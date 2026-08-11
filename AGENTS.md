@@ -1,5 +1,25 @@
 # AGENTS.md
 
+## Permanent Session Rules (user requirements — do not forget)
+
+1. **After EVERY compaction, re-read this AGENTS.md and `plans/008-flutter-builder-engine.md`** before continuing work. Do not assume context survived.
+2. **Commit after EVERY major change.** Major change = any milestone step, any new tool/feature, any significant refactor, any plan/AGENTS.md update. Commit even if the change is unpolished. Never leave the working tree dirty across sessions for structural work.
+3. The product mission (see next section) overrides any codebase-local convention that conflicts with it.
+
+## Project Mission (Flutter Builder)
+
+This repo is now the home of the **Flutter Builder** product: Synara's UI
+(kept as-is) + a rebuilt **Caide engine** (`apps/engine`, under construction)
+that builds **real Flutter applications**. The previous dyad×caide product
+failed because it built web apps; this engine targets Dart/Flutter: scaffold,
+analyze/test/build, emulator + iOS Simulator preview, APK/IPA release.
+
+The engine is a NEW spawned process (pattern: `codex app-server`, JSON-RPC
+over stdio) supervised by `apps/server` through a new provider adapter. The
+engine keeps its own SQLite; Synara keeps the event store. External provider
+adapters (codex/claude/cursor/etc.) are being stripped from the active product
+path for v1. Full details in `plans/008-flutter-builder-engine.md`.
+
 ## Task Completion Requirements
 
 - Do not run `bun fmt`, `bun lint`, or `bun typecheck` unless the user explicitly asks for them in the current conversation.
@@ -89,6 +109,7 @@ Reference usage: opening/closing a project and the sidebar sections in `apps/web
 
 ## Package Roles
 
+- `apps/engine`: **NEW — the Flutter Builder engine.** Standalone Node process (JSON-RPC over stdio, codex-app-server pattern) containing the agent loop (rebuilt from dyad×caide `local_agent_handler.ts`), Flutter tooling, preview runtime, and its own SQLite. Owns workspace/app files, pub dependencies, flutter toolchain. Talks to `apps/server` via the engine adapter.
 - `apps/server`: Node.js WebSocket server. Wraps Codex app-server (JSON-RPC over stdio), serves the React web app, and manages provider sessions.
 - `apps/web`: React/Vite UI. Owns session UX, conversation/event rendering, and client-side state. Connects to the server via WebSocket.
 - `packages/contracts`: Shared effect/Schema schemas and TypeScript contracts for provider events, WebSocket protocol, and model/session types. Keep this package schema-only — no runtime logic.
