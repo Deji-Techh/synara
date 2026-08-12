@@ -111,6 +111,7 @@ export function DeferredChatView(props: {
   onToggleRightDock?: () => void;
   onToggleBrowser: () => void;
   onToggleDevice?: () => void;
+  onTogglePreview?: () => void;
   onOpenBrowserUrl: (url: string) => void;
   onOpenTurnDiff: (turnId: TurnId, filePath?: string) => void;
   onSplitSurface?: () => void;
@@ -167,6 +168,7 @@ export function DeferredChatView(props: {
       {...(props.onToggleRightDock ? { onToggleRightDock: props.onToggleRightDock } : {})}
       onToggleBrowserPanel={props.onToggleBrowser}
       {...(props.onToggleDevice ? { onToggleDevicePanel: props.onToggleDevice } : {})}
+      {...(props.onTogglePreview ? { onTogglePreviewPanel: props.onTogglePreview } : {})}
       onOpenBrowserUrl={props.onOpenBrowserUrl}
       onOpenTurnDiffPanel={props.onOpenTurnDiff}
       {...(props.onSplitSurface ? { onSplitSurface: props.onSplitSurface } : {})}

@@ -131,6 +131,11 @@ const DockFilePane = lazy(() =>
     default: module.DockFilePane,
   })),
 );
+const LazyPreviewPanel = lazy(() =>
+  import("./PreviewPanel").then((module) => ({
+    default: module.PreviewPanel,
+  })),
+);
 
 const DIFF_INLINE_DEFAULT_WIDTH = "max(28rem, calc(50vw - 8rem))";
 const SINGLE_PANEL_MIN_WIDTH = 26 * 16;
@@ -226,11 +231,16 @@ export function SingleChatSurface(props: {
     isGitRepo: hasGitRepository,
   });
   const hasDeviceSupport = useDeviceSupport();
+  // The preview pane previews engine-served Flutter apps in the thread's
+  // workspace; without a workspace there is nothing to run, so the launcher
+  // and header toggle stay hidden like the simulator gate above.
+  const hasPreviewSupport = workspaceRoot !== null;
   const dockLauncherItems = resolveRightDockLauncherItems({
     hasWorkspace: workspaceRoot !== null,
     hasGitRepository,
     hasReview: dockDiffTotals.fileCount > 0,
     hasDeviceSupport,
+    hasPreviewSupport,
   });
   const availableDockPaneKinds = dockLauncherItems.map(({ kind }) => kind);
   const projects = useStore((store) => store.projects);
@@ -320,6 +330,10 @@ export function SingleChatSurface(props: {
   const handleToggleDevice = () => {
     requestImmediateDockHydration("device");
     toggleSingletonPane(props.threadId, { kind: "device" });
+  };
+  const handleTogglePreview = () => {
+    requestImmediateDockHydration("preview");
+    toggleSingletonPane(props.threadId, { kind: "preview" });
   };
   const handleToggleRightDock = () => {
     setDockOpen(props.threadId, !dockState.open);
@@ -796,6 +810,18 @@ export function SingleChatSurface(props: {
             />
           </Suspense>
         );
+      case "preview":
+        return (
+          <Suspense fallback={<PanelStateMessage>Loading preview...</PanelStateMessage>}>
+            <LazyPreviewPanel
+              threadId={props.threadId}
+              pane={pane}
+              isVisible={context.isVisible}
+              onUpdatePane={(patch) => updatePane(props.threadId, pane.id, patch)}
+              onClose={() => closePane(props.threadId, pane.id)}
+            />
+          </Suspense>
+        );
       case "pullRequest":
         return (
           <Suspense fallback={<PanelStateMessage>Loading pull request...</PanelStateMessage>}>
@@ -1066,6 +1092,7 @@ export function SingleChatSurface(props: {
               onToggleRightDock={handleToggleRightDock}
               onToggleBrowser={handleToggleBrowser}
               {...(hasDeviceSupport ? { onToggleDevice: handleToggleDevice } : {})}
+              {...(hasPreviewSupport ? { onTogglePreview: handleTogglePreview } : {})}
               onOpenBrowserUrl={handleOpenBrowserUrl}
               onOpenTurnDiff={handleOpenTurnDiff}
               onSplitSurface={handleSplitSurface}

@@ -51,6 +51,8 @@ interface RightDockStore {
         | "pullRequestRepository"
         | "pullRequestNumber"
         | "pullRequestInitialTab"
+        | "previewAppId"
+        | "previewDeviceId"
       >
     >,
   ) => void;

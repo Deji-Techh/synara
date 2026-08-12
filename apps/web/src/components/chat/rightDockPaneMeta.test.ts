@@ -107,4 +107,27 @@ describe("resolveRightDockLauncherItems", () => {
       }).map(({ kind }) => kind),
     ).not.toContain("device");
   });
+
+  it("offers the preview only when a workspace is available", () => {
+    expect(
+      resolveRightDockLauncherItems({
+        hasWorkspace: true,
+        hasGitRepository: false,
+        hasReview: false,
+        hasPreviewSupport: true,
+      }).map(({ kind }) => kind),
+    ).toContain("preview");
+
+    expect(
+      resolveRightDockLauncherItems({
+        hasWorkspace: true,
+        hasGitRepository: false,
+        hasReview: false,
+      }).map(({ kind }) => kind),
+    ).not.toContain("preview");
+  });
+
+  it("labels the preview pane", () => {
+    expect(getRightDockPaneMeta("preview").label).toBe("Preview");
+  });
 });

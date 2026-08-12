@@ -9,6 +9,7 @@ import type { LucideIcon } from "~/lib/icons";
 import {
   DeviceMobileIcon,
   DiffIcon,
+  EyeIcon,
   FileIcon,
   FoldersIcon,
   GitCommitIcon,
@@ -48,6 +49,7 @@ export const RIGHT_DOCK_PANE_META: Record<RightDockPaneKind, RightDockPaneMeta> 
   sidechat: { label: "Side chats", Icon: MessageCircleIcon },
   git: { label: "Git", Icon: GitCommitIcon },
   pullRequest: { label: "Pull request", Icon: GitPullRequestIcon },
+  preview: { label: "Preview", Icon: EyeIcon },
 };
 
 // Neutral fallback for any pane kind we no longer recognize (e.g. stale
@@ -84,6 +86,7 @@ const RIGHT_DOCK_LAUNCHER_ORDER: readonly RightDockPaneKind[] = [
   "explorer",
   "sidechat",
   "device",
+  "preview",
   "git",
 ];
 
@@ -104,6 +107,11 @@ export function resolveRightDockLauncherItems(input: {
    * from this machine to make it work.
    */
   hasDeviceSupport?: boolean;
+  /**
+   * The preview pane previews engine-served Flutter apps, so the entry only
+   * appears when an engine session is available for the thread.
+   */
+  hasPreviewSupport?: boolean;
 }): readonly RightDockLauncherItem[] {
   return RIGHT_DOCK_LAUNCHER_ORDER.flatMap((kind) => {
     if (kind === "diff" && !input.hasReview) {
@@ -116,6 +124,9 @@ export function resolveRightDockLauncherItems(input: {
       return [];
     }
     if (kind === "device" && input.hasDeviceSupport !== true) {
+      return [];
+    }
+    if (kind === "preview" && input.hasPreviewSupport !== true) {
       return [];
     }
     const meta = getRightDockPaneMeta(kind);

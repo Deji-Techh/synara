@@ -1117,6 +1117,7 @@ interface ChatViewProps {
   onToggleRightDock?: () => void;
   onToggleBrowserPanel?: () => void;
   onToggleDevicePanel?: () => void;
+  onTogglePreviewPanel?: () => void;
   onOpenBrowserUrl?: (url: string) => void;
   onOpenTurnDiffPanel?: (turnId: TurnId, filePath?: string) => void;
   onSplitSurface?: () => void;
@@ -1181,6 +1182,7 @@ export default function ChatView({
   onToggleRightDock,
   onToggleBrowserPanel,
   onToggleDevicePanel,
+  onTogglePreviewPanel,
   onOpenBrowserUrl,
   onOpenTurnDiffPanel,
   onSplitSurface,
@@ -6507,6 +6509,15 @@ export default function ChatView({
         return;
       }
 
+      if (command === "preview.toggle") {
+        event.preventDefault();
+        event.stopPropagation();
+        // The preview needs a workspace, so the surface leaves the handler
+        // unwired when there is no project to preview.
+        onTogglePreviewPanel?.();
+        return;
+      }
+
       if (command === "chat.split") {
         event.preventDefault();
         event.stopPropagation();
@@ -6557,6 +6568,7 @@ export default function ChatView({
     terminalWorkspaceTerminalTabActive,
     onToggleBrowser,
     onToggleDevicePanel,
+    onTogglePreviewPanel,
     onToggleDiff,
     onInterruptFromStopControl,
     onSplitSurface,

@@ -19,10 +19,12 @@ export const RIGHT_DOCK_PANE_KINDS = [
   "sidechat",
   "git",
   "pullRequest",
+  "preview",
 ] as const;
 
 export type RightDockPaneKind = (typeof RIGHT_DOCK_PANE_KINDS)[number];
 export type PullRequestInitialTab = "summary" | "timeline" | "code";
+export type PreviewDeviceId = "mobile" | "tablet" | "desktop";
 
 const RIGHT_DOCK_PANE_KIND_SET: ReadonlySet<string> = new Set(RIGHT_DOCK_PANE_KINDS);
 
@@ -40,6 +42,9 @@ export interface RightDockPane {
   pullRequestRepository: string | null;
   pullRequestNumber: number | null;
   pullRequestInitialTab: PullRequestInitialTab | null;
+  // preview panes preview the engine-served Flutter app for the thread.
+  previewAppId: string | null;
+  previewDeviceId: PreviewDeviceId | null;
 }
 
 export interface RightDockThreadState {
@@ -111,6 +116,13 @@ function sanitizePersistedPane(value: unknown): RightDockPane | null {
       candidate.pullRequestInitialTab === "code"
         ? candidate.pullRequestInitialTab
         : null,
+    previewAppId: typeof candidate.previewAppId === "string" ? candidate.previewAppId : null,
+    previewDeviceId:
+      candidate.previewDeviceId === "mobile" ||
+      candidate.previewDeviceId === "tablet" ||
+      candidate.previewDeviceId === "desktop"
+        ? candidate.previewDeviceId
+        : null,
   };
 }
 
@@ -169,6 +181,8 @@ export interface OpenPaneInput {
   pullRequestRepository?: string | null;
   pullRequestNumber?: number | null;
   pullRequestInitialTab?: PullRequestInitialTab | null;
+  previewAppId?: string | null;
+  previewDeviceId?: PreviewDeviceId | null;
 }
 
 function createPane(input: OpenPaneInput): RightDockPane {
@@ -183,6 +197,8 @@ function createPane(input: OpenPaneInput): RightDockPane {
     pullRequestRepository: input.pullRequestRepository ?? null,
     pullRequestNumber: input.pullRequestNumber ?? null,
     pullRequestInitialTab: input.pullRequestInitialTab ?? null,
+    previewAppId: input.previewAppId ?? null,
+    previewDeviceId: input.previewDeviceId ?? null,
   };
 }
 
@@ -211,6 +227,15 @@ function singletonPaneReopenPatch(input: OpenPaneInput): Partial<RightDockPane> 
       pullRequestRepository: input.pullRequestRepository ?? null,
       pullRequestNumber: input.pullRequestNumber ?? null,
       pullRequestInitialTab: input.pullRequestInitialTab ?? null,
+    };
+  }
+  if (
+    input.kind === "preview" &&
+    (input.previewAppId !== undefined || input.previewDeviceId !== undefined)
+  ) {
+    return {
+      previewAppId: input.previewAppId ?? null,
+      previewDeviceId: input.previewDeviceId ?? null,
     };
   }
   return null;
@@ -341,6 +366,8 @@ export function updatePaneInState(
       | "pullRequestRepository"
       | "pullRequestNumber"
       | "pullRequestInitialTab"
+      | "previewAppId"
+      | "previewDeviceId"
     >
   >,
 ): RightDockThreadState {
@@ -358,7 +385,9 @@ export function updatePaneInState(
       nextPane.pullRequestProjectId !== pane.pullRequestProjectId ||
       nextPane.pullRequestRepository !== pane.pullRequestRepository ||
       nextPane.pullRequestNumber !== pane.pullRequestNumber ||
-      nextPane.pullRequestInitialTab !== pane.pullRequestInitialTab
+      nextPane.pullRequestInitialTab !== pane.pullRequestInitialTab ||
+      nextPane.previewAppId !== pane.previewAppId ||
+      nextPane.previewDeviceId !== pane.previewDeviceId
     ) {
       changed = true;
       return nextPane;
