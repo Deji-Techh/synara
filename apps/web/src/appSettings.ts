@@ -17,18 +17,18 @@ import {
   type ProviderStartOptions,
   type ServerSettingsView,
   type ServerSettingsPatch,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import {
   getDefaultModel,
   getModelOptions,
   normalizeModelSlug,
   resolveSelectableModel,
-} from "@synara/shared/model";
+} from "@caide/shared/model";
 import {
   APP_SNAP_SHORTCUT_KEYS,
   APP_SNAP_SHORTCUT_MODIFIERS,
   DEFAULT_APP_SNAP_SHORTCUT,
-} from "@synara/shared/appSnapShortcut";
+} from "@caide/shared/appSnapShortcut";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { EnvMode } from "./components/BranchToolbar.logic";
 import { normalizeCursorModelVariantBaseId } from "./cursorModelVariants";
@@ -47,8 +47,8 @@ import {
   normalizeUiDensity as normalizeUiDensityValue,
 } from "./lib/appDensity";
 
-const APP_SETTINGS_STORAGE_KEY = "synara:app-settings:v1";
-const SERVER_SETTINGS_MIGRATION_STORAGE_KEY = "synara:server-settings-migrated:v1";
+const APP_SETTINGS_STORAGE_KEY = "caide:app-settings:v1";
+const SERVER_SETTINGS_MIGRATION_STORAGE_KEY = "caide:server-settings-migrated:v1";
 const MAX_CUSTOM_MODEL_COUNT = 32;
 export const MAX_CUSTOM_MODEL_LENGTH = 256;
 export const MIN_CHAT_FONT_SIZE_PX = 11;
@@ -116,7 +116,8 @@ type CustomModelSettingsKey =
   | "customDroidModels"
   | "customKiloModels"
   | "customOpenCodeModels"
-  | "customPiModels";
+  | "customPiModels"
+  | "customEngineModels";
 export type ProviderCustomModelConfig = {
   provider: ProviderKind;
   settingsKey: CustomModelSettingsKey;
@@ -164,6 +165,7 @@ const PersistedProviderKind = Schema.Literals([
   "kilo",
   "opencode",
   "pi",
+  "engine",
 ]).pipe(
   Schema.decodeTo(
     ProviderKind,
@@ -265,6 +267,7 @@ export const AppSettingsSchema = Schema.Struct({
   customKiloModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   customOpenCodeModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   customPiModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
+  customEngineModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   textGenerationProvider: PersistedProviderKind.pipe(withDefaults(() => "codex" as const)),
   textGenerationModel: Schema.optional(TrimmedNonEmptyString),
   uiFontFamily: Schema.String.check(Schema.isMaxLength(256)).pipe(withDefaults(() => "")),
@@ -875,6 +878,7 @@ export function getCustomModelsByProvider(
     kilo: getCustomModelsForProvider(settings, "kilo"),
     opencode: getCustomModelsForProvider(settings, "opencode"),
     pi: getCustomModelsForProvider(settings, "pi"),
+    engine: getCustomModelsForProvider(settings, "engine"),
   };
 }
 
@@ -1023,6 +1027,7 @@ export function getCustomModelOptionsByProvider(
     kilo: getAppModelOptions("kilo", customModelsByProvider.kilo),
     opencode: getAppModelOptions("opencode", customModelsByProvider.opencode),
     pi: getAppModelOptions("pi", customModelsByProvider.pi),
+    engine: getAppModelOptions("engine", customModelsByProvider.engine),
   };
 }
 
@@ -1204,6 +1209,8 @@ export function getCustomBinaryPathForProvider(
       return normalizeProviderBinaryPathOverride(provider, settings.openCodeBinaryPath);
     case "pi":
       return normalizeProviderBinaryPathOverride(provider, settings.piBinaryPath);
+    case "engine":
+      return "";
   }
 }
 

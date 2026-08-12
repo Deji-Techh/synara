@@ -1,4 +1,4 @@
-import { type ModelSlug, type ProviderKind, type ServerProviderStatus } from "@synara/contracts";
+import { type ModelSlug, type ProviderKind, type ServerProviderStatus } from "@caide/contracts";
 import { page } from "vitest/browser";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "vitest-browser-react";
@@ -69,6 +69,7 @@ const MODEL_OPTIONS_BY_PROVIDER = {
       name: "Gemini 3.5 Flash",
     },
   ],
+  engine: [],
 } as const satisfies Record<ProviderKind, ReadonlyArray<ProviderModelOption & { slug: ModelSlug }>>;
 
 const MANY_OPENCODE_MODELS = Array.from({ length: 16 }, (_, index) => ({

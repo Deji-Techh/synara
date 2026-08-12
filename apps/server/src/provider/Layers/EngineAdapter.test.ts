@@ -1,6 +1,6 @@
 // FILE: EngineAdapter.test.ts
 // Purpose: Proves the engine adapter spawns apps/engine over stdio and drives
-// the canonical Synara provider API end to end: startSession (initialize +
+// the canonical Caide provider API end to end: startSession (initialize +
 // ping hello-world), sendTurn (echo hello-world), event stream, stopSession.
 // Layer: Provider adapter integration test
 
@@ -9,7 +9,7 @@ import { randomUUID } from "node:crypto";
 import { Effect, Fiber, Stream } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { ThreadId } from "@synara/contracts";
+import { ThreadId } from "@caide/contracts";
 
 import { EngineAdapter, EngineAdapterShape } from "../Services/EngineAdapter.ts";
 import { EngineAdapterLive } from "./EngineAdapter.ts";

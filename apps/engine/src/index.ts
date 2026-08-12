@@ -73,7 +73,7 @@ async function handleMethod(method: string, params: unknown): Promise<unknown> {
         throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "initialize params invalid");
       }
       const result = InitializeResultSchema.parse({
-        serverName: "synara-engine",
+        serverName: "caide-engine",
         serverVersion: ENGINE_SERVER_VERSION,
         protocolVersion: ENGINE_PROTOCOL_VERSION,
         capabilities: {

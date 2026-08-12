@@ -13,5 +13,5 @@ export interface DroidAdapterShape extends ProviderAdapterShape<ProviderAdapterE
 }
 
 export class DroidAdapter extends ServiceMap.Service<DroidAdapter, DroidAdapterShape>()(
-  "synara/provider/Services/DroidAdapter",
+  "caide/provider/Services/DroidAdapter",
 ) {}

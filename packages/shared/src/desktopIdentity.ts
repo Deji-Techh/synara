@@ -1,21 +1,21 @@
 // FILE: desktopIdentity.ts
 // Purpose: Defines the canonical desktop application identity across packaging and runtime.
 
-export const SYNARA_DESKTOP_SCHEME = "synara";
-export const SYNARA_DESKTOP_ORIGIN = `${SYNARA_DESKTOP_SCHEME}://app`;
-export const SYNARA_DESKTOP_ENTRY_URL = `${SYNARA_DESKTOP_ORIGIN}/index.html`;
-export const SYNARA_DESKTOP_UPDATE_CHANNEL = "synara";
-export const SYNARA_PRODUCTION_BUNDLE_ID = "com.emanueledipietro.synara";
-export const SYNARA_DEVELOPMENT_BUNDLE_ID = `${SYNARA_PRODUCTION_BUNDLE_ID}.dev`;
-export const SYNARA_CANARY_BUNDLE_ID = `${SYNARA_PRODUCTION_BUNDLE_ID}.canary`;
-export const SYNARA_CANARY_DESKTOP_SCHEME = "synara-canary";
-export const SYNARA_CANARY_DESKTOP_ORIGIN = `${SYNARA_CANARY_DESKTOP_SCHEME}://app`;
-export const SYNARA_CANARY_DESKTOP_ENTRY_URL = `${SYNARA_CANARY_DESKTOP_ORIGIN}/index.html`;
+export const CAIDE_DESKTOP_SCHEME = "caide";
+export const CAIDE_DESKTOP_ORIGIN = `${CAIDE_DESKTOP_SCHEME}://app`;
+export const CAIDE_DESKTOP_ENTRY_URL = `${CAIDE_DESKTOP_ORIGIN}/index.html`;
+export const CAIDE_DESKTOP_UPDATE_CHANNEL = "caide";
+export const CAIDE_PRODUCTION_BUNDLE_ID = "com.emanueledipietro.caide";
+export const CAIDE_DEVELOPMENT_BUNDLE_ID = `${CAIDE_PRODUCTION_BUNDLE_ID}.dev`;
+export const CAIDE_CANARY_BUNDLE_ID = `${CAIDE_PRODUCTION_BUNDLE_ID}.canary`;
+export const CAIDE_CANARY_DESKTOP_SCHEME = "caide-canary";
+export const CAIDE_CANARY_DESKTOP_ORIGIN = `${CAIDE_CANARY_DESKTOP_SCHEME}://app`;
+export const CAIDE_CANARY_DESKTOP_ENTRY_URL = `${CAIDE_CANARY_DESKTOP_ORIGIN}/index.html`;
 
-export type SynaraDesktopFlavor = "production" | "development" | "canary";
+export type CaideDesktopFlavor = "production" | "development" | "canary";
 
-export interface SynaraDesktopIdentity {
-  readonly flavor: SynaraDesktopFlavor;
+export interface CaideDesktopIdentity {
+  readonly flavor: CaideDesktopFlavor;
   readonly displayName: string;
   readonly bundleId: string;
   readonly scheme: string;
@@ -26,56 +26,56 @@ export interface SynaraDesktopIdentity {
   readonly usesScriptedUpdates: boolean;
 }
 
-export function resolveSynaraDesktopFlavor(input: {
+export function resolveCaideDesktopFlavor(input: {
   readonly isDevelopment: boolean;
   readonly requestedFlavor?: string | undefined;
-}): SynaraDesktopFlavor {
+}): CaideDesktopFlavor {
   if (input.requestedFlavor?.trim().toLowerCase() === "canary") {
     return "canary";
   }
   return input.isDevelopment ? "development" : "production";
 }
 
-export function synaraDesktopIdentity(flavor: SynaraDesktopFlavor): SynaraDesktopIdentity {
+export function caideDesktopIdentity(flavor: CaideDesktopFlavor): CaideDesktopIdentity {
   if (flavor === "canary") {
     return {
       flavor,
-      displayName: "Synara Canary",
-      bundleId: SYNARA_CANARY_BUNDLE_ID,
-      scheme: SYNARA_CANARY_DESKTOP_SCHEME,
-      origin: SYNARA_CANARY_DESKTOP_ORIGIN,
-      entryUrl: SYNARA_CANARY_DESKTOP_ENTRY_URL,
-      userDataDirectoryName: "synara-canary",
-      defaultHomeDirectoryName: ".synara-canary",
+      displayName: "Caide Canary",
+      bundleId: CAIDE_CANARY_BUNDLE_ID,
+      scheme: CAIDE_CANARY_DESKTOP_SCHEME,
+      origin: CAIDE_CANARY_DESKTOP_ORIGIN,
+      entryUrl: CAIDE_CANARY_DESKTOP_ENTRY_URL,
+      userDataDirectoryName: "caide-canary",
+      defaultHomeDirectoryName: ".caide-canary",
       usesScriptedUpdates: true,
     };
   }
   if (flavor === "development") {
     return {
       flavor,
-      displayName: "Synara (Dev)",
-      bundleId: SYNARA_DEVELOPMENT_BUNDLE_ID,
-      scheme: SYNARA_DESKTOP_SCHEME,
-      origin: SYNARA_DESKTOP_ORIGIN,
-      entryUrl: SYNARA_DESKTOP_ENTRY_URL,
-      userDataDirectoryName: "synara-dev",
-      defaultHomeDirectoryName: ".synara",
+      displayName: "Caide (Dev)",
+      bundleId: CAIDE_DEVELOPMENT_BUNDLE_ID,
+      scheme: CAIDE_DESKTOP_SCHEME,
+      origin: CAIDE_DESKTOP_ORIGIN,
+      entryUrl: CAIDE_DESKTOP_ENTRY_URL,
+      userDataDirectoryName: "caide-dev",
+      defaultHomeDirectoryName: ".caide",
       usesScriptedUpdates: false,
     };
   }
   return {
     flavor,
-    displayName: "Synara",
-    bundleId: SYNARA_PRODUCTION_BUNDLE_ID,
-    scheme: SYNARA_DESKTOP_SCHEME,
-    origin: SYNARA_DESKTOP_ORIGIN,
-    entryUrl: SYNARA_DESKTOP_ENTRY_URL,
-    userDataDirectoryName: "synara",
-    defaultHomeDirectoryName: ".synara",
+    displayName: "Caide",
+    bundleId: CAIDE_PRODUCTION_BUNDLE_ID,
+    scheme: CAIDE_DESKTOP_SCHEME,
+    origin: CAIDE_DESKTOP_ORIGIN,
+    entryUrl: CAIDE_DESKTOP_ENTRY_URL,
+    userDataDirectoryName: "caide",
+    defaultHomeDirectoryName: ".caide",
     usesScriptedUpdates: false,
   };
 }
 
-export function synaraBundleId(isDevelopment: boolean): string {
-  return synaraDesktopIdentity(isDevelopment ? "development" : "production").bundleId;
+export function caideBundleId(isDevelopment: boolean): string {
+  return caideDesktopIdentity(isDevelopment ? "development" : "production").bundleId;
 }

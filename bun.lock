@@ -13,7 +13,7 @@
       },
     },
     "apps/desktop": {
-      "name": "@synara/desktop",
+      "name": "@caide/desktop",
       "version": "0.7.1",
       "dependencies": {
         "effect": "catalog:",
@@ -21,8 +21,8 @@
         "electron-updater": "^6.6.2",
       },
       "devDependencies": {
-        "@synara/contracts": "workspace:*",
-        "@synara/shared": "workspace:*",
+        "@caide/contracts": "workspace:*",
+        "@caide/shared": "workspace:*",
         "@types/node": "catalog:",
         "tsdown": "catalog:",
         "typescript": "catalog:",
@@ -31,14 +31,14 @@
       },
     },
     "apps/engine": {
-      "name": "@synara/engine",
+      "name": "@caide/engine",
       "version": "0.1.0",
       "bin": {
-        "synara-engine": "dist/index.mjs",
+        "caide-engine": "dist/index.mjs",
       },
       "dependencies": {
         "@ai-sdk/openai-compatible": "^3.0.30",
-        "@synara/contracts": "workspace:*",
+        "@caide/contracts": "workspace:*",
         "ai": "^7.0.62",
         "zod": "4.3.6",
       },
@@ -50,7 +50,7 @@
       },
     },
     "apps/marketing": {
-      "name": "@synara/marketing",
+      "name": "@caide/marketing",
       "version": "0.0.0",
       "dependencies": {
         "astro": "^6.4.6",
@@ -61,16 +61,17 @@
       },
     },
     "apps/server": {
-      "name": "@synara/cli",
+      "name": "@caide/cli",
       "version": "0.7.1",
       "bin": {
-        "synara": "dist/index.mjs",
-        "synara-restore-migration-backup": "dist/restoreMigrationBackup.mjs",
+        "caide": "dist/index.mjs",
+        "caide-restore-migration-backup": "dist/restoreMigrationBackup.mjs",
       },
       "dependencies": {
         "@agentclientprotocol/sdk": "1.2.1",
         "@anthropic-ai/claude-agent-sdk": "0.3.207",
         "@anthropic-ai/sdk": "^0.100.0",
+        "@caide/engine": "workspace:*",
         "@earendil-works/pi-agent-core": "^0.81.1",
         "@earendil-works/pi-ai": "^0.81.1",
         "@earendil-works/pi-coding-agent": "^0.81.1",
@@ -78,7 +79,6 @@
         "@effect/sql-sqlite-bun": "catalog:",
         "@opencode-ai/sdk": "^1.15.13",
         "@pierre/diffs": "^1.2.12",
-        "@synara/engine": "workspace:*",
         "@xterm/headless": "^6.0.0",
         "effect": "catalog:",
         "node-pty": "^1.1.0",
@@ -87,11 +87,11 @@
         "ws": "^8.21.0",
       },
       "devDependencies": {
+        "@caide/contracts": "workspace:*",
+        "@caide/shared": "workspace:*",
+        "@caide/web": "workspace:*",
         "@effect/language-service": "catalog:",
         "@effect/vitest": "catalog:",
-        "@synara/contracts": "workspace:*",
-        "@synara/shared": "workspace:*",
-        "@synara/web": "workspace:*",
         "@types/bun": "catalog:",
         "@types/node": "catalog:",
         "@types/ws": "^8.5.13",
@@ -102,10 +102,12 @@
       },
     },
     "apps/web": {
-      "name": "@synara/web",
+      "name": "@caide/web",
       "version": "0.7.1",
       "dependencies": {
         "@base-ui/react": "^1.5.0",
+        "@caide/contracts": "workspace:*",
+        "@caide/shared": "workspace:*",
         "@dnd-kit/core": "^6.3.1",
         "@dnd-kit/modifiers": "^9.0.0",
         "@dnd-kit/sortable": "^10.0.0",
@@ -115,8 +117,6 @@
         "@legendapp/list": "3.3.3",
         "@lexical/react": "^0.41.0",
         "@pierre/diffs": "^1.2.12",
-        "@synara/contracts": "workspace:*",
-        "@synara/shared": "workspace:*",
         "@tabler/icons-react": "^3.44.0",
         "@tanstack/react-pacer": "^0.19.4",
         "@tanstack/react-query": "^5.90.0",
@@ -171,7 +171,7 @@
       },
     },
     "packages/contracts": {
-      "name": "@synara/contracts",
+      "name": "@caide/contracts",
       "version": "0.7.1",
       "dependencies": {
         "effect": "catalog:",
@@ -185,10 +185,10 @@
       },
     },
     "packages/shared": {
-      "name": "@synara/shared",
+      "name": "@caide/shared",
       "version": "0.0.0-alpha.1",
       "dependencies": {
-        "@synara/contracts": "workspace:*",
+        "@caide/contracts": "workspace:*",
         "effect": "catalog:",
       },
       "devDependencies": {
@@ -200,12 +200,12 @@
       },
     },
     "scripts": {
-      "name": "@synara/scripts",
+      "name": "@caide/scripts",
       "dependencies": {
         "@anthropic-ai/claude-agent-sdk": "^0.3.207",
+        "@caide/contracts": "workspace:*",
+        "@caide/shared": "workspace:*",
         "@effect/platform-node": "catalog:",
-        "@synara/contracts": "workspace:*",
-        "@synara/shared": "workspace:*",
         "effect": "catalog:",
       },
       "devDependencies": {
@@ -411,6 +411,22 @@
     "@base-ui/utils": ["@base-ui/utils@0.2.9", "", { "dependencies": { "@babel/runtime": "^7.29.2", "@floating-ui/utils": "^0.2.11", "reselect": "^5.1.1", "use-sync-external-store": "^1.6.0" }, "peerDependencies": { "@types/react": "^17 || ^18 || ^19", "react": "^17 || ^18 || ^19", "react-dom": "^17 || ^18 || ^19" }, "optionalPeers": ["@types/react"] }, "sha512-x/PDDCYzoqPpjrdyb3VcyylTI2IjUXEtYDGi5foh7KsnmNJIIaVwA2GLgDH1dps1GgXiJbA60hM+AyuTfQzIvw=="],
 
     "@blazediff/core": ["@blazediff/core@1.9.1", "", {}, "sha512-ehg3jIkYKulZh+8om/O25vkvSsXXwC+skXmyA87FFx6A/45eqOkZsBltMw/TVteb0mloiGT8oGRTcjRAz66zaA=="],
+
+    "@caide/cli": ["@caide/cli@workspace:apps/server"],
+
+    "@caide/contracts": ["@caide/contracts@workspace:packages/contracts"],
+
+    "@caide/desktop": ["@caide/desktop@workspace:apps/desktop"],
+
+    "@caide/engine": ["@caide/engine@workspace:apps/engine"],
+
+    "@caide/marketing": ["@caide/marketing@workspace:apps/marketing"],
+
+    "@caide/scripts": ["@caide/scripts@workspace:scripts"],
+
+    "@caide/shared": ["@caide/shared@workspace:packages/shared"],
+
+    "@caide/web": ["@caide/web@workspace:apps/web"],
 
     "@capsizecss/unpack": ["@capsizecss/unpack@4.0.0", "", { "dependencies": { "fontkitten": "^1.0.0" } }, "sha512-VERIM64vtTP1C4mxQ5thVT9fK0apjPFobqybMtA1UdUujWka24ERHbRHFGmpbbhp73MhV+KSsHQH9C6uOTdEQA=="],
 
@@ -985,22 +1001,6 @@
     "@stablelib/base64": ["@stablelib/base64@1.0.1", "", {}, "sha512-1bnPQqSxSuc3Ii6MhBysoWCg58j97aUjuCSZrGSmDxNqtytIi0k8utUenAwTZN4V5mXXYGsVUI9zeBqy+jBOSQ=="],
 
     "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
-
-    "@synara/cli": ["@synara/cli@workspace:apps/server"],
-
-    "@synara/contracts": ["@synara/contracts@workspace:packages/contracts"],
-
-    "@synara/desktop": ["@synara/desktop@workspace:apps/desktop"],
-
-    "@synara/engine": ["@synara/engine@workspace:apps/engine"],
-
-    "@synara/marketing": ["@synara/marketing@workspace:apps/marketing"],
-
-    "@synara/scripts": ["@synara/scripts@workspace:scripts"],
-
-    "@synara/shared": ["@synara/shared@workspace:packages/shared"],
-
-    "@synara/web": ["@synara/web@workspace:apps/web"],
 
     "@szmarczak/http-timer": ["@szmarczak/http-timer@4.0.6", "", { "dependencies": { "defer-to-connect": "^2.0.0" } }, "sha512-4BAffykYOgO+5nzBWYwE3W90sBgLJoUPRWWcL8wlyiM8IB8ipJz3UMJ9KXQd1RKQXpKp8Tutn80HZtWsu2u76w=="],
 

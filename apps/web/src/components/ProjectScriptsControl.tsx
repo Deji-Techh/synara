@@ -1,8 +1,4 @@
-import type {
-  ProjectScript,
-  ProjectScriptIcon,
-  ResolvedKeybindingsConfig,
-} from "@synara/contracts";
+import type { ProjectScript, ProjectScriptIcon, ResolvedKeybindingsConfig } from "@caide/contracts";
 import {
   BugIcon,
   ChevronDownIcon,

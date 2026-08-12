@@ -1,15 +1,15 @@
 {
-  "name": "@synara/cli",
+  "name": "@caide/cli",
   "version": "0.7.1",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Emanuele-web04/Synara.git",
+    "url": "git+https://github.com/Emanuele-web04/Caide.git",
     "directory": "apps/server"
   },
   "bin": {
-    "synara": "dist/index.mjs",
-    "synara-restore-migration-backup": "dist/restoreMigrationBackup.mjs"
+    "caide": "dist/index.mjs",
+    "caide-restore-migration-backup": "dist/restoreMigrationBackup.mjs"
   },
   "files": [
     "dist"
@@ -27,6 +27,7 @@
     "@agentclientprotocol/sdk": "1.2.1",
     "@anthropic-ai/claude-agent-sdk": "0.3.207",
     "@anthropic-ai/sdk": "^0.100.0",
+    "@caide/engine": "workspace:*",
     "@earendil-works/pi-agent-core": "^0.81.1",
     "@earendil-works/pi-ai": "^0.81.1",
     "@earendil-works/pi-coding-agent": "^0.81.1",
@@ -34,7 +35,6 @@
     "@effect/sql-sqlite-bun": "catalog:",
     "@opencode-ai/sdk": "^1.15.13",
     "@pierre/diffs": "^1.2.12",
-    "@synara/engine": "workspace:*",
     "@xterm/headless": "^6.0.0",
     "effect": "catalog:",
     "node-pty": "^1.1.0",
@@ -43,11 +43,11 @@
     "ws": "^8.21.0"
   },
   "devDependencies": {
+    "@caide/contracts": "workspace:*",
+    "@caide/shared": "workspace:*",
+    "@caide/web": "workspace:*",
     "@effect/language-service": "catalog:",
     "@effect/vitest": "catalog:",
-    "@synara/contracts": "workspace:*",
-    "@synara/shared": "workspace:*",
-    "@synara/web": "workspace:*",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
     "@types/ws": "^8.5.13",

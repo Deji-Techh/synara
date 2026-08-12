@@ -17,7 +17,7 @@ export const DEFAULT_FLUTTER_PLATFORMS = ["android", "ios", "web"] as const;
 
 export const FLUTTER_AI_RULES = `# AI_RULES.md
 
-Contract for AI agent builds in this app (Synara Flutter Builder engine).
+Contract for AI agent builds in this app (Caide Flutter Builder engine).
 
 - Always run \`flutter analyze\` before considering a change done; fix all reported issues.
 - Run \`flutter test\` after any logic change; keep all tests green.

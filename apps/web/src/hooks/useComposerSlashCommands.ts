@@ -7,8 +7,8 @@ import {
   type ProviderModelOptions,
   type RuntimeMode,
   type ThreadId,
-} from "@synara/contracts";
-import { deriveAssociatedWorktreeMetadata } from "@synara/shared/threadWorkspace";
+} from "@caide/contracts";
+import { deriveAssociatedWorktreeMetadata } from "@caide/shared/threadWorkspace";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { newCommandId, newMessageId, newThreadId } from "../lib/utils";
 import { readNativeApi } from "../nativeApi";
@@ -592,7 +592,7 @@ export function useComposerSlashCommands(input: {
     const params = new URLSearchParams({ threadId: threadId });
     void downloadUrlAsBlob({
       url: resolveWsHttpUrl(`/api/thread-export?${params.toString()}`),
-      filename: `synara-thread-${threadId}.zip`,
+      filename: `caide-thread-${threadId}.zip`,
     }).catch((error: unknown) => {
       toastManager.add({
         type: "error",

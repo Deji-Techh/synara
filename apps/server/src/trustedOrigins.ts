@@ -1,21 +1,18 @@
 // FILE: trustedOrigins.ts
 // Purpose: Shared origin checks for browser-facing HTTP/WS routes that expose
-//          local machine data only to Synara's own app surfaces.
+//          local machine data only to Caide's own app surfaces.
 // Layer: Server HTTP/security utility
 // Exports: normalizeCorsOrigin, isTrustedAppOrigin,
 //          shouldRejectUntrustedRequestOrigin
 
-import {
-  SYNARA_CANARY_DESKTOP_ORIGIN,
-  SYNARA_DESKTOP_ORIGIN,
-} from "@synara/shared/desktopIdentity";
+import { CAIDE_CANARY_DESKTOP_ORIGIN, CAIDE_DESKTOP_ORIGIN } from "@caide/shared/desktopIdentity";
 
 import type { ServerConfigShape } from "./config";
 import { isLoopbackHost, isWildcardHost } from "./startupAccess";
 
 export const DESKTOP_APP_CORS_ORIGINS: ReadonlySet<string> = new Set([
-  SYNARA_DESKTOP_ORIGIN,
-  SYNARA_CANARY_DESKTOP_ORIGIN,
+  CAIDE_DESKTOP_ORIGIN,
+  CAIDE_CANARY_DESKTOP_ORIGIN,
 ]);
 
 export function normalizeCorsOrigin(rawOrigin: string | ReadonlyArray<string> | undefined) {

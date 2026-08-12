@@ -48,8 +48,9 @@ import {
   DEVICE_WS_CHANNELS,
   DEVICE_WS_METHODS,
   type DeviceEvent,
-} from "@synara/contracts";
-import { VOICE_TRANSCRIPTION_UPLOAD_ROUTE_PATH } from "@synara/shared/binaryTransfer";
+  PREVIEW_WS_METHODS,
+} from "@caide/contracts";
+import { VOICE_TRANSCRIPTION_UPLOAD_ROUTE_PATH } from "@caide/shared/binaryTransfer";
 
 import { showConfirmDialogFallback } from "./confirmDialogFallback";
 import { showContextMenuFallback } from "./contextMenuFallback";
@@ -832,6 +833,12 @@ export function createWsNativeApi(): NativeApi {
       scrollToElement: (input) =>
         transport.request(DEVICE_WS_METHODS.scrollToElement, input, { timeoutMs: null }),
       onEvent: deviceEventListeners.subscribe,
+    },
+    preview: {
+      start: (input) => transport.request(PREVIEW_WS_METHODS.start, input, { timeoutMs: null }),
+      stop: (input) => transport.request(PREVIEW_WS_METHODS.stop, input),
+      reload: (input) => transport.request(PREVIEW_WS_METHODS.reload, input),
+      getState: (input) => transport.request(PREVIEW_WS_METHODS.getState, input),
     },
     browser: {
       open: async (input) => {

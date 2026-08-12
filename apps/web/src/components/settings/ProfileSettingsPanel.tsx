@@ -7,7 +7,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { type ProfileStats, type ProfileTokenStats, type ProviderKind } from "@synara/contracts";
+import { type ProfileStats, type ProfileTokenStats, type ProviderKind } from "@caide/contracts";
 import {
   serverProfileStatsQueryOptions,
   serverProfileTokenStatsQueryOptions,
@@ -117,7 +117,7 @@ function ProfileContent({
             <span>{handle}</span>
             <span aria-hidden>·</span>
             <span className="rounded-full border px-1.5 py-px text-xs text-muted-foreground">
-              Synara
+              Caide
             </span>
           </div>
         </div>
@@ -347,6 +347,8 @@ function formatProviderLabel(provider: ProviderKind): string {
       return "OpenCode";
     case "pi":
       return "Pi";
+    case "engine":
+      return "Builder";
   }
 }
 

@@ -11,7 +11,7 @@ import {
   MODEL_OPTIONS_BY_PROVIDER,
   CODEX_REASONING_EFFORT_OPTIONS,
   GROK_REASONING_EFFORT_OPTIONS,
-} from "@synara/contracts";
+} from "@caide/contracts";
 
 import {
   applyClaudePromptEffortPrefix,

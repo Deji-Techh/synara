@@ -24,16 +24,16 @@ import {
   type ProviderStartOptions,
   type ThreadEnvironmentMode,
   type TurnId,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import {
   automationContinuationThreadId,
   automationContinuesThread,
   automationOwnsItsThread,
   automationRequiresTargetThread,
-} from "@synara/shared/automationMode";
-import { buildTemporaryWorktreeBranchName } from "@synara/shared/git";
-import { providerStartOptionsFromServerSettings } from "@synara/shared/serverSettings";
-import { autoRuntimeModeSelectionIssue } from "@synara/shared/runtimeMode";
+} from "@caide/shared/automationMode";
+import { buildTemporaryWorktreeBranchName } from "@caide/shared/git";
+import { providerStartOptionsFromServerSettings } from "@caide/shared/serverSettings";
+import { autoRuntimeModeSelectionIssue } from "@caide/shared/runtimeMode";
 import { Cause, Effect, Layer, Option, PubSub, Queue, Stream } from "effect";
 
 import { GitCore } from "../../git/Services/GitCore.ts";

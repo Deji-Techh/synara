@@ -1,6 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
-import type { OrchestrationMessage } from "@synara/contracts";
-import { MessageId, ThreadId, TurnId } from "@synara/contracts";
+import type { OrchestrationMessage } from "@caide/contracts";
+import { MessageId, ThreadId, TurnId } from "@caide/contracts";
 
 import { deriveAgentThreadStatus, paginateThreadMessages } from "./threadSummary.ts";
 

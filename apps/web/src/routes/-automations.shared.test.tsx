@@ -14,7 +14,7 @@ import {
   type AutomationDefinition,
   type AutomationRun,
   type ProviderStartOptions,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import { describe, expect, it } from "vitest";
 
 import {

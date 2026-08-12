@@ -1,4 +1,4 @@
-import type { ServerAuthDescriptor } from "@synara/contracts";
+import type { ServerAuthDescriptor } from "@caide/contracts";
 import { Effect, Layer } from "effect";
 
 import { ServerConfig } from "../../config";

@@ -7,9 +7,9 @@ import {
   type ProviderKind,
   type ServerProviderStatus,
   type ServerSettings,
-} from "@synara/contracts";
-import { PROVIDER_DESCRIPTORS } from "@synara/shared/providerMetadata";
-import { pluralize } from "@synara/shared/text";
+} from "@caide/contracts";
+import { PROVIDER_DESCRIPTORS } from "@caide/shared/providerMetadata";
+import { pluralize } from "@caide/shared/text";
 import {
   closestCenter,
   DndContext,
@@ -733,14 +733,14 @@ function ProviderToolRow(props: {
                       <code className="font-mono">{updateAdvisory.updateCommand}</code>
                     </>
                   ) : (
-                    "A newer version is available, but Synara could not identify a safe one-click update command for this installation."
+                    "A newer version is available, but Caide could not identify a safe one-click update command for this installation."
                   )}
                 </div>
               ) : null}
               {showSelfManagedUpdate && props.providerStatus ? (
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0 text-xs text-muted-foreground">
-                    {title} manages its own releases, so Synara cannot tell whether a newer version
+                    {title} manages its own releases, so Caide cannot tell whether a newer version
                     exists. Run the update to be sure.
                   </div>
                   <ProviderUpdateAction
@@ -936,7 +936,7 @@ export function ProvidersSettingsPanel({
 
           <SettingsRow
             title="Provider updates"
-            description="Review installed provider tools that Synara can safely update."
+            description="Review installed provider tools that Caide can safely update."
             status={
               !settings.enableProviderUpdateChecks
                 ? "Automatic checks off"

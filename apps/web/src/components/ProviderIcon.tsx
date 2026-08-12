@@ -4,10 +4,11 @@
  * Centralizes provider-to-icon mapping so new providers do not need repeated
  * branching across every UI surface.
  */
-import { type ProviderKind } from "@synara/contracts";
+import { type ProviderKind } from "@caide/contracts";
 import type { ReactNode, SVGProps } from "react";
 
 import { CentralIcon } from "~/lib/central-icons";
+import { HammerIcon } from "~/lib/icons";
 import { cn } from "~/lib/utils";
 import {
   AntigravityIcon,
@@ -73,6 +74,7 @@ export const PROVIDER_ICON_COMPONENT_BY_PROVIDER: Record<ProviderKind, Icon> = {
   kilo: KiloIcon,
   opencode: OpenCodeProviderIcon,
   pi: PiIcon,
+  engine: HammerIcon,
 };
 
 export function providerIconToneClassName(

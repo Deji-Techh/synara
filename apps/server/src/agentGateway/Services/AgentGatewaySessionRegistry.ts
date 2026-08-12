@@ -1,4 +1,4 @@
-import type { ProviderKind, ThreadId } from "@synara/contracts";
+import type { ProviderKind, ThreadId } from "@caide/contracts";
 import { ServiceMap } from "effect";
 
 export type AgentGatewayCapability =
@@ -55,4 +55,4 @@ export interface AgentGatewaySessionRegistryShape {
 export class AgentGatewaySessionRegistry extends ServiceMap.Service<
   AgentGatewaySessionRegistry,
   AgentGatewaySessionRegistryShape
->()("synara/agentGateway/Services/AgentGatewaySessionRegistry") {}
+>()("caide/agentGateway/Services/AgentGatewaySessionRegistry") {}

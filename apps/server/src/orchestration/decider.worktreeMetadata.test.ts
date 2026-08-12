@@ -5,7 +5,7 @@ import {
   EventId,
   ProjectId,
   ThreadId,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 

@@ -3,7 +3,7 @@
 // Layer: Web chat presentation component
 // Exports: TimelineWorkEntryRow, EditedFileRowContent, prefersCompactWorkEntryRow
 
-import type { TurnId } from "@synara/contracts";
+import type { TurnId } from "@caide/contracts";
 import {
   createElement,
   memo,
@@ -54,7 +54,7 @@ import { DiffStatLabel } from "./DiffStatLabel";
 import { type ExpandedImagePreview } from "./ExpandedImagePreview";
 import { LinkChipIcon } from "../LinkChipIcon";
 import { normalizeCompactToolLabel } from "./MessagesTimeline.logic";
-import { SynaraLogo } from "../SynaraLogo";
+import { CaideLogo } from "../CaideLogo";
 import { ToolCallDetailsContent } from "./ToolCallDetailsDialog";
 import { DisclosureChevron } from "../ui/DisclosureChevron";
 import { DisclosureRegion } from "../ui/DisclosureRegion";
@@ -66,13 +66,13 @@ import {
 } from "../../lib/toolArgumentSummary";
 import {
   deriveFriendlyCommandTarget,
-  deriveSynaraMcpToolTitle,
+  deriveCaideMcpToolTitle,
   extractWebFetchUrl,
-  isSynaraBrowserToolCall,
+  isCaideBrowserToolCall,
   normalizeToolTextForComparison,
   resolveCommandVisualKind,
-  sanitizeSynaraMcpToolPreview,
-  type SynaraMcpToolStatus,
+  sanitizeCaideMcpToolPreview,
+  type CaideMcpToolStatus,
 } from "../../lib/toolCallLabel";
 import { formatLiveActivityMeta, useLiveActivityNow } from "../../lib/liveActivityPresentation";
 import { openWorkspaceFileReference, useWorkspaceFileOpener } from "../../lib/workspaceFileOpener";
@@ -92,8 +92,8 @@ type TimelineWorkEntry = WorkLogEntry;
 
 const AgentTaskIcon: LucideIcon = (props) => <BotIcon {...props} />;
 
-const SynaraToolIcon: LucideIcon = ({ className, ...props }) => (
-  <SynaraLogo {...props} className={cn("text-current", className)} />
+const CaideToolIcon: LucideIcon = ({ className, ...props }) => (
+  <CaideLogo {...props} className={cn("text-current", className)} />
 );
 
 function workToneIcon(tone: TimelineWorkEntry["tone"]): {
@@ -273,8 +273,8 @@ export function renderWorkEntryIcon(Icon: LucideIcon, className: string): ReactE
 // row, which borrows its first entry's icon.
 export function workEntryLeftIcon(workEntry: TimelineWorkEntry): LucideIcon {
   if (isGitHubMcpToolCall(workEntry)) return GitHubIcon;
-  if (isSynaraBrowserWorkEntry(workEntry)) return GlobeIcon;
-  if (isSynaraToolCall(workEntry)) return SynaraToolIcon;
+  if (isCaideBrowserWorkEntry(workEntry)) return GlobeIcon;
+  if (isCaideToolCall(workEntry)) return CaideToolIcon;
   if (workEntry.itemType === "mcp_tool_call") return McpIcon;
   return workEntryIcon(workEntry);
 }
@@ -284,20 +284,20 @@ function isGitHubMcpToolCall(workEntry: TimelineWorkEntry): boolean {
   return Boolean(toolName?.startsWith("mcp__codex_apps__github"));
 }
 
-// Synara's own agent-gateway tools (synara_list_threads, synara_create_thread,
-// ...) get the Synara mark instead of the generic MCP glyph. Providers report
-// the call differently: Claude prefixes the MCP server (mcp__synara__*), ACP
-// agents surface the bare tool name (synara_*), and Codex reports server/tool
-// pairs that the label humanizer renders as "Synara: ...".
-function toolWorkEntryStatus(workEntry: TimelineWorkEntry): SynaraMcpToolStatus {
+// Caide's own agent-gateway tools (caide_list_threads, caide_create_thread,
+// ...) get the Caide mark instead of the generic MCP glyph. Providers report
+// the call differently: Claude prefixes the MCP server (mcp__caide__*), ACP
+// agents surface the bare tool name (caide_*), and Codex reports server/tool
+// pairs that the label humanizer renders as "Caide: ...".
+function toolWorkEntryStatus(workEntry: TimelineWorkEntry): CaideMcpToolStatus {
   if (workEntry.toolStatus) return workEntry.toolStatus;
   return workEntry.activityKind !== undefined && workEntry.activityKind !== "tool.completed"
     ? "running"
     : "completed";
 }
 
-function isSynaraBrowserWorkEntry(workEntry: TimelineWorkEntry): boolean {
-  return isSynaraBrowserToolCall({
+function isCaideBrowserWorkEntry(workEntry: TimelineWorkEntry): boolean {
+  return isCaideBrowserToolCall({
     toolName: workEntry.toolName,
     title: workEntry.toolTitle,
     fallbackLabel: workEntry.label,
@@ -305,9 +305,9 @@ function isSynaraBrowserWorkEntry(workEntry: TimelineWorkEntry): boolean {
   });
 }
 
-function isSynaraToolCall(workEntry: TimelineWorkEntry): boolean {
+function isCaideToolCall(workEntry: TimelineWorkEntry): boolean {
   return (
-    deriveSynaraMcpToolTitle({
+    deriveCaideMcpToolTitle({
       toolName: workEntry.toolName,
       title: workEntry.toolTitle,
       fallbackLabel: workEntry.label,
@@ -350,14 +350,14 @@ function capitalizePhrase(value: string): string {
 }
 
 function toolWorkEntryHeading(workEntry: TimelineWorkEntry): string {
-  const synaraTitle = deriveSynaraMcpToolTitle({
+  const caideTitle = deriveCaideMcpToolTitle({
     toolName: workEntry.toolName,
     title: workEntry.toolTitle,
     fallbackLabel: workEntry.label,
     status: toolWorkEntryStatus(workEntry),
   });
-  if (synaraTitle) {
-    return synaraTitle;
+  if (caideTitle) {
+    return caideTitle;
   }
   if (!workEntry.toolTitle) {
     return capitalizePhrase(normalizeCompactToolLabel(workEntry.label));
@@ -472,31 +472,30 @@ export const TimelineWorkEntryRow = memo(function TimelineWorkEntryRow(props: {
   // Standard tool rows keep one discoverable left glyph. Codex status rows
   // deliberately skip it and reuse only the shared tool-label typography.
   const isGitHubToolRow = isGitHubMcpToolCall(workEntry);
-  const isSynaraBrowserToolRow = !isGitHubToolRow && isSynaraBrowserWorkEntry(workEntry);
-  const isSynaraToolRow =
-    !isGitHubToolRow && !isSynaraBrowserToolRow && isSynaraToolCall(workEntry);
+  const isCaideBrowserToolRow = !isGitHubToolRow && isCaideBrowserWorkEntry(workEntry);
+  const isCaideToolRow = !isGitHubToolRow && !isCaideBrowserToolRow && isCaideToolCall(workEntry);
   const isMcpToolRow =
     workEntry.itemType === "mcp_tool_call" &&
     !isGitHubToolRow &&
-    !isSynaraBrowserToolRow &&
-    !isSynaraToolRow;
+    !isCaideBrowserToolRow &&
+    !isCaideToolRow;
   const LeftIcon = workEntryLeftIcon(workEntry);
   const leftIconKind = webFetchUrl
     ? "web-fetch"
     : isGitHubToolRow || EntryIcon === GitHubIcon
       ? "github"
-      : isSynaraBrowserToolRow
+      : isCaideBrowserToolRow
         ? "browser"
-        : isSynaraToolRow
-          ? "synara"
+        : isCaideToolRow
+          ? "caide"
           : isMcpToolRow
             ? "mcp"
             : undefined;
   const heading = toolWorkEntryHeading(workEntry);
   const rawPreview = workEntryPreview(workEntry);
   const preview =
-    isSynaraBrowserToolRow || isSynaraToolRow
-      ? sanitizeSynaraMcpToolPreview({
+    isCaideBrowserToolRow || isCaideToolRow
+      ? sanitizeCaideMcpToolPreview({
           preview: rawPreview,
           heading,
           status: toolWorkEntryStatus(workEntry),

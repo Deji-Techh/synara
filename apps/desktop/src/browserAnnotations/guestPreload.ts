@@ -4,11 +4,11 @@ import type {
   BrowserAnnotationMarker,
   BrowserAnnotationSource,
   BrowserAnnotationTheme,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import {
   browserAnnotationDocumentIdentityUrl,
   sanitizeBrowserAnnotationUrl,
-} from "@synara/shared/browserAnnotations";
+} from "@caide/shared/browserAnnotations";
 
 import { BROWSER_ANNOTATION_GUEST_COMMAND_CHANNEL, BROWSER_IPC_CHANNELS } from "../ipcChannels";
 import {
@@ -32,7 +32,7 @@ import {
   isGuestAnnotationCommand,
 } from "./guestProtocol";
 
-const HOST_ATTRIBUTE = "data-synara-browser-annotations";
+const HOST_ATTRIBUTE = "data-caide-browser-annotations";
 /** Mutation storms are coalesced into at most one marker re-resolve per window. */
 const MARKER_REVALIDATE_DELAY_MS = 400;
 const VIEWPORT_GAP = 12;

@@ -14,7 +14,7 @@ import type {
   OrchestrationCommand,
   OrchestrationEvent,
   OrchestrationReadModel,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import { ServiceMap } from "effect";
 import type { Effect, Scope, Stream } from "effect";
 
@@ -155,4 +155,4 @@ export interface OrchestrationEngineShape {
 export class OrchestrationEngineService extends ServiceMap.Service<
   OrchestrationEngineService,
   OrchestrationEngineShape
->()("synara/orchestration/Services/OrchestrationEngine/OrchestrationEngineService") {}
+>()("caide/orchestration/Services/OrchestrationEngine/OrchestrationEngineService") {}

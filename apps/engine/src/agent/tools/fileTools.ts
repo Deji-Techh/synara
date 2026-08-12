@@ -69,7 +69,7 @@ export const listFilesTool = defineTool({
     if (!fs.existsSync(dir)) {
       throw new Error(`directory not found: ${args.path ?? "."}`);
     }
-    const EXCLUDED = new Set([".git", "build", ".dart_tool", "node_modules", ".idea", ".synara"]);
+    const EXCLUDED = new Set([".git", "build", ".dart_tool", "node_modules", ".idea", ".caide"]);
     const files: string[] = [];
     const walk = (current: string, rel: string) => {
       for (const entry of fs.readdirSync(current, { withFileTypes: true })) {

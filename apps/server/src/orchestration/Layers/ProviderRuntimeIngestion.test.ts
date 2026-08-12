@@ -8,7 +8,7 @@ import type {
   ProviderKind,
   ProviderRuntimeEvent,
   ProviderSession,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import {
   ApprovalRequestId,
   CommandId,
@@ -19,7 +19,7 @@ import {
   RuntimeItemId,
   ThreadId,
   TurnId,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import { Effect, Exit, Layer, ManagedRuntime, PubSub, Scope, Stream } from "effect";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -253,7 +253,7 @@ describe("ProviderRuntimeIngestion", () => {
   });
 
   async function createHarness(options?: { readonly startIngestion?: boolean }) {
-    const workspaceRoot = makeTempDir("synara-provider-project-");
+    const workspaceRoot = makeTempDir("caide-provider-project-");
     fs.mkdirSync(path.join(workspaceRoot, ".git"));
     const provider = createProviderServiceHarness();
     const orchestrationLayer = OrchestrationEngineLive.pipe(
@@ -5079,7 +5079,7 @@ describe("ProviderRuntimeIngestion", () => {
         ? (data.rawOutput as Record<string, unknown>)
         : {};
 
-    expect(data.__synaraTruncated).toBe(true);
+    expect(data.__caideTruncated).toBe(true);
     expect(JSON.stringify(data).length).toBeLessThan(17_000);
     expect(rawInput.command).toBe("bun run something");
     expect(String(rawOutput.stdout ?? "").length).toBeLessThan(3_000);
@@ -5253,7 +5253,7 @@ describe("ProviderRuntimeIngestion", () => {
         ? (payload.data as Record<string, unknown>)
         : {};
 
-    expect(data.__synaraTruncated).toBe(true);
+    expect(data.__caideTruncated).toBe(true);
     expect(typeof data.preview).toBe("string");
     expect(JSON.stringify(data).length).toBeLessThanOrEqual(16_000);
   });

@@ -1,4 +1,4 @@
-# Plan 008: Flutter Builder — Synara UI × Rebuilt Caide Engine
+# Plan 008: Flutter Builder — Caide UI × Rebuilt Caide Engine
 
 > **Status**: IN PROGRESS (execution started 2026-08-12)
 > **Priority**: P0 — this is the product
@@ -8,30 +8,30 @@
 ## Mission
 
 Rebuild the Caide (dyad x caide) engine as a **Flutter application builder** and
-plug it into **Synara's UI** as a new provider. The previous dyad×caide product
+plug it into **Caide's UI** as a new provider. The previous dyad×caide product
 failed because its build target was web apps; the new engine targets **real
 Flutter applications** (Dart, widgets, emulator/simulator preview, APK/IPA
 builds).
 
-Synara's UI stays untouched. Synara's server keeps its orchestration. The
+Caide's UI stays untouched. Caide's server keeps its orchestration. The
 engine is a **new spawned process** (same pattern as `codex app-server`:
 JSON-RPC over stdio) that the server supervises.
 
 ## Decisions locked (debated 2026-08-12)
 
-| #   | Question           | Decision                                                                                                                                                                     |
-| --- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A   | Engine location    | **In-monorepo** — new `apps/engine` package in this repo (bun workspaces, turbo). One install, shared `@synara/contracts`.                                                   |
-| B   | Database           | **Engine keeps its own SQLite** (messages, apps, preview state, settings). Synara keeps the event store. Adapter projects engine events into `ProviderRuntimeEvent` stream.  |
-| C   | External providers | **Strip for v1.** The engine IS the product. Remove non-engine provider adapters from the active product path (code remains in git history).                                 |
-| D   | Android emulator   | **Build it** — `adb` + `avdmanager` + `flutter run -d emulator`, `adb exec-out screencap` screenshots. iOS Simulator comes free via Synara's existing `IosSimulatorBackend`. |
-| E   | Flutter SDK        | **Pinned SDK** (a known-good Flutter stable version), downloaded/managed by the engine (mirror `managed_android_toolchain_service` pattern). FVM later.                      |
-| F   | Model routing      | **User API keys** via Synara's existing Settings provider section. No free-tier/Dyad-engine gateway in v1.                                                                   |
+| #   | Question           | Decision                                                                                                                                                                    |
+| --- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A   | Engine location    | **In-monorepo** — new `apps/engine` package in this repo (bun workspaces, turbo). One install, shared `@caide/contracts`.                                                   |
+| B   | Database           | **Engine keeps its own SQLite** (messages, apps, preview state, settings). Caide keeps the event store. Adapter projects engine events into `ProviderRuntimeEvent` stream.  |
+| C   | External providers | **Strip for v1.** The engine IS the product. Remove non-engine provider adapters from the active product path (code remains in git history).                                |
+| D   | Android emulator   | **Build it** — `adb` + `avdmanager` + `flutter run -d emulator`, `adb exec-out screencap` screenshots. iOS Simulator comes free via Caide's existing `IosSimulatorBackend`. |
+| E   | Flutter SDK        | **Pinned SDK** (a known-good Flutter stable version), downloaded/managed by the engine (mirror `managed_android_toolchain_service` pattern). FVM later.                     |
+| F   | Model routing      | **User API keys** via Caide's existing Settings provider section. No free-tier/Dyad-engine gateway in v1.                                                                   |
 
 ## Architecture
 
 ```
-┌─────────────────────────── Synara (kept) ────────────────────────────┐
+┌─────────────────────────── Caide (kept) ────────────────────────────┐
 │  apps/desktop — Electron shell                                      │
 │  apps/web     — React UI (sidebar, chat, right dock, settings)      │
 │  apps/server  — Effect-TS orchestration, WS RPC, persistence        │
@@ -50,7 +50,7 @@ JSON-RPC over stdio) that the server supervises.
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-## What we KEEP from Synara (no work)
+## What we KEEP from Caide (no work)
 
 - Full chat UI, composer, approvals, pending-input, transcript
 - Right dock: Review/Diff, Terminal, Browser (CDP+automation), Files, Side chats, Git, PR, Device (iOS Simulator backend)
@@ -81,7 +81,7 @@ shell, i18n/PostHog/Figma/image-gen, Vercel/Supabase/Neon handlers, web3 skills
 
 - scaffold-web3, Capacitor/native-release service, cloud preview services.
 
-**From Synara:** nothing structural. Non-engine provider adapters removed from
+**From Caide:** nothing structural. Non-engine provider adapters removed from
 the active path (v1).
 
 ## What we CAN build (Flutter path)
@@ -89,14 +89,14 @@ the active path (v1).
 1. Scaffold: `flutter create` (org `dev.caide`, platforms android+ios+web) + pinned SDK + `AI_RULES.md`
 2. Agent tools: `flutter analyze` / `flutter test` / `flutter build`, `pub add`, Dart-aware prompts
 3. Preview layer 1 (fast loop): `flutter run -d web-server` → proxy → iframe preview with DeviceLab presets; parse `flutter run` output into Console; hot reload/restart (`r`/`R`)
-4. Preview layer 2 (real devices): Android emulator backend (adb screencap), iOS Simulator via Synara device pane
+4. Preview layer 2 (real devices): Android emulator backend (adb screencap), iOS Simulator via Caide device pane
 5. Quality gates: `flutter analyze` + `flutter test` exit codes → QualityGatePipeline
 6. Release: `flutter build apk/appbundle/ipa` + signing → ReleaseCentre-style panel
 
 ## What we CANNOT build (v1)
 
 - Visual editing / DOM annotator on Flutter (CanvasKit has no DOM). Future: Flutter DevTools widget-inspection (DDS) — research spike, not v1.
-- iOS builds on Linux (Xcode-only; respect Synara's existing off-macOS gating).
+- iOS builds on Linux (Xcode-only; respect Caide's existing off-macOS gating).
 - Cloud preview of mobile builds (web preview can cloud-preview later).
 - Real-time hot-reload introspection via DDS (defer behind web-server + screenshots).
 
@@ -105,7 +105,7 @@ the active path (v1).
 1. Add `preview` kind to `apps/web/src/rightDockStore.logic.ts` (kind union + state: selectedAppId, mode, device preset)
 2. `rightDockPaneMeta.tsx`: label/icon entry
 3. `SingleChatSurface.tsx` renderPane `case "preview"`
-4. Port Caide's `PreviewPanel` stack (PreviewToolbar, DeviceLab, Console, Problems, TestsPanel, QualityGatePipeline, FileTree, FileEditor) restyled to Synara's design tokens (Tailwind v4 + Base UI on both sides)
+4. Port Caide's `PreviewPanel` stack (PreviewToolbar, DeviceLab, Console, Problems, TestsPanel, QualityGatePipeline, FileTree, FileEditor) restyled to Caide's design tokens (Tailwind v4 + Base UI on both sides)
 5. Engine exposes preview RPC (start/stop/reload/log-stream/analyze/test-results); adapter forwards; UI consumes via WS RPC (new methods in `wsRpc.ts`, respecting `docs/server-architecture-migration.md` compatibility rules)
 
 ## Import order (how to do it carefully)

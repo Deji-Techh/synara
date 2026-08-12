@@ -89,7 +89,7 @@ export class Agent {
 
   constructor(readonly options: AgentOptions) {
     const provider = createOpenAICompatible({
-      name: "synara-engine",
+      name: "caide-engine",
       baseURL: options.model.baseUrl,
       apiKey: options.model.apiKey,
     });

@@ -2,7 +2,7 @@
  * EngineAdapterLive - Flutter Builder engine provider adapter.
  *
  * Spawns apps/engine over stdio JSON-RPC (codex app-server pattern) and
- * projects engine activity into Synara's canonical provider runtime event
+ * projects engine activity into Caide's canonical provider runtime event
  * stream. M1 scope: session lifecycle + hello-world turn round trip.
  *
  * @module EngineAdapterLive
@@ -20,8 +20,8 @@ import {
   RuntimeMode,
   ThreadId,
   TurnId,
-} from "@synara/contracts";
-import { EngineClient } from "@synara/engine/client";
+} from "@caide/contracts";
+import { EngineClient } from "@caide/engine/client";
 import {
   ENGINE_PROTOCOL_VERSION,
   InitializeResultSchema,
@@ -30,7 +30,7 @@ import {
   PreviewStartResultSchema,
   PreviewStateResultSchema,
   PreviewStopResultSchema,
-} from "@synara/engine/protocol";
+} from "@caide/engine/protocol";
 import { Effect, Layer, PubSub, Ref, Stream } from "effect";
 
 import {
@@ -124,7 +124,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         const initializeResponse = yield* Effect.tryPromise({
           try: () =>
             client.initialize({
-              clientName: "synara-server",
+              clientName: "caide-server",
               protocolVersion: ENGINE_PROTOCOL_VERSION,
             }),
           catch: (cause) => processError(threadId, "engine initialize request failed", cause),

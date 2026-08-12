@@ -84,7 +84,7 @@ describe("engine app/create RPC", () => {
   let env: NodeJS.ProcessEnv;
 
   beforeAll(() => {
-    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "synara-appcreate-"));
+    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "caide-appcreate-"));
     workspaceDir = path.join(tempRoot, "workspace");
     fs.mkdirSync(workspaceDir, { recursive: true });
     shimDir = path.join(tempRoot, "shimbin");
@@ -120,7 +120,7 @@ describe("engine app/create RPC", () => {
       await once(child, "spawn");
 
       const initialize = await engine.sendRequest("initialize", {
-        clientName: "synara-server",
+        clientName: "caide-server",
         protocolVersion: 1,
       });
       expect(initialize.error).toBeUndefined();

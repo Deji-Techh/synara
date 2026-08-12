@@ -22,7 +22,7 @@ describe("linkOrCopyCodexOverlayEntry", () => {
       {
         entryName: "auth.json",
         sourcePath: "C:\\Users\\test\\.codex\\auth.json",
-        targetPath: "C:\\Users\\test\\.synara\\codex-home-overlay\\auth.json",
+        targetPath: "C:\\Users\\test\\.caide\\codex-home-overlay\\auth.json",
         type: "file",
       },
       { symlink, copyFile },
@@ -30,12 +30,12 @@ describe("linkOrCopyCodexOverlayEntry", () => {
 
     expect(symlink).toHaveBeenCalledWith(
       "C:\\Users\\test\\.codex\\auth.json",
-      "C:\\Users\\test\\.synara\\codex-home-overlay\\auth.json",
+      "C:\\Users\\test\\.caide\\codex-home-overlay\\auth.json",
       "file",
     );
     expect(copyFile).toHaveBeenCalledWith(
       "C:\\Users\\test\\.codex\\auth.json",
-      "C:\\Users\\test\\.synara\\codex-home-overlay\\auth.json",
+      "C:\\Users\\test\\.caide\\codex-home-overlay\\auth.json",
     );
   });
 
@@ -49,7 +49,7 @@ describe("linkOrCopyCodexOverlayEntry", () => {
         {
           entryName: "sessions",
           sourcePath: "C:\\Users\\test\\.codex\\sessions",
-          targetPath: "C:\\Users\\test\\.synara\\codex-home-overlay\\sessions",
+          targetPath: "C:\\Users\\test\\.caide\\codex-home-overlay\\sessions",
           type: "dir",
         },
         { symlink, copyFile: vi.fn(async () => undefined) },
@@ -90,24 +90,24 @@ describe("disableCodexConfigSections", () => {
 });
 
 describe("buildCodexProcessEnv", () => {
-  it("replaces a user-defined Synara MCP table only inside the session overlay", async () => {
-    const sourceHome = mkdtempSync(path.join(os.tmpdir(), "synara-codex-source-"));
-    const runtimeHome = mkdtempSync(path.join(os.tmpdir(), "synara-codex-runtime-"));
+  it("replaces a user-defined Caide MCP table only inside the session overlay", async () => {
+    const sourceHome = mkdtempSync(path.join(os.tmpdir(), "caide-codex-source-"));
+    const runtimeHome = mkdtempSync(path.join(os.tmpdir(), "caide-codex-runtime-"));
     const sourceConfig = [
       'model = "gpt-5.5"',
       "",
-      "[mcp_servers.synara]",
+      "[mcp_servers.caide]",
       'url = "http://127.0.0.1:1111/stale-mcp"',
       'bearer_token_env_var = "STALE_GATEWAY_TOKEN"',
       "",
-      "[mcp_servers.synara.headers]",
+      "[mcp_servers.caide.headers]",
       'Authorization = "stale-inline-secret"',
       "",
-      "[mcp_servers.synara.env]",
+      "[mcp_servers.caide.env]",
       'STALE_GATEWAY_TOKEN = "stale-inline-secret"',
       "",
-      "[mcp_servers.synara-other]",
-      'url = "http://127.0.0.1:2111/synara-other"',
+      "[mcp_servers.caide-other]",
+      'url = "http://127.0.0.1:2111/caide-other"',
       "",
       "[mcp_servers.user-tool]",
       'url = "http://127.0.0.1:2222/user-tool"',
@@ -117,45 +117,45 @@ describe("buildCodexProcessEnv", () => {
       'exclude = ["USER_SECRET"]',
     ].join("\n");
     const managedConfig = [
-      "[mcp_servers.synara]",
+      "[mcp_servers.caide]",
       'url = "http://127.0.0.1:3773/mcp"',
-      'bearer_token_env_var = "SYNARA_AGENT_GATEWAY_TOKEN"',
+      'bearer_token_env_var = "CAIDE_AGENT_GATEWAY_TOKEN"',
       "",
       "[shell_environment_policy]",
-      'exclude = ["SYNARA_AGENT_GATEWAY_TOKEN"]',
+      'exclude = ["CAIDE_AGENT_GATEWAY_TOKEN"]',
     ].join("\n");
     const sourceConfigPath = path.join(sourceHome, "config.toml");
     writeFileSync(sourceConfigPath, sourceConfig, "utf8");
 
     try {
       const env = await buildCodexProcessEnv({
-        env: { SYNARA_HOME: runtimeHome },
+        env: { CAIDE_HOME: runtimeHome },
         homePath: sourceHome,
         platform: "darwin",
         appendConfigToml: managedConfig,
       });
       const overlayHome = env.CODEX_HOME;
       if (!overlayHome) {
-        throw new Error("Expected a Synara Codex home overlay.");
+        throw new Error("Expected a Caide Codex home overlay.");
       }
       const overlayConfig = readFileSync(path.join(overlayHome, "config.toml"), "utf8");
 
-      expect(overlayConfig.match(/^\[mcp_servers\.synara\]$/gm)).toHaveLength(1);
+      expect(overlayConfig.match(/^\[mcp_servers\.caide\]$/gm)).toHaveLength(1);
       expect(overlayConfig).toContain('url = "http://127.0.0.1:3773/mcp"');
-      expect(overlayConfig).toContain('bearer_token_env_var = "SYNARA_AGENT_GATEWAY_TOKEN"');
+      expect(overlayConfig).toContain('bearer_token_env_var = "CAIDE_AGENT_GATEWAY_TOKEN"');
       expect(overlayConfig).not.toContain("http://127.0.0.1:1111/stale-mcp");
       expect(overlayConfig).not.toContain("STALE_GATEWAY_TOKEN");
       expect(overlayConfig).not.toContain("stale-inline-secret");
-      expect(overlayConfig).not.toContain("[mcp_servers.synara.headers]");
-      expect(overlayConfig).not.toContain("[mcp_servers.synara.env]");
+      expect(overlayConfig).not.toContain("[mcp_servers.caide.headers]");
+      expect(overlayConfig).not.toContain("[mcp_servers.caide.env]");
       expect(overlayConfig).toContain(
-        '[mcp_servers.synara-other]\nurl = "http://127.0.0.1:2111/synara-other"',
+        '[mcp_servers.caide-other]\nurl = "http://127.0.0.1:2111/caide-other"',
       );
       expect(overlayConfig).toContain(
         '[mcp_servers.user-tool]\nurl = "http://127.0.0.1:2222/user-tool"',
       );
       expect(overlayConfig).toContain('inherit = "core"');
-      expect(overlayConfig).toContain('exclude = ["SYNARA_AGENT_GATEWAY_TOKEN", "USER_SECRET"]');
+      expect(overlayConfig).toContain('exclude = ["CAIDE_AGENT_GATEWAY_TOKEN", "USER_SECRET"]');
       expect(readFileSync(sourceConfigPath, "utf8")).toBe(sourceConfig);
     } finally {
       rmSync(sourceHome, { recursive: true, force: true });

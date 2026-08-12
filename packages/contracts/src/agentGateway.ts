@@ -1,5 +1,5 @@
 /**
- * Public contracts for the Synara agent-control gateway.
+ * Public contracts for the Caide agent-control gateway.
  *
  * New gateway tools decode these schemas before doing any work. Keeping the
  * limits here ensures the MCP surface, server implementation, and tests share
@@ -12,11 +12,11 @@ import { ModelSelection, ProviderKind } from "./orchestration";
 import { ProviderModelDescriptor } from "./providerDiscovery";
 import { ServerProviderAuthStatus } from "./server";
 
-export const SYNARA_GATEWAY_MAX_THREADS_PER_OPERATION = 20;
-export const SYNARA_GATEWAY_MAX_REQUEST_ID_LENGTH = 256;
-export const SYNARA_GATEWAY_MAX_WAIT_MS = 60_000;
+export const CAIDE_GATEWAY_MAX_THREADS_PER_OPERATION = 20;
+export const CAIDE_GATEWAY_MAX_REQUEST_ID_LENGTH = 256;
+export const CAIDE_GATEWAY_MAX_WAIT_MS = 60_000;
 
-export const SynaraGatewayErrorCode = Schema.Literals([
+export const CaideGatewayErrorCode = Schema.Literals([
   "caller_session_inactive",
   "caller_turn_inactive",
   "capability_denied",
@@ -30,23 +30,23 @@ export const SynaraGatewayErrorCode = Schema.Literals([
   "wait_timed_out",
   "operation_failed",
 ]);
-export type SynaraGatewayErrorCode = typeof SynaraGatewayErrorCode.Type;
+export type CaideGatewayErrorCode = typeof CaideGatewayErrorCode.Type;
 
-export const SynaraGatewayError = Schema.Struct({
-  code: SynaraGatewayErrorCode,
+export const CaideGatewayError = Schema.Struct({
+  code: CaideGatewayErrorCode,
   message: Schema.String,
   details: Schema.optional(Schema.Unknown),
 });
-export type SynaraGatewayError = typeof SynaraGatewayError.Type;
+export type CaideGatewayError = typeof CaideGatewayError.Type;
 
-export const SynaraGatewayErrorResult = Schema.Struct({
-  error: SynaraGatewayError,
+export const CaideGatewayErrorResult = Schema.Struct({
+  error: CaideGatewayError,
 });
-export type SynaraGatewayErrorResult = typeof SynaraGatewayErrorResult.Type;
+export type CaideGatewayErrorResult = typeof CaideGatewayErrorResult.Type;
 
-export const SynaraContextResult = Schema.Struct({
+export const CaideContextResult = Schema.Struct({
   harness: Schema.Struct({
-    name: Schema.Literal("Synara"),
+    name: Schema.Literal("Caide"),
     policyVersion: Schema.String,
   }),
   caller: Schema.Struct({
@@ -62,9 +62,9 @@ export const SynaraContextResult = Schema.Struct({
     automations: Schema.Boolean,
   }),
 });
-export type SynaraContextResult = typeof SynaraContextResult.Type;
+export type CaideContextResult = typeof CaideContextResult.Type;
 
-export const SynaraCreateThreadSpec = Schema.Struct({
+export const CaideCreateThreadSpec = Schema.Struct({
   prompt: Schema.String.check(Schema.isNonEmpty()),
   title: Schema.optional(Schema.String.check(Schema.isNonEmpty())),
   target: ModelSelection,
@@ -77,21 +77,21 @@ export const SynaraCreateThreadSpec = Schema.Struct({
   branchName: Schema.optional(Schema.String.check(Schema.isNonEmpty())),
   runtimeMode: Schema.optional(Schema.Literals(["approval-required", "full-access"])),
 });
-export type SynaraCreateThreadSpec = typeof SynaraCreateThreadSpec.Type;
+export type CaideCreateThreadSpec = typeof CaideCreateThreadSpec.Type;
 
-const SynaraGatewayRequestId = Schema.String.check(Schema.isNonEmpty()).check(
-  Schema.isMaxLength(SYNARA_GATEWAY_MAX_REQUEST_ID_LENGTH),
+const CaideGatewayRequestId = Schema.String.check(Schema.isNonEmpty()).check(
+  Schema.isMaxLength(CAIDE_GATEWAY_MAX_REQUEST_ID_LENGTH),
 );
 
-export const SynaraCreateThreadsInput = Schema.Struct({
-  requestId: SynaraGatewayRequestId,
-  threads: Schema.Array(SynaraCreateThreadSpec)
+export const CaideCreateThreadsInput = Schema.Struct({
+  requestId: CaideGatewayRequestId,
+  threads: Schema.Array(CaideCreateThreadSpec)
     .check(Schema.isMinLength(1))
-    .check(Schema.isMaxLength(SYNARA_GATEWAY_MAX_THREADS_PER_OPERATION)),
+    .check(Schema.isMaxLength(CAIDE_GATEWAY_MAX_THREADS_PER_OPERATION)),
 }).annotate({ parseOptions: { onExcessProperty: "error" } });
-export type SynaraCreateThreadsInput = typeof SynaraCreateThreadsInput.Type;
+export type CaideCreateThreadsInput = typeof CaideCreateThreadsInput.Type;
 
-export const SynaraProviderCatalog = Schema.Struct({
+export const CaideProviderCatalog = Schema.Struct({
   provider: ProviderKind,
   defaultModel: Schema.NullOr(Schema.String),
   models: Schema.Array(ProviderModelDescriptor),
@@ -101,46 +101,46 @@ export const SynaraProviderCatalog = Schema.Struct({
   source: Schema.optional(Schema.String),
   error: Schema.optional(Schema.String),
 });
-export type SynaraProviderCatalog = typeof SynaraProviderCatalog.Type;
+export type CaideProviderCatalog = typeof CaideProviderCatalog.Type;
 
-export const SynaraGatewayTargetOptionValue = Schema.Union([
+export const CaideGatewayTargetOptionValue = Schema.Union([
   Schema.String,
   Schema.Number,
   Schema.Boolean,
 ]);
-export type SynaraGatewayTargetOptionValue = typeof SynaraGatewayTargetOptionValue.Type;
+export type CaideGatewayTargetOptionValue = typeof CaideGatewayTargetOptionValue.Type;
 
-export const SynaraGatewayTargetOptionRule = Schema.Struct({
+export const CaideGatewayTargetOptionRule = Schema.Struct({
   key: Schema.String,
   valueType: Schema.Literals(["string", "number", "boolean"]),
-  allowedValues: Schema.Array(SynaraGatewayTargetOptionValue),
+  allowedValues: Schema.Array(CaideGatewayTargetOptionValue),
   allowedValuesSource: Schema.Literals(["provider-contract", "model-discovery"]),
 });
-export type SynaraGatewayTargetOptionRule = typeof SynaraGatewayTargetOptionRule.Type;
+export type CaideGatewayTargetOptionRule = typeof CaideGatewayTargetOptionRule.Type;
 
-export const SynaraGatewayTargetConstruction = Schema.Struct({
+export const CaideGatewayTargetConstruction = Schema.Struct({
   modelValueSource: Schema.Literal("providers[].models[].slug"),
   primaryOptionKey: Schema.String,
   alternativeOptionKeys: Schema.Array(Schema.String),
   optionSelectionRule: Schema.String,
-  providerOptions: Schema.Array(SynaraGatewayTargetOptionRule),
-  optionsByModel: Schema.Record(Schema.String, Schema.Array(SynaraGatewayTargetOptionRule)),
+  providerOptions: Schema.Array(CaideGatewayTargetOptionRule),
+  optionsByModel: Schema.Record(Schema.String, Schema.Array(CaideGatewayTargetOptionRule)),
   exampleTarget: Schema.NullOr(ModelSelection),
 });
-export type SynaraGatewayTargetConstruction = typeof SynaraGatewayTargetConstruction.Type;
+export type CaideGatewayTargetConstruction = typeof CaideGatewayTargetConstruction.Type;
 
-export const SynaraCapabilitiesResult = Schema.Struct({
-  targetConstruction: Schema.Record(Schema.String, SynaraGatewayTargetConstruction),
-  providers: Schema.Array(SynaraProviderCatalog),
+export const CaideCapabilitiesResult = Schema.Struct({
+  targetConstruction: Schema.Record(Schema.String, CaideGatewayTargetConstruction),
+  providers: Schema.Array(CaideProviderCatalog),
   limits: Schema.Struct({
     maxThreadsPerOperation: Schema.Int,
     maxWaitMs: Schema.Int,
     oneCreationPlanPerActiveTurn: Schema.Boolean,
   }),
 });
-export type SynaraCapabilitiesResult = typeof SynaraCapabilitiesResult.Type;
+export type CaideCapabilitiesResult = typeof CaideCapabilitiesResult.Type;
 
-export const SynaraCreatedThreadResult = Schema.Struct({
+export const CaideCreatedThreadResult = Schema.Struct({
   index: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
   threadId: ThreadId,
   projectId: ProjectId,
@@ -154,36 +154,36 @@ export const SynaraCreatedThreadResult = Schema.Struct({
   worktreePath: Schema.NullOr(Schema.String),
   status: Schema.Literal("task_dispatched"),
 });
-export type SynaraCreatedThreadResult = typeof SynaraCreatedThreadResult.Type;
+export type CaideCreatedThreadResult = typeof CaideCreatedThreadResult.Type;
 
-export const SynaraCreateThreadsResult = Schema.Struct({
+export const CaideCreateThreadsResult = Schema.Struct({
   operationId: Schema.String,
-  requestId: SynaraGatewayRequestId,
+  requestId: CaideGatewayRequestId,
   requestedCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(1)),
   createdCount: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
   threadIds: Schema.Array(ThreadId),
-  threads: Schema.Array(SynaraCreatedThreadResult),
+  threads: Schema.Array(CaideCreatedThreadResult),
 });
-export type SynaraCreateThreadsResult = typeof SynaraCreateThreadsResult.Type;
+export type CaideCreateThreadsResult = typeof CaideCreateThreadsResult.Type;
 
-export const SynaraWaitForThreadsInput = Schema.Struct({
+export const CaideWaitForThreadsInput = Schema.Struct({
   threadIds: Schema.Array(ThreadId)
     .check(Schema.isMinLength(1))
-    .check(Schema.isMaxLength(SYNARA_GATEWAY_MAX_THREADS_PER_OPERATION)),
+    .check(Schema.isMaxLength(CAIDE_GATEWAY_MAX_THREADS_PER_OPERATION)),
   runIds: Schema.optional(
     Schema.Array(Schema.NullOr(TurnId)).check(
-      Schema.isMaxLength(SYNARA_GATEWAY_MAX_THREADS_PER_OPERATION),
+      Schema.isMaxLength(CAIDE_GATEWAY_MAX_THREADS_PER_OPERATION),
     ),
   ),
   timeoutMs: Schema.optional(
     Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)).check(
-      Schema.isLessThanOrEqualTo(SYNARA_GATEWAY_MAX_WAIT_MS),
+      Schema.isLessThanOrEqualTo(CAIDE_GATEWAY_MAX_WAIT_MS),
     ),
   ),
 }).annotate({ parseOptions: { onExcessProperty: "error" } });
-export type SynaraWaitForThreadsInput = typeof SynaraWaitForThreadsInput.Type;
+export type CaideWaitForThreadsInput = typeof CaideWaitForThreadsInput.Type;
 
-export const SynaraWaitedThreadResult = Schema.Struct({
+export const CaideWaitedThreadResult = Schema.Struct({
   threadId: ThreadId,
   runId: Schema.NullOr(TurnId),
   state: Schema.Literals(["idle", "pending", "running", "completed", "error", "interrupted"]),
@@ -193,17 +193,17 @@ export const SynaraWaitedThreadResult = Schema.Struct({
   summaryTruncated: Schema.Boolean,
   error: Schema.NullOr(Schema.String),
   readThread: Schema.Struct({
-    tool: Schema.Literal("synara_read_thread"),
+    tool: Schema.Literal("caide_read_thread"),
     arguments: Schema.Struct({ threadId: ThreadId }),
   }),
 });
-export type SynaraWaitedThreadResult = typeof SynaraWaitedThreadResult.Type;
+export type CaideWaitedThreadResult = typeof CaideWaitedThreadResult.Type;
 
-export const SynaraWaitForThreadsResult = Schema.Struct({
+export const CaideWaitForThreadsResult = Schema.Struct({
   callerThreadId: ThreadId,
   runIds: Schema.Array(Schema.NullOr(TurnId)),
   allTerminal: Schema.Boolean,
   timedOut: Schema.Boolean,
-  threads: Schema.Array(SynaraWaitedThreadResult),
+  threads: Schema.Array(CaideWaitedThreadResult),
 });
-export type SynaraWaitForThreadsResult = typeof SynaraWaitForThreadsResult.Type;
+export type CaideWaitForThreadsResult = typeof CaideWaitForThreadsResult.Type;

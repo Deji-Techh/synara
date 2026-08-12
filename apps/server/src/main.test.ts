@@ -15,7 +15,7 @@ import * as Command from "effect/unstable/cli/Command";
 import { FetchHttpClient } from "effect/unstable/http";
 import * as SqlClient from "effect/unstable/sql/SqlClient";
 import { afterEach, beforeEach, vi } from "vitest";
-import { NetService } from "@synara/shared/Net";
+import { NetService } from "@caide/shared/Net";
 
 import { ServerConfig, type ServerConfigShape } from "./config";
 import { Open, type OpenShape } from "./open";
@@ -29,7 +29,7 @@ vi.mock("./threadRetention", async () => {
   };
 });
 
-import { CliConfig, makeServerStartupLogData, synaraCli, type CliConfigShape } from "./main";
+import { CliConfig, makeServerStartupLogData, caideCli, type CliConfigShape } from "./main";
 
 const start = vi.fn(() => undefined);
 const stop = vi.fn(() => undefined);
@@ -61,10 +61,10 @@ const serverStart = Effect.acquireRelease(
     ),
 ).pipe(Effect.map(({ server }) => server));
 const findAvailablePort = vi.fn((preferred: number) => Effect.succeed(preferred));
-let defaultSynaraHome = "";
+let defaultCaideHome = "";
 const tempHomes = new Set<string>();
 
-function makeTempHome(prefix = "synara-main-test-"): string {
+function makeTempHome(prefix = "caide-main-test-"): string {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
   tempHomes.add(directory);
   return directory;
@@ -77,7 +77,7 @@ function permissionMode(filePath: string): number {
 // Shared service layer used by this CLI test suite.
 const testLayer = Layer.mergeAll(
   Layer.succeed(CliConfig, {
-    cwd: "/tmp/synara-test-workspace",
+    cwd: "/tmp/caide-test-workspace",
     fixPath: Effect.void,
     resolveStaticDir: Effect.undefined,
   } satisfies CliConfigShape),
@@ -100,13 +100,13 @@ const testLayer = Layer.mergeAll(
 );
 
 const runCli = (args: ReadonlyArray<string>, env: Record<string, string> = {}) => {
-  const program = Command.runWith(synaraCli, { version: "0.0.0-test" })(args).pipe(
+  const program = Command.runWith(caideCli, { version: "0.0.0-test" })(args).pipe(
     Effect.provide(
       ConfigProvider.layer(
         ConfigProvider.fromEnv({
           env: {
-            SYNARA_HOME: defaultSynaraHome,
-            SYNARA_NO_BROWSER: "true",
+            CAIDE_HOME: defaultCaideHome,
+            CAIDE_NO_BROWSER: "true",
             ...env,
           },
         }),
@@ -118,7 +118,7 @@ const runCli = (args: ReadonlyArray<string>, env: Record<string, string> = {}) =
 
 beforeEach(() => {
   vi.clearAllMocks();
-  defaultSynaraHome = makeTempHome();
+  defaultCaideHome = makeTempHome();
   resolvedConfig = null;
   serverStopSignal = Effect.void;
   retainedSqlClient = null;
@@ -138,7 +138,7 @@ afterEach(() => {
 it.layer(testLayer)("server CLI command", (it) => {
   it.effect("parses all CLI flags and wires scoped start/stop", () =>
     Effect.gen(function* () {
-      const flagHome = makeTempHome("synara-main-flag-");
+      const flagHome = makeTempHome("caide-main-flag-");
 
       yield* runCli([
         "--mode",
@@ -185,7 +185,7 @@ it.layer(testLayer)("server CLI command", (it) => {
 
   it.effect("passes the root --home-dir flag to MCP subcommands", () =>
     Effect.gen(function* () {
-      const flagHome = makeTempHome("synara-main-mcp-flag-");
+      const flagHome = makeTempHome("caide-main-mcp-flag-");
 
       const exit = yield* Effect.exit(runCli(["mcp", "serve", "--home-dir", flagHome]));
 
@@ -200,7 +200,7 @@ it.layer(testLayer)("server CLI command", (it) => {
   it.effect("creates fresh local state directories with private permissions", () =>
     Effect.gen(function* () {
       if (process.platform === "win32") return;
-      const homeDir = makeTempHome("synara-main-private-fresh-");
+      const homeDir = makeTempHome("caide-main-private-fresh-");
 
       yield* runCli(["--home-dir", homeDir]);
 
@@ -222,7 +222,7 @@ it.layer(testLayer)("server CLI command", (it) => {
   it.effect("repairs permissions for an upgraded local state directory", () =>
     Effect.gen(function* () {
       if (process.platform === "win32") return;
-      const homeDir = makeTempHome("synara-main-private-upgrade-");
+      const homeDir = makeTempHome("caide-main-private-upgrade-");
       const stateDir = path.join(homeDir, "userdata");
       const attachmentDir = path.join(stateDir, "attachments");
       const attachmentPath = path.join(attachmentDir, "existing.bin");
@@ -241,17 +241,17 @@ it.layer(testLayer)("server CLI command", (it) => {
 
   it.effect("uses env fallbacks when flags are not provided", () =>
     Effect.gen(function* () {
-      const envHome = makeTempHome("synara-main-env-");
+      const envHome = makeTempHome("caide-main-env-");
 
       yield* runCli([], {
-        SYNARA_MODE: "desktop",
-        SYNARA_PORT: "4999",
-        SYNARA_HOST: "127.0.0.1",
-        SYNARA_HOME: envHome,
+        CAIDE_MODE: "desktop",
+        CAIDE_PORT: "4999",
+        CAIDE_HOST: "127.0.0.1",
+        CAIDE_HOME: envHome,
         VITE_DEV_SERVER_URL: "http://localhost:5173",
-        SYNARA_NO_BROWSER: "true",
-        SYNARA_AUTH_TOKEN: "env-token",
-        SYNARA_DESKTOP_SHUTDOWN_TOKEN: "shutdown-token",
+        CAIDE_NO_BROWSER: "true",
+        CAIDE_AUTH_TOKEN: "env-token",
+        CAIDE_DESKTOP_SHUTDOWN_TOKEN: "shutdown-token",
       });
 
       assert.equal(start.mock.calls.length, 1);
@@ -273,7 +273,7 @@ it.layer(testLayer)("server CLI command", (it) => {
 
   it.effect("consumes desktop shutdown authority before generic child launches", () =>
     Effect.gen(function* () {
-      const canonicalKey = "SYNARA_DESKTOP_SHUTDOWN_TOKEN";
+      const canonicalKey = "CAIDE_DESKTOP_SHUTDOWN_TOKEN";
       const mixedCaseKey = "sYnArA_dEsKtOp_ShUtDoWn_ToKeN";
       const liveToken = "live-process-shutdown-token";
       const injectedToken = "injected-shutdown-token";
@@ -317,7 +317,7 @@ it.layer(testLayer)("server CLI command", (it) => {
         assert.equal(descendant.stdout, "missing");
 
         resolvedConfig = null;
-        yield* runCli([], { SYNARA_DESKTOP_SHUTDOWN_TOKEN: injectedToken });
+        yield* runCli([], { CAIDE_DESKTOP_SHUTDOWN_TOKEN: injectedToken });
         assert.equal(getResolvedConfig()?.desktopShutdownToken, injectedToken);
         assert.deepEqual(matchingLiveKeys(), []);
       } finally {
@@ -401,8 +401,8 @@ it.layer(testLayer)("server CLI command", (it) => {
   it.effect("omits both server authority secrets from startup log data", () =>
     Effect.gen(function* () {
       yield* runCli([], {
-        SYNARA_AUTH_TOKEN: "browser-secret",
-        SYNARA_DESKTOP_SHUTDOWN_TOKEN: "shutdown-secret",
+        CAIDE_AUTH_TOKEN: "browser-secret",
+        CAIDE_DESKTOP_SHUTDOWN_TOKEN: "shutdown-secret",
       });
       const config = resolvedConfig;
       if (!config) throw new Error("Expected resolved server config");
@@ -416,12 +416,12 @@ it.layer(testLayer)("server CLI command", (it) => {
     }),
   );
 
-  it.effect("prefers --mode over SYNARA_MODE", () =>
+  it.effect("prefers --mode over CAIDE_MODE", () =>
     Effect.gen(function* () {
       findAvailablePort.mockImplementation((_preferred: number) => Effect.succeed(4666));
       yield* runCli(["--mode", "web"], {
-        SYNARA_MODE: "desktop",
-        SYNARA_NO_BROWSER: "true",
+        CAIDE_MODE: "desktop",
+        CAIDE_NO_BROWSER: "true",
       });
 
       assert.deepStrictEqual(findAvailablePort.mock.calls, [[3773]]);
@@ -432,10 +432,10 @@ it.layer(testLayer)("server CLI command", (it) => {
     }),
   );
 
-  it.effect("prefers --no-browser over SYNARA_NO_BROWSER", () =>
+  it.effect("prefers --no-browser over CAIDE_NO_BROWSER", () =>
     Effect.gen(function* () {
       yield* runCli(["--no-browser"], {
-        SYNARA_NO_BROWSER: "false",
+        CAIDE_NO_BROWSER: "false",
       });
 
       assert.equal(start.mock.calls.length, 1);
@@ -453,11 +453,11 @@ it.layer(testLayer)("server CLI command", (it) => {
           "--no-log-websocket-events",
         ],
         {
-          SYNARA_MODE: "desktop",
-          SYNARA_NO_BROWSER: "true",
-          SYNARA_AUTO_BOOTSTRAP_PROJECT_FROM_CWD: "true",
-          SYNARA_LOG_PROVIDER_EVENTS: "true",
-          SYNARA_LOG_WS_EVENTS: "true",
+          CAIDE_MODE: "desktop",
+          CAIDE_NO_BROWSER: "true",
+          CAIDE_AUTO_BOOTSTRAP_PROJECT_FROM_CWD: "true",
+          CAIDE_LOG_PROVIDER_EVENTS: "true",
+          CAIDE_LOG_WS_EVENTS: "true",
         },
       );
 
@@ -484,8 +484,8 @@ it.layer(testLayer)("server CLI command", (it) => {
   it.effect("uses fixed localhost defaults in desktop mode", () =>
     Effect.gen(function* () {
       yield* runCli([], {
-        SYNARA_MODE: "desktop",
-        SYNARA_NO_BROWSER: "true",
+        CAIDE_MODE: "desktop",
+        CAIDE_NO_BROWSER: "true",
       });
 
       assert.equal(findAvailablePort.mock.calls.length, 0);
@@ -501,8 +501,8 @@ it.layer(testLayer)("server CLI command", (it) => {
       yield* runCli(
         ["--host", "0.0.0.0", "--auth-token", "remote-secret", "--allow-insecure-remote"],
         {
-          SYNARA_MODE: "desktop",
-          SYNARA_NO_BROWSER: "true",
+          CAIDE_MODE: "desktop",
+          CAIDE_NO_BROWSER: "true",
         },
       );
 
@@ -516,8 +516,8 @@ it.layer(testLayer)("server CLI command", (it) => {
   it.effect("honors insecure remote opt-in from the environment when the CLI flag is absent", () =>
     Effect.gen(function* () {
       yield* runCli(["--host", "0.0.0.0", "--auth-token", "remote-secret"], {
-        SYNARA_ALLOW_INSECURE_REMOTE: "true",
-        SYNARA_NO_BROWSER: "true",
+        CAIDE_ALLOW_INSECURE_REMOTE: "true",
+        CAIDE_NO_BROWSER: "true",
       });
 
       assert.equal(start.mock.calls.length, 1);
@@ -531,8 +531,8 @@ it.layer(testLayer)("server CLI command", (it) => {
         runCli(
           ["--host", "0.0.0.0", "--auth-token", "remote-secret", "--no-allow-insecure-remote"],
           {
-            SYNARA_ALLOW_INSECURE_REMOTE: "true",
-            SYNARA_NO_BROWSER: "true",
+            CAIDE_ALLOW_INSECURE_REMOTE: "true",
+            CAIDE_NO_BROWSER: "true",
           },
         ),
       );
@@ -562,16 +562,16 @@ it.layer(testLayer)("server CLI command", (it) => {
           "--auth-token",
           "remote-secret",
           "--public-url",
-          "https://synara.example.test",
+          "https://caide.example.test",
         ],
-        { SYNARA_NO_BROWSER: "false" },
+        { CAIDE_NO_BROWSER: "false" },
       );
 
-      assert.equal(resolvedConfig?.publicUrl?.origin, "https://synara.example.test");
+      assert.equal(resolvedConfig?.publicUrl?.origin, "https://caide.example.test");
       assert.equal(openBrowser.mock.calls.length, 1);
       assert.match(
         openBrowser.mock.calls[0]?.[0] ?? "",
-        /^https:\/\/synara\.example\.test\/pair#token=/,
+        /^https:\/\/caide\.example\.test\/pair#token=/,
       );
     }),
   );
@@ -579,13 +579,13 @@ it.layer(testLayer)("server CLI command", (it) => {
   it.effect("supports the HTTPS public origin through environment configuration", () =>
     Effect.gen(function* () {
       yield* runCli([], {
-        SYNARA_HOST: "192.168.1.50",
-        SYNARA_AUTH_TOKEN: "remote-secret",
-        SYNARA_PUBLIC_URL: "https://synara.example.test",
+        CAIDE_HOST: "192.168.1.50",
+        CAIDE_AUTH_TOKEN: "remote-secret",
+        CAIDE_PUBLIC_URL: "https://caide.example.test",
       });
 
       assert.equal(start.mock.calls.length, 1);
-      assert.equal(resolvedConfig?.publicUrl?.origin, "https://synara.example.test");
+      assert.equal(resolvedConfig?.publicUrl?.origin, "https://caide.example.test");
       assert.equal(resolvedConfig?.allowInsecureRemote, false);
     }),
   );
@@ -601,7 +601,7 @@ it.layer(testLayer)("server CLI command", (it) => {
           "--public-url",
           "https://proxy.example.test",
         ],
-        { SYNARA_NO_BROWSER: "false" },
+        { CAIDE_NO_BROWSER: "false" },
       );
 
       assert.equal(openBrowser.mock.calls.length, 1);
@@ -634,7 +634,7 @@ it.layer(testLayer)("server CLI command", (it) => {
 
   it.effect("rejects non-root or non-HTTPS public URLs", () =>
     Effect.gen(function* () {
-      for (const publicUrl of ["http://synara.example.test", "https://synara.example.test/app"]) {
+      for (const publicUrl of ["http://caide.example.test", "https://caide.example.test/app"]) {
         const error = yield* Effect.flip(
           runCli(["--host", "0.0.0.0", "--auth-token", "remote-secret", "--public-url", publicUrl]),
         );
@@ -648,14 +648,14 @@ it.layer(testLayer)("server CLI command", (it) => {
     Effect.gen(function* () {
       const error = yield* Effect.flip(
         runCli(["--host", "0.0.0.0"], {
-          SYNARA_MODE: "web",
-          SYNARA_NO_BROWSER: "true",
+          CAIDE_MODE: "web",
+          CAIDE_NO_BROWSER: "true",
         }),
       );
 
       assert.equal(start.mock.calls.length, 0);
       assert.equal(resolvedConfig, null);
-      assert.match(String(error), /Refusing to bind Synara to non-loopback host 0\.0\.0\.0/);
+      assert.match(String(error), /Refusing to bind Caide to non-loopback host 0\.0\.0\.0/);
     }),
   );
 
@@ -672,8 +672,8 @@ it.layer(testLayer)("server CLI command", (it) => {
             "http://localhost:5173",
           ],
           {
-            SYNARA_MODE: "web",
-            SYNARA_NO_BROWSER: "true",
+            CAIDE_MODE: "web",
+            CAIDE_NO_BROWSER: "true",
           },
         ),
       );
@@ -690,11 +690,11 @@ it.layer(testLayer)("server CLI command", (it) => {
   it.effect("supports CLI and env for bootstrap/provider-log/websocket toggles", () =>
     Effect.gen(function* () {
       yield* runCli(["--auto-bootstrap-project-from-cwd"], {
-        SYNARA_MODE: "desktop",
-        SYNARA_LOG_PROVIDER_EVENTS: "true",
-        SYNARA_LOG_WS_EVENTS: "false",
-        SYNARA_AUTO_BOOTSTRAP_PROJECT_FROM_CWD: "false",
-        SYNARA_NO_BROWSER: "true",
+        CAIDE_MODE: "desktop",
+        CAIDE_LOG_PROVIDER_EVENTS: "true",
+        CAIDE_LOG_WS_EVENTS: "false",
+        CAIDE_AUTO_BOOTSTRAP_PROJECT_FROM_CWD: "false",
+        CAIDE_NO_BROWSER: "true",
       });
 
       assert.equal(start.mock.calls.length, 1);
@@ -708,7 +708,7 @@ it.layer(testLayer)("server CLI command", (it) => {
     Effect.gen(function* () {
       const error = yield* Effect.flip(
         runCli([], {
-          SYNARA_LOG_PROVIDER_EVENTS: "sometimes",
+          CAIDE_LOG_PROVIDER_EVENTS: "sometimes",
         }),
       );
 

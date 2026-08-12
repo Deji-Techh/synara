@@ -1,4 +1,4 @@
-import type { BrowserToolName } from "@synara/contracts";
+import type { BrowserToolName } from "@caide/contracts";
 
 export const BROWSER_TOOL_TITLES = {
   browser_status: "Check browser status",

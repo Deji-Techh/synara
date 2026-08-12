@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   WORKTREE_BRANCH_PREFIX,
-  buildSynaraBranchName,
+  buildCaideBranchName,
   buildTemporaryWorktreeBranchName,
   isTemporaryWorktreeBranch,
-  resolveUniqueSynaraBranchName,
+  resolveUniqueCaideBranchName,
   resolveThreadBranchRegressionGuard,
 } from "./git";
 
@@ -70,37 +70,37 @@ describe("resolveThreadBranchRegressionGuard", () => {
   });
 });
 
-describe("buildSynaraBranchName", () => {
-  it("uses synara as the branch namespace", () => {
-    expect(buildSynaraBranchName("fix toast copy")).toBe("synara/fix-toast-copy");
+describe("buildCaideBranchName", () => {
+  it("uses caide as the branch namespace", () => {
+    expect(buildCaideBranchName("fix toast copy")).toBe("caide/fix-toast-copy");
   });
 
-  it("keeps non-Synara namespaces inside the Synara branch", () => {
-    expect(buildSynaraBranchName("feature/refine-toolbar-actions")).toBe(
-      "synara/feature/refine-toolbar-actions",
+  it("keeps non-Caide namespaces inside the Caide branch", () => {
+    expect(buildCaideBranchName("feature/refine-toolbar-actions")).toBe(
+      "caide/feature/refine-toolbar-actions",
     );
   });
 
   it("normalizes legacy prefixes before rebuilding the branch", () => {
     for (const namespace of PRE_CUTOVER_NAMESPACE_FIXTURES) {
-      expect(buildSynaraBranchName(`${namespace}/refine toolbar actions`)).toBe(
-        "synara/refine-toolbar-actions",
+      expect(buildCaideBranchName(`${namespace}/refine toolbar actions`)).toBe(
+        "caide/refine-toolbar-actions",
       );
     }
   });
 
-  it("falls back to synara/update when no preferred name is provided", () => {
-    expect(buildSynaraBranchName()).toBe("synara/update");
+  it("falls back to caide/update when no preferred name is provided", () => {
+    expect(buildCaideBranchName()).toBe("caide/update");
   });
 });
 
-describe("resolveUniqueSynaraBranchName", () => {
-  it("increments suffix when the Synara branch already exists", () => {
+describe("resolveUniqueCaideBranchName", () => {
+  it("increments suffix when the Caide branch already exists", () => {
     expect(
-      resolveUniqueSynaraBranchName(
-        ["main", "synara/fix-toast-copy", "synara/fix-toast-copy-2"],
+      resolveUniqueCaideBranchName(
+        ["main", "caide/fix-toast-copy", "caide/fix-toast-copy-2"],
         "fix toast copy",
       ),
-    ).toBe("synara/fix-toast-copy-3");
+    ).toBe("caide/fix-toast-copy-3");
   });
 });

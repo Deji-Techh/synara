@@ -10,7 +10,7 @@ import {
   type ProviderModelDescriptor,
   type ProviderModelOptions,
   type ThreadId,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import {
   getDefaultContextWindow,
   getDefaultEffort,
@@ -23,7 +23,7 @@ import {
   normalizePiModelOptions,
   resolveLabeledOptionValue,
   trimOrNull,
-} from "@synara/shared/model";
+} from "@caide/shared/model";
 import type { ReactNode } from "react";
 import { classifyCodexReasoningEffortSupport } from "../../lib/codexReasoningEffort";
 import { TraitsMenuContent, TraitsPicker } from "./TraitsPicker";
@@ -318,6 +318,11 @@ const composerProviderRegistry: Record<ProviderKind, ProviderRegistryEntry> = {
     getState: (input) => getProviderStateFromCapabilities(input),
     renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("pi", input),
     renderTraitsPicker: (input) => renderTraitsPickerForProvider("pi", input),
+  },
+  engine: {
+    getState: (input) => getProviderStateFromCapabilities(input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("engine", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("engine", input),
   },
 };
 

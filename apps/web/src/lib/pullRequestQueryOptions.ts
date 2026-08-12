@@ -3,7 +3,7 @@ import type {
   PullRequestDetailInput,
   PullRequestInvolvement,
   PullRequestState,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 
 import { ensureNativeApi } from "~/nativeApi";

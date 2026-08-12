@@ -81,7 +81,7 @@ export type PiServerProviderSettings = typeof PiServerProviderSettings.Type;
 
 export const EngineServerProviderSettings = Schema.Struct({
   ...ProviderSettingsBase,
-  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "synara-engine")),
+  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "caide-engine")),
 });
 export type EngineServerProviderSettings = typeof EngineServerProviderSettings.Type;
 

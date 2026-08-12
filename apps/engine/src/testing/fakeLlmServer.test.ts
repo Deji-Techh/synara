@@ -21,7 +21,7 @@ let server: FakeLlmServerHandle;
 let dumpDir: string;
 
 beforeAll(async () => {
-  dumpDir = fs.mkdtempSync(path.join(os.tmpdir(), "synara-llm-test-"));
+  dumpDir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-llm-test-"));
   server = await startFakeLlmServer({ dumpDir });
 }, 10_000);
 

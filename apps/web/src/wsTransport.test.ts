@@ -16,7 +16,7 @@ import {
   WS_PROTOCOL_MIN_REVISION,
   WsCompatibilityError,
   type WsBootstrapNegotiateResult,
-} from "@synara/contracts";
+} from "@caide/contracts";
 
 import {
   shouldKeepServerLifecycleStream,
@@ -316,9 +316,9 @@ describe("WsTransport", () => {
       kind: "completed" as const,
       result: {
         worktree: {
-          path: "/repo/.codex/worktrees/generated/synara",
+          path: "/repo/.codex/worktrees/generated/caide",
           ref: "0123456789abcdef0123456789abcdef01234567",
-          branch: "synara/abcd1234",
+          branch: "caide/abcd1234",
         },
       },
     };

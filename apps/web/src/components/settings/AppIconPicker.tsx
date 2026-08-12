@@ -2,7 +2,7 @@
 // Purpose: Render the visual desktop app-icon choices used by Appearance settings.
 // Layer: Settings UI component
 
-import type { DesktopAppIcon } from "@synara/contracts";
+import type { DesktopAppIcon } from "@caide/contracts";
 import { cn } from "~/lib/utils";
 
 const APP_ICON_OPTIONS = [

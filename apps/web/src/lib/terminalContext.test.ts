@@ -1,4 +1,4 @@
-import { MessageId, ThreadId } from "@synara/contracts";
+import { MessageId, ThreadId } from "@caide/contracts";
 import { describe, expect, it } from "vitest";
 
 import {

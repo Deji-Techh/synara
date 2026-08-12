@@ -1,7 +1,7 @@
 // FILE: providerMetadata.ts
 // Purpose: Exhaustive non-secret provider identity and presentation metadata.
 
-import { PROVIDER_DISPLAY_NAMES, type ProviderKind } from "@synara/contracts";
+import { PROVIDER_DISPLAY_NAMES, type ProviderKind } from "@caide/contracts";
 
 export interface ProviderDescriptor {
   readonly kind: ProviderKind;
@@ -85,6 +85,13 @@ export const PROVIDER_DESCRIPTORS = [
     displayName: PROVIDER_DISPLAY_NAMES.opencode,
     available: true,
     supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "engine",
+    displayName: PROVIDER_DISPLAY_NAMES.engine,
+    available: true,
+    supportsNativeTurnSteering: true,
     usage: null,
   },
   {

@@ -40,7 +40,7 @@ describe("agent flutter tools", () => {
   let tempRoot: string;
 
   beforeAll(async () => {
-    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "synara-fluttertools-"));
+    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "caide-fluttertools-"));
     shimDir = path.join(tempRoot, "shimbin");
     fs.mkdirSync(shimDir, { recursive: true });
     fs.writeFileSync(path.join(shimDir, "flutter"), FLUTTER_SHIM, { mode: 0o755 });
@@ -70,7 +70,7 @@ describe("agent flutter tools", () => {
   it("runs flutter analyze and reports success to the model", async () => {
     const result = await harness.runTurn("[call_tool=flutter_analyze:{}]");
     expect(result.toolCalls.map((call) => call.name)).toEqual(["flutter_analyze"]);
-    expect(result.text).toContain("hello world from the synara engine fake LLM");
+    expect(result.text).toContain("hello world from the caide engine fake LLM");
   }, 30_000);
 
   it("surfaces analyzer failures as tool output for the model to fix", async () => {

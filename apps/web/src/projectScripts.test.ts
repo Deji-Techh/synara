@@ -53,8 +53,8 @@ describe("projectScripts helpers", () => {
     });
 
     expect(env).toMatchObject({
-      SYNARA_PROJECT_ROOT: "/repo",
-      SYNARA_WORKTREE_PATH: "/repo/worktree-a",
+      CAIDE_PROJECT_ROOT: "/repo",
+      CAIDE_WORKTREE_PATH: "/repo/worktree-a",
     });
   });
 
@@ -62,14 +62,14 @@ describe("projectScripts helpers", () => {
     const env = projectScriptRuntimeEnv({
       project: { cwd: "/repo" },
       extraEnv: {
-        SYNARA_PROJECT_ROOT: "/custom-root",
+        CAIDE_PROJECT_ROOT: "/custom-root",
         CUSTOM_FLAG: "1",
       },
     });
 
-    expect(env.SYNARA_PROJECT_ROOT).toBe("/custom-root");
+    expect(env.CAIDE_PROJECT_ROOT).toBe("/custom-root");
     expect(env.CUSTOM_FLAG).toBe("1");
-    expect(env.SYNARA_WORKTREE_PATH).toBeUndefined();
+    expect(env.CAIDE_WORKTREE_PATH).toBeUndefined();
   });
 
   it("prefers the worktree path for script cwd resolution", () => {

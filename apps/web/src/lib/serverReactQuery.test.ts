@@ -2,7 +2,7 @@
 // Purpose: Locks down server React Query polling profiles and cache options.
 // Layer: Web data-fetching unit tests
 
-import type { ServerConfig, ServerProviderStatus } from "@synara/contracts";
+import type { ServerConfig, ServerProviderStatus } from "@caide/contracts";
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
 
@@ -27,12 +27,12 @@ const READY_CODEX_STATUS = {
 
 function makeServerConfig(providers: readonly ServerProviderStatus[]): ServerConfig {
   return {
-    cwd: "G:\\synara",
+    cwd: "G:\\caide",
     homeDir: "C:\\Users\\tester",
-    chatWorkspaceRoot: "C:\\Users\\tester\\Documents\\Synara",
-    studioWorkspaceRoot: "C:\\Users\\tester\\Documents\\Synara\\Studio",
-    worktreesDir: "C:\\SynaraDev\\worktrees",
-    keybindingsConfigPath: "C:\\SynaraDev\\keybindings.json",
+    chatWorkspaceRoot: "C:\\Users\\tester\\Documents\\Caide",
+    studioWorkspaceRoot: "C:\\Users\\tester\\Documents\\Caide\\Studio",
+    worktreesDir: "C:\\CaideDev\\worktrees",
+    keybindingsConfigPath: "C:\\CaideDev\\keybindings.json",
     keybindings: [],
     issues: [],
     providers,
@@ -166,7 +166,7 @@ describe("serverLocalServersQueryOptions", () => {
     expect(options.refetchOnWindowFocus).toBe(true);
   });
 
-  it("uses visible polling while a Synara-owned project run is active", () => {
+  it("uses visible polling while a Caide-owned project run is active", () => {
     const options = sidebarLocalServersQueryOptions({
       hasActiveProjectRun: true,
       hasProjects: true,

@@ -24,9 +24,9 @@ describe("EngineClient", () => {
   it("initialize round trip reports engine capabilities", async () => {
     const client = await openClient();
     try {
-      const response = await client.initialize({ clientName: "synara-server", protocolVersion: 1 });
+      const response = await client.initialize({ clientName: "caide-server", protocolVersion: 1 });
       expect(response.error).toBeUndefined();
-      expect(response.result).toMatchObject({ serverName: "synara-engine", protocolVersion: 1 });
+      expect(response.result).toMatchObject({ serverName: "caide-engine", protocolVersion: 1 });
     } finally {
       client.kill();
     }

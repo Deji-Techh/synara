@@ -1,8 +1,8 @@
 # Keybindings
 
-Synara reads keybindings from:
+Caide reads keybindings from:
 
-- `~/.synara/userdata/keybindings.json`
+- `~/.caide/userdata/keybindings.json`
 
 The file must be a JSON array of rules:
 

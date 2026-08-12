@@ -16,10 +16,10 @@ import {
   buildAcceptLanguageHeader,
   buildChromeClientHints,
   deriveChromeUserAgent,
-} from "@synara/shared/browserSession";
+} from "@caide/shared/browserSession";
 import { LOCAL_HTML_PREVIEW_SCHEME, LocalHtmlPreviewRegistry } from "./localHtmlPreviewProtocol";
 
-export const BROWSER_SESSION_PARTITION = "persist:synara-browser";
+export const BROWSER_SESSION_PARTITION = "persist:caide-browser";
 
 export interface BrowserSessionDownloadEvent {
   readonly event: Electron.Event;

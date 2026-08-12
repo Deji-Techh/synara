@@ -8,7 +8,7 @@
 
 ## Project Mission (Flutter Builder)
 
-This repo is now the home of the **Flutter Builder** product: Synara's UI
+This repo is now the home of the **Flutter Builder** product: Caide's UI
 (kept as-is) + a rebuilt **Caide engine** (`apps/engine`, under construction)
 that builds **real Flutter applications**. The previous dyad×caide product
 failed because it built web apps; this engine targets Dart/Flutter: scaffold,
@@ -16,7 +16,7 @@ analyze/test/build, emulator + iOS Simulator preview, APK/IPA release.
 
 The engine is a NEW spawned process (pattern: `codex app-server`, JSON-RPC
 over stdio) supervised by `apps/server` through a new provider adapter. The
-engine keeps its own SQLite; Synara keeps the event store. External provider
+engine keeps its own SQLite; Caide keeps the event store. External provider
 adapters (codex/claude/cursor/etc.) are being stripped from the active product
 path for v1. Full details in `plans/008-flutter-builder-engine.md`.
 
@@ -31,7 +31,7 @@ path for v1. Full details in `plans/008-flutter-builder-engine.md`.
 
 ## Project Snapshot
 
-Synara is a minimal web GUI for using coding agents like Codex and Claude.
+Caide is a minimal web GUI for using coding agents like Codex and Claude.
 
 This repository is a VERY EARLY WIP. Proposing sweeping changes that improve long-term maintainability is encouraged.
 
@@ -113,20 +113,20 @@ Reference usage: opening/closing a project and the sidebar sections in `apps/web
 - `apps/server`: Node.js WebSocket server. Wraps Codex app-server (JSON-RPC over stdio), serves the React web app, and manages provider sessions.
 - `apps/web`: React/Vite UI. Owns session UX, conversation/event rendering, and client-side state. Connects to the server via WebSocket.
 - `packages/contracts`: Shared effect/Schema schemas and TypeScript contracts for provider events, WebSocket protocol, and model/session types. Keep this package schema-only — no runtime logic.
-- `packages/shared`: Shared runtime utilities consumed by both server and web. Uses explicit subpath exports (e.g. `@synara/shared/git`) — no barrel index.
+- `packages/shared`: Shared runtime utilities consumed by both server and web. Uses explicit subpath exports (e.g. `@caide/shared/git`) — no barrel index.
 
 ## Local Dev Instance Isolation
 
-- Never start the default `bun run dev` while another Synara instance is running unless the user explicitly wants shared ports/state.
-- Use an isolated home dir and non-default ports when running alongside the user's own Synara instance, for example: `env -u SYNARA_AUTH_TOKEN SYNARA_PORT_OFFSET=3158 SYNARA_NO_BROWSER=1 bun run dev -- --home-dir ./.synara-pr84 --port 58090`.
-- Always dry-run first when avoiding conflicts: `env -u SYNARA_AUTH_TOKEN SYNARA_PORT_OFFSET=3158 bun run dev -- --home-dir ./.synara-pr84 --port 58090 --dry-run`.
-- Unset `SYNARA_AUTH_TOKEN` for browser dev instances unless the web app is also configured to connect with that token. If auth is accidentally inherited, the browser WebSocket can be rejected and the UI will show no threads even though SQLite has projects/threads.
+- Never start the default `bun run dev` while another Caide instance is running unless the user explicitly wants shared ports/state.
+- Use an isolated home dir and non-default ports when running alongside the user's own Caide instance, for example: `env -u CAIDE_AUTH_TOKEN CAIDE_PORT_OFFSET=3158 CAIDE_NO_BROWSER=1 bun run dev -- --home-dir ./.caide-pr84 --port 58090`.
+- Always dry-run first when avoiding conflicts: `env -u CAIDE_AUTH_TOKEN CAIDE_PORT_OFFSET=3158 bun run dev -- --home-dir ./.caide-pr84 --port 58090 --dry-run`.
+- Unset `CAIDE_AUTH_TOKEN` for browser dev instances unless the web app is also configured to connect with that token. If auth is accidentally inherited, the browser WebSocket can be rejected and the UI will show no threads even though SQLite has projects/threads.
 - Check both server and web ports with `lsof -nP -iTCP:<port> -sTCP:LISTEN`. A desktop app can bind `127.0.0.1:<port>` while the dev server binds IPv6 `*:<port>`, and `localhost` may still hit the wrong process.
 - If the UI shows no threads, verify the server path before changing SQL: inspect the isolated `state.sqlite`, then probe `orchestration.getSnapshot` over WebSocket. A healthy snapshot with projects/threads means the issue is client connection/hydration, not empty history.
 
 ## Codex App Server (Important)
 
-Synara is currently Codex-first. The server starts `codex app-server` (JSON-RPC over stdio) per provider session, then streams structured events to the browser through WebSocket push messages.
+Caide is currently Codex-first. The server starts `codex app-server` (JSON-RPC over stdio) per provider session, then streams structured events to the browser through WebSocket push messages.
 
 How we use it in this codebase:
 

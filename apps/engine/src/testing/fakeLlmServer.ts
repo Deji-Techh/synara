@@ -12,7 +12,7 @@ import type { AddressInfo } from "node:net";
 import fs from "node:fs";
 import path from "node:path";
 
-export const CANNED_MESSAGE = "hello world from the synara engine fake LLM";
+export const CANNED_MESSAGE = "hello world from the caide engine fake LLM";
 
 export interface StreamUsage {
   prompt_tokens: number;

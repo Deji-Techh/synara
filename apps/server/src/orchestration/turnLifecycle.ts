@@ -1,4 +1,4 @@
-import type { OrchestrationSession } from "@synara/contracts";
+import type { OrchestrationSession } from "@caide/contracts";
 
 type TurnState = "pending" | "running" | "completed" | "interrupted" | "error";
 

@@ -1,4 +1,4 @@
-import type { ProjectId, PullRequestListEntry, PullRequestProjectContext } from "@synara/contracts";
+import type { ProjectId, PullRequestListEntry, PullRequestProjectContext } from "@caide/contracts";
 
 type ProjectAwarePullRequestEntry = Pick<
   PullRequestListEntry,

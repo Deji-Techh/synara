@@ -3,7 +3,7 @@
  *
  * This adapter owns the engine process lifecycle and protocol semantics. It
  * spawns apps/engine over stdio JSON-RPC (codex app-server pattern) and emits
- * canonical provider runtime events into Synara's orchestration stream.
+ * canonical provider runtime events into Caide's orchestration stream.
  *
  * @module EngineAdapter
  */
@@ -16,7 +16,7 @@ import type {
   PreviewState,
   PreviewStopResult,
   ThreadId,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import type { ProviderAdapterError } from "../Errors.ts";
 import type { ProviderAdapterShape } from "./ProviderAdapter.ts";
 
@@ -47,5 +47,5 @@ export interface EngineAdapterShape
 }
 
 export class EngineAdapter extends ServiceMap.Service<EngineAdapter, EngineAdapterShape>()(
-  "synara/provider/Services/EngineAdapter",
+  "caide/provider/Services/EngineAdapter",
 ) {}

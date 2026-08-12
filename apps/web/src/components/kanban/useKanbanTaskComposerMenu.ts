@@ -12,7 +12,7 @@ import type {
   ProviderSkillReference,
   ProviderStartOptions,
   ThreadId,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import {
   useEffect,
   useState,

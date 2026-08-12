@@ -48,7 +48,7 @@ describe("agent tool chain (file tools)", () => {
     expect(harness.readWorkspaceFile("lib/counter.dart")).toBe("int add(int a, int b) => a + b;\n");
 
     // The model's final answer came after the tool result was fed back.
-    expect(result.text).toContain("hello world from the synara engine fake LLM");
+    expect(result.text).toContain("hello world from the caide engine fake LLM");
   }, 30_000);
 
   it("chains multiple tool calls in one turn", async () => {
@@ -68,6 +68,6 @@ describe("agent tool chain (file tools)", () => {
 
     expect(result.toolCalls.map((call) => call.name)).toEqual(["list_files"]);
     // The final answer includes the tool's listing (fed back into context).
-    expect(result.text).toContain("hello world from the synara engine fake LLM");
+    expect(result.text).toContain("hello world from the caide engine fake LLM");
   }, 30_000);
 });

@@ -13,8 +13,8 @@ import {
   LOCAL_IMAGE_ROUTE_PATH,
   isSupportedLocalImagePath,
   isSupportedLocalPreviewFilePath,
-} from "@synara/shared/localPreviewFiles";
-import { SCRATCH_WORKSPACES_DIRNAME } from "@synara/shared/threadWorkspace";
+} from "@caide/shared/localPreviewFiles";
+import { SCRATCH_WORKSPACES_DIRNAME } from "@caide/shared/threadWorkspace";
 
 import { resolveCodexGeneratedImagesRoots } from "./codexGeneratedImages.ts";
 

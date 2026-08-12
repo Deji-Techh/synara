@@ -145,6 +145,9 @@ export const DroidModelOptions = Schema.Struct({
 });
 export type DroidModelOptions = typeof DroidModelOptions.Type;
 
+export const EngineModelOptions = Schema.Struct({});
+export type EngineModelOptions = typeof EngineModelOptions.Type;
+
 export const ProviderModelOptions = Schema.Struct({
   codex: Schema.optional(CodexModelOptions),
   claudeAgent: Schema.optional(ClaudeModelOptions),
@@ -155,6 +158,7 @@ export const ProviderModelOptions = Schema.Struct({
   kilo: Schema.optional(OpenCodeModelOptions),
   opencode: Schema.optional(OpenCodeModelOptions),
   pi: Schema.optional(PiModelOptions),
+  engine: Schema.optional(EngineModelOptions),
 });
 export type ProviderModelOptions = typeof ProviderModelOptions.Type;
 
@@ -601,7 +605,7 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
     },
   ],
   // Antigravity owns its model catalog. The web app populates this provider from
-  // `agy models` so CLI updates appear without a Synara release.
+  // `agy models` so CLI updates appear without a Caide release.
   antigravity: [],
   grok: [
     {

@@ -1,10 +1,10 @@
-import { SPACE_NAME_MAX_LENGTH } from "@synara/contracts";
+import { SPACE_NAME_MAX_LENGTH } from "@caide/contracts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_VOID_SPACE } from "~/lib/spaceGrouping";
 import { normalizeVoidSpace, useVoidSpaceStore } from "./voidSpaceStore";
 
-const STORAGE_KEY = "synara:void-space:v1";
+const STORAGE_KEY = "caide:void-space:v1";
 
 describe("voidSpaceStore", () => {
   let entries: Map<string, string>;

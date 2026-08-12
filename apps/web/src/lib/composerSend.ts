@@ -13,12 +13,12 @@ import {
   type ClaudeCodeEffort,
   type ProviderKind,
   type UploadChatAttachment,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import {
   ATTACHMENT_CANCEL_ROUTE_PATH,
   ATTACHMENT_UPLOAD_ROUTE_PATH,
-} from "@synara/shared/binaryTransfer";
-import { applyClaudePromptEffortPrefix, getModelCapabilities } from "@synara/shared/model";
+} from "@caide/shared/binaryTransfer";
+import { applyClaudePromptEffortPrefix, getModelCapabilities } from "@caide/shared/model";
 
 import {
   cloneComposerImageAttachment,
@@ -129,7 +129,7 @@ export async function prepareComposerImageAttachmentsFromFiles(input: {
       error =
         cause instanceof ComposerImagePreparationError
           ? cause.message
-          : `Synara could not prepare '${file.name || "image"}'.`;
+          : `Caide could not prepare '${file.name || "image"}'.`;
     }
   }
 
@@ -226,6 +226,8 @@ export function resolvePromptEffortFromModelSelection(
       return modelSelection.options?.thinkingLevel ?? null;
     case "kilo":
     case "opencode":
+      return null;
+    case "engine":
       return null;
   }
 }

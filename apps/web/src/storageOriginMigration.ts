@@ -1,7 +1,7 @@
 // FILE: storageOriginMigration.ts
-// Purpose: Imports Synara browser state before renderer stores hydrate after a desktop origin move.
+// Purpose: Imports Caide browser state before renderer stores hydrate after a desktop origin move.
 
-import type { SynaraStorageSnapshot } from "@synara/contracts";
+import type { CaideStorageSnapshot } from "@caide/contracts";
 
 const MAX_SNAPSHOT_ENTRIES = 2_048;
 const MAX_SNAPSHOT_KEY_LENGTH = 512;
@@ -9,7 +9,7 @@ const MAX_SNAPSHOT_VALUE_LENGTH = 16 * 1024 * 1024;
 const MAX_SNAPSHOT_BYTES = 16 * 1024 * 1024;
 
 function isCanonicalStorageKey(key: string): boolean {
-  return key.startsWith("synara:") || key.startsWith("synara.");
+  return key.startsWith("caide:") || key.startsWith("caide.");
 }
 
 function getLocalStorage(): Storage | null {
@@ -20,8 +20,8 @@ function getLocalStorage(): Storage | null {
   }
 }
 
-export function importSynaraStorageSnapshot(
-  snapshot: SynaraStorageSnapshot | null,
+export function importCaideStorageSnapshot(
+  snapshot: CaideStorageSnapshot | null,
   storage = getLocalStorage(),
 ): boolean {
   if (!snapshot || !storage || snapshot.version !== 1 || !snapshot.entries) return false;
@@ -54,13 +54,13 @@ export function importSynaraStorageSnapshot(
   }
 }
 
-export function bootstrapSynaraStorageOriginMigration(): void {
+export function bootstrapCaideStorageOriginMigration(): void {
   const bridge = globalThis.window?.desktopBridge?.storageMigration;
   if (!bridge) return;
 
   try {
     const snapshot = bridge.readSnapshot();
-    if (snapshot && importSynaraStorageSnapshot(snapshot)) {
+    if (snapshot && importCaideStorageSnapshot(snapshot)) {
       void bridge.acknowledgeSnapshot().catch(() => undefined);
     }
   } catch {
@@ -68,4 +68,4 @@ export function bootstrapSynaraStorageOriginMigration(): void {
   }
 }
 
-bootstrapSynaraStorageOriginMigration();
+bootstrapCaideStorageOriginMigration();

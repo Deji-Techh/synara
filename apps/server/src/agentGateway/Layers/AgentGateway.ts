@@ -1,10 +1,10 @@
 /**
- * AgentGatewayLive - Synara app-control MCP tool surface.
+ * AgentGatewayLive - Caide app-control MCP tool surface.
  *
- * Implements the `synara_*` tools served over `POST /mcp` (streamable HTTP,
+ * Implements the `caide_*` tools served over `POST /mcp` (streamable HTTP,
  * stateless JSON responses). Every provider session gets this endpoint plus a
  * thread-bound bearer token injected at session start, so any agent running in
- * a Synara thread can list/read/create/steer threads and manage heartbeat
+ * a Caide thread can list/read/create/steer threads and manage heartbeat
  * automations - the same host-tool pattern the Codex desktop app uses.
  *
  * All tools delegate to existing services (OrchestrationEngine dispatch,
@@ -17,15 +17,15 @@ import { randomUUID } from "node:crypto";
 
 import {
   CommandId,
-  SYNARA_GATEWAY_MAX_THREADS_PER_OPERATION,
+  CAIDE_GATEWAY_MAX_THREADS_PER_OPERATION,
   MessageId,
   ThreadId,
   type ProviderKind,
   type RuntimeMode,
   type ServerProviderStatus,
   type TurnDispatchMode,
-} from "@synara/contracts";
-import { runtimeModeEscalatesPrivilege } from "@synara/shared/runtimeMode";
+} from "@caide/contracts";
+import { runtimeModeEscalatesPrivilege } from "@caide/shared/runtimeMode";
 import { Effect, Layer, Option } from "effect";
 
 import { GitCore } from "../../git/Services/GitCore.ts";
@@ -83,7 +83,7 @@ import { resolveThreadWorkspaceCwd } from "../../checkpointing/Utils.ts";
 // tool definition, so repeating the full policy here adds tens of thousands of
 // context characters per round without adding authority or safety.
 const AGENT_GATEWAY_INSTRUCTIONS =
-  "Synara tools are thread-scoped. Use browser_* only for Synara's shared in-app browser runtime; follow the provider-delivered <synara_host_context> for full policy.";
+  "Caide tools are thread-scoped. Use browser_* only for Caide's shared in-app browser runtime; follow the provider-delivered <caide_host_context> for full policy.";
 
 export const makeAgentGateway = Effect.gen(function* () {
   const credentials = yield* AgentGatewayCredentials;
@@ -221,9 +221,9 @@ export const makeAgentGateway = Effect.gen(function* () {
     requiredCapability: "thread:write",
     requiresActiveTurn: true,
     definition: {
-      name: "synara_create_threads",
+      name: "caide_create_threads",
       description:
-        "Create an exact batch of 1–20 standalone Synara threads. Worktree threads start on a Synara-managed temporary branch pinned at baseRef (or the selected checkout's HEAD) and copy local checkout changes plus .worktreeinclude files when the ref is that checkout's HEAD; on the first turn Synara may rename the branch after the prompt and publish it. Validation/preflight failures create nothing and may be corrected with the same requestId; durable retries replay the exact operation.",
+        "Create an exact batch of 1–20 standalone Caide threads. Worktree threads start on a Caide-managed temporary branch pinned at baseRef (or the selected checkout's HEAD) and copy local checkout changes plus .worktreeinclude files when the ref is that checkout's HEAD; on the first turn Caide may rename the branch after the prompt and publish it. Validation/preflight failures create nothing and may be corrected with the same requestId; durable retries replay the exact operation.",
       inputSchema: {
         type: "object",
         properties: {
@@ -235,7 +235,7 @@ export const makeAgentGateway = Effect.gen(function* () {
           threads: {
             type: "array",
             minItems: 1,
-            maxItems: SYNARA_GATEWAY_MAX_THREADS_PER_OPERATION,
+            maxItems: CAIDE_GATEWAY_MAX_THREADS_PER_OPERATION,
             items: {
               type: "object",
               properties: {
@@ -265,7 +265,7 @@ export const makeAgentGateway = Effect.gen(function* () {
         additionalProperties: false,
       },
       annotations: {
-        title: "Create Synara threads",
+        title: "Create Caide threads",
         readOnlyHint: false,
         destructiveHint: true,
         idempotentHint: true,
@@ -285,9 +285,9 @@ export const makeAgentGateway = Effect.gen(function* () {
     requiredCapability: "thread:write",
     requiresActiveTurn: true,
     definition: {
-      name: "synara_create_thread",
+      name: "caide_create_thread",
       description:
-        "Create exactly one standalone Synara thread. Worktree threads start on a Synara-managed temporary branch pinned at baseRef; on the first turn Synara may rename the branch after the prompt and publish it. For two or more threads use one synara_create_threads call instead.",
+        "Create exactly one standalone Caide thread. Worktree threads start on a Caide-managed temporary branch pinned at baseRef; on the first turn Caide may rename the branch after the prompt and publish it. For two or more threads use one caide_create_threads call instead.",
       inputSchema: {
         type: "object",
         properties: {
@@ -319,7 +319,7 @@ export const makeAgentGateway = Effect.gen(function* () {
         additionalProperties: false,
       },
       annotations: {
-        title: "Create a Synara thread",
+        title: "Create a Caide thread",
         readOnlyHint: false,
         destructiveHint: true,
         idempotentHint: true,
@@ -388,9 +388,9 @@ export const makeAgentGateway = Effect.gen(function* () {
     requiredCapability: "thread:write",
     requiresActiveTurn: true,
     definition: {
-      name: "synara_send_message",
+      name: "caide_send_message",
       description:
-        'Send a Synara follow-up message to an existing thread. mode "queue" (default) waits for the current turn; "steer" redirects a running turn where the provider supports it (otherwise it is queued).',
+        'Send a Caide follow-up message to an existing thread. mode "queue" (default) waits for the current turn; "steer" redirects a running turn where the provider supports it (otherwise it is queued).',
       inputSchema: {
         type: "object",
         properties: {
@@ -401,7 +401,7 @@ export const makeAgentGateway = Effect.gen(function* () {
         required: ["threadId", "message"],
         additionalProperties: false,
       },
-      annotations: { title: "Send a Synara message", ...WRITE_TOOL_ANNOTATIONS },
+      annotations: { title: "Send a Caide message", ...WRITE_TOOL_ANNOTATIONS },
     },
     handler: (args, context) =>
       Effect.gen(function* () {
@@ -445,8 +445,8 @@ export const makeAgentGateway = Effect.gen(function* () {
     requiredCapability: "thread:write",
     requiresActiveTurn: true,
     definition: {
-      name: "synara_interrupt_thread",
-      description: "Interrupt the running turn of a Synara thread.",
+      name: "caide_interrupt_thread",
+      description: "Interrupt the running turn of a Caide thread.",
       inputSchema: {
         type: "object",
         properties: {
@@ -455,7 +455,7 @@ export const makeAgentGateway = Effect.gen(function* () {
         required: ["threadId"],
         additionalProperties: false,
       },
-      annotations: { title: "Interrupt a Synara thread", ...WRITE_TOOL_ANNOTATIONS },
+      annotations: { title: "Interrupt a Caide thread", ...WRITE_TOOL_ANNOTATIONS },
     },
     handler: (args, context) =>
       Effect.gen(function* () {
@@ -491,8 +491,8 @@ export const makeAgentGateway = Effect.gen(function* () {
     requiredCapability: "thread:write",
     requiresActiveTurn: true,
     definition: {
-      name: "synara_set_thread_title",
-      description: "Rename a Synara thread.",
+      name: "caide_set_thread_title",
+      description: "Rename a Caide thread.",
       inputSchema: {
         type: "object",
         properties: {
@@ -502,7 +502,7 @@ export const makeAgentGateway = Effect.gen(function* () {
         required: ["threadId", "title"],
         additionalProperties: false,
       },
-      annotations: { title: "Rename a Synara thread", ...WRITE_TOOL_ANNOTATIONS },
+      annotations: { title: "Rename a Caide thread", ...WRITE_TOOL_ANNOTATIONS },
     },
     handler: (args, context) =>
       Effect.gen(function* () {
@@ -527,9 +527,9 @@ export const makeAgentGateway = Effect.gen(function* () {
     requiredCapability: "thread:write",
     requiresActiveTurn: true,
     definition: {
-      name: "synara_set_thread_archived",
+      name: "caide_set_thread_archived",
       description:
-        "Archive or unarchive a Synara thread. Defaults to your own thread when threadId is omitted.",
+        "Archive or unarchive a Caide thread. Defaults to your own thread when threadId is omitted.",
       inputSchema: {
         type: "object",
         properties: {
@@ -539,7 +539,7 @@ export const makeAgentGateway = Effect.gen(function* () {
         required: ["archived"],
         additionalProperties: false,
       },
-      annotations: { title: "Update a Synara thread", ...WRITE_TOOL_ANNOTATIONS },
+      annotations: { title: "Update a Caide thread", ...WRITE_TOOL_ANNOTATIONS },
     },
     handler: (args, context) =>
       Effect.gen(function* () {

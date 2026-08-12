@@ -7,8 +7,8 @@ import type {
   ProjectDiscoverScriptsResult,
   ProjectSearchEntriesResult,
   ProjectSearchLocalEntriesResult,
-} from "@synara/contracts";
-import { isLocalAbsolutePath } from "@synara/shared/path";
+} from "@caide/contracts";
+import { isLocalAbsolutePath } from "@caide/shared/path";
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 import { ensureNativeApi } from "~/nativeApi";
 

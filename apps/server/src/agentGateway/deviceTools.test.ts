@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Effect } from "effect";
 
-import type { ProviderKind } from "@synara/contracts";
+import type { ProviderKind } from "@caide/contracts";
 
 import { DeviceBackendError } from "../device/DeviceBackend.ts";
 import { DeviceManager } from "../device/DeviceManager.ts";
@@ -125,7 +125,7 @@ describe("agent gateway device tool handlers", () => {
     };
 
     expect(result.availability).toEqual({ kind: "available" });
-    expect(result.devices.find((device) => device.udid === DEVICE)?.bootSource).toBe("synara");
+    expect(result.devices.find((device) => device.udid === DEVICE)?.bootSource).toBe("caide");
   });
 
   it("taps through to the backend with the requested device points", async () => {

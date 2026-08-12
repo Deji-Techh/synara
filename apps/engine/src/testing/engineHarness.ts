@@ -100,7 +100,7 @@ export async function setupEngineHarness(
   }
   activeEngineHarness = true;
 
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "synara-engine-harness-"));
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "caide-engine-harness-"));
   const workspaceDir = path.join(tempRoot, "workspace");
   fs.mkdirSync(workspaceDir, { recursive: true });
   const dumpDir = path.join(tempRoot, "dumps");
@@ -119,7 +119,7 @@ export async function setupEngineHarness(
       fs.writeFileSync(filePath, content, "utf8");
     }
     git(workspaceDir, ["init", "-b", "main"]);
-    git(workspaceDir, ["config", "user.email", "harness@synara.engine"]);
+    git(workspaceDir, ["config", "user.email", "harness@caide.engine"]);
     git(workspaceDir, ["config", "user.name", "Engine Harness"]);
     git(workspaceDir, ["add", "-A"]);
     git(workspaceDir, ["commit", "-m", "chore: initial commit"]);

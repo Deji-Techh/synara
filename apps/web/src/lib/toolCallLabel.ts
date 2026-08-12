@@ -2,14 +2,14 @@
 // Purpose: Normalizes generic tool-call titles and humanizes command executions for timeline rows.
 // Layer: UI utility
 // Exports: deriveReadableToolTitle, deriveReadableCommandDisplay, deriveFriendlyCommandTarget, command icon classifiers, deriveInlineCommandCall, normalizeCompactToolLabel, isGenericToolTitle, extractWebFetchUrl
-// Depends on: @synara/contracts tool lifecycle item types
+// Depends on: @caide/contracts tool lifecycle item types
 
 import {
   BROWSER_TOOL_NAMES,
   type BrowserToolName,
   type ToolLifecycleItemType,
-} from "@synara/contracts";
-import { BROWSER_TOOL_TITLES } from "@synara/shared/browserAutomationPresentation";
+} from "@caide/contracts";
+import { BROWSER_TOOL_TITLES } from "@caide/shared/browserAutomationPresentation";
 import { basenameOfPath } from "../file-icons";
 import { extractToolArgumentField } from "./toolArgumentSummary";
 
@@ -113,249 +113,249 @@ export interface ReadableToolTitleInput {
   readonly isRunning?: boolean;
 }
 
-interface SynaraMcpToolPresentation {
+interface CaideMcpToolPresentation {
   readonly running: string;
   readonly completed: string;
   readonly failed: string;
 }
 
-type SynaraBrowserToolName = `synara_${BrowserToolName}`;
+type CaideBrowserToolName = `caide_${BrowserToolName}`;
 const BROWSER_TOOL_NAME_SET = new Set<string>(BROWSER_TOOL_NAMES);
 
-const SYNARA_BROWSER_TOOL_PRESENTATIONS = Object.fromEntries(
+const CAIDE_BROWSER_TOOL_PRESENTATIONS = Object.fromEntries(
   BROWSER_TOOL_NAMES.map((toolName) => {
     const title = BROWSER_TOOL_TITLES[toolName];
-    return [`synara_${toolName}`, { running: title, completed: title, failed: title }];
+    return [`caide_${toolName}`, { running: title, completed: title, failed: title }];
   }),
-) as Record<SynaraBrowserToolName, SynaraMcpToolPresentation>;
+) as Record<CaideBrowserToolName, CaideMcpToolPresentation>;
 
-const SYNARA_MCP_TOOL_PRESENTATIONS = {
-  synara_context: {
-    running: "Synara is checking its context",
-    completed: "Synara checked its context",
-    failed: "Synara couldn't check its context",
+const CAIDE_MCP_TOOL_PRESENTATIONS = {
+  caide_context: {
+    running: "Caide is checking its context",
+    completed: "Caide checked its context",
+    failed: "Caide couldn't check its context",
   },
-  synara_capabilities: {
-    running: "Synara is checking available agents",
-    completed: "Synara checked available agents",
-    failed: "Synara couldn't check available agents",
+  caide_capabilities: {
+    running: "Caide is checking available agents",
+    completed: "Caide checked available agents",
+    failed: "Caide couldn't check available agents",
   },
-  synara_overview: {
-    running: "Synara is gathering an overview",
-    completed: "Synara gathered an overview",
-    failed: "Synara couldn't gather an overview",
+  caide_overview: {
+    running: "Caide is gathering an overview",
+    completed: "Caide gathered an overview",
+    failed: "Caide couldn't gather an overview",
   },
-  synara_list_allowed_projects: {
-    running: "Synara is listing allowed projects",
-    completed: "Synara listed allowed projects",
-    failed: "Synara couldn't list allowed projects",
+  caide_list_allowed_projects: {
+    running: "Caide is listing allowed projects",
+    completed: "Caide listed allowed projects",
+    failed: "Caide couldn't list allowed projects",
   },
-  synara_create_task: {
-    running: "Synara is creating a task",
-    completed: "Synara created a task",
-    failed: "Synara couldn't create a task",
+  caide_create_task: {
+    running: "Caide is creating a task",
+    completed: "Caide created a task",
+    failed: "Caide couldn't create a task",
   },
-  synara_wait_for_task: {
-    running: "Synara is waiting for a task",
-    completed: "Synara finished waiting for a task",
-    failed: "Synara couldn't wait for a task",
+  caide_wait_for_task: {
+    running: "Caide is waiting for a task",
+    completed: "Caide finished waiting for a task",
+    failed: "Caide couldn't wait for a task",
   },
-  synara_read_task: {
-    running: "Synara is reading a task",
-    completed: "Synara read a task",
-    failed: "Synara couldn't read a task",
+  caide_read_task: {
+    running: "Caide is reading a task",
+    completed: "Caide read a task",
+    failed: "Caide couldn't read a task",
   },
-  synara_list_projects: {
-    running: "Synara is listing projects",
-    completed: "Synara listed projects",
-    failed: "Synara couldn't list projects",
+  caide_list_projects: {
+    running: "Caide is listing projects",
+    completed: "Caide listed projects",
+    failed: "Caide couldn't list projects",
   },
-  synara_list_threads: {
-    running: "Synara is listing threads",
-    completed: "Synara listed threads",
-    failed: "Synara couldn't list threads",
+  caide_list_threads: {
+    running: "Caide is listing threads",
+    completed: "Caide listed threads",
+    failed: "Caide couldn't list threads",
   },
-  synara_read_thread: {
-    running: "Synara is reading a thread",
-    completed: "Synara read a thread",
-    failed: "Synara couldn't read a thread",
+  caide_read_thread: {
+    running: "Caide is reading a thread",
+    completed: "Caide read a thread",
+    failed: "Caide couldn't read a thread",
   },
-  synara_read_thread_activity: {
-    running: "Synara is reading thread activity",
-    completed: "Synara read thread activity",
-    failed: "Synara couldn't read thread activity",
+  caide_read_thread_activity: {
+    running: "Caide is reading thread activity",
+    completed: "Caide read thread activity",
+    failed: "Caide couldn't read thread activity",
   },
-  synara_read_thread_events: {
-    running: "Synara is reading thread events",
-    completed: "Synara read thread events",
-    failed: "Synara couldn't read thread events",
+  caide_read_thread_events: {
+    running: "Caide is reading thread events",
+    completed: "Caide read thread events",
+    failed: "Caide couldn't read thread events",
   },
-  synara_read_thread_runtime_events: {
-    running: "Synara is reading thread runtime events",
-    completed: "Synara read thread runtime events",
-    failed: "Synara couldn't read thread runtime events",
+  caide_read_thread_runtime_events: {
+    running: "Caide is reading thread runtime events",
+    completed: "Caide read thread runtime events",
+    failed: "Caide couldn't read thread runtime events",
   },
-  synara_diagnose_thread: {
-    running: "Synara is diagnosing a thread",
-    completed: "Synara diagnosed a thread",
-    failed: "Synara couldn't diagnose a thread",
+  caide_diagnose_thread: {
+    running: "Caide is diagnosing a thread",
+    completed: "Caide diagnosed a thread",
+    failed: "Caide couldn't diagnose a thread",
   },
-  synara_create_thread: {
-    running: "Synara is creating a thread",
-    completed: "Synara created a thread",
-    failed: "Synara couldn't create a thread",
+  caide_create_thread: {
+    running: "Caide is creating a thread",
+    completed: "Caide created a thread",
+    failed: "Caide couldn't create a thread",
   },
-  synara_create_threads: {
-    running: "Synara is creating threads",
-    completed: "Synara created threads",
-    failed: "Synara couldn't create threads",
+  caide_create_threads: {
+    running: "Caide is creating threads",
+    completed: "Caide created threads",
+    failed: "Caide couldn't create threads",
   },
-  synara_wait_for_threads: {
-    running: "Synara is waiting for threads",
-    completed: "Synara finished waiting for threads",
-    failed: "Synara couldn't wait for threads",
+  caide_wait_for_threads: {
+    running: "Caide is waiting for threads",
+    completed: "Caide finished waiting for threads",
+    failed: "Caide couldn't wait for threads",
   },
-  synara_send_message: {
-    running: "Synara is sending a message",
-    completed: "Synara sent a message",
-    failed: "Synara couldn't send a message",
+  caide_send_message: {
+    running: "Caide is sending a message",
+    completed: "Caide sent a message",
+    failed: "Caide couldn't send a message",
   },
-  synara_interrupt_thread: {
-    running: "Synara is interrupting a thread",
-    completed: "Synara interrupted a thread",
-    failed: "Synara couldn't interrupt a thread",
+  caide_interrupt_thread: {
+    running: "Caide is interrupting a thread",
+    completed: "Caide interrupted a thread",
+    failed: "Caide couldn't interrupt a thread",
   },
-  synara_set_thread_title: {
-    running: "Synara is renaming a thread",
-    completed: "Synara renamed a thread",
-    failed: "Synara couldn't rename a thread",
+  caide_set_thread_title: {
+    running: "Caide is renaming a thread",
+    completed: "Caide renamed a thread",
+    failed: "Caide couldn't rename a thread",
   },
-  synara_set_thread_archived: {
-    running: "Synara is updating a thread",
-    completed: "Synara updated a thread",
-    failed: "Synara couldn't update a thread",
+  caide_set_thread_archived: {
+    running: "Caide is updating a thread",
+    completed: "Caide updated a thread",
+    failed: "Caide couldn't update a thread",
   },
-  synara_create_automation: {
-    running: "Synara is creating an automation",
-    completed: "Synara created an automation",
-    failed: "Synara couldn't create an automation",
+  caide_create_automation: {
+    running: "Caide is creating an automation",
+    completed: "Caide created an automation",
+    failed: "Caide couldn't create an automation",
   },
-  synara_list_automations: {
-    running: "Synara is listing automations",
-    completed: "Synara listed automations",
-    failed: "Synara couldn't list automations",
+  caide_list_automations: {
+    running: "Caide is listing automations",
+    completed: "Caide listed automations",
+    failed: "Caide couldn't list automations",
   },
-  synara_view_automation: {
-    running: "Synara is viewing an automation",
-    completed: "Synara viewed an automation",
-    failed: "Synara couldn't view an automation",
+  caide_view_automation: {
+    running: "Caide is viewing an automation",
+    completed: "Caide viewed an automation",
+    failed: "Caide couldn't view an automation",
   },
-  synara_update_automation: {
-    running: "Synara is updating an automation",
-    completed: "Synara updated an automation",
-    failed: "Synara couldn't update an automation",
+  caide_update_automation: {
+    running: "Caide is updating an automation",
+    completed: "Caide updated an automation",
+    failed: "Caide couldn't update an automation",
   },
-  synara_update_automation_memory: {
-    running: "Synara is updating automation memory",
-    completed: "Synara updated automation memory",
-    failed: "Synara couldn't update automation memory",
+  caide_update_automation_memory: {
+    running: "Caide is updating automation memory",
+    completed: "Caide updated automation memory",
+    failed: "Caide couldn't update automation memory",
   },
-  synara_report_automation_result: {
-    running: "Synara is reporting an automation result",
-    completed: "Synara reported an automation result",
-    failed: "Synara couldn't report an automation result",
+  caide_report_automation_result: {
+    running: "Caide is reporting an automation result",
+    completed: "Caide reported an automation result",
+    failed: "Caide couldn't report an automation result",
   },
-  synara_cancel_automation: {
-    running: "Synara is stopping an automation",
-    completed: "Synara stopped an automation",
-    failed: "Synara couldn't stop an automation",
+  caide_cancel_automation: {
+    running: "Caide is stopping an automation",
+    completed: "Caide stopped an automation",
+    failed: "Caide couldn't stop an automation",
   },
-  ...SYNARA_BROWSER_TOOL_PRESENTATIONS,
-} as const satisfies Record<string, SynaraMcpToolPresentation>;
+  ...CAIDE_BROWSER_TOOL_PRESENTATIONS,
+} as const satisfies Record<string, CaideMcpToolPresentation>;
 
-function normalizeSynaraMcpIdentifier(value: string): string {
+function normalizeCaideMcpIdentifier(value: string): string {
   return value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
 }
 
-const SYNARA_BROWSER_TOOL_NAME_BY_PRESENTATION = new Map<string, SynaraBrowserToolName>(
+const CAIDE_BROWSER_TOOL_NAME_BY_PRESENTATION = new Map<string, CaideBrowserToolName>(
   BROWSER_TOOL_NAMES.map((toolName) => [
-    normalizeSynaraMcpIdentifier(BROWSER_TOOL_TITLES[toolName]),
-    `synara_${toolName}`,
+    normalizeCaideMcpIdentifier(BROWSER_TOOL_TITLES[toolName]),
+    `caide_${toolName}`,
   ]),
 );
 
-const SYNARA_MCP_TOOL_PRESENTATION_ENTRIES = Object.entries(SYNARA_MCP_TOOL_PRESENTATIONS).map(
+const CAIDE_MCP_TOOL_PRESENTATION_ENTRIES = Object.entries(CAIDE_MCP_TOOL_PRESENTATIONS).map(
   ([toolName, presentation]) => ({
     toolName,
     presentation,
-    normalizedRunning: normalizeSynaraMcpIdentifier(presentation.running),
-    normalizedCompleted: normalizeSynaraMcpIdentifier(presentation.completed),
-    normalizedFailed: normalizeSynaraMcpIdentifier(presentation.failed),
+    normalizedRunning: normalizeCaideMcpIdentifier(presentation.running),
+    normalizedCompleted: normalizeCaideMcpIdentifier(presentation.completed),
+    normalizedFailed: normalizeCaideMcpIdentifier(presentation.failed),
   }),
 );
 
-function extractSynaraMcpToolName(normalizedCandidate: string): string | null {
+function extractCaideMcpToolName(normalizedCandidate: string): string | null {
   if (BROWSER_TOOL_NAME_SET.has(normalizedCandidate)) {
-    return `synara_${normalizedCandidate}`;
+    return `caide_${normalizedCandidate}`;
   }
-  if (normalizedCandidate.startsWith("mcp_synara_synara_")) {
-    return normalizedCandidate.slice("mcp_synara_".length);
+  if (normalizedCandidate.startsWith("mcp_caide_caide_")) {
+    return normalizedCandidate.slice("mcp_caide_".length);
   }
-  if (normalizedCandidate.startsWith("mcp_synara_")) {
-    return `synara_${normalizedCandidate.slice("mcp_synara_".length)}`;
+  if (normalizedCandidate.startsWith("mcp_caide_")) {
+    return `caide_${normalizedCandidate.slice("mcp_caide_".length)}`;
   }
-  if (normalizedCandidate.startsWith("synara_synara_")) {
-    return normalizedCandidate.slice("synara_".length);
+  if (normalizedCandidate.startsWith("caide_caide_")) {
+    return normalizedCandidate.slice("caide_".length);
   }
-  if (normalizedCandidate.startsWith("synara_")) {
+  if (normalizedCandidate.startsWith("caide_")) {
     return normalizedCandidate;
   }
   return null;
 }
 
-function resolveSynaraBrowserToolName(
+function resolveCaideBrowserToolName(
   candidates: ReadonlyArray<string | null | undefined>,
-): SynaraBrowserToolName | null {
+): CaideBrowserToolName | null {
   for (const candidate of candidates) {
     if (!candidate) continue;
-    const normalizedCandidate = normalizeSynaraMcpIdentifier(candidate);
-    const extractedToolName = extractSynaraMcpToolName(normalizedCandidate);
+    const normalizedCandidate = normalizeCaideMcpIdentifier(candidate);
+    const extractedToolName = extractCaideMcpToolName(normalizedCandidate);
     const candidateToolName =
       extractedToolName ??
-      SYNARA_BROWSER_TOOL_NAME_BY_PRESENTATION.get(normalizedCandidate) ??
+      CAIDE_BROWSER_TOOL_NAME_BY_PRESENTATION.get(normalizedCandidate) ??
       normalizedCandidate;
-    if (candidateToolName in SYNARA_BROWSER_TOOL_PRESENTATIONS) {
-      return candidateToolName as SynaraBrowserToolName;
+    if (candidateToolName in CAIDE_BROWSER_TOOL_PRESENTATIONS) {
+      return candidateToolName as CaideBrowserToolName;
     }
   }
   return null;
 }
 
-function fallbackSynaraMcpToolPresentation(toolName: string): SynaraMcpToolPresentation {
+function fallbackCaideMcpToolPresentation(toolName: string): CaideMcpToolPresentation {
   const action =
     toolName
-      .replace(/^synara_/, "")
+      .replace(/^caide_/, "")
       .replace(/_+/g, " ")
       .trim() || "an action";
   return {
-    running: `Synara is handling ${action}`,
-    completed: `Synara handled ${action}`,
-    failed: `Synara couldn't handle ${action}`,
+    running: `Caide is handling ${action}`,
+    completed: `Caide handled ${action}`,
+    failed: `Caide couldn't handle ${action}`,
   };
 }
 
-function resolveSynaraMcpToolPresentation(
+function resolveCaideMcpToolPresentation(
   candidates: ReadonlyArray<string | null | undefined>,
-): SynaraMcpToolPresentation | null {
+): CaideMcpToolPresentation | null {
   for (const candidate of candidates) {
     if (!candidate) {
       continue;
     }
-    const normalizedCandidate = normalizeSynaraMcpIdentifier(candidate);
-    for (const entry of SYNARA_MCP_TOOL_PRESENTATION_ENTRIES) {
+    const normalizedCandidate = normalizeCaideMcpIdentifier(candidate);
+    for (const entry of CAIDE_MCP_TOOL_PRESENTATION_ENTRIES) {
       if (
         normalizedCandidate === entry.normalizedRunning ||
         normalizedCandidate === entry.normalizedCompleted ||
@@ -364,62 +364,62 @@ function resolveSynaraMcpToolPresentation(
         return entry.presentation;
       }
     }
-    const toolName = extractSynaraMcpToolName(normalizedCandidate);
+    const toolName = extractCaideMcpToolName(normalizedCandidate);
     const knownPresentation = toolName
-      ? (SYNARA_MCP_TOOL_PRESENTATIONS[toolName as keyof typeof SYNARA_MCP_TOOL_PRESENTATIONS] as
-          | SynaraMcpToolPresentation
+      ? (CAIDE_MCP_TOOL_PRESENTATIONS[toolName as keyof typeof CAIDE_MCP_TOOL_PRESENTATIONS] as
+          | CaideMcpToolPresentation
           | undefined)
       : undefined;
     if (knownPresentation) {
       return knownPresentation;
     }
     // Free-text summaries (e.g. reconciler activity lines) can begin with the
-    // word "Synara" and normalize into a fake tool identifier; only
+    // word "Caide" and normalize into a fake tool identifier; only
     // identifier-shaped candidates may take an invented fallback presentation.
     if (/\s/.test(candidate.trim())) {
       continue;
     }
-    if (normalizedCandidate.startsWith("synara_is_handling_")) {
-      return fallbackSynaraMcpToolPresentation(
-        `synara_${normalizedCandidate.slice("synara_is_handling_".length)}`,
+    if (normalizedCandidate.startsWith("caide_is_handling_")) {
+      return fallbackCaideMcpToolPresentation(
+        `caide_${normalizedCandidate.slice("caide_is_handling_".length)}`,
       );
     }
-    if (normalizedCandidate.startsWith("synara_handled_")) {
-      return fallbackSynaraMcpToolPresentation(
-        `synara_${normalizedCandidate.slice("synara_handled_".length)}`,
+    if (normalizedCandidate.startsWith("caide_handled_")) {
+      return fallbackCaideMcpToolPresentation(
+        `caide_${normalizedCandidate.slice("caide_handled_".length)}`,
       );
     }
-    if (normalizedCandidate.startsWith("synara_couldn_t_handle_")) {
-      return fallbackSynaraMcpToolPresentation(
-        `synara_${normalizedCandidate.slice("synara_couldn_t_handle_".length)}`,
+    if (normalizedCandidate.startsWith("caide_couldn_t_handle_")) {
+      return fallbackCaideMcpToolPresentation(
+        `caide_${normalizedCandidate.slice("caide_couldn_t_handle_".length)}`,
       );
     }
     if (!toolName) {
       continue;
     }
-    return fallbackSynaraMcpToolPresentation(toolName);
+    return fallbackCaideMcpToolPresentation(toolName);
   }
   return null;
 }
 
-export type SynaraMcpToolStatus = "running" | "completed" | "failed" | "cancelled";
+export type CaideMcpToolStatus = "running" | "completed" | "failed" | "cancelled";
 
-export interface SynaraMcpToolTitleInput {
+export interface CaideMcpToolTitleInput {
   readonly toolName?: string | null | undefined;
   readonly title?: string | null | undefined;
   readonly fallbackLabel?: string | null | undefined;
-  readonly status?: SynaraMcpToolStatus | undefined;
+  readonly status?: CaideMcpToolStatus | undefined;
 }
 
-export function isSynaraBrowserToolCall(input: SynaraMcpToolTitleInput): boolean {
-  return resolveSynaraBrowserToolName([input.toolName, input.title, input.fallbackLabel]) !== null;
+export function isCaideBrowserToolCall(input: CaideMcpToolTitleInput): boolean {
+  return resolveCaideBrowserToolName([input.toolName, input.title, input.fallbackLabel]) !== null;
 }
 
-// Every provider exposes Synara's MCP tools differently: MCP, dynamic, and even
+// Every provider exposes Caide's MCP tools differently: MCP, dynamic, and even
 // file-change rows can all represent the same gateway action. Normalize by tool
 // identity instead of provider item type so transport details never reach the UI.
-export function deriveSynaraMcpToolTitle(input: SynaraMcpToolTitleInput): string | null {
-  const presentation = resolveSynaraMcpToolPresentation([
+export function deriveCaideMcpToolTitle(input: CaideMcpToolTitleInput): string | null {
+  const presentation = resolveCaideMcpToolPresentation([
     input.toolName,
     input.title,
     input.fallbackLabel,
@@ -435,23 +435,23 @@ export function deriveSynaraMcpToolTitle(input: SynaraMcpToolTitleInput): string
     case "failed":
       return presentation.failed;
     case "cancelled":
-      return presentation.running.startsWith("Synara is ")
-        ? `Synara stopped ${presentation.running.slice("Synara is ".length)}`
+      return presentation.running.startsWith("Caide is ")
+        ? `Caide stopped ${presentation.running.slice("Caide is ".length)}`
         : `Cancelled ${presentation.running}`;
   }
 }
 
-export function sanitizeSynaraMcpToolPreview(input: {
+export function sanitizeCaideMcpToolPreview(input: {
   readonly preview?: string | null | undefined;
   readonly heading: string;
-  readonly status?: SynaraMcpToolStatus | undefined;
+  readonly status?: CaideMcpToolStatus | undefined;
 }): string | null {
   const preview = input.preview?.trim();
   if (!preview) return null;
-  const previewTitle = deriveSynaraMcpToolTitle({ title: preview, status: input.status });
+  const previewTitle = deriveCaideMcpToolTitle({ title: preview, status: input.status });
   if (
     previewTitle &&
-    normalizeSynaraMcpIdentifier(previewTitle) === normalizeSynaraMcpIdentifier(input.heading)
+    normalizeCaideMcpIdentifier(previewTitle) === normalizeCaideMcpIdentifier(input.heading)
   ) {
     return null;
   }

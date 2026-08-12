@@ -8,7 +8,7 @@ import type {
   ProviderAgentDescriptor,
   ProviderKind,
   ProviderModelDescriptor,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
@@ -295,6 +295,11 @@ export function useProviderModelCatalog(input: {
         modelHintByProvider?.opencode,
       ),
       pi: getAppModelOptions("pi", customModelsByProvider.pi, modelHintByProvider?.pi),
+      engine: getAppModelOptions(
+        "engine",
+        customModelsByProvider.engine,
+        modelHintByProvider?.engine,
+      ),
     };
     const result: Record<
       ProviderKind,
@@ -313,6 +318,7 @@ export function useProviderModelCatalog(input: {
       kilo: kiloDynamicModelsQuery.data,
       opencode: openCodeDynamicModelsQuery.data,
       pi: piDynamicModelsQuery.data,
+      engine: undefined,
     };
     for (const provider of [
       "claudeAgent",
@@ -382,6 +388,7 @@ export function useProviderModelCatalog(input: {
       kilo: kiloDynamicModelsQuery.data?.models ?? [],
       opencode: openCodeDynamicModelsQuery.data?.models ?? [],
       pi: piDynamicModelsQuery.data?.models ?? [],
+      engine: [],
     }),
     [
       antigravityModelsQuery.data?.models,

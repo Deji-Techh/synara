@@ -1,5 +1,5 @@
 {
-  "name": "@synara/shared",
+  "name": "@caide/shared",
   "version": "0.0.0-alpha.1",
   "private": true,
   "type": "module",
@@ -40,9 +40,9 @@
       "types": "./src/loginShellEnvironment.ts",
       "import": "./src/loginShellEnvironment.ts"
     },
-    "./synaraHome": {
-      "types": "./src/synaraHome.ts",
-      "import": "./src/synaraHome.ts"
+    "./caideHome": {
+      "types": "./src/caideHome.ts",
+      "import": "./src/caideHome.ts"
     },
     "./staticSnapshot": {
       "types": "./src/staticSnapshot.ts",
@@ -287,7 +287,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@synara/contracts": "workspace:*",
+    "@caide/contracts": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {

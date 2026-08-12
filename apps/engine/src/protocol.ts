@@ -57,7 +57,7 @@ export const InitializeParamsSchema = z.object({
 export type InitializeParams = z.infer<typeof InitializeParamsSchema>;
 
 export const InitializeResultSchema = z.object({
-  serverName: z.literal("synara-engine"),
+  serverName: z.literal("caide-engine"),
   serverVersion: z.string(),
   protocolVersion: z.number(),
   capabilities: z.object({

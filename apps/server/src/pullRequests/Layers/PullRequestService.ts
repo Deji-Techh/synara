@@ -6,8 +6,8 @@ import {
   type PullRequestInvolvement,
   type PullRequestListEntry,
   type PullRequestsListResult,
-} from "@synara/contracts";
-import { coalescePullRequestListEntries } from "@synara/shared/githubRepository";
+} from "@caide/contracts";
+import { coalescePullRequestListEntries } from "@caide/shared/githubRepository";
 import { Effect, Layer, Scope, Semaphore } from "effect";
 
 import { ServerConfig } from "../../config";

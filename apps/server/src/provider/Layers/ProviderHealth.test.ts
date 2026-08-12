@@ -1,6 +1,6 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import type { ServerProviderStatus } from "@synara/contracts";
-import { DEFAULT_SERVER_SETTINGS, ServerProviderUpdateError } from "@synara/contracts";
+import type { ServerProviderStatus } from "@caide/contracts";
+import { DEFAULT_SERVER_SETTINGS, ServerProviderUpdateError } from "@caide/contracts";
 import { describe, it, assert } from "@effect/vitest";
 import { Effect, FileSystem, Layer, Path, Sink, Stream } from "effect";
 import { TestClock } from "effect/testing";
@@ -8,7 +8,7 @@ import * as PlatformError from "effect/PlatformError";
 import { ChildProcessSpawner } from "effect/unstable/process";
 import { vi } from "vitest";
 
-import { SYNARA_CODEX_HOME_OVERLAY_DIR } from "../../codexHomePaths";
+import { CAIDE_CODEX_HOME_OVERLAY_DIR } from "../../codexHomePaths";
 import { ServerConfig } from "../../config";
 import { ServerSettingsService } from "../../serverSettings";
 import { ProviderHealth } from "../Services/ProviderHealth";
@@ -200,9 +200,9 @@ function withTempCodexHome(configContent?: string) {
   return Effect.gen(function* () {
     const fileSystem = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
-    const tmpDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "synara-test-codex-" });
+    const tmpDir = yield* fileSystem.makeTempDirectoryScoped({ prefix: "caide-test-codex-" });
     const runtimeDir = yield* fileSystem.makeTempDirectoryScoped({
-      prefix: "synara-test-runtime-",
+      prefix: "caide-test-runtime-",
     });
 
     yield* Effect.acquireRelease(
@@ -211,7 +211,7 @@ function withTempCodexHome(configContent?: string) {
         // the resolved CODEX_HOME during this test.
         const overrides: Record<string, string> = {
           CODEX_HOME: tmpDir,
-          SYNARA_HOME: runtimeDir,
+          CAIDE_HOME: runtimeDir,
         };
         const restore: Record<string, string | undefined> = {};
         for (const [key, value] of Object.entries(overrides)) {
@@ -408,7 +408,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         available: false,
         authStatus: "unknown",
         checkedAt: "2026-06-16T12:00:00.000Z",
-        message: "Provider is disabled in Synara settings.",
+        message: "Provider is disabled in Caide settings.",
       });
     });
 
@@ -422,7 +422,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
 
       assert.strictEqual(statuses.length, 10);
       assert.strictEqual(codex?.available, false);
-      assert.strictEqual(codex?.message, "Provider is disabled in Synara settings.");
+      assert.strictEqual(codex?.message, "Provider is disabled in Caide settings.");
     });
 
     it("suppresses cached update advisories when automatic update checks are disabled", () => {
@@ -483,7 +483,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         const cachedCodex = yield* readProviderStatusCache(cachePath);
 
         assert.strictEqual(codex?.available, false);
-        assert.strictEqual(codex?.message, "Provider is disabled in Synara settings.");
+        assert.strictEqual(codex?.message, "Provider is disabled in Caide settings.");
         assert.deepStrictEqual(cachedCodex, cachedReadyCodexStatus);
       }),
     );
@@ -530,7 +530,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
           const disabledCodex = disabledStatuses.find((status) => status.provider === "codex");
 
           assert.strictEqual(disabledCodex?.available, false);
-          assert.strictEqual(disabledCodex?.message, "Provider is disabled in Synara settings.");
+          assert.strictEqual(disabledCodex?.message, "Provider is disabled in Caide settings.");
 
           yield* serverSettings.updateSettings({
             providers: {
@@ -544,7 +544,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
           const currentCodex = currentStatuses.find((status) => status.provider === "codex");
           assert.strictEqual(currentCodex?.available, true);
           assert.strictEqual(currentCodex?.authStatus, "authenticated");
-          assert.notStrictEqual(currentCodex?.message, "Provider is disabled in Synara settings.");
+          assert.notStrictEqual(currentCodex?.message, "Provider is disabled in Caide settings.");
           assert.strictEqual(spawnCount, 0);
         }).pipe(Effect.provide(layer));
       }),
@@ -558,7 +558,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         assert.strictEqual(statuses.length, 10);
         for (const status of statuses) {
           assert.strictEqual(status.available, false);
-          assert.strictEqual(status.message, "Provider is disabled in Synara settings.");
+          assert.strictEqual(status.message, "Provider is disabled in Caide settings.");
           assert.strictEqual(status.versionAdvisory?.status, "unknown");
           assert.strictEqual(status.versionAdvisory?.canUpdate, false);
           assert.strictEqual(status.versionAdvisory?.updateCommand, null);
@@ -573,7 +573,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
 
         assert.ok(error instanceof ServerProviderUpdateError);
         assert.strictEqual(error.provider, "kilo");
-        assert.strictEqual(error.reason, "Provider is disabled in Synara settings.");
+        assert.strictEqual(error.reason, "Provider is disabled in Caide settings.");
       }).pipe(Effect.provide(disabledProviderHealthLayer)),
     );
   });
@@ -936,13 +936,13 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
           'model_provider = "portkey"\n',
         );
         const configuredHome = yield* fileSystem.makeTempDirectoryScoped({
-          prefix: "synara-configured-codex-",
+          prefix: "caide-configured-codex-",
         });
         yield* fileSystem.writeFileString(
           path.join(configuredHome, "config.toml"),
           'model_provider = "openai"\n',
         );
-        expectedCodexHome = path.join(runtimeDir, SYNARA_CODEX_HOME_OVERLAY_DIR);
+        expectedCodexHome = path.join(runtimeDir, CAIDE_CODEX_HOME_OVERLAY_DIR);
 
         const status = yield* makeCheckCodexProviderStatus("codex", configuredHome);
         assert.strictEqual(status.status, "ready");
@@ -987,7 +987,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         assert.strictEqual(status.authStatus, "unknown");
         assert.strictEqual(
           status.message,
-          "Codex CLI v0.36.0 is too old for Synara. Upgrade to v0.37.0 or newer and restart Synara.",
+          "Codex CLI v0.36.0 is too old for Caide. Upgrade to v0.37.0 or newer and restart Caide.",
         );
       }).pipe(
         Effect.provide(
@@ -1931,7 +1931,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         assert.strictEqual(status.status, "ready");
         assert.strictEqual(
           status.message,
-          "Pi CLI is installed. Synara will use Pi agent dir /tmp/pi-agent.",
+          "Pi CLI is installed. Caide will use Pi agent dir /tmp/pi-agent.",
         );
       }).pipe(
         Effect.provide(
@@ -1954,7 +1954,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         assert.strictEqual(status.authStatus, "unknown");
         assert.strictEqual(
           status.message,
-          "Pi SDK is bundled, but the Pi CLI (`pi`) is not on PATH, so Synara could not verify the installed CLI version.",
+          "Pi SDK is bundled, but the Pi CLI (`pi`) is not on PATH, so Caide could not verify the installed CLI version.",
         );
       }).pipe(Effect.provide(failingSpawnerLayer("spawn pi ENOENT"))),
     );
@@ -1969,7 +1969,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         assert.strictEqual(status.version, "1.0.11");
         assert.strictEqual(
           status.message,
-          "Antigravity CLI 1.0.11 is too old for Synara. Upgrade to 1.0.12 or newer.",
+          "Antigravity CLI 1.0.11 is too old for Caide. Upgrade to 1.0.12 or newer.",
         );
       }).pipe(
         Effect.provide(

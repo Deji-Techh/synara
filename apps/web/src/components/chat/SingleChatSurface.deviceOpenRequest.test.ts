@@ -1,4 +1,4 @@
-import { ThreadId } from "@synara/contracts";
+import { ThreadId } from "@caide/contracts";
 import { describe, expect, it, vi } from "vitest";
 
 import { routeSingleDevicePaneOpenRequest } from "./devicePaneOpenRequest";

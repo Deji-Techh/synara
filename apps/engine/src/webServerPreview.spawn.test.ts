@@ -110,7 +110,7 @@ describe("engine web-server preview RPC", () => {
   let env: NodeJS.ProcessEnv;
 
   beforeAll(() => {
-    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "synara-preview-"));
+    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "caide-preview-"));
     workspaceDir = path.join(tempRoot, "workspace");
     fs.mkdirSync(workspaceDir, { recursive: true });
     shimDir = path.join(tempRoot, "shimbin");
@@ -187,7 +187,7 @@ describe("engine web-server preview RPC", () => {
       await once(child, "spawn");
 
       const initialize = await engine.sendRequest("initialize", {
-        clientName: "synara-server",
+        clientName: "caide-server",
         protocolVersion: 1,
       });
       expect(initialize.error).toBeUndefined();
@@ -276,7 +276,7 @@ describe("engine web-server preview RPC", () => {
 
       const port = await probePort();
       const start = await engine.sendRequest("preview/start", {
-        appDir: path.join(os.tmpdir(), "does-not-exist-synara"),
+        appDir: path.join(os.tmpdir(), "does-not-exist-caide"),
         port,
       });
       expect(start.result).toBeUndefined();

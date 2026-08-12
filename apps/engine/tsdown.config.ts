@@ -10,7 +10,7 @@ export default defineConfig({
   format: ["esm"],
   outDir: "dist",
   clean: true,
-  noExternal: (id) => id.startsWith("@synara/"),
+  noExternal: (id) => id.startsWith("@caide/"),
   banner: {
     js: "#!/usr/bin/env node\n",
   },

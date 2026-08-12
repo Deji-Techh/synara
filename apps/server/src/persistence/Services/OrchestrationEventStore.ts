@@ -9,7 +9,7 @@
  *
  * @module OrchestrationEventStore
  */
-import { OrchestrationEvent } from "@synara/contracts";
+import { OrchestrationEvent } from "@caide/contracts";
 import { ServiceMap } from "effect";
 import type { Effect, Stream } from "effect";
 
@@ -102,4 +102,4 @@ export interface OrchestrationEventStoreShape {
 export class OrchestrationEventStore extends ServiceMap.Service<
   OrchestrationEventStore,
   OrchestrationEventStoreShape
->()("synara/persistence/Services/OrchestrationEventStore") {}
+>()("caide/persistence/Services/OrchestrationEventStore") {}

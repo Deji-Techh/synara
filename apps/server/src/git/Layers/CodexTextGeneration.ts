@@ -6,11 +6,11 @@ import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import {
   DEFAULT_GIT_TEXT_GENERATION_MODEL,
   DEFAULT_GIT_TEXT_GENERATION_REASONING_EFFORT,
-} from "@synara/contracts";
-import { sanitizeGeneratedThreadTitle } from "@synara/shared/chatThreads";
-import { resolveCodexHome } from "@synara/shared/codexConfig";
-import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@synara/shared/git";
-import { prepareWindowsSafeProcess } from "@synara/shared/windowsProcess";
+} from "@caide/contracts";
+import { sanitizeGeneratedThreadTitle } from "@caide/shared/chatThreads";
+import { resolveCodexHome } from "@caide/shared/codexConfig";
+import { sanitizeBranchFragment, sanitizeFeatureBranchName } from "@caide/shared/git";
+import { prepareWindowsSafeProcess } from "@caide/shared/windowsProcess";
 
 import { resolveProviderAttachmentPath } from "../../provider/providerAttachmentPaths.ts";
 import { buildCodexProcessEnv } from "../../codexProcessEnv.ts";
@@ -154,7 +154,7 @@ const makeCodexTextGeneration = Effect.gen(function* () {
     prefix: string,
     content: string,
   ): Effect.Effect<string, TextGenerationError> => {
-    const filePath = path.join(tempDir, `synara-${prefix}-${process.pid}-${randomUUID()}.tmp`);
+    const filePath = path.join(tempDir, `caide-${prefix}-${process.pid}-${randomUUID()}.tmp`);
     return fileSystem.writeFileString(filePath, content).pipe(
       Effect.mapError(
         (cause) =>
@@ -182,7 +182,7 @@ const makeCodexTextGeneration = Effect.gen(function* () {
       const sourceCodexHome = sourceHomePath?.trim() || resolveCodexHome(process.env);
       const isolatedHomePath = path.join(
         tempDir,
-        `synara-codex-home-${process.pid}-${randomUUID()}`,
+        `caide-codex-home-${process.pid}-${randomUUID()}`,
       );
 
       yield* fileSystem.makeDirectory(isolatedHomePath, { recursive: true }).pipe(

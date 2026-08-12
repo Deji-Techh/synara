@@ -1,9 +1,9 @@
 {
-  "name": "@synara/engine",
+  "name": "@caide/engine",
   "version": "0.1.0",
   "private": true,
   "bin": {
-    "synara-engine": "dist/index.mjs"
+    "caide-engine": "dist/index.mjs"
   },
   "files": [
     "dist"
@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^3.0.30",
-    "@synara/contracts": "workspace:*",
+    "@caide/contracts": "workspace:*",
     "ai": "^7.0.62",
     "zod": "4.3.6"
   },

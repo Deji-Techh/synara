@@ -6,7 +6,7 @@ import {
   ProviderSkillReference,
   TurnDispatchMode,
   type OrchestrationMessage,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import { Schema, Struct } from "effect";
 
 import {

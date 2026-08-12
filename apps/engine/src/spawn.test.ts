@@ -95,7 +95,7 @@ describe("engine stdio JSON-RPC protocol", () => {
     await once(engine.child, "spawn");
 
     const response = await engine.sendRequest("initialize", {
-      clientName: "synara-server",
+      clientName: "caide-server",
       protocolVersion: 1,
     });
 
@@ -103,7 +103,7 @@ describe("engine stdio JSON-RPC protocol", () => {
     expect(response.id).toBe(1);
     const result = InitializeResultSchema.safeParse(response.result);
     expect(result.success).toBe(true);
-    expect(result.data.serverName).toBe("synara-engine");
+    expect(result.data.serverName).toBe("caide-engine");
     expect(result.data.protocolVersion).toBe(1);
   });
 

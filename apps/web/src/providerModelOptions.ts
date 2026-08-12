@@ -1,8 +1,4 @@
-import {
-  formatModelDisplayName,
-  humanizeModelSlug,
-  normalizeModelSlug,
-} from "@synara/shared/model";
+import { formatModelDisplayName, humanizeModelSlug, normalizeModelSlug } from "@caide/shared/model";
 import {
   PROVIDER_DISPLAY_NAMES,
   type AntigravityModelOptions,
@@ -17,6 +13,7 @@ import {
   type DroidModelSelection,
   type GrokModelOptions,
   type GrokModelSelection,
+  type EngineModelOptions,
   type KiloModelSelection,
   type ModelSelection,
   type OpenCodeModelOptions,
@@ -25,7 +22,7 @@ import {
   type PiModelSelection,
   type ProviderKind,
   type ProviderModelOptions,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import { normalizeCursorModelVariantBaseId } from "./cursorModelVariants";
 
 export type ProviderOptions = ProviderModelOptions[ProviderKind];
@@ -460,6 +457,14 @@ export function buildModelSelection(
             provider,
             model,
             options: options as OpenCodeModelOptions,
+          }
+        : { provider, model };
+    case "engine":
+      return options
+        ? {
+            provider,
+            model,
+            options: options as EngineModelOptions,
           }
         : { provider, model };
     case "pi":

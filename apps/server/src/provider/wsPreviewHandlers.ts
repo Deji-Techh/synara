@@ -10,7 +10,7 @@
  *
  * @module provider/wsPreviewHandlers
  */
-import { PREVIEW_WS_METHODS, ThreadId, WsRpcError, type PreviewState } from "@synara/contracts";
+import { PREVIEW_WS_METHODS, ThreadId, WsRpcError, type PreviewState } from "@caide/contracts";
 import { Effect } from "effect";
 
 import type { EngineAdapterShape } from "./Services/EngineAdapter.ts";

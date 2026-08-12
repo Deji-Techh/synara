@@ -3,8 +3,8 @@
 // Layer: UI state logic test
 
 import { describe, expect, it } from "vitest";
-import { ProjectId, ThreadId } from "@synara/contracts";
-import type { ResolvedTerminalVisualIdentity } from "@synara/shared/terminalThreads";
+import { ProjectId, ThreadId } from "@caide/contracts";
+import type { ResolvedTerminalVisualIdentity } from "@caide/shared/terminalThreads";
 import {
   buildRecentViewDisplayEntries,
   deriveCurrentRecentView,
@@ -133,7 +133,7 @@ describe("recent view MRU logic", () => {
 
   it("prefers terminal visual identity over thread provider for display icons", () => {
     const terminalThreadId = threadId("thread-terminal");
-    const project = { id: projectId("project-1"), name: "Synara" } as Project;
+    const project = { id: projectId("project-1"), name: "Caide" } as Project;
     const threadSummary = {
       id: terminalThreadId,
       projectId: project.id,
@@ -164,7 +164,7 @@ describe("recent view MRU logic", () => {
       icon: { kind: "terminal", iconKey: "terminal" },
       isTerminal: true,
       provider: "codex",
-      subtitle: "Synara · Terminal",
+      subtitle: "Caide · Terminal",
       terminalVisualIdentity: {
         cliKind: null,
         iconKey: "terminal",

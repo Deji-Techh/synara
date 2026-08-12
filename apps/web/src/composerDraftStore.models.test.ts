@@ -1,4 +1,4 @@
-import { ThreadId, type ModelSelection } from "@synara/contracts";
+import { ThreadId, type ModelSelection } from "@caide/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   deriveEffectiveComposerModelState,
@@ -365,6 +365,7 @@ describe("composerDraftStore modelSelection", () => {
         kilo: [],
         opencode: [],
         pi: [],
+        engine: [],
       },
       availableModelOptionsByProvider: {
         opencode: [{ slug: "opencode/gpt-5-nano", name: "GPT-5 Nano" }],
@@ -393,6 +394,7 @@ describe("composerDraftStore modelSelection", () => {
         kilo: [],
         opencode: [],
         pi: [],
+        engine: [],
       },
       availableModelOptionsByProvider: {
         opencode: [
@@ -426,6 +428,7 @@ describe("composerDraftStore modelSelection", () => {
         kilo: [],
         opencode: [],
         pi: [],
+        engine: [],
       },
       availableModelOptionsByProvider: {
         opencode: [
@@ -459,6 +462,7 @@ describe("composerDraftStore modelSelection", () => {
         kilo: [],
         opencode: [],
         pi: [],
+        engine: [],
       },
       availableModelOptionsByProvider: {
         pi: [

@@ -14,7 +14,7 @@ import {
   type ModelSlug,
   type PiThinkingLevel,
   type ProviderModelOptions,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import * as Schema from "effect/Schema";
 
 import {
@@ -22,7 +22,7 @@ import {
   normalizeModelSlug,
   resolveModelSlugForProvider,
   resolveSelectableModel,
-} from "@synara/shared/model";
+} from "@caide/shared/model";
 import { resolveAppModelSelection } from "./appSettings";
 import type { ComposerThreadDraftState } from "./composerDraftDomain";
 import { classifyProviderReasoningEffortSupport } from "./lib/codexReasoningEffort";
@@ -207,6 +207,14 @@ export function makeModelSelection(
         model,
         ...(options
           ? { options: options as Extract<ModelSelection, { provider: "pi" }>["options"] }
+          : {}),
+      };
+    case "engine":
+      return {
+        provider,
+        model,
+        ...(options
+          ? { options: options as Extract<ModelSelection, { provider: "engine" }>["options"] }
           : {}),
       };
   }
@@ -772,8 +780,11 @@ export function resolvePreferredComposerModelSelection(input: {
     (input.projectModelSelection?.provider === preferredProvider
       ? input.projectModelSelection
       : null) ?? {
-      provider: preferredProvider === "pi" ? "codex" : preferredProvider,
-      model: getDefaultModel(preferredProvider === "pi" ? "codex" : preferredProvider),
+      provider:
+        preferredProvider === "pi" || preferredProvider === "engine" ? "codex" : preferredProvider,
+      model: getDefaultModel(
+        preferredProvider === "pi" || preferredProvider === "engine" ? "codex" : preferredProvider,
+      ),
     }
   );
 }

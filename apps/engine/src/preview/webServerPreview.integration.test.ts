@@ -70,7 +70,7 @@ describe("web server preview", () => {
   let preview: WebServerPreview | null = null;
 
   beforeAll(async () => {
-    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "synara-preview-"));
+    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "caide-preview-"));
     appDir = path.join(tempRoot, "app");
     fs.mkdirSync(appDir, { recursive: true });
     fs.writeFileSync(path.join(appDir, "pubspec.yaml"), "name: hello_app\n", "utf8");

@@ -4,13 +4,13 @@ import {
   deriveInlineCommandCall,
   deriveReadableCommandDisplay,
   deriveReadableToolTitle,
-  deriveSynaraMcpToolTitle,
+  deriveCaideMcpToolTitle,
   extractWebFetchUrl,
   isInspectCommand,
-  isSynaraBrowserToolCall,
+  isCaideBrowserToolCall,
   normalizeCompactToolLabel,
   resolveCommandVisualKind,
-  sanitizeSynaraMcpToolPreview,
+  sanitizeCaideMcpToolPreview,
 } from "./toolCallLabel";
 
 describe("extractWebFetchUrl", () => {
@@ -61,217 +61,205 @@ describe("normalizeCompactToolLabel", () => {
   });
 });
 
-describe("deriveSynaraMcpToolTitle", () => {
-  it("uses stable action-first names for Synara browser tools", () => {
+describe("deriveCaideMcpToolTitle", () => {
+  it("uses stable action-first names for Caide browser tools", () => {
     for (const status of ["running", "completed", "failed"] as const) {
       expect(
-        deriveSynaraMcpToolTitle({
-          toolName: "mcp__synara__browser_open",
+        deriveCaideMcpToolTitle({
+          toolName: "mcp__caide__browser_open",
           status,
         }),
       ).toBe("Open browser tab");
     }
 
     expect(
-      deriveSynaraMcpToolTitle({
-        title: "Synara: Browser Snapshot",
+      deriveCaideMcpToolTitle({
+        title: "Caide: Browser Snapshot",
         status: "completed",
       }),
     ).toBe("Snapshot browser page");
   });
 
-  it("has intentional running and completed copy for every Synara gateway action", () => {
+  it("has intentional running and completed copy for every Caide gateway action", () => {
     const cases = [
-      ["synara_context", "Synara is checking its context", "Synara checked its context"],
+      ["caide_context", "Caide is checking its context", "Caide checked its context"],
       [
-        "synara_capabilities",
-        "Synara is checking available agents",
-        "Synara checked available agents",
+        "caide_capabilities",
+        "Caide is checking available agents",
+        "Caide checked available agents",
       ],
-      ["synara_list_projects", "Synara is listing projects", "Synara listed projects"],
-      ["synara_list_threads", "Synara is listing threads", "Synara listed threads"],
-      ["synara_read_thread", "Synara is reading a thread", "Synara read a thread"],
+      ["caide_list_projects", "Caide is listing projects", "Caide listed projects"],
+      ["caide_list_threads", "Caide is listing threads", "Caide listed threads"],
+      ["caide_read_thread", "Caide is reading a thread", "Caide read a thread"],
       [
-        "synara_read_thread_activity",
-        "Synara is reading thread activity",
-        "Synara read thread activity",
+        "caide_read_thread_activity",
+        "Caide is reading thread activity",
+        "Caide read thread activity",
       ],
-      ["synara_read_thread_events", "Synara is reading thread events", "Synara read thread events"],
+      ["caide_read_thread_events", "Caide is reading thread events", "Caide read thread events"],
       [
-        "synara_read_thread_runtime_events",
-        "Synara is reading thread runtime events",
-        "Synara read thread runtime events",
+        "caide_read_thread_runtime_events",
+        "Caide is reading thread runtime events",
+        "Caide read thread runtime events",
       ],
-      ["synara_diagnose_thread", "Synara is diagnosing a thread", "Synara diagnosed a thread"],
-      ["synara_create_thread", "Synara is creating a thread", "Synara created a thread"],
-      ["synara_create_threads", "Synara is creating threads", "Synara created threads"],
+      ["caide_diagnose_thread", "Caide is diagnosing a thread", "Caide diagnosed a thread"],
+      ["caide_create_thread", "Caide is creating a thread", "Caide created a thread"],
+      ["caide_create_threads", "Caide is creating threads", "Caide created threads"],
       [
-        "synara_wait_for_threads",
-        "Synara is waiting for threads",
-        "Synara finished waiting for threads",
+        "caide_wait_for_threads",
+        "Caide is waiting for threads",
+        "Caide finished waiting for threads",
       ],
-      ["synara_send_message", "Synara is sending a message", "Synara sent a message"],
-      ["synara_interrupt_thread", "Synara is interrupting a thread", "Synara interrupted a thread"],
-      ["synara_set_thread_title", "Synara is renaming a thread", "Synara renamed a thread"],
-      ["synara_set_thread_archived", "Synara is updating a thread", "Synara updated a thread"],
+      ["caide_send_message", "Caide is sending a message", "Caide sent a message"],
+      ["caide_interrupt_thread", "Caide is interrupting a thread", "Caide interrupted a thread"],
+      ["caide_set_thread_title", "Caide is renaming a thread", "Caide renamed a thread"],
+      ["caide_set_thread_archived", "Caide is updating a thread", "Caide updated a thread"],
+      ["caide_create_automation", "Caide is creating an automation", "Caide created an automation"],
+      ["caide_list_automations", "Caide is listing automations", "Caide listed automations"],
+      ["caide_cancel_automation", "Caide is stopping an automation", "Caide stopped an automation"],
+      ["caide_overview", "Caide is gathering an overview", "Caide gathered an overview"],
       [
-        "synara_create_automation",
-        "Synara is creating an automation",
-        "Synara created an automation",
+        "caide_list_allowed_projects",
+        "Caide is listing allowed projects",
+        "Caide listed allowed projects",
       ],
-      ["synara_list_automations", "Synara is listing automations", "Synara listed automations"],
-      [
-        "synara_cancel_automation",
-        "Synara is stopping an automation",
-        "Synara stopped an automation",
-      ],
-      ["synara_overview", "Synara is gathering an overview", "Synara gathered an overview"],
-      [
-        "synara_list_allowed_projects",
-        "Synara is listing allowed projects",
-        "Synara listed allowed projects",
-      ],
-      ["synara_create_task", "Synara is creating a task", "Synara created a task"],
-      [
-        "synara_wait_for_task",
-        "Synara is waiting for a task",
-        "Synara finished waiting for a task",
-      ],
-      ["synara_read_task", "Synara is reading a task", "Synara read a task"],
+      ["caide_create_task", "Caide is creating a task", "Caide created a task"],
+      ["caide_wait_for_task", "Caide is waiting for a task", "Caide finished waiting for a task"],
+      ["caide_read_task", "Caide is reading a task", "Caide read a task"],
     ] as const;
 
     for (const [toolName, running, completed] of cases) {
-      expect(deriveSynaraMcpToolTitle({ toolName, status: "running" })).toBe(running);
-      expect(deriveSynaraMcpToolTitle({ toolName, status: "completed" })).toBe(completed);
+      expect(deriveCaideMcpToolTitle({ toolName, status: "running" })).toBe(running);
+      expect(deriveCaideMcpToolTitle({ toolName, status: "completed" })).toBe(completed);
     }
 
     expect(
-      deriveSynaraMcpToolTitle({
-        toolName: "synara_create_threads",
+      deriveCaideMcpToolTitle({
+        toolName: "caide_create_threads",
         status: "failed",
       }),
-    ).toBe("Synara couldn't create threads");
+    ).toBe("Caide couldn't create threads");
     expect(
-      deriveSynaraMcpToolTitle({
-        toolName: "synara_create_thread",
+      deriveCaideMcpToolTitle({
+        toolName: "caide_create_thread",
         status: "cancelled",
       }),
-    ).toBe("Synara stopped creating a thread");
+    ).toBe("Caide stopped creating a thread");
   });
 
   it("turns provider-specific create-thread identifiers into activity sentences", () => {
     expect(
-      deriveSynaraMcpToolTitle({
-        toolName: "Synara__synara_create_thread",
+      deriveCaideMcpToolTitle({
+        toolName: "Caide__caide_create_thread",
         status: "running",
       }),
-    ).toBe("Synara is creating a thread");
+    ).toBe("Caide is creating a thread");
     expect(
-      deriveSynaraMcpToolTitle({
-        toolName: "mcp__synara__synara_create_thread",
+      deriveCaideMcpToolTitle({
+        toolName: "mcp__caide__caide_create_thread",
         status: "completed",
       }),
-    ).toBe("Synara created a thread");
+    ).toBe("Caide created a thread");
   });
 
-  it("recognizes bare and already-humanized Synara tool names", () => {
-    expect(deriveSynaraMcpToolTitle({ toolName: "synara_send_message", status: "running" })).toBe(
-      "Synara is sending a message",
+  it("recognizes bare and already-humanized Caide tool names", () => {
+    expect(deriveCaideMcpToolTitle({ toolName: "caide_send_message", status: "running" })).toBe(
+      "Caide is sending a message",
     );
     expect(
-      deriveSynaraMcpToolTitle({ title: "Synara: Synara List Threads", status: "completed" }),
-    ).toBe("Synara listed threads");
+      deriveCaideMcpToolTitle({ title: "Caide: Caide List Threads", status: "completed" }),
+    ).toBe("Caide listed threads");
   });
 
   it("ignores tools from other MCP servers", () => {
     expect(
-      deriveSynaraMcpToolTitle({
+      deriveCaideMcpToolTitle({
         toolName: "mcp__codex_apps__github_fetch_pr",
         status: "running",
       }),
     ).toBeNull();
   });
 
-  it("keeps future Synara actions branded without exposing raw identifiers", () => {
+  it("keeps future Caide actions branded without exposing raw identifiers", () => {
     expect(
-      deriveSynaraMcpToolTitle({
-        toolName: "mcp__synara__synara_delete_project",
+      deriveCaideMcpToolTitle({
+        toolName: "mcp__caide__caide_delete_project",
         status: "running",
       }),
-    ).toBe("Synara is handling delete project");
+    ).toBe("Caide is handling delete project");
     expect(
-      deriveSynaraMcpToolTitle({
-        toolName: "Synara__synara_delete_project",
+      deriveCaideMcpToolTitle({
+        toolName: "Caide__caide_delete_project",
         status: "completed",
       }),
-    ).toBe("Synara handled delete project");
+    ).toBe("Caide handled delete project");
     expect(
-      deriveSynaraMcpToolTitle({
-        toolName: "synara_is_handling_delete_project",
+      deriveCaideMcpToolTitle({
+        toolName: "caide_is_handling_delete_project",
         status: "completed",
       }),
-    ).toBe("Synara handled delete project");
+    ).toBe("Caide handled delete project");
   });
 
   it("does not reinterpret free text beginning with fallback status copy", () => {
     expect(
-      deriveSynaraMcpToolTitle({
-        title: "Synara is handling delete project after recovery",
+      deriveCaideMcpToolTitle({
+        title: "Caide is handling delete project after recovery",
         status: "completed",
       }),
     ).toBeNull();
     expect(
-      deriveSynaraMcpToolTitle({
-        title: "Synara handled delete project after recovery",
+      deriveCaideMcpToolTitle({
+        title: "Caide handled delete project after recovery",
         status: "running",
       }),
     ).toBeNull();
     expect(
-      deriveSynaraMcpToolTitle({
-        title: "Synara couldn't handle delete project after recovery",
+      deriveCaideMcpToolTitle({
+        title: "Caide couldn't handle delete project after recovery",
         status: "failed",
       }),
     ).toBeNull();
   });
 
-  it("leaves free-text activity summaries starting with Synara untouched", () => {
+  it("leaves free-text activity summaries starting with Caide untouched", () => {
     expect(
-      deriveSynaraMcpToolTitle({
-        title: "Synara recovered a stale running state",
+      deriveCaideMcpToolTitle({
+        title: "Caide recovered a stale running state",
         status: "completed",
       }),
     ).toBeNull();
     expect(
-      deriveSynaraMcpToolTitle({
-        fallbackLabel: "Synara restarted the provider session",
+      deriveCaideMcpToolTitle({
+        fallbackLabel: "Caide restarted the provider session",
         status: "running",
       }),
     ).toBeNull();
   });
 
-  it("removes transport identifiers without hiding meaningful Synara details", () => {
+  it("removes transport identifiers without hiding meaningful Caide details", () => {
     expect(
-      sanitizeSynaraMcpToolPreview({
-        preview: "Synara__synara_create_threads",
-        heading: "Synara created threads",
+      sanitizeCaideMcpToolPreview({
+        preview: "Caide__caide_create_threads",
+        heading: "Caide created threads",
         status: "completed",
       }),
     ).toBeNull();
     expect(
-      sanitizeSynaraMcpToolPreview({
+      sanitizeCaideMcpToolPreview({
         preview: 'Unexpected key "reasoningEffort" for Claude Agent',
-        heading: "Synara couldn't create threads",
+        heading: "Caide couldn't create threads",
         status: "failed",
       }),
     ).toBe('Unexpected key "reasoningEffort" for Claude Agent');
   });
 });
 
-describe("isSynaraBrowserToolCall", () => {
+describe("isCaideBrowserToolCall", () => {
   it("recognizes canonical presentation titles without a tool identifier", () => {
-    expect(isSynaraBrowserToolCall({ title: "Open browser tab" })).toBe(true);
-    expect(isSynaraBrowserToolCall({ fallbackLabel: "Snapshot browser page" })).toBe(true);
-    expect(isSynaraBrowserToolCall({ title: "Synara listed threads" })).toBe(false);
+    expect(isCaideBrowserToolCall({ title: "Open browser tab" })).toBe(true);
+    expect(isCaideBrowserToolCall({ fallbackLabel: "Snapshot browser page" })).toBe(true);
+    expect(isCaideBrowserToolCall({ title: "Caide listed threads" })).toBe(false);
   });
 });
 
@@ -453,13 +441,13 @@ describe("deriveReadableCommandDisplay", () => {
   it("removes env and timeout wrappers from inline command summaries", () => {
     expect(
       deriveReadableCommandDisplay(
-        "env -u SYNARA_AUTH_TOKEN SYNARA_PORT_OFFSET=3158 timeout 180s bun run dev",
+        "env -u CAIDE_AUTH_TOKEN CAIDE_PORT_OFFSET=3158 timeout 180s bun run dev",
         true,
       ),
     ).toEqual({
       verb: "Running",
       target: "bun run dev",
-      fullCommand: "env -u SYNARA_AUTH_TOKEN SYNARA_PORT_OFFSET=3158 timeout 180s bun run dev",
+      fullCommand: "env -u CAIDE_AUTH_TOKEN CAIDE_PORT_OFFSET=3158 timeout 180s bun run dev",
     });
   });
 

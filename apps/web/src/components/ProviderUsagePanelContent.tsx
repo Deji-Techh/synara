@@ -2,8 +2,8 @@
 // Purpose: Render a provider usage summary panel that can show both classic
 // rate-limit rows and archive-derived local usage lines in the same popover.
 
-import type { ProviderKind } from "@synara/contracts";
-import { providerUsageLabel } from "@synara/shared/providerUsage";
+import type { ProviderKind } from "@caide/contracts";
+import { providerUsageLabel } from "@caide/shared/providerUsage";
 
 import { ExternalLinkIcon, TriangleAlertIcon } from "~/lib/icons";
 import type { OpenUsageUsageLine } from "~/lib/openUsageRateLimits";

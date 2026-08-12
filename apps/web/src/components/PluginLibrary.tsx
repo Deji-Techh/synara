@@ -8,7 +8,7 @@ import {
   type ProviderKind,
   type ProviderPluginDescriptor,
   type ProviderSkillDescriptor,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import { useQuery } from "@tanstack/react-query";
 import React, { useMemo, type ReactNode, useDeferredValue, useState } from "react";
 import type { IconType } from "react-icons";
@@ -432,6 +432,10 @@ export function PluginLibrary() {
     pi: {
       plugins: supportsPluginDiscovery(piCapabilitiesQuery.data),
       skills: supportsSkillDiscovery(piCapabilitiesQuery.data),
+    },
+    engine: {
+      plugins: false,
+      skills: false,
     },
   };
 

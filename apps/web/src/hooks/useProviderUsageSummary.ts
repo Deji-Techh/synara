@@ -6,7 +6,7 @@ import type {
   OrchestrationThread,
   ProviderKind,
   ServerGetProviderUsageSnapshotResult,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import { useQuery } from "@tanstack/react-query";
 
 import {

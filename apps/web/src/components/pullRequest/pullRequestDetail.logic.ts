@@ -8,11 +8,7 @@
 //          describePullRequestState, stripHtmlComments, PullRequestTimelineEvent,
 //          buildPullRequestTimelineEvents
 
-import type {
-  PullRequestDetail,
-  PullRequestDetailInput,
-  PullRequestState,
-} from "@synara/contracts";
+import type { PullRequestDetail, PullRequestDetailInput, PullRequestState } from "@caide/contracts";
 
 import type { RightDockPane } from "~/rightDockStore.logic";
 

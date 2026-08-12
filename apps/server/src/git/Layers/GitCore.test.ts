@@ -20,7 +20,7 @@ import { ServerConfig } from "../../config.ts";
 // ── Helpers ──
 
 const ServerConfigLayer = ServerConfig.layerTest(process.cwd(), {
-  prefix: "synara-git-core-test-",
+  prefix: "caide-git-core-test-",
 });
 const GitCoreTestLayer = GitCoreLive.pipe(
   Layer.provide(ServerConfigLayer),
@@ -821,7 +821,7 @@ it.layer(TestLayer)("git integration", (it) => {
 
         const stashList = yield* git(tmp, ["stash", "list"]);
         expect(stashList).toContain("pre-existing stash");
-        expect(stashList).not.toContain("synara: stash before switching to feature");
+        expect(stashList).not.toContain("caide: stash before switching to feature");
         expect(yield* readTextFile(path.join(tmp, "README.md"))).toBe("dirty changes\n");
       }),
     );
@@ -851,7 +851,7 @@ it.layer(TestLayer)("git integration", (it) => {
         expect(yield* readTextFile(path.join(tmp, "README.md"))).toBe("conflicting content\n");
         expect((yield* git(tmp, ["status", "--short"])).trim()).toBe("");
         expect(yield* git(tmp, ["stash", "list"])).toContain(
-          "synara: stash before switching to conflicting",
+          "caide: stash before switching to conflicting",
         );
       }),
     );
@@ -1033,26 +1033,24 @@ it.layer(TestLayer)("git integration", (it) => {
       Effect.gen(function* () {
         const tmp = yield* makeTmpDir();
         yield* initRepoWithCommit(tmp);
-        yield* (yield* GitCore).createBranch({ cwd: tmp, branch: "synara/feat/session" });
-        yield* (yield* GitCore).createBranch({ cwd: tmp, branch: "synara/tmp-working" });
-        yield* (yield* GitCore).checkoutBranch({ cwd: tmp, branch: "synara/tmp-working" });
+        yield* (yield* GitCore).createBranch({ cwd: tmp, branch: "caide/feat/session" });
+        yield* (yield* GitCore).createBranch({ cwd: tmp, branch: "caide/tmp-working" });
+        yield* (yield* GitCore).checkoutBranch({ cwd: tmp, branch: "caide/tmp-working" });
 
         const renamed = yield* (yield* GitCore).renameBranch({
           cwd: tmp,
-          oldBranch: "synara/tmp-working",
-          newBranch: "synara/feat/session",
+          oldBranch: "caide/tmp-working",
+          newBranch: "caide/feat/session",
         });
 
-        expect(renamed.branch).toBe("synara/feat/session-1");
+        expect(renamed.branch).toBe("caide/feat/session-1");
         const branches = yield* (yield* GitCore).listBranches({ cwd: tmp });
-        expect(branches.branches.some((branch) => branch.name === "synara/feat/session")).toBe(
-          true,
-        );
-        expect(branches.branches.some((branch) => branch.name === "synara/feat/session-1")).toBe(
+        expect(branches.branches.some((branch) => branch.name === "caide/feat/session")).toBe(true);
+        expect(branches.branches.some((branch) => branch.name === "caide/feat/session-1")).toBe(
           true,
         );
         const current = branches.branches.find((branch) => branch.current);
-        expect(current?.name).toBe("synara/feat/session-1");
+        expect(current?.name).toBe("caide/feat/session-1");
       }),
     );
 
@@ -1060,18 +1058,18 @@ it.layer(TestLayer)("git integration", (it) => {
       Effect.gen(function* () {
         const tmp = yield* makeTmpDir();
         yield* initRepoWithCommit(tmp);
-        yield* (yield* GitCore).createBranch({ cwd: tmp, branch: "synara/feat/session" });
-        yield* (yield* GitCore).createBranch({ cwd: tmp, branch: "synara/feat/session-1" });
-        yield* (yield* GitCore).createBranch({ cwd: tmp, branch: "synara/tmp-working" });
-        yield* (yield* GitCore).checkoutBranch({ cwd: tmp, branch: "synara/tmp-working" });
+        yield* (yield* GitCore).createBranch({ cwd: tmp, branch: "caide/feat/session" });
+        yield* (yield* GitCore).createBranch({ cwd: tmp, branch: "caide/feat/session-1" });
+        yield* (yield* GitCore).createBranch({ cwd: tmp, branch: "caide/tmp-working" });
+        yield* (yield* GitCore).checkoutBranch({ cwd: tmp, branch: "caide/tmp-working" });
 
         const renamed = yield* (yield* GitCore).renameBranch({
           cwd: tmp,
-          oldBranch: "synara/tmp-working",
-          newBranch: "synara/feat/session",
+          oldBranch: "caide/tmp-working",
+          newBranch: "caide/feat/session",
         });
 
-        expect(renamed.branch).toBe("synara/feat/session-2");
+        expect(renamed.branch).toBe("caide/feat/session-2");
       }),
     );
 
@@ -1273,16 +1271,16 @@ it.layer(TestLayer)("git integration", (it) => {
           cwd: tmp,
           ref: "HEAD",
           path: wtPath,
-          newBranch: "synara/abcd1234",
+          newBranch: "caide/abcd1234",
         });
 
         expect(result.worktree).toEqual({
           path: wtPath,
           ref: expectedHead,
-          branch: "synara/abcd1234",
+          branch: "caide/abcd1234",
         });
-        expect(yield* git(wtPath, ["symbolic-ref", "--short", "HEAD"])).toBe("synara/abcd1234");
-        expect(yield* git(tmp, ["rev-parse", "refs/heads/synara/abcd1234"])).toBe(expectedHead);
+        expect(yield* git(wtPath, ["symbolic-ref", "--short", "HEAD"])).toBe("caide/abcd1234");
+        expect(yield* git(tmp, ["rev-parse", "refs/heads/caide/abcd1234"])).toBe(expectedHead);
 
         yield* core.removeWorktree({
           cwd: tmp,
@@ -1290,7 +1288,7 @@ it.layer(TestLayer)("git integration", (it) => {
           force: true,
           reclaimTemporaryBranch: true,
         });
-        const remainingBranches = yield* git(tmp, ["branch", "--list", "synara/abcd1234"]);
+        const remainingBranches = yield* git(tmp, ["branch", "--list", "caide/abcd1234"]);
         expect(remainingBranches).toBe("");
       }),
     );
@@ -1308,7 +1306,7 @@ it.layer(TestLayer)("git integration", (it) => {
             cwd: tmp,
             ref: "HEAD",
             path: wtPath,
-            newBranch: "synara/ph123456",
+            newBranch: "caide/ph123456",
             copyChangesFrom: tmp,
           },
           {
@@ -1342,7 +1340,7 @@ it.layer(TestLayer)("git integration", (it) => {
               cwd: tmp,
               ref: "refs/heads/missing",
               path: path.join(tmp, "wt-invalid-ref"),
-              newBranch: "synara/notstarted",
+              newBranch: "caide/notstarted",
             },
             {
               onPhase: (phase) =>
@@ -1355,7 +1353,7 @@ it.layer(TestLayer)("git integration", (it) => {
 
         expect(Exit.isFailure(result)).toBe(true);
         expect(phases).toEqual([]);
-        expect(yield* git(tmp, ["branch", "--list", "synara/notstarted"])).toBe("");
+        expect(yield* git(tmp, ["branch", "--list", "caide/notstarted"])).toBe("");
       }),
     );
 
@@ -1374,12 +1372,12 @@ it.layer(TestLayer)("git integration", (it) => {
             cwd: tmp,
             ref: "HEAD",
             path: wtPath,
-            newBranch: "synara/rollback1",
+            newBranch: "caide/rollback1",
           }),
         );
 
         expect(Exit.isFailure(result)).toBe(true);
-        expect(yield* git(tmp, ["branch", "--list", "synara/rollback1"])).toBe("");
+        expect(yield* git(tmp, ["branch", "--list", "caide/rollback1"])).toBe("");
       }),
     );
 
@@ -1852,12 +1850,12 @@ it.layer(TestLayer)("git integration", (it) => {
           yield* initRepoWithCommit(tmp);
           const core = yield* GitCore;
 
-          yield* git(tmp, ["remote", "add", "origin", "git@github.com:example-org/synara.git"]);
+          yield* git(tmp, ["remote", "add", "origin", "git@github.com:example-org/caide.git"]);
 
           const remoteName = yield* core.ensureRemote({
             cwd: tmp,
             preferredName: "origin",
-            url: "git@github.com:example-org/synara.git/",
+            url: "git@github.com:example-org/caide.git/",
           });
 
           expect(remoteName).toBe("origin");
@@ -2409,7 +2407,7 @@ it.layer(TestLayer)("git integration", (it) => {
           yield* git(tmp, [
             "checkout",
             "-b",
-            "synara/pr-488/statemachine",
+            "caide/pr-488/statemachine",
             "--track",
             "jasonLaster/statemachine",
           ]);
@@ -2431,7 +2429,7 @@ it.layer(TestLayer)("git integration", (it) => {
             yield* git(tmp, ["ls-remote", "--heads", "jasonLaster", "statemachine"]),
           ).toContain("statemachine");
           expect(
-            yield* git(tmp, ["ls-remote", "--heads", "jasonLaster", "synara/pr-488/statemachine"]),
+            yield* git(tmp, ["ls-remote", "--heads", "jasonLaster", "caide/pr-488/statemachine"]),
           ).toBe("");
         }),
     );

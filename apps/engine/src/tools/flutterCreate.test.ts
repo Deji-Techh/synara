@@ -43,7 +43,7 @@ function buildShim(argsLog: string): string {
       'NAME_USED="${@: -1}"',
       'PROJECT="$PWD/$NAME_USED"',
       'mkdir -p "$PROJECT/lib" "$PROJECT/test"',
-      'printf \'name: %s\\ndescription: scaffolded by the synara engine\\n\' "$NAME_USED" > "$PROJECT/pubspec.yaml"',
+      'printf \'name: %s\\ndescription: scaffolded by the caide engine\\n\' "$NAME_USED" > "$PROJECT/pubspec.yaml"',
       "printf 'void main() {}\\\n' > \"$PROJECT/lib/main.dart\"",
       "printf 'void main() {}\\\n' > \"$PROJECT/test/widget_test.dart\"",
       `echo "Creating project $NAME_USED..."`,
@@ -54,7 +54,7 @@ function buildShim(argsLog: string): string {
 
 describe("flutter create scaffold tool", () => {
   beforeAll(() => {
-    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "synara-flutter-tool-"));
+    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "caide-flutter-tool-"));
     workspaceDir = path.join(tempRoot, "workspace");
     fs.mkdirSync(workspaceDir, { recursive: true });
     shimDir = path.join(tempRoot, "shimbin");

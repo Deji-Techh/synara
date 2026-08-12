@@ -17,10 +17,10 @@ This document covers build-only native validation and publishing desktop release
 - Publishes one versioned GitHub Release with all produced files.
   - Versions with a suffix after `X.Y.Z` (for example `1.2.3-alpha.1`) are published as GitHub prereleases.
   - Stable 0.5.x releases are GitHub Latest; the 0.4.x compatibility release remains historical.
-- Publishes default `latest*.yml` metadata plus byte-identical `synara*.yml` aliases on every stable release so existing packaged binaries keep working.
+- Publishes default `latest*.yml` metadata plus byte-identical `caide*.yml` aliases on every stable release so existing packaged binaries keep working.
 - Keeps the historical 0.4.x compatibility release unchanged; current stable payloads stay on their own GitHub Latest release.
-- Publishes prerelease installers only on their versioned GitHub prerelease; prereleases never replace the stable `synara` update manifests.
-- Publishes the CLI package (`apps/server`, npm package `@synara/cli`) with OIDC trusted publishing.
+- Publishes prerelease installers only on their versioned GitHub prerelease; prereleases never replace the stable `caide` update manifests.
+- Publishes the CLI package (`apps/server`, npm package `@caide/cli`) with OIDC trusted publishing.
 - Published macOS and Windows artifacts must be signed. Build-only runs may
   produce unsigned artifacts when signing secrets are unavailable.
 
@@ -33,24 +33,24 @@ This document covers build-only native validation and publishing desktop release
   - The desktop UI shows a rocket update button while preparing and switches to an install action once the update is ready.
 - Provider: GitHub Releases (`provider: github`) configured at build time.
 - Repository visibility: public. The authenticated private-repository provider does not honor custom channel filenames.
-- Runtime channel: `synara`. Stable 0.5.x releases publish both `latest` and `synara` metadata; the 0.4.x compatibility release remains available for historical migration.
+- Runtime channel: `caide`. Stable 0.5.x releases publish both `latest` and `caide` metadata; the 0.4.x compatibility release remains available for historical migration.
 - Repository slug source:
-  - `SYNARA_DESKTOP_UPDATE_REPOSITORY` (format `owner/repo`), if set.
+  - `CAIDE_DESKTOP_UPDATE_REPOSITORY` (format `owner/repo`), if set.
   - otherwise `GITHUB_REPOSITORY` from GitHub Actions.
-- Required Synara release assets for updater:
+- Required Caide release assets for updater:
   - platform installers (`.exe`, `.dmg`, `.AppImage`, plus macOS `.zip` for Squirrel.Mac update payloads)
-  - `synara-mac.yml`, `synara.yml`, and `synara-linux.yml` metadata
-  - every stable release includes both `synara-mac.yml`, `synara.yml`, `synara-linux.yml` and `latest-mac.yml`, `latest.yml`, `latest-linux.yml`
+  - `caide-mac.yml`, `caide.yml`, and `caide-linux.yml` metadata
+  - every stable release includes both `caide-mac.yml`, `caide.yml`, `caide-linux.yml` and `latest-mac.yml`, `latest.yml`, `latest-linux.yml`
   - `*.blockmap` files, except the macOS update `.zip.blockmap` removed after zip repack
 - Enforced upgrade path:
-  - Stable clean Synara releases are created with `make_latest=true` and carry both six-manifest filenames in the versioned release.
+  - Stable clean Caide releases are created with `make_latest=true` and carry both six-manifest filenames in the versioned release.
   - The historical 0.4.x compatibility release remains available for predecessor migration and is never overwritten by a 0.5.x release.
   - Clean releases do not mirror payloads onto the historical compatibility release, so the 0.4.x line remains immutable.
-  - Clean-release publication fails closed if either the default Latest manifests or the dedicated `synara` aliases are missing.
-- Production desktop builds omit web/server/desktop source maps by default to keep update payloads small. Set `SYNARA_WEB_SOURCEMAP=1`, `SYNARA_SERVER_SOURCEMAP=1`, or `SYNARA_DESKTOP_SOURCEMAP=1` only for a diagnostic release that needs them.
+  - Clean-release publication fails closed if either the default Latest manifests or the dedicated `caide` aliases are missing.
+- Production desktop builds omit web/server/desktop source maps by default to keep update payloads small. Set `CAIDE_WEB_SOURCEMAP=1`, `CAIDE_SERVER_SOURCEMAP=1`, or `CAIDE_DESKTOP_SOURCEMAP=1` only for a diagnostic release that needs them.
 - macOS metadata note:
   - The build initially emits `latest-mac.yml` for both Intel and Apple Silicon.
-  - The workflow merges the per-arch macOS metadata, then keeps the merged manifest as `latest-mac.yml` and copies it to `synara-mac.yml` for stable releases.
+  - The workflow merges the per-arch macOS metadata, then keeps the merged manifest as `latest-mac.yml` and copies it to `caide-mac.yml` for stable releases.
   - The desktop build script repacks the macOS update `.zip` with `ditto`, verifies Electron framework symlinks, extracts the zip, validates the extracted app signature, patches the matching `latest-mac*.yml` hash/size, and removes the stale `.zip.blockmap`.
   - macOS updater downloads intentionally use the full zip payload so Squirrel.Mac installs the exact signed archive validated by release build.
 - Local smoke test:
@@ -65,7 +65,7 @@ the package version to the release tag version.
 
 Checklist:
 
-1. Confirm the npm account controls the `@synara` scope and can publish `@synara/cli`.
+1. Confirm the npm account controls the `@caide` scope and can publish `@caide/cli`.
 2. In npm package settings, configure Trusted Publisher:
    - Provider: GitHub Actions
    - Repository: this repo
@@ -77,14 +77,14 @@ Checklist:
    - build web + server
    - run `bun publish --access public`
 
-## Synara notes
+## Caide notes
 
 - The desktop updater expects the pinned compatibility release in this repository to include the generated updater metadata files, not just the installers.
-- The published release title should read `Synara vX.Y.Z`.
+- The published release title should read `Caide vX.Y.Z`.
 - By default, the first-party desktop release path does not require CLI publish or post-release version-bump automation.
 - Optional jobs stay disabled unless repository variables enable them:
-  - `SYNARA_PUBLISH_CLI=1`
-  - `SYNARA_FINALIZE_RELEASE=1`
+  - `CAIDE_PUBLISH_CLI=1`
+  - `CAIDE_FINALIZE_RELEASE=1`
 
 ## 1) Build-only native CI validation
 
@@ -178,7 +178,7 @@ full subject distinguished name.
    - preflight passes
    - all matrix builds pass
    - release job uploads expected files
-8. Confirm the new versioned release is not GitHub Latest and the pinned compatibility release contains the new payloads plus all three `synara` manifests.
+8. Confirm the new versioned release is not GitHub Latest and the pinned compatibility release contains the new payloads plus all three `caide` manifests.
 9. Smoke test downloaded artifacts.
 
 ## 5) Troubleshooting

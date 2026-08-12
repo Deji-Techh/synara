@@ -7,13 +7,13 @@ import {
   type ProviderOptionDescriptor,
   type ProviderKind,
   type ProviderModelDescriptor,
-} from "@synara/contracts";
+} from "@caide/contracts";
 import {
   getProviderOptionCurrentValue,
   getProviderOptionDescriptors,
   isClaudeUltrathinkPrompt,
   trimOrNull,
-} from "@synara/shared/model";
+} from "@caide/shared/model";
 
 import type { ProviderOptions } from "../../providerModelOptions";
 import { getRuntimeAwareModelCapabilities } from "./runtimeModelCapabilities";

@@ -11,12 +11,12 @@ import {
   type PullRequestCommit,
   type PullRequestLabel,
   type PullRequestMergeCapabilities,
-} from "@synara/contracts";
-import { githubAvatarUrlForLogin } from "@synara/shared/githubAvatar";
+} from "@caide/contracts";
+import { githubAvatarUrlForLogin } from "@caide/shared/githubAvatar";
 import {
   isValidGitHubRepositoryNameWithOwner,
   parseGitHubRepositoryNameWithOwnerFromRemoteUrl,
-} from "@synara/shared/githubRepository";
+} from "@caide/shared/githubRepository";
 
 import { runProcess } from "../../processRunner";
 import { GitHubCliError } from "../Errors.ts";
