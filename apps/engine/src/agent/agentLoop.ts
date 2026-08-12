@@ -9,13 +9,7 @@
 // Layer: Engine agent core
 
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import {
-  isStepCount,
-  streamText,
-  tool,
-  type LanguageModel,
-  type ToolSet,
-} from "ai";
+import { isStepCount, streamText, tool, type LanguageModel, type ToolSet } from "ai";
 
 import type { ToolCallRecord, ToolContext, ToolDefinition } from "./tool.ts";
 
@@ -102,8 +96,7 @@ export class Agent {
     this.model = provider.chatModel(options.model.modelId);
     this.history = [...(options.initialHistory ?? [])];
     this.tools = toAISdkTools(options.tools ?? [], options.toolContext);
-    this.maxSteps =
-      options.maxSteps ?? (options.tools && options.tools.length > 0 ? 20 : 1);
+    this.maxSteps = options.maxSteps ?? (options.tools && options.tools.length > 0 ? 20 : 1);
   }
 
   get conversation(): readonly AgentMessage[] {
@@ -121,9 +114,7 @@ export class Agent {
         })),
         { role: "user" as const, content: userMessage },
       ],
-      ...(Object.keys(this.tools).length > 0
-        ? { tools: this.tools }
-        : {}),
+      ...(Object.keys(this.tools).length > 0 ? { tools: this.tools } : {}),
       stopWhen: isStepCount(this.maxSteps),
       ...(opts.abortSignal !== undefined && { abortSignal: opts.abortSignal }),
     });

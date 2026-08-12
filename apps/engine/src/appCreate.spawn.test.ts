@@ -97,7 +97,7 @@ describe("engine app/create RPC", () => {
         'PROJECT="$PWD/$NAME_USED"',
         'mkdir -p "$PROJECT/lib" "$PROJECT/test"',
         'printf \'name: %s\\n\' "$NAME_USED" > "$PROJECT/pubspec.yaml"',
-        'printf \'void main() {}\\\n\' > "$PROJECT/lib/main.dart"',
+        "printf 'void main() {}\\\n' > \"$PROJECT/lib/main.dart\"",
         "exit 0",
       ].join("\n"),
       { mode: 0o755 },

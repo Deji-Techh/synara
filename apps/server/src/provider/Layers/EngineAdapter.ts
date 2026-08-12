@@ -26,6 +26,10 @@ import {
   ENGINE_PROTOCOL_VERSION,
   InitializeResultSchema,
   PingResultSchema,
+  PreviewReloadResultSchema,
+  PreviewStartResultSchema,
+  PreviewStateResultSchema,
+  PreviewStopResultSchema,
 } from "@synara/engine/protocol";
 import { Effect, Layer, PubSub, Ref, Stream } from "effect";
 
@@ -61,6 +65,12 @@ interface EngineSessionContext {
   readonly session: ProviderSession;
   readonly client: EngineClient;
   readonly engineServerVersion: string;
+  /**
+   * The appDir the pane last previewed for this thread (first preview/start
+   * wins, then stop/reload/state reuse it so the pair never drifts from the
+   * session default when the pane omits it).
+   */
+  previewAppDir: string | null;
 }
 
 const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
@@ -133,7 +143,11 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         if (!initialized.success) {
           client.kill();
           return yield* Effect.fail(
-            processError(threadId, "engine initialize returned malformed result", initialized.error),
+            processError(
+              threadId,
+              "engine initialize returned malformed result",
+              initialized.error,
+            ),
           );
         }
 
@@ -175,6 +189,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           session,
           client,
           engineServerVersion: initialized.data.serverVersion,
+          previewAppDir: null,
         };
         yield* Ref.update(sessions, (map) => new Map(map).set(threadId, context));
 
@@ -280,8 +295,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
 
           const echoResponse = yield* Effect.tryPromise({
             try: () => context.client.request("engine/echo", { message: input.input ?? "" }),
-            catch: (cause) =>
-              processError(input.threadId, "engine echo request failed", cause),
+            catch: (cause) => processError(input.threadId, "engine echo request failed", cause),
           });
           if (echoResponse.error) {
             yield* PubSub.publish(
@@ -381,6 +395,146 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               payload: { reason: "stopped", recoverable: true, exitKind: "graceful" },
             }),
           );
+        }),
+
+      // ── Preview operations (M4) ──────────────────────────────────────
+      // The thread's engine session owns the flutter process; previews are
+      // keyed by appDir inside the engine. The first start picks the appDir
+      // (explicit or the session cwd); later ops reuse the remembered one so
+      // the pair never drifts when the pane omits it.
+
+      previewStart: (input) =>
+        Effect.gen(function* () {
+          const context = yield* getSession(input.threadId);
+          const appDir = input.appDir ?? context.session.cwd ?? "";
+          const response = yield* Effect.tryPromise({
+            try: () =>
+              context.client.previewStart({
+                appDir,
+                ...(input.port !== undefined ? { port: input.port } : {}),
+                ...(input.hostname !== undefined ? { hostname: input.hostname } : {}),
+              }),
+            catch: (cause) =>
+              processError(input.threadId, "engine preview/start request failed", cause),
+          });
+          if (response.error) {
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                `engine preview/start failed: ${response.error.code} ${response.error.message}`,
+                new Error(response.error.message),
+              ),
+            );
+          }
+          const result = PreviewStartResultSchema.safeParse(response.result);
+          if (!result.success) {
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                "engine preview/start returned malformed result",
+                result.error,
+              ),
+            );
+          }
+          context.previewAppDir = appDir;
+          return { url: result.data.url };
+        }),
+
+      previewStop: (input) =>
+        Effect.gen(function* () {
+          const context = yield* getSession(input.threadId);
+          const appDir = context.previewAppDir ?? context.session.cwd ?? "";
+          const response = yield* Effect.tryPromise({
+            try: () => context.client.previewStop({ appDir }),
+            catch: (cause) =>
+              processError(input.threadId, "engine preview/stop request failed", cause),
+          });
+          if (response.error) {
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                `engine preview/stop failed: ${response.error.code} ${response.error.message}`,
+                new Error(response.error.message),
+              ),
+            );
+          }
+          const result = PreviewStopResultSchema.safeParse(response.result);
+          if (!result.success) {
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                "engine preview/stop returned malformed result",
+                result.error,
+              ),
+            );
+          }
+          return { stopped: result.data.stopped };
+        }),
+
+      previewReload: (input) =>
+        Effect.gen(function* () {
+          const context = yield* getSession(input.threadId);
+          const appDir = context.previewAppDir ?? context.session.cwd ?? "";
+          const response = yield* Effect.tryPromise({
+            try: () => context.client.previewReload({ appDir, hotReload: input.hotReload }),
+            catch: (cause) =>
+              processError(input.threadId, "engine preview/reload request failed", cause),
+          });
+          if (response.error) {
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                `engine preview/reload failed: ${response.error.code} ${response.error.message}`,
+                new Error(response.error.message),
+              ),
+            );
+          }
+          const result = PreviewReloadResultSchema.safeParse(response.result);
+          if (!result.success) {
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                "engine preview/reload returned malformed result",
+                result.error,
+              ),
+            );
+          }
+          return { reloaded: result.data.reloaded };
+        }),
+
+      previewState: (input) =>
+        Effect.gen(function* () {
+          const context = yield* getSession(input.threadId);
+          const appDir = context.previewAppDir ?? context.session.cwd ?? "";
+          const response = yield* Effect.tryPromise({
+            try: () => context.client.previewState({ appDir }),
+            catch: (cause) =>
+              processError(input.threadId, "engine preview/state request failed", cause),
+          });
+          if (response.error) {
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                `engine preview/state failed: ${response.error.code} ${response.error.message}`,
+                new Error(response.error.message),
+              ),
+            );
+          }
+          const result = PreviewStateResultSchema.safeParse(response.result);
+          if (!result.success) {
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                "engine preview/state returned malformed result",
+                result.error,
+              ),
+            );
+          }
+          return {
+            running: result.data.running,
+            url: result.data.url,
+            logs: result.data.logs,
+          };
         }),
 
       listSessions: () =>

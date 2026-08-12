@@ -21,8 +21,12 @@ import {
   JSON_RPC_METHOD_NOT_FOUND,
   JSON_RPC_PARSE_ERROR,
   PingResultSchema,
+  PreviewReloadParamsSchema,
+  PreviewReloadResultSchema,
   PreviewStartParamsSchema,
   PreviewStartResultSchema,
+  PreviewStateParamsSchema,
+  PreviewStateResultSchema,
   PreviewStopParamsSchema,
   PreviewStopResultSchema,
   type JsonRpcResponse,
@@ -112,6 +116,28 @@ async function handleMethod(method: string, params: unknown): Promise<unknown> {
       previews.delete(parsed.data.appDir);
       await preview.stop();
       return PreviewStopResultSchema.parse({ stopped: true });
+    }
+    case ENGINE_METHODS.previewReload: {
+      const parsed = PreviewReloadParamsSchema.safeParse(params);
+      if (!parsed.success) {
+        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "preview/reload params invalid");
+      }
+      const preview = previews.get(parsed.data.appDir);
+      return PreviewReloadResultSchema.parse({
+        reloaded: preview?.reload(parsed.data.hotReload) ?? false,
+      });
+    }
+    case ENGINE_METHODS.previewState: {
+      const parsed = PreviewStateParamsSchema.safeParse(params);
+      if (!parsed.success) {
+        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "preview/state params invalid");
+      }
+      const preview = previews.get(parsed.data.appDir);
+      return PreviewStateResultSchema.parse({
+        running: preview !== undefined,
+        url: preview?.url ?? "",
+        logs: preview?.logs ? [...preview.logs] : [],
+      });
     }
     case ENGINE_METHODS.appCreate: {
       const parsed = AppCreateParamsSchema.safeParse(params);

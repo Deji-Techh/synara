@@ -138,6 +138,17 @@ import {
 } from "./orchestration";
 import { ProviderCompactThreadInput } from "./provider";
 import {
+  PreviewGetStateInput,
+  PreviewReloadInput,
+  PreviewReloadResult,
+  PreviewStartInput,
+  PreviewStartResult,
+  PreviewState,
+  PreviewStopInput,
+  PreviewStopResult,
+  PREVIEW_WS_METHODS,
+} from "./preview";
+import {
   ProviderGetComposerCapabilitiesInput,
   ProviderComposerCapabilities,
   ProviderListAgentsInput,
@@ -604,6 +615,41 @@ export const WsSubscribeDeviceEventsRpc = Rpc.make(DEVICE_WS_METHODS.subscribeEv
   error: WsRpcError,
   stream: true,
 });
+
+// ── Preview pane ─────────────────────────────────────────────────────
+// Grouped separately: the Flutter Builder engine is the product, and its
+// preview methods are engine-specific (mirror the provider adapter's ops).
+
+export const WsPreviewStartRpc = Rpc.make(PREVIEW_WS_METHODS.start, {
+  payload: PreviewStartInput,
+  success: PreviewStartResult,
+  error: WsRpcError,
+});
+
+export const WsPreviewStopRpc = Rpc.make(PREVIEW_WS_METHODS.stop, {
+  payload: PreviewStopInput,
+  success: PreviewStopResult,
+  error: WsRpcError,
+});
+
+export const WsPreviewReloadRpc = Rpc.make(PREVIEW_WS_METHODS.reload, {
+  payload: PreviewReloadInput,
+  success: PreviewReloadResult,
+  error: WsRpcError,
+});
+
+export const WsPreviewGetStateRpc = Rpc.make(PREVIEW_WS_METHODS.getState, {
+  payload: PreviewGetStateInput,
+  success: PreviewState,
+  error: WsRpcError,
+});
+
+export const WsPreviewRpcGroup = RpcGroup.make(
+  WsPreviewStartRpc,
+  WsPreviewStopRpc,
+  WsPreviewReloadRpc,
+  WsPreviewGetStateRpc,
+);
 
 export const WsDeviceRpcGroup = RpcGroup.make(
   WsDeviceListRpc,

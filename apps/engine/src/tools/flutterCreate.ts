@@ -49,18 +49,13 @@ export interface FlutterCreateResult {
  * created project path. Rejects with a descriptive error if the binary is
  * missing, the command fails, or it times out.
  */
-export async function createFlutterApp(options: FlutterCreateOptions): Promise<FlutterCreateResult> {
+export async function createFlutterApp(
+  options: FlutterCreateOptions,
+): Promise<FlutterCreateResult> {
   const org = options.org ?? DEFAULT_FLUTTER_ORG;
   const platforms = options.platforms ?? DEFAULT_FLUTTER_PLATFORMS;
   const projectPath = path.join(options.cwd, options.name);
-  const args = [
-    "create",
-    "--org",
-    org,
-    "--platforms",
-    platforms.join(","),
-    options.name,
-  ];
+  const args = ["create", "--org", org, "--platforms", platforms.join(","), options.name];
 
   const result = await runFlutterCommand(args, options.cwd, {
     ...(options.timeoutMs !== undefined ? { timeoutMs: options.timeoutMs } : {}),

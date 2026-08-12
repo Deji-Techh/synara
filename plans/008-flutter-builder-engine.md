@@ -19,14 +19,14 @@ JSON-RPC over stdio) that the server supervises.
 
 ## Decisions locked (debated 2026-08-12)
 
-| # | Question | Decision |
-|---|----------|----------|
-| A | Engine location | **In-monorepo** — new `apps/engine` package in this repo (bun workspaces, turbo). One install, shared `@synara/contracts`. |
-| B | Database | **Engine keeps its own SQLite** (messages, apps, preview state, settings). Synara keeps the event store. Adapter projects engine events into `ProviderRuntimeEvent` stream. |
-| C | External providers | **Strip for v1.** The engine IS the product. Remove non-engine provider adapters from the active product path (code remains in git history). |
-| D | Android emulator | **Build it** — `adb` + `avdmanager` + `flutter run -d emulator`, `adb exec-out screencap` screenshots. iOS Simulator comes free via Synara's existing `IosSimulatorBackend`. |
-| E | Flutter SDK | **Pinned SDK** (a known-good Flutter stable version), downloaded/managed by the engine (mirror `managed_android_toolchain_service` pattern). FVM later. |
-| F | Model routing | **User API keys** via Synara's existing Settings provider section. No free-tier/Dyad-engine gateway in v1. |
+| #   | Question           | Decision                                                                                                                                                                     |
+| --- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A   | Engine location    | **In-monorepo** — new `apps/engine` package in this repo (bun workspaces, turbo). One install, shared `@synara/contracts`.                                                   |
+| B   | Database           | **Engine keeps its own SQLite** (messages, apps, preview state, settings). Synara keeps the event store. Adapter projects engine events into `ProviderRuntimeEvent` stream.  |
+| C   | External providers | **Strip for v1.** The engine IS the product. Remove non-engine provider adapters from the active product path (code remains in git history).                                 |
+| D   | Android emulator   | **Build it** — `adb` + `avdmanager` + `flutter run -d emulator`, `adb exec-out screencap` screenshots. iOS Simulator comes free via Synara's existing `IosSimulatorBackend`. |
+| E   | Flutter SDK        | **Pinned SDK** (a known-good Flutter stable version), downloaded/managed by the engine (mirror `managed_android_toolchain_service` pattern). FVM later.                      |
+| F   | Model routing      | **User API keys** via Synara's existing Settings provider section. No free-tier/Dyad-engine gateway in v1.                                                                   |
 
 ## Architecture
 
@@ -61,24 +61,25 @@ JSON-RPC over stdio) that the server supervises.
 
 ## What we PORT from Caide (rebuild, not copy)
 
-| Caide source | Port as | Effort |
-|---|---|---|
-| `local_agent_handler.ts` (2.4k LOC) | Rebuilt agent loop: streamText, stop-when, compaction, retry/replay, checkpoint passes | M |
-| `tool_definitions.ts` + `tools/` (~80 files) | Tool set; adapt analyze/test/dependency tools to Flutter | M |
-| `src/ipc/utils/sandbox/` (1.9k LOC) | Keep as-is (language-agnostic) | S |
-| `src/testing/chat_flow_harness.ts` + `hybrid_chat_harness.tsx` | Port verbatim — this is THE harness; fake LLM fixtures make 2.5s test loops | S |
-| `app_runtime_service.ts` (1.7k LOC) | Rebuild: install → `flutter run` → proxy → log stream → kill | M |
-| Preview panel components | Port into new Preview right-dock pane (see below) | M |
-| `createFromTemplate.ts` + scaffolds | Replace with `flutter create` template + `AI_RULES.md` | S |
-| Blueprint flow (`write_app_blueprint`) | Port — good for Flutter app specing | M |
-| `src/prompts/` skills + guides | Rewrite `mobile_ui_skill_pack` → **Flutter skill pack** | M |
-| `native_release_service.ts` (1.6k LOC) | Replaced by `flutter build apk/appbundle/ipa` + signing | M |
+| Caide source                                                   | Port as                                                                                | Effort |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ------ |
+| `local_agent_handler.ts` (2.4k LOC)                            | Rebuilt agent loop: streamText, stop-when, compaction, retry/replay, checkpoint passes | M      |
+| `tool_definitions.ts` + `tools/` (~80 files)                   | Tool set; adapt analyze/test/dependency tools to Flutter                               | M      |
+| `src/ipc/utils/sandbox/` (1.9k LOC)                            | Keep as-is (language-agnostic)                                                         | S      |
+| `src/testing/chat_flow_harness.ts` + `hybrid_chat_harness.tsx` | Port verbatim — this is THE harness; fake LLM fixtures make 2.5s test loops            | S      |
+| `app_runtime_service.ts` (1.7k LOC)                            | Rebuild: install → `flutter run` → proxy → log stream → kill                           | M      |
+| Preview panel components                                       | Port into new Preview right-dock pane (see below)                                      | M      |
+| `createFromTemplate.ts` + scaffolds                            | Replace with `flutter create` template + `AI_RULES.md`                                 | S      |
+| Blueprint flow (`write_app_blueprint`)                         | Port — good for Flutter app specing                                                    | M      |
+| `src/prompts/` skills + guides                                 | Rewrite `mobile_ui_skill_pack` → **Flutter skill pack**                                | M      |
+| `native_release_service.ts` (1.6k LOC)                         | Replaced by `flutter build apk/appbundle/ipa` + signing                                | M      |
 
 ## What we REMOVE
 
 **From Caide:** all renderer UI (~342 components / 72k LOC), Electron main
 shell, i18n/PostHog/Figma/image-gen, Vercel/Supabase/Neon handlers, web3 skills
-+ scaffold-web3, Capacitor/native-release service, cloud preview services.
+
+- scaffold-web3, Capacitor/native-release service, cloud preview services.
 
 **From Synara:** nothing structural. Non-engine provider adapters removed from
 the active path (v1).

@@ -11,7 +11,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { startWebServerPreview, type WebServerPreview } from "./webServerPreview.ts";
 
@@ -41,9 +41,23 @@ server.listen(port, host, () => {
   console.log("The web-server device requires the Dart Debug Extension...");
 });
 process.stdin.setEncoding("utf8");
+let buf = "";
 process.stdin.on("data", (chunk) => {
-  if (/^q\\r?\\n/.test(chunk)) {
-    server.close(() => process.exit(0));
+  buf += chunk;
+  let nl;
+  while ((nl = buf.indexOf("\\n")) >= 0) {
+    const line = buf.slice(0, nl);
+    buf = buf.slice(nl + 1);
+    if (line === "q") {
+      server.close(() => process.exit(0));
+      return;
+    }
+    if (line === "r") {
+      console.log("Performing hot reload...");
+      console.log("Reloaded 1 of 1 libraries in 42ms.");
+    } else if (line === "R") {
+      console.log("Performing hot restart...");
+    }
   }
 });
 `;
@@ -98,11 +112,26 @@ describe("web server preview", () => {
     expect(await response.text()).toContain("hello world from fake flutter web server");
   }, 30_000);
 
+  it("reload() sends hot reload/restart to flutter stdin", async () => {
+    expect(preview).not.toBeNull();
+    expect(preview!.reload(true)).toBe(true);
+    expect(preview!.reload(false)).toBe(true);
+    // The shim prints flutter's real hot-reload lines in response.
+    await vi.waitFor(() => {
+      const logText = preview!.logs.join("\n");
+      expect(logText).toContain("Performing hot reload");
+      expect(logText).toContain("Reloaded 1 of 1 libraries");
+      expect(logText).toContain("Performing hot restart");
+    }, 5_000);
+  }, 15_000);
+
   it("stop() terminates the flutter process", async () => {
     expect(preview).not.toBeNull();
     const exited = preview!.exited;
     await preview!.stop();
     await expect(exited).resolves.not.toBeNull();
+    // Flutter is gone, so stdin reloads are refused.
+    expect(preview!.reload(true)).toBe(false);
     preview = null;
   }, 15_000);
 

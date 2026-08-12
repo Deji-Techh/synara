@@ -18,7 +18,12 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { Agent, type AgentMessage, type EngineModelConfig, type TurnResult } from "../agent/agentLoop.ts";
+import {
+  Agent,
+  type AgentMessage,
+  type EngineModelConfig,
+  type TurnResult,
+} from "../agent/agentLoop.ts";
 import type { ToolContext, ToolDefinition } from "../agent/tool.ts";
 import { startFakeLlmServer, type FakeLlmServerHandle } from "./fakeLlmServer.ts";
 
@@ -59,11 +64,14 @@ export interface EngineHarness {
   readonly dumpDir: string;
 
   /** Runs the real agent loop against the fake LLM. */
-  get runTurn(): (prompt: string, opts?: {
-    abortSignal?: AbortSignal;
-    onTextDelta?: (delta: string) => void;
-    onToolCall?: (call: { name: string; args: unknown }) => void;
-  }) => Promise<TurnResult>;
+  get runTurn(): (
+    prompt: string,
+    opts?: {
+      abortSignal?: AbortSignal;
+      onTextDelta?: (delta: string) => void;
+      onToolCall?: (call: { name: string; args: unknown }) => void;
+    },
+  ) => Promise<TurnResult>;
   /** Reads the newest [engine-dump-path] payload written by the fake server. */
   getServerDump(dumpIndex?: number): { parsed: unknown; dumpPath: string };
   /** Output of the newest dump, prettified for snapshotting. */
@@ -145,8 +153,7 @@ export async function setupEngineHarness(
       if (dumpPaths.length === 0) {
         throw new Error("No fake-LLM dump found — trigger [dump] first");
       }
-      const dumpPath =
-        dumpIndex === -1 ? dumpPaths[dumpPaths.length - 1] : dumpPaths[dumpIndex];
+      const dumpPath = dumpIndex === -1 ? dumpPaths[dumpPaths.length - 1] : dumpPaths[dumpIndex];
       return { parsed: JSON.parse(fs.readFileSync(dumpPath, "utf8")), dumpPath };
     };
 
@@ -186,8 +193,7 @@ export async function setupEngineHarness(
       },
       readWorkspaceFile: (relativePath) =>
         fs.readFileSync(path.join(workspaceDir, relativePath), "utf8"),
-      workspaceFileExists: (relativePath) =>
-        fs.existsSync(path.join(workspaceDir, relativePath)),
+      workspaceFileExists: (relativePath) => fs.existsSync(path.join(workspaceDir, relativePath)),
       gitLog: () => {
         const output = git(workspaceDir, ["log", "--pretty=format:%h %s"]);
         return output.length === 0 ? [] : output.split("\n");

@@ -49,11 +49,7 @@ describe("agent flutter tools", () => {
     process.env.PATH = `${shimDir}${path.delimiter}${preExistingPath}`;
     // Scaffold a fake app so the tools have an appDir with pubspec.yaml.
     fs.mkdirSync(path.join(tempRoot, "app", "lib"), { recursive: true });
-    fs.writeFileSync(
-      path.join(tempRoot, "app", "pubspec.yaml"),
-      "name: hello_app\n",
-      "utf8",
-    );
+    fs.writeFileSync(path.join(tempRoot, "app", "pubspec.yaml"), "name: hello_app\n", "utf8");
 
     harness = await setupEngineHarness({
       tools: [flutterAnalyzeTool, flutterTestTool],

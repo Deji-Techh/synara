@@ -49,9 +49,9 @@ describe("EngineAdapter", () => {
       provideAdapter(
         Effect.gen(function* () {
           const adapter = yield* EngineAdapter;
-          const eventsFiber = yield* Stream.runCollect(
-            Stream.take(adapter.streamEvents, 8),
-          ).pipe(Effect.forkChild);
+          const eventsFiber = yield* Stream.runCollect(Stream.take(adapter.streamEvents, 8)).pipe(
+            Effect.forkChild,
+          );
           yield* adapter.startSession({
             threadId,
             runtimeMode: "full-access",

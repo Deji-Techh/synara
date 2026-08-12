@@ -98,6 +98,7 @@ import { ProviderDiscoveryService } from "./provider/Services/ProviderDiscoveryS
 import { discoverSkillsCatalog, synaraSkillsDir } from "./provider/skillsCatalog";
 import { recoverUnregisteredGitHubCheckout } from "./project/githubProjectRegistration";
 import { ProviderAdapterRegistry } from "./provider/Services/ProviderAdapterRegistry";
+import { makeWsPreviewHandlers } from "./provider/wsPreviewHandlers";
 import { ProviderHealth } from "./provider/Services/ProviderHealth";
 import { ProviderService } from "./provider/Services/ProviderService";
 import { listProviderUsage } from "./providerUsage";
@@ -1945,6 +1946,7 @@ const makeWsRpcHandlersLayer = () =>
             ),
           ),
 
+        ...makeWsPreviewHandlers(providerAdapterRegistry),
         ...makeWsDeviceHandlers(deviceService),
         [DEVICE_WS_METHODS.subscribeEvents]: (_, { clientId }) =>
           streamAdmission.guard(

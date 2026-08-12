@@ -124,16 +124,19 @@ export class EngineClient {
     return new Promise<JsonRpcResponse>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(requestId);
-        reject(new EngineRequestError(JSON_RPC_INTERNAL_ERROR, "engine request timed out", requestId));
+        reject(
+          new EngineRequestError(JSON_RPC_INTERNAL_ERROR, "engine request timed out", requestId),
+        );
       }, timeoutMs);
       this.pending.set(requestId, { resolve, reject, timer });
       this.child.stdin.write(`${JSON.stringify(request)}\n`);
     });
   }
 
-  async initialize(
-    params: { clientName: string; protocolVersion: number },
-  ): Promise<JsonRpcResponse> {
+  async initialize(params: {
+    clientName: string;
+    protocolVersion: number;
+  }): Promise<JsonRpcResponse> {
     return this.request("initialize", params);
   }
 
@@ -141,12 +144,24 @@ export class EngineClient {
     return this.request("engine/ping");
   }
 
-  async previewStart(params: { appDir: string; port?: number; hostname?: string }): Promise<JsonRpcResponse> {
+  async previewStart(params: {
+    appDir: string;
+    port?: number;
+    hostname?: string;
+  }): Promise<JsonRpcResponse> {
     return this.request("preview/start", params);
   }
 
   async previewStop(params: { appDir: string }): Promise<JsonRpcResponse> {
     return this.request("preview/stop", params);
+  }
+
+  async previewReload(params: { appDir: string; hotReload: boolean }): Promise<JsonRpcResponse> {
+    return this.request("preview/reload", params);
+  }
+
+  async previewState(params: { appDir: string }): Promise<JsonRpcResponse> {
+    return this.request("preview/state", params);
   }
 
   async waitForSpawn(): Promise<void> {

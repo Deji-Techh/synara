@@ -36,6 +36,11 @@ export interface WebServerPreview {
   readonly exited: Promise<number | null>;
   /** Sends `q` to flutter to stop the dev server; SIGKILL fallback. */
   stop(): Promise<void>;
+  /**
+   * Sends `r` (hot reload) or `R` (hot restart) to flutter's stdin.
+   * Returns false when flutter is no longer running or stdin is not writable.
+   */
+  reload(hotReload: boolean): boolean;
 }
 
 const MAX_LOG_LINES = 500;
@@ -127,14 +132,18 @@ export async function startWebServerPreview(
       if (child.stdin?.writable) {
         child.stdin.write("q\n");
       }
-      await Promise.race([
-        exited,
-        new Promise((resolve) => setTimeout(resolve, 5_000)),
-      ]);
+      await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 5_000))]);
       if (child.exitCode === null) {
         child.kill("SIGKILL");
         await exited;
       }
+    },
+    reload(hotReload: boolean) {
+      if (child.exitCode !== null || !child.stdin?.writable) {
+        return false;
+      }
+      child.stdin.write(hotReload ? "r\n" : "R\n");
+      return true;
     },
   } satisfies WebServerPreview;
 

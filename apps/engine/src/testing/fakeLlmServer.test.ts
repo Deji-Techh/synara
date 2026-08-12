@@ -10,7 +10,12 @@ import path from "node:path";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { CANNED_MESSAGE, createStreamChunk, startFakeLlmServer, type FakeLlmServerHandle } from "./fakeLlmServer.ts";
+import {
+  CANNED_MESSAGE,
+  createStreamChunk,
+  startFakeLlmServer,
+  type FakeLlmServerHandle,
+} from "./fakeLlmServer.ts";
 
 let server: FakeLlmServerHandle;
 let dumpDir: string;

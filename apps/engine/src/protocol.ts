@@ -15,6 +15,8 @@ export const ENGINE_METHODS = {
   appCreate: "app/create",
   previewStart: "preview/start",
   previewStop: "preview/stop",
+  previewReload: "preview/reload",
+  previewState: "preview/state",
 } as const;
 
 export type EngineMethod = (typeof ENGINE_METHODS)[keyof typeof ENGINE_METHODS];
@@ -116,6 +118,31 @@ export const PreviewStopResultSchema = z.object({
   stopped: z.boolean(),
 });
 export type PreviewStopResult = z.infer<typeof PreviewStopResultSchema>;
+
+export const PreviewReloadParamsSchema = z.object({
+  appDir: z.string(),
+  /** true = hot reload (r), false = hot restart (R). */
+  hotReload: z.boolean(),
+});
+export type PreviewReloadParams = z.infer<typeof PreviewReloadParamsSchema>;
+
+export const PreviewReloadResultSchema = z.object({
+  /** false when no preview is running for appDir (or flutter is gone). */
+  reloaded: z.boolean(),
+});
+export type PreviewReloadResult = z.infer<typeof PreviewReloadResultSchema>;
+
+export const PreviewStateParamsSchema = z.object({
+  appDir: z.string(),
+});
+export type PreviewStateParams = z.infer<typeof PreviewStateParamsSchema>;
+
+export const PreviewStateResultSchema = z.object({
+  running: z.boolean(),
+  url: z.string(),
+  logs: z.array(z.string()),
+});
+export type PreviewStateResult = z.infer<typeof PreviewStateResultSchema>;
 
 export function isJsonRpcRequest(value: unknown): value is JsonRpcRequest {
   return JsonRpcRequestSchema.safeParse(value).success;

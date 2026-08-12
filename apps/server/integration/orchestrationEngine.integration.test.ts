@@ -123,9 +123,7 @@ const seedProjectAndThread = (harness: OrchestrationIntegrationHarness) =>
     const createdAt = nowIso();
     const provider = harness.adapterHarness?.provider ?? "codex";
     if (provider === "pi" || provider === "engine") {
-      throw new Error(
-        "Pi/engine integration tests require an explicit model selection.",
-      );
+      throw new Error("Pi/engine integration tests require an explicit model selection.");
     }
     const defaultModel = DEFAULT_MODEL_BY_PROVIDER[provider];
 

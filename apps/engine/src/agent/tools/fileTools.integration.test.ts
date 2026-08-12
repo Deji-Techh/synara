@@ -45,9 +45,7 @@ describe("agent tool chain (file tools)", () => {
     expect(result.toolCalls[0]!.name).toBe("write_file");
 
     // The tool executed against the real workspace.
-    expect(harness.readWorkspaceFile("lib/counter.dart")).toBe(
-      "int add(int a, int b) => a + b;\n",
-    );
+    expect(harness.readWorkspaceFile("lib/counter.dart")).toBe("int add(int a, int b) => a + b;\n");
 
     // The model's final answer came after the tool result was fed back.
     expect(result.text).toContain("hello world from the synara engine fake LLM");
@@ -61,17 +59,12 @@ describe("agent tool chain (file tools)", () => {
       ].join(" "),
     );
 
-    expect(result.toolCalls.map((call) => call.name)).toEqual([
-      "write_file",
-      "read_file",
-    ]);
+    expect(result.toolCalls.map((call) => call.name)).toEqual(["write_file", "read_file"]);
     expect(harness.readWorkspaceFile("notes.md")).toBe("# Notes\n");
   }, 30_000);
 
   it("reports list_files output to the model", async () => {
-    const result = await harness.runTurn(
-      '[call_tool=list_files:{"path":"lib"}]',
-    );
+    const result = await harness.runTurn('[call_tool=list_files:{"path":"lib"}]');
 
     expect(result.toolCalls.map((call) => call.name)).toEqual(["list_files"]);
     // The final answer includes the tool's listing (fed back into context).

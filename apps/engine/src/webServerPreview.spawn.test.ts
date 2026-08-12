@@ -20,7 +20,9 @@ import {
   AppCreateResultSchema,
   InitializeResultSchema,
   isJsonRpcResponse,
+  PreviewReloadResultSchema,
   PreviewStartResultSchema,
+  PreviewStateResultSchema,
   PreviewStopResultSchema,
   type JsonRpcResponse,
 } from "./protocol.ts";
@@ -122,7 +124,7 @@ describe("engine web-server preview RPC", () => {
         '  PROJECT="$PWD/$NAME"',
         '  mkdir -p "$PROJECT/lib" "$PROJECT/test"',
         '  printf \'name: %s\\n\' "$NAME" > "$PROJECT/pubspec.yaml"',
-        '  printf \'void main() {}\\\n\' > "$PROJECT/lib/main.dart"',
+        "  printf 'void main() {}\\\n' > \"$PROJECT/lib/main.dart\"",
         "  exit 0",
         "fi",
         // `flutter run ...`: defer to serve.mjs, which prints the real serving
@@ -154,8 +156,15 @@ describe("engine web-server preview RPC", () => {
         "});",
         'process.stdin.setEncoding("utf8");',
         'process.stdin.on("data", (chunk) => {',
-        '  if (/^q\\r?\\n/.test(chunk)) {',
+        "  if (/^q\\r?\\n/.test(chunk)) {",
         "    server.close(() => process.exit(0));",
+        "    return;",
+        "  }",
+        "  if (/^r\\r?\\n/.test(chunk)) {",
+        '    console.log("Performing hot reload...");',
+        '    console.log("Reloaded 1 of 1 libraries in 42ms.");',
+        "  } else if (/^R\\r?\\n/.test(chunk)) {",
+        '    console.log("Performing hot restart...");',
         "  }",
         "});",
       ].join("\n"),
@@ -210,6 +219,38 @@ describe("engine web-server preview RPC", () => {
       const response = await fetch(unwrap(startResult, "preview/start").url);
       expect(response.status).toBe(200);
       expect(await response.text()).toContain("hello world from the fake flutter web server");
+
+      const state = await engine.sendRequest("preview/state", { appDir });
+      expect(state.error).toBeUndefined();
+      const stateResult = PreviewStateResultSchema.safeParse(state.result);
+      expect(stateResult.success).toBe(true);
+      expect(unwrap(stateResult, "preview/state").running).toBe(true);
+      expect(unwrap(stateResult, "preview/state").url).toBe(`http://127.0.0.1:${port}`);
+      expect(unwrap(stateResult, "preview/state").logs.join("\n")).toContain("is being served at");
+
+      const reload = await engine.sendRequest("preview/reload", {
+        appDir,
+        hotReload: true,
+      });
+      expect(reload.error).toBeUndefined();
+      const reloadResult = PreviewReloadResultSchema.safeParse(reload.result);
+      expect(reloadResult.success).toBe(true);
+      expect(unwrap(reloadResult, "preview/reload").reloaded).toBe(true);
+      // The hot reload lands in the ring buffer (poll until it does).
+      let reloadedInLogs = false;
+      for (let i = 0; i < 25; i++) {
+        const laterState = await engine.sendRequest("preview/state", { appDir });
+        const laterResult = PreviewStateResultSchema.safeParse(laterState.result);
+        if (
+          laterResult.success &&
+          laterResult.data.logs.some((line) => line.includes("Performing hot reload"))
+        ) {
+          reloadedInLogs = true;
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      expect(reloadedInLogs).toBe(true);
 
       const stop = await engine.sendRequest("preview/stop", { appDir });
       expect(stop.error).toBeUndefined();

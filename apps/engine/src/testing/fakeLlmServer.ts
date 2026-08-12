@@ -12,8 +12,7 @@ import type { AddressInfo } from "node:net";
 import fs from "node:fs";
 import path from "node:path";
 
-export const CANNED_MESSAGE =
-  "hello world from the synara engine fake LLM";
+export const CANNED_MESSAGE = "hello world from the synara engine fake LLM";
 
 export interface StreamUsage {
   prompt_tokens: number;
@@ -124,9 +123,7 @@ function getTextContent(message: { content: unknown }): string {
   if (Array.isArray(message.content)) {
     const textPart = message.content.find(
       (part: unknown) =>
-        typeof part === "object" &&
-        part !== null &&
-        (part as { type?: string }).type === "text",
+        typeof part === "object" && part !== null && (part as { type?: string }).type === "text",
     );
     return textPart ? String((textPart as { text?: unknown }).text ?? "") : "";
   }
@@ -188,12 +185,12 @@ function respondJson(res: ServerResponse, status: number, body: unknown): void {
   res.end(payload);
 }
 
-function createChatCompletionHandler(
-  fixturesDir: string,
-  dumpDir: string,
-  quiet: boolean,
-) {
-  return async (req: IncomingMessage, res: ServerResponse, body: FakeChatCompletionRequestBody): Promise<void> => {
+function createChatCompletionHandler(fixturesDir: string, dumpDir: string, quiet: boolean) {
+  return async (
+    req: IncomingMessage,
+    res: ServerResponse,
+    body: FakeChatCompletionRequestBody,
+  ): Promise<void> => {
     const log = (message: string) => {
       if (!quiet) {
         console.log(`[fake-llm] ${message}`);
@@ -265,7 +262,9 @@ function createChatCompletionHandler(
     }
 
     const isToolCall = userText.includes("[call_tool=");
-    const toolCallMatches = [...userText.matchAll(/\[call_tool=([a-zA-Z0-9_]+)(?::((?:[^\[\]]*)))?\]/g)];
+    const toolCallMatches = [
+      ...userText.matchAll(/\[call_tool=([a-zA-Z0-9_]+)(?::((?:[^\[\]]*)))?\]/g),
+    ];
 
     const toolCallArgs = (argsJson: string | undefined): Record<string, unknown> => {
       // [call_tool=write_file:{"path":"lib/main.dart","content":"..."}] passes
@@ -292,8 +291,7 @@ function createChatCompletionHandler(
       lastMessage.content.match(/\[high-tokens=(\d+)\]/);
     const highTokensValue = highTokensMatch ? parseInt(highTokensMatch[1], 10) : null;
 
-    const includeUsage =
-      body.stream_options?.include_usage === true || highTokensValue !== null;
+    const includeUsage = body.stream_options?.include_usage === true || highTokensValue !== null;
     const usage: Partial<StreamUsage> | undefined = highTokensValue
       ? {
           prompt_tokens: highTokensValue - 100,
@@ -351,7 +349,13 @@ function createChatCompletionHandler(
         object: "chat.completion",
         created: Math.floor(Date.now() / 1000),
         model: "engine-fake-model",
-        choices: [{ index: 0, message: { role: "assistant", content: messageContent }, finish_reason: "stop" }],
+        choices: [
+          {
+            index: 0,
+            message: { role: "assistant", content: messageContent },
+            finish_reason: "stop",
+          },
+        ],
       });
       return;
     }
@@ -421,7 +425,9 @@ export function startFakeLlmServer(
       void readJsonBody(req)
         .then((parsed) => chatHandler(req, res, parsed as FakeChatCompletionRequestBody))
         .catch((error) => {
-          respondJson(res, 400, { error: { message: String(error), type: "invalid_request_error" } });
+          respondJson(res, 400, {
+            error: { message: String(error), type: "invalid_request_error" },
+          });
         });
       return;
     }
@@ -432,7 +438,9 @@ export function startFakeLlmServer(
       });
       return;
     }
-    respondJson(res, 404, { error: { message: `no fake route: ${req.method} ${url.pathname}`, type: "not_found" } });
+    respondJson(res, 404, {
+      error: { message: `no fake route: ${req.method} ${url.pathname}`, type: "not_found" },
+    });
   });
 
   return new Promise((resolve, reject) => {

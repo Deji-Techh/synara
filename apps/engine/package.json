@@ -2,13 +2,13 @@
   "name": "@synara/engine",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "bin": {
     "synara-engine": "dist/index.mjs"
   },
   "files": [
     "dist"
   ],
+  "type": "module",
   "exports": {
     ".": {
       "types": "./src/index.ts",

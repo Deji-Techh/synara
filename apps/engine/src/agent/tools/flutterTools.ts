@@ -18,11 +18,10 @@ export const flutterAnalyzeTool = defineTool({
     "numbers). Run this before considering a change done.",
   parameters: z.object({}),
   async execute(_args, context) {
-    const result = await runFlutterCommand(
-      ["analyze"],
-      context.appDir,
-      { timeoutMs: 120_000, ...(context.flutterBinary !== undefined && { binary: context.flutterBinary }) },
-    ).catch((error) => ({
+    const result = await runFlutterCommand(["analyze"], context.appDir, {
+      timeoutMs: 120_000,
+      ...(context.flutterBinary !== undefined && { binary: context.flutterBinary }),
+    }).catch((error) => ({
       // flutter analyze exits non-zero when it finds issues; surface that as
       // tool output (the loop can then fix the issues), not a thrown error.
       code: 1 as const,
@@ -47,11 +46,10 @@ export const flutterTestTool = defineTool({
   }),
   async execute(args, context) {
     const command = ["test", ...(args.testPath ? [args.testPath] : [])];
-    const result = await runFlutterCommand(
-      command,
-      context.appDir,
-      { timeoutMs: 120_000, ...(context.flutterBinary !== undefined && { binary: context.flutterBinary }) },
-    ).catch((error) => ({
+    const result = await runFlutterCommand(command, context.appDir, {
+      timeoutMs: 120_000,
+      ...(context.flutterBinary !== undefined && { binary: context.flutterBinary }),
+    }).catch((error) => ({
       code: 1 as const,
       stdout: "",
       stderr: error instanceof Error ? error.message : String(error),
@@ -60,7 +58,4 @@ export const flutterTestTool = defineTool({
   },
 });
 
-export const flutterTools: readonly ToolDefinition<any>[] = [
-  flutterAnalyzeTool,
-  flutterTestTool,
-];
+export const flutterTools: readonly ToolDefinition<any>[] = [flutterAnalyzeTool, flutterTestTool];

@@ -161,6 +161,16 @@ import type {
   DeviceTypeTextInput,
   ThreadDeviceState,
 } from "./device";
+import type {
+  PreviewGetStateInput,
+  PreviewReloadInput,
+  PreviewReloadResult,
+  PreviewStartInput,
+  PreviewStartResult,
+  PreviewState,
+  PreviewStopInput,
+  PreviewStopResult,
+} from "./preview";
 import type { StudioListThreadOutputsInput, StudioListThreadOutputsResult } from "./studio";
 import type {
   ServerConfig,
@@ -861,5 +871,16 @@ export interface NativeApi {
     describeUi: (input: DeviceDescribeUiInput) => Promise<DeviceDescribeUiResult>;
     scrollToElement: (input: DeviceScrollToElementInput) => Promise<DeviceScrollToElementResult>;
     onEvent: (callback: (event: DeviceEvent) => void) => () => void;
+  };
+  /**
+   * Flutter Builder engine preview. Backed by the engine provider adapter's
+   * per-thread session (spawns `flutter run -d web-server`); the pane polls
+   * getState for logs since the engine has no push channel yet.
+   */
+  preview: {
+    start: (input: PreviewStartInput) => Promise<PreviewStartResult>;
+    stop: (input: PreviewStopInput) => Promise<PreviewStopResult>;
+    reload: (input: PreviewReloadInput) => Promise<PreviewReloadResult>;
+    getState: (input: PreviewGetStateInput) => Promise<PreviewState>;
   };
 }

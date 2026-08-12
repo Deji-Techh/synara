@@ -22,7 +22,10 @@ let workspaceDir: string;
 let shimDir: string;
 
 function writeShim(script: string): string {
-  const shimPath = path.join(shimDir, `flutter-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  const shimPath = path.join(
+    shimDir,
+    `flutter-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  );
   fs.writeFileSync(shimPath, script, { mode: 0o755 });
   return shimPath;
 }
@@ -41,8 +44,8 @@ function buildShim(argsLog: string): string {
       'PROJECT="$PWD/$NAME_USED"',
       'mkdir -p "$PROJECT/lib" "$PROJECT/test"',
       'printf \'name: %s\\ndescription: scaffolded by the synara engine\\n\' "$NAME_USED" > "$PROJECT/pubspec.yaml"',
-      'printf \'void main() {}\\\n\' > "$PROJECT/lib/main.dart"',
-      'printf \'void main() {}\\\n\' > "$PROJECT/test/widget_test.dart"',
+      "printf 'void main() {}\\\n' > \"$PROJECT/lib/main.dart\"",
+      "printf 'void main() {}\\\n' > \"$PROJECT/test/widget_test.dart\"",
       `echo "Creating project $NAME_USED..."`,
       "exit 0",
     ].join("\n"),
@@ -164,9 +167,9 @@ describe("flutter create scaffold tool", () => {
     delete process.env.FLUTTER_SDK_DIR;
     process.env.PATH = "/nonexistent-bin-dir";
     try {
-      await expect(
-        createFlutterApp({ cwd: workspaceDir, name: "x" }),
-      ).rejects.toThrow(FlutterToolNotFoundError);
+      await expect(createFlutterApp({ cwd: workspaceDir, name: "x" })).rejects.toThrow(
+        FlutterToolNotFoundError,
+      );
     } finally {
       process.env.PATH = oldPath;
     }

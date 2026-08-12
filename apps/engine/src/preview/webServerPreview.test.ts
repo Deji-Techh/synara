@@ -19,9 +19,9 @@ describe("extractServedUrl", () => {
   });
 
   it("strips the trailing slash from the served URL", () => {
-    expect(
-      extractServedUrl(["lib/main.dart is being served at", "http://127.0.0.1:3000/"]),
-    ).toBe("http://127.0.0.1:3000");
+    expect(extractServedUrl(["lib/main.dart is being served at", "http://127.0.0.1:3000/"])).toBe(
+      "http://127.0.0.1:3000",
+    );
   });
 
   it("returns null when the URL never follows the marker", () => {

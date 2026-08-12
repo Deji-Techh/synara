@@ -20,10 +20,7 @@ export interface ToolDefinition<PARAMS extends z.ZodType = z.ZodType> {
   readonly name: string;
   readonly description: string;
   readonly parameters: PARAMS;
-  readonly execute: (
-    args: z.infer<PARAMS>,
-    context: ToolContext,
-  ) => Promise<string> | string;
+  readonly execute: (args: z.infer<PARAMS>, context: ToolContext) => Promise<string> | string;
 }
 
 /**
