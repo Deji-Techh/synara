@@ -124,7 +124,7 @@ the active path (v1).
 - M2: Harness ported; agent loop runs with fake LLM; `flutter create` scaffold tool
 - M3a: Tool system — write_file/read_file/list_files + flutter_analyze/flutter_test, multi-step loop via AI-SDK `stopWhen` (DONE; tests: `src/agent/tools/*.integration.test.ts`)
 - M3b: Flutter hello-world app generated E2E + web-server preview (DONE; `preview/start` + `preview/stop` RPC in `src/protocol.ts`, `src/preview/webServerPreview.ts`; tests: `src/preview/webServerPreview.test.ts`, `src/preview/webServerPreview.integration.test.ts`, `src/webServerPreview.spawn.test.ts`)
-- M4: Preview pane in right dock (web-server mode + DeviceLab + Console)
+- M4: Preview pane in right dock (web-server mode + DeviceLab + Console) (DONE; `preview` dock kind + `PreviewPanel` at `apps/web/src/components/chat/PreviewPanel.tsx`, state machine `previewPanel.logic.ts`; see plans/009 for the expanded feature import)
 - M5: Android emulator backend + iOS Simulator preview + screenshot tool
 - M6: Quality gates + release builds (apk/appbundle) + signing
 - M7: Flutter skill pack prompts + hardening + polish
