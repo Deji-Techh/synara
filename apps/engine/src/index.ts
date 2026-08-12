@@ -8,6 +8,8 @@ import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 
 import {
+  AppCreateParamsSchema,
+  AppCreateResultSchema,
   EchoParamsSchema,
   ENGINE_METHODS,
   ENGINE_PROTOCOL_VERSION,
@@ -21,6 +23,7 @@ import {
   PingResultSchema,
   type JsonRpcResponse,
 } from "./protocol.ts";
+import { createFlutterApp } from "./tools/flutterCreate.ts";
 
 export const ENGINE_SERVER_VERSION = "0.1.0";
 
@@ -57,11 +60,27 @@ async function handleMethod(method: string, params: unknown): Promise<unknown> {
         serverVersion: ENGINE_SERVER_VERSION,
         protocolVersion: ENGINE_PROTOCOL_VERSION,
         capabilities: {
-          flutter: false,
+          flutter: true,
           preview: false,
         },
       });
       return result;
+    }
+    case ENGINE_METHODS.appCreate: {
+      const parsed = AppCreateParamsSchema.safeParse(params);
+      if (!parsed.success) {
+        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "app/create params invalid");
+      }
+      const { projectPath } = await createFlutterApp({
+        cwd: parsed.data.cwd,
+        name: parsed.data.name,
+        org: parsed.data.org,
+        platforms: parsed.data.platforms,
+      });
+      return AppCreateResultSchema.parse({
+        appId: parsed.data.name,
+        projectPath,
+      });
     }
     case ENGINE_METHODS.ping: {
       return PingResultSchema.parse({ pong: "pong", time: new Date().toISOString() });
