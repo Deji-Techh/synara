@@ -137,6 +137,7 @@ const BUILT_IN_MODEL_SLUGS_BY_PROVIDER: Record<ProviderKind, ReadonlySet<string>
   kilo: new Set(getModelOptions("kilo").map((option) => option.slug)),
   opencode: new Set(getModelOptions("opencode").map((option) => option.slug)),
   pi: new Set(getModelOptions("pi").map((option) => option.slug)),
+  engine: new Set(getModelOptions("engine").map((option) => option.slug)),
 };
 
 const withDefaults =
@@ -400,6 +401,15 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     description: "Save additional Pi model slugs for the picker and provider runtime.",
     placeholder: "provider/model",
     example: "anthropic/claude-sonnet-4-5",
+  },
+  engine: {
+    provider: "engine",
+    settingsKey: "customEngineModels",
+    defaultSettingsKey: "customEngineModels",
+    title: "Builder",
+    description: "Save additional Builder engine model slugs for the picker.",
+    placeholder: "your-engine-model-slug",
+    example: "gpt-5.6-sol",
   },
 };
 

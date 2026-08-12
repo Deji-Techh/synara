@@ -34,6 +34,8 @@ const MODEL_SLUG_SET_BY_PROVIDER: Record<ProviderKind, ReadonlySet<ModelSlug>> =
   kilo: new Set(MODEL_OPTIONS_BY_PROVIDER.kilo.map((option) => option.slug)),
   opencode: new Set(MODEL_OPTIONS_BY_PROVIDER.opencode.map((option) => option.slug)),
   pi: new Set<ModelSlug>(),
+  // Engine's catalog is live-discovered (echo/tool harness); no static model list.
+  engine: new Set<ModelSlug>(),
 };
 
 export interface SelectableModelOption {
@@ -496,7 +498,7 @@ export function resolveModelSlug(
   provider: ProviderKind = "codex",
 ): ModelSlug | null {
   const normalized = normalizeModelSlug(model, provider);
-  if (provider === "pi") {
+  if (provider === "pi" || provider === "engine") {
     return normalized;
   }
   if (!normalized) {

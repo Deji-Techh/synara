@@ -236,10 +236,14 @@ const PROVIDER_TARGET_OPTION_RULES = {
       }),
     },
   }),
+  engine: defineProviderOptionConfig<"engine">({
+    primaryOptionKey: "thinkingLevel",
+    options: { thinkingLevel: providerOptionRule("string", [], "model-discovery") },
+  }),
 } as const satisfies Record<ProviderKind, ProviderTargetOptionConfig>;
 
 function providerDefaultModel(provider: ProviderKind): string | null {
-  return provider === "pi" ? null : DEFAULT_MODEL_BY_PROVIDER[provider];
+  return provider === "pi" || provider === "engine" ? null : DEFAULT_MODEL_BY_PROVIDER[provider];
 }
 
 export function loadAgentGatewayProviderCatalog(input: {

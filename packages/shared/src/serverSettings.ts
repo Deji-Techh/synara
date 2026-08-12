@@ -26,8 +26,9 @@ export function applyServerSettingsPatch(
   const provider = selectionPatch.provider ?? current.textGenerationModelSelection.provider;
   const model =
     selectionPatch.model ??
-    (selectionPatch.provider &&
+    (    selectionPatch.provider &&
     selectionPatch.provider !== "pi" &&
+    selectionPatch.provider !== "engine" &&
     selectionPatch.provider !== current.textGenerationModelSelection.provider
       ? DEFAULT_MODEL_BY_PROVIDER[selectionPatch.provider]
       : current.textGenerationModelSelection.model);
@@ -83,6 +84,9 @@ export function providerStartOptionsFromServerSettings(
     pi: {
       ...(providers.pi.binaryPath ? { binaryPath: providers.pi.binaryPath } : {}),
       ...(providers.pi.agentDir ? { agentDir: providers.pi.agentDir } : {}),
+    },
+    engine: {
+      ...(providers.engine.binaryPath ? { binaryPath: providers.engine.binaryPath } : {}),
     },
   };
 }

@@ -120,6 +120,7 @@ const DROID_PROVIDER = "droid" as const;
 const KILO_PROVIDER = "kilo" as const;
 const OPENCODE_PROVIDER = "opencode" as const;
 const PI_PROVIDER = "pi" as const;
+const ENGINE_PROVIDER = "engine" as const;
 type ProviderStatuses = ReadonlyArray<ServerProviderStatus>;
 const DISABLED_PROVIDER_STATUS_MESSAGE = "Provider is disabled in Synara settings.";
 const MINIMUM_ANTIGRAVITY_CLI_VERSION = "1.0.12";
@@ -134,6 +135,7 @@ const PROVIDERS = [
   KILO_PROVIDER,
   OPENCODE_PROVIDER,
   PI_PROVIDER,
+  ENGINE_PROVIDER,
 ] as const satisfies ReadonlyArray<ProviderKind>;
 
 const providerChildKind = (provider: ProviderKind): ProviderChildKind =>
@@ -2205,6 +2207,8 @@ export function makeProviderHealthLive(options?: { readonly providerUpdateTimeou
             return settings.providers.opencode.binaryPath;
           case "pi":
             return settings.providers.pi.binaryPath;
+          case "engine":
+            return settings.providers.engine.binaryPath;
         }
       };
 
@@ -2243,8 +2247,9 @@ export function makeProviderHealthLive(options?: { readonly providerUpdateTimeou
               updateLockKey: null,
             });
           }
+          const binaryPath = getProviderBinaryPath(provider, settings);
           return yield* resolveProviderMaintenanceCapabilitiesEffect(definition, {
-            binaryPath: getProviderBinaryPath(provider, settings),
+            ...(binaryPath !== undefined ? { binaryPath } : {}),
             env: providerCommandEnv(provider),
             platform: process.platform,
           }).pipe(Effect.provideService(FileSystem.FileSystem, fileSystem));

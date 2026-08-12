@@ -30,6 +30,23 @@
         "wait-on": "^8.0.2",
       },
     },
+    "apps/engine": {
+      "name": "@synara/engine",
+      "version": "0.1.0",
+      "bin": {
+        "synara-engine": "dist/index.mjs",
+      },
+      "dependencies": {
+        "@synara/contracts": "workspace:*",
+        "zod": "4.3.6",
+      },
+      "devDependencies": {
+        "@types/node": "catalog:",
+        "tsdown": "catalog:",
+        "typescript": "catalog:",
+        "vitest": "catalog:",
+      },
+    },
     "apps/marketing": {
       "name": "@synara/marketing",
       "version": "0.0.0",
@@ -59,6 +76,7 @@
         "@effect/sql-sqlite-bun": "catalog:",
         "@opencode-ai/sdk": "^1.15.13",
         "@pierre/diffs": "^1.2.12",
+        "@synara/engine": "workspace:*",
         "@xterm/headless": "^6.0.0",
         "effect": "catalog:",
         "node-pty": "^1.1.0",
@@ -963,6 +981,8 @@
     "@synara/contracts": ["@synara/contracts@workspace:packages/contracts"],
 
     "@synara/desktop": ["@synara/desktop@workspace:apps/desktop"],
+
+    "@synara/engine": ["@synara/engine@workspace:apps/engine"],
 
     "@synara/marketing": ["@synara/marketing@workspace:apps/marketing"],
 

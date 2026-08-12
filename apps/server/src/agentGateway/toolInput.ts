@@ -133,9 +133,9 @@ export function buildModelSelection(
 ): ModelSelection {
   const effectiveModel =
     model ??
-    (provider === "pi"
+    (provider === "pi" || provider === "engine"
       ? undefined
-      : DEFAULT_MODEL_BY_PROVIDER[provider as Exclude<ProviderKind, "pi">]);
+      : DEFAULT_MODEL_BY_PROVIDER[provider as Exclude<ProviderKind, "pi" | "engine">]);
   if (!effectiveModel) {
     throw new ToolInputError(
       `Provider "${provider}" has no default model; pass an explicit "model" argument.`,
