@@ -19,6 +19,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { Agent, type AgentMessage, type EngineModelConfig, type TurnResult } from "../agent/agentLoop.ts";
+import type { ToolContext, ToolDefinition } from "../agent/tool.ts";
 import { startFakeLlmServer, type FakeLlmServerHandle } from "./fakeLlmServer.ts";
 
 export interface EngineHarnessOptions {
@@ -28,6 +29,12 @@ export interface EngineHarnessOptions {
   model?: Partial<Omit<EngineModelConfig, "baseUrl">> & { baseUrl?: string };
   systemPrompt?: string;
   initialHistory?: readonly AgentMessage[];
+  /** Tools exposed to the harness agent (bound to the workspace context). */
+  tools?: readonly ToolDefinition[];
+  /** Overrides the default tool execution context (workspace/app dirs). */
+  toolContext?: Partial<ToolContext>;
+  /** Max agent-loop steps per turn; default 20 when tools are present. */
+  maxSteps?: number;
   /** Show the fake server's per-request logs (default quiet). */
   verboseFakeLlm?: boolean;
   /** Seed files written into the workspace before the initial commit. */
@@ -52,7 +59,11 @@ export interface EngineHarness {
   readonly dumpDir: string;
 
   /** Runs the real agent loop against the fake LLM. */
-  get runTurn(): (prompt: string, opts?: { abortSignal?: AbortSignal; onTextDelta?: (d: string) => void }) => Promise<TurnResult>;
+  get runTurn(): (prompt: string, opts?: {
+    abortSignal?: AbortSignal;
+    onTextDelta?: (delta: string) => void;
+    onToolCall?: (call: { name: string; args: unknown }) => void;
+  }) => Promise<TurnResult>;
   /** Reads the newest [engine-dump-path] payload written by the fake server. */
   getServerDump(dumpIndex?: number): { parsed: unknown; dumpPath: string };
   /** Output of the newest dump, prettified for snapshotting. */
@@ -111,10 +122,18 @@ export async function setupEngineHarness(
       apiKey: options.model?.apiKey ?? "test-key",
       modelId: options.model?.modelId ?? "test-model",
     };
+    const toolContext: ToolContext = {
+      workspaceDir,
+      appDir: workspaceDir,
+      ...options.toolContext,
+    };
     const agent = new Agent({
       model,
       systemPrompt: options.systemPrompt,
       initialHistory: options.initialHistory,
+      tools: options.tools,
+      toolContext,
+      maxSteps: options.maxSteps,
     });
 
     const getServerDump = (dumpIndex = -1) => {

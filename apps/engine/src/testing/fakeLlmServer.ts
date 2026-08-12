@@ -55,11 +55,9 @@ export function createStreamChunk(
   }
   return `data: ${JSON.stringify(chunk)}\n\n${isLast ? "data: [DONE]\n\n" : ""}`;
 }
-
-function streamToolCall(
+function streamToolCalls(
   res: ServerResponse,
-  toolName: string,
-  args: Record<string, unknown>,
+  calls: Array<{ name: string; args: Record<string, unknown> }>,
 ): void {
   const now = Date.now();
   const mkChunk = (delta: Record<string, unknown>, finish: string | null = null) =>
@@ -74,29 +72,29 @@ function streamToolCall(
   res.write(mkChunk({ role: "assistant" }));
   res.write(
     mkChunk({
-      tool_calls: [
-        {
-          index: 0,
-          id: `call_${now}`,
-          type: "function",
-          function: { name: toolName, arguments: "" },
-        },
-      ],
+      tool_calls: calls.map((call, index) => ({
+        index,
+        id: `call_${now}_${index}`,
+        type: "function",
+        function: { name: call.name, arguments: "" },
+      })),
     }),
   );
-  const argsText = JSON.stringify(args);
-  const batchSize = 20;
-  for (let index = 0; index < argsText.length; index += batchSize) {
-    res.write(
-      mkChunk({
-        tool_calls: [
-          {
-            index: 0,
-            function: { arguments: argsText.slice(index, index + batchSize) },
-          },
-        ],
-      }),
-    );
+  for (const [callIndex, call] of calls.entries()) {
+    const argsText = JSON.stringify(call.args);
+    const batchSize = 20;
+    for (let offset = 0; offset < argsText.length; offset += batchSize) {
+      res.write(
+        mkChunk({
+          tool_calls: [
+            {
+              index: callIndex,
+              function: { arguments: argsText.slice(offset, offset + batchSize) },
+            },
+          ],
+        }),
+      );
+    }
   }
   res.write(mkChunk({}, "tool_calls"));
   res.write("data: [DONE]\n\n");
@@ -229,9 +227,26 @@ function createChatCompletionHandler(
       return;
     }
 
+    // Once a tool result has been fed back (role: "tool"), stop re-triggering
+    // the tool call and answer with the canned message — the multi-step loop
+    // terminates like a real model would.
+    const toolResultAlreadyFedBack = messages.some((m) => m.role === "tool");
+
     let messageContent = CANNED_MESSAGE;
     const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
     const userText = lastUserMessage ? getTextContent(lastUserMessage) : "";
+
+    // When a tool result has been fed back, the model's answer flows from it:
+    // echo the last tool-result content so tests can assert the tool output
+    // actually reached the model.
+    if (toolResultAlreadyFedBack) {
+      const toolMessages = messages.filter((m) => m.role === "tool");
+      const lastToolMessage = toolMessages[toolMessages.length - 1];
+      const toolContent = lastToolMessage ? getTextContent(lastToolMessage) : "";
+      if (toolContent !== "") {
+        messageContent += `\n[fake-llm] tool result seen by model:\n${toolContent}`;
+      }
+    }
 
     if (userText.startsWith("tc=") && !userText.startsWith("tc=local-agent/")) {
       const testCaseName = userText.slice(3).split("[")[0].trim();
@@ -250,7 +265,27 @@ function createChatCompletionHandler(
     }
 
     const isToolCall = userText.includes("[call_tool=");
-    const toolCallMatch = userText.match(/\[call_tool=([a-zA-Z0-9_]+)\]/);
+    const toolCallMatches = [...userText.matchAll(/\[call_tool=([a-zA-Z0-9_]+)(?::((?:[^\[\]]*)))?\]/g)];
+
+    const toolCallArgs = (argsJson: string | undefined): Record<string, unknown> => {
+      // [call_tool=write_file:{"path":"lib/main.dart","content":"..."}] passes
+      // explicit JSON args; bare [call_tool=name] falls back to {request: ...}.
+      if (argsJson) {
+        try {
+          const parsed = JSON.parse(argsJson) as unknown;
+          if (parsed && typeof parsed === "object") {
+            return parsed as Record<string, unknown>;
+          }
+        } catch {
+          // fall through to the default args
+        }
+      }
+      return { request: userText };
+    };
+    const toolCalls = toolCallMatches.map((match) => ({
+      name: match[1]!,
+      args: toolCallArgs(match[2]),
+    }));
 
     const highTokensMatch =
       typeof lastMessage?.content === "string" &&
@@ -274,7 +309,7 @@ function createChatCompletionHandler(
       messageContent += `\n[[dump-marker]]${marker}`;
     };
 
-    if (isToolCall && toolCallMatch && !stream) {
+    if (isToolCall && toolCalls.length > 0 && !toolResultAlreadyFedBack && !stream) {
       respondJson(res, 200, {
         id: `chatcmpl-${Date.now()}`,
         object: "chat.completion",
@@ -286,16 +321,14 @@ function createChatCompletionHandler(
             message: {
               role: "assistant",
               content: null,
-              tool_calls: [
-                {
-                  id: `call_${Date.now()}`,
-                  type: "function",
-                  function: {
-                    name: toolCallMatch[1],
-                    arguments: JSON.stringify({ request: userText }),
-                  },
+              tool_calls: toolCalls.map((call, index) => ({
+                id: `call_${Date.now()}_${index}`,
+                type: "function",
+                function: {
+                  name: call.name,
+                  arguments: JSON.stringify(call.args),
                 },
-              ],
+              })),
             },
             finish_reason: "tool_calls",
           },
@@ -304,11 +337,11 @@ function createChatCompletionHandler(
       return;
     }
 
-    if (isToolCall && toolCallMatch) {
+    if (isToolCall && toolCalls.length > 0 && !toolResultAlreadyFedBack) {
       res.setHeader("Content-Type", "text/event-stream");
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
-      streamToolCall(res, toolCallMatch[1], { request: userText });
+      streamToolCalls(res, toolCalls);
       return;
     }
 

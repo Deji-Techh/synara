@@ -5,9 +5,12 @@
 // the agent loop follows while building the app.
 // Layer: Engine tool
 
-import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+
+import { FlutterToolNotFoundError, runFlutterCommand } from "./flutterCommand.ts";
+
+export { FlutterToolNotFoundError, resolveFlutterBinary } from "./flutterCommand.ts";
 
 export const DEFAULT_FLUTTER_ORG = "dev.caide";
 export const DEFAULT_FLUTTER_PLATFORMS = ["android", "ios", "web"] as const;
@@ -22,42 +25,6 @@ Contract for AI agent builds in this app (Synara Flutter Builder engine).
 - Keep pub dependencies minimal; run \`flutter pub add\` / \`flutter pub remove\` for changes.
 - Never commit build artifacts (build/, .dart_tool/) to git.
 `;
-
-export class FlutterToolNotFoundError extends Error {
-  constructor() {
-    super(
-      "flutter binary not found: set FLUTTER_SDK_DIR (decision E: pinned SDK) or " +
-        "put `flutter` on PATH",
-    );
-  }
-}
-
-/** Resolves the flutter binary: FLUTTER_SDK_BIN, then FLUTTER_SDK_DIR/bin/flutter, then PATH. */
-export function resolveFlutterBinary(): string | null {
-  const explicit = process.env.FLUTTER_SDK_BIN;
-  if (explicit && fs.existsSync(explicit)) {
-    return explicit;
-  }
-  const sdkDir = process.env.FLUTTER_SDK_DIR;
-  if (sdkDir) {
-    const candidate = path.join(sdkDir, "bin", "flutter");
-    if (fs.existsSync(candidate)) {
-      return candidate;
-    }
-  }
-  for (const dir of (process.env.PATH ?? "").split(path.delimiter)) {
-    if (dir === "") {
-      continue;
-    }
-    for (const name of ["flutter", "flutter.bat", "flutter.exe"]) {
-      const candidate = path.join(dir, name);
-      if (fs.existsSync(candidate)) {
-        return candidate;
-      }
-    }
-  }
-  return null;
-}
 
 export interface FlutterCreateOptions {
   /** Workspace (repo root) the app is created in. */
@@ -83,11 +50,6 @@ export interface FlutterCreateResult {
  * missing, the command fails, or it times out.
  */
 export async function createFlutterApp(options: FlutterCreateOptions): Promise<FlutterCreateResult> {
-  const binary = options.flutterBinary ?? resolveFlutterBinary();
-  if (!binary) {
-    throw new FlutterToolNotFoundError();
-  }
-
   const org = options.org ?? DEFAULT_FLUTTER_ORG;
   const platforms = options.platforms ?? DEFAULT_FLUTTER_PLATFORMS;
   const projectPath = path.join(options.cwd, options.name);
@@ -100,60 +62,12 @@ export async function createFlutterApp(options: FlutterCreateOptions): Promise<F
     options.name,
   ];
 
-  const output = await runFlutterCommand(binary, args, options.cwd, options.timeoutMs ?? 180_000);
+  const result = await runFlutterCommand(args, options.cwd, {
+    ...(options.timeoutMs !== undefined ? { timeoutMs: options.timeoutMs } : {}),
+    ...(options.flutterBinary !== undefined ? { binary: options.flutterBinary } : {}),
+  });
 
   fs.writeFileSync(path.join(projectPath, "AI_RULES.md"), FLUTTER_AI_RULES, "utf8");
 
-  return { projectPath, output };
-}
-
-function runFlutterCommand(
-  binary: string,
-  args: string[],
-  cwd: string,
-  timeoutMs: number,
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(binary, args, {
-      cwd,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    let stdout = "";
-    let stderr = "";
-    child.stdout.setEncoding("utf8");
-    child.stdout.on("data", (chunk: string) => {
-      stdout += chunk;
-    });
-    child.stderr.setEncoding("utf8");
-    child.stderr.on("data", (chunk: string) => {
-      stderr += chunk;
-    });
-
-    const timer = setTimeout(() => {
-      child.kill("SIGKILL");
-      reject(
-        new Error(
-          `flutter create timed out after ${timeoutMs}ms\nstdout:\n${stdout}\nstderr:\n${stderr}`,
-        ),
-      );
-    }, timeoutMs);
-
-    child.on("error", (error) => {
-      clearTimeout(timer);
-      reject(error);
-    });
-    child.on("close", (code) => {
-      clearTimeout(timer);
-      const combined = `${stdout}\n${stderr}`.trim();
-      if (code !== 0) {
-        reject(
-          new Error(
-            `flutter create exited with code ${code === null ? "null" : code}\n${combined}`,
-          ),
-        );
-        return;
-      }
-      resolve(combined);
-    });
-  });
+  return { projectPath, output: `${result.stdout}\n${result.stderr}`.trim() };
 }
