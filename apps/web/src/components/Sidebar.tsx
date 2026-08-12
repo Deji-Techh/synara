@@ -13,6 +13,7 @@ import {
   ExternalLinkIcon,
   FolderOpenIcon,
   GiftIcon,
+  HistoryIcon,
   KanbanIcon,
   KeyboardIcon,
   BellIcon,
@@ -205,6 +206,7 @@ import {
 import { RenameDialog } from "./RenameDialog";
 import { RenameThreadDialog } from "./RenameThreadDialog";
 import ReleaseHistoryDialog from "./ReleaseHistoryDialog";
+import { ProjectsHistoryDialog } from "./history/ProjectsHistoryDialog";
 import { WHATS_NEW_ENTRIES } from "../whatsNew/entries";
 import { sortEntriesByVersionDesc } from "../whatsNew/logic";
 import {
@@ -1233,11 +1235,13 @@ export function SidebarSurfacePicker({
   activeView,
   onSelectView,
   onPrewarmView,
+  onOpenHistory,
 }: {
   views: ReadonlyArray<SidebarView>;
   activeView: SidebarView;
   onSelectView: (view: SidebarView) => void;
   onPrewarmView?: (view: SidebarView) => void;
+  onOpenHistory?: () => void;
 }) {
   const activeCopy = SIDEBAR_SURFACE_PICKER_COPY[activeView];
 
@@ -1298,6 +1302,22 @@ export function SidebarSurfacePicker({
             );
           })}
         </MenuRadioGroup>
+        {onOpenHistory ? (
+          <>
+            <MenuSeparator className="my-1" />
+            <MenuItem closeOnClick onClick={onOpenHistory} className="items-center rounded-[10px]">
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="flex items-center gap-1.5 text-[13px] font-medium leading-none text-foreground">
+                  <HistoryIcon className="size-3.5" />
+                  History
+                </span>
+                <span className="text-[11px] leading-snug text-muted-foreground">
+                  Grid view of every project
+                </span>
+              </span>
+            </MenuItem>
+          </>
+        ) : null}
       </ComposerPickerMenuPopup>
     </Menu>
   );
@@ -1550,6 +1570,7 @@ export default function Sidebar() {
   const projectAdditionLockRef = useRef(false);
   const [renameDialogThreadId, setRenameDialogThreadId] = useState<ThreadId | null>(null);
   const [renameProjectDialogId, setRenameProjectDialogId] = useState<ProjectId | null>(null);
+  const [projectHistoryOpen, setProjectHistoryOpen] = useState(false);
   const [projectContextMenuState, setProjectContextMenuState] =
     useState<ProjectContextMenuState | null>(null);
   // "Show more" paging state: extra pages of THREAD_PREVIEW_PAGE_SIZE rows per project cwd.
@@ -5780,10 +5801,11 @@ export default function Sidebar() {
           <>
             <div className="flex items-center gap-1 pt-0 pb-1 pr-2.5 pl-1.5">
               <SidebarSurfacePicker
-                views={["threads", ...(studioSectionVisible ? (["studio"] as const) : [])]}
+                views={["threads"]}
                 activeView={isOnStudio ? "studio" : "threads"}
                 onSelectView={handleSidebarViewChange}
                 onPrewarmView={prewarmSidebarViewTarget}
+                onOpenHistory={() => setProjectHistoryOpen(true)}
               />
               <div className="ml-auto flex items-center gap-1.5">
                 <SidebarIconButton
@@ -6608,6 +6630,15 @@ export default function Sidebar() {
             nextName,
             renameProjectDialogProject.localName,
           );
+        }}
+      />
+
+      <ProjectsHistoryDialog
+        open={projectHistoryOpen}
+        onOpenChange={setProjectHistoryOpen}
+        projects={projects}
+        onDeleteProject={(project) => {
+          void deleteProjectThreads(project.id);
         }}
       />
 
