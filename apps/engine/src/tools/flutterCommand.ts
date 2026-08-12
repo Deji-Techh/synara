@@ -5,7 +5,7 @@
 // pinned SDK) and for spawning with capture + timeout.
 // Layer: Engine tool infra
 
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -59,6 +59,23 @@ export interface FlutterCommandResult {
   readonly code: number | null;
   readonly stdout: string;
   readonly stderr: string;
+}
+
+/**
+ * Spawns the flutter binary without waiting for exit — the long-running
+ * counterpart to runFlutterCommand (flutter run, pub serve, etc.). Callers own
+ * the child lifecycle (stop/kill) and the output plumbing.
+ */
+export function spawnFlutterProcess(
+  args: string[],
+  cwd: string,
+  options: { binary?: string } = {},
+): ChildProcess {
+  const binary = options.binary ?? requireFlutterBinary();
+  return spawn(binary, args, {
+    cwd,
+    stdio: ["pipe", "pipe", "pipe"],
+  });
 }
 
 /**

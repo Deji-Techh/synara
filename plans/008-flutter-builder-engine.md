@@ -122,7 +122,7 @@ the active path (v1).
 - M1: Engine package skeleton + stdio JSON-RPC + stub adapter + hello-world round trip (vitest green)
 - M2: Harness ported; agent loop runs with fake LLM; `flutter create` scaffold tool
 - M3a: Tool system — write_file/read_file/list_files + flutter_analyze/flutter_test, multi-step loop via AI-SDK `stopWhen` (DONE; tests: `src/agent/tools/*.integration.test.ts`)
-- M3b: Flutter hello-world app generated E2E + web-server preview
+- M3b: Flutter hello-world app generated E2E + web-server preview (DONE; `preview/start` + `preview/stop` RPC in `src/protocol.ts`, `src/preview/webServerPreview.ts`; tests: `src/preview/webServerPreview.test.ts`, `src/preview/webServerPreview.integration.test.ts`, `src/webServerPreview.spawn.test.ts`)
 - M4: Preview pane in right dock (web-server mode + DeviceLab + Console)
 - M5: Android emulator backend + iOS Simulator preview + screenshot tool
 - M6: Quality gates + release builds (apk/appbundle) + signing

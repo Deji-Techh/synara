@@ -13,6 +13,8 @@ export const ENGINE_METHODS = {
   echo: "engine/echo",
   shutdown: "engine/shutdown",
   appCreate: "app/create",
+  previewStart: "preview/start",
+  previewStop: "preview/stop",
 } as const;
 
 export type EngineMethod = (typeof ENGINE_METHODS)[keyof typeof ENGINE_METHODS];
@@ -92,6 +94,28 @@ export const AppCreateResultSchema = z.object({
   projectPath: z.string(),
 });
 export type AppCreateResult = z.infer<typeof AppCreateResultSchema>;
+
+export const PreviewStartParamsSchema = z.object({
+  appDir: z.string(),
+  port: z.number().int().optional(),
+  hostname: z.string().optional(),
+});
+export type PreviewStartParams = z.infer<typeof PreviewStartParamsSchema>;
+
+export const PreviewStartResultSchema = z.object({
+  url: z.string(),
+});
+export type PreviewStartResult = z.infer<typeof PreviewStartResultSchema>;
+
+export const PreviewStopParamsSchema = z.object({
+  appDir: z.string(),
+});
+export type PreviewStopParams = z.infer<typeof PreviewStopParamsSchema>;
+
+export const PreviewStopResultSchema = z.object({
+  stopped: z.boolean(),
+});
+export type PreviewStopResult = z.infer<typeof PreviewStopResultSchema>;
 
 export function isJsonRpcRequest(value: unknown): value is JsonRpcRequest {
   return JsonRpcRequestSchema.safeParse(value).success;

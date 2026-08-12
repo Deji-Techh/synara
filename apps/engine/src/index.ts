@@ -21,8 +21,13 @@ import {
   JSON_RPC_METHOD_NOT_FOUND,
   JSON_RPC_PARSE_ERROR,
   PingResultSchema,
+  PreviewStartParamsSchema,
+  PreviewStartResultSchema,
+  PreviewStopParamsSchema,
+  PreviewStopResultSchema,
   type JsonRpcResponse,
 } from "./protocol.ts";
+import { startWebServerPreview, type WebServerPreview } from "./preview/webServerPreview.ts";
 import { createFlutterApp } from "./tools/flutterCreate.ts";
 
 export const ENGINE_SERVER_VERSION = "0.1.0";
@@ -48,6 +53,14 @@ class ProtocolParamError extends Error {
   }
 }
 
+const previews = new Map<string, WebServerPreview>();
+
+async function stopAllPreviews(): Promise<void> {
+  const stops = [...previews.values()].map((preview) => preview.stop());
+  previews.clear();
+  await Promise.allSettled(stops);
+}
+
 async function handleMethod(method: string, params: unknown): Promise<unknown> {
   switch (method) {
     case ENGINE_METHODS.initialize: {
@@ -61,10 +74,44 @@ async function handleMethod(method: string, params: unknown): Promise<unknown> {
         protocolVersion: ENGINE_PROTOCOL_VERSION,
         capabilities: {
           flutter: true,
-          preview: false,
+          preview: true,
         },
       });
       return result;
+    }
+    case ENGINE_METHODS.previewStart: {
+      const parsed = PreviewStartParamsSchema.safeParse(params);
+      if (!parsed.success) {
+        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "preview/start params invalid");
+      }
+      const existing = previews.get(parsed.data.appDir);
+      if (existing) {
+        await existing.stop();
+        previews.delete(parsed.data.appDir);
+      }
+      const preview = await startWebServerPreview({
+        appDir: parsed.data.appDir,
+        ...(parsed.data.port !== undefined ? { port: parsed.data.port } : {}),
+        ...(parsed.data.hostname !== undefined ? { hostname: parsed.data.hostname } : {}),
+      });
+      previews.set(parsed.data.appDir, preview);
+      preview.exited.catch(() => {
+        previews.delete(parsed.data.appDir);
+      });
+      return PreviewStartResultSchema.parse({ url: preview.url });
+    }
+    case ENGINE_METHODS.previewStop: {
+      const parsed = PreviewStopParamsSchema.safeParse(params);
+      if (!parsed.success) {
+        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "preview/stop params invalid");
+      }
+      const preview = previews.get(parsed.data.appDir);
+      if (!preview) {
+        return PreviewStopResultSchema.parse({ stopped: false });
+      }
+      previews.delete(parsed.data.appDir);
+      await preview.stop();
+      return PreviewStopResultSchema.parse({ stopped: true });
     }
     case ENGINE_METHODS.appCreate: {
       const parsed = AppCreateParamsSchema.safeParse(params);
@@ -128,8 +175,9 @@ export async function runEngine(): Promise<void> {
       const result = await handleMethod(request.method, request.params);
       sendResult(request.id, result);
       if (request.method === ENGINE_METHODS.shutdown) {
-        // Close the interface so the process exits once stdin (kept open by
-        // the parent) stops holding the event loop.
+        // Stop any running previews, then close the interface so the process
+        // exits once stdin (kept open by the parent) stops holding the loop.
+        await stopAllPreviews();
         lines.close();
         break;
       }

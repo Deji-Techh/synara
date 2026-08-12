@@ -141,6 +141,14 @@ export class EngineClient {
     return this.request("engine/ping");
   }
 
+  async previewStart(params: { appDir: string; port?: number; hostname?: string }): Promise<JsonRpcResponse> {
+    return this.request("preview/start", params);
+  }
+
+  async previewStop(params: { appDir: string }): Promise<JsonRpcResponse> {
+    return this.request("preview/stop", params);
+  }
+
   async waitForSpawn(): Promise<void> {
     await once(this.child, "spawn");
   }
