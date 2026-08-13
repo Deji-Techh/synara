@@ -15,6 +15,7 @@ import {
   WsCompatibilityError,
   WsDeviceRpcGroup,
   WsFeatureRpcGroup,
+  WsPreviewRpcGroup,
   WsRpcError,
   PullRequestsUnavailableError,
   type DeviceEvent,
@@ -178,10 +179,14 @@ class WsRequestAdmissionMiddleware extends RpcMiddleware.Service<WsRequestAdmiss
 
 // The device group is defined separately in contracts because its engine is
 // macOS-only, but it is served on the same socket: one connection, one
-// admission middleware, one exhaustive handler map.
-const AdmittedWsFeatureRpcGroup = WsFeatureRpcGroup.merge(WsDeviceRpcGroup).middleware(
-  WsRequestAdmissionMiddleware,
-);
+// admission middleware, one exhaustive handler map. The preview group is
+// engine-specific (mirrors the provider adapter's ops) and served here too.
+// NOTE: every handler key spread below must resolve to a request in this group;
+// toHandlers builds the map by Object.entries(handler) and dies on unknown tags.
+export const AdmittedWsFeatureRpcGroup = WsFeatureRpcGroup.merge(
+  WsDeviceRpcGroup,
+  WsPreviewRpcGroup,
+).middleware(WsRequestAdmissionMiddleware);
 
 const wsRequestAdmissionMiddlewareLayer = Layer.effect(
   WsRequestAdmissionMiddleware,

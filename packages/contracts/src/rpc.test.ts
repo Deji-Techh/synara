@@ -9,10 +9,12 @@ import {
   WsProjectsDiscoverScriptsRpc,
   WsProjectsProvisionFromGitHubRpc,
   WsPullRequestsReviewRequestCountRpc,
+  WsPreviewRpcGroup,
   WsRpcError,
   WsRpcGroup,
 } from "./rpc";
 import { ORCHESTRATION_WS_METHODS } from "./orchestration";
+import { PREVIEW_WS_METHODS } from "./preview";
 
 describe("WS RPC contracts", () => {
   it("exports the additive Effect RPC group", () => {
@@ -25,6 +27,14 @@ describe("WS RPC contracts", () => {
     expect(WsFeatureRpcGroup.requests.has(ORCHESTRATION_WS_METHODS.reconcileProviderDelivery)).toBe(
       true,
     );
+  });
+
+  it("defines every preview method in its engine-specific group", () => {
+    for (const method of Object.values(PREVIEW_WS_METHODS)) {
+      expect(WsPreviewRpcGroup.requests.has(method), `${method} missing from preview group`).toBe(
+        true,
+      );
+    }
   });
 
   it("uses a schema-backed transport error", () => {

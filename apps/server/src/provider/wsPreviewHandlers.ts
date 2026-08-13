@@ -10,7 +10,19 @@
  *
  * @module provider/wsPreviewHandlers
  */
-import { PREVIEW_WS_METHODS, ThreadId, WsRpcError, type PreviewState } from "@caide/contracts";
+import {
+  PREVIEW_WS_METHODS,
+  ThreadId,
+  WsRpcError,
+  type PreviewGetStateInput,
+  type PreviewReloadInput,
+  type PreviewReloadResult,
+  type PreviewState,
+  type PreviewStartInput,
+  type PreviewStartResult,
+  type PreviewStopInput,
+  type PreviewStopResult,
+} from "@caide/contracts";
 import { Effect } from "effect";
 
 import type { EngineAdapterShape } from "./Services/EngineAdapter.ts";
@@ -32,22 +44,18 @@ const resolveEngineAdapter = (
   );
 
 export interface WsPreviewHandlers {
-  readonly [PREVIEW_WS_METHODS.start]: (input: {
-    threadId: string;
-    appDir?: string;
-    port?: number;
-    hostname?: string;
-  }) => Effect.Effect<{ url: string }, WsRpcError>;
-  readonly [PREVIEW_WS_METHODS.stop]: (input: {
-    threadId: string;
-  }) => Effect.Effect<{ stopped: boolean }, WsRpcError>;
-  readonly [PREVIEW_WS_METHODS.reload]: (input: {
-    threadId: string;
-    hotReload: boolean;
-  }) => Effect.Effect<{ reloaded: boolean }, WsRpcError>;
-  readonly [PREVIEW_WS_METHODS.getState]: (input: {
-    threadId: string;
-  }) => Effect.Effect<PreviewState, WsRpcError>;
+  readonly [PREVIEW_WS_METHODS.start]: (
+    input: PreviewStartInput,
+  ) => Effect.Effect<PreviewStartResult, WsRpcError>;
+  readonly [PREVIEW_WS_METHODS.stop]: (
+    input: PreviewStopInput,
+  ) => Effect.Effect<PreviewStopResult, WsRpcError>;
+  readonly [PREVIEW_WS_METHODS.reload]: (
+    input: PreviewReloadInput,
+  ) => Effect.Effect<PreviewReloadResult, WsRpcError>;
+  readonly [PREVIEW_WS_METHODS.getState]: (
+    input: PreviewGetStateInput,
+  ) => Effect.Effect<PreviewState, WsRpcError>;
 }
 
 /**
