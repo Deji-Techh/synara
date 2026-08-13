@@ -9,11 +9,55 @@
 // is served from, and the latest `flutter run` log ring. The engine pushes no
 // events, so the panel poll-merges `preview.getState` snapshots while visible.
 
+import type {
+  PreviewAnalyzeIssue,
+  PreviewBuildChannel,
+  PreviewBuildStateResult,
+  PreviewBuildStatus,
+  PreviewBuildTarget,
+  PreviewTestResult,
+} from "@caide/contracts";
+
 import type { PreviewDeviceId } from "~/rightDockStore.logic";
 
 export type PreviewPanelStatus = "idle" | "starting" | "running" | "failed";
 
+/** Tabs in the preview pane; the console is folded into the preview tab. */
+export type PreviewPaneTab = "preview" | "tests" | "problems" | "qualityGate" | "release";
+
 export const DEFAULT_PREVIEW_DEVICE_ID: PreviewDeviceId = "mobile";
+
+export interface PreviewAnalyzeState {
+  /** True while `preview.analyze` is in flight. */
+  readonly running: boolean;
+  /** Newest analyze result; last-wins, replaced whole. */
+  readonly issues: readonly PreviewAnalyzeIssue[];
+  readonly clean: boolean | null;
+  readonly output: string;
+  readonly error: string | null;
+}
+
+export interface PreviewTestState {
+  readonly running: boolean;
+  readonly passed: number;
+  readonly failed: number;
+  readonly skipped: number;
+  readonly output: string;
+  readonly error: string | null;
+}
+
+export interface PreviewBuildState {
+  /** True once a build has been requested and hasn't succeeded/failed yet. */
+  readonly running: boolean;
+  readonly buildId: string | null;
+  readonly status: PreviewBuildStatus | null;
+  readonly target: PreviewBuildTarget;
+  readonly channel: PreviewBuildChannel;
+  readonly exitCode: number | null;
+  readonly outputPath: string | null;
+  readonly error: string | null;
+  readonly logs: readonly string[];
+}
 
 export interface PreviewPanelState {
   readonly status: PreviewPanelStatus;
@@ -32,6 +76,11 @@ export interface PreviewPanelState {
    * which is what actually applies hot reload vs hot restart server-side.
    */
   readonly reloadToken: number;
+  /** Active pane tab. */
+  readonly activeTab: PreviewPaneTab;
+  readonly analyze: PreviewAnalyzeState;
+  readonly test: PreviewTestState;
+  readonly build: PreviewBuildState;
 }
 
 export function createInitialPreviewPanelState(
@@ -44,6 +93,20 @@ export function createInitialPreviewPanelState(
     logs: [],
     deviceId,
     reloadToken: 0,
+    activeTab: "preview",
+    analyze: { running: false, issues: [], clean: null, output: "", error: null },
+    test: { running: false, passed: 0, failed: 0, skipped: 0, output: "", error: null },
+    build: {
+      running: false,
+      buildId: null,
+      status: null,
+      target: "apk",
+      channel: "release",
+      exitCode: null,
+      outputPath: null,
+      error: null,
+      logs: [],
+    },
   };
 }
 
@@ -121,4 +184,143 @@ export function mergeEnginePreviewState(
   }
   const logs = snapshot.logs.length > 0 ? snapshot.logs : state.logs;
   return { ...state, status: "running", url: snapshot.url, error: null, logs };
+}
+
+export function previewTabChanged(
+  state: PreviewPanelState,
+  tab: PreviewPaneTab,
+): PreviewPanelState {
+  if (state.activeTab === tab) {
+    return state;
+  }
+  return { ...state, activeTab: tab };
+}
+
+// ── Quality gates: flutter analyze ──────────────────────────────────────────
+
+export function analyzeRequested(state: PreviewPanelState): PreviewPanelState {
+  return {
+    ...state,
+    analyze: { ...state.analyze, running: true, error: null },
+  };
+}
+
+export function analyzeFinished(
+  state: PreviewPanelState,
+  result: { issues: readonly PreviewAnalyzeIssue[]; clean: boolean; output: string },
+): PreviewPanelState {
+  return {
+    ...state,
+    analyze: {
+      running: false,
+      issues: result.issues,
+      clean: result.clean,
+      output: result.output,
+      error: null,
+    },
+  };
+}
+
+export function analyzeFailed(state: PreviewPanelState, error: string): PreviewPanelState {
+  return {
+    ...state,
+    analyze: { ...state.analyze, running: false, error },
+  };
+}
+
+// ── Quality gates: flutter test ─────────────────────────────────────────────
+
+export function testRequested(state: PreviewPanelState): PreviewPanelState {
+  return {
+    ...state,
+    test: { ...state.test, running: true, error: null },
+  };
+}
+
+export function testFinished(
+  state: PreviewPanelState,
+  result: PreviewTestResult,
+): PreviewPanelState {
+  return {
+    ...state,
+    test: {
+      running: false,
+      passed: result.passed,
+      failed: result.failed,
+      skipped: result.skipped,
+      output: result.output,
+      error: null,
+    },
+  };
+}
+
+export function testFailed(state: PreviewPanelState, error: string): PreviewPanelState {
+  return {
+    ...state,
+    test: { ...state.test, running: false, error },
+  };
+}
+
+// ── Release builds ──────────────────────────────────────────────────────────
+
+export interface BuildRequestOptions {
+  readonly target: PreviewBuildTarget;
+  readonly channel: PreviewBuildChannel;
+}
+
+export function buildRequested(
+  state: PreviewPanelState,
+  options: BuildRequestOptions,
+): PreviewPanelState {
+  return {
+    ...state,
+    build: {
+      running: true,
+      buildId: null,
+      status: "running",
+      target: options.target,
+      channel: options.channel,
+      exitCode: null,
+      outputPath: null,
+      error: null,
+      logs: [],
+    },
+  };
+}
+
+export function buildAccepted(state: PreviewPanelState, buildId: string): PreviewPanelState {
+  return { ...state, build: { ...state.build, buildId } };
+}
+
+/**
+ * Merge a `preview.buildState` poll snapshot. Once the engine reports a
+ * terminal status the poll stops naturally (the panel only polls while the
+ * machine thinks the build is running).
+ */
+export function mergeBuildState(
+  state: PreviewPanelState,
+  snapshot: PreviewBuildStateResult,
+): PreviewPanelState {
+  const isTerminal = snapshot.status === "succeeded" || snapshot.status === "failed";
+  return {
+    ...state,
+    build: {
+      running: !isTerminal,
+      buildId: snapshot.buildId,
+      status: snapshot.status,
+      target: state.build.target,
+      channel: state.build.channel,
+      exitCode: snapshot.exitCode ?? null,
+      outputPath: snapshot.outputPath ?? null,
+      error: snapshot.error ?? null,
+      logs: snapshot.logs,
+    },
+  };
+}
+
+export function buildFailed(state: PreviewPanelState, error: string): PreviewPanelState {
+  return {
+    ...state,
+    build: { ...state.build, running: false, status: "failed", error },
+  };
 }

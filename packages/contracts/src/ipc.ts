@@ -170,6 +170,14 @@ import type {
   PreviewState,
   PreviewStopInput,
   PreviewStopResult,
+  PreviewAnalyzeInput,
+  PreviewAnalyzeResult,
+  PreviewTestInput,
+  PreviewTestResult,
+  PreviewBuildStartInput,
+  PreviewBuildStartResult,
+  PreviewBuildStateInput,
+  PreviewBuildStateResult,
 } from "./preview";
 import type { StudioListThreadOutputsInput, StudioListThreadOutputsResult } from "./studio";
 import type {
@@ -887,5 +895,9 @@ export interface NativeApi {
     stop: (input: PreviewStopInput) => Promise<PreviewStopResult>;
     reload: (input: PreviewReloadInput) => Promise<PreviewReloadResult>;
     getState: (input: PreviewGetStateInput) => Promise<PreviewState>;
+    analyze: (input: PreviewAnalyzeInput) => Promise<PreviewAnalyzeResult>;
+    test: (input: PreviewTestInput) => Promise<PreviewTestResult>;
+    buildStart: (input: PreviewBuildStartInput) => Promise<PreviewBuildStartResult>;
+    buildState: (input: PreviewBuildStateInput) => Promise<PreviewBuildStateResult>;
   };
 }
