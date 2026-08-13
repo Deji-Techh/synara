@@ -11,6 +11,8 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { isStepCount, streamText, tool, type LanguageModel, type ToolSet } from "ai";
 
+import type { ChatMode } from "@caide/contracts";
+
 import type { ToolCallRecord, ToolContext, ToolDefinition } from "./tool.ts";
 
 export interface EngineModelConfig {
@@ -59,6 +61,44 @@ export interface AgentOptions {
    * iterate on their results; 1 = single-shot chat (default when no tools).
    */
   readonly maxSteps?: number;
+  /**
+   * Chat mode. `ask` strips tools for a plain Q&A answer; `plan` adds a
+   * plan-only instruction and caps the loop to a single step so the model
+   * produces a plan artifact without editing files.
+   */
+  readonly mode?: ChatMode;
+}
+
+const PLAN_MODE_SYSTEM_PROMPT =
+  "You are in plan mode. Produce a concise implementation plan for the user's request " +
+  "as structured markdown (steps, files touched, commands). Do not modify any files.";
+
+export function resolveModeSystemPrompt(
+  systemPrompt: string | undefined,
+  mode: ChatMode | undefined,
+): string {
+  if (mode !== "plan") return systemPrompt ?? "";
+  const base = systemPrompt ?? "";
+  return base ? `${base}\n\n${PLAN_MODE_SYSTEM_PROMPT}` : PLAN_MODE_SYSTEM_PROMPT;
+}
+
+function shouldExposeTools(
+  mode: ChatMode | undefined,
+  tools: readonly ToolDefinition[] | undefined,
+): boolean {
+  if (mode === "ask") return false;
+  if (mode === "plan") return false;
+  return (tools?.length ?? 0) > 0;
+}
+
+export function resolveMaxSteps(
+  mode: ChatMode | undefined,
+  toolCount: number,
+  explicitMaxSteps?: number,
+): number {
+  if (explicitMaxSteps !== undefined) return explicitMaxSteps;
+  if (mode === "plan" || mode === "ask") return 1;
+  return toolCount > 0 ? 20 : 1;
 }
 
 function toAISdkTools(
@@ -95,8 +135,13 @@ export class Agent {
     });
     this.model = provider.chatModel(options.model.modelId);
     this.history = [...(options.initialHistory ?? [])];
-    this.tools = toAISdkTools(options.tools ?? [], options.toolContext);
-    this.maxSteps = options.maxSteps ?? (options.tools && options.tools.length > 0 ? 20 : 1);
+    // ask/plan modes intentionally drop tools (see shouldExposeTools).
+    this.tools = toAISdkTools(
+      shouldExposeTools(options.mode, options.tools) ? (options.tools ?? []) : [],
+      options.toolContext,
+    );
+    const toolCount = Object.keys(this.tools).length;
+    this.maxSteps = resolveMaxSteps(options.mode, toolCount, options.maxSteps);
   }
 
   get conversation(): readonly AgentMessage[] {
@@ -104,9 +149,10 @@ export class Agent {
   }
 
   async runTurn(userMessage: string, opts: RunTurnOptions = {}): Promise<TurnResult> {
+    const systemPrompt = resolveModeSystemPrompt(this.options.systemPrompt, this.options.mode);
     const result = streamText({
       model: this.model,
-      ...(this.options.systemPrompt !== undefined && { system: this.options.systemPrompt }),
+      ...(systemPrompt !== "" && { system: systemPrompt }),
       messages: [
         ...this.history.map((message) => ({
           role: message.role,

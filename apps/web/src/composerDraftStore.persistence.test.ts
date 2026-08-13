@@ -173,6 +173,20 @@ describe("composerDraftStore restored source proposed plan", () => {
       restoredSource,
     );
   });
+
+  it("round-trips chat mode overrides through persistence hydration", () => {
+    const store = useComposerDraftStore.getState();
+
+    store.setChatMode(threadId, "ask");
+
+    const persistedState = partializeComposerDraftStoreState(
+      useComposerDraftStore.getState(),
+    ) as unknown as {
+      draftsByThreadId?: Record<string, { mode?: unknown }>;
+    };
+
+    expect(persistedState.draftsByThreadId?.[threadId]?.mode).toBe("ask");
+  });
 });
 
 describe("composerDraftStore provider references", () => {

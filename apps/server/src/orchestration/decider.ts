@@ -1654,6 +1654,7 @@ export const decideOrchestrationCommand = Effect.fn("decideOrchestrationCommand"
         dispatchOrigin: command.dispatchOrigin ?? "user",
         runtimeMode: command.runtimeMode,
         interactionMode: command.interactionMode,
+        mode: command.mode,
         ...(sourceProposedPlan !== undefined ? { sourceProposedPlan } : {}),
         createdAt: command.createdAt,
       } as const;
@@ -1745,6 +1746,7 @@ export const decideOrchestrationCommand = Effect.fn("decideOrchestrationCommand"
           dispatchOrigin: command.dispatchOrigin ?? "user",
           runtimeMode: command.runtimeMode,
           interactionMode: command.interactionMode,
+          mode: command.mode,
           ...(command.sourceProposedPlan !== undefined
             ? { sourceProposedPlan: command.sourceProposedPlan }
             : {}),

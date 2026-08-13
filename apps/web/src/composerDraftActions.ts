@@ -1036,6 +1036,36 @@ export const createComposerDraftStoreState =
         return { draftsByThreadId: nextDraftsByThreadId };
       });
     },
+    setChatMode: (threadId, mode) => {
+      if (threadId.length === 0) {
+        return;
+      }
+      const nextMode =
+        mode === "build" || mode === "ask" || mode === "local-agent" || mode === "plan"
+          ? mode
+          : null;
+      set((state) => {
+        const existing = state.draftsByThreadId[threadId];
+        if (!existing && nextMode === null) {
+          return state;
+        }
+        const base = existing ?? createEmptyThreadDraft();
+        if (base.mode === nextMode) {
+          return state;
+        }
+        const nextDraft: ComposerThreadDraftState = {
+          ...base,
+          mode: nextMode,
+        };
+        const nextDraftsByThreadId = { ...state.draftsByThreadId };
+        if (shouldRemoveDraft(nextDraft)) {
+          delete nextDraftsByThreadId[threadId];
+        } else {
+          nextDraftsByThreadId[threadId] = nextDraft;
+        }
+        return { draftsByThreadId: nextDraftsByThreadId };
+      });
+    },
     // Keep queued follow-ups with the thread draft so route changes do not hide them.
     enqueueQueuedTurn: (threadId, queuedTurn) => {
       if (threadId.length === 0) {

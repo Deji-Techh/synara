@@ -34,6 +34,7 @@ import {
   type TurnId,
   type EditorId,
   type KeybindingCommand,
+  type ChatMode,
   OrchestrationThreadActivity,
   ProviderInteractionMode,
   RuntimeMode,
@@ -278,6 +279,7 @@ import {
 } from "../proposedPlan";
 import { truncateTitle } from "../truncateTitle";
 import {
+  DEFAULT_CHAT_MODE,
   DEFAULT_INTERACTION_MODE,
   DEFAULT_RUNTIME_MODE,
   DEFAULT_THREAD_TERMINAL_ID,
@@ -489,6 +491,7 @@ import {
 } from "./chat/ComposerLocalDirectoryMenu";
 import { ComposerPendingApprovalPanel } from "./chat/ComposerPendingApprovalPanel";
 import { ComposerExtrasMenu } from "./chat/ComposerExtrasMenu";
+import { ChatModeSelector } from "./chat/ChatModeSelector";
 import { ContextWindowMeter } from "./chat/ContextWindowMeter";
 import { ComposerInputBanners } from "./chat/ComposerInputBanners";
 import { ComposerPendingUserInputPanel } from "./chat/ComposerPendingUserInputPanel";
@@ -1292,6 +1295,7 @@ export default function ChatView({
   const setComposerDraftInteractionMode = useComposerDraftStore(
     (store) => store.setInteractionMode,
   );
+  const setComposerDraftChatMode = useComposerDraftStore((store) => store.setChatMode);
   const enqueueQueuedComposerTurn = useComposerDraftStore((store) => store.enqueueQueuedTurn);
   const insertQueuedComposerTurn = useComposerDraftStore((store) => store.insertQueuedTurn);
   const removeQueuedComposerTurnFromDraft = useComposerDraftStore(
@@ -1870,6 +1874,7 @@ export default function ChatView({
   }, [runtimeMode, threadId]);
   const interactionMode =
     composerDraft.interactionMode ?? activeThread?.interactionMode ?? DEFAULT_INTERACTION_MODE;
+  const chatMode = composerDraft.mode ?? DEFAULT_CHAT_MODE;
   const isServerThread = serverThread !== undefined;
   const isLocalDraftThread = !isServerThread && localDraftThread !== undefined;
   const canCheckoutPullRequestIntoThread = isLocalDraftThread;
@@ -5016,6 +5021,14 @@ export default function ChatView({
   const toggleInteractionMode = useCallback(() => {
     handleInteractionModeChange(interactionMode === "plan" ? "default" : "plan");
   }, [handleInteractionModeChange, interactionMode]);
+  const handleChatModeChange = useCallback(
+    (mode: ChatMode) => {
+      if (mode === chatMode) return;
+      setComposerDraftChatMode(threadId, mode);
+      scheduleComposerFocus();
+    },
+    [chatMode, scheduleComposerFocus, setComposerDraftChatMode, threadId],
+  );
   const togglePlanSidebar = useCallback(() => {
     setPlanSidebarOpen((open) => {
       if (open) {
@@ -7402,6 +7415,7 @@ export default function ChatView({
       queuedChatTurn?.providerOptionsForDispatch ?? providerOptionsForDispatch;
     const runtimeModeForSend = queuedChatTurn?.runtimeMode ?? runtimeMode;
     let interactionModeForSend = queuedChatTurn?.interactionMode ?? interactionMode;
+    const chatModeForSend = queuedChatTurn?.mode ?? chatMode;
     const envModeForSend = queuedChatTurn?.envMode ?? envMode;
     const {
       trimmedPrompt: trimmed,
@@ -7809,6 +7823,7 @@ export default function ChatView({
         ...(sourceProposedPlanForSend ? { sourceProposedPlan: sourceProposedPlanForSend } : {}),
         runtimeMode: runtimeModeForSend,
         interactionMode: interactionModeForSend,
+        mode: chatModeForSend,
         envMode: envModeForSend,
       });
       return true;
@@ -8474,6 +8489,7 @@ export default function ChatView({
           dispatchMode,
           runtimeMode: nextRuntimeModeForSend,
           interactionMode: interactionModeForSend,
+          mode: chatModeForSend,
           ...(sourceProposedPlanForSend ? { sourceProposedPlan: sourceProposedPlanForSend } : {}),
           createdAt: messageCreatedAt,
         }),
@@ -10965,6 +10981,9 @@ export default function ChatView({
   const relocateComposerLeadingControls = composerFooterControlsPlan.relocateLeadingControls;
   const renderComposerLeadingControls = (options: { iconOnly: boolean }) => (
     <>
+      {!options.iconOnly ? (
+        <ChatModeSelector mode={chatMode} onChatModeChange={handleChatModeChange} />
+      ) : null}
       <ComposerExtrasMenu
         interactionMode={interactionMode}
         supportsFastMode={composerTraitSelection.caps.supportsFastMode}

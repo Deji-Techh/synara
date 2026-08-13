@@ -234,6 +234,20 @@ export const DEFAULT_RUNTIME_MODE: RuntimeMode = "full-access";
 export const ProviderInteractionMode = Schema.Literals(["default", "plan"]);
 export type ProviderInteractionMode = typeof ProviderInteractionMode.Type;
 export const DEFAULT_PROVIDER_INTERACTION_MODE: ProviderInteractionMode = "default";
+
+/**
+ * Chat mode — which kind of agent behavior a turn runs under. Maps to the
+ * engine's session-mode routing; other adapters ignore it.
+ *
+ * - `build`: the Flutter builder agent loop (tools enabled).
+ * - `ask`: plain Q&A — no tool execution, single-step answer.
+ * - `local-agent`: project-aware scripting for the current workspace (same
+ *   engine loop as `build`, kept as a distinct label for parity with Caide).
+ * - `plan`: produce a plan artifact only — single-step, no file edits.
+ */
+export const ChatMode = Schema.Literals(["build", "ask", "local-agent", "plan"]);
+export type ChatMode = typeof ChatMode.Type;
+export const DEFAULT_CHAT_MODE: ChatMode = "build";
 const SidechatSourceThreadId = Schema.optional(Schema.NullOr(ThreadId)).pipe(
   Schema.withDecodingDefault(() => null),
 );
@@ -1304,6 +1318,7 @@ export const ThreadTurnStartCommand = Schema.Struct({
   interactionMode: ProviderInteractionMode.pipe(
     Schema.withDecodingDefault(() => DEFAULT_PROVIDER_INTERACTION_MODE),
   ),
+  mode: Schema.optional(ChatMode).pipe(Schema.withDecodingDefault(() => DEFAULT_CHAT_MODE)),
   sourceProposedPlan: Schema.optional(SourceProposedPlanReference),
   createdAt: IsoDateTime,
 });
@@ -1329,6 +1344,7 @@ const ClientThreadTurnStartCommand = Schema.Struct({
   ),
   runtimeMode: RuntimeMode,
   interactionMode: ProviderInteractionMode,
+  mode: Schema.optional(ChatMode).pipe(Schema.withDecodingDefault(() => DEFAULT_CHAT_MODE)),
   sourceProposedPlan: Schema.optional(SourceProposedPlanReference),
   createdAt: IsoDateTime,
 });
@@ -1374,6 +1390,7 @@ const ThreadDispatchQueuedTurnCommand = Schema.Struct({
   interactionMode: ProviderInteractionMode.pipe(
     Schema.withDecodingDefault(() => DEFAULT_PROVIDER_INTERACTION_MODE),
   ),
+  mode: Schema.optional(ChatMode).pipe(Schema.withDecodingDefault(() => DEFAULT_CHAT_MODE)),
   sourceProposedPlan: Schema.optional(SourceProposedPlanReference),
   createdAt: IsoDateTime,
 });
@@ -1930,6 +1947,7 @@ export const ThreadTurnStartRequestedPayload = Schema.Struct({
   interactionMode: ProviderInteractionMode.pipe(
     Schema.withDecodingDefault(() => DEFAULT_PROVIDER_INTERACTION_MODE),
   ),
+  mode: Schema.optional(ChatMode).pipe(Schema.withDecodingDefault(() => DEFAULT_CHAT_MODE)),
   sourceProposedPlan: Schema.optional(SourceProposedPlanReference),
   createdAt: IsoDateTime,
 });

@@ -4,6 +4,7 @@
 
 import {
   type ChatAttachment,
+  type ChatMode,
   type CheckpointRef,
   CommandId,
   EventId,
@@ -1098,6 +1099,7 @@ const make = Effect.gen(function* () {
       readonly modelSelection?: ModelSelection;
       readonly providerOptions?: ProviderStartOptions;
       readonly runtimeMode?: RuntimeMode;
+      readonly mode?: ChatMode;
     },
   ) {
     const thread = yield* resolveThread(threadId);
@@ -1158,6 +1160,7 @@ const make = Effect.gen(function* () {
       ...(effectiveCwd ? { cwd: effectiveCwd } : {}),
       modelSelection: desiredModelSelection,
       providerOptions: resolvedProviderOptions,
+      ...(options?.mode !== undefined ? { mode: options.mode } : {}),
       runtimeMode: desiredRuntimeMode,
     };
 
@@ -1359,6 +1362,7 @@ const make = Effect.gen(function* () {
     readonly providerOptions?: ProviderStartOptions;
     readonly runtimeMode?: RuntimeMode;
     readonly interactionMode?: "default" | "plan";
+    readonly mode?: ChatMode;
     readonly dispatchMode?: "queue" | "steer";
     readonly createdAt: string;
   }) {
@@ -1453,6 +1457,7 @@ const make = Effect.gen(function* () {
         ...(input.modelSelection !== undefined ? { modelSelection: input.modelSelection } : {}),
         ...(input.providerOptions !== undefined ? { providerOptions: input.providerOptions } : {}),
         ...(input.runtimeMode !== undefined ? { runtimeMode: input.runtimeMode } : {}),
+        ...(input.mode !== undefined ? { mode: input.mode } : {}),
       },
     );
     if (input.providerOptions !== undefined) {
@@ -1733,6 +1738,7 @@ const make = Effect.gen(function* () {
         ...(input.modelSelection !== undefined ? { modelSelection: input.modelSelection } : {}),
         ...(input.providerOptions !== undefined ? { providerOptions: input.providerOptions } : {}),
         ...(input.runtimeMode !== undefined ? { runtimeMode: input.runtimeMode } : {}),
+        ...(input.mode !== undefined ? { mode: input.mode } : {}),
       });
       const replayWithTranscriptBootstrap = (
         cause: ProviderServiceError,
@@ -2317,6 +2323,7 @@ const make = Effect.gen(function* () {
         ...(event.payload.runtimeMode !== undefined
           ? { runtimeMode: event.payload.runtimeMode }
           : {}),
+        ...(event.payload.mode !== undefined ? { mode: event.payload.mode } : {}),
         ...(event.payload.reviewTarget !== undefined
           ? { reviewTarget: event.payload.reviewTarget }
           : {}),
@@ -2456,6 +2463,7 @@ const make = Effect.gen(function* () {
             : {}),
           runtimeMode: nextQueuedTurn.runtimeMode,
           interactionMode: nextQueuedTurn.interactionMode,
+          mode: nextQueuedTurn.mode,
           ...(nextQueuedTurn.sourceProposedPlan !== undefined
             ? { sourceProposedPlan: nextQueuedTurn.sourceProposedPlan }
             : {}),

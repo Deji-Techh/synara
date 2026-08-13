@@ -550,13 +550,33 @@ describe("composerDraftStore runtime and interaction settings", () => {
     );
   });
 
+  it("stores chat mode overrides in the composer draft", () => {
+    const store = useComposerDraftStore.getState();
+
+    store.setChatMode(threadId, "ask");
+
+    expect(useComposerDraftStore.getState().draftsByThreadId[threadId]?.mode).toBe("ask");
+  });
+
+  it("clears chat mode overrides when set back to null", () => {
+    const store = useComposerDraftStore.getState();
+
+    store.setChatMode(threadId, "plan");
+    store.setChatMode(threadId, null);
+
+    // Clearing the only draft setting drops the bare draft entirely.
+    expect(useComposerDraftStore.getState().draftsByThreadId[threadId]).toBeUndefined();
+  });
+
   it("removes empty settings-only drafts when overrides are cleared", () => {
     const store = useComposerDraftStore.getState();
 
     store.setRuntimeMode(threadId, "approval-required");
     store.setInteractionMode(threadId, "plan");
+    store.setChatMode(threadId, "ask");
     store.setRuntimeMode(threadId, null);
     store.setInteractionMode(threadId, null);
+    store.setChatMode(threadId, null);
 
     expect(useComposerDraftStore.getState().draftsByThreadId[threadId]).toBeUndefined();
   });

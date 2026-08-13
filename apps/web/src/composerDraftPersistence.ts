@@ -3,6 +3,7 @@
 // Exports: Persist middleware transitions and persisted state type.
 
 import {
+  ChatMode,
   ModelSelection,
   OrchestrationProposedPlanId,
   OrchestrationThreadPullRequest,
@@ -173,6 +174,7 @@ const PersistedQueuedComposerChatTurn = Schema.Struct({
   sourceProposedPlan: Schema.optionalKey(PersistedSourceProposedPlanReference),
   runtimeMode: RuntimeMode,
   interactionMode: ProviderInteractionMode,
+  mode: Schema.optionalKey(ChatMode),
   envMode: DraftThreadEnvModeSchema,
 });
 
@@ -185,6 +187,7 @@ const PersistedQueuedComposerPlanFollowUp = Schema.Struct({
   previewText: Schema.String,
   text: Schema.String,
   interactionMode: ProviderInteractionMode,
+  mode: Schema.optionalKey(ChatMode),
   selectedProvider: ProviderKind,
   selectedModel: Schema.NullOr(Schema.String),
   selectedPromptEffort: Schema.NullOr(Schema.String),
@@ -249,6 +252,7 @@ const PersistedComposerThreadDraftState = Schema.Struct({
   activeProvider: Schema.optionalKey(Schema.NullOr(ProviderKind)),
   runtimeMode: Schema.optionalKey(RuntimeMode),
   interactionMode: Schema.optionalKey(ProviderInteractionMode),
+  mode: Schema.optionalKey(ChatMode),
 });
 
 type PersistedComposerThreadDraftState = typeof PersistedComposerThreadDraftState.Type;
@@ -615,6 +619,13 @@ function normalizePersistedQueuedTurns(
         candidate.interactionMode === "default" || candidate.interactionMode === "plan"
           ? candidate.interactionMode
           : null;
+      const mode =
+        candidate.mode === "build" ||
+        candidate.mode === "ask" ||
+        candidate.mode === "local-agent" ||
+        candidate.mode === "plan"
+          ? candidate.mode
+          : null;
       const envMode =
         candidate.envMode === "local" || candidate.envMode === "worktree"
           ? candidate.envMode
@@ -644,6 +655,7 @@ function normalizePersistedQueuedTurns(
         ...(sourceProposedPlan ? { sourceProposedPlan } : {}),
         runtimeMode,
         interactionMode,
+        ...(mode ? { mode } : {}),
         envMode,
       });
       seenIds.add(id);
@@ -655,6 +667,13 @@ function normalizePersistedQueuedTurns(
         candidate.interactionMode === "default" || candidate.interactionMode === "plan"
           ? candidate.interactionMode
           : null;
+      const mode =
+        candidate.mode === "build" ||
+        candidate.mode === "ask" ||
+        candidate.mode === "local-agent" ||
+        candidate.mode === "plan"
+          ? candidate.mode
+          : null;
       if (interactionMode === null) {
         continue;
       }
@@ -665,6 +684,7 @@ function normalizePersistedQueuedTurns(
         previewText,
         text,
         interactionMode,
+        ...(mode ? { mode } : {}),
         selectedProvider,
         selectedModel,
         selectedPromptEffort,
@@ -1069,6 +1089,7 @@ export function partializeComposerDraftStoreState(
             : {}),
           runtimeMode: queuedTurn.runtimeMode,
           interactionMode: queuedTurn.interactionMode,
+          ...(queuedTurn.mode ? { mode: queuedTurn.mode } : {}),
           envMode: queuedTurn.envMode,
         });
         continue;
@@ -1080,6 +1101,7 @@ export function partializeComposerDraftStoreState(
         previewText: queuedTurn.previewText,
         text: queuedTurn.text,
         interactionMode: queuedTurn.interactionMode,
+        ...(queuedTurn.mode ? { mode: queuedTurn.mode } : {}),
         selectedProvider: queuedTurn.selectedProvider,
         selectedModel: queuedTurn.selectedModel,
         selectedPromptEffort: queuedTurn.selectedPromptEffort,
@@ -1108,7 +1130,8 @@ export function partializeComposerDraftStoreState(
       draft.restoredSourceProposedPlan == null &&
       !hasModelData &&
       draft.runtimeMode === null &&
-      draft.interactionMode === null
+      draft.interactionMode === null &&
+      draft.mode === null
     ) {
       continue;
     }
@@ -1244,6 +1267,7 @@ export function partializeComposerDraftStoreState(
         : {}),
       ...(draft.runtimeMode ? { runtimeMode: draft.runtimeMode } : {}),
       ...(draft.interactionMode ? { interactionMode: draft.interactionMode } : {}),
+      ...(draft.mode ? { mode: draft.mode } : {}),
     };
     persistedDraftsByThreadId[threadId as ThreadId] = persistedDraft;
   }
@@ -1419,5 +1443,6 @@ export function toHydratedThreadDraft(
     activeProvider,
     runtimeMode: persistedDraft.runtimeMode ?? null,
     interactionMode: persistedDraft.interactionMode ?? null,
+    mode: persistedDraft.mode ?? null,
   };
 }

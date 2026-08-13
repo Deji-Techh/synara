@@ -5,6 +5,8 @@
 1. **After EVERY compaction, re-read this AGENTS.md and `plans/008-flutter-builder-engine.md`** before continuing work. Do not assume context survived.
 2. **Commit after EVERY major change.** Major change = any milestone step, any new tool/feature, any significant refactor, any plan/AGENTS.md update. Commit even if the change is unpolished. Never leave the working tree dirty across sessions for structural work.
 3. The product mission (see next section) overrides any codebase-local convention that conflicts with it.
+4. **New product = "new caide".** The end state must be: the `apps/web` + `apps/server` + `apps/engine` harness of Caide, fully functional with the dyad×caide harness, AND the ability to create a real Flutter app, build it, and preview it. Flutter build + preview MUST work end-to-end.
+5. **Autonomy mandate (user directive).** The user granted open-ended autonomous execution on the Full Caide Import (plans/009): proceed through milestones without stopping to ask for permissions. Execute the plan to completion, wire up everything from dyad×caide that isn't yet supported, make Settings fully work, keep the harness/shell/github features in the Caide portions working, and improve UI/UX/animations while doing it. Do not stall on questions; if truly blocked, note the blocker, leave the tree in a safe committable state, and move on.
 
 ## Project Mission (Flutter Builder)
 
