@@ -45,6 +45,8 @@ export interface ThemeState {
   mode: ThemeMode;
   /** Ignore the theme pack's custom UI font and let the native system stack apply. */
   systemUiFont: boolean;
+  /** Last palette preset applied to both chrome variants (null = stock/default). */
+  appliedPaletteId: string | null;
 }
 
 export interface CodeThemeOption {
@@ -276,6 +278,7 @@ export const DEFAULT_THEME_STATE: ThemeState = {
   },
   systemUiFont: true,
   mode: "system",
+  appliedPaletteId: null,
 };
 
 // ─── Theme catalog helpers ────────────────────────────────────────────────
@@ -402,6 +405,7 @@ export function normalizeThemeState(value: unknown): ThemeState {
     // native stack, while an explicit preference always wins after the first save.
     systemUiFont:
       typeof state.systemUiFont === "boolean" ? state.systemUiFont : !hasStoredCustomUiFont(state),
+    appliedPaletteId: typeof state.appliedPaletteId === "string" ? state.appliedPaletteId : null,
   };
 }
 
@@ -648,6 +652,19 @@ export function resetThemeVariant(state: ThemeState, variant: ThemeVariant): The
     codeThemeIds: {
       ...state.codeThemeIds,
       [variant]: DEFAULT_THEME_STATE.codeThemeIds[variant],
+    },
+  };
+}
+
+export function applyPaletteTheme(
+  state: ThemeState,
+  chromeThemes: Record<ThemeVariant, ChromeTheme>,
+): ThemeState {
+  return {
+    ...state,
+    chromeThemes: {
+      dark: normalizeChromeTheme(chromeThemes.dark, "dark"),
+      light: normalizeChromeTheme(chromeThemes.light, "light"),
     },
   };
 }

@@ -59,6 +59,8 @@ import {
 } from "../components/settings/SettingsPanelPrimitives";
 import { SkillsSettingsPanel } from "../components/settings/SkillsSettingsPanel";
 import { ThemeModePicker } from "../components/settings/ThemeModePicker";
+import { PaletteSwatchPicker } from "../components/settings/PaletteSwatchPicker";
+import { PALETTE_THEMES, type PaletteThemeId } from "../theme/paletteThemes";
 import { ThemePackEditor } from "../components/ThemePackEditor";
 import {
   CHAT_CONTENT_CARD_CLASS_NAME,
@@ -169,6 +171,7 @@ function SettingsRouteView() {
   const activeSectionItem = SETTINGS_NAV_ITEMS.find((item) => item.id === activeSection)!;
 
   const {
+    applyPaletteTheme,
     isDefaultActiveTheme,
     resetAllThemes,
     resolvedTheme,
@@ -176,6 +179,7 @@ function SettingsRouteView() {
     setTheme,
     systemUiFont,
     setSystemUiFont,
+    themeState,
   } = useTheme();
   const { settings, defaults, updateSettings, resetSettings } = useAppSettings();
   const desktopTopBarTrafficLightGutterClassName = useDesktopTopBarTrafficLightGutterClassName();
@@ -625,6 +629,42 @@ function SettingsRouteView() {
             (`?target=setting-theme`) working without the SettingsRow. */}
         <div id={settingRowAnchorId("Theme")} className="scroll-mt-24 pb-1.5">
           <ThemeModePicker value={theme} onValueChange={setTheme} ariaLabel="Theme preference" />
+        </div>
+
+        {/* Quick-start palettes: apply a curated chrome (surface/ink/accent) to both
+            variants, then let the per-variant pack editors refine further. */}
+        <div className="space-y-2 border-t border-border/70 pt-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Palette</p>
+              <p className="mt-0.5 text-xs text-muted-foreground/80">
+                Start from a preset chrome and fine-tune below.
+              </p>
+            </div>
+            {themeState.appliedPaletteId ? (
+              <SettingResetButton
+                label="palette"
+                onClick={() => {
+                  const defaultTheme = PALETTE_THEMES[0];
+                  if (defaultTheme) {
+                    applyPaletteTheme("default", defaultTheme.chromeThemes);
+                  }
+                }}
+              />
+            ) : null}
+          </div>
+          <PaletteSwatchPicker
+            value={
+              PALETTE_THEMES.some((option) => option.id === themeState.appliedPaletteId)
+                ? (themeState.appliedPaletteId as PaletteThemeId)
+                : "default"
+            }
+            onValueChange={(next) => {
+              const option = PALETTE_THEMES.find((themeOption) => themeOption.id === next);
+              if (option) applyPaletteTheme(next, option.chromeThemes);
+            }}
+            ariaLabel="Palette preset"
+          />
         </div>
 
         <div className="space-y-3">

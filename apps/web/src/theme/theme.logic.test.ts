@@ -5,6 +5,7 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  applyPaletteTheme,
   CODE_THEME_OPTIONS,
   DEFAULT_CHROME_THEME_BY_VARIANT,
   DEFAULT_THEME_STATE,
@@ -21,6 +22,7 @@ import {
   setThemeCodeThemeId,
   updateThemePackFromShareString,
 } from "./theme.logic";
+import { findPaletteTheme } from "./paletteThemes";
 import { DEFAULT_MONOSPACE_FONT_FAMILY_STACK } from "../lib/fontFamily";
 
 const PROVIDED_THEME_STRING =
@@ -469,5 +471,28 @@ describe("buildThemeCssVariables", () => {
     expect(cssVariables.variables["--app-chat-code-surface"]).toBe(
       cssVariables.variables["--app-user-message-background"],
     );
+  });
+
+  describe("applyPaletteTheme", () => {
+    it("swaps both chrome variants and preserves unrelated state", () => {
+      const forest = findPaletteTheme("forest");
+
+      const next = applyPaletteTheme(DEFAULT_THEME_STATE, forest.chromeThemes);
+
+      expect(next.chromeThemes.dark).not.toEqual(DEFAULT_THEME_STATE.chromeThemes.dark);
+      expect(next.chromeThemes.dark.accent).toBe(forest.chromeThemes.dark.accent);
+      expect(next.chromeThemes.light.accent).toBe(forest.chromeThemes.light.accent);
+      expect(next.mode).toBe(DEFAULT_THEME_STATE.mode);
+      expect(next.codeThemeIds).toEqual(DEFAULT_THEME_STATE.codeThemeIds);
+    });
+
+    it("keeps an explicit palette id distinct from the applied chrome", () => {
+      const option = findPaletteTheme("forest");
+      const next = applyPaletteTheme(DEFAULT_THEME_STATE, option.chromeThemes);
+
+      expect(option.id).toBe("forest");
+      expect(next.chromeThemes.dark.ink).toBe(option.chromeThemes.dark.ink);
+      expect(next.appliedPaletteId).toBe(DEFAULT_THEME_STATE.appliedPaletteId);
+    });
   });
 });

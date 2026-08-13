@@ -14,6 +14,7 @@ import {
   type ThemePack,
   type ThemeState,
   type ThemeVariant,
+  applyPaletteTheme as applyPaletteThemeState,
   areThemePacksEqual,
   buildThemeCssVariables,
   canParseThemeShareString,
@@ -246,6 +247,13 @@ function setCodeThemeId(variant: ThemeVariant, codeThemeId: string) {
   updateStoredThemeState((state) => setThemeCodeThemeId(state, variant, codeThemeId));
 }
 
+function applyPaletteTheme(id: string, chromeThemes: Record<ThemeVariant, ChromeTheme>) {
+  updateStoredThemeState((state) => ({
+    ...applyPaletteThemeState(state, chromeThemes),
+    appliedPaletteId: id,
+  }));
+}
+
 export function useTheme() {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, () => ({
     state: DEFAULT_THEME_STATE,
@@ -286,6 +294,7 @@ export function useTheme() {
 
   return {
     activeTheme,
+    applyPaletteTheme,
     canImportThemeString,
     systemUiFont: snapshot.state.systemUiFont,
     setSystemUiFont,
