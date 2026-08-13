@@ -472,3 +472,34 @@ export type ServerUpdateSettingsInput = typeof ServerUpdateSettingsInput.Type;
 
 export const ServerUpdateSettingsResult = ServerSettingsView;
 export type ServerUpdateSettingsResult = typeof ServerUpdateSettingsResult.Type;
+
+// ── Toolchain Doctor ──────────────────────────────────────────────────
+
+export const ToolchainCheckId = Schema.Literals([
+  "flutter",
+  "dart",
+  "node",
+  "git",
+  "flutterDoctor",
+]);
+export type ToolchainCheckId = typeof ToolchainCheckId.Type;
+
+export const ToolchainCheckStatus = Schema.Literals(["ok", "missing", "error", "unknown"]);
+export type ToolchainCheckStatus = typeof ToolchainCheckStatus.Type;
+
+export const ToolchainCheck = Schema.Struct({
+  id: ToolchainCheckId,
+  label: TrimmedNonEmptyString,
+  status: ToolchainCheckStatus,
+  version: Schema.optional(Schema.NullOr(TrimmedNonEmptyString)),
+  message: Schema.optional(Schema.String),
+});
+export type ToolchainCheck = typeof ToolchainCheck.Type;
+
+export const ServerRunToolchainDoctorInput = Schema.Struct({});
+export type ServerRunToolchainDoctorInput = typeof ServerRunToolchainDoctorInput.Type;
+
+export const ServerRunToolchainDoctorResult = Schema.Struct({
+  checks: Schema.Array(ToolchainCheck),
+});
+export type ServerRunToolchainDoctorResult = typeof ServerRunToolchainDoctorResult.Type;

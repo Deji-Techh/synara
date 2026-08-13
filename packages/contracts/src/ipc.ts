@@ -190,6 +190,8 @@ import type {
   ServerProviderUpdateInput,
   ServerProviderUpdateResult,
   ServerRefreshProvidersResult,
+  ServerRunToolchainDoctorInput,
+  ServerRunToolchainDoctorResult,
   ServerStopLocalServerInput,
   ServerStopLocalServerResult,
   ServerUpdateSettingsInput,
@@ -729,6 +731,9 @@ export interface NativeApi {
     getEnvironment: () => Promise<ServerGetEnvironmentResult>;
     getSettings: () => Promise<ServerGetSettingsResult>;
     updateSettings: (input: ServerUpdateSettingsInput) => Promise<ServerUpdateSettingsResult>;
+    runToolchainDoctor: (
+      input: ServerRunToolchainDoctorInput,
+    ) => Promise<ServerRunToolchainDoctorResult>;
     getAuthSession: () => Promise<AuthSessionState>;
     bootstrapAuth: (input: AuthBootstrapInput) => Promise<AuthBootstrapResult>;
     bootstrapBearerAuth: (input: AuthBootstrapInput) => Promise<AuthBearerBootstrapResult>;

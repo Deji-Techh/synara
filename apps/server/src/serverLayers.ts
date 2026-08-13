@@ -45,6 +45,7 @@ import { ExternalMcpRepositoryLive } from "./externalMcp/Layers/ExternalMcpRepos
 import { ExternalMcpServiceLive } from "./externalMcp/Layers/ExternalMcpService";
 import { ExternalMcpGatewayLive } from "./externalMcp/Layers/ExternalMcpGateway";
 import { ServerEnvironmentLive } from "./environment/Layers/ServerEnvironment";
+import { ToolchainDoctorLive } from "./toolchain/Layers/ToolchainDoctor";
 import { AutomationRepositoryLive } from "./persistence/Layers/AutomationRepository";
 import { ProjectPullRequestPinsLive } from "./persistence/Layers/ProjectPullRequestPins";
 import { ProjectionTurnRepositoryLive } from "./persistence/Layers/ProjectionTurns";
@@ -239,6 +240,7 @@ export function makeServerRuntimeServicesLayer(
     KeybindingsLive,
     ServerSettingsLive,
     ServerEnvironmentLive,
+    ToolchainDoctorLive,
     ProfileStatsQueryLive,
     authServicesLayer,
     ServerLifecycleEventsLive,

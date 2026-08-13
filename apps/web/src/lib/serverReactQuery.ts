@@ -18,6 +18,7 @@ export const serverQueryKeys = {
   authSession: () => ["server", "auth", "session"] as const,
   environment: () => ["server", "environment"] as const,
   settings: () => ["server", "settings"] as const,
+  toolchainDoctor: () => ["server", "toolchainDoctor"] as const,
   worktrees: () => ["server", "worktrees"] as const,
   localServers: () => ["server", "localServers"] as const,
   providerUsage: (provider: ProviderKind | null | undefined, homePath?: string | null) =>

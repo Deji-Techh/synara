@@ -19,6 +19,8 @@ import { cn } from "~/lib/utils";
 import { SETTINGS_INSET_LIST_CLASS_NAME } from "~/settingsPanelStyles";
 import { useStore } from "~/store";
 import { createAllThreadsMessagelessSelector, createThreadShellsSelector } from "~/storeSelectors";
+import { DoctorDialog } from "~/components/DoctorDialog";
+import { FlaskConicalIcon } from "~/lib/icons";
 import { useSettingsRestoreSignal } from "./SettingControls";
 import { SettingsRow, SettingsSection } from "./SettingsPanelPrimitives";
 
@@ -41,6 +43,7 @@ export function AdvancedSettingsPanel(props: {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showRecoveryTools, setShowRecoveryTools] = useState(false);
   const [openKeybindingsError, setOpenKeybindingsError] = useState<string | null>(null);
+  const [doctorOpen, setDoctorOpen] = useState(false);
 
   useSettingsRestoreSignal(props.resetEpoch, () => {
     setShowRecoveryTools(false);
@@ -232,7 +235,20 @@ export function AdvancedSettingsPanel(props: {
             </div>
           ) : null}
         </SettingsRow>
+
+        <SettingsRow
+          title="Toolchain doctor"
+          description="Check the Flutter SDK, Dart, Node.js, and Git toolchain used to build and preview apps."
+          control={
+            <Button size="xs" variant="outline" onClick={() => setDoctorOpen(true)}>
+              <FlaskConicalIcon className="size-4" />
+              Run checks
+            </Button>
+          }
+        />
       </SettingsSection>
+
+      <DoctorDialog open={doctorOpen} onOpenChange={setDoctorOpen} />
 
       <SettingsSection title="About">
         <SettingsRow

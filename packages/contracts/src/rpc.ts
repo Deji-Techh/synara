@@ -211,6 +211,8 @@ import {
   ServerProviderUpdateInput,
   ServerProviderUpdateResult,
   ServerRefreshProvidersResult,
+  ServerRunToolchainDoctorInput,
+  ServerRunToolchainDoctorResult,
   ServerStopLocalServerInput,
   ServerStopLocalServerResult,
   ServerUpdateSettingsInput,
@@ -944,6 +946,12 @@ export const WsServerGetSettingsRpc = Rpc.make(WS_METHODS.serverGetSettings, {
   error: WsRpcError,
 });
 
+export const WsServerRunToolchainDoctorRpc = Rpc.make(WS_METHODS.serverRunToolchainDoctor, {
+  payload: ServerRunToolchainDoctorInput,
+  success: ServerRunToolchainDoctorResult,
+  error: WsRpcError,
+});
+
 export const WsServerUpdateSettingsRpc = Rpc.make(WS_METHODS.serverUpdateSettings, {
   payload: ServerUpdateSettingsInput,
   success: ServerUpdateSettingsResult,
@@ -1314,6 +1322,7 @@ export const WsFeatureRpcGroup = RpcGroup.make(
   WsServerGetConfigRpc,
   WsServerGetEnvironmentRpc,
   WsServerGetSettingsRpc,
+  WsServerRunToolchainDoctorRpc,
   WsServerUpdateSettingsRpc,
   WsServerRefreshProvidersRpc,
   WsServerUpdateProviderRpc,
