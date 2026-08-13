@@ -164,6 +164,26 @@ export class EngineClient {
     return this.request("preview/state", params);
   }
 
+  async analyzeRun(params: { appDir: string }): Promise<JsonRpcResponse> {
+    return this.request("analyze/run", params);
+  }
+
+  async testRun(params: { appDir: string; testPath?: string }): Promise<JsonRpcResponse> {
+    return this.request("test/run", params);
+  }
+
+  async buildStart(params: {
+    appDir: string;
+    target: "apk" | "appbundle" | "ipa";
+    channel?: "debug" | "profile" | "release";
+  }): Promise<JsonRpcResponse> {
+    return this.request("build/start", params);
+  }
+
+  async buildState(params: { buildId: string }): Promise<JsonRpcResponse> {
+    return this.request("build/state", params);
+  }
+
   async waitForSpawn(): Promise<void> {
     await once(this.child, "spawn");
   }

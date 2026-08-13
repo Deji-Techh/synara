@@ -8,8 +8,14 @@ import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 
 import {
+  AnalyzeRunParamsSchema,
+  AnalyzeRunResultSchema,
   AppCreateParamsSchema,
   AppCreateResultSchema,
+  BuildStartParamsSchema,
+  BuildStartResultSchema,
+  BuildStateParamsSchema,
+  BuildStateResultSchema,
   EchoParamsSchema,
   ENGINE_METHODS,
   ENGINE_PROTOCOL_VERSION,
@@ -29,10 +35,16 @@ import {
   PreviewStateResultSchema,
   PreviewStopParamsSchema,
   PreviewStopResultSchema,
+  TestRunParamsSchema,
+  TestResultSchema,
   type JsonRpcResponse,
 } from "./protocol.ts";
 import { startWebServerPreview, type WebServerPreview } from "./preview/webServerPreview.ts";
+import { startFlutterBuild, getFlutterBuildJob } from "./build/flutterBuild.ts";
+import { runFlutterAnalyze } from "./build/flutterAnalyze.ts";
+import { parseFlutterTestOutput } from "./build/flutterTestParse.ts";
 import { createFlutterApp } from "./tools/flutterCreate.ts";
+import { runFlutterCommand } from "./tools/flutterCommand.ts";
 
 export const ENGINE_SERVER_VERSION = "0.1.0";
 
@@ -147,12 +159,74 @@ async function handleMethod(method: string, params: unknown): Promise<unknown> {
       const { projectPath } = await createFlutterApp({
         cwd: parsed.data.cwd,
         name: parsed.data.name,
-        org: parsed.data.org,
-        platforms: parsed.data.platforms,
+        ...(parsed.data.org !== undefined ? { org: parsed.data.org } : {}),
+        ...(parsed.data.platforms !== undefined ? { platforms: parsed.data.platforms } : {}),
       });
       return AppCreateResultSchema.parse({
         appId: parsed.data.name,
         projectPath,
+      });
+    }
+    case ENGINE_METHODS.analyzeRun: {
+      const parsed = AnalyzeRunParamsSchema.safeParse(params);
+      if (!parsed.success) {
+        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "analyze/run params invalid");
+      }
+      const { issues, output } = await runFlutterAnalyze(parsed.data.appDir);
+      return AnalyzeRunResultSchema.parse({ issues, output });
+    }
+    case ENGINE_METHODS.testRun: {
+      const parsed = TestRunParamsSchema.safeParse(params);
+      if (!parsed.success) {
+        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "test/run params invalid");
+      }
+      const args = ["test", ...(parsed.data.testPath ? [parsed.data.testPath] : [])];
+      const result = await runFlutterCommand(args, parsed.data.appDir, {
+        timeoutMs: 180_000,
+      }).catch((error) => ({
+        code: 1 as const,
+        stdout: "",
+        stderr: error instanceof Error ? error.message : String(error),
+      }));
+      const counts = parseFlutterTestOutput(result.stdout);
+      return TestResultSchema.parse({
+        passed: counts.passed,
+        failed: counts.failed,
+        skipped: counts.skipped,
+        output: `${result.stdout}\n${result.stderr}`.trim(),
+      });
+    }
+    case ENGINE_METHODS.buildStart: {
+      const parsed = BuildStartParamsSchema.safeParse(params);
+      if (!parsed.success) {
+        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "build/start params invalid");
+      }
+      const job = startFlutterBuild({
+        appDir: parsed.data.appDir,
+        target: parsed.data.target,
+        ...(parsed.data.channel !== undefined ? { channel: parsed.data.channel } : {}),
+      });
+      return BuildStartResultSchema.parse({ buildId: job.buildId });
+    }
+    case ENGINE_METHODS.buildState: {
+      const parsed = BuildStateParamsSchema.safeParse(params);
+      if (!parsed.success) {
+        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "build/state params invalid");
+      }
+      const job = getFlutterBuildJob(parsed.data.buildId);
+      if (!job) {
+        throw new ProtocolParamError(
+          JSON_RPC_INVALID_PARAMS,
+          `unknown build id: ${parsed.data.buildId}`,
+        );
+      }
+      return BuildStateResultSchema.parse({
+        buildId: job.buildId,
+        status: job.state.status,
+        ...(job.state.exitCode !== null ? { exitCode: job.state.exitCode } : {}),
+        ...(job.state.outputPath ? { outputPath: job.state.outputPath } : {}),
+        ...(job.state.error ? { error: job.state.error } : {}),
+        logs: [...job.logs],
       });
     }
     case ENGINE_METHODS.ping: {
