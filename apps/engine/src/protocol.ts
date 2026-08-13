@@ -11,6 +11,7 @@ export const ENGINE_METHODS = {
   initialize: "initialize",
   ping: "engine/ping",
   echo: "engine/echo",
+  turnRun: "turn/run",
   shutdown: "engine/shutdown",
   appCreate: "app/create",
   previewStart: "preview/start",
@@ -86,6 +87,42 @@ export const EchoResultSchema = z.object({
   message: z.string(),
 });
 export type EchoResult = z.infer<typeof EchoResultSchema>;
+
+// ── turn/run ─────────────────────────────────────────────────────────
+
+/** OpenAI-compatible model config used to drive the engine's agent loop. */
+export const EngineTurnModelSchema = z.object({
+  baseUrl: z.string(),
+  apiKey: z.string(),
+  modelId: z.string(),
+});
+export type EngineTurnModel = z.infer<typeof EngineTurnModelSchema>;
+
+export const EngineTurnModeSchema = z.enum(["build", "ask", "plan"]);
+export type EngineTurnMode = z.infer<typeof EngineTurnModeSchema>;
+
+export const TurnRunParamsSchema = z.object({
+  /** User message for this turn. */
+  message: z.string(),
+  /** Chat mode: build (tools + multi-step), ask (no tools), plan (plan artifact). */
+  mode: EngineTurnModeSchema,
+  /** OpenAI-compatible model config. */
+  model: EngineTurnModelSchema,
+  /** Optional explicit workspace dir for tools (defaults to engine cwd). */
+  cwd: z.string().optional(),
+});
+export type TurnRunParams = z.infer<typeof TurnRunParamsSchema>;
+
+export const TurnRunResultSchema = z.object({
+  text: z.string(),
+  toolCalls: z.array(
+    z.object({
+      name: z.string(),
+      args: z.unknown(),
+    }),
+  ),
+});
+export type TurnRunResult = z.infer<typeof TurnRunResultSchema>;
 
 export const AppCreateParamsSchema = z.object({
   name: z.string(),

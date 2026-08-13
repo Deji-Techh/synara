@@ -82,6 +82,10 @@ export type PiServerProviderSettings = typeof PiServerProviderSettings.Type;
 export const EngineServerProviderSettings = Schema.Struct({
   ...ProviderSettingsBase,
   binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "caide-engine")),
+  // The engine is an OpenAI-compatible chat endpoint for its agent loop.
+  baseUrl: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
+  modelId: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
+  apiKeyConfigured: Schema.Boolean.pipe(Schema.withDecodingDefault(() => false)),
 });
 export type EngineServerProviderSettings = typeof EngineServerProviderSettings.Type;
 

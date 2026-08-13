@@ -6,16 +6,32 @@
 
 import { randomUUID } from "node:crypto";
 
-import { Effect, Fiber, Stream } from "effect";
+import { Effect, Fiber, Layer, Stream } from "effect";
 import { describe, expect, it } from "vitest";
 
 import { ThreadId } from "@caide/contracts";
 
+import { ServerSettingsService } from "../../serverSettings";
+import { ServerSecretStore } from "../../auth/Services/ServerSecretStore";
 import { EngineAdapter, EngineAdapterShape } from "../Services/EngineAdapter.ts";
 import { EngineAdapterLive } from "./EngineAdapter.ts";
 
+const fakeSecretStoreLayer = Layer.succeed(ServerSecretStore, {
+  get: () => Effect.succeed(null),
+  set: () => Effect.void,
+  getOrCreateRandom: () => Effect.succeed(new Uint8Array()),
+  remove: () => Effect.void,
+});
+
 function provideAdapter<T>(effect: Effect.Effect<T, unknown, EngineAdapter>) {
-  return effect.pipe(Effect.provide(EngineAdapterLive));
+  return effect.pipe(
+    Effect.provide(
+      EngineAdapterLive.pipe(
+        Layer.provide(ServerSettingsService.layerTest()),
+        Layer.provide(fakeSecretStoreLayer),
+      ),
+    ),
+  );
 }
 
 describe("EngineAdapter", () => {

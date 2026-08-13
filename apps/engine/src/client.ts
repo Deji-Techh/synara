@@ -114,13 +114,18 @@ export class EngineClient {
     this.pending.clear();
   }
 
-  async request(method: string, params?: unknown, id?: number): Promise<JsonRpcResponse> {
+  async request(
+    method: string,
+    params?: unknown,
+    id?: number,
+    timeoutMsOverride?: number,
+  ): Promise<JsonRpcResponse> {
     if (this.closed) {
       throw new EngineSpawnError("engine client is closed");
     }
     const requestId = id ?? this.nextId++;
     const request: JsonRpcRequest = { jsonrpc: "2.0", id: requestId, method, params };
-    const timeoutMs = this.options.requestTimeoutMs ?? 30_000;
+    const timeoutMs = timeoutMsOverride ?? this.options.requestTimeoutMs ?? 30_000;
     return new Promise<JsonRpcResponse>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(requestId);
@@ -142,6 +147,15 @@ export class EngineClient {
 
   async ping(): Promise<JsonRpcResponse> {
     return this.request("engine/ping");
+  }
+  async turnRun(params: {
+    message: string;
+    mode: "build" | "ask" | "plan";
+    model: { baseUrl: string; apiKey: string; modelId: string };
+    cwd?: string;
+  }): Promise<JsonRpcResponse> {
+    // Agent turns can span many model+tool steps; allow up to 5 minutes.
+    return this.request("turn/run", params, undefined, 5 * 60_000);
   }
 
   async previewStart(params: {

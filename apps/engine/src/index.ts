@@ -37,6 +37,8 @@ import {
   PreviewStopResultSchema,
   TestRunParamsSchema,
   TestResultSchema,
+  TurnRunParamsSchema,
+  TurnRunResultSchema,
   type JsonRpcResponse,
 } from "./protocol.ts";
 import { startWebServerPreview, type WebServerPreview } from "./preview/webServerPreview.ts";
@@ -45,6 +47,7 @@ import { runFlutterAnalyze } from "./build/flutterAnalyze.ts";
 import { parseFlutterTestOutput } from "./build/flutterTestParse.ts";
 import { createFlutterApp } from "./tools/flutterCreate.ts";
 import { runFlutterCommand } from "./tools/flutterCommand.ts";
+import { Agent } from "./agent/agentLoop.ts";
 
 export const ENGINE_SERVER_VERSION = "0.1.0";
 
@@ -238,6 +241,28 @@ async function handleMethod(method: string, params: unknown): Promise<unknown> {
         throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "echo params invalid");
       }
       return { message: parsed.data.message };
+    }
+    case ENGINE_METHODS.turnRun: {
+      const parsed = TurnRunParamsSchema.safeParse(params);
+      if (!parsed.success) {
+        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "turn/run params invalid");
+      }
+      const { message, mode, model, cwd } = parsed.data;
+      const agent = new Agent({
+        model,
+        mode,
+        ...(cwd !== undefined ? { toolContext: { workspaceDir: cwd, appDir: cwd } } : {}),
+      });
+      const result = await agent.runTurn(message, {
+        onTextDelta: () => {
+          // Full text is returned once the turn completes so the stdio
+          // JSON-RPC adapter can publish it in a single content event.
+        },
+      });
+      return TurnRunResultSchema.parse({
+        text: result.text,
+        toolCalls: result.toolCalls,
+      });
     }
     case ENGINE_METHODS.shutdown: {
       // Do not process.exit() here: it truncates the buffered stdout write of

@@ -45,6 +45,8 @@ import {
 } from "../Errors.ts";
 import { EngineAdapter, type EngineAdapterShape } from "../Services/EngineAdapter.ts";
 import { PROVIDER_ADAPTER_RUNTIME_EVENT_BUFFER_CAPACITY } from "../Services/ProviderAdapter.ts";
+import { ServerSettingsService } from "../../serverSettings.ts";
+import { ServerSecretStore } from "../../auth/Services/ServerSecretStore.ts";
 
 /**
  * Resolve the engine entrypoint to spawn.
@@ -81,6 +83,43 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
   Effect.gen(function* () {
     const runtimeEventQueue = yield* PubSub.unbounded<ProviderRuntimeEvent>();
     const sessions = yield* Ref.make<ReadonlyMap<ThreadId, EngineSessionContext>>(new Map());
+    const serverSettings = yield* ServerSettingsService;
+    const secretStore = yield* ServerSecretStore;
+
+    const engineModelConfig = (
+      cwd?: string,
+    ): Effect.Effect<
+      | {
+          baseUrl: string;
+          apiKey: string;
+          modelId: string;
+          cwd: string;
+        }
+      | undefined,
+      ProviderAdapterError
+    > =>
+      Effect.gen(function* () {
+        const engineSettings = (yield* serverSettings.getSettings.pipe(
+          Effect.orElseSucceed(() => undefined),
+        ))?.providers?.engine;
+        const baseUrl = engineSettings?.baseUrl ?? "";
+        const modelId = engineSettings?.modelId ?? "";
+        if (!baseUrl || !modelId) {
+          // Not configured for real model-driven turns; fall back to echo.
+          return undefined;
+        }
+        const secret = yield* secretStore
+          .get("provider-engine-api-key")
+          .pipe(Effect.orElseSucceed(() => null));
+        const decoder = new TextDecoder("utf-8");
+        const apiKey = secret ? decoder.decode(secret) : "";
+        return {
+          baseUrl,
+          apiKey,
+          modelId,
+          cwd: cwd ?? options?.cwd ?? ".",
+        };
+      });
 
     const binaryPath = options?.binaryPath;
     const resolvedCommand = options?.command ?? "bun";
@@ -358,27 +397,8 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             }),
           );
 
-          const echoResponse = yield* Effect.tryPromise({
-            try: () => context.client.request("engine/echo", { message: input.input ?? "" }),
-            catch: (cause) => processError(input.threadId, "engine echo request failed", cause),
-          });
-          if (echoResponse.error) {
-            yield* PubSub.publish(
-              runtimeEventQueue,
-              makeEvent<ProviderRuntimeEvent>(input.threadId, {
-                type: "turn.completed",
-                turnId,
-                payload: { state: "error" },
-              }),
-            );
-            return yield* Effect.fail(
-              processError(
-                input.threadId,
-                `engine echo failed: ${echoResponse.error.message}`,
-                new Error(echoResponse.error.message),
-              ),
-            );
-          }
+          const modelConfig = yield* engineModelConfig(context.session.cwd);
+          const mode: "build" | "plan" = input.interactionMode === "plan" ? "plan" : "build";
 
           yield* PubSub.publish(
             runtimeEventQueue,
@@ -388,14 +408,35 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               payload: { itemType: "assistant_message" },
             }),
           );
+
+          const text = modelConfig
+            ? yield* Effect.tryPromise({
+                try: async () => {
+                  const response = await context.client.turnRun({
+                    message: input.input ?? "",
+                    mode,
+                    model: {
+                      baseUrl: modelConfig.baseUrl,
+                      apiKey: modelConfig.apiKey,
+                      modelId: modelConfig.modelId,
+                    },
+                    ...(modelConfig.cwd !== "." ? { cwd: modelConfig.cwd } : {}),
+                  });
+                  if (response.error) {
+                    throw new Error(response.error.message);
+                  }
+                  return String((response.result as { text?: string }).text ?? "");
+                },
+                catch: (cause) => processError(input.threadId, "engine turn/run failed", cause),
+              })
+            : `hello flutter: ${input.input ?? ""}`;
+
           yield* PubSub.publish(
             runtimeEventQueue,
             makeEvent<ProviderRuntimeEvent>(input.threadId, {
               type: "content.delta",
               turnId,
-              payload: {
-                delta: `hello flutter: ${String((echoResponse.result as { message?: string }).message ?? "")}`,
-              },
+              payload: { delta: text },
             }),
           );
           yield* PubSub.publish(

@@ -8,6 +8,7 @@ import {
   ProviderCredentialsLive,
 } from "../providerCredentials";
 import { ServerSettingsLive } from "../serverSettings";
+import { ServerSecretStoreLive } from "../auth/Layers/ServerSecretStore";
 import { makeClaudeAdapterLive } from "./Layers/ClaudeAdapter";
 import { makeCodexAdapterLive } from "./Layers/CodexAdapter";
 import { CursorAdapterLive } from "./Layers/CursorAdapter";
@@ -98,7 +99,12 @@ export function makeServerProviderLayer(
       Layer.provide(kiloAdapterLayer),
       Layer.provide(openCodeAdapterLayer),
       Layer.provide(piAdapterLayer),
-      Layer.provide(EngineAdapterLive),
+      Layer.provide(
+        EngineAdapterLive.pipe(
+          Layer.provide(ServerSettingsLive),
+          Layer.provide(ServerSecretStoreLive),
+        ),
+      ),
       Layer.provide(openAiAdapterLayer),
       Layer.provide(anthropicAdapterLayer),
       Layer.provide(googleAdapterLayer),
