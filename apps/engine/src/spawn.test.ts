@@ -101,10 +101,9 @@ describe("engine stdio JSON-RPC protocol", () => {
 
     expect(response.error).toBeUndefined();
     expect(response.id).toBe(1);
-    const result = InitializeResultSchema.safeParse(response.result);
-    expect(result.success).toBe(true);
-    expect(result.data.serverName).toBe("caide-engine");
-    expect(result.data.protocolVersion).toBe(1);
+    const result = InitializeResultSchema.parse(response.result);
+    expect(result.serverName).toBe("caide-engine");
+    expect(result.protocolVersion).toBe(1);
   });
 
   it("answers engine/ping with pong", async () => {
@@ -115,9 +114,8 @@ describe("engine stdio JSON-RPC protocol", () => {
     const response = await engine.sendRequest("engine/ping");
 
     expect(response.error).toBeUndefined();
-    const result = PingResultSchema.safeParse(response.result);
-    expect(result.success).toBe(true);
-    expect(result.data.pong).toBe("pong");
+    const result = PingResultSchema.parse(response.result);
+    expect(result.pong).toBe("pong");
   });
 
   it("echoes messages back (hello world round trip)", async () => {
@@ -128,9 +126,8 @@ describe("engine stdio JSON-RPC protocol", () => {
     const response = await engine.sendRequest("engine/echo", { message: "hello flutter" });
 
     expect(response.error).toBeUndefined();
-    const result = EchoResultSchema.safeParse(response.result);
-    expect(result.success).toBe(true);
-    expect(result.data.message).toBe("hello flutter");
+    const result = EchoResultSchema.parse(response.result);
+    expect(result.message).toBe("hello flutter");
   });
 
   it("returns a JSON-RPC error for unknown methods", async () => {

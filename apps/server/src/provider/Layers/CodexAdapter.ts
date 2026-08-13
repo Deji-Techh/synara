@@ -1827,6 +1827,7 @@ const makeCodexAdapter = (options?: CodexAdapterLiveOptions) =>
         return {
           threadId: input.threadId,
           ...(composedInput !== undefined ? { input: composedInput } : {}),
+          ...(input.systemPrompt !== undefined ? { systemPrompt: input.systemPrompt } : {}),
           ...(input.skills !== undefined ? { skills: input.skills } : {}),
           ...(input.mentions !== undefined ? { mentions: input.mentions } : {}),
           ...codexModelSelectionOverrides(input.modelSelection),

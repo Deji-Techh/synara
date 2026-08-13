@@ -278,6 +278,11 @@ describe("resolveAppModelSelection", () => {
           opencode: [],
           pi: [],
           engine: [],
+          openai: [],
+          anthropic: [],
+          google: [],
+          openrouter: [],
+          ollama: [],
         },
         "galapagos-alpha",
       ),
@@ -299,6 +304,11 @@ describe("resolveAppModelSelection", () => {
           opencode: [],
           pi: [],
           engine: [],
+          openai: [],
+          anthropic: [],
+          google: [],
+          openrouter: [],
+          ollama: [],
         },
         "",
       ),
@@ -320,6 +330,11 @@ describe("resolveAppModelSelection", () => {
           opencode: [],
           pi: [],
           engine: [],
+          openai: [],
+          anthropic: [],
+          google: [],
+          openrouter: [],
+          ollama: [],
         },
         "GPT-5.3 Codex",
       ),
@@ -341,6 +356,11 @@ describe("resolveAppModelSelection", () => {
           opencode: [],
           pi: [],
           engine: [],
+          openai: [],
+          anthropic: [],
+          google: [],
+          openrouter: [],
+          ollama: [],
         },
         "sonnet",
       ),
@@ -362,6 +382,11 @@ describe("resolveAppModelSelection", () => {
           opencode: [],
           pi: [],
           engine: [],
+          openai: [],
+          anthropic: [],
+          google: [],
+          openrouter: [],
+          ollama: [],
         },
         "custom/selected-model",
       ),
@@ -602,6 +627,11 @@ describe("provider-indexed custom model settings", () => {
     customOpenCodeModels: ["openrouter/gpt-oss-120b"],
     customPiModels: ["anthropic/custom-pi"],
     customEngineModels: [],
+    customOpenAiModels: [],
+    customAnthropicModels: [],
+    customGoogleModels: [],
+    customOpenRouterModels: [],
+    customOllamaModels: [],
   } as const;
 
   it("exports one provider config per provider", () => {
@@ -616,6 +646,11 @@ describe("provider-indexed custom model settings", () => {
       "opencode",
       "pi",
       "engine",
+      "openai",
+      "anthropic",
+      "google",
+      "openrouter",
+      "ollama",
     ]);
   });
 
@@ -648,6 +683,11 @@ describe("provider-indexed custom model settings", () => {
       customOpenCodeModels: ["openai/gpt-5"],
       customPiModels: ["anthropic/default-pi"],
       customEngineModels: [],
+      customOpenAiModels: [],
+      customAnthropicModels: [],
+      customGoogleModels: [],
+      customOpenRouterModels: [],
+      customOllamaModels: [],
     } as const;
 
     expect(getDefaultCustomModelsForProvider(defaults, "codex")).toEqual(["default/codex-model"]);
@@ -731,6 +771,11 @@ describe("provider-indexed custom model settings", () => {
       opencode: ["openrouter/gpt-oss-120b"],
       pi: ["anthropic/custom-pi"],
       engine: [],
+      openai: [],
+      anthropic: [],
+      google: [],
+      openrouter: [],
+      ollama: [],
     });
   });
 
@@ -789,6 +834,11 @@ describe("provider-indexed custom model settings", () => {
         "anthropic/custom-pi",
       ],
       customEngineModels: [],
+      customOpenAiModels: [],
+      customAnthropicModels: [],
+      customGoogleModels: [],
+      customOpenRouterModels: [],
+      customOllamaModels: [],
     });
 
     expect(

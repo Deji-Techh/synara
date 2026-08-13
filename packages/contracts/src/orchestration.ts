@@ -1,6 +1,7 @@
 import { Option, Schema, SchemaIssue, Struct } from "effect";
 import {
   AntigravityModelOptions,
+  ApiModelOptions,
   ClaudeModelOptions,
   CodexModelOptions,
   CursorModelOptions,
@@ -64,8 +65,27 @@ export const ProviderKind = Schema.Literals([
   "opencode",
   "pi",
   "engine",
+  "openai",
+  "anthropic",
+  "google",
+  "openrouter",
+  "ollama",
 ]);
 export type ProviderKind = typeof ProviderKind.Type;
+
+/** API-key providers: they talk to HTTP endpoints, never a local CLI process. */
+export const API_PROVIDER_KINDS = [
+  "openai",
+  "anthropic",
+  "google",
+  "openrouter",
+  "ollama",
+] as const;
+export type ApiProviderKind = (typeof API_PROVIDER_KINDS)[number];
+
+/** Provider kinds that run a local CLI/child process. */
+export type ProviderCliKind = Exclude<ProviderKind, ApiProviderKind>;
+
 export const ProviderApprovalPolicy = Schema.Literals([
   "untrusted",
   "on-failure",
@@ -152,6 +172,42 @@ export const EngineModelSelection = Schema.Struct({
 });
 export type EngineModelSelection = typeof EngineModelSelection.Type;
 
+const ApiModelSelection = Schema.Struct({
+  provider: Schema.Literal("openai"),
+  model: TrimmedNonEmptyString,
+  options: Schema.optional(ApiModelOptions),
+});
+export const OpenAiModelSelection = ApiModelSelection;
+export type OpenAiModelSelection = typeof OpenAiModelSelection.Type;
+
+export const AnthropicModelSelection = Schema.Struct({
+  provider: Schema.Literal("anthropic"),
+  model: TrimmedNonEmptyString,
+  options: Schema.optional(ApiModelOptions),
+});
+export type AnthropicModelSelection = typeof AnthropicModelSelection.Type;
+
+export const GoogleModelSelection = Schema.Struct({
+  provider: Schema.Literal("google"),
+  model: TrimmedNonEmptyString,
+  options: Schema.optional(ApiModelOptions),
+});
+export type GoogleModelSelection = typeof GoogleModelSelection.Type;
+
+export const OpenRouterModelSelection = Schema.Struct({
+  provider: Schema.Literal("openrouter"),
+  model: TrimmedNonEmptyString,
+  options: Schema.optional(ApiModelOptions),
+});
+export type OpenRouterModelSelection = typeof OpenRouterModelSelection.Type;
+
+export const OllamaModelSelection = Schema.Struct({
+  provider: Schema.Literal("ollama"),
+  model: TrimmedNonEmptyString,
+  options: Schema.optional(ApiModelOptions),
+});
+export type OllamaModelSelection = typeof OllamaModelSelection.Type;
+
 export const ModelSelection = Schema.Union([
   CodexModelSelection,
   ClaudeModelSelection,
@@ -163,6 +219,11 @@ export const ModelSelection = Schema.Union([
   OpenCodeModelSelection,
   PiModelSelection,
   EngineModelSelection,
+  OpenAiModelSelection,
+  AnthropicModelSelection,
+  GoogleModelSelection,
+  OpenRouterModelSelection,
+  OllamaModelSelection,
 ]);
 export type ModelSelection = typeof ModelSelection.Type;
 
@@ -214,6 +275,12 @@ export const EngineProviderStartOptions = Schema.Struct({
   binaryPath: Schema.optional(TrimmedNonEmptyString),
 });
 
+// API-key providers have no CLI binary; the only tunable is the chat endpoint
+// base URL (self-hosted gateways, local Ollama servers, Azure-style overrides).
+export const ApiProviderStartOptions = Schema.Struct({
+  baseUrl: Schema.optional(TrimmedNonEmptyString),
+});
+
 export const ProviderStartOptions = Schema.Struct({
   codex: Schema.optional(CodexProviderStartOptions),
   claudeAgent: Schema.optional(ClaudeProviderStartOptions),
@@ -225,6 +292,11 @@ export const ProviderStartOptions = Schema.Struct({
   opencode: Schema.optional(OpenCodeProviderStartOptions),
   pi: Schema.optional(PiProviderStartOptions),
   engine: Schema.optional(EngineProviderStartOptions),
+  openai: Schema.optional(ApiProviderStartOptions),
+  anthropic: Schema.optional(ApiProviderStartOptions),
+  google: Schema.optional(ApiProviderStartOptions),
+  openrouter: Schema.optional(ApiProviderStartOptions),
+  ollama: Schema.optional(ApiProviderStartOptions),
 });
 export type ProviderStartOptions = typeof ProviderStartOptions.Type;
 

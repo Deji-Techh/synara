@@ -14,6 +14,11 @@ import { OpenCodeAdapter, OpenCodeAdapterShape } from "../Services/OpenCodeAdapt
 import { PiAdapter, PiAdapterShape } from "../Services/PiAdapter.ts";
 import { EngineAdapter, EngineAdapterShape } from "../Services/EngineAdapter.ts";
 import { AntigravityAdapter, AntigravityAdapterShape } from "../Services/AntigravityAdapter.ts";
+import { OpenAiAdapter, OpenAiAdapterShape } from "../Services/OpenAiAdapter.ts";
+import { AnthropicAdapter, AnthropicAdapterShape } from "../Services/AnthropicAdapter.ts";
+import { GoogleAdapter, GoogleAdapterShape } from "../Services/GoogleAdapter.ts";
+import { OpenRouterAdapter, OpenRouterAdapterShape } from "../Services/OpenRouterAdapter.ts";
+import { OllamaAdapter, OllamaAdapterShape } from "../Services/OllamaAdapter.ts";
 import { ProviderAdapterRegistry } from "../Services/ProviderAdapterRegistry.ts";
 import { ProviderAdapterRegistryLive } from "./ProviderAdapterRegistry.ts";
 import { ProviderUnsupportedError } from "../Errors.ts";
@@ -110,7 +115,7 @@ const fakeDroidAdapter: DroidAdapterShape = {
 
 const fakeOpenCodeAdapter: OpenCodeAdapterShape = {
   provider: "opencode",
-  capabilities: { sessionModelSwitch: "in-session" },
+  capabilities: { sessionModelSwitch: "restart-session" },
   startSession: vi.fn(),
   sendTurn: vi.fn(),
   interruptTurn: vi.fn(),
@@ -127,7 +132,7 @@ const fakeOpenCodeAdapter: OpenCodeAdapterShape = {
 
 const fakeKiloAdapter: KiloAdapterShape = {
   provider: "kilo",
-  capabilities: { sessionModelSwitch: "in-session" },
+  capabilities: { sessionModelSwitch: "restart-session" },
   startSession: vi.fn(),
   sendTurn: vi.fn(),
   interruptTurn: vi.fn(),
@@ -144,7 +149,7 @@ const fakeKiloAdapter: KiloAdapterShape = {
 
 const fakePiAdapter: PiAdapterShape = {
   provider: "pi",
-  capabilities: { sessionModelSwitch: "in-session" },
+  capabilities: { sessionModelSwitch: "restart-session" },
   startSession: vi.fn(),
   sendTurn: vi.fn(),
   interruptTurn: vi.fn(),
@@ -161,7 +166,7 @@ const fakePiAdapter: PiAdapterShape = {
 
 const fakeEngineAdapter: EngineAdapterShape = {
   provider: "engine",
-  capabilities: { sessionModelSwitch: "restart-session" },
+  capabilities: { sessionModelSwitch: "in-session" },
   startSession: vi.fn(),
   sendTurn: vi.fn(),
   interruptTurn: vi.fn(),
@@ -174,6 +179,7 @@ const fakeEngineAdapter: EngineAdapterShape = {
   rollbackThread: vi.fn(),
   stopAll: vi.fn(),
   streamEvents: Stream.empty,
+  startPreviewSession: vi.fn(),
   previewStart: vi.fn(),
   previewStop: vi.fn(),
   previewReload: vi.fn(),
@@ -201,6 +207,31 @@ const fakeAntigravityAdapter: AntigravityAdapterShape = {
   streamEvents: Stream.empty,
 };
 
+const makeFakeApiAdapter = <P extends "openai" | "anthropic" | "google" | "openrouter" | "ollama">(
+  provider: P,
+) => ({
+  provider,
+  capabilities: { sessionModelSwitch: "in-session" as const },
+  startSession: vi.fn(),
+  sendTurn: vi.fn(),
+  interruptTurn: vi.fn(),
+  respondToRequest: vi.fn(),
+  respondToUserInput: vi.fn(),
+  stopSession: vi.fn(),
+  listSessions: vi.fn(),
+  hasSession: vi.fn(),
+  readThread: vi.fn(),
+  rollbackThread: vi.fn(),
+  stopAll: vi.fn(),
+  streamEvents: Stream.empty,
+});
+
+const fakeOpenAiAdapter: OpenAiAdapterShape = makeFakeApiAdapter("openai");
+const fakeAnthropicAdapter: AnthropicAdapterShape = makeFakeApiAdapter("anthropic");
+const fakeGoogleAdapter: GoogleAdapterShape = makeFakeApiAdapter("google");
+const fakeOpenRouterAdapter: OpenRouterAdapterShape = makeFakeApiAdapter("openrouter");
+const fakeOllamaAdapter: OllamaAdapterShape = makeFakeApiAdapter("ollama");
+
 const layer = it.layer(
   Layer.mergeAll(
     Layer.provide(
@@ -216,6 +247,11 @@ const layer = it.layer(
         Layer.succeed(OpenCodeAdapter, fakeOpenCodeAdapter),
         Layer.succeed(PiAdapter, fakePiAdapter),
         Layer.succeed(EngineAdapter, fakeEngineAdapter),
+        Layer.succeed(OpenAiAdapter, fakeOpenAiAdapter),
+        Layer.succeed(AnthropicAdapter, fakeAnthropicAdapter),
+        Layer.succeed(GoogleAdapter, fakeGoogleAdapter),
+        Layer.succeed(OpenRouterAdapter, fakeOpenRouterAdapter),
+        Layer.succeed(OllamaAdapter, fakeOllamaAdapter),
       ),
     ),
     NodeServices.layer,
@@ -236,6 +272,11 @@ layer("ProviderAdapterRegistryLive", (it) => {
       const opencode = yield* registry.getByProvider("opencode");
       const pi = yield* registry.getByProvider("pi");
       const engine = yield* registry.getByProvider("engine");
+      const openai = yield* registry.getByProvider("openai");
+      const anthropic = yield* registry.getByProvider("anthropic");
+      const google = yield* registry.getByProvider("google");
+      const openrouter = yield* registry.getByProvider("openrouter");
+      const ollama = yield* registry.getByProvider("ollama");
       assert.equal(codex, fakeCodexAdapter);
       assert.equal(claude, fakeClaudeAdapter);
       assert.equal(cursor, fakeCursorAdapter);
@@ -246,6 +287,11 @@ layer("ProviderAdapterRegistryLive", (it) => {
       assert.equal(opencode, fakeOpenCodeAdapter);
       assert.equal(pi, fakePiAdapter);
       assert.equal(engine, fakeEngineAdapter);
+      assert.equal(openai, fakeOpenAiAdapter);
+      assert.equal(anthropic, fakeAnthropicAdapter);
+      assert.equal(google, fakeGoogleAdapter);
+      assert.equal(openrouter, fakeOpenRouterAdapter);
+      assert.equal(ollama, fakeOllamaAdapter);
 
       const providers = yield* registry.listProviders();
       assert.deepEqual(providers, [
@@ -259,6 +305,11 @@ layer("ProviderAdapterRegistryLive", (it) => {
         "opencode",
         "pi",
         "engine",
+        "openai",
+        "anthropic",
+        "google",
+        "openrouter",
+        "ollama",
       ]);
     }),
   );

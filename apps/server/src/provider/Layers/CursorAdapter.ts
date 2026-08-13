@@ -1246,8 +1246,11 @@ export function makeCursorAdapter(
           ctx,
           agentGatewayCredentials !== undefined,
         );
-        if (harnessPolicy) {
-          promptParts.unshift(harnessPolicy);
+        if (input.systemPrompt !== undefined || harnessPolicy !== null) {
+          promptParts.unshift({
+            type: "text",
+            text: [input.systemPrompt, harnessPolicy?.text].filter(Boolean).join("\n\n"),
+          });
         }
 
         ctx.activeTurnId = turnId;

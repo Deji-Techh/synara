@@ -92,12 +92,13 @@ describe("engine app/create RPC", () => {
     fs.writeFileSync(
       path.join(shimDir, "flutter"),
       [
-        "#!/bin/sh",
-        'NAME_USED="${@: -1}"',
+        "#!/bin/bash",
+        "for last; do true; done",
+        'NAME_USED="$last"',
         'PROJECT="$PWD/$NAME_USED"',
         'mkdir -p "$PROJECT/lib" "$PROJECT/test"',
         'printf \'name: %s\\n\' "$NAME_USED" > "$PROJECT/pubspec.yaml"',
-        "printf 'void main() {}\\\n' > \"$PROJECT/lib/main.dart\"",
+        "printf 'void main() {}\\n' > \"$PROJECT/lib/main.dart\"",
         "exit 0",
       ].join("\n"),
       { mode: 0o755 },
@@ -124,20 +125,18 @@ describe("engine app/create RPC", () => {
         protocolVersion: 1,
       });
       expect(initialize.error).toBeUndefined();
-      const initResult = InitializeResultSchema.safeParse(initialize.result);
-      expect(initResult.success).toBe(true);
+      const initResult = InitializeResultSchema.parse(initialize.result);
       // M2: the engine owns the flutter create scaffold tool.
-      expect(initResult.data.capabilities.flutter).toBe(true);
+      expect(initResult.capabilities.flutter).toBe(true);
 
       const response = await engine.sendRequest("app/create", {
         name: "hello_app",
         cwd: workspaceDir,
       });
       expect(response.error).toBeUndefined();
-      const result = AppCreateResultSchema.safeParse(response.result);
-      expect(result.success).toBe(true);
-      expect(result.data.appId).toBe("hello_app");
-      expect(result.data.projectPath).toBe(path.join(workspaceDir, "hello_app"));
+      const result = AppCreateResultSchema.parse(response.result);
+      expect(result.appId).toBe("hello_app");
+      expect(result.projectPath).toBe(path.join(workspaceDir, "hello_app"));
 
       expect(fs.existsSync(path.join(workspaceDir, "hello_app", "pubspec.yaml"))).toBe(true);
       expect(fs.existsSync(path.join(workspaceDir, "hello_app", "AI_RULES.md"))).toBe(true);
@@ -164,13 +163,15 @@ describe("engine app/create RPC", () => {
 
   it("surfaces flutter binary resolution failures as JSON-RPC errors", async () => {
     const badEnv: NodeJS.ProcessEnv = {
-      // Keep bun on PATH (needed to spawn the engine) but drop the shim dir so
-      // no `flutter` binary is resolvable anywhere.
       ...process.env,
-      PATH: process.env.PATH ?? "",
+      PATH: (process.env.PATH ?? "")
+        .split(path.delimiter)
+        .filter((dir) => dir !== shimDir && !fs.existsSync(path.join(dir, "flutter")))
+        .join(path.delimiter),
     };
     delete badEnv.FLUTTER_SDK_BIN;
     delete badEnv.FLUTTER_SDK_DIR;
+    delete badEnv.FLUTTER_ROOT;
     const engine = spawnEngine(badEnv);
     const child = engine.child;
     try {

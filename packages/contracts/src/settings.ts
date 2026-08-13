@@ -85,6 +85,47 @@ export const EngineServerProviderSettings = Schema.Struct({
 });
 export type EngineServerProviderSettings = typeof EngineServerProviderSettings.Type;
 
+// API-key providers authenticate over HTTP. The key itself never leaves the
+// secret store; the settings view only carries a boolean `apiKeyConfigured`
+// flag, mirroring the kilo/opencode serverPassword handling.
+const ApiProviderSettingsBase = {
+  ...ProviderSettingsBase,
+  // The chat-completions base URL. Ollama defaults to a local server; the rest
+  // default to the vendor endpoint. Empty means "use the provider default".
+  baseUrl: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
+  apiKeyConfigured: Schema.Boolean.pipe(Schema.withDecodingDefault(() => false)),
+};
+
+export const OpenAiServerProviderSettings = Schema.Struct({
+  ...ApiProviderSettingsBase,
+  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
+});
+export type OpenAiServerProviderSettings = typeof OpenAiServerProviderSettings.Type;
+
+export const AnthropicServerProviderSettings = Schema.Struct({
+  ...ApiProviderSettingsBase,
+  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
+});
+export type AnthropicServerProviderSettings = typeof AnthropicServerProviderSettings.Type;
+
+export const GoogleServerProviderSettings = Schema.Struct({
+  ...ApiProviderSettingsBase,
+  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
+});
+export type GoogleServerProviderSettings = typeof GoogleServerProviderSettings.Type;
+
+export const OpenRouterServerProviderSettings = Schema.Struct({
+  ...ApiProviderSettingsBase,
+  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
+});
+export type OpenRouterServerProviderSettings = typeof OpenRouterServerProviderSettings.Type;
+
+export const OllamaServerProviderSettings = Schema.Struct({
+  ...ApiProviderSettingsBase,
+  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
+});
+export type OllamaServerProviderSettings = typeof OllamaServerProviderSettings.Type;
+
 const DisabledSkillNames = Schema.Array(Schema.String.check(Schema.isMaxLength(256))).pipe(
   Schema.withDecodingDefault(() => []),
 );
@@ -118,6 +159,11 @@ export const ServerSettings = Schema.Struct({
     opencode: OpenCodeServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
     pi: PiServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
     engine: EngineServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
+    openai: OpenAiServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
+    anthropic: AnthropicServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
+    google: GoogleServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
+    openrouter: OpenRouterServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
+    ollama: OllamaServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
   }).pipe(Schema.withDecodingDefault(() => ({}))),
   skills: SkillsServerSettings.pipe(Schema.withDecodingDefault(() => ({}))),
 });
@@ -195,6 +241,41 @@ export const ServerSettingsPatch = Schema.Struct({
           ...ProviderSettingsBasePatch,
           binaryPath: Schema.optionalKey(StringSetting),
           agentDir: Schema.optionalKey(StringSetting),
+        }),
+      ),
+      openai: Schema.optionalKey(
+        Schema.Struct({
+          ...ProviderSettingsBasePatch,
+          baseUrl: Schema.optionalKey(StringSetting),
+          apiKey: Schema.optionalKey(StringSetting),
+        }),
+      ),
+      anthropic: Schema.optionalKey(
+        Schema.Struct({
+          ...ProviderSettingsBasePatch,
+          baseUrl: Schema.optionalKey(StringSetting),
+          apiKey: Schema.optionalKey(StringSetting),
+        }),
+      ),
+      google: Schema.optionalKey(
+        Schema.Struct({
+          ...ProviderSettingsBasePatch,
+          baseUrl: Schema.optionalKey(StringSetting),
+          apiKey: Schema.optionalKey(StringSetting),
+        }),
+      ),
+      openrouter: Schema.optionalKey(
+        Schema.Struct({
+          ...ProviderSettingsBasePatch,
+          baseUrl: Schema.optionalKey(StringSetting),
+          apiKey: Schema.optionalKey(StringSetting),
+        }),
+      ),
+      ollama: Schema.optionalKey(
+        Schema.Struct({
+          ...ProviderSettingsBasePatch,
+          baseUrl: Schema.optionalKey(StringSetting),
+          apiKey: Schema.optionalKey(StringSetting),
         }),
       ),
     }),

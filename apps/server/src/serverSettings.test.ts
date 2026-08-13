@@ -146,6 +146,43 @@ describe("ServerSettingsService", () => {
     expect(result.persisted).not.toContain("opencode-secret");
   });
 
+  it("keeps provider API keys server-only and returns configured flags to clients", async () => {
+    const result = await runWithSettings(
+      Effect.gen(function* () {
+        const service = yield* ServerSettingsService;
+        const { settingsPath } = yield* ServerConfig;
+        const fs = yield* FileSystem.FileSystem;
+        yield* service.start;
+
+        const view = yield* service.updateSettingsView({
+          providers: {
+            openai: {
+              apiKey: "sk-openai-test-key",
+            },
+            anthropic: {
+              apiKey: "sk-ant-test-key",
+            },
+          },
+        });
+        const internal = yield* service.getSettings;
+        const persisted = yield* fs.readFileString(settingsPath);
+        return { view, internal, persisted };
+      }),
+    );
+
+    expect(result.internal.providers.openai.apiKeyConfigured).toBe(true);
+    expect(result.internal.providers.anthropic.apiKeyConfigured).toBe(true);
+    expect(result.view.providers.openai).toMatchObject({ apiKeyConfigured: true });
+    expect(result.view.providers.anthropic).toMatchObject({ apiKeyConfigured: true });
+    expect(JSON.stringify(result.internal)).not.toContain("sk-openai-test-key");
+    expect(JSON.stringify(result.internal)).not.toContain("sk-ant-test-key");
+    expect(JSON.stringify(result.view)).not.toContain("sk-openai-test-key");
+    expect(JSON.stringify(result.view)).not.toContain("sk-ant-test-key");
+    expect(JSON.stringify(result.view)).not.toContain('"apiKey"');
+    expect(result.persisted).not.toContain("sk-openai-test-key");
+    expect(result.persisted).not.toContain("sk-ant-test-key");
+  });
+
   it("resolves text generation selection away from disabled providers", async () => {
     const settings = await Effect.runPromise(
       Effect.gen(function* () {

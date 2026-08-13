@@ -437,6 +437,26 @@ export function PluginLibrary() {
       plugins: false,
       skills: false,
     },
+    openai: {
+      plugins: false,
+      skills: false,
+    },
+    anthropic: {
+      plugins: false,
+      skills: false,
+    },
+    google: {
+      plugins: false,
+      skills: false,
+    },
+    openrouter: {
+      plugins: false,
+      skills: false,
+    },
+    ollama: {
+      plugins: false,
+      skills: false,
+    },
   };
 
   // Auto-fallback: when the current tab/provider combo is unsupported, render

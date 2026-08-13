@@ -15,12 +15,17 @@ import {
   BrainIcon,
   BugIcon,
   ChangesIcon,
+  CircleCheckIcon,
   ClockIcon,
+  CodeIcon,
   DeviceLaptopIcon,
+  DeviceMobileIcon,
   EraserIcon,
   FastModeIcon,
+  FileIcon,
   GitBranchIcon,
   GitForkIcon,
+  GlobeIcon,
   InfoIcon,
   ListTodoIcon,
   type LucideIcon,
@@ -62,6 +67,36 @@ function commandMenuTitle(
   item: Extract<ComposerCommandItem, { type: "slash-command" | "provider-native-command" }>,
 ): string {
   switch (item.command) {
+    case "init":
+      return "Initialize AGENTS.md";
+    case "spawn":
+      return "Spawn Subagents";
+    case "btw":
+      return "Quick Question";
+    case "goal":
+      return "Autonomous Goal";
+    case "schedule":
+      return "Schedule Automation";
+    case "browser":
+      return "Browser Agent";
+    case "grill-me":
+      return "Grill Me";
+    case "teamwork-preview":
+      return "Teamwork Preview";
+    case "learn":
+      return "Learn Skill / Rule";
+    case "doctor":
+      return "Toolchain Doctor";
+    case "test":
+      return "Flutter Test";
+    case "analyze":
+      return "Flutter Analyze";
+    case "build":
+      return "Flutter Build";
+    case "preview":
+      return "Live Preview Dock";
+    case "theme":
+      return "Theme Palette";
     case "clear":
       return "Clear";
     case "compact":
@@ -448,6 +483,21 @@ const COMPOSER_COMMAND_ITEM_GLYPH_CLASSNAME = "size-3.5";
 // stays coherent with how plan/fork/review/model/etc. appear everywhere else.
 // Don't introduce bespoke glyphs here — map to the shared `~/lib/icons` exports.
 const SLASH_COMMAND_ICONS: Record<string, LucideIcon> = {
+  init: FileIcon,
+  spawn: BotIcon,
+  btw: MessageCircleIcon,
+  goal: CircleCheckIcon,
+  schedule: ClockIcon,
+  browser: GlobeIcon,
+  "grill-me": BrainIcon,
+  "teamwork-preview": BotIcon,
+  learn: SkillCubeIcon,
+  doctor: InfoIcon,
+  test: ListTodoIcon,
+  analyze: BugIcon,
+  build: CodeIcon,
+  preview: DeviceMobileIcon,
+  theme: ChangesIcon,
   clear: EraserIcon,
   compact: Minimize2,
   model: BrainIcon,

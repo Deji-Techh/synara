@@ -3,6 +3,8 @@ import {
   PROVIDER_DISPLAY_NAMES,
   type AntigravityModelOptions,
   type AntigravityModelSelection,
+  type AnthropicModelSelection,
+  type ApiModelOptions,
   type ClaudeModelOptions,
   type ClaudeModelSelection,
   type CodexModelOptions,
@@ -11,13 +13,17 @@ import {
   type CursorModelSelection,
   type DroidModelOptions,
   type DroidModelSelection,
+  type GoogleModelSelection,
   type GrokModelOptions,
   type GrokModelSelection,
   type EngineModelOptions,
   type KiloModelSelection,
   type ModelSelection,
+  type OpenAiModelSelection,
   type OpenCodeModelOptions,
   type OpenCodeModelSelection,
+  type OpenRouterModelSelection,
+  type OllamaModelSelection,
   type PiModelOptions,
   type PiModelSelection,
   type ProviderKind,
@@ -384,6 +390,31 @@ export function buildModelSelection(
   options?: PiModelOptions | null | undefined,
 ): PiModelSelection;
 export function buildModelSelection(
+  provider: "openai",
+  model: string,
+  options?: ApiModelOptions | null | undefined,
+): OpenAiModelSelection;
+export function buildModelSelection(
+  provider: "anthropic",
+  model: string,
+  options?: ApiModelOptions | null | undefined,
+): AnthropicModelSelection;
+export function buildModelSelection(
+  provider: "google",
+  model: string,
+  options?: ApiModelOptions | null | undefined,
+): GoogleModelSelection;
+export function buildModelSelection(
+  provider: "openrouter",
+  model: string,
+  options?: ApiModelOptions | null | undefined,
+): OpenRouterModelSelection;
+export function buildModelSelection(
+  provider: "ollama",
+  model: string,
+  options?: ApiModelOptions | null | undefined,
+): OllamaModelSelection;
+export function buildModelSelection(
   provider: ProviderKind,
   model: string,
   options?: ProviderOptions | null | undefined,
@@ -473,6 +504,18 @@ export function buildModelSelection(
             provider,
             model,
             options: options as PiModelOptions,
+          }
+        : { provider, model };
+    case "openai":
+    case "anthropic":
+    case "google":
+    case "openrouter":
+    case "ollama":
+      return options
+        ? {
+            provider,
+            model,
+            options: options as ApiModelOptions,
           }
         : { provider, model };
   }

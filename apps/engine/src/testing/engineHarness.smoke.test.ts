@@ -41,8 +41,8 @@ describe("engine harness (smoke)", () => {
     await harness.runTurn("[increment]");
     expect(harness.agent.conversation).toHaveLength(4);
     const last = harness.agent.conversation[harness.agent.conversation.length - 1];
-    expect(last.role).toBe("assistant");
-    expect(last.content).toMatch(/counter=\d+/);
+    expect(last?.role).toBe("assistant");
+    expect(last?.content).toMatch(/counter=\d+/);
   }, 30_000);
 
   it("exposes the seeded workspace as a real git repo", () => {
@@ -63,7 +63,8 @@ describe("engine harness (smoke)", () => {
       body: { model: string; messages: Array<{ role: string }> };
     };
     expect(parsed.body.model).toBe("test-model");
-    expect(parsed.body.messages[parsed.body.messages.length - 1].role).toBe("user");
+    const lastMsg = parsed.body.messages[parsed.body.messages.length - 1];
+    expect(lastMsg?.role).toBe("user");
     expect(harness.getServerDumpText()).toContain('"model": "test-model"');
   }, 30_000);
 

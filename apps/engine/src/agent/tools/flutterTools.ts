@@ -58,4 +58,88 @@ export const flutterTestTool = defineTool({
   },
 });
 
-export const flutterTools: readonly ToolDefinition<any>[] = [flutterAnalyzeTool, flutterTestTool];
+export const pubAddTool = defineTool({
+  name: "pub_add",
+  description:
+    "Add one or more packages to the Flutter project (e.g. `flutter pub add flutter_riverpod google_fonts`).",
+  parameters: z.object({
+    packages: z
+      .array(z.string())
+      .describe("List of package names to add, e.g. ['flutter_riverpod', 'go_router']"),
+    dev: z.boolean().optional().describe("Whether to add as dev_dependencies (defaults to false)"),
+  }),
+  async execute(args, context) {
+    const cmd = ["pub", "add", ...(args.dev ? ["--dev"] : []), ...args.packages];
+    const result = await runFlutterCommand(cmd, context.appDir, {
+      timeoutMs: 120_000,
+      ...(context.flutterBinary !== undefined && { binary: context.flutterBinary }),
+    }).catch((error) => ({
+      code: 1 as const,
+      stdout: "",
+      stderr: error instanceof Error ? error.message : String(error),
+    }));
+    return `flutter pub add: exit ${result.code}\n${result.stdout}\n${result.stderr}`.trim();
+  },
+});
+
+export const pubRemoveTool = defineTool({
+  name: "pub_remove",
+  description: "Remove one or more packages from pubspec.yaml.",
+  parameters: z.object({
+    packages: z.array(z.string()).describe("List of package names to remove"),
+  }),
+  async execute(args, context) {
+    const cmd = ["pub", "remove", ...args.packages];
+    const result = await runFlutterCommand(cmd, context.appDir, {
+      timeoutMs: 120_000,
+      ...(context.flutterBinary !== undefined && { binary: context.flutterBinary }),
+    }).catch((error) => ({
+      code: 1 as const,
+      stdout: "",
+      stderr: error instanceof Error ? error.message : String(error),
+    }));
+    return `flutter pub remove: exit ${result.code}\n${result.stdout}\n${result.stderr}`.trim();
+  },
+});
+
+export const runCommandTool = defineTool({
+  name: "run_command",
+  description:
+    "Run a safe command inside the workspace or app directory (e.g. dart format, git, or custom scripts).",
+  parameters: z.object({
+    command: z.string().describe("Command to run"),
+    cwd: z
+      .enum(["app", "workspace"])
+      .optional()
+      .describe("Working directory for the command (defaults to app)"),
+    timeoutMs: z
+      .number()
+      .optional()
+      .describe("Command timeout in milliseconds (defaults to 60000)"),
+  }),
+  async execute(args, context) {
+    const workingDir = args.cwd === "workspace" ? context.workspaceDir : context.appDir;
+    const timeout = args.timeoutMs ?? 60_000;
+    try {
+      const { exec } = await import("node:child_process");
+      const { promisify } = await import("node:util");
+      const execAsync = promisify(exec);
+      const { stdout, stderr } = await execAsync(args.command, {
+        cwd: workingDir,
+        timeout,
+        maxBuffer: 5 * 1024 * 1024,
+      });
+      return `${stdout}\n${stderr}`.trim() || "(command succeeded with no output)";
+    } catch (err: any) {
+      return `Command failed (exit ${err.code ?? 1}):\n${err.stdout ?? ""}\n${err.stderr ?? err.message}`.trim();
+    }
+  },
+});
+
+export const flutterTools: readonly ToolDefinition<any>[] = [
+  flutterAnalyzeTool,
+  flutterTestTool,
+  pubAddTool,
+  pubRemoveTool,
+  runCommandTool,
+];

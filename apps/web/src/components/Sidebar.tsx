@@ -6269,14 +6269,7 @@ export default function Sidebar() {
                     />
                     <TooltipPopup side="top">{desktopUpdateTooltip}</TooltipPopup>
                   </Tooltip>
-                ) : (
-                  <SidebarHelpMenu
-                    onOpenShortcuts={() =>
-                      void navigate({ to: "/settings", search: { section: "shortcuts" } })
-                    }
-                    onOpenFeedback={openFeedbackDialog}
-                  />
-                )}
+                ) : null}
               </div>
             </div>
           </SidebarMenuItem>

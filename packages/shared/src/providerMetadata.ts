@@ -101,6 +101,41 @@ export const PROVIDER_DESCRIPTORS = [
     supportsNativeTurnSteering: true,
     usage: null,
   },
+  {
+    kind: "openai",
+    displayName: PROVIDER_DISPLAY_NAMES.openai,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "anthropic",
+    displayName: PROVIDER_DISPLAY_NAMES.anthropic,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "google",
+    displayName: PROVIDER_DISPLAY_NAMES.google,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "openrouter",
+    displayName: PROVIDER_DISPLAY_NAMES.openrouter,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "ollama",
+    displayName: PROVIDER_DISPLAY_NAMES.ollama,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
 ] as const satisfies readonly ProviderDescriptor[];
 
 export const PROVIDER_DESCRIPTOR_BY_KIND = Object.fromEntries(

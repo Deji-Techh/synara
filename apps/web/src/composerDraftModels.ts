@@ -217,6 +217,18 @@ export function makeModelSelection(
           ? { options: options as Extract<ModelSelection, { provider: "engine" }>["options"] }
           : {}),
       };
+    case "openai":
+    case "anthropic":
+    case "google":
+    case "openrouter":
+    case "ollama":
+      return {
+        provider,
+        model,
+        ...(options
+          ? { options: options as Extract<ModelSelection, { provider: "openai" }>["options"] }
+          : {}),
+      };
   }
 }
 

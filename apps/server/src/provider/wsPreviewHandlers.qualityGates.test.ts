@@ -13,6 +13,7 @@ import { assert, describe, expect, it } from "vitest";
 import { PREVIEW_WS_METHODS, ThreadId, WsRpcError } from "@caide/contracts";
 import { Effect, Exit } from "effect";
 
+import { ProviderUnsupportedError, ProviderAdapterProcessError } from "./Errors.ts";
 import type { EngineAdapterShape } from "./Services/EngineAdapter.ts";
 import type { ProviderAdapterRegistryShape } from "./Services/ProviderAdapterRegistry.ts";
 import { makeWsPreviewHandlers } from "./wsPreviewHandlers.ts";
@@ -23,7 +24,7 @@ const makeRegistry = (engine: Partial<EngineAdapterShape>): ProviderAdapterRegis
   getByProvider: (provider) =>
     provider === "engine"
       ? Effect.succeed(engine as EngineAdapterShape)
-      : Effect.fail(new Error("unsupported provider")),
+      : Effect.fail(new ProviderUnsupportedError({ provider })),
   listProviders: () => Effect.succeed(["engine"]),
 });
 
@@ -107,7 +108,14 @@ describe("makeWsPreviewHandlers quality gates (M5)", () => {
 
   it("maps adapter failures to WsRpcError", async () => {
     const engine: Partial<EngineAdapterShape> = {
-      previewAnalyze: () => Effect.fail(new Error("engine down")),
+      previewAnalyze: () =>
+        Effect.fail(
+          new ProviderAdapterProcessError({
+            provider: "engine",
+            threadId,
+            detail: "engine down",
+          }),
+        ),
     };
     const handlers = makeWsPreviewHandlers(makeRegistry(engine));
     const exit = await Effect.runPromise(
@@ -116,9 +124,65 @@ describe("makeWsPreviewHandlers quality gates (M5)", () => {
     assert.isTrue(Exit.isFailure(exit));
     if (Exit.isFailure(exit)) {
       const reason = exit.cause.reasons[0];
-      expect(reason?._tag).toBe("Fail");
-      expect(reason?.error).toBeInstanceOf(WsRpcError);
-      expect((reason?.error as WsRpcError).message).toBe("engine down");
+      if (reason && reason._tag === "Fail") {
+        expect(reason.error).toBeInstanceOf(WsRpcError);
+        expect((reason.error as WsRpcError).message).toBe(
+          "Provider adapter process error (engine) for thread t_1: engine down",
+        );
+      }
     }
+  });
+
+  it("ensures an engine session before dispatching a preview op", async () => {
+    let ensured = false;
+    const engine: Partial<EngineAdapterShape> = {
+      previewTest: () => Effect.succeed({ passed: 1, failed: 0, skipped: 0, output: "ok" }),
+    };
+    const handlers = makeWsPreviewHandlers(makeRegistry(engine), {
+      ensureEngineSession: (_threadId) =>
+        Effect.sync(() => {
+          ensured = true;
+        }),
+    });
+    const exit = await Effect.runPromise(
+      Effect.exit(handlers[PREVIEW_WS_METHODS.test]({ threadId, testPath: "test/a_test.dart" })),
+    );
+    assert.isTrue(Exit.isSuccess(exit));
+    expect(ensured).toBe(true);
+  });
+
+  it("fails cleanly when the ensure callback itself fails", async () => {
+    const engine: Partial<EngineAdapterShape> = {
+      previewStart: () => Effect.succeed({ url: "http://localhost:8081" }),
+    };
+    const handlers = makeWsPreviewHandlers(makeRegistry(engine), {
+      ensureEngineSession: () => Effect.fail(new WsRpcError({ message: "engine unavailable" })),
+    });
+    const exit = await Effect.runPromise(
+      Effect.exit(handlers[PREVIEW_WS_METHODS.start]({ threadId })),
+    );
+    assert.isTrue(Exit.isFailure(exit));
+    if (Exit.isFailure(exit)) {
+      const reason = exit.cause.reasons[0];
+      if (reason && reason._tag === "Fail") {
+        expect((reason.error as WsRpcError).message).toBe("engine unavailable");
+      }
+    }
+  });
+
+  it("dispatches without an ensure callback (backwards compatible)", async () => {
+    let seen = false;
+    const engine: Partial<EngineAdapterShape> = {
+      previewReload: () => {
+        seen = true;
+        return Effect.succeed({ reloaded: true });
+      },
+    };
+    const handlers = makeWsPreviewHandlers(makeRegistry(engine));
+    const exit = await Effect.runPromise(
+      Effect.exit(handlers[PREVIEW_WS_METHODS.reload]({ threadId, hotReload: true })),
+    );
+    assert.isTrue(Exit.isSuccess(exit));
+    expect(seen).toBe(true);
   });
 });

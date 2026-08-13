@@ -10,6 +10,7 @@ describe("providerStartOptionsFromServerSettings", () => {
     const settings = {
       ...DEFAULT_SERVER_SETTINGS,
       providers: {
+        ...DEFAULT_SERVER_SETTINGS.providers,
         codex: {
           ...DEFAULT_SERVER_SETTINGS.providers.codex,
           binaryPath: "",

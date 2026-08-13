@@ -81,11 +81,28 @@ type ProviderInstallTextKey =
   | "openCodeBinaryPath"
   | "openCodeServerUrl"
   | "piBinaryPath"
-  | "piAgentDir";
-type ProviderInstallPasswordKey = "kiloServerPassword" | "openCodeServerPassword";
+  | "piAgentDir"
+  | "openaiBaseUrl"
+  | "anthropicBaseUrl"
+  | "googleBaseUrl"
+  | "openrouterBaseUrl"
+  | "ollamaBaseUrl";
+type ProviderInstallPasswordKey =
+  | "kiloServerPassword"
+  | "openCodeServerPassword"
+  | "openaiApiKey"
+  | "anthropicApiKey"
+  | "googleApiKey"
+  | "openrouterApiKey"
+  | "ollamaApiKey";
 type ProviderInstallPasswordConfiguredKey =
   | "kiloServerPasswordConfigured"
-  | "openCodeServerPasswordConfigured";
+  | "openCodeServerPasswordConfigured"
+  | "openaiApiKeyConfigured"
+  | "anthropicApiKeyConfigured"
+  | "googleApiKeyConfigured"
+  | "openrouterApiKeyConfigured"
+  | "ollamaApiKeyConfigured";
 type ProviderInstallBooleanKey = "openCodeExperimentalWebSockets";
 
 type ProviderInstallTextField = {
@@ -372,6 +389,126 @@ const PROVIDER_INSTALL_SETTINGS: readonly ProviderInstallSettings[] = [
         label: "Pi agent directory",
         placeholder: "Pi agent directory",
         description: "Optional custom Pi agent directory for auth, models, skills, and commands.",
+      },
+    ],
+  },
+  {
+    provider: "openai",
+    docs: [
+      { label: "API Keys", href: "https://platform.openai.com/api-keys" },
+      { label: "Docs", href: "https://platform.openai.com/docs" },
+    ],
+    fields: [
+      {
+        kind: "password",
+        settingsKey: "openaiApiKey",
+        configuredKey: "openaiApiKeyConfigured",
+        label: "OpenAI API key",
+        placeholder: "sk-...",
+        description: "Your OpenAI secret API key used for direct model execution.",
+      },
+      {
+        kind: "text",
+        settingsKey: "openaiBaseUrl",
+        label: "OpenAI base URL",
+        placeholder: "https://api.openai.com/v1",
+        description: "Optional custom OpenAI endpoint override.",
+      },
+    ],
+  },
+  {
+    provider: "anthropic",
+    docs: [
+      { label: "API Keys", href: "https://console.anthropic.com/settings/keys" },
+      { label: "Docs", href: "https://docs.anthropic.com" },
+    ],
+    fields: [
+      {
+        kind: "password",
+        settingsKey: "anthropicApiKey",
+        configuredKey: "anthropicApiKeyConfigured",
+        label: "Anthropic API key",
+        placeholder: "sk-ant-...",
+        description: "Your Anthropic API key used for Claude models.",
+      },
+      {
+        kind: "text",
+        settingsKey: "anthropicBaseUrl",
+        label: "Anthropic base URL",
+        placeholder: "https://api.anthropic.com/v1",
+        description: "Optional custom Anthropic endpoint override.",
+      },
+    ],
+  },
+  {
+    provider: "google",
+    docs: [
+      { label: "AI Studio", href: "https://aistudio.google.com/app/apikey" },
+      { label: "Docs", href: "https://ai.google.dev/docs" },
+    ],
+    fields: [
+      {
+        kind: "password",
+        settingsKey: "googleApiKey",
+        configuredKey: "googleApiKeyConfigured",
+        label: "Gemini API key",
+        placeholder: "AIzaSy...",
+        description: "Your Google Gemini API key from AI Studio.",
+      },
+      {
+        kind: "text",
+        settingsKey: "googleBaseUrl",
+        label: "Google base URL",
+        placeholder: "https://generativelanguage.googleapis.com/v1beta",
+        description: "Optional custom Google Generative Language endpoint override.",
+      },
+    ],
+  },
+  {
+    provider: "openrouter",
+    docs: [
+      { label: "API Keys", href: "https://openrouter.ai/keys" },
+      { label: "Models", href: "https://openrouter.ai/models" },
+    ],
+    fields: [
+      {
+        kind: "password",
+        settingsKey: "openrouterApiKey",
+        configuredKey: "openrouterApiKeyConfigured",
+        label: "OpenRouter API key",
+        placeholder: "sk-or-...",
+        description: "Your OpenRouter API key for unified access to 200+ models.",
+      },
+      {
+        kind: "text",
+        settingsKey: "openrouterBaseUrl",
+        label: "OpenRouter base URL",
+        placeholder: "https://openrouter.ai/api/v1",
+        description: "Optional custom OpenRouter endpoint override.",
+      },
+    ],
+  },
+  {
+    provider: "ollama",
+    docs: [
+      { label: "Ollama Docs", href: "https://ollama.com" },
+      { label: "Models", href: "https://ollama.com/library" },
+    ],
+    fields: [
+      {
+        kind: "text",
+        settingsKey: "ollamaBaseUrl",
+        label: "Ollama server URL",
+        placeholder: "http://127.0.0.1:11434/v1",
+        description: "URL where your local Ollama server is running.",
+      },
+      {
+        kind: "password",
+        settingsKey: "ollamaApiKey",
+        configuredKey: "ollamaApiKeyConfigured",
+        label: "Ollama API key (Optional)",
+        placeholder: "ollama",
+        description: "Optional auth token if your Ollama instance is behind an auth proxy.",
       },
     ],
   },

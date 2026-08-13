@@ -366,6 +366,11 @@ describe("composerDraftStore modelSelection", () => {
         opencode: [],
         pi: [],
         engine: [],
+        openai: [],
+        anthropic: [],
+        google: [],
+        openrouter: [],
+        ollama: [],
       },
       availableModelOptionsByProvider: {
         opencode: [{ slug: "opencode/gpt-5-nano", name: "GPT-5 Nano" }],
@@ -395,6 +400,11 @@ describe("composerDraftStore modelSelection", () => {
         opencode: [],
         pi: [],
         engine: [],
+        openai: [],
+        anthropic: [],
+        google: [],
+        openrouter: [],
+        ollama: [],
       },
       availableModelOptionsByProvider: {
         opencode: [
@@ -429,6 +439,11 @@ describe("composerDraftStore modelSelection", () => {
         opencode: [],
         pi: [],
         engine: [],
+        openai: [],
+        anthropic: [],
+        google: [],
+        openrouter: [],
+        ollama: [],
       },
       availableModelOptionsByProvider: {
         opencode: [
@@ -463,6 +478,11 @@ describe("composerDraftStore modelSelection", () => {
         opencode: [],
         pi: [],
         engine: [],
+        openai: [],
+        anthropic: [],
+        google: [],
+        openrouter: [],
+        ollama: [],
       },
       availableModelOptionsByProvider: {
         pi: [

@@ -36,6 +36,12 @@ const MODEL_SLUG_SET_BY_PROVIDER: Record<ProviderKind, ReadonlySet<ModelSlug>> =
   pi: new Set<ModelSlug>(),
   // Engine's catalog is live-discovered (echo/tool harness); no static model list.
   engine: new Set<ModelSlug>(),
+  openai: new Set(MODEL_OPTIONS_BY_PROVIDER.openai.map((option) => option.slug)),
+  anthropic: new Set(MODEL_OPTIONS_BY_PROVIDER.anthropic.map((option) => option.slug)),
+  google: new Set(MODEL_OPTIONS_BY_PROVIDER.google.map((option) => option.slug)),
+  openrouter: new Set(MODEL_OPTIONS_BY_PROVIDER.openrouter.map((option) => option.slug)),
+  // Ollama's catalog is live-discovered from the local server; no static model list.
+  ollama: new Set<ModelSlug>(),
 };
 
 export interface SelectableModelOption {

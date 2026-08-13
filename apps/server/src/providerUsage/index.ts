@@ -5,6 +5,7 @@
 // plain async API (for tests) and an Effect that reads ServerConfig (for the WS RPC handler).
 
 import type {
+  ProviderCliKind,
   ProviderKind,
   ServerListProviderUsageInput,
   ServerListProviderUsageResult,
@@ -23,7 +24,7 @@ import type { ProviderUsageContext } from "./types";
 // Providers whose live snapshot is enriched with on-disk token-total lines (24h/7d/30d).
 const LOCAL_ARCHIVE_PROVIDERS: ReadonlySet<ProviderKind> = new Set(["codex", "claudeAgent"]);
 
-const providerChildKind = (provider: ProviderKind): ProviderChildKind =>
+const providerChildKind = (provider: ProviderCliKind): ProviderChildKind =>
   provider === "claudeAgent" ? "claude" : provider;
 
 function buildContext(): ProviderUsageContext {
@@ -60,10 +61,13 @@ function buildProviderContext(
   provider: ProviderKind,
   ctx: ProviderUsageContext,
 ): ProviderUsageContext {
+  if (!PROVIDER_USAGE_FETCHERS[provider]) {
+    return ctx;
+  }
   return {
     ...ctx,
     env: buildProviderChildEnvironment({
-      provider: providerChildKind(provider),
+      provider: providerChildKind(provider as ProviderCliKind),
       baseEnv: ctx.env,
     }),
   };

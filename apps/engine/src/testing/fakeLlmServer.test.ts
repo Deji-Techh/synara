@@ -46,13 +46,22 @@ async function chatCompletions(
   };
 }
 
-function parseSse(text: string): Array<Record<string, unknown>> {
+interface SseChunk {
+  choices: Array<{
+    index: number;
+    delta: { role?: string; content?: string; tool_calls?: unknown };
+    finish_reason: string | null;
+  }>;
+  usage?: { total_tokens: number; prompt_tokens: number; completion_tokens: number };
+}
+
+function parseSse(text: string): Array<SseChunk> {
   return text
     .split("\n\n")
     .filter((line) => line.startsWith("data: "))
     .map((line) => line.slice(6))
     .filter((payload) => payload !== "[DONE]")
-    .map((payload) => JSON.parse(payload) as Record<string, unknown>);
+    .map((payload) => JSON.parse(payload) as SseChunk);
 }
 
 describe("fake LLM server", () => {
@@ -91,10 +100,11 @@ describe("fake LLM server", () => {
 
     const chunks = parseSse(text);
     expect(chunks.length).toBeGreaterThan(1);
-    expect(chunks[chunks.length - 1].choices[0].finish_reason).toBe("stop");
+    const lastChunk = chunks[chunks.length - 1];
+    expect(lastChunk?.choices[0]?.finish_reason).toBe("stop");
     expect(text.endsWith("data: [DONE]\n\n")).toBe(true);
 
-    const body = chunks.map((chunk) => chunk.choices[0].delta.content).join("");
+    const body = chunks.map((chunk) => chunk.choices[0]?.delta.content ?? "").join("");
     expect(body).toContain(CANNED_MESSAGE);
   });
 
@@ -104,7 +114,7 @@ describe("fake LLM server", () => {
       stream: true,
     });
     const chunks = parseSse(text);
-    const body = chunks.map((chunk) => chunk.choices[0].delta.content).join("");
+    const body = chunks.map((chunk) => chunk.choices[0]?.delta.content ?? "").join("");
     expect(body).toContain("hello world Flutter app");
     expect(body).toContain("flutter create");
   });
@@ -115,7 +125,7 @@ describe("fake LLM server", () => {
       stream: true,
     });
     const chunks = parseSse(text);
-    const body = chunks.map((chunk) => chunk.choices[0].delta.content).join("");
+    const body = chunks.map((chunk) => chunk.choices[0]?.delta.content ?? "").join("");
     expect(body).toContain("Test case file not found");
   });
 
@@ -147,7 +157,7 @@ describe("fake LLM server", () => {
     });
     const chunks = parseSse(text);
     const last = chunks[chunks.length - 1];
-    expect(last.usage).toMatchObject({ total_tokens: 1234 });
+    expect(last?.usage).toMatchObject({ total_tokens: 1234 });
   });
 
   it("streams tool calls for [call_tool=name] prompts", async () => {
@@ -156,9 +166,10 @@ describe("fake LLM server", () => {
       stream: true,
     });
     const chunks = parseSse(text);
-    const toolCallChunks = chunks.filter((chunk) => chunk.choices[0].delta.tool_calls);
+    const toolCallChunks = chunks.filter((chunk) => chunk.choices[0]?.delta.tool_calls);
     expect(toolCallChunks.length).toBeGreaterThan(1);
-    expect(chunks[chunks.length - 1].choices[0].finish_reason).toBe("tool_calls");
+    const lastChunk = chunks[chunks.length - 1];
+    expect(lastChunk?.choices[0]?.finish_reason).toBe("tool_calls");
   });
 
   it("writes [dump] request bodies to the dump dir and embeds the path", async () => {
@@ -168,10 +179,11 @@ describe("fake LLM server", () => {
       model: "some-model",
     });
     const chunks = parseSse(text);
-    const body = chunks.map((chunk) => chunk.choices[0].delta.content).join("");
+    const body = chunks.map((chunk) => chunk.choices[0]?.delta.content ?? "").join("");
     const match = body.match(/\[\[engine-dump-path=([^\]]+)\]\]/);
     expect(match).not.toBeNull();
-    const dumpPath = match![1];
+    const dumpPath = match?.[1] ?? "";
+    expect(dumpPath.length).toBeGreaterThan(0);
     expect(fs.existsSync(dumpPath)).toBe(true);
     const dumped = JSON.parse(fs.readFileSync(dumpPath, "utf8"));
     expect(dumped.body.model).toBe("some-model");
@@ -182,7 +194,7 @@ describe("fake LLM server", () => {
     const response = await fetch(`${server.url}/v1/models`);
     expect(response.status).toBe(200);
     const parsed = (await response.json()) as { data: Array<{ id: string }> };
-    expect(parsed.data[0].id).toBe("engine-fake-model");
+    expect(parsed.data[0]?.id).toBe("engine-fake-model");
   });
 
   it("createStreamChunk emits a [DONE] marker only on the final chunk", () => {
@@ -190,7 +202,8 @@ describe("fake LLM server", () => {
     expect(first.endsWith("data: [DONE]\n\n")).toBe(false);
     const last = createStreamChunk("", "assistant", true, { total_tokens: 5 });
     expect(last.endsWith("data: [DONE]\n\n")).toBe(true);
-    const jsonLine = last.split("\n\n")[0].slice(6);
+    const firstLine = last.split("\n\n")[0] ?? "";
+    const jsonLine = firstLine.slice(6);
     expect(JSON.parse(jsonLine).usage.total_tokens).toBe(5);
   });
 });

@@ -3,6 +3,7 @@
 // Layer: Web build config
 // Depends on: Vite, Tailwind, React compiler, TanStack Router.
 
+/// <reference types="vitest" />
 import fs from "node:fs/promises";
 import path from "node:path";
 import zlib from "node:zlib";
@@ -11,7 +12,8 @@ import tailwindcss from "@tailwindcss/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import babel from "@rolldown/plugin-babel";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
-import { defineConfig, type Plugin } from "vite";
+import { type Plugin } from "vite";
+import { defineConfig } from "vitest/config";
 import pkg from "./package.json" with { type: "json" };
 
 const port = Number(process.env.PORT ?? 5733);
@@ -241,5 +243,8 @@ export default defineConfig({
         pluginTimings: false,
       },
     },
+  },
+  test: {
+    setupFiles: [path.resolve(import.meta.dirname, "../../scripts/test-setup.ts")],
   },
 });

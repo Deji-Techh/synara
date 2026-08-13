@@ -8,7 +8,7 @@ import { type ProviderKind } from "@caide/contracts";
 import type { ReactNode, SVGProps } from "react";
 
 import { CentralIcon } from "~/lib/central-icons";
-import { HammerIcon } from "~/lib/icons";
+import { FlaskConicalIcon, GlobeIcon, HammerIcon, TerminalSquareIcon } from "~/lib/icons";
 import { cn } from "~/lib/utils";
 import {
   AntigravityIcon,
@@ -75,6 +75,11 @@ export const PROVIDER_ICON_COMPONENT_BY_PROVIDER: Record<ProviderKind, Icon> = {
   opencode: OpenCodeProviderIcon,
   pi: PiIcon,
   engine: HammerIcon,
+  openai: OpenAI,
+  anthropic: ClaudeAI,
+  google: FlaskConicalIcon,
+  openrouter: GlobeIcon,
+  ollama: TerminalSquareIcon,
 };
 
 export function providerIconToneClassName(

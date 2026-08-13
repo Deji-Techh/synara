@@ -300,6 +300,31 @@ export function useProviderModelCatalog(input: {
         customModelsByProvider.engine,
         modelHintByProvider?.engine,
       ),
+      openai: getAppModelOptions(
+        "openai",
+        customModelsByProvider.openai,
+        modelHintByProvider?.openai,
+      ),
+      anthropic: getAppModelOptions(
+        "anthropic",
+        customModelsByProvider.anthropic,
+        modelHintByProvider?.anthropic,
+      ),
+      google: getAppModelOptions(
+        "google",
+        customModelsByProvider.google,
+        modelHintByProvider?.google,
+      ),
+      openrouter: getAppModelOptions(
+        "openrouter",
+        customModelsByProvider.openrouter,
+        modelHintByProvider?.openrouter,
+      ),
+      ollama: getAppModelOptions(
+        "ollama",
+        customModelsByProvider.ollama,
+        modelHintByProvider?.ollama,
+      ),
     };
     const result: Record<
       ProviderKind,
@@ -319,6 +344,11 @@ export function useProviderModelCatalog(input: {
       opencode: openCodeDynamicModelsQuery.data,
       pi: piDynamicModelsQuery.data,
       engine: undefined,
+      openai: undefined,
+      anthropic: undefined,
+      google: undefined,
+      openrouter: undefined,
+      ollama: undefined,
     };
     for (const provider of [
       "claudeAgent",
@@ -389,6 +419,11 @@ export function useProviderModelCatalog(input: {
       opencode: openCodeDynamicModelsQuery.data?.models ?? [],
       pi: piDynamicModelsQuery.data?.models ?? [],
       engine: [],
+      openai: [],
+      anthropic: [],
+      google: [],
+      openrouter: [],
+      ollama: [],
     }),
     [
       antigravityModelsQuery.data?.models,

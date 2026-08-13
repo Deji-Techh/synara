@@ -3,11 +3,12 @@
 // Layer: Orchestration domain helper
 
 interface ForkLineageThread {
-  readonly id: string;
+  readonly id?: string | undefined;
+  readonly threadId?: string | undefined;
   readonly projectId: string;
   readonly title: string;
-  readonly forkSourceThreadId?: string | null;
-  readonly sidechatSourceThreadId?: string | null;
+  readonly forkSourceThreadId?: string | null | undefined;
+  readonly sidechatSourceThreadId?: string | null | undefined;
 }
 
 interface LineageRoot {
@@ -17,19 +18,25 @@ interface LineageRoot {
 
 const FORK_VERSION_SUFFIX = /^(.*) \((\d+)\)$/;
 
+function getThreadId(thread: ForkLineageThread): string {
+  return thread.threadId ?? thread.id ?? "";
+}
+
 function findLineageRoot(
   source: ForkLineageThread,
   threadsById: ReadonlyMap<string, ForkLineageThread>,
 ): LineageRoot {
-  const visited = new Set<string>([source.id]);
+  const sourceId = getThreadId(source);
+  const visited = new Set<string>([sourceId]);
   let current = source;
 
   while (current.forkSourceThreadId) {
     const parent = threadsById.get(current.forkSourceThreadId);
-    if (!parent || parent.projectId !== source.projectId || visited.has(parent.id)) {
+    const currentId = getThreadId(current);
+    if (!parent || parent.projectId !== source.projectId || visited.has(getThreadId(parent))) {
       return { thread: current, complete: false };
     }
-    visited.add(parent.id);
+    visited.add(getThreadId(parent));
     current = parent;
   }
 
@@ -54,7 +61,7 @@ export function buildForkThreadTitle(
   source: ForkLineageThread,
   projectThreads: readonly ForkLineageThread[],
 ): string {
-  const threadsById = new Map(projectThreads.map((thread) => [thread.id, thread]));
+  const threadsById = new Map(projectThreads.map((thread) => [getThreadId(thread), thread]));
   const sourceRoot = findLineageRoot(source, threadsById);
   const fallbackTitle = parseForkVersion(source.title);
   const lineageTitle = sourceRoot.complete
@@ -65,7 +72,11 @@ export function buildForkThreadTitle(
       return false;
     }
     const root = findLineageRoot(thread, threadsById);
-    return root.complete && sourceRoot.complete && root.thread.id === sourceRoot.thread.id;
+    return (
+      root.complete &&
+      sourceRoot.complete &&
+      getThreadId(root.thread) === getThreadId(sourceRoot.thread)
+    );
   });
   const latestNamedVersion = family.reduce((latest, thread) => {
     const candidate = parseForkVersion(thread.title);

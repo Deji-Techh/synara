@@ -25,6 +25,11 @@ import { OpenCodeAdapter } from "../Services/OpenCodeAdapter.ts";
 import { PiAdapter } from "../Services/PiAdapter.ts";
 import { AntigravityAdapter } from "../Services/AntigravityAdapter.ts";
 import { EngineAdapter } from "../Services/EngineAdapter.ts";
+import { OpenAiAdapter } from "../Services/OpenAiAdapter.ts";
+import { AnthropicAdapter } from "../Services/AnthropicAdapter.ts";
+import { GoogleAdapter } from "../Services/GoogleAdapter.ts";
+import { OpenRouterAdapter } from "../Services/OpenRouterAdapter.ts";
+import { OllamaAdapter } from "../Services/OllamaAdapter.ts";
 
 export interface ProviderAdapterRegistryLiveOptions {
   readonly adapters?: ReadonlyArray<ProviderAdapterShape<ProviderAdapterError>>;
@@ -46,6 +51,11 @@ const makeProviderAdapterRegistry = (options?: ProviderAdapterRegistryLiveOption
             yield* OpenCodeAdapter,
             yield* PiAdapter,
             yield* EngineAdapter,
+            yield* OpenAiAdapter,
+            yield* AnthropicAdapter,
+            yield* GoogleAdapter,
+            yield* OpenRouterAdapter,
+            yield* OllamaAdapter,
           ];
     const byProvider = new Map(adapters.map((adapter) => [adapter.provider, adapter]));
 

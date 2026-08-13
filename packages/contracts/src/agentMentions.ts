@@ -221,6 +221,11 @@ export const AGENT_MENTION_ALIASES_BY_PROVIDER: Record<
   opencode: OPENCODE_AGENT_MENTION_ALIASES,
   pi: {},
   engine: {},
+  openai: {},
+  anthropic: {},
+  google: {},
+  openrouter: {},
+  ollama: {},
 } as const satisfies Record<ProviderKind, Record<string, AgentAliasDefinition>>;
 
 // Backward compatibility for legacy call sites that still expect a flat alias table.
@@ -240,6 +245,11 @@ const AGENT_MENTION_AUTOCOMPLETE_ALIASES_BY_PROVIDER: Record<ProviderKind, reado
   opencode: [],
   pi: [],
   engine: [],
+  openai: [],
+  anthropic: [],
+  google: [],
+  openrouter: [],
+  ollama: [],
 };
 
 function mapAgentEntries(input: Record<string, AgentAliasDefinition>): ResolvedAgentAlias[] {

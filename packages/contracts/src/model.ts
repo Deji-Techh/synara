@@ -148,6 +148,16 @@ export type DroidModelOptions = typeof DroidModelOptions.Type;
 export const EngineModelOptions = Schema.Struct({});
 export type EngineModelOptions = typeof EngineModelOptions.Type;
 
+// Generic options for API-key providers speaking the OpenAI-compatible chat
+// protocol (OpenAI, Anthropic, Google, OpenRouter, Ollama). These map to the
+// standard chat request fields (`reasoning_effort`, `fast`, `thinking`).
+export const ApiModelOptions = Schema.Struct({
+  reasoningEffort: Schema.optional(TrimmedNonEmptyString),
+  fastMode: Schema.optional(Schema.Boolean),
+  thinking: Schema.optional(Schema.Boolean),
+});
+export type ApiModelOptions = typeof ApiModelOptions.Type;
+
 export const ProviderModelOptions = Schema.Struct({
   codex: Schema.optional(CodexModelOptions),
   claudeAgent: Schema.optional(ClaudeModelOptions),
@@ -159,6 +169,11 @@ export const ProviderModelOptions = Schema.Struct({
   opencode: Schema.optional(OpenCodeModelOptions),
   pi: Schema.optional(PiModelOptions),
   engine: Schema.optional(EngineModelOptions),
+  openai: Schema.optional(ApiModelOptions),
+  anthropic: Schema.optional(ApiModelOptions),
+  google: Schema.optional(ApiModelOptions),
+  openrouter: Schema.optional(ApiModelOptions),
+  ollama: Schema.optional(ApiModelOptions),
 });
 export type ProviderModelOptions = typeof ProviderModelOptions.Type;
 
@@ -495,6 +510,17 @@ type ModelDefinition = {
   readonly slug: string;
   readonly name: string;
   readonly capabilities: ModelCapabilities;
+};
+
+// API-key providers expose a live model catalog over HTTP, so their static
+// table only pins the default picker entries. No reasoning-effort ladder is
+// declared statically; runtime discovery supplies the full catalog.
+const API_MODEL_CAPABILITIES: ModelCapabilities = {
+  reasoningEffortLevels: [],
+  supportsFastMode: false,
+  supportsThinkingToggle: false,
+  promptInjectedEffortLevels: [],
+  contextWindowOptions: [],
 };
 
 /**
@@ -1019,6 +1045,68 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
       capabilities: cursorCapabilities({ efforts: ["high", "max"] }),
     },
   ],
+  // API-key providers. Their catalogs are live-discovered over HTTP; the
+  // static entries below keep the picker useful before the first model list.
+  openai: [
+    {
+      slug: "gpt-5.5",
+      name: "GPT-5.5",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "gpt-5.5-mini",
+      name: "GPT-5.5 Mini",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
+  anthropic: [
+    {
+      slug: "claude-opus-5",
+      name: "Claude Opus 5",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "claude-sonnet-5",
+      name: "Claude Sonnet 5",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "claude-haiku-4-5",
+      name: "Claude Haiku 4.5",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
+  google: [
+    {
+      slug: "gemini-3-pro",
+      name: "Gemini 3 Pro",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "gemini-3-flash",
+      name: "Gemini 3 Flash",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
+  openrouter: [
+    {
+      slug: "openai/gpt-5.5",
+      name: "GPT-5.5 (OpenRouter)",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "anthropic/claude-sonnet-5",
+      name: "Claude Sonnet 5 (OpenRouter)",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "deepseek/deepseek-chat",
+      name: "DeepSeek Chat (OpenRouter)",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
+  // Ollama's catalog is the local server's; nothing is pinned statically.
+  ollama: [],
 } as const satisfies Record<ProviderKind, readonly ModelDefinition[]>;
 export type ModelOptionsByProvider = typeof MODEL_OPTIONS_BY_PROVIDER;
 
@@ -1036,6 +1124,11 @@ export const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderWithDefaultModel, ModelSl
   droid: "claude-opus-4-8",
   kilo: "kilo/kilo-auto/free",
   opencode: "openai/gpt-5",
+  openai: "gpt-5.5",
+  anthropic: "claude-sonnet-5",
+  google: "gemini-3-flash",
+  openrouter: "openai/gpt-5.5",
+  ollama: "llama3.3",
 };
 
 // Backward compatibility for existing Codex-only call sites.
@@ -1172,6 +1265,11 @@ export const MODEL_SLUG_ALIASES_BY_PROVIDER: Record<ProviderKind, Record<string,
   opencode: {},
   pi: {},
   engine: {},
+  openai: {},
+  anthropic: {},
+  google: {},
+  openrouter: {},
+  ollama: {},
 };
 
 // ── Agent mention aliases ─────────────────────────────────────────────
@@ -1209,4 +1307,9 @@ export const PROVIDER_DISPLAY_NAMES: Record<ProviderKind, string> = {
   opencode: "OpenCode",
   pi: "Pi",
   engine: "Builder",
+  openai: "OpenAI",
+  anthropic: "Anthropic",
+  google: "Google",
+  openrouter: "OpenRouter",
+  ollama: "Ollama",
 };

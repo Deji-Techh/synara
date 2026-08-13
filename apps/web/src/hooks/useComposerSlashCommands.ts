@@ -16,7 +16,10 @@ import type { Project, Thread } from "../types";
 import type { ComposerTrigger } from "../composer-logic";
 import { extendReplacementRangeForTrailingSpace } from "../composerTriggerInsertion";
 import {
+  buildInitPrompt,
+  buildReviewPrompt,
   buildSlashReviewComposerPrompt,
+  buildSpawnPrompt,
   buildSubagentsPrompt,
   getAvailableComposerSlashCommands,
   hasProviderNativeSlashCommand,
@@ -876,8 +879,22 @@ export function useComposerSlashCommands(input: {
         return;
       }
 
-      if (item.command === "subagents") {
-        const replacement = buildSubagentsPrompt("");
+      if (item.command === "init") {
+        const replacement = buildInitPrompt("");
+        const applied = editorActions.applyPromptReplacement(
+          trigger.rangeStart,
+          trigger.rangeEnd,
+          replacement,
+          { expectedText: snapshot.value.slice(trigger.rangeStart, trigger.rangeEnd) },
+        );
+        if (wasPromptReplacementApplied(applied)) {
+          editorActions.setComposerHighlightedItemId(null);
+        }
+        return;
+      }
+
+      if (item.command === "spawn" || item.command === "subagents") {
+        const replacement = buildSpawnPrompt("");
         const applied = editorActions.applyPromptReplacement(
           trigger.rangeStart,
           trigger.rangeEnd,
@@ -996,6 +1013,24 @@ export function useComposerSlashCommands(input: {
               error instanceof Error ? error.message : "An error occurred while creating Side.",
           });
         });
+        return;
+      }
+
+      const replacement = `/${item.command} `;
+      const replacementRangeEnd = extendReplacementRangeForTrailingSpace(
+        snapshot.value,
+        trigger.rangeEnd,
+        replacement,
+      );
+      const applied = editorActions.applyPromptReplacement(
+        trigger.rangeStart,
+        replacementRangeEnd,
+        replacement,
+        { expectedText: snapshot.value.slice(trigger.rangeStart, replacementRangeEnd) },
+      );
+      if (wasPromptReplacementApplied(applied)) {
+        editorActions.setComposerHighlightedItemId(null);
+        editorActions.scheduleComposerFocus();
       }
     },
     [

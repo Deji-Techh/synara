@@ -36,7 +36,13 @@ import {
 import { clamp } from "effect/Number";
 import { Effect, FileSystem, Layer, Option, Path, Queue, Schema, Scope, Stream } from "effect";
 import { Headers, HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/unstable/http";
-import { RpcMiddleware, RpcSchema, RpcSerialization, RpcServer } from "effect/unstable/rpc";
+import {
+  RpcGroup,
+  RpcMiddleware,
+  RpcSchema,
+  RpcSerialization,
+  RpcServer,
+} from "effect/unstable/rpc";
 
 import { AutomationService } from "./automation/Services/AutomationService";
 import { authErrorResponse, makeEffectAuthRequest } from "./auth/effectHttp";
@@ -183,10 +189,9 @@ class WsRequestAdmissionMiddleware extends RpcMiddleware.Service<WsRequestAdmiss
 // engine-specific (mirrors the provider adapter's ops) and served here too.
 // NOTE: every handler key spread below must resolve to a request in this group;
 // toHandlers builds the map by Object.entries(handler) and dies on unknown tags.
-export const AdmittedWsFeatureRpcGroup = WsFeatureRpcGroup.merge(
-  WsDeviceRpcGroup,
-  WsPreviewRpcGroup,
-).middleware(WsRequestAdmissionMiddleware);
+export const AdmittedWsFeatureRpcGroup: ReturnType<
+  typeof WsFeatureRpcGroup.middleware<typeof WsRequestAdmissionMiddleware>
+> = WsFeatureRpcGroup.middleware(WsRequestAdmissionMiddleware);
 
 const wsRequestAdmissionMiddlewareLayer = Layer.effect(
   WsRequestAdmissionMiddleware,
@@ -1955,7 +1960,62 @@ const makeWsRpcHandlersLayer = () =>
             ),
           ),
 
-        ...makeWsPreviewHandlers(providerAdapterRegistry),
+        ...makeWsPreviewHandlers(providerAdapterRegistry, {
+          ensureEngineSession: (threadId) =>
+            Effect.gen(function* () {
+              // Preview panes work for threads whose chat runs on any provider.
+              // A thread with no engine session yet gets one lazily, anchored in
+              // its workspace cwd, so "Unknown engine adapter thread" is
+              // replaced by the engine coming up. Existing engine sessions are
+              // left untouched (no double spawn / no event replay).
+              const hasSession = yield* providerAdapterRegistry.getByProvider("engine").pipe(
+                Effect.map(
+                  (adapter) =>
+                    adapter as import("./provider/Services/EngineAdapter.ts").EngineAdapterShape,
+                ),
+                Effect.flatMap((adapter) => adapter.hasSession(threadId)),
+                Effect.mapError((cause) => new WsRpcError({ message: cause.message })),
+              );
+              if (hasSession) {
+                return;
+              }
+              const threadShell = yield* projectionReadModelQuery
+                .getThreadShellById(threadId)
+                .pipe(Effect.mapError((cause) => new WsRpcError({ message: cause.message })));
+              if (Option.isNone(threadShell)) {
+                return yield* new WsRpcError({
+                  message: `Cannot start the preview: thread '${threadId}' has no workspace.`,
+                });
+              }
+              const projectShell = yield* projectionReadModelQuery
+                .getProjectShellById(threadShell.value.projectId)
+                .pipe(
+                  Effect.catch((cause) =>
+                    Effect.logWarning("preview.ensure_engine_session.project_lookup_failed", {
+                      threadId: String(threadId),
+                      cause: String(cause),
+                    }).pipe(Effect.as(Option.none())),
+                  ),
+                );
+              const cwd = resolveThreadWorkspaceCwd({
+                thread: threadShell.value,
+                projects: Option.isSome(projectShell) ? [projectShell.value] : [],
+              });
+              yield* providerAdapterRegistry.getByProvider("engine").pipe(
+                Effect.map(
+                  (adapter) =>
+                    adapter as import("./provider/Services/EngineAdapter.ts").EngineAdapterShape,
+                ),
+                Effect.flatMap((adapter) =>
+                  adapter.startPreviewSession({
+                    threadId,
+                    ...(cwd !== undefined ? { cwd } : {}),
+                  }),
+                ),
+                Effect.mapError((cause) => new WsRpcError({ message: cause.message })),
+              );
+            }),
+        }),
         ...makeWsDeviceHandlers(deviceService),
         [DEVICE_WS_METHODS.subscribeEvents]: (_, { clientId }) =>
           streamAdmission.guard(

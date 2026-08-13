@@ -10,6 +10,7 @@
  */
 import * as OS from "node:os";
 import type {
+  ProviderCliKind,
   ProviderKind,
   ServerSettings,
   ServerProviderAuthStatus,
@@ -138,10 +139,17 @@ const PROVIDERS = [
   ENGINE_PROVIDER,
 ] as const satisfies ReadonlyArray<ProviderKind>;
 
-const providerChildKind = (provider: ProviderKind): ProviderChildKind =>
+const providerChildKind = (provider: ProviderCliKind): ProviderChildKind =>
   provider === CLAUDE_AGENT_PROVIDER ? "claude" : provider;
 
-const providerCommandEnv = (provider: ProviderKind): NodeJS.ProcessEnv =>
+const isProviderCliKind = (provider: ProviderKind): provider is ProviderCliKind =>
+  provider !== "openai" &&
+  provider !== "anthropic" &&
+  provider !== "google" &&
+  provider !== "openrouter" &&
+  provider !== "ollama";
+
+const providerCommandEnv = (provider: ProviderCliKind): NodeJS.ProcessEnv =>
   buildProviderChildEnvironment({ provider: providerChildKind(provider) });
 
 const UPDATE_OUTPUT_MAX_BYTES = 10_000;
@@ -2130,7 +2138,7 @@ export function makeProviderHealthLive(options?: { readonly providerUpdateTimeou
       const refreshScope = yield* Scope.make("sequential");
       yield* Effect.addFinalizer(() => Scope.close(refreshScope, Exit.void));
 
-      const cachePathByProvider = new Map(
+      const cachePathByProvider = new Map<ProviderKind, string>(
         PROVIDERS.map(
           (provider) =>
             [
@@ -2216,6 +2224,16 @@ export function makeProviderHealthLive(options?: { readonly providerUpdateTimeou
         function* (provider: ProviderKind) {
           const settings = yield* serverSettings.getSettings;
           if (!isProviderEnabledForSettings(provider, settings)) {
+            return makeProviderMaintenanceCapabilities({
+              provider,
+              packageName: null,
+              latestVersionSource: null,
+              updateExecutable: null,
+              updateArgs: [],
+              updateLockKey: null,
+            });
+          }
+          if (!isProviderCliKind(provider)) {
             return makeProviderMaintenanceCapabilities({
               provider,
               packageName: null,
@@ -2553,7 +2571,7 @@ export function makeProviderHealthLive(options?: { readonly providerUpdateTimeou
       };
 
       const runUpdateCommand = Effect.fn("runProviderUpdateCommand")(function* (input: {
-        readonly provider: ProviderKind;
+        readonly provider: ProviderCliKind;
         readonly command: string;
         readonly args: ReadonlyArray<string>;
         readonly pathPrepend?: string;
@@ -2639,7 +2657,7 @@ export function makeProviderHealthLive(options?: { readonly providerUpdateTimeou
           );
 
           const commandResult = yield* runUpdateCommand({
-            provider,
+            provider: provider as ProviderCliKind,
             command: update.executable,
             args: update.args,
             ...(update.pathPrepend ? { pathPrepend: update.pathPrepend } : {}),

@@ -2514,7 +2514,9 @@ const makePiAdapter = (options?: PiAdapterLiveOptions) =>
           provider: PROVIDER,
           scopedGatewayConnectionAvailable: context.gatewayControlAvailable,
         });
-        const providerText = [harnessPolicy, payload.text].filter(Boolean).join("\n\n");
+        const providerText = [input.systemPrompt, harnessPolicy, payload.text]
+          .filter(Boolean)
+          .join("\n\n");
         void context.runtime.session
           .prompt(providerText, payload.images.length > 0 ? { images: payload.images } : undefined)
           .catch((cause) => {
@@ -2535,7 +2537,9 @@ const makePiAdapter = (options?: PiAdapterLiveOptions) =>
           provider: PROVIDER,
           scopedGatewayConnectionAvailable: context.gatewayControlAvailable,
         });
-        const providerText = [harnessPolicy, payload.text].filter(Boolean).join("\n\n");
+        const providerText = [input.systemPrompt, harnessPolicy, payload.text]
+          .filter(Boolean)
+          .join("\n\n");
         const turnId = context.activeTurnId ?? TurnId.makeUnsafe(crypto.randomUUID());
         if (!context.activeTurnId) {
           context.activeTurnId = turnId;

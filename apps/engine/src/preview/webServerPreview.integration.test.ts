@@ -116,13 +116,22 @@ describe("web server preview", () => {
     expect(preview).not.toBeNull();
     expect(preview!.reload(true)).toBe(true);
     expect(preview!.reload(false)).toBe(true);
-    // The shim prints flutter's real hot-reload lines in response.
-    await vi.waitFor(() => {
+    const deadline = Date.now() + 5_000;
+    while (Date.now() < deadline) {
       const logText = preview!.logs.join("\n");
-      expect(logText).toContain("Performing hot reload");
-      expect(logText).toContain("Reloaded 1 of 1 libraries");
-      expect(logText).toContain("Performing hot restart");
-    }, 5_000);
+      if (
+        logText.includes("Performing hot reload") &&
+        logText.includes("Reloaded 1 of 1 libraries") &&
+        logText.includes("Performing hot restart")
+      ) {
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    const finalLogs = preview!.logs.join("\n");
+    expect(finalLogs).toContain("Performing hot reload");
+    expect(finalLogs).toContain("Reloaded 1 of 1 libraries");
+    expect(finalLogs).toContain("Performing hot restart");
   }, 15_000);
 
   it("stop() terminates the flutter process", async () => {

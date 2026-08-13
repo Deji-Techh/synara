@@ -1157,7 +1157,10 @@ function buildPromptText(input: ProviderSendTurnInput): string {
         ? requestedEffort
         : null;
   return withProviderPlanModePrompt({
-    text: applyClaudePromptEffortPrefix(basePrompt, promptEffort),
+    text: applyClaudePromptEffortPrefix(
+      [input.systemPrompt, basePrompt].filter(Boolean).join("\n\n"),
+      promptEffort,
+    ),
     interactionMode: input.interactionMode,
   });
 }

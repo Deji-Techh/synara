@@ -72,7 +72,7 @@ function findLeafIdForThread(splitView: SplitView, threadId: ThreadId): string {
 
 describe("splitViewStore", () => {
   beforeEach(() => {
-    globalThis.localStorage = createMemoryStorage();
+    globalThis.localStorage?.clear();
     useSplitViewStore.setState({
       splitViewsById: {},
       splitViewIdBySourceThreadId: {},
@@ -80,8 +80,7 @@ describe("splitViewStore", () => {
   });
 
   afterEach(() => {
-    vi.resetModules();
-    globalThis.localStorage = ORIGINAL_LOCAL_STORAGE;
+    globalThis.localStorage?.clear();
   });
 
   it("creates a horizontal drop split with the dropped leaf placed on the requested side", () => {

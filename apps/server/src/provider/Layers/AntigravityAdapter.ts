@@ -432,13 +432,14 @@ export function buildAntigravityTurnPrompt(
   input: {
     readonly prompt: string;
     readonly hasGatewaySessionLease: boolean;
+    readonly systemPrompt?: string | undefined;
   },
 ): string {
   const harnessPolicy = takeCaideHarnessPolicyForProviderSession(state, {
     provider: PROVIDER,
     scopedGatewayConnectionAvailable: input.hasGatewaySessionLease,
   });
-  return [harnessPolicy, input.prompt].filter(Boolean).join("\n\n");
+  return [input.systemPrompt, harnessPolicy, input.prompt].filter(Boolean).join("\n\n");
 }
 
 const DEFAULT_EFFORT_BY_MODEL: Readonly<Record<string, string>> = {
@@ -1088,6 +1089,7 @@ const makeAntigravityAdapter = (dependencies: AntigravityAdapterDependencies = {
         const providerPrompt = buildAntigravityTurnPrompt(context, {
           prompt: normalizedPrompt,
           hasGatewaySessionLease: canBootstrapGateway,
+          ...(input.systemPrompt !== undefined ? { systemPrompt: input.systemPrompt } : {}),
         });
         const promptIssue = antigravityPromptCommandLineIssue(providerPrompt);
         if (promptIssue) {

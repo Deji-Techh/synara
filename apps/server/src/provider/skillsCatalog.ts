@@ -473,6 +473,12 @@ const PROVIDER_SKILL_ORIGIN_PREFERENCES = {
   opencode: ["opencode", "claude", "agents"],
   pi: ["pi", "agents"],
   engine: ["engine", "agents"],
+  // API-key providers have no native skill home; they share the portable agents dir.
+  openai: ["agents"],
+  anthropic: ["agents"],
+  google: ["agents"],
+  openrouter: ["agents"],
+  ollama: ["agents"],
 } as const satisfies Partial<Record<ProviderKind, readonly SkillsHomeOrigin[]>>;
 
 function homeRootsForOrigin(

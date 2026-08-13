@@ -692,17 +692,34 @@ const installFrozenStageDependencies = Effect.fn("installFrozenStageDependencies
   }
 
   if (platform === "linux") {
-    // node-pty's npm package does not ship Linux prebuilds. Keep the frozen
-    // install's blanket lifecycle-script block, then rebuild only node-pty so
-    // npm supplies node-gyp to its install script and compiles the native
-    // binding required by the packaged terminal.
+    // node-pty's npm package does not ship Linux prebuilds. Use the repo's
+    // compiled Linux node-pty binding or compile directly in the staged package.
     yield* Effect.log("[desktop-artifact] Building staged Linux node-pty binding...");
-    yield* runCommand(
-      ChildProcess.make({
-        cwd: stageAppDir,
-        ...commandOutputOptions(verbose),
-      })`npm rebuild node-pty --foreground-scripts`,
+    const stagedPtyDir = path.join(stageAppDir, "node_modules/node-pty");
+    const repoPtyBinary = path.join(
+      repoRoot,
+      "node_modules/.bun/node-pty@1.1.0/node_modules/node-pty/build/Release/pty.node",
     );
+    const stagedPtyBinary = path.join(stagedPtyDir, "build/Release/pty.node");
+    const hasRepoPty = yield* fs.exists(repoPtyBinary);
+    if (hasRepoPty) {
+      yield* fs.makeDirectory(path.dirname(stagedPtyBinary), { recursive: true });
+      yield* fs.copyFile(repoPtyBinary, stagedPtyBinary);
+    } else if (yield* fs.exists(stagedPtyDir)) {
+      yield* runCommand(
+        ChildProcess.make({
+          cwd: stagedPtyDir,
+          ...commandOutputOptions(verbose),
+        })`npx --yes node-gyp rebuild`,
+      );
+    } else {
+      yield* runCommand(
+        ChildProcess.make({
+          cwd: stageAppDir,
+          ...commandOutputOptions(verbose),
+        })`npm rebuild node-pty --foreground-scripts`,
+      );
+    }
   }
 
   yield* verifyStagedPatchedDependencies(repoRoot, stageAppDir);
@@ -728,6 +745,10 @@ const createBuildConfig = Effect.fn("createBuildConfig")(function* (
     appId: CAIDE_PRODUCTION_BUNDLE_ID,
     productName,
     artifactName: "Caide-${version}-${arch}.${ext}",
+    electronVersion: desktopPackageJson.dependencies.electron,
+    electronDownload: {
+      cache: join(process.env.HOME ?? "/home/DejiTech", ".cache/electron"),
+    },
     directories: {
       buildResources: "apps/desktop/resources",
     },
@@ -978,8 +999,11 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
       });
     }
   }
+  const localTmpDir = path.join(repoRoot, ".tmp");
+  yield* fs.makeDirectory(localTmpDir, { recursive: true });
   const mkdir = options.keepStage ? fs.makeTempDirectory : fs.makeTempDirectoryScoped;
   const stageRoot = yield* mkdir({
+    directory: localTmpDir,
     prefix: `caide-desktop-${options.platform}-stage-`,
   });
 
@@ -1082,6 +1106,10 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
 
   const buildEnv: NodeJS.ProcessEnv = {
     ...process.env,
+    TMPDIR: localTmpDir,
+    ELECTRON_CACHE: join(process.env.HOME ?? "/home/DejiTech", ".cache/electron"),
+    electron_config_cache: join(process.env.HOME ?? "/home/DejiTech", ".cache/electron"),
+    ELECTRON_BUILDER_CACHE: join(process.env.HOME ?? "/home/DejiTech", ".cache/electron-builder"),
   };
   for (const [key, value] of Object.entries(buildEnv)) {
     if (value === "") {

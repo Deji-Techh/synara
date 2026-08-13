@@ -253,6 +253,7 @@ interface CodexVoiceTranscriptionAuthContext {
 export interface CodexAppServerSendTurnInput {
   readonly threadId: ThreadId;
   readonly input?: string;
+  readonly systemPrompt?: string;
   readonly attachments?: ReadonlyArray<CodexImageInputItem>;
   readonly skills?: ReadonlyArray<ProviderSkillReference>;
   readonly mentions?: ReadonlyArray<ProviderMentionReference>;
@@ -755,6 +756,7 @@ function buildCodexCollaborationMode(input: {
   readonly interactionMode?: "default" | "plan";
   readonly model?: string;
   readonly effort?: string;
+  readonly systemPrompt?: string;
 }):
   | {
       mode: "default" | "plan";
@@ -774,10 +776,12 @@ function buildCodexCollaborationMode(input: {
     settings: {
       model,
       reasoning_effort: input.effort ?? "medium",
-      developer_instructions:
+      developer_instructions: [
+        ...(input.systemPrompt ? [input.systemPrompt] : []),
         input.interactionMode === "plan"
           ? CODEX_PLAN_MODE_DEVELOPER_INSTRUCTIONS
           : CODEX_DEFAULT_MODE_DEVELOPER_INSTRUCTIONS,
+      ].join("\n\n"),
     },
   };
 }
@@ -1346,6 +1350,7 @@ export class CodexAppServerManager extends EventEmitter<CodexAppServerManagerEve
       ...(input.interactionMode !== undefined ? { interactionMode: input.interactionMode } : {}),
       ...(normalizedModel !== undefined ? { model: normalizedModel } : {}),
       ...(input.effort !== undefined ? { effort: input.effort } : {}),
+      ...(input.systemPrompt !== undefined ? { systemPrompt: input.systemPrompt } : {}),
     });
     if (collaborationMode) {
       if (!turnStartParams.model) {

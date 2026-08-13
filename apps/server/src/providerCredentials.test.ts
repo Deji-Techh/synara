@@ -13,6 +13,9 @@ describe("resolveProviderServerPassword", () => {
       getServerPassword: () => Effect.succeed("secret"),
       replaceServerPassword: () => Effect.void,
       isServerPasswordConfigured: () => Effect.succeed(true),
+      getApiKey: () => Effect.succeed("secret"),
+      replaceApiKey: () => Effect.void,
+      isApiKeyConfigured: () => Effect.succeed(true),
     };
 
     const password = await Effect.runPromise(

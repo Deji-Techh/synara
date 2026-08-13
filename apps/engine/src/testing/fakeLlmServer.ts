@@ -116,7 +116,10 @@ function generateDump(reqBody: unknown, dumpDir: string): string {
   return `[[engine-dump-path=${dumpFilePath}]]`;
 }
 
-function getTextContent(message: { content: unknown }): string {
+function getTextContent(message?: { content?: unknown }): string {
+  if (!message) {
+    return "";
+  }
   if (typeof message.content === "string") {
     return message.content;
   }
@@ -246,7 +249,7 @@ function createChatCompletionHandler(fixturesDir: string, dumpDir: string, quiet
     }
 
     if (userText.startsWith("tc=") && !userText.startsWith("tc=local-agent/")) {
-      const testCaseName = userText.slice(3).split("[")[0].trim();
+      const testCaseName = (userText.slice(3).split("[")[0] ?? "").trim();
       log(`loading test case: ${testCaseName}`);
       const testFilePath = path.join(fixturesDir, `${testCaseName}.md`);
       if (fs.existsSync(testFilePath)) {
@@ -289,7 +292,8 @@ function createChatCompletionHandler(fixturesDir: string, dumpDir: string, quiet
     const highTokensMatch =
       typeof lastMessage?.content === "string" &&
       lastMessage.content.match(/\[high-tokens=(\d+)\]/);
-    const highTokensValue = highTokensMatch ? parseInt(highTokensMatch[1], 10) : null;
+    const highTokensValue =
+      highTokensMatch && highTokensMatch[1] ? parseInt(highTokensMatch[1], 10) : null;
 
     const includeUsage = body.stream_options?.include_usage === true || highTokensValue !== null;
     const usage: Partial<StreamUsage> | undefined = highTokensValue

@@ -67,6 +67,7 @@ import {
 } from "../../checkpointing/Utils.ts";
 import { CheckpointStore } from "../../checkpointing/Services/CheckpointStore.ts";
 import { AgentGatewayOperationRepository } from "../../agentGateway/Services/AgentGatewayOperationRepository.ts";
+import { CAIDE_FLUTTER_BUILDER_PERSONA } from "../../agentGateway/flutterBuilderPersona.ts";
 import { GitCore } from "../../git/Services/GitCore.ts";
 import {
   ProviderAdapterRequestError,
@@ -1642,6 +1643,7 @@ const make = Effect.gen(function* () {
             }
           : requestedModelSelection
         : requestedModelSelection;
+    const skipCaideFlutterPersona = selectedProvider === "engine";
     const providerTurnInput = {
       threadId: input.threadId,
       ...(normalizedAttachments.length > 0 ? { attachments: normalizedAttachments } : {}),
@@ -1649,6 +1651,7 @@ const make = Effect.gen(function* () {
       ...(providerMentions !== undefined ? { mentions: providerMentions } : {}),
       ...(modelForTurn !== undefined ? { modelSelection: modelForTurn } : {}),
       ...(input.interactionMode !== undefined ? { interactionMode: input.interactionMode } : {}),
+      ...(!skipCaideFlutterPersona ? { systemPrompt: CAIDE_FLUTTER_BUILDER_PERSONA } : {}),
     };
     const sendQueuedProviderTurn = (messageText: string | undefined) =>
       providerService.sendTurn({

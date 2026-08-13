@@ -119,6 +119,12 @@ export function providerModelsPrefetchQueryOptions(input: {
       });
     case "engine":
       return providerModelsQueryOptions({ provider: "engine" });
+    case "openai":
+    case "anthropic":
+    case "google":
+    case "openrouter":
+    case "ollama":
+      return providerModelsQueryOptions({ provider });
   }
 }
 

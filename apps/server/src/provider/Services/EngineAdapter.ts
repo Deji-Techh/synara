@@ -21,6 +21,7 @@ import type {
   PreviewTestResult,
   ThreadId,
 } from "@caide/contracts";
+import type { ProviderSession } from "@caide/contracts";
 import type { ProviderAdapterError } from "../Errors.ts";
 import type { ProviderAdapterShape } from "./ProviderAdapter.ts";
 
@@ -29,6 +30,16 @@ import type { ProviderAdapterShape } from "./ProviderAdapter.ts";
  * preview/* JSON-RPC methods; the thread's session owns the flutter process.
  */
 export interface EnginePreviewOps {
+  /**
+   * Lazily start a preview-only engine session for a thread that has none.
+   * Unlike a chat session this publishes no lifecycle events, so a thread
+   * bound to another provider can preview without its session binding gaining
+   * engine events.
+   */
+  startPreviewSession(input: {
+    threadId: ThreadId;
+    cwd?: string;
+  }): Effect.Effect<ProviderSession, ProviderAdapterError>;
   previewStart(input: {
     threadId: ThreadId;
     appDir?: string;

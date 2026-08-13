@@ -50,6 +50,11 @@ function ClaudeTraitsPickerHarness(props: {
       opencode: [],
       pi: [],
       engine: [],
+      openai: [],
+      anthropic: [],
+      google: [],
+      openrouter: [],
+      ollama: [],
     },
   });
   const handlePromptChange = (nextPrompt: string) => {
@@ -655,6 +660,11 @@ function OpenCodeTraitsPickerHarness(props: {
       opencode: [],
       pi: [],
       engine: [],
+      openai: [],
+      anthropic: [],
+      google: [],
+      openrouter: [],
+      ollama: [],
     },
   });
   const handlePromptChange = (nextPrompt: string) => {

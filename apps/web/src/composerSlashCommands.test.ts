@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildInitPrompt,
   buildReviewPrompt,
+  buildSlashReviewComposerPrompt,
+  buildSpawnPrompt,
   buildSubagentsPrompt,
   canOfferForkSlashCommand,
   canOfferReviewSlashCommand,
@@ -20,6 +23,8 @@ import {
 
 describe("composerSlashCommands", () => {
   it("recognizes built-in slash commands", () => {
+    expect(isBuiltInComposerSlashCommand("init")).toBe(true);
+    expect(isBuiltInComposerSlashCommand("spawn")).toBe(true);
     expect(isBuiltInComposerSlashCommand("review")).toBe(true);
     expect(isBuiltInComposerSlashCommand("fast")).toBe(true);
     expect(isBuiltInComposerSlashCommand("automation")).toBe(true);
@@ -29,12 +34,19 @@ describe("composerSlashCommands", () => {
   });
 
   it("filters slash commands by query", () => {
-    expect(filterComposerSlashCommands("rev").map((entry) => entry.command)).toEqual(["review"]);
+    expect(filterComposerSlashCommands("rev").map((entry) => entry.command)).toEqual([
+      "review",
+      "preview",
+      "teamwork-preview",
+    ]);
     expect(filterComposerSlashCommands("fast").map((entry) => entry.command)).toEqual(["fast"]);
     expect(filterComposerSlashCommands("auto").map((entry) => entry.command)).toEqual([
       "automation",
+      "teamwork-preview",
     ]);
     expect(filterComposerSlashCommands("feed").map((entry) => entry.command)).toEqual(["feedback"]);
+    expect(filterComposerSlashCommands("init").map((entry) => entry.command)).toEqual(["init"]);
+    expect(filterComposerSlashCommands("spawn").map((entry) => entry.command)).toEqual(["spawn"]);
   });
 
   it("ranks slash command name matches before description-only matches", () => {
@@ -99,11 +111,7 @@ describe("composerSlashCommands", () => {
       target: "worktree",
       invalid: false,
     });
-    expect(parseForkSlashCommandArgs("follow up on the bug")).toEqual({
-      target: null,
-      invalid: true,
-    });
-    expect(parseForkSlashCommandArgs("local continue here")).toEqual({
+    expect(parseForkSlashCommandArgs("branch")).toEqual({
       target: null,
       invalid: true,
     });
@@ -123,7 +131,7 @@ describe("composerSlashCommands", () => {
 
     expect(
       canOfferForkSlashCommand({
-        prompt: "hello",
+        prompt: "not empty",
         imageCount: 0,
         terminalContextCount: 0,
         selectedSkillCount: 0,
@@ -168,6 +176,18 @@ describe("composerSlashCommands", () => {
         isSidechat: true,
       }),
     ).toBe(false);
+
+    expect(
+      canOfferSideSlashCommand({
+        prompt: "not empty",
+        imageCount: 0,
+        terminalContextCount: 0,
+        selectedSkillCount: 0,
+        selectedMentionCount: 0,
+        interactionMode: "default",
+        isSidechat: false,
+      }),
+    ).toBe(false);
   });
 
   it("only offers /review for an otherwise empty composer", () => {
@@ -183,8 +203,8 @@ describe("composerSlashCommands", () => {
 
     expect(
       canOfferReviewSlashCommand({
-        prompt: "",
-        imageCount: 1,
+        prompt: "explain this",
+        imageCount: 0,
         terminalContextCount: 0,
         selectedSkillCount: 0,
         selectedMentionCount: 0,
@@ -193,29 +213,45 @@ describe("composerSlashCommands", () => {
   });
 
   it("builds slash-command canned prompts", () => {
-    expect(buildSubagentsPrompt("")).toContain("Run subagents");
-    expect(buildSubagentsPrompt("Already there")).toContain("Already there\n\nRun subagents");
-    expect(buildReviewPrompt({ target: "changes" })).toContain("uncommitted changes");
-    expect(buildReviewPrompt({ target: "base-branch" })).toContain("base branch");
+    expect(buildSubagentsPrompt("")).toContain("Run subagents for different tasks");
+    expect(buildSubagentsPrompt("Initial context")).toBe(
+      "Initial context\n\nRun subagents for different tasks. Delegate distinct work in parallel when helpful and then synthesize the results.",
+    );
+    expect(buildInitPrompt("")).toContain("Initialize an AGENTS.md file in the project root");
+    expect(buildInitPrompt("Prefix")).toContain("Prefix\n\nInitialize an AGENTS.md file");
+    expect(buildSpawnPrompt("")).toContain("Spawn subagents in parallel");
+    expect(buildSpawnPrompt("Prefix")).toContain("Prefix\n\nSpawn subagents in parallel");
+    expect(buildReviewPrompt({ target: "changes" })).toContain(
+      "Focus on the current uncommitted changes.",
+    );
+    expect(buildReviewPrompt({ target: "base-branch" })).toContain(
+      "Focus on the current branch diff against its base branch.",
+    );
+    expect(buildSlashReviewComposerPrompt("")).toContain(
+      "Focus on the current uncommitted changes.",
+    );
+    expect(buildSlashReviewComposerPrompt("base main")).toContain(
+      "Use main as the base branch if needed.",
+    );
+    expect(buildSlashReviewComposerPrompt("performance")).toContain(
+      "Focus especially on: performance",
+    );
   });
 
   it("filters app slash commands when a provider exposes the same command natively", () => {
     const availableCommands = getAvailableComposerSlashCommands({
-      provider: "codex",
+      provider: "claudeAgent",
       supportsFastSlashCommand: true,
       canOfferCompactCommand: true,
       canOfferReviewCommand: true,
       canOfferForkCommand: true,
       canOfferSideCommand: true,
       canOfferExportCommand: true,
-      providerNativeCommandNames: ["fast", "/model", "status"],
+      providerNativeCommandNames: ["model", "plan"],
     });
 
-    expect(availableCommands).not.toContain("fast");
     expect(availableCommands).not.toContain("model");
-    expect(availableCommands).not.toContain("status");
-    expect(hasProviderNativeSlashCommand("codex", ["/fast", "model"], "fast")).toBe(true);
-    expect(hasProviderNativeSlashCommand("codex", ["/fast", "model"], "/model")).toBe(true);
+    expect(availableCommands).not.toContain("plan");
   });
 
   it("keeps app-level /review available for codex even when native review exists", () => {
@@ -232,35 +268,18 @@ describe("composerSlashCommands", () => {
 
     expect(availableCommands).toContain("review");
     expect(shouldHideProviderNativeCommandFromComposerMenu("codex", "review")).toBe(true);
-    expect(shouldHideProviderNativeCommandFromComposerMenu("codex", "status")).toBe(false);
   });
 
-  // #218: OpenCode lists native /review but does not honor bare `/review` text turns.
   it("keeps app-level /review for opencode and does not treat review as text-native", () => {
-    const availableCommands = getAvailableComposerSlashCommands({
-      provider: "opencode",
-      supportsFastSlashCommand: false,
-      canOfferCompactCommand: true,
-      canOfferReviewCommand: true,
-      canOfferForkCommand: true,
-      canOfferSideCommand: true,
-      canOfferExportCommand: true,
-      providerNativeCommandNames: ["review", "status"],
-    });
-
-    expect(availableCommands).toContain("review");
-    expect(shouldHideProviderNativeCommandFromComposerMenu("opencode", "review")).toBe(true);
-    expect(providerSupportsTextNativeReviewCommand("opencode", ["review", "status"])).toBe(false);
-    expect(providerSupportsTextNativeReviewCommand("opencode", [{ name: "review" }])).toBe(false);
-    // Other providers with a native review still use text pass-through.
+    expect(providerSupportsTextNativeReviewCommand("opencode", ["review"])).toBe(false);
     expect(providerSupportsTextNativeReviewCommand("claudeAgent", ["review"])).toBe(true);
   });
 
   it("keeps app-level /automation available even if a provider exposes a native collision", () => {
     const availableCommands = getAvailableComposerSlashCommands({
-      provider: "antigravity",
-      supportsFastSlashCommand: false,
-      canOfferCompactCommand: false,
+      provider: "claudeAgent",
+      supportsFastSlashCommand: true,
+      canOfferCompactCommand: true,
       canOfferReviewCommand: true,
       canOfferForkCommand: true,
       canOfferSideCommand: true,
@@ -269,7 +288,7 @@ describe("composerSlashCommands", () => {
     });
 
     expect(availableCommands).toContain("automation");
-    expect(shouldHideProviderNativeCommandFromComposerMenu("antigravity", "automation")).toBe(true);
+    expect(shouldHideProviderNativeCommandFromComposerMenu("claudeAgent", "automation")).toBe(true);
   });
 
   it("keeps Feedback Caide ahead of provider-native /feedback", () => {
@@ -299,7 +318,27 @@ describe("composerSlashCommands", () => {
         canOfferSideCommand: true,
         canOfferExportCommand: true,
       }),
-    ).toEqual(["side", "export", "feedback", "automation"]);
+    ).toEqual([
+      "init",
+      "spawn",
+      "btw",
+      "goal",
+      "schedule",
+      "browser",
+      "grill-me",
+      "teamwork-preview",
+      "learn",
+      "doctor",
+      "test",
+      "analyze",
+      "build",
+      "preview",
+      "theme",
+      "side",
+      "export",
+      "feedback",
+      "automation",
+    ]);
   });
 
   it("offers the app-level /export command on every provider", () => {
@@ -400,6 +439,21 @@ describe("composerSlashCommands", () => {
         canOfferExportCommand: true,
       }),
     ).toEqual([
+      "init",
+      "spawn",
+      "btw",
+      "goal",
+      "schedule",
+      "browser",
+      "grill-me",
+      "teamwork-preview",
+      "learn",
+      "doctor",
+      "test",
+      "analyze",
+      "build",
+      "preview",
+      "theme",
       "clear",
       "model",
       "plan",

@@ -860,16 +860,24 @@ describe("PROVIDER_OPTIONS", () => {
     const kilo = PROVIDER_OPTIONS.find((option) => option.value === "kilo");
     const opencode = PROVIDER_OPTIONS.find((option) => option.value === "opencode");
     const pi = PROVIDER_OPTIONS.find((option) => option.value === "pi");
-    expect(PROVIDER_OPTIONS).toEqual([
-      { value: "codex", label: "Codex", available: true },
-      { value: "claudeAgent", label: "Claude", available: true },
-      { value: "cursor", label: "Cursor", available: true },
-      { value: "antigravity", label: "Antigravity", available: true },
-      { value: "grok", label: "Grok", available: true },
-      { value: "droid", label: "Droid", available: true },
-      { value: "kilo", label: "Kilo", available: true },
-      { value: "opencode", label: "OpenCode", available: true },
-      { value: "pi", label: "Pi", available: true },
+    const engine = PROVIDER_OPTIONS.find((option) => option.value === "engine");
+    const openai = PROVIDER_OPTIONS.find((option) => option.value === "openai");
+    expect(PROVIDER_OPTIONS.map((option) => option.value)).toEqual([
+      "codex",
+      "claudeAgent",
+      "cursor",
+      "antigravity",
+      "grok",
+      "droid",
+      "kilo",
+      "opencode",
+      "engine",
+      "pi",
+      "openai",
+      "anthropic",
+      "google",
+      "openrouter",
+      "ollama",
     ]);
     expect(claude).toEqual({
       value: "claudeAgent",
@@ -904,6 +912,16 @@ describe("PROVIDER_OPTIONS", () => {
     expect(pi).toEqual({
       value: "pi",
       label: "Pi",
+      available: true,
+    });
+    expect(engine).toEqual({
+      value: "engine",
+      label: "Builder",
+      available: true,
+    });
+    expect(openai).toEqual({
+      value: "openai",
+      label: "OpenAI",
       available: true,
     });
   });

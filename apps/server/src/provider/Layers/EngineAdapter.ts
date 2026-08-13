@@ -109,10 +109,18 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         cause: cause instanceof Error ? cause : new Error(String(cause)),
       });
 
-    const startEngineSession = (
+    /**
+     * Spawn the engine process, initialize the protocol channel, and prove it
+     * alive with a ping. Returns the live client plus handshake metadata. This
+     * is the shared substrate for normal chat sessions (which additionally
+     * publish lifecycle events) and preview-only sessions (which are created
+     * on demand and must stay silent so an engine session.started event never
+     * rewrites another provider's thread session binding).
+     */
+    const spawnEngineClient = (
       threadId: ThreadId,
-      input: { runtimeMode: RuntimeMode; cwd?: string },
-    ): Effect.Effect<EngineSessionContext, ProviderAdapterError> =>
+      input: { cwd?: string },
+    ): Effect.Effect<{ client: EngineClient; engineServerVersion: string }, ProviderAdapterError> =>
       Effect.gen(function* () {
         const cwd = options?.cwd ?? input.cwd;
         const client = new EngineClient({
@@ -178,6 +186,23 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           );
         }
 
+        return { client, engineServerVersion: initialized.data.serverVersion };
+      });
+
+    /**
+     * Start a full engine chat session for the thread: spawn the engine and
+     * announce it through the provider runtime event stream so the thread's
+     * lifecycle (session.started / thread.started) is wired into the
+     * projection. Used when the thread itself is bound to the engine provider.
+     */
+    const startEngineSession = (
+      threadId: ThreadId,
+      input: { runtimeMode: RuntimeMode; cwd?: string },
+    ): Effect.Effect<EngineSessionContext, ProviderAdapterError> =>
+      Effect.gen(function* () {
+        const { client, engineServerVersion } = yield* spawnEngineClient(threadId, {
+          ...(input.cwd !== undefined ? { cwd: input.cwd } : {}),
+        });
         const now = new Date().toISOString();
         const session: ProviderSession = {
           provider: "engine",
@@ -192,7 +217,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           threadId,
           session,
           client,
-          engineServerVersion: initialized.data.serverVersion,
+          engineServerVersion,
           previewAppDir: null,
         };
         yield* Ref.update(sessions, (map) => new Map(map).set(threadId, context));
@@ -202,7 +227,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           makeEvent<ProviderRuntimeEvent>(threadId, {
             type: "session.started",
             payload: {
-              message: `Engine ${initialized.data.serverVersion} connected (protocol v${initialized.data.protocolVersion})`,
+              message: `Engine ${engineServerVersion} connected (protocol v${ENGINE_PROTOCOL_VERSION})`,
             },
           }),
         );
@@ -212,8 +237,8 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             type: "session.configured",
             payload: {
               config: {
-                serverVersion: initialized.data.serverVersion,
-                capabilities: initialized.data.capabilities,
+                serverVersion: engineServerVersion,
+                capabilities: { flutter: true, preview: true },
               },
             },
           }),
@@ -226,6 +251,42 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           }),
         );
 
+        return context;
+      });
+
+    /**
+     * Start a preview-only engine session for the thread. Unlike
+     * `startEngineSession` this deliberately does NOT publish lifecycle events:
+     * preview sessions are created on demand for threads that chat on another
+     * provider (the pane must not rewrite that thread's session binding, which
+     * `thread.session.set` from an engine session.started event would do).
+     */
+    const startPreviewOnlySession = (
+      threadId: ThreadId,
+      input: { cwd?: string },
+    ): Effect.Effect<EngineSessionContext, ProviderAdapterError> =>
+      Effect.gen(function* () {
+        const { client, engineServerVersion } = yield* spawnEngineClient(threadId, {
+          ...(input.cwd !== undefined ? { cwd: input.cwd } : {}),
+        });
+        const now = new Date().toISOString();
+        const session: ProviderSession = {
+          provider: "engine",
+          status: "ready",
+          runtimeMode: "full-access",
+          ...(input.cwd ? { cwd: input.cwd } : {}),
+          threadId,
+          createdAt: now,
+          updatedAt: now,
+        };
+        const context: EngineSessionContext = {
+          threadId,
+          session,
+          client,
+          engineServerVersion,
+          previewAppDir: null,
+        };
+        yield* Ref.update(sessions, (map) => new Map(map).set(threadId, context));
         return context;
       });
 
@@ -406,6 +467,11 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       // keyed by appDir inside the engine. The first start picks the appDir
       // (explicit or the session cwd); later ops reuse the remembered one so
       // the pair never drifts when the pane omits it.
+
+      startPreviewSession: (input) =>
+        startPreviewOnlySession(input.threadId, {
+          ...(input.cwd !== undefined ? { cwd: input.cwd } : {}),
+        }).pipe(Effect.map((context) => context.session)),
 
       previewStart: (input) =>
         Effect.gen(function* () {
@@ -686,9 +752,11 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           return {
             buildId: result.data.buildId,
             status: result.data.status,
-            ...(result.data.exitCode !== undefined ? { exitCode: result.data.exitCode } : {}),
-            ...(result.data.outputPath !== undefined ? { outputPath: result.data.outputPath } : {}),
-            ...(result.data.error !== undefined ? { error: result.data.error } : {}),
+            ...(typeof result.data.exitCode === "number" ? { exitCode: result.data.exitCode } : {}),
+            ...(typeof result.data.outputPath === "string"
+              ? { outputPath: result.data.outputPath }
+              : {}),
+            ...(typeof result.data.error === "string" ? { error: result.data.error } : {}),
             logs: result.data.logs,
           };
         }),

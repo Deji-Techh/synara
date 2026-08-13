@@ -18,6 +18,11 @@ const ProviderDiscoveryKind = Schema.Literals([
   "opencode",
   "pi",
   "engine",
+  "openai",
+  "anthropic",
+  "google",
+  "openrouter",
+  "ollama",
 ]);
 
 export const ProviderSkillInterface = Schema.Struct({

@@ -8,6 +8,14 @@
  * not an engine session exists, and engine-level failures surface as WsRpcError
  * messages the pane can render inline.
  *
+ * Preview ops are keyed by the thread's *engine* session, but the chat thread
+ * itself may run on any provider. The pane therefore drives a lazily-created
+ * engine session: a thread with no engine session yet gets one started
+ * (resolving the workspace cwd) before the op dispatches, so "Unknown engine
+ * adapter thread" is replaced by the session actually coming up. The
+ * session-ensure strategy is injected because only the WS-RPC layer can
+ * resolve the thread's workspace from the projection read model.
+ *
  * @module provider/wsPreviewHandlers
  */
 import {
@@ -33,6 +41,7 @@ import {
 } from "@caide/contracts";
 import { Effect } from "effect";
 
+import type { ProviderAdapterError } from "./Errors.ts";
 import type { EngineAdapterShape } from "./Services/EngineAdapter.ts";
 import type { ProviderAdapterRegistryShape } from "./Services/ProviderAdapterRegistry.ts";
 
@@ -50,6 +59,17 @@ const resolveEngineAdapter = (
     Effect.mapError((cause) => new WsRpcError({ message: cause.message })),
     Effect.map((adapter) => adapter as EngineAdapterShape),
   );
+
+/**
+ * Lazily ensure the thread's engine session exists before dispatching a
+ * preview op. A thread that has never started an engine session (e.g. its chat
+ * provider is a stock CLI/API adapter) has no flutter process to drive; this
+ * starts one in the thread's workspace so the pane works without requiring the
+ * user to bind the thread to the engine provider first.
+ */
+export interface PreviewSessionEnsurer {
+  readonly ensureEngineSession: (threadId: ThreadId) => Effect.Effect<void, WsRpcError>;
+}
 
 export interface WsPreviewHandlers {
   readonly [PREVIEW_WS_METHODS.start]: (
@@ -79,11 +99,16 @@ export interface WsPreviewHandlers {
 }
 
 /**
- * Build the four preview handlers. Engine sessions are keyed by thread inside
- * the adapter; there is no preview engine without a session, so the handlers
- * fail with a clear message instead of guessing.
+ * Build the preview handlers. Engine sessions are keyed by thread inside the
+ * adapter; preview ops always ensure the session exists first (lazily creating
+ * one from the thread's workspace when missing), so the pane never surfaces
+ * "unknown engine adapter thread" for a thread whose chat runs on another
+ * provider.
  */
-export function makeWsPreviewHandlers(registry: ProviderAdapterRegistryShape): WsPreviewHandlers {
+export function makeWsPreviewHandlers(
+  registry: ProviderAdapterRegistryShape,
+  ensure?: PreviewSessionEnsurer,
+): WsPreviewHandlers {
   const mapEngineError = (cause: unknown, fallback: string): WsRpcError =>
     cause instanceof WsRpcError
       ? cause
@@ -92,80 +117,69 @@ export function makeWsPreviewHandlers(registry: ProviderAdapterRegistryShape): W
           cause,
         });
 
+  const withEngineSession = <A>(
+    threadId: ThreadId,
+    run: (adapter: EngineAdapterShape) => Effect.Effect<A, ProviderAdapterError>,
+  ): Effect.Effect<A, WsRpcError> =>
+    resolveEngineAdapter(registry).pipe(
+      Effect.flatMap((adapter) =>
+        (ensure?.ensureEngineSession(threadId) ?? Effect.void).pipe(
+          Effect.flatMap(() => run(adapter)),
+        ),
+      ),
+      Effect.mapError((cause) => mapEngineError(cause, "Preview operation failed")),
+    );
+
   return {
     [PREVIEW_WS_METHODS.start]: (input) =>
-      resolveEngineAdapter(registry).pipe(
-        Effect.flatMap((adapter) =>
-          adapter.previewStart({
-            threadId: ThreadId.makeUnsafe(input.threadId),
-            ...(input.appDir !== undefined ? { appDir: input.appDir } : {}),
-            ...(input.port !== undefined ? { port: input.port } : {}),
-            ...(input.hostname !== undefined ? { hostname: input.hostname } : {}),
-          }),
-        ),
-        Effect.mapError((cause) => mapEngineError(cause, "Failed to start preview")),
+      withEngineSession(ThreadId.makeUnsafe(input.threadId), (adapter) =>
+        adapter.previewStart({
+          threadId: ThreadId.makeUnsafe(input.threadId),
+          ...(input.appDir !== undefined ? { appDir: input.appDir } : {}),
+          ...(input.port !== undefined ? { port: input.port } : {}),
+          ...(input.hostname !== undefined ? { hostname: input.hostname } : {}),
+        }),
       ),
     [PREVIEW_WS_METHODS.stop]: (input) =>
-      resolveEngineAdapter(registry).pipe(
-        Effect.flatMap((adapter) =>
-          adapter.previewStop({ threadId: ThreadId.makeUnsafe(input.threadId) }),
-        ),
-        Effect.mapError((cause) => mapEngineError(cause, "Failed to stop preview")),
+      withEngineSession(ThreadId.makeUnsafe(input.threadId), (adapter) =>
+        adapter.previewStop({ threadId: ThreadId.makeUnsafe(input.threadId) }),
       ),
     [PREVIEW_WS_METHODS.reload]: (input) =>
-      resolveEngineAdapter(registry).pipe(
-        Effect.flatMap((adapter) =>
-          adapter.previewReload({
-            threadId: ThreadId.makeUnsafe(input.threadId),
-            hotReload: input.hotReload,
-          }),
-        ),
-        Effect.mapError((cause) => mapEngineError(cause, "Failed to reload preview")),
+      withEngineSession(ThreadId.makeUnsafe(input.threadId), (adapter) =>
+        adapter.previewReload({
+          threadId: ThreadId.makeUnsafe(input.threadId),
+          hotReload: input.hotReload,
+        }),
       ),
     [PREVIEW_WS_METHODS.getState]: (input) =>
-      resolveEngineAdapter(registry).pipe(
-        Effect.flatMap((adapter) =>
-          adapter.previewState({ threadId: ThreadId.makeUnsafe(input.threadId) }),
-        ),
-        Effect.mapError((cause) => mapEngineError(cause, "Failed to read preview state")),
+      withEngineSession(ThreadId.makeUnsafe(input.threadId), (adapter) =>
+        adapter.previewState({ threadId: ThreadId.makeUnsafe(input.threadId) }),
       ),
     [PREVIEW_WS_METHODS.analyze]: (input) =>
-      resolveEngineAdapter(registry).pipe(
-        Effect.flatMap((adapter) =>
-          adapter.previewAnalyze({ threadId: ThreadId.makeUnsafe(input.threadId) }),
-        ),
-        Effect.mapError((cause) => mapEngineError(cause, "Failed to run flutter analyze")),
+      withEngineSession(ThreadId.makeUnsafe(input.threadId), (adapter) =>
+        adapter.previewAnalyze({ threadId: ThreadId.makeUnsafe(input.threadId) }),
       ),
     [PREVIEW_WS_METHODS.test]: (input) =>
-      resolveEngineAdapter(registry).pipe(
-        Effect.flatMap((adapter) =>
-          adapter.previewTest({
-            threadId: ThreadId.makeUnsafe(input.threadId),
-            ...(input.testPath !== undefined ? { testPath: input.testPath } : {}),
-          }),
-        ),
-        Effect.mapError((cause) => mapEngineError(cause, "Failed to run flutter test")),
+      withEngineSession(ThreadId.makeUnsafe(input.threadId), (adapter) =>
+        adapter.previewTest({
+          threadId: ThreadId.makeUnsafe(input.threadId),
+          ...(input.testPath !== undefined ? { testPath: input.testPath } : {}),
+        }),
       ),
     [PREVIEW_WS_METHODS.buildStart]: (input) =>
-      resolveEngineAdapter(registry).pipe(
-        Effect.flatMap((adapter) =>
-          adapter.previewBuildStart({
-            threadId: ThreadId.makeUnsafe(input.threadId),
-            target: input.target,
-            ...(input.channel !== undefined ? { channel: input.channel } : {}),
-          }),
-        ),
-        Effect.mapError((cause) => mapEngineError(cause, "Failed to start flutter build")),
+      withEngineSession(ThreadId.makeUnsafe(input.threadId), (adapter) =>
+        adapter.previewBuildStart({
+          threadId: ThreadId.makeUnsafe(input.threadId),
+          target: input.target,
+          ...(input.channel !== undefined ? { channel: input.channel } : {}),
+        }),
       ),
     [PREVIEW_WS_METHODS.buildState]: (input) =>
-      resolveEngineAdapter(registry).pipe(
-        Effect.flatMap((adapter) =>
-          adapter.previewBuildState({
-            threadId: ThreadId.makeUnsafe(input.threadId),
-            buildId: input.buildId,
-          }),
-        ),
-        Effect.mapError((cause) => mapEngineError(cause, "Failed to read flutter build state")),
+      withEngineSession(ThreadId.makeUnsafe(input.threadId), (adapter) =>
+        adapter.previewBuildState({
+          threadId: ThreadId.makeUnsafe(input.threadId),
+          buildId: input.buildId,
+        }),
       ),
   };
 }

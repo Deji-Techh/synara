@@ -60,9 +60,13 @@ export const RIGHT_DOCK_DEFAULT_WIDTH = "max(28rem, calc(50vw - 8rem))";
 // at the even split. The device pane frames a portrait phone, so its useful
 // width is whatever lets the phone reach full height: a ~19.5:9 chassis stays
 // height-bound well past 480px, and opening narrower only shrinks the device
-// while leaving empty space above and below it.
+// while leaving empty space above and below it. The preview pane frames the
+// Flutter app in the same device chassis (mobile/tablet presets are
+// height-bound), so it opens at the same comfortable width instead of the
+// half-shell split.
 const RIGHT_DOCK_PREFERRED_WIDTH: Partial<Record<RightDockPaneKind, number>> = {
   device: 38 * 16,
+  preview: 38 * 16,
 };
 
 interface RightDockProps {

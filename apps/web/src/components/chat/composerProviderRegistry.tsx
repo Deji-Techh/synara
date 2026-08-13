@@ -237,6 +237,31 @@ function getProviderStateFromCapabilities(
       normalizedOptions = normalizePiModelOptions(providerOptions);
       break;
     }
+    case "openai":
+    case "anthropic":
+    case "google":
+    case "openrouter":
+    case "ollama": {
+      const providerOptions = modelOptions?.[provider];
+      rawEffort = trimOrNull(providerOptions?.reasoningEffort);
+      const defaultReasoningEffort = getDefaultEffort(caps);
+      const reasoningEffort =
+        rawEffort && hasEffortLevel(caps, rawEffort) && rawEffort !== defaultReasoningEffort
+          ? providerOptions?.reasoningEffort
+          : undefined;
+      const fastModeEnabled = caps.supportsFastMode && providerOptions?.fastMode === true;
+      const thinking =
+        caps.supportsThinkingToggle && providerOptions?.thinking !== undefined
+          ? providerOptions.thinking
+          : undefined;
+      const nextOptions = {
+        ...(reasoningEffort ? { reasoningEffort } : {}),
+        ...(fastModeEnabled ? { fastMode: true } : {}),
+        ...(thinking !== undefined ? { thinking } : {}),
+      };
+      normalizedOptions = Object.keys(nextOptions).length > 0 ? nextOptions : undefined;
+      break;
+    }
   }
 
   const draftEffort = trimOrNull(rawEffort);
@@ -323,6 +348,31 @@ const composerProviderRegistry: Record<ProviderKind, ProviderRegistryEntry> = {
     getState: (input) => getProviderStateFromCapabilities(input),
     renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("engine", input),
     renderTraitsPicker: (input) => renderTraitsPickerForProvider("engine", input),
+  },
+  openai: {
+    getState: (input) => getProviderStateFromCapabilities(input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("openai", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("openai", input),
+  },
+  anthropic: {
+    getState: (input) => getProviderStateFromCapabilities(input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("anthropic", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("anthropic", input),
+  },
+  google: {
+    getState: (input) => getProviderStateFromCapabilities(input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("google", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("google", input),
+  },
+  openrouter: {
+    getState: (input) => getProviderStateFromCapabilities(input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("openrouter", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("openrouter", input),
+  },
+  ollama: {
+    getState: (input) => getProviderStateFromCapabilities(input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("ollama", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("ollama", input),
   },
 };
 

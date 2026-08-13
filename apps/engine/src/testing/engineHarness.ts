@@ -106,7 +106,7 @@ export async function setupEngineHarness(
   const dumpDir = path.join(tempRoot, "dumps");
 
   const fakeLlm = await startFakeLlmServer({
-    fixturesDir: options.fixturesDir,
+    ...(options.fixturesDir !== undefined ? { fixturesDir: options.fixturesDir } : {}),
     dumpDir,
     quiet: !options.verboseFakeLlm,
   });
@@ -137,11 +137,11 @@ export async function setupEngineHarness(
     };
     const agent = new Agent({
       model,
-      systemPrompt: options.systemPrompt,
-      initialHistory: options.initialHistory,
-      tools: options.tools,
       toolContext,
-      maxSteps: options.maxSteps,
+      ...(options.systemPrompt !== undefined ? { systemPrompt: options.systemPrompt } : {}),
+      ...(options.initialHistory !== undefined ? { initialHistory: options.initialHistory } : {}),
+      ...(options.tools !== undefined ? { tools: options.tools } : {}),
+      ...(options.maxSteps !== undefined ? { maxSteps: options.maxSteps } : {}),
     });
 
     const getServerDump = (dumpIndex = -1) => {
@@ -150,10 +150,10 @@ export async function setupEngineHarness(
         .filter((name) => name.endsWith(".json"))
         .sort()
         .map((name) => path.join(dumpDir, name));
-      if (dumpPaths.length === 0) {
-        throw new Error("No fake-LLM dump found — trigger [dump] first");
-      }
       const dumpPath = dumpIndex === -1 ? dumpPaths[dumpPaths.length - 1] : dumpPaths[dumpIndex];
+      if (!dumpPath) {
+        throw new Error(`Dump at index ${dumpIndex} not found`);
+      }
       return { parsed: JSON.parse(fs.readFileSync(dumpPath, "utf8")), dumpPath };
     };
 

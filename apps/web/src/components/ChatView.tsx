@@ -943,6 +943,12 @@ function getProviderStartOptionsCustomBinaryPath(
       return normalizeCustomBinaryPath(providerOptions?.pi?.binaryPath);
     case "engine":
       return null;
+    case "openai":
+    case "anthropic":
+    case "google":
+    case "openrouter":
+    case "ollama":
+      return null;
   }
 }
 
@@ -2264,6 +2270,11 @@ export default function ChatView({
       opencode: resolveHint("opencode"),
       pi: resolveHint("pi"),
       engine: resolveHint("engine"),
+      openai: resolveHint("openai"),
+      anthropic: resolveHint("anthropic"),
+      google: resolveHint("google"),
+      openrouter: resolveHint("openrouter"),
+      ollama: resolveHint("ollama"),
     };
   }, [
     activeProject?.defaultModelSelection,

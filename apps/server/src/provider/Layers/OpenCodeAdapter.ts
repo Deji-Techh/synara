@@ -3882,7 +3882,7 @@ export function makeOpenCodeAdapterLive(options?: OpenCodeAdapterLiveOptions) {
             scopedGatewayConnectionAvailable: context.gatewayControlAvailable,
           },
         );
-        const providerText = [harnessPolicy, text].filter(Boolean).join("\n\n");
+        const providerText = [input.systemPrompt, harnessPolicy, text].filter(Boolean).join("\n\n");
 
         const requestedAgent =
           input.modelSelection?.provider === provider

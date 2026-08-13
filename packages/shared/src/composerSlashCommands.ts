@@ -5,6 +5,21 @@
 // Exports: command-name constants and normalization helpers.
 
 export const BUILT_IN_COMPOSER_SLASH_COMMANDS = [
+  "init",
+  "spawn",
+  "btw",
+  "goal",
+  "schedule",
+  "browser",
+  "grill-me",
+  "teamwork-preview",
+  "learn",
+  "doctor",
+  "test",
+  "analyze",
+  "build",
+  "preview",
+  "theme",
   "clear",
   "compact",
   "model",

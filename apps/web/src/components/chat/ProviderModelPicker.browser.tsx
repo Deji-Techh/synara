@@ -70,6 +70,26 @@ const MODEL_OPTIONS_BY_PROVIDER = {
     },
   ],
   engine: [],
+  openai: [
+    { slug: "gpt-5.5", name: "GPT-5.5" },
+    { slug: "gpt-5.5-mini", name: "GPT-5.5 Mini" },
+  ],
+  anthropic: [
+    { slug: "claude-sonnet-5", name: "Claude Sonnet 5" },
+    { slug: "claude-haiku-4-5", name: "Claude Haiku 4.5" },
+  ],
+  google: [
+    { slug: "gemini-3-pro", name: "Gemini 3 Pro" },
+    { slug: "gemini-3-flash", name: "Gemini 3 Flash" },
+  ],
+  openrouter: [
+    { slug: "openai/gpt-5.5", name: "GPT-5.5" },
+    { slug: "anthropic/claude-sonnet-5", name: "Claude Sonnet 5" },
+  ],
+  ollama: [
+    { slug: "llama3.3", name: "Llama 3.3" },
+    { slug: "qwen3-coder", name: "Qwen3 Coder" },
+  ],
 } as const satisfies Record<ProviderKind, ReadonlyArray<ProviderModelOption & { slug: ModelSlug }>>;
 
 const MANY_OPENCODE_MODELS = Array.from({ length: 16 }, (_, index) => ({

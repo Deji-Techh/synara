@@ -133,6 +133,96 @@ const COMPOSER_SLASH_COMMAND_DEFINITIONS: Record<
   ComposerSlashCommand,
   ComposerSlashCommandDefinition
 > = {
+  init: {
+    command: "init",
+    label: "/init",
+    description: "Initialize or update AGENTS.md instructions for this codebase",
+    source: "app",
+  },
+  spawn: {
+    command: "spawn",
+    label: "/spawn",
+    description: "Spawn parallel subagents to concurrently execute the current task",
+    source: "app",
+  },
+  btw: {
+    command: "btw",
+    label: "/btw",
+    description: "Ask a quick question without interrupting the main conversation",
+    source: "app",
+  },
+  goal: {
+    command: "goal",
+    label: "/goal",
+    description: "Run until the specified goal is completely finished",
+    source: "app",
+  },
+  schedule: {
+    command: "schedule",
+    label: "/schedule",
+    description: "Run an instruction on a recurring schedule or as a one-time timer",
+    source: "app",
+  },
+  browser: {
+    command: "browser",
+    label: "/browser",
+    description: "Invoke a browser agent for web tasks",
+    source: "app",
+  },
+  "grill-me": {
+    command: "grill-me",
+    label: "/grill-me",
+    description: "Interview me to align on a plan",
+    source: "app",
+  },
+  "teamwork-preview": {
+    command: "teamwork-preview",
+    label: "/teamwork-preview",
+    description: "Invoke a team of agents to autonomously tackle large projects",
+    source: "app",
+  },
+  learn: {
+    command: "learn",
+    label: "/learn",
+    description: "Reflect on recent successes or corrections to capture reusable skills or rules",
+    source: "app",
+  },
+  doctor: {
+    command: "doctor",
+    label: "/doctor",
+    description: "Check Flutter SDK, Dart, Node.js, and Git toolchain health",
+    source: "app",
+  },
+  test: {
+    command: "test",
+    label: "/test",
+    description: "Run Flutter test suite with live diagnostics",
+    source: "app",
+  },
+  analyze: {
+    command: "analyze",
+    label: "/analyze",
+    description: "Run flutter analyze to check for errors and missing imports",
+    source: "app",
+  },
+  build: {
+    command: "build",
+    label: "/build",
+    description: "Trigger a production Flutter release build (APK / Bundle / Web)",
+    source: "app",
+  },
+  preview: {
+    command: "preview",
+    label: "/preview",
+    description: "Toggle the Flutter live device preview dock",
+    source: "app",
+  },
+  theme: {
+    command: "theme",
+    label: "/theme",
+    description: "Open the Caide theme palette switcher",
+    source: "app",
+  },
   clear: {
     command: "clear",
     label: "/clear",
@@ -326,6 +416,20 @@ export function buildSubagentsPrompt(existingPrompt: string): string {
   return trimmedPrompt.length > 0 ? `${trimmedPrompt}\n\n${cannedPrompt}` : cannedPrompt;
 }
 
+export function buildInitPrompt(existingPrompt: string): string {
+  const cannedPrompt =
+    "Initialize an AGENTS.md file in the project root with instructions the agent will follow: coding standards, Flutter architecture guidelines, state management patterns, quality check instructions, and tool conventions.";
+  const trimmedPrompt = existingPrompt.trim();
+  return trimmedPrompt.length > 0 ? `${trimmedPrompt}\n\n${cannedPrompt}` : cannedPrompt;
+}
+
+export function buildSpawnPrompt(existingPrompt: string): string {
+  const cannedPrompt =
+    "Spawn subagents in parallel to handle the current tasks concurrently. Delegate distinct subtasks across subagents and synthesize all findings and code changes.";
+  const trimmedPrompt = existingPrompt.trim();
+  return trimmedPrompt.length > 0 ? `${trimmedPrompt}\n\n${cannedPrompt}` : cannedPrompt;
+}
+
 export function buildReviewPrompt(input: { target: "changes" | "base-branch" }): string {
   const baseInstruction =
     "Review the local code changes for bugs, risks, behavioural regressions, and missing tests. Findings first, ordered by severity.";
@@ -399,6 +503,21 @@ export function getAvailableComposerSlashCommands(input: {
   const availableCommands: ComposerSlashCommand[] =
     input.provider !== "claudeAgent"
       ? [
+          "init",
+          "spawn",
+          "btw",
+          "goal",
+          "schedule",
+          "browser",
+          "grill-me",
+          "teamwork-preview",
+          "learn",
+          "doctor",
+          "test",
+          "analyze",
+          "build",
+          "preview",
+          "theme",
           "clear",
           ...(input.canOfferCompactCommand ? (["compact"] as const) : []),
           "model",
@@ -415,10 +534,21 @@ export function getAvailableComposerSlashCommands(input: {
           "automation",
         ]
       : [
-          // Claude owns most slash-command UX natively; sidechat remains app-level because it
-          // creates a Caide split/context clone before the provider sees the first turn.
-          // /export is app-level too — Caide owns the thread transcript, so the download
-          // happens in the app rather than being forwarded to Claude's native /export.
+          "init",
+          "spawn",
+          "btw",
+          "goal",
+          "schedule",
+          "browser",
+          "grill-me",
+          "teamwork-preview",
+          "learn",
+          "doctor",
+          "test",
+          "analyze",
+          "build",
+          "preview",
+          "theme",
           ...(input.canOfferSideCommand ? (["side"] as const) : []),
           ...(input.canOfferExportCommand ? (["export"] as const) : []),
           "feedback",

@@ -117,7 +117,12 @@ type CustomModelSettingsKey =
   | "customKiloModels"
   | "customOpenCodeModels"
   | "customPiModels"
-  | "customEngineModels";
+  | "customEngineModels"
+  | "customOpenAiModels"
+  | "customAnthropicModels"
+  | "customGoogleModels"
+  | "customOpenRouterModels"
+  | "customOllamaModels";
 export type ProviderCustomModelConfig = {
   provider: ProviderKind;
   settingsKey: CustomModelSettingsKey;
@@ -139,6 +144,11 @@ const BUILT_IN_MODEL_SLUGS_BY_PROVIDER: Record<ProviderKind, ReadonlySet<string>
   opencode: new Set(getModelOptions("opencode").map((option) => option.slug)),
   pi: new Set(getModelOptions("pi").map((option) => option.slug)),
   engine: new Set(getModelOptions("engine").map((option) => option.slug)),
+  openai: new Set(getModelOptions("openai").map((option) => option.slug)),
+  anthropic: new Set(getModelOptions("anthropic").map((option) => option.slug)),
+  google: new Set(getModelOptions("google").map((option) => option.slug)),
+  openrouter: new Set(getModelOptions("openrouter").map((option) => option.slug)),
+  ollama: new Set(getModelOptions("ollama").map((option) => option.slug)),
 };
 
 const withDefaults =
@@ -166,6 +176,11 @@ const PersistedProviderKind = Schema.Literals([
   "opencode",
   "pi",
   "engine",
+  "openai",
+  "anthropic",
+  "google",
+  "openrouter",
+  "ollama",
 ]).pipe(
   Schema.decodeTo(
     ProviderKind,
@@ -207,6 +222,23 @@ export const AppSettingsSchema = Schema.Struct({
   ),
   openCodeServerPasswordConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
   openCodeExperimentalWebSockets: Schema.Boolean.pipe(withDefaults(() => false)),
+  openaiApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  openaiApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
+  openaiBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  anthropicApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  anthropicApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
+  anthropicBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  googleApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  googleApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
+  googleBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  openrouterApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  openrouterApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
+  openrouterBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  ollamaApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  ollamaApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
+  ollamaBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(
+    withDefaults(() => "http://127.0.0.1:11434/v1"),
+  ),
   defaultThreadEnvMode: EnvMode.pipe(withDefaults(() => "local" as const satisfies EnvMode)),
   confirmThreadDelete: Schema.Boolean.pipe(withDefaults(() => true)),
   confirmThreadArchive: Schema.Boolean.pipe(withDefaults(() => false)),
@@ -268,6 +300,11 @@ export const AppSettingsSchema = Schema.Struct({
   customOpenCodeModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   customPiModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   customEngineModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
+  customOpenAiModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
+  customAnthropicModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
+  customGoogleModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
+  customOpenRouterModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
+  customOllamaModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   textGenerationProvider: PersistedProviderKind.pipe(withDefaults(() => "codex" as const)),
   textGenerationModel: Schema.optional(TrimmedNonEmptyString),
   uiFontFamily: Schema.String.check(Schema.isMaxLength(256)).pipe(withDefaults(() => "")),
@@ -414,6 +451,51 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     placeholder: "your-engine-model-slug",
     example: "gpt-5.6-sol",
   },
+  openai: {
+    provider: "openai",
+    settingsKey: "customOpenAiModels",
+    defaultSettingsKey: "customOpenAiModels",
+    title: "OpenAI",
+    description: "Save additional OpenAI model slugs for the picker.",
+    placeholder: "gpt-5.5",
+    example: "gpt-6-mini",
+  },
+  anthropic: {
+    provider: "anthropic",
+    settingsKey: "customAnthropicModels",
+    defaultSettingsKey: "customAnthropicModels",
+    title: "Anthropic",
+    description: "Save additional Anthropic model slugs for the picker.",
+    placeholder: "claude-sonnet-5",
+    example: "claude-custom-model",
+  },
+  google: {
+    provider: "google",
+    settingsKey: "customGoogleModels",
+    defaultSettingsKey: "customGoogleModels",
+    title: "Google",
+    description: "Save additional Google model slugs for the picker.",
+    placeholder: "gemini-3-flash",
+    example: "gemini-3-ultra",
+  },
+  openrouter: {
+    provider: "openrouter",
+    settingsKey: "customOpenRouterModels",
+    defaultSettingsKey: "customOpenRouterModels",
+    title: "OpenRouter",
+    description: "Save additional OpenRouter model slugs for the picker.",
+    placeholder: "provider/model",
+    example: "anthropic/claude-sonnet-5",
+  },
+  ollama: {
+    provider: "ollama",
+    settingsKey: "customOllamaModels",
+    defaultSettingsKey: "customOllamaModels",
+    title: "Ollama",
+    description: "Save additional Ollama model names for the picker.",
+    placeholder: "model-name",
+    example: "llama3.3",
+  },
 };
 
 export const MODEL_PROVIDER_SETTINGS = Object.values(PROVIDER_CUSTOM_MODEL_CONFIG);
@@ -527,10 +609,15 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
   return {
     ...currentSettings,
     enableAppSnap: settings.enableAppSnap || legacyEnableAppshots === true,
-    // Password fields are accepted only as write-only update patches. Never retain
+    // Password & API key fields are accepted only as write-only update patches. Never retain
     // reusable provider credentials in browser state or localStorage.
     kiloServerPassword: "",
     openCodeServerPassword: "",
+    openaiApiKey: "",
+    anthropicApiKey: "",
+    googleApiKey: "",
+    openrouterApiKey: "",
+    ollamaApiKey: "",
     claudeBinaryPath: normalizeProviderBinaryPathOverride("claudeAgent", settings.claudeBinaryPath),
     codexBinaryPath: normalizeProviderBinaryPathOverride("codex", settings.codexBinaryPath),
     cursorBinaryPath: normalizeProviderBinaryPathOverride("cursor", settings.cursorBinaryPath),
@@ -562,6 +649,14 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
     customKiloModels: normalizeCustomModelSlugs(settings.customKiloModels, "kilo"),
     customOpenCodeModels: normalizeCustomModelSlugs(settings.customOpenCodeModels, "opencode"),
     customPiModels: normalizeCustomModelSlugs(settings.customPiModels, "pi"),
+    customOpenAiModels: normalizeCustomModelSlugs(settings.customOpenAiModels, "openai"),
+    customAnthropicModels: normalizeCustomModelSlugs(settings.customAnthropicModels, "anthropic"),
+    customGoogleModels: normalizeCustomModelSlugs(settings.customGoogleModels, "google"),
+    customOpenRouterModels: normalizeCustomModelSlugs(
+      settings.customOpenRouterModels,
+      "openrouter",
+    ),
+    customOllamaModels: normalizeCustomModelSlugs(settings.customOllamaModels, "ollama"),
     hiddenProviders: normalizeHiddenProviders(settings.hiddenProviders),
     providerOrder: normalizeProviderOrder(settings.providerOrder),
     hiddenModels: [],
@@ -599,6 +694,21 @@ function serverSettingsToAppSettings(settings: ServerSettingsView): Partial<AppS
     customKiloModels: settings.providers.kilo.customModels,
     customOpenCodeModels: settings.providers.opencode.customModels,
     customPiModels: settings.providers.pi.customModels,
+    customOpenAiModels: settings.providers.openai.customModels,
+    customAnthropicModels: settings.providers.anthropic.customModels,
+    customGoogleModels: settings.providers.google.customModels,
+    customOpenRouterModels: settings.providers.openrouter.customModels,
+    customOllamaModels: settings.providers.ollama.customModels,
+    openaiApiKeyConfigured: settings.providers.openai.apiKeyConfigured,
+    openaiBaseUrl: settings.providers.openai.baseUrl,
+    anthropicApiKeyConfigured: settings.providers.anthropic.apiKeyConfigured,
+    anthropicBaseUrl: settings.providers.anthropic.baseUrl,
+    googleApiKeyConfigured: settings.providers.google.apiKeyConfigured,
+    googleBaseUrl: settings.providers.google.baseUrl,
+    openrouterApiKeyConfigured: settings.providers.openrouter.apiKeyConfigured,
+    openrouterBaseUrl: settings.providers.openrouter.baseUrl,
+    ollamaApiKeyConfigured: settings.providers.ollama.apiKeyConfigured,
+    ollamaBaseUrl: settings.providers.ollama.baseUrl,
     textGenerationProvider: settings.textGenerationModelSelection.provider,
     textGenerationModel: settings.textGenerationModelSelection.model,
   };
@@ -628,7 +738,17 @@ function touchesProviderDiscoverySettings(patch: Partial<AppSettings>): boolean 
     hasOwn(patch, "openCodeExperimentalWebSockets") ||
     hasOwn(patch, "openCodeServerPassword") ||
     hasOwn(patch, "openCodeServerUrl") ||
-    hasOwn(patch, "piAgentDir")
+    hasOwn(patch, "piAgentDir") ||
+    hasOwn(patch, "openaiApiKey") ||
+    hasOwn(patch, "openaiBaseUrl") ||
+    hasOwn(patch, "anthropicApiKey") ||
+    hasOwn(patch, "anthropicBaseUrl") ||
+    hasOwn(patch, "googleApiKey") ||
+    hasOwn(patch, "googleBaseUrl") ||
+    hasOwn(patch, "openrouterApiKey") ||
+    hasOwn(patch, "openrouterBaseUrl") ||
+    hasOwn(patch, "ollamaApiKey") ||
+    hasOwn(patch, "ollamaBaseUrl")
   );
 }
 
@@ -765,6 +885,71 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
       ...(hasOwn(patch, "customPiModels") ? { customModels: patch.customPiModels ?? [] } : {}),
     };
   }
+  if (
+    hasOwn(patch, "openaiApiKey") ||
+    hasOwn(patch, "openaiBaseUrl") ||
+    hasOwn(patch, "customOpenAiModels")
+  ) {
+    providers.openai = {
+      ...(hasOwn(patch, "openaiApiKey") ? { apiKey: patch.openaiApiKey ?? "" } : {}),
+      ...(hasOwn(patch, "openaiBaseUrl") ? { baseUrl: patch.openaiBaseUrl ?? "" } : {}),
+      ...(hasOwn(patch, "customOpenAiModels")
+        ? { customModels: patch.customOpenAiModels ?? [] }
+        : {}),
+    };
+  }
+  if (
+    hasOwn(patch, "anthropicApiKey") ||
+    hasOwn(patch, "anthropicBaseUrl") ||
+    hasOwn(patch, "customAnthropicModels")
+  ) {
+    providers.anthropic = {
+      ...(hasOwn(patch, "anthropicApiKey") ? { apiKey: patch.anthropicApiKey ?? "" } : {}),
+      ...(hasOwn(patch, "anthropicBaseUrl") ? { baseUrl: patch.anthropicBaseUrl ?? "" } : {}),
+      ...(hasOwn(patch, "customAnthropicModels")
+        ? { customModels: patch.customAnthropicModels ?? [] }
+        : {}),
+    };
+  }
+  if (
+    hasOwn(patch, "googleApiKey") ||
+    hasOwn(patch, "googleBaseUrl") ||
+    hasOwn(patch, "customGoogleModels")
+  ) {
+    providers.google = {
+      ...(hasOwn(patch, "googleApiKey") ? { apiKey: patch.googleApiKey ?? "" } : {}),
+      ...(hasOwn(patch, "googleBaseUrl") ? { baseUrl: patch.googleBaseUrl ?? "" } : {}),
+      ...(hasOwn(patch, "customGoogleModels")
+        ? { customModels: patch.customGoogleModels ?? [] }
+        : {}),
+    };
+  }
+  if (
+    hasOwn(patch, "openrouterApiKey") ||
+    hasOwn(patch, "openrouterBaseUrl") ||
+    hasOwn(patch, "customOpenRouterModels")
+  ) {
+    providers.openrouter = {
+      ...(hasOwn(patch, "openrouterApiKey") ? { apiKey: patch.openrouterApiKey ?? "" } : {}),
+      ...(hasOwn(patch, "openrouterBaseUrl") ? { baseUrl: patch.openrouterBaseUrl ?? "" } : {}),
+      ...(hasOwn(patch, "customOpenRouterModels")
+        ? { customModels: patch.customOpenRouterModels ?? [] }
+        : {}),
+    };
+  }
+  if (
+    hasOwn(patch, "ollamaApiKey") ||
+    hasOwn(patch, "ollamaBaseUrl") ||
+    hasOwn(patch, "customOllamaModels")
+  ) {
+    providers.ollama = {
+      ...(hasOwn(patch, "ollamaApiKey") ? { apiKey: patch.ollamaApiKey ?? "" } : {}),
+      ...(hasOwn(patch, "ollamaBaseUrl") ? { baseUrl: patch.ollamaBaseUrl ?? "" } : {}),
+      ...(hasOwn(patch, "customOllamaModels")
+        ? { customModels: patch.customOllamaModels ?? [] }
+        : {}),
+    };
+  }
 
   if (Object.keys(providers).length > 0) {
     serverPatch.providers = providers;
@@ -802,6 +987,16 @@ function buildInitialServerSettingsMigrationPatch(settings: AppSettings): Server
     "openCodeServerUrl",
     "piAgentDir",
     "piBinaryPath",
+    "openaiApiKey",
+    "openaiBaseUrl",
+    "anthropicApiKey",
+    "anthropicBaseUrl",
+    "googleApiKey",
+    "googleBaseUrl",
+    "openrouterApiKey",
+    "openrouterBaseUrl",
+    "ollamaApiKey",
+    "ollamaBaseUrl",
     "textGenerationModel",
     "textGenerationProvider",
   ] as const) {
@@ -818,6 +1013,21 @@ function buildInitialServerSettingsMigrationPatch(settings: AppSettings): Server
   if (settings.openCodeServerPassword.trim()) {
     patch.openCodeServerPassword = settings.openCodeServerPassword;
   }
+  if (settings.openaiApiKey.trim()) {
+    patch.openaiApiKey = settings.openaiApiKey;
+  }
+  if (settings.anthropicApiKey.trim()) {
+    patch.anthropicApiKey = settings.anthropicApiKey;
+  }
+  if (settings.googleApiKey.trim()) {
+    patch.googleApiKey = settings.googleApiKey;
+  }
+  if (settings.openrouterApiKey.trim()) {
+    patch.openrouterApiKey = settings.openrouterApiKey;
+  }
+  if (settings.ollamaApiKey.trim()) {
+    patch.ollamaApiKey = settings.ollamaApiKey;
+  }
 
   for (const key of [
     "customCodexModels",
@@ -829,6 +1039,11 @@ function buildInitialServerSettingsMigrationPatch(settings: AppSettings): Server
     "customKiloModels",
     "customOpenCodeModels",
     "customPiModels",
+    "customOpenAiModels",
+    "customAnthropicModels",
+    "customGoogleModels",
+    "customOpenRouterModels",
+    "customOllamaModels",
   ] as const) {
     if (normalizedSettings[key].length > 0) {
       patch[key] = normalizedSettings[key] as never;
@@ -879,6 +1094,11 @@ export function getCustomModelsByProvider(
     opencode: getCustomModelsForProvider(settings, "opencode"),
     pi: getCustomModelsForProvider(settings, "pi"),
     engine: getCustomModelsForProvider(settings, "engine"),
+    openai: getCustomModelsForProvider(settings, "openai"),
+    anthropic: getCustomModelsForProvider(settings, "anthropic"),
+    google: getCustomModelsForProvider(settings, "google"),
+    openrouter: getCustomModelsForProvider(settings, "openrouter"),
+    ollama: getCustomModelsForProvider(settings, "ollama"),
   };
 }
 
@@ -1028,6 +1248,11 @@ export function getCustomModelOptionsByProvider(
     opencode: getAppModelOptions("opencode", customModelsByProvider.opencode),
     pi: getAppModelOptions("pi", customModelsByProvider.pi),
     engine: getAppModelOptions("engine", customModelsByProvider.engine),
+    openai: getAppModelOptions("openai", customModelsByProvider.openai),
+    anthropic: getAppModelOptions("anthropic", customModelsByProvider.anthropic),
+    google: getAppModelOptions("google", customModelsByProvider.google),
+    openrouter: getAppModelOptions("openrouter", customModelsByProvider.openrouter),
+    ollama: getAppModelOptions("ollama", customModelsByProvider.ollama),
   };
 }
 
@@ -1211,6 +1436,12 @@ export function getCustomBinaryPathForProvider(
       return normalizeProviderBinaryPathOverride(provider, settings.piBinaryPath);
     case "engine":
       return "";
+    case "openai":
+    case "anthropic":
+    case "google":
+    case "openrouter":
+    case "ollama":
+      return "";
   }
 }
 
@@ -1282,6 +1513,21 @@ export function useAppSettings() {
           : {}),
         ...(hasOwn(patch, "openCodeServerPassword")
           ? { openCodeServerPasswordConfigured: Boolean(patch.openCodeServerPassword?.trim()) }
+          : {}),
+        ...(hasOwn(patch, "openaiApiKey")
+          ? { openaiApiKeyConfigured: Boolean(patch.openaiApiKey?.trim()) }
+          : {}),
+        ...(hasOwn(patch, "anthropicApiKey")
+          ? { anthropicApiKeyConfigured: Boolean(patch.anthropicApiKey?.trim()) }
+          : {}),
+        ...(hasOwn(patch, "googleApiKey")
+          ? { googleApiKeyConfigured: Boolean(patch.googleApiKey?.trim()) }
+          : {}),
+        ...(hasOwn(patch, "openrouterApiKey")
+          ? { openrouterApiKeyConfigured: Boolean(patch.openrouterApiKey?.trim()) }
+          : {}),
+        ...(hasOwn(patch, "ollamaApiKey")
+          ? { ollamaApiKeyConfigured: Boolean(patch.ollamaApiKey?.trim()) }
           : {}),
       }),
     );

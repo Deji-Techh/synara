@@ -173,6 +173,11 @@ const allProvidersDisabledServerSettings = {
     opencode: { ...DEFAULT_SERVER_SETTINGS.providers.opencode, enabled: false },
     pi: { ...DEFAULT_SERVER_SETTINGS.providers.pi, enabled: false },
     engine: { ...DEFAULT_SERVER_SETTINGS.providers.engine, enabled: false },
+    openai: { ...DEFAULT_SERVER_SETTINGS.providers.openai, enabled: false },
+    anthropic: { ...DEFAULT_SERVER_SETTINGS.providers.anthropic, enabled: false },
+    google: { ...DEFAULT_SERVER_SETTINGS.providers.google, enabled: false },
+    openrouter: { ...DEFAULT_SERVER_SETTINGS.providers.openrouter, enabled: false },
+    ollama: { ...DEFAULT_SERVER_SETTINGS.providers.ollama, enabled: false },
   },
 } satisfies typeof DEFAULT_SERVER_SETTINGS;
 

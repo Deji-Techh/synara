@@ -1843,8 +1843,11 @@ export function makeGrokAdapter(
           ctx,
           agentGatewayCredentials !== undefined,
         );
-        if (harnessPolicy) {
-          promptParts.unshift(harnessPolicy);
+        if (input.systemPrompt !== undefined || harnessPolicy !== null) {
+          promptParts.unshift({
+            type: "text",
+            text: [input.systemPrompt, harnessPolicy?.text].filter(Boolean).join("\n\n"),
+          });
         }
 
         // A stop can land while the pre-prompt work or attachment reads above were

@@ -61,6 +61,8 @@ describe("createProviderInstallResetPatch", () => {
 
     expect(Object.keys(patch).sort()).toEqual(
       [
+        "anthropicApiKey",
+        "anthropicBaseUrl",
         "antigravityBinaryPath",
         "claudeBinaryPath",
         "codexBinaryPath",
@@ -68,19 +70,32 @@ describe("createProviderInstallResetPatch", () => {
         "cursorApiEndpoint",
         "cursorBinaryPath",
         "droidBinaryPath",
+        "googleApiKey",
+        "googleBaseUrl",
         "grokBinaryPath",
         "kiloBinaryPath",
         "kiloServerPassword",
         "kiloServerUrl",
+        "ollamaApiKey",
+        "ollamaBaseUrl",
         "openCodeBinaryPath",
         "openCodeExperimentalWebSockets",
         "openCodeServerPassword",
         "openCodeServerUrl",
+        "openaiApiKey",
+        "openaiBaseUrl",
+        "openrouterApiKey",
+        "openrouterBaseUrl",
         "piAgentDir",
         "piBinaryPath",
       ].sort(),
     );
     expect(patch.kiloServerPassword).toBe("");
     expect(patch.openCodeServerPassword).toBe("");
+    expect(patch.openaiApiKey).toBe("");
+    expect(patch.anthropicApiKey).toBe("");
+    expect(patch.googleApiKey).toBe("");
+    expect(patch.openrouterApiKey).toBe("");
+    expect(patch.ollamaApiKey).toBe("");
   });
 });

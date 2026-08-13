@@ -6,6 +6,7 @@
  * and process-authoritative on the server.
  */
 import {
+  API_PROVIDER_KINDS,
   DEFAULT_GIT_TEXT_GENERATION_MODEL,
   DEFAULT_MODEL_BY_PROVIDER,
   DEFAULT_SERVER_SETTINGS,
@@ -218,12 +219,22 @@ function omitProviderPasswords(patch: ServerSettingsPatch): ServerSettingsPatch 
   if (!patch.providers) return patch;
   const { serverPassword: _kiloPassword, ...kilo } = patch.providers.kilo ?? {};
   const { serverPassword: _openCodePassword, ...opencode } = patch.providers.opencode ?? {};
+  const { apiKey: _openaiKey, ...openai } = patch.providers.openai ?? {};
+  const { apiKey: _anthropicKey, ...anthropic } = patch.providers.anthropic ?? {};
+  const { apiKey: _googleKey, ...google } = patch.providers.google ?? {};
+  const { apiKey: _openrouterKey, ...openrouter } = patch.providers.openrouter ?? {};
+  const { apiKey: _ollamaKey, ...ollama } = patch.providers.ollama ?? {};
   return {
     ...patch,
     providers: {
       ...patch.providers,
       ...(patch.providers.kilo ? { kilo } : {}),
       ...(patch.providers.opencode ? { opencode } : {}),
+      ...(patch.providers.openai ? { openai } : {}),
+      ...(patch.providers.anthropic ? { anthropic } : {}),
+      ...(patch.providers.google ? { google } : {}),
+      ...(patch.providers.openrouter ? { openrouter } : {}),
+      ...(patch.providers.ollama ? { ollama } : {}),
     },
   };
 }
@@ -281,6 +292,11 @@ const makeServerSettings = Effect.gen(function* () {
     Effect.all({
       kilo: providerCredentials.isServerPasswordConfigured("kilo"),
       opencode: providerCredentials.isServerPasswordConfigured("opencode"),
+      openai: providerCredentials.isApiKeyConfigured("openai"),
+      anthropic: providerCredentials.isApiKeyConfigured("anthropic"),
+      google: providerCredentials.isApiKeyConfigured("google"),
+      openrouter: providerCredentials.isApiKeyConfigured("openrouter"),
+      ollama: providerCredentials.isApiKeyConfigured("ollama"),
     }).pipe(
       Effect.map(
         (configured): ServerSettings => ({
@@ -294,6 +310,26 @@ const makeServerSettings = Effect.gen(function* () {
             opencode: {
               ...settings.providers.opencode,
               serverPasswordConfigured: configured.opencode,
+            },
+            openai: {
+              ...settings.providers.openai,
+              apiKeyConfigured: configured.openai,
+            },
+            anthropic: {
+              ...settings.providers.anthropic,
+              apiKeyConfigured: configured.anthropic,
+            },
+            google: {
+              ...settings.providers.google,
+              apiKeyConfigured: configured.google,
+            },
+            openrouter: {
+              ...settings.providers.openrouter,
+              apiKeyConfigured: configured.openrouter,
+            },
+            ollama: {
+              ...settings.providers.ollama,
+              apiKeyConfigured: configured.ollama,
             },
           },
         }),
@@ -449,6 +485,21 @@ const makeServerSettings = Effect.gen(function* () {
                   new ServerSettingsError({
                     settingsPath,
                     detail: `failed to update ${provider} server password`,
+                    cause,
+                  }),
+              ),
+            );
+          }
+        }
+        for (const provider of API_PROVIDER_KINDS) {
+          const apiKey = patch.providers?.[provider]?.apiKey;
+          if (apiKey !== undefined) {
+            yield* providerCredentials.replaceApiKey(provider, apiKey).pipe(
+              Effect.mapError(
+                (cause) =>
+                  new ServerSettingsError({
+                    settingsPath,
+                    detail: `failed to update ${provider} API key`,
                     cause,
                   }),
               ),

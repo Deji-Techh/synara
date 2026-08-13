@@ -240,6 +240,76 @@ const PROVIDER_TARGET_OPTION_RULES = {
     primaryOptionKey: "thinkingLevel",
     options: { thinkingLevel: providerOptionRule("string", [], "model-discovery") },
   }),
+  openai: defineProviderOptionConfig<"openai">({
+    primaryOptionKey: "reasoningEffort",
+    options: {
+      reasoningEffort: providerOptionRule("string", [], "model-discovery"),
+      fastMode: providerOptionRule("boolean", [], "model-discovery", {
+        advertised: false,
+        validation: { kind: "boolean-capability", capability: "supportsFastMode" },
+      }),
+      thinking: providerOptionRule("boolean", [], "model-discovery", {
+        advertised: false,
+        validation: { kind: "boolean-capability", capability: "supportsThinkingToggle" },
+      }),
+    },
+  }),
+  anthropic: defineProviderOptionConfig<"anthropic">({
+    primaryOptionKey: "reasoningEffort",
+    options: {
+      reasoningEffort: providerOptionRule("string", [], "model-discovery"),
+      fastMode: providerOptionRule("boolean", [], "model-discovery", {
+        advertised: false,
+        validation: { kind: "boolean-capability", capability: "supportsFastMode" },
+      }),
+      thinking: providerOptionRule("boolean", [], "model-discovery", {
+        advertised: false,
+        validation: { kind: "boolean-capability", capability: "supportsThinkingToggle" },
+      }),
+    },
+  }),
+  google: defineProviderOptionConfig<"google">({
+    primaryOptionKey: "reasoningEffort",
+    options: {
+      reasoningEffort: providerOptionRule("string", [], "model-discovery"),
+      fastMode: providerOptionRule("boolean", [], "model-discovery", {
+        advertised: false,
+        validation: { kind: "boolean-capability", capability: "supportsFastMode" },
+      }),
+      thinking: providerOptionRule("boolean", [], "model-discovery", {
+        advertised: false,
+        validation: { kind: "boolean-capability", capability: "supportsThinkingToggle" },
+      }),
+    },
+  }),
+  openrouter: defineProviderOptionConfig<"openrouter">({
+    primaryOptionKey: "reasoningEffort",
+    options: {
+      reasoningEffort: providerOptionRule("string", [], "model-discovery"),
+      fastMode: providerOptionRule("boolean", [], "model-discovery", {
+        advertised: false,
+        validation: { kind: "boolean-capability", capability: "supportsFastMode" },
+      }),
+      thinking: providerOptionRule("boolean", [], "model-discovery", {
+        advertised: false,
+        validation: { kind: "boolean-capability", capability: "supportsThinkingToggle" },
+      }),
+    },
+  }),
+  ollama: defineProviderOptionConfig<"ollama">({
+    primaryOptionKey: "reasoningEffort",
+    options: {
+      reasoningEffort: providerOptionRule("string", [], "model-discovery"),
+      fastMode: providerOptionRule("boolean", [], "model-discovery", {
+        advertised: false,
+        validation: { kind: "boolean-capability", capability: "supportsFastMode" },
+      }),
+      thinking: providerOptionRule("boolean", [], "model-discovery", {
+        advertised: false,
+        validation: { kind: "boolean-capability", capability: "supportsThinkingToggle" },
+      }),
+    },
+  }),
 } as const satisfies Record<ProviderKind, ProviderTargetOptionConfig>;
 
 function providerDefaultModel(provider: ProviderKind): string | null {

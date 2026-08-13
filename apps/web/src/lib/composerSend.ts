@@ -229,6 +229,12 @@ export function resolvePromptEffortFromModelSelection(
       return null;
     case "engine":
       return null;
+    case "openai":
+    case "anthropic":
+    case "google":
+    case "openrouter":
+    case "ollama":
+      return modelSelection.options?.reasoningEffort ?? null;
   }
 }
 

@@ -10,15 +10,22 @@ import {
 import { ServerSettingsLive } from "../serverSettings";
 import { makeClaudeAdapterLive } from "./Layers/ClaudeAdapter";
 import { makeCodexAdapterLive } from "./Layers/CodexAdapter";
-import { makeCursorAdapterLive } from "./Layers/CursorAdapter";
+import { CursorAdapterLive } from "./Layers/CursorAdapter";
 import { makeEventNdjsonLogger } from "./Layers/EventNdjsonLogger";
-import { makeAntigravityAdapterLive } from "./Layers/AntigravityAdapter";
-import { makeDroidAdapterLive } from "./Layers/DroidAdapter";
-import { makeGrokAdapterLive } from "./Layers/GrokAdapter";
+import { AntigravityAdapterLive } from "./Layers/AntigravityAdapter";
+import { DroidAdapterLive } from "./Layers/DroidAdapter";
+import { GrokAdapterLive } from "./Layers/GrokAdapter";
 import { makeKiloAdapterLive, makeOpenCodeAdapterLive } from "./Layers/OpenCodeAdapter";
 import { makePiAdapterLive } from "./Layers/PiAdapter";
 import { ProviderAdapterRegistryLive } from "./Layers/ProviderAdapterRegistry";
 import { EngineAdapterLive } from "./Layers/EngineAdapter";
+import {
+  OpenAiAdapterLive,
+  AnthropicAdapterLive,
+  GoogleAdapterLive,
+  OpenRouterAdapterLive,
+  OllamaAdapterLive,
+} from "./Layers/ApiAdapter";
 import { ProviderDiscoveryServiceLive } from "./Layers/ProviderDiscoveryService";
 import { makeDurableProviderServiceLive } from "./Layers/ProviderService";
 import { ProviderSessionDirectoryLive } from "./Layers/ProviderSessionDirectory";
@@ -58,32 +65,29 @@ export function makeServerProviderLayer(
     const claudeAdapterLayer = makeClaudeAdapterLive(
       nativeEventLogger ? { nativeEventLogger } : undefined,
     ).pipe(Layer.provide(agentGatewayCredentialsLayer));
-    const openCodeAdapterLayer = makeOpenCodeAdapterLive({
-      ...(nativeEventLogger ? { nativeEventLogger } : {}),
-      resolveServerPassword: resolveProviderServerPassword,
-    }).pipe(Layer.provide(agentGatewayCredentialsLayer));
+    const antigravityAdapterLayer = AntigravityAdapterLive.pipe(
+      Layer.provide(agentGatewayCredentialsLayer),
+    );
+    const grokAdapterLayer = GrokAdapterLive.pipe(Layer.provide(agentGatewayCredentialsLayer));
+    const droidAdapterLayer = DroidAdapterLive.pipe(Layer.provide(agentGatewayCredentialsLayer));
     const kiloAdapterLayer = makeKiloAdapterLive({
       ...(nativeEventLogger ? { nativeEventLogger } : {}),
       resolveServerPassword: resolveProviderServerPassword,
     }).pipe(Layer.provide(agentGatewayCredentialsLayer));
-    const antigravityAdapterLayer = makeAntigravityAdapterLive().pipe(
-      Layer.provide(agentGatewayCredentialsLayer),
-    );
-    const grokAdapterLayer = makeGrokAdapterLive(
-      {},
-      nativeEventLogger ? { nativeEventLogger } : undefined,
-    ).pipe(Layer.provide(agentGatewayCredentialsLayer));
-    const droidAdapterLayer = makeDroidAdapterLive(
-      {},
-      nativeEventLogger ? { nativeEventLogger } : undefined,
-    ).pipe(Layer.provide(agentGatewayCredentialsLayer));
-    const cursorAdapterLayer = makeCursorAdapterLive(
-      {},
-      nativeEventLogger ? { nativeEventLogger } : undefined,
-    ).pipe(Layer.provide(agentGatewayCredentialsLayer));
+    const openCodeAdapterLayer = makeOpenCodeAdapterLive({
+      ...(nativeEventLogger ? { nativeEventLogger } : {}),
+      resolveServerPassword: resolveProviderServerPassword,
+    }).pipe(Layer.provide(agentGatewayCredentialsLayer));
+    const cursorAdapterLayer = CursorAdapterLive.pipe(Layer.provide(agentGatewayCredentialsLayer));
     const piAdapterLayer = makePiAdapterLive(
       nativeEventLogger ? { nativeEventLogger } : undefined,
     ).pipe(Layer.provide(agentGatewayCredentialsLayer));
+    const credentialsLayer = Layer.succeed(ProviderCredentials, credentials);
+    const openAiAdapterLayer = OpenAiAdapterLive.pipe(Layer.provide(credentialsLayer));
+    const anthropicAdapterLayer = AnthropicAdapterLive.pipe(Layer.provide(credentialsLayer));
+    const googleAdapterLayer = GoogleAdapterLive.pipe(Layer.provide(credentialsLayer));
+    const openRouterAdapterLayer = OpenRouterAdapterLive.pipe(Layer.provide(credentialsLayer));
+    const ollamaAdapterLayer = OllamaAdapterLive.pipe(Layer.provide(credentialsLayer));
     const adapterRegistryLayer = ProviderAdapterRegistryLive.pipe(
       Layer.provide(codexAdapterLayer),
       Layer.provide(claudeAdapterLayer),
@@ -95,7 +99,13 @@ export function makeServerProviderLayer(
       Layer.provide(openCodeAdapterLayer),
       Layer.provide(piAdapterLayer),
       Layer.provide(EngineAdapterLive),
+      Layer.provide(openAiAdapterLayer),
+      Layer.provide(anthropicAdapterLayer),
+      Layer.provide(googleAdapterLayer),
+      Layer.provide(openRouterAdapterLayer),
+      Layer.provide(ollamaAdapterLayer),
       Layer.provideMerge(providerSessionDirectoryLayer),
+      Layer.provideMerge(credentialsLayer),
     );
     const providerServiceLayer = makeDurableProviderServiceLive(
       canonicalEventLogger ? { canonicalEventLogger } : undefined,
