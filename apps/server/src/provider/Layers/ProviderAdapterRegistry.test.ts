@@ -178,6 +178,10 @@ const fakeEngineAdapter: EngineAdapterShape = {
   previewStop: vi.fn(),
   previewReload: vi.fn(),
   previewState: vi.fn(),
+  previewAnalyze: vi.fn(),
+  previewTest: vi.fn(),
+  previewBuildStart: vi.fn(),
+  previewBuildState: vi.fn(),
 };
 
 const fakeAntigravityAdapter: AntigravityAdapterShape = {

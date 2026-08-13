@@ -14,6 +14,12 @@ import {
   PREVIEW_WS_METHODS,
   ThreadId,
   WsRpcError,
+  type PreviewAnalyzeInput,
+  type PreviewAnalyzeResult,
+  type PreviewBuildStartInput,
+  type PreviewBuildStartResult,
+  type PreviewBuildStateInput,
+  type PreviewBuildStateResult,
   type PreviewGetStateInput,
   type PreviewReloadInput,
   type PreviewReloadResult,
@@ -22,6 +28,8 @@ import {
   type PreviewStartResult,
   type PreviewStopInput,
   type PreviewStopResult,
+  type PreviewTestInput,
+  type PreviewTestResult,
 } from "@caide/contracts";
 import { Effect } from "effect";
 
@@ -56,6 +64,18 @@ export interface WsPreviewHandlers {
   readonly [PREVIEW_WS_METHODS.getState]: (
     input: PreviewGetStateInput,
   ) => Effect.Effect<PreviewState, WsRpcError>;
+  readonly [PREVIEW_WS_METHODS.analyze]: (
+    input: PreviewAnalyzeInput,
+  ) => Effect.Effect<PreviewAnalyzeResult, WsRpcError>;
+  readonly [PREVIEW_WS_METHODS.test]: (
+    input: PreviewTestInput,
+  ) => Effect.Effect<PreviewTestResult, WsRpcError>;
+  readonly [PREVIEW_WS_METHODS.buildStart]: (
+    input: PreviewBuildStartInput,
+  ) => Effect.Effect<PreviewBuildStartResult, WsRpcError>;
+  readonly [PREVIEW_WS_METHODS.buildState]: (
+    input: PreviewBuildStateInput,
+  ) => Effect.Effect<PreviewBuildStateResult, WsRpcError>;
 }
 
 /**
@@ -108,6 +128,44 @@ export function makeWsPreviewHandlers(registry: ProviderAdapterRegistryShape): W
           adapter.previewState({ threadId: ThreadId.makeUnsafe(input.threadId) }),
         ),
         Effect.mapError((cause) => mapEngineError(cause, "Failed to read preview state")),
+      ),
+    [PREVIEW_WS_METHODS.analyze]: (input) =>
+      resolveEngineAdapter(registry).pipe(
+        Effect.flatMap((adapter) =>
+          adapter.previewAnalyze({ threadId: ThreadId.makeUnsafe(input.threadId) }),
+        ),
+        Effect.mapError((cause) => mapEngineError(cause, "Failed to run flutter analyze")),
+      ),
+    [PREVIEW_WS_METHODS.test]: (input) =>
+      resolveEngineAdapter(registry).pipe(
+        Effect.flatMap((adapter) =>
+          adapter.previewTest({
+            threadId: ThreadId.makeUnsafe(input.threadId),
+            ...(input.testPath !== undefined ? { testPath: input.testPath } : {}),
+          }),
+        ),
+        Effect.mapError((cause) => mapEngineError(cause, "Failed to run flutter test")),
+      ),
+    [PREVIEW_WS_METHODS.buildStart]: (input) =>
+      resolveEngineAdapter(registry).pipe(
+        Effect.flatMap((adapter) =>
+          adapter.previewBuildStart({
+            threadId: ThreadId.makeUnsafe(input.threadId),
+            target: input.target,
+            ...(input.channel !== undefined ? { channel: input.channel } : {}),
+          }),
+        ),
+        Effect.mapError((cause) => mapEngineError(cause, "Failed to start flutter build")),
+      ),
+    [PREVIEW_WS_METHODS.buildState]: (input) =>
+      resolveEngineAdapter(registry).pipe(
+        Effect.flatMap((adapter) =>
+          adapter.previewBuildState({
+            threadId: ThreadId.makeUnsafe(input.threadId),
+            buildId: input.buildId,
+          }),
+        ),
+        Effect.mapError((cause) => mapEngineError(cause, "Failed to read flutter build state")),
       ),
   };
 }

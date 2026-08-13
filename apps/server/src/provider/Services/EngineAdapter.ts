@@ -11,10 +11,14 @@ import { ServiceMap } from "effect";
 import type { Effect } from "effect";
 
 import type {
+  PreviewAnalyzeResult,
+  PreviewBuildStartResult,
+  PreviewBuildStateResult,
   PreviewReloadResult,
   PreviewStartResult,
   PreviewState,
   PreviewStopResult,
+  PreviewTestResult,
   ThreadId,
 } from "@caide/contracts";
 import type { ProviderAdapterError } from "../Errors.ts";
@@ -39,6 +43,23 @@ export interface EnginePreviewOps {
     hotReload: boolean;
   }): Effect.Effect<PreviewReloadResult, ProviderAdapterError>;
   previewState(input: { threadId: ThreadId }): Effect.Effect<PreviewState, ProviderAdapterError>;
+  previewAnalyze(input: {
+    threadId: ThreadId;
+  }): Effect.Effect<PreviewAnalyzeResult, ProviderAdapterError>;
+  previewTest(input: {
+    threadId: ThreadId;
+    testPath?: string;
+  }): Effect.Effect<PreviewTestResult, ProviderAdapterError>;
+  previewBuildStart(input: {
+    threadId: ThreadId;
+    appDir?: string;
+    target: "apk" | "appbundle" | "ipa";
+    channel?: "debug" | "profile" | "release";
+  }): Effect.Effect<PreviewBuildStartResult, ProviderAdapterError>;
+  previewBuildState(input: {
+    threadId: ThreadId;
+    buildId: string;
+  }): Effect.Effect<PreviewBuildStateResult, ProviderAdapterError>;
 }
 
 export interface EngineAdapterShape

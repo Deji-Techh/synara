@@ -23,6 +23,9 @@ import {
 } from "@caide/contracts";
 import { EngineClient } from "@caide/engine/client";
 import {
+  AnalyzeRunResultSchema,
+  BuildStartResultSchema,
+  BuildStateResultSchema,
   ENGINE_PROTOCOL_VERSION,
   InitializeResultSchema,
   PingResultSchema,
@@ -30,6 +33,7 @@ import {
   PreviewStartResultSchema,
   PreviewStateResultSchema,
   PreviewStopResultSchema,
+  TestResultSchema,
 } from "@caide/engine/protocol";
 import { Effect, Layer, PubSub, Ref, Stream } from "effect";
 
@@ -533,6 +537,158 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           return {
             running: result.data.running,
             url: result.data.url,
+            logs: result.data.logs,
+          };
+        }),
+
+      // ── Quality gates (M5) ───────────────────────────────────────────
+      // analyze / test / build proxy the engine's RPCs one-for-one. The first
+      // appDir still wins (reuse previewAppDir), matching preview ops.
+
+      previewAnalyze: (input) =>
+        Effect.gen(function* () {
+          const context = yield* getSession(input.threadId);
+          const appDir = context.previewAppDir ?? context.session.cwd ?? "";
+          const response = yield* Effect.tryPromise({
+            try: () => context.client.analyzeRun({ appDir }),
+            catch: (cause) =>
+              processError(input.threadId, "engine analyze/run request failed", cause),
+          });
+          if (response.error) {
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                `engine analyze/run failed: ${response.error.code} ${response.error.message}`,
+                new Error(response.error.message),
+              ),
+            );
+          }
+          const result = AnalyzeRunResultSchema.safeParse(response.result);
+          if (!result.success) {
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                "engine analyze/run returned malformed result",
+                result.error,
+              ),
+            );
+          }
+          return {
+            issues: result.data.issues,
+            clean: result.data.issues.length === 0,
+            output: result.data.output,
+          };
+        }),
+
+      previewTest: (input) =>
+        Effect.gen(function* () {
+          const context = yield* getSession(input.threadId);
+          const appDir = context.previewAppDir ?? context.session.cwd ?? "";
+          const response = yield* Effect.tryPromise({
+            try: () =>
+              context.client.testRun({
+                appDir,
+                ...(input.testPath !== undefined ? { testPath: input.testPath } : {}),
+              }),
+            catch: (cause) => processError(input.threadId, "engine test/run request failed", cause),
+          });
+          if (response.error) {
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                `engine test/run failed: ${response.error.code} ${response.error.message}`,
+                new Error(response.error.message),
+              ),
+            );
+          }
+          const result = TestResultSchema.safeParse(response.result);
+          if (!result.success) {
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                "engine test/run returned malformed result",
+                result.error,
+              ),
+            );
+          }
+          return {
+            passed: result.data.passed,
+            failed: result.data.failed,
+            skipped: result.data.skipped,
+            output: result.data.output,
+          };
+        }),
+
+      previewBuildStart: (input) =>
+        Effect.gen(function* () {
+          const context = yield* getSession(input.threadId);
+          const appDir = context.previewAppDir ?? input.appDir ?? context.session.cwd ?? "";
+          const response = yield* Effect.tryPromise({
+            try: () =>
+              context.client.buildStart({
+                appDir,
+                target: input.target,
+                ...(input.channel !== undefined ? { channel: input.channel } : {}),
+              }),
+            catch: (cause) =>
+              processError(input.threadId, "engine build/start request failed", cause),
+          });
+          if (response.error) {
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                `engine build/start failed: ${response.error.code} ${response.error.message}`,
+                new Error(response.error.message),
+              ),
+            );
+          }
+          const result = BuildStartResultSchema.safeParse(response.result);
+          if (!result.success) {
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                "engine build/start returned malformed result",
+                result.error,
+              ),
+            );
+          }
+          context.previewAppDir = appDir;
+          return { buildId: result.data.buildId };
+        }),
+
+      previewBuildState: (input) =>
+        Effect.gen(function* () {
+          const context = yield* getSession(input.threadId);
+          const response = yield* Effect.tryPromise({
+            try: () => context.client.buildState({ buildId: input.buildId }),
+            catch: (cause) =>
+              processError(input.threadId, "engine build/state request failed", cause),
+          });
+          if (response.error) {
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                `engine build/state failed: ${response.error.code} ${response.error.message}`,
+                new Error(response.error.message),
+              ),
+            );
+          }
+          const result = BuildStateResultSchema.safeParse(response.result);
+          if (!result.success) {
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                "engine build/state returned malformed result",
+                result.error,
+              ),
+            );
+          }
+          return {
+            buildId: result.data.buildId,
+            status: result.data.status,
+            ...(result.data.exitCode !== undefined ? { exitCode: result.data.exitCode } : {}),
+            ...(result.data.outputPath !== undefined ? { outputPath: result.data.outputPath } : {}),
+            ...(result.data.error !== undefined ? { error: result.data.error } : {}),
             logs: result.data.logs,
           };
         }),

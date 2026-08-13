@@ -108,4 +108,29 @@ describe("EngineAdapter", () => {
       ),
     ).rejects.toMatchObject({ _tag: "ProviderAdapterSessionNotFoundError" });
   });
+
+  it("quality gates require an active session", async () => {
+    const threadId = ThreadId.makeUnsafe(randomUUID());
+
+    const gates = [
+      (adapter: EngineAdapterShape) => adapter.previewAnalyze({ threadId }),
+      (adapter: EngineAdapterShape) => adapter.previewTest({ threadId }),
+      (adapter: EngineAdapterShape) =>
+        adapter.previewBuildStart({ threadId, target: "apk", channel: "debug" }),
+      (adapter: EngineAdapterShape) => adapter.previewBuildState({ threadId, buildId: "b_1" }),
+    ];
+
+    for (const gate of gates) {
+      await expect(
+        Effect.runPromise(
+          provideAdapter(
+            Effect.gen(function* () {
+              const adapter = yield* EngineAdapter;
+              yield* gate(adapter);
+            }),
+          ),
+        ),
+      ).rejects.toMatchObject({ _tag: "ProviderAdapterSessionNotFoundError" });
+    }
+  });
 });
