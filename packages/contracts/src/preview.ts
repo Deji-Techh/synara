@@ -9,6 +9,10 @@ export const PREVIEW_WS_METHODS = {
   stop: "preview.stop",
   reload: "preview.reload",
   getState: "preview.getState",
+  analyze: "preview.analyze",
+  test: "preview.test",
+  buildStart: "preview.buildStart",
+  buildState: "preview.buildState",
 } as const;
 
 // ── Limits ───────────────────────────────────────────────────────────
@@ -78,3 +82,90 @@ export const PreviewState = Schema.Struct({
   ),
 });
 export type PreviewState = typeof PreviewState.Type;
+
+// ── Quality gates (M5): analyze / test / build ─────────────────────────
+
+const PATH_MAX_LENGTH = 8_192;
+const OUTPUT_MAX_LENGTH = 200_000;
+const MAX_OUTPUT_LINES = 1_000;
+
+export const PreviewSeverity = Schema.Literals(["error", "warning", "info"] as const);
+export type PreviewSeverity = typeof PreviewSeverity.Type;
+
+export const PreviewAnalyzeIssue = Schema.Struct({
+  severity: PreviewSeverity,
+  /** e.g. `lib/main.dart` */
+  path: Schema.String.check(Schema.isMaxLength(PREVIEW_PATH_MAX_LENGTH)),
+  line: Schema.optional(Schema.Int.check(Schema.isGreaterThanOrEqualTo(1))),
+  column: Schema.optional(Schema.Int.check(Schema.isGreaterThanOrEqualTo(1))),
+  message: Schema.String.check(Schema.isMaxLength(PREVIEW_LOG_MAX_LENGTH)),
+  code: Schema.optional(Schema.String.check(Schema.isMaxLength(128))),
+});
+export type PreviewAnalyzeIssue = typeof PreviewAnalyzeIssue.Type;
+
+export const PreviewAnalyzeInput = Schema.Struct({
+  threadId: ThreadId,
+});
+export type PreviewAnalyzeInput = typeof PreviewAnalyzeInput.Type;
+
+export const PreviewAnalyzeResult = Schema.Struct({
+  issues: Schema.Array(PreviewAnalyzeIssue),
+  clean: Schema.Boolean,
+  output: Schema.String.check(Schema.isMaxLength(OUTPUT_MAX_LENGTH)),
+});
+export type PreviewAnalyzeResult = typeof PreviewAnalyzeResult.Type;
+
+export const PreviewTestInput = Schema.Struct({
+  threadId: ThreadId,
+  testPath: Schema.optional(
+    TrimmedNonEmptyString.check(Schema.isMaxLength(PREVIEW_PATH_MAX_LENGTH)),
+  ),
+});
+export type PreviewTestInput = typeof PreviewTestInput.Type;
+
+export const PreviewTestResult = Schema.Struct({
+  passed: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+  failed: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+  skipped: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+  output: Schema.String.check(Schema.isMaxLength(OUTPUT_MAX_LENGTH)),
+});
+export type PreviewTestResult = typeof PreviewTestResult.Type;
+
+export const PreviewBuildTarget = Schema.Literals(["apk", "appbundle", "ipa"] as const);
+export type PreviewBuildTarget = typeof PreviewBuildTarget.Type;
+
+export const PreviewBuildChannel = Schema.Literals(["debug", "profile", "release"] as const);
+export type PreviewBuildChannel = typeof PreviewBuildChannel.Type;
+
+export const PreviewBuildStartInput = Schema.Struct({
+  threadId: ThreadId,
+  target: PreviewBuildTarget,
+  channel: Schema.optional(PreviewBuildChannel),
+});
+export type PreviewBuildStartInput = typeof PreviewBuildStartInput.Type;
+
+export const PreviewBuildStartResult = Schema.Struct({
+  buildId: Schema.String.check(Schema.isMaxLength(128)),
+});
+export type PreviewBuildStartResult = typeof PreviewBuildStartResult.Type;
+
+export const PreviewBuildStatus = Schema.Literals(["running", "succeeded", "failed"] as const);
+export type PreviewBuildStatus = typeof PreviewBuildStatus.Type;
+
+export const PreviewBuildStateInput = Schema.Struct({
+  threadId: ThreadId,
+  buildId: Schema.String.check(Schema.isMaxLength(128)),
+});
+export type PreviewBuildStateInput = typeof PreviewBuildStateInput.Type;
+
+export const PreviewBuildStateResult = Schema.Struct({
+  buildId: Schema.String.check(Schema.isMaxLength(128)),
+  status: PreviewBuildStatus,
+  exitCode: Schema.optional(Schema.Int),
+  outputPath: Schema.optional(Schema.String.check(Schema.isMaxLength(PREVIEW_PATH_MAX_LENGTH))),
+  logs: Schema.Array(Schema.String.check(Schema.isMaxLength(PREVIEW_LOG_MAX_LENGTH))).check(
+    Schema.isMaxLength(MAX_OUTPUT_LINES),
+  ),
+  error: Schema.optional(Schema.String.check(Schema.isMaxLength(16_384))),
+});
+export type PreviewBuildStateResult = typeof PreviewBuildStateResult.Type;

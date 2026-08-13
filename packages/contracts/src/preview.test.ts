@@ -2,10 +2,14 @@ import { Schema } from "effect";
 import { describe, expect, it } from "vitest";
 
 import {
+  PreviewAnalyzeResult,
+  PreviewBuildStateResult,
+  PreviewBuildStartInput,
   PreviewGetStateInput,
   PreviewReloadInput,
   PreviewStartInput,
   PreviewState,
+  PreviewTestResult,
 } from "./preview";
 
 function decodeSync<S extends Schema.Top>(schema: S, input: unknown): Schema.Schema.Type<S> {
@@ -64,5 +68,57 @@ describe("preview WS schemas", () => {
   it("decodes getState input", () => {
     const decoded = decodeSync(PreviewGetStateInput, { threadId: THREAD_ID });
     expect(decoded.threadId).toBe(THREAD_ID);
+  });
+
+  it("decodes build start input with optional channel", () => {
+    const decoded = decodeSync(PreviewBuildStartInput, {
+      threadId: THREAD_ID,
+      target: "apk",
+    });
+    expect(decoded.target).toBe("apk");
+    expect(decodes(PreviewBuildStartInput, { threadId: THREAD_ID })).toBe(false);
+    expect(decodes(PreviewBuildStartInput, { threadId: THREAD_ID, target: "ios" })).toBe(false);
+  });
+
+  it("decodes analyze result issues", () => {
+    const decoded = decodeSync(PreviewAnalyzeResult, {
+      issues: [
+        {
+          severity: "error",
+          path: "lib/main.dart",
+          line: 5,
+          column: 18,
+          message: "The argument type 'String' can't be assigned",
+          code: "argument_type_not_assignable",
+        },
+      ],
+      clean: false,
+      output: "Analyzing lib...",
+    });
+    expect(decoded.issues[0]?.severity).toBe("error");
+  });
+
+  it("decodes test result counts", () => {
+    const decoded = decodeSync(PreviewTestResult, {
+      passed: 3,
+      failed: 1,
+      skipped: 0,
+      output: "00:01 +3 -1: Some tests failed.",
+    });
+    expect(decoded.failed).toBe(1);
+  });
+
+  it("decodes build state with optional exit code and output path", () => {
+    const elapsed = decodeSync(PreviewBuildStateResult, {
+      buildId: "abc",
+      status: "succeeded",
+      exitCode: 0,
+      outputPath: "build/app/outputs/flutter-apk/app-release.apk",
+      logs: ["✓ Built ..."],
+    });
+    expect(elapsed.outputPath).toBe("build/app/outputs/flutter-apk/app-release.apk");
+    expect(decodes(PreviewBuildStateResult, { buildId: "abc", status: "running", logs: [] })).toBe(
+      true,
+    );
   });
 });

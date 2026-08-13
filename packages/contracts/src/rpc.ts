@@ -146,6 +146,14 @@ import {
   PreviewState,
   PreviewStopInput,
   PreviewStopResult,
+  PreviewAnalyzeInput,
+  PreviewAnalyzeResult,
+  PreviewBuildStartInput,
+  PreviewBuildStartResult,
+  PreviewBuildStateInput,
+  PreviewBuildStateResult,
+  PreviewTestInput,
+  PreviewTestResult,
   PREVIEW_WS_METHODS,
 } from "./preview";
 import {
@@ -646,11 +654,39 @@ export const WsPreviewGetStateRpc = Rpc.make(PREVIEW_WS_METHODS.getState, {
   error: WsRpcError,
 });
 
+export const WsPreviewAnalyzeRpc = Rpc.make(PREVIEW_WS_METHODS.analyze, {
+  payload: PreviewAnalyzeInput,
+  success: PreviewAnalyzeResult,
+  error: WsRpcError,
+});
+
+export const WsPreviewTestRpc = Rpc.make(PREVIEW_WS_METHODS.test, {
+  payload: PreviewTestInput,
+  success: PreviewTestResult,
+  error: WsRpcError,
+});
+
+export const WsPreviewBuildStartRpc = Rpc.make(PREVIEW_WS_METHODS.buildStart, {
+  payload: PreviewBuildStartInput,
+  success: PreviewBuildStartResult,
+  error: WsRpcError,
+});
+
+export const WsPreviewBuildStateRpc = Rpc.make(PREVIEW_WS_METHODS.buildState, {
+  payload: PreviewBuildStateInput,
+  success: PreviewBuildStateResult,
+  error: WsRpcError,
+});
+
 export const WsPreviewRpcGroup = RpcGroup.make(
   WsPreviewStartRpc,
   WsPreviewStopRpc,
   WsPreviewReloadRpc,
   WsPreviewGetStateRpc,
+  WsPreviewAnalyzeRpc,
+  WsPreviewTestRpc,
+  WsPreviewBuildStartRpc,
+  WsPreviewBuildStateRpc,
 );
 
 export const WsDeviceRpcGroup = RpcGroup.make(
