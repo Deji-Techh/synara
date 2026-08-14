@@ -181,8 +181,8 @@ export const DeviceToolchain = Schema.Struct({
 export type DeviceToolchain = typeof DeviceToolchain.Type;
 
 /**
- * Why (or whether) the pane can run, modelled the way AppSnap models its
- * permission states: the UI renders one of these instead of guessing from errors.
+ * Why (or whether) the pane can run: the UI renders one of these instead of
+ * guessing from errors.
  */
 export const DeviceAvailability = Schema.Union([
   Schema.Struct({

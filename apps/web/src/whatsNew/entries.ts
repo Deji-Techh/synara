@@ -22,8 +22,8 @@ import type { WhatsNewEntry } from "./logic";
 
 export const WHATS_NEW_ENTRIES: readonly WhatsNewEntry[] = [
   {
-    version: "0.7.1",
-    date: "Aug 9",
+    version: "0.0.1",
+    date: "Aug 14",
     features: [
       {
         id: "startup-reconnect-recovery",
@@ -622,7 +622,7 @@ export const WHATS_NEW_ENTRIES: readonly WhatsNewEntry[] = [
         description:
           "Sharper Markdown hierarchy, steadier pickers, better composer spacing, smarter sidebar priority, clearer Studio Git controls, and new shortcuts make daily work easier to scan.",
         details:
-          "This release also adds Commit and Push from the active task, configurable AppSnap shortcuts, a folder opener in Studio, a slimmer running indicator, reliable Cmd+K search on macOS, fixed PR review counts, safer file-icon lookup, cleaner stacked composer panels, and a global new-task flow that uses the latest project state.",
+          "This release also adds Commit and Push from the active task, a folder opener in Studio, a slimmer running indicator, reliable Cmd+K search on macOS, fixed PR review counts, safer file-icon lookup, cleaner stacked composer panels, and a global new-task flow that uses the latest project state.",
       },
     ],
   },
@@ -730,22 +730,6 @@ export const WHATS_NEW_ENTRIES: readonly WhatsNewEntry[] = [
     version: "0.5.3",
     date: "Jul 14",
     features: [
-      {
-        id: "appsnap-capture",
-        title: "Capture any Mac app straight into your task",
-        description:
-          "Press both Option keys to capture the window you are using and attach it to the current Caide task.",
-        details:
-          "AppSnap is an opt-in macOS workflow with a dedicated setup panel, permission guidance, capture feedback, app icons, and a first-run introduction. Captures stay tied to the active task without stealing focus, and the desktop helper is included in packaged Mac builds.",
-      },
-      {
-        id: "durable-appsnap-drafts",
-        title: "AppSnaps wait safely until you send",
-        description:
-          "Captured windows remain available through navigation, restarts, retries, and manual attachment flows.",
-        details:
-          "Pending image blobs are persisted outside the lightweight draft record, restored into the composer on startup, counted against attachment limits, deduplicated across retry paths, and hydrated immediately before send. Failed or overlapping captures recover without duplicating attachments or replaying feedback sounds.",
-      },
       {
         id: "clearer-long-messages",
         title: "Long messages are easier to scan",
@@ -932,7 +916,7 @@ export const WHATS_NEW_ENTRIES: readonly WhatsNewEntry[] = [
         id: "studio-outputs",
         title: "Studio outputs are collected where you need them",
         description:
-          "Files, generated images, and other agent outputs from Studio are surfaced in the Environment panel so finished work is easier to find and open.",
+          "Files, generated images, and other agent outputs from Studio are surfaced in the Context panel so finished work is easier to find and open.",
         details:
           "The server records Studio output activity and generated-image metadata, then projects it into a dedicated Environment section with resilient display helpers and targeted coverage for output ordering and presentation.",
       },
@@ -983,12 +967,12 @@ export const WHATS_NEW_ENTRIES: readonly WhatsNewEntry[] = [
           "Composer draft history now preserves attachment state while you move through previous prompts, resets stale navigation state more carefully, and avoids duplicate optimistic history entries after sends.",
       },
       {
-        id: "pr-environment-panel",
-        title: "Pull request context is clearer in the Environment panel",
+        id: "pr-context-panel",
+        title: "Pull request context is clearer in the Context panel",
         description:
           "Threads attached to GitHub pull requests now surface richer PR context, including merged-state handling and more readable review/check previews.",
         details:
-          "The PR snapshot path now captures pull request data for the Environment panel, handles merged PRs more predictably, trims long review previews, dedupes GitHub field requests, and tightens merge-head formatting.",
+          "The PR snapshot path now captures pull request data for the Context panel, handles merged PRs more predictably, trims long review previews, dedupes GitHub field requests, and tightens merge-head formatting.",
       },
       {
         id: "claude-rate-limits",
@@ -1012,7 +996,7 @@ export const WHATS_NEW_ENTRIES: readonly WhatsNewEntry[] = [
         description:
           "This release rounds off recent agent-session and pull-request work with tighter assertions, safer formatting, and cleaner edge-case behavior.",
         details:
-          "The release includes automation migration lineage assertion fixes, PR snapshot review follow-up fixes, provider usage type narrowing, and general cleanup from the prompt-history and PR environment-panel review loops.",
+          "The release includes automation migration lineage assertion fixes, PR snapshot review follow-up fixes, provider usage type narrowing, and general cleanup from the prompt-history and PR context-panel review loops.",
       },
     ],
   },
@@ -1161,12 +1145,12 @@ export const WHATS_NEW_ENTRIES: readonly WhatsNewEntry[] = [
           "Sidebar chat collapse state now exposes `aria-expanded`, reuses the shared disclosure chevron, and separates chat rows from the footer while preserving sort and new-chat actions.",
       },
       {
-        id: "first-send-environment-panel",
+        id: "first-send-context-panel",
         title: "First sends keep the workspace calm",
         description:
-          "Starting from an empty chat no longer opens the Environment panel by surprise after the first message turns the landing view into a transcript.",
+          "Starting from an empty chat no longer opens the Context panel by surprise after the first message turns the landing view into a transcript.",
         details:
-          "ChatView now records a closed environment-panel preference when sending from the centered empty landing, preventing the default-open policy from popping the panel into a just-started conversation.",
+          "ChatView now records a closed context-panel preference when sending from the centered empty landing, preventing the default-open policy from popping the panel into a just-started conversation.",
       },
       {
         id: "provider-health-parser-coverage",
@@ -1250,7 +1234,7 @@ export const WHATS_NEW_ENTRIES: readonly WhatsNewEntry[] = [
         description:
           "Archive actions now use an undo toast instead of an interrupting confirmation dialog, so cleaning up threads is faster while still giving you a quick escape hatch.",
         details:
-          "The sidebar archive flow, shared toast primitive, settings surfaces, environment panel hints, and threadArchive helper now cooperate around immediate archive plus undo behavior.",
+          "The sidebar archive flow, shared toast primitive, settings surfaces, context panel hints, and threadArchive helper now cooperate around immediate archive plus undo behavior.",
       },
       {
         id: "pending-input-and-work-polish",
@@ -1574,9 +1558,9 @@ export const WHATS_NEW_ENTRIES: readonly WhatsNewEntry[] = [
         id: "chat-panels-and-thread-state",
         title: "Chats and side panels stay in sync",
         description:
-          "Deleted chats disappear immediately, the Environment panel behaves better in constrained layouts, automation cards show up in the transcript, and file previews avoid extra full-thread subscriptions.",
+          "Deleted chats disappear immediately, the Context panel behaves better in constrained layouts, automation cards show up in the transcript, and file previews avoid extra full-thread subscriptions.",
         details:
-          "Client projections now use delete tombstones and responsive archived bulk-delete updates, environment-panel open/close preferences survive chat switches, constrained/floating layouts stay calmer by default, thread automation summaries appear in the environment panel, created automation cards render in chat, and file preview routing avoids unnecessary full thread subscriptions.",
+          "Client projections now use delete tombstones and responsive archived bulk-delete updates, context-panel open/close preferences survive chat switches, constrained/floating layouts stay calmer by default, thread automation summaries appear in the context panel, created automation cards render in chat, and file preview routing avoids unnecessary full thread subscriptions.",
       },
       {
         id: "profile-skill-counts",
@@ -1978,7 +1962,7 @@ export const WHATS_NEW_ENTRIES: readonly WhatsNewEntry[] = [
         id: "thread-markers",
         title: "Transcript markers make long chats easier to navigate",
         description:
-          "You can now mark important transcript moments, jump back to them, and manage them from the Environment panel without losing your place in busy threads.",
+          "You can now mark important transcript moments, jump back to them, and manage them from the Context panel without losing your place in busy threads.",
         details:
           "Markers now round-trip through orchestration events, projection storage, migrations, shared validation helpers, transcript selection actions, highlighted markdown spans, marker-aware scrolling, and focused browser/unit coverage.",
       },
@@ -1994,7 +1978,7 @@ export const WHATS_NEW_ENTRIES: readonly WhatsNewEntry[] = [
         id: "local-server-environment",
         title: "Local dev servers are easier to spot",
         description:
-          "The Environment panel can now show local servers tied to the current project, with clearer browser/terminal identity and controls for tracked project runs.",
+          "The Context panel can now show local servers tied to the current project, with clearer browser/terminal identity and controls for tracked project runs.",
         details:
           "The server now monitors listening processes with address-family metadata, tracks project-run ownership, syncs local server state over WebSocket/RPC contracts, and adds sidebar/project-run affordances for starting, viewing, and stopping dev servers.",
       },
@@ -2078,7 +2062,7 @@ export const WHATS_NEW_ENTRIES: readonly WhatsNewEntry[] = [
         id: "environment-memory",
         title: "Thread context has a memory shelf",
         description:
-          "The environment panel now carries pinned messages and editable notes, giving long-running chats a durable place for decisions, constraints, and useful references.",
+          "The context panel now carries pinned messages and editable notes, giving long-running chats a durable place for decisions, constraints, and useful references.",
         details:
           "Pinned message actions round-trip through server commands and snapshots, while thread notes autosave through the same projected thread detail path. This keeps the side panel useful without turning the transcript itself into a scratchpad.",
       },
@@ -2152,7 +2136,7 @@ export const WHATS_NEW_ENTRIES: readonly WhatsNewEntry[] = [
         id: "diff-totals-performance",
         title: "Large diffs do less duplicate work",
         description:
-          "Repo diff totals are computed once for the active chat and shared between the header and environment panel, with memoized patch stats to avoid re-parsing the same large diff during live updates.",
+          "Repo diff totals are computed once for the active chat and shared between the header and context panel, with memoized patch stats to avoid re-parsing the same large diff during live updates.",
       },
       {
         id: "archived-delete-cleanup",

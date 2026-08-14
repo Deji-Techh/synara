@@ -24,11 +24,7 @@ import { FlaskConicalIcon } from "~/lib/icons";
 import { useSettingsRestoreSignal } from "./SettingControls";
 import { SettingsRow, SettingsSection } from "./SettingsPanelPrimitives";
 
-export function AdvancedSettingsPanel(props: {
-  active: boolean;
-  onOpenReleaseHistory: () => void;
-  resetEpoch: number;
-}) {
+export function AdvancedSettingsPanel(props: { active: boolean; resetEpoch: number }) {
   const configQuery = useQuery(serverConfigQueryOptions());
   const authSessionQuery = useQuery(serverAuthSessionQueryOptions());
   const syncServerReadModel = useStore((store) => store.syncServerReadModel);
@@ -255,15 +251,6 @@ export function AdvancedSettingsPanel(props: {
           title="Version"
           description="Current application version."
           control={<code className="text-xs font-medium text-muted-foreground">{APP_VERSION}</code>}
-        />
-        <SettingsRow
-          title="Release history"
-          description="A running log of every update, newest first. Same notes the post-update dialog shows, kept here so you can revisit them any time."
-          control={
-            <Button size="sm" variant="outline" onClick={props.onOpenReleaseHistory}>
-              View release history
-            </Button>
-          }
         />
       </SettingsSection>
     </div>

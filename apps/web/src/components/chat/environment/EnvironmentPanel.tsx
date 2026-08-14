@@ -288,7 +288,7 @@ export function EnvironmentPanel({
       ) : null}
 
       <div className="flex items-center justify-between gap-2 px-2 pb-0.5 pt-0.5">
-        <EnvironmentPanelTitle>Environment</EnvironmentPanelTitle>
+        <EnvironmentPanelTitle>Context</EnvironmentPanelTitle>
         {/*
           icon-xs centers the 14px gear inside a 28/24px box, insetting it ~7/5px from the
           content edge; pull it back so the glyph's right edge lines up with the rows' chevrons

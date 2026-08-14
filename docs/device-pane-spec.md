@@ -78,7 +78,7 @@ side is ready if a real orientation path ever appears.
 
 - Dock pane registration: `apps/web/src/rightDockStore.logic.ts` (`RIGHT_DOCK_PANE_KINDS`), `rightDockPaneMeta.tsx`, `SingleChatSurface.tsx` `renderDockPane`, lazy panel via `ChatThreadSurfacePrimitives.tsx`.
 - Auto-open flow: browser's `requestOpenPanel` (`apps/desktop/src/main.ts:407` → `useBrowserPanelDesktopBridge.ts`) — but routed via server WS push since the engine lives in apps/server.
-- Setup/unavailable states + platform gating precedent: AppSnap (`contracts/src/ipc.ts:339-406`, `appSnapManager.ts`).
+- Setup/unavailable states + platform gating precedent: existing platform-gated desktop features (e.g. media permissions, auto-update) in `apps/desktop/src/` + their `contracts/src/ipc.ts` channel definitions.
 - Prompt screenshot: `apps/web/src/lib/browserPromptContext.ts`.
 - Thread-scoped state shape: `ThreadBrowserState` in `contracts/src/ipc.ts`.
 - MCP per-provider registration: provider session config in `apps/server/src/providerManager.ts` + per-provider adapters (audit target).

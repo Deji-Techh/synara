@@ -32,7 +32,6 @@ import {
   ComposerImagePreparationError,
   prepareComposerImageFile,
 } from "./composerImagePreparation";
-import { normalizeComposerImageSource } from "./composerImageSource";
 import { randomUUID } from "./utils";
 import { resolveWsHttpUrl } from "./wsHttpUrl";
 
@@ -377,10 +376,10 @@ export async function buildUploadComposerAttachments(input: {
 }
 
 /**
- * Persisted image attachments that still back a blob (AppSnap captures) but
- * have not yet hydrated into the live `images` array. Right after a reload,
- * `AppSnapCoordinator` hydrates these asynchronously from IndexedDB; sending
- * before that finishes must not silently drop them.
+ * Persisted image attachments that still back a blob but have not yet hydrated
+ * into the live `images` array. Right after a reload, blob-backed attachments
+ * hydrate asynchronously from IndexedDB; sending before that finishes must not
+ * silently drop them.
  */
 export function findPendingBlobComposerAttachments(input: {
   persistedAttachments: ReadonlyArray<PersistedComposerImageAttachment>;
@@ -408,7 +407,6 @@ export async function hydratePendingBlobComposerAttachments(
       try {
         const file = await readComposerImageBlob(attachment.blobKey);
         if (!file) return null;
-        const source = normalizeComposerImageSource(attachment.source);
         return {
           type: "image",
           id: attachment.id,
@@ -417,7 +415,6 @@ export async function hydratePendingBlobComposerAttachments(
           sizeBytes: attachment.sizeBytes,
           previewUrl: URL.createObjectURL(file),
           file,
-          ...(source ? { source } : {}),
         };
       } catch (error) {
         console.warn("[composer-send] Could not hydrate a pending attachment before send", error);

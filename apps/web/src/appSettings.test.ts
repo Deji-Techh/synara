@@ -941,9 +941,6 @@ describe("AppSettingsSchema", () => {
       confirmThreadDelete: false,
       confirmTerminalTabClose: true,
       desktopAppIcon: "default",
-      enableAppSnap: false,
-      appSnapShortcut: { kind: "both-option-keys" },
-      appSnapPlaySound: true,
       enableAssistantStreaming: true,
       followUpBehavior: DEFAULT_FOLLOW_UP_BEHAVIOR,
       sidebarProjectSortOrder: DEFAULT_SIDEBAR_PROJECT_SORT_ORDER,
@@ -965,18 +962,5 @@ describe("AppSettingsSchema", () => {
     const decode = Schema.decodeSync(Schema.fromJsonString(AppSettingsSchema));
 
     expect(decode(JSON.stringify({ desktopAppIcon: "icon" })).desktopAppIcon).toBe("icon");
-  });
-
-  it("migrates the former AppSnap feature flag", () => {
-    const decode = Schema.decodeSync(Schema.fromJsonString(AppSettingsSchema));
-
-    expect(
-      normalizeStoredAppSettings(decode(JSON.stringify({ enableAppshots: true }))),
-    ).toMatchObject({
-      enableAppSnap: true,
-    });
-    expect(
-      normalizeStoredAppSettings(decode(JSON.stringify({ enableAppshots: true }))),
-    ).not.toHaveProperty("enableAppshots");
   });
 });

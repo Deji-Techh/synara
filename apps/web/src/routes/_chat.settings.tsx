@@ -5,7 +5,6 @@
 
 import { PROVIDER_DISPLAY_NAMES, type ProviderKind } from "@caide/contracts";
 import { PROVIDER_DESCRIPTORS } from "@caide/shared/providerMetadata";
-import { sameAppSnapShortcut } from "@caide/shared/appSnapShortcut";
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
@@ -25,24 +24,19 @@ import {
   TERMINAL_FONT_FAMILY_SUGGESTIONS,
   useAppSettings,
 } from "../appSettings";
-import { APP_VERSION } from "../branding";
 import { AdvancedSettingsPanel } from "~/components/settings/AdvancedSettingsPanel";
 import { AppIconPicker } from "~/components/settings/AppIconPicker";
 import {
   ArchivedSettingsPanel,
   WorktreesSettingsPanel,
 } from "~/components/settings/ConversationStorageSettingsPanels";
-import {
-  AppSnapSettingsPanel,
-  NotificationsSettingsPanel,
-} from "~/components/settings/DesktopSettingsPanels";
+import { NotificationsSettingsPanel } from "~/components/settings/DesktopSettingsPanels";
 import { ModelsSettingsPanel } from "~/components/settings/ModelsSettingsPanel";
 import {
   isProviderInstallSettingsDirty,
   ProvidersSettingsPanel,
 } from "~/components/settings/ProvidersSettingsPanel";
 import { ProviderOptionLabel } from "../components/ProviderIcon";
-import ReleaseHistoryDialog from "../components/ReleaseHistoryDialog";
 import { KeyboardShortcutsSettingsPanel } from "../components/settings/KeyboardShortcutsSettingsPanel";
 import { ProfileSettingsPanel } from "../components/settings/ProfileSettingsPanel";
 import { ProviderUsageSettingsPanel } from "../components/settings/ProviderUsageSettingsPanel";
@@ -183,7 +177,6 @@ function SettingsRouteView() {
   } = useTheme();
   const { settings, defaults, updateSettings, resetSettings } = useAppSettings();
   const desktopTopBarTrafficLightGutterClassName = useDesktopTopBarTrafficLightGutterClassName();
-  const [releaseHistoryOpen, setReleaseHistoryOpen] = useState(false);
   const [resetEpoch, setResetEpoch] = useState(0);
   const shouldShowFontSmoothing = isMacPlatform(
     typeof navigator === "undefined" ? "" : navigator.platform,
@@ -246,11 +239,6 @@ function SettingsRouteView() {
       ? ["Assistant output"]
       : []),
     ...(settings.followUpBehavior !== defaults.followUpBehavior ? ["Follow-up behavior"] : []),
-    ...(settings.enableAppSnap !== defaults.enableAppSnap ? ["AppSnap"] : []),
-    ...(!sameAppSnapShortcut(settings.appSnapShortcut, defaults.appSnapShortcut)
-      ? ["AppSnap shortcut"]
-      : []),
-    ...(settings.appSnapPlaySound !== defaults.appSnapPlaySound ? ["AppSnap capture sound"] : []),
     ...(settings.enableProviderUpdateChecks !== defaults.enableProviderUpdateChecks
       ? ["Provider update checks"]
       : []),
@@ -519,14 +507,14 @@ function SettingsRouteView() {
       </SettingsSection>
 
       <div id={SETTINGS_TARGETS.environmentPanel} className="space-y-6">
-        <SettingsSection title="Environment panel">
+        <SettingsSection title="Context panel">
           {renderBooleanSettingRow({
             settingKey: "environmentPanelDefaultOpen",
             title: "Open by default",
             description:
-              "Open the chat Environment panel automatically on normal threads. When off, the panel stays closed until you open it. Your last open/close also updates this preference.",
-            resetLabel: "environment panel default open",
-            ariaLabel: "Open the Environment panel by default on normal threads",
+              "Open the chat Context panel automatically on normal threads. When off, the panel stays closed until you open it. Your last open/close also updates this preference.",
+            resetLabel: "context panel default open",
+            ariaLabel: "Open the Context panel by default on normal threads",
           })}
         </SettingsSection>
 
@@ -534,36 +522,36 @@ function SettingsRouteView() {
           {renderBooleanSettingRow({
             settingKey: "showEnvironmentUsage",
             title: "Usage",
-            description: "Show the provider usage row in the chat Environment panel.",
+            description: "Show the provider usage row in the chat Context panel.",
             resetLabel: "usage section",
-            ariaLabel: "Show the Usage section in the Environment panel",
+            ariaLabel: "Show the Usage section in the Context panel",
           })}
 
           {renderBooleanSettingRow({
             settingKey: "showEnvironmentRepository",
             title: "Repository",
             description:
-              "Show the GitHub repository link in the chat Environment panel. The git block (Changes, Worktree, branch, Commit and Push) always stays visible.",
+              "Show the GitHub repository link in the chat Context panel. The git block (Changes, Worktree, branch, Commit and Push) always stays visible.",
             resetLabel: "repository section",
-            ariaLabel: "Show the Repository section in the Environment panel",
+            ariaLabel: "Show the Repository section in the Context panel",
           })}
 
           {renderBooleanSettingRow({
             settingKey: "showEnvironmentPullRequest",
             title: "Pull request",
             description:
-              "Show the open pull request (CI checks and review comments) for the current branch in the chat Environment panel.",
+              "Show the open pull request (CI checks and review comments) for the current branch in the chat Context panel.",
             resetLabel: "pull request section",
-            ariaLabel: "Show the Pull request section in the Environment panel",
+            ariaLabel: "Show the Pull request section in the Context panel",
           })}
 
           {renderBooleanSettingRow({
             settingKey: "showEnvironmentEditor",
             title: "Editor",
             description:
-              "Show the Editor section (in-app editor view and Open in editor picker) in the chat Environment panel.",
+              "Show the Editor section (in-app editor view and Open in editor picker) in the chat Context panel.",
             resetLabel: "editor section",
-            ariaLabel: "Show the Editor section in the Environment panel",
+            ariaLabel: "Show the Editor section in the Context panel",
           })}
         </SettingsSection>
 
@@ -571,42 +559,42 @@ function SettingsRouteView() {
           {renderBooleanSettingRow({
             settingKey: "showEnvironmentRecap",
             title: "Recap",
-            description: "Show the auto-generated chat recap in the Environment panel.",
+            description: "Show the auto-generated chat recap in the Context panel.",
             resetLabel: "recap section",
-            ariaLabel: "Show the Recap section in the Environment panel",
+            ariaLabel: "Show the Recap section in the Context panel",
           })}
 
           {renderBooleanSettingRow({
             settingKey: "showEnvironmentPinned",
             title: "Pinned messages",
-            description: "Show the pinned-messages checklist in the Environment panel.",
+            description: "Show the pinned-messages checklist in the Context panel.",
             resetLabel: "pinned messages section",
-            ariaLabel: "Show the Pinned messages section in the Environment panel",
+            ariaLabel: "Show the Pinned messages section in the Context panel",
           })}
 
           {renderBooleanSettingRow({
             settingKey: "showEnvironmentMarkers",
             title: "Text markers",
             description:
-              "Show highlighted and underlined transcript text in the Environment panel.",
+              "Show highlighted and underlined transcript text in the Context panel.",
             resetLabel: "text markers section",
-            ariaLabel: "Show the Text markers section in the Environment panel",
+            ariaLabel: "Show the Text markers section in the Context panel",
           })}
 
           {renderBooleanSettingRow({
             settingKey: "showEnvironmentInstructions",
             title: "Project instructions",
-            description: "Show project-level instructions in the Environment panel.",
+            description: "Show project-level instructions in the Context panel.",
             resetLabel: "project instructions section",
-            ariaLabel: "Show the Project instructions section in the Environment panel",
+            ariaLabel: "Show the Project instructions section in the Context panel",
           })}
 
           {renderBooleanSettingRow({
             settingKey: "showEnvironmentNotepad",
             title: "Notepad",
-            description: "Show the per-thread notepad in the Environment panel.",
+            description: "Show the per-thread notepad in the Context panel.",
             resetLabel: "notepad section",
-            ariaLabel: "Show the Notepad section in the Environment panel",
+            ariaLabel: "Show the Notepad section in the Context panel",
           })}
         </SettingsSection>
       </div>
@@ -1134,12 +1122,6 @@ function SettingsRouteView() {
                   defaults={defaults}
                   updateSettings={updateSettings}
                 />
-                <AppSnapSettingsPanel
-                  active={activeSection === "appsnap"}
-                  settings={settings}
-                  defaults={defaults}
-                  updateSettings={updateSettings}
-                />
                 <WorktreesSettingsPanel active={activeSection === "worktrees"} />
                 <ArchivedSettingsPanel active={activeSection === "archived"} />
                 <ModelsSettingsPanel
@@ -1157,23 +1139,11 @@ function SettingsRouteView() {
                   resetEpoch={resetEpoch}
                 />
                 <ExternalMcpSettingsPanel active={activeSection === "integrations"} />
-                <AdvancedSettingsPanel
-                  active={activeSection === "advanced"}
-                  onOpenReleaseHistory={() => setReleaseHistoryOpen(true)}
-                  resetEpoch={resetEpoch}
-                />
+                <AdvancedSettingsPanel active={activeSection === "advanced"} resetEpoch={resetEpoch} />
               </div>
             </div>
           </div>
         </div>
-        {/* Mounted at the route level (outside the scrollable panel) so the
-          dialog portal can overlay the entire settings view without being
-          clipped by the content wrapper's overflow. */}
-        <ReleaseHistoryDialog
-          open={releaseHistoryOpen}
-          onOpenChange={setReleaseHistoryOpen}
-          defaultExpandedVersion={APP_VERSION}
-        />
       </RouteInsetSurface>
     </div>
   );

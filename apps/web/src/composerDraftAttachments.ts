@@ -20,10 +20,6 @@ import {
 } from "./composerDraftDomain";
 import { getLocalStorageItem } from "./hooks/useLocalStorage";
 import { deleteComposerImageBlob } from "./lib/composerImageBlobStore";
-import {
-  normalizeComposerImageSource,
-  toPersistedComposerImageSource,
-} from "./lib/composerImageSource";
 
 const composerAttachmentPersistenceQueueByThreadId = new Map<string, Promise<void>>();
 // Tracks the newest in-flight sync per (slot, thread) so a superseded verification knows not to
@@ -236,7 +232,6 @@ export function normalizePersistedAttachment(
   const sizeBytes = candidate.sizeBytes;
   const dataUrl = candidate.dataUrl;
   const blobKey = candidate.blobKey;
-  const source = normalizeComposerImageSource(candidate.source);
   if (
     typeof id !== "string" ||
     typeof name !== "string" ||
@@ -258,18 +253,19 @@ export function normalizePersistedAttachment(
     sizeBytes,
     ...(typeof dataUrl === "string" && dataUrl.length > 0 ? { dataUrl } : {}),
     ...(typeof blobKey === "string" && blobKey.length > 0 ? { blobKey } : {}),
-    ...(source ? { source } : {}),
   };
 }
 
 export function toStorageSafePersistedAttachment(
   attachment: PersistedComposerImageAttachment,
 ): PersistedComposerImageAttachment {
-  const { source: _source, ...attachmentWithoutSource } = attachment;
-  const source = toPersistedComposerImageSource(attachment.source);
   return {
-    ...attachmentWithoutSource,
-    ...(source ? { source } : {}),
+    id: attachment.id,
+    name: attachment.name,
+    mimeType: attachment.mimeType,
+    sizeBytes: attachment.sizeBytes,
+    ...(attachment.dataUrl ? { dataUrl: attachment.dataUrl } : {}),
+    ...(attachment.blobKey ? { blobKey: attachment.blobKey } : {}),
   };
 }
 
@@ -597,8 +593,6 @@ export function hydrateImagesFromPersisted(
     if (!previewUrl) return [];
     const file = hydreatePersistedComposerImageAttachment(attachment);
     if (!file) return [];
-    const source = normalizeComposerImageSource(attachment.source);
-
     return [
       {
         type: "image" as const,
@@ -608,7 +602,6 @@ export function hydrateImagesFromPersisted(
         sizeBytes: attachment.sizeBytes,
         previewUrl,
         file,
-        ...(source ? { source } : {}),
       } satisfies ComposerImageAttachment,
     ];
   });

@@ -8,10 +8,6 @@ export const MICROPHONE_USAGE_DESCRIPTION =
 export const MAC_ENTITLEMENTS_PATH = "apps/desktop/resources/entitlements.mac.plist";
 export const MAC_INHERITED_ENTITLEMENTS_PATH =
   "apps/desktop/resources/entitlements.mac.inherit.plist";
-export const MAC_APPSNAP_HELPER_STAGE_PATH =
-  "apps/desktop/native/appsnap/build/caide-appsnap-helper";
-export const MAC_APPSNAP_HELPER_ASAR_EXCLUSION = "!apps/desktop/native/appsnap/build/**";
-export const MAC_APPSNAP_HELPER_BUNDLE_PATH = "Contents/Helpers/caide-appsnap-helper";
 export const MAC_DEVICE_HELPER_STAGE_PATH = "apps/server/dist/device-helper";
 export const MAC_DEVICE_HELPER_RESOURCE_PATH = "Resources/device-helper";
 export const WINDOWS_INSTALLER_GUID = "368107a8-afe6-5db5-ab3b-d4f331684868";
@@ -46,8 +42,8 @@ export interface DesktopNativeBuildHostInput {
 export function validateDesktopNativeBuildHost(input: DesktopNativeBuildHostInput): string | null {
   if (input.platform === "mac" && input.hostPlatform !== "darwin") {
     return [
-      "macOS desktop artifacts include the native Swift AppSnap helper.",
-      `Build mac/${input.arch} on macOS so the helper can be compiled and signed.`,
+      "macOS desktop artifacts require signing, notarization, and resource preparation.",
+      `Build mac/${input.arch} on macOS so the artifacts can be finalized and signed.`,
       `Current host is ${input.hostPlatform}/${input.hostArch}.`,
     ].join(" ");
   }
@@ -78,10 +74,6 @@ export function createDesktopPlatformBuildConfig(
       notarize: input.signed === true,
       entitlements: MAC_ENTITLEMENTS_PATH,
       entitlementsInherit: MAC_INHERITED_ENTITLEMENTS_PATH,
-      binaries: [MAC_APPSNAP_HELPER_BUNDLE_PATH],
-      // The universal build stages the same pre-lipo'd helper in both app trees.
-      // @electron/universal needs this pattern to preserve that existing fat binary.
-      x64ArchFiles: MAC_APPSNAP_HELPER_BUNDLE_PATH,
       extendInfo: {
         NSMicrophoneUsageDescription: MICROPHONE_USAGE_DESCRIPTION,
       },
@@ -96,12 +88,7 @@ export function createDesktopPlatformBuildConfig(
         // macOS auto-updates use the separately finalized ZIP artifact.
         writeUpdateInfo: false,
       },
-      files: ["**/*", MAC_APPSNAP_HELPER_ASAR_EXCLUSION],
       extraFiles: [
-        {
-          from: MAC_APPSNAP_HELPER_STAGE_PATH,
-          to: "Helpers/caide-appsnap-helper",
-        },
         {
           from: MAC_DEVICE_HELPER_STAGE_PATH,
           to: MAC_DEVICE_HELPER_RESOURCE_PATH,

@@ -77,63 +77,63 @@ export const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
     section: "general",
     title: "Open by default",
     keywords:
-      "Open the chat Environment panel automatically on normal threads. default closed open environment panel preference",
+      "Open the chat Context panel automatically on normal threads. default closed open context panel preference",
   },
   {
     id: "general:environment-usage",
     section: "general",
     title: "Usage",
-    keywords: "Show the provider usage row in the chat Environment panel.",
+    keywords: "Show the provider usage row in the chat Context panel.",
   },
   {
     id: "general:environment-repository",
     section: "general",
     title: "Repository",
-    keywords: "Show the GitHub repository link in the chat Environment panel. git changes worktree",
+    keywords: "Show the GitHub repository link in the chat Context panel. git changes worktree",
   },
   {
     id: "general:environment-pull-request",
     section: "general",
     title: "Pull request",
     keywords:
-      "Show the open pull request CI checks and review comments in the chat Environment panel. pr fix github",
+      "Show the open pull request CI checks and review comments in the chat Context panel. pr fix github",
   },
   {
     id: "general:environment-editor",
     section: "general",
     title: "Editor",
     keywords:
-      "Show the Editor section in-app editor view and Open in editor picker in the chat Environment panel.",
+      "Show the Editor section in-app editor view and Open in editor picker in the chat Context panel.",
   },
   {
     id: "general:environment-recap",
     section: "general",
     title: "Recap",
-    keywords: "Show the auto-generated chat recap in the Environment panel.",
+    keywords: "Show the auto-generated chat recap in the Context panel.",
   },
   {
     id: "general:environment-pinned",
     section: "general",
     title: "Pinned messages",
-    keywords: "Show the pinned-messages checklist in the Environment panel.",
+    keywords: "Show the pinned-messages checklist in the Context panel.",
   },
   {
     id: "general:environment-markers",
     section: "general",
     title: "Text markers",
-    keywords: "Show highlighted and underlined transcript text in the Environment panel.",
+    keywords: "Show highlighted and underlined transcript text in the Context panel.",
   },
   {
     id: "general:environment-instructions",
     section: "general",
     title: "Project instructions",
-    keywords: "Show project-level instructions in the Environment panel.",
+    keywords: "Show project-level instructions in the Context panel.",
   },
   {
     id: "general:environment-notepad",
     section: "general",
     title: "Notepad",
-    keywords: "Show the per-thread notepad in the Environment panel.",
+    keywords: "Show the per-thread notepad in the Context panel.",
   },
 
   // ── Appearance ───────────────────────────────────────────────────────────────
@@ -212,43 +212,6 @@ export const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
     title: "Desktop notifications",
     keywords:
       "Show an OS notification when a chat or managed terminal agent finishes or needs input while the app is in the background. alerts toast",
-  },
-
-  // ── AppSnap ───────────────────────────────────────────────────────────────────
-  {
-    id: "appsnap:enable",
-    section: "appsnap",
-    title: "Enable AppSnap",
-    keywords:
-      "Capture the frontmost macOS app window with a configurable two-key shortcut and add it to a recent task. appshot screenshot snap window capture hotkey",
-  },
-  {
-    id: "appsnap:shortcut",
-    section: "appsnap",
-    title: "Shortcut",
-    keywords: "Press the left and right Option keys at the same time. hotkey chord alt keys",
-  },
-  {
-    id: "appsnap:destination",
-    section: "appsnap",
-    title: "Destination",
-    keywords:
-      "Snaps join the task you interacted with in the last minute, otherwise a fresh task opens. automatic target composer",
-  },
-  {
-    id: "appsnap:capture-sound",
-    section: "appsnap",
-    title: "Capture sound",
-    keywords: "Play a short shutter cue when a window is captured. sound effect audio mute",
-  },
-  {
-    id: "appsnap:permissions",
-    section: "appsnap",
-    title: "Permission status",
-    keywords:
-      "Input Monitoring and Screen Recording permissions for AppSnap in macOS System Settings. privacy security recheck grant",
-    // Renders only in the macOS desktop app, so no stable anchor on other platforms.
-    target: null,
   },
 
   // ── Behavior ──────────────────────────────────────────────────────────────────
@@ -405,13 +368,6 @@ export const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
     section: "advanced",
     title: "Version",
     keywords: "Current application version. about",
-  },
-  {
-    id: "advanced:release-history",
-    section: "advanced",
-    title: "Release history",
-    keywords:
-      "A running log of every update, newest first. changelog what's new about release notes",
   },
 ] as const;
 

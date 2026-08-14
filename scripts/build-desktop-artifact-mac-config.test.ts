@@ -2,9 +2,6 @@ import { assert, describe, it } from "@effect/vitest";
 
 import {
   createDesktopPlatformBuildConfig,
-  MAC_APPSNAP_HELPER_ASAR_EXCLUSION,
-  MAC_APPSNAP_HELPER_BUNDLE_PATH,
-  MAC_APPSNAP_HELPER_STAGE_PATH,
   MAC_DEVICE_HELPER_RESOURCE_PATH,
   MAC_DEVICE_HELPER_STAGE_PATH,
   MAC_ENTITLEMENTS_PATH,
@@ -36,20 +33,7 @@ describe("createDesktopPlatformBuildConfig", () => {
     assert.equal(dmg.writeUpdateInfo, false);
     assert.equal(mac.entitlements, MAC_ENTITLEMENTS_PATH);
     assert.equal(mac.entitlementsInherit, MAC_INHERITED_ENTITLEMENTS_PATH);
-    assert.equal(MAC_APPSNAP_HELPER_BUNDLE_PATH, "Contents/Helpers/caide-appsnap-helper");
-    assert.deepStrictEqual(mac.binaries, ["Contents/Helpers/caide-appsnap-helper"]);
-    assert.equal(mac.x64ArchFiles, "Contents/Helpers/caide-appsnap-helper");
-    assert.equal(
-      MAC_APPSNAP_HELPER_STAGE_PATH,
-      "apps/desktop/native/appsnap/build/caide-appsnap-helper",
-    );
-    assert.equal(MAC_APPSNAP_HELPER_ASAR_EXCLUSION, "!apps/desktop/native/appsnap/build/**");
-    assert.deepStrictEqual(config.files, ["**/*", MAC_APPSNAP_HELPER_ASAR_EXCLUSION]);
     assert.deepStrictEqual(config.extraFiles, [
-      {
-        from: "apps/desktop/native/appsnap/build/caide-appsnap-helper",
-        to: "Helpers/caide-appsnap-helper",
-      },
       {
         from: MAC_DEVICE_HELPER_STAGE_PATH,
         to: MAC_DEVICE_HELPER_RESOURCE_PATH,
@@ -163,7 +147,7 @@ describe("createDesktopPlatformBuildConfig", () => {
     assert.ok(issue?.includes("Build linux/x64 on a matching Linux host"));
   });
 
-  it("requires a macOS host for the native Swift AppSnap helper", () => {
+  it("requires a macOS host for signed macOS artifacts", () => {
     assert.equal(
       validateDesktopNativeBuildHost({
         platform: "mac",

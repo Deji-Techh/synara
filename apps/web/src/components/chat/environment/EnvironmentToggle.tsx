@@ -33,7 +33,7 @@ export function EnvironmentToggle({ environment }: { environment: EnvironmentTog
             className={TOGGLE_CLASS_NAME}
             pressed={environment.open}
             onPressedChange={environment.onOpenChange}
-            aria-label="Toggle environment panel"
+            aria-label="Toggle context panel"
             variant="default"
             size="xs"
           >
@@ -41,7 +41,7 @@ export function EnvironmentToggle({ environment }: { environment: EnvironmentTog
           </Toggle>
         }
       />
-      <TooltipPopup side="bottom">Environment</TooltipPopup>
+      <TooltipPopup side="bottom">Context</TooltipPopup>
     </Tooltip>
   );
 }

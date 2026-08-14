@@ -469,22 +469,15 @@ describe("composerDraftStore prompt history saved draft", () => {
     expect(savedDraft?.nonPersistedImageIds).toEqual([]);
   });
 
-  it("preserves saved-draft AppSnap metadata when persisted storage is unreadable", async () => {
+  it("preserves saved-draft attachment metadata when persisted storage is unreadable", async () => {
     const store = useComposerDraftStore.getState();
-    const image = makeImage({ id: "appsnap-history-unverified", previewUrl: "blob:history" });
+    const image = makeImage({ id: "history-unverified", previewUrl: "blob:history" });
     const attachment = {
       id: image.id,
       name: image.name,
       mimeType: image.mimeType,
       sizeBytes: image.sizeBytes,
       blobKey: `${threadId}:${image.id}`,
-      source: {
-        kind: "appsnap" as const,
-        captureId: "capture-history-unverified",
-        capturedAt: "2026-07-12T20:00:00.000Z",
-        appName: "ChatGPT",
-        windowTitle: "ChatGPT",
-      },
     };
     store.setPrompt(threadId, "saved before browsing history");
     store.addImage(threadId, image);
@@ -505,11 +498,11 @@ describe("composerDraftStore prompt history saved draft", () => {
     expect(savedDraft?.nonPersistedImageIds).toEqual([image.id]);
   });
 
-  it("adds a hydrated AppSnap image back to a prompt-history snapshot", () => {
+  it("adds a hydrated image back to a prompt-history snapshot", () => {
     const store = useComposerDraftStore.getState();
     const originalImage = makeImage({
-      id: "appsnap-history-hydrated",
-      previewUrl: "blob:appsnap-history-original",
+      id: "history-hydrated",
+      previewUrl: "blob:history-original",
     });
     store.setPrompt(threadId, "saved before history navigation");
     store.addImage(threadId, originalImage);
@@ -533,7 +526,7 @@ describe("composerDraftStore prompt history saved draft", () => {
 
     const hydratedImage = makeImage({
       id: originalImage.id,
-      previewUrl: "blob:appsnap-history-restored",
+      previewUrl: "blob:history-restored",
     });
     store.addPromptHistorySavedDraftImage(threadId, hydratedImage);
 
@@ -542,25 +535,17 @@ describe("composerDraftStore prompt history saved draft", () => {
     ).toEqual([hydratedImage]);
   });
 
-  it("removes stale AppSnap rows before retrying a capture with missing blob bytes", async () => {
-    const liveThreadId = ThreadId.makeUnsafe("thread-appsnap-retry-live");
-    const savedThreadId = ThreadId.makeUnsafe("thread-appsnap-retry-saved");
-    const captureId = "capture-missing-blob";
-    const source = {
-      kind: "appsnap" as const,
-      captureId,
-      capturedAt: "2026-07-14T08:00:00.000Z",
-      appName: "Safari",
-      windowTitle: "Caide",
-    };
-    const staleLiveImage = {
-      ...makeImage({ id: "appsnap-stale-live", previewUrl: "blob:appsnap-stale-live" }),
-      source,
-    };
-    const staleSavedImage = {
-      ...makeImage({ id: "appsnap-stale-saved", previewUrl: "blob:appsnap-stale-saved" }),
-      source,
-    };
+  it("removes stale attachment rows across live and saved drafts", async () => {
+    const liveThreadId = ThreadId.makeUnsafe("thread-remove-live");
+    const savedThreadId = ThreadId.makeUnsafe("thread-remove-saved");
+    const staleLiveImage = makeImage({
+      id: "stale-live",
+      previewUrl: "blob:stale-live",
+    });
+    const staleSavedImage = makeImage({
+      id: "stale-saved",
+      previewUrl: "blob:stale-saved",
+    });
     const unrelatedLiveImage = makeImage({
       id: "unrelated-live",
       previewUrl: "blob:unrelated-live",
@@ -577,7 +562,6 @@ describe("composerDraftStore prompt history saved draft", () => {
       mimeType: image.mimeType,
       sizeBytes: image.sizeBytes,
       dataUrl: "data:image/png;base64,aGk=",
-      ...(image.source ? { source: image.source } : {}),
     });
     const store = useComposerDraftStore.getState();
 
@@ -610,7 +594,8 @@ describe("composerDraftStore prompt history saved draft", () => {
         .draftsByThreadId[liveThreadId]?.images.map((image) => image.id),
     ).toEqual([staleLiveImage.id, unrelatedLiveImage.id]);
 
-    store.removeAppSnapCapture(captureId);
+    store.removeImage(liveThreadId, staleLiveImage.id);
+    store.removeImage(savedThreadId, staleSavedImage.id);
 
     const liveDraft = useComposerDraftStore.getState().draftsByThreadId[liveThreadId]!;
     expect(liveDraft.images.map((image) => image.id)).toEqual([unrelatedLiveImage.id]);
@@ -711,18 +696,9 @@ describe("composerDraftStore copyTransferableComposerState", () => {
     }
   });
 
-  it("keeps a shared AppSnap blob referenced until every copied draft removes it", async () => {
-    const blobKey = `${sourceThreadId}:appsnap-shared`;
-    const sourceImage = {
-      ...makeImage({ id: "appsnap-shared", previewUrl: "blob:source-appsnap" }),
-      source: {
-        kind: "appsnap" as const,
-        captureId: "capture-shared",
-        capturedAt: "2026-07-12T20:00:00.000Z",
-        appName: "Safari",
-        windowTitle: "Caide",
-      },
-    };
+  it("keeps a shared blob referenced until every copied draft removes it", async () => {
+    const blobKey = `${sourceThreadId}:shared`;
+    const sourceImage = makeImage({ id: "shared", previewUrl: "blob:source-shared" });
     const store = useComposerDraftStore.getState();
     store.addImage(sourceThreadId, sourceImage);
     useComposerDraftStore.setState((state) => ({
@@ -737,7 +713,6 @@ describe("composerDraftStore copyTransferableComposerState", () => {
               mimeType: sourceImage.mimeType,
               sizeBytes: sourceImage.sizeBytes,
               blobKey,
-              source: sourceImage.source,
             },
           ],
         },
@@ -761,15 +736,15 @@ describe("composerDraftStore copyTransferableComposerState", () => {
 
   it("identifies a replaced thread-scoped blob key for cleanup", () => {
     const previousAttachment = {
-      id: "appsnap-rekeyed",
-      name: "AppSnap.png",
+      id: "rekeyed",
+      name: "capture.png",
       mimeType: "image/png",
       sizeBytes: 4,
-      blobKey: `${sourceThreadId}:appsnap-rekeyed`,
+      blobKey: `${sourceThreadId}:rekeyed`,
     };
     const nextAttachment = {
       ...previousAttachment,
-      blobKey: `${targetThreadId}:appsnap-rekeyed`,
+      blobKey: `${targetThreadId}:rekeyed`,
     };
 
     expect(
@@ -845,14 +820,14 @@ describe("composerDraftStore syncPersistedAttachments", () => {
 
   it("stages overlapping attachment syncs immediately and serializes verification", async () => {
     const firstImage = makeImage({
-      id: "appsnap-sync-first",
-      previewUrl: "blob:appsnap-sync-first",
-      name: "appsnap-sync-first.png",
+      id: "sync-first",
+      previewUrl: "blob:sync-first",
+      name: "sync-first.png",
     });
     const secondImage = makeImage({
-      id: "appsnap-sync-second",
-      previewUrl: "blob:appsnap-sync-second",
-      name: "appsnap-sync-second.png",
+      id: "sync-second",
+      previewUrl: "blob:sync-second",
+      name: "sync-second.png",
     });
     const attachmentFor = (image: ComposerImageAttachment) => ({
       id: image.id,
@@ -890,9 +865,9 @@ describe("composerDraftStore syncPersistedAttachments", () => {
 
   it("retires the sync generation entry once the newest sync for a slot settles", async () => {
     const image = makeImage({
-      id: "appsnap-sync-generation",
-      previewUrl: "blob:appsnap-sync-generation",
-      name: "appsnap-sync-generation.png",
+      id: "sync-generation",
+      previewUrl: "blob:sync-generation",
+      name: "sync-generation.png",
     });
     const attachment = {
       id: image.id,
@@ -962,10 +937,10 @@ describe("composerDraftStore syncPersistedAttachments", () => {
     ).toEqual([image.id]);
   });
 
-  it("warns when AppSnap bytes exist but their draft metadata cannot be verified", async () => {
+  it("warns when blob bytes exist but their draft metadata cannot be verified", async () => {
     const image = makeImage({
-      id: "appsnap-persisted",
-      previewUrl: "blob:appsnap-persisted",
+      id: "blob-unverified",
+      previewUrl: "blob:unverified",
     });
     useComposerDraftStore.getState().addImage(threadId, image);
     setLocalStorageItem(
@@ -990,13 +965,6 @@ describe("composerDraftStore syncPersistedAttachments", () => {
         mimeType: image.mimeType,
         sizeBytes: image.sizeBytes,
         blobKey: `${threadId}:${image.id}`,
-        source: {
-          kind: "appsnap",
-          captureId: "capture-persisted",
-          capturedAt: "2026-07-12T20:00:00.000Z",
-          appName: "ChatGPT",
-          windowTitle: "ChatGPT",
-        },
       },
     ]);
     expect(persisted).toBe("unverified");
@@ -1009,10 +977,10 @@ describe("composerDraftStore syncPersistedAttachments", () => {
     ).toEqual([image.id]);
   });
 
-  it("clears the warning after AppSnap blob metadata is readable from storage", async () => {
+  it("clears the warning after blob metadata is readable from storage", async () => {
     const image = makeImage({
-      id: "appsnap-verified",
-      previewUrl: "blob:appsnap-verified",
+      id: "blob-verified",
+      previewUrl: "blob:verified",
     });
     useComposerDraftStore.getState().addImage(threadId, image);
 
@@ -1031,13 +999,6 @@ describe("composerDraftStore syncPersistedAttachments", () => {
                   mimeType: image.mimeType,
                   sizeBytes: image.sizeBytes,
                   blobKey: `${threadId}:${image.id}`,
-                  source: {
-                    kind: "appsnap",
-                    captureId: "capture-verified",
-                    capturedAt: "2026-07-12T20:00:00.000Z",
-                    appName: "ChatGPT",
-                    windowTitle: "ChatGPT",
-                  },
                 },
               ],
             },
@@ -1056,13 +1017,6 @@ describe("composerDraftStore syncPersistedAttachments", () => {
         mimeType: image.mimeType,
         sizeBytes: image.sizeBytes,
         blobKey: `${threadId}:${image.id}`,
-        source: {
-          kind: "appsnap",
-          captureId: "capture-verified",
-          capturedAt: "2026-07-12T20:00:00.000Z",
-          appName: "ChatGPT",
-          windowTitle: "ChatGPT",
-        },
       },
     ]);
     expect(persisted).toBe("persisted");
@@ -1075,10 +1029,10 @@ describe("composerDraftStore syncPersistedAttachments", () => {
     ).toEqual([]);
   });
 
-  it("verifies AppSnap metadata without rejecting unrelated malformed drafts", async () => {
+  it("verifies blob metadata without rejecting unrelated malformed drafts", async () => {
     const image = makeImage({
-      id: "appsnap-valid-among-malformed",
-      previewUrl: "blob:appsnap-valid-among-malformed",
+      id: "valid-among-malformed",
+      previewUrl: "blob:valid-among-malformed",
     });
     const attachment = {
       id: image.id,
@@ -1086,13 +1040,6 @@ describe("composerDraftStore syncPersistedAttachments", () => {
       mimeType: image.mimeType,
       sizeBytes: image.sizeBytes,
       blobKey: `${threadId}:${image.id}`,
-      source: {
-        kind: "appsnap" as const,
-        captureId: "capture-valid-among-malformed",
-        capturedAt: "2026-07-12T20:00:00.000Z",
-        appName: "ChatGPT",
-        windowTitle: "ChatGPT",
-      },
     };
     useComposerDraftStore.getState().addImage(threadId, image);
     setLocalStorageItem(
@@ -1121,101 +1068,5 @@ describe("composerDraftStore syncPersistedAttachments", () => {
     expect(
       useComposerDraftStore.getState().draftsByThreadId[threadId]?.nonPersistedImageIds,
     ).toEqual([]);
-  });
-
-  it("keeps AppSnap blob metadata and migrates former provenance", () => {
-    const persistApi = useComposerDraftStore.persist as unknown as {
-      getOptions: () => {
-        merge: (
-          persistedState: unknown,
-          currentState: ReturnType<typeof useComposerDraftStore.getState>,
-        ) => ReturnType<typeof useComposerDraftStore.getState>;
-      };
-    };
-    const source = {
-      kind: "appsnap",
-      captureId: "capture-1",
-      capturedAt: "2026-07-12T19:59:33.000Z",
-      appName: "Safari",
-      bundleIdentifier: null,
-      appIconDataUrl: null,
-      windowTitle: "Caide",
-    };
-    const mergedState = persistApi.getOptions().merge(
-      {
-        draftsByThreadId: {
-          [threadId]: {
-            prompt: "",
-            attachments: [
-              {
-                id: "appsnap-1",
-                name: "appsnap.png",
-                mimeType: "image/png",
-                sizeBytes: 2048,
-                blobKey: `${threadId}:appsnap-1`,
-                source: { ...source, kind: "appshot" },
-              },
-            ],
-          },
-        },
-      },
-      useComposerDraftStore.getInitialState(),
-    );
-
-    expect(mergedState.draftsByThreadId[threadId]?.images).toEqual([]);
-    expect(mergedState.draftsByThreadId[threadId]?.persistedAttachments).toEqual([
-      expect.objectContaining({
-        id: "appsnap-1",
-        blobKey: `${threadId}:appsnap-1`,
-        source,
-      }),
-    ]);
-  });
-
-  it("omits inline AppSnap icons from localStorage metadata", () => {
-    const image = makeImage({ id: "appsnap-icon", previewUrl: "blob:appsnap-icon" });
-    useComposerDraftStore.getState().addImage(threadId, image);
-    useComposerDraftStore.setState((state) => ({
-      draftsByThreadId: {
-        ...state.draftsByThreadId,
-        [threadId]: {
-          ...state.draftsByThreadId[threadId]!,
-          persistedAttachments: [
-            {
-              id: image.id,
-              name: image.name,
-              mimeType: image.mimeType,
-              sizeBytes: image.sizeBytes,
-              blobKey: `${threadId}:${image.id}`,
-              source: {
-                kind: "appsnap",
-                captureId: "capture-icon",
-                capturedAt: "2026-07-12T20:00:00.000Z",
-                appName: "Safari",
-                bundleIdentifier: "com.apple.Safari",
-                appIconDataUrl: "data:image/png;base64,aWNvbg==",
-                windowTitle: "Caide",
-              },
-            },
-          ],
-        },
-      },
-    }));
-
-    const persistedState = partializeComposerDraftStoreState(
-      useComposerDraftStore.getState(),
-    ) as unknown as {
-      draftsByThreadId?: Record<
-        string,
-        { attachments?: Array<{ source?: Record<string, unknown> }> }
-      >;
-    };
-
-    expect(persistedState.draftsByThreadId?.[threadId]?.attachments?.[0]?.source).toMatchObject({
-      bundleIdentifier: "com.apple.Safari",
-    });
-    expect(
-      persistedState.draftsByThreadId?.[threadId]?.attachments?.[0]?.source,
-    ).not.toHaveProperty("appIconDataUrl");
   });
 });

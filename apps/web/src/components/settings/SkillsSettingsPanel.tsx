@@ -93,13 +93,67 @@ export function SkillsSettingsPanel() {
       });
   };
 
+  const setAllSkillsEnabled = (enabled: boolean) => {
+    const latestSettings = queryClient.getQueryData<ServerSettings>(serverQueryKeys.settings());
+    const next = new Set(
+      (latestSettings?.skills.disabled ?? [...disabledSkillNames]).map((name) =>
+        settingsSkillNameKey(name),
+      ),
+    );
+    const allSkillNames = skillGroups.map((group) => settingsSkillNameKey(group.primarySkill.name));
+    if (enabled) {
+      for (const key of allSkillNames) {
+        next.delete(key);
+      }
+    } else {
+      for (const key of allSkillNames) {
+        next.add(key);
+      }
+    }
+    const disabled = [...next].sort();
+    if (latestSettings) {
+      queryClient.setQueryData(serverQueryKeys.settings(), {
+        ...latestSettings,
+        skills: { disabled },
+      });
+    }
+    void ensureNativeApi()
+      .server.updateSettings({ skills: { disabled } })
+      .then((nextSettings) => {
+        queryClient.setQueryData(serverQueryKeys.settings(), nextSettings);
+        void queryClient.invalidateQueries({ queryKey: providerDiscoveryQueryKeys.all });
+      })
+      .catch(() => {
+        void queryClient.invalidateQueries({ queryKey: serverQueryKeys.settings() });
+      });
+  };
+
   const totalSkills = skillGroups.length;
   const enabledSkills = skillGroups.filter((group) => !disabledSkillNames.has(group.key)).length;
+  const allSkillsDisabled = totalSkills > 0 && enabledSkills === 0;
   const caideSkillsDir = catalogQuery.data?.caideSkillsDir;
 
   return (
     <div className="space-y-8">
       <SettingsSection title="Portable skills">
+        <SettingsRow
+          title="Disable all skills"
+          description="Turn every skill off at once across all providers. Skills stay installed; flip this back on to re-enable them all."
+          status={
+            <span className="text-xs font-medium text-muted-foreground">
+              {catalogQuery.isLoading
+                ? "Scanning…"
+                : `${enabledSkills} of ${totalSkills} skill${totalSkills === 1 ? "" : "s"} enabled`}
+            </span>
+          }
+          control={
+            <Switch
+              checked={allSkillsDisabled}
+              onCheckedChange={(checked) => setAllSkillsEnabled(!Boolean(checked))}
+              aria-label={allSkillsDisabled ? "Enable all skills" : "Disable all skills"}
+            />
+          }
+        />
         <SettingsRow
           title="Caide skills folder"
           description="Skills placed here are available on every provider. When a provider already ships its own copy of a skill, that copy is used; otherwise Caide's copy is the fallback."
@@ -107,13 +161,6 @@ export function SkillsSettingsPanel() {
             caideSkillsDir ? (
               <code className="break-all text-[11px] text-muted-foreground">{caideSkillsDir}</code>
             ) : null
-          }
-          control={
-            <span className="text-xs font-medium text-muted-foreground">
-              {catalogQuery.isLoading
-                ? "Scanning…"
-                : `${enabledSkills} of ${totalSkills} skill${totalSkills === 1 ? "" : "s"} enabled`}
-            </span>
           }
         />
       </SettingsSection>

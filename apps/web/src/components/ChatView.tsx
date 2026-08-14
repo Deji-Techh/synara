@@ -154,9 +154,16 @@ import {
   findPendingBlobComposerAttachments,
   formatOutgoingComposerPrompt,
   hydratePendingBlobComposerAttachments,
+  prepareComposerImageAttachmentsFromFiles,
   readFileAsDataUrl,
 } from "../lib/composerSend";
-import { composerImageBlobKey, persistComposerImageBlob } from "../lib/composerImageBlobStore";
+import {
+  composerImageBlobKey,
+  deleteComposerImageBlob,
+  persistComposerImageBlob,
+} from "../lib/composerImageBlobStore";
+import { buildBrandingPromptBlock } from "../brandingSetup";
+import { BrandingWizardModal, type BrandingWizardValue } from "./BrandingWizardModal";
 import { reconcileDeletedThreadFromClient } from "../lib/deletedThreadClientReconciliation";
 import { extractChatAutomationInvocation } from "../lib/automationIntent";
 import {
@@ -807,9 +814,9 @@ function revokeBlobPreviewUrlsAfterPaint(previewUrls: readonly string[]): void {
 }
 
 // Shared by the live-composer and prompt-history attachment sync effects:
-// AppSnap images persist their bytes as IndexedDB blobs (reusing an existing
-// blob key when valid), everything else inlines a data URL. Falls back to the
-// already-persisted attachments for images whose serialization fails.
+// images with an existing IndexedDB blob key keep persisting as blobs (reusing
+// an existing blob key when valid), everything else inlines a data URL. Falls
+// back to the already-persisted attachments for images whose serialization fails.
 async function stagePersistedComposerImageAttachments(input: {
   threadId: ThreadId;
   images: ReadonlyArray<ComposerImageAttachment>;
@@ -823,11 +830,11 @@ async function stagePersistedComposerImageAttachments(input: {
     await Promise.all(
       input.images.map(async (image) => {
         try {
-          if (image.source?.kind === "appsnap") {
-            const existingPersisted = existingPersistedById.get(image.id);
+          const existingPersisted = existingPersistedById.get(image.id);
+          if (existingPersisted?.blobKey) {
             const expectedBlobKey = composerImageBlobKey(input.threadId, image.id);
             const blobKey =
-              existingPersisted?.blobKey === expectedBlobKey
+              existingPersisted.blobKey === expectedBlobKey
                 ? expectedBlobKey
                 : await persistComposerImageBlob({
                     threadId: input.threadId,
@@ -840,7 +847,6 @@ async function stagePersistedComposerImageAttachments(input: {
               mimeType: image.mimeType,
               sizeBytes: image.sizeBytes,
               blobKey,
-              source: image.source,
             });
             return;
           }
@@ -1599,6 +1605,14 @@ export default function ChatView({
   }, [threadId]);
   const composerEditorRef = useRef<ComposerPromptEditorHandle>(null);
   const composerFormRef = useRef<HTMLFormElement>(null);
+  // App Branding wizard (build / agent modes only): opened on the very first send
+  // from a container landing project so the Flutter Builder Engine can apply the
+  // chosen brand. The submitted prompt is stashed while the dialog is open and
+  // re-triggered (with the branding block) once the user picks an option.
+  const [isBrandingWizardOpen, setIsBrandingWizardOpen] = useState(false);
+  const pendingBrandingPromptRef = useRef<{ threadId: ThreadId; prompt: string } | null>(null);
+  const brandingAmendmentRef = useRef<{ threadId: ThreadId; prompt: string } | null>(null);
+  const skipBrandingWizardForNextSubmitRef = useRef(false);
   // Set by whichever mounted GitActionsControl instance (header quick-action or the
   // Environment panel row) last registered — either performs the identical commit &
   // push mutation for this thread's repo, so it doesn't matter which one is "current".
@@ -7379,16 +7393,25 @@ export default function ChatView({
     const liveComposerSnapshot =
       queuedChatTurn === null ? (composerEditorRef.current?.readSnapshot() ?? null) : null;
     let promptForSend = queuedChatTurn?.prompt ?? liveComposerSnapshot?.value ?? promptRef.current;
+    // Branded re-submit: after the App Branding wizard closes, the composer still holds
+    // the user's original text, so carry the appended branding block through here rather
+    // than depending on the editor value prop having caught up by re-submit time.
+    const pendingBrandingAmendment = brandingAmendmentRef.current;
+    if (queuedChatTurn === null && pendingBrandingAmendment?.threadId === activeThread.id) {
+      promptForSend = pendingBrandingAmendment.prompt;
+      brandingAmendmentRef.current = null;
+      skipBrandingWizardForNextSubmitRef.current = true;
+    }
     let composerImagesForSend =
       queuedChatTurn?.images ??
       useComposerDraftStore.getState().draftsByThreadId[activeThread.id]?.images ??
       composerImages;
-    // AppSnap captures persist as IndexedDB blobs and hydrate into `images`
-    // asynchronously (see AppSnapCoordinator). Right after a reload the user can
-    // hit send before that hydration finishes; without this, the not-yet-hydrated
-    // capture would be silently dropped from the message and then have its blob
-    // deleted when the composer clears after send. Live sends only: a queued turn
-    // already captured a fully-resolved image snapshot when it was queued.
+    // Blob-backed images persist to IndexedDB and hydrate into `images`
+    // asynchronously. Right after a reload the user can hit send before that
+    // hydration finishes; without this, the not-yet-hydrated image would be
+    // silently dropped from the message and then have its blob deleted when the
+    // composer clears after send. Live sends only: a queued turn already
+    // captured a fully-resolved image snapshot when it was queued.
     if (queuedChatTurn === null) {
       const pendingBlobAttachments = findPendingBlobComposerAttachments({
         persistedAttachments:
@@ -7682,6 +7705,25 @@ export default function ChatView({
         pendingAutomationConversationRef.current = null;
         setPendingAutomationConversation(null);
       }
+    }
+    // App Branding: on the very first native send from a container landing project
+    // (build / agent modes only) pause to let the user choose how to brand the new
+    // app before anything is dispatched. Skip queued turns, live-plan follow-ups,
+    // automation setup, and the immediate re-submit that carries the chosen brand.
+    const shouldSkipBrandingThisSend = skipBrandingWizardForNextSubmitRef.current;
+    skipBrandingWizardForNextSubmitRef.current = false;
+    if (
+      queuedChatTurn === null &&
+      !isLivePlanFollowUpSubmission &&
+      !pendingAutomationConversation &&
+      !shouldSkipBrandingThisSend &&
+      (!isServerThread || !hasNativeUserMessages) &&
+      isContainerLandingProject &&
+      (chatModeForSend === "build" || chatModeForSend === "local-agent")
+    ) {
+      pendingBrandingPromptRef.current = { threadId: activeThread.id, prompt: promptForSend };
+      setIsBrandingWizardOpen(true);
+      return true;
     }
     sendPreflightInFlightRef.current = true;
     const sendProviderAvailability = await resolveProviderSendAvailabilityWithRefresh({
@@ -10170,6 +10212,88 @@ export default function ChatView({
     [setPrompt, setRestoredQueuedSourceProposedPlan, threadId],
   );
 
+  const handleBrandingWizardSubmit = useCallback(
+    async (value: BrandingWizardValue) => {
+      const { threadId: brandingThreadId, prompt: originalPrompt } = pendingBrandingPromptRef.current ?? {};
+      pendingBrandingPromptRef.current = null;
+      if (!brandingThreadId) {
+        setIsBrandingWizardOpen(false);
+        return;
+      }
+      const brandingBlock = buildBrandingPromptBlock(value);
+      const amendedPrompt =
+        originalPrompt && originalPrompt.trim().length > 0
+          ? `${originalPrompt.trim()}\n\n${brandingBlock}`
+          : brandingBlock;
+      if (value.mode === "custom" && value.logoFile) {
+        const draftStore = useComposerDraftStore.getState();
+        const draft = draftStore.draftsByThreadId[brandingThreadId];
+        const existingAttachmentCount = effectiveComposerAttachmentCount(draft);
+        const { images } = await prepareComposerImageAttachmentsFromFiles({
+          files: [value.logoFile],
+          existingAttachmentCount,
+        });
+        const image = images[0];
+        if (image) {
+          let blobKey: string | null = null;
+          let imageAdded = false;
+          try {
+            blobKey = await persistComposerImageBlob({
+              threadId: brandingThreadId,
+              imageId: image.id,
+              file: image.file,
+            });
+            draftStore.setPromptHistorySavedDraft(brandingThreadId, null);
+            if (!draftStore.addImage(brandingThreadId, image)) {
+              throw new Error(
+                "The branding logo could not be attached because this message already has the maximum number of references.",
+              );
+            }
+            imageAdded = true;
+            const currentPersistedAttachments =
+              useComposerDraftStore.getState().draftsByThreadId[brandingThreadId]
+                ?.persistedAttachments ?? [];
+            const result = await draftStore.syncPersistedAttachments(brandingThreadId, [
+              ...currentPersistedAttachments.filter(
+                (attachment) => attachment.id !== image.id,
+              ),
+              {
+                id: image.id,
+                name: image.name,
+                mimeType: image.mimeType,
+                sizeBytes: image.sizeBytes,
+                blobKey,
+              },
+            ]);
+            if (result === "rejected") {
+              draftStore.removeImage(brandingThreadId, image.id);
+              await deleteComposerImageBlob(blobKey).catch((error) =>
+                console.warn("[branding] Could not roll back rejected logo", error),
+              );
+            }
+          } catch (error) {
+            if (!imageAdded) {
+              URL.revokeObjectURL(image.previewUrl);
+              if (blobKey) {
+                await deleteComposerImageBlob(blobKey).catch((cleanupError) =>
+                  console.warn("[branding] Could not roll back unattached logo", cleanupError),
+                );
+              }
+            }
+            console.warn("[branding] Could not attach the branding logo", error);
+          }
+        }
+      }
+      brandingAmendmentRef.current = { threadId: brandingThreadId, prompt: amendedPrompt };
+      skipBrandingWizardForNextSubmitRef.current = true;
+      setIsBrandingWizardOpen(false);
+      requestAnimationFrame(() => {
+        composerFormRef.current?.requestSubmit();
+      });
+    },
+    [],
+  );
+
   const clearComposerSlashDraft = useCallback(() => {
     promptRef.current = "";
     setRestoredQueuedSourceProposedPlan(threadId, null);
@@ -12287,6 +12411,11 @@ export default function ChatView({
         expandedImage={expandedImage}
         onClose={closeExpandedImage}
         onNavigate={navigateExpandedImage}
+      />
+      <BrandingWizardModal
+        open={isBrandingWizardOpen}
+        onOpenChange={setIsBrandingWizardOpen}
+        onSubmit={handleBrandingWizardSubmit}
       />
     </div>
   );
