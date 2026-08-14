@@ -135,6 +135,7 @@ const BUILT_IN_MODEL_SLUGS_BY_PROVIDER: Record<ProviderKind, ReadonlySet<string>
   google: new Set(getModelOptions("google").map((option) => option.slug)),
   openrouter: new Set(getModelOptions("openrouter").map((option) => option.slug)),
   ollama: new Set(getModelOptions("ollama").map((option) => option.slug)),
+  deepseek: new Set(getModelOptions("deepseek").map((option) => option.slug)),
 };
 
 const withDefaults =
@@ -167,6 +168,7 @@ const PersistedProviderKind = Schema.Literals([
   "google",
   "openrouter",
   "ollama",
+  "deepseek",
 ]).pipe(
   Schema.decodeTo(
     ProviderKind,
@@ -225,6 +227,27 @@ export const AppSettingsSchema = Schema.Struct({
   ollamaBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(
     withDefaults(() => "http://127.0.0.1:11434/v1"),
   ),
+  fireworksApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  fireworksApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
+  fireworksBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  xaiApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  xaiApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
+  xaiBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  cohereApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  cohereApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
+  cohereBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  togetherApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  togetherApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
+  togetherBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  mistralApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  mistralApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
+  mistralBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  groqApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  groqApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
+  groqBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  deepseekApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  deepseekApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
+  deepseekBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
   defaultThreadEnvMode: EnvMode.pipe(withDefaults(() => "local" as const satisfies EnvMode)),
   confirmThreadDelete: Schema.Boolean.pipe(withDefaults(() => true)),
   confirmThreadArchive: Schema.Boolean.pipe(withDefaults(() => false)),
@@ -593,6 +616,13 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
     googleApiKey: "",
     openrouterApiKey: "",
     ollamaApiKey: "",
+    fireworksApiKey: "",
+    xaiApiKey: "",
+    cohereApiKey: "",
+    togetherApiKey: "",
+    mistralApiKey: "",
+    groqApiKey: "",
+    deepseekApiKey: "",
     claudeBinaryPath: normalizeProviderBinaryPathOverride("claudeAgent", settings.claudeBinaryPath),
     codexBinaryPath: normalizeProviderBinaryPathOverride("codex", settings.codexBinaryPath),
     cursorBinaryPath: normalizeProviderBinaryPathOverride("cursor", settings.cursorBinaryPath),
@@ -684,6 +714,20 @@ function serverSettingsToAppSettings(settings: ServerSettingsView): Partial<AppS
     openrouterBaseUrl: settings.providers.openrouter.baseUrl,
     ollamaApiKeyConfigured: settings.providers.ollama.apiKeyConfigured,
     ollamaBaseUrl: settings.providers.ollama.baseUrl,
+    fireworksApiKeyConfigured: settings.providers.fireworks.apiKeyConfigured,
+    fireworksBaseUrl: settings.providers.fireworks.baseUrl,
+    xaiApiKeyConfigured: settings.providers.xai.apiKeyConfigured,
+    xaiBaseUrl: settings.providers.xai.baseUrl,
+    cohereApiKeyConfigured: settings.providers.cohere.apiKeyConfigured,
+    cohereBaseUrl: settings.providers.cohere.baseUrl,
+    togetherApiKeyConfigured: settings.providers.together.apiKeyConfigured,
+    togetherBaseUrl: settings.providers.together.baseUrl,
+    mistralApiKeyConfigured: settings.providers.mistral.apiKeyConfigured,
+    mistralBaseUrl: settings.providers.mistral.baseUrl,
+    groqApiKeyConfigured: settings.providers.groq.apiKeyConfigured,
+    groqBaseUrl: settings.providers.groq.baseUrl,
+    deepseekApiKeyConfigured: settings.providers.deepseek.apiKeyConfigured,
+    deepseekBaseUrl: settings.providers.deepseek.baseUrl,
     textGenerationProvider: settings.textGenerationModelSelection.provider,
     textGenerationModel: settings.textGenerationModelSelection.model,
   };
@@ -723,7 +767,9 @@ function touchesProviderDiscoverySettings(patch: Partial<AppSettings>): boolean 
     hasOwn(patch, "openrouterApiKey") ||
     hasOwn(patch, "openrouterBaseUrl") ||
     hasOwn(patch, "ollamaApiKey") ||
-    hasOwn(patch, "ollamaBaseUrl")
+    hasOwn(patch, "ollamaBaseUrl") ||
+    hasOwn(patch, "deepseekApiKey") ||
+    hasOwn(patch, "deepseekBaseUrl")
   );
 }
 
@@ -926,6 +972,66 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
     };
   }
 
+  if (
+    hasOwn(patch, "groqApiKey") ||
+    hasOwn(patch, "groqBaseUrl")
+  ) {
+    providers.groq = {
+      ...(hasOwn(patch, "groqApiKey") ? { apiKey: patch.groqApiKey ?? "" } : {}),
+      ...(hasOwn(patch, "groqBaseUrl") ? { baseUrl: patch.groqBaseUrl ?? "" } : {}),
+    };
+  }
+
+  if (
+    hasOwn(patch, "mistralApiKey") ||
+    hasOwn(patch, "mistralBaseUrl")
+  ) {
+    providers.mistral = {
+      ...(hasOwn(patch, "mistralApiKey") ? { apiKey: patch.mistralApiKey ?? "" } : {}),
+      ...(hasOwn(patch, "mistralBaseUrl") ? { baseUrl: patch.mistralBaseUrl ?? "" } : {}),
+    };
+  }
+
+  if (
+    hasOwn(patch, "togetherApiKey") ||
+    hasOwn(patch, "togetherBaseUrl")
+  ) {
+    providers.together = {
+      ...(hasOwn(patch, "togetherApiKey") ? { apiKey: patch.togetherApiKey ?? "" } : {}),
+      ...(hasOwn(patch, "togetherBaseUrl") ? { baseUrl: patch.togetherBaseUrl ?? "" } : {}),
+    };
+  }
+
+  if (
+    hasOwn(patch, "cohereApiKey") ||
+    hasOwn(patch, "cohereBaseUrl")
+  ) {
+    providers.cohere = {
+      ...(hasOwn(patch, "cohereApiKey") ? { apiKey: patch.cohereApiKey ?? "" } : {}),
+      ...(hasOwn(patch, "cohereBaseUrl") ? { baseUrl: patch.cohereBaseUrl ?? "" } : {}),
+    };
+  }
+
+  if (
+    hasOwn(patch, "xaiApiKey") ||
+    hasOwn(patch, "xaiBaseUrl")
+  ) {
+    providers.xai = {
+      ...(hasOwn(patch, "xaiApiKey") ? { apiKey: patch.xaiApiKey ?? "" } : {}),
+      ...(hasOwn(patch, "xaiBaseUrl") ? { baseUrl: patch.xaiBaseUrl ?? "" } : {}),
+    };
+  }
+
+  if (
+    hasOwn(patch, "fireworksApiKey") ||
+    hasOwn(patch, "fireworksBaseUrl")
+  ) {
+    providers.fireworks = {
+      ...(hasOwn(patch, "fireworksApiKey") ? { apiKey: patch.fireworksApiKey ?? "" } : {}),
+      ...(hasOwn(patch, "fireworksBaseUrl") ? { baseUrl: patch.fireworksBaseUrl ?? "" } : {}),
+    };
+  }
+
   if (Object.keys(providers).length > 0) {
     serverPatch.providers = providers;
   }
@@ -972,6 +1078,20 @@ function buildInitialServerSettingsMigrationPatch(settings: AppSettings): Server
     "openrouterBaseUrl",
     "ollamaApiKey",
     "ollamaBaseUrl",
+    "fireworksApiKey",
+    "fireworksBaseUrl",
+    "xaiApiKey",
+    "xaiBaseUrl",
+    "cohereApiKey",
+    "cohereBaseUrl",
+    "togetherApiKey",
+    "togetherBaseUrl",
+    "mistralApiKey",
+    "mistralBaseUrl",
+    "groqApiKey",
+    "groqBaseUrl",
+    "deepseekApiKey",
+    "deepseekBaseUrl",
     "textGenerationModel",
     "textGenerationProvider",
   ] as const) {
@@ -1002,6 +1122,27 @@ function buildInitialServerSettingsMigrationPatch(settings: AppSettings): Server
   }
   if (settings.ollamaApiKey.trim()) {
     patch.ollamaApiKey = settings.ollamaApiKey;
+  }
+  if (settings.fireworksApiKey.trim()) {
+    patch.fireworksApiKey = settings.fireworksApiKey;
+  }
+  if (settings.xaiApiKey.trim()) {
+    patch.xaiApiKey = settings.xaiApiKey;
+  }
+  if (settings.cohereApiKey.trim()) {
+    patch.cohereApiKey = settings.cohereApiKey;
+  }
+  if (settings.togetherApiKey.trim()) {
+    patch.togetherApiKey = settings.togetherApiKey;
+  }
+  if (settings.mistralApiKey.trim()) {
+    patch.mistralApiKey = settings.mistralApiKey;
+  }
+  if (settings.groqApiKey.trim()) {
+    patch.groqApiKey = settings.groqApiKey;
+  }
+  if (settings.deepseekApiKey.trim()) {
+    patch.deepseekApiKey = settings.deepseekApiKey;
   }
 
   for (const key of [

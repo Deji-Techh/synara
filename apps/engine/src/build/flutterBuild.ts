@@ -54,7 +54,17 @@ export function startFlutterBuild(input: StartFlutterBuildInput): FlutterBuildJo
 
   let child;
   try {
-    child = spawnFlutterProcess(args, input.appDir);
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      // Skeleton for v1 code signing config via environment variables
+      // FLUTTER_BUILD_NAME: process.env.FLUTTER_BUILD_NAME,
+      // FLUTTER_BUILD_NUMBER: process.env.FLUTTER_BUILD_NUMBER,
+      // KEYSTORE_PASSWORD: process.env.KEYSTORE_PASSWORD,
+      // KEY_PASSWORD: process.env.KEY_PASSWORD,
+      // KEY_ALIAS: process.env.KEY_ALIAS,
+      // KEYSTORE_FILE: process.env.KEYSTORE_FILE,
+    };
+    child = spawnFlutterProcess(args, input.appDir, { env });
   } catch (error) {
     job.state.status = "failed";
     job.state.error = error instanceof Error ? error.message : String(error);

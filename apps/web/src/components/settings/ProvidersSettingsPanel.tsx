@@ -86,7 +86,9 @@ type ProviderInstallTextKey =
   | "anthropicBaseUrl"
   | "googleBaseUrl"
   | "openrouterBaseUrl"
-  | "ollamaBaseUrl";
+  | "ollamaBaseUrl"
+  | "deepseekBaseUrl"
+  | "groqBaseUrl";
 type ProviderInstallPasswordKey =
   | "kiloServerPassword"
   | "openCodeServerPassword"
@@ -94,7 +96,9 @@ type ProviderInstallPasswordKey =
   | "anthropicApiKey"
   | "googleApiKey"
   | "openrouterApiKey"
-  | "ollamaApiKey";
+  | "ollamaApiKey"
+  | "deepseekApiKey"
+  | "groqApiKey";
 type ProviderInstallPasswordConfiguredKey =
   | "kiloServerPasswordConfigured"
   | "openCodeServerPasswordConfigured"
@@ -102,7 +106,9 @@ type ProviderInstallPasswordConfiguredKey =
   | "anthropicApiKeyConfigured"
   | "googleApiKeyConfigured"
   | "openrouterApiKeyConfigured"
-  | "ollamaApiKeyConfigured";
+  | "ollamaApiKeyConfigured"
+  | "deepseekApiKeyConfigured"
+  | "groqApiKeyConfigured";
 type ProviderInstallBooleanKey = "openCodeExperimentalWebSockets";
 
 type ProviderInstallTextField = {
@@ -509,6 +515,167 @@ const PROVIDER_INSTALL_SETTINGS: readonly ProviderInstallSettings[] = [
         label: "Ollama API key (Optional)",
         placeholder: "ollama",
         description: "Optional auth token if your Ollama instance is behind an auth proxy.",
+      },
+    ],
+  },
+  {
+    provider: "deepseek",
+    docs: [
+      { label: "API Keys", href: "https://platform.deepseek.com/api_keys" },
+    ],
+    fields: [
+      {
+        kind: "password",
+        settingsKey: "deepseekApiKey",
+        configuredKey: "deepseekApiKeyConfigured",
+        label: "DeepSeek API key",
+        placeholder: "API Key",
+        description: "Your DeepSeek API key.",
+      },
+      {
+        kind: "text",
+        settingsKey: "deepseekBaseUrl",
+        label: "DeepSeek base URL",
+        placeholder: "https://api.deepseek.com/v1",
+        description: "Optional custom DeepSeek endpoint override.",
+      },
+    ],
+  },
+  {
+    provider: "groq",
+    docs: [
+      { label: "API Keys", href: "https://console.groq.com/keys" },
+    ],
+    fields: [
+      {
+        kind: "password",
+        settingsKey: "groqApiKey",
+        configuredKey: "groqApiKeyConfigured",
+        label: "Groq API key",
+        placeholder: "API Key",
+        description: "Your Groq API key.",
+      },
+      {
+        kind: "text",
+        settingsKey: "groqBaseUrl",
+        label: "Groq base URL",
+        placeholder: "https://api.groq.com/openai/v1",
+        description: "Optional custom Groq endpoint override.",
+      },
+    ],
+  },
+  {
+    provider: "mistral",
+    docs: [
+      { label: "API Keys", href: "https://console.mistral.ai/api-keys/" },
+    ],
+    fields: [
+      {
+        kind: "password",
+        settingsKey: "mistralApiKey",
+        configuredKey: "mistralApiKeyConfigured",
+        label: "Mistral API key",
+        placeholder: "API Key",
+        description: "Your Mistral API key.",
+      },
+      {
+        kind: "text",
+        settingsKey: "mistralBaseUrl",
+        label: "Mistral base URL",
+        placeholder: "https://api.mistral.ai/v1",
+        description: "Optional custom Mistral endpoint override.",
+      },
+    ],
+  },
+  {
+    provider: "together",
+    docs: [
+      { label: "API Keys", href: "https://api.together.ai/settings/api-keys" },
+    ],
+    fields: [
+      {
+        kind: "password",
+        settingsKey: "togetherApiKey",
+        configuredKey: "togetherApiKeyConfigured",
+        label: "Together API key",
+        placeholder: "API Key",
+        description: "Your Together API key.",
+      },
+      {
+        kind: "text",
+        settingsKey: "togetherBaseUrl",
+        label: "Together base URL",
+        placeholder: "https://api.together.xyz/v1",
+        description: "Optional custom Together endpoint override.",
+      },
+    ],
+  },
+  {
+    provider: "cohere",
+    docs: [
+      { label: "API Keys", href: "https://dashboard.cohere.com/api-keys" },
+    ],
+    fields: [
+      {
+        kind: "password",
+        settingsKey: "cohereApiKey",
+        configuredKey: "cohereApiKeyConfigured",
+        label: "Cohere API key",
+        placeholder: "API Key",
+        description: "Your Cohere API key.",
+      },
+      {
+        kind: "text",
+        settingsKey: "cohereBaseUrl",
+        label: "Cohere base URL",
+        placeholder: "https://api.cohere.ai/v1",
+        description: "Optional custom Cohere endpoint override.",
+      },
+    ],
+  },
+  {
+    provider: "xai",
+    docs: [
+      { label: "API Keys", href: "https://console.x.ai/" },
+    ],
+    fields: [
+      {
+        kind: "password",
+        settingsKey: "xaiApiKey",
+        configuredKey: "xaiApiKeyConfigured",
+        label: "xAI API key",
+        placeholder: "API Key",
+        description: "Your xAI API key.",
+      },
+      {
+        kind: "text",
+        settingsKey: "xaiBaseUrl",
+        label: "xAI base URL",
+        placeholder: "https://api.x.ai/v1",
+        description: "Optional custom xAI endpoint override.",
+      },
+    ],
+  },
+  {
+    provider: "fireworks",
+    docs: [
+      { label: "API Keys", href: "https://fireworks.ai/api-keys" },
+    ],
+    fields: [
+      {
+        kind: "password",
+        settingsKey: "fireworksApiKey",
+        configuredKey: "fireworksApiKeyConfigured",
+        label: "Fireworks API key",
+        placeholder: "API Key",
+        description: "Your Fireworks API key.",
+      },
+      {
+        kind: "text",
+        settingsKey: "fireworksBaseUrl",
+        label: "Fireworks base URL",
+        placeholder: "https://api.fireworks.ai/inference/v1",
+        description: "Optional custom Fireworks endpoint override.",
       },
     ],
   },

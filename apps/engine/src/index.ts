@@ -44,7 +44,7 @@ import {
 import { startWebServerPreview, type WebServerPreview } from "./preview/webServerPreview.ts";
 import { startFlutterBuild, getFlutterBuildJob } from "./build/flutterBuild.ts";
 import { runFlutterAnalyze } from "./build/flutterAnalyze.ts";
-import { parseFlutterTestOutput } from "./build/flutterTestParse.ts";
+import { runFlutterTest } from "./build/flutterTest.ts";
 import { createFlutterApp } from "./tools/flutterCreate.ts";
 import { runFlutterCommand } from "./tools/flutterCommand.ts";
 import { Agent } from "./agent/agentLoop.ts";
@@ -188,20 +188,12 @@ async function handleMethod(method: string, params: unknown): Promise<unknown> {
       if (!parsed.success) {
         throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "test/run params invalid");
       }
-      const args = ["test", ...(parsed.data.testPath ? [parsed.data.testPath] : [])];
-      const result = await runFlutterCommand(args, parsed.data.appDir, {
-        timeoutMs: 180_000,
-      }).catch((error) => ({
-        code: 1 as const,
-        stdout: "",
-        stderr: error instanceof Error ? error.message : String(error),
-      }));
-      const counts = parseFlutterTestOutput(result.stdout);
+      const testResult = await runFlutterTest(parsed.data.appDir, parsed.data.testPath);
       return TestResultSchema.parse({
-        passed: counts.passed,
-        failed: counts.failed,
-        skipped: counts.skipped,
-        output: `${result.stdout}\n${result.stderr}`.trim(),
+        passed: testResult.passed,
+        failed: testResult.failed,
+        skipped: testResult.skipped,
+        output: testResult.output,
       });
     }
     case ENGINE_METHODS.buildStart: {

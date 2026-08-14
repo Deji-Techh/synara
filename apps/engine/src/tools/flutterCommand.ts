@@ -69,12 +69,13 @@ export interface FlutterCommandResult {
 export function spawnFlutterProcess(
   args: string[],
   cwd: string,
-  options: { binary?: string } = {},
+  options: { binary?: string; env?: NodeJS.ProcessEnv } = {},
 ): ChildProcess {
   const binary = options.binary ?? requireFlutterBinary();
   return spawn(binary, args, {
     cwd,
     stdio: ["pipe", "pipe", "pipe"],
+    ...(options.env !== undefined ? { env: options.env } : {}),
   });
 }
 
