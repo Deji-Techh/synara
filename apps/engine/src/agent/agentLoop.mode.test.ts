@@ -38,8 +38,8 @@ describe("agentLoop chat modes", () => {
   });
 
   describe("resolveModeSystemPrompt", () => {
-    it("passes the base prompt through for non-plan modes", () => {
-      for (const mode of ["build", "ask", "local-agent", undefined] as const) {
+    it("passes the base prompt through for neutral modes", () => {
+      for (const mode of ["build", "ask", undefined] as const) {
         expect(resolveModeSystemPrompt("Base instructions.", mode)).toBe("Base instructions.");
       }
     });
@@ -55,6 +55,19 @@ describe("agentLoop chat modes", () => {
       expect(prompt.startsWith("Base instructions.")).toBe(true);
       expect(prompt).toContain("You are in plan mode.");
       expect(prompt).toContain("Do not modify any files");
+    });
+
+    it("returns the raw agent prompt when no base prompt and local-agent mode", () => {
+      const prompt = resolveModeSystemPrompt(undefined, "local-agent");
+      expect(prompt).toContain("agent mode");
+      expect(prompt).toContain("Prefer `edit_file`");
+    });
+
+    it("appends the agent instruction to the base prompt in local-agent mode", () => {
+      const prompt = resolveModeSystemPrompt("Base instructions.", "local-agent");
+      expect(prompt.startsWith("Base instructions.")).toBe(true);
+      expect(prompt).toContain("You are in agent mode.");
+      expect(prompt).toContain("Prefer `edit_file`");
     });
   });
 

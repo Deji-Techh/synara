@@ -77,6 +77,11 @@ interface EngineSessionContext {
    * session default when the pane omits it).
    */
   previewAppDir: string | null;
+  /**
+   * Mutable ref to the current active turn ID, used by the streaming
+   * notification handler to attribute incoming text/tool deltas.
+   */
+  readonly currentTurnIdRef: { current: TurnId | null };
 }
 
 const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
@@ -158,7 +163,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
      */
     const spawnEngineClient = (
       threadId: ThreadId,
-      input: { cwd?: string },
+      input: { cwd?: string; currentTurnIdRef?: { current: TurnId | null } },
     ): Effect.Effect<{ client: EngineClient; engineServerVersion: string }, ProviderAdapterError> =>
       Effect.gen(function* () {
         const cwd = options?.cwd ?? input.cwd;
@@ -166,6 +171,36 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           command: resolvedCommand,
           args: resolvedArgs,
           ...(cwd !== undefined ? { cwd } : {}),
+          onNotification: (method, params) => {
+            const turnId = input.currentTurnIdRef?.current;
+            if (!turnId) return;
+
+            if (method === "turn/textDelta") {
+              const p = params as { delta: string };
+              Effect.runFork(
+                PubSub.publish(
+                  runtimeEventQueue,
+                  makeEvent<ProviderRuntimeEvent>(threadId, {
+                    type: "content.delta",
+                    turnId,
+                    payload: { delta: p.delta },
+                  }),
+                ),
+              );
+            } else if (method === "turn/toolCall") {
+              const p = params as { name: string; args: unknown };
+              Effect.runFork(
+                PubSub.publish(
+                  runtimeEventQueue,
+                  makeEvent<ProviderRuntimeEvent>(threadId, {
+                    type: "tool_call.started",
+                    turnId,
+                    payload: { toolName: p.name, args: p.args },
+                  }),
+                ),
+              );
+            }
+          },
         });
         yield* Effect.tryPromise({
           try: () => client.waitForSpawn(),
@@ -239,8 +274,10 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       input: { runtimeMode: RuntimeMode; cwd?: string },
     ): Effect.Effect<EngineSessionContext, ProviderAdapterError> =>
       Effect.gen(function* () {
+        const currentTurnIdRef = { current: null as TurnId | null };
         const { client, engineServerVersion } = yield* spawnEngineClient(threadId, {
           ...(input.cwd !== undefined ? { cwd: input.cwd } : {}),
+          currentTurnIdRef,
         });
         const now = new Date().toISOString();
         const session: ProviderSession = {
@@ -258,6 +295,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           client,
           engineServerVersion,
           previewAppDir: null,
+          currentTurnIdRef,
         };
         yield* Ref.update(sessions, (map) => new Map(map).set(threadId, context));
 
@@ -388,6 +426,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         Effect.gen(function* () {
           const context = yield* getSession(input.threadId);
           const turnId = TurnId.makeUnsafe(randomUUID());
+          context.currentTurnIdRef.current = turnId;
           yield* PubSub.publish(
             runtimeEventQueue,
             makeEvent<ProviderRuntimeEvent>(input.threadId, {
@@ -430,15 +469,18 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 catch: (cause) => processError(input.threadId, "engine turn/run failed", cause),
               })
             : `hello flutter: ${input.input ?? ""}`;
-
-          yield* PubSub.publish(
-            runtimeEventQueue,
-            makeEvent<ProviderRuntimeEvent>(input.threadId, {
-              type: "content.delta",
-              turnId,
-              payload: { delta: text },
-            }),
-          );
+            
+          // If we are using the fallback stub, emit it as a delta since the engine didn't run.
+          if (!modelConfig) {
+            yield* PubSub.publish(
+              runtimeEventQueue,
+              makeEvent<ProviderRuntimeEvent>(input.threadId, {
+                type: "content.delta",
+                turnId,
+                payload: { delta: text },
+              }),
+            );
+          }
           yield* PubSub.publish(
             runtimeEventQueue,
             makeEvent<ProviderRuntimeEvent>(input.threadId, {

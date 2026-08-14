@@ -73,11 +73,13 @@ export interface AgentOptions {
 
 import { fileTools } from "./tools/fileTools.ts";
 import { flutterTools } from "./tools/flutterTools.ts";
+import { blueprintTools } from "./tools/blueprintTools.ts";
 import { buildFlutterSystemPrompt } from "../prompts/flutterSkillPack.ts";
 
 export const DEFAULT_FLUTTER_AGENT_TOOLS: readonly ToolDefinition[] = [
   ...fileTools,
   ...flutterTools,
+  ...blueprintTools,
 ];
 
 export const DEFAULT_FLUTTER_SYSTEM_PROMPT = buildFlutterSystemPrompt();
@@ -86,6 +88,9 @@ const PLAN_MODE_SYSTEM_PROMPT =
   "You are in plan mode. Produce a concise implementation plan for the user's request " +
   "as structured markdown (steps, files touched, commands). Do not modify any files.";
 
+const LOCAL_AGENT_MODE_SYSTEM_PROMPT =
+  "You are in agent mode. Focus on surgical, targeted modifications to existing code. Prefer `edit_file` over `write_file` when making changes to existing files. Always read the file first before editing.";
+
 export function resolveModeSystemPrompt(
   systemPrompt: string | undefined,
   mode: ChatMode | undefined,
@@ -93,6 +98,10 @@ export function resolveModeSystemPrompt(
   if (mode === "plan") {
     const base = systemPrompt ?? DEFAULT_FLUTTER_SYSTEM_PROMPT;
     return `${base}\n\n${PLAN_MODE_SYSTEM_PROMPT}`;
+  }
+  if (mode === "local-agent") {
+    const base = systemPrompt ?? DEFAULT_FLUTTER_SYSTEM_PROMPT;
+    return `${base}\n\n${LOCAL_AGENT_MODE_SYSTEM_PROMPT}`;
   }
   return systemPrompt ?? DEFAULT_FLUTTER_SYSTEM_PROMPT;
 }

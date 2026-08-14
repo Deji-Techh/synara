@@ -108,7 +108,7 @@ export const EngineTurnModelSchema = z.object({
 });
 export type EngineTurnModel = z.infer<typeof EngineTurnModelSchema>;
 
-export const EngineTurnModeSchema = z.enum(["build", "ask", "plan"]);
+export const EngineTurnModeSchema = z.enum(["build", "ask", "plan", "local-agent"]);
 export type EngineTurnMode = z.infer<typeof EngineTurnModeSchema>;
 
 export const TurnRunParamsSchema = z.object({
