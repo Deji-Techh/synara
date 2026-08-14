@@ -10,19 +10,26 @@ import {
 } from "@caide/contracts";
 import { deriveAssociatedWorktreeMetadata } from "@caide/shared/threadWorkspace";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { newCommandId, newMessageId, newThreadId } from "../lib/utils";
-import { readNativeApi } from "../nativeApi";
+import { ensureNativeApi, readNativeApi } from "../nativeApi";
 import type { Project, Thread } from "../types";
 import type { ComposerTrigger } from "../composer-logic";
 import { extendReplacementRangeForTrailingSpace } from "../composerTriggerInsertion";
 import {
+  buildBtwPrompt,
+  buildGoalPrompt,
+  buildGrillMePrompt,
   buildInitPrompt,
+  buildLearnPrompt,
   buildReviewPrompt,
   buildSlashReviewComposerPrompt,
   buildSpawnPrompt,
   buildSubagentsPrompt,
+  buildTeamworkPreviewPrompt,
   getAvailableComposerSlashCommands,
   hasProviderNativeSlashCommand,
+  parseBuildSlashCommandArgs,
   parseComposerSlashInvocationForCommands,
   parseFastSlashCommandAction,
   parseForkSlashCommandArgs,
@@ -108,6 +115,7 @@ export function useComposerSlashCommands(input: {
   };
 }) {
   const [isSlashStatusDialogOpen, setIsSlashStatusDialogOpen] = useState(false);
+  const navigate = useNavigate();
   const openGlobalFeedbackDialog = useFeedbackDialogStore((state) => state.openDialog);
   const {
     activeProject,
@@ -776,6 +784,128 @@ export function useComposerSlashCommands(input: {
         }
         return true;
       }
+
+      if (
+        slashInvocation.command === "goal" ||
+        slashInvocation.command === "btw" ||
+        slashInvocation.command === "grill-me" ||
+        slashInvocation.command === "teamwork-preview" ||
+        slashInvocation.command === "learn"
+      ) {
+        const buildPrompt =
+          slashInvocation.command === "goal"
+            ? buildGoalPrompt
+            : slashInvocation.command === "btw"
+              ? buildBtwPrompt
+              : slashInvocation.command === "grill-me"
+                ? buildGrillMePrompt
+                : slashInvocation.command === "teamwork-preview"
+                  ? buildTeamworkPreviewPrompt
+                  : buildLearnPrompt;
+        editorActions.setComposerPromptValue(buildPrompt(slashInvocation.args));
+        return true;
+      }
+
+      if (slashInvocation.command === "schedule") {
+        // The scheduling engine lives behind the automation flow (/automation).
+        const nextPrompt = slashInvocation.args.trim();
+        editorActions.setComposerPromptValue(
+          nextPrompt.length > 0 ? `/automation ${nextPrompt}` : "/automation ",
+        );
+        return true;
+      }
+
+      if (slashInvocation.command === "browser" || slashInvocation.command === "preview") {
+        editorActions.clearComposerSlashDraft();
+        useRightDockStore.getState().openPane(threadId, {
+          kind: slashInvocation.command === "browser" ? "browser" : "preview",
+        });
+        return true;
+      }
+
+      if (slashInvocation.command === "doctor" || slashInvocation.command === "theme") {
+        editorActions.clearComposerSlashDraft();
+        void navigate({ to: "/settings" });
+        return true;
+      }
+
+      if (
+        slashInvocation.command === "test" ||
+        slashInvocation.command === "analyze" ||
+        slashInvocation.command === "build"
+      ) {
+        editorActions.clearComposerSlashDraft();
+        useRightDockStore.getState().openPane(threadId, { kind: "preview" });
+        if (slashInvocation.command === "test") {
+          void ensureNativeApi()
+            .preview.test({ threadId })
+            .then((result) => {
+              toastManager.add({
+                type: "success",
+                title: "Flutter tests finished",
+                description: `${result.passed} passed, ${result.failed} failed, ${result.skipped} skipped`,
+              });
+            })
+            .catch((error: unknown) => {
+              toastManager.add({
+                type: "error",
+                title: "Flutter test failed",
+                description: error instanceof Error ? error.message : "Could not run tests.",
+              });
+            });
+        } else if (slashInvocation.command === "analyze") {
+          void ensureNativeApi()
+            .preview.analyze({ threadId })
+            .then((result) => {
+              toastManager.add({
+                type: result.clean ? "success" : "warning",
+                title: "Flutter analyze finished",
+                description: result.clean
+                  ? "No analyzer issues found"
+                  : `${result.issues.length} issue(s) found`,
+              });
+            })
+            .catch((error: unknown) => {
+              toastManager.add({
+                type: "error",
+                title: "Flutter analyze failed",
+                description:
+                  error instanceof Error ? error.message : "Could not run flutter analyze.",
+              });
+            });
+        } else {
+          const buildArgs = parseBuildSlashCommandArgs(slashInvocation.args);
+          if (buildArgs.invalid || buildArgs.target === null || buildArgs.channel === null) {
+            toastManager.add({
+              type: "warning",
+              title: "Invalid /build command",
+              description:
+                "Use /build, /build apk|appbundle|ipa, or /build <target> <channel>.",
+            });
+            return true;
+          }
+          const buildTarget = buildArgs.target;
+          const buildChannel = buildArgs.channel;
+          void ensureNativeApi()
+            .preview.buildStart({ threadId, target: buildTarget, channel: buildChannel })
+            .then(() => {
+              toastManager.add({
+                type: "success",
+                title: `Build started (${buildTarget}/${buildChannel})`,
+                description: "Track progress in the preview quality gate.",
+              });
+            })
+            .catch((error: unknown) => {
+              toastManager.add({
+                type: "error",
+                title: "Build failed to start",
+                description: error instanceof Error ? error.message : "Could not start build.",
+              });
+            });
+        }
+        return true;
+      }
+
       return false;
     },
     [
@@ -796,6 +926,7 @@ export function useComposerSlashCommands(input: {
       runCodexReviewStart,
       runExportSlashCommand,
       runFastSlashCommand,
+      navigate,
     ],
   );
 
@@ -1016,6 +1147,137 @@ export function useComposerSlashCommands(input: {
         return;
       }
 
+      if (
+        item.command === "goal" ||
+        item.command === "btw" ||
+        item.command === "grill-me" ||
+        item.command === "teamwork-preview" ||
+        item.command === "learn"
+      ) {
+        const buildPrompt =
+          item.command === "goal"
+            ? buildGoalPrompt
+            : item.command === "btw"
+              ? buildBtwPrompt
+              : item.command === "grill-me"
+                ? buildGrillMePrompt
+                : item.command === "teamwork-preview"
+                  ? buildTeamworkPreviewPrompt
+                  : buildLearnPrompt;
+        const applied = clearSlashCommandFromComposer();
+        if (!wasPromptReplacementApplied(applied)) {
+          return;
+        }
+        editorActions.setComposerHighlightedItemId(null);
+        editorActions.setComposerPromptValue(buildPrompt(""));
+        editorActions.scheduleComposerFocus();
+        return;
+      }
+
+      if (item.command === "schedule") {
+        const applied = clearSlashCommandFromComposer();
+        if (!wasPromptReplacementApplied(applied)) {
+          return;
+        }
+        editorActions.setComposerHighlightedItemId(null);
+        editorActions.setComposerPromptValue("/automation ");
+        editorActions.scheduleComposerFocus();
+        return;
+      }
+
+      if (item.command === "browser" || item.command === "preview") {
+        const applied = clearSlashCommandFromComposer();
+        if (!wasPromptReplacementApplied(applied)) {
+          return;
+        }
+        editorActions.setComposerHighlightedItemId(null);
+        useRightDockStore.getState().openPane(threadId, {
+          kind: item.command === "browser" ? "browser" : "preview",
+        });
+        return;
+      }
+
+      if (item.command === "doctor" || item.command === "theme") {
+        const applied = clearSlashCommandFromComposer();
+        if (!wasPromptReplacementApplied(applied)) {
+          return;
+        }
+        editorActions.setComposerHighlightedItemId(null);
+        void navigate({ to: "/settings" });
+        return;
+      }
+
+      if (item.command === "test" || item.command === "analyze" || item.command === "build") {
+        const applied = clearSlashCommandFromComposer();
+        if (!wasPromptReplacementApplied(applied)) {
+          return;
+        }
+        editorActions.setComposerHighlightedItemId(null);
+        useRightDockStore.getState().openPane(threadId, { kind: "preview" });
+        if (item.command === "test") {
+          void ensureNativeApi()
+            .preview.test({ threadId })
+            .then((result) => {
+              toastManager.add({
+                type: "success",
+                title: "Flutter tests finished",
+                description: `${result.passed} passed, ${result.failed} failed, ${result.skipped} skipped`,
+              });
+            })
+            .catch((error: unknown) => {
+              toastManager.add({
+                type: "error",
+                title: "Flutter test failed",
+                description: error instanceof Error ? error.message : "Could not run tests.",
+              });
+            });
+        } else if (item.command === "analyze") {
+          void ensureNativeApi()
+            .preview.analyze({ threadId })
+            .then((result) => {
+              toastManager.add({
+                type: result.clean ? "success" : "warning",
+                title: "Flutter analyze finished",
+                description: result.clean
+                  ? "No analyzer issues found"
+                  : `${result.issues.length} issue(s) found`,
+              });
+            })
+            .catch((error: unknown) => {
+              toastManager.add({
+                type: "error",
+                title: "Flutter analyze failed",
+                description:
+                  error instanceof Error ? error.message : "Could not run flutter analyze.",
+              });
+            });
+        } else {
+          const buildArgs = parseBuildSlashCommandArgs("");
+          if (buildArgs.invalid || buildArgs.target === null || buildArgs.channel === null) {
+            return;
+          }
+          const buildTarget = buildArgs.target;
+          const buildChannel = buildArgs.channel;
+          void ensureNativeApi()
+            .preview.buildStart({ threadId, target: buildTarget, channel: buildChannel })
+            .then(() => {
+              toastManager.add({
+                type: "success",
+                title: `Build started (${buildTarget}/${buildChannel})`,
+                description: "Track progress in the preview quality gate.",
+              });
+            })
+            .catch((error: unknown) => {
+              toastManager.add({
+                type: "error",
+                title: "Build failed to start",
+                description: error instanceof Error ? error.message : "Could not start build.",
+              });
+            });
+        }
+        return;
+      }
+
       const replacement = `/${item.command} `;
       const replacementRangeEnd = extendReplacementRangeForTrailingSpace(
         snapshot.value,
@@ -1046,6 +1308,7 @@ export function useComposerSlashCommands(input: {
       supportsTextNativeReviewCommand,
       runExportSlashCommand,
       runFastSlashCommand,
+      navigate,
     ],
   );
 

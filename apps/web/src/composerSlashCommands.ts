@@ -430,6 +430,43 @@ export function buildSpawnPrompt(existingPrompt: string): string {
   return trimmedPrompt.length > 0 ? `${trimmedPrompt}\n\n${cannedPrompt}` : cannedPrompt;
 }
 
+export function buildGoalPrompt(existingPrompt: string): string {
+  const cannedPrompt =
+    "Keep working autonomously until the goal below is completely finished. Do not stop at a partial result: verify each part, then check the goal is fully satisfied before reporting completion.\n\nGoal: ";
+  const trimmedPrompt = existingPrompt.trim();
+  return trimmedPrompt.length > 0 ? `${cannedPrompt}${trimmedPrompt}` : cannedPrompt;
+}
+
+export function buildBtwPrompt(existingPrompt: string): string {
+  const cannedPrompt =
+    "By the way — quickly answer this side question without derailing the main task. Keep the reply short and to the point: ";
+  const trimmedPrompt = existingPrompt.trim();
+  return trimmedPrompt.length > 0 ? `${cannedPrompt}${trimmedPrompt}` : cannedPrompt.trim();
+}
+
+export function buildGrillMePrompt(existingPrompt: string): string {
+  const cannedPrompt =
+    "Interview me one question at a time to align on a solid plan before doing any work. Ask only what you genuinely need to know, then present a concise plan for my approval.";
+  const trimmedPrompt = existingPrompt.trim();
+  return trimmedPrompt.length > 0
+    ? `${cannedPrompt}\n\nContext I want to align on: ${trimmedPrompt}`
+    : cannedPrompt;
+}
+
+export function buildTeamworkPreviewPrompt(existingPrompt: string): string {
+  const cannedPrompt =
+    "Tackle the task as an autonomous team. Break the work into parallel streams, delegate distinct pieces to specialized subagents where it speeds things up, and then synthesize all findings and code changes into a single coherent result.";
+  const trimmedPrompt = existingPrompt.trim();
+  return trimmedPrompt.length > 0 ? `${trimmedPrompt}\n\n${cannedPrompt}` : cannedPrompt;
+}
+
+export function buildLearnPrompt(existingPrompt: string): string {
+  const cannedPrompt =
+    "Reflect on the recent conversation: what worked, what got corrected, and what patterns are reusable. Capture the most valuable takeaways as concise, actionable rules or project guidelines.";
+  const trimmedPrompt = existingPrompt.trim();
+  return trimmedPrompt.length > 0 ? `${trimmedPrompt}\n\n${cannedPrompt}` : cannedPrompt;
+}
+
 export function buildReviewPrompt(input: { target: "changes" | "base-branch" }): string {
   const baseInstruction =
     "Review the local code changes for bugs, risks, behavioural regressions, and missing tests. Findings first, ordered by severity.";
@@ -603,4 +640,33 @@ export function parseForkSlashCommandArgs(args: string): {
     target: match[1]!.toLowerCase() as ForkSlashCommandTarget,
     invalid: false,
   };
+}
+
+export type BuildSlashCommandArgs =
+  | { target: "apk" | "appbundle" | "ipa"; channel: "debug" | "profile" | "release"; invalid: false }
+  | { target: null; channel: null; invalid: boolean };
+
+export function parseBuildSlashCommandArgs(args: string): BuildSlashCommandArgs {
+  const trimmedArgs = args.trim().toLowerCase();
+  if (!trimmedArgs) {
+    return { target: "apk", channel: "release", invalid: false };
+  }
+
+  const tokens = trimmedArgs.split(/\s+/);
+  const targetToken = tokens[0] ?? "";
+  const channelToken = tokens[1] ?? "";
+
+  if (targetToken !== "apk" && targetToken !== "appbundle" && targetToken !== "ipa") {
+    return { target: null, channel: null, invalid: true };
+  }
+  const channel =
+    channelToken === "debug" || channelToken === "profile" || channelToken === "release"
+      ? channelToken
+      : channelToken.length > 0
+        ? null
+        : ("release" as const);
+  if (channel === null) {
+    return { target: null, channel: null, invalid: true };
+  }
+  return { target: targetToken, channel, invalid: false };
 }

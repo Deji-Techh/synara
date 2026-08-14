@@ -326,7 +326,14 @@ describe("wsNativeApi", () => {
             customModels: [],
           },
           pi: { enabled: true, binaryPath: "pi", agentDir: "", customModels: [] },
-          engine: { enabled: true, binaryPath: "caide-engine", customModels: [] },
+          engine: {
+            enabled: true,
+            binaryPath: "caide-engine",
+            customModels: [],
+            baseUrl: "",
+            modelId: "",
+            apiKeyConfigured: false,
+          },
           openai: {
             enabled: true,
             binaryPath: "",

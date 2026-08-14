@@ -75,7 +75,7 @@ function serverSettings(overrides: Partial<ServerSettings["providers"]> = {}): S
         experimentalWebSockets: false,
       },
       pi: { ...provider, binaryPath: "pi", agentDir: "" },
-      engine: { ...provider, binaryPath: "caide-engine" },
+      engine: { ...provider, binaryPath: "caide-engine", baseUrl: "", modelId: "", apiKeyConfigured: false },
       openai: { ...provider, baseUrl: "", apiKeyConfigured: false },
       anthropic: { ...provider, baseUrl: "", apiKeyConfigured: false },
       google: { ...provider, baseUrl: "", apiKeyConfigured: false },
