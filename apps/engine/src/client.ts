@@ -203,6 +203,10 @@ export class EngineClient {
     return this.request("build/state", params);
   }
 
+  async previewScreenshot(): Promise<JsonRpcResponse> {
+    return this.request("preview/screenshot", {});
+  }
+
   async waitForSpawn(): Promise<void> {
     await once(this.child, "spawn");
   }

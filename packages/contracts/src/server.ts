@@ -481,6 +481,8 @@ export const ToolchainCheckId = Schema.Literals([
   "node",
   "git",
   "flutterDoctor",
+  "android",
+  "xcode",
 ]);
 export type ToolchainCheckId = typeof ToolchainCheckId.Type;
 

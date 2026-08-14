@@ -635,7 +635,7 @@ function SettingsRouteView() {
                 onClick={() => {
                   const defaultTheme = PALETTE_THEMES[0];
                   if (defaultTheme) {
-                    applyPaletteTheme("default", defaultTheme.chromeThemes);
+                    applyPaletteTheme("system", defaultTheme.chromeThemes);
                   }
                 }}
               />
@@ -645,7 +645,7 @@ function SettingsRouteView() {
             value={
               PALETTE_THEMES.some((option) => option.id === themeState.appliedPaletteId)
                 ? (themeState.appliedPaletteId as PaletteThemeId)
-                : "default"
+                : "system"
             }
             onValueChange={(next) => {
               const option = PALETTE_THEMES.find((themeOption) => themeOption.id === next);

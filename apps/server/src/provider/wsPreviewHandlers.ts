@@ -38,6 +38,8 @@ import {
   type PreviewStopResult,
   type PreviewTestInput,
   type PreviewTestResult,
+  type PreviewScreenshotInput,
+  type PreviewScreenshotResult,
 } from "@caide/contracts";
 import { Effect } from "effect";
 
@@ -96,6 +98,9 @@ export interface WsPreviewHandlers {
   readonly [PREVIEW_WS_METHODS.buildState]: (
     input: PreviewBuildStateInput,
   ) => Effect.Effect<PreviewBuildStateResult, WsRpcError>;
+  readonly [PREVIEW_WS_METHODS.screenshot]: (
+    input: PreviewScreenshotInput,
+  ) => Effect.Effect<PreviewScreenshotResult, WsRpcError>;
 }
 
 /**
@@ -179,6 +184,12 @@ export function makeWsPreviewHandlers(
         adapter.previewBuildState({
           threadId: ThreadId.makeUnsafe(input.threadId),
           buildId: input.buildId,
+        }),
+      ),
+    [PREVIEW_WS_METHODS.screenshot]: (input) =>
+      withEngineSession(ThreadId.makeUnsafe(input.threadId), (adapter) =>
+        adapter.previewScreenshot({
+          threadId: ThreadId.makeUnsafe(input.threadId),
         }),
       ),
   };

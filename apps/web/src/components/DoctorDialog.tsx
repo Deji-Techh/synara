@@ -21,6 +21,8 @@ import {
   RefreshCwIcon,
   TerminalIcon,
   TriangleAlertIcon,
+  DeviceMobileIcon,
+  DeviceLaptopIcon,
 } from "~/lib/icons";
 
 function ToolchainCheckIcon({ status }: { status: ToolchainCheck["status"] }) {
@@ -43,6 +45,10 @@ function ToolchainIcon({ id }: { id: ToolchainCheck["id"] }) {
     case "flutter":
     case "dart":
       return <TerminalIcon className="size-4 shrink-0 text-muted-foreground" />;
+    case "android":
+      return <DeviceMobileIcon className="size-4 shrink-0 text-muted-foreground" />;
+    case "xcode":
+      return <DeviceLaptopIcon className="size-4 shrink-0 text-muted-foreground" />;
     default:
       return <TerminalIcon className="size-4 shrink-0 text-muted-foreground" />;
   }

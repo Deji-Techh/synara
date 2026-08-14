@@ -109,7 +109,7 @@ export const runCommandTool = defineTool({
   parameters: z.object({
     command: z.string().describe("Command to run"),
     cwd: z
-      .enum(["app", "workspace"])
+      .string()
       .optional()
       .describe("Working directory for the command (defaults to app)"),
     timeoutMs: z
@@ -118,14 +118,52 @@ export const runCommandTool = defineTool({
       .describe("Command timeout in milliseconds (defaults to 60000)"),
   }),
   async execute(args, context) {
-    const workingDir = args.cwd === "workspace" ? context.workspaceDir : context.appDir;
+    const path = await import("node:path");
+
+    const commandToRun = args.command.trim();
+    const firstToken = commandToRun.split(/\s+/)[0];
+    const allowedBinaries = ["flutter", "dart", "pub", "git", "pod"];
+    
+    if (!firstToken || !allowedBinaries.includes(firstToken)) {
+      return `Error: Command '${firstToken}' is not on the allowlist. Allowed commands are: ${allowedBinaries.join(", ")}.`;
+    }
+
+    if (/[&|;<>$`\\]/.test(commandToRun)) {
+      return `Error: Command contains forbidden shell characters.`;
+    }
+
+    let workingDir = context.appDir;
+    if (args.cwd) {
+      if (args.cwd === "workspace") {
+        workingDir = context.workspaceDir;
+      } else if (args.cwd === "app") {
+        workingDir = context.appDir;
+      } else {
+        // Resolve custom paths relative to workspaceDir
+        workingDir = path.resolve(context.workspaceDir, args.cwd);
+      }
+    }
+
+    const targetDir = path.resolve(workingDir);
+    const workspaceDir = path.resolve(context.workspaceDir);
+    const appDir = path.resolve(context.appDir);
+
+    const isInside = (dir: string, parent: string) => {
+      const relative = path.relative(parent, dir);
+      return !relative.startsWith("..") && !path.isAbsolute(relative);
+    };
+
+    if (!isInside(targetDir, workspaceDir) && !isInside(targetDir, appDir)) {
+      return `Error: Directory jail violation. Target cwd (${targetDir}) is outside the workspace.`;
+    }
+
     const timeout = args.timeoutMs ?? 60_000;
     try {
       const { exec } = await import("node:child_process");
       const { promisify } = await import("node:util");
       const execAsync = promisify(exec);
-      const { stdout, stderr } = await execAsync(args.command, {
-        cwd: workingDir,
+      const { stdout, stderr } = await execAsync(commandToRun, {
+        cwd: targetDir,
         timeout,
         maxBuffer: 5 * 1024 * 1024,
       });

@@ -533,7 +533,7 @@ export const ProviderModelPicker = function ProviderModelPicker(props: ProviderM
           aria-hidden="true"
           className={cn(
             // opacity-100 opts out of the Button base's [&_svg]:opacity-80 dimming.
-            "size-3.5 shrink-0 opacity-100",
+            "size-4.5 shrink-0 opacity-100",
             providerIconClassName(activeProvider, "text-muted-foreground/70"),
             props.activeProviderIconClassName,
           )}

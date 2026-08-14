@@ -178,6 +178,8 @@ import type {
   PreviewBuildStartResult,
   PreviewBuildStateInput,
   PreviewBuildStateResult,
+  PreviewScreenshotInput,
+  PreviewScreenshotResult,
 } from "./preview";
 import type { StudioListThreadOutputsInput, StudioListThreadOutputsResult } from "./studio";
 import type {
@@ -819,5 +821,6 @@ export interface NativeApi {
     test: (input: PreviewTestInput) => Promise<PreviewTestResult>;
     buildStart: (input: PreviewBuildStartInput) => Promise<PreviewBuildStartResult>;
     buildState: (input: PreviewBuildStateInput) => Promise<PreviewBuildStateResult>;
+    screenshot: (input: PreviewScreenshotInput) => Promise<PreviewScreenshotResult>;
   };
 }

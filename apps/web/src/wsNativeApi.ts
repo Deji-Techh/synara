@@ -845,6 +845,7 @@ export function createWsNativeApi(): NativeApi {
       buildStart: (input) =>
         transport.request(PREVIEW_WS_METHODS.buildStart, input, { timeoutMs: null }),
       buildState: (input) => transport.request(PREVIEW_WS_METHODS.buildState, input),
+      screenshot: (input) => transport.request(PREVIEW_WS_METHODS.screenshot, input),
     },
     browser: {
       open: async (input) => {

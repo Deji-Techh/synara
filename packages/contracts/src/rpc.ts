@@ -154,6 +154,8 @@ import {
   PreviewBuildStateResult,
   PreviewTestInput,
   PreviewTestResult,
+  PreviewScreenshotInput,
+  PreviewScreenshotResult,
   PREVIEW_WS_METHODS,
 } from "./preview";
 import {
@@ -678,6 +680,12 @@ export const WsPreviewBuildStateRpc = Rpc.make(PREVIEW_WS_METHODS.buildState, {
   error: WsRpcError,
 });
 
+export const WsPreviewScreenshotRpc = Rpc.make(PREVIEW_WS_METHODS.screenshot, {
+  payload: PreviewScreenshotInput,
+  success: PreviewScreenshotResult,
+  error: WsRpcError,
+});
+
 export const WsPreviewRpcGroup = RpcGroup.make(
   WsPreviewStartRpc,
   WsPreviewStopRpc,
@@ -687,6 +695,7 @@ export const WsPreviewRpcGroup = RpcGroup.make(
   WsPreviewTestRpc,
   WsPreviewBuildStartRpc,
   WsPreviewBuildStateRpc,
+  WsPreviewScreenshotRpc,
 );
 
 export const WsDeviceRpcGroup = RpcGroup.make(

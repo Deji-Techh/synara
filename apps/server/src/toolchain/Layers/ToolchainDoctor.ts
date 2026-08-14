@@ -18,6 +18,8 @@ const PROBES: readonly Probe[] = [
   { id: "dart", label: "Dart SDK", command: "dart", args: ["--version"] },
   { id: "node", label: "Node.js", command: "node", args: ["--version"] },
   { id: "git", label: "Git", command: "git", args: ["--version"] },
+  { id: "xcode", label: "Xcode", command: "xcodebuild", args: ["-version"] },
+  { id: "android", label: "Android SDK", command: "adb", args: ["--version"] },
 ];
 
 function parseVersion(probe: Probe, output: string): string | null {
@@ -39,6 +41,14 @@ function parseVersion(probe: Probe, output: string): string | null {
     }
     case "git": {
       const match = trimmed.match(/git version\s+([0-9][^\s]*)/);
+      return match?.[1] ?? trimmed;
+    }
+    case "xcode": {
+      const match = trimmed.match(/Xcode\s+([0-9.]+)/);
+      return match?.[1] ?? trimmed;
+    }
+    case "android": {
+      const match = trimmed.match(/Version\s+([0-9.]+)/);
       return match?.[1] ?? trimmed;
     }
     default:

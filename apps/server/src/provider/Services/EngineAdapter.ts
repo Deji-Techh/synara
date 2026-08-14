@@ -19,6 +19,7 @@ import type {
   PreviewState,
   PreviewStopResult,
   PreviewTestResult,
+  PreviewScreenshotResult,
   ThreadId,
 } from "@caide/contracts";
 import type { ProviderSession } from "@caide/contracts";
@@ -71,6 +72,9 @@ export interface EnginePreviewOps {
     threadId: ThreadId;
     buildId: string;
   }): Effect.Effect<PreviewBuildStateResult, ProviderAdapterError>;
+  previewScreenshot(input: {
+    threadId: ThreadId;
+  }): Effect.Effect<PreviewScreenshotResult, ProviderAdapterError>;
 }
 
 export interface EngineAdapterShape

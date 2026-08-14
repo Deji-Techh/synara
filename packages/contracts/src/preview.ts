@@ -13,6 +13,7 @@ export const PREVIEW_WS_METHODS = {
   test: "preview.test",
   buildStart: "preview.buildStart",
   buildState: "preview.buildState",
+  screenshot: "preview.screenshot",
 } as const;
 
 // ── Limits ───────────────────────────────────────────────────────────
@@ -82,6 +83,16 @@ export const PreviewState = Schema.Struct({
   ),
 });
 export type PreviewState = typeof PreviewState.Type;
+
+export const PreviewScreenshotInput = Schema.Struct({
+  threadId: ThreadId,
+});
+export type PreviewScreenshotInput = typeof PreviewScreenshotInput.Type;
+
+export const PreviewScreenshotResult = Schema.Struct({
+  image: Schema.NullOr(Schema.String),
+});
+export type PreviewScreenshotResult = typeof PreviewScreenshotResult.Type;
 
 // ── Quality gates (M5): analyze / test / build ─────────────────────────
 

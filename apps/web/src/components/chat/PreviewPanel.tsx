@@ -182,22 +182,68 @@ function PreviewFailedState(props: { error: string | null; onRetry: () => void }
 }
 
 function PreviewDeviceFrame(props: {
+  threadId: ThreadId;
   deviceId: PreviewDeviceId;
   url: string;
   reloadToken: number;
 }) {
+  const isNative = !props.url.startsWith("http");
+  const [screenshotBase64, setScreenshotBase64] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isNative) return;
+    let timer: number;
+    let cancelled = false;
+
+    const poll = () => {
+      ensureNativeApi()
+        .preview.screenshot({ threadId: props.threadId })
+        .then((res) => {
+          if (!cancelled && res.image) {
+            setScreenshotBase64(res.image);
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            timer = window.setTimeout(poll, 1500);
+          }
+        });
+    };
+    poll();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [isNative, props.threadId]);
+
   const viewport = DEVICE_VIEWPORT[props.deviceId];
   const iframeClassName = props.deviceId === "desktop" ? "h-full w-full" : "h-full w-full border-0";
+  
+  const innerView = isNative ? (
+    screenshotBase64 ? (
+      <img
+        src={`data:image/png;base64,${screenshotBase64}`}
+        alt="Device screenshot"
+        className={props.deviceId === "desktop" ? "h-full w-full object-contain" : "h-full w-full object-cover"}
+      />
+    ) : (
+      <div className="flex h-full w-full items-center justify-center bg-muted/30">
+        <LoaderIcon aria-hidden="true" className="size-5 animate-spin text-muted-foreground" />
+      </div>
+    )
+  ) : (
+    <iframe
+      key={props.reloadToken}
+      src={props.url}
+      title="Flutter preview"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
+      className={props.deviceId === "desktop" ? iframeClassName : "h-full w-full border-0"}
+    />
+  );
   return (
     <div className="flex h-full min-h-0 flex-1 items-center justify-center overflow-auto p-4">
       {viewport === null ? (
-        <iframe
-          key={props.reloadToken}
-          src={props.url}
-          title="Flutter preview"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
-          className={iframeClassName}
-        />
+        innerView
       ) : (
         <div
           className="flex shrink-0 items-center justify-center rounded-[2rem] border-4 border-muted-foreground/60 bg-black p-2 shadow-lg"
@@ -213,13 +259,7 @@ function PreviewDeviceFrame(props: {
                 aria-hidden="true"
               />
             )}
-            <iframe
-              key={props.reloadToken}
-              src={props.url}
-              title="Flutter preview"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
-              className="h-full w-full border-0"
-            />
+            {innerView}
           </div>
         </div>
       )}
@@ -933,6 +973,7 @@ export function PreviewPanel(props: {
             )}
             {isRunning && panelState.url !== null && (
               <PreviewDeviceFrame
+                threadId={props.threadId}
                 deviceId={panelState.deviceId}
                 url={panelState.url}
                 reloadToken={panelState.reloadToken}

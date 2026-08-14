@@ -34,6 +34,7 @@ import {
   PreviewStateResultSchema,
   PreviewStopResultSchema,
   TestResultSchema,
+  PreviewScreenshotResultSchema,
 } from "@caide/engine/protocol";
 import { Effect, Layer, PubSub, Ref, Stream } from "effect";
 
@@ -841,6 +842,38 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               : {}),
             ...(typeof result.data.error === "string" ? { error: result.data.error } : {}),
             logs: result.data.logs,
+          };
+        }),
+
+      previewScreenshot: (input) =>
+        Effect.gen(function* () {
+          const context = yield* getSession(input.threadId);
+          const response = yield* Effect.tryPromise({
+            try: () => context.client.previewScreenshot(),
+            catch: (cause) =>
+              processError(input.threadId, "engine preview/screenshot request failed", cause),
+          });
+          if (response.error) {
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                `engine preview/screenshot failed: ${response.error.code} ${response.error.message}`,
+                new Error(response.error.message),
+              ),
+            );
+          }
+          const result = PreviewScreenshotResultSchema.safeParse(response.result);
+          if (!result.success) {
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                "engine preview/screenshot returned malformed result",
+                result.error,
+              ),
+            );
+          }
+          return {
+            image: result.data.image,
           };
         }),
 
