@@ -18,6 +18,8 @@ export const ENGINE_METHODS = {
   previewStop: "preview/stop",
   previewReload: "preview/reload",
   previewState: "preview/state",
+  previewDevices: "preview/devices",
+  previewScreenshot: "preview/screenshot",
   analyzeRun: "analyze/run",
   testRun: "test/run",
   buildStart: "build/start",
@@ -210,6 +212,32 @@ export const PreviewStateResultSchema = z.object({
   logs: z.array(z.string()),
 });
 export type PreviewStateResult = z.infer<typeof PreviewStateResultSchema>;
+
+export const PreviewDevicesParamsSchema = z.object({});
+export type PreviewDevicesParams = z.infer<typeof PreviewDevicesParamsSchema>;
+
+export const PreviewDevicesResultSchema = z.object({
+  devices: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      isEmulator: z.boolean(),
+    })
+  ),
+});
+export type PreviewDevicesResult = z.infer<typeof PreviewDevicesResultSchema>;
+
+export const PreviewScreenshotParamsSchema = z.object({
+  deviceId: z.string(),
+  outputPath: z.string(),
+});
+export type PreviewScreenshotParams = z.infer<typeof PreviewScreenshotParamsSchema>;
+
+export const PreviewScreenshotResultSchema = z.object({
+  success: z.boolean(),
+  outputPath: z.string(),
+});
+export type PreviewScreenshotResult = z.infer<typeof PreviewScreenshotResultSchema>;
 
 // ── analyze ────────────────────────────────────────────────────────────
 

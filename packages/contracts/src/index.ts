@@ -38,3 +38,5 @@ export * from "./filesystem";
 export * from "./device";
 export * from "./preview";
 export * from "./rpc";
+export * from "./goals";
+export * from "./goals.rpc";

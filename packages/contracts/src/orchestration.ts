@@ -70,6 +70,13 @@ export const ProviderKind = Schema.Literals([
   "google",
   "openrouter",
   "ollama",
+  "deepseek",
+  "groq",
+  "mistral",
+  "together",
+  "cohere",
+  "xai",
+  "fireworks",
 ]);
 export type ProviderKind = typeof ProviderKind.Type;
 
@@ -80,6 +87,13 @@ export const API_PROVIDER_KINDS = [
   "google",
   "openrouter",
   "ollama",
+  "deepseek",
+  "groq",
+  "mistral",
+  "together",
+  "cohere",
+  "xai",
+  "fireworks",
 ] as const;
 export type ApiProviderKind = (typeof API_PROVIDER_KINDS)[number];
 
@@ -208,6 +222,55 @@ export const OllamaModelSelection = Schema.Struct({
 });
 export type OllamaModelSelection = typeof OllamaModelSelection.Type;
 
+export const DeepseekModelSelection = Schema.Struct({
+  provider: Schema.Literal("deepseek"),
+  model: TrimmedNonEmptyString,
+  options: Schema.optional(ApiModelOptions),
+});
+export type DeepseekModelSelection = typeof DeepseekModelSelection.Type;
+
+export const GroqModelSelection = Schema.Struct({
+  provider: Schema.Literal("groq"),
+  model: TrimmedNonEmptyString,
+  options: Schema.optional(ApiModelOptions),
+});
+export type GroqModelSelection = typeof GroqModelSelection.Type;
+
+export const MistralModelSelection = Schema.Struct({
+  provider: Schema.Literal("mistral"),
+  model: TrimmedNonEmptyString,
+  options: Schema.optional(ApiModelOptions),
+});
+export type MistralModelSelection = typeof MistralModelSelection.Type;
+
+export const TogetherModelSelection = Schema.Struct({
+  provider: Schema.Literal("together"),
+  model: TrimmedNonEmptyString,
+  options: Schema.optional(ApiModelOptions),
+});
+export type TogetherModelSelection = typeof TogetherModelSelection.Type;
+
+export const CohereModelSelection = Schema.Struct({
+  provider: Schema.Literal("cohere"),
+  model: TrimmedNonEmptyString,
+  options: Schema.optional(ApiModelOptions),
+});
+export type CohereModelSelection = typeof CohereModelSelection.Type;
+
+export const XaiModelSelection = Schema.Struct({
+  provider: Schema.Literal("xai"),
+  model: TrimmedNonEmptyString,
+  options: Schema.optional(ApiModelOptions),
+});
+export type XaiModelSelection = typeof XaiModelSelection.Type;
+
+export const FireworksModelSelection = Schema.Struct({
+  provider: Schema.Literal("fireworks"),
+  model: TrimmedNonEmptyString,
+  options: Schema.optional(ApiModelOptions),
+});
+export type FireworksModelSelection = typeof FireworksModelSelection.Type;
+
 export const ModelSelection = Schema.Union([
   CodexModelSelection,
   ClaudeModelSelection,
@@ -224,6 +287,13 @@ export const ModelSelection = Schema.Union([
   GoogleModelSelection,
   OpenRouterModelSelection,
   OllamaModelSelection,
+  DeepseekModelSelection,
+  GroqModelSelection,
+  MistralModelSelection,
+  TogetherModelSelection,
+  CohereModelSelection,
+  XaiModelSelection,
+  FireworksModelSelection,
 ]);
 export type ModelSelection = typeof ModelSelection.Type;
 
@@ -297,6 +367,13 @@ export const ProviderStartOptions = Schema.Struct({
   google: Schema.optional(ApiProviderStartOptions),
   openrouter: Schema.optional(ApiProviderStartOptions),
   ollama: Schema.optional(ApiProviderStartOptions),
+  deepseek: Schema.optional(ApiProviderStartOptions),
+  groq: Schema.optional(ApiProviderStartOptions),
+  mistral: Schema.optional(ApiProviderStartOptions),
+  together: Schema.optional(ApiProviderStartOptions),
+  cohere: Schema.optional(ApiProviderStartOptions),
+  xai: Schema.optional(ApiProviderStartOptions),
+  fireworks: Schema.optional(ApiProviderStartOptions),
 });
 export type ProviderStartOptions = typeof ProviderStartOptions.Type;
 

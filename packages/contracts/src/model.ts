@@ -1105,8 +1105,14 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
       capabilities: API_MODEL_CAPABILITIES,
     },
   ],
-  // Ollama's catalog is the local server's; nothing is pinned statically.
   ollama: [],
+  deepseek: [],
+  groq: [],
+  mistral: [],
+  together: [],
+  cohere: [],
+  xai: [],
+  fireworks: [],
 } as const satisfies Record<ProviderKind, readonly ModelDefinition[]>;
 export type ModelOptionsByProvider = typeof MODEL_OPTIONS_BY_PROVIDER;
 
@@ -1129,6 +1135,13 @@ export const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderWithDefaultModel, ModelSl
   google: "gemini-3-flash",
   openrouter: "openai/gpt-5.5",
   ollama: "llama3.3",
+  deepseek: "deepseek-chat",
+  groq: "llama-3-8b-8192",
+  mistral: "mistral-large-latest",
+  together: "meta-llama/Llama-3-70b-chat-hf",
+  cohere: "command-r-plus",
+  xai: "grok-2",
+  fireworks: "accounts/fireworks/models/llama-v3-70b-instruct",
 };
 
 // Backward compatibility for existing Codex-only call sites.
@@ -1270,6 +1283,13 @@ export const MODEL_SLUG_ALIASES_BY_PROVIDER: Record<ProviderKind, Record<string,
   google: {},
   openrouter: {},
   ollama: {},
+  deepseek: {},
+  groq: {},
+  mistral: {},
+  together: {},
+  cohere: {},
+  xai: {},
+  fireworks: {},
 };
 
 // ── Agent mention aliases ─────────────────────────────────────────────
@@ -1312,4 +1332,11 @@ export const PROVIDER_DISPLAY_NAMES: Record<ProviderKind, string> = {
   google: "Google",
   openrouter: "OpenRouter",
   ollama: "Ollama",
+  deepseek: "DeepSeek",
+  groq: "Groq",
+  mistral: "Mistral",
+  together: "Together",
+  cohere: "Cohere",
+  xai: "xAI",
+  fireworks: "Fireworks",
 };

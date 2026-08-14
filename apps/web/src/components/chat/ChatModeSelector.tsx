@@ -1,107 +1,124 @@
-// FILE: ChatModeSelector.tsx
-// Purpose: Composer chat-mode picker (build / ask / local-agent / plan). Mirrors
-// dyad x caide's ChatModeSelector but on Synara's Base UI menu primitives. The
-// chosen mode is stamped onto the thread.turn.start command so the engine can
-// swap behavior: ask strips tools, plan single-shots with a plan prompt, and
-// local-agent/build run the tooling loop.
-// Layer: App composer presentation
-// Depends on: shared composer menu primitives and icon glyphs.
+import React from "react";
+import { type ChatMode } from "@caide/contracts";
+import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+  MiniSelectTrigger
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
+import {
+  Hammer,
+  Bot,
+  MessageCircle,
+  Lightbulb,
+} from "lucide-react";
 
-import type { ChatMode } from "@caide/contracts";
-
-import { cn } from "~/lib/utils";
-import { AskIcon, BotIcon, HammerIcon, LightBulbIcon } from "~/lib/icons";
-import { ComposerPickerMenuPopup } from "./ComposerPickerMenuPopup";
-import { Menu, MenuRadioGroup, MenuRadioItem, MenuTrigger } from "../ui/menu";
-
-export const CHAT_MODE_ORDER: readonly ChatMode[] = ["local-agent", "plan", "build", "ask"];
+export const CHAT_MODE_ORDER: ChatMode[] = ["local-agent", "plan", "build", "ask"];
 
 export const CHAT_MODE_META: Record<
   ChatMode,
-  { label: string; hint: string; Icon: typeof HammerIcon }
+  { name: string; description: string; Icon: React.ElementType }
 > = {
   "local-agent": {
-    label: "Agent",
-    hint: "Execute larger changes with project tools",
-    Icon: BotIcon,
+    name: "Agent",
+    description: "Execute larger changes with project tools",
+    Icon: Bot,
   },
   plan: {
-    label: "Plan",
-    hint: "Design before you build",
-    Icon: LightBulbIcon,
+    name: "Plan",
+    description: "Design before you build",
+    Icon: Lightbulb,
   },
   build: {
-    label: "Build",
-    hint: "Generate and edit code",
-    Icon: HammerIcon,
+    name: "Build",
+    description: "Generate and edit code",
+    Icon: Hammer,
   },
   ask: {
-    label: "Ask",
-    hint: "Ask questions about the app",
-    Icon: AskIcon,
+    name: "Ask",
+    description: "Ask questions about the app",
+    Icon: MessageCircle,
   },
 };
 
 export function getChatModeDisplayName(mode: ChatMode): string {
-  return CHAT_MODE_META[mode].label;
+  return CHAT_MODE_META[mode]?.name || "Build";
 }
 
-type ChatModeSelectorProps = {
-  readonly mode: ChatMode;
-  readonly onChatModeChange: (mode: ChatMode) => void;
-  readonly className?: string;
-};
+interface ChatModeSelectorProps {
+  mode: ChatMode;
+  onChatModeChange: (mode: ChatMode) => void;
+}
 
-export function ChatModeSelector({ mode, onChatModeChange, className }: ChatModeSelectorProps) {
-  const meta = CHAT_MODE_META[mode];
+export function ChatModeSelector({ mode, onChatModeChange }: ChatModeSelectorProps) {
+  const meta = CHAT_MODE_META[mode] || CHAT_MODE_META.build;
+  const Icon = meta.Icon;
+
   return (
-    <Menu>
-      <MenuTrigger
-        render={
-          <button
-            type="button"
-            data-testid="chat-mode-selector"
-            aria-label={`Chat mode: ${meta.label}`}
-            title={`Chat mode: ${meta.label} — switch to plan/ask/agent per turn`}
-            className={cn(
-              "shrink-0 cursor-pointer whitespace-nowrap rounded-md px-2 py-1 text-[length:var(--app-font-size-ui-sm,11px)] font-medium text-[var(--color-text-foreground-secondary)] transition-colors hover:bg-[var(--color-background-button-secondary-hover)] hover:text-[var(--color-text-foreground)]",
-              className,
-            )}
+    <div className="flex items-center gap-1.5">
+      <Select value={mode} onValueChange={(v) => v && onChatModeChange(v as ChatMode)}>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <MiniSelectTrigger
+                data-testid="chat-mode-selector"
+                aria-label={`Chat mode: ${meta.name}`}
+                className={cn(
+                  "cursor-pointer w-fit px-2 py-0 text-xs font-medium border-none shadow-none gap-1 rounded-lg transition-colors",
+                  mode === "build" || mode === "local-agent"
+                    ? "text-foreground/80 hover:text-foreground hover:bg-muted/60"
+                    : mode === "ask"
+                      ? "bg-purple-500/10 text-purple-600 hover:bg-purple-500/15 dark:bg-purple-500/15 dark:text-purple-400 dark:hover:bg-purple-500/20"
+                      : mode === "plan"
+                        ? "bg-blue-500/10 text-blue-600 hover:bg-blue-500/15 dark:bg-blue-500/15 dark:text-blue-400 dark:hover:bg-blue-500/20"
+                        : "text-foreground/80 hover:text-foreground hover:bg-muted/60",
+                )}
+                size="sm"
+              />
+            }
           >
-            <span className="flex items-center gap-1.5">
-              <meta.Icon className="size-3.5" />
-              {meta.label}
-            </span>
-          </button>
-        }
-      >
-        {null}
-      </MenuTrigger>
-      <ComposerPickerMenuPopup align="start" size="small">
-        <MenuRadioGroup value={mode} onValueChange={(next) => next && onChatModeChange(next)}>
-          {CHAT_MODE_ORDER.map((candidate) => {
-            const candidateMeta = CHAT_MODE_META[candidate];
+            <SelectValue>
+              <span className="flex items-center gap-1.5">
+                <Icon size={14} />
+                {meta.name}
+              </span>
+            </SelectValue>
+          </TooltipTrigger>
+          <TooltipContent>
+            Open mode menu (Ctrl + . to toggle)
+          </TooltipContent>
+        </Tooltip>
+        <SelectContent align="start">
+          {CHAT_MODE_ORDER.map((m) => {
+            const mMeta = CHAT_MODE_META[m];
+            const MIcon = mMeta.Icon;
             return (
-              <MenuRadioItem
-                key={candidate}
-                value={candidate}
-                preserveChildLayout
-                className="py-1.5"
-              >
-                <span className="flex flex-col items-start">
-                  <span className="flex items-center gap-1.5">
-                    <candidateMeta.Icon className="size-3.5 text-muted-foreground" />
-                    <span className="font-medium">{candidateMeta.label}</span>
+              <SelectItem key={m} value={m}>
+                <div className="flex flex-col items-start">
+                  <div className="flex items-center gap-1.5">
+                    <MIcon size={14} className={
+                      m === "plan" ? "text-blue-500" :
+                      m === "ask" ? "text-purple-500" :
+                      "text-muted-foreground"
+                    } />
+                    <span className="font-medium">{mMeta.name}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground ml-[22px]">
+                    {mMeta.description}
                   </span>
-                  <span className="ml-[22px] text-xs text-[var(--color-text-foreground-secondary)]">
-                    {candidateMeta.hint}
-                  </span>
-                </span>
-              </MenuRadioItem>
+                </div>
+              </SelectItem>
             );
           })}
-        </MenuRadioGroup>
-      </ComposerPickerMenuPopup>
-    </Menu>
+        </SelectContent>
+      </Select>
+    </div>
   );
 }

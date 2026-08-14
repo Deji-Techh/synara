@@ -130,6 +130,48 @@ export const OllamaServerProviderSettings = Schema.Struct({
 });
 export type OllamaServerProviderSettings = typeof OllamaServerProviderSettings.Type;
 
+export const DeepseekServerProviderSettings = Schema.Struct({
+  ...ApiProviderSettingsBase,
+  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
+});
+export type DeepseekServerProviderSettings = typeof DeepseekServerProviderSettings.Type;
+
+export const GroqServerProviderSettings = Schema.Struct({
+  ...ApiProviderSettingsBase,
+  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
+});
+export type GroqServerProviderSettings = typeof GroqServerProviderSettings.Type;
+
+export const MistralServerProviderSettings = Schema.Struct({
+  ...ApiProviderSettingsBase,
+  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
+});
+export type MistralServerProviderSettings = typeof MistralServerProviderSettings.Type;
+
+export const TogetherServerProviderSettings = Schema.Struct({
+  ...ApiProviderSettingsBase,
+  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
+});
+export type TogetherServerProviderSettings = typeof TogetherServerProviderSettings.Type;
+
+export const CohereServerProviderSettings = Schema.Struct({
+  ...ApiProviderSettingsBase,
+  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
+});
+export type CohereServerProviderSettings = typeof CohereServerProviderSettings.Type;
+
+export const XaiServerProviderSettings = Schema.Struct({
+  ...ApiProviderSettingsBase,
+  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
+});
+export type XaiServerProviderSettings = typeof XaiServerProviderSettings.Type;
+
+export const FireworksServerProviderSettings = Schema.Struct({
+  ...ApiProviderSettingsBase,
+  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
+});
+export type FireworksServerProviderSettings = typeof FireworksServerProviderSettings.Type;
+
 const DisabledSkillNames = Schema.Array(Schema.String.check(Schema.isMaxLength(256))).pipe(
   Schema.withDecodingDefault(() => []),
 );
@@ -168,6 +210,13 @@ export const ServerSettings = Schema.Struct({
     google: GoogleServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
     openrouter: OpenRouterServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
     ollama: OllamaServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
+    deepseek: DeepseekServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
+    groq: GroqServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
+    mistral: MistralServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
+    together: TogetherServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
+    cohere: CohereServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
+    xai: XaiServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
+    fireworks: FireworksServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
   }).pipe(Schema.withDecodingDefault(() => ({}))),
   skills: SkillsServerSettings.pipe(Schema.withDecodingDefault(() => ({}))),
 });
@@ -276,6 +325,55 @@ export const ServerSettingsPatch = Schema.Struct({
         }),
       ),
       ollama: Schema.optionalKey(
+        Schema.Struct({
+          ...ProviderSettingsBasePatch,
+          baseUrl: Schema.optionalKey(StringSetting),
+          apiKey: Schema.optionalKey(StringSetting),
+        }),
+      ),
+      deepseek: Schema.optionalKey(
+        Schema.Struct({
+          ...ProviderSettingsBasePatch,
+          baseUrl: Schema.optionalKey(StringSetting),
+          apiKey: Schema.optionalKey(StringSetting),
+        }),
+      ),
+      groq: Schema.optionalKey(
+        Schema.Struct({
+          ...ProviderSettingsBasePatch,
+          baseUrl: Schema.optionalKey(StringSetting),
+          apiKey: Schema.optionalKey(StringSetting),
+        }),
+      ),
+      mistral: Schema.optionalKey(
+        Schema.Struct({
+          ...ProviderSettingsBasePatch,
+          baseUrl: Schema.optionalKey(StringSetting),
+          apiKey: Schema.optionalKey(StringSetting),
+        }),
+      ),
+      together: Schema.optionalKey(
+        Schema.Struct({
+          ...ProviderSettingsBasePatch,
+          baseUrl: Schema.optionalKey(StringSetting),
+          apiKey: Schema.optionalKey(StringSetting),
+        }),
+      ),
+      cohere: Schema.optionalKey(
+        Schema.Struct({
+          ...ProviderSettingsBasePatch,
+          baseUrl: Schema.optionalKey(StringSetting),
+          apiKey: Schema.optionalKey(StringSetting),
+        }),
+      ),
+      xai: Schema.optionalKey(
+        Schema.Struct({
+          ...ProviderSettingsBasePatch,
+          baseUrl: Schema.optionalKey(StringSetting),
+          apiKey: Schema.optionalKey(StringSetting),
+        }),
+      ),
+      fireworks: Schema.optionalKey(
         Schema.Struct({
           ...ProviderSettingsBasePatch,
           baseUrl: Schema.optionalKey(StringSetting),
