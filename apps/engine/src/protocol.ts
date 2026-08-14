@@ -22,6 +22,9 @@ export const ENGINE_METHODS = {
   testRun: "test/run",
   buildStart: "build/start",
   buildState: "build/state",
+  turnTextDelta: "turn/textDelta",
+  turnToolCall: "turn/toolCall",
+  turnStatus: "turn/status",
 } as const;
 
 export type EngineMethod = (typeof ENGINE_METHODS)[keyof typeof ENGINE_METHODS];
@@ -48,6 +51,13 @@ export const JsonRpcResponseSchema = z.object({
   error: JsonRpcErrorSchema.optional(),
 });
 export type JsonRpcResponse = z.infer<typeof JsonRpcResponseSchema>;
+
+export const JsonRpcNotificationSchema = z.object({
+  jsonrpc: z.literal("2.0"),
+  method: z.string(),
+  params: z.unknown().optional(),
+});
+export type JsonRpcNotification = z.infer<typeof JsonRpcNotificationSchema>;
 
 export const JSON_RPC_PARSE_ERROR = -32700;
 export const JSON_RPC_INVALID_REQUEST = -32600;
@@ -123,6 +133,22 @@ export const TurnRunResultSchema = z.object({
   ),
 });
 export type TurnRunResult = z.infer<typeof TurnRunResultSchema>;
+
+export const TurnTextDeltaNotificationSchema = z.object({
+  delta: z.string(),
+});
+export type TurnTextDeltaNotification = z.infer<typeof TurnTextDeltaNotificationSchema>;
+
+export const TurnToolCallNotificationSchema = z.object({
+  name: z.string(),
+  args: z.unknown(),
+});
+export type TurnToolCallNotification = z.infer<typeof TurnToolCallNotificationSchema>;
+
+export const TurnStatusNotificationSchema = z.object({
+  status: z.enum(["started", "toolCall", "completed"]),
+});
+export type TurnStatusNotification = z.infer<typeof TurnStatusNotificationSchema>;
 
 export const AppCreateParamsSchema = z.object({
   name: z.string(),
@@ -278,4 +304,8 @@ export function isJsonRpcRequest(value: unknown): value is JsonRpcRequest {
 
 export function isJsonRpcResponse(value: unknown): value is JsonRpcResponse {
   return JsonRpcResponseSchema.safeParse(value).success;
+}
+
+export function isJsonRpcNotification(value: unknown): value is JsonRpcNotification {
+  return JsonRpcNotificationSchema.safeParse(value).success;
 }

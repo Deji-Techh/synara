@@ -11,6 +11,7 @@ import { createInterface } from "node:readline/promises";
 
 import {
   isJsonRpcResponse,
+  isJsonRpcNotification,
   JSON_RPC_INTERNAL_ERROR,
   type JsonRpcRequest,
   type JsonRpcResponse,
@@ -35,6 +36,7 @@ export interface EngineClientOptions {
   readonly env?: NodeJS.ProcessEnv;
   readonly requestTimeoutMs?: number;
   readonly onStderr?: (line: string) => void;
+  readonly onNotification?: (method: string, params: unknown) => void;
 }
 
 export class EngineClient {
@@ -85,6 +87,9 @@ export class EngineClient {
         continue;
       }
       if (!isJsonRpcResponse(parsed)) {
+        if (isJsonRpcNotification(parsed)) {
+          this.options.onNotification?.(parsed.method, parsed.params);
+        }
         continue;
       }
       const id = typeof parsed.id === "number" ? parsed.id : null;

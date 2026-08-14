@@ -67,35 +67,20 @@ export interface AgentOptions {
    * produces a plan artifact without editing files.
    */
   readonly mode?: ChatMode;
+  /** Maximum context window tokens. */
+  readonly contextWindowTokens?: number;
 }
 
 import { fileTools } from "./tools/fileTools.ts";
 import { flutterTools } from "./tools/flutterTools.ts";
+import { buildFlutterSystemPrompt } from "../prompts/flutterSkillPack.ts";
 
 export const DEFAULT_FLUTTER_AGENT_TOOLS: readonly ToolDefinition[] = [
   ...fileTools,
   ...flutterTools,
 ];
 
-export const DEFAULT_FLUTTER_SYSTEM_PROMPT = `You are the Flutter Builder Engine, an expert Flutter and Dart software architect and engineer.
-Your sole mission is to build, iterate, and deliver fully functional, breathtaking, production-ready Flutter mobile and web applications with live interactive previews.
-
-Engineering & Design Principles:
-1. Modern Declarative Architecture:
-   - Structure projects cleanly: \`lib/main.dart\`, \`lib/models/\`, \`lib/screens/\` (or \`lib/views/\`), \`lib/widgets/\`, \`lib/providers/\` (or \`lib/controllers/\`), \`lib/theme/\`, and \`lib/services/\`.
-   - Use Material 3 with tailored \`ColorScheme.fromSeed\`, polished dark/light themes, custom typography, smooth transitions, and proper padding/elevation.
-   - Design for all form factors: Phone (portrait/landscape), Tablet, and Web using \`LayoutBuilder\` / \`MediaQuery\` / responsive navigation.
-2. Tooling Workflow:
-   - Use \`read_file\`, \`write_file\`, \`edit_file\`, \`search_code\`, \`list_files\`, and \`pub_add\` to build features incrementally.
-   - When adding dependencies (e.g. \`flutter_riverpod\`, \`go_router\`, \`google_fonts\`, \`lucide_icons\`, \`shared_preferences\`), use \`pub_add\`.
-3. Quality Gate & Self-Correction:
-   - Always run \`flutter_analyze\` after creating or editing Dart code.
-   - If \`flutter_analyze\` reports errors, warnings, or missing imports, immediately inspect the referenced files, correct the syntax/types, and re-analyze until clean.
-   - Run \`flutter_test\` whenever business logic or state reducers are modified.
-4. Completeness & Excellence:
-   - Never leave placeholder stubs (\`// TODO: implement later\`). Write complete, working widget trees, data models, and realistic mock data where needed.
-   - Ensure snappy 60fps animations using Flutter's built-in \`AnimatedContainer\`, \`AnimatedSwitcher\`, \`Hero\`, and implicit animation controllers.
-`;
+export const DEFAULT_FLUTTER_SYSTEM_PROMPT = buildFlutterSystemPrompt();
 
 const PLAN_MODE_SYSTEM_PROMPT =
   "You are in plan mode. Produce a concise implementation plan for the user's request " +
@@ -151,9 +136,16 @@ const EMPTY_TOOL_CONTEXT: ToolContext = {
   appDir: ".",
 };
 
+import {
+  COMPACTION_THRESHOLD,
+  DEFAULT_CONTEXT_WINDOW_TOKENS,
+  compactHistory,
+  estimateHistoryTokens,
+} from "./compaction.ts";
+
 export class Agent {
   private readonly model: LanguageModel;
-  private readonly history: AgentMessage[];
+  private history: AgentMessage[];
   private readonly tools: ToolSet;
   private readonly maxSteps: number;
 
@@ -180,6 +172,17 @@ export class Agent {
   }
 
   async runTurn(userMessage: string, opts: RunTurnOptions = {}): Promise<TurnResult> {
+    const maxTokens = this.options.contextWindowTokens ?? DEFAULT_CONTEXT_WINDOW_TOKENS;
+    const currentTokens = estimateHistoryTokens(this.history);
+    const thresholdTokens = maxTokens * COMPACTION_THRESHOLD;
+
+    if (currentTokens > thresholdTokens) {
+      console.error(
+        `[Compaction] History exceeded threshold (${currentTokens} > ${thresholdTokens}). Compacting...`,
+      );
+      this.history = compactHistory(this.history, maxTokens);
+    }
+
     const systemPrompt = resolveModeSystemPrompt(this.options.systemPrompt, this.options.mode);
     const result = streamText({
       model: this.model,

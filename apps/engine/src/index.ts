@@ -63,6 +63,11 @@ function sendError(id: JsonRpcResponse["id"], code: number, message: string): vo
   send({ jsonrpc: "2.0", id, error: { code, message } });
 }
 
+function sendNotification(method: string, params?: unknown): void {
+  // Use stdout.write directly to avoid TypeScript complaining about JsonRpcResponse vs Notification
+  stdout.write(`${JSON.stringify({ jsonrpc: "2.0", method, ...(params !== undefined ? { params } : {}) })}\n`);
+}
+
 class ProtocolParamError extends Error {
   constructor(
     readonly code: number,
@@ -253,12 +258,17 @@ async function handleMethod(method: string, params: unknown): Promise<unknown> {
         mode,
         ...(cwd !== undefined ? { toolContext: { workspaceDir: cwd, appDir: cwd } } : {}),
       });
+      sendNotification(ENGINE_METHODS.turnStatus, { status: "started" });
       const result = await agent.runTurn(message, {
-        onTextDelta: () => {
-          // Full text is returned once the turn completes so the stdio
-          // JSON-RPC adapter can publish it in a single content event.
+        onTextDelta: (delta) => {
+          sendNotification(ENGINE_METHODS.turnTextDelta, { delta });
+        },
+        onToolCall: (call) => {
+          sendNotification(ENGINE_METHODS.turnStatus, { status: "toolCall" });
+          sendNotification(ENGINE_METHODS.turnToolCall, { name: call.name, args: call.args });
         },
       });
+      sendNotification(ENGINE_METHODS.turnStatus, { status: "completed" });
       return TurnRunResultSchema.parse({
         text: result.text,
         toolCalls: result.toolCalls,

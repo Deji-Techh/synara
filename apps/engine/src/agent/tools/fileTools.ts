@@ -11,6 +11,7 @@ import path from "node:path";
 import { z } from "zod";
 
 import { defineTool, type ToolContext, type ToolDefinition } from "../tool.ts";
+import { applyFuzzyEdit } from "./fuzzyMatch.ts";
 
 function resolveInsideWorkspace(relativePath: string, context: ToolContext): string {
   const abs = path.resolve(context.workspaceDir, relativePath);
@@ -102,6 +103,10 @@ export const editFileTool = defineTool({
       .boolean()
       .optional()
       .describe("If true, replace all occurrences. Defaults to false (must be unique)."),
+    startLine: z
+      .number()
+      .optional()
+      .describe("Optional starting line number to narrow the search range for fuzzy matching."),
   }),
   execute(args, context) {
     const filePath = resolveInsideWorkspace(args.path, context);
@@ -110,8 +115,13 @@ export const editFileTool = defineTool({
     }
     const content = fs.readFileSync(filePath, "utf8");
     if (!content.includes(args.target)) {
+      const fuzzyEdited = applyFuzzyEdit(content, args.target, args.replacement, args.startLine);
+      if (fuzzyEdited) {
+        fs.writeFileSync(filePath, fuzzyEdited, "utf8");
+        return `Edited ${args.path} (1 occurrence replaced via fuzzy match)`;
+      }
       throw new Error(
-        `target string not found in ${args.path}. Ensure exact character match including whitespace.`,
+        `target string not found in ${args.path}. Exact and fuzzy match failed. Read the file to ensure you have the correct content.`,
       );
     }
     if (!args.multiple) {
