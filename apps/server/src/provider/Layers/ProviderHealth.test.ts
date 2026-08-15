@@ -190,7 +190,7 @@ const allProvidersDisabledServerSettings = {
 } satisfies typeof DEFAULT_SERVER_SETTINGS;
 
 const disabledProviderHealthLayer = ProviderHealthLive.pipe(
-  Layer.provideMerge(ServerSettingsService.layerTest(allProvidersDisabledSettings)),
+  Layer.provideMerge(ServerSettingsService.layerTest(allProvidersDisabledServerSettings)),
   Layer.provideMerge(
     ServerConfig.layerTest(process.cwd(), { prefix: "provider-health-disabled-" }),
   ),
@@ -433,7 +433,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
       );
       const codex = statuses.find((status) => status.provider === "codex");
 
-      assert.strictEqual(statuses.length, 10);
+      assert.strictEqual(statuses.length, 23);
       assert.strictEqual(codex?.available, false);
       assert.strictEqual(codex?.message, "Provider is disabled in Caide settings.");
     });
@@ -568,7 +568,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         const providerHealth = yield* ProviderHealth;
         const statuses = yield* providerHealth.refresh;
 
-        assert.strictEqual(statuses.length, 10);
+        assert.strictEqual(statuses.length, 23);
         for (const status of statuses) {
           assert.strictEqual(status.available, false);
           assert.strictEqual(status.message, "Provider is disabled in Caide settings.");
@@ -610,12 +610,24 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
           ),
         );
 
+        // No CLI is spawned and no cache exists yet, so the CLI-provider list is
+        // empty. API providers are still surfaced from settings (no key
+        // configured for any of them yet) so the picker can show real state.
         const statuses = yield* Effect.gen(function* () {
           const providerHealth = yield* ProviderHealth;
           return yield* providerHealth.getStatuses;
         }).pipe(Effect.provide(layer));
 
-        assert.deepStrictEqual(statuses, []);
+        const apiKinds = statuses.filter(
+          (status) => status.available === false && status.authStatus === "unauthenticated",
+        );
+        const ollamaStatus = statuses.find((status) => status.provider === "ollama");
+        assert.strictEqual(statuses.length, 13);
+        assert.strictEqual(apiKinds.length, 12);
+        assert.strictEqual(ollamaStatus?.available, true);
+        for (const status of apiKinds) {
+          assert.strictEqual(status.authStatus, "unauthenticated");
+        }
         assert.strictEqual(spawnCount, 0);
       }),
     );

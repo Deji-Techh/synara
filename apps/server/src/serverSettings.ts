@@ -217,26 +217,24 @@ function readLegacyProviderPasswords(raw: string): ReadonlyMap<ExternalProviderS
 
 function omitProviderPasswords(patch: ServerSettingsPatch): ServerSettingsPatch {
   if (!patch.providers) return patch;
-  const { serverPassword: _kiloPassword, ...kilo } = patch.providers.kilo ?? {};
-  const { serverPassword: _openCodePassword, ...opencode } = patch.providers.opencode ?? {};
-  const { apiKey: _openaiKey, ...openai } = patch.providers.openai ?? {};
-  const { apiKey: _anthropicKey, ...anthropic } = patch.providers.anthropic ?? {};
-  const { apiKey: _googleKey, ...google } = patch.providers.google ?? {};
-  const { apiKey: _openrouterKey, ...openrouter } = patch.providers.openrouter ?? {};
-  const { apiKey: _ollamaKey, ...ollama } = patch.providers.ollama ?? {};
-  return {
-    ...patch,
-    providers: {
-      ...patch.providers,
-      ...(patch.providers.kilo ? { kilo } : {}),
-      ...(patch.providers.opencode ? { opencode } : {}),
-      ...(patch.providers.openai ? { openai } : {}),
-      ...(patch.providers.anthropic ? { anthropic } : {}),
-      ...(patch.providers.google ? { google } : {}),
-      ...(patch.providers.openrouter ? { openrouter } : {}),
-      ...(patch.providers.ollama ? { ollama } : {}),
-    },
-  };
+  // CLI providers may carry a serverPassword (kilo/opencode); every API provider
+  // may carry an apiKey. The secret store holds the real values, so never
+  // persist them inside settings.json.
+  const providers = {} as NonNullable<ServerSettingsPatch["providers"]>;
+  for (const [name, providerSettings] of Object.entries(patch.providers)) {
+    if (!providerSettings) continue;
+    const { serverPassword: _serverPassword, apiKey: _apiKey, ...rest } = providerSettings as {
+      serverPassword?: unknown;
+      apiKey?: unknown;
+    };
+    Object.defineProperty(providers, name, {
+      value: rest,
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+  }
+  return { ...patch, providers };
 }
 
 function decodeSettingsFromJson(settingsPath: string, raw: string) {
@@ -289,51 +287,48 @@ const makeServerSettings = Effect.gen(function* () {
     PubSub.publish(changesPubSub, settings).pipe(Effect.asVoid);
 
   const withCredentialState = (settings: ServerSettings) =>
-    Effect.all({
-      kilo: providerCredentials.isServerPasswordConfigured("kilo"),
-      opencode: providerCredentials.isServerPasswordConfigured("opencode"),
-      openai: providerCredentials.isApiKeyConfigured("openai"),
-      anthropic: providerCredentials.isApiKeyConfigured("anthropic"),
-      google: providerCredentials.isApiKeyConfigured("google"),
-      openrouter: providerCredentials.isApiKeyConfigured("openrouter"),
-      ollama: providerCredentials.isApiKeyConfigured("ollama"),
-    }).pipe(
-      Effect.map(
-        (configured): ServerSettings => ({
+    Effect.all(
+      [
+        ...API_PROVIDER_KINDS.map((provider) =>
+          providerCredentials
+            .isApiKeyConfigured(provider)
+            .pipe(Effect.map((isConfigured) => [provider, isConfigured] as const)),
+        ),
+        providerCredentials
+          .isServerPasswordConfigured("kilo")
+          .pipe(Effect.map((isConfigured) => ["kilo", isConfigured] as const)),
+        providerCredentials
+          .isServerPasswordConfigured("opencode")
+          .pipe(Effect.map((isConfigured) => ["opencode", isConfigured] as const)),
+      ],
+      { concurrency: "unbounded" },
+    ).pipe(
+      Effect.map((entries) => {
+        const configured = new Map(entries);
+        return {
           ...settings,
           providers: {
             ...settings.providers,
+            ...Object.fromEntries(
+              API_PROVIDER_KINDS.map((provider) => [
+                provider,
+                {
+                  ...settings.providers[provider],
+                  apiKeyConfigured: configured.get(provider) ?? false,
+                },
+              ]),
+            ),
             kilo: {
               ...settings.providers.kilo,
-              serverPasswordConfigured: configured.kilo,
+              serverPasswordConfigured: configured.get("kilo") ?? false,
             },
             opencode: {
               ...settings.providers.opencode,
-              serverPasswordConfigured: configured.opencode,
+              serverPasswordConfigured: configured.get("opencode") ?? false,
             },
-            openai: {
-              ...settings.providers.openai,
-              apiKeyConfigured: configured.openai,
-            },
-            anthropic: {
-              ...settings.providers.anthropic,
-              apiKeyConfigured: configured.anthropic,
-            },
-            google: {
-              ...settings.providers.google,
-              apiKeyConfigured: configured.google,
-            },
-            openrouter: {
-              ...settings.providers.openrouter,
-              apiKeyConfigured: configured.openrouter,
-            },
-            ollama: {
-              ...settings.providers.ollama,
-              apiKeyConfigured: configured.ollama,
-            },
-          },
-        }),
-      ),
+          } satisfies ServerSettings["providers"],
+        };
+      }),
       Effect.mapError(
         (cause) =>
           new ServerSettingsError({

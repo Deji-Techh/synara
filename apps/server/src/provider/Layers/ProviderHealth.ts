@@ -10,6 +10,7 @@
  */
 import * as OS from "node:os";
 import type {
+  ApiProviderKind,
   ProviderCliKind,
   ProviderKind,
   ServerSettings,
@@ -18,7 +19,7 @@ import type {
   ServerProviderStatusState,
   ServerProviderUpdateState,
 } from "@caide/contracts";
-import { ServerProviderUpdateError } from "@caide/contracts";
+import { API_PROVIDER_KINDS, ServerProviderUpdateError } from "@caide/contracts";
 import { parseCodexConfigModelProvider } from "@caide/shared/codexConfig";
 import { decodeJsonResult } from "@caide/shared/schemaJson";
 import { prepareWindowsSafeProcess } from "@caide/shared/windowsProcess";
@@ -143,11 +144,7 @@ const providerChildKind = (provider: ProviderCliKind): ProviderChildKind =>
   provider === CLAUDE_AGENT_PROVIDER ? "claude" : provider;
 
 const isProviderCliKind = (provider: ProviderKind): provider is ProviderCliKind =>
-  provider !== "openai" &&
-  provider !== "anthropic" &&
-  provider !== "google" &&
-  provider !== "openrouter" &&
-  provider !== "ollama";
+  !(API_PROVIDER_KINDS as readonly ProviderKind[]).includes(provider);
 
 const providerCommandEnv = (provider: ProviderCliKind): NodeJS.ProcessEnv =>
   buildProviderChildEnvironment({ provider: providerChildKind(provider) });
@@ -2085,6 +2082,32 @@ function suppressProviderVersionAdvisory(status: ServerProviderStatus): ServerPr
 
 // Disabled providers are a settings overlay, not a probe result. Keep the raw
 // cached/probed status intact so re-enabling a provider can reuse it immediately.
+function makeApiProviderStatus(
+  provider: ApiProviderKind,
+  settings: ServerSettings,
+  checkedAt: string,
+): ServerProviderStatus {
+  const isOllama = provider === "ollama";
+  // Ollama runs a local server, so it works without an API key.
+  if (settings.providers[provider]?.apiKeyConfigured === true || isOllama) {
+    return {
+      provider,
+      status: "ready" as const,
+      available: true,
+      authStatus: isOllama ? ("unknown" as const) : ("authenticated" as const),
+      checkedAt,
+    };
+  }
+  return {
+    provider,
+    status: "warning" as const,
+    available: false,
+    authStatus: "unauthenticated" as const,
+    checkedAt,
+    message: `Add an API key in Settings > Providers to enable ${provider} generation.`,
+  };
+}
+
 export function projectProviderStatusesForSettings(
   statuses: ReadonlyArray<ServerProviderStatus>,
   settings: ServerSettings,
@@ -2114,6 +2137,20 @@ export function projectProviderStatusesForSettings(
         settings.enableProviderUpdateChecks ? status : suppressProviderVersionAdvisory(status),
       );
     }
+  }
+
+  // API providers are never CLI-probed; synthesize their status from settings so
+  // the picker reflects key configuration instead of a permanent "Checking".
+  for (const provider of API_PROVIDER_KINDS) {
+    if (!isProviderEnabledForSettings(provider, settings)) {
+      const disabledStatus = makeDisabledProviderStatus(provider, checkedAt);
+      projected.push({
+        ...disabledStatus,
+        versionAdvisory: makeSuppressedProviderVersionAdvisory(disabledStatus),
+      } satisfies ServerProviderStatus);
+      continue;
+    }
+    projected.push(makeApiProviderStatus(provider, settings, checkedAt));
   }
 
   return orderProviderStatuses(projected);
