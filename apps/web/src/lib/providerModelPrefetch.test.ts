@@ -3,7 +3,7 @@
 //          the same React Query keys ChatView uses for listModels.
 // Layer: Web lib tests
 
-import type { ProviderKind } from "@caide/contracts";
+import { API_PROVIDER_KINDS, type ProviderKind } from "@caide/contracts";
 import { QueryClient } from "@tanstack/react-query";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -161,6 +161,17 @@ describe("providerModelsPrefetchQueryOptions", () => {
     expect(codexOptions.queryKey).toEqual(
       providerDiscoveryQueryKeys.models("codex", null, null, null, null),
     );
+  });
+
+  it("returns real options for every API provider so prefetchQuery never receives undefined", () => {
+    const settings = makeSettings();
+    for (const provider of API_PROVIDER_KINDS) {
+      const options = providerModelsPrefetchQueryOptions({ provider, settings });
+      expect(options, `no options for ${provider}`).toBeDefined();
+      expect(options.queryKey).toEqual(
+        providerDiscoveryQueryKeys.models(provider, null, null, null, null),
+      );
+    }
   });
 });
 

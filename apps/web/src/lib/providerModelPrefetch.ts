@@ -124,6 +124,21 @@ export function providerModelsPrefetchQueryOptions(input: {
     case "google":
     case "openrouter":
     case "ollama":
+    case "deepseek":
+    case "groq":
+    case "mistral":
+    case "together":
+    case "cohere":
+    case "xai":
+    case "fireworks":
+    case "opencodeZen":
+      // API providers talk to HTTP endpoints with no CLI args; ChatView issues
+      // the same generic discovery query for all of them, so the prefetch cache
+      // key must match exactly.
+      return providerModelsQueryOptions({ provider });
+    default:
+      // Guard against future provider kinds being prefetched with undefined
+      // options, which would throw inside prefetchQuery.
       return providerModelsQueryOptions({ provider });
   }
 }
@@ -167,13 +182,18 @@ export function prefetchProviderModelsForNewThread(
   },
 ): void {
   const cwd = input.cwd ?? null;
-  void queryClient.prefetchQuery(
-    providerModelsPrefetchQueryOptions({
-      provider: input.provider,
-      settings: input.settings,
-      cwd,
-    }),
-  );
+  const modelsOptions = providerModelsPrefetchQueryOptions({
+    provider: input.provider,
+    settings: input.settings,
+    cwd,
+  });
+  if (modelsOptions) {
+    // Warm model discovery for the thread the user is about to open. The
+    // options builder always returns a real options object, but keep the guard
+    // so an unrecognized future provider kind degrades to a skipped prefetch
+    // instead of a runtime throw inside prefetchQuery.
+    void queryClient.prefetchQuery(modelsOptions);
+  }
 
   // Agent/mode lists ride along for providers that surface them next to models.
   const agentsOptions = providerAgentsPrefetchQueryOptions({
