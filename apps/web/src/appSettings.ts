@@ -108,7 +108,15 @@ type CustomModelSettingsKey =
   | "customAnthropicModels"
   | "customGoogleModels"
   | "customOpenRouterModels"
-  | "customOllamaModels";
+  | "customOllamaModels"
+  | "customDeepseekModels"
+  | "customGroqModels"
+  | "customMistralModels"
+  | "customTogetherModels"
+  | "customCohereModels"
+  | "customXaiModels"
+  | "customFireworksModels"
+  | "customOpenCodeZenModels";
 export type ProviderCustomModelConfig = {
   provider: ProviderKind;
   settingsKey: CustomModelSettingsKey;
@@ -136,6 +144,13 @@ const BUILT_IN_MODEL_SLUGS_BY_PROVIDER: Record<ProviderKind, ReadonlySet<string>
   openrouter: new Set(getModelOptions("openrouter").map((option) => option.slug)),
   ollama: new Set(getModelOptions("ollama").map((option) => option.slug)),
   deepseek: new Set(getModelOptions("deepseek").map((option) => option.slug)),
+  groq: new Set(getModelOptions("groq").map((option) => option.slug)),
+  mistral: new Set(getModelOptions("mistral").map((option) => option.slug)),
+  together: new Set(getModelOptions("together").map((option) => option.slug)),
+  cohere: new Set(getModelOptions("cohere").map((option) => option.slug)),
+  xai: new Set(getModelOptions("xai").map((option) => option.slug)),
+  fireworks: new Set(getModelOptions("fireworks").map((option) => option.slug)),
+  opencodeZen: new Set(getModelOptions("opencodeZen").map((option) => option.slug)),
 };
 
 const withDefaults =
@@ -169,6 +184,13 @@ const PersistedProviderKind = Schema.Literals([
   "openrouter",
   "ollama",
   "deepseek",
+  "groq",
+  "mistral",
+  "together",
+  "cohere",
+  "xai",
+  "fireworks",
+  "opencodeZen",
 ]).pipe(
   Schema.decodeTo(
     ProviderKind,
@@ -248,6 +270,9 @@ export const AppSettingsSchema = Schema.Struct({
   deepseekApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
   deepseekApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
   deepseekBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  opencodeZenApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  opencodeZenApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
+  opencodeZenBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
   defaultThreadEnvMode: EnvMode.pipe(withDefaults(() => "local" as const satisfies EnvMode)),
   confirmThreadDelete: Schema.Boolean.pipe(withDefaults(() => true)),
   confirmThreadArchive: Schema.Boolean.pipe(withDefaults(() => false)),
@@ -305,6 +330,14 @@ export const AppSettingsSchema = Schema.Struct({
   customGoogleModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   customOpenRouterModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   customOllamaModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
+  customDeepseekModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
+  customGroqModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
+  customMistralModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
+  customTogetherModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
+  customCohereModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
+  customXaiModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
+  customFireworksModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
+  customOpenCodeZenModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   textGenerationProvider: PersistedProviderKind.pipe(withDefaults(() => "codex" as const)),
   textGenerationModel: Schema.optional(TrimmedNonEmptyString),
   uiFontFamily: Schema.String.check(Schema.isMaxLength(256)).pipe(withDefaults(() => "")),
@@ -496,6 +529,78 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     placeholder: "model-name",
     example: "llama3.3",
   },
+  deepseek: {
+    provider: "deepseek",
+    settingsKey: "customDeepseekModels",
+    defaultSettingsKey: "customDeepseekModels",
+    title: "DeepSeek",
+    description: "Save additional DeepSeek model slugs for the picker.",
+    placeholder: "your-deepseek-model-slug",
+    example: "deepseek-v3",
+  },
+  groq: {
+    provider: "groq",
+    settingsKey: "customGroqModels",
+    defaultSettingsKey: "customGroqModels",
+    title: "Groq",
+    description: "Save additional Groq model slugs for the picker.",
+    placeholder: "your-groq-model-slug",
+    example: "llama-3.3-70b-versatile",
+  },
+  mistral: {
+    provider: "mistral",
+    settingsKey: "customMistralModels",
+    defaultSettingsKey: "customMistralModels",
+    title: "Mistral",
+    description: "Save additional Mistral model slugs for the picker.",
+    placeholder: "your-mistral-model-slug",
+    example: "mistral-large-latest",
+  },
+  together: {
+    provider: "together",
+    settingsKey: "customTogetherModels",
+    defaultSettingsKey: "customTogetherModels",
+    title: "Together",
+    description: "Save additional Together model slugs for the picker.",
+    placeholder: "provider/model",
+    example: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+  },
+  cohere: {
+    provider: "cohere",
+    settingsKey: "customCohereModels",
+    defaultSettingsKey: "customCohereModels",
+    title: "Cohere",
+    description: "Save additional Cohere model slugs for the picker.",
+    placeholder: "your-cohere-model-slug",
+    example: "command-r-plus",
+  },
+  xai: {
+    provider: "xai",
+    settingsKey: "customXaiModels",
+    defaultSettingsKey: "customXaiModels",
+    title: "xAI",
+    description: "Save additional xAI model slugs for the picker.",
+    placeholder: "your-xai-model-slug",
+    example: "grok-3",
+  },
+  fireworks: {
+    provider: "fireworks",
+    settingsKey: "customFireworksModels",
+    defaultSettingsKey: "customFireworksModels",
+    title: "Fireworks",
+    description: "Save additional Fireworks model slugs for the picker.",
+    placeholder: "provider/model",
+    example: "accounts/fireworks/models/llama-v3-70b-instruct",
+  },
+  opencodeZen: {
+    provider: "opencodeZen",
+    settingsKey: "customOpenCodeZenModels",
+    defaultSettingsKey: "customOpenCodeZenModels",
+    title: "OpenCode Zen",
+    description: "Save additional OpenCode Zen model slugs for the picker.",
+    placeholder: "your-opencode-zen-model-slug",
+    example: "deepseek-v4-flash-free",
+  },
 };
 
 export const MODEL_PROVIDER_SETTINGS = Object.values(PROVIDER_CUSTOM_MODEL_CONFIG);
@@ -623,6 +728,7 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
     mistralApiKey: "",
     groqApiKey: "",
     deepseekApiKey: "",
+    opencodeZenApiKey: "",
     claudeBinaryPath: normalizeProviderBinaryPathOverride("claudeAgent", settings.claudeBinaryPath),
     codexBinaryPath: normalizeProviderBinaryPathOverride("codex", settings.codexBinaryPath),
     cursorBinaryPath: normalizeProviderBinaryPathOverride("cursor", settings.cursorBinaryPath),
@@ -662,6 +768,17 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
       "openrouter",
     ),
     customOllamaModels: normalizeCustomModelSlugs(settings.customOllamaModels, "ollama"),
+    customDeepseekModels: normalizeCustomModelSlugs(settings.customDeepseekModels, "deepseek"),
+    customGroqModels: normalizeCustomModelSlugs(settings.customGroqModels, "groq"),
+    customMistralModels: normalizeCustomModelSlugs(settings.customMistralModels, "mistral"),
+    customTogetherModels: normalizeCustomModelSlugs(settings.customTogetherModels, "together"),
+    customCohereModels: normalizeCustomModelSlugs(settings.customCohereModels, "cohere"),
+    customXaiModels: normalizeCustomModelSlugs(settings.customXaiModels, "xai"),
+    customFireworksModels: normalizeCustomModelSlugs(settings.customFireworksModels, "fireworks"),
+    customOpenCodeZenModels: normalizeCustomModelSlugs(
+      settings.customOpenCodeZenModels,
+      "opencodeZen",
+    ),
     hiddenProviders: normalizeHiddenProviders(settings.hiddenProviders),
     providerOrder: normalizeProviderOrder(settings.providerOrder),
     hiddenModels: [],
@@ -704,6 +821,14 @@ function serverSettingsToAppSettings(settings: ServerSettingsView): Partial<AppS
     customGoogleModels: settings.providers.google.customModels,
     customOpenRouterModels: settings.providers.openrouter.customModels,
     customOllamaModels: settings.providers.ollama.customModels,
+    customDeepseekModels: settings.providers.deepseek.customModels,
+    customGroqModels: settings.providers.groq.customModels,
+    customMistralModels: settings.providers.mistral.customModels,
+    customTogetherModels: settings.providers.together.customModels,
+    customCohereModels: settings.providers.cohere.customModels,
+    customXaiModels: settings.providers.xai.customModels,
+    customFireworksModels: settings.providers.fireworks.customModels,
+    customOpenCodeZenModels: settings.providers.opencodeZen.customModels,
     openaiApiKeyConfigured: settings.providers.openai.apiKeyConfigured,
     openaiBaseUrl: settings.providers.openai.baseUrl,
     anthropicApiKeyConfigured: settings.providers.anthropic.apiKeyConfigured,
@@ -728,6 +853,8 @@ function serverSettingsToAppSettings(settings: ServerSettingsView): Partial<AppS
     groqBaseUrl: settings.providers.groq.baseUrl,
     deepseekApiKeyConfigured: settings.providers.deepseek.apiKeyConfigured,
     deepseekBaseUrl: settings.providers.deepseek.baseUrl,
+    opencodeZenApiKeyConfigured: settings.providers.opencodeZen.apiKeyConfigured,
+    opencodeZenBaseUrl: settings.providers.opencodeZen.baseUrl,
     textGenerationProvider: settings.textGenerationModelSelection.provider,
     textGenerationModel: settings.textGenerationModelSelection.model,
   };
@@ -769,7 +896,9 @@ function touchesProviderDiscoverySettings(patch: Partial<AppSettings>): boolean 
     hasOwn(patch, "ollamaApiKey") ||
     hasOwn(patch, "ollamaBaseUrl") ||
     hasOwn(patch, "deepseekApiKey") ||
-    hasOwn(patch, "deepseekBaseUrl")
+    hasOwn(patch, "deepseekBaseUrl") ||
+    hasOwn(patch, "opencodeZenApiKey") ||
+    hasOwn(patch, "opencodeZenBaseUrl")
   );
 }
 
@@ -1032,6 +1161,18 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
     };
   }
 
+  if (
+    hasOwn(patch, "opencodeZenApiKey") ||
+    hasOwn(patch, "opencodeZenBaseUrl")
+  ) {
+    providers.opencodeZen = {
+      ...(hasOwn(patch, "opencodeZenApiKey") ? { apiKey: patch.opencodeZenApiKey ?? "" } : {}),
+      ...(hasOwn(patch, "opencodeZenBaseUrl")
+        ? { baseUrl: patch.opencodeZenBaseUrl ?? "" }
+        : {}),
+    };
+  }
+
   if (Object.keys(providers).length > 0) {
     serverPatch.providers = providers;
   }
@@ -1092,6 +1233,8 @@ function buildInitialServerSettingsMigrationPatch(settings: AppSettings): Server
     "groqBaseUrl",
     "deepseekApiKey",
     "deepseekBaseUrl",
+    "opencodeZenApiKey",
+    "opencodeZenBaseUrl",
     "textGenerationModel",
     "textGenerationProvider",
   ] as const) {
@@ -1144,6 +1287,9 @@ function buildInitialServerSettingsMigrationPatch(settings: AppSettings): Server
   if (settings.deepseekApiKey.trim()) {
     patch.deepseekApiKey = settings.deepseekApiKey;
   }
+  if (settings.opencodeZenApiKey.trim()) {
+    patch.opencodeZenApiKey = settings.opencodeZenApiKey;
+  }
 
   for (const key of [
     "customCodexModels",
@@ -1160,6 +1306,14 @@ function buildInitialServerSettingsMigrationPatch(settings: AppSettings): Server
     "customGoogleModels",
     "customOpenRouterModels",
     "customOllamaModels",
+    "customDeepseekModels",
+    "customGroqModels",
+    "customMistralModels",
+    "customTogetherModels",
+    "customCohereModels",
+    "customXaiModels",
+    "customFireworksModels",
+    "customOpenCodeZenModels",
   ] as const) {
     if (normalizedSettings[key].length > 0) {
       patch[key] = normalizedSettings[key] as never;

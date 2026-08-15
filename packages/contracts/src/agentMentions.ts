@@ -263,6 +263,7 @@ export const AGENT_MENTION_ALIASES_BY_PROVIDER: Record<
   fireworks: {
     "fireworks": { provider: "fireworks", kind: "model", model: "accounts/fireworks/models/llama-v3p1-70b-instruct", displayName: "Llama 3.1 (Fireworks)", color: "orange" },
   },
+  opencodeZen: {},
 } as const satisfies Record<ProviderKind, Record<string, AgentAliasDefinition>>;
 
 // Backward compatibility for legacy call sites that still expect a flat alias table.
@@ -294,6 +295,7 @@ const AGENT_MENTION_AUTOCOMPLETE_ALIASES_BY_PROVIDER: Record<ProviderKind, reado
   cohere: ["cohere"],
   xai: ["grok"],
   fireworks: ["fireworks"],
+  opencodeZen: [],
 };
 
 function mapAgentEntries(input: Record<string, AgentAliasDefinition>): ResolvedAgentAlias[] {

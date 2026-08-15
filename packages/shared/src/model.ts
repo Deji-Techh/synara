@@ -42,6 +42,15 @@ const MODEL_SLUG_SET_BY_PROVIDER: Record<ProviderKind, ReadonlySet<ModelSlug>> =
   openrouter: new Set(MODEL_OPTIONS_BY_PROVIDER.openrouter.map((option) => option.slug)),
   // Ollama's catalog is live-discovered from the local server; no static model list.
   ollama: new Set<ModelSlug>(),
+  // These catalog sets are live-discovered over HTTP; the static table is empty.
+  deepseek: new Set<ModelSlug>(),
+  groq: new Set<ModelSlug>(),
+  mistral: new Set<ModelSlug>(),
+  together: new Set<ModelSlug>(),
+  cohere: new Set<ModelSlug>(),
+  xai: new Set<ModelSlug>(),
+  fireworks: new Set<ModelSlug>(),
+  opencodeZen: new Set(MODEL_OPTIONS_BY_PROVIDER.opencodeZen.map((option) => option.slug)),
 };
 
 export interface SelectableModelOption {

@@ -136,6 +136,62 @@ export const PROVIDER_DESCRIPTORS = [
     supportsNativeTurnSteering: false,
     usage: null,
   },
+  {
+    kind: "deepseek",
+    displayName: PROVIDER_DISPLAY_NAMES.deepseek,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "groq",
+    displayName: PROVIDER_DISPLAY_NAMES.groq,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "mistral",
+    displayName: PROVIDER_DISPLAY_NAMES.mistral,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "together",
+    displayName: PROVIDER_DISPLAY_NAMES.together,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "cohere",
+    displayName: PROVIDER_DISPLAY_NAMES.cohere,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "xai",
+    displayName: PROVIDER_DISPLAY_NAMES.xai,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "fireworks",
+    displayName: PROVIDER_DISPLAY_NAMES.fireworks,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "opencodeZen",
+    displayName: PROVIDER_DISPLAY_NAMES.opencodeZen,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
 ] as const satisfies readonly ProviderDescriptor[];
 
 export const PROVIDER_DESCRIPTOR_BY_KIND = Object.fromEntries(

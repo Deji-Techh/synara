@@ -26,6 +26,14 @@ import {
   GoogleAdapterLive,
   OpenRouterAdapterLive,
   OllamaAdapterLive,
+  DeepseekAdapterLive,
+  GroqAdapterLive,
+  MistralAdapterLive,
+  TogetherAdapterLive,
+  CohereAdapterLive,
+  XaiAdapterLive,
+  FireworksAdapterLive,
+  OpenCodeZenAdapterLive,
 } from "./Layers/ApiAdapter";
 import { ProviderDiscoveryServiceLive } from "./Layers/ProviderDiscoveryService";
 import { makeDurableProviderServiceLive } from "./Layers/ProviderService";
@@ -89,6 +97,29 @@ export function makeServerProviderLayer(
     const googleAdapterLayer = GoogleAdapterLive.pipe(Layer.provide(credentialsLayer));
     const openRouterAdapterLayer = OpenRouterAdapterLive.pipe(Layer.provide(credentialsLayer));
     const ollamaAdapterLayer = OllamaAdapterLive.pipe(Layer.provide(credentialsLayer));
+    const deepseekAdapterLayer = DeepseekAdapterLive.pipe(Layer.provide(credentialsLayer));
+    const groqAdapterLayer = GroqAdapterLive.pipe(Layer.provide(credentialsLayer));
+    const mistralAdapterLayer = MistralAdapterLive.pipe(Layer.provide(credentialsLayer));
+    const togetherAdapterLayer = TogetherAdapterLive.pipe(Layer.provide(credentialsLayer));
+    const cohereAdapterLayer = CohereAdapterLive.pipe(Layer.provide(credentialsLayer));
+    const xaiAdapterLayer = XaiAdapterLive.pipe(Layer.provide(credentialsLayer));
+    const fireworksAdapterLayer = FireworksAdapterLive.pipe(Layer.provide(credentialsLayer));
+    const openCodeZenAdapterLayer = OpenCodeZenAdapterLive.pipe(Layer.provide(credentialsLayer));
+    const apiAdaptersLayer = Layer.mergeAll(
+      openAiAdapterLayer,
+      anthropicAdapterLayer,
+      googleAdapterLayer,
+      openRouterAdapterLayer,
+      ollamaAdapterLayer,
+      deepseekAdapterLayer,
+      groqAdapterLayer,
+      mistralAdapterLayer,
+      togetherAdapterLayer,
+      cohereAdapterLayer,
+      xaiAdapterLayer,
+      fireworksAdapterLayer,
+      openCodeZenAdapterLayer,
+    );
     const adapterRegistryLayer = ProviderAdapterRegistryLive.pipe(
       Layer.provide(codexAdapterLayer),
       Layer.provide(claudeAdapterLayer),
@@ -105,11 +136,7 @@ export function makeServerProviderLayer(
           Layer.provide(ServerSecretStoreLive),
         ),
       ),
-      Layer.provide(openAiAdapterLayer),
-      Layer.provide(anthropicAdapterLayer),
-      Layer.provide(googleAdapterLayer),
-      Layer.provide(openRouterAdapterLayer),
-      Layer.provide(ollamaAdapterLayer),
+      Layer.provide(apiAdaptersLayer),
       Layer.provideMerge(providerSessionDirectoryLayer),
       Layer.provideMerge(credentialsLayer),
     );

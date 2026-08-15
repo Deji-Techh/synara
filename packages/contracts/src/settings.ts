@@ -86,6 +86,10 @@ export const EngineServerProviderSettings = Schema.Struct({
   baseUrl: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
   modelId: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
   apiKeyConfigured: Schema.Boolean.pipe(Schema.withDecodingDefault(() => false)),
+  // Absolute path to the flutter binary the engine spawns. Overrides
+  // FLUTTER_SDK_BIN/PATH resolution so a pinned SDK keeps working even when
+  // flutter is not on PATH (see flutterCommand.ts: resolveFlutterBinary).
+  flutterSdkBin: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
 });
 export type EngineServerProviderSettings = typeof EngineServerProviderSettings.Type;
 
@@ -172,6 +176,12 @@ export const FireworksServerProviderSettings = Schema.Struct({
 });
 export type FireworksServerProviderSettings = typeof FireworksServerProviderSettings.Type;
 
+export const OpenCodeZenServerProviderSettings = Schema.Struct({
+  ...ApiProviderSettingsBase,
+  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
+});
+export type OpenCodeZenServerProviderSettings = typeof OpenCodeZenServerProviderSettings.Type;
+
 const DisabledSkillNames = Schema.Array(Schema.String.check(Schema.isMaxLength(256))).pipe(
   Schema.withDecodingDefault(() => []),
 );
@@ -217,6 +227,7 @@ export const ServerSettings = Schema.Struct({
     cohere: CohereServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
     xai: XaiServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
     fireworks: FireworksServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
+    opencodeZen: OpenCodeZenServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
   }).pipe(Schema.withDecodingDefault(() => ({}))),
   skills: SkillsServerSettings.pipe(Schema.withDecodingDefault(() => ({}))),
 });
@@ -374,6 +385,13 @@ export const ServerSettingsPatch = Schema.Struct({
         }),
       ),
       fireworks: Schema.optionalKey(
+        Schema.Struct({
+          ...ProviderSettingsBasePatch,
+          baseUrl: Schema.optionalKey(StringSetting),
+          apiKey: Schema.optionalKey(StringSetting),
+        }),
+      ),
+      opencodeZen: Schema.optionalKey(
         Schema.Struct({
           ...ProviderSettingsBasePatch,
           baseUrl: Schema.optionalKey(StringSetting),

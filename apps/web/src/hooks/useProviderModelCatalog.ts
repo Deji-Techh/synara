@@ -325,6 +325,42 @@ export function useProviderModelCatalog(input: {
         customModelsByProvider.ollama,
         modelHintByProvider?.ollama,
       ),
+      deepseek: getAppModelOptions(
+        "deepseek",
+        customModelsByProvider.deepseek,
+        modelHintByProvider?.deepseek,
+      ),
+      groq: getAppModelOptions(
+        "groq",
+        customModelsByProvider.groq,
+        modelHintByProvider?.groq,
+      ),
+      mistral: getAppModelOptions(
+        "mistral",
+        customModelsByProvider.mistral,
+        modelHintByProvider?.mistral,
+      ),
+      together: getAppModelOptions(
+        "together",
+        customModelsByProvider.together,
+        modelHintByProvider?.together,
+      ),
+      cohere: getAppModelOptions(
+        "cohere",
+        customModelsByProvider.cohere,
+        modelHintByProvider?.cohere,
+      ),
+      xai: getAppModelOptions("xai", customModelsByProvider.xai, modelHintByProvider?.xai),
+      fireworks: getAppModelOptions(
+        "fireworks",
+        customModelsByProvider.fireworks,
+        modelHintByProvider?.fireworks,
+      ),
+      opencodeZen: getAppModelOptions(
+        "opencodeZen",
+        customModelsByProvider.opencodeZen,
+        modelHintByProvider?.opencodeZen,
+      ),
     };
     const result: Record<
       ProviderKind,
@@ -349,6 +385,14 @@ export function useProviderModelCatalog(input: {
       google: undefined,
       openrouter: undefined,
       ollama: undefined,
+      deepseek: undefined,
+      groq: undefined,
+      mistral: undefined,
+      together: undefined,
+      cohere: undefined,
+      xai: undefined,
+      fireworks: undefined,
+      opencodeZen: undefined,
     };
     for (const provider of [
       "claudeAgent",
@@ -424,6 +468,14 @@ export function useProviderModelCatalog(input: {
       google: [],
       openrouter: [],
       ollama: [],
+      deepseek: [],
+      groq: [],
+      mistral: [],
+      together: [],
+      cohere: [],
+      xai: [],
+      fireworks: [],
+      opencodeZen: [],
     }),
     [
       antigravityModelsQuery.data?.models,

@@ -77,6 +77,7 @@ export const ProviderKind = Schema.Literals([
   "cohere",
   "xai",
   "fireworks",
+  "opencodeZen",
 ]);
 export type ProviderKind = typeof ProviderKind.Type;
 
@@ -94,6 +95,7 @@ export const API_PROVIDER_KINDS = [
   "cohere",
   "xai",
   "fireworks",
+  "opencodeZen",
 ] as const;
 export type ApiProviderKind = (typeof API_PROVIDER_KINDS)[number];
 
@@ -271,6 +273,13 @@ export const FireworksModelSelection = Schema.Struct({
 });
 export type FireworksModelSelection = typeof FireworksModelSelection.Type;
 
+export const OpenCodeZenModelSelection = Schema.Struct({
+  provider: Schema.Literal("opencodeZen"),
+  model: TrimmedNonEmptyString,
+  options: Schema.optional(ApiModelOptions),
+});
+export type OpenCodeZenModelSelection = typeof OpenCodeZenModelSelection.Type;
+
 export const ModelSelection = Schema.Union([
   CodexModelSelection,
   ClaudeModelSelection,
@@ -294,6 +303,7 @@ export const ModelSelection = Schema.Union([
   CohereModelSelection,
   XaiModelSelection,
   FireworksModelSelection,
+  OpenCodeZenModelSelection,
 ]);
 export type ModelSelection = typeof ModelSelection.Type;
 
@@ -374,6 +384,7 @@ export const ProviderStartOptions = Schema.Struct({
   cohere: Schema.optional(ApiProviderStartOptions),
   xai: Schema.optional(ApiProviderStartOptions),
   fireworks: Schema.optional(ApiProviderStartOptions),
+  opencodeZen: Schema.optional(ApiProviderStartOptions),
 });
 export type ProviderStartOptions = typeof ProviderStartOptions.Type;
 

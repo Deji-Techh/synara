@@ -178,6 +178,14 @@ const allProvidersDisabledServerSettings = {
     google: { ...DEFAULT_SERVER_SETTINGS.providers.google, enabled: false },
     openrouter: { ...DEFAULT_SERVER_SETTINGS.providers.openrouter, enabled: false },
     ollama: { ...DEFAULT_SERVER_SETTINGS.providers.ollama, enabled: false },
+    deepseek: { ...DEFAULT_SERVER_SETTINGS.providers.deepseek, enabled: false },
+    groq: { ...DEFAULT_SERVER_SETTINGS.providers.groq, enabled: false },
+    mistral: { ...DEFAULT_SERVER_SETTINGS.providers.mistral, enabled: false },
+    together: { ...DEFAULT_SERVER_SETTINGS.providers.together, enabled: false },
+    cohere: { ...DEFAULT_SERVER_SETTINGS.providers.cohere, enabled: false },
+    xai: { ...DEFAULT_SERVER_SETTINGS.providers.xai, enabled: false },
+    fireworks: { ...DEFAULT_SERVER_SETTINGS.providers.fireworks, enabled: false },
+    opencodeZen: { ...DEFAULT_SERVER_SETTINGS.providers.opencodeZen, enabled: false },
   },
 } satisfies typeof DEFAULT_SERVER_SETTINGS;
 

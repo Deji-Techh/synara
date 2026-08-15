@@ -88,7 +88,13 @@ type ProviderInstallTextKey =
   | "openrouterBaseUrl"
   | "ollamaBaseUrl"
   | "deepseekBaseUrl"
-  | "groqBaseUrl";
+  | "groqBaseUrl"
+  | "mistralBaseUrl"
+  | "togetherBaseUrl"
+  | "cohereBaseUrl"
+  | "xaiBaseUrl"
+  | "fireworksBaseUrl"
+  | "opencodeZenBaseUrl";
 type ProviderInstallPasswordKey =
   | "kiloServerPassword"
   | "openCodeServerPassword"
@@ -98,7 +104,13 @@ type ProviderInstallPasswordKey =
   | "openrouterApiKey"
   | "ollamaApiKey"
   | "deepseekApiKey"
-  | "groqApiKey";
+  | "groqApiKey"
+  | "mistralApiKey"
+  | "togetherApiKey"
+  | "cohereApiKey"
+  | "xaiApiKey"
+  | "fireworksApiKey"
+  | "opencodeZenApiKey";
 type ProviderInstallPasswordConfiguredKey =
   | "kiloServerPasswordConfigured"
   | "openCodeServerPasswordConfigured"
@@ -108,7 +120,13 @@ type ProviderInstallPasswordConfiguredKey =
   | "openrouterApiKeyConfigured"
   | "ollamaApiKeyConfigured"
   | "deepseekApiKeyConfigured"
-  | "groqApiKeyConfigured";
+  | "groqApiKeyConfigured"
+  | "mistralApiKeyConfigured"
+  | "togetherApiKeyConfigured"
+  | "cohereApiKeyConfigured"
+  | "xaiApiKeyConfigured"
+  | "fireworksApiKeyConfigured"
+  | "opencodeZenApiKeyConfigured";
 type ProviderInstallBooleanKey = "openCodeExperimentalWebSockets";
 
 type ProviderInstallTextField = {
@@ -676,6 +694,30 @@ const PROVIDER_INSTALL_SETTINGS: readonly ProviderInstallSettings[] = [
         label: "Fireworks base URL",
         placeholder: "https://api.fireworks.ai/inference/v1",
         description: "Optional custom Fireworks endpoint override.",
+      },
+    ],
+  },
+  {
+    provider: "opencodeZen",
+    docs: [
+      { label: "Docs", href: "https://opencode.ai/docs/zen" },
+      { label: "Models", href: "https://opencode.ai/zen/v1/models" },
+    ],
+    fields: [
+      {
+        kind: "password",
+        settingsKey: "opencodeZenApiKey",
+        configuredKey: "opencodeZenApiKeyConfigured",
+        label: "OpenCode Zen API key",
+        placeholder: "API Key",
+        description: "Your OpenCode Zen API key. The API provider is separate from the OpenCode CLI provider.",
+      },
+      {
+        kind: "text",
+        settingsKey: "opencodeZenBaseUrl",
+        label: "OpenCode Zen base URL",
+        placeholder: "https://opencode.ai/zen/v1",
+        description: "Optional custom OpenCode Zen endpoint override.",
       },
     ],
   },

@@ -34,6 +34,14 @@ import { AnthropicAdapter, type AnthropicAdapterShape } from "../Services/Anthro
 import { GoogleAdapter, type GoogleAdapterShape } from "../Services/GoogleAdapter.ts";
 import { OpenRouterAdapter, type OpenRouterAdapterShape } from "../Services/OpenRouterAdapter.ts";
 import { OllamaAdapter, type OllamaAdapterShape } from "../Services/OllamaAdapter.ts";
+import { DeepseekAdapter, type DeepseekAdapterShape } from "../Services/DeepseekAdapter.ts";
+import { GroqAdapter, type GroqAdapterShape } from "../Services/GroqAdapter.ts";
+import { MistralAdapter, type MistralAdapterShape } from "../Services/MistralAdapter.ts";
+import { TogetherAdapter, type TogetherAdapterShape } from "../Services/TogetherAdapter.ts";
+import { CohereAdapter, type CohereAdapterShape } from "../Services/CohereAdapter.ts";
+import { XaiAdapter, type XaiAdapterShape } from "../Services/XaiAdapter.ts";
+import { FireworksAdapter, type FireworksAdapterShape } from "../Services/FireworksAdapter.ts";
+import { OpenCodeZenAdapter, type OpenCodeZenAdapterShape } from "../Services/OpenCodeZenAdapter.ts";
 import { type ProviderAdapterShape } from "../Services/ProviderAdapter.ts";
 import { ProviderCredentials, resolveProviderApiKey } from "../../providerCredentials.ts";
 
@@ -51,6 +59,14 @@ const DEFAULT_BASE_URL_BY_PROVIDER: Record<ApiProviderKind, string> = {
   google: "https://generativelanguage.googleapis.com/v1beta",
   openrouter: "https://openrouter.ai/api/v1",
   ollama: "http://127.0.0.1:11434/v1",
+  deepseek: "https://api.deepseek.com/v1",
+  groq: "https://api.groq.com/openai/v1",
+  mistral: "https://api.mistral.ai/v1",
+  together: "https://api.together.xyz/v1",
+  cohere: "https://api.cohere.com/compatibility/v1",
+  xai: "https://api.x.ai/v1",
+  fireworks: "https://api.fireworks.ai/inference/v1",
+  opencodeZen: "https://opencode.ai/zen/v1",
 };
 
 async function streamOpenAiCompatible(
@@ -291,8 +307,14 @@ export const makeApiAdapter = (provider: ApiProviderKind) =>
             })),
           };
         }
-        // Fallback for local models (e.g. Ollama)
-        const fallbacks = ["llama3.3", "qwen2.5-coder", "deepseek-r1"];
+        // Standard providers advertise a static picker catalog. Providers
+        // without a static catalog (e.g. Ollama's local models) fall back to a
+        // sensible single default rather than a shared generic list.
+        const defaultModel = DEFAULT_MODEL_BY_PROVIDER[provider] ?? "default";
+        const fallbacks =
+          provider === "ollama"
+            ? ["llama3.3", "qwen2.5-coder", "deepseek-r1"]
+            : [defaultModel];
         return {
           models: fallbacks.map((slug) => ({
             slug,
@@ -677,6 +699,78 @@ export const OllamaAdapterLive = Layer.effect(
   OllamaAdapter,
   makeApiAdapter("ollama") as unknown as Effect.Effect<
     OllamaAdapterShape,
+    never,
+    ProviderCredentials
+  >,
+);
+
+export const DeepseekAdapterLive = Layer.effect(
+  DeepseekAdapter,
+  makeApiAdapter("deepseek") as unknown as Effect.Effect<
+    DeepseekAdapterShape,
+    never,
+    ProviderCredentials
+  >,
+);
+
+export const GroqAdapterLive = Layer.effect(
+  GroqAdapter,
+  makeApiAdapter("groq") as unknown as Effect.Effect<
+    GroqAdapterShape,
+    never,
+    ProviderCredentials
+  >,
+);
+
+export const MistralAdapterLive = Layer.effect(
+  MistralAdapter,
+  makeApiAdapter("mistral") as unknown as Effect.Effect<
+    MistralAdapterShape,
+    never,
+    ProviderCredentials
+  >,
+);
+
+export const TogetherAdapterLive = Layer.effect(
+  TogetherAdapter,
+  makeApiAdapter("together") as unknown as Effect.Effect<
+    TogetherAdapterShape,
+    never,
+    ProviderCredentials
+  >,
+);
+
+export const CohereAdapterLive = Layer.effect(
+  CohereAdapter,
+  makeApiAdapter("cohere") as unknown as Effect.Effect<
+    CohereAdapterShape,
+    never,
+    ProviderCredentials
+  >,
+);
+
+export const XaiAdapterLive = Layer.effect(
+  XaiAdapter,
+  makeApiAdapter("xai") as unknown as Effect.Effect<
+    XaiAdapterShape,
+    never,
+    ProviderCredentials
+  >,
+);
+
+export const FireworksAdapterLive = Layer.effect(
+  FireworksAdapter,
+  makeApiAdapter("fireworks") as unknown as Effect.Effect<
+    FireworksAdapterShape,
+    never,
+    ProviderCredentials
+  >,
+);
+
+export const OpenCodeZenAdapterLive = Layer.effect(
+  OpenCodeZenAdapter,
+  makeApiAdapter("opencodeZen") as unknown as Effect.Effect<
+    OpenCodeZenAdapterShape,
     never,
     ProviderCredentials
   >,

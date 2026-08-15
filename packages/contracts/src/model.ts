@@ -174,6 +174,14 @@ export const ProviderModelOptions = Schema.Struct({
   google: Schema.optional(ApiModelOptions),
   openrouter: Schema.optional(ApiModelOptions),
   ollama: Schema.optional(ApiModelOptions),
+  deepseek: Schema.optional(ApiModelOptions),
+  groq: Schema.optional(ApiModelOptions),
+  mistral: Schema.optional(ApiModelOptions),
+  together: Schema.optional(ApiModelOptions),
+  cohere: Schema.optional(ApiModelOptions),
+  xai: Schema.optional(ApiModelOptions),
+  fireworks: Schema.optional(ApiModelOptions),
+  opencodeZen: Schema.optional(ApiModelOptions),
 });
 export type ProviderModelOptions = typeof ProviderModelOptions.Type;
 
@@ -1113,6 +1121,38 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
   cohere: [],
   xai: [],
   fireworks: [],
+  opencodeZen: [
+    {
+      slug: "deepseek-v4-flash-free",
+      name: "DeepSeek V4 Flash Free",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "mimo-v2.5-free",
+      name: "Mimo 2.5 Free",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "laguna-s-2.1-free",
+      name: "Laguna S 2.1 Free",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "north-mini-code-free",
+      name: "North Mini Code Free",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "nemotron-3-ultra-free",
+      name: "Nemotron 3 Ultra Free",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "big-pickle",
+      name: "Big Pickle Free",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
 } as const satisfies Record<ProviderKind, readonly ModelDefinition[]>;
 export type ModelOptionsByProvider = typeof MODEL_OPTIONS_BY_PROVIDER;
 
@@ -1142,6 +1182,7 @@ export const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderWithDefaultModel, ModelSl
   cohere: "command-r-plus",
   xai: "grok-2",
   fireworks: "accounts/fireworks/models/llama-v3-70b-instruct",
+  opencodeZen: "deepseek-v4-flash-free",
 };
 
 // Backward compatibility for existing Codex-only call sites.
@@ -1290,6 +1331,7 @@ export const MODEL_SLUG_ALIASES_BY_PROVIDER: Record<ProviderKind, Record<string,
   cohere: {},
   xai: {},
   fireworks: {},
+  opencodeZen: {},
 };
 
 // ── Agent mention aliases ─────────────────────────────────────────────
@@ -1339,4 +1381,5 @@ export const PROVIDER_DISPLAY_NAMES: Record<ProviderKind, string> = {
   cohere: "Cohere",
   xai: "xAI",
   fireworks: "Fireworks",
+  opencodeZen: "OpenCode Zen",
 };

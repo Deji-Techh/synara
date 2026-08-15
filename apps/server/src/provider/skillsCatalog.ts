@@ -479,6 +479,14 @@ const PROVIDER_SKILL_ORIGIN_PREFERENCES = {
   google: ["agents"],
   openrouter: ["agents"],
   ollama: ["agents"],
+  deepseek: ["agents"],
+  groq: ["agents"],
+  mistral: ["agents"],
+  together: ["agents"],
+  cohere: ["agents"],
+  xai: ["agents"],
+  fireworks: ["agents"],
+  opencodeZen: ["agents"],
 } as const satisfies Partial<Record<ProviderKind, readonly SkillsHomeOrigin[]>>;
 
 function homeRootsForOrigin(

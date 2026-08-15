@@ -23,6 +23,14 @@ const ProviderDiscoveryKind = Schema.Literals([
   "google",
   "openrouter",
   "ollama",
+  "deepseek",
+  "groq",
+  "mistral",
+  "together",
+  "cohere",
+  "xai",
+  "fireworks",
+  "opencodeZen",
 ]);
 
 export const ProviderSkillInterface = Schema.Struct({

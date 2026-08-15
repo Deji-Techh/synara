@@ -30,6 +30,14 @@ import { AnthropicAdapter } from "../Services/AnthropicAdapter.ts";
 import { GoogleAdapter } from "../Services/GoogleAdapter.ts";
 import { OpenRouterAdapter } from "../Services/OpenRouterAdapter.ts";
 import { OllamaAdapter } from "../Services/OllamaAdapter.ts";
+import { DeepseekAdapter } from "../Services/DeepseekAdapter.ts";
+import { GroqAdapter } from "../Services/GroqAdapter.ts";
+import { MistralAdapter } from "../Services/MistralAdapter.ts";
+import { TogetherAdapter } from "../Services/TogetherAdapter.ts";
+import { CohereAdapter } from "../Services/CohereAdapter.ts";
+import { XaiAdapter } from "../Services/XaiAdapter.ts";
+import { FireworksAdapter } from "../Services/FireworksAdapter.ts";
+import { OpenCodeZenAdapter } from "../Services/OpenCodeZenAdapter.ts";
 
 export interface ProviderAdapterRegistryLiveOptions {
   readonly adapters?: ReadonlyArray<ProviderAdapterShape<ProviderAdapterError>>;
@@ -56,6 +64,14 @@ const makeProviderAdapterRegistry = (options?: ProviderAdapterRegistryLiveOption
             yield* GoogleAdapter,
             yield* OpenRouterAdapter,
             yield* OllamaAdapter,
+            yield* DeepseekAdapter,
+            yield* GroqAdapter,
+            yield* MistralAdapter,
+            yield* TogetherAdapter,
+            yield* CohereAdapter,
+            yield* XaiAdapter,
+            yield* FireworksAdapter,
+            yield* OpenCodeZenAdapter,
           ];
     const byProvider = new Map(adapters.map((adapter) => [adapter.provider, adapter]));
 
