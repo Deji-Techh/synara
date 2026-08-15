@@ -374,6 +374,46 @@ const composerProviderRegistry: Record<ProviderKind, ProviderRegistryEntry> = {
     renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("ollama", input),
     renderTraitsPicker: (input) => renderTraitsPickerForProvider("ollama", input),
   },
+  deepseek: {
+    getState: (input) => getProviderStateFromCapabilities(input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("deepseek", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("deepseek", input),
+  },
+  groq: {
+    getState: (input) => getProviderStateFromCapabilities(input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("groq", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("groq", input),
+  },
+  mistral: {
+    getState: (input) => getProviderStateFromCapabilities(input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("mistral", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("mistral", input),
+  },
+  together: {
+    getState: (input) => getProviderStateFromCapabilities(input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("together", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("together", input),
+  },
+  cohere: {
+    getState: (input) => getProviderStateFromCapabilities(input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("cohere", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("cohere", input),
+  },
+  xai: {
+    getState: (input) => getProviderStateFromCapabilities(input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("xai", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("xai", input),
+  },
+  fireworks: {
+    getState: (input) => getProviderStateFromCapabilities(input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("fireworks", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("fireworks", input),
+  },
+  opencodeZen: {
+    getState: (input) => getProviderStateFromCapabilities(input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("opencodeZen", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("opencodeZen", input),
+  },
 };
 
 export function getComposerProviderState(input: ComposerProviderStateInput): ComposerProviderState {

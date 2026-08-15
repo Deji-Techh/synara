@@ -55,6 +55,14 @@ function ClaudeTraitsPickerHarness(props: {
       google: [],
       openrouter: [],
       ollama: [],
+      deepseek: [],
+      groq: [],
+      mistral: [],
+      together: [],
+      cohere: [],
+      xai: [],
+      fireworks: [],
+      opencodeZen: [],
     },
   });
   const handlePromptChange = (nextPrompt: string) => {
@@ -665,6 +673,14 @@ function OpenCodeTraitsPickerHarness(props: {
       google: [],
       openrouter: [],
       ollama: [],
+      deepseek: [],
+      groq: [],
+      mistral: [],
+      together: [],
+      cohere: [],
+      xai: [],
+      fireworks: [],
+      opencodeZen: [],
     },
   });
   const handlePromptChange = (nextPrompt: string) => {

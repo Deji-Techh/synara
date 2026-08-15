@@ -33,6 +33,14 @@ describe("ComposerModelEffortPicker", () => {
           google: [],
           openrouter: [],
           ollama: [],
+          deepseek: [],
+          groq: [],
+          mistral: [],
+          together: [],
+          cohere: [],
+          xai: [],
+          fireworks: [],
+          opencodeZen: [],
         }}
         hideStatusLabel
         onProviderModelChange={vi.fn()}

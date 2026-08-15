@@ -90,6 +90,41 @@ const MODEL_OPTIONS_BY_PROVIDER = {
     { slug: "llama3.3", name: "Llama 3.3" },
     { slug: "qwen3-coder", name: "Qwen3 Coder" },
   ],
+  deepseek: [
+    { slug: "deepseek-chat", name: "DeepSeek Chat" },
+    { slug: "deepseek-reasoner", name: "DeepSeek Reasoner" },
+  ],
+  groq: [
+    { slug: "llama-3.3-70b-versatile", name: "Llama 3.3 70B Versatile" },
+    { slug: "deepseek-r1-distill-llama-70b", name: "DeepSeek R1 Distill 70B" },
+  ],
+  mistral: [
+    { slug: "mistral-large-latest", name: "Mistral Large" },
+    { slug: "codestral-latest", name: "Codestral" },
+  ],
+  together: [
+    { slug: "llama-3.3-70b-instruct-turbo", name: "Llama 3.3 70B Instruct Turbo" },
+    { slug: "qwen2.5-coder-32b-instruct", name: "Qwen 2.5 Coder 32B" },
+  ],
+  cohere: [
+    { slug: "command-r-plus", name: "Command R+" },
+    { slug: "c4ai-aya-expanse-32b", name: "Aya Expanse 32B" },
+  ],
+  xai: [
+    { slug: "grok-4", name: "Grok 4" },
+    { slug: "grok-4-vision", name: "Grok 4 Vision" },
+  ],
+  fireworks: [
+    { slug: "accounts/fireworks/models/llama-v3p3-70b-instruct", name: "Llama 3.3 70B Instruct" },
+  ],
+  opencodeZen: [
+    { slug: "deepseek-v4-flash-free", name: "DeepSeek V4 Flash Free" },
+    { slug: "mimo-v2.5-free", name: "Mimo V2.5 Free" },
+    { slug: "laguna-s-2.1-free", name: "Laguna S 2.1 Free" },
+    { slug: "north-mini-code-free", name: "North Mini Code Free" },
+    { slug: "nemotron-3-ultra-free", name: "Nemotron 3 Ultra Free" },
+    { slug: "big-pickle", name: "Big Pickle" },
+  ],
 } as const satisfies Record<ProviderKind, ReadonlyArray<ProviderModelOption & { slug: ModelSlug }>>;
 
 const MANY_OPENCODE_MODELS = Array.from({ length: 16 }, (_, index) => ({

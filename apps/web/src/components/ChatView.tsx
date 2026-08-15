@@ -954,6 +954,14 @@ function getProviderStartOptionsCustomBinaryPath(
     case "google":
     case "openrouter":
     case "ollama":
+    case "deepseek":
+    case "groq":
+    case "mistral":
+    case "together":
+    case "cohere":
+    case "xai":
+    case "fireworks":
+    case "opencodeZen":
       return null;
   }
 }
@@ -2289,6 +2297,14 @@ export default function ChatView({
       google: resolveHint("google"),
       openrouter: resolveHint("openrouter"),
       ollama: resolveHint("ollama"),
+      deepseek: resolveHint("deepseek"),
+      groq: resolveHint("groq"),
+      mistral: resolveHint("mistral"),
+      together: resolveHint("together"),
+      cohere: resolveHint("cohere"),
+      xai: resolveHint("xai"),
+      fireworks: resolveHint("fireworks"),
+      opencodeZen: resolveHint("opencodeZen"),
     };
   }, [
     activeProject?.defaultModelSelection,
@@ -11125,7 +11141,7 @@ export default function ChatView({
         fastModeEnabled={composerTraitSelection.fastModeEnabled}
         onAddAttachments={addComposerAttachments}
         onToggleFastMode={toggleFastMode}
-        onSetPlanMode={setPlanMode}
+        onInteractionModeChange={handleInteractionModeChange}
       />
       {!isVoiceRecording && !isVoiceTranscribing ? (
         <RuntimeUsageControls

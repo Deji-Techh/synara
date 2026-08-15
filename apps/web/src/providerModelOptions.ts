@@ -511,6 +511,14 @@ export function buildModelSelection(
     case "google":
     case "openrouter":
     case "ollama":
+    case "deepseek":
+    case "groq":
+    case "mistral":
+    case "together":
+    case "cohere":
+    case "xai":
+    case "fireworks":
+    case "opencodeZen":
       return options
         ? {
             provider,

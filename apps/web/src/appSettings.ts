@@ -1369,6 +1369,14 @@ export function getCustomModelsByProvider(
     google: getCustomModelsForProvider(settings, "google"),
     openrouter: getCustomModelsForProvider(settings, "openrouter"),
     ollama: getCustomModelsForProvider(settings, "ollama"),
+    deepseek: getCustomModelsForProvider(settings, "deepseek"),
+    groq: getCustomModelsForProvider(settings, "groq"),
+    mistral: getCustomModelsForProvider(settings, "mistral"),
+    together: getCustomModelsForProvider(settings, "together"),
+    cohere: getCustomModelsForProvider(settings, "cohere"),
+    xai: getCustomModelsForProvider(settings, "xai"),
+    fireworks: getCustomModelsForProvider(settings, "fireworks"),
+    opencodeZen: getCustomModelsForProvider(settings, "opencodeZen"),
   };
 }
 
@@ -1523,6 +1531,14 @@ export function getCustomModelOptionsByProvider(
     google: getAppModelOptions("google", customModelsByProvider.google),
     openrouter: getAppModelOptions("openrouter", customModelsByProvider.openrouter),
     ollama: getAppModelOptions("ollama", customModelsByProvider.ollama),
+    deepseek: getAppModelOptions("deepseek", customModelsByProvider.deepseek),
+    groq: getAppModelOptions("groq", customModelsByProvider.groq),
+    mistral: getAppModelOptions("mistral", customModelsByProvider.mistral),
+    together: getAppModelOptions("together", customModelsByProvider.together),
+    cohere: getAppModelOptions("cohere", customModelsByProvider.cohere),
+    xai: getAppModelOptions("xai", customModelsByProvider.xai),
+    fireworks: getAppModelOptions("fireworks", customModelsByProvider.fireworks),
+    opencodeZen: getAppModelOptions("opencodeZen", customModelsByProvider.opencodeZen),
   };
 }
 
@@ -1711,6 +1727,14 @@ export function getCustomBinaryPathForProvider(
     case "google":
     case "openrouter":
     case "ollama":
+    case "deepseek":
+    case "groq":
+    case "mistral":
+    case "together":
+    case "cohere":
+    case "xai":
+    case "fireworks":
+    case "opencodeZen":
       return "";
   }
 }

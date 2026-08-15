@@ -80,6 +80,14 @@ export const PROVIDER_ICON_COMPONENT_BY_PROVIDER: Record<ProviderKind, Icon> = {
   google: FlaskConicalIcon,
   openrouter: GlobeIcon,
   ollama: TerminalSquareIcon,
+  deepseek: GlobeIcon,
+  groq: GlobeIcon,
+  mistral: GlobeIcon,
+  together: GlobeIcon,
+  cohere: GlobeIcon,
+  xai: GlobeIcon,
+  fireworks: GlobeIcon,
+  opencodeZen: GlobeIcon,
 };
 
 export function providerIconToneClassName(

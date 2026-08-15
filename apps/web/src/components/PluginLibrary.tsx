@@ -457,6 +457,38 @@ export function PluginLibrary() {
       plugins: false,
       skills: false,
     },
+    deepseek: {
+      plugins: false,
+      skills: false,
+    },
+    groq: {
+      plugins: false,
+      skills: false,
+    },
+    mistral: {
+      plugins: false,
+      skills: false,
+    },
+    together: {
+      plugins: false,
+      skills: false,
+    },
+    cohere: {
+      plugins: false,
+      skills: false,
+    },
+    xai: {
+      plugins: false,
+      skills: false,
+    },
+    fireworks: {
+      plugins: false,
+      skills: false,
+    },
+    opencodeZen: {
+      plugins: false,
+      skills: false,
+    },
   };
 
   // Auto-fallback: when the current tab/provider combo is unsupported, render
