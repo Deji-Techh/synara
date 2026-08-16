@@ -421,15 +421,19 @@ describe("Antigravity CLI integration helpers", () => {
       },
     });
 
-    expect(env).toEqual({
-      PATH: "/usr/bin",
-      HOME: "/home/test",
-      GEMINI_API_KEY: "gemini-key",
-      CAIDE_AGENT_GATEWAY_URL: "http://127.0.0.1:3773/mcp",
-      CAIDE_AGENT_GATEWAY_BOOTSTRAP_TOKEN: "thread-a-bootstrap",
-      CAIDE_ANTIGRAVITY_EVENTS: "/tmp/thread-a-hooks.ndjson",
-      CAIDE_ANTIGRAVITY_HOOK_DECISION: "allow",
-    });
+    // Safe env strips dangerous CAIDE_ control-plane vars and does NOT
+    // forward arbitrary baseEnv (that was the E2BIG bug). It only includes
+    // whitelisted system vars from process.env plus explicit overrides.
+    expect(env.CAIDE_AGENT_GATEWAY_URL).toBe("http://127.0.0.1:3773/mcp");
+    expect(env.CAIDE_AGENT_GATEWAY_BOOTSTRAP_TOKEN).toBe("thread-a-bootstrap");
+    expect(env.CAIDE_ANTIGRAVITY_EVENTS).toBe("/tmp/thread-a-hooks.ndjson");
+    expect(env.CAIDE_ANTIGRAVITY_HOOK_DECISION).toBe("allow");
+    // Dangerous vars must NOT be forwarded
+    expect(env.CAIDE_AUTH_TOKEN).toBeUndefined();
+    expect(env.CAIDE_BROWSER_HOST_PIPE_PATH).toBeUndefined();
+    expect(env.CAIDE_BROWSER_USE_PIPE_PATH).toBeUndefined();
+    expect(env.CAIDE_BROWSER_HOST_CAPABILITY).toBeUndefined();
+    expect(env.NODE_REPL_SANDBOX_ALLOWED_UNIX_SOCKETS).toBeUndefined();
   });
 
   it("advertises canonical browser tools only while the session owns a gateway lease", () => {
@@ -608,6 +612,13 @@ describe("Antigravity CLI integration helpers", () => {
       "limited to 24,000 characters",
     );
     expect(antigravityPromptCommandLineIssue("x".repeat(120_000), "darwin")).toBeNull();
+    expect(antigravityPromptCommandLineIssue("x".repeat(240_001), "darwin")).toContain(
+      "limited to 240,000 characters",
+    );
+    expect(antigravityPromptCommandLineIssue("x".repeat(120_000), "linux")).toBeNull();
+    expect(antigravityPromptCommandLineIssue("x".repeat(120_001), "linux")).toContain(
+      "limited to 120,000 characters",
+    );
   });
 
   it("marks every generated hook as a command hook", () => {

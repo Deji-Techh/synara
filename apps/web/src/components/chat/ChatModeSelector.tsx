@@ -1,24 +1,24 @@
 import React from "react";
 import { type ChatMode } from "@caide/contracts";
-import { cn } from "@/lib/utils";
+import { cn } from "~/lib/utils";
 import {
   Select,
-  SelectContent,
+  SelectPopup,
   SelectItem,
-  SelectValue,
-  MiniSelectTrigger
-} from "@/components/ui/select";
+  SelectValue
+} from "~/components/ui/select";
+import { Select as SelectPrimitive } from "@base-ui/react/select";
 import {
   Tooltip,
   TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+  TooltipPopup,
+} from "~/components/ui/tooltip";
 import {
-  Hammer,
-  Bot,
-  MessageCircle,
-  Lightbulb,
-} from "lucide-react";
+  HammerIcon as Hammer,
+  BotIcon as Bot,
+  AskIcon as MessageCircle,
+  LightBulbIcon as Lightbulb,
+} from "~/lib/icons";
 
 export const CHAT_MODE_ORDER: ChatMode[] = ["local-agent", "plan", "build", "ask"];
 
@@ -67,11 +67,11 @@ export function ChatModeSelector({ mode, onChatModeChange }: ChatModeSelectorPro
         <Tooltip>
           <TooltipTrigger
             render={
-              <MiniSelectTrigger
+              <SelectPrimitive.Trigger
                 data-testid="chat-mode-selector"
                 aria-label={`Chat mode: ${meta.name}`}
                 className={cn(
-                  "cursor-pointer w-fit px-2 py-0 text-xs font-medium border-none shadow-none gap-1 rounded-lg transition-colors",
+                  "cursor-pointer inline-flex items-center w-fit px-2 py-0 h-7 text-xs font-medium border-none shadow-none gap-1 rounded-lg transition-colors outline-none",
                   mode === "build" || mode === "local-agent"
                     ? "text-foreground/80 hover:text-foreground hover:bg-muted/60"
                     : mode === "ask"
@@ -80,7 +80,6 @@ export function ChatModeSelector({ mode, onChatModeChange }: ChatModeSelectorPro
                         ? "bg-blue-500/10 text-blue-600 hover:bg-blue-500/15 dark:bg-blue-500/15 dark:text-blue-400 dark:hover:bg-blue-500/20"
                         : "text-foreground/80 hover:text-foreground hover:bg-muted/60",
                 )}
-                size="sm"
               />
             }
           >
@@ -91,11 +90,11 @@ export function ChatModeSelector({ mode, onChatModeChange }: ChatModeSelectorPro
               </span>
             </SelectValue>
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipPopup>
             Open mode menu (Ctrl + . to toggle)
-          </TooltipContent>
+          </TooltipPopup>
         </Tooltip>
-        <SelectContent align="start">
+        <SelectPopup surface="composer" align="start">
           {CHAT_MODE_ORDER.map((m) => {
             const mMeta = CHAT_MODE_META[m];
             const MIcon = mMeta.Icon;
@@ -117,7 +116,7 @@ export function ChatModeSelector({ mode, onChatModeChange }: ChatModeSelectorPro
               </SelectItem>
             );
           })}
-        </SelectContent>
+        </SelectPopup>
       </Select>
     </div>
   );

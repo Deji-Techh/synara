@@ -83,6 +83,7 @@ function shouldKeepBuiltInSlashCommandDespiteNativeCollision(
 ): boolean {
   return (
     command === "automation" ||
+    command === "debug" ||
     command === "export" ||
     command === "feedback" ||
     (providerUsesAppOwnedReviewSlashCommand(provider) && command === "review")
@@ -98,6 +99,7 @@ export function shouldHideProviderNativeCommandFromComposerMenu(
   const appCommandIsAvailable = options.availableAppCommands?.has(normalizedCommand) ?? true;
   return (
     normalizedCommand === "automation" ||
+    normalizedCommand === "debug" ||
     (normalizedCommand === "export" && appCommandIsAvailable) ||
     (normalizedCommand === "feedback" && appCommandIsAvailable) ||
     (providerUsesAppOwnedReviewSlashCommand(provider) && normalizedCommand === "review")
@@ -245,6 +247,12 @@ const COMPOSER_SLASH_COMMAND_DEFINITIONS: Record<
     command: "plan",
     label: "/plan",
     description: "Switch this thread into plan mode",
+    source: "app",
+  },
+  debug: {
+    command: "debug",
+    label: "/debug",
+    description: "Switch this thread into evidence-first debug mode",
     source: "app",
   },
   default: {
@@ -560,6 +568,7 @@ export function getAvailableComposerSlashCommands(input: {
           "model",
           ...(input.supportsFastSlashCommand ? (["fast"] as const) : []),
           "plan",
+          "debug",
           "default",
           ...(input.canOfferReviewCommand ? (["review"] as const) : []),
           ...(input.canOfferForkCommand ? (["fork"] as const) : []),
@@ -586,6 +595,7 @@ export function getAvailableComposerSlashCommands(input: {
           "build",
           "preview",
           "theme",
+          "debug",
           ...(input.canOfferSideCommand ? (["side"] as const) : []),
           ...(input.canOfferExportCommand ? (["export"] as const) : []),
           "feedback",

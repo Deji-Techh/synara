@@ -235,6 +235,11 @@ const CAIDE_MCP_TOOL_PRESENTATIONS = {
     completed: "Caide updated a thread",
     failed: "Caide couldn't update a thread",
   },
+  caide_set_thread_goal: {
+    running: "Caide is setting a thread goal",
+    completed: "Caide set a thread goal",
+    failed: "Caide couldn't set a thread goal",
+  },
   caide_create_automation: {
     running: "Caide is creating an automation",
     completed: "Caide created an automation",

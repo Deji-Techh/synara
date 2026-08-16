@@ -38,7 +38,10 @@ import {
   withAgentGatewayTurnCancellation,
 } from "../../agentGateway/sessionLease.ts";
 import { ServerConfig } from "../../config.ts";
-import { buildProviderChildEnvironment } from "../../providerChildEnvironment.ts";
+import {
+  buildProviderChildEnvironment,
+  buildSafeProviderChildEnvironment,
+} from "../../providerChildEnvironment.ts";
 import {
   ProviderAdapterRequestError,
   ProviderAdapterSessionNotFoundError,
@@ -71,6 +74,14 @@ const MODEL_DISCOVERY_TIMEOUT_MS = 15_000;
 const PLUGIN_INSTALL_TIMEOUT_MS = 30_000;
 const HELPER_OUTPUT_MAX_CHARS = 128 * 1024;
 const WINDOWS_PROMPT_MAX_CHARS = 24_000;
+// The agy CLI accepts print-mode prompts as a single command-line argument.
+// Every OS enforces a per-argument cap (MAX_ARG_STRLEN): Linux ≈128KiB,
+// macOS ≈256KiB, Windows ≈32KiB. Exceeding it makes child_process.spawn throw
+// E2BIG. Guard with a conservative margin below those hard limits so users get
+// a clear, actionable error instead of a transport failure that quarantines
+// the thread.
+const LINUX_PROMPT_MAX_CHARS = 120_000;
+const DARWIN_PROMPT_MAX_CHARS = 240_000;
 
 type TranscriptStep = {
   readonly step_index?: number;
@@ -411,14 +422,8 @@ export function buildAntigravityTurnProcessEnvironment(input: {
         [CAIDE_AGENT_GATEWAY_BOOTSTRAP_TOKEN_ENV]: input.gatewayBootstrapToken!,
       }
     : {};
-  return buildProviderChildEnvironment({
+  return buildSafeProviderChildEnvironment({
     provider: PROVIDER,
-    ...(input.baseEnv === undefined ? {} : { baseEnv: input.baseEnv }),
-    inheritedCaideKeys: [
-      "CAIDE_ANTIGRAVITY_EVENTS",
-      "CAIDE_ANTIGRAVITY_HOOK_DECISION",
-      ...gatewayKeys,
-    ],
     overrides: {
       CAIDE_ANTIGRAVITY_EVENTS: input.eventFile,
       CAIDE_ANTIGRAVITY_HOOK_DECISION: "allow",
@@ -488,10 +493,18 @@ export function antigravityPromptCommandLineIssue(
   prompt: string,
   platform: NodeJS.Platform = process.platform,
 ): string | null {
-  if (platform !== "win32" || prompt.length <= WINDOWS_PROMPT_MAX_CHARS) {
+  const limit =
+    platform === "win32"
+      ? WINDOWS_PROMPT_MAX_CHARS
+      : platform === "darwin"
+        ? DARWIN_PROMPT_MAX_CHARS
+        : LINUX_PROMPT_MAX_CHARS;
+  if (prompt.length <= limit) {
     return null;
   }
-  return `Antigravity prompts on Windows are limited to ${WINDOWS_PROMPT_MAX_CHARS.toLocaleString("en-US")} characters because the CLI accepts print-mode prompts as command-line arguments. Shorten the prompt or attach the content as files.`;
+  const platformName =
+    platform === "win32" ? "Windows" : platform === "darwin" ? "macOS" : "Linux";
+  return `Antigravity prompts on ${platformName} are limited to ${limit.toLocaleString("en-US")} characters because the CLI accepts print-mode prompts as command-line arguments. Shorten the prompt or attach the content as files.`;
 }
 
 export function parseAntigravityModelLines(output: string): ProviderListModelsResult["models"] {

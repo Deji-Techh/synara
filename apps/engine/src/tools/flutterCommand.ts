@@ -8,6 +8,7 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { safeFlutterEnvironment } from "../safeEnvironment.ts";
 
 export class FlutterToolNotFoundError extends Error {
   constructor() {
@@ -75,7 +76,7 @@ export function spawnFlutterProcess(
   return spawn(binary, args, {
     cwd,
     stdio: ["pipe", "pipe", "pipe"],
-    ...(options.env !== undefined ? { env: options.env } : {}),
+    env: options.env ?? safeFlutterEnvironment(),
   });
 }
 
@@ -94,6 +95,7 @@ export async function runFlutterCommand(
     const child = spawn(binary, args, {
       cwd,
       stdio: ["ignore", "pipe", "pipe"],
+      env: safeFlutterEnvironment(),
     });
     let stdout = "";
     let stderr = "";

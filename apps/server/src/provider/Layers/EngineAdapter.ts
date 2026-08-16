@@ -22,6 +22,7 @@ import {
   TurnId,
 } from "@caide/contracts";
 import { EngineClient } from "@caide/engine/client";
+import { safeFlutterEnvironment } from "@caide/engine/env";
 import {
   AnalyzeRunResultSchema,
   BuildStartResultSchema,
@@ -168,10 +169,26 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
     ): Effect.Effect<{ client: EngineClient; engineServerVersion: string }, ProviderAdapterError> =>
       Effect.gen(function* () {
         const cwd = options?.cwd ?? input.cwd;
+        // Pin the flutter SDK for the engine process (and, transparently, for
+        // every flutter child it spawns via safeFlutterEnvironment). Falls back
+        // to FLUTTER_SDK_BIN already present in the server environment.
+        const engineSettings = (yield* serverSettings.getSettings.pipe(
+          Effect.orElseSucceed(() => undefined),
+        ))?.providers?.engine;
+        const flutterSdkBin =
+          engineSettings?.flutterSdkBin?.trim() ||
+          (typeof process.env.FLUTTER_SDK_BIN === "string"
+            ? process.env.FLUTTER_SDK_BIN.trim()
+            : "") ||
+          "";
+        const engineEnv = safeFlutterEnvironment(
+          flutterSdkBin !== "" ? { FLUTTER_SDK_BIN: flutterSdkBin } : undefined,
+        );
         const client = new EngineClient({
           command: resolvedCommand,
           args: resolvedArgs,
           ...(cwd !== undefined ? { cwd } : {}),
+          env: engineEnv,
           onNotification: (method, params) => {
             const turnId = input.currentTurnIdRef?.current;
             if (!turnId) return;
@@ -438,7 +455,10 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           );
 
           const modelConfig = yield* engineModelConfig(context.session.cwd);
-          const mode: "build" | "plan" = input.interactionMode === "plan" ? "plan" : "build";
+          const mode = (input.interactionMode === "plan" ? "plan"
+            : input.interactionMode === "ask" ? "ask"
+            : input.interactionMode === "local-agent" ? "local-agent"
+            : "build") as "build" | "ask" | "plan" | "local-agent";
 
           yield* PubSub.publish(
             runtimeEventQueue,

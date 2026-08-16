@@ -74,7 +74,20 @@ import {
   ProviderAdapterValidationError,
   ProviderServiceError,
 } from "../../provider/Errors.ts";
-import { buildInlineSkillInstructions } from "../../provider/skillPromptInjection.ts";
+import {
+  buildInlineSkillInstructions,
+  inlinePersonaSystemInstruction,
+} from "../../provider/skillPromptInjection.ts";
+import {
+  PROVIDER_DEBUG_MODE_PROMPT_PREFIX,
+  withProviderDebugModePrompt,
+} from "../../provider/debugMode.ts";
+import {
+  activeThreadGoal,
+  buildGoalContinuationInput,
+  providerGoalPromptOverheadChars,
+  withProviderGoalPrompt,
+} from "../../provider/goalMode.ts";
 import {
   appendThreadMentionContextBlocks,
   resolveThreadMentionPromptProjection,
@@ -244,6 +257,28 @@ export function isSafeLegacyProviderBlocker(lastError: string | null): boolean {
   return normalized.includes("stdin closed before the frame was written");
 }
 
+/**
+ * True when a per-thread blocking provider delivery is the result of a
+ * launch/transport failure rather than an in-flight execution. Launch failures
+ * (E2BIG argv overflow, missing binary, failed stdio spawn) provably never
+ * started the provider process, so the command could not have executed. These
+ * blocks are safe to clear when the user explicitly retries the turn.
+ */
+export function isLaunchTransportFailure(lastError: string | null): boolean {
+  const normalized = lastError?.toLowerCase() ?? "";
+  if (normalized.length === 0) return false;
+  return (
+    normalized.includes("failed to launch") ||
+    normalized.includes("spawn e2big") ||
+    normalized.includes("argument list too long") ||
+    normalized.includes("error: spawn") ||
+    normalized.includes("failed to spawn") ||
+    normalized.includes("enospc") ||
+    normalized.includes("enoent") ||
+    normalized.includes("amaxsize")
+  );
+}
+
 function toNonEmptyProviderInput(value: string | undefined): string | undefined {
   const normalized = value?.trim();
   return normalized && normalized.length > 0 ? normalized : undefined;
@@ -339,14 +374,41 @@ function availableProviderContextChars(input: {
   );
 }
 
-function availableThreadMentionContextChars(messageText: string): number {
+function availableThreadMentionContextChars(messageText: string, reservedChars = 0): number {
   return Math.max(
     0,
     PROVIDER_SEND_TURN_MAX_INPUT_CHARS -
       messageText.length -
       PROVIDER_INPUT_SAFETY_MARGIN_CHARS -
-      THREAD_MENTION_CONTEXT_SUFFIX_PREFIX_CHARS,
+      THREAD_MENTION_CONTEXT_SUFFIX_PREFIX_CHARS -
+      reservedChars,
   );
+}
+
+function debugModePromptOverheadChars(
+  interactionMode: ProviderInteractionMode | undefined,
+): number {
+  return interactionMode === "debug" ? PROVIDER_DEBUG_MODE_PROMPT_PREFIX.length + 2 : 0;
+}
+
+function withProviderThreadStatePrompts(input: {
+  readonly text: string;
+  readonly interactionMode?: ProviderInteractionMode | undefined;
+  readonly goal?: string | undefined;
+}): string {
+  return withProviderGoalPrompt({
+    goal: input.goal,
+    text: withProviderDebugModePrompt({
+      interactionMode: input.interactionMode,
+      text: input.text,
+    }),
+  });
+}
+
+function providerPromptOverflowIssue(goalPromptOverheadChars: number): string {
+  return goalPromptOverheadChars > 0
+    ? "The latest message is too long to include the persistent thread goal. Shorten the message and retry."
+    : "The latest message is too long to include Caide Debug mode instructions. Shorten the message and retry.";
 }
 
 function isUnknownPendingApprovalRequestError(cause: Cause.Cause<ProviderServiceError>): boolean {
@@ -1371,10 +1433,17 @@ const make = Effect.gen(function* () {
     if (!thread) {
       return;
     }
+    const goalPromptOverheadChars = providerGoalPromptOverheadChars(activeThreadGoal(thread));
+    const debugPromptOverheadChars = debugModePromptOverheadChars(input.interactionMode);
+    const providerPromptOverheadChars = debugPromptOverheadChars + goalPromptOverheadChars;
+
     const threadMentionProjection = yield* resolveThreadMentionPromptProjection({
       mentions: input.mentions,
       snapshotQuery: projectionSnapshotQuery,
-      maxTotalContextChars: availableThreadMentionContextChars(input.messageText),
+      maxTotalContextChars: availableThreadMentionContextChars(
+        input.messageText,
+        providerPromptOverheadChars,
+      ),
     });
     const messageText = appendThreadMentionContextBlocks({
       text: input.messageText,
@@ -1423,13 +1492,26 @@ const make = Effect.gen(function* () {
       const steerMessageWithSkills = steerSkillInlineText
         ? `${messageText}\n\n${steerSkillInlineText}`
         : messageText;
-      const normalizedSteerInput = toNonEmptyProviderInput(
-        normalizeSkillMentionTextForProvider({
+      const composedSteerInput = withProviderThreadStatePrompts({
+        interactionMode: input.interactionMode,
+        goal: activeThreadGoal(thread),
+        text: normalizeSkillMentionTextForProvider({
           provider: steerProvider,
           messageText: steerMessageWithSkills,
           ...(input.skills !== undefined ? { skills: input.skills } : {}),
         }),
-      );
+      });
+      if (
+        providerPromptOverheadChars > 0 &&
+        composedSteerInput.length > PROVIDER_SEND_TURN_MAX_INPUT_CHARS
+      ) {
+        return yield* new ProviderAdapterValidationError({
+          provider: steerProvider,
+          operation: "thread.turn.start",
+          issue: providerPromptOverflowIssue(goalPromptOverheadChars),
+        });
+      }
+      const normalizedSteerInput = toNonEmptyProviderInput(composedSteerInput);
       const normalizedSteerAttachments = yield* resolveProviderDispatchAttachments({
         attachments: input.attachments,
         attachmentsDir: serverConfig.attachmentsDir,
@@ -1483,6 +1565,7 @@ const make = Effect.gen(function* () {
       tag: "handoff_context",
       messageText: bootstrapBudgetMessageText,
       wrapLatestUserMessage: true,
+      reservedChars: providerPromptOverheadChars,
     });
     const handoffBootstrapText =
       shouldBootstrapHandoff && handoffBootstrapAvailableChars > 0
@@ -1493,6 +1576,20 @@ const make = Effect.gen(function* () {
       threadSessionModelSelections.get(input.threadId)?.provider ??
       thread.session?.providerName ??
       thread.modelSelection.provider;
+    if (
+      providerPromptOverheadChars > 0 &&
+      withProviderThreadStatePrompts({
+        interactionMode: input.interactionMode,
+        goal: activeThreadGoal(thread),
+        text: bootstrapBudgetMessageText,
+      }).length > PROVIDER_SEND_TURN_MAX_INPUT_CHARS
+    ) {
+      return yield* new ProviderAdapterValidationError({
+        provider: selectedProvider as ProviderKind,
+        operation: "thread.turn.start",
+        issue: providerPromptOverflowIssue(goalPromptOverheadChars),
+      });
+    }
     const hasPendingPriorTranscriptBootstrap =
       freshSessionContextBootstrapThreadIds.has(input.threadId) ||
       rollbackContextBootstrapThreadIds.has(input.threadId);
@@ -1506,6 +1603,7 @@ const make = Effect.gen(function* () {
       tag: "sidechat_context",
       messageText: bootstrapBudgetMessageText,
       wrapLatestUserMessage: false,
+      reservedChars: providerPromptOverheadChars,
     });
     const sidechatBootstrapText =
       shouldBootstrapSidechatContext && sidechatBootstrapAvailableChars > 0
@@ -1538,6 +1636,7 @@ const make = Effect.gen(function* () {
       tag: "thread_context",
       messageText: bootstrapBudgetMessageText,
       wrapLatestUserMessage: true,
+      reservedChars: providerPromptOverheadChars,
     });
     if (
       input.reviewTarget === undefined &&
@@ -1583,7 +1682,11 @@ const make = Effect.gen(function* () {
       bootstrap
         ? wrapProviderContext({ ...bootstrap, messageText: boundaryMessageText })
         : boundaryMessageText;
-    const providerInputWithMentionContext = `${composeProviderInput(selectedBootstrapContext)}${mentionContextSuffix}`;
+    const providerInputWithMentionContext = withProviderThreadStatePrompts({
+      interactionMode: input.interactionMode,
+      goal: activeThreadGoal(thread),
+      text: `${composeProviderInput(selectedBootstrapContext)}${mentionContextSuffix}`,
+    });
     // Portable skills fallback: providers that cannot load the referenced skill
     // file natively get the skill instructions inlined into the prompt.
     const skillInlineText =
@@ -1614,10 +1717,14 @@ const make = Effect.gen(function* () {
         ? `${withMentionContext}\n\n${skillInlineText}`
         : withMentionContext;
       return toNonEmptyProviderInput(
-        normalizeSkillMentionTextForProvider({
-          provider: selectedProvider as ProviderKind,
-          messageText: withSkills,
-          ...(input.skills !== undefined ? { skills: input.skills } : {}),
+        withProviderThreadStatePrompts({
+          interactionMode: input.interactionMode,
+          goal: activeThreadGoal(thread),
+          text: normalizeSkillMentionTextForProvider({
+            provider: selectedProvider as ProviderKind,
+            messageText: withSkills,
+            ...(input.skills !== undefined ? { skills: input.skills } : {}),
+          }),
         }),
       );
     };
@@ -3668,6 +3775,47 @@ const make = Effect.gen(function* () {
         !(yield* isThreadQuarantined(event.payload.threadId))
       ) {
         return false;
+      }
+      // A blocked thread is normally skipped to avoid double-executing work
+      // whose completion state is unknown. A launch/transport failure is the
+      // exception: the provider never started, so execution provably did not
+      // happen. A fresh explicit turn-start is a retry — clear the blocker and
+      // proceed so a transient spawn failure (e.g. E2BIG) cannot brick the
+      // thread forever.
+      if (event.type === "thread.turn-start-requested") {
+        const blocker = yield* deliveryRepository.firstBlockingDeliveryForThread({
+          consumerName: PROVIDER_COMMAND_REACTOR_CONSUMER,
+          threadId: event.payload.threadId,
+        });
+        if (
+          Option.isSome(blocker) &&
+          isLaunchTransportFailure(blocker.value.lastError)
+        ) {
+          const reconciled = yield* deliveryRepository.reconcile({
+            reconciliationId: crypto.randomUUID(),
+            consumerName: PROVIDER_COMMAND_REACTOR_CONSUMER,
+            eventSequence: blocker.value.eventSequence,
+            threadId: blocker.value.threadId,
+            expectedState: blocker.value.state,
+            outcome: "abandon",
+            reconciledBy: "system:provider-command-reactor",
+            note: "Launch/transport failure proves the provider never executed this command; cleared on explicit retry.",
+            reconciledAt: new Date().toISOString(),
+          });
+          if (Option.isSome(reconciled)) {
+            quarantinedThreads.delete(event.payload.threadId);
+            yield* Effect.logWarning(
+              "cleared thread quarantine for launch-failure blocker on explicit retry",
+              {
+                eventType: event.type,
+                eventSequence: blocker.value.eventSequence,
+                threadId: event.payload.threadId,
+                lastError: blocker.value.lastError,
+              },
+            );
+            return false;
+          }
+        }
       }
       yield* Effect.logWarning("provider command skipped for quarantined thread", {
         eventType: event.type,

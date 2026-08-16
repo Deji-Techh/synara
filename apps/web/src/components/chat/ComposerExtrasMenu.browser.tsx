@@ -13,12 +13,12 @@ import { ComposerExtrasMenu } from "./ComposerExtrasMenu";
 
 async function mountMenu(props?: {
   fastModeEnabled?: boolean;
-  interactionMode?: "default" | "plan";
+  interactionMode?: "default" | "plan" | "debug";
   supportsFastMode?: boolean;
 }) {
   const onAddAttachments = vi.fn();
   const onToggleFastMode = vi.fn();
-  const onSetPlanMode = vi.fn();
+  const onInteractionModeChange = vi.fn();
   const host = document.createElement("div");
   document.body.append(host);
   const screen = await render(
@@ -28,7 +28,7 @@ async function mountMenu(props?: {
       fastModeEnabled={props?.fastModeEnabled ?? false}
       onAddAttachments={onAddAttachments}
       onToggleFastMode={onToggleFastMode}
-      onSetPlanMode={onSetPlanMode}
+      onInteractionModeChange={onInteractionModeChange}
     />,
     { container: host },
   );
@@ -43,7 +43,7 @@ async function mountMenu(props?: {
     cleanup,
     onAddAttachments,
     onToggleFastMode,
-    onSetPlanMode,
+    onInteractionModeChange,
   };
 }
 
@@ -83,7 +83,7 @@ describe("ComposerExtrasMenu", () => {
     await vi.waitFor(() => {
       const text = document.body.textContent ?? "";
       expect(text).toContain("Add files");
-      expect(text).toContain("Plan mode");
+      expect(text).toContain("Mode");
       expect(text).toContain("Fast");
       expect(text).not.toContain("Plugins");
     });
@@ -93,11 +93,12 @@ describe("ComposerExtrasMenu", () => {
     await using menu = await mountMenu();
 
     await page.getByLabelText("Composer extras").click();
-    await page.getByText("Plan mode").click();
+    await page.getByText("Mode").click();
+    await page.getByRole("menuitemradio", { name: "Plan" }).click();
     await page.getByText("Fast").click();
     await page.getByRole("menuitemradio", { name: "Fast" }).click();
 
-    expect(menu.onSetPlanMode).toHaveBeenCalledWith(true);
+    expect(menu.onInteractionModeChange).toHaveBeenCalledWith("plan");
     expect(menu.onToggleFastMode).toHaveBeenCalledTimes(1);
   });
 });

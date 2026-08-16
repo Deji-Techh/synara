@@ -189,9 +189,10 @@ class WsRequestAdmissionMiddleware extends RpcMiddleware.Service<WsRequestAdmiss
 // engine-specific (mirrors the provider adapter's ops) and served here too.
 // NOTE: every handler key spread below must resolve to a request in this group;
 // toHandlers builds the map by Object.entries(handler) and dies on unknown tags.
-export const AdmittedWsFeatureRpcGroup: ReturnType<
-  typeof WsFeatureRpcGroup.middleware<typeof WsRequestAdmissionMiddleware>
-> = WsFeatureRpcGroup.middleware(WsRequestAdmissionMiddleware);
+export const AdmittedWsFeatureRpcGroup = WsFeatureRpcGroup.merge(
+  WsDeviceRpcGroup,
+  WsPreviewRpcGroup,
+).middleware(WsRequestAdmissionMiddleware);
 
 const wsRequestAdmissionMiddlewareLayer = Layer.effect(
   WsRequestAdmissionMiddleware,

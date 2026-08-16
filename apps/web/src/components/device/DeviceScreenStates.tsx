@@ -7,7 +7,12 @@
 // screen rather than the app surface: fixed light-on-dark values, not theme
 // tokens, because a phone screen does not change with the app's theme.
 
-import type { DeviceSetupStep } from "@caide/contracts";
+export interface DeviceSetupStep {
+  id: string;
+  label: string;
+  detail?: string;
+  done: boolean;
+}
 
 import { CheckIcon, LoaderCircleIcon } from "~/lib/icons";
 import { cn } from "~/lib/utils";

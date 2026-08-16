@@ -16,7 +16,8 @@
 // screen, so the pane reads as one object instead of a rectangle with chrome
 // stacked above and below it.
 
-import type { DeviceFamily, DeviceHardwareButton } from "@caide/contracts";
+export type DeviceFamily = "phone" | "tablet" | "tv";
+export type DeviceHardwareButton = "volume-up" | "volume-down" | "lock" | "home";
 import { memo, useId, useMemo, type CSSProperties, type ReactNode } from "react";
 
 import { cn } from "~/lib/utils";

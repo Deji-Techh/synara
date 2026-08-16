@@ -36,6 +36,10 @@ import {
   RotateCcwIcon,
   TerminalIcon,
 } from "~/lib/icons";
+import { DeviceScreen } from "../device/DeviceFrame";
+import { DeviceControlRail } from "../device/DeviceControlRail";
+
+import { useAgentGatewayStore } from "~/agentGatewayStore";
 import { cn } from "~/lib/utils";
 import { PanelStateMessage } from "./PanelStateMessage";
 import {
@@ -224,7 +228,7 @@ function PreviewDeviceFrame(props: {
       <img
         src={`data:image/png;base64,${screenshotBase64}`}
         alt="Device screenshot"
-        className={props.deviceId === "desktop" ? "h-full w-full object-contain" : "h-full w-full object-cover"}
+        className="h-full w-full object-cover"
       />
     ) : (
       <div className="flex h-full w-full items-center justify-center bg-muted/30">
@@ -237,32 +241,34 @@ function PreviewDeviceFrame(props: {
       src={props.url}
       title="Flutter preview"
       sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
-      className={props.deviceId === "desktop" ? iframeClassName : "h-full w-full border-0"}
+      className="h-full w-full border-0"
     />
   );
+
+  if (viewport === null || props.deviceId === "desktop") {
+    return (
+      <div className="flex h-full min-h-0 flex-1 items-center justify-center overflow-auto p-4">
+        {innerView}
+      </div>
+    );
+  }
+
+  const kind = props.deviceId === "mobile" ? "iPhone" : "iPad";
+
   return (
-    <div className="flex h-full min-h-0 flex-1 items-center justify-center overflow-auto p-4">
-      {viewport === null ? (
-        innerView
-      ) : (
-        <div
-          className="flex shrink-0 items-center justify-center rounded-[2rem] border-4 border-muted-foreground/60 bg-black p-2 shadow-lg"
-          style={{ width: viewport.width + 32, height: viewport.height + 32 }}
-        >
-          <div
-            className="relative overflow-hidden rounded-[1.6rem] bg-white"
-            style={{ width: viewport.width, height: viewport.height }}
-          >
-            {props.deviceId === "mobile" && (
-              <div
-                className="absolute left-1/2 top-1.5 z-10 h-1 w-16 -translate-x-1/2 rounded-full bg-black"
-                aria-hidden="true"
-              />
-            )}
-            {innerView}
-          </div>
-        </div>
-      )}
+    <div className="flex h-full min-h-0 flex-1 flex-col items-center overflow-auto p-4 py-8">
+      <div className="flex shrink-0 flex-col items-center gap-4">
+        <DeviceScreen kind={kind}>
+          {innerView}
+        </DeviceScreen>
+        <DeviceControlRail
+          className="mt-4"
+          activeActions={new Set(["home", "screenshot"])}
+          onAction={(action) => {
+            console.log("Action", action);
+          }}
+        />
+      </div>
     </div>
   );
 }
@@ -835,107 +841,101 @@ export function PreviewPanel(props: {
   const showConsole = isStarting || isRunning || panelState.status === "failed";
 
   return (
-    <div className="flex h-full min-h-0 flex-col" data-testid="preview-pane">
-      <div className="flex items-center gap-2 border-b border-border px-3 py-2">
-        <button
-          type="button"
-          data-testid="preview-start-stop-button"
-          onClick={isRunning ? handleStop : handleStart}
-          disabled={isStarting}
-          className={cn(
-            "inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-            isRunning
-              ? "bg-muted text-muted-foreground hover:bg-muted-foreground/20"
-              : "bg-foreground text-background hover:opacity-90",
-            isStarting && "cursor-wait opacity-60",
-          )}
+    <div className="flex h-full min-h-0 flex-col bg-background" data-testid="preview-pane">
+      {/* Top Header: Choose Simulator */}
+      <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+        <select
+          value={panelState.deviceId}
+          onChange={(event) => {
+            handleDeviceChange(event.target.value as PreviewDeviceId);
+            if (panelState.status === "idle" || panelState.status === "failed") {
+              handleStart();
+            }
+          }}
+          className="bg-transparent text-sm font-medium text-foreground outline-none appearance-none"
         >
-          {isRunning ? (
-            <>
-              <DeviceRecordStopIcon aria-hidden="true" className="size-3.5" />
-              Stop
-            </>
-          ) : (
-            <>
-              {isStarting ? (
-                <LoaderIcon aria-hidden="true" className="size-3.5 animate-spin" />
-              ) : (
-                <PlayIcon aria-hidden="true" className="size-3.5" />
-              )}
-              Start
-            </>
-          )}
-        </button>
+          <option value="" disabled>Choose a simulator</option>
+          {PREVIEW_DEVICE_OPTIONS.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <ChevronDownIcon aria-hidden="true" className="size-4 text-muted-foreground -ml-1" />
+        <div className="min-w-0 flex-1" />
         {isRunning && (
-          <div className="flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              data-testid="preview-reload-button"
-              title="Hot reload (r)"
-              aria-label="Hot reload"
-              onClick={() => handleReload(true)}
-              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <RefreshCwIcon aria-hidden="true" className="size-3.5" />
+          <div className="flex shrink-0 items-center gap-1 mr-2">
+            <button type="button" onClick={() => handleReload(true)} className="p-1.5 text-muted-foreground hover:text-foreground">
+              <RefreshCwIcon className="size-3.5" />
             </button>
-            <button
-              type="button"
-              data-testid="preview-restart-button"
-              title="Hot restart (R)"
-              aria-label="Hot restart"
-              onClick={() => handleReload(false)}
-              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <RotateCcwIcon aria-hidden="true" className="size-3.5" />
+            <button type="button" onClick={handleStop} className="p-1.5 text-red-500 hover:text-red-400">
+              <DeviceRecordStopIcon className="size-3.5" />
             </button>
           </div>
         )}
         <StatusPill state={panelState} />
-        <div className="min-w-0 flex-1" />
-        <div
-          className="flex shrink-0 items-center gap-0.5"
-          role="radiogroup"
-          aria-label="Device preset"
-        >
-          {PREVIEW_DEVICE_OPTIONS.map((option) => {
-            const isSelected = panelState.deviceId === option.id;
-            return (
-              <button
-                key={option.id}
-                type="button"
-                role="radio"
-                aria-checked={isSelected}
-                onClick={() => handleDeviceChange(option.id)}
-                className={cn(
-                  "rounded-md px-1.5 py-1 text-[11px] font-medium transition-colors",
-                  isSelected
-                    ? "text-foreground underline decoration-2 underline-offset-2"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {option.label}
-              </button>
-            );
-          })}
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-black/5 dark:bg-black/20">
+        <div className={cn("flex-1 overflow-auto", panelState.activeTab === "preview" ? "block" : "hidden")}>
+          {(panelState.status === "idle" || panelState.status === "starting" || panelState.status === "failed") ? (
+            <div className="flex h-full flex-col items-center justify-center p-8">
+              <DeviceScreen kind={panelState.deviceId === "tablet" ? "iPad" : "iPhone"}>
+                <div className="flex h-full w-full flex-col items-center justify-center bg-black p-6 text-center">
+                  {panelState.status === "starting" ? (
+                    <>
+                      <LoaderIcon className="size-5 animate-spin text-muted-foreground mb-3" />
+                      <p className="text-sm text-muted-foreground">Starting simulator...</p>
+                    </>
+                  ) : panelState.status === "failed" ? (
+                    <>
+                      <p className="text-sm text-red-500 mb-3">{panelState.error ?? "Failed to start"}</p>
+                      <button onClick={handleStart} className="text-xs bg-white text-black px-3 py-1.5 rounded-full font-medium">Retry</button>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Choose a simulator to<br/>start streaming it here.
+                    </p>
+                  )}
+                </div>
+              </DeviceScreen>
+            </div>
+          ) : (
+            isRunning && panelState.url !== null && (
+              <PreviewDeviceFrame
+                threadId={props.threadId}
+                deviceId={panelState.deviceId}
+                url={panelState.url}
+                reloadToken={panelState.reloadToken}
+              />
+            )
+          )}
         </div>
-        {isRunning && panelState.url !== null && (
-          <a
-            href={panelState.url}
-            target="_blank"
-            rel="noreferrer"
-            title="Open in a new tab"
-            aria-label="Open in a new tab"
-            className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <ExternalLinkIcon aria-hidden="true" className="size-3.5" />
-          </a>
+        
+        {panelState.activeTab === "problems" && <div className="flex-1 overflow-hidden"><ProblemList state={panelState.analyze} /></div>}
+        {panelState.activeTab === "tests" && <div className="flex-1 overflow-hidden"><TestResults state={panelState.test} /></div>}
+        {panelState.activeTab === "qualityGate" && (
+          <div className="flex-1 overflow-hidden">
+            <QualityGatePanel
+              analyze={panelState.analyze}
+              test={panelState.test}
+              onRunAnalyze={handleRunAnalyze}
+              onRunTest={handleRunTest}
+            />
+          </div>
+        )}
+        {panelState.activeTab === "release" && (
+          <div className="flex-1 overflow-hidden">
+            <ReleasePanel build={panelState.build} onBuild={handleBuild} />
+          </div>
         )}
       </div>
 
+      {/* Bottom Nav Bar for Tabs */}
       <div
-        className="flex shrink-0 items-center gap-0.5 border-b border-border px-2"
+        className="flex shrink-0 items-center justify-center gap-6 border-t border-border px-4 py-3 bg-background"
         role="tablist"
-        aria-label="Preview pane"
       >
         {PREVIEW_TABS.map((tab) => {
           const TabIcon = tab.icon;
@@ -946,66 +946,18 @@ export function PreviewPanel(props: {
               type="button"
               role="tab"
               aria-selected={isSelected}
-              data-testid={`preview-tab-${tab.id}`}
               onClick={() => handleTabChange(tab.id)}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-t-md px-2.5 py-1.5 text-[11px] font-medium transition-colors",
-                isSelected
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                "flex flex-col items-center gap-1 transition-colors",
+                isSelected ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"
               )}
             >
-              <TabIcon aria-hidden="true" className="size-3.5" />
-              {tab.label}
+              <TabIcon aria-hidden="true" className="size-4" />
+              <span className="text-[10px] font-medium">{tab.label}</span>
             </button>
           );
         })}
-        <div className="min-w-0 flex-1" />
       </div>
-
-      <div className="flex min-h-0 flex-1 flex-col">
-        {panelState.activeTab === "preview" && (
-          <>
-            {panelState.status === "idle" && <PreviewEmptyState onStart={handleStart} />}
-            {panelState.status === "starting" && <PreviewStartingState />}
-            {panelState.status === "failed" && (
-              <PreviewFailedState error={panelState.error} onRetry={handleStart} />
-            )}
-            {isRunning && panelState.url !== null && (
-              <PreviewDeviceFrame
-                threadId={props.threadId}
-                deviceId={panelState.deviceId}
-                url={panelState.url}
-                reloadToken={panelState.reloadToken}
-              />
-            )}
-            {isRunning && panelState.url === null && (
-              <PanelStateMessage>Preview server did not report a URL.</PanelStateMessage>
-            )}
-          </>
-        )}
-        {panelState.activeTab === "problems" && <ProblemList state={panelState.analyze} />}
-        {panelState.activeTab === "tests" && <TestResults state={panelState.test} />}
-        {panelState.activeTab === "qualityGate" && (
-          <QualityGatePanel
-            analyze={panelState.analyze}
-            test={panelState.test}
-            onRunAnalyze={handleRunAnalyze}
-            onRunTest={handleRunTest}
-          />
-        )}
-        {panelState.activeTab === "release" && (
-          <ReleasePanel build={panelState.build} onBuild={handleBuild} />
-        )}
-      </div>
-
-      {panelState.activeTab === "preview" && showConsole && (
-        <PreviewConsole
-          isOpen={isConsoleOpen}
-          onToggle={() => setIsConsoleOpen((open) => !open)}
-          logs={panelState.logs}
-        />
-      )}
     </div>
   );
 }

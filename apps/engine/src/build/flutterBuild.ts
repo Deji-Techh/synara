@@ -10,6 +10,7 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 
 import { spawnFlutterProcess } from "../tools/flutterCommand.ts";
+import { safeFlutterEnvironment } from "../safeEnvironment.ts";
 
 import {
   type BuildStatus,
@@ -55,7 +56,7 @@ export function startFlutterBuild(input: StartFlutterBuildInput): FlutterBuildJo
   let child;
   try {
     const env: NodeJS.ProcessEnv = {
-      ...process.env,
+      ...safeFlutterEnvironment(),
       // Skeleton for v1 code signing config via environment variables
       // FLUTTER_BUILD_NAME: process.env.FLUTTER_BUILD_NAME,
       // FLUTTER_BUILD_NUMBER: process.env.FLUTTER_BUILD_NUMBER,

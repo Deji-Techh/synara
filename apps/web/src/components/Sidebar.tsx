@@ -32,7 +32,7 @@ import {
   WorktreeIcon,
   XIcon,
 } from "~/lib/icons";
-import { AntigravityIcon } from "~/components/Icons";
+import { CaideLogo } from "~/components/CaideLogo";
 import { createCentralIconComponent } from "~/lib/central-icons";
 import {
   PR_STATE_PRESENTATION_ICONS,
@@ -1261,7 +1261,7 @@ export function SidebarSurfacePicker({
           />
         }
       >
-        <AntigravityIcon className="size-4 shrink-0 text-foreground" />
+        <CaideLogo className="size-4 shrink-0 text-foreground" />
         <span className="font-display min-w-0 truncate text-[17px] text-foreground">
           {activeCopy.title}
         </span>

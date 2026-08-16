@@ -100,3 +100,57 @@ export function buildProviderChildEnvironment(input: {
 
   return childEnv;
 }
+
+/**
+ * Build a safe, minimal environment for provider child processes.
+ * Uses a whitelist approach to prevent E2BIG spawn errors.
+ *
+ * Unlike `buildProviderChildEnvironment` which inherits the full process.env
+ * and strips a few keys, this function starts from an empty env and only adds
+ * essential variables. This keeps the env well under Linux's ~128KB execve limit.
+ */
+export function buildSafeProviderChildEnvironment(input: {
+  readonly provider: ProviderChildKind;
+  readonly overrides?: NodeJS.ProcessEnv;
+}): NodeJS.ProcessEnv {
+  const SAFE_KEYS = [
+    "PATH", "HOME", "USER", "TMPDIR", "TMP", "TEMP",
+    "LANG", "LC_ALL", "LC_CTYPE",
+    "SHELL", "TERM",
+    "SSH_AUTH_SOCK",
+    "DISPLAY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR",
+    // Node/Bun runtime
+    "NODE_ENV", "BUN_INSTALL",
+    // Flutter SDK
+    "FLUTTER_SDK_DIR", "FLUTTER_SDK_BIN", "FLUTTER_ROOT",
+    "ANDROID_HOME", "ANDROID_SDK_ROOT", "JAVA_HOME",
+    "DART_SDK", "PUB_CACHE",
+  ];
+
+  const credentialGrants = PROVIDER_CREDENTIAL_GRANTS[input.provider];
+  const env: NodeJS.ProcessEnv = {};
+
+  // Whitelist system vars
+  for (const key of SAFE_KEYS) {
+    if (process.env[key]) {
+      env[key] = process.env[key];
+    }
+  }
+
+  // Add granted credentials only
+  for (const key of Object.keys(process.env)) {
+    if (
+      PROVIDER_CREDENTIAL_KEYS.has(key) &&
+      (credentialGrants === "all" || credentialGrants.has(key))
+    ) {
+      env[key] = process.env[key];
+    }
+  }
+
+  // Apply overrides
+  if (input.overrides) {
+    Object.assign(env, input.overrides);
+  }
+
+  return env;
+}

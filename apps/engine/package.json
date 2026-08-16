@@ -21,6 +21,10 @@
     "./protocol": {
       "types": "./src/protocol.ts",
       "import": "./src/protocol.ts"
+    },
+    "./env": {
+      "types": "./src/safeEnvironment.ts",
+      "import": "./src/safeEnvironment.ts"
     }
   },
   "scripts": {
