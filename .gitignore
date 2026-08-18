@@ -41,3 +41,12 @@ __screenshots__/
 /browser-sidebar-comment-preload.js.map
 /preload.js.map
 /bootstrap.js.map
+
+# Transplant-experiment leftovers (build artifacts, never commit)
+/out/
+/dist/
+/scaffold-flutter/
+/testing/
+/userData/
+/src/notch/
+/.claude/tmp/

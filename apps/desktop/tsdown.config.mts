@@ -20,7 +20,6 @@ export default defineConfig([
   {
     ...shared,
     entry: ["src/main.ts"],
-    clean: true,
     // Electron exposes this builtin only at runtime; keeping it external avoids
     // asking Rolldown to resolve a package that intentionally does not exist.
     external: ["original-fs"],
