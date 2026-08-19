@@ -46,6 +46,9 @@ export const ORCHESTRATION_WS_METHODS = {
   unsubscribeShell: "orchestration.unsubscribeShell",
   subscribeThread: "orchestration.subscribeThread",
   unsubscribeThread: "orchestration.unsubscribeThread",
+  // Per-project activity timeline (M4b): day-grouped chat/goal/commit/
+  // build/analyze/test rows aggregated server-side.
+  getProjectActivity: "orchestration.getProjectActivity",
 } as const;
 
 export const ORCHESTRATION_WS_CHANNELS = {
@@ -2673,6 +2676,43 @@ export const OrchestrationUnsubscribeThreadInput = Schema.Struct({
 });
 export type OrchestrationUnsubscribeThreadInput = typeof OrchestrationUnsubscribeThreadInput.Type;
 
+// ── Project activity timeline (M4b) ───────────────────────────────────
+// Server-side per-project activity query backing the main-pane Activity
+// view: chat events, goal-run events, git commits, and engine
+// build/analyze/test results, day-grouped by the client.
+
+export const ProjectActivityKind = Schema.Literals([
+  "chat",
+  "goal",
+  "commit",
+  "build",
+  "analyze",
+  "test",
+]);
+export type ProjectActivityKind = typeof ProjectActivityKind.Type;
+
+export const ProjectActivityItem = Schema.Struct({
+  id: Schema.String,
+  kind: ProjectActivityKind,
+  /** Epoch ms. */
+  at: NonNegativeInt,
+  summary: Schema.String,
+  detail: Schema.optional(Schema.NullOr(Schema.String)),
+  status: Schema.optional(Schema.NullOr(Schema.String)),
+});
+export type ProjectActivityItem = typeof ProjectActivityItem.Type;
+
+export const OrchestrationGetProjectActivityInput = Schema.Struct({
+  projectId: ProjectId,
+  limit: Schema.optional(PositiveInt),
+});
+export type OrchestrationGetProjectActivityInput = typeof OrchestrationGetProjectActivityInput.Type;
+
+export const OrchestrationGetProjectActivityResult = Schema.Struct({
+  items: Schema.Array(ProjectActivityItem),
+});
+export type OrchestrationGetProjectActivityResult = typeof OrchestrationGetProjectActivityResult.Type;
+
 export const OrchestrationRpcSchemas = {
   getSnapshot: {
     input: OrchestrationGetSnapshotInput,
@@ -2733,5 +2773,9 @@ export const OrchestrationRpcSchemas = {
   unsubscribeThread: {
     input: OrchestrationUnsubscribeThreadInput,
     output: Schema.Void,
+  },
+  getProjectActivity: {
+    input: OrchestrationGetProjectActivityInput,
+    output: OrchestrationGetProjectActivityResult,
   },
 } as const;
