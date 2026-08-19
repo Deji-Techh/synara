@@ -781,6 +781,8 @@ export function createWsNativeApi(): NativeApi {
         transport.request<void>(ORCHESTRATION_WS_METHODS.subscribeThread, input),
       unsubscribeThread: (input) =>
         transport.request<void>(ORCHESTRATION_WS_METHODS.unsubscribeThread, input),
+      getProjectActivity: (input) =>
+        transport.request(ORCHESTRATION_WS_METHODS.getProjectActivity, input),
       onDomainEvent: (callback) => {
         const shouldStartTransport = orchestrationDomainEventListeners.size === 0;
         const unsubscribe = orchestrationDomainEventListeners.subscribe(callback);

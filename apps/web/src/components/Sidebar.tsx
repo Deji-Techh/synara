@@ -293,7 +293,6 @@ import {
   findWorkspaceRootMatch,
   getPinnedThreadsForSidebar,
   getUnpinnedThreadsForSidebar,
-  orderPinnedProjectsForSidebar,
   pullRequestRepositoryConfigFingerprint,
   getNextVisibleSidebarThreadId,
   getSidebarThreadIdsToPrewarm,
@@ -433,6 +432,16 @@ const readGitHubProvisioningServerCapability = () => false;
 const THREAD_PREVIEW_LIMIT = 5;
 // Each "Show more" click reveals this many extra rows; "Show less" hides them again page by page.
 const THREAD_PREVIEW_PAGE_SIZE = 5;
+// M4a flatten: the Project list shows the eight newest projects first, and each
+// "See more" click reveals one more page of the same size.
+const MAX_SIDEBAR_PROJECTS_PREVIEW = 8;
+// Newest-first ordering for the flattened project list; missing/unparseable
+// createdAt values sink to the bottom instead of destabilizing the sort.
+function toSortableProjectCreatedAtTimestamp(iso: string | undefined): number {
+  if (!iso) return Number.NEGATIVE_INFINITY;
+  const ms = Date.parse(iso);
+  return Number.isFinite(ms) ? ms : Number.NEGATIVE_INFINITY;
+}
 // Mouse clicks must not focus the paging buttons, or the focus ring lingers as a solid block
 // after the click; they should only light up on hover/press. Keyboard focus is unaffected.
 const preventFocusOnMouseDown = (event: React.MouseEvent) => {
@@ -1594,6 +1603,8 @@ export default function Sidebar() {
   const [activityViewEnabled, setActivityViewEnabled] = useState(
     () => readSidebarUiState().activityViewEnabled,
   );
+  // M4a flatten: paging for the capped newest-first project list.
+  const [visibleProjectsExtraPages, setVisibleProjectsExtraPages] = useState(0);
   const [activityVisibleThreadIds, setActivityVisibleThreadIds] = useState<readonly ThreadId[]>([]);
   const handleActivityVisibleThreadIdsChange = useCallback((threadIds: readonly ThreadId[]) => {
     setActivityVisibleThreadIds((current) => {
@@ -3322,6 +3333,9 @@ export default function Sidebar() {
         ? (existingProject.spaceId ?? null)
         : value.spaceId;
       const runCreateProject = async () => {
+        // M4a flatten: creating a project adopts the dyad "recent = createdAt"
+        // convention so newly created chats surface at the top of the sidebar.
+        updateSettings({ sidebarThreadSortOrder: "created_at" });
         if (value.source === "github") {
           const api = readNativeApi();
           if (!api) throw new Error("The app server is unavailable.");
@@ -3418,6 +3432,7 @@ export default function Sidebar() {
       openExistingProjectFromSnapshot,
       projects,
       syncServerShellSnapshot,
+      updateSettings,
       waitForCancelledGitHubProjectInSnapshot,
       waitForProjectInSnapshot,
     ],
@@ -3651,6 +3666,16 @@ export default function Sidebar() {
     }
     return byProjectId;
   }, [appSettings.sidebarThreadSortOrder, sidebarThreadsByProjectId]);
+  // M4a flatten: per-project chat lists always sort newest-first by createdAt
+  // (engine threads have no updatedAt), independent of the app-wide thread sort
+  // preference that still drives the standalone Chats section.
+  const projectCreatedAtSortedSidebarThreadsByProjectId = useMemo(() => {
+    const byProjectId = new Map<ProjectId, SidebarThreadSummary[]>();
+    for (const [projectId, projectThreads] of sidebarThreadsByProjectId) {
+      byProjectId.set(projectId, sortThreadsForSidebar(projectThreads, "created_at"));
+    }
+    return byProjectId;
+  }, [sidebarThreadsByProjectId]);
   const handleProjectTitlePointerDownCapture = useCallback(() => {
     suppressProjectClickAfterDragRef.current = false;
   }, []);
@@ -3826,9 +3851,35 @@ export default function Sidebar() {
     [optimisticPinnedStateByProjectId, persistedPinnedProjectIds, standardProjectsBase],
   );
   const pinnedProjectIdSet = useMemo(() => new Set(pinnedProjectIds), [pinnedProjectIds]);
+  // M4a flatten: the Projects list is always newest-first (creation order), so
+  // the manual/pinned orderings from the legacy sidebar no longer drive the
+  // flattened surface; project pins stay available per row.
   const standardProjects = useMemo(
-    () => orderPinnedProjectsForSidebar(standardProjectsBase, pinnedProjectIds),
-    [pinnedProjectIds, standardProjectsBase],
+    () =>
+      standardProjectsBase.toSorted((left, right) => {
+        const byCreatedAt =
+          toSortableProjectCreatedAtTimestamp(right.createdAt) -
+          toSortableProjectCreatedAtTimestamp(left.createdAt);
+        if (byCreatedAt !== 0) return byCreatedAt;
+        return left.name.localeCompare(right.name) || left.id.localeCompare(right.id);
+      }),
+    [standardProjectsBase],
+  );
+  // Cap the flattened project list at MAX_SIDEBAR_PROJECTS_PREVIEW rows; "See more" reveals
+  // one additional page (same size) per click. The full list still feeds derivation and
+  // empty-state checks so hidden projects keep their derived thread state when revealed.
+  const visibleProjects = useMemo(
+    () =>
+      standardProjects.slice(
+        0,
+        MAX_SIDEBAR_PROJECTS_PREVIEW * (visibleProjectsExtraPages + 1),
+      ),
+    [standardProjects, visibleProjectsExtraPages],
+  );
+  const hasMoreVisibleProjects = visibleProjects.length < standardProjects.length;
+  const showMoreVisibleProjects = useCallback(
+    () => setVisibleProjectsExtraPages((current) => current + 1),
+    [],
   );
   const projectEmptyState = resolveProjectEmptyState({
     projectCount: standardProjects.length,
@@ -3839,7 +3890,7 @@ export default function Sidebar() {
     () =>
       deriveSidebarProjectData({
         projects: standardProjects,
-        sortedSidebarThreadsByProjectId,
+        sortedSidebarThreadsByProjectId: projectCreatedAtSortedSidebarThreadsByProjectId,
         pinnedThreadIds,
         threadListExtraPagesByProjectCwd,
         normalizeProjectCwd: normalizeSidebarProjectThreadListCwd,
@@ -3852,7 +3903,7 @@ export default function Sidebar() {
       activeSidebarThreadId,
       threadListExtraPagesByProjectCwd,
       pinnedThreadIds,
-      sortedSidebarThreadsByProjectId,
+      projectCreatedAtSortedSidebarThreadsByProjectId,
       standardProjects,
       resolveThreadStatusForSidebar,
     ],
@@ -4844,6 +4895,20 @@ export default function Sidebar() {
               <PinStatusIcon pinned={isProjectPinned} className="size-3.5" />
             </button>
             <SidebarSectionToolbar placement="overlay" revealOnHover>
+              <SidebarIconButton
+                icon={HistoryIcon}
+                label={`View activity for ${project.name}`}
+                tooltip="Activity"
+                tooltipSide="top"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  void navigate({
+                    to: "/activity/$projectId",
+                    params: { projectId: project.id },
+                  });
+                }}
+              />
               <SidebarIconButton
                 icon={IoIosGitCompare}
                 label={`View pull requests for ${project.name}`}
@@ -6040,10 +6105,10 @@ export default function Sidebar() {
                     >
                       <SidebarMenu className="gap-3">
                         <SortableContext
-                          items={standardProjects.map((project) => project.id)}
+                          items={visibleProjects.map((project) => project.id)}
                           strategy={verticalListSortingStrategy}
                         >
-                          {standardProjects.map((project) => (
+                          {visibleProjects.map((project) => (
                             <SortableProjectItem key={project.id} projectId={project.id}>
                               {(dragHandleProps) => renderProjectItem(project, dragHandleProps)}
                             </SortableProjectItem>
@@ -6053,12 +6118,26 @@ export default function Sidebar() {
                     </DndContext>
                   ) : (
                     <SidebarMenu ref={attachProjectListAutoAnimateRef} className="gap-3">
-                      {standardProjects.map((project) => (
+                      {visibleProjects.map((project) => (
                         <SidebarMenuItem key={project.id} className="rounded-md">
                           {renderProjectItem(project, null)}
                         </SidebarMenuItem>
                       ))}
                     </SidebarMenu>
+                  )}
+
+                  {hasMoreVisibleProjects && (
+                    <SidebarMenuItem className="rounded-md">
+                      <SidebarMenuButton
+                        size="sm"
+                        data-thread-selection-safe
+                        className="h-7 w-full cursor-pointer justify-start rounded-lg text-left text-[length:var(--app-font-size-ui,12px)] text-muted-foreground/79 hover:bg-transparent hover:text-foreground active:bg-transparent active:text-foreground"
+                        onMouseDown={preventFocusOnMouseDown}
+                        onClick={showMoreVisibleProjects}
+                      >
+                        <span className="truncate pl-6">See more</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
                   )}
 
                   {projectEmptyState === "loading" && (

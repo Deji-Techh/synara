@@ -25,9 +25,13 @@ import {
   type GitActionProgressEvent,
   type GitHubProjectProvisionProgressEvent,
   type GitWorktreeSetupProgressEvent,
+  type GoalActivityEvent,
   type OrchestrationCommand,
   type OrchestrationEvent,
+  type OrchestrationGetProjectActivityInput,
+  type OrchestrationGetProjectActivityResult,
   type ProjectDevServerEvent,
+  type ProjectActivityItem,
   type OrchestrationShellStreamEvent,
   type OrchestrationShellStreamItem,
   type OrchestrationThreadDetailSnapshot,
@@ -326,6 +330,44 @@ function isShellRelevantEvent(event: OrchestrationEvent): boolean {
     event.type === "thread.deleted" ||
     (event.aggregateKind === "thread" && shouldPublishThreadShellForEvent(event))
   );
+}
+
+// M4b activity aggregation helpers: classify engine goal activity rows into
+// Activity view kinds and parse `git log` machine output (one commit per
+// line, \x1f-separated fields) into commit rows.
+const GOAL_ACTIVITY_KIND_BY_TOKEN: ReadonlyArray<[string, ProjectActivityItem["kind"]]> = [
+  ["build", "build"],
+  ["analy", "analyze"],
+  ["test", "test"],
+];
+
+function classifyGoalActivityEvent(event: GoalActivityEvent): ProjectActivityItem["kind"] {
+  const type = event.type.toLowerCase();
+  const matched = GOAL_ACTIVITY_KIND_BY_TOKEN.find(([token]) => type.includes(token));
+  return matched !== undefined ? matched[1] : "goal";
+}
+
+function parseCommitLogRows(stdout: string, maxRows: number): ProjectActivityItem[] {
+  const rows: ProjectActivityItem[] = [];
+  for (const line of stdout.split("\n")) {
+    if (line.trim() === "" || rows.length >= maxRows) continue;
+    const [hash, author, authorEmail, authorAtSeconds, ...subjectParts] = line.split("\x1f");
+    if (typeof hash !== "string" || hash === "") continue;
+    const at = Number(authorAtSeconds) * 1000;
+    if (!Number.isFinite(at)) continue;
+    const subject = (subjectParts.join("\x1f") || "(no message)").trim();
+    const detail =
+      author !== undefined && author !== "" ? `${author} <${authorEmail ?? ""}>`.trim() : null;
+    rows.push({
+      id: `commit:${hash}`,
+      kind: "commit",
+      at,
+      summary: subject,
+      detail,
+      status: null,
+    });
+  }
+  return rows;
 }
 
 const makeWsRpcHandlersLayer = () =>
@@ -955,6 +997,94 @@ const makeWsRpcHandlersLayer = () =>
           ),
       };
 
+      // M4b: aggregate the per-project activity timeline from thread shells
+      // (chat rows), engine goals + goal activity (goal/build/analyze/test
+      // rows, joined through the engine app rowid), and git commits.
+      const getProjectActivity = (
+        input: OrchestrationGetProjectActivityInput,
+      ) =>
+        Effect.gen(function* () {
+          const shell = yield* projectionReadModelQuery.getShellSnapshot();
+          const project = shell.projects.find((candidate) => candidate.id === input.projectId);
+          if (!project) {
+            return { items: [] };
+          }
+          const limit = input.limit ?? 100;
+          const items: ProjectActivityItem[] = [];
+
+          for (const thread of shell.threads) {
+            if (thread.projectId !== project.id || thread.archivedAt !== null) continue;
+            const at = Date.parse(thread.createdAt);
+            if (!Number.isFinite(at)) continue;
+            items.push({
+              id: `chat:${thread.id}`,
+              kind: "chat",
+              at,
+              summary: thread.title,
+              detail: null,
+              status: null,
+            });
+          }
+
+          const engineAdapter = yield* engineAdapterEffect;
+          const appId = yield* engineAdapter.goals.resolveAppId({
+            workspaceRoot: project.workspaceRoot,
+          });
+          if (appId !== null) {
+            const goals = yield* engineAdapter.goals.list({ appId });
+            for (const goal of goals) {
+              items.push({
+                id: `goal:${goal.id}`,
+                kind: "goal",
+                at: goal.createdAt,
+                summary: goal.title || goal.objective,
+                detail: goal.objective,
+                status: goal.status,
+              });
+              const goalActivity = yield* engineAdapter.goals.listActivity({
+                goalId: goal.id,
+                limit: 200,
+              });
+              for (const event of goalActivity) {
+                items.push({
+                  id: `goal-event:${event.id}`,
+                  kind: classifyGoalActivityEvent(event),
+                  at: event.createdAt,
+                  summary: event.summary,
+                  detail: event.type,
+                  status:
+                    typeof event.metadata?.status === "string" ? event.metadata.status : null,
+                });
+              }
+            }
+          }
+
+          if (project.workspaceRoot !== "") {
+            const logResult = yield* git
+              .execute({
+                operation: "log",
+                cwd: project.workspaceRoot,
+                args: [
+                  "log",
+                  "--no-color",
+                  "-n",
+                  String(limit),
+                  "--format=%H%x1f%an%x1f%ae%x1f%at%x1f%s",
+                ],
+                allowNonZeroExit: true,
+                maxOutputBytes: 2_000_000,
+                timeoutMs: 10_000,
+              })
+              .pipe(Effect.catch(() => Effect.succeed(null)));
+            if (logResult !== null) {
+              items.push(...parseCommitLogRows(logResult.stdout, limit));
+            }
+          }
+
+          items.sort((left, right) => right.at - left.at || left.id.localeCompare(right.id));
+          return { items: items.slice(0, limit) };
+        });
+
       return AdmittedWsFeatureRpcGroup.of({
         [ORCHESTRATION_WS_METHODS.dispatchCommand]: (command) =>
           rpcEffect(
@@ -1245,6 +1375,9 @@ const makeWsRpcHandlersLayer = () =>
               { label: "goals.domain-events" },
             ),
           ),
+
+        [ORCHESTRATION_WS_METHODS.getProjectActivity]: (input) =>
+          rpcEffect(getProjectActivity(input), "Failed to load project activity"),
 
         [WS_METHODS.projectsListDirectories]: (input) =>
           rpcEffect(
