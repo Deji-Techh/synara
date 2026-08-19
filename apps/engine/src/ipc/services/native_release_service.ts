@@ -5,7 +5,7 @@ import { promises as fsp } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import log from "electron-log/main";
+import log from "electron-log/node";
 
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
 import type {

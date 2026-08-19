@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
-import log from "electron-log/main";
+import log from "electron-log/node";
 import { spawnStreaming } from "./spawn_streaming";
 import {
   PNPM_INSTALL_POLICY_ARGS,

@@ -79,3 +79,17 @@ export function caideDesktopIdentity(flavor: CaideDesktopFlavor): CaideDesktopId
 export function caideBundleId(isDevelopment: boolean): string {
   return caideDesktopIdentity(isDevelopment ? "development" : "production").bundleId;
 }
+
+/**
+ * Env var the packaged desktop main injects into the backend process pointing
+ * at the unpacked Flutter engine directory. The engine is a separate Node
+ * program (better-sqlite3/node-pty native bindings) spawned by the server via
+ * a plain `node` child process, which cannot read app.asar — so it must live
+ * outside the archive (an electron-builder `extraResource`) and the server
+ * resolves it through this env var rather than a bundled-relative path.
+ *
+ * Lives here (shared) so the desktop main (injects it), the server adapter
+ * (reads it) and the packaging script (stages it) derive one constant instead
+ * of drifting.
+ */
+export const CAIDE_ENGINE_DIR_ENV = "CAIDE_ENGINE_DIR";

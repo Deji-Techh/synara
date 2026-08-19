@@ -57,6 +57,7 @@ import {
   CAIDE_DESKTOP_UPDATE_CHANNEL,
   resolveCaideDesktopFlavor,
   caideDesktopIdentity,
+  CAIDE_ENGINE_DIR_ENV,
 } from "@caide/shared/desktopIdentity";
 import { NetService } from "@caide/shared/Net";
 import { applyShellEnvironmentHydrationMarker } from "@caide/shared/shell";
@@ -3038,7 +3039,13 @@ function backendEnv(): NodeJS.ProcessEnv {
     // caide:// protocol serves, so both surfaces survive app.asar being replaced.
     ...(servedStaticRoot?.snapshotted ? { CAIDE_STATIC_DIR: servedStaticRoot.dir } : {}),
     ...(app.isPackaged
-      ? { [DEVICE_HELPER_SOURCE_DIR_ENV]: Path.join(process.resourcesPath, "device-helper") }
+      ? {
+          [DEVICE_HELPER_SOURCE_DIR_ENV]: Path.join(process.resourcesPath, "device-helper"),
+          // The Flutter engine is a separate Node program spawned by the server
+          // via plain `node`, which cannot read app.asar — so it ships as an
+          // unpacked extraResource and we point the server at it.
+          [CAIDE_ENGINE_DIR_ENV]: Path.join(process.resourcesPath, "engine"),
+        }
       : {}),
     CAIDE_MODE: "desktop",
     CAIDE_NO_BROWSER: "1",

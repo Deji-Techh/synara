@@ -29,6 +29,7 @@ import {
 } from "@caide/contracts";
 import { EngineClient } from "@caide/engine/client";
 import { safeFlutterEnvironment } from "@caide/engine/env";
+import { CAIDE_ENGINE_DIR_ENV } from "@caide/shared/desktopIdentity";
 import {
   AnalyzeRunResultSchema,
   BuildStartResultSchema,
@@ -60,7 +61,7 @@ import { ServerSettingsService } from "../../serverSettings.ts";
 import { ServerSecretStore } from "../../auth/Services/ServerSecretStore.ts";
 
 /**
- * Resolve the engine entrypoint to spawn.
+ * Resolve the Flutter engine entrypoint to spawn.
  *
  * The engine bundle is a Node program (better-sqlite3 native binding is not
  * supported by Bun — see apps/engine/src/spawn.test.ts), so the adapter
@@ -68,15 +69,40 @@ import { ServerSecretStore } from "../../auth/Services/ServerSecretStore.ts";
  * build it once via the engine package's tsdown script.
  */
 function resolveEngineCommand(): { command: string; args: readonly string[] } {
-  const engineDir = fileURLToPath(new URL("../../../../engine", import.meta.url));
-  const distEntry = path.join(engineDir, "dist", "index.mjs");
-  if (!existsSync(distEntry)) {
-    const built = spawnSync("bun", ["run", "build"], { cwd: engineDir });
-    if (built.status !== 0 || !existsSync(distEntry)) {
-      throw new Error(
-        `engine bundle missing at ${distEntry}; tried 'bun run build' (${built.status ?? built.signal})`,
-      );
+  const candidates: ReadonlyArray<string> = [
+    // Packaged desktop: the desktop main injects the unpacked engine dir
+    // (process.resourcesPath/engine) which a plain `node` child can read —
+    // unlike app.asar.
+    process.env[CAIDE_ENGINE_DIR_ENV],
+    // Repo dev, bundled server (apps/server/dist/index.mjs → apps/engine).
+    fileURLToPath(new URL("../../../apps/engine", import.meta.url)),
+    // Repo dev, TS source under vitest (apps/server/src/provider/Layers →
+    // apps/engine).
+    fileURLToPath(new URL("../../../../engine", import.meta.url)),
+  ].filter((candidate): candidate is string =>
+    typeof candidate === "string" && candidate.length > 0,
+  );
+
+  for (const engineDir of candidates) {
+    const distEntry = path.join(engineDir, "dist", "index.mjs");
+    if (existsSync(distEntry)) {
+      return { command: "node", args: [distEntry] };
     }
+  }
+
+  // Fresh checkout: build once via the engine package's tsdown script. Use the
+  // repo layout candidate (source or bundled) so the build lands where the
+  // adapter will look next time.
+  const repoEngineDir = candidates.find(
+    (candidate) => existsSync(path.join(candidate, "package.json")),
+  );
+  const engineDir = repoEngineDir ?? candidates[0];
+  const built = spawnSync("bun", ["run", "build"], { cwd: engineDir });
+  const distEntry = path.join(engineDir, "dist", "index.mjs");
+  if (built.status !== 0 || !existsSync(distEntry)) {
+    throw new Error(
+      `engine bundle missing at ${distEntry}; tried 'bun run build' (${built.status ?? built.signal})`,
+    );
   }
   return { command: "node", args: [distEntry] };
 }

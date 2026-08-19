@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from "child_process";
 import treeKill from "tree-kill";
-import log from "electron-log/main";
+import log from "electron-log/node";
 
 const logger = log.scope("spawn_streaming");
 

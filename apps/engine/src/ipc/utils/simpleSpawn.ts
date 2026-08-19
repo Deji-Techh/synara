@@ -1,4 +1,4 @@
-import log from "electron-log/main";
+import log from "electron-log/node";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
 import {
   BufferedProcessSpawnError,

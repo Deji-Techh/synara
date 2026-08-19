@@ -14,7 +14,7 @@ const { logger, runBufferedProcessMock } = vi.hoisted(() => ({
   runBufferedProcessMock: vi.fn(),
 }));
 
-vi.mock("electron-log/main", () => ({
+vi.mock("electron-log/node", () => ({
   default: {
     scope: () => logger,
   },
