@@ -402,6 +402,15 @@ export const WsOrchestrationUnsubscribeThreadRpc = Rpc.make(
   },
 );
 
+export const WsOrchestrationGetProjectActivityRpc = Rpc.make(
+  ORCHESTRATION_WS_METHODS.getProjectActivity,
+  {
+    payload: OrchestrationRpcSchemas.getProjectActivity.input,
+    success: OrchestrationRpcSchemas.getProjectActivity.output,
+    error: WsRpcError,
+  },
+);
+
 export const WsProjectsListDirectoriesRpc = Rpc.make(WS_METHODS.projectsListDirectories, {
   payload: ProjectListDirectoriesInput,
   success: ProjectListDirectoriesResult,
@@ -1308,6 +1317,7 @@ export const WsFeatureRpcGroup = RpcGroup.make(
   WsOrchestrationUnsubscribeShellRpc,
   WsOrchestrationSubscribeThreadRpc,
   WsOrchestrationUnsubscribeThreadRpc,
+  WsOrchestrationGetProjectActivityRpc,
   WsOrchestrationSubscribeDomainEventsRpc,
   WsProjectsDiscoverScriptsRpc,
   WsProjectsListDirectoriesRpc,
