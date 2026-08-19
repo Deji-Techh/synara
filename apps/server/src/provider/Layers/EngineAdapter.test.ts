@@ -1,10 +1,14 @@
 // FILE: EngineAdapter.test.ts
-// Purpose: Proves the engine adapter spawns apps/engine over stdio and drives
-// the canonical Caide provider API end to end: startSession (initialize +
-// ping hello-world), sendTurn (echo hello-world), event stream, stopSession.
+// Purpose: Proves the engine adapter spawns apps/engine (node dist bundle)
+// over stdio and drives the canonical Caide provider API end to end:
+// startSession (initialize + ping hello-world), sendTurn (canned QA stream
+// round trip), event stream, stopSession.
 // Layer: Provider adapter integration test
 
 import { randomUUID } from "node:crypto";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 
 import { Effect, Fiber, Layer, Stream } from "effect";
 import { describe, expect, it } from "vitest";
@@ -14,7 +18,7 @@ import { ThreadId } from "@caide/contracts";
 import { ServerSettingsService } from "../../serverSettings";
 import { ServerSecretStore } from "../../auth/Services/ServerSecretStore";
 import { EngineAdapter, EngineAdapterShape } from "../Services/EngineAdapter.ts";
-import { EngineAdapterLive } from "./EngineAdapter.ts";
+import { EngineAdapterLive, EngineAdapterLiveWithOptions } from "./EngineAdapter.ts";
 
 const fakeSecretStoreLayer = Layer.succeed(ServerSecretStore, {
   get: () => Effect.succeed(null),
@@ -23,10 +27,29 @@ const fakeSecretStoreLayer = Layer.succeed(ServerSecretStore, {
   remove: () => Effect.void,
 });
 
+// Isolate the engine's SQLite + caide-apps dirs per run so tests never touch
+// the real user state, and import a tiny fixture folder (fast) instead of
+// scaffolding a fresh Flutter template per test.
+function makeIsolatedFixture(): { appsDir: string; userDataDir: string; fixturePath: string } {
+  const root = mkdtempSync(path.join(os.tmpdir(), "caide-engine-adapter-"));
+  const appsDir = path.join(root, "apps");
+  const userDataDir = path.join(root, "userData");
+  mkdirSync(appsDir, { recursive: true });
+  mkdirSync(userDataDir, { recursive: true });
+  const fixturePath = path.join(root, "fixture");
+  mkdirSync(fixturePath, { recursive: true });
+  writeFileSync(path.join(fixturePath, "pubspec.yaml"), "name: fixture_app\n", "utf8");
+  return { appsDir, userDataDir, fixturePath };
+}
+
 function provideAdapter<T>(effect: Effect.Effect<T, unknown, EngineAdapter>) {
+  const { appsDir, userDataDir } = makeIsolatedFixture();
   return effect.pipe(
     Effect.provide(
-      EngineAdapterLive.pipe(
+      EngineAdapterLiveWithOptions({
+        appsDir,
+        env: { CAIDE_DEV_USER_DATA_DIR: userDataDir },
+      }).pipe(
         Layer.provide(ServerSettingsService.layerTest()),
         Layer.provide(fakeSecretStoreLayer),
       ),
@@ -58,8 +81,9 @@ describe("EngineAdapter", () => {
     expect(result.sessions).toHaveLength(1);
   });
 
-  it("sendTurn completes a hello-world echo turn and emits lifecycle events", async () => {
+  it("sendTurn completes a canned-stream turn and emits lifecycle events", async () => {
     const threadId = ThreadId.makeUnsafe(randomUUID());
+    const { fixturePath } = makeIsolatedFixture();
 
     const result = await Effect.runPromise(
       provideAdapter(
@@ -71,10 +95,11 @@ describe("EngineAdapter", () => {
           yield* adapter.startSession({
             threadId,
             runtimeMode: "full-access",
+            cwd: fixturePath,
           });
           const turnResult = yield* adapter.sendTurn({
             threadId,
-            input: "build me a flutter app",
+            input: "[caide-qa=write]",
           });
           const events = yield* Fiber.join(eventsFiber);
           return { turnResult, events };
@@ -89,7 +114,7 @@ describe("EngineAdapter", () => {
     expect(eventTypes).toContain("thread.started");
     expect(eventTypes).toContain("turn.started");
     expect(eventTypes).toContain("turn.completed");
-  });
+  }, 120_000);
 
   it("stopSession tears the engine process down", async () => {
     const threadId = ThreadId.makeUnsafe(randomUUID());

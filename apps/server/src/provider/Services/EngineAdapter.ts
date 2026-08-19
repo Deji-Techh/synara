@@ -7,7 +7,7 @@
  *
  * @module EngineAdapter
  */
-import { ServiceMap } from "effect";
+import { ServiceMap, Stream } from "effect";
 import type { Effect } from "effect";
 
 import type {
@@ -77,9 +77,44 @@ export interface EnginePreviewOps {
   }): Effect.Effect<PreviewScreenshotResult, ProviderAdapterError>;
 }
 
+/**
+ * Goals API proxied onto the shared engine process. The engine owns goal
+ * state; the adapter relays CRUD verbatim (engine-shaped payloads) and
+ * streams goal lifecycle events for orchestration + WS consumers.
+ */
+export interface EngineGoalsApi {
+  create(input: Record<string, unknown>): Effect.Effect<unknown, ProviderAdapterError>;
+  get(goalId: string): Effect.Effect<unknown, ProviderAdapterError>;
+  getActive(
+    appId: number | null | undefined,
+  ): Effect.Effect<unknown, ProviderAdapterError>;
+  list(input: {
+    appId?: number;
+    statuses?: Array<string>;
+  }): Effect.Effect<unknown, ProviderAdapterError>;
+  listActivity(
+    goalId: string,
+    limit?: number,
+  ): Effect.Effect<unknown, ProviderAdapterError>;
+  pause(goalId: string, reason?: string): Effect.Effect<unknown, ProviderAdapterError>;
+  resume(goalId: string): Effect.Effect<unknown, ProviderAdapterError>;
+  cancel(goalId: string, reason?: string): Effect.Effect<unknown, ProviderAdapterError>;
+  edit(input: Record<string, unknown>): Effect.Effect<unknown, ProviderAdapterError>;
+  steer(goalId: string, instruction: string): Effect.Effect<unknown, ProviderAdapterError>;
+  retry(goalId: string): Effect.Effect<unknown, ProviderAdapterError>;
+  verify(goalId: string): Effect.Effect<unknown, ProviderAdapterError>;
+}
+
+export interface GoalDomainEvent {
+  readonly type: "goal.updated" | "goal.run-requested" | "goal.control-requested";
+  readonly payload: unknown;
+}
+
 export interface EngineAdapterShape
   extends ProviderAdapterShape<ProviderAdapterError>, EnginePreviewOps {
   readonly provider: "engine";
+  readonly goals: EngineGoalsApi;
+  readonly streamGoalDomainEvents: Stream.Stream<GoalDomainEvent>;
 }
 
 export class EngineAdapter extends ServiceMap.Service<EngineAdapter, EngineAdapterShape>()(

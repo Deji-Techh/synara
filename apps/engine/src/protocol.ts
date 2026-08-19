@@ -70,6 +70,22 @@ export const JSON_RPC_INTERNAL_ERROR = -32603;
 export const InitializeParamsSchema = z.object({
   clientName: z.string(),
   protocolVersion: z.number(),
+  /**
+   * Model-config handshake from the supervising server (M3): the server owns
+   * provider keys and forwards the resolved selectedModel/providerSettings
+   * here so the engine's own settings file is seeded before any chat:stream
+   * run. Omit to keep whatever the engine persisted from a previous run.
+   */
+  settings: z
+    .object({
+      selectedModel: z.object({
+        name: z.string(),
+        provider: z.string(),
+        customModelId: z.number().optional(),
+      }),
+      providerSettings: z.record(z.string(), z.unknown()),
+    })
+    .optional(),
 });
 export type InitializeParams = z.infer<typeof InitializeParamsSchema>;
 

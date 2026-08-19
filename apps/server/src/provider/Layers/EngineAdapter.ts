@@ -3,16 +3,22 @@
  *
  * Spawns apps/engine over stdio JSON-RPC (codex app-server pattern) and
  * projects engine activity into Caide's canonical provider runtime event
- * stream. M1 scope: session lifecycle + hello-world turn round trip.
+ * stream. M3 scope: one shared engine process per adapter; real turns over
+ * the engine's dyad `chat:stream` channel (message deltas, XML preview,
+ * todos, consent/user-input round trips, goals bridge), plus the M1 preview
+ * and quality-gate plumbing kept verbatim.
  *
  * @module EngineAdapterLive
  */
 import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
   EventId,
+  type CanonicalItemType,
   type ProviderKind,
   type ProviderRuntimeEvent,
   type ProviderSession,
@@ -37,7 +43,7 @@ import {
   TestResultSchema,
   PreviewScreenshotResultSchema,
 } from "@caide/engine/protocol";
-import { Effect, Layer, PubSub, Ref, Stream } from "effect";
+import { Effect, Fiber, Layer, PubSub, Ref, Stream } from "effect";
 
 import {
   ProviderAdapterProcessError,
@@ -46,19 +52,29 @@ import {
   type ProviderAdapterError,
 } from "../Errors.ts";
 import { EngineAdapter, type EngineAdapterShape } from "../Services/EngineAdapter.ts";
-import { PROVIDER_ADAPTER_RUNTIME_EVENT_BUFFER_CAPACITY } from "../Services/ProviderAdapter.ts";
 import { ServerSettingsService } from "../../serverSettings.ts";
 import { ServerSecretStore } from "../../auth/Services/ServerSecretStore.ts";
 
 /**
  * Resolve the engine entrypoint to spawn.
  *
- * In dev, run the TS source through bun (matching the rest of the repo's dev
- * workflow). Packaged builds resolve to dist/index.mjs.
+ * The engine bundle is a Node program (better-sqlite3 native binding is not
+ * supported by Bun — see apps/engine/src/spawn.test.ts), so the adapter
+ * spawns `node dist/index.mjs`. If the bundle is missing (fresh checkout),
+ * build it once via the engine package's tsdown script.
  */
 function resolveEngineCommand(): { command: string; args: readonly string[] } {
-  const engineEntry = fileURLToPath(new URL("../../../../engine/src/index.ts", import.meta.url));
-  return { command: "bun", args: ["run", engineEntry] };
+  const engineDir = fileURLToPath(new URL("../../../../engine", import.meta.url));
+  const distEntry = path.join(engineDir, "dist", "index.mjs");
+  if (!existsSync(distEntry)) {
+    const built = spawnSync("bun", ["run", "build"], { cwd: engineDir });
+    if (built.status !== 0 || !existsSync(distEntry)) {
+      throw new Error(
+        `engine bundle missing at ${distEntry}; tried 'bun run build' (${built.status ?? built.signal})`,
+      );
+    }
+  }
+  return { command: "node", args: [distEntry] };
 }
 
 export interface EngineAdapterLiveOptions {
@@ -66,13 +82,35 @@ export interface EngineAdapterLiveOptions {
   readonly cwd?: string;
   readonly command?: string;
   readonly args?: readonly string[];
+  /** Dev/test override for the engine's caide-apps base directory. */
+  readonly appsDir?: string;
+  /** Extra environment variables for the engine process (dev/test only). */
+  readonly env?: Readonly<Record<string, string>>;
+}
+
+interface EngineChatMapping {
+  readonly appId: number;
+  readonly chatId: number;
+}
+
+type PendingRequestKind =
+  | "mcp-consent"
+  | "agent-tool-consent"
+  | "questionnaire"
+  | "env-vars";
+
+interface PendingEngineRequest {
+  readonly kind: PendingRequestKind;
+  readonly threadId: ThreadId;
+  readonly chatId?: number;
 }
 
 interface EngineSessionContext {
   readonly threadId: ThreadId;
   readonly session: ProviderSession;
-  readonly client: EngineClient;
   readonly engineServerVersion: string;
+  /** Reference to the shared engine client (all sessions share one process). */
+  readonly client: EngineClient;
   /**
    * The appDir the pane last previewed for this thread (first preview/start
    * wins, then stop/reload/state reuse it so the pair never drifts from the
@@ -84,23 +122,37 @@ interface EngineSessionContext {
    * notification handler to attribute incoming text/tool deltas.
    */
   readonly currentTurnIdRef: { current: TurnId | null };
+  /** Engine app/chat this thread's conversation is bound to (lazy). */
+  chatMapping: EngineChatMapping | null;
+}
+
+interface SharedEngine {
+  readonly client: EngineClient;
+  readonly engineServerVersion: string;
 }
 
 const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
   Effect.gen(function* () {
     const runtimeEventQueue = yield* PubSub.unbounded<ProviderRuntimeEvent>();
     const sessions = yield* Ref.make<ReadonlyMap<ThreadId, EngineSessionContext>>(new Map());
+    const sharedEngineRef = yield* Ref.make<SharedEngine | null>(null);
+    const chatToThread = yield* Ref.make<ReadonlyMap<number, ThreadId>>(new Map());
+    const pendingRequests = yield* Ref.make<ReadonlyMap<string, PendingEngineRequest>>(
+      new Map(),
+    );
+    const settledChats = yield* Ref.make<ReadonlySet<number>>(new Set());
+    const goalsEventQueue = yield* PubSub.unbounded<{
+      type: "goal.updated" | "goal.run-requested" | "goal.control-requested";
+      payload: unknown;
+    }>();
     const serverSettings = yield* ServerSettingsService;
     const secretStore = yield* ServerSecretStore;
 
-    const engineModelConfig = (
-      cwd?: string,
-    ): Effect.Effect<
+    const engineModelConfig = (): Effect.Effect<
       | {
           baseUrl: string;
           apiKey: string;
           modelId: string;
-          cwd: string;
         }
       | undefined,
       ProviderAdapterError
@@ -112,7 +164,8 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         const baseUrl = engineSettings?.baseUrl ?? "";
         const modelId = engineSettings?.modelId ?? "";
         if (!baseUrl || !modelId) {
-          // Not configured for real model-driven turns; fall back to echo.
+          // Not configured for real model-driven turns; the engine runs with
+          // its own default settings.
           return undefined;
         }
         const secret = yield* secretStore
@@ -120,17 +173,14 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           .pipe(Effect.orElseSucceed(() => null));
         const decoder = new TextDecoder("utf-8");
         const apiKey = secret ? decoder.decode(secret) : "";
-        return {
-          baseUrl,
-          apiKey,
-          modelId,
-          cwd: cwd ?? options?.cwd ?? ".",
-        };
+        return { baseUrl, apiKey, modelId };
       });
 
     const binaryPath = options?.binaryPath;
-    const resolvedCommand = options?.command ?? "bun";
+    const resolvedCommand = options?.command ?? "node";
     const resolvedArgs = options?.args ?? (binaryPath ? [binaryPath] : resolveEngineCommand().args);
+    const engineDir = fileURLToPath(new URL("../../../../engine", import.meta.url));
+    const engineCwd = options?.cwd ?? engineDir;
 
     const makeEvent = <T extends { type: string; payload: unknown }>(
       threadId: ThreadId,
@@ -155,23 +205,591 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         cause: cause instanceof Error ? cause : new Error(String(cause)),
       });
 
-    /**
-     * Spawn the engine process, initialize the protocol channel, and prove it
-     * alive with a ping. Returns the live client plus handshake metadata. This
-     * is the shared substrate for normal chat sessions (which additionally
-     * publish lifecycle events) and preview-only sessions (which are created
-     * on demand and must stay silent so an engine session.started event never
-     * rewrites another provider's thread session binding).
-     */
-    const spawnEngineClient = (
+    const publishEvent = (event: ProviderRuntimeEvent) =>
+      PubSub.publish(runtimeEventQueue, event);
+
+    const publishTextDelta = (
       threadId: ThreadId,
-      input: { cwd?: string; currentTurnIdRef?: { current: TurnId | null } },
-    ): Effect.Effect<{ client: EngineClient; engineServerVersion: string }, ProviderAdapterError> =>
+      turnId: TurnId,
+      delta: string,
+      summaryIndex?: number,
+    ) =>
+      publishEvent(
+        makeEvent<ProviderRuntimeEvent>(threadId, {
+          type: "content.delta",
+          turnId,
+          payload: {
+            streamKind: "assistant_text" as const,
+            delta,
+            ...(summaryIndex !== undefined ? { summaryIndex } : {}),
+          },
+        }),
+      );
+
+    const publishTurnSettled = (
+      threadId: ThreadId,
+      turnId: TurnId | null,
+      state: "completed" | "failed" | "interrupted" | "cancelled",
+      stopReason: string,
+      extra?: Record<string, unknown>,
+    ) =>
+      publishEvent(
+        makeEvent<ProviderRuntimeEvent>(threadId, {
+          type: "turn.completed",
+          ...(turnId !== null ? { turnId } : {}),
+          payload: { state, stopReason, ...(extra ?? {}) },
+        }),
+      );
+
+    /**
+     * Look up the session context for a chatId (used by the notification
+     * dispatcher, which receives engine chat-scoped events). Returns null for
+     * preview-only sessions, which never bind chats.
+     */
+    const sessionForChat = (chatId: number): Effect.Effect<EngineSessionContext | null> =>
+      Ref.get(chatToThread).pipe(
+        Effect.flatMap((map) => {
+          const threadId = map.get(chatId);
+          if (!threadId) return Effect.succeed(null);
+          return Ref.get(sessions).pipe(
+            Effect.map((next) => next.get(threadId) ?? null),
+          );
+        }),
+      );
+
+    // ── Engine chat turn helpers ──────────────────────────────────────────
+
+    /**
+     * Map tool_use blocks from the engine chat transcript onto Caide's
+     * canonical tool item types (best-effort heuristic).
+     */
+    const canonicalToolItemType = (toolName: string): CanonicalItemType => {
+      if (/^(bash|shell|exec|run|command|terminal|docker)/i.test(toolName)) {
+        return "command_execution";
+      }
+      if (/^(file|write|edit|create|patch|apply_patch|delete|rename|move|chmod)/i.test(toolName)) {
+        return "file_change";
+      }
+      return "mcp_tool_call";
+    };
+
+    /**
+     * Emit the assistant's final message payload from a full `messages`
+     * chunk (arrives when the engine completes a message) as a content
+     * delta. Tracks emitted length per text block so repeated full-message
+     * chunks never double-send.
+     */
+    const emitTranscriptMessages = (
+      context: EngineSessionContext,
+      messages: unknown,
+    ): Effect.Effect<void> =>
       Effect.gen(function* () {
-        const cwd = options?.cwd ?? input.cwd;
-        // Pin the flutter SDK for the engine process (and, transparently, for
-        // every flutter child it spawns via safeFlutterEnvironment). Falls back
-        // to FLUTTER_SDK_BIN already present in the server environment.
+        const turnId = context.currentTurnIdRef.current;
+        if (!turnId || !Array.isArray(messages)) return;
+
+        // messageId -> number of chars already emitted (across text blocks).
+        const emitted = new Map<string, number>();
+        for (const message of messages) {
+          if (typeof message !== "object" || message === null) continue;
+          const raw = message as Record<string, unknown>;
+          const messageId =
+            typeof raw.id === "string"
+              ? raw.id
+              : typeof raw.messageId === "string"
+                ? raw.messageId
+                : null;
+          if (!messageId) continue;
+          if (raw.role !== "assistant" && raw.role !== "agent") continue;
+          const content = raw.content;
+          if (!Array.isArray(content)) continue;
+          const textBlocks: string[] = [];
+          const toolBlocks: Array<Record<string, unknown>> = [];
+          for (const block of content) {
+            if (typeof block !== "object" || block === null) continue;
+            const b = block as Record<string, unknown>;
+            if (b.type === "text" && typeof b.text === "string") {
+              textBlocks.push(b.text);
+            } else if (b.type === "tool_use" && typeof b.name === "string") {
+              toolBlocks.push(b);
+            }
+          }
+          const emittedForMessage = emitted.get(messageId) ?? 0;
+          if (textBlocks.length > 0) {
+            const text = textBlocks.join("\n");
+            if (text.length > emittedForMessage) {
+              const delta = text.slice(emittedForMessage);
+              emitted.set(messageId, text.length);
+              yield* publishTextDelta(context.threadId, turnId, delta);
+            }
+          }
+          const alreadyLaunched =
+            emitted.get(`${messageId}:tools`) ?? 0;
+          if (toolBlocks.length > alreadyLaunched) {
+            emitted.set(`${messageId}:tools`, toolBlocks.length);
+            for (const tool of toolBlocks.slice(alreadyLaunched)) {
+              const toolName = String(tool.name);
+              const callId =
+                typeof tool.id === "string" ? tool.id : `${toolName}:${alreadyLaunched}`;
+              const itemType = canonicalToolItemType(toolName);
+              yield* publishEvent(
+                makeEvent<ProviderRuntimeEvent>(context.threadId, {
+                  type: "item.started",
+                  turnId,
+                  payload: {
+                    itemType,
+                    title: toolName,
+                    data: { toolName, callId, args: tool.input ?? {} },
+                  },
+                }),
+              );
+              yield* publishEvent(
+                makeEvent<ProviderRuntimeEvent>(context.threadId, {
+                  type: "item.completed",
+                  turnId,
+                  payload: {
+                    itemType,
+                    status: "completed" as const,
+                    title: toolName,
+                    data: { toolName, callId },
+                  },
+                }),
+              );
+            }
+          }
+        }
+      });
+
+    /**
+     * Notification dispatcher for the shared engine connection. Routes by
+     * engine channel:
+     *   chat:stream:*            - turn lifecycle pieces
+     *   chat:response:*          - text/tool deltas + completion
+     *   agent-tool:*             - todos, consents, env var prompts
+     *   mcp:tool-consent-*       - MCP tool consent life
+     *   plan:*                   - plan questionnaire questions
+     *   goal:*                   - forwarded to the goals domain event stream
+     */
+    const handleEngineNotification = (method: string, params: unknown): Effect.Effect<void> =>
+      Effect.gen(function* () {
+        // Renderer-bound events arrive on the bridge as `dyad/event`
+        // notifications with { channel, payload }; unwrap them so the
+        // dispatcher switch can address the real engine channel names.
+        if (method === "dyad/event") {
+          const envelope = (params ?? {}) as Record<string, unknown>;
+          if (typeof envelope.channel !== "string") return;
+          method = envelope.channel;
+          params = envelope.payload;
+        }
+        const payload = (params ?? {}) as Record<string, unknown>;
+        switch (method) {
+          case "chat:stream:start":
+          case "chat:stream:end": {
+            if (typeof payload.chatId !== "number") return;
+            const chatId = payload.chatId as number;
+            if (method === "chat:stream:start") {
+              yield* Ref.update(settledChats, (set) => {
+                const next = new Set(set);
+                next.delete(chatId);
+                return next;
+              });
+            } else {
+              const settled = yield* Ref.get(settledChats);
+              const context = yield* sessionForChat(chatId);
+              if (!settled.has(chatId) && context !== null) {
+                // The engine ended the stream without a chat:response:end
+                // (abort/restart mid-turn). Close the turn cleanly.
+                const turnId = context.currentTurnIdRef.current;
+                yield* publishEvent(
+                  makeEvent<ProviderRuntimeEvent>(context.threadId, {
+                    type: "turn.aborted",
+                    ...(turnId !== null ? { turnId } : {}),
+                    payload: { reason: "engine stream ended before response" },
+                  }),
+                );
+                context.currentTurnIdRef.current = null;
+              }
+              yield* Ref.update(chatToThread, (map) => {
+                const next = new Map(map);
+                next.delete(chatId);
+                return next;
+              });
+            }
+            return;
+          }
+          case "chat:response:chunk": {
+            if (typeof payload.chatId !== "number") return;
+            const chatId = payload.chatId as number;
+            const context = yield* sessionForChat(chatId);
+            if (context === null) return;
+            const turnId = context.currentTurnIdRef.current;
+            if (turnId === null) return;
+
+            // Ack-based backpressure: the engine's canned QA stream path only
+            // sends the next chunk once the renderer acks (MAX_IN_FLIGHT = 1).
+            // Fire-and-forget; real LLM streams omit chunkSeq and ignore acks.
+            if (typeof payload.chunkSeq === "number") {
+              const shared = yield* Ref.get(sharedEngineRef);
+              shared?.client
+                .dyadInvoke("chat:response:ack", {
+                  chatId,
+                  lastSeq: payload.chunkSeq,
+                })
+                .catch(() => undefined);
+            }
+
+            if (typeof payload.streamingPreview === "object" && payload.streamingPreview !== null) {
+              const content = String(
+                (payload.streamingPreview as Record<string, unknown>).content ?? "",
+              );
+              if (content !== "") {
+                yield* publishEvent(
+                  makeEvent<ProviderRuntimeEvent>(context.threadId, {
+                    type: "turn.proposed.delta",
+                    turnId,
+                    payload: { delta: content },
+                  }),
+                );
+              }
+            }
+            if (typeof payload.streamingPatch === "string" && payload.streamingPatch !== "") {
+              yield* publishTextDelta(context.threadId, turnId, payload.streamingPatch);
+            }
+            if (payload.messages !== undefined) {
+              yield* emitTranscriptMessages(context, payload.messages);
+            }
+            return;
+          }
+          case "chat:response:end": {
+            if (typeof payload.chatId !== "number") return;
+            const chatId = payload.chatId as number;
+            const context = yield* sessionForChat(chatId);
+            if (context === null) return;
+            const turnId = context.currentTurnIdRef.current;
+            const wasCancelled = payload.wasCancelled === true;
+            // Ensure the tail of any final message was flushed.
+            if (Array.isArray(payload.messages)) {
+              yield* emitTranscriptMessages(context, payload.messages);
+            }
+            yield* publishEvent(
+              makeEvent<ProviderRuntimeEvent>(context.threadId, {
+                type: "item.completed",
+                ...(turnId !== null ? { turnId } : {}),
+                payload: { itemType: "assistant_message" as const },
+              }),
+            );
+            yield* publishTurnSettled(
+              context.threadId,
+              turnId,
+              wasCancelled ? "interrupted" : "completed",
+              wasCancelled ? "user_cancelled" : "end_turn",
+              Array.isArray(payload.updatedFiles) && payload.updatedFiles.length > 0
+                ? { usage: { updatedFiles: payload.updatedFiles as unknown[] } }
+                : undefined,
+            );
+            context.currentTurnIdRef.current = null;
+            yield* Ref.update(settledChats, (set) => {
+              const next = new Set(set);
+              next.add(chatId);
+              return next;
+            });
+            return;
+          }
+          case "chat:response:error": {
+            if (typeof payload.chatId !== "number") return;
+            const chatId = payload.chatId as number;
+            const context = yield* sessionForChat(chatId);
+            if (context === null) return;
+            const turnId = context.currentTurnIdRef.current;
+            const message = String(payload.error ?? "engine turn failed");
+            yield* publishEvent(
+              makeEvent<ProviderRuntimeEvent>(context.threadId, {
+                type: "runtime.error",
+                ...(turnId !== null ? { turnId } : {}),
+                payload: {
+                  message,
+                  class: "provider_error" as const,
+                },
+              }),
+            );
+            yield* publishEvent(
+              makeEvent<ProviderRuntimeEvent>(context.threadId, {
+                type: "item.completed",
+                ...(turnId !== null ? { turnId } : {}),
+                payload: {
+                  itemType: "assistant_message" as const,
+                  status: "failed" as const,
+                },
+              }),
+            );
+            yield* publishTurnSettled(
+              context.threadId,
+              turnId,
+              "failed",
+              "error",
+              message !== "" ? { errorMessage: message } : undefined,
+            );
+            context.currentTurnIdRef.current = null;
+            yield* Ref.update(settledChats, (set) => {
+              const next = new Set(set);
+              next.add(chatId);
+              return next;
+            });
+            return;
+          }
+
+          case "agent-tool:todos-update": {
+            if (typeof payload.chatId !== "number") return;
+            const context = yield* sessionForChat(payload.chatId);
+            if (context === null) return;
+            const turnId = context.currentTurnIdRef.current;
+            if (turnId === null || !Array.isArray(payload.todos)) return;
+            const tasks = payload.todos
+              .map((todo) => {
+                if (typeof todo !== "object" || todo === null) return null;
+                const t = todo as Record<string, unknown>;
+                const status = t.status === "in_progress" ? "inProgress" : t.status === "completed" ? "completed" : "pending";
+                return {
+                  task: String(t.content ?? t.task ?? "…"),
+                  status: status as "pending" | "inProgress" | "completed",
+                };
+              })
+              .filter((task): task is NonNullable<typeof task> => task !== null);
+            if (tasks.length === 0) return;
+            yield* publishEvent(
+              makeEvent<ProviderRuntimeEvent>(context.threadId, {
+                type: "turn.tasks.updated",
+                turnId,
+                payload: { tasks },
+              }),
+            );
+            return;
+          }
+
+          case "agent-tool:consent-request": {
+            const requestId = String(payload.requestId ?? "");
+            if (requestId === "") return;
+            const chatId =
+              typeof payload.chatId === "number" ? payload.chatId : undefined;
+            const context = chatId !== undefined ? yield* sessionForChat(chatId) : null;
+            if (context === null) return;
+            yield* Ref.update(pendingRequests, (map) => {
+              const next = new Map(map);
+              next.set(requestId, {
+                kind: "agent-tool-consent",
+                threadId: context.threadId,
+                ...(chatId !== undefined ? { chatId } : {}),
+              });
+              return next;
+            });
+            const toolName = String(payload.toolName ?? "tool");
+            yield* publishEvent(
+              makeEvent<ProviderRuntimeEvent>(context.threadId, {
+                type: "request.opened",
+                requestId: requestId as never,
+                payload: {
+                  requestType: "command_execution_approval" as const,
+                  detail: toolName,
+                  args: {
+                    toolName,
+                    toolDescription: payload.toolDescription ?? null,
+                    inputPreview: payload.inputPreview ?? null,
+                    metadata: payload.metadata ?? null,
+                  },
+                },
+              }),
+            );
+            return;
+          }
+
+          case "mcp:tool-consent-request": {
+            const requestId = String(payload.requestId ?? "");
+            if (requestId === "") return;
+            const chatId =
+              typeof payload.chatId === "number" ? payload.chatId : undefined;
+            const context = chatId !== undefined ? yield* sessionForChat(chatId) : null;
+            if (context === null) return;
+            yield* Ref.update(pendingRequests, (map) => {
+              const next = new Map(map);
+              next.set(requestId, {
+                kind: "mcp-consent",
+                threadId: context.threadId,
+                ...(chatId !== undefined ? { chatId } : {}),
+              });
+              return next;
+            });
+            const toolName = String(payload.toolName ?? "tool");
+            const serverName = payload.serverName;
+            yield* publishEvent(
+              makeEvent<ProviderRuntimeEvent>(context.threadId, {
+                type: "request.opened",
+                requestId: requestId as never,
+                payload: {
+                  requestType: "command_execution_approval" as const,
+                  detail:
+                    typeof serverName === "string" && serverName !== ""
+                      ? `${toolName} via ${serverName}`
+                      : toolName,
+                  args: {
+                    toolName,
+                    ...(typeof serverName === "string"
+                      ? { serverName }
+                      : {}),
+                    ...(payload.args !== undefined ? { args: payload.args } : {}),
+                  },
+                },
+              }),
+            );
+            return;
+          }
+
+          case "mcp:tool-consent-resolved":
+          case "mcp:tool-consent-classified": {
+            const requestId = String(payload.requestId ?? "");
+            if (requestId === "") return;
+            const pending = yield* Ref.get(pendingRequests);
+            const entry = pending.get(requestId);
+            if (!entry) return;
+            yield* Ref.update(pendingRequests, (map) => {
+              const next = new Map(map);
+              next.delete(requestId);
+              return next;
+            });
+            yield* publishEvent(
+              makeEvent<ProviderRuntimeEvent>(entry.threadId, {
+                type: "request.resolved",
+                requestId: requestId as never,
+                payload: {
+                  requestType: "command_execution_approval" as const,
+                  decision: "accept",
+                  resolution: { source: method },
+                },
+              }),
+            );
+            return;
+          }
+
+          case "plan:questionnaire": {
+            if (typeof payload.chatId !== "number") return;
+            const context = yield* sessionForChat(payload.chatId);
+            if (context === null) return;
+            const requestId = String(payload.requestId ?? "");
+            if (requestId === "") return;
+            yield* Ref.update(pendingRequests, (map) => {
+              const next = new Map(map);
+              next.set(requestId, {
+                kind: "questionnaire",
+                threadId: context.threadId,
+                chatId: payload.chatId as number,
+              });
+              return next;
+            });
+            const questions = Array.isArray(payload.questions)
+              ? payload.questions.map((question) => {
+                  const q = (question ?? {}) as Record<string, unknown>;
+                  const id = String(q.id ?? "");
+                  return {
+                    id: id !== "" ? id : randomUUID(),
+                    header: "Question",
+                    question: String(q.question ?? ""),
+                    options: Array.isArray(q.options)
+                      ? (q.options as unknown[]).map((option) => ({
+                          label: String(option),
+                          description: "",
+                        }))
+                      : [],
+                    multiSelect: q.type === "checkbox",
+                  };
+                })
+              : [];
+            yield* publishEvent(
+              makeEvent<ProviderRuntimeEvent>(context.threadId, {
+                type: "user-input.requested",
+                requestId: requestId as never,
+                payload: { questions },
+              }),
+            );
+            return;
+          }
+
+          case "agent-tool:prompt-env-vars": {
+            if (typeof payload.chatId !== "number") return;
+            const context = yield* sessionForChat(payload.chatId);
+            if (context === null) return;
+            const requestId = String(payload.requestId ?? "");
+            if (requestId === "") return;
+            yield* Ref.update(pendingRequests, (map) => {
+              const next = new Map(map);
+              next.set(requestId, {
+                kind: "env-vars",
+                threadId: context.threadId,
+                chatId: payload.chatId as number,
+              });
+              return next;
+            });
+            const questions = Array.isArray(payload.vars)
+              ? (payload.vars as unknown[]).map((variable) => {
+                  const v = (variable ?? {}) as Record<string, unknown>;
+                  const key = String(v.key ?? "");
+                  return {
+                    id: key,
+                    header: "Environment variable",
+                    question:
+                      key + (typeof v.description === "string" && v.description !== "" ? ` — ${v.description}` : ""),
+                    options: [],
+                    multiSelect: false,
+                  };
+                })
+              : [];
+            yield* publishEvent(
+              makeEvent<ProviderRuntimeEvent>(context.threadId, {
+                type: "user-input.requested",
+                requestId: requestId as never,
+                payload: { questions },
+              }),
+            );
+            return;
+          }
+
+          case "goal:updated": {
+            yield* PubSub.publish(goalsEventQueue, {
+              type: "goal.updated",
+              payload: payload.payload ?? payload,
+            });
+            return;
+          }
+          case "goal:run-requested": {
+            yield* PubSub.publish(goalsEventQueue, {
+              type: "goal.run-requested",
+              payload: payload.payload ?? payload,
+            });
+            return;
+          }
+          case "goal:control-requested": {
+            yield* PubSub.publish(goalsEventQueue, {
+              type: "goal.control-requested",
+              payload: payload.payload ?? payload,
+            });
+            return;
+          }
+          default:
+            return;
+        }
+      });
+
+    /**
+     * Spawn the shared engine process once; initialize the protocol channel,
+     * seed settings (model handshake), provision the custom model provider
+     * when configured, and prove it alive with a ping. Subsequent calls reuse
+     * the running process so apps/chats/goals share one SQLite world.
+     */
+    const ensureSharedEngine = (
+      threadId: ThreadId,
+    ): Effect.Effect<SharedEngine, ProviderAdapterError> =>
+      Effect.gen(function* () {
+        const existing = yield* Ref.get(sharedEngineRef);
+        if (existing !== null) return existing;
+
+        const cwd = engineCwd;
         const engineSettings = (yield* serverSettings.getSettings.pipe(
           Effect.orElseSucceed(() => undefined),
         ))?.providers?.engine;
@@ -184,40 +802,21 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         const engineEnv = safeFlutterEnvironment(
           flutterSdkBin !== "" ? { FLUTTER_SDK_BIN: flutterSdkBin } : undefined,
         );
+        if (options?.appsDir !== undefined) {
+          engineEnv["CAIDE_DEV_APPS_DIR"] = options.appsDir;
+        }
+        if (options?.env !== undefined) {
+          for (const [key, value] of Object.entries(options.env)) {
+            engineEnv[key] = value;
+          }
+        }
         const client = new EngineClient({
           command: resolvedCommand,
           args: resolvedArgs,
           ...(cwd !== undefined ? { cwd } : {}),
           env: engineEnv,
           onNotification: (method, params) => {
-            const turnId = input.currentTurnIdRef?.current;
-            if (!turnId) return;
-
-            if (method === "turn/textDelta") {
-              const p = params as { delta: string };
-              Effect.runFork(
-                PubSub.publish(
-                  runtimeEventQueue,
-                  makeEvent<ProviderRuntimeEvent>(threadId, {
-                    type: "content.delta",
-                    turnId,
-                    payload: { delta: p.delta },
-                  }),
-                ),
-              );
-            } else if (method === "turn/toolCall") {
-              const p = params as { name: string; args: unknown };
-              Effect.runFork(
-                PubSub.publish(
-                  runtimeEventQueue,
-                  makeEvent<ProviderRuntimeEvent>(threadId, {
-                    type: "tool_call.started",
-                    turnId,
-                    payload: { toolName: p.name, args: p.args },
-                  }),
-                ),
-              );
-            }
+            Effect.runFork(handleEngineNotification(method, params));
           },
         });
         yield* Effect.tryPromise({
@@ -225,11 +824,30 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           catch: (cause) => processError(threadId, "engine process failed to spawn", cause),
         });
 
+        const modelConfig = yield* engineModelConfig();
         const initializeResponse = yield* Effect.tryPromise({
           try: () =>
             client.initialize({
               clientName: "caide-server",
               protocolVersion: ENGINE_PROTOCOL_VERSION,
+              ...(modelConfig
+                ? {
+                    settings: {
+                      selectedModel: {
+                        name: modelConfig.modelId,
+                        provider: "caide-engine",
+                      },
+                      providerSettings: {
+                        "caide-engine": {
+                          apiKey: {
+                            value: modelConfig.apiKey,
+                            encryptionType: "plaintext",
+                          },
+                        },
+                      },
+                    },
+                  }
+                : {}),
             }),
           catch: (cause) => processError(threadId, "engine initialize request failed", cause),
         });
@@ -255,7 +873,32 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           );
         }
 
-        // Hello-world round trip: ping proves the stdio channel is alive.
+        // Provision the custom provider the settings handshake references.
+        // Tolerant: a pre-existing provider/model mid-air errors are fine.
+        if (modelConfig !== undefined) {
+          const provisionPromises = [
+            client
+              .dyadInvoke("create-custom-language-model-provider", {
+                id: "caide-engine",
+                name: "Caide Engine",
+                apiBaseUrl: modelConfig.baseUrl,
+              })
+              .catch(() => null) as Promise<unknown>,
+            client
+              .dyadInvoke("create-custom-language-model", {
+                apiName: modelConfig.modelId,
+                displayName: modelConfig.modelId,
+                providerId: "caide-engine",
+              })
+              .catch(() => null) as Promise<unknown>,
+          ];
+          yield* Effect.tryPromise({
+            try: () => Promise.all(provisionPromises),
+            catch: (cause) =>
+              processError(threadId, "engine model provisioning failed", cause),
+          });
+        }
+
         const pingResponse = yield* Effect.tryPromise({
           try: () => client.ping(),
           catch: (cause) => processError(threadId, "engine ping request failed", cause),
@@ -278,25 +921,200 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           );
         }
 
-        return { client, engineServerVersion: initialized.data.serverVersion };
+        const shared: SharedEngine = {
+          client,
+          engineServerVersion: initialized.data.serverVersion,
+        };
+        yield* Ref.set(sharedEngineRef, shared);
+        return shared;
       });
 
     /**
-     * Start a full engine chat session for the thread: spawn the engine and
-     * announce it through the provider runtime event stream so the thread's
-     * lifecycle (session.started / thread.started) is wired into the
-     * projection. Used when the thread itself is bound to the engine provider.
+     * Bind (or create) the engine app + chat backing this thread's
+     * conversation. Legacy folders (thread cwd) are imported verbatim;
+     * threads without a cwd get a fresh scratch app.
+     */
+    const ensureThreadChat = (
+      context: EngineSessionContext,
+    ): Effect.Effect<EngineChatMapping, ProviderAdapterError> =>
+      Effect.gen(function* () {
+        if (context.chatMapping !== null) return context.chatMapping;
+        const { client } = yield* ensureSharedEngine(context.threadId);
+        const appPath = context.session.cwd;
+
+        let appId: number | null = null;
+        let chatFromCreate: number | null = null;
+        if (typeof appPath === "string" && appPath !== "" && appPath !== ".") {
+          const appListResponse = yield* Effect.tryPromise({
+            try: () => client.dyadInvoke<{ apps?: Array<Record<string, unknown>> }>("list-apps"),
+            catch: (cause) =>
+              processError(context.threadId, "engine list-apps failed", cause),
+          });
+          const apps = Array.isArray(appListResponse?.apps) ? appListResponse.apps : [];
+          const existing = apps.find((app) => {
+            const appPathField = app.path;
+            return typeof appPathField === "string" &&
+              (appPathField === appPath ||
+                // engine resolves relative names under its apps dir; compare
+                // both raw path and resolved absolute forms.
+                path.resolve(appPathField) === path.resolve(appPath));
+          });
+          if (existing !== undefined && typeof existing.id === "number") {
+            appId = existing.id;
+          }
+          if (appId === null) {
+            const importResponse = yield* Effect.tryPromise({
+              try: () =>
+                client.dyadInvoke<{ appId: number; chatId?: number }>("import-app", {
+                  path: appPath,
+                  appName: path.basename(appPath),
+                }),
+              catch: (cause) =>
+                processError(context.threadId, "engine import-app failed", cause),
+            });
+            appId = importResponse?.appId ?? null;
+            chatFromCreate =
+              typeof importResponse?.chatId === "number" ? importResponse.chatId : null;
+          }
+        }
+        if (appId === null) {
+          const name = `caide-workspace-${Date.now()}`;
+          const createResponse = yield* Effect.tryPromise({
+            try: () =>
+              client.dyadInvoke<{ app?: { id?: number }; chatId?: number }>(
+                "create-app",
+                { name, initialChatMode: "build" },
+              ),
+            catch: (cause) =>
+              processError(context.threadId, "engine create-app failed", cause),
+          });
+          appId =
+            typeof createResponse?.app?.id === "number" ? createResponse.app.id : null;
+          chatFromCreate =
+            typeof createResponse?.chatId === "number" ? createResponse.chatId : null;
+        }
+        if (appId === null) {
+          return yield* Effect.fail(
+            processError(context.threadId, "engine app provisioning returned no appId", null),
+          );
+        }
+
+        let chatId: number | null = chatFromCreate;
+        if (chatId === null) {
+          const chatsResponse = yield* Effect.tryPromise({
+            try: () => client.dyadInvoke<Array<Record<string, unknown>>>("get-chats", appId),
+            catch: (cause) =>
+              processError(context.threadId, "engine get-chats failed", cause),
+          });
+          chatId =
+            Array.isArray(chatsResponse) && chatsResponse.length > 0 &&
+            typeof chatsResponse[0]?.id === "number"
+              ? chatsResponse[0].id
+              : null;
+        }
+        if (chatId === null) {
+          const createChatResponse = yield* Effect.tryPromise({
+            try: () => client.dyadInvoke<{ chatId: number }>("create-chat", appId, 120_000),
+            catch: (cause) =>
+              processError(context.threadId, "engine create-chat failed", cause),
+          });
+          chatId = createChatResponse?.chatId ?? null;
+        }
+        if (chatId === null) {
+          return yield* Effect.fail(
+            processError(context.threadId, "engine chat provisioning returned no chatId", null),
+          );
+        }
+
+        const mapping: EngineChatMapping = { appId, chatId };
+        context.chatMapping = mapping;
+        yield* Ref.update(chatToThread, (map) => {
+          const next = new Map(map);
+          next.set(chatId!, context.threadId);
+          return next;
+        });
+        return mapping;
+      });
+
+    /**
+     * Run one engine chat turn in the background. Completion/lifecycle is
+     * driven by chat:stream notifications; this effect only guards against
+     * a hard transport failure so the turn still settles.
+     */
+    const forkChatStream = (
+      context: EngineSessionContext,
+      chatId: number,
+      turnId: TurnId,
+      prompt: string,
+      requestedChatMode: "build" | "ask" | "plan" | "local-agent",
+    ): Effect.Effect<Fiber.Fiber<void, never>, never, never> =>
+      Effect.gen(function* () {
+        const { client } = yield* ensureSharedEngine(context.threadId);
+        const response = yield* Effect.tryPromise({
+          try: () =>
+            client.dyadInvoke(
+              "chat:stream",
+              {
+                chatId,
+                prompt,
+                requestedChatMode,
+                suppressUserMessage: false,
+              },
+              30 * 60_000,
+            ),
+          catch: (cause) =>
+            processError(context.threadId, "engine chat:stream failed", cause),
+        });
+        void response;
+      }).pipe(
+        Effect.matchEffect({
+          onSuccess: () => Effect.void,
+          onFailure: (error) =>
+            Effect.gen(function* () {
+              const settled = yield* Ref.get(settledChats);
+              if (settled.has(chatId)) return;
+              const turn = context.currentTurnIdRef.current;
+              yield* publishEvent(
+                makeEvent<ProviderRuntimeEvent>(context.threadId, {
+                  type: "runtime.error",
+                  ...(turn !== null ? { turnId: turn } : {}),
+                  payload: {
+                    message: error.message,
+                    class: "transport_error" as const,
+                  },
+                }),
+              );
+              yield* publishEvent(
+                makeEvent<ProviderRuntimeEvent>(context.threadId, {
+                  type: "item.completed",
+                  ...(turn !== null ? { turnId: turn } : {}),
+                  payload: {
+                    itemType: "assistant_message" as const,
+                    status: "failed" as const,
+                  },
+                }),
+              );
+              yield* publishTurnSettled(context.threadId, turn, "failed", "error", {
+                errorMessage: error.message,
+              });
+              context.currentTurnIdRef.current = null;
+            }),
+        }),
+        Effect.forkDetach,
+      );
+
+    /**
+     * Start a full engine chat session for the thread, binding it to the
+     * shared engine process and announcing it through the provider runtime
+     * event stream so the thread's lifecycle (session.started /
+     * thread.started) is wired into the projection.
      */
     const startEngineSession = (
       threadId: ThreadId,
       input: { runtimeMode: RuntimeMode; cwd?: string },
     ): Effect.Effect<EngineSessionContext, ProviderAdapterError> =>
       Effect.gen(function* () {
-        const currentTurnIdRef = { current: null as TurnId | null };
-        const { client, engineServerVersion } = yield* spawnEngineClient(threadId, {
-          ...(input.cwd !== undefined ? { cwd: input.cwd } : {}),
-          currentTurnIdRef,
-        });
+        const shared = yield* ensureSharedEngine(threadId);
         const now = new Date().toISOString();
         const session: ProviderSession = {
           provider: "engine",
@@ -310,36 +1128,34 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         const context: EngineSessionContext = {
           threadId,
           session,
-          client,
-          engineServerVersion,
+          client: shared.client,
+          engineServerVersion: shared.engineServerVersion,
           previewAppDir: null,
-          currentTurnIdRef,
+          currentTurnIdRef: { current: null },
+          chatMapping: null,
         };
         yield* Ref.update(sessions, (map) => new Map(map).set(threadId, context));
 
-        yield* PubSub.publish(
-          runtimeEventQueue,
+        yield* publishEvent(
           makeEvent<ProviderRuntimeEvent>(threadId, {
             type: "session.started",
             payload: {
-              message: `Engine ${engineServerVersion} connected (protocol v${ENGINE_PROTOCOL_VERSION})`,
+              message: `Engine ${shared.engineServerVersion} connected (protocol v${ENGINE_PROTOCOL_VERSION})`,
             },
           }),
         );
-        yield* PubSub.publish(
-          runtimeEventQueue,
+        yield* publishEvent(
           makeEvent<ProviderRuntimeEvent>(threadId, {
             type: "session.configured",
             payload: {
               config: {
-                serverVersion: engineServerVersion,
+                serverVersion: shared.engineServerVersion,
                 capabilities: { flutter: true, preview: true },
               },
             },
           }),
         );
-        yield* PubSub.publish(
-          runtimeEventQueue,
+        yield* publishEvent(
           makeEvent<ProviderRuntimeEvent>(threadId, {
             type: "thread.started",
             payload: {},
@@ -361,9 +1177,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       input: { cwd?: string },
     ): Effect.Effect<EngineSessionContext, ProviderAdapterError> =>
       Effect.gen(function* () {
-        const { client, engineServerVersion } = yield* spawnEngineClient(threadId, {
-          ...(input.cwd !== undefined ? { cwd: input.cwd } : {}),
-        });
+        const shared = yield* ensureSharedEngine(threadId);
         const now = new Date().toISOString();
         const session: ProviderSession = {
           provider: "engine",
@@ -377,9 +1191,11 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         const context: EngineSessionContext = {
           threadId,
           session,
-          client,
-          engineServerVersion,
+          client: shared.client,
+          engineServerVersion: shared.engineServerVersion,
           previewAppDir: null,
+          currentTurnIdRef: { current: null },
+          chatMapping: null,
         };
         yield* Ref.update(sessions, (map) => new Map(map).set(threadId, context));
         return context;
@@ -400,20 +1216,88 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         }),
       );
 
-    // Layer teardown: kill every live engine process so nothing outlives the
+    // Layer teardown: kill the shared engine process so nothing outlives the
     // adapter (ProviderService also calls stopAll on shutdown, this is the
     // backstop for crash paths).
     yield* Effect.addFinalizer(() =>
-      Ref.get(sessions).pipe(
-        Effect.flatMap((map) => {
-          for (const context of map.values()) {
-            context.client.kill();
-          }
+      Ref.get(sharedEngineRef).pipe(
+        Effect.flatMap((shared) => {
+          if (shared !== null) shared.client.kill();
           return Effect.void;
         }),
         Effect.ignore,
       ),
     );
+
+    // ── Goals bridge ──────────────────────────────────────────────────────
+    // The engine owns goal state; the adapter proxies goal CRUD onto the
+    // shared engine process and relays goal:updated / goal:run-requested /
+    // goal:control-requested into a pub-sub stream for the WS layer (M4 web
+    // consumer) and orchestration hooks (goal-driven turns).
+    const goalRequest = <A = unknown>(
+      threadId: ThreadId,
+      channel: string,
+      input: Record<string, unknown>,
+    ): Effect.Effect<A, ProviderAdapterError> =>
+      Effect.gen(function* () {
+        const { client } = yield* ensureSharedEngine(threadId);
+        return yield* Effect.tryPromise({
+          try: () => client.dyadInvoke<A>(channel, input, 30_000),
+          catch: (cause) =>
+            processError(threadId, `engine ${channel} failed`, cause),
+        });
+      });
+
+    const goalsApi = {
+      create: (input: Record<string, unknown>) =>
+        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:create", input),
+      get: (goalId: string) =>
+        goalRequest(
+          ThreadId.makeUnsafe(randomUUID()),
+          "goal:get",
+          { goalId },
+        ),
+      getActive: (appId: number | null | undefined) =>
+        goalRequest(
+          ThreadId.makeUnsafe(randomUUID()),
+          "goal:get-active",
+          { appId: appId ?? null },
+        ),
+      list: (input: { appId?: number; statuses?: Array<string> }) =>
+        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:list", input),
+      listActivity: (goalId: string, limit?: number) =>
+        goalRequest(
+          ThreadId.makeUnsafe(randomUUID()),
+          "goal:list-activity",
+          { goalId, limit: limit ?? 200 },
+        ),
+      pause: (goalId: string, reason?: string) =>
+        goalRequest(
+          ThreadId.makeUnsafe(randomUUID()),
+          "goal:pause",
+          { goalId, ...(reason !== undefined ? { reason } : {}) },
+        ),
+      resume: (goalId: string) =>
+        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:resume", { goalId }),
+      cancel: (goalId: string, reason?: string) =>
+        goalRequest(
+          ThreadId.makeUnsafe(randomUUID()),
+          "goal:cancel",
+          { goalId, ...(reason !== undefined ? { reason } : {}) },
+        ),
+      edit: (input: Record<string, unknown>) =>
+        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:edit", input),
+      steer: (goalId: string, instruction: string) =>
+        goalRequest(
+          ThreadId.makeUnsafe(randomUUID()),
+          "goal:steer",
+          { goalId, instruction },
+        ),
+      retry: (goalId: string) =>
+        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:retry", { goalId }),
+      verify: (goalId: string) =>
+        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:verify", { goalId }),
+    };
 
     const adapter: EngineAdapterShape = {
       provider: "engine",
@@ -443,80 +1327,41 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       sendTurn: (input) =>
         Effect.gen(function* () {
           const context = yield* getSession(input.threadId);
+          // Bind the thread's conversation to an engine app + chat lazily.
+          const mapping = yield* ensureThreadChat(context);
           const turnId = TurnId.makeUnsafe(randomUUID());
           context.currentTurnIdRef.current = turnId;
-          yield* PubSub.publish(
-            runtimeEventQueue,
+          yield* publishEvent(
             makeEvent<ProviderRuntimeEvent>(input.threadId, {
               type: "turn.started",
               turnId,
-              payload: { model: input.modelSelection?.model },
+              payload: {
+                ...(input.modelSelection?.model
+                  ? { model: input.modelSelection.model }
+                  : {}),
+              },
             }),
           );
 
-          const modelConfig = yield* engineModelConfig(context.session.cwd);
-          const mode = (input.interactionMode === "plan" ? "plan"
-            : input.interactionMode === "ask" ? "ask"
-            : input.interactionMode === "local-agent" ? "local-agent"
-            : "build") as "build" | "ask" | "plan" | "local-agent";
+          const requestedChatMode =
+            input.interactionMode === "plan" ? "plan" : "build";
 
-          yield* PubSub.publish(
-            runtimeEventQueue,
+          yield* publishEvent(
             makeEvent<ProviderRuntimeEvent>(input.threadId, {
               type: "item.started",
               turnId,
-              payload: { itemType: "assistant_message" },
+              payload: { itemType: "assistant_message" as const },
             }),
           );
 
-          const text = modelConfig
-            ? yield* Effect.tryPromise({
-                try: async () => {
-                  const response = await context.client.turnRun({
-                    message: input.input ?? "",
-                    mode,
-                    model: {
-                      baseUrl: modelConfig.baseUrl,
-                      apiKey: modelConfig.apiKey,
-                      modelId: modelConfig.modelId,
-                    },
-                    ...(modelConfig.cwd !== "." ? { cwd: modelConfig.cwd } : {}),
-                  });
-                  if (response.error) {
-                    throw new Error(response.error.message);
-                  }
-                  return String((response.result as { text?: string }).text ?? "");
-                },
-                catch: (cause) => processError(input.threadId, "engine turn/run failed", cause),
-              })
-            : `hello flutter: ${input.input ?? ""}`;
-            
-          // If we are using the fallback stub, emit it as a delta since the engine didn't run.
-          if (!modelConfig) {
-            yield* PubSub.publish(
-              runtimeEventQueue,
-              makeEvent<ProviderRuntimeEvent>(input.threadId, {
-                type: "content.delta",
-                turnId,
-                payload: { delta: text },
-              }),
-            );
-          }
-          yield* PubSub.publish(
-            runtimeEventQueue,
-            makeEvent<ProviderRuntimeEvent>(input.threadId, {
-              type: "item.completed",
-              turnId,
-              payload: { itemType: "assistant_message" },
-            }),
-          );
-          yield* PubSub.publish(
-            runtimeEventQueue,
-            makeEvent<ProviderRuntimeEvent>(input.threadId, {
-              type: "turn.completed",
-              turnId,
-              payload: { state: "completed", stopReason: "end_turn" },
-            }),
+          // The chat:stream call resolves only when the engine stream ends;
+          // stream events arrive as notifications and settle the turn.
+          yield* forkChatStream(
+            context,
+            mapping.chatId,
+            turnId,
+            input.input ?? "",
+            requestedChatMode,
           );
 
           const result: ProviderTurnStartResult = { threadId: input.threadId, turnId };
@@ -525,43 +1370,152 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
 
       interruptTurn: (threadId) =>
         Effect.gen(function* () {
-          yield* getSession(threadId);
-          yield* PubSub.publish(
-            runtimeEventQueue,
+          const context = yield* getSession(threadId);
+          const pending = context.chatMapping;
+          if (pending !== null) {
+            const { client } = yield* ensureSharedEngine(threadId);
+            yield* Effect.tryPromise({
+              try: () =>
+                client
+                  .dyadInvoke<unknown>("chat:cancel", { chatId: pending.chatId }, 10_000)
+                  .catch(() => null),
+              catch: () => null,
+            }).pipe(Effect.ignore);
+          }
+          const turnId = context.currentTurnIdRef.current;
+          yield* publishEvent(
             makeEvent<ProviderRuntimeEvent>(threadId, {
               type: "turn.aborted",
-              payload: { state: "interrupted" },
+              ...(turnId !== null ? { turnId } : {}),
+              payload: { reason: "interrupted by user" },
+            }),
+          );
+          context.currentTurnIdRef.current = null;
+        }),
+
+      respondToRequest: (threadId, requestId, decision) =>
+        Effect.gen(function* () {
+          yield* getSession(threadId);
+          const entry = yield* Ref.get(pendingRequests).pipe(
+            Effect.map((map) => map.get(String(requestId)) ?? null),
+          );
+          if (entry === null) return;
+          const engineDecision =
+            decision === "accept"
+              ? "accept-once"
+              : decision === "acceptForSession"
+                ? "accept-always"
+                : "decline";
+          const { client } = yield* ensureSharedEngine(threadId);
+          if (entry.kind === "agent-tool-consent") {
+            yield* Effect.tryPromise({
+              try: () =>
+                client.dyadInvoke("agent-tool:consent-response", {
+                  requestId: String(requestId),
+                  decision: engineDecision,
+                }),
+              catch: (cause) =>
+                processError(threadId, "engine consent-response failed", cause),
+            }).pipe(Effect.ignore);
+          } else {
+            yield* Effect.tryPromise({
+              try: () =>
+                client.dyadInvoke("mcp:tool-consent-response", {
+                  requestId: String(requestId),
+                  decision: engineDecision,
+                }),
+              catch: (cause) =>
+                processError(threadId, "engine tool-consent-response failed", cause),
+            }).pipe(Effect.ignore);
+          }
+          yield* Ref.update(pendingRequests, (map) => {
+            const next = new Map(map);
+            next.delete(String(requestId));
+            return next;
+          });
+          yield* publishEvent(
+            makeEvent<ProviderRuntimeEvent>(entry.threadId, {
+              type: "request.resolved",
+              requestId: requestId as never,
+              payload: {
+                requestType: "command_execution_approval" as const,
+                decision,
+                resolution: { engineDecision },
+              },
             }),
           );
         }),
 
-      respondToRequest: (threadId) =>
+      respondToUserInput: (threadId, requestId, answers) =>
         Effect.gen(function* () {
           yield* getSession(threadId);
-        }),
-
-      respondToUserInput: (threadId) =>
-        Effect.gen(function* () {
-          yield* getSession(threadId);
+          const entry = yield* Ref.get(pendingRequests).pipe(
+            Effect.map((map) => map.get(String(requestId)) ?? null),
+          );
+          if (entry === null) return;
+          const { client } = yield* ensureSharedEngine(threadId);
+          const serialized: Record<string, string> = {};
+          for (const [key, value] of Object.entries(answers ?? {})) {
+            serialized[key] = Array.isArray(value)
+              ? value.join(", ")
+              : value === null
+                ? ""
+                : String(value);
+          }
+          if (entry.kind === "questionnaire") {
+            yield* Effect.tryPromise({
+              try: () =>
+                client.dyadInvoke("plan:questionnaire-response", {
+                  requestId: String(requestId),
+                  answers: serialized,
+                }),
+              catch: (cause) =>
+                processError(threadId, "engine questionnaire-response failed", cause),
+            }).pipe(Effect.ignore);
+          } else {
+            yield* Effect.tryPromise({
+              try: () =>
+                client.dyadInvoke("agent-tool:env-var-response", {
+                  requestId: String(requestId),
+                  envVars: serialized,
+                }),
+              catch: (cause) =>
+                processError(threadId, "engine env-var-response failed", cause),
+            }).pipe(Effect.ignore);
+          }
+          yield* Ref.update(pendingRequests, (map) => {
+            const next = new Map(map);
+            next.delete(String(requestId));
+            return next;
+          });
+          yield* publishEvent(
+            makeEvent<ProviderRuntimeEvent>(entry.threadId, {
+              type: "user-input.resolved",
+              requestId: requestId as never,
+              payload: { answers: answers ?? {} },
+            }),
+          );
         }),
 
       stopSession: (threadId) =>
         Effect.gen(function* () {
-          const context = yield* getSession(threadId);
+          yield* getSession(threadId);
           yield* Ref.update(sessions, (map) => {
             const next = new Map(map);
             next.delete(threadId);
             return next;
           });
-          yield* Effect.tryPromise({
-            try: () => context.client.shutdown(),
-            catch: (cause) => processError(threadId, "engine shutdown failed", cause),
+          yield* Ref.update(chatToThread, (map) => {
+            const next = new Map(map);
+            for (const [chatId, mappedThread] of next) {
+              if (mappedThread === threadId) next.delete(chatId!);
+            }
+            return next;
           });
-          yield* PubSub.publish(
-            runtimeEventQueue,
+          yield* publishEvent(
             makeEvent<ProviderRuntimeEvent>(threadId, {
               type: "session.exited",
-              payload: { reason: "stopped", recoverable: true, exitKind: "graceful" },
+              payload: { reason: "stopped", recoverable: true, exitKind: "graceful" as const },
             }),
           );
         }),
@@ -892,10 +1846,17 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               ),
             );
           }
+          // The engine writes the screenshot to disk and returns its path.
           return {
-            image: result.data.image,
+            image: result.data.outputPath,
           };
         }),
+
+      // ── Goals ────────────────────────────────────────────────────────
+
+      goals: goalsApi,
+
+      streamGoalDomainEvents: Stream.fromPubSub(goalsEventQueue),
 
       listSessions: () =>
         Ref.get(sessions).pipe(
@@ -926,11 +1887,14 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
 
       stopAll: () =>
         Effect.gen(function* () {
-          const map = yield* Ref.get(sessions);
-          for (const context of map.values()) {
-            context.client.kill();
+          const shared = yield* Ref.get(sharedEngineRef);
+          if (shared !== null) {
+            shared.client.kill();
+            yield* Ref.set(sharedEngineRef, null);
           }
           yield* Ref.set(sessions, new Map());
+          yield* Ref.set(chatToThread, new Map());
+          yield* Ref.set(pendingRequests, new Map());
         }),
 
       streamEvents: Stream.fromPubSub(runtimeEventQueue),

@@ -147,8 +147,48 @@ export class EngineClient {
   async initialize(params: {
     clientName: string;
     protocolVersion: number;
+    settings?: {
+      selectedModel: { name: string; provider: string; customModelId?: number };
+      providerSettings: Record<string, unknown>;
+    };
   }): Promise<JsonRpcResponse> {
     return this.request("initialize", params);
+  }
+
+  /**
+   * Dispatch a dyad IPC channel over the engine bridge. Resolves with the
+   * unwrapped envelope value (dyad.invoke envelopes use `value` for success
+   * and `error` for failure) and rejects on transport errors or engine-side
+   * failures alike.
+   */
+  async dyadInvoke<T = unknown>(
+    channel: string,
+    payload?: unknown,
+    timeoutMsOverride?: number,
+  ): Promise<T> {
+    const response = await this.request(
+      "dyad/invoke",
+      { channel, payload },
+      undefined,
+      timeoutMsOverride ?? 5 * 60_000,
+    );
+    const value = response.result as
+      | { __caideIpcEnvelope?: string; ok: boolean; value?: unknown; data?: unknown; error?: unknown }
+      | undefined;
+    if (!value || value.ok !== true) {
+      const message =
+        value?.error !== undefined
+          ? typeof value.error === "object" &&
+            value.error !== null &&
+            "message" in value.error
+            ? String((value.error as { message: unknown }).message)
+            : String(value.error)
+          : `engine channel "${channel}" failed (ok=false)`;
+      throw new EngineRequestError(JSON_RPC_INTERNAL_ERROR, message, null);
+    }
+    // createTypedHandler envelopes carry `value`; raw ipcMain.handle results
+    // are wrapped by the engine's dispatchDyadInvoke as { ok: true, data }.
+    return (value.value !== undefined ? value.value : value.data) as T;
   }
 
   async ping(): Promise<JsonRpcResponse> {

@@ -9,6 +9,7 @@
 // requests.
 
 import { registerAppHandlers } from "./handlers/app_handlers";
+import { registerImportHandlers } from "./handlers/import_handlers";
 import { registerChatHandlers } from "./handlers/chat_handlers";
 import { registerChatStreamHandlers } from "./handlers/chat_stream_handlers";
 import { registerSettingsHandlers } from "./handlers/settings_handlers";
@@ -48,6 +49,7 @@ export function registerEngineIpcHandlers(): void {
 
   // App lifecycle — names, creation (flutter template), git, identities
   registerAppHandlers();
+  registerImportHandlers();
   registerChatHandlers();
   registerChatStreamHandlers();
   registerSettingsHandlers();

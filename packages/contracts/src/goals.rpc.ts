@@ -1,7 +1,8 @@
 import { Schema } from "effect";
 import * as Rpc from "effect/unstable/rpc/Rpc";
+import * as RpcGroup from "effect/unstable/rpc/RpcGroup";
 import { WsRpcError } from "./rpc";
-import { Goal, GoalId, GoalStatus, GoalActivityEvent, GoalRun, GoalExecutionTarget } from "./goals";
+import { Goal, GoalId, GoalStatus, GoalActivityEvent, GoalExecutionTarget } from "./goals";
 import { ProjectId, ThreadId } from "./baseSchemas";
 
 export const GOALS_WS_METHODS = {
@@ -18,6 +19,37 @@ export const GOALS_WS_METHODS = {
   retryGoal: "goals:retry",
   verifyGoal: "goals:verify",
 } as const;
+
+export const WS_GOALS_SUBSCRIBE = "goals:subscribe" as const;
+
+/**
+ * Live goal activity streamed from the engine: goal state transitions
+ * (goal:updated), goal run launches (goal:run-requested) and control
+ * requests (goal:control-requested). Payload is the engine goal contract
+ * body; consumers should treat it as opaque until M4 web typing lands.
+ */
+export const GoalDomainEvent = Schema.Union([
+  Schema.Struct({
+    type: Schema.Literal("goal.updated"),
+    payload: Schema.Unknown,
+  }),
+  Schema.Struct({
+    type: Schema.Literal("goal.run-requested"),
+    payload: Schema.Unknown,
+  }),
+  Schema.Struct({
+    type: Schema.Literal("goal.control-requested"),
+    payload: Schema.Unknown,
+  }),
+]);
+export type GoalDomainEvent = typeof GoalDomainEvent.Type;
+
+export const WsGoalsSubscribeRpc = Rpc.make(WS_GOALS_SUBSCRIBE, {
+  payload: Schema.Struct({}),
+  success: GoalDomainEvent,
+  error: WsRpcError,
+  stream: true,
+});
 
 export const WsGoalsCreateGoalRpc = Rpc.make(GOALS_WS_METHODS.createGoal, {
   payload: Schema.Struct({
@@ -120,3 +152,24 @@ export const WsGoalsVerifyGoalRpc = Rpc.make(GOALS_WS_METHODS.verifyGoal, {
   success: Goal,
   error: WsRpcError,
 });
+
+/**
+ * Live goals group. Lives in this module (not rpc.ts) to keep the import
+ * direction one-way: goals.rpc already imports WsRpcError from ./rpc, so
+ * a reverse import would create a module-eval cycle.
+ */
+export const WsGoalsRpcGroup = RpcGroup.make(
+  WsGoalsCreateGoalRpc,
+  WsGoalsGetGoalRpc,
+  WsGoalsGetActiveGoalRpc,
+  WsGoalsListGoalsRpc,
+  WsGoalsListActivityRpc,
+  WsGoalsPauseGoalRpc,
+  WsGoalsResumeGoalRpc,
+  WsGoalsCancelGoalRpc,
+  WsGoalsEditGoalRpc,
+  WsGoalsSteerGoalRpc,
+  WsGoalsRetryGoalRpc,
+  WsGoalsVerifyGoalRpc,
+  WsGoalsSubscribeRpc,
+);

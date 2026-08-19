@@ -196,6 +196,22 @@ const fakeEngineAdapter: EngineAdapterShape = {
   previewTest: vi.fn(),
   previewBuildStart: vi.fn(),
   previewBuildState: vi.fn(),
+  previewScreenshot: vi.fn(),
+  goals: {
+    create: vi.fn(),
+    get: vi.fn(),
+    getActive: vi.fn(),
+    list: vi.fn(),
+    listActivity: vi.fn(),
+    pause: vi.fn(),
+    resume: vi.fn(),
+    cancel: vi.fn(),
+    edit: vi.fn(),
+    steer: vi.fn(),
+    retry: vi.fn(),
+    verify: vi.fn(),
+  },
+  streamGoalDomainEvents: Stream.empty,
 };
 
 const fakeAntigravityAdapter: AntigravityAdapterShape = {

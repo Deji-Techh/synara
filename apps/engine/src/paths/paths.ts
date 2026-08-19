@@ -14,6 +14,9 @@ let defaultDirCreated = false;
  * Gets the default path of the base caide-apps directory (without a specific app subdirectory)
  */
 export function getDefaultCaideAppsDirectory(): string {
+  if (process.env.CAIDE_DEV_APPS_DIR) {
+    return process.env.CAIDE_DEV_APPS_DIR;
+  }
   if (IS_TEST_BUILD) {
     const electron = getElectron();
     return path.join(electron!.app.getPath("userData"), "caide-apps");

@@ -13,7 +13,9 @@
 // until M3 replaces the adapter.
 
 import { spawnSync } from "node:child_process";
+import path from "node:path";
 import { createInterface } from "node:readline/promises";
+import { fileURLToPath } from "node:url";
 import log from "electron-log";
 
 import {
@@ -29,7 +31,15 @@ import { registerEngineIpcHandlers } from "./ipc/engine_ipc_host.ts";
 import { initializeDatabase, closeDatabase } from "./db/index.ts";
 import { emit, onAll } from "./ipc/utils/event_bus.ts";
 import { startGoalRuntime } from "./ipc/goal/goal_runtime_executor.ts";
+import { writeSettings } from "./main/settings.ts";
 import { app, ipcMain } from "./electron-shim.ts";
+
+// The headless bundle is ESM (node dist/index.mjs); dyad handlers resolve
+// bundled assets via __dirname. Shim it when the module system does not.
+if (typeof __dirname === "undefined") {
+  const entryDir = import.meta.dirname ?? path.dirname(fileURLToPath(import.meta.url));
+  (globalThis as { __dirname?: string }).__dirname = entryDir;
+}
 
 log.errorHandler.startCatching();
 // stdout is the JSON-RPC channel: keep electron-log off the console so no
@@ -84,15 +94,32 @@ function makeError(request: JsonRpcRequest, code: number, message: string, data?
 
 // ── Engine lifecycle ────────────────────────────────────────────────
 
-function bootstrap(): void {
+function bootstrap(settings?: { selectedModel?: unknown; providerSettings?: unknown }): void {
   if (initialized) {
     return;
   }
   initialized = true;
   log.info(`engine: boot userData=${app.getPath("userData")}`);
   // Settings are created/migrated on first read (safeStorage shim is
-  // reversible-obfuscation only; real secret handling arrives with M2/M3
-  // server-forwarded config).
+  // reversible-obfuscation only; real secret handling is the server-side
+  // secret store, forwarded here via the initialize handshake).
+  if (settings) {
+    try {
+      const selectedModel = settings.selectedModel;
+      const providerSettings = settings.providerSettings;
+      const patch: Record<string, unknown> = {};
+      if (typeof selectedModel === "object" && selectedModel !== null) {
+        patch.selectedModel = selectedModel;
+      }
+      if (typeof providerSettings === "object" && providerSettings !== null) {
+        patch.providerSettings = providerSettings;
+      }
+      writeSettings(patch as never);
+      log.info("engine: server-forwarded settings applied");
+    } catch (error) {
+      log.warn("engine: failed to apply server-forwarded settings:", error);
+    }
+  }
   void import("./main/settings.ts").then(({ readSettings }) => {
     try {
       readSettings();
@@ -162,7 +189,10 @@ async function handleRequest(request: JsonRpcRequest): Promise<JsonRpcResponse |
   const { method, params } = request;
   switch (method) {
     case "initialize": {
-      bootstrap();
+      const settings = (params as { settings?: unknown } | undefined)?.settings as
+        | { selectedModel?: unknown; providerSettings?: unknown }
+        | undefined;
+      bootstrap(settings);
       return makeResponse(request, {
         serverName: "caide-engine",
         serverVersion: "0.1.0",
