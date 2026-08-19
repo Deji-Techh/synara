@@ -159,6 +159,11 @@ import {
   PREVIEW_WS_METHODS,
 } from "./preview";
 import {
+  PREVIEW_SUPERVISOR_WS_METHODS,
+  PreviewSupervisorGetStateInput,
+  PreviewSupervisorSnapshot,
+} from "./previewSupervisor";
+import {
   ProviderGetComposerCapabilitiesInput,
   ProviderComposerCapabilities,
   ProviderListAgentsInput,
@@ -695,6 +700,15 @@ export const WsPreviewScreenshotRpc = Rpc.make(PREVIEW_WS_METHODS.screenshot, {
   error: WsRpcError,
 });
 
+export const WsPreviewSupervisorGetStateRpc = Rpc.make(
+  PREVIEW_SUPERVISOR_WS_METHODS.getState,
+  {
+    payload: PreviewSupervisorGetStateInput,
+    success: PreviewSupervisorSnapshot,
+    error: WsRpcError,
+  },
+);
+
 export const WsPreviewRpcGroup = RpcGroup.make(
   WsPreviewStartRpc,
   WsPreviewStopRpc,
@@ -705,6 +719,7 @@ export const WsPreviewRpcGroup = RpcGroup.make(
   WsPreviewBuildStartRpc,
   WsPreviewBuildStateRpc,
   WsPreviewScreenshotRpc,
+  WsPreviewSupervisorGetStateRpc,
 );
 
 export const WsDeviceRpcGroup = RpcGroup.make(

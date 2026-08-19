@@ -181,6 +181,10 @@ import type {
   PreviewScreenshotInput,
   PreviewScreenshotResult,
 } from "./preview";
+import type {
+  PreviewSupervisorGetStateInput,
+  PreviewSupervisorSnapshot,
+} from "./previewSupervisor";
 import type { StudioListThreadOutputsInput, StudioListThreadOutputsResult } from "./studio";
 import type {
   ServerConfig,
@@ -855,5 +859,7 @@ export interface NativeApi {
     buildStart: (input: PreviewBuildStartInput) => Promise<PreviewBuildStartResult>;
     buildState: (input: PreviewBuildStateInput) => Promise<PreviewBuildStateResult>;
     screenshot: (input: PreviewScreenshotInput) => Promise<PreviewScreenshotResult>;
+    /** Server-side build/analyze/test supervisor snapshot for the thread's app. */
+    supervisorState: (input: PreviewSupervisorGetStateInput) => Promise<PreviewSupervisorSnapshot>;
   };
 }
