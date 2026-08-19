@@ -2,19 +2,27 @@
 // Purpose: Verifies the EngineClient speaks to a spawned engine process and
 // surfaces protocol errors correctly.
 // Layer: Engine protocol client test
+// NOTE: the engine must run under Node (better-sqlite3 is not supported by
+// Bun), so this spawns the built bundle `dist/index.mjs`. `bun run test` runs
+// `bun run build` first (see package.json).
 
-import { fileURLToPath } from "node:url";
+import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 import { EngineClient, EngineRequestError } from "./client.ts";
 
-const engineEntry = fileURLToPath(new URL("./index.ts", import.meta.url));
+const engineEntry = path.resolve(process.cwd(), "dist", "index.mjs");
 
 async function openClient(): Promise<EngineClient> {
   const client = new EngineClient({
-    command: "bun",
-    args: ["run", engineEntry],
+    command: process.execPath,
+    args: [engineEntry],
+    env: {
+      ...process.env,
+      NODE_ENV: "development",
+      CAIDE_DEV_USER_DATA_DIR: `/tmp/caide-engine-test-${process.pid}-client`,
+    },
   });
   await client.waitForSpawn();
   return client;

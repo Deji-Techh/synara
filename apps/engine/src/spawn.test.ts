@@ -3,11 +3,13 @@
 // stdio — the exact integration contract apps/server's engine adapter relies on
 // (same pattern as codex app-server).
 // Layer: Engine integration test
+// NOTE: the engine must run under Node (better-sqlite3 is not supported by
+// Bun), so this spawns the built bundle `dist/index.mjs`. `bun run test` runs
+// `bun run build` first (see package.json).
 
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { once } from "node:events";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { describe, expect, it, afterEach } from "vitest";
 
@@ -19,16 +21,25 @@ import {
   type JsonRpcResponse,
 } from "./protocol.ts";
 
-const engineEntry = fileURLToPath(new URL("./index.ts", import.meta.url));
+const engineEntry = path.resolve(process.cwd(), "dist", "index.mjs");
 
 interface SpawnedEngine {
   readonly child: ChildProcessWithoutNullStreams;
   readonly sendRequest: (method: string, params?: unknown, id?: number) => Promise<JsonRpcResponse>;
 }
 
+let spawnedCount = 0;
+
 function spawnEngine(): SpawnedEngine {
-  const child = spawn("bun", ["run", engineEntry], {
+  const child = spawn(process.execPath, [engineEntry], {
     stdio: ["pipe", "pipe", "pipe"],
+    env: {
+      ...process.env,
+      NODE_ENV: "development",
+      // Unique userData per engine so parallel forks never share the SQLite
+      // database (better-sqlite3 locks the file during migrations).
+      CAIDE_DEV_USER_DATA_DIR: `/tmp/caide-engine-test-${process.pid}-${spawnedCount++}`,
+    },
   });
 
   let buffer = "";

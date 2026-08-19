@@ -63,7 +63,7 @@ describe("preview proxy worker", () => {
     await close(portReservation);
 
     const worker = new Worker(
-      path.resolve(process.cwd(), "worker/proxy_server.js"),
+      path.resolve(process.cwd(), "worker/proxy_server.cjs"),
       {
         workerData: {
           targetOrigin: `http://127.0.0.1:${upstreamPort}`,

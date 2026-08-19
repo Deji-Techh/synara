@@ -41,7 +41,7 @@ export async function startProxy(
   logger.info("Starting proxy on port", port);
 
   const worker = new Worker(
-    path.resolve(__dirname, "..", "..", "worker", "proxy_server.js"),
+    path.resolve(__dirname, "..", "..", "worker", "proxy_server.cjs"),
     {
       workerData: {
         targetOrigin,

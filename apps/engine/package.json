@@ -32,7 +32,7 @@
     "build": "tsdown",
     "start": "node dist/index.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "bun run build && vitest run"
   },
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "^4.0.46",
@@ -55,6 +55,7 @@
     "@types/fs-extra": "^11.0.4",
     "@types/node-fetch": "^2.6.13",
     "@vscode/ripgrep": "^1.17.0",
+    "@vscode/ripgrep-linux-x64": "^1.18.0",
     "ai": "^6.0.68",
     "better-sqlite3": "^12.6.2",
     "clsx": "^2.1.1",
@@ -80,6 +81,7 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7",
     "@types/node": "catalog:",
+    "happy-dom": "^20.11.2",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

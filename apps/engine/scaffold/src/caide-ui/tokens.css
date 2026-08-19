@@ -1,0 +1,75 @@
+:root {
+  --caide-background: #ffffff;
+  --caide-surface: #f7f7f8;
+  --caide-surface-raised: #ffffff;
+  --caide-surface-hover: #f0f0f2;
+  --caide-border: #dedee3;
+  --caide-text: #151518;
+  --caide-text-secondary: #4f4f57;
+  --caide-text-muted: #73737d;
+  --caide-accent: #2557d6;
+  --caide-accent-hover: #1d46af;
+  --caide-accent-soft: rgb(37 87 214 / 0.1);
+  --caide-success: #16794b;
+  --caide-warning: #9a6700;
+  --caide-danger: #b42318;
+  --caide-focus: #2557d6;
+  --caide-shadow-raised: 0 12px 32px rgb(15 23 42 / 0.1);
+
+  --caide-space-1: 0.25rem;
+  --caide-space-2: 0.5rem;
+  --caide-space-3: 0.75rem;
+  --caide-space-4: 1rem;
+  --caide-space-6: 1.5rem;
+  --caide-space-8: 2rem;
+  --caide-space-12: 3rem;
+  --caide-space-16: 4rem;
+
+  --caide-radius-sm: 0.5rem;
+  --caide-radius-md: 0.875rem;
+  --caide-radius-lg: 1.25rem;
+
+  --caide-motion-instant: 60ms;
+  --caide-motion-press: 110ms;
+  --caide-motion-quick: 160ms;
+  --caide-motion-standard: 240ms;
+  --caide-motion-navigation: 300ms;
+  --caide-motion-expressive: 440ms;
+  --caide-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --caide-ease-emphasized: cubic-bezier(0.2, 1, 0.2, 1);
+
+  --caide-safe-top: env(safe-area-inset-top, 0px);
+  --caide-safe-right: env(safe-area-inset-right, 0px);
+  --caide-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --caide-safe-left: env(safe-area-inset-left, 0px);
+}
+
+.dark {
+  --caide-background: #111214;
+  --caide-surface: #191a1e;
+  --caide-surface-raised: #202126;
+  --caide-surface-hover: #292a30;
+  --caide-border: #34353d;
+  --caide-text: #f4f4f5;
+  --caide-text-secondary: #c4c4ca;
+  --caide-text-muted: #94949e;
+  --caide-accent: #7da2ff;
+  --caide-accent-hover: #9ab8ff;
+  --caide-accent-soft: rgb(125 162 255 / 0.14);
+  --caide-success: #69c494;
+  --caide-warning: #e4b45f;
+  --caide-danger: #ff8a80;
+  --caide-focus: #9ab8ff;
+  --caide-shadow-raised: 0 16px 42px rgb(0 0 0 / 0.28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --caide-motion-instant: 0ms;
+    --caide-motion-press: 0ms;
+    --caide-motion-quick: 0ms;
+    --caide-motion-standard: 0ms;
+    --caide-motion-navigation: 0ms;
+    --caide-motion-expressive: 0ms;
+  }
+}

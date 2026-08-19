@@ -1,0 +1,164 @@
+:root {
+  --caide-motion-scale: 1;
+  --caide-motion-instant: calc(60ms * var(--caide-motion-scale));
+  --caide-motion-press: calc(110ms * var(--caide-motion-scale));
+  --caide-motion-quick: calc(160ms * var(--caide-motion-scale));
+  --caide-motion-standard: calc(240ms * var(--caide-motion-scale));
+  --caide-motion-navigation: calc(300ms * var(--caide-motion-scale));
+  --caide-motion-expressive: calc(440ms * var(--caide-motion-scale));
+  --caide-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --caide-ease-emphasized: cubic-bezier(0.2, 1, 0.2, 1);
+}
+
+html[data-caide-motion-diagnostic="slow"] {
+  --caide-motion-scale: 4;
+}
+
+.caide-motion-pressable {
+  transform: translateZ(0) scale(1);
+  transition:
+    transform var(--caide-motion-press) var(--caide-ease-standard),
+    filter var(--caide-motion-quick) var(--caide-ease-standard);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.caide-motion-pressable:active:not(:disabled) {
+  transform: translateZ(0) scale(0.98);
+}
+
+.caide-motion-screen {
+  min-width: 0;
+  animation: caide-screen-enter
+    var(--caide-region-duration, var(--caide-motion-navigation))
+    var(--caide-ease-emphasized) both;
+}
+
+.caide-motion-presence[data-state="open"] {
+  animation: caide-presence-enter
+    var(--caide-region-duration, var(--caide-motion-standard))
+    var(--caide-ease-emphasized) both;
+}
+
+.caide-motion-presence[data-state="closed"] {
+  pointer-events: none;
+  animation: caide-presence-exit
+    var(--caide-region-duration, var(--caide-motion-standard)) ease-in both;
+}
+
+.caide-motion-stagger-item {
+  animation: caide-stagger-enter var(--caide-motion-standard)
+    var(--caide-ease-emphasized) both;
+  animation-delay: calc(
+    var(--caide-stagger-index, 0) * var(--caide-stagger-gap, 45ms)
+  );
+}
+
+.caide-motion-success {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.625rem;
+  animation: caide-status-enter var(--caide-motion-standard)
+    var(--caide-ease-emphasized) both;
+}
+
+.caide-motion-success-mark {
+  display: inline-grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--caide-success);
+  color: white;
+  font-weight: 800;
+  animation: caide-success-pop var(--caide-motion-expressive)
+    var(--caide-ease-emphasized) both;
+}
+
+@keyframes caide-screen-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0.75rem, 0) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes caide-presence-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0.5rem, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes caide-presence-exit {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, 0.25rem, 0) scale(0.99);
+  }
+}
+
+@keyframes caide-stagger-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0.625rem, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes caide-status-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes caide-success-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.72) rotate(-10deg);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.08) rotate(2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --caide-motion-scale: 0;
+  }
+
+  .caide-motion-screen,
+  .caide-motion-presence,
+  .caide-motion-stagger-item,
+  .caide-motion-success,
+  .caide-motion-success-mark {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .caide-motion-pressable {
+    transition: none !important;
+  }
+}

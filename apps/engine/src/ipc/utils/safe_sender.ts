@@ -1,6 +1,5 @@
 import type { WebContents } from "electron";
 import log from "electron-log";
-import { emit } from "./event_bus";
 
 /**
  * Sends an IPC message to the renderer only if the provided `WebContents` is
@@ -8,8 +7,11 @@ import { emit } from "./event_bus";
  * when asynchronous callbacks attempt to communicate after the window has
  * already been closed (e.g. during e2e test teardown).
  *
- * Also emits the message to the main-process event bus so other windows
- * (e.g. the notch) can subscribe to relevant events.
+ * The Caide engine has no renderer: every WebContents is a bus-routing shim,
+ * so the `send` call delivers the message to the in-process event bus exactly
+ * once (which the engine entry re-emits as a `dyad.event` notification). The
+ * engine intentionally does not emit here too — that would duplicate every
+ * event for the JSON-RPC relay.
  */
 export function safeSend(
   sender: WebContents | null | undefined,
@@ -29,11 +31,5 @@ export function safeSend(
     log.debug(
       `safeSend: failed to send on channel "${channel}" because: ${(error as Error).message}`,
     );
-  }
-
-  // Emit to main-process event bus for other windows (e.g. notch) to consume.
-  // Only emit for known broadcast channels to avoid flooding the bus.
-  if (args.length === 1) {
-    emit(channel, args[0]);
   }
 }

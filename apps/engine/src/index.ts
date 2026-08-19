@@ -27,10 +27,14 @@ import {
 } from "./protocol.ts";
 import { registerEngineIpcHandlers } from "./ipc/engine_ipc_host.ts";
 import { initializeDatabase, closeDatabase } from "./db/index.ts";
-import { onAll } from "./ipc/utils/event_bus.ts";
+import { emit, onAll } from "./ipc/utils/event_bus.ts";
+import { startGoalRuntime } from "./ipc/goal/goal_runtime_executor.ts";
 import { app, ipcMain } from "./electron-shim.ts";
 
 log.errorHandler.startCatching();
+// stdout is the JSON-RPC channel: keep electron-log off the console so no
+// transport line can corrupt the wire format. File logging still applies.
+log.transports.console.level = false;
 
 const rl = createInterface({ input: process.stdin, terminal: false });
 
@@ -100,6 +104,12 @@ function bootstrap(): void {
   initializeDatabase();
   registerEngineIpcHandlers();
   log.info("engine: handlers registered, db opened");
+  try {
+    startGoalRuntime();
+    log.info("engine: goal runtime started");
+  } catch (error) {
+    log.warn("engine: goal runtime failed to start:", error);
+  }
 }
 
 async function shutdown(): Promise<void> {
@@ -128,8 +138,17 @@ async function dispatchDyadInvoke(channel: string, payload: unknown): Promise<un
   if (!handler) {
     throw new Error(`dyad.invoke: no IPC handler registered for channel "${channel}"`);
   }
+  // The sender is a bus-routing shim: renderer-directed events (safeSend /
+  // direct `event.sender.send`) land on the event bus and are re-emitted as
+  // `dyad.event` notifications to the supervising server.
   const event = {
-    sender: { id: 0, isDestroyed: () => false, send: () => {} },
+    sender: {
+      id: 0,
+      isDestroyed: () => false,
+      send: (eventChannel: string, ...args: unknown[]) => {
+        emit(eventChannel, args.length === 1 ? args[0] : args);
+      },
+    },
     processId: process.pid,
     frameId: 0,
   };
@@ -139,7 +158,7 @@ async function dispatchDyadInvoke(channel: string, payload: unknown): Promise<un
 
 // ── JSON-RPC routing ────────────────────────────────────────────────
 
-async function handleRequest(request: JsonRpcRequest): Promise<JsonRpcResponse> {
+async function handleRequest(request: JsonRpcRequest): Promise<JsonRpcResponse | null> {
   const { method, params } = request;
   switch (method) {
     case "initialize": {
@@ -162,8 +181,14 @@ async function handleRequest(request: JsonRpcRequest): Promise<JsonRpcResponse> 
       return makeResponse(request, { message: String(message ?? "") });
     }
     case "engine/shutdown": {
-      void shutdown();
-      return makeResponse(request, { shutdown: true });
+      const response = makeResponse(request, { shutdown: true });
+      // Flush the response before exiting: process.exit(0) does not wait for
+      // pending async stdout writes, and a truncated reply would make the
+      // supervisor believe the engine hung.
+      process.stdout.write(`${JSON.stringify(response)}\n`, () => {
+        void shutdown();
+      });
+      return null;
     }
     case "dyad/invoke": {
       const { channel, payload } = (params ?? {}) as { channel?: unknown; payload?: unknown };
@@ -216,7 +241,9 @@ rl.on("line", (line) => {
     return;
   }
   handleRequest(parsed as JsonRpcRequest).then((response) => {
-    send(response);
+    if (response !== null) {
+      send(response);
+    }
   });
 });
 
