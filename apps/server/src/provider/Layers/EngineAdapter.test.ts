@@ -135,6 +135,75 @@ describe("EngineAdapter", () => {
     );
   });
 
+  it("goals bridge is engine-native: resolveAppId + CRUD + live domain events", async () => {
+    const threadId = ThreadId.makeUnsafe(randomUUID());
+    const { fixturePath } = makeIsolatedFixture();
+
+    const result = await Effect.runPromise(
+      provideAdapter(
+        Effect.gen(function* () {
+          const adapter = yield* EngineAdapter;
+
+          yield* adapter.startSession({
+            threadId,
+            runtimeMode: "full-access",
+            cwd: fixturePath,
+          });
+
+          // App identity resolves to the engine's numeric rowid by path;
+          // import-app provisions a fresh app for the fixture folder.
+          const appId = yield* adapter.goals.resolveAppId({ workspaceRoot: fixturePath });
+          expect(typeof appId).toBe("number");
+
+          // Subscribe first so goal:updated / goal:run-requested relays are
+          // captured as the engine schedules the run.
+          const eventsFiber = yield* Stream.runCollect(Stream.take(adapter.streamGoalDomainEvents, 2)).pipe(
+            Effect.timeout("30 seconds"),
+            Effect.map((maybe) => {
+              if (maybe === undefined) throw new Error("no goal domain events");
+              return maybe;
+            }),
+            Effect.forkChild,
+          );
+
+          const created = yield* adapter.goals.create({
+            appId,
+            title: "probe goal",
+            objective: "say hello",
+          });
+          expect(created.appId).toBe(appId);
+          expect(created.status).toBe("active");
+
+          const active = yield* adapter.goals.getActive({ appId });
+          expect(active?.id).toBe(created.id);
+          expect(active?.appId).toBe(appId);
+
+          const listed = yield* adapter.goals.list({ appId });
+          expect(listed.some((g) => g.id === created.id)).toBe(true);
+
+          const fetched = yield* adapter.goals.get({ goalId: created.id });
+          expect(fetched.id).toBe(created.id);
+
+          const activity = yield* adapter.goals.listActivity({ goalId: created.id });
+          expect(activity.length).toBeGreaterThan(0);
+          expect(activity.some((e) => e.goalId === created.id)).toBe(true);
+
+          const events = yield* Fiber.join(eventsFiber);
+          return { created, active, activity, events };
+        }),
+      ),
+    );
+
+    // Engine-native identity flows through the whole bridge untouched.
+    expect(result.active).not.toBeNull();
+    expect(result.activity[0].goalId).toBe(result.created.id);
+    // Live relays: engine emits goal:updated + goal:run-requested as it
+    // schedules the run; the adapter republishes them for the WS layer.
+    const eventTypes = result.events.map((e) => e.type);
+    expect(eventTypes).toContain("goal.updated");
+    expect(eventTypes).toContain("goal.run-requested");
+  }, 120_000);
+
   it("rejects sessions for an unknown thread", async () => {
     const threadId = ThreadId.makeUnsafe(randomUUID());
 
