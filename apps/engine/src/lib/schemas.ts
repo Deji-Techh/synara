@@ -1,0 +1,654 @@
+import { z } from "zod";
+import { isNonGoogleProviderSetup, isProviderSetup } from "./providerUtils";
+
+export const SecretSchema = z.object({
+  value: z.string(),
+  encryptionType: z.enum(["electron-safe-storage", "plaintext"]).optional(),
+});
+export type Secret = z.infer<typeof SecretSchema>;
+
+/**
+ * Zod schema for chat summary objects returned by the get-chats IPC
+ */
+export const ChatSummarySchema = z.object({
+  id: z.number(),
+  appId: z.number(),
+  title: z.string().nullable(),
+  createdAt: z.date(),
+  chatMode: z.enum(["build", "ask", "local-agent", "plan"]).nullable(),
+});
+
+/**
+ * Type derived from the ChatSummarySchema
+ */
+export type ChatSummary = z.infer<typeof ChatSummarySchema>;
+
+/**
+ * Zod schema for an array of chat summaries
+ */
+export const ChatSummariesSchema = z.array(ChatSummarySchema);
+
+/**
+ * Zod schema for chat search result objects returned by the search-chats IPC
+ */
+export const ChatSearchResultSchema = z.object({
+  id: z.number(),
+  appId: z.number(),
+  title: z.string().nullable(),
+  createdAt: z.date(),
+  matchedMessageContent: z.string().nullable(),
+});
+
+/**
+ * Type derived from the ChatSearchResultSchema
+ */
+export type ChatSearchResult = z.infer<typeof ChatSearchResultSchema>;
+
+export const ChatSearchResultsSchema = z.array(ChatSearchResultSchema);
+
+// Zod schema for app search result objects returned by the search-app IPC
+export const AppSearchResultSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  createdAt: z.date(),
+  matchedChatTitle: z.string().nullable(),
+  matchedChatMessage: z.string().nullable(),
+});
+
+// Type derived from AppSearchResultSchema
+export type AppSearchResult = z.infer<typeof AppSearchResultSchema>;
+
+export const AppSearchResultsSchema = z.array(AppSearchResultSchema);
+
+const providers = [
+  "chatgpt",
+  "deepseek",
+  "opencode-zen",
+  "openai",
+  "anthropic",
+  "google",
+  "vertex",
+  "auto",
+  "openrouter",
+  "ollama",
+  "lmstudio",
+  "azure",
+  "xai",
+  "bedrock",
+  "minimax",
+] as const;
+
+export const cloudProviders = providers.filter(
+  (provider) => provider !== "ollama" && provider !== "lmstudio",
+);
+
+/**
+ * Zod schema for large language model configuration
+ */
+export const LargeLanguageModelSchema = z.object({
+  name: z.string(),
+  provider: z.string(),
+  customModelId: z.number().optional(),
+});
+
+/**
+ * Type derived from the LargeLanguageModelSchema
+ */
+export type LargeLanguageModel = z.infer<typeof LargeLanguageModelSchema>;
+
+/**
+ * Zod schema for provider settings
+ * Regular providers use only apiKey. Vertex has additional optional fields.
+ */
+export const RegularProviderSettingSchema = z.object({
+  apiKey: SecretSchema.optional(),
+});
+
+export const AzureProviderSettingSchema = z.object({
+  apiKey: SecretSchema.optional(),
+  resourceName: z.string().optional(),
+});
+
+export const VertexProviderSettingSchema = z.object({
+  // We make this undefined so that it makes existing callsites easier.
+  apiKey: z.undefined(),
+  projectId: z.string().optional(),
+  location: z.string().optional(),
+  serviceAccountKey: SecretSchema.optional(),
+});
+
+export const ProviderSettingSchema = z.union([
+  // Must use more specific type first!
+  // Zod uses the first type that matches.
+  //
+  // We use passthrough as a hack because Azure and Vertex
+  // will match together since their required fields overlap.
+  //
+  // In addition, there may be future provider settings that
+  // we may want to preserve (e.g. user downgrades to older version)
+  // so doing passthrough keeps these extra fields.
+  AzureProviderSettingSchema.passthrough(),
+  VertexProviderSettingSchema.passthrough(),
+  RegularProviderSettingSchema.passthrough(),
+]);
+
+/**
+ * Type derived from the ProviderSettingSchema
+ */
+export type ProviderSetting = z.infer<typeof ProviderSettingSchema>;
+export type RegularProviderSetting = z.infer<
+  typeof RegularProviderSettingSchema
+>;
+export type AzureProviderSetting = z.infer<typeof AzureProviderSettingSchema>;
+export type VertexProviderSetting = z.infer<typeof VertexProviderSettingSchema>;
+
+export const RuntimeModeSchema = z.enum(["web-sandbox", "local-node", "unset"]);
+export type RuntimeMode = z.infer<typeof RuntimeModeSchema>;
+
+export const RuntimeMode2Schema = z.enum(["host", "docker", "cloud"]);
+export type RuntimeMode2 = z.infer<typeof RuntimeMode2Schema>;
+
+/**
+ * Which device `flutter run` targets for Flutter apps. "web-server" keeps the
+ * preview proxy intact; emulator/simulator run the app on a connected mobile
+ * device (useful for native-only behavior + device screenshots).
+ */
+export const FlutterRunDeviceSchema = z.enum([
+  "web-server",
+  "emulator",
+  "simulator",
+]);
+export type FlutterRunDevice = z.infer<typeof FlutterRunDeviceSchema>;
+
+/**
+ * Chat modes that can be stored in settings (includes deprecated values for backwards compat)
+ */
+export const StoredChatModeSchema = z.enum([
+  "build",
+  "ask",
+  "agent", // DEPRECATED: converted to "build" on read
+  "local-agent",
+  "plan",
+]);
+export type StoredChatMode = z.infer<typeof StoredChatModeSchema>;
+
+/**
+ * Active chat modes (excludes deprecated values)
+ */
+export const ChatModeSchema = z.enum(["build", "ask", "local-agent", "plan"]);
+export type ChatMode = z.infer<typeof ChatModeSchema>;
+
+/**
+ * Modes that stream through the local agent (tool-calling) path rather than
+ * the build-mode path that injects full codebases into the prompt. Keep this
+ * in sync with the chat-stream and token-count handlers: whenever a new mode
+ * routes through the local agent, add it here so the token estimate matches
+ * what's actually sent to the model.
+ */
+export function isLocalAgentBackedMode(mode: ChatMode | undefined): boolean {
+  return mode === "local-agent" || mode === "ask" || mode === "plan";
+}
+
+export const GitHubSecretsSchema = z.object({
+  accessToken: SecretSchema.nullable(),
+});
+export type GitHubSecrets = z.infer<typeof GitHubSecretsSchema>;
+
+export const GithubUserSchema = z.object({
+  email: z.string(),
+});
+export type GithubUser = z.infer<typeof GithubUserSchema>;
+
+/**
+ * Supabase organization credentials.
+ * Each organization has its own OAuth tokens.
+ */
+export const SupabaseOrganizationCredentialsSchema = z.object({
+  accessToken: SecretSchema,
+  refreshToken: SecretSchema,
+  expiresIn: z.number(),
+  tokenTimestamp: z.number(),
+});
+export type SupabaseOrganizationCredentials = z.infer<
+  typeof SupabaseOrganizationCredentialsSchema
+>;
+
+export const SupabaseSchema = z.object({
+  // Map keyed by organizationSlug -> organization credentials
+  organizations: z
+    .record(z.string(), SupabaseOrganizationCredentialsSchema)
+    .optional(),
+
+  // Legacy fields - kept for backwards compat
+  accessToken: SecretSchema.optional(),
+  refreshToken: SecretSchema.optional(),
+  expiresIn: z.number().optional(),
+  tokenTimestamp: z.number().optional(),
+});
+export type Supabase = z.infer<typeof SupabaseSchema>;
+
+export const NeonSchema = z.object({
+  accessToken: SecretSchema.optional(),
+  refreshToken: SecretSchema.optional(),
+  expiresIn: z.number().optional(),
+  tokenTimestamp: z.number().optional(),
+});
+export type Neon = z.infer<typeof NeonSchema>;
+
+// IMPORTANT: Do NOT add any new experiments here. Instead, add them to BaseUserSettingsFields.
+// It's hard to turn experiments on by default when you put them in
+// ExperimentsSchema.
+export const ExperimentsSchema = z.object({
+  enableCloudSandbox: z.boolean().optional(),
+  //////////////////////////////////////////////////////////////////////////////
+  // Deprecated experiments
+  //////////////////////////////////////////////////////////////////////////////
+  enableLocalAgent: z.boolean().describe("DEPRECATED").optional(),
+  enableSupabaseIntegration: z.boolean().describe("DEPRECATED").optional(),
+  enableFileEditing: z.boolean().describe("DEPRECATED").optional(),
+  // do NOT read off these property, instead use BaseUserSettingsFields#enableSandboxScriptExecution
+  enableSandboxScriptExecution: z.boolean("DEPRECATED").optional(),
+});
+export type Experiments = z.infer<typeof ExperimentsSchema>;
+
+export const CaideProBudgetSchema = z.object({
+  budgetResetAt: z.string(),
+  maxBudget: z.number(),
+});
+export type CaideProBudget = z.infer<typeof CaideProBudgetSchema>;
+
+export const GlobPathSchema = z.object({
+  globPath: z.string(),
+});
+
+export type GlobPath = z.infer<typeof GlobPathSchema>;
+
+export const AppChatContextSchema = z.object({
+  contextPaths: z.array(GlobPathSchema),
+  smartContextAutoIncludes: z.array(GlobPathSchema),
+  excludePaths: z.array(GlobPathSchema).optional(),
+});
+export type AppChatContext = z.infer<typeof AppChatContextSchema>;
+
+export type ContextPathResult = GlobPath & {
+  files: number;
+  tokens: number;
+};
+
+export type ContextPathResults = {
+  contextPaths: ContextPathResult[];
+  smartContextAutoIncludes: ContextPathResult[];
+  excludePaths: ContextPathResult[];
+};
+
+export const ReleaseChannelSchema = z.enum(["stable", "beta"]);
+export type ReleaseChannel = z.infer<typeof ReleaseChannelSchema>;
+
+export const ZoomLevelSchema = z.enum(["90", "100", "110", "125", "150"]);
+export type ZoomLevel = z.infer<typeof ZoomLevelSchema>;
+export const ZOOM_LEVELS: readonly ZoomLevel[] = ZoomLevelSchema.options;
+export const DEFAULT_ZOOM_LEVEL: ZoomLevel = "100";
+
+export const LanguageSchema = z.enum([
+  "en",
+  "zh-CN",
+  "ja",
+  "ko",
+  "es",
+  "fr",
+  "de",
+  "pt-BR",
+]);
+export type Language = z.infer<typeof LanguageSchema>;
+
+export const DeviceModeSchema = z.enum(["desktop", "tablet", "mobile"]);
+export type DeviceMode = z.infer<typeof DeviceModeSchema>;
+
+/**
+ * The product paradigm CAIDE builds for. Determines which platform contract and
+ * UI skill pack are injected into the model prompt, and what the AI must
+ * optimize the generated app toward:
+ * - "mobile": a native-feel iOS/Android app (bottom tab bar, screen-based
+ *   navigation, touch-first, tablet-adaptive), packageable for the stores.
+ * - "web": a responsive website that works on desktop, tablet and mobile
+ *   browsers (top/side nav, keyboard + mouse + touch, desktop layouts).
+ */
+export const AppTargetSchema = z.enum(["mobile", "web"]);
+export type AppTarget = z.infer<typeof AppTargetSchema>;
+export const APP_TARGETS: readonly AppTarget[] = AppTargetSchema.options;
+
+export const SmartContextModeSchema = z.enum([
+  "balanced",
+  "conservative",
+  "deep",
+]);
+export type SmartContextMode = z.infer<typeof SmartContextModeSchema>;
+
+export const AgentToolConsentSchema = z.enum(["ask", "always", "never"]);
+export type AgentToolConsent = z.infer<typeof AgentToolConsentSchema>;
+
+/**
+ * Base fields shared between StoredUserSettings and UserSettings
+ */
+const BaseUserSettingsFields = {
+  ////////////////////////////////
+  // E2E TESTING ONLY.
+  ////////////////////////////////
+  isTestMode: z.boolean().optional(),
+
+  ////////////////////////////////
+  // DEPRECATED.
+  ////////////////////////////////
+  enableProSaverMode: z.boolean().optional(),
+  caideProBudget: CaideProBudgetSchema.optional(),
+  runtimeMode: RuntimeModeSchema.optional(),
+
+  ////////////////////////////////
+  // ACTIVE FIELDS.
+  ////////////////////////////////
+  selectedModel: LargeLanguageModelSchema,
+  providerSettings: z.record(z.string(), ProviderSettingSchema),
+  agentToolConsents: z.record(z.string(), AgentToolConsentSchema).optional(),
+  githubUser: GithubUserSchema.optional(),
+  githubAccessToken: SecretSchema.optional(),
+  vercelAccessToken: SecretSchema.optional(),
+  supabase: SupabaseSchema.optional(),
+  neon: NeonSchema.optional(),
+  autoApproveChanges: z.boolean().optional(),
+  telemetryConsent: z.enum(["opted_in", "opted_out", "unset"]).optional(),
+  telemetryUserId: z.string().optional(),
+  hasRunBefore: z.boolean().optional(),
+  enableCaidePro: z.boolean().optional(),
+  experiments: ExperimentsSchema.optional(),
+  lastShownReleaseNotesVersion: z.string().optional(),
+  maxChatTurnsInContext: z.number().optional(),
+  maxToolCallSteps: z.number().optional(),
+  thinkingBudget: z.enum(["low", "medium", "high"]).optional(),
+  enableProLazyEditsMode: z.boolean().optional(),
+  proLazyEditsMode: z.enum(["off", "v1", "v2"]).optional(),
+  enableProSmartFilesContextMode: z.boolean().optional(),
+  enableProWebSearch: z.boolean().optional(),
+  proSmartContextOption: SmartContextModeSchema.optional(),
+  selectedTemplateId: z.string(),
+  selectedThemeId: z.string().optional(),
+  enableSupabaseWriteSqlMigration: z.boolean().optional(),
+  autoApproveNonSchemaSql: z.boolean().optional(),
+  autoApproveSafeMcpTools: z.boolean().optional(),
+  skipPruneEdgeFunctions: z.boolean().optional(),
+  acceptedCommunityCode: z.boolean().optional(),
+  zoomLevel: ZoomLevelSchema.optional(),
+  language: LanguageSchema.optional(),
+  previewDeviceMode: DeviceModeSchema.optional(),
+  previewDevicePreset: z.string().optional(),
+  previewOrientation: z.enum(["portrait", "landscape"]).optional(),
+  appTarget: AppTargetSchema.optional(),
+
+  enableAutoFixProblems: z.boolean().optional(),
+  enableAppBlueprint: z.boolean().optional(),
+  autoExpandPreviewPanel: z.boolean().optional(),
+  enableChatEventNotifications: z.boolean().optional(),
+  blockUnsafeNpmPackages: z.boolean().optional(),
+  enablePnpmMinimumReleaseAgeWarning: z.boolean().optional(),
+  hidePnpmMinimumReleaseAgeWarning: z.boolean().optional(),
+  enableNativeGit: z.boolean().optional(),
+  enableSandboxScriptExecution: z.boolean().optional(),
+  enableMcpServersForBuildMode: z.boolean().optional(),
+  enableMcpToolSearch: z.boolean().optional(),
+  enableCodeExplorer: z.boolean().optional(),
+  enableAutoUpdate: z.boolean(),
+  releaseChannel: ReleaseChannelSchema,
+  runtimeMode2: RuntimeMode2Schema.optional(),
+  flutterRunDevice: FlutterRunDeviceSchema.optional(),
+  customNodePath: z.string().optional().nullable(),
+  nodeRuntimePreference: z.enum(["system", "managed"]).optional(),
+  disablePreviewNodeAutoInstall: z.boolean().optional(),
+  customAppsFolder: z.string().optional().nullable(),
+  isRunning: z.boolean().optional(),
+  lastKnownPerformance: z
+    .object({
+      timestamp: z.number(),
+      memoryUsageMB: z.number(),
+      cpuUsagePercent: z.number().optional(),
+      systemMemoryUsageMB: z.number().optional(),
+      systemMemoryTotalMB: z.number().optional(),
+      systemCpuPercent: z.number().optional(),
+    })
+    .optional(),
+  hideLocalAgentNewChatToast: z.boolean().optional(),
+  enableContextCompaction: z.boolean().optional(),
+  skipNotificationBanner: z.boolean().optional(),
+  previewIdleTimeoutPolicy: z.enum(["default", "never"]).optional(),
+  figmaAccessToken: SecretSchema.optional(),
+};
+
+/**
+ * Zod schema for stored user settings (includes deprecated values for backwards compat).
+ * This is what gets written to/read from the JSON file.
+ */
+export const StoredUserSettingsSchema = z
+  .object({
+    ...BaseUserSettingsFields,
+    // Use StoredChatModeSchema to allow deprecated "agent" value
+    selectedChatMode: StoredChatModeSchema.optional(),
+    defaultChatMode: StoredChatModeSchema.optional(),
+    // Deprecated: renamed to enableChatEventNotifications
+    enableChatCompletionNotifications: z.boolean().optional(),
+  })
+  // Allow unknown properties to pass through (e.g. future settings
+  // that should be preserved if user downgrades to an older version)
+  .passthrough();
+
+/**
+ * Type derived from the StoredUserSettingsSchema
+ */
+export type StoredUserSettings = z.infer<typeof StoredUserSettingsSchema>;
+
+/**
+ * Zod schema for active user settings (excludes deprecated values).
+ * This is what the application uses at runtime.
+ */
+export const UserSettingsSchema = z
+  .object({
+    ...BaseUserSettingsFields,
+    // Use ChatModeSchema which excludes deprecated "agent" value
+    selectedChatMode: ChatModeSchema.optional(),
+    defaultChatMode: ChatModeSchema.optional(),
+  })
+  // Allow unknown properties to pass through (e.g. future settings
+  // that should be preserved if user downgrades to an older version)
+  .passthrough();
+
+/**
+ * Type derived from the UserSettingsSchema
+ */
+export type UserSettings = z.infer<typeof UserSettingsSchema>;
+
+/**
+ * Migrates a stored chat mode to an active chat mode.
+ * Converts deprecated "agent" mode to "build".
+ */
+export function migrateStoredChatMode(
+  mode: StoredChatMode | undefined,
+): ChatMode | undefined {
+  if (mode === "agent") {
+    return "build";
+  }
+  return mode;
+}
+
+/**
+ * Migrates stored settings to active settings.
+ * Applies necessary transformations for deprecated values.
+ */
+export function migrateStoredSettings(
+  stored: StoredUserSettings,
+): UserSettings {
+  return {
+    ...stored,
+    selectedChatMode: migrateStoredChatMode(stored.selectedChatMode),
+    defaultChatMode: migrateStoredChatMode(stored.defaultChatMode),
+    enableChatEventNotifications:
+      stored.enableChatEventNotifications ??
+      stored.enableChatCompletionNotifications,
+    enableAppBlueprint: stored.enableAppBlueprint ?? true,
+  };
+}
+
+export function isCaideProEnabled(settings: UserSettings): boolean {
+  return settings.enableCaidePro === true && hasCaideProKey(settings);
+}
+
+export function hasCaideProKey(settings: UserSettings): boolean {
+  return !!settings.providerSettings?.auto?.apiKey?.value;
+}
+
+type PnpmMinimumReleaseAgeWarningSettings = Pick<
+  UserSettings,
+  "enablePnpmMinimumReleaseAgeWarning" | "hidePnpmMinimumReleaseAgeWarning"
+>;
+
+export function shouldShowPnpmMinimumReleaseAgeWarning(
+  settings?: PnpmMinimumReleaseAgeWarningSettings | null,
+): boolean {
+  return Boolean(
+    settings?.enablePnpmMinimumReleaseAgeWarning &&
+    !settings.hidePnpmMinimumReleaseAgeWarning,
+  );
+}
+
+/** Uses the configured default, or selects Agent whenever a model provider is ready. */
+export function getEffectiveDefaultChatMode(
+  settings: UserSettings,
+  envVars: Record<string, string | undefined>,
+  freeAgentQuotaAvailable?: boolean,
+): ChatMode {
+  void freeAgentQuotaAvailable;
+  if (settings.defaultChatMode) return settings.defaultChatMode;
+  const providerOptions = { settings, envVars };
+  const hasProvider =
+    isNonGoogleProviderSetup(settings, envVars) ||
+    isProviderSetup("google", providerOptions) ||
+    isProviderSetup("auto", providerOptions) ||
+    settings.selectedModel.provider === "chatgpt";
+  return hasProvider ? "local-agent" : "build";
+}
+
+/** Legacy compatibility hook. CAIDE no longer limits Agent mode by subscription. */
+export function isBasicAgentMode(settings: UserSettings): boolean {
+  void settings;
+  return false;
+}
+
+export function isSupabaseConnected(settings: UserSettings | null): boolean {
+  if (!settings) {
+    return false;
+  }
+  return Boolean(
+    settings.supabase?.accessToken ||
+    (settings.supabase?.organizations &&
+      Object.keys(settings.supabase.organizations).length > 0),
+  );
+}
+
+export function isTurboEditsV2Enabled(settings: UserSettings): boolean {
+  return Boolean(
+    settings.enableProLazyEditsMode === true &&
+    settings.proLazyEditsMode === "v2",
+  );
+}
+
+// Define interfaces for the props
+export interface SecurityRisk {
+  type: "warning" | "danger";
+  title: string;
+  description: string;
+}
+
+export interface FileChange {
+  name: string;
+  path: string;
+  summary: string;
+  type: "write" | "rename" | "delete";
+  isServerFunction: boolean;
+}
+
+export interface CodeProposal {
+  type: "code-proposal";
+  title: string;
+  securityRisks: SecurityRisk[];
+  filesChanged: FileChange[];
+  packagesAdded: string[];
+  sqlQueries: SqlQuery[];
+}
+
+export type SuggestedAction =
+  | RestartAppAction
+  | SummarizeInNewChatAction
+  | RefactorFileAction
+  | WriteCodeProperlyAction
+  | RebuildAction
+  | RestartAction
+  | RefreshAction
+  | KeepGoingAction
+  | AddTypeScriptAction;
+
+export interface RestartAppAction {
+  id: "restart-app";
+}
+
+export interface SummarizeInNewChatAction {
+  id: "summarize-in-new-chat";
+}
+
+export interface WriteCodeProperlyAction {
+  id: "write-code-properly";
+}
+
+export interface RefactorFileAction {
+  id: "refactor-file";
+  path: string;
+}
+
+export interface RebuildAction {
+  id: "rebuild";
+}
+
+export interface RestartAction {
+  id: "restart";
+}
+
+export interface RefreshAction {
+  id: "refresh";
+}
+
+export interface AddTypeScriptAction {
+  id: "add-typescript";
+}
+
+export interface KeepGoingAction {
+  id: "keep-going";
+}
+
+export interface ActionProposal {
+  type: "action-proposal";
+  actions: SuggestedAction[];
+}
+
+export interface TipProposal {
+  type: "tip-proposal";
+  title: string;
+  description: string;
+}
+
+export type Proposal = CodeProposal | ActionProposal | TipProposal;
+
+export interface ProposalResult {
+  proposal: Proposal;
+  chatId: number;
+  messageId: number;
+}
+
+export interface SqlQuery {
+  content: string;
+  description?: string;
+}

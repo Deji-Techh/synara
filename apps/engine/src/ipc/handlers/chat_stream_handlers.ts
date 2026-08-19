@@ -1,0 +1,2584 @@
+import { v4 as uuidv4 } from "uuid";
+import { app, ipcMain, IpcMainInvokeEvent } from "electron";
+import { createTypedHandler } from "./base";
+import {
+  StreamingPatchTracker,
+  fastTextOutput,
+} from "../utils/stream_text_utils";
+import { chatContracts, ChatStreamParamsSchema } from "../types/chat";
+import {
+  ModelMessage,
+  TextPart,
+  ImagePart,
+  streamText,
+  generateText,
+  ToolSet,
+  TextStreamPart,
+  stepCountIs,
+  hasToolCall,
+  type ToolExecutionOptions,
+} from "ai";
+
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { db } from "../../db";
+import { appPrompts, chats, messages } from "../../db/schema";
+import { and, eq, inArray, isNull } from "drizzle-orm";
+import type { SmartContextMode } from "../../lib/schemas";
+import {
+  constructSystemPrompt,
+  readAiRules,
+} from "../../prompts/system_prompt";
+import { detectFrameworkType } from "../utils/framework_utils";
+import { getThemePromptById } from "../utils/theme_utils";
+import {
+  getSupabaseAvailableSystemPrompt,
+  getSupabaseAvailableSystemPromptForFlutter,
+  SUPABASE_NOT_AVAILABLE_SYSTEM_PROMPT,
+} from "../../prompts/supabase_prompt";
+import { buildNeonPromptForApp } from "../../neon_admin/neon_prompt_context";
+import { getCaideAppPath } from "../../paths/paths";
+import { buildCaideMediaUrl } from "../../lib/caideMediaUrl";
+import {
+  buildAppIdentityPrompt,
+  parseStoredAppIdentity,
+} from "../../shared/app_identity";
+import type { ChatResponseEnd, ChatStreamParams } from "@/ipc/types";
+import { CaideError, CaideErrorKind, isCaideError } from "@/errors/caide_error";
+import {
+  CodebaseFile,
+  extractCodebase,
+  readFileWithCache,
+} from "../../utils/codebase";
+import {
+  dryRunSearchReplace,
+  processFullResponseActions,
+} from "../processors/response_processor";
+import { getCaideExecuteSqlTags } from "../utils/caide_tag_parser";
+import { doesSqlDeleteData } from "@/lib/sqlSchemaMutation";
+import {
+  streamTestResponse,
+  getTestResponse,
+  noteAck,
+} from "./testing_chat_handlers";
+import { getModelClient, ModelClient } from "../utils/get_model_client";
+import log from "electron-log";
+import { sendTelemetryEvent } from "../utils/telemetry";
+import {
+  getSupabaseContext,
+  getSupabaseClientCode,
+} from "../../supabase_admin/supabase_context";
+import { SUMMARIZE_CHAT_SYSTEM_PROMPT } from "../../prompts/summarize_chat_system_prompt";
+import { SECURITY_REVIEW_SYSTEM_PROMPT } from "../../prompts/security_review_prompt";
+import fs from "node:fs";
+import * as path from "path";
+import * as crypto from "crypto";
+import { readFile, writeFile } from "fs/promises";
+import { getMaxTokens, getTemperature } from "../utils/token_utils";
+import { MAX_CHAT_TURNS_IN_CONTEXT } from "@/constants/settings_constants";
+import { validateChatContext } from "../utils/context_paths_utils";
+import { getProviderOptions, getAiHeaders } from "../utils/provider_options";
+import {
+  withSystemCacheBreakpoint,
+  withToolCacheBreakpoint,
+} from "../utils/cache_breakpoints";
+import { mcpServers } from "../../db/schema";
+import {
+  requireMcpToolConsent,
+  clearPendingMcpConsentsForChat,
+} from "../utils/mcp_consent";
+
+import { handleLocalAgentStream } from "../../pro/main/ipc/handlers/local_agent/local_agent_handler";
+
+import { safeSend } from "../utils/safe_sender";
+import { cancelOrphanedBaseStream } from "../utils/stream_text_utils";
+import { cleanFullResponse } from "../utils/cleanFullResponse";
+import {
+  generateProblemReport,
+  getTypeCheckPreconditionKind,
+} from "../processors/tsc";
+import { createProblemFixPrompt } from "@/shared/problem_prompt";
+import { AsyncVirtualFileSystem } from "../../../shared/VirtualFilesystem";
+import { escapeXmlAttr, escapeXmlContent } from "../../../shared/xmlEscape";
+import {
+  getCaideAddDependencyTags,
+  getCaideWriteTags,
+  getCaideDeleteTags,
+  getCaideRenameTags,
+} from "../utils/caide_tag_parser";
+import {
+  advanceChain,
+  buildPassPrompt,
+  createChain,
+  isBackendCodePath,
+  isOnboardingScreenPath,
+} from "@/prompts/checkpoint_chain";
+import { fileExists } from "../utils/file_utils";
+import { isCodeExplorerReady } from "../processors/code_explorer";
+import { appendCancelledResponseNotice } from "@/shared/chatCancellation";
+import {
+  extractMentionedAppsCodebasesFromPrompt,
+  extractMentionedAppsReferencesFromPrompt,
+  type MentionedAppCodebaseEntry,
+  type MentionedAppReference,
+} from "../utils/mention_apps";
+import {
+  parseMediaMentions,
+  stripResolvedMediaMentions,
+} from "@/shared/parse_media_mentions";
+import { prompts as promptsTable } from "../../db/schema";
+import { replacePromptReference } from "../utils/replacePromptReference";
+import { replaceSlashSkillReference } from "../utils/replaceSlashSkillReference";
+import { resolveMediaMentions } from "../utils/resolve_media_mentions";
+import { parsePlanFile, validatePlanId } from "./planUtils";
+import { ensureCaideGitignored } from "./gitignoreUtils";
+import {
+  appendAttachmentManifestEntriesWithLogicalNames,
+  createUniqueAttachmentLogicalName,
+  CAIDE_MEDIA_DIR_NAME,
+  type AttachmentManifestEntryInput,
+} from "../utils/media_path_utils";
+import { mcpManager } from "../utils/mcp_manager";
+import z from "zod";
+import {
+  isBasicAgentMode,
+  isLocalAgentBackedMode,
+  isSupabaseConnected,
+  isTurboEditsV2Enabled,
+} from "@/lib/schemas";
+import { isFreeProModel } from "@/lib/freeProModel";
+import { resolveChatModeForTurn } from "./chat_mode_resolution";
+import { AI_STREAMING_ERROR_MESSAGE_PREFIX } from "@/shared/texts";
+import { getCurrentCommitHash } from "../utils/git_utils";
+import {
+  processChatMessagesWithVersionedFiles as getVersionedFiles,
+  VersionedFiles,
+} from "../utils/versioned_codebase_context";
+import {
+  ensureReasoningConsistency,
+  getAiMessagesJsonIfWithinLimit,
+  parseAiMessagesJson,
+} from "../utils/ai_messages_utils";
+import { readSettings, setSentinelActiveChat } from "@/main/settings";
+import {
+  buildLocalAgentAttachmentInfo,
+  getInlineImageMimeType,
+  hasScriptReadableAttachment,
+  isTextFile,
+  resolveAttachmentDeliveryConfig,
+  type PendingStoredChatAttachment,
+  type StoredChatAttachment,
+} from "../utils/chat_attachment_utils";
+import { inspectBase64DataUrl } from "../../shared/chatAttachmentLimits";
+import { toRendererMessage } from "../utils/renderer_chat_message";
+
+type AsyncIterableStream<T> = AsyncIterable<T> & ReadableStream<T>;
+
+const logger = log.scope("chat_stream_handlers");
+
+// Track active streams for cancellation
+const activeStreams = new Map<number, AbortController>();
+
+// Track partial responses for cancelled streams
+const partialResponses = new Map<number, string>();
+
+// Use escapeXmlAttr from shared/xmlEscape for XML escaping
+
+// Safely parse an MCP tool key that combines server and tool names.
+// We split on the LAST occurrence of "__" to avoid ambiguity if either
+// side contains "__" as part of its sanitized name.
+function parseMcpToolKey(toolKey: string): {
+  serverName: string;
+  toolName: string;
+} {
+  const separator = "__";
+  const lastIndex = toolKey.lastIndexOf(separator);
+  if (lastIndex === -1) {
+    return { serverName: "", toolName: toolKey };
+  }
+  const serverName = toolKey.slice(0, lastIndex);
+  const toolName = toolKey.slice(lastIndex + separator.length);
+  return { serverName, toolName };
+}
+
+// Helper function to process stream chunks
+async function processStreamChunks({
+  fullStream,
+  fullResponse,
+  abortController,
+  chatId,
+  processResponseChunkUpdate,
+}: {
+  fullStream: AsyncIterableStream<TextStreamPart<ToolSet>>;
+  fullResponse: string;
+  abortController: AbortController;
+  chatId: number;
+  processResponseChunkUpdate: (params: {
+    fullResponse: string;
+  }) => Promise<string>;
+}): Promise<{ fullResponse: string; incrementalResponse: string }> {
+  let incrementalResponse = "";
+  let inThinkingBlock = false;
+
+  for await (const part of fullStream) {
+    let chunk = "";
+    if (
+      inThinkingBlock &&
+      !["reasoning-delta", "reasoning-end", "reasoning-start"].includes(
+        part.type,
+      )
+    ) {
+      chunk = "</think>";
+      inThinkingBlock = false;
+    }
+    if (part.type === "text-delta") {
+      chunk += part.text;
+    } else if (part.type === "reasoning-delta") {
+      if (!inThinkingBlock) {
+        chunk = "<think>";
+        inThinkingBlock = true;
+      }
+
+      chunk += escapeCaideTags(part.text);
+    } else if (part.type === "tool-call") {
+      const { serverName, toolName } = parseMcpToolKey(part.toolName);
+      const content = escapeCaideTags(JSON.stringify(part.input));
+      chunk = `<caide-mcp-tool-call server="${escapeXmlAttr(serverName)}" tool="${escapeXmlAttr(toolName)}" call-id="${escapeXmlAttr(part.toolCallId)}">\n${content}\n</caide-mcp-tool-call>\n`;
+    } else if (part.type === "tool-result") {
+      const { serverName, toolName } = parseMcpToolKey(part.toolName);
+      const content = escapeCaideTags(part.output);
+      chunk = `<caide-mcp-tool-result server="${escapeXmlAttr(serverName)}" tool="${escapeXmlAttr(toolName)}" call-id="${escapeXmlAttr(part.toolCallId)}">\n${content}\n</caide-mcp-tool-result>\n`;
+    } else if (part.type === "tool-error") {
+      // Emit an errored result so the merged card terminates in an error
+      // state instead of staying on "Running".
+      const { serverName, toolName } = parseMcpToolKey(part.toolName);
+      const message =
+        part.error instanceof Error ? part.error.message : String(part.error);
+      const content = escapeCaideTags(message);
+      chunk = `<caide-mcp-tool-result server="${escapeXmlAttr(serverName)}" tool="${escapeXmlAttr(toolName)}" call-id="${escapeXmlAttr(part.toolCallId)}" is-error="true">\n${content}\n</caide-mcp-tool-result>\n`;
+    }
+
+    if (!chunk) {
+      continue;
+    }
+
+    fullResponse += chunk;
+    incrementalResponse += chunk;
+    fullResponse = cleanFullResponse(fullResponse);
+    fullResponse = await processResponseChunkUpdate({
+      fullResponse,
+    });
+
+    // If the stream was aborted, exit early
+    if (abortController.signal.aborted) {
+      logger.log(`Stream for chat ${chatId} was aborted`);
+      break;
+    }
+  }
+
+  return { fullResponse, incrementalResponse };
+}
+
+export function registerChatStreamHandlers() {
+  // Abort in-flight LLM streams on quit so the process can exit promptly and
+  // the module-level stream-tracking maps don't outlive their renderer.
+  // (Guarded: `app` is undefined when this module is imported in unit tests.)
+  app?.on?.("before-quit", () => {
+    for (const controller of activeStreams.values()) {
+      controller.abort();
+    }
+    activeStreams.clear();
+    partialResponses.clear();
+  });
+
+  createTypedHandler(
+    chatContracts.responseAck,
+    async (_event, { chatId, lastSeq }) => {
+      noteAck(chatId, lastSeq);
+    },
+  );
+
+  ipcMain.handle("chat:stream", async (event, req: ChatStreamParams) => {
+    let attachmentPaths: string[] = [];
+    try {
+      // This legacy stream handler predates createTypedHandler, so enforce the
+      // contract explicitly before any attachment string is decoded.
+      const parsedRequest = ChatStreamParamsSchema.safeParse(req);
+      if (!parsedRequest.success) {
+        throw new CaideError(
+          parsedRequest.error.issues[0]?.message ?? "Invalid chat request.",
+          CaideErrorKind.Validation,
+        );
+      }
+      req = parsedRequest.data;
+
+      let caideRequestId: string | undefined;
+      // Create an AbortController for this stream
+      const abortController = new AbortController();
+      activeStreams.set(req.chatId, abortController);
+
+      // Notify renderer that stream is starting
+      safeSend(event.sender, "chat:stream:start", { chatId: req.chatId });
+
+      // Get the chat to check for existing messages
+      const chat = await db.query.chats.findFirst({
+        where: eq(chats.id, req.chatId),
+        with: {
+          messages: {
+            orderBy: (messages, { asc }) => [asc(messages.createdAt)],
+          },
+          app: true, // Include app information
+        },
+      });
+
+      if (!chat) {
+        throw new CaideError(
+          `Chat not found: ${req.chatId}`,
+          CaideErrorKind.NotFound,
+        );
+      }
+
+      // Record the streaming chat in the crash sentinel so a later force-close
+      // can offer to upload it. We intentionally don't clear this when the
+      // stream ends: the chat of the most recent stream stays the most likely
+      // crash culprit even afterwards (its output stays mounted, and the
+      // apply/build/preview steps run after the stream), so it remains the best
+      // guess until the next stream replaces it. The latest stream wins, and the
+      // value is cleared on clean exit.
+      setSentinelActiveChat(req.chatId);
+
+      // Handle redo option: remove the most recent messages if needed
+      if (req.redo) {
+        // Get the most recent messages
+        const chatMessages = [...chat.messages];
+
+        // Find the most recent user message
+        let lastUserMessageIndex = chatMessages.length - 1;
+        while (
+          lastUserMessageIndex >= 0 &&
+          chatMessages[lastUserMessageIndex].role !== "user"
+        ) {
+          lastUserMessageIndex--;
+        }
+
+        if (lastUserMessageIndex >= 0) {
+          // Delete the user message
+          await db
+            .delete(messages)
+            .where(eq(messages.id, chatMessages[lastUserMessageIndex].id));
+
+          // If there's an assistant message after the user message, delete it too
+          if (
+            lastUserMessageIndex < chatMessages.length - 1 &&
+            chatMessages[lastUserMessageIndex + 1].role === "assistant"
+          ) {
+            await db
+              .delete(messages)
+              .where(
+                eq(messages.id, chatMessages[lastUserMessageIndex + 1].id),
+              );
+          }
+        }
+      }
+
+      // Process attachments if any
+      let attachmentInfo = "";
+      // Display-only attachment info uses <caide-attachment> tags for inline rendering
+      let displayAttachmentInfo = "";
+      let storedAttachments: StoredChatAttachment[] = [];
+      const pendingStoredAttachments: PendingStoredChatAttachment[] = [];
+      const manifestEntries: AttachmentManifestEntryInput[] = [];
+      const usedLogicalNames = new Set<string>();
+      const appPath = getCaideAppPath(chat.app.path);
+
+      // Detach the serialized payloads from the long-lived stream request as
+      // soon as they are persisted. Otherwise every base64 string remains
+      // reachable for the entire LLM turn and duplicates later disk reads.
+      let incomingAttachments = req.attachments;
+      req.attachments = undefined;
+      if (incomingAttachments && incomingAttachments.length > 0) {
+        attachmentInfo = "\n\nAttachments:\n";
+
+        // Create persistent .caide/media directory for this app
+        const mediaDir = path.join(appPath, CAIDE_MEDIA_DIR_NAME);
+        if (!fs.existsSync(mediaDir)) {
+          fs.mkdirSync(mediaDir, { recursive: true });
+        }
+        await ensureCaideGitignored(appPath);
+
+        for (const attachment of incomingAttachments) {
+          const inspection = inspectBase64DataUrl(attachment.data);
+          if (!inspection.ok) {
+            throw new CaideError(
+              `"${attachment.name}" is not a valid base64 attachment.`,
+              CaideErrorKind.Validation,
+            );
+          }
+          const base64Data = attachment.data.slice(inspection.payloadStart);
+          const fileBuffer = Buffer.from(base64Data, "base64");
+          const hash = crypto
+            .createHash("sha256")
+            .update(fileBuffer)
+            .digest("hex");
+          const fileExtension = path.extname(attachment.name);
+          const filename = `${hash}${fileExtension}`;
+          const logicalName = createUniqueAttachmentLogicalName(
+            attachment.name,
+            usedLogicalNames,
+          );
+
+          // Save to .caide/media dir
+          const persistentPath = path.join(mediaDir, filename);
+          await writeFile(persistentPath, fileBuffer);
+          attachmentPaths.push(persistentPath);
+          pendingStoredAttachments.push({
+            filePath: persistentPath,
+            attachmentType: attachment.attachmentType,
+          });
+          manifestEntries.push({
+            requestedLogicalName: logicalName,
+            originalName: attachment.name,
+            storedFileName: filename,
+            mimeType: attachment.type,
+            sizeBytes: fileBuffer.byteLength,
+            createdAt: new Date().toISOString(),
+          });
+          sendTelemetryEvent("attachment.stored", {
+            appId: chat.app.id,
+            chatId: req.chatId,
+            attachmentType: attachment.attachmentType,
+            mimeType: attachment.type,
+            sizeBytes: fileBuffer.byteLength,
+          });
+
+          // Build caide-media:// URL for display
+          // Use a fixed hostname to avoid URL hostname normalization (lowercasing)
+          // Encode path segments so special characters (spaces, #, ?, %) don't
+          // break URL parsing. The protocol handler already decodeURIComponent's.
+          const mediaUrl = `caide-media://media/${encodeURIComponent(chat.app.path)}/.caide/media/${encodeURIComponent(filename)}`;
+
+          // Build display tag for inline rendering (escape attribute values)
+          displayAttachmentInfo += `\n<caide-attachment name="${escapeXmlAttr(attachment.name)}" type="${escapeXmlAttr(attachment.type)}" url="${escapeXmlAttr(mediaUrl)}" path="${escapeXmlAttr(persistentPath)}" attachment-type="${escapeXmlAttr(attachment.attachmentType)}"></caide-attachment>\n`;
+
+          if (attachment.attachmentType === "upload-to-codebase") {
+            // Provide the .caide/media path so the AI can copy it into the codebase
+            attachmentInfo += `\n\nFile to upload to codebase: "${attachment.name}" (path: ${persistentPath})\nUse the copy_file tool when tools are available, or emit a <caide-copy> tag otherwise, to copy this file into the codebase at the appropriate location.\n`;
+          } else {
+            // For chat-context, provide file info for reference (no path to avoid auto-copying)
+            attachmentInfo += `- ${attachment.name} (${attachment.type})\n`;
+            // If it's a text-based file, try to include the content
+            if (await isTextFile(persistentPath)) {
+              try {
+                attachmentInfo += `<caide-text-attachment filename="${escapeXmlAttr(attachment.name)}" type="${escapeXmlAttr(attachment.type)}" path="${escapeXmlAttr(persistentPath)}">
+                </caide-text-attachment>
+                \n\n`;
+              } catch (err) {
+                logger.error(`Error reading file content: ${err}`);
+              }
+            }
+          }
+        }
+      }
+      incomingAttachments = undefined;
+
+      // Build the full AI prompt. Attachment-specific instructions are added
+      // to the user message, never the system prompt.
+      let userPrompt = req.prompt;
+      // Build the display prompt (with <caide-attachment> tags for inline rendering)
+      // This separates what the user sees from what the AI receives.
+      let displayUserPrompt: string | undefined;
+      if (displayAttachmentInfo) {
+        displayUserPrompt = req.prompt + displayAttachmentInfo;
+      }
+      // Inline referenced prompt contents for mentions like @prompt:<id>
+      try {
+        const matches = Array.from(userPrompt.matchAll(/@prompt:(\d+)/g));
+        if (matches.length > 0) {
+          const ids = Array.from(new Set(matches.map((m) => Number(m[1]))));
+          const referenced = await db
+            .select()
+            .from(promptsTable)
+            .where(inArray(promptsTable.id, ids));
+          if (referenced.length > 0) {
+            const promptsMap: Record<number, string> = {};
+            for (const p of referenced) {
+              promptsMap[p.id] = p.content;
+            }
+            userPrompt = replacePromptReference(userPrompt, promptsMap);
+          }
+        }
+      } catch (e) {
+        logger.error("Failed to inline referenced prompts:", e);
+      }
+
+      // Expand /slug skill references (e.g. /webapp-testing) to prompt content
+      try {
+        const slashSkillPattern = /(?:^|\s)\/([a-zA-Z0-9-]+)(?=\s|$)/;
+        if (slashSkillPattern.test(userPrompt)) {
+          const allPrompts = db.select().from(promptsTable).all();
+          const promptsBySlug: Record<string, string> = {};
+          for (const p of allPrompts) {
+            if (p.slug && !promptsBySlug[p.slug]) {
+              promptsBySlug[p.slug] = p.content;
+            }
+          }
+          userPrompt = replaceSlashSkillReference(userPrompt, promptsBySlug);
+        }
+      } catch (e) {
+        logger.error("Failed to expand slash skill references:", e);
+      }
+
+      // Resolve @media: mentions to image attachments
+      const mediaRefs = parseMediaMentions(userPrompt);
+      if (mediaRefs.length > 0) {
+        try {
+          const resolvedMedia = await resolveMediaMentions(
+            mediaRefs,
+            chat.app.path,
+            chat.app.name,
+          );
+          const resolvedMediaRefs = resolvedMedia.map((media) =>
+            encodeURIComponent(media.fileName),
+          );
+          let mediaDisplayInfo = "";
+          for (const media of resolvedMedia) {
+            attachmentPaths.push(media.filePath);
+            const logicalName = createUniqueAttachmentLogicalName(
+              media.fileName,
+              usedLogicalNames,
+            );
+            const stat = await fs.promises.stat(media.filePath);
+            pendingStoredAttachments.push({
+              filePath: media.filePath,
+              attachmentType: "chat-context",
+            });
+            manifestEntries.push({
+              requestedLogicalName: logicalName,
+              originalName: media.fileName,
+              storedFileName: media.fileName,
+              mimeType: media.mimeType,
+              sizeBytes: stat.size,
+              createdAt: new Date().toISOString(),
+            });
+            const mediaUrl = buildCaideMediaUrl(chat.app.path, media.fileName);
+            mediaDisplayInfo += `\n<caide-attachment name="${escapeXmlAttr(media.fileName)}" type="${escapeXmlAttr(media.mimeType)}" url="${escapeXmlAttr(mediaUrl)}" path="${escapeXmlAttr(media.filePath)}" attachment-type="chat-context"></caide-attachment>\n`;
+          }
+          // Strip only resolved @media: tags from the prompt text.
+          // This preserves adjacent user text when mentions are directly followed
+          // by text without a whitespace separator.
+          userPrompt = stripResolvedMediaMentions(
+            userPrompt,
+            resolvedMediaRefs,
+          );
+          // Build display prompt with attachment tags for inline rendering.
+          if (mediaDisplayInfo) {
+            const strippedPrompt = stripResolvedMediaMentions(
+              displayUserPrompt ?? req.prompt,
+              resolvedMediaRefs,
+            );
+            displayUserPrompt = strippedPrompt + mediaDisplayInfo;
+          }
+        } catch (e) {
+          logger.error("Failed to resolve media mentions:", e);
+        }
+      }
+
+      const finalizedManifestEntries =
+        await appendAttachmentManifestEntriesWithLogicalNames(
+          appPath,
+          manifestEntries,
+        );
+      storedAttachments = finalizedManifestEntries.map((entry, index) => ({
+        ...entry,
+        filePath: pendingStoredAttachments[index].filePath,
+        attachmentType: pendingStoredAttachments[index].attachmentType,
+      }));
+
+      // Expand /implement-plan= into full implementation prompt
+      // Keep the original short form for display in the UI; the expanded
+      // content is only injected into the AI message history.
+      let implementPlanDisplayPrompt: string | undefined;
+      const implementPlanMatch = userPrompt.match(/^\/implement-plan=(.+)$/);
+      if (implementPlanMatch) {
+        try {
+          implementPlanDisplayPrompt = userPrompt;
+          const planSlug = implementPlanMatch[1];
+          validatePlanId(planSlug);
+          const appPath = getCaideAppPath(chat.app.path);
+          const planFilePath = path.join(
+            appPath,
+            ".caide",
+            "plans",
+            `${planSlug}.md`,
+          );
+          const raw = await fs.promises.readFile(planFilePath, "utf-8");
+          const { meta, content } = parsePlanFile(raw);
+
+          const planPath = `.caide/plans/${planSlug}.md`;
+
+          userPrompt = `Please implement the following plan:
+
+## ${meta.title || "Implementation Plan"}
+
+${content}
+
+Start implementing this plan now. Follow the steps outlined and create/modify the necessary files.
+You may update the plan at \`${planPath}\` to mark your progress.`;
+        } catch (e) {
+          implementPlanDisplayPrompt = undefined;
+          logger.error("Failed to expand /implement-plan= prompt:", e);
+        }
+      }
+
+      const componentsToProcess = req.selectedComponents || [];
+
+      if (componentsToProcess.length > 0) {
+        userPrompt += "\n\nSelected components:\n";
+
+        for (const component of componentsToProcess) {
+          let componentSnippet = "[component snippet not available]";
+          try {
+            const componentFileContent = await readFile(
+              path.join(getCaideAppPath(chat.app.path), component.relativePath),
+              "utf8",
+            );
+            const lines = componentFileContent.split(/\r?\n/);
+            const selectedIndex = component.lineNumber - 1;
+
+            // Let's get one line before and three after for context.
+            const startIndex = Math.max(0, selectedIndex - 1);
+            const endIndex = Math.min(lines.length, selectedIndex + 4);
+
+            const snippetLines = lines.slice(startIndex, endIndex);
+            const selectedLineInSnippetIndex = selectedIndex - startIndex;
+
+            if (snippetLines[selectedLineInSnippetIndex]) {
+              snippetLines[selectedLineInSnippetIndex] =
+                `${snippetLines[selectedLineInSnippetIndex]} // <-- EDIT HERE`;
+            }
+
+            componentSnippet = snippetLines.join("\n");
+          } catch (err) {
+            logger.error(
+              `Error reading selected component file content: ${err}`,
+            );
+          }
+
+          userPrompt += `\n${componentsToProcess.length > 1 ? `${componentsToProcess.indexOf(component) + 1}. ` : ""}Component: ${component.name} (file: ${component.relativePath})
+
+Snippet:
+\`\`\`
+${componentSnippet}
+\`\`\`
+`;
+        }
+      }
+
+      const defaultAiUserPrompt =
+        userPrompt + (attachmentInfo ? attachmentInfo : "");
+
+      const suppressUserMessage = req.suppressUserMessage === true;
+      const displayContent =
+        implementPlanDisplayPrompt ?? displayUserPrompt ?? defaultAiUserPrompt;
+      let userMessageId: number | undefined;
+      if (!suppressUserMessage) {
+        const [inserted] = await db
+          .insert(messages)
+          .values({
+            chatId: req.chatId,
+            role: "user",
+            content: displayContent,
+          })
+          .returning({ id: messages.id });
+        userMessageId = inserted.id;
+      }
+      const {
+        settings: storedSettings,
+        mode: selectedChatMode,
+        fallbackReason: chatModeFallbackReason,
+      } = await resolveChatModeForTurn({
+        storedChatMode: chat.chatMode,
+        requestedChatMode: req.requestedChatMode,
+      });
+      const settings = {
+        ...storedSettings,
+        selectedChatMode,
+      };
+      const freeModelMode = isFreeProModel(settings.selectedModel);
+      const hasImageAttachments = storedAttachments.some((attachment) =>
+        attachment.mimeType.startsWith("image/"),
+      );
+      const hasUploadedAttachments = storedAttachments.some(
+        (attachment) => attachment.attachmentType === "upload-to-codebase",
+      );
+      const attachmentDeliveryConfig = resolveAttachmentDeliveryConfig({
+        mode: selectedChatMode,
+        settings,
+        hasImageAttachments,
+        hasUploadedAttachments,
+      });
+      const localAgentAiUserPrompt =
+        userPrompt +
+        buildLocalAgentAttachmentInfo(
+          storedAttachments,
+          attachmentDeliveryConfig,
+        );
+      safeSend(event.sender, "chat:response:chunk", {
+        chatId: req.chatId,
+        effectiveChatMode: selectedChatMode,
+        chatModeFallbackReason,
+      });
+      // Only CAIDE Gateway requests have request ids.
+      if (settings.enableCaidePro) {
+        // Generate requestId early so it can be saved with the message
+        caideRequestId = uuidv4();
+      }
+
+      // Add a placeholder assistant message immediately
+      const [placeholderAssistantMessage] = await db
+        .insert(messages)
+        .values({
+          chatId: req.chatId,
+          role: "assistant",
+          content: "", // Start with empty content
+          requestId: caideRequestId,
+          model: settings.selectedModel.name,
+          sourceCommitHash: await getCurrentCommitHash({
+            path: getCaideAppPath(chat.app.path),
+          }),
+        })
+        .returning();
+
+      // Fetch updated chat data after possible deletions and additions
+      const updatedChat = await db.query.chats.findFirst({
+        where: eq(chats.id, req.chatId),
+        with: {
+          messages: {
+            orderBy: (messages, { asc }) => [asc(messages.createdAt)],
+          },
+          app: true, // Include app information
+        },
+      });
+
+      if (!updatedChat) {
+        throw new CaideError(
+          `Chat not found: ${req.chatId}`,
+          CaideErrorKind.NotFound,
+        );
+      }
+
+      // Send the messages right away so that the loading state is shown for the message.
+      safeSend(event.sender, "chat:response:chunk", {
+        chatId: req.chatId,
+        messages: updatedChat.messages.map(toRendererMessage),
+      });
+
+      let fullResponse = "";
+      let maxTokensUsed: number | undefined;
+
+      // Check if this is a test prompt
+      const testResponse = getTestResponse(req.prompt);
+
+      if (testResponse) {
+        // For test prompts, use the dedicated function
+        fullResponse = await streamTestResponse(
+          event,
+          req.chatId,
+          testResponse,
+          abortController,
+          placeholderAssistantMessage.id,
+        );
+      } else {
+        // Normal AI processing for non-test prompts
+        const { modelClient, isEngineEnabled, isSmartContextEnabled } =
+          await getModelClient(settings.selectedModel, settings);
+
+        const appPath = getCaideAppPath(updatedChat.app.path);
+        // When we don't have smart context enabled, we
+        // only include the selected components' files for codebase context.
+        //
+        // If we have selected components and smart context is enabled,
+        // we handle this specially below.
+        const chatContext =
+          req.selectedComponents &&
+          req.selectedComponents.length > 0 &&
+          !isSmartContextEnabled
+            ? {
+                contextPaths: req.selectedComponents.map((component) => ({
+                  globPath: component.relativePath,
+                })),
+                smartContextAutoIncludes: [],
+              }
+            : validateChatContext(updatedChat.app.chatContext);
+
+        // Extract codebase for current app
+        const { formattedOutput: codebaseInfo, files } = await extractCodebase({
+          appPath,
+          chatContext,
+        });
+
+        // For smart context and selected components, we will mark the selected components' files as focused.
+        // This means that we don't do the regular smart context handling, but we'll allow fetching
+        // additional files through <caide-read> as needed.
+        if (
+          isSmartContextEnabled &&
+          req.selectedComponents &&
+          req.selectedComponents.length > 0
+        ) {
+          const selectedPaths = new Set(
+            req.selectedComponents.map((component) => component.relativePath),
+          );
+          for (const file of files) {
+            if (selectedPaths.has(file.path)) {
+              file.focused = true;
+            }
+          }
+        }
+
+        const isLocalAgentMode = selectedChatMode === "local-agent";
+        const isAskMode = selectedChatMode === "ask";
+        const isPlanMode = selectedChatMode === "plan";
+        const willUseLocalAgentStream =
+          isLocalAgentBackedMode(selectedChatMode);
+
+        // Agent/ask/plan modes reach referenced apps via tool calls (`app_name`
+        // on read-only tools), so we only need name/path pairs — skip the heavy
+        // codebase extraction entirely. Build mode still injects full codebases.
+        let mentionedAppsCodebases: MentionedAppCodebaseEntry[] = [];
+        let referencedAppsForAgent: MentionedAppReference[] = [];
+        if (willUseLocalAgentStream) {
+          referencedAppsForAgent =
+            await extractMentionedAppsReferencesFromPrompt(
+              req.prompt,
+              updatedChat.app.id, // Exclude current app
+            );
+        } else {
+          mentionedAppsCodebases =
+            await extractMentionedAppsCodebasesFromPrompt(
+              req.prompt,
+              updatedChat.app.id, // Exclude current app
+            );
+          referencedAppsForAgent = mentionedAppsCodebases.map(
+            ({ appName, appPath }) => ({ appName, appPath }),
+          );
+        }
+        const useReferencedAppManifest =
+          willUseLocalAgentStream && referencedAppsForAgent.length > 0;
+        const effectiveAiUserPrompt =
+          attachmentDeliveryConfig.useOnDiskAttachmentBlock
+            ? localAgentAiUserPrompt
+            : defaultAiUserPrompt;
+
+        const isDeepContextEnabled =
+          isEngineEnabled &&
+          settings.enableProSmartFilesContextMode &&
+          // Anything besides balanced will use deep context.
+          settings.proSmartContextOption !== "balanced" &&
+          referencedAppsForAgent.length === 0;
+        logger.log(`isDeepContextEnabled: ${isDeepContextEnabled}`);
+
+        // Combine current app codebase with mentioned apps' codebases.
+        // In agent/ask/plan modes we skip the full codebase injection — the
+        // model can read referenced apps on-demand via tool calls with `app_name`
+        // instead of carrying their full contents in the system prompt.
+        let otherAppsCodebaseInfo = "";
+        if (mentionedAppsCodebases.length > 0 && !useReferencedAppManifest) {
+          const mentionedAppsSection = mentionedAppsCodebases
+            .map(
+              ({ appName, codebaseInfo }) =>
+                `\n\n=== Referenced App: ${appName} ===\n${codebaseInfo}`,
+            )
+            .join("");
+
+          otherAppsCodebaseInfo = mentionedAppsSection;
+
+          logger.log(
+            `Added ${mentionedAppsCodebases.length} mentioned app codebases`,
+          );
+        }
+
+        logger.log(`Extracted codebase information from ${appPath}`);
+        logger.log(
+          "codebaseInfo: length",
+          codebaseInfo.length,
+          "estimated tokens",
+          codebaseInfo.length / 4,
+        );
+
+        type ChatHistoryMessage = ModelMessage & {
+          sourceCommitHash: string | null;
+          commitHash: string | null;
+        };
+
+        // Prepare message history for the AI.
+        // Prefer the structured model message stored in ai_messages_json when
+        // present: it retains `reasoning` parts (and image/tool parts) that a
+        // plain-text `content` column drops. Thinking-mode providers such as
+        // DeepSeek reject history where a prior thinking turn is replayed
+        // without its reasoning_content ("reasoning_content ... must be passed
+        // back to the API"), so the parts must survive the round trip.
+        //
+        // Reasoning consistency is then enforced across the whole history: the
+        // compaction summary is a synthetic assistant message with no reasoning
+        // part, and mixing it with reasoning-bearing assistant messages makes
+        // thinking-mode providers reject the request. The extra commit-hash
+        // fields survive because the normalizer preserves unknown message
+        // fields via spread.
+        let messageHistory = updatedChat.messages.flatMap((message) =>
+          parseAiMessagesJson(message).map((parsedMessage) => ({
+            role: parsedMessage.role as "user" | "assistant" | "system",
+            content: parsedMessage.content,
+            sourceCommitHash: message.sourceCommitHash,
+            commitHash: message.commitHash,
+          })),
+        ) as unknown as ChatHistoryMessage[];
+        messageHistory = ensureReasoningConsistency(messageHistory);
+
+        // The DB stores display-friendly versions (short /implement-plan= form
+        // or clean <caide-attachment> tags). Replace the last user message with the
+        // full AI prompt so the model receives expanded plan content or attachment paths.
+        if (implementPlanDisplayPrompt || displayUserPrompt) {
+          for (let i = messageHistory.length - 1; i >= 0; i--) {
+            if (messageHistory[i].role === "user") {
+              messageHistory[i] = {
+                ...messageHistory[i],
+                content: effectiveAiUserPrompt,
+              } as ChatHistoryMessage;
+              break;
+            }
+          }
+        }
+
+        // For CAIDE Gateway + Deep Context, we set to 200 chat turns (+1)
+        // this is to enable more cache hits. Practically, users should
+        // rarely go over this limit because they will hit the model's
+        // context window limit.
+        //
+        // Limit chat history based on maxChatTurnsInContext setting
+        // We add 1 because the current prompt counts as a turn.
+        const maxChatTurns = isDeepContextEnabled
+          ? 201
+          : (settings.maxChatTurnsInContext || MAX_CHAT_TURNS_IN_CONTEXT) + 1;
+
+        // If we need to limit the context, we take only the most recent turns
+        let limitedMessageHistory = messageHistory;
+        if (messageHistory.length > maxChatTurns * 2) {
+          // Each turn is a user + assistant pair
+          // Calculate how many messages to keep (maxChatTurns * 2)
+          let recentMessages = messageHistory
+            .filter((msg) => msg.role !== "system")
+            .slice(-maxChatTurns * 2);
+
+          // Ensure the first message is a user message
+          if (recentMessages.length > 0 && recentMessages[0].role !== "user") {
+            // Find the first user message
+            const firstUserIndex = recentMessages.findIndex(
+              (msg) => msg.role === "user",
+            );
+            if (firstUserIndex > 0) {
+              // Drop assistant messages before the first user message
+              recentMessages = recentMessages.slice(firstUserIndex);
+            } else if (firstUserIndex === -1) {
+              logger.warn(
+                "No user messages found in recent history, set recent messages to empty",
+              );
+              recentMessages = [];
+            }
+          }
+
+          limitedMessageHistory = [...recentMessages];
+
+          logger.log(
+            `Limiting chat history from ${messageHistory.length} to ${limitedMessageHistory.length} messages (max ${maxChatTurns} turns)`,
+          );
+        }
+
+        const aiRules = await readAiRules(
+          getCaideAppPath(updatedChat.app.path),
+        );
+
+        // Get theme prompt for the app (null themeId means "no theme")
+        const themePrompt = await getThemePromptById(updatedChat.app.themeId);
+        logger.log(
+          `Theme for app ${updatedChat.app.id}: ${updatedChat.app.themeId ?? "none"}, prompt length: ${themePrompt.length} chars`,
+        );
+
+        const frameworkType = detectFrameworkType(appPath);
+        // Gate on Pro to match the `explore_code` tool's `isEnabled`, so the
+        // prompt never points the model at a tool that isn't in the toolset.
+        const codeExplorerAvailable =
+          !!settings.enableCodeExplorer && isCodeExplorerReady(appPath);
+
+        const isWeb3App = fs.existsSync(
+          path.join(appPath, "src", "caide-web3"),
+        );
+
+        // Per-project assigned skills: inject their contents into the system prompt
+        let appSkillPack: string | undefined;
+        try {
+          const appPromptRows = db
+            .select({ prompt: promptsTable })
+            .from(appPrompts)
+            .innerJoin(promptsTable, eq(appPrompts.promptId, promptsTable.id))
+            .where(eq(appPrompts.appId, updatedChat.app.id))
+            .all();
+          if (appPromptRows.length > 0) {
+            const sections = appPromptRows.map(
+              (r) =>
+                `## Skill: ${r.prompt.title}${
+                  r.prompt.slug ? ` (/${r.prompt.slug})` : ""
+                }\n\n${r.prompt.content}`,
+            );
+            appSkillPack = `The following project skills are available. Activate them when relevant by following their instructions.\n\n${sections.join(
+              "\n\n",
+            )}`;
+          }
+        } catch (e) {
+          logger.error("Failed to load app skill pack:", e);
+        }
+
+        let systemPrompt = constructSystemPrompt({
+          aiRules,
+          chatMode: selectedChatMode,
+          enableTurboEditsV2: isTurboEditsV2Enabled(settings),
+          themePrompt,
+          basicAgentMode: isBasicAgentMode(settings),
+          freeModelMode,
+          frameworkType,
+          hasSupabaseProject: !!updatedChat.app?.supabaseProjectId,
+          enableAppBlueprint:
+            settings.enableAppBlueprint && updatedChat.app.needsAppBlueprint,
+          codeExplorerAvailable,
+          testingEnabled: !!updatedChat.app?.testingEnabled,
+          isWeb3App,
+          appSkillPack,
+          appTarget: settings.appTarget,
+        });
+        if (selectedChatMode !== "ask") {
+          systemPrompt +=
+            "\n\n" +
+            buildAppIdentityPrompt(
+              parseStoredAppIdentity(
+                updatedChat.app.appIdentity,
+                updatedChat.app.name,
+              ),
+            );
+        }
+
+        // Add information about mentioned apps for build mode only.
+        // Full codebase injection (build mode): full file contents already
+        // concatenated into `otherAppsCodebaseInfo`.
+        //
+        // Agent/ask/plan modes don't need anything in the system prompt —
+        // handleLocalAgentStream injects a `<system-reminder>` into the
+        // user's latest message so the system prompt stays static.
+        if (otherAppsCodebaseInfo) {
+          const mentionedAppsList = mentionedAppsCodebases
+            .map(({ appName }) => appName)
+            .join(", ");
+
+          systemPrompt += `\n\n# Referenced Apps\nThe user has mentioned the following apps in their prompt: ${mentionedAppsList}. Their codebases have been included in the context for your reference. When referring to these apps, you can understand their structure and code to provide better assistance, however you should NOT edit the files in these referenced apps. The referenced apps are NOT part of the current app and are READ-ONLY.`;
+        }
+
+        const isSecurityReviewIntent =
+          req.prompt.startsWith("/security-review");
+        if (isSecurityReviewIntent) {
+          systemPrompt = SECURITY_REVIEW_SYSTEM_PROMPT;
+          try {
+            const appPath = getCaideAppPath(updatedChat.app.path);
+            const rulesPath = path.join(appPath, "SECURITY_RULES.md");
+            let securityRules = "";
+
+            await fs.promises.access(rulesPath);
+            securityRules = await fs.promises.readFile(rulesPath, "utf8");
+
+            if (securityRules && securityRules.trim().length > 0) {
+              systemPrompt +=
+                "\n\n# Project-specific security rules:\n" + securityRules;
+            }
+          } catch (error) {
+            // Best-effort: if reading rules fails, continue without them
+            logger.info("Failed to read security rules", error);
+          }
+        }
+
+        if (
+          updatedChat.app?.supabaseProjectId &&
+          isSupabaseConnected(settings)
+        ) {
+          // Flutter apps consume Supabase through supabase_flutter (Dart), so
+          // the connected-instructions prompt swaps the React/TS code for a
+          // Dart Flow setup. The SQL/RLS/edge-function guidance is shared.
+          const supabasePrompt =
+            frameworkType === "flutter"
+              ? getSupabaseAvailableSystemPromptForFlutter()
+              : getSupabaseAvailableSystemPrompt(
+                  await getSupabaseClientCode({
+                    projectId: updatedChat.app.supabaseProjectId,
+                    organizationSlug:
+                      updatedChat.app.supabaseOrganizationSlug ?? null,
+                  }),
+                );
+          systemPrompt +=
+            "\n\n" +
+            supabasePrompt +
+            "\n\n" +
+            // For local agent, we will explicitly fetch the database context when needed.
+            (selectedChatMode === "local-agent"
+              ? ""
+              : await getSupabaseContext({
+                  supabaseProjectId: updatedChat.app.supabaseProjectId,
+                  organizationSlug:
+                    updatedChat.app.supabaseOrganizationSlug ?? null,
+                }));
+        } else if (updatedChat.app?.neonProjectId) {
+          // Neon is connected — inject Neon prompt instead of Supabase
+          systemPrompt +=
+            "\n\n" +
+            (await buildNeonPromptForApp({
+              appPath: updatedChat.app.path,
+              neonProjectId: updatedChat.app.neonProjectId!,
+              neonActiveBranchId: updatedChat.app.neonActiveBranchId,
+              neonDevelopmentBranchId: updatedChat.app.neonDevelopmentBranchId,
+              selectedChatMode,
+            })) +
+            "\n\n";
+        } else if (
+          // In local agent mode, we will suggest integrations as part of the add-integration tool
+          selectedChatMode !== "local-agent" &&
+          // If in security review mode, we don't need to mention integrations are available.
+          !isSecurityReviewIntent
+        ) {
+          systemPrompt += "\n\n" + SUPABASE_NOT_AVAILABLE_SYSTEM_PROMPT;
+        }
+        const isSummarizeIntent = req.prompt.startsWith(
+          "Summarize from chat-id=",
+        );
+        if (isSummarizeIntent) {
+          systemPrompt = SUMMARIZE_CHAT_SYSTEM_PROMPT;
+        }
+
+        if (attachmentDeliveryConfig.addSystemCopyInstructions) {
+          systemPrompt += `
+
+When files are attached to this conversation for upload to the codebase, copy them into the project using this exact format:
+
+<caide-copy from="/absolute/path/to/.caide/media/source.ext" to="path/to/destination/filename.ext" description="Upload file to codebase"></caide-copy>
+
+Use the attached file path from the user's message as the \`from\` value. Choose an appropriate project-relative \`to\` path.
+
+`;
+        }
+
+        if (attachmentDeliveryConfig.addSystemVisionInstructions) {
+          systemPrompt += `
+
+# Image Analysis Instructions
+This conversation includes one or more image attachments. When the user uploads images:
+1. If the user explicitly asks for analysis, description, or information about the image, please analyze the image content.
+2. Describe what you see in the image if asked.
+3. You can use images as references when the user has coding or design-related questions.
+4. For diagrams or wireframes, try to understand the content and structure shown.
+5. For screenshots of code or errors, try to identify the issue or explain the code.
+`;
+        }
+
+        const codebasePrefix =
+          isEngineEnabled && !isSecurityReviewIntent
+            ? // No codebase prefix if engine is set, we will take care of it
+              // there. Security reviews are the exception: they need a
+              // complete, auditable snapshot in the review request itself.
+              []
+            : ([
+                {
+                  role: "user",
+                  content: createCodebasePrompt(codebaseInfo),
+                },
+                {
+                  role: "assistant",
+                  content: "OK, got it. I'm ready to help",
+                },
+              ] as const);
+
+        // If engine is enabled, we will send the other apps codebase info to the engine
+        // and process it with smart context.
+        const otherCodebasePrefix =
+          otherAppsCodebaseInfo && !isEngineEnabled
+            ? ([
+                {
+                  role: "user",
+                  content: createOtherAppsCodebasePrompt(otherAppsCodebaseInfo),
+                },
+                {
+                  role: "assistant",
+                  content: "OK.",
+                },
+              ] as const)
+            : [];
+
+        const limitedHistoryChatMessages = limitedMessageHistory.map((msg) => ({
+          role: msg.role as "user" | "assistant" | "system",
+          content: sanitizeContentForHistory(
+            msg.content,
+            selectedChatMode === "ask",
+          ),
+          providerOptions: {
+            "caide-engine": {
+              sourceCommitHash: msg.sourceCommitHash,
+              commitHash: msg.commitHash,
+            },
+          },
+        })) as ModelMessage[];
+
+        let chatMessages: ModelMessage[] = [
+          ...codebasePrefix,
+          ...otherCodebasePrefix,
+          ...limitedHistoryChatMessages,
+        ];
+
+        // Check if the last message should include attachments
+        if (chatMessages.length >= 1) {
+          const lastUserIndex = chatMessages.length - 1;
+          const lastUserMessage = chatMessages[lastUserIndex];
+          if (lastUserMessage.role === "user") {
+            if (attachmentPaths.length > 0) {
+              const textOnlyProviders = [
+                "deepseek",
+                "opencode-zen",
+                "ollama",
+                "lmstudio",
+              ];
+              if (
+                hasImageAttachments &&
+                textOnlyProviders.includes(settings.selectedModel.provider)
+              ) {
+                const googleApiKey =
+                  settings.providerSettings?.google?.apiKey?.value;
+                if (!googleApiKey) {
+                  throw new CaideError(
+                    "To use images with this model, please add a Google (Gemini) API key in Settings.",
+                    CaideErrorKind.Validation,
+                  );
+                }
+
+                const googleProvider = createGoogleGenerativeAI({
+                  apiKey: googleApiKey,
+                });
+                const visionModel = googleProvider("gemini-1.5-flash");
+
+                let appendedDescriptions = "";
+                const imagePaths = attachmentPaths.filter((p) =>
+                  getInlineImageMimeType(p),
+                );
+                for (const imgPath of imagePaths) {
+                  try {
+                    const imageBuffer = await readFile(imgPath);
+                    const { text } = await generateText({
+                      model: visionModel,
+                      messages: [
+                        {
+                          role: "user",
+                          content: [
+                            {
+                              type: "text",
+                              text: "Please describe this image in detail so it can be used as context for a text-only LLM.",
+                            },
+                            { type: "image", image: imageBuffer },
+                          ],
+                        },
+                      ],
+                    });
+                    appendedDescriptions += `\n\n[Image Description]: ${text}`;
+                  } catch (err) {
+                    logger.error("Failed to transcribe image with Gemini", err);
+                  }
+                }
+
+                if (typeof lastUserMessage.content === "string") {
+                  lastUserMessage.content += appendedDescriptions;
+                } else if (Array.isArray(lastUserMessage.content)) {
+                  lastUserMessage.content.push({
+                    type: "text",
+                    text: appendedDescriptions,
+                  });
+                }
+
+                // Do not forward actual image parts to text-only models
+                attachmentDeliveryConfig.includeImageParts = false;
+              }
+
+              // Replace the last message with one that includes attachments
+              chatMessages[lastUserIndex] = await prepareMessageWithAttachments(
+                lastUserMessage,
+                attachmentPaths,
+                {
+                  includeImageAttachments:
+                    attachmentDeliveryConfig.includeImageParts,
+                  inlineTextAttachments:
+                    attachmentDeliveryConfig.inlineTextAttachments,
+                },
+              );
+            }
+            // Save aiMessagesJson for modes that use handleLocalAgentStream
+            // (which reads from DB and needs structured image content)
+
+            if (willUseLocalAgentStream && userMessageId !== undefined) {
+              // Insert into DB (with size guard)
+              const userAiMessagesJson = getAiMessagesJsonIfWithinLimit([
+                chatMessages[lastUserIndex],
+              ]);
+              if (userAiMessagesJson) {
+                await db
+                  .update(messages)
+                  .set({ aiMessagesJson: userAiMessagesJson })
+                  .where(eq(messages.id, userMessageId));
+              }
+            }
+          }
+        } else {
+          logger.warn(
+            "Unexpected number of chat messages:",
+            chatMessages.length,
+          );
+        }
+
+        if (isSummarizeIntent) {
+          const previousChat = await db.query.chats.findFirst({
+            where: eq(chats.id, parseInt(req.prompt.split("=")[1])),
+            with: {
+              messages: {
+                orderBy: (messages, { asc }) => [asc(messages.createdAt)],
+              },
+            },
+          });
+          chatMessages = [
+            {
+              role: "user",
+              content:
+                "Summarize the following chat: " +
+                formatMessagesForSummary(previousChat?.messages ?? []),
+            } satisfies ModelMessage,
+          ];
+        }
+        const simpleStreamText = async ({
+          chatMessages,
+          modelClient,
+          tools,
+          systemPromptOverride = systemPrompt,
+          caideDisableFiles = false,
+          files,
+        }: {
+          chatMessages: ModelMessage[];
+          modelClient: ModelClient;
+          files: CodebaseFile[];
+          tools?: ToolSet;
+          systemPromptOverride?: string;
+          caideDisableFiles?: boolean;
+        }) => {
+          if (isEngineEnabled) {
+            logger.log(
+              "sending AI request to engine with request id:",
+              caideRequestId,
+            );
+          } else {
+            logger.log("sending AI request");
+          }
+          let versionedFiles: VersionedFiles | undefined;
+          if (isDeepContextEnabled) {
+            versionedFiles = await getVersionedFiles({
+              files,
+              chatMessages,
+              appPath,
+            });
+          }
+          const smartContextMode: SmartContextMode = isDeepContextEnabled
+            ? "deep"
+            : "balanced";
+          const providerOptions = getProviderOptions({
+            caideAppId: updatedChat.app.id,
+            caideRequestId,
+            caideDisableFiles,
+            smartContextMode,
+            files,
+            versionedFiles,
+            mentionedAppsCodebases,
+            builtinProviderId: modelClient.builtinProviderId,
+            settings,
+          });
+
+          const streamResult = streamText({
+            headers: getAiHeaders({
+              builtinProviderId: modelClient.builtinProviderId,
+            }),
+            maxOutputTokens: await getMaxTokens(settings.selectedModel),
+            temperature: await getTemperature(settings.selectedModel),
+            maxRetries: 2,
+            model: modelClient.model,
+            stopWhen: [stepCountIs(20), hasToolCall("edit-code")],
+            // Avoids the SDK's O(n^2) per-chunk JSON.stringify of the full
+            // accumulated text (see fastTextOutput). We read fullStream parts
+            // directly and never consume partialOutput.
+            output: fastTextOutput(),
+            providerOptions,
+            system: withSystemCacheBreakpoint(
+              systemPromptOverride,
+              modelClient.builtinProviderId,
+            ),
+            tools: withToolCacheBreakpoint(
+              tools,
+              modelClient.builtinProviderId,
+            ),
+            messages: chatMessages.filter((m) =>
+              typeof m.content === "string"
+                ? m.content.length > 0
+                : Array.isArray(m.content) && m.content.length > 0,
+            ),
+            onFinish: async (response) => {
+              const totalTokens = response.usage?.totalTokens;
+
+              if (typeof totalTokens === "number") {
+                // We use the highest total tokens used (we are *not* accumulating)
+                // since we're trying to figure it out if we're near the context limit.
+                maxTokensUsed = Math.max(maxTokensUsed ?? 0, totalTokens);
+
+                // Persist the aggregated token usage on the placeholder assistant message
+                await db
+                  .update(messages)
+                  .set({ maxTokensUsed: maxTokensUsed })
+                  .where(eq(messages.id, placeholderAssistantMessage.id))
+                  .catch((error) => {
+                    logger.error(
+                      "Failed to save total tokens for assistant message",
+                      error,
+                    );
+                  });
+
+                logger.log(
+                  `Total tokens used (aggregated for message ${placeholderAssistantMessage.id}): ${maxTokensUsed}`,
+                );
+              } else {
+                logger.log("Total tokens used: unknown");
+              }
+            },
+            onError: (error: any) => {
+              let errorMessage = (error as any)?.error?.message;
+              const responseBody = error?.error?.responseBody;
+              if (errorMessage && responseBody) {
+                errorMessage += "\n\nDetails: " + responseBody;
+              }
+              const message = errorMessage || JSON.stringify(error);
+              const requestIdPrefix = isEngineEnabled
+                ? `[Request ID: ${caideRequestId}] `
+                : "";
+              logger.error(
+                `AI stream text error for request: ${requestIdPrefix} errorMessage=${errorMessage} error=`,
+                error,
+              );
+              safeSend(event.sender, "chat:response:error", {
+                chatId: req.chatId,
+                error: `${AI_STREAMING_ERROR_MESSAGE_PREFIX}${requestIdPrefix}${message}`,
+              });
+              // Clean up the abort controller
+              activeStreams.delete(req.chatId);
+            },
+            abortSignal: abortController.signal,
+          });
+          // Read .fullStream now (not lazily) so the SDK's `teeStream()`
+          // runs synchronously, then cancel the orphaned tee branch
+          // before any chunks are pumped. See `cancelOrphanedBaseStream`
+          // for the underlying SDK behavior and why this is required.
+          const fullStream = streamResult.fullStream;
+          cancelOrphanedBaseStream(streamResult);
+          // Not every caller consumes `usage`; when the user cancels the
+          // stream it rejects with AbortError, so mark it handled here to
+          // keep the rejection from surfacing as unhandled. Callers that
+          // await it still observe the rejection.
+          const usage = streamResult.usage;
+          Promise.resolve(usage).catch(() => {});
+          return {
+            fullStream,
+            usage,
+          };
+        };
+
+        let lastDbSaveAt = 0;
+        // Tracks what was last sent to the renderer so we can emit only the
+        // tail diff. `cleanFullResponse` may retroactively rewrite earlier
+        // bytes inside an in-progress caide-tag's attribute values, so the
+        // tracker falls back to a full longest-common-prefix recompute on any
+        // non-append change rather than assuming pure appends.
+        const patchTracker = new StreamingPatchTracker();
+
+        const processResponseChunkUpdate = async ({
+          fullResponse,
+        }: {
+          fullResponse: string;
+        }) => {
+          // Store the current partial response
+          partialResponses.set(req.chatId, fullResponse);
+          // Save to DB (in case user is switching chats during the stream)
+          const now = Date.now();
+          if (now - lastDbSaveAt >= 150) {
+            await db
+              .update(messages)
+              .set({ content: fullResponse })
+              .where(eq(messages.id, placeholderAssistantMessage.id));
+
+            lastDbSaveAt = now;
+          }
+
+          const patch = patchTracker.update(fullResponse);
+          if (!patch) {
+            return fullResponse;
+          }
+          safeSend(event.sender, "chat:response:chunk", {
+            chatId: req.chatId,
+            streamingMessageId: placeholderAssistantMessage.id,
+            streamingPatch: patch,
+          });
+          return fullResponse;
+        };
+
+        // Handle ask mode: use local-agent in read-only mode
+        // This gives users access to code reading tools while in ask mode
+        // Ask mode does not consume free agent quota
+        if (isAskMode && !isSecurityReviewIntent) {
+          // Reconstruct system prompt for local-agent read-only mode
+          const readOnlySystemPrompt = constructSystemPrompt({
+            aiRules,
+            chatMode: "local-agent",
+            enableTurboEditsV2: false,
+            themePrompt,
+            readOnly: true,
+            freeModelMode,
+            codeExplorerAvailable,
+          });
+
+          // Return value indicates success/failure for quota tracking.
+          // Ask mode doesn't consume quota, but we still capture it for
+          // consistent error handling.
+          const streamSuccess = await handleLocalAgentStream(
+            event,
+            req,
+            abortController,
+            {
+              placeholderMessageId: placeholderAssistantMessage.id,
+              // Note: this is using the read-only system prompt rather than the
+              // regular system prompt which gets overrides for special intents
+              // like summarize chat, security review, etc.
+              //
+              // This is OK because those intents should always happen in a new chat
+              // and new chats will default to non-ask modes.
+              systemPrompt: readOnlySystemPrompt,
+              caideRequestId: caideRequestId ?? "[no-request-id]",
+              readOnly: true,
+              messageOverride: isSummarizeIntent ? chatMessages : undefined,
+              settingsOverride: settings,
+              freeModelMode,
+              referencedApps: referencedAppsForAgent,
+              currentTurnHasOnDiskAttachment:
+                hasScriptReadableAttachment(storedAttachments),
+            },
+          );
+          if (!streamSuccess) {
+            logger.warn(
+              "Ask mode local agent stream did not complete successfully",
+            );
+          }
+          return req.chatId;
+        }
+
+        // Handle plan mode: use local-agent with plan tools only
+        // Plan mode is for requirements gathering and creating implementation plans
+        if (isPlanMode && !isSecurityReviewIntent) {
+          // Reconstruct system prompt for plan mode
+          const planModeSystemPrompt = constructSystemPrompt({
+            aiRules,
+            chatMode: "plan",
+            enableTurboEditsV2: false,
+            themePrompt,
+            freeModelMode,
+          });
+
+          await handleLocalAgentStream(event, req, abortController, {
+            placeholderMessageId: placeholderAssistantMessage.id,
+            systemPrompt: planModeSystemPrompt,
+            caideRequestId: caideRequestId ?? "[no-request-id]",
+            planModeOnly: true,
+            messageOverride: isSummarizeIntent ? chatMessages : undefined,
+            settingsOverride: settings,
+            freeModelMode,
+            referencedApps: referencedAppsForAgent,
+            currentTurnHasOnDiskAttachment: false,
+          });
+          return req.chatId;
+        }
+
+        // Handle local-agent mode (Agent v2).
+        // Referenced apps (from `@app:Name` mentions) are accessed by the
+        // agent via tool calls with an `app_name` parameter — see
+        // resolveTargetAppPath in the local agent tools. handleLocalAgentStream
+        // injects a `<system-reminder>` into the user's latest message telling
+        // the agent which `app_name` values are valid.
+        if (isLocalAgentMode && !isSecurityReviewIntent) {
+          // CAIDE has no quota tier (P4: completely free), so Agent mode is
+          // never blocked or metered here.
+          const localAgentMessageOverride = suppressUserMessage
+            ? [
+                ...(limitedHistoryChatMessages.filter(
+                  (m) =>
+                    !(m.role === "assistant" && m.content === "") &&
+                    m.role !== "system",
+                ) as { role: "user" | "assistant"; content: string }[]),
+                { role: "user" as const, content: displayContent },
+              ]
+            : isSummarizeIntent
+              ? chatMessages
+              : undefined;
+          await handleLocalAgentStream(event, req, abortController, {
+            placeholderMessageId: placeholderAssistantMessage.id,
+            systemPrompt,
+            caideRequestId: caideRequestId ?? "[no-request-id]",
+            messageOverride: localAgentMessageOverride,
+            settingsOverride: settings,
+            freeModelMode,
+            referencedApps: referencedAppsForAgent,
+            currentTurnHasOnDiskAttachment:
+              hasScriptReadableAttachment(storedAttachments),
+            suppressCompaction: suppressUserMessage,
+          });
+
+          return req.chatId;
+        }
+
+        // Use MCP agent code path if:
+        // 1. The enableMcpServersForBuildMode experiment is on AND
+        // 2. Mode is "build" AND there are enabled MCP servers
+        if (
+          settings.enableMcpServersForBuildMode &&
+          selectedChatMode === "build"
+        ) {
+          const tools = await getMcpTools(event, req.chatId);
+          const hasEnabledMcpServers = Object.keys(tools).length > 0;
+
+          // Only run MCP agent path if build mode has enabled MCP servers
+          if (hasEnabledMcpServers) {
+            const { fullStream } = await simpleStreamText({
+              chatMessages: limitedHistoryChatMessages,
+              modelClient,
+              tools: {
+                ...tools,
+                "generate-code": {
+                  description:
+                    "ALWAYS use this tool whenever generating or editing code for the codebase.",
+                  inputSchema: z.object({}),
+                  execute: async () => "",
+                },
+              },
+              systemPromptOverride: constructSystemPrompt({
+                aiRules: await readAiRules(
+                  getCaideAppPath(updatedChat.app.path),
+                ),
+                chatMode: "build",
+                enableTurboEditsV2: false,
+                freeModelMode,
+                frameworkType,
+                hasSupabaseProject: !!updatedChat.app?.supabaseProjectId,
+                testingEnabled: !!updatedChat.app?.testingEnabled,
+                appTarget: settings.appTarget,
+              }),
+              files: files,
+              caideDisableFiles: true,
+            });
+
+            const result = await processStreamChunks({
+              fullStream,
+              fullResponse,
+              abortController,
+              chatId: req.chatId,
+              processResponseChunkUpdate,
+            });
+            fullResponse = result.fullResponse;
+            chatMessages.push({
+              role: "assistant",
+              content: fullResponse,
+            });
+            chatMessages.push({
+              role: "user",
+              content: "OK.",
+            });
+          }
+        }
+
+        // When calling streamText, the messages need to be properly formatted for mixed content
+        const { fullStream } = await simpleStreamText({
+          chatMessages,
+          modelClient,
+          files: files,
+        });
+
+        // Process the stream as before
+        try {
+          const result = await processStreamChunks({
+            fullStream,
+            fullResponse,
+            abortController,
+            chatId: req.chatId,
+            processResponseChunkUpdate,
+          });
+          fullResponse = result.fullResponse;
+
+          if (isTurboEditsV2Enabled(settings)) {
+            let issues = await dryRunSearchReplace({
+              fullResponse,
+              appPath: getCaideAppPath(updatedChat.app.path),
+            });
+            sendTelemetryEvent("search_replace:fix", {
+              attemptNumber: 0,
+              success: issues.length === 0,
+              issueCount: issues.length,
+              errors: issues.map((i) => ({
+                filePath: i.filePath,
+                error: i.error,
+              })),
+            });
+
+            let searchReplaceFixAttempts = 0;
+            const originalFullResponse = fullResponse;
+            const previousAttempts: ModelMessage[] = [];
+            while (
+              issues.length > 0 &&
+              searchReplaceFixAttempts < 2 &&
+              !abortController.signal.aborted
+            ) {
+              logger.warn(
+                `Detected search-replace issues (attempt #${searchReplaceFixAttempts + 1}): ${issues.map((i) => i.error).join(", ")}`,
+              );
+              const formattedSearchReplaceIssues = issues
+                .map(({ filePath, error }) => {
+                  return `File path: ${filePath}\nError: ${error}`;
+                })
+                .join("\n\n");
+
+              fullResponse += `<caide-output type="warning" message="Could not apply Turbo Edits properly for some of the files; re-generating code...">${formattedSearchReplaceIssues}</caide-output>`;
+              await processResponseChunkUpdate({
+                fullResponse,
+              });
+
+              logger.info(
+                `Attempting to fix search-replace issues, attempt #${searchReplaceFixAttempts + 1}`,
+              );
+
+              const fixSearchReplacePrompt =
+                searchReplaceFixAttempts === 0
+                  ? `There was an issue with the following \`caide-search-replace\` tags. Make sure you use \`caide-read\` to read the latest version of the file and then trying to do search & replace again.`
+                  : `There was an issue with the following \`caide-search-replace\` tags. Please fix the errors by generating the code changes using \`caide-write\` tags instead.`;
+              searchReplaceFixAttempts++;
+              const userPrompt = {
+                role: "user",
+                content: `${fixSearchReplacePrompt}
+                
+${formattedSearchReplaceIssues}`,
+              } as const;
+
+              const { fullStream: fixSearchReplaceStream } =
+                await simpleStreamText({
+                  // Build messages: reuse chat history and original full response, then ask to fix search-replace issues.
+                  chatMessages: [
+                    ...chatMessages,
+                    { role: "assistant", content: originalFullResponse },
+                    ...previousAttempts,
+                    userPrompt,
+                  ],
+                  modelClient,
+                  files: files,
+                });
+              previousAttempts.push(userPrompt);
+              const result = await processStreamChunks({
+                fullStream: fixSearchReplaceStream,
+                fullResponse,
+                abortController,
+                chatId: req.chatId,
+                processResponseChunkUpdate,
+              });
+              fullResponse = result.fullResponse;
+              previousAttempts.push({
+                role: "assistant",
+                content: removeNonEssentialTags(result.incrementalResponse),
+              });
+
+              // Re-check for issues after the fix attempt
+              issues = await dryRunSearchReplace({
+                fullResponse: result.incrementalResponse,
+                appPath: getCaideAppPath(updatedChat.app.path),
+              });
+
+              sendTelemetryEvent("search_replace:fix", {
+                attemptNumber: searchReplaceFixAttempts,
+                success: issues.length === 0,
+                issueCount: issues.length,
+                errors: issues.map((i) => ({
+                  filePath: i.filePath,
+                  error: i.error,
+                })),
+              });
+            }
+          }
+
+          if (
+            !abortController.signal.aborted &&
+            hasUnclosedCaideWrite(fullResponse)
+          ) {
+            let continuationAttempts = 0;
+            while (
+              hasUnclosedCaideWrite(fullResponse) &&
+              continuationAttempts < 2 &&
+              !abortController.signal.aborted
+            ) {
+              logger.warn(
+                `Received unclosed caide-write tag, attempting to continue, attempt #${continuationAttempts + 1}`,
+              );
+              continuationAttempts++;
+
+              const { fullStream: contStream } = await simpleStreamText({
+                // Build messages: replay history, then ask the model to continue from the partial response.
+                chatMessages: [
+                  ...chatMessages,
+                  {
+                    role: "assistant",
+                    content: fullResponse,
+                  },
+                  {
+                    role: "user",
+                    content:
+                      "Your previous response did not finish completely. Continue exactly where you left off without any preamble.",
+                  },
+                ],
+                modelClient,
+                files: files,
+              });
+              for await (const part of contStream) {
+                // If the stream was aborted, exit early
+                if (abortController.signal.aborted) {
+                  logger.log(`Stream for chat ${req.chatId} was aborted`);
+                  break;
+                }
+                if (part.type !== "text-delta") continue; // ignore reasoning for continuation
+                fullResponse += part.text;
+                fullResponse = cleanFullResponse(fullResponse);
+                fullResponse = await processResponseChunkUpdate({
+                  fullResponse,
+                });
+              }
+            }
+          }
+          // Checkpoint chain: deterministic design-audit passes for
+          // substantive build-mode responses. Each pass is one focused LLM
+          // turn streamed into the same assistant message; a zero-change
+          // pass retries exactly once, then the chain moves on. Mirrors
+          // the local-agent chain (see local_agent_handler.ts).
+          if (
+            !abortController.signal.aborted &&
+            selectedChatMode === "build" &&
+            !isSummarizeIntent
+          ) {
+            const preChainWriteTags = getCaideWriteTags(fullResponse);
+            const preChainRenameTags = getCaideRenameTags(fullResponse);
+            const preChainDeletePaths = getCaideDeleteTags(fullResponse);
+            const chainNeedsEditsBeforePass = 2;
+            let chainEditsNow =
+              preChainWriteTags.length +
+              preChainRenameTags.length +
+              preChainDeletePaths.length;
+            if (chainEditsNow >= chainNeedsEditsBeforePass) {
+              const chainTouchedPaths = [
+                ...preChainWriteTags.map((tag) => tag.path),
+                ...preChainRenameTags.flatMap((tag) => [tag.from, tag.to]),
+                ...preChainDeletePaths,
+              ];
+              const checkpointChain = createChain({
+                isNewApp: updatedChat.app?.needsAppBlueprint ?? false,
+                hasOnboardingScreens: chainTouchedPaths.some(
+                  isOnboardingScreenPath,
+                ),
+                hasBackendCode: chainTouchedPaths.some(isBackendCodePath),
+                freeModelMode,
+                isWebApp: (settings.appTarget ?? "mobile") === "web",
+                frameworkType,
+              });
+              let chainEditsAtPassStart = chainEditsNow;
+              while (!abortController.signal.aborted) {
+                const madeEdits = chainEditsNow > chainEditsAtPassStart;
+                const { step, pass } = advanceChain(checkpointChain, madeEdits);
+                if (!pass) break;
+                chainEditsAtPassStart = chainEditsNow;
+                logger.info(
+                  `Starting checkpoint pass ${pass.id} (${step}) for chat ${req.chatId}`,
+                );
+                const { fullStream: passFullStream } = await simpleStreamText({
+                  // Replay history, then append the pass prompt after the
+                  // accumulated response so the pass sees current output.
+                  chatMessages: [
+                    ...chatMessages,
+                    {
+                      role: "assistant",
+                      content: fullResponse,
+                    },
+                    {
+                      role: "user",
+                      content: buildPassPrompt(pass, {
+                        retry: step === "retry",
+                      }),
+                    },
+                  ],
+                  modelClient,
+                  files: files,
+                });
+                for await (const part of passFullStream) {
+                  // If the stream was aborted, exit early
+                  if (abortController.signal.aborted) {
+                    logger.log(`Stream for chat ${req.chatId} was aborted`);
+                    break;
+                  }
+                  if (part.type !== "text-delta") continue; // ignore reasoning for continuation
+                  fullResponse += part.text;
+                  fullResponse = cleanFullResponse(fullResponse);
+                  fullResponse = await processResponseChunkUpdate({
+                    fullResponse,
+                  });
+                }
+                // Re-count edits made across the whole response (including
+                // any tags the pass emitted) to seed the next advance.
+                chainEditsNow =
+                  getCaideWriteTags(fullResponse).length +
+                  getCaideRenameTags(fullResponse).length +
+                  getCaideDeleteTags(fullResponse).length;
+              }
+            }
+          }
+          const addDependencies = getCaideAddDependencyTags(fullResponse);
+          const writeTags = getCaideWriteTags(fullResponse);
+          const renameTags = getCaideRenameTags(fullResponse);
+          const deletePaths = getCaideDeleteTags(fullResponse);
+          const hasCodeModifications =
+            writeTags.length > 0 ||
+            renameTags.length > 0 ||
+            deletePaths.length > 0;
+
+          if (
+            !abortController.signal.aborted &&
+            // If there are dependencies, we don't want to auto-fix problems
+            // because there's going to be type errors since the packages aren't
+            // installed yet.
+            addDependencies.length === 0 &&
+            hasCodeModifications &&
+            settings.enableAutoFixProblems
+          ) {
+            try {
+              // IF auto-fix is enabled
+              let problemReport = await generateProblemReport({
+                fullResponse,
+                appPath: getCaideAppPath(updatedChat.app.path),
+              });
+
+              let autoFixAttempts = 0;
+              const originalFullResponse = fullResponse;
+              const previousAttempts: ModelMessage[] = [];
+              while (
+                problemReport.problems.length > 0 &&
+                autoFixAttempts < 2 &&
+                !abortController.signal.aborted
+              ) {
+                fullResponse += `<caide-problem-report summary="${problemReport.problems.length} problems">
+${problemReport.problems
+  .map(
+    (problem) =>
+      `<problem file="${escapeXmlAttr(problem.file)}" line="${problem.line}" column="${problem.column}" code="${problem.code}">${escapeXmlContent(problem.message)}</problem>`,
+  )
+  .join("\n")}
+</caide-problem-report>`;
+
+                logger.info(
+                  `Attempting to auto-fix problems, attempt #${autoFixAttempts + 1}`,
+                );
+                autoFixAttempts++;
+                const problemFixPrompt = createProblemFixPrompt(problemReport);
+
+                const virtualFileSystem = new AsyncVirtualFileSystem(
+                  getCaideAppPath(updatedChat.app.path),
+                  {
+                    fileExists: (fileName: string) => fileExists(fileName),
+                    readFile: (fileName: string) => readFileWithCache(fileName),
+                  },
+                );
+                const writeTags = getCaideWriteTags(fullResponse);
+                const renameTags = getCaideRenameTags(fullResponse);
+                const deletePaths = getCaideDeleteTags(fullResponse);
+                virtualFileSystem.applyResponseChanges({
+                  deletePaths,
+                  renameTags,
+                  writeTags,
+                });
+
+                const { formattedOutput: codebaseInfo, files } =
+                  await extractCodebase({
+                    appPath,
+                    chatContext,
+                    virtualFileSystem,
+                  });
+                const { modelClient } = await getModelClient(
+                  settings.selectedModel,
+                  settings,
+                );
+
+                const { fullStream } = await simpleStreamText({
+                  modelClient,
+                  files: files,
+                  chatMessages: [
+                    ...chatMessages.map((msg, index) => {
+                      if (
+                        index === 0 &&
+                        msg.role === "user" &&
+                        typeof msg.content === "string" &&
+                        msg.content.startsWith(CODEBASE_PROMPT_PREFIX)
+                      ) {
+                        return {
+                          role: "user",
+                          content: createCodebasePrompt(codebaseInfo),
+                        } as const;
+                      }
+                      return msg;
+                    }),
+                    {
+                      role: "assistant",
+                      content: removeNonEssentialTags(originalFullResponse),
+                    },
+                    ...previousAttempts,
+                    { role: "user", content: problemFixPrompt },
+                  ],
+                });
+                previousAttempts.push({
+                  role: "user",
+                  content: problemFixPrompt,
+                });
+                const result = await processStreamChunks({
+                  fullStream,
+                  fullResponse,
+                  abortController,
+                  chatId: req.chatId,
+                  processResponseChunkUpdate,
+                });
+                fullResponse = result.fullResponse;
+                previousAttempts.push({
+                  role: "assistant",
+                  content: removeNonEssentialTags(result.incrementalResponse),
+                });
+
+                problemReport = await generateProblemReport({
+                  fullResponse,
+                  appPath: getCaideAppPath(updatedChat.app.path),
+                });
+              }
+            } catch (error) {
+              const preconditionKind = getTypeCheckPreconditionKind(error);
+              if (preconditionKind) {
+                logger.info(
+                  "Skipping auto-fix because type checking is unavailable:",
+                  preconditionKind,
+                );
+              } else {
+                logger.error(
+                  "Error generating problem report or auto-fixing:",
+                  settings.enableAutoFixProblems,
+                  error,
+                );
+              }
+            }
+          }
+        } catch (streamError) {
+          // Check if this was an abort error
+          if (abortController.signal.aborted) {
+            const chatId = req.chatId;
+            const partialResponse = partialResponses.get(req.chatId) ?? "";
+            try {
+              // Update the placeholder assistant message with the partial content and cancellation note
+              await db
+                .update(messages)
+                .set({
+                  content: appendCancelledResponseNotice(partialResponse),
+                })
+                .where(eq(messages.id, placeholderAssistantMessage.id));
+
+              logger.log(
+                `Updated cancelled response for placeholder message ${placeholderAssistantMessage.id} in chat ${chatId}`,
+              );
+              partialResponses.delete(req.chatId);
+            } catch (error) {
+              logger.error(
+                `Error saving partial response for chat ${chatId}:`,
+                error,
+              );
+            }
+            return req.chatId;
+          }
+          throw streamError;
+        }
+      }
+
+      // If the stream was aborted but didn't throw (e.g. stream ended gracefully),
+      // save the cancellation notice to the placeholder message.
+      if (abortController.signal.aborted) {
+        const partialResponse = partialResponses.get(req.chatId) ?? "";
+        try {
+          await db
+            .update(messages)
+            .set({
+              content: appendCancelledResponseNotice(partialResponse),
+            })
+            .where(eq(messages.id, placeholderAssistantMessage.id));
+          partialResponses.delete(req.chatId);
+        } catch (error) {
+          logger.error(
+            `Error saving cancelled response for chat ${req.chatId}:`,
+            error,
+          );
+        }
+      }
+
+      // Only save the response and process it if we weren't aborted
+      if (!abortController.signal.aborted && fullResponse) {
+        // Scrape from: <caide-chat-summary>Renaming profile file</caide-chat-title>
+        const chatTitle = fullResponse.match(
+          /<caide-chat-summary>(.*?)<\/caide-chat-summary>/,
+        );
+        if (chatTitle) {
+          await db
+            .update(chats)
+            .set({ title: chatTitle[1] })
+            .where(and(eq(chats.id, req.chatId), isNull(chats.title)));
+        }
+        const chatSummary = chatTitle?.[1];
+
+        // Update the placeholder assistant message with the full response
+        await db
+          .update(messages)
+          .set({ content: fullResponse })
+          .where(eq(messages.id, placeholderAssistantMessage.id));
+        const latestSettings = readSettings();
+        const shouldAutoApply =
+          latestSettings.autoApproveChanges && selectedChatMode !== "ask";
+        const hasDestructiveSql =
+          shouldAutoApply &&
+          getCaideExecuteSqlTags(fullResponse).some((query) =>
+            doesSqlDeleteData(query.content),
+          );
+        if (shouldAutoApply && !hasDestructiveSql) {
+          const status = await processFullResponseActions(
+            fullResponse,
+            req.chatId,
+            {
+              chatSummary,
+              messageId: placeholderAssistantMessage.id,
+            }, // Use placeholder ID
+          );
+
+          const chat = await db.query.chats.findFirst({
+            where: eq(chats.id, req.chatId),
+            with: {
+              messages: {
+                orderBy: (messages, { asc }) => [asc(messages.createdAt)],
+              },
+            },
+          });
+
+          safeSend(event.sender, "chat:response:chunk", {
+            chatId: req.chatId,
+            messages: chat!.messages.map(toRendererMessage),
+          });
+
+          if (status.error) {
+            safeSend(event.sender, "chat:response:error", {
+              chatId: req.chatId,
+              error: `Sorry, there was an error applying the AI's changes: ${status.error}`,
+              warningMessages: status.warningMessages,
+            });
+          }
+
+          // Signal that the stream has completed
+          safeSend(event.sender, "chat:response:end", {
+            chatId: req.chatId,
+            updatedFiles: status.updatedFiles ?? false,
+            extraFiles: status.extraFiles,
+            extraFilesError: status.extraFilesError,
+            warningMessages: status.warningMessages,
+            chatSummary,
+          } satisfies ChatResponseEnd);
+        } else {
+          safeSend(event.sender, "chat:response:end", {
+            chatId: req.chatId,
+            updatedFiles: false,
+            chatSummary,
+          } satisfies ChatResponseEnd);
+        }
+      }
+
+      // Return the chat ID for backwards compatibility
+      return req.chatId;
+    } catch (error) {
+      logger.error("Error calling LLM:", error);
+      const errorMessage = isCaideError(error) ? error.message : String(error);
+      safeSend(event.sender, "chat:response:error", {
+        chatId: req.chatId,
+        error: `Sorry, there was an error processing your request: ${errorMessage}`,
+      });
+
+      return "error";
+    } finally {
+      // Clean up the abort controller
+      activeStreams.delete(req.chatId);
+
+      // Notify renderer that stream has ended
+      safeSend(event.sender, "chat:stream:end", { chatId: req.chatId });
+      // Unblock any pending MCP consents (their banners are cleared on stream end).
+      clearPendingMcpConsentsForChat(req.chatId);
+    }
+  });
+
+  // Handler to cancel an ongoing stream
+  createTypedHandler(chatContracts.cancelStream, async (event, chatId) => {
+    const abortController = activeStreams.get(chatId);
+
+    if (abortController) {
+      // Abort the stream
+      abortController.abort();
+      activeStreams.delete(chatId);
+      logger.log(`Aborted stream for chat ${chatId}`);
+    } else {
+      logger.warn(`No active stream found for chat ${chatId}`);
+    }
+
+    // Send the end event to the renderer with wasCancelled flag
+    safeSend(event.sender, "chat:response:end", {
+      chatId,
+      updatedFiles: false,
+      wasCancelled: true,
+    } satisfies ChatResponseEnd);
+
+    // Also emit stream:end so cleanup listeners (e.g., pending agent consents) fire
+    safeSend(event.sender, "chat:stream:end", { chatId });
+    // Unblock any pending MCP consents (their banners are cleared on stream end).
+    clearPendingMcpConsentsForChat(chatId);
+
+    return true;
+  });
+}
+
+export function formatMessagesForSummary(
+  messages: { role: string; content: string | undefined }[],
+) {
+  if (messages.length <= 8) {
+    // If we have 8 or fewer messages, include all of them
+    return messages
+      .map((m) => `<message role="${m.role}">${m.content}</message>`)
+      .join("\n");
+  }
+
+  // Take first 2 messages and last 6 messages
+  const firstMessages = messages.slice(0, 2);
+  const lastMessages = messages.slice(-6);
+
+  // Combine them with an indicator of skipped messages
+  const combinedMessages = [
+    ...firstMessages,
+    {
+      role: "system",
+      content: `[... ${messages.length - 8} messages omitted ...]`,
+    },
+    ...lastMessages,
+  ];
+
+  return combinedMessages
+    .map((m) => `<message role="${m.role}">${m.content}</message>`)
+    .join("\n");
+}
+
+// Helper function to replace text attachment placeholders with full content
+async function replaceTextAttachmentWithContent(
+  text: string,
+  filePath: string,
+  fileName: string,
+): Promise<string> {
+  try {
+    if (await isTextFile(filePath)) {
+      // Read the full content
+      const fullContent = await readFile(filePath, "utf-8");
+
+      // Replace the placeholder tag with the full content.
+      // The path attribute in the tag is XML-escaped (via escapeXmlAttr), so we
+      // must also XML-escape the path before regex-escaping to ensure a match.
+      const xmlEscapedPath = escapeXmlAttr(filePath);
+      const escapedPath = xmlEscapedPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const tagPattern = new RegExp(
+        `<caide-text-attachment filename="[^"]*" type="[^"]*" path="${escapedPath}">\\s*<\\/caide-text-attachment>`,
+        "g",
+      );
+
+      const replacedText = text.replace(
+        tagPattern,
+        `Full content of ${fileName}:\n\`\`\`\n${fullContent}\n\`\`\``,
+      );
+
+      logger.log(
+        `Replaced text attachment content for: ${fileName} - length before: ${text.length} - length after: ${replacedText.length}`,
+      );
+      return replacedText;
+    }
+    return text;
+  } catch (error) {
+    logger.error(`Error processing text file: ${error}`);
+    return text;
+  }
+}
+
+// Helper function to convert traditional message to one with proper image attachments
+async function prepareMessageWithAttachments(
+  message: ModelMessage,
+  attachmentPaths: string[],
+  {
+    includeImageAttachments = true,
+    inlineTextAttachments = true,
+  }: {
+    includeImageAttachments?: boolean;
+    inlineTextAttachments?: boolean;
+  } = {},
+): Promise<ModelMessage> {
+  let textContent = message.content;
+  // Get the original text content
+  if (typeof textContent !== "string") {
+    logger.warn(
+      "Message content is not a string - shouldn't happen but using message as-is",
+    );
+    return message;
+  }
+
+  if (inlineTextAttachments) {
+    // Process text file attachments - replace placeholder tags with full content
+    for (const filePath of attachmentPaths) {
+      const fileName = path.basename(filePath);
+      textContent = await replaceTextAttachmentWithContent(
+        textContent,
+        filePath,
+        fileName,
+      );
+    }
+  }
+
+  // For user messages with attachments, create a content array
+  const contentParts: (TextPart | ImagePart)[] = [];
+
+  // Add the text part first with possibly modified content
+  contentParts.push({
+    type: "text",
+    text: textContent,
+  });
+
+  if (includeImageAttachments) {
+    // Add image parts for any image attachments
+    for (const filePath of attachmentPaths) {
+      const mimeType = getInlineImageMimeType(filePath);
+      if (mimeType) {
+        try {
+          // Read the file as a buffer and convert to base64 string
+          // Using base64 strings instead of raw Buffers ensures proper JSON serialization
+          // for storage in aiMessagesJson (raw Buffers serialize inefficiently and exceed size limits)
+          const imageBuffer = await readFile(filePath);
+          const base64Data = imageBuffer.toString("base64");
+
+          // Add the image to the content parts with base64 data and mediaType
+          contentParts.push({
+            type: "image",
+            image: base64Data,
+            mediaType: mimeType,
+          });
+
+          logger.log(`Added image attachment: ${filePath}`);
+        } catch (error) {
+          logger.error(`Error reading image file: ${error}`);
+        }
+      }
+    }
+  }
+
+  // Return the message with the content array
+  return {
+    role: "user",
+    content: contentParts,
+  };
+}
+
+function removeNonEssentialTags(text: string): string {
+  return removeProblemReportTags(removeThinkingTags(text));
+}
+
+function removeThinkingTags(text: string): string {
+  const thinkRegex = / thinking([\s\S]*?)<\/think>/g;
+  return text.replace(thinkRegex, "").trim();
+}
+
+/**
+ * Strip caide/problem/thinking tags from outgoing history. When content is an
+ * array of parts (loaded from ai_messages_json), only `text` parts are cleaned
+ * so `reasoning` parts survive for thinking-mode providers that require
+ * reasoning_content to be echoed back.
+ */
+function sanitizeContentForHistory(
+  content: ModelMessage["content"],
+  stripCaideTags: boolean,
+): ModelMessage["content"] {
+  if (typeof content === "string") {
+    return stripCaideTags
+      ? removeCaideTags(removeNonEssentialTags(content))
+      : removeNonEssentialTags(content);
+  }
+  if (!Array.isArray(content)) {
+    return content;
+  }
+  return content.map((part) => {
+    // Leave `reasoning` parts untouched so thinking-mode providers receive the
+    // exact reasoning_content they require to be echoed back.
+    if (part.type === "reasoning") {
+      return part;
+    }
+    if (part.type === "text") {
+      return {
+        ...part,
+        text: stripCaideTags
+          ? removeCaideTags(removeNonEssentialTags(part.text))
+          : removeNonEssentialTags(part.text),
+      };
+    }
+    return part;
+  }) as ModelMessage["content"];
+}
+
+export function removeProblemReportTags(text: string): string {
+  const problemReportRegex =
+    /<caide-problem-report[^>]*>[\s\S]*?<\/caide-problem-report>/g;
+  return text.replace(problemReportRegex, "").trim();
+}
+
+export function removeCaideTags(text: string): string {
+  const caideRegex = /<caide-[^>]*>[\s\S]*?<\/caide-[^>]*>/g;
+  return text.replace(caideRegex, "").trim();
+}
+
+export function hasUnclosedCaideWrite(text: string): boolean {
+  // Find the last opening caide-write tag
+  const openRegex = /<caide-write[^>]*>/g;
+  let lastOpenIndex = -1;
+  let match;
+
+  while ((match = openRegex.exec(text)) !== null) {
+    lastOpenIndex = match.index;
+  }
+
+  // If no opening tag found, there's nothing unclosed
+  if (lastOpenIndex === -1) {
+    return false;
+  }
+
+  // Look for a closing tag after the last opening tag
+  const textAfterLastOpen = text.substring(lastOpenIndex);
+  const hasClosingTag = /<\/caide-write>/.test(textAfterLastOpen);
+
+  return !hasClosingTag;
+}
+
+function escapeCaideTags(text: string): string {
+  // Escape caide tags in reasoning content
+  // We are replacing the opening tag with a look-alike character
+  // to avoid issues where thinking content includes caide tags
+  // and are mishandled by:
+  // 1. FE markdown parser
+  // 2. Main process response processor
+  return text.replace(/<caide/g, "＜caide").replace(/<\/caide/g, "＜/caide");
+}
+
+const CODEBASE_PROMPT_PREFIX = "This is my codebase.";
+function createCodebasePrompt(codebaseInfo: string): string {
+  return `${CODEBASE_PROMPT_PREFIX} ${codebaseInfo}`;
+}
+
+function createOtherAppsCodebasePrompt(otherAppsCodebaseInfo: string): string {
+  return `
+# Referenced Apps
+
+These are the other apps that I've mentioned in my prompt. These other apps' codebases are READ-ONLY.
+
+${otherAppsCodebaseInfo}
+`;
+}
+
+async function getMcpTools(
+  event: IpcMainInvokeEvent,
+  chatId: number,
+): Promise<ToolSet> {
+  const mcpToolSet: ToolSet = {};
+  try {
+    const servers = await db
+      .select()
+      .from(mcpServers)
+      .where(eq(mcpServers.enabled, true as any));
+    for (const s of servers) {
+      // One bad server (e.g. unconnected OAuth) must not strip tools
+      // from every later enabled server in the same agent run.
+      const toolSet = await (async () => {
+        try {
+          const client = await mcpManager.getClient(s.id);
+          return await client.tools();
+        } catch (e) {
+          logger.warn(
+            `Failed to load tools for MCP server ${s.id} (${s.name})`,
+            e,
+          );
+          return null;
+        }
+      })();
+      if (!toolSet) continue;
+      for (const [name, mcpTool] of Object.entries(toolSet)) {
+        const key = `${String(s.name || "").replace(/[^a-zA-Z0-9_-]/g, "-")}__${String(name).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+        mcpToolSet[key] = {
+          description: mcpTool.description,
+          inputSchema: mcpTool.inputSchema,
+          execute: async (args: unknown, execCtx: ToolExecutionOptions) => {
+            const inputPreview =
+              typeof args === "string"
+                ? args
+                : Array.isArray(args)
+                  ? args.join(" ")
+                  : JSON.stringify(args).slice(0, 500);
+            const { approved } = await requireMcpToolConsent(event, {
+              serverId: s.id,
+              serverName: s.name,
+              toolName: name,
+              toolDescription: mcpTool.description,
+              inputPreview,
+              chatId,
+            });
+
+            if (!approved)
+              throw new CaideError(
+                `User declined running tool ${key}`,
+                CaideErrorKind.UserCancelled,
+              );
+            const res = await mcpTool.execute(args, execCtx);
+
+            return typeof res === "string" ? res : JSON.stringify(res);
+          },
+        };
+      }
+    }
+  } catch (e) {
+    logger.warn("Failed building MCP toolset", e);
+  }
+  return mcpToolSet;
+}

@@ -1,0 +1,418 @@
+import { db } from "../../db";
+import { messages } from "../../db/schema";
+import { eq } from "drizzle-orm";
+import { Message } from "@/ipc/types";
+import { readEffectiveSettings } from "@/main/settings";
+import { CaideError, CaideErrorKind } from "@/errors/caide_error";
+import {
+  ADD_DEPENDENCY_INSTALL_TIMEOUT_MS,
+  buildAddDependencyCommand,
+  commitPnpmAllowBuildsConfigIfChanged,
+  ensureSocketFirewallInstalled,
+  getCommandExecutionDisplayDetails,
+  getPackageManagerCommandEnv,
+  getPnpmMinimumReleaseAgeSupport,
+  runCommand,
+} from "@/ipc/utils/socket_firewall";
+import {
+  recordAndReportDeniedPnpmBuilds,
+  resolvePnpmIgnoredBuilds,
+} from "@/ipc/utils/pnpm_denied_builds";
+import {
+  choosePackageManagerFromSignal,
+  getPackageManagerSignal,
+  signalPrefersPnpm,
+} from "@/ipc/utils/package_manager_selection";
+import { shouldShowPnpmMinimumReleaseAgeWarning } from "@/lib/schemas";
+import { escapeXmlAttr, escapeXmlContent } from "../../../shared/xmlEscape";
+import { getFlutterExecutable, isFlutterApp } from "@/ipc/utils/flutter_utils";
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildPackagesAttrPattern(packages: string[]): string {
+  const rawPackages = packages.join(" ");
+  const escapedPackages = escapeXmlAttr(rawPackages);
+  const packageVariants = new Set([rawPackages, escapedPackages]);
+
+  return Array.from(packageVariants).map(escapeRegExp).join("|");
+}
+
+export interface ExecuteAddDependencyResult {
+  installResults: string;
+  warningMessages: string[];
+}
+
+// Matches package names with optional version specifiers:
+// lodash, @scope/pkg, lodash@1.2.3, @scope/pkg@^1.0.0, pkg@latest, pkg@file:../local
+const NPM_PACKAGE_NAME_PATTERN =
+  /^(@[a-z0-9-_.]+\/)?[a-z0-9-_.]+(@[a-z0-9^~>=.<_\-*|,: /\\]+)?$/i;
+
+// Shell metacharacters that should never appear in a package name
+const SHELL_METACHARACTER_PATTERN = /[;&|`$(){}!<>]/;
+
+const DISPLAY_SUMMARY_PATTERNS = [
+  /\bblocked\b/i,
+  /\bfailed\b/i,
+  /\berror\b/i,
+  /\bdenied\b/i,
+  /\btimed out\b/i,
+  /\btimeout\b/i,
+  /\betimedout\b/i,
+  /\bnpm err!/i,
+  /\berr_pnpm_[a-z0-9_]+\b/i,
+  /\bE[A-Z][A-Z0-9_]{2,}\b/,
+];
+
+const DISPLAY_SUMMARY_NOISE_PATTERNS = [
+  /^progress:/i,
+  /^packages:\s*[+-]?\d+/i,
+  /^npm (?:notice|warn)\b/i,
+  /^npm err!\s*(?:a complete log of this run can be found in:|this is probably not a problem with npm\.)/i,
+  /^npm err!\s*(?:[A-Za-z]:\\|\/).+/i,
+];
+
+function isDisplaySummaryNoise(line: string): boolean {
+  return DISPLAY_SUMMARY_NOISE_PATTERNS.some((pattern) => pattern.test(line));
+}
+
+function getDisplayLines(value: string): string[] {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function getFilteredDisplayDetails(value: string): string | undefined {
+  const lines = getDisplayLines(value).filter(
+    (line) => !isDisplaySummaryNoise(line),
+  );
+
+  if (lines.length === 0) {
+    return undefined;
+  }
+
+  return lines.join("\n");
+}
+
+function getDisplaySummary(value: string): string | undefined {
+  const lines = getDisplayLines(value);
+
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const line = lines[index];
+    if (
+      !isDisplaySummaryNoise(line) &&
+      DISPLAY_SUMMARY_PATTERNS.some((pattern) => pattern.test(line))
+    ) {
+      return line;
+    }
+  }
+
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const line = lines[index];
+    if (!isDisplaySummaryNoise(line)) {
+      return line;
+    }
+  }
+
+  return lines.at(-1);
+}
+
+export class ExecuteAddDependencyError extends Error {
+  warningMessages: string[];
+  originalError: unknown;
+  displayDetails: string;
+  displaySummary: string;
+
+  constructor({
+    error,
+    warningMessages,
+  }: {
+    error: unknown;
+    warningMessages: string[];
+  }) {
+    const message = error instanceof Error ? error.message : String(error);
+    const commandDisplayDetails = getCommandExecutionDisplayDetails(error);
+    const displayDetails = commandDisplayDetails
+      ? (getFilteredDisplayDetails(commandDisplayDetails) ?? message)
+      : message;
+
+    super(message);
+    this.name = "ExecuteAddDependencyError";
+    this.warningMessages = warningMessages;
+    this.originalError = error;
+    this.displayDetails = displayDetails;
+    this.displaySummary = getDisplaySummary(displayDetails) ?? message;
+  }
+}
+
+async function runAddDependencyCommand(
+  command: { command: string; args: string[] },
+  appPath: string,
+): Promise<{
+  succeeded: boolean;
+  installResults: string;
+  lastError: unknown;
+}> {
+  try {
+    const options = {
+      cwd: appPath,
+      env: getPackageManagerCommandEnv(),
+      timeoutMs: ADD_DEPENDENCY_INSTALL_TIMEOUT_MS,
+    };
+    const { stdout, stderr } = await runCommand(
+      command.command,
+      command.args,
+      options,
+    );
+    return {
+      succeeded: true,
+      installResults: stdout + (stderr ? `\n${stderr}` : ""),
+      lastError: null,
+    };
+  } catch (error) {
+    return {
+      succeeded: false,
+      installResults: "",
+      lastError: error,
+    };
+  }
+}
+
+function formatDeniedBuildsNote(packageNames: string[]): string {
+  if (packageNames.length === 0) {
+    return "";
+  }
+
+  const packageList = packageNames.join(", ");
+  return `\n\nNote: build scripts for ${packageList} were not run (Caide security policy).`;
+}
+
+async function rebuildPromotedPnpmBuilds(
+  appPath: string,
+  packageNames: string[],
+): Promise<void> {
+  if (packageNames.length === 0) {
+    return;
+  }
+
+  try {
+    await runCommand("pnpm", ["rebuild", ...packageNames], {
+      cwd: appPath,
+      env: getPackageManagerCommandEnv(),
+      timeoutMs: ADD_DEPENDENCY_INSTALL_TIMEOUT_MS,
+    });
+  } catch {
+    // Best effort: if the build is still broken, the install should not regress.
+  }
+}
+
+// Matches Dart pub package names with optional version constraints:
+// http, cupertino_icons, provider, uuid, intl@^1.0.0
+const PUB_PACKAGE_NAME_PATTERN = /^[a-z0-9_]+(@[^\s;&|`$(){}<>]+)?$/i;
+
+async function installFlutterPackages(
+  packages: string[],
+  appPath: string,
+  dev: boolean,
+): Promise<ExecuteAddDependencyResult> {
+  const invalidPackage = packages.find(
+    (pkg) => !PUB_PACKAGE_NAME_PATTERN.test(pkg),
+  );
+  if (invalidPackage) {
+    throw new ExecuteAddDependencyError({
+      error: new CaideError(
+        `Invalid pub package name: ${invalidPackage}`,
+        CaideErrorKind.Validation,
+      ),
+      warningMessages: [],
+    });
+  }
+
+  const dangerousPackage = packages.find((pkg) =>
+    SHELL_METACHARACTER_PATTERN.test(pkg),
+  );
+  if (dangerousPackage) {
+    throw new ExecuteAddDependencyError({
+      error: new CaideError(
+        `Rejected package name containing shell metacharacters: ${dangerousPackage}`,
+        CaideErrorKind.Validation,
+      ),
+      warningMessages: [],
+    });
+  }
+
+  const flutter = getFlutterExecutable();
+  const args = ["pub", "add", ...(dev ? ["--dev"] : []), ...packages];
+  try {
+    const { stdout, stderr } = await runCommand(flutter, args, {
+      cwd: appPath,
+      env: getPackageManagerCommandEnv(),
+      timeoutMs: ADD_DEPENDENCY_INSTALL_TIMEOUT_MS,
+    });
+    return {
+      installResults: stdout + (stderr ? `\n${stderr}` : ""),
+      warningMessages: [],
+    };
+  } catch (error) {
+    throw new ExecuteAddDependencyError({
+      error,
+      warningMessages: [],
+    });
+  }
+}
+
+export async function installPackages({
+  packages,
+  appPath,
+  dev = false,
+}: {
+  packages: string[];
+  appPath: string;
+  dev?: boolean;
+}): Promise<ExecuteAddDependencyResult> {
+  if (isFlutterApp(appPath)) {
+    return installFlutterPackages(packages, appPath, dev);
+  }
+
+  const invalidPackage = packages.find(
+    (pkg) => !NPM_PACKAGE_NAME_PATTERN.test(pkg),
+  );
+  if (invalidPackage) {
+    throw new ExecuteAddDependencyError({
+      error: new CaideError(
+        `Invalid npm package name: ${invalidPackage}`,
+        CaideErrorKind.Validation,
+      ),
+      warningMessages: [],
+    });
+  }
+
+  const dangerousPackage = packages.find((pkg) =>
+    SHELL_METACHARACTER_PATTERN.test(pkg),
+  );
+  if (dangerousPackage) {
+    throw new ExecuteAddDependencyError({
+      error: new CaideError(
+        `Rejected package name containing shell metacharacters: ${dangerousPackage}`,
+        CaideErrorKind.Validation,
+      ),
+      warningMessages: [],
+    });
+  }
+
+  const settings = await readEffectiveSettings();
+  const warningMessages: string[] = [];
+
+  let useSocketFirewall = settings.blockUnsafeNpmPackages !== false;
+  if (useSocketFirewall) {
+    const socketFirewall = await ensureSocketFirewallInstalled();
+    if (!socketFirewall.available) {
+      useSocketFirewall = false;
+      if (socketFirewall.warningMessage) {
+        warningMessages.push(socketFirewall.warningMessage);
+      }
+    }
+  }
+
+  const pnpmSupport = await getPnpmMinimumReleaseAgeSupport();
+  // Choose from the app's own signals (packageManager field, lockfiles,
+  // node_modules shape) so add-dependency and the run command agree on the
+  // package manager — a pnpm add against an npm-shaped app would purge its
+  // node_modules and write a lockfile the run command ignores.
+  const signal = getPackageManagerSignal(appPath);
+  const packageManager = choosePackageManagerFromSignal({
+    signal,
+    pnpmAvailable: pnpmSupport.available,
+  });
+  if (
+    signalPrefersPnpm(signal) &&
+    !pnpmSupport.minimumReleaseAgeSupported &&
+    pnpmSupport.warningMessage &&
+    shouldShowPnpmMinimumReleaseAgeWarning(settings)
+  ) {
+    warningMessages.push(pnpmSupport.warningMessage);
+  }
+  const promotedPackages =
+    packageManager === "pnpm"
+      ? (await commitPnpmAllowBuildsConfigIfChanged(appPath)).promotedPackages
+      : [];
+  const { succeeded, installResults, lastError } =
+    await runAddDependencyCommand(
+      buildAddDependencyCommand(packages, packageManager, useSocketFirewall, {
+        dev,
+      }),
+      appPath,
+    );
+
+  if (!succeeded && lastError) {
+    throw new ExecuteAddDependencyError({
+      error: lastError,
+      warningMessages,
+    });
+  }
+
+  await rebuildPromotedPnpmBuilds(appPath, promotedPackages);
+
+  let installResultsWithPolicyNotes = installResults;
+  if (packageManager === "pnpm") {
+    const ignoredBuilds = await resolvePnpmIgnoredBuilds(appPath);
+    // Promotions were already applied (and rebuilt) by the pre-install
+    // commitPnpmAllowBuildsConfigIfChanged call above, so this record pass
+    // only ever adds denials for builds the install just ignored.
+    const { deniedBuilds } = await recordAndReportDeniedPnpmBuilds({
+      appPath,
+      ignoredBuilds,
+      source: "add-dependency",
+    });
+    if (deniedBuilds.length > 0) {
+      installResultsWithPolicyNotes += formatDeniedBuildsNote(
+        Array.from(
+          new Set(deniedBuilds.map((ignoredBuild) => ignoredBuild.packageName)),
+        ).sort((left, right) => left.localeCompare(right)),
+      );
+    }
+  }
+
+  return {
+    installResults: installResultsWithPolicyNotes,
+    warningMessages,
+  };
+}
+
+export async function executeAddDependency({
+  packages,
+  message,
+  appPath,
+}: {
+  packages: string[];
+  message: Message;
+  appPath: string;
+}): Promise<ExecuteAddDependencyResult> {
+  const { installResults, warningMessages } = await installPackages({
+    packages,
+    appPath,
+  });
+
+  // Update the message content with the installation results
+  const escapedPackages = escapeXmlAttr(packages.join(" "));
+  const updatedContent = message.content.replace(
+    new RegExp(
+      `<caide-add-dependency packages="(?:${buildPackagesAttrPattern(packages)})">[\\s\\S]*?</caide-add-dependency>`,
+      "g",
+    ),
+    `<caide-add-dependency packages="${escapedPackages}">${escapeXmlContent(installResults)}</caide-add-dependency>`,
+  );
+
+  // Save the updated message back to the database
+  await db
+    .update(messages)
+    .set({ content: updatedContent })
+    .where(eq(messages.id, message.id));
+
+  return {
+    installResults,
+    warningMessages,
+  };
+}

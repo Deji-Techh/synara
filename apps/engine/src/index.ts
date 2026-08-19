@@ -1,321 +1,234 @@
 // FILE: src/index.ts
-// Purpose: Flutter Builder engine — stdio JSON-RPC server entry point.
-// Layer: Engine process entry. Spawned by apps/server (engine adapter) exactly
-// like codex app-server: newline-delimited JSON-RPC over stdin/stdout.
-// Depends on: ./protocol.ts
+// Purpose: Caide engine entry — a headless Node process speaking
+// newline-delimited JSON-RPC 2.0 over stdio (codex app-server pattern).
+// The dyad backend runs fully inside this process; the server's EngineAdapter
+// supervises it. Renderer-bound Electron IPC is shimmed (electron-shim.ts):
+//   - requests arrive as `dyad.invoke` { channel, payload } and dispatch onto
+//     the dyad `ipcMain.handle` registry (envelope-wrapped by
+//     createTypedHandler in ipc/handlers/base.ts)
+//   - renderer-bound events (safeSend / webContents.send) flow through the
+//     in-process event bus and are re-emitted as `dyad.event` notifications
+// Upstream protocol methods (initialize/engine/ping/echo/shutdown) keep the
+// pre-transplant wire format so the server's EngineClient stays source-compat
+// until M3 replaces the adapter.
 
+import { spawnSync } from "node:child_process";
 import { createInterface } from "node:readline/promises";
-import { stdin, stdout } from "node:process";
+import log from "electron-log";
 
 import {
-  AnalyzeRunParamsSchema,
-  AnalyzeRunResultSchema,
-  AppCreateParamsSchema,
-  AppCreateResultSchema,
-  BuildStartParamsSchema,
-  BuildStartResultSchema,
-  BuildStateParamsSchema,
-  BuildStateResultSchema,
-  EchoParamsSchema,
-  ENGINE_METHODS,
   ENGINE_PROTOCOL_VERSION,
-  InitializeParamsSchema,
-  InitializeResultSchema,
-  isJsonRpcRequest,
   JSON_RPC_INTERNAL_ERROR,
-  JSON_RPC_INVALID_PARAMS,
+  JSON_RPC_INVALID_REQUEST,
   JSON_RPC_METHOD_NOT_FOUND,
   JSON_RPC_PARSE_ERROR,
-  PingResultSchema,
-  PreviewReloadParamsSchema,
-  PreviewReloadResultSchema,
-  PreviewStartParamsSchema,
-  PreviewStartResultSchema,
-  PreviewStateParamsSchema,
-  PreviewStateResultSchema,
-  PreviewStopParamsSchema,
-  PreviewStopResultSchema,
-  TestRunParamsSchema,
-  TestResultSchema,
-  TurnRunParamsSchema,
-  TurnRunResultSchema,
+  type JsonRpcRequest,
   type JsonRpcResponse,
 } from "./protocol.ts";
-import { startWebServerPreview, type WebServerPreview } from "./preview/webServerPreview.ts";
-import { startFlutterBuild, getFlutterBuildJob } from "./build/flutterBuild.ts";
-import { runFlutterAnalyze } from "./build/flutterAnalyze.ts";
-import { runFlutterTest } from "./build/flutterTest.ts";
-import { createFlutterApp } from "./tools/flutterCreate.ts";
-import { runFlutterCommand } from "./tools/flutterCommand.ts";
-import { Agent } from "./agent/agentLoop.ts";
+import { registerEngineIpcHandlers } from "./ipc/engine_ipc_host.ts";
+import { initializeDatabase, closeDatabase } from "./db/index.ts";
+import { onAll } from "./ipc/utils/event_bus.ts";
+import { app, ipcMain } from "./electron-shim.ts";
 
-export const ENGINE_SERVER_VERSION = "0.1.0";
+log.errorHandler.startCatching();
 
-function send(response: JsonRpcResponse): void {
-  stdout.write(`${JSON.stringify(response)}\n`);
-}
+const rl = createInterface({ input: process.stdin, terminal: false });
 
-function sendResult(id: JsonRpcResponse["id"], result: unknown): void {
-  send({ jsonrpc: "2.0", id, result });
-}
+let initialized = false;
+let shuttingDown = false;
+let flutterAvailable: boolean | null = null;
 
-function sendError(id: JsonRpcResponse["id"], code: number, message: string): void {
-  send({ jsonrpc: "2.0", id, error: { code, message } });
-}
-
-function sendNotification(method: string, params?: unknown): void {
-  // Use stdout.write directly to avoid TypeScript complaining about JsonRpcResponse vs Notification
-  stdout.write(`${JSON.stringify({ jsonrpc: "2.0", method, ...(params !== undefined ? { params } : {}) })}\n`);
-}
-
-class ProtocolParamError extends Error {
-  constructor(
-    readonly code: number,
-    message: string,
-  ) {
-    super(message);
+function detectFlutter(): boolean {
+  if (flutterAvailable !== null) {
+    return flutterAvailable;
   }
-}
-
-const previews = new Map<string, WebServerPreview>();
-
-async function stopAllPreviews(): Promise<void> {
-  const stops = [...previews.values()].map((preview) => preview.stop());
-  previews.clear();
-  await Promise.allSettled(stops);
-}
-
-async function handleMethod(method: string, params: unknown): Promise<unknown> {
-  switch (method) {
-    case ENGINE_METHODS.initialize: {
-      const parsed = InitializeParamsSchema.safeParse(params);
-      if (!parsed.success) {
-        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "initialize params invalid");
-      }
-      const result = InitializeResultSchema.parse({
-        serverName: "caide-engine",
-        serverVersion: ENGINE_SERVER_VERSION,
-        protocolVersion: ENGINE_PROTOCOL_VERSION,
-        capabilities: {
-          flutter: true,
-          preview: true,
-        },
-      });
-      return result;
-    }
-    case ENGINE_METHODS.previewStart: {
-      const parsed = PreviewStartParamsSchema.safeParse(params);
-      if (!parsed.success) {
-        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "preview/start params invalid");
-      }
-      const existing = previews.get(parsed.data.appDir);
-      if (existing) {
-        await existing.stop();
-        previews.delete(parsed.data.appDir);
-      }
-      const preview = await startWebServerPreview({
-        appDir: parsed.data.appDir,
-        ...(parsed.data.port !== undefined ? { port: parsed.data.port } : {}),
-        ...(parsed.data.hostname !== undefined ? { hostname: parsed.data.hostname } : {}),
-      });
-      previews.set(parsed.data.appDir, preview);
-      preview.exited.catch(() => {
-        previews.delete(parsed.data.appDir);
-      });
-      return PreviewStartResultSchema.parse({ url: preview.url });
-    }
-    case ENGINE_METHODS.previewStop: {
-      const parsed = PreviewStopParamsSchema.safeParse(params);
-      if (!parsed.success) {
-        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "preview/stop params invalid");
-      }
-      const preview = previews.get(parsed.data.appDir);
-      if (!preview) {
-        return PreviewStopResultSchema.parse({ stopped: false });
-      }
-      previews.delete(parsed.data.appDir);
-      await preview.stop();
-      return PreviewStopResultSchema.parse({ stopped: true });
-    }
-    case ENGINE_METHODS.previewReload: {
-      const parsed = PreviewReloadParamsSchema.safeParse(params);
-      if (!parsed.success) {
-        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "preview/reload params invalid");
-      }
-      const preview = previews.get(parsed.data.appDir);
-      return PreviewReloadResultSchema.parse({
-        reloaded: preview?.reload(parsed.data.hotReload) ?? false,
-      });
-    }
-    case ENGINE_METHODS.previewState: {
-      const parsed = PreviewStateParamsSchema.safeParse(params);
-      if (!parsed.success) {
-        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "preview/state params invalid");
-      }
-      const preview = previews.get(parsed.data.appDir);
-      return PreviewStateResultSchema.parse({
-        running: preview !== undefined,
-        url: preview?.url ?? "",
-        logs: preview?.logs ? [...preview.logs] : [],
-      });
-    }
-    case ENGINE_METHODS.appCreate: {
-      const parsed = AppCreateParamsSchema.safeParse(params);
-      if (!parsed.success) {
-        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "app/create params invalid");
-      }
-      const { projectPath } = await createFlutterApp({
-        cwd: parsed.data.cwd,
-        name: parsed.data.name,
-        ...(parsed.data.org !== undefined ? { org: parsed.data.org } : {}),
-        ...(parsed.data.platforms !== undefined ? { platforms: parsed.data.platforms } : {}),
-      });
-      return AppCreateResultSchema.parse({
-        appId: parsed.data.name,
-        projectPath,
-      });
-    }
-    case ENGINE_METHODS.analyzeRun: {
-      const parsed = AnalyzeRunParamsSchema.safeParse(params);
-      if (!parsed.success) {
-        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "analyze/run params invalid");
-      }
-      const { issues, output } = await runFlutterAnalyze(parsed.data.appDir);
-      return AnalyzeRunResultSchema.parse({ issues, output });
-    }
-    case ENGINE_METHODS.testRun: {
-      const parsed = TestRunParamsSchema.safeParse(params);
-      if (!parsed.success) {
-        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "test/run params invalid");
-      }
-      const testResult = await runFlutterTest(parsed.data.appDir, parsed.data.testPath);
-      return TestResultSchema.parse({
-        passed: testResult.passed,
-        failed: testResult.failed,
-        skipped: testResult.skipped,
-        output: testResult.output,
-      });
-    }
-    case ENGINE_METHODS.buildStart: {
-      const parsed = BuildStartParamsSchema.safeParse(params);
-      if (!parsed.success) {
-        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "build/start params invalid");
-      }
-      const job = startFlutterBuild({
-        appDir: parsed.data.appDir,
-        target: parsed.data.target,
-        ...(parsed.data.channel !== undefined ? { channel: parsed.data.channel } : {}),
-      });
-      return BuildStartResultSchema.parse({ buildId: job.buildId });
-    }
-    case ENGINE_METHODS.buildState: {
-      const parsed = BuildStateParamsSchema.safeParse(params);
-      if (!parsed.success) {
-        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "build/state params invalid");
-      }
-      const job = getFlutterBuildJob(parsed.data.buildId);
-      if (!job) {
-        throw new ProtocolParamError(
-          JSON_RPC_INVALID_PARAMS,
-          `unknown build id: ${parsed.data.buildId}`,
-        );
-      }
-      return BuildStateResultSchema.parse({
-        buildId: job.buildId,
-        status: job.state.status,
-        ...(job.state.exitCode !== null ? { exitCode: job.state.exitCode } : {}),
-        ...(job.state.outputPath ? { outputPath: job.state.outputPath } : {}),
-        ...(job.state.error ? { error: job.state.error } : {}),
-        logs: [...job.logs],
-      });
-    }
-    case ENGINE_METHODS.ping: {
-      return PingResultSchema.parse({ pong: "pong", time: new Date().toISOString() });
-    }
-    case ENGINE_METHODS.echo: {
-      const parsed = EchoParamsSchema.safeParse(params);
-      if (!parsed.success) {
-        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "echo params invalid");
-      }
-      return { message: parsed.data.message };
-    }
-    case ENGINE_METHODS.turnRun: {
-      const parsed = TurnRunParamsSchema.safeParse(params);
-      if (!parsed.success) {
-        throw new ProtocolParamError(JSON_RPC_INVALID_PARAMS, "turn/run params invalid");
-      }
-      const { message, mode, model, cwd } = parsed.data;
-      const agent = new Agent({
-        model,
-        mode,
-        ...(cwd !== undefined ? { toolContext: { workspaceDir: cwd, appDir: cwd } } : {}),
-      });
-      sendNotification(ENGINE_METHODS.turnStatus, { status: "started" });
-      const result = await agent.runTurn(message, {
-        onTextDelta: (delta) => {
-          sendNotification(ENGINE_METHODS.turnTextDelta, { delta });
-        },
-        onToolCall: (call) => {
-          sendNotification(ENGINE_METHODS.turnStatus, { status: "toolCall" });
-          sendNotification(ENGINE_METHODS.turnToolCall, { name: call.name, args: call.args });
-        },
-      });
-      sendNotification(ENGINE_METHODS.turnStatus, { status: "completed" });
-      return TurnRunResultSchema.parse({
-        text: result.text,
-        toolCalls: result.toolCalls,
-      });
-    }
-    case ENGINE_METHODS.shutdown: {
-      // Do not process.exit() here: it truncates the buffered stdout write of
-      // this very response. Set the exit code and let the loop end naturally.
-      process.exitCode = 0;
-      return { shutdown: true };
-    }
-    default:
-      throw new ProtocolParamError(JSON_RPC_METHOD_NOT_FOUND, `unknown method: ${method}`);
+  if (process.env.FLUTTER_SDK_DIR || process.env.FLUTTER_ROOT) {
+    flutterAvailable = true;
+    return true;
   }
+  try {
+    const probe = spawnSync("flutter", ["--version"], {
+      timeout: 10_000,
+      stdio: "ignore",
+      env: { ...process.env, CI: "false", TERM: "dumb" },
+    });
+    flutterAvailable = probe.status === 0;
+  } catch {
+    flutterAvailable = false;
+  }
+  if (!flutterAvailable) {
+    log.warn("engine: flutter not detected on PATH (capabilities.flutter=false)");
+  }
+  return flutterAvailable;
 }
 
-export async function runEngine(): Promise<void> {
-  const lines = createInterface({
-    input: stdin,
-    crlfDelay: Infinity,
-  });
+function send(line: unknown): void {
+  process.stdout.write(`${JSON.stringify(line)}\n`);
+}
 
-  for await (const line of lines) {
-    if (line.trim() === "") {
-      continue;
-    }
-    let request: unknown;
+function makeResponse(request: JsonRpcRequest, result?: unknown): JsonRpcResponse {
+  return { jsonrpc: "2.0", id: request.id, ...(result === undefined ? {} : { result }) };
+}
+
+function makeError(request: JsonRpcRequest, code: number, message: string, data?: unknown): JsonRpcResponse {
+  return {
+    jsonrpc: "2.0",
+    id: request.id,
+    error: { code, message, ...(data === undefined ? {} : { data }) },
+  };
+}
+
+// ── Engine lifecycle ────────────────────────────────────────────────
+
+function bootstrap(): void {
+  if (initialized) {
+    return;
+  }
+  initialized = true;
+  log.info(`engine: boot userData=${app.getPath("userData")}`);
+  // Settings are created/migrated on first read (safeStorage shim is
+  // reversible-obfuscation only; real secret handling arrives with M2/M3
+  // server-forwarded config).
+  void import("./main/settings.ts").then(({ readSettings }) => {
     try {
-      request = JSON.parse(line);
-    } catch {
-      sendError(null, JSON_RPC_PARSE_ERROR, "invalid JSON");
-      continue;
-    }
-    if (!isJsonRpcRequest(request)) {
-      sendError(null, JSON_RPC_INVALID_PARAMS, "invalid request envelope");
-      continue;
-    }
-    try {
-      const result = await handleMethod(request.method, request.params);
-      sendResult(request.id, result);
-      if (request.method === ENGINE_METHODS.shutdown) {
-        // Stop any running previews, then close the interface so the process
-        // exits once stdin (kept open by the parent) stops holding the loop.
-        await stopAllPreviews();
-        lines.close();
-        break;
-      }
+      readSettings();
+      log.info("engine: settings ready");
     } catch (error) {
-      const code = error instanceof ProtocolParamError ? error.code : JSON_RPC_INTERNAL_ERROR;
-      const message = error instanceof Error ? error.message : String(error);
-      sendError(request.id, code, message);
+      log.warn("engine: settings read failed:", error);
+    }
+  });
+  initializeDatabase();
+  registerEngineIpcHandlers();
+  log.info("engine: handlers registered, db opened");
+}
+
+async function shutdown(): Promise<void> {
+  if (shuttingDown) {
+    return;
+  }
+  shuttingDown = true;
+  log.info("engine: shutting down");
+  try {
+    await app._fireQuitHandlers();
+  } catch (error) {
+    log.warn("engine: quit handlers error:", error);
+  }
+  closeDatabase();
+  process.exit(0);
+}
+
+// ── dyad.invoke dispatch ────────────────────────────────────────────
+
+function isEnvelope(value: unknown): value is { ok: boolean } {
+  return typeof value === "object" && value !== null && typeof (value as { ok?: unknown }).ok === "boolean";
+}
+
+async function dispatchDyadInvoke(channel: string, payload: unknown): Promise<unknown> {
+  const handler = ipcMain._handlers.get(channel);
+  if (!handler) {
+    throw new Error(`dyad.invoke: no IPC handler registered for channel "${channel}"`);
+  }
+  const event = {
+    sender: { id: 0, isDestroyed: () => false, send: () => {} },
+    processId: process.pid,
+    frameId: 0,
+  };
+  const result = await handler(event, payload);
+  return isEnvelope(result) ? result : { ok: true, data: result };
+}
+
+// ── JSON-RPC routing ────────────────────────────────────────────────
+
+async function handleRequest(request: JsonRpcRequest): Promise<JsonRpcResponse> {
+  const { method, params } = request;
+  switch (method) {
+    case "initialize": {
+      bootstrap();
+      return makeResponse(request, {
+        serverName: "caide-engine",
+        serverVersion: "0.1.0",
+        protocolVersion: ENGINE_PROTOCOL_VERSION,
+        capabilities: { flutter: detectFlutter(), preview: true },
+      });
+    }
+    case "engine/ping": {
+      return makeResponse(request, {
+        pong: "pong",
+        time: new Date().toISOString(),
+      });
+    }
+    case "engine/echo": {
+      const message = (params as { message?: unknown } | undefined)?.message;
+      return makeResponse(request, { message: String(message ?? "") });
+    }
+    case "engine/shutdown": {
+      void shutdown();
+      return makeResponse(request, { shutdown: true });
+    }
+    case "dyad/invoke": {
+      const { channel, payload } = (params ?? {}) as { channel?: unknown; payload?: unknown };
+      if (typeof channel !== "string") {
+        return makeError(request, JSON_RPC_INVALID_REQUEST, "dyad.invoke requires params.channel");
+      }
+      try {
+        const result = await dispatchDyadInvoke(channel, payload);
+        return makeResponse(request, result);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        log.warn(`engine: dyad.invoke("${channel}") failed: ${message}`);
+        return makeError(request, JSON_RPC_INTERNAL_ERROR, message);
+      }
+    }
+    default: {
+      return makeError(
+        request,
+        JSON_RPC_METHOD_NOT_FOUND,
+        `method not found: ${method} (implemented: initialize, engine/ping, engine/echo, engine/shutdown, dyad/invoke)`,
+      );
     }
   }
 }
 
-if (import.meta.main) {
-  runEngine();
-}
+// ── Event bridge: renderer-bound events → dyad.event notifications ──
+
+onAll((channel, payload) => {
+  if (shuttingDown) {
+    return;
+  }
+  send({ jsonrpc: "2.0", method: "dyad/event", params: { channel, payload } });
+});
+
+// ── Main loop ───────────────────────────────────────────────────────
+
+rl.on("line", (line) => {
+  if (!line.trim()) {
+    return;
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(line);
+  } catch {
+    send({ jsonrpc: "2.0", id: null, error: { code: JSON_RPC_PARSE_ERROR, message: "invalid JSON" } });
+    return;
+  }
+  if (parsed === null || typeof parsed !== "object" || typeof (parsed as JsonRpcRequest).method !== "string") {
+    send({ jsonrpc: "2.0", id: null, error: { code: JSON_RPC_INVALID_REQUEST, message: "invalid request" } });
+    return;
+  }
+  handleRequest(parsed as JsonRpcRequest).then((response) => {
+    send(response);
+  });
+});
+
+rl.on("close", () => {
+  void shutdown();
+});
+
+process.on("SIGINT", () => {
+  void shutdown();
+});
+process.on("SIGTERM", () => {
+  void shutdown();
+});
+
+log.info("engine: ready, awaiting JSON-RPC over stdio");

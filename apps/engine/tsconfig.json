@@ -1,10 +1,25 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "composite": true,
     "types": ["node"],
     "noEmit": true,
-    "allowImportingTsExtensions": true
+    "skipLibCheck": true,
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "electron": ["./src/electron-shim.ts"],
+      "*": ["./*", "./src/*"]
+    },
+    "useDefineForClassFields": false,
+    "exactOptionalPropertyTypes": false,
+    "noImplicitOverride": false,
+    "noUncheckedIndexedAccess": false,
+    "strict": false
   },
-  "include": ["src", "tsdown.config.ts"]
+  "include": ["src", "shared", "tsdown.config.ts"]
 }
