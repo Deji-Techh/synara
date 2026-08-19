@@ -11,6 +11,7 @@ import {
 import {
   ChatAttachment,
   ChatMode,
+  DEFAULT_CHAT_MODE,
   ModelSelection,
   PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
   PROVIDER_SEND_TURN_MAX_INPUT_CHARS,
@@ -78,6 +79,10 @@ export const ProviderSendTurnInput = Schema.Struct({
   mentions: Schema.optional(Schema.Array(ProviderMentionReference)),
   modelSelection: Schema.optional(ModelSelection),
   interactionMode: Schema.optional(ProviderInteractionMode),
+  /** Engine chat mode (build/ask/plan/local-agent); defaults to build. */
+  mode: Schema.optional(ChatMode).pipe(
+    Schema.withDecodingDefault(() => DEFAULT_CHAT_MODE),
+  ),
   systemPrompt: Schema.optional(Schema.String),
 });
 export type ProviderSendTurnInput = typeof ProviderSendTurnInput.Type;

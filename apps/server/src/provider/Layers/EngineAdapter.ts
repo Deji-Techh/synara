@@ -1417,8 +1417,16 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             }),
           );
 
+          // The engine accepts each of build/ask/plan/local-agent. Prefer the
+          // web's explicit chat mode; fall back to a plan/build split from the
+          // legacy interaction-mode selector so ask/local-agent still work
+          // end-to-end (interactionMode alone can't distinguish them).
           const requestedChatMode =
-            input.interactionMode === "plan" ? "plan" : "build";
+            input.mode !== undefined
+              ? input.mode
+              : input.interactionMode === "plan"
+                ? "plan"
+                : "build";
 
           yield* publishEvent(
             makeEvent<ProviderRuntimeEvent>(input.threadId, {

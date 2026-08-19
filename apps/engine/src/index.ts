@@ -28,6 +28,7 @@ import {
   type JsonRpcResponse,
 } from "./protocol.ts";
 import { registerEngineIpcHandlers } from "./ipc/engine_ipc_host.ts";
+import { createPreviewJsonRpcRouter } from "./ipc/preview_host.ts";
 import { initializeDatabase, closeDatabase } from "./db/index.ts";
 import { emit, onAll } from "./ipc/utils/event_bus.ts";
 import { startGoalRuntime } from "./ipc/goal/goal_runtime_executor.ts";
@@ -51,6 +52,11 @@ const rl = createInterface({ input: process.stdin, terminal: false });
 let initialized = false;
 let shuttingDown = false;
 let flutterAvailable: boolean | null = null;
+
+// Raw JSON-RPC handlers for the preview/analyze/test/build vertical. Driven
+// by the server's EngineAdapter (`preview/start|stop|reload|state|screenshot`,
+// `analyze/run`, `test/run`, `build/start|state`).
+const previewRouter = createPreviewJsonRpcRouter();
 
 function detectFlutter(): boolean {
   if (flutterAvailable !== null) {
@@ -145,6 +151,7 @@ async function shutdown(): Promise<void> {
   }
   shuttingDown = true;
   log.info("engine: shutting down");
+  previewRouter.dispose();
   try {
     await app._fireQuitHandlers();
   } catch (error) {
@@ -235,10 +242,20 @@ async function handleRequest(request: JsonRpcRequest): Promise<JsonRpcResponse |
       }
     }
     default: {
+      if (previewRouter.isPreviewMethod(method)) {
+        try {
+          const result = await previewRouter.handle(method, params);
+          return makeResponse(request, result);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          log.error(`engine: ${method} failed: ${message}`);
+          return makeError(request, JSON_RPC_INTERNAL_ERROR, message);
+        }
+      }
       return makeError(
         request,
         JSON_RPC_METHOD_NOT_FOUND,
-        `method not found: ${method} (implemented: initialize, engine/ping, engine/echo, engine/shutdown, dyad/invoke)`,
+        `method not found: ${method} (implemented: initialize, engine/ping, engine/echo, engine/shutdown, dyad/invoke, preview/start, preview/stop, preview/reload, preview/state, preview/screenshot, analyze/run, test/run, build/start, build/state)`,
       );
     }
   }

@@ -1758,6 +1758,7 @@ const make = Effect.gen(function* () {
       ...(providerMentions !== undefined ? { mentions: providerMentions } : {}),
       ...(modelForTurn !== undefined ? { modelSelection: modelForTurn } : {}),
       ...(input.interactionMode !== undefined ? { interactionMode: input.interactionMode } : {}),
+      ...(input.mode !== undefined ? { mode: input.mode } : {}),
       ...(!skipCaideFlutterPersona ? { systemPrompt: CAIDE_FLUTTER_BUILDER_PERSONA } : {}),
     };
     const sendQueuedProviderTurn = (messageText: string | undefined) =>

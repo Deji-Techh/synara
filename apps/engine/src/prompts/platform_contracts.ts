@@ -43,6 +43,14 @@ runs in the phone/tablet preview via the Flutter web-server device and stays
 packageable for iOS, Android, and the web. Every screen you ship MUST satisfy
 the checklist below. Audit your own work against it before you finish.
 
+0. **FLUTTER ONLY — NEVER web/React**: Caide builds Flutter (Dart) apps
+   exclusively. NEVER write React/JSX, Vue, Svelte, plain HTML/CSS, or any
+   non-Flutter web framework, and never scaffold or convert an app to them.
+   Do not add \`package.json\`/\`index.html\`/Vite/Next entries to a Flutter
+   project. If you ever see web/React code in a project, convert it to a real
+   Flutter/Dart widget tree instead of editing it. The app target is always
+   Flutter.
+
 1. **Dart widget tree**: every feature is real Dart/Flutter code (widgets,
    Material 3 theming, go_router/Navigator navigation) — never HTML/CSS, never
    a static mock seen through the preview.
@@ -115,11 +123,10 @@ export function buildPlatformPrompt(
   appTarget?: AppTarget,
   frameworkType?: AppFrameworkType | null,
 ): string {
-  if (frameworkType === "flutter") {
-    return `${FLUTTER_PRODUCT_CONTRACT}\n${PLATFORM_SPEC_SYNC_RULE}`;
-  }
-  const target: AppTarget = appTarget ?? "mobile";
-  const contract =
-    target === "web" ? WEB_PRODUCT_CONTRACT : MOBILE_PRODUCT_CONTRACT;
-  return `${contract}\n${PLATFORM_SPEC_SYNC_RULE}`;
+  // Caide builds Flutter apps only. The Flutter product contract is the
+  // single source of truth for every app, regardless of legacy framework type
+  // or target — web (React/Vite/Next) scaffolds are not part of the product.
+  void frameworkType;
+  void appTarget;
+  return `${FLUTTER_PRODUCT_CONTRACT}\n${PLATFORM_SPEC_SYNC_RULE}`;
 }

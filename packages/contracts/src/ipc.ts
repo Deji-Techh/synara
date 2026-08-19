@@ -232,6 +232,7 @@ import type {
   ClientOrchestrationCommand,
   OrchestrationGetFullThreadDiffInput,
   OrchestrationGetFullThreadDiffResult,
+  OrchestrationGetProjectActivityResult,
   OrchestrationGetThreadDetailSnapshotInput,
   OrchestrationGetThreadDetailSnapshotResult,
   OrchestrationImportThreadInput,
@@ -766,6 +767,10 @@ export interface NativeApi {
     unsubscribeShell: () => Promise<void>;
     subscribeThread: (input: OrchestrationSubscribeThreadInput) => Promise<void>;
     unsubscribeThread: (input: OrchestrationUnsubscribeThreadInput) => Promise<void>;
+    getProjectActivity: (input: {
+      projectId: string;
+      limit?: number;
+    }) => Promise<OrchestrationGetProjectActivityResult>;
     onDomainEvent: (callback: (event: OrchestrationEvent) => void) => () => void;
     onShellEvent: (callback: (event: OrchestrationShellStreamItem) => void) => () => void;
     onThreadEvent: (callback: (event: OrchestrationThreadStreamItem) => void) => () => void;

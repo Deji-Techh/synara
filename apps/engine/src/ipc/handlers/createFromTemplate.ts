@@ -5,10 +5,77 @@ import { copyDirectoryRecursive } from "../utils/file_utils";
 import { gitClone, getCurrentCommitHash } from "../utils/git_utils";
 import { readSettings } from "@/main/settings";
 import { getTemplateOrThrow } from "../utils/template_utils";
+import { getFlutterExecutable } from "@/ipc/utils/flutter_utils";
 import log from "electron-log";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
+import { spawn } from "node:child_process";
 
 const logger = log.scope("createFromTemplate");
+
+/**
+ * Caide builds Flutter apps only. Fall back to a real `flutter create` when the
+ * bundled `scaffold-flutter/` template is absent (e.g. a build-artifact-only
+ * dump or an unpackaged checkout), so app creation is never blocked on a
+ * committed template and never silently produces a React/web project.
+ */
+function createFlutterProjectViaToolchain(fullAppPath: string): Promise<void> {
+  const appName = path.basename(fullAppPath).replace(/[^a-zA-Z0-9_]/g, "_").toLowerCase();
+  const flutter = getFlutterExecutable();
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const settle = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      fn();
+    };
+    const timeout = setTimeout(() => {
+      settle(() =>
+        reject(
+          new CaideError(
+            `flutter create timed out (${flutter})`,
+            CaideErrorKind.External,
+          ),
+        ),
+      );
+    }, 5 * 60_000);
+    const child = spawn(
+      flutter,
+      ["create", "--org", "com.caide", "--project-name", appName || "caide_app", "."],
+      { cwd: fullAppPath, shell: false, stdio: "pipe", windowsHide: true },
+    );
+    let stderr = "";
+    child.stderr.on("data", (chunk) => {
+      stderr += String(chunk);
+    });
+    child.on("error", (error) => {
+      settle(() =>
+        reject(
+          new CaideError(
+            `flutter create could not start: ${error.message}; stderr: ${stderr}`,
+            CaideErrorKind.External,
+          ),
+        ),
+      );
+    });
+    child.on("close", (code) => {
+      settle(() => {
+        if (code === 0) {
+          // flutter create leaves an empty .gitignore and a fresh .git? It does
+          // not init git; the caller (createApp) runs initRepoWithInitialCommit.
+          resolve();
+        } else {
+          reject(
+            new CaideError(
+              `flutter create failed with code ${code}; stderr: ${stderr.slice(-2000)}`,
+              CaideErrorKind.External,
+            ),
+          );
+        }
+      });
+    });
+  });
+}
 
 export async function createFromTemplate({
   fullAppPath,
@@ -20,24 +87,35 @@ export async function createFromTemplate({
   const settings = readSettings();
   const templateId = requestedTemplateId ?? settings.selectedTemplateId;
 
-  if (
-    templateId === "react" ||
-    templateId === "web3" ||
-    templateId === "flutter"
-  ) {
-    const scaffoldDir =
-      templateId === "flutter"
-        ? "scaffold-flutter"
-        : templateId === "web3"
-          ? "scaffold-web3"
-          : "scaffold";
+  if (templateId === "flutter") {
+    const scaffoldDir = "scaffold-flutter";
     const sourceScaffoldPath = path.join(__dirname, "..", "..", scaffoldDir);
     const repoScaffoldPath = path.join(process.cwd(), scaffoldDir);
+    const hasScaffold =
+      fs.existsSync(sourceScaffoldPath) || fs.existsSync(repoScaffoldPath);
+    if (!hasScaffold) {
+      // No committed template (or a broken build-artifact dump): use the
+      // toolchain so the app is always a real Flutter project.
+      logger.info(`flutter: no scaffold-flutter asset, running flutter create for ${fullAppPath}`);
+      await createFlutterProjectViaToolchain(fullAppPath);
+      return;
+    }
     await copyDirectoryRecursive(
       fs.existsSync(sourceScaffoldPath) ? sourceScaffoldPath : repoScaffoldPath,
       fullAppPath,
     );
     return;
+  }
+
+  if (templateId === "react" || templateId === "web3") {
+    // Legacy web templates are not part of the Flutter product. Fall through
+    // to the toolchain path so we never produce a React app unexpectedly; if a
+    // template id is ever explicitly requested, surface it as an error instead
+    // of silently scaffolding web code.
+    throw new CaideError(
+      `Template "${templateId}" is not supported. Caide builds Flutter apps only.`,
+      CaideErrorKind.Validation,
+    );
   }
 
   const template = await getTemplateOrThrow(templateId);

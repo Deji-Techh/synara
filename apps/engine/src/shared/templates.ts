@@ -18,11 +18,14 @@ export interface ApiTemplate {
   imageUrl: string;
 }
 
-export const DEFAULT_TEMPLATE_ID = "react";
-export const DEFAULT_TEMPLATE = {
-  id: "react",
-  title: "React.js Template",
-  description: "Uses React.js, Vite, Shadcn, Tailwind and TypeScript.",
+// Caide builds Flutter apps only. The default template must always be the
+// Flutter app template; React/web templates are legacy and never the default.
+export const DEFAULT_TEMPLATE_ID = "flutter";
+export const DEFAULT_TEMPLATE: Template = {
+  id: "flutter",
+  title: "Flutter App Template",
+  description:
+    "Cross-platform Flutter app (Android, iOS, Web) with Material 3, ready for caide.",
   imageUrl:
     "https://github.com/user-attachments/assets/5b700eab-b28c-498e-96de-8649b14c16d9",
   isOfficial: true,
@@ -78,15 +81,6 @@ export const FULLSTACK_TEMPLATE_KEYWORDS = [
 
 export const localTemplatesData: Template[] = [
   DEFAULT_TEMPLATE,
-  {
-    id: "flutter",
-    title: "Flutter App Template",
-    description:
-      "Cross-platform Flutter app (Android, iOS, Web) with Material 3, ready for caide.",
-    imageUrl:
-      "https://github.com/user-attachments/assets/5b700eab-b28c-498e-96de-8649b14c16d9",
-    isOfficial: true,
-  },
   {
     id: "web3",
     title: "Multi-Chain Web3 dApp",
