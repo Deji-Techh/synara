@@ -2,7 +2,11 @@ import type { DeviceUdid, ThreadDeviceState } from "@caide/contracts";
 import { ThreadId } from "@caide/contracts";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { selectThreadDeviceState, useDeviceStateStore } from "./deviceStateStore";
+import {
+  selectThreadDeviceState,
+  selectThreadFrameKind,
+  useDeviceStateStore,
+} from "./deviceStateStore";
 
 const THREAD_ID = ThreadId.makeUnsafe("thread-device-1");
 const OTHER_THREAD_ID = ThreadId.makeUnsafe("thread-device-2");
@@ -106,5 +110,64 @@ describe("deviceStateStore version gating", () => {
     useDeviceStateStore.getState().upsertThreadState(threadState({ version: 1 }));
 
     expect(selectThreadDeviceState(THREAD_ID)(useDeviceStateStore.getState())?.version).toBe(1);
+  });
+});
+
+describe("frame kind persistence", () => {
+  it("defaults to no stored frame", () => {
+    expect(selectThreadFrameKind(THREAD_ID)(useDeviceStateStore.getState())).toBeUndefined();
+  });
+
+  it("stores a per-thread frame choice", () => {
+    const store = useDeviceStateStore.getState();
+    store.setFrameKind(THREAD_ID, "androidPhone");
+
+    expect(selectThreadFrameKind(THREAD_ID)(useDeviceStateStore.getState())).toBe("androidPhone");
+  });
+
+  it("keeps frame choices independent per thread", () => {
+    const store = useDeviceStateStore.getState();
+    store.setFrameKind(THREAD_ID, "iPad");
+    store.setFrameKind(OTHER_THREAD_ID, "frameless");
+
+    const state = useDeviceStateStore.getState();
+    expect(selectThreadFrameKind(THREAD_ID)(state)).toBe("iPad");
+    expect(selectThreadFrameKind(OTHER_THREAD_ID)(state)).toBe("frameless");
+  });
+
+  it("retains the same object identity when re-setting the same kind", () => {
+    const store = useDeviceStateStore.getState();
+    store.setFrameKind(THREAD_ID, "iPhone");
+    const before = useDeviceStateStore.getState().frameKindByThreadId;
+
+    useDeviceStateStore.getState().setFrameKind(THREAD_ID, "iPhone");
+
+    expect(useDeviceStateStore.getState().frameKindByThreadId).toBe(before);
+  });
+
+  it("drops the frame kind with the thread when the thread is removed", () => {
+    const store = useDeviceStateStore.getState();
+    store.upsertThreadState(threadState({ threadId: THREAD_ID }));
+    store.upsertThreadState(threadState({ threadId: OTHER_THREAD_ID }));
+    store.setFrameKind(THREAD_ID, "iPhone");
+    store.setFrameKind(OTHER_THREAD_ID, "iPad");
+
+    useDeviceStateStore.getState().removeThreadState(THREAD_ID);
+
+    const state = useDeviceStateStore.getState();
+    expect(selectThreadFrameKind(THREAD_ID)(state)).toBeUndefined();
+    expect(selectThreadFrameKind(OTHER_THREAD_ID)(state)).toBe("iPad");
+  });
+
+  it("clears every frame kind on reset", () => {
+    const store = useDeviceStateStore.getState();
+    store.setFrameKind(THREAD_ID, "androidPhone");
+    store.setFrameKind(OTHER_THREAD_ID, "frameless");
+
+    useDeviceStateStore.getState().clear();
+
+    const state = useDeviceStateStore.getState();
+    expect(selectThreadFrameKind(THREAD_ID)(state)).toBeUndefined();
+    expect(selectThreadFrameKind(OTHER_THREAD_ID)(state)).toBeUndefined();
   });
 });

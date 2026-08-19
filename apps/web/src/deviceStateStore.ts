@@ -14,11 +14,25 @@
 import type { ThreadDeviceState, ThreadId } from "@caide/contracts";
 import { create } from "zustand";
 
+/**
+ * Which chassis the preview pane draws the live Flutter app in. Frameless is
+ * the fluid full-bleed view (no bezel, no rail); the rest map onto the
+ * DeviceFrame kinds.
+ */
+export type PreviewFrameKind = "androidPhone" | "iPhone" | "iPad" | "frameless";
+
 interface DeviceStateStore {
   threadStatesByThreadId: Record<string, ThreadDeviceState | undefined>;
   upsertThreadState: (state: ThreadDeviceState) => void;
   removeThreadState: (threadId: ThreadId) => void;
   clear: () => void;
+  /**
+   * Per-thread preview frame choice. Persistently stored next to the thread's
+   * device metadata so the chosen frame survives the preview pane closing and
+   * reopening (the pane state itself is not persisted).
+   */
+  frameKindByThreadId: Record<string, PreviewFrameKind | undefined>;
+  setFrameKind: (threadId: ThreadId, kind: PreviewFrameKind) => void;
 }
 
 export const useDeviceStateStore = create<DeviceStateStore>()((set) => ({
@@ -42,14 +56,33 @@ export const useDeviceStateStore = create<DeviceStateStore>()((set) => ({
     }),
   removeThreadState: (threadId) =>
     set((current) => {
-      if (!Object.hasOwn(current.threadStatesByThreadId, threadId)) {
+      const hasState = Object.hasOwn(current.threadStatesByThreadId, threadId);
+      const hasFrameKind = Object.hasOwn(current.frameKindByThreadId, threadId);
+      if (!hasState && !hasFrameKind) {
         return current;
       }
       const nextThreadStatesByThreadId = { ...current.threadStatesByThreadId };
-      delete nextThreadStatesByThreadId[threadId];
-      return { threadStatesByThreadId: nextThreadStatesByThreadId };
+      if (hasState) {
+        delete nextThreadStatesByThreadId[threadId];
+      }
+      const nextFrameKindByThreadId = { ...current.frameKindByThreadId };
+      if (hasFrameKind) {
+        delete nextFrameKindByThreadId[threadId];
+      }
+      return {
+        threadStatesByThreadId: nextThreadStatesByThreadId,
+        frameKindByThreadId: nextFrameKindByThreadId,
+      };
     }),
-  clear: () => set({ threadStatesByThreadId: {} }),
+  clear: () => set({ threadStatesByThreadId: {}, frameKindByThreadId: {} }),
+  frameKindByThreadId: {},
+  setFrameKind: (threadId, kind) =>
+    set((current) => {
+      if (current.frameKindByThreadId[threadId] === kind) {
+        return current;
+      }
+      return { frameKindByThreadId: { ...current.frameKindByThreadId, [threadId]: kind } };
+    }),
 }));
 
 // Dev-only handle so the pane's availability and setup states — which otherwise
@@ -63,4 +96,10 @@ export function selectThreadDeviceState(
   threadId: ThreadId,
 ): (store: DeviceStateStore) => ThreadDeviceState | undefined {
   return (store) => store.threadStatesByThreadId[threadId];
+}
+
+export function selectThreadFrameKind(
+  threadId: ThreadId,
+): (store: DeviceStateStore) => PreviewFrameKind | undefined {
+  return (store) => store.frameKindByThreadId[threadId];
 }
