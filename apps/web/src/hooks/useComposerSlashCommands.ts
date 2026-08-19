@@ -18,7 +18,7 @@ import type { ComposerTrigger } from "../composer-logic";
 import { extendReplacementRangeForTrailingSpace } from "../composerTriggerInsertion";
 import {
   buildBtwPrompt,
-  buildGoalPrompt,
+  buildGoalCreateTitle,
   buildGrillMePrompt,
   buildInitPrompt,
   buildLearnPrompt,
@@ -33,8 +33,10 @@ import {
   parseComposerSlashInvocationForCommands,
   parseFastSlashCommandAction,
   parseForkSlashCommandArgs,
+  parseGoalSlashArgs,
   type ForkSlashCommandTarget,
 } from "../composerSlashCommands";
+import { useGoalStore } from "../goalStore";
 import { buildThreadHandoffImportedMessages } from "../lib/threadHandoff";
 import { toastManager } from "../components/ui/toast";
 import type { ComposerCommandItem } from "../components/chat/ComposerCommandMenu";
@@ -641,6 +643,136 @@ export function useComposerSlashCommands(input: {
     selectedProvider,
   ]);
 
+  const openGoalsPane = useCallback(() => {
+    useRightDockStore.getState().openPane(threadId, { kind: "goals" });
+  }, [threadId]);
+
+  // Dyad `/goal` handling: `/goal` opens the goals pane (compose into the
+  // goal flow), `/goal <objective>` creates + starts a durable engine goal via
+  // `NativeApi.goals.createGoal`, and `/goal <subcommand>` drives the active
+  // goal's controls (pause/resume/cancel/retry/verify/steer) or, for browse
+  // subcommands (status/edit/tasks/logs/evidence/blockers/history), the Goals
+  // pane where those surfaces live. `appId` is intentionally omitted so the
+  // engine resolves the current app for this thread.
+  const runGoalSlashCommand = useCallback(
+    (args: string): void => {
+      const store = useGoalStore.getState();
+      const parsed = parseGoalSlashArgs(args);
+
+      if (parsed.kind === "subcommand") {
+        const { subcommand, argument } = parsed;
+        const activeGoal = store.activeGoal;
+        const controlActions = [
+          "pause",
+          "resume",
+          "cancel",
+          "retry",
+          "verify",
+          "steer",
+        ] as const;
+
+        if ((controlActions as readonly string[]).includes(subcommand)) {
+          if (!activeGoal) {
+            toastManager.add({
+              type: "info",
+              title: "No active goal",
+              description: "Create a goal first with /goal <objective>.",
+            });
+            openGoalsPane();
+            return;
+          }
+          const pastTense: Record<string, string> = {
+            pause: "paused",
+            resume: "resumed",
+            cancel: "cancelled",
+            retry: "retried",
+            verify: "verified",
+            steer: "steered",
+          };
+          const run = (() => {
+            switch (subcommand) {
+              case "pause":
+                return store.pauseGoal(activeGoal.id);
+              case "resume":
+                return store.resumeGoal(activeGoal.id);
+              case "cancel":
+                return store.cancelGoal(activeGoal.id);
+              case "retry":
+                return store.retryGoal(activeGoal.id);
+              case "verify":
+                return store.verifyGoal(activeGoal.id);
+              case "steer":
+                if (!argument) {
+                  toastManager.add({
+                    type: "warning",
+                    title: "Missing steer instruction",
+                    description: "Use /goal steer <instruction>.",
+                  });
+                  return Promise.resolve(null);
+                }
+                return store.steerGoal(activeGoal.id, argument);
+              default:
+                return Promise.resolve(null);
+            }
+          })();
+          void run.then((goal) => {
+            if (goal) {
+              toastManager.add({
+                type: "success",
+                title: `Goal ${pastTense[subcommand] ?? "updated"}`,
+                description: goal.title,
+              });
+            }
+          });
+          openGoalsPane();
+          return;
+        }
+
+        if (subcommand === "status" && activeGoal) {
+          toastManager.add({
+            type: "info",
+            title: activeGoal.title,
+            description: `${activeGoal.status} — ${activeGoal.verifiedTaskCount}/${activeGoal.totalTaskCount} tasks verified`,
+          });
+        } else if (subcommand === "status") {
+          toastManager.add({
+            type: "info",
+            title: "No active goal",
+            description: "Create a goal first with /goal <objective>.",
+          });
+        }
+        // status | edit | tasks | logs | evidence | blockers | history all
+        // live in the Goals pane — open it so the user can act.
+        openGoalsPane();
+        return;
+      }
+
+      const objective = parsed.objective;
+      if (!objective) {
+        openGoalsPane();
+        return;
+      }
+      const title = buildGoalCreateTitle(objective);
+      void store.createGoal({ title, objective }).then((goal) => {
+        if (goal) {
+          toastManager.add({
+            type: "success",
+            title: "Goal created",
+            description: `${goal.title} — running autonomously`,
+          });
+        } else {
+          toastManager.add({
+            type: "error",
+            title: "Could not create goal",
+            description: "An error occurred while creating the goal. See the Goals pane for details.",
+          });
+        }
+        openGoalsPane();
+      });
+    },
+    [openGoalsPane],
+  );
+
   const handleStandaloneSlashCommand = useCallback(
     async (trimmed: string): Promise<boolean> => {
       const fastSlashAction = parseFastSlashCommandAction(trimmed);
@@ -786,23 +918,48 @@ export function useComposerSlashCommands(input: {
       }
 
       if (
-        slashInvocation.command === "goal" ||
         slashInvocation.command === "btw" ||
         slashInvocation.command === "grill-me" ||
         slashInvocation.command === "teamwork-preview" ||
         slashInvocation.command === "learn"
       ) {
         const buildPrompt =
-          slashInvocation.command === "goal"
-            ? buildGoalPrompt
-            : slashInvocation.command === "btw"
-              ? buildBtwPrompt
-              : slashInvocation.command === "grill-me"
-                ? buildGrillMePrompt
-                : slashInvocation.command === "teamwork-preview"
-                  ? buildTeamworkPreviewPrompt
-                  : buildLearnPrompt;
+          slashInvocation.command === "btw"
+            ? buildBtwPrompt
+            : slashInvocation.command === "grill-me"
+              ? buildGrillMePrompt
+              : slashInvocation.command === "teamwork-preview"
+                ? buildTeamworkPreviewPrompt
+                : buildLearnPrompt;
         editorActions.setComposerPromptValue(buildPrompt(slashInvocation.args));
+        return true;
+      }
+
+      if (
+        slashInvocation.command === "goal" ||
+        slashInvocation.command === "goals" ||
+        slashInvocation.command === "commands" ||
+        slashInvocation.command === "help"
+      ) {
+        editorActions.clearComposerSlashDraft();
+        if (slashInvocation.command === "goal") {
+          runGoalSlashCommand(slashInvocation.args);
+        } else if (slashInvocation.command === "goals") {
+          openGoalsPane();
+        } else if (slashInvocation.command === "commands") {
+          toastManager.add({
+            type: "info",
+            title: "Browse slash commands",
+            description: "Type / in the composer to browse all built-in commands.",
+          });
+        } else {
+          toastManager.add({
+            type: "info",
+            title: "Engine help",
+            description:
+              "The engine help bot isn't wired to the web yet — /goal, /goals and the Goals pane cover autonomous tasks.",
+          });
+        }
         return true;
       }
 
@@ -926,6 +1083,8 @@ export function useComposerSlashCommands(input: {
       runCodexReviewStart,
       runExportSlashCommand,
       runFastSlashCommand,
+      runGoalSlashCommand,
+      openGoalsPane,
       navigate,
     ],
   );
@@ -1147,23 +1306,33 @@ export function useComposerSlashCommands(input: {
         return;
       }
 
+      if (item.command === "goal") {
+        // Menu insert composes the objective: typing the objective then
+        // sending /goal <objective> creates a real engine goal.
+        const applied = clearSlashCommandFromComposer();
+        if (!wasPromptReplacementApplied(applied)) {
+          return;
+        }
+        editorActions.setComposerHighlightedItemId(null);
+        editorActions.setComposerPromptValue("/goal ");
+        editorActions.scheduleComposerFocus();
+        return;
+      }
+
       if (
-        item.command === "goal" ||
         item.command === "btw" ||
         item.command === "grill-me" ||
         item.command === "teamwork-preview" ||
         item.command === "learn"
       ) {
         const buildPrompt =
-          item.command === "goal"
-            ? buildGoalPrompt
-            : item.command === "btw"
-              ? buildBtwPrompt
-              : item.command === "grill-me"
-                ? buildGrillMePrompt
-                : item.command === "teamwork-preview"
-                  ? buildTeamworkPreviewPrompt
-                  : buildLearnPrompt;
+          item.command === "btw"
+            ? buildBtwPrompt
+            : item.command === "grill-me"
+              ? buildGrillMePrompt
+              : item.command === "teamwork-preview"
+                ? buildTeamworkPreviewPrompt
+                : buildLearnPrompt;
         const applied = clearSlashCommandFromComposer();
         if (!wasPromptReplacementApplied(applied)) {
           return;
@@ -1171,6 +1340,35 @@ export function useComposerSlashCommands(input: {
         editorActions.setComposerHighlightedItemId(null);
         editorActions.setComposerPromptValue(buildPrompt(""));
         editorActions.scheduleComposerFocus();
+        return;
+      }
+
+      if (
+        item.command === "goals" ||
+        item.command === "commands" ||
+        item.command === "help"
+      ) {
+        const applied = clearSlashCommandFromComposer();
+        if (!wasPromptReplacementApplied(applied)) {
+          return;
+        }
+        editorActions.setComposerHighlightedItemId(null);
+        if (item.command === "goals") {
+          openGoalsPane();
+        } else if (item.command === "commands") {
+          toastManager.add({
+            type: "info",
+            title: "Browse slash commands",
+            description: "Type / in the composer to browse all built-in commands.",
+          });
+        } else {
+          toastManager.add({
+            type: "info",
+            title: "Engine help",
+            description:
+              "The engine help bot isn't wired to the web yet — /goal, /goals and the Goals pane cover autonomous tasks.",
+          });
+        }
         return;
       }
 
@@ -1308,6 +1506,7 @@ export function useComposerSlashCommands(input: {
       supportsTextNativeReviewCommand,
       runExportSlashCommand,
       runFastSlashCommand,
+      openGoalsPane,
       navigate,
     ],
   );

@@ -17,6 +17,8 @@ import {
   parseComposerSlashInvocationForCommands,
   parseFastSlashCommandAction,
   parseForkSlashCommandArgs,
+  parseGoalSlashArgs,
+  buildGoalCreateTitle,
   providerSupportsTextNativeReviewCommand,
   shouldHideProviderNativeCommandFromComposerMenu,
 } from "./composerSlashCommands";
@@ -43,6 +45,7 @@ describe("composerSlashCommands", () => {
     expect(filterComposerSlashCommands("auto").map((entry) => entry.command)).toEqual([
       "automation",
       "teamwork-preview",
+      "goal",
     ]);
     expect(filterComposerSlashCommands("feed").map((entry) => entry.command)).toEqual(["feedback"]);
     expect(filterComposerSlashCommands("init").map((entry) => entry.command)).toEqual(["init"]);
@@ -115,6 +118,50 @@ describe("composerSlashCommands", () => {
       target: null,
       invalid: true,
     });
+  });
+
+  it("parses /goal args into create vs dyad subcommands", () => {
+    expect(parseGoalSlashArgs("")).toEqual({ kind: "create", objective: "" });
+    expect(parseGoalSlashArgs("implement feature X")).toEqual({
+      kind: "create",
+      objective: "implement feature X",
+    });
+    expect(parseGoalSlashArgs("status page")).toEqual({
+      kind: "subcommand",
+      subcommand: "status",
+      argument: "page",
+    });
+    expect(parseGoalSlashArgs("status")).toEqual({
+      kind: "subcommand",
+      subcommand: "status",
+      argument: "",
+    });
+    expect(parseGoalSlashArgs("pause")).toEqual({
+      kind: "subcommand",
+      subcommand: "pause",
+      argument: "",
+    });
+    expect(parseGoalSlashArgs("pause ran out of budget")).toEqual({
+      kind: "subcommand",
+      subcommand: "pause",
+      argument: "ran out of budget",
+    });
+    expect(parseGoalSlashArgs("steer focus on the login flow")).toEqual({
+      kind: "subcommand",
+      subcommand: "steer",
+      argument: "focus on the login flow",
+    });
+    expect(parseGoalSlashArgs("history")).toEqual({
+      kind: "subcommand",
+      subcommand: "history",
+      argument: "",
+    });
+  });
+
+  it("derives a goal title from the objective first line, mirroring the engine", () => {
+    expect(buildGoalCreateTitle("implement feature X")).toBe("implement feature X");
+    expect(buildGoalCreateTitle("")).toBe("New goal");
+    expect(buildGoalCreateTitle("first line\nsecond line")).toBe("first line");
   });
 
   it("only offers /fork for an otherwise empty default composer", () => {
@@ -334,10 +381,14 @@ describe("composerSlashCommands", () => {
       "build",
       "preview",
       "theme",
+      "debug",
       "side",
       "export",
       "feedback",
       "automation",
+      "goals",
+      "commands",
+      "help",
     ]);
   });
 
@@ -457,6 +508,7 @@ describe("composerSlashCommands", () => {
       "clear",
       "model",
       "plan",
+      "debug",
       "default",
       "review",
       "fork",
@@ -466,6 +518,9 @@ describe("composerSlashCommands", () => {
       "export",
       "feedback",
       "automation",
+      "goals",
+      "commands",
+      "help",
     ]);
   });
 

@@ -23,6 +23,7 @@ import {
   EraserIcon,
   FastModeIcon,
   FileIcon,
+  FlagIcon,
   GitBranchIcon,
   GitForkIcon,
   GlobeIcon,
@@ -74,7 +75,13 @@ function commandMenuTitle(
     case "btw":
       return "Quick Question";
     case "goal":
-      return "Autonomous Goal";
+      return "Create Goal";
+    case "goals":
+      return "All Goals";
+    case "commands":
+      return "Browse Commands";
+    case "help":
+      return "Engine Help";
     case "schedule":
       return "Schedule Automation";
     case "browser":
@@ -487,6 +494,9 @@ const SLASH_COMMAND_ICONS: Record<string, LucideIcon> = {
   spawn: BotIcon,
   btw: MessageCircleIcon,
   goal: CircleCheckIcon,
+  goals: FlagIcon,
+  commands: TerminalIcon,
+  help: InfoIcon,
   schedule: ClockIcon,
   browser: GlobeIcon,
   "grill-me": BrainIcon,

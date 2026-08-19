@@ -156,8 +156,26 @@ const COMPOSER_SLASH_COMMAND_DEFINITIONS: Record<
   goal: {
     command: "goal",
     label: "/goal",
-    description: "Run until the specified goal is completely finished",
+    description: "Create a durable project goal for the current app (runs autonomously until done)",
     source: "app",
+  },
+  goals: {
+    command: "goals",
+    label: "/goals",
+    description: "Open all goals across projects",
+    source: "shared",
+  },
+  commands: {
+    command: "commands",
+    label: "/commands",
+    description: "Browse all built-in slash commands",
+    source: "shared",
+  },
+  help: {
+    command: "help",
+    label: "/help",
+    description: "Ask the engine help bot for guidance",
+    source: "shared",
   },
   schedule: {
     command: "schedule",
@@ -445,6 +463,55 @@ export function buildGoalPrompt(existingPrompt: string): string {
   return trimmedPrompt.length > 0 ? `${cannedPrompt}${trimmedPrompt}` : cannedPrompt;
 }
 
+/**
+ * Dyad goal subcommands mirrored from the engine's `slash_commands.ts`
+ * (`/goal status|pause|resume|cancel|edit|steer|tasks|logs|evidence|blockers|
+ * retry|verify|history`). Any other first token is treated as the start of a
+ * new goal's objective, matching the engine parser (`/goal <objective>`).
+ */
+export const GOAL_SLASH_SUBCOMMANDS = [
+  "status",
+  "pause",
+  "resume",
+  "cancel",
+  "edit",
+  "steer",
+  "tasks",
+  "logs",
+  "evidence",
+  "blockers",
+  "retry",
+  "verify",
+  "history",
+] as const;
+
+export type GoalSlashSubcommand = (typeof GOAL_SLASH_SUBCOMMANDS)[number];
+
+export type GoalSlashInvocation =
+  | { kind: "create"; objective: string }
+  | { kind: "subcommand"; subcommand: GoalSlashSubcommand; argument: string };
+
+export function parseGoalSlashArgs(args: string): GoalSlashInvocation {
+  const trimmed = args.trim();
+  if (!trimmed) {
+    return { kind: "create", objective: "" };
+  }
+  const [firstToken, ...restTokens] = trimmed.split(/\s+/);
+  const subcommand = GOAL_SLASH_SUBCOMMANDS.find(
+    (candidate) => candidate === firstToken?.toLowerCase(),
+  );
+  if (subcommand) {
+    return { kind: "subcommand", subcommand, argument: restTokens.join(" ").trim() };
+  }
+  return { kind: "create", objective: trimmed };
+}
+
+/** Mirrors the engine's `createGoal` title derivation (first line, ≤100 chars). */
+export function buildGoalCreateTitle(objective: string): string {
+  const firstLine = objective.split(/\r?\n/)[0];
+  return (firstLine ?? "").slice(0, 100).trim() || "New goal";
+}
+
 export function buildBtwPrompt(existingPrompt: string): string {
   const cannedPrompt =
     "By the way — quickly answer this side question without derailing the main task. Keep the reply short and to the point: ";
@@ -578,6 +645,9 @@ export function getAvailableComposerSlashCommands(input: {
           ...(input.canOfferExportCommand ? (["export"] as const) : []),
           "feedback",
           "automation",
+          "goals",
+          "commands",
+          "help",
         ]
       : [
           "init",
@@ -600,6 +670,9 @@ export function getAvailableComposerSlashCommands(input: {
           ...(input.canOfferExportCommand ? (["export"] as const) : []),
           "feedback",
           "automation",
+          "goals",
+          "commands",
+          "help",
         ];
   return availableCommands.filter((command) => !collidingNativeCommandNames.has(command));
 }

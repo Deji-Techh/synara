@@ -35,6 +35,13 @@ export const BUILT_IN_COMPOSER_SLASH_COMMANDS = [
   "export",
   "feedback",
   "automation",
+  // Dyad/engine registry commands surfaced to the composer so the shared
+  // package stays the single source of truth for what the web parses/menus.
+  // The engine does not yet expose its command registry over RPC; when it does
+  // (`slash:list`), that response should replace this static mirror.
+  "goals",
+  "commands",
+  "help",
 ] as const;
 
 export type BuiltInComposerSlashCommand = (typeof BUILT_IN_COMPOSER_SLASH_COMMANDS)[number];
