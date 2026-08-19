@@ -1,5 +1,5 @@
 import { Schema } from "effect";
-import { TrimmedNonEmptyString, NonNegativeInt, PositiveInt, ProjectId, ThreadId } from "./baseSchemas";
+import { TrimmedNonEmptyString, NonNegativeInt, PositiveInt } from "./baseSchemas";
 
 export const GoalId = Schema.brand("GoalId")(TrimmedNonEmptyString);
 export type GoalId = typeof GoalId.Type;
@@ -109,9 +109,12 @@ export type GoalBlocker = typeof GoalBlocker.Type;
 
 export const Goal = Schema.Struct({
   id: GoalId,
-  appId: ProjectId,
-  originatingChatId: Schema.NullOr(ThreadId),
-  goalChatId: Schema.NullOr(ThreadId),
+  // Engine-native: the engine's numeric app rowid + chat rowids. Caide-side
+  // project/thread identity is derived where needed (activity view) by
+  // joining through the engine's app paths, not re-branded here.
+  appId: Schema.Number,
+  originatingChatId: Schema.NullOr(Schema.Number),
+  goalChatId: Schema.NullOr(Schema.Number),
   title: Schema.String,
   objective: Schema.String,
   definitionOfDone: Schema.Array(Schema.String),
@@ -150,8 +153,8 @@ export type GoalActivityEvent = typeof GoalActivityEvent.Type;
 export const GoalRun = Schema.Struct({
   id: GoalRunId,
   goalId: GoalId,
-  appId: ProjectId,
-  chatId: ThreadId,
+  appId: Schema.Number,
+  chatId: Schema.Number,
   kind: GoalRunKind,
   status: GoalRunStatus,
   prompt: Schema.String,
@@ -178,7 +181,7 @@ export type GoalUpdated = typeof GoalUpdated.Type;
 
 export const GoalControlRequested = Schema.Struct({
   goalId: GoalId,
-  chatId: Schema.NullOr(ThreadId),
+  chatId: Schema.NullOr(Schema.Number),
   action: Schema.Literals(["pause", "cancel", "interrupt"]),
 });
 export type GoalControlRequested = typeof GoalControlRequested.Type;

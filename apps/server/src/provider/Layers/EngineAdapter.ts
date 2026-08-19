@@ -934,6 +934,50 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       });
 
     /**
+     * Resolve the engine app rowid backing a workspace root (app path).
+     * Matches an existing app by path, else imports the folder verbatim
+     * (same provisioning policy as thread chats). Returns null when the
+     * path is empty.
+     */
+    const resolveAppIdByPath = (
+      client: EngineClient,
+      appPath: string | null | undefined,
+      errorContext: ThreadId,
+    ): Effect.Effect<number | null, ProviderAdapterError> =>
+      Effect.gen(function* () {
+        if (typeof appPath !== "string" || appPath === "" || appPath === ".") {
+          return null;
+        }
+        const appListResponse = yield* Effect.tryPromise({
+          try: () => client.dyadInvoke<{ apps?: Array<Record<string, unknown>> }>("list-apps"),
+          catch: (cause) =>
+            processError(errorContext, "engine list-apps failed", cause),
+        });
+        const apps = Array.isArray(appListResponse?.apps) ? appListResponse.apps : [];
+        const existing = apps.find((app) => {
+          const appPathField = app.path;
+          return typeof appPathField === "string" &&
+            (appPathField === appPath ||
+              // engine resolves relative names under its apps dir; compare
+              // both raw path and resolved absolute forms.
+              path.resolve(appPathField) === path.resolve(appPath));
+        });
+        if (existing !== undefined && typeof existing.id === "number") {
+          return existing.id;
+        }
+        const importResponse = yield* Effect.tryPromise({
+          try: () =>
+            client.dyadInvoke<{ appId: number }>("import-app", {
+              path: appPath,
+              appName: path.basename(appPath),
+            }),
+          catch: (cause) =>
+            processError(errorContext, "engine import-app failed", cause),
+        });
+        return typeof importResponse?.appId === "number" ? importResponse.appId : null;
+      });
+
+    /**
      * Bind (or create) the engine app + chat backing this thread's
      * conversation. Legacy folders (thread cwd) are imported verbatim;
      * threads without a cwd get a fresh scratch app.
@@ -949,36 +993,21 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         let appId: number | null = null;
         let chatFromCreate: number | null = null;
         if (typeof appPath === "string" && appPath !== "" && appPath !== ".") {
-          const appListResponse = yield* Effect.tryPromise({
-            try: () => client.dyadInvoke<{ apps?: Array<Record<string, unknown>> }>("list-apps"),
-            catch: (cause) =>
-              processError(context.threadId, "engine list-apps failed", cause),
-          });
-          const apps = Array.isArray(appListResponse?.apps) ? appListResponse.apps : [];
-          const existing = apps.find((app) => {
-            const appPathField = app.path;
-            return typeof appPathField === "string" &&
-              (appPathField === appPath ||
-                // engine resolves relative names under its apps dir; compare
-                // both raw path and resolved absolute forms.
-                path.resolve(appPathField) === path.resolve(appPath));
-          });
-          if (existing !== undefined && typeof existing.id === "number") {
-            appId = existing.id;
-          }
-          if (appId === null) {
-            const importResponse = yield* Effect.tryPromise({
-              try: () =>
-                client.dyadInvoke<{ appId: number; chatId?: number }>("import-app", {
-                  path: appPath,
-                  appName: path.basename(appPath),
-                }),
+          const existing = yield* resolveAppIdByPath(client, appPath, context.threadId);
+          appId = existing;
+          if (appId !== null) {
+            const chatsResponse = yield* Effect.tryPromise({
+              try: () => client.dyadInvoke<Array<Record<string, unknown>>>("get-chats", appId),
               catch: (cause) =>
-                processError(context.threadId, "engine import-app failed", cause),
+                processError(context.threadId, "engine get-chats failed", cause),
             });
-            appId = importResponse?.appId ?? null;
+            const firstChat = Array.isArray(chatsResponse) && chatsResponse.length > 0
+              ? chatsResponse[0]
+              : undefined;
             chatFromCreate =
-              typeof importResponse?.chatId === "number" ? importResponse.chatId : null;
+              firstChat !== undefined && typeof firstChat.id === "number"
+                ? firstChat.id
+                : null;
           }
         }
         if (appId === null) {
@@ -1252,26 +1281,22 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         });
       });
 
-    // M3 bridge: the engine's goal store speaks its own GoalSchema (string
-    // goal ids; appId is the engine's numeric app rowid). The WS contract
-    // models goals with Caide's branded id types for future web consumers.
-    // Conversions happen here, at the wire, and stay loose until M4 lands
-    // the real engine contract typing (see plans/013 milestone table).
+    // M4 bridge: the engine's goal store speaks engine-native shapes (string
+    // goal ids, numeric app rowids + chat rowids). Caide-side identity
+    // (ProjectId/ThreadId) is translated on the WS boundary (wsRpc); this
+    // layer exposes the raw engine surface plus the path↔appid helpers the
+    // translation needs.
     const goalIdOf = (arg: { goalId: string }): Record<string, unknown> => ({
       goalId: String(arg.goalId),
     });
-    const engineAppIdOf = (appId: string | null | undefined): Record<string, unknown> =>
-      appId === undefined || appId === null
-        ? {}
-        : // appId crosses as the raw engine numeric rowid keyed by the
-          // project's string id; M4 maps ProjectId → engine app rows.
-          { appId: appId as never };
 
     const goalsApi: EngineGoalsApi = {
       create: (input) =>
         goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:create", {
-          ...engineAppIdOf(input.appId),
-          ...(input.chatId !== undefined ? { chatId: String(input.chatId) } : {}),
+          ...(input.appId !== undefined && input.appId !== null
+            ? { appId: input.appId }
+            : {}),
+          ...(input.chatId !== undefined ? { chatId: input.chatId } : {}),
           ...(input.title !== undefined ? { title: input.title } : {}),
           objective: input.objective,
           ...(input.definitionOfDone !== undefined
@@ -1279,7 +1304,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             : {}),
           ...(input.constraints !== undefined ? { constraints: input.constraints } : {}),
           ...(input.executionTarget !== undefined
-            ? { executionTarget: input.executionTarget as never }
+            ? { executionTarget: input.executionTarget }
             : {}),
         }),
       get: (input) =>
@@ -1288,11 +1313,13 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         goalRequest(
           ThreadId.makeUnsafe(randomUUID()),
           "goal:get-active",
-          engineAppIdOf(input.appId),
+          input.appId !== undefined && input.appId !== null
+            ? { appId: input.appId }
+            : {},
         ),
       list: (input) =>
         goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:list", {
-          ...engineAppIdOf(input.appId),
+          ...(input.appId !== undefined ? { appId: input.appId } : {}),
           ...(input.statuses !== undefined ? { statuses: input.statuses } : {}),
         }),
       listActivity: (input) =>
@@ -1325,7 +1352,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             : {}),
           ...(input.constraints !== undefined ? { constraints: input.constraints } : {}),
           ...(input.executionTarget !== undefined
-            ? { executionTarget: input.executionTarget as never }
+            ? { executionTarget: input.executionTarget }
             : {}),
         }),
       steer: (input) =>
@@ -1338,6 +1365,12 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:retry", goalIdOf(input)),
       verify: (input) =>
         goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:verify", goalIdOf(input)),
+
+      resolveAppId: ({ workspaceRoot }) =>
+        Effect.gen(function* () {
+          const { client } = yield* ensureSharedEngine(ThreadId.makeUnsafe(randomUUID()));
+          return yield* resolveAppIdByPath(client, workspaceRoot, ThreadId.makeUnsafe(randomUUID()));
+        }),
     };
 
     const adapter: EngineAdapterShape = {

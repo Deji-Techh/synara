@@ -3,7 +3,7 @@ import * as Rpc from "effect/unstable/rpc/Rpc";
 import * as RpcGroup from "effect/unstable/rpc/RpcGroup";
 import { WsRpcError } from "./rpc";
 import { Goal, GoalId, GoalStatus, GoalActivityEvent, GoalExecutionTarget } from "./goals";
-import { ProjectId, ThreadId } from "./baseSchemas";
+
 
 export const GOALS_WS_METHODS = {
   createGoal: "goals:create",
@@ -53,8 +53,8 @@ export const WsGoalsSubscribeRpc = Rpc.make(WS_GOALS_SUBSCRIBE, {
 
 export const WsGoalsCreateGoalRpc = Rpc.make(GOALS_WS_METHODS.createGoal, {
   payload: Schema.Struct({
-    appId: Schema.optional(Schema.NullOr(ProjectId)),
-    chatId: Schema.optional(ThreadId),
+    appId: Schema.optional(Schema.NullOr(Schema.Number)),
+    chatId: Schema.optional(Schema.Number),
     title: Schema.optional(Schema.String),
     objective: Schema.String,
     definitionOfDone: Schema.optional(Schema.Array(Schema.String)),
@@ -72,14 +72,14 @@ export const WsGoalsGetGoalRpc = Rpc.make(GOALS_WS_METHODS.getGoal, {
 });
 
 export const WsGoalsGetActiveGoalRpc = Rpc.make(GOALS_WS_METHODS.getActiveGoal, {
-  payload: Schema.Struct({ appId: Schema.optional(Schema.NullOr(ProjectId)) }),
+  payload: Schema.Struct({ appId: Schema.optional(Schema.NullOr(Schema.Number)) }),
   success: Schema.NullOr(Goal),
   error: WsRpcError,
 });
 
 export const WsGoalsListGoalsRpc = Rpc.make(GOALS_WS_METHODS.listGoals, {
   payload: Schema.Struct({
-    appId: Schema.optional(ProjectId),
+    appId: Schema.optional(Schema.Number),
     statuses: Schema.optional(Schema.Array(GoalStatus)),
   }),
   success: Schema.Array(Goal),

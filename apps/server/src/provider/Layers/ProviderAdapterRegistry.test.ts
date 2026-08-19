@@ -210,6 +210,7 @@ const fakeEngineAdapter: EngineAdapterShape = {
     steer: vi.fn(),
     retry: vi.fn(),
     verify: vi.fn(),
+    resolveAppId: vi.fn(),
   },
   streamGoalDomainEvents: Stream.empty,
 };

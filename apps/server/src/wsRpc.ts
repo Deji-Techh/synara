@@ -866,7 +866,6 @@ const makeWsRpcHandlersLayer = () =>
             rpcEffect(
               engineAdapterEffect.pipe(
                 Effect.flatMap((adapter) => adapter.goals.create(input)),
-                Effect.map((goal) => goal as never),
               ),
               label,
             ),
@@ -874,7 +873,6 @@ const makeWsRpcHandlersLayer = () =>
             rpcEffect(
               engineAdapterEffect.pipe(
                 Effect.flatMap((adapter) => adapter.goals.get(input)),
-                Effect.map((goal) => goal as never),
               ),
               label,
             ),
@@ -882,7 +880,6 @@ const makeWsRpcHandlersLayer = () =>
             rpcEffect(
               engineAdapterEffect.pipe(
                 Effect.flatMap((adapter) => adapter.goals.getActive(input)),
-                Effect.map((goal) => goal as never),
               ),
               label,
             ),
@@ -890,7 +887,6 @@ const makeWsRpcHandlersLayer = () =>
             rpcEffect(
               engineAdapterEffect.pipe(
                 Effect.flatMap((adapter) => adapter.goals.list(input)),
-                Effect.map((goals) => goals as never),
               ),
               label,
             ),
@@ -898,7 +894,6 @@ const makeWsRpcHandlersLayer = () =>
             rpcEffect(
               engineAdapterEffect.pipe(
                 Effect.flatMap((adapter) => adapter.goals.listActivity(input)),
-                Effect.map((events) => events as never),
               ),
               label,
             ),
@@ -906,7 +901,6 @@ const makeWsRpcHandlersLayer = () =>
             rpcEffect(
               engineAdapterEffect.pipe(
                 Effect.flatMap((adapter) => adapter.goals.pause(input)),
-                Effect.map((goal) => goal as never),
               ),
               label,
             ),
@@ -914,7 +908,6 @@ const makeWsRpcHandlersLayer = () =>
             rpcEffect(
               engineAdapterEffect.pipe(
                 Effect.flatMap((adapter) => adapter.goals.resume(input)),
-                Effect.map((goal) => goal as never),
               ),
               label,
             ),
@@ -922,7 +915,6 @@ const makeWsRpcHandlersLayer = () =>
             rpcEffect(
               engineAdapterEffect.pipe(
                 Effect.flatMap((adapter) => adapter.goals.cancel(input)),
-                Effect.map((goal) => goal as never),
               ),
               label,
             ),
@@ -930,7 +922,6 @@ const makeWsRpcHandlersLayer = () =>
             rpcEffect(
               engineAdapterEffect.pipe(
                 Effect.flatMap((adapter) => adapter.goals.edit(input)),
-                Effect.map((goal) => goal as never),
               ),
               label,
             ),
@@ -938,7 +929,6 @@ const makeWsRpcHandlersLayer = () =>
             rpcEffect(
               engineAdapterEffect.pipe(
                 Effect.flatMap((adapter) => adapter.goals.steer(input)),
-                Effect.map((goal) => goal as never),
               ),
               label,
             ),
@@ -946,7 +936,6 @@ const makeWsRpcHandlersLayer = () =>
             rpcEffect(
               engineAdapterEffect.pipe(
                 Effect.flatMap((adapter) => adapter.goals.retry(input)),
-                Effect.map((goal) => goal as never),
               ),
               label,
             ),
@@ -954,7 +943,6 @@ const makeWsRpcHandlersLayer = () =>
             rpcEffect(
               engineAdapterEffect.pipe(
                 Effect.flatMap((adapter) => adapter.goals.verify(input)),
-                Effect.map((goal) => goal as never),
               ),
               label,
             ),

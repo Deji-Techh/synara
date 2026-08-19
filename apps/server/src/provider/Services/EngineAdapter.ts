@@ -25,10 +25,8 @@ import type {
   PreviewStopResult,
   PreviewTestResult,
   PreviewScreenshotResult,
-  ProjectId,
-  ThreadId,
 } from "@caide/contracts";
-import type { ProviderSession } from "@caide/contracts";
+import type { ProviderSession, ThreadId } from "@caide/contracts";
 import type { ProviderAdapterError } from "../Errors.ts";
 import type { ProviderAdapterShape } from "./ProviderAdapter.ts";
 
@@ -87,21 +85,25 @@ export interface EnginePreviewOps {
  * Goals API proxied onto the shared engine process. The engine owns goal
  * state; the adapter relays CRUD verbatim (engine-shaped payloads) and
  * streams goal lifecycle events for orchestration + WS consumers.
+ *
+ * Engine-native shapes: appId and chatId are the engine's numeric rowids.
+ * Caide-side identity (ProjectId/ThreadId) is translated by the layer that
+ * owns the projection (wsRpc); the provider adapter stays engine-shaped.
  */
 export interface EngineGoalsApi {
   create(input: {
-    appId?: ProjectId | null | undefined;
-    chatId?: ThreadId | undefined;
+    appId?: number | null | undefined;
+    chatId?: number | undefined;
     title?: string | undefined;
     objective: string;
     definitionOfDone?: ReadonlyArray<string> | undefined;
     constraints?: ReadonlyArray<string> | undefined;
     executionTarget?: GoalExecutionTarget | undefined;
   }): Effect.Effect<Goal, ProviderAdapterError>;
-  get(input: { goalId: GoalId }): Effect.Effect<Goal | null, ProviderAdapterError>;
-  getActive(input: { appId?: ProjectId | null | undefined }): Effect.Effect<Goal | null, ProviderAdapterError>;
+  get(input: { goalId: GoalId }): Effect.Effect<Goal, ProviderAdapterError>;
+  getActive(input: { appId?: number | null | undefined }): Effect.Effect<Goal | null, ProviderAdapterError>;
   list(input: {
-    appId?: ProjectId | undefined;
+    appId?: number | undefined;
     statuses?: ReadonlyArray<GoalStatus> | undefined;
   }): Effect.Effect<Array<Goal>, ProviderAdapterError>;
   listActivity(input: {
@@ -122,6 +124,17 @@ export interface EngineGoalsApi {
   steer(input: { goalId: GoalId; instruction: string }): Effect.Effect<Goal, ProviderAdapterError>;
   retry(input: { goalId: GoalId }): Effect.Effect<Goal, ProviderAdapterError>;
   verify(input: { goalId: GoalId }): Effect.Effect<Goal, ProviderAdapterError>;
+
+  /**
+   * Resolve the engine app rowid backing a workspace root (app path).
+   * Matches an existing app by path; when none exists the app is imported
+   * verbatim (same provisioning as thread chats). Returns null when no
+   * path is given. Used by the M4b activity view to join engine goal runs
+   * onto Caide projects.
+   */
+  resolveAppId(input: {
+    workspaceRoot: string;
+  }): Effect.Effect<number | null, ProviderAdapterError>;
 }
 
 export interface GoalDomainEvent {
