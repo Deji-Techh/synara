@@ -50,3 +50,4 @@ __screenshots__/
 /userData/
 /src/notch/
 /.claude/tmp/
+apps/*/userData/
