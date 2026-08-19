@@ -10,7 +10,7 @@
 export interface DeviceSetupStep {
   id: string;
   label: string;
-  detail?: string;
+  detail?: string | undefined;
   done: boolean;
 }
 

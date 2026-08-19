@@ -36,12 +36,20 @@ import {
   RotateCcwIcon,
   TerminalIcon,
 } from "~/lib/icons";
-import { DeviceScreen } from "../device/DeviceFrame";
-import { DeviceControlRail } from "../device/DeviceControlRail";
+import {
+  selectThreadFrameKind,
+  useDeviceStateStore,
+  type PreviewFrameKind,
+} from "../../deviceStateStore";
+import { DeviceScreen, type DeviceKind } from "../device/DeviceFrame";
+import {
+  DeviceControlRail,
+  type DeviceRailAction,
+} from "../device/DeviceControlRail";
 
-import { useAgentGatewayStore } from "~/agentGatewayStore";
 import { cn } from "~/lib/utils";
 import { PanelStateMessage } from "./PanelStateMessage";
+import { toastManager } from "../ui/toast";
 import {
   analyzeFailed,
   analyzeFinished,
@@ -83,10 +91,31 @@ const PREVIEW_TABS: readonly {
   { id: "release", label: "Release", icon: ArchiveIcon },
 ];
 
-const PREVIEW_DEVICE_OPTIONS: readonly { id: PreviewDeviceId; label: string }[] = [
-  { id: "mobile", label: "Mobile" },
-  { id: "tablet", label: "Tablet" },
-  { id: "desktop", label: "Desktop" },
+/**
+ * The frame switcher drives the chassis (and the frameless view) the live
+ * preview renders in. The mapped device presets keep the pane's existing
+ * deviceId state (view sizing, status machine) in sync without touching its
+ * shape: androidPhone and iPhone share the mobile viewport, iPad the tablet
+ * viewport, and frameless maps to the fluid desktop view.
+ */
+const FRAME_KIND_TO_DEVICE_ID: Record<PreviewFrameKind, PreviewDeviceId> = {
+  androidPhone: "mobile",
+  iPhone: "mobile",
+  iPad: "tablet",
+  frameless: "desktop",
+};
+
+const DEVICE_ID_FRAME_KIND_FALLBACK: Record<PreviewDeviceId, PreviewFrameKind> = {
+  mobile: "iPhone",
+  tablet: "iPad",
+  desktop: "frameless",
+};
+
+const FRAME_KIND_OPTIONS: readonly { id: PreviewFrameKind; label: string }[] = [
+  { id: "androidPhone", label: "Android phone" },
+  { id: "iPhone", label: "iPhone" },
+  { id: "iPad", label: "Tablet" },
+  { id: "frameless", label: "Frameless" },
 ];
 
 const BUILD_TARGET_OPTIONS: readonly { id: "apk" | "appbundle" | "ipa"; label: string }[] = [
@@ -101,12 +130,9 @@ const BUILD_CHANNEL_OPTIONS: readonly { id: "debug" | "profile" | "release"; lab
   { id: "release", label: "Release" },
 ];
 
-// Screen-like viewport for the framed presets; desktop is fluid.
-const DEVICE_VIEWPORT: Record<PreviewDeviceId, { width: number; height: number } | null> = {
-  mobile: { width: 375, height: 680 },
-  tablet: { width: 690, height: 900 },
-  desktop: null,
-};
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message.length > 0 ? error.message : fallback;
+}
 
 function StatusPill({ state }: { state: PreviewPanelState }) {
   const live = state.status === "starting" || state.status === "running";
@@ -187,9 +213,13 @@ function PreviewFailedState(props: { error: string | null; onRetry: () => void }
 
 function PreviewDeviceFrame(props: {
   threadId: ThreadId;
-  deviceId: PreviewDeviceId;
+  frameKind: PreviewFrameKind;
   url: string;
   reloadToken: number;
+  landscape: boolean;
+  onRotate: () => void;
+  onScreenshot: () => void;
+  onRailAction: (action: DeviceRailAction) => void;
 }) {
   const isNative = !props.url.startsWith("http");
   const [screenshotBase64, setScreenshotBase64] = useState<string | null>(null);
@@ -220,9 +250,6 @@ function PreviewDeviceFrame(props: {
     };
   }, [isNative, props.threadId]);
 
-  const viewport = DEVICE_VIEWPORT[props.deviceId];
-  const iframeClassName = props.deviceId === "desktop" ? "h-full w-full" : "h-full w-full border-0";
-  
   const innerView = isNative ? (
     screenshotBase64 ? (
       <img
@@ -245,7 +272,9 @@ function PreviewDeviceFrame(props: {
     />
   );
 
-  if (viewport === null || props.deviceId === "desktop") {
+  // Frameless is the fluid full-bleed view: no chassis and no rail, just the
+  // live surface sized to the pane.
+  if (props.frameKind === "frameless") {
     return (
       <div className="flex h-full min-h-0 flex-1 items-center justify-center overflow-auto p-4">
         {innerView}
@@ -253,20 +282,17 @@ function PreviewDeviceFrame(props: {
     );
   }
 
-  const kind = props.deviceId === "mobile" ? "iPhone" : "iPad";
-
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col items-center overflow-auto p-4 py-8">
       <div className="flex shrink-0 flex-col items-center gap-4">
-        <DeviceScreen kind={kind}>
+        <DeviceScreen kind={props.frameKind} landscape={props.landscape}>
           {innerView}
         </DeviceScreen>
         <DeviceControlRail
-          className="mt-4"
-          activeActions={new Set(["home", "screenshot"])}
-          onAction={(action) => {
-            console.log("Action", action);
-          }}
+          disabled={false}
+          recording={false}
+          landscape={props.landscape}
+          onAction={props.onRailAction}
         />
       </div>
     </div>
@@ -675,6 +701,18 @@ export function PreviewPanel(props: {
     createInitialPreviewPanelState(props.pane.previewDeviceId ?? "mobile"),
   );
   const [isConsoleOpen, setIsConsoleOpen] = useState(false);
+  const [landscape, setLandscape] = useState(false);
+
+  // The chassis choice is persisted per thread (survives the pane closing and
+  // reopening); when nothing is stored yet it falls back to the pane's device
+  // preset so an untouched pane renders the same frame it always did.
+  const threadFrameKind = useDeviceStateStore(selectThreadFrameKind(props.threadId));
+  const setFrameKind = useDeviceStateStore((store) => store.setFrameKind);
+  const frameKind: PreviewFrameKind = threadFrameKind ?? DEVICE_ID_FRAME_KIND_FALLBACK[panelState.deviceId];
+  // Status states (idle/starting/failed) always draw inside a chassis — there
+  // is no frameless "device" to hang a prompt or spinner on — so frameless
+  // falls back to the iPhone silhouette rather than showing an empty pane.
+  const statusFrameKind: DeviceKind = frameKind === "frameless" ? "iPhone" : frameKind;
 
   useEffect(() => {
     setPanelState((previous) =>
@@ -742,6 +780,76 @@ export function PreviewPanel(props: {
       props.onUpdatePane({ previewDeviceId: deviceId });
     },
     [props.onUpdatePane],
+  );
+
+  const handleFrameKindChange = useCallback(
+    (kind: PreviewFrameKind) => {
+      setFrameKind(props.threadId, kind);
+      setLandscape(false);
+      handleDeviceChange(FRAME_KIND_TO_DEVICE_ID[kind]);
+      if (panelState.status === "idle" || panelState.status === "failed") {
+        handleStart();
+      }
+    },
+    [setFrameKind, props.threadId, handleDeviceChange, handleStart, panelState.status],
+  );
+
+  // The preview pane has no simulator session to relay touch input to, so the
+  // rail's device actions stay honest: screenshot and rotate work against the
+  // engine-served frame, and everything wired to the iOS Simulator pane points
+  // the user somewhere it can actually run.
+  const savePreviewScreenshot = useCallback(() => {
+    ensureNativeApi()
+      .preview.screenshot({ threadId: props.threadId })
+      .then((result) => {
+        if (!result.image) {
+          toastManager.add({
+            type: "error",
+            title: "No screenshot available",
+            description: "The engine did not return a frame to save.",
+          });
+          return;
+        }
+        const anchor = document.createElement("a");
+        anchor.href = `data:image/png;base64,${result.image}`;
+        anchor.download = `flutter-preview-${Date.now()}.png`;
+        anchor.click();
+        toastManager.add({
+          type: "success",
+          title: "Screenshot saved",
+          description: "Flutter preview screenshot downloaded.",
+        });
+      })
+      .catch((error: unknown) => {
+        toastManager.add({
+          type: "error",
+          title: "Could not save the screenshot",
+          description: errorMessage(error, "The engine did not return a frame."),
+        });
+      });
+  }, [props.threadId]);
+
+  const handleRailAction = useCallback(
+    (action: DeviceRailAction) => {
+      switch (action) {
+        case "screenshot":
+          savePreviewScreenshot();
+          return;
+        case "rotate":
+          setLandscape((current) => !current);
+          return;
+        case "home":
+        case "record":
+        case "shutdown":
+        case "detach":
+          toastManager.add({
+            type: "info",
+            title: "Not available in the preview pane",
+            description: "Open the iOS Simulator panel to use this device action.",
+          });
+      }
+    },
+    [savePreviewScreenshot],
   );
 
   const handleTabChange = useCallback((tab: PreviewPaneTab) => {
@@ -845,17 +953,11 @@ export function PreviewPanel(props: {
       {/* Top Header: Choose Simulator */}
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
         <select
-          value={panelState.deviceId}
-          onChange={(event) => {
-            handleDeviceChange(event.target.value as PreviewDeviceId);
-            if (panelState.status === "idle" || panelState.status === "failed") {
-              handleStart();
-            }
-          }}
+          value={frameKind}
+          onChange={(event) => handleFrameKindChange(event.target.value as PreviewFrameKind)}
           className="bg-transparent text-sm font-medium text-foreground outline-none appearance-none"
         >
-          <option value="" disabled>Choose a simulator</option>
-          {PREVIEW_DEVICE_OPTIONS.map((option) => (
+          {FRAME_KIND_OPTIONS.map((option) => (
             <option key={option.id} value={option.id}>
               {option.label}
             </option>
@@ -881,7 +983,7 @@ export function PreviewPanel(props: {
         <div className={cn("flex-1 overflow-auto", panelState.activeTab === "preview" ? "block" : "hidden")}>
           {(panelState.status === "idle" || panelState.status === "starting" || panelState.status === "failed") ? (
             <div className="flex h-full flex-col items-center justify-center p-8">
-              <DeviceScreen kind={panelState.deviceId === "tablet" ? "iPad" : "iPhone"}>
+              <DeviceScreen kind={statusFrameKind} landscape={landscape}>
                 <div className="flex h-full w-full flex-col items-center justify-center bg-black p-6 text-center">
                   {panelState.status === "starting" ? (
                     <>
@@ -895,7 +997,7 @@ export function PreviewPanel(props: {
                     </>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      Choose a simulator to<br/>start streaming it here.
+                      Choose a frame to<br/>preview the Flutter app here.
                     </p>
                   )}
                 </div>
@@ -905,9 +1007,13 @@ export function PreviewPanel(props: {
             isRunning && panelState.url !== null && (
               <PreviewDeviceFrame
                 threadId={props.threadId}
-                deviceId={panelState.deviceId}
+                frameKind={frameKind}
                 url={panelState.url}
                 reloadToken={panelState.reloadToken}
+                landscape={landscape}
+                onRotate={() => setLandscape((current) => !current)}
+                onScreenshot={savePreviewScreenshot}
+                onRailAction={handleRailAction}
               />
             )
           )}
