@@ -20,7 +20,6 @@ import {
   MAC_DEVICE_HELPER_RESOURCE_PATH,
   validateDesktopNativeBuildHost,
 } from "./lib/desktop-platform-build-config.ts";
-import { CAIDE_PRODUCTION_BUNDLE_ID } from "@caide/shared/desktopIdentity";
 import { parseBooleanEnvValue } from "./lib/env-bool.ts";
 import { finalizeSignedMacDmg } from "./lib/mac-dmg-finalize.ts";
 import { finalizeMacUpdateZip } from "./lib/mac-update-zip-finalize.ts";
@@ -30,6 +29,11 @@ import {
   RELEASE_WORKSPACE_MANIFEST_PATHS,
 } from "./lib/release-workspace-manifests.ts";
 import { resolveCatalogDependencies } from "./lib/resolve-catalog.ts";
+import {
+  ENGINE_PAYLOAD_RELATIVE_DIR,
+  stageEnginePayload,
+} from "./lib/stage-engine-payload.ts";
+import { CAIDE_PRODUCTION_BUNDLE_ID } from "@caide/shared/desktopIdentity";
 
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as NodeServices from "@effect/platform-node/NodeServices";
@@ -746,6 +750,15 @@ const createBuildConfig = Effect.fn("createBuildConfig")(function* (
     directories: {
       buildResources: "apps/desktop/resources",
     },
+    // The Flutter engine ships as an unpacked extraResource (plain `node`
+    // cannot read app.asar). The desktop main injects CAIDE_ENGINE_DIR at
+    // process.resourcesPath/engine, which is where `to: "engine"` lands.
+    extraResources: [
+      {
+        from: ENGINE_PAYLOAD_RELATIVE_DIR,
+        to: "engine",
+      },
+    ],
     forceCodeSigning: signed,
   };
   const publishConfig = resolveGitHubPublishConfig();
@@ -1019,6 +1032,28 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
   yield* fs.copy(distDirs.desktopDist, path.join(stageAppDir, "apps/desktop/dist-electron"));
   yield* fs.copy(distDirs.desktopResources, stageResourcesDir);
   yield* fs.copy(distDirs.serverDist, path.join(stageAppDir, "apps/server/dist"));
+
+  // The Flutter engine is a self-contained Node program (better-sqlite3,
+  // node-pty native bindings) spawned by the server via plain `node`. It must
+  // ship unpacked (asar is unreadable to node) with its prod deps co-located,
+  // so stage it as a payload and register it as the extraResource that lands
+  // at resources/engine (see createBuildConfig.extraResources + the desktop
+  // main's CAIDE_ENGINE_DIR injection).
+  yield* Effect.log("[desktop-artifact] Staging Flutter engine payload...");
+  const enginePayload = yield* Effect.try({
+    try: () =>
+      stageEnginePayload(repoRoot, stageAppDir, options.verbose),
+    catch: (cause) =>
+      new BuildScriptError({
+        message: "Could not stage Flutter engine payload.",
+        cause,
+      }),
+  });
+  if (enginePayload.payloadDir === "") {
+    return yield* new BuildScriptError({
+      message: "Engine payload staging produced no directory.",
+    });
+  }
 
   yield* assertPlatformBuildResources(options.platform, stageResourcesDir, options.verbose);
 
