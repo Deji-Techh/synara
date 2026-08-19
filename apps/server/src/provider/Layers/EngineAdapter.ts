@@ -51,7 +51,11 @@ import {
   ProviderAdapterValidationError,
   type ProviderAdapterError,
 } from "../Errors.ts";
-import { EngineAdapter, type EngineAdapterShape } from "../Services/EngineAdapter.ts";
+import {
+  EngineAdapter,
+  type EngineAdapterShape,
+  type EngineGoalsApi,
+} from "../Services/EngineAdapter.ts";
 import { ServerSettingsService } from "../../serverSettings.ts";
 import { ServerSecretStore } from "../../auth/Services/ServerSecretStore.ts";
 
@@ -1248,55 +1252,92 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         });
       });
 
-    const goalsApi = {
-      create: (input: Record<string, unknown>) =>
-        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:create", input),
-      get: (goalId: string) =>
-        goalRequest(
-          ThreadId.makeUnsafe(randomUUID()),
-          "goal:get",
-          { goalId },
-        ),
-      getActive: (appId: number | null | undefined) =>
+    // M3 bridge: the engine's goal store speaks its own GoalSchema (string
+    // goal ids; appId is the engine's numeric app rowid). The WS contract
+    // models goals with Caide's branded id types for future web consumers.
+    // Conversions happen here, at the wire, and stay loose until M4 lands
+    // the real engine contract typing (see plans/013 milestone table).
+    const goalIdOf = (arg: { goalId: string }): Record<string, unknown> => ({
+      goalId: String(arg.goalId),
+    });
+    const engineAppIdOf = (appId: string | null | undefined): Record<string, unknown> =>
+      appId === undefined || appId === null
+        ? {}
+        : // appId crosses as the raw engine numeric rowid keyed by the
+          // project's string id; M4 maps ProjectId → engine app rows.
+          { appId: appId as never };
+
+    const goalsApi: EngineGoalsApi = {
+      create: (input) =>
+        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:create", {
+          ...engineAppIdOf(input.appId),
+          ...(input.chatId !== undefined ? { chatId: String(input.chatId) } : {}),
+          ...(input.title !== undefined ? { title: input.title } : {}),
+          objective: input.objective,
+          ...(input.definitionOfDone !== undefined
+            ? { definitionOfDone: input.definitionOfDone }
+            : {}),
+          ...(input.constraints !== undefined ? { constraints: input.constraints } : {}),
+          ...(input.executionTarget !== undefined
+            ? { executionTarget: input.executionTarget as never }
+            : {}),
+        }),
+      get: (input) =>
+        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:get", goalIdOf(input)),
+      getActive: (input) =>
         goalRequest(
           ThreadId.makeUnsafe(randomUUID()),
           "goal:get-active",
-          { appId: appId ?? null },
+          engineAppIdOf(input.appId),
         ),
-      list: (input: { appId?: number; statuses?: Array<string> }) =>
-        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:list", input),
-      listActivity: (goalId: string, limit?: number) =>
+      list: (input) =>
+        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:list", {
+          ...engineAppIdOf(input.appId),
+          ...(input.statuses !== undefined ? { statuses: input.statuses } : {}),
+        }),
+      listActivity: (input) =>
         goalRequest(
           ThreadId.makeUnsafe(randomUUID()),
           "goal:list-activity",
-          { goalId, limit: limit ?? 200 },
+          { ...goalIdOf(input), limit: input.limit ?? 200 },
         ),
-      pause: (goalId: string, reason?: string) =>
+      pause: (input) =>
         goalRequest(
           ThreadId.makeUnsafe(randomUUID()),
           "goal:pause",
-          { goalId, ...(reason !== undefined ? { reason } : {}) },
+          { ...goalIdOf(input), ...(input.reason !== undefined ? { reason: input.reason } : {}) },
         ),
-      resume: (goalId: string) =>
-        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:resume", { goalId }),
-      cancel: (goalId: string, reason?: string) =>
+      resume: (input) =>
+        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:resume", goalIdOf(input)),
+      cancel: (input) =>
         goalRequest(
           ThreadId.makeUnsafe(randomUUID()),
           "goal:cancel",
-          { goalId, ...(reason !== undefined ? { reason } : {}) },
+          { ...goalIdOf(input), ...(input.reason !== undefined ? { reason: input.reason } : {}) },
         ),
-      edit: (input: Record<string, unknown>) =>
-        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:edit", input),
-      steer: (goalId: string, instruction: string) =>
+      edit: (input) =>
+        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:edit", {
+          ...goalIdOf(input),
+          ...(input.title !== undefined ? { title: input.title } : {}),
+          ...(input.objective !== undefined ? { objective: input.objective } : {}),
+          ...(input.definitionOfDone !== undefined
+            ? { definitionOfDone: input.definitionOfDone }
+            : {}),
+          ...(input.constraints !== undefined ? { constraints: input.constraints } : {}),
+          ...(input.executionTarget !== undefined
+            ? { executionTarget: input.executionTarget as never }
+            : {}),
+        }),
+      steer: (input) =>
         goalRequest(
           ThreadId.makeUnsafe(randomUUID()),
           "goal:steer",
-          { goalId, instruction },
+          { ...goalIdOf(input), instruction: input.instruction },
         ),
-      retry: (goalId: string) =>
-        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:retry", { goalId }),
-      verify: (goalId: string) =>
-        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:verify", { goalId }),
+      retry: (input) =>
+        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:retry", goalIdOf(input)),
+      verify: (input) =>
+        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:verify", goalIdOf(input)),
     };
 
     const adapter: EngineAdapterShape = {

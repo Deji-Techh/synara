@@ -4,17 +4,20 @@ import {
   CommandId,
   DEFAULT_TERMINAL_ID,
   DEVICE_WS_METHODS,
+  GOALS_WS_METHODS,
   ORCHESTRATION_WS_METHODS,
   ThreadId,
   WS_BOOTSTRAP_METHOD,
   WS_BOOTSTRAP_PATH,
   WS_FEATURE_PATH,
+  WS_GOALS_SUBSCRIBE,
   WS_NEGOTIATE_HTTP_PATH,
   WS_METHODS,
   WsBootstrapRpcGroup,
   WsCompatibilityError,
   WsDeviceRpcGroup,
   WsFeatureRpcGroup,
+  WsGoalsRpcGroup,
   WsPreviewRpcGroup,
   WsRpcError,
   PullRequestsUnavailableError,
@@ -192,6 +195,7 @@ class WsRequestAdmissionMiddleware extends RpcMiddleware.Service<WsRequestAdmiss
 export const AdmittedWsFeatureRpcGroup = WsFeatureRpcGroup.merge(
   WsDeviceRpcGroup,
   WsPreviewRpcGroup,
+  WsGoalsRpcGroup,
 ).middleware(WsRequestAdmissionMiddleware);
 
 const wsRequestAdmissionMiddlewareLayer = Layer.effect(
@@ -847,6 +851,122 @@ const makeWsRpcHandlersLayer = () =>
         }
       });
 
+      // Engine goals bridge helpers: resolve the shared engine adapter and
+      // wire its opaque goal outputs into the RPC contract types.
+      const engineAdapterEffect = providerAdapterRegistry.getByProvider("engine").pipe(
+        Effect.map(
+          (adapter) =>
+            adapter as import("./provider/Services/EngineAdapter.ts").EngineAdapterShape,
+        ),
+        Effect.mapError((cause) => new WsRpcError({ message: cause.message })),
+      );
+      const adapterHex = {
+        goals: {
+          create: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["create"]>[0], label: string) =>
+            rpcEffect(
+              engineAdapterEffect.pipe(
+                Effect.flatMap((adapter) => adapter.goals.create(input)),
+                Effect.map((goal) => goal as never),
+              ),
+              label,
+            ),
+          get: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["get"]>[0], label: string) =>
+            rpcEffect(
+              engineAdapterEffect.pipe(
+                Effect.flatMap((adapter) => adapter.goals.get(input)),
+                Effect.map((goal) => goal as never),
+              ),
+              label,
+            ),
+          getActive: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["getActive"]>[0], label: string) =>
+            rpcEffect(
+              engineAdapterEffect.pipe(
+                Effect.flatMap((adapter) => adapter.goals.getActive(input)),
+                Effect.map((goal) => goal as never),
+              ),
+              label,
+            ),
+          list: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["list"]>[0], label: string) =>
+            rpcEffect(
+              engineAdapterEffect.pipe(
+                Effect.flatMap((adapter) => adapter.goals.list(input)),
+                Effect.map((goals) => goals as never),
+              ),
+              label,
+            ),
+          listActivity: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["listActivity"]>[0], label: string) =>
+            rpcEffect(
+              engineAdapterEffect.pipe(
+                Effect.flatMap((adapter) => adapter.goals.listActivity(input)),
+                Effect.map((events) => events as never),
+              ),
+              label,
+            ),
+          pause: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["pause"]>[0], label: string) =>
+            rpcEffect(
+              engineAdapterEffect.pipe(
+                Effect.flatMap((adapter) => adapter.goals.pause(input)),
+                Effect.map((goal) => goal as never),
+              ),
+              label,
+            ),
+          resume: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["resume"]>[0], label: string) =>
+            rpcEffect(
+              engineAdapterEffect.pipe(
+                Effect.flatMap((adapter) => adapter.goals.resume(input)),
+                Effect.map((goal) => goal as never),
+              ),
+              label,
+            ),
+          cancel: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["cancel"]>[0], label: string) =>
+            rpcEffect(
+              engineAdapterEffect.pipe(
+                Effect.flatMap((adapter) => adapter.goals.cancel(input)),
+                Effect.map((goal) => goal as never),
+              ),
+              label,
+            ),
+          edit: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["edit"]>[0], label: string) =>
+            rpcEffect(
+              engineAdapterEffect.pipe(
+                Effect.flatMap((adapter) => adapter.goals.edit(input)),
+                Effect.map((goal) => goal as never),
+              ),
+              label,
+            ),
+          steer: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["steer"]>[0], label: string) =>
+            rpcEffect(
+              engineAdapterEffect.pipe(
+                Effect.flatMap((adapter) => adapter.goals.steer(input)),
+                Effect.map((goal) => goal as never),
+              ),
+              label,
+            ),
+          retry: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["retry"]>[0], label: string) =>
+            rpcEffect(
+              engineAdapterEffect.pipe(
+                Effect.flatMap((adapter) => adapter.goals.retry(input)),
+                Effect.map((goal) => goal as never),
+              ),
+              label,
+            ),
+          verify: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["verify"]>[0], label: string) =>
+            rpcEffect(
+              engineAdapterEffect.pipe(
+                Effect.flatMap((adapter) => adapter.goals.verify(input)),
+                Effect.map((goal) => goal as never),
+              ),
+              label,
+            ),
+        },
+        streamGoalDomainEvents: (label: string) =>
+          engineAdapterEffect.pipe(
+            Effect.map((adapter) => adapter.streamGoalDomainEvents),
+            Stream.unwrap,
+            Stream.map((event) => event as never),
+          ),
+      };
+
       return AdmittedWsFeatureRpcGroup.of({
         [ORCHESTRATION_WS_METHODS.dispatchCommand]: (command) =>
           rpcEffect(
@@ -1099,6 +1219,43 @@ const makeWsRpcHandlersLayer = () =>
             bufferLiveUiStream(orchestrationEngine.streamDomainEvents, {
               label: "orchestration.domain-events",
             }),
+          ),
+
+        // ── Engine goals ─────────────────────────────────────────────────────
+        // Goal CRUD proxies onto the engine's goal store (EngineGoalsApi);
+        // payloads stay opaque at the bridge and are shaped for the web in M4.
+        [GOALS_WS_METHODS.createGoal]: (input) =>
+          adapterHex.goals.create(input, "create engine goal"),
+        [GOALS_WS_METHODS.getGoal]: (input) =>
+          adapterHex.goals.get(input, "fetch engine goal"),
+        [GOALS_WS_METHODS.getActiveGoal]: (input) =>
+          adapterHex.goals.getActive(input, "fetch active engine goal"),
+        [GOALS_WS_METHODS.listGoals]: (input) =>
+          adapterHex.goals.list(input, "list engine goals"),
+        [GOALS_WS_METHODS.listActivity]: (input) =>
+          adapterHex.goals.listActivity(input, "list engine goal activity"),
+        [GOALS_WS_METHODS.pauseGoal]: (input) =>
+          adapterHex.goals.pause(input, "pause engine goal"),
+        [GOALS_WS_METHODS.resumeGoal]: (input) =>
+          adapterHex.goals.resume(input, "resume engine goal"),
+        [GOALS_WS_METHODS.cancelGoal]: (input) =>
+          adapterHex.goals.cancel(input, "cancel engine goal"),
+        [GOALS_WS_METHODS.editGoal]: (input) =>
+          adapterHex.goals.edit(input, "edit engine goal"),
+        [GOALS_WS_METHODS.steerGoal]: (input) =>
+          adapterHex.goals.steer(input, "steer engine goal"),
+        [GOALS_WS_METHODS.retryGoal]: (input) =>
+          adapterHex.goals.retry(input, "retry engine goal"),
+        [GOALS_WS_METHODS.verifyGoal]: (input) =>
+          adapterHex.goals.verify(input, "verify engine goal"),
+        [WS_GOALS_SUBSCRIBE]: (_, { clientId }) =>
+          streamAdmission.guard(
+            clientId,
+            { key: "goals.domain-events" },
+            bufferLiveUiStream(
+              adapterHex.streamGoalDomainEvents("goals domain event stream"),
+              { label: "goals.domain-events" },
+            ),
           ),
 
         [WS_METHODS.projectsListDirectories]: (input) =>

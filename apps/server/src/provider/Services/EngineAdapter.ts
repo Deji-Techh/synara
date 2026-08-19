@@ -11,6 +11,11 @@ import { ServiceMap, Stream } from "effect";
 import type { Effect } from "effect";
 
 import type {
+  Goal,
+  GoalActivityEvent,
+  GoalExecutionTarget,
+  GoalId,
+  GoalStatus,
   PreviewAnalyzeResult,
   PreviewBuildStartResult,
   PreviewBuildStateResult,
@@ -20,6 +25,7 @@ import type {
   PreviewStopResult,
   PreviewTestResult,
   PreviewScreenshotResult,
+  ProjectId,
   ThreadId,
 } from "@caide/contracts";
 import type { ProviderSession } from "@caide/contracts";
@@ -83,26 +89,39 @@ export interface EnginePreviewOps {
  * streams goal lifecycle events for orchestration + WS consumers.
  */
 export interface EngineGoalsApi {
-  create(input: Record<string, unknown>): Effect.Effect<unknown, ProviderAdapterError>;
-  get(goalId: string): Effect.Effect<unknown, ProviderAdapterError>;
-  getActive(
-    appId: number | null | undefined,
-  ): Effect.Effect<unknown, ProviderAdapterError>;
+  create(input: {
+    appId?: ProjectId | null | undefined;
+    chatId?: ThreadId | undefined;
+    title?: string | undefined;
+    objective: string;
+    definitionOfDone?: ReadonlyArray<string> | undefined;
+    constraints?: ReadonlyArray<string> | undefined;
+    executionTarget?: GoalExecutionTarget | undefined;
+  }): Effect.Effect<Goal, ProviderAdapterError>;
+  get(input: { goalId: GoalId }): Effect.Effect<Goal | null, ProviderAdapterError>;
+  getActive(input: { appId?: ProjectId | null | undefined }): Effect.Effect<Goal | null, ProviderAdapterError>;
   list(input: {
-    appId?: number;
-    statuses?: Array<string>;
-  }): Effect.Effect<unknown, ProviderAdapterError>;
-  listActivity(
-    goalId: string,
-    limit?: number,
-  ): Effect.Effect<unknown, ProviderAdapterError>;
-  pause(goalId: string, reason?: string): Effect.Effect<unknown, ProviderAdapterError>;
-  resume(goalId: string): Effect.Effect<unknown, ProviderAdapterError>;
-  cancel(goalId: string, reason?: string): Effect.Effect<unknown, ProviderAdapterError>;
-  edit(input: Record<string, unknown>): Effect.Effect<unknown, ProviderAdapterError>;
-  steer(goalId: string, instruction: string): Effect.Effect<unknown, ProviderAdapterError>;
-  retry(goalId: string): Effect.Effect<unknown, ProviderAdapterError>;
-  verify(goalId: string): Effect.Effect<unknown, ProviderAdapterError>;
+    appId?: ProjectId | undefined;
+    statuses?: ReadonlyArray<GoalStatus> | undefined;
+  }): Effect.Effect<Array<Goal>, ProviderAdapterError>;
+  listActivity(input: {
+    goalId: GoalId;
+    limit?: number | undefined;
+  }): Effect.Effect<Array<GoalActivityEvent>, ProviderAdapterError>;
+  pause(input: { goalId: GoalId; reason?: string | undefined }): Effect.Effect<Goal, ProviderAdapterError>;
+  resume(input: { goalId: GoalId }): Effect.Effect<Goal, ProviderAdapterError>;
+  cancel(input: { goalId: GoalId; reason?: string | undefined }): Effect.Effect<Goal, ProviderAdapterError>;
+  edit(input: {
+    goalId: GoalId;
+    title?: string | undefined;
+    objective?: string | undefined;
+    definitionOfDone?: ReadonlyArray<string> | undefined;
+    constraints?: ReadonlyArray<string> | undefined;
+    executionTarget?: GoalExecutionTarget | undefined;
+  }): Effect.Effect<Goal, ProviderAdapterError>;
+  steer(input: { goalId: GoalId; instruction: string }): Effect.Effect<Goal, ProviderAdapterError>;
+  retry(input: { goalId: GoalId }): Effect.Effect<Goal, ProviderAdapterError>;
+  verify(input: { goalId: GoalId }): Effect.Effect<Goal, ProviderAdapterError>;
 }
 
 export interface GoalDomainEvent {
