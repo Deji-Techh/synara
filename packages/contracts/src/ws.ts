@@ -302,6 +302,8 @@ export const WS_CHANNELS = {
   serverConfigUpdated: "server.configUpdated",
   serverProviderStatusesUpdated: "server.providerStatusesUpdated",
   serverSettingsUpdated: "server.settingsUpdated",
+  /** Live goal domain events streamed from the engine over `goals:subscribe`. */
+  goalDomainEvent: "goals.domainEvent",
 } as const;
 
 // -- Tagged Union of all request body schemas ─────────────────────────

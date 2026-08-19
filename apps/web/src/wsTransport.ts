@@ -17,6 +17,8 @@ import {
   WS_PROTOCOL_EPOCH,
   WS_PROTOCOL_MAX_REVISION,
   WS_PROTOCOL_MIN_REVISION,
+  WsGoalsRpcGroup,
+  WS_GOALS_SUBSCRIBE,
   DEVICE_WS_CHANNELS,
   DEVICE_WS_METHODS,
   WsBootstrapNegotiateResult,
@@ -32,6 +34,7 @@ import {
   type GitWorktreeSetupProgressEvent,
   type GitHubProjectProvisionProgressEvent,
   type GitHubProjectProvisionResult,
+  type GoalDomainEvent,
   type OrchestrationEvent,
   type OrchestrationShellStreamItem,
   type OrchestrationThreadStreamItem,
@@ -171,7 +174,13 @@ function awaitWithAbort<A>(promise: Promise<A>, signal: AbortSignal | undefined)
 // server is the authority that refuses them off darwin, and the pane needs a
 // real RPC error (or an `unsupported-platform` availability) to render its
 // blocked state. Merging here keeps one socket and one client.
-const makeRpcClient = RpcClient.make(WsFeatureRpcGroup.merge(WsDeviceRpcGroup));
+//
+// The goals group lives in goals.rpc.ts (not the feature group) so the engine
+// can own goal CRUD without bloating the core WS group; the web client must
+// carry it explicitly or `goals:*` calls would hit "Unknown RPC method".
+const makeRpcClient = RpcClient.make(
+  WsFeatureRpcGroup.merge(WsDeviceRpcGroup).merge(WsGoalsRpcGroup),
+);
 const makeBootstrapRpcClient = RpcClient.make(WsBootstrapRpcGroup);
 const REQUEST_TIMEOUT_MS = 60_000;
 const FEATURE_CONNECTION_PROBE_TIMEOUT_MS = 10_000;
@@ -1340,6 +1349,14 @@ export class WsTransport {
             "orchestration.domain",
             client[WS_METHODS.subscribeOrchestrationDomainEvents]({}),
             (event: OrchestrationEvent) => this.emit(ORCHESTRATION_WS_CHANNELS.domainEvent, event),
+            restartChannel,
+          );
+        } else if (channel === WS_CHANNELS.goalDomainEvent) {
+          this.startStream(
+            client,
+            "goals.domain",
+            client[WS_GOALS_SUBSCRIBE]({}),
+            (event: GoalDomainEvent) => this.emit(WS_CHANNELS.goalDomainEvent, event),
             restartChannel,
           );
         }

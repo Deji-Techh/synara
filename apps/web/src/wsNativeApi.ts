@@ -48,6 +48,8 @@ import {
   DEVICE_WS_CHANNELS,
   DEVICE_WS_METHODS,
   type DeviceEvent,
+  GOALS_WS_METHODS,
+  type GoalDomainEvent,
   PREVIEW_WS_METHODS,
 } from "@caide/contracts";
 import { VOICE_TRANSCRIPTION_UPLOAD_ROUTE_PATH } from "@caide/shared/binaryTransfer";
@@ -158,6 +160,7 @@ const terminalEventListeners = createListenerRegistry<TerminalEvent>();
 const projectDevServerEventListeners = createListenerRegistry<ProjectDevServerEvent>();
 const automationEventListeners = createListenerRegistry<AutomationStreamEvent>();
 const deviceEventListeners = createListenerRegistry<DeviceEvent>();
+const goalDomainEventListeners = createListenerRegistry<GoalDomainEvent>();
 const orchestrationDomainEventListeners = createListenerRegistry<OrchestrationEvent>();
 const orchestrationShellEventListeners = createListenerRegistry<OrchestrationShellStreamItem>();
 const orchestrationThreadEventListeners = createListenerRegistry<OrchestrationThreadStreamItem>();
@@ -178,6 +181,7 @@ function clearWsNativeApiListeners(): void {
   projectDevServerEventListeners.clear();
   automationEventListeners.clear();
   deviceEventListeners.clear();
+  goalDomainEventListeners.clear();
   orchestrationDomainEventListeners.clear();
   orchestrationShellEventListeners.clear();
   orchestrationThreadEventListeners.clear();
@@ -473,6 +477,9 @@ export function createWsNativeApi(): NativeApi {
   });
   transport.subscribe(DEVICE_WS_CHANNELS.event, (message) => {
     deviceEventListeners.emit(message.data);
+  });
+  transport.subscribe(WS_CHANNELS.goalDomainEvent, (message) => {
+    goalDomainEventListeners.emit(message.data);
   });
   transport.subscribe(ORCHESTRATION_WS_CHANNELS.shellEvent, (message) => {
     orchestrationShellEventListeners.emit(message.data);
@@ -793,6 +800,21 @@ export function createWsNativeApi(): NativeApi {
       },
       onShellEvent: orchestrationShellEventListeners.subscribe,
       onThreadEvent: orchestrationThreadEventListeners.subscribe,
+    },
+    goals: {
+      getActiveGoal: (input) => transport.request(GOALS_WS_METHODS.getActiveGoal, input),
+      createGoal: (input) => transport.request(GOALS_WS_METHODS.createGoal, input),
+      getGoal: (input) => transport.request(GOALS_WS_METHODS.getGoal, input),
+      listGoals: (input) => transport.request(GOALS_WS_METHODS.listGoals, input),
+      listActivity: (input) => transport.request(GOALS_WS_METHODS.listActivity, input),
+      pauseGoal: (input) => transport.request(GOALS_WS_METHODS.pauseGoal, input),
+      resumeGoal: (input) => transport.request(GOALS_WS_METHODS.resumeGoal, input),
+      cancelGoal: (input) => transport.request(GOALS_WS_METHODS.cancelGoal, input),
+      editGoal: (input) => transport.request(GOALS_WS_METHODS.editGoal, input),
+      steerGoal: (input) => transport.request(GOALS_WS_METHODS.steerGoal, input),
+      retryGoal: (input) => transport.request(GOALS_WS_METHODS.retryGoal, input),
+      verifyGoal: (input) => transport.request(GOALS_WS_METHODS.verifyGoal, input),
+      onDomainEvent: goalDomainEventListeners.subscribe,
     },
     automation: {
       list: (input) => transport.request(WS_METHODS.automationList, input),

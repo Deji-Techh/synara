@@ -267,6 +267,9 @@ import type {
   ProviderReadPluginResult,
 } from "./providerDiscovery";
 import type { ProviderCompactThreadInput } from "./provider";
+import type { Goal, GoalActivityEvent, GoalExecutionTarget, GoalStatus } from "./goals";
+import type { GoalId } from "./goals";
+import type { GoalDomainEvent } from "./goals.rpc";
 import type {
   StatsGetProfileStatsInput,
   StatsGetProfileStatsResult,
@@ -762,6 +765,36 @@ export interface NativeApi {
     onDomainEvent: (callback: (event: OrchestrationEvent) => void) => () => void;
     onShellEvent: (callback: (event: OrchestrationShellStreamItem) => void) => () => void;
     onThreadEvent: (callback: (event: OrchestrationThreadStreamItem) => void) => () => void;
+  };
+  goals: {
+    getActiveGoal: (input: { appId?: number | null }) => Promise<Goal | null>;
+    createGoal: (input: {
+      appId?: number | null;
+      chatId?: number;
+      title?: string;
+      objective: string;
+      definitionOfDone?: string[];
+      constraints?: string[];
+      executionTarget?: GoalExecutionTarget;
+    }) => Promise<Goal>;
+    getGoal: (input: { goalId: GoalId }) => Promise<Goal>;
+    listGoals: (input?: { appId?: number; statuses?: GoalStatus[] }) => Promise<Goal[]>;
+    listActivity: (input: { goalId: GoalId; limit?: number }) => Promise<GoalActivityEvent[]>;
+    pauseGoal: (input: { goalId: GoalId; reason?: string }) => Promise<Goal>;
+    resumeGoal: (input: { goalId: GoalId }) => Promise<Goal>;
+    cancelGoal: (input: { goalId: GoalId; reason?: string }) => Promise<Goal>;
+    editGoal: (input: {
+      goalId: GoalId;
+      title?: string;
+      objective?: string;
+      definitionOfDone?: string[];
+      constraints?: string[];
+      executionTarget?: GoalExecutionTarget;
+    }) => Promise<Goal>;
+    steerGoal: (input: { goalId: GoalId; instruction: string }) => Promise<Goal>;
+    retryGoal: (input: { goalId: GoalId }) => Promise<Goal>;
+    verifyGoal: (input: { goalId: GoalId }) => Promise<Goal>;
+    onDomainEvent: (callback: (event: GoalDomainEvent) => void) => () => void;
   };
   automation: {
     list: (input?: AutomationListInput) => Promise<AutomationListResult>;
