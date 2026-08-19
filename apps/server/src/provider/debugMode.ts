@@ -1,5 +1,5 @@
 // FILE: debugMode.ts
-// Purpose: Applies Synara's provider-independent evidence-first Debug instructions.
+// Purpose: Applies Caide's provider-independent evidence-first Debug instructions.
 // Layer: Provider prompt policy
 
 import type { ProviderInteractionMode } from "@caide/contracts";

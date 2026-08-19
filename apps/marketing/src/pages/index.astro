@@ -1,239 +1,762 @@
 ---
+// FILE: index.astro
+// Purpose: Caide landing page (monochrome) — split hero with product demo video,
+//          stats, feature grid, process steps, and a demo download section.
+// Layer: Marketing page
+// Depends on: Layout, PlatformIcon.
 import PlatformIcon from "../components/PlatformIcon.astro";
 import Layout from "../layouts/Layout.astro";
-import { RELEASES_URL } from "../lib/releases";
 ---
 
-<Layout>
-  <h1 class="tagline">Caide is the best way to code with AI.</h1>
+<Layout
+  title="Caide — the best way to code with AI"
+  description="Caide describes an app, then scaffolds, builds, tests, and previews real Flutter apps — shipping APKs and IPAs from one workspace."
+>
+  <!-- ───────────────────────────── HERO ───────────────────────────── -->
+  <section class="hero">
+    <div class="hero-left" data-reveal>
+      <p class="eyebrow">&#9632;&nbsp; AI coding agent for Flutter builders</p>
 
-  <a
-    id="download-btn"
-    href={RELEASES_URL}
-    class="hero-button"
-  >
-    <PlatformIcon platform="apple" class="hero-button-icon hero-button-icon--apple" />
-    <PlatformIcon platform="windows" class="hero-button-icon hero-button-icon--windows" />
-    <PlatformIcon platform="linux" class="hero-button-icon hero-button-icon--linux" />
-    <span id="download-label">Download now</span>
-  </a>
+      <h1 class="display">
+        Caide is the best way to <span class="hl">code with AI.</span>
+      </h1>
 
-  <a href="/download" class="other-platforms">Other platforms</a>
+      <p class="subhead">
+        Describe an app. Caide scaffolds, analyzes, builds, and previews real
+        Flutter applications — then ships APKs and IPAs to your device, all
+        from one workspace.
+      </p>
 
-  <div class="screenshot-wrap">
-    <img src="/screenshot.jpeg" alt="Caide" class="screenshot" />
-  </div>
+      <div class="cta-row">
+        <a class="btn btn--solid" href="/download">
+          <PlatformIcon platform="windows" class="btn-icon" />
+          Download for Windows
+        </a>
+        <a class="btn btn--ghost" href="/download">
+          <PlatformIcon platform="linux" class="btn-icon" />
+          Download for Linux
+        </a>
+      </div>
+      <p class="cta-note">Demo builds — final links coming soon.</p>
+    </div>
+
+    <div class="hero-media" data-reveal>
+      <figure class="frame">
+        <div class="frame-bar">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="dot" aria-hidden="true"></span>
+          <span class="dot" aria-hidden="true"></span>
+          <span class="frame-title">Product demo</span>
+        </div>
+        <div class="frame-body">
+          <video
+            class="demo-video"
+            src="/caide-demo.mp4"
+            poster="/caide-demo-poster.jpg"
+            preload="metadata"
+            autoplay
+            muted
+            loop
+            playsinline
+            disablepictureinpicture
+            aria-label="Caide product demo"
+          ></video>
+        </div>
+        <figcaption class="frame-caption">
+          Live preview &middot; Flutter app built, run, and shipped by Caide
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── STATS / TRUST ──────────────────────── -->
+  <section class="stats" aria-label="Caide at a glance" data-reveal>
+    <div class="stat">
+      <span class="stat-value">04</span>
+      <span class="stat-label">modes — plan · build · ask · agent</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">02</span>
+      <span class="stat-label">previews — emulator + simulator</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">02</span>
+      <span class="stat-label">artifacts — APK + IPA</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">01</span>
+      <span class="stat-label">workspace for every app</span>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── FEATURES ─────────────────────────── -->
+  <section class="section" id="features">
+    <div class="section-head" data-reveal>
+      <p class="section-index">/ Features</p>
+      <h2 class="section-title">
+        Everything from idea to installed app.
+      </h2>
+      <p class="section-sub">
+        Caide keeps the whole Flutter workflow in one agentic loop — no context
+        switching between scaffolders, editors, terminals, and build tools.
+      </p>
+    </div>
+
+    <ul class="grid">
+      <li class="card" data-reveal>
+        <div class="card-top">
+          <span class="card-num">01</span>
+          <span class="card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          </span>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Real Flutter apps</h3>
+          <p>
+            Scaffolds actual Dart projects with pub dependencies wired in — not
+            mockups. Built against a real toolchain.
+          </p>
+        </div>
+      </li>
+
+      <li class="card" data-reveal>
+        <div class="card-top">
+          <span class="card-num">02</span>
+          <span class="card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"><path d="M12 3v18M5 3a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2 2 2 0 0 1 2 2v4a2 2 0 0 0 2 2M19 3a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2 2 2 0 0 0-2 2v4a2 2 0 0 1-2 2"/></svg>
+          </span>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Plan → Build → Ship</h3>
+          <p>
+            Four interaction modes — plan, build, ask, and local agent — so you
+            drive the loop and Caide does the heavy lifting.
+          </p>
+        </div>
+      </li>
+
+      <li class="card" data-reveal>
+        <div class="card-top">
+          <span class="card-num">03</span>
+          <span class="card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"><rect x="2" y="4" width="20" height="14"/><path d="M8 21h8M12 18v3"/></svg>
+          </span>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Device previews</h3>
+          <p>
+            Launch on the Android emulator and iOS Simulator straight from the
+            workspace and iterate on what users will actually see.
+          </p>
+        </div>
+      </li>
+
+      <li class="card" data-reveal>
+        <div class="card-top">
+          <span class="card-num">04</span>
+          <span class="card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"><path d="M21 8a2 2 0 0 0-1-1.73V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v1.27A2 2 0 0 0 3 8v12h18zM3 12h18M8 8v4M16 8v4"/></svg>
+          </span>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Release artifacts</h3>
+          <p>
+            Build signed APK and IPA releases from the workspace — ready for the
+            Play Store and TestFlight.
+          </p>
+        </div>
+      </li>
+
+      <li class="card" data-reveal>
+        <div class="card-top">
+          <span class="card-num">05</span>
+          <span class="card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+          </span>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Your API keys</h3>
+          <p>
+            Bring your own model API keys with provider support built in — your
+            sessions, your models, no third-party gatekeeping.
+          </p>
+        </div>
+      </li>
+
+      <li class="card" data-reveal>
+        <div class="card-top">
+          <span class="card-num">06</span>
+          <span class="card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </span>
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">Organized workspaces</h3>
+          <p>
+            App projects, recent chats, and per-project activity in one
+            predictable workspace that survives restarts.
+          </p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ─────────────────────────── PROCESS ─────────────────────────── -->
+  <section class="section" id="process">
+    <div class="section-head" data-reveal>
+      <p class="section-index">/ Process</p>
+      <h2 class="section-title">From a sentence to a shipped app.</h2>
+    </div>
+
+    <ol class="steps" data-reveal>
+      <li class="step">
+        <span class="step-num">01</span>
+        <h3 class="step-title">Describe</h3>
+        <p class="step-body">
+          Tell Caide what you want in plain language and pick a workspace. The
+          app is scaffolded as a real Flutter project.
+        </p>
+      </li>
+      <li class="step">
+        <span class="step-num">02</span>
+        <h3 class="step-title">Iterate</h3>
+        <p class="step-body">
+          Caide analyzes, tests, and rebuilds as you refine — watch it live on
+          the emulator or Simulator and steer with ask or agent mode.
+        </p>
+      </li>
+      <li class="step">
+        <span class="step-num">03</span>
+        <h3 class="step-title">Ship</h3>
+        <p class="step-body">
+          Generate an APK or IPA from the workspace and install it on your
+          device. The whole pipeline stays under one roof.
+        </p>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ─────────────────────────── DOWNLOAD ─────────────────────────── -->
+  <section class="section section--download" id="download">
+    <div class="section-head" data-reveal>
+      <p class="section-index">/ Download</p>
+      <h2 class="section-title">Get Caide.</h2>
+      <p class="section-sub">
+        Demo builds for Windows and Linux are ready to try. Final release links
+        will land here.
+      </p>
+    </div>
+
+    <div class="dl-grid">
+      <a class="dl-card" href="/download" data-reveal>
+        <div class="dl-head">
+          <PlatformIcon platform="windows" class="dl-icon" />
+          <span class="dl-meta">Windows</span>
+        </div>
+        <span class="dl-name">Win 10 &amp; 11</span>
+        <span class="dl-format">Installer &middot; .exe</span>
+        <span class="btn btn--solid dl-btn">
+          Download demo build <span aria-hidden="true">&#8594;</span>
+        </span>
+      </a>
+
+      <a class="dl-card" href="/download" data-reveal>
+        <div class="dl-head">
+          <PlatformIcon platform="linux" class="dl-icon" />
+          <span class="dl-meta">Linux</span>
+        </div>
+        <span class="dl-name">x64</span>
+        <span class="dl-format">Portable &middot; AppImage</span>
+        <span class="btn btn--ghost dl-btn">
+          Download demo build <span aria-hidden="true">&#8594;</span>
+        </span>
+      </a>
+    </div>
+  </section>
 </Layout>
 
-<script>
-  import { fetchLatestRelease, RELEASES_URL, type ReleaseAsset } from "../lib/releases";
-
-  type Platform = { os: "mac" | "win" | "linux"; label: string; arch?: string };
-
-  function detectPlatform(): Platform | null {
-    const ua = navigator.userAgent;
-    if (/Win/i.test(ua)) return { os: "win", label: "Download for Windows" };
-    if (/Mac/i.test(ua)) {
-      return {
-        os: "mac",
-        label: `Download for macOS`,
-        arch: "arm64",
-      };
-    }
-    if (/Linux/i.test(ua)) return { os: "linux", label: "Download for Linux" };
-    return null;
-  }
-
-  function pickAsset(assets: ReleaseAsset[], platform: Platform): string | null {
-    if (platform.os === "win") {
-      return (
-        assets.find((a) => a.name.endsWith("-x64.exe"))
-          ?.browser_download_url ?? null
-      );
-    }
-    if (platform.os === "mac") {
-      const preferred = assets.find((a) =>
-        a.name.endsWith(`-${platform.arch}.dmg`),
-      );
-      const fallback = assets.find((a) => a.name.endsWith(".dmg"));
-      return (preferred ?? fallback)?.browser_download_url ?? null;
-    }
-    if (platform.os === "linux") {
-      return (
-        assets.find((a) => a.name.endsWith(".AppImage"))
-          ?.browser_download_url ?? null
-      );
-    }
-    return null;
-  }
-
-  async function init() {
-    const btn = document.getElementById("download-btn") as HTMLAnchorElement | null;
-    const label = document.getElementById("download-label");
-    if (!btn || !label) return;
-
-    const platform = detectPlatform();
-    if (!platform) return;
-
-    document.documentElement.dataset.platform = platform.os;
-    label.textContent = platform.label;
-
-    try {
-      const release = await fetchLatestRelease();
-      const url = pickAsset(release.assets ?? [], platform);
-      if (url) {
-        btn.href = url;
-        btn.removeAttribute("target");
-        btn.removeAttribute("rel");
-      }
-    } catch {
-      btn.href = RELEASES_URL;
-    }
-  }
-
-  init();
-</script>
-
 <style>
-  .main {
-    padding-top: 10vh;
+  /* `<main>` is rendered by the shared Layout, so its container sizing must be
+     un-scoped to match. Keeps the page content centred with consistent gutters. */
+  :global(.main) {
+    padding: 0 clamp(1.5rem, 5vw, 4.5rem);
+    max-width: 1360px;
+    align-self: center;
   }
 
-  /* ── Tagline ── */
+  /* ── Shared ── */
 
-  .tagline {
-    font-weight: 500;
-    font-size: clamp(2rem, 5vw, 3.5rem);
-    letter-spacing: -0.035em;
-    line-height: 1.15;
-    text-align: center;
-    margin: 0 0 6vh;
-    opacity: 0;
-    animation: fade-in 1s ease-out forwards;
+  .display {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(2.7rem, 6.2vw, 4.6rem);
+    letter-spacing: -0.028em;
+    line-height: 1.07;
   }
 
-  /* ── Hero button ── */
+  .hl {
+    background: var(--invert);
+    color: var(--invert-fg);
+    padding: 0.02em 0.12em 0.06em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    white-space: nowrap;
+  }
 
-  .hero-button {
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--fg-soft);
+    margin-bottom: 1.6rem;
+    line-height: 1.7;
+  }
+
+  .section {
+    width: 100%;
+    padding: clamp(5rem, 9vw, 9rem) 0 0;
+  }
+
+  .section-head {
+    max-width: 700px;
+    margin-bottom: clamp(3rem, 6vw, 4.5rem);
+  }
+
+  .section-index {
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+    margin-bottom: 1.25rem;
+  }
+
+  .section-title {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(1.9rem, 4.2vw, 3rem);
+    letter-spacing: -0.025em;
+    line-height: 1.13;
+    margin-bottom: 1.25rem;
+  }
+
+  .section-sub {
+    max-width: 56ch;
+    color: var(--fg-soft);
+    font-size: 1.08rem;
+    line-height: 1.75;
+  }
+
+  /* ── Hero ── */
+
+  .hero {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.04fr);
+    align-items: center;
+    gap: clamp(2.5rem, 6vw, 5.5rem);
+    padding: clamp(3.5rem, 9vh, 6.5rem) 0 clamp(4rem, 8vh, 6rem);
+  }
+
+  .hero .display {
+    margin-bottom: 1.6rem;
+  }
+
+  .subhead {
+    max-width: 48ch;
+    color: var(--fg-soft);
+    font-size: 1.1rem;
+    line-height: 1.75;
+    margin-bottom: 2.25rem;
+  }
+
+  .cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin-bottom: 1rem;
+  }
+
+  .btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.55rem;
-    background: #fafafa;
-    color: #09090b;
-    padding: 0.75rem 2rem;
-    border-radius: 999px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    margin-bottom: 1.25rem;
-    opacity: 0;
-    animation: fade-in 1s ease-out 0.15s forwards;
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    justify-content: center;
+    gap: 0.6rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.95rem 1.5rem;
   }
 
-  .hero-button:hover {
-    transform: scale(1.03);
-    box-shadow: 0 0 24px rgba(255, 255, 255, 0.08);
+  .btn--solid {
+    background: var(--fg);
+    color: var(--bg);
   }
 
-  .hero-button:active {
-    transform: scale(0.98);
+  .btn--solid:hover {
+    opacity: 0.85;
   }
 
-  .hero-button-icon {
-    display: none;
-    width: 1em;
-    height: 1em;
+  .btn--ghost {
+    background: transparent;
+    color: var(--fg);
+    border: 1px solid var(--line-strong);
+  }
+
+  .btn--ghost:hover {
+    background: var(--fg);
+    color: var(--bg);
+  }
+
+  .btn-icon {
+    width: 0.92rem;
+    height: 0.92rem;
     flex-shrink: 0;
   }
 
-  :global([data-platform="mac"]) .hero-button-icon--apple {
-    display: block;
+  .cta-note {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.05em;
+    color: var(--fg-faint);
+    line-height: 1.7;
   }
 
-  :global([data-platform="win"]) .hero-button-icon--windows {
-    display: block;
+  /* ── Hero media (video) ── */
+
+  .frame {
+    margin: 0;
+    border: 1px solid var(--line-strong);
+    background: #000;
+    box-shadow:
+      0 40px 80px -48px rgba(0, 0, 0, 0.5),
+      0 14px 32px -20px rgba(0, 0, 0, 0.35);
   }
 
-  :global([data-platform="linux"]) .hero-button-icon--linux {
-    display: block;
+  .frame-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem 1rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
   }
 
-  /* ── Other platforms link ── */
-
-  .other-platforms {
-    font-size: 0.825rem;
-    color: var(--fg-dim);
-    margin-bottom: 5vh;
-    opacity: 0;
-    animation: fade-in 1s ease-out 0.3s forwards;
-    transition: color 0.3s ease;
-    text-decoration: underline;
-    text-decoration-color: rgba(113, 113, 122, 0.4);
-    text-underline-offset: 3px;
+  .dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    border: 1px solid var(--fg);
+    border-radius: 50%;
+    flex-shrink: 0;
   }
 
-  .other-platforms:hover {
-    color: var(--fg-muted);
-    text-decoration-color: var(--fg-muted);
+  .frame-title {
+    margin-left: 0.35rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--fg-soft);
+    white-space: nowrap;
   }
 
-  /* ── Screenshot ── */
-
-  .screenshot-wrap {
-    margin: 0 auto;
-    width: min(95vw, 1400px);
-    opacity: 0;
-    transform: scale(0.98);
-    animation: screenshot-in 1s ease-out 0.15s forwards;
+  .frame-body {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: #000;
   }
 
-  .screenshot {
+  .demo-video {
     width: 100%;
+    height: 100%;
+    object-fit: cover;
     display: block;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
   }
 
-  .screenshot-wrap::after {
-    content: "";
-    display: block;
+  .frame-caption {
+    padding: 1rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: var(--fg-faint);
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+    line-height: 1.7;
+  }
+
+  /* ── Stats ── */
+
+  .stats {
     width: 100%;
-    height: 120px;
-    background: inherit;
-    margin-top: -1px;
-    opacity: 0.04;
-    transform: scaleY(-1);
-    mask-image: linear-gradient(to bottom, black 0%, transparent 60%);
-    -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 60%);
-    pointer-events: none;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid var(--line-strong);
+    border-bottom: 1px solid var(--line);
   }
 
-  @keyframes screenshot-in {
-    from {
-      opacity: 0;
-      transform: scale(0.98);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    padding: 2.1rem 1.6rem;
+    border-left: 1px solid var(--line);
   }
 
-  /* ── Mobile ── */
+  .stat:first-child {
+    border-left: none;
+  }
+
+  .stat-value {
+    font-family: var(--display);
+    font-size: clamp(2.2rem, 4.4vw, 3.1rem);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--fg-soft);
+    max-width: 24ch;
+    line-height: 1.6;
+  }
+
+  /* ── Feature grid ── */
+
+  .grid {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 2.05rem 1.95rem;
+    background: var(--surface);
+    transition: background 0.2s ease;
+  }
+
+  .card:hover {
+    background: var(--surface-2);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .card-num {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+    color: var(--fg-faint);
+  }
+
+  .card-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: var(--fg);
+  }
+
+  .card-icon svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .card-title {
+    font-family: var(--display);
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+  }
+
+  .card-body p {
+    font-size: 0.97rem;
+    line-height: 1.75;
+    color: var(--fg-soft);
+  }
+
+  /* ── Process steps ── */
+
+  .steps {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .step {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 2.1rem 2rem 2.5rem;
+    background: var(--surface);
+  }
+
+  .step-num {
+    font-family: var(--display);
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: 0.9rem;
+  }
+
+  .step-title {
+    font-family: var(--display);
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    margin-bottom: 0.7rem;
+  }
+
+  .step-body {
+    font-size: 0.97rem;
+    line-height: 1.75;
+    color: var(--fg-soft);
+  }
+
+  /* ── Download ── */
+
+  .section--download {
+    padding-bottom: clamp(4.5rem, 9vw, 7rem);
+  }
+
+  .dl-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    max-width: 820px;
+  }
+
+  .dl-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 2.15rem 2rem;
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    transition: box-shadow 0.2s ease, background 0.2s ease;
+  }
+
+  .dl-card:hover {
+    background: var(--surface-2);
+    box-shadow: 0 20px 44px -40px rgba(0, 0, 0, 0.6);
+  }
+
+  .dl-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 1.1rem;
+  }
+
+  .dl-icon {
+    width: 1.9rem;
+    height: 1.9rem;
+    color: var(--fg);
+  }
+
+  .dl-meta {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+  }
+
+  .dl-name {
+    font-family: var(--display);
+    font-size: 1.9rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.1;
+  }
+
+  .dl-format {
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    letter-spacing: 0.04em;
+    color: var(--fg-soft);
+    margin-bottom: 0.9rem;
+    line-height: 1.6;
+  }
+
+  .dl-btn {
+    width: 100%;
+    margin-top: 0.8rem;
+  }
+
+  /* ── Responsive ── */
+
+  @media (max-width: 900px) {
+    .hero {
+      grid-template-columns: 1fr;
+      gap: 2.75rem;
+      padding-top: 2.75rem;
+    }
+
+    .stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stat:nth-child(3) {
+      border-left: none;
+    }
+
+    .stat:nth-child(n + 3) {
+      border-top: 1px solid var(--line);
+    }
+
+    .grid,
+    .steps {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
 
   @media (max-width: 640px) {
-    .main {
-      padding-top: 7vh;
+    .hero {
+      padding-top: 2.25rem;
+      padding-bottom: 2.5rem;
     }
 
-    .tagline {
-      margin-bottom: 4vh;
+    .hl {
+      white-space: normal;
     }
 
-    .screenshot-wrap {
-      width: 95vw;
+    .grid,
+    .steps,
+    .dl-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .stats {
+      grid-template-columns: 1fr 1fr;
     }
   }
 </style>

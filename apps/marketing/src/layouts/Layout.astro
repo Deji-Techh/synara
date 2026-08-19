@@ -1,11 +1,8 @@
 ---
 // FILE: Layout.astro
-// Purpose: Wraps the marketing pages with shared metadata, nav, and footer links.
+// Purpose: Wraps marketing pages with metadata, a monochrome light/dark shell
+//          (theme switcher in the nav), footer, and reveal-on-scroll.
 // Layer: Marketing layout
-// Depends on: release repo metadata from ../lib/releases.
-
-import { REPO_URL } from "../lib/releases";
-
 interface Props {
   title?: string;
   description?: string;
@@ -13,19 +10,27 @@ interface Props {
 
 const {
   title = "Caide",
-  description = "Caide — The best way to code with AI.",
+  description = "Caide — the best way to code with AI.",
 } = Astro.props;
+
+const THEME_ICONS = {
+  light:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>',
+  dark:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+} as const;
 ---
 
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
+    <meta name="color-scheme" content="light dark" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cal+Sans&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
@@ -33,39 +38,82 @@ const {
     <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>{title}</title>
+    <script is:inline>
+      // Apply theme before first paint (no flash). Honours a saved choice,
+      // otherwise falls back to the OS preference.
+      (function () {
+        try {
+          var stored = localStorage.getItem("caide-theme");
+          var theme =
+            stored ||
+            (window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light");
+          document.documentElement.dataset.theme = theme;
+        } catch (_) {
+          document.documentElement.dataset.theme = "light";
+        }
+        document.documentElement.classList.add("js");
+      })();
+    </script>
   </head>
   <body>
+    <a href="#main" class="skip-link">Skip to content</a>
+
     <div class="page">
       <nav class="nav">
-        <a href="/" class="nav-brand">
-          <img src="/icon.png" alt="Caide" class="nav-icon" />
+        <a href="/" class="nav-brand" aria-label="Caide home">
+          <img src="/icon.png" alt="" class="nav-icon" draggable="false" />
+          <span class="nav-wordmark">Caide</span>
         </a>
-        <a
-          href={REPO_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="nav-github"
-        >
-          GitHub
-          <span class="nav-github-arrow" aria-hidden="true">&#8599;</span>
-        </a>
+
+        <div class="nav-links" role="navigation" aria-label="Primary">
+          <a href="/#features" class="nav-link">Features</a>
+          <a href="/#process" class="nav-link">Process</a>
+          <a href="/download" class="nav-link">Download</a>
+          <div class="theme-toggle" role="group" aria-label="Color theme">
+            <button
+              type="button"
+              class="theme-opt"
+              data-theme-opt="light"
+              aria-pressed="false"
+              set:html={THEME_ICONS.light}
+            >
+              <span>Light</span>
+            </button>
+            <button
+              type="button"
+              class="theme-opt"
+              data-theme-opt="dark"
+              aria-pressed="false"
+              set:html={THEME_ICONS.dark}
+            >
+              <span>Dark</span>
+            </button>
+          </div>
+          <a href="/#download" class="nav-cta">Get Caide</a>
+        </div>
       </nav>
 
-      <main class="main">
+      <main id="main" class="main">
         <slot />
       </main>
 
       <footer class="footer">
-        <span class="footer-copy">&copy; {new Date().getFullYear()} Emanuele Di Pietro</span>
-        <div class="footer-links">
-          <a href={REPO_URL} target="_blank" rel="noopener noreferrer">GitHub</a>
-          <a
-            href={`${REPO_URL}/issues`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Issues
+        <div class="footer-row">
+          <a href="/" class="footer-brand" aria-label="Caide home">
+            <img src="/icon.png" alt="" class="footer-icon" draggable="false" />
+            <span>Caide</span>
           </a>
+          <div class="footer-links">
+            <a href="/#features">Features</a>
+            <a href="/#process">Process</a>
+            <a href="/download">Download</a>
+          </div>
+        </div>
+        <div class="footer-row footer-row--bottom">
+          <span>&copy; {new Date().getFullYear()} Emanuele Di Pietro</span>
+          <span>The best way to code with AI.</span>
         </div>
       </footer>
     </div>
@@ -74,11 +122,41 @@ const {
 
 <style is:global>
   :root {
-    --bg: #09090b;
-    --fg: #fafafa;
-    --fg-muted: #a1a1aa;
-    --fg-dim: #71717a;
-    --border: rgba(255, 255, 255, 0.08);
+    --bg: #ffffff;
+    --fg: #0a0a0a;
+    --fg-soft: rgba(10, 10, 10, 0.62);
+    --fg-faint: rgba(10, 10, 10, 0.4);
+    --line: rgba(10, 10, 10, 0.14);
+    --line-strong: #0a0a0a;
+    --surface: #ffffff;
+    --surface-2: #f6f6f5;
+    --nav-bg: rgba(255, 255, 255, 0.86);
+    --invert: #0a0a0a;
+    --invert-fg: #ffffff;
+    --invert-soft: rgba(255, 255, 255, 0.66);
+    --invert-faint: rgba(255, 255, 255, 0.5);
+    --invert-line: rgba(255, 255, 255, 0.18);
+    --display: "Cal Sans", "Inter", system-ui, sans-serif;
+    --sans: "Inter", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  html[data-theme="dark"] {
+    --bg: #0a0a0a;
+    --fg: #f5f5f5;
+    --fg-soft: rgba(245, 245, 245, 0.66);
+    --fg-faint: rgba(245, 245, 245, 0.42);
+    --line: rgba(245, 245, 245, 0.16);
+    --line-strong: #f5f5f5;
+    --surface: #0a0a0a;
+    --surface-2: #151515;
+    --nav-bg: rgba(10, 10, 10, 0.86);
+    --invert: #f5f5f5;
+    --invert-fg: #0a0a0a;
+    --invert-soft: rgba(0, 0, 0, 0.62);
+    --invert-faint: rgba(0, 0, 0, 0.55);
+    --invert-line: rgba(0, 0, 0, 0.2);
   }
 
   * {
@@ -88,17 +166,20 @@ const {
   }
 
   html {
-    color-scheme: dark;
+    scroll-behavior: smooth;
   }
 
   body {
     background: var(--bg);
     color: var(--fg);
-    font-family: "DM Sans", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
     overflow-x: hidden;
+    text-rendering: optimizeLegibility;
   }
 
   a {
@@ -111,21 +192,105 @@ const {
     max-width: 100%;
   }
 
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
+  ::selection {
+    background: var(--invert);
+    color: var(--invert-fg);
+  }
+
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 100;
+    background: var(--invert);
+    color: var(--invert-fg);
+    padding: 0.5rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+  }
+
+  .skip-link:focus {
+    left: 0;
+  }
+
+  /* Smooth cross-theme transition — used as the no-View-Transition fallback
+     and as a finishing glint on top of the circular reveal. */
+  html.theme-anim body,
+  html.theme-anim body * {
+    transition:
+      background-color 0.4s ease,
+      border-color 0.4s ease,
+      color 0.4s ease,
+      fill 0.4s ease,
+      stroke 0.4s ease !important;
+  }
+
+  /* Circular theme-switch reveal (View Transitions API). The new theme is
+     painted on top of the old one and grows out from the toggle button. */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+
+  ::view-transition-old(root) {
+    z-index: 1;
+  }
+
+  ::view-transition-new(root) {
+    z-index: 9999;
+    clip-path: circle(0% at var(--t-x, 50%) var(--t-y, 50%));
+    animation: theme-reveal 0.6s var(--ease) forwards;
+  }
+
+  @keyframes theme-reveal {
     to {
-      opacity: 1;
-      transform: translateY(0);
+      clip-path: circle(160% at var(--t-x, 50%) var(--t-y, 50%));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-new(root) {
+      animation: none;
+    }
+  }
+
+  /* Reveal-on-scroll: only hides when JS is active; reduced-motion users see
+     content immediately without movement. */
+  .js [data-reveal] {
+    opacity: 0;
+  }
+
+  .js [data-reveal].is-revealed {
+    opacity: 1;
+  }
+
+  [data-reveal] {
+    transition:
+      opacity 0.7s var(--ease),
+      transform 0.7s var(--ease);
+  }
+
+  .js [data-reveal]:not(.is-revealed) {
+    transform: translateY(18px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    .js [data-reveal]:not(.is-revealed) {
+      transform: none;
+    }
+
+    [data-reveal] {
+      transition: opacity 0.3s ease;
     }
   }
 </style>
 
 <style>
-  /* ── Page ── */
-
   .page {
     min-height: 100vh;
     display: flex;
@@ -136,94 +301,336 @@ const {
   /* ── Navbar ── */
 
   .nav {
+    position: sticky;
+    top: 0;
+    z-index: 40;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1.5rem 2.5rem;
-    opacity: 0.5;
-    transition: opacity 0.4s ease;
-  }
-
-  .nav:hover {
-    opacity: 1;
+    gap: 1.25rem;
+    padding: 1.1rem clamp(1.5rem, 5vw, 4rem);
+    background: var(--nav-bg);
+    backdrop-filter: saturate(1.4) blur(14px);
+    -webkit-backdrop-filter: saturate(1.4) blur(14px);
+    border-bottom: 1px solid var(--line);
   }
 
   .nav-brand {
     display: flex;
     align-items: center;
+    gap: 0.6rem;
   }
 
   .nav-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
+    width: 26px;
+    height: 26px;
   }
 
-  .nav-github {
+  .nav-wordmark {
+    font-family: var(--display);
+    font-size: 1.22rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .nav-links {
     display: flex;
     align-items: center;
-    gap: 0.35rem;
-    color: var(--fg-muted);
-    font-size: 0.875rem;
-    transition: color 0.3s ease;
+    gap: clamp(1.1rem, 2.5vw, 1.8rem);
   }
 
-  .nav-github:hover {
+  .nav-link {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--fg-soft);
+    transition: color 0.15s ease;
+  }
+
+  .nav-link:hover {
     color: var(--fg);
   }
 
-  .nav-github-arrow {
-    display: inline-block;
-    transition: transform 0.3s ease;
+  .nav-cta {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--bg);
+    background: var(--fg);
+    padding: 0.6rem 1.05rem;
+    transition: opacity 0.15s ease;
   }
 
-  .nav-github:hover .nav-github-arrow {
-    transform: translateX(2px) translateY(-1px);
+  .nav-cta:hover {
+    opacity: 0.82;
   }
 
-  /* ── Main content ── */
+  /* ── Theme switcher ── */
+
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.2rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+  }
+
+  .theme-opt {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.75rem;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--fg-soft);
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .theme-opt svg {
+    width: 0.85rem;
+    height: 0.85rem;
+  }
+
+  .theme-opt:hover {
+    color: var(--fg);
+  }
+
+  .theme-opt.is-active {
+    background: var(--fg);
+    color: var(--bg);
+  }
 
   .main {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 100%;
   }
 
   /* ── Footer ── */
 
   .footer {
+    background: var(--invert);
+    color: var(--invert-fg);
+    padding: 3.25rem clamp(1.5rem, 5vw, 4rem) 2rem;
+  }
+
+  .footer-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1.5rem 2.5rem;
-    font-size: 0.8rem;
-    color: var(--fg-dim);
+    gap: 1.5rem;
+    padding-bottom: 2.25rem;
+    border-bottom: 1px solid var(--invert-line);
+  }
+
+  .footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--display);
+    font-size: 1.15rem;
+    font-weight: 600;
+  }
+
+  .footer-icon {
+    width: 24px;
+    height: 24px;
   }
 
   .footer-links {
     display: flex;
-    gap: 1.25rem;
+    flex-wrap: wrap;
+    gap: clamp(1rem, 2.5vw, 1.6rem);
   }
 
   .footer-links a {
-    color: var(--fg-dim);
-    transition: color 0.3s ease;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--invert-soft);
+    transition: color 0.15s ease;
   }
 
   .footer-links a:hover {
-    color: var(--fg);
+    color: var(--invert-fg);
+  }
+
+  .footer-row--bottom {
+    padding-top: 1.6rem;
+    padding-bottom: 0;
+    border-bottom: none;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--invert-faint);
+    line-height: 1.7;
   }
 
   /* ── Mobile ── */
 
   @media (max-width: 640px) {
     .nav {
-      padding: 1.25rem;
+      padding: 0.8rem 1.25rem;
     }
 
-    .footer {
-      padding: 1.25rem;
+    .nav-link {
+      display: none;
+    }
+
+    .theme-opt span {
+      display: none;
+    }
+
+    .theme-opt {
+      padding: 0.42rem 0.5rem;
+    }
+
+    .nav-cta {
+      padding: 0.55rem 0.9rem;
+    }
+
+    .footer-row {
+      align-items: flex-start;
+      flex-direction: column;
     }
   }
 </style>
+
+<script>
+  // Theme switcher behaviour: a circular reveal (View Transitions API) grows
+  // from the clicked button and paints the new theme. Falls back to a smooth
+  // colour cross-fade where View Transitions are unavailable, and to an instant
+  // swap when the user prefers reduced motion.
+  (function () {
+    var root = document.documentElement;
+    var KEY = "caide-theme";
+    var opts = document.querySelectorAll<HTMLElement>("[data-theme-opt]");
+    var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var doc = document as Document & {
+      startViewTransition?: (callback: () => void) => { finished: Promise<void> };
+    };
+
+    function sync(theme: string) {
+      root.dataset.theme = theme;
+      root.classList.remove("theme-anim");
+      void root.offsetWidth;
+      root.classList.add("theme-anim");
+      opts.forEach(function (btn) {
+        var on = btn.dataset.themeOpt === theme;
+        btn.classList.toggle("is-active", on);
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      setTimeout(function () {
+        root.classList.remove("theme-anim");
+      }, 620);
+    }
+
+    function switchTo(theme: string) {
+      try {
+        localStorage.setItem(KEY, theme);
+      } catch (_) {
+        /* storage unavailable — fall back to session-only */
+      }
+
+      if (reduced || typeof doc.startViewTransition !== "function") {
+        sync(theme);
+        return;
+      }
+
+      // Origin = centre of the clicked button (screen px, scaled to the
+      // View-Transition device-px coordinate space).
+      var btn = Array.prototype.find.call(opts, function (b: HTMLElement) {
+        return b.dataset.themeOpt === theme;
+      }) as HTMLElement;
+      var rect = btn.getBoundingClientRect();
+      var scale = window.visualViewport ? window.visualViewport.scale || 1 : 1;
+      var dpr = window.devicePixelRatio || 1;
+      root.style.setProperty(
+        "--t-x",
+        ((rect.left + rect.width / 2) * dpr) / scale + "px",
+      );
+      root.style.setProperty(
+        "--t-y",
+        ((rect.top + rect.height / 2) * dpr) / scale + "px",
+      );
+
+      // The reveal callback flips the theme inside the transition. If the
+      // transition stalls (throttled view, headless, some webviews) it may never
+      // run, so a fallback timer force-applies the theme shortly after — the
+      // circle simply won't animate then, but the theme is never wrong.
+      var applied = false;
+      var timers: number[] = [];
+      function applyNow() {
+        if (applied) return;
+        applied = true;
+        timers.forEach(clearTimeout);
+        sync(theme);
+      }
+      try {
+        var vt = doc.startViewTransition(function () {
+          applied = true;
+          timers.forEach(clearTimeout);
+          sync(theme);
+        });
+        timers.push(setTimeout(applyNow, 700) as unknown as number);
+        var finished: Promise<void> | undefined =
+          vt && "finished" in vt ? vt.finished : undefined;
+        if (finished) {
+          finished
+            .catch(function () {
+              /* ignored — fallback already handled failure */
+            })
+            .then(function () {
+              timers.forEach(clearTimeout);
+            });
+        }
+      } catch (_) {
+        applyNow();
+      }
+    }
+
+    opts.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        switchTo(btn.dataset.themeOpt as string);
+      });
+    });
+
+    sync(root.dataset.theme || "light");
+  })();
+</script>
+
+<script>
+  // Shared reveal-on-scroll. Respects prefers-reduced-motion via CSS (elements
+  // still reveal, just without the translate).
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const items = document.querySelectorAll("[data-reveal]");
+  if (reduced || !("IntersectionObserver" in window)) {
+    items.forEach((el) => el.classList.add("is-revealed"));
+  } else {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-revealed");
+            io.unobserve(entry.target);
+          }
+        }
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" },
+    );
+    items.forEach((el) => io.observe(el));
+  }
+</script>
