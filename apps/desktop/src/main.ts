@@ -58,6 +58,7 @@ import {
   resolveCaideDesktopFlavor,
   caideDesktopIdentity,
   CAIDE_ENGINE_DIR_ENV,
+  CAIDE_ENGINE_DRIZZLE_DIR_ENV,
 } from "@caide/shared/desktopIdentity";
 import { NetService } from "@caide/shared/Net";
 import { applyShellEnvironmentHydrationMarker } from "@caide/shared/shell";
@@ -3043,8 +3044,14 @@ function backendEnv(): NodeJS.ProcessEnv {
           [DEVICE_HELPER_SOURCE_DIR_ENV]: Path.join(process.resourcesPath, "device-helper"),
           // The Flutter engine is a separate Node program spawned by the server
           // via plain `node`, which cannot read app.asar — so it ships as an
-          // unpacked extraResource and we point the server at it.
+          // unpacked extraResource and we point the server at it. The migration
+          // folder travels with it (drizzle sits next to dist in the payload).
           [CAIDE_ENGINE_DIR_ENV]: Path.join(process.resourcesPath, "engine"),
+          [CAIDE_ENGINE_DRIZZLE_DIR_ENV]: Path.join(
+            process.resourcesPath,
+            "engine",
+            "drizzle",
+          ),
         }
       : {}),
     CAIDE_MODE: "desktop",

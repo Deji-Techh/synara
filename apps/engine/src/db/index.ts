@@ -70,22 +70,30 @@ export function initializeDatabase(): BetterSQLite3Database<typeof schema> & {
   _db = drizzle(sqlite, { schema });
 
   try {
-    let migrationsFolder: string | null = null;
-    for (
-      let dir = fileURLToPath(new URL(".", import.meta.url));
-      dir !== path.parse(dir).root;
-      dir = path.dirname(dir)
-    ) {
-      const candidate = path.join(dir, "drizzle");
-      if (fs.existsSync(candidate)) {
-        migrationsFolder = candidate;
-        break;
+    let migrationsFolder: string | null =
+      process.env.CAIDE_ENGINE_DRIZZLE_DIR ?? null;
+    if (migrationsFolder === null) {
+      for (
+        let dir = fileURLToPath(new URL(".", import.meta.url));
+        dir !== path.parse(dir).root;
+        dir = path.dirname(dir)
+      ) {
+        const candidate = path.join(dir, "drizzle");
+        if (fs.existsSync(candidate)) {
+          migrationsFolder = candidate;
+          break;
+        }
       }
     }
     if (!migrationsFolder) {
       throw new Error(
         "Migrations folder not found: searched upward from " +
           fileURLToPath(new URL(".", import.meta.url)),
+      );
+    }
+    if (!fs.existsSync(path.join(migrationsFolder, "meta"))) {
+      throw new Error(
+        "Migrations folder missing drizzle meta: " + migrationsFolder,
       );
     }
     logger.log("Running migrations from:", migrationsFolder);

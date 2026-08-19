@@ -287,11 +287,25 @@ rl.on("line", (line) => {
     send({ jsonrpc: "2.0", id: null, error: { code: JSON_RPC_INVALID_REQUEST, message: "invalid request" } });
     return;
   }
-  handleRequest(parsed as JsonRpcRequest).then((response) => {
-    if (response !== null) {
-      send(response);
-    }
-  });
+  handleRequest(parsed as JsonRpcRequest).then(
+    (response) => {
+      if (response !== null) {
+        send(response);
+      }
+    },
+    (error: unknown) => {
+      // A rejected request must never vanish: surface a JSON-RPC error instead
+      // of an unhandled rejection that the supervisor can only see as silence
+      // (and the caller as a timeout).
+      const message = error instanceof Error ? error.message : String(error);
+      log.error(`engine: request ${(parsed as JsonRpcRequest).method} failed: ${message}`);
+      send({
+        jsonrpc: "2.0",
+        id: (parsed as JsonRpcRequest).id,
+        error: { code: JSON_RPC_INTERNAL_ERROR, message },
+      });
+    },
+  );
 });
 
 rl.on("close", () => {

@@ -93,3 +93,13 @@ export function caideBundleId(isDevelopment: boolean): string {
  * of drifting.
  */
 export const CAIDE_ENGINE_DIR_ENV = "CAIDE_ENGINE_DIR";
+/**
+ * Env var pointing the engine at its SQL migration folder. The engine walks
+ * upward from its bundle looking for a `drizzle/` dir, which is fine in the
+ * monorepo but fails in a packaged app where the engine lives at an unpacked
+ * `resources/engine` with no sibling `drizzle/`. The desktop injects the
+ * packaged path (resources/engine/drizzle) so migrations always resolve. Lives
+ * here next to CAIDE_ENGINE_DIR_ENV since packaging, desktop and engine all
+ * reference the same layout.
+ */
+export const CAIDE_ENGINE_DRIZZLE_DIR_ENV = "CAIDE_ENGINE_DRIZZLE_DIR";
