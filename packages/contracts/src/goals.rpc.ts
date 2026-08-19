@@ -23,26 +23,11 @@ export const GOALS_WS_METHODS = {
 export const WS_GOALS_SUBSCRIBE = "goals:subscribe" as const;
 
 /**
- * Live goal activity streamed from the engine: goal state transitions
- * (goal:updated), goal run launches (goal:run-requested) and control
- * requests (goal:control-requested). Payload is the engine goal contract
- * body; consumers should treat it as opaque until M4 web typing lands.
+ * Live goal activity streamed from the engine (see ./goals for the schema —
+ * it lives in the leaf module so ws.ts can reference it cycle-free).
  */
-export const GoalDomainEvent = Schema.Union([
-  Schema.Struct({
-    type: Schema.Literal("goal.updated"),
-    payload: Schema.Unknown,
-  }),
-  Schema.Struct({
-    type: Schema.Literal("goal.run-requested"),
-    payload: Schema.Unknown,
-  }),
-  Schema.Struct({
-    type: Schema.Literal("goal.control-requested"),
-    payload: Schema.Unknown,
-  }),
-]);
-export type GoalDomainEvent = typeof GoalDomainEvent.Type;
+import { GoalDomainEvent } from "./goals";
+export { GoalDomainEvent };
 
 export const WsGoalsSubscribeRpc = Rpc.make(WS_GOALS_SUBSCRIBE, {
   payload: Schema.Struct({}),

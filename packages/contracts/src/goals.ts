@@ -185,3 +185,27 @@ export const GoalControlRequested = Schema.Struct({
   action: Schema.Literals(["pause", "cancel", "interrupt"]),
 });
 export type GoalControlRequested = typeof GoalControlRequested.Type;
+
+/**
+ * Live goal activity streamed from the engine: goal state transitions
+ * (goal:updated), goal run launches (goal:run-requested) and control
+ * requests (goal:control-requested). Payload is the engine goal contract
+ * body; consumers should treat it as opaque until M4 web typing lands.
+ * Lives in this leaf module (not goals.rpc) so ws.ts can reference it
+ * without creating a module-eval cycle through ./rpc.
+ */
+export const GoalDomainEvent = Schema.Union([
+  Schema.Struct({
+    type: Schema.Literal("goal.updated"),
+    payload: Schema.Unknown,
+  }),
+  Schema.Struct({
+    type: Schema.Literal("goal.run-requested"),
+    payload: Schema.Unknown,
+  }),
+  Schema.Struct({
+    type: Schema.Literal("goal.control-requested"),
+    payload: Schema.Unknown,
+  }),
+]);
+export type GoalDomainEvent = typeof GoalDomainEvent.Type;

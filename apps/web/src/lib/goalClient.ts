@@ -45,7 +45,10 @@ export const goalClient = {
   listActivity: (
     goalId: GoalId,
     limit?: number,
-  ): Promise<GoalActivityEvent[]> => goalsApi().listActivity({ goalId, limit }),
+  ): Promise<GoalActivityEvent[]> => {
+    if (limit === undefined) return goalsApi().listActivity({ goalId });
+    return goalsApi().listActivity({ goalId, limit });
+  },
   createGoal: (input: {
     appId?: number | null;
     title?: string;
@@ -64,11 +67,15 @@ export const goalClient = {
   }): Promise<Goal> => goalsApi().editGoal(input),
   steerGoal: (goalId: GoalId, instruction: string): Promise<Goal> =>
     goalsApi().steerGoal({ goalId, instruction }),
-  pauseGoal: (goalId: GoalId, reason?: string): Promise<Goal> =>
-    goalsApi().pauseGoal({ goalId, reason }),
+  pauseGoal: (goalId: GoalId, reason?: string): Promise<Goal> => {
+    if (reason === undefined) return goalsApi().pauseGoal({ goalId });
+    return goalsApi().pauseGoal({ goalId, reason });
+  },
   resumeGoal: (goalId: GoalId): Promise<Goal> => goalsApi().resumeGoal({ goalId }),
-  cancelGoal: (goalId: GoalId, reason?: string): Promise<Goal> =>
-    goalsApi().cancelGoal({ goalId, reason }),
+  cancelGoal: (goalId: GoalId, reason?: string): Promise<Goal> => {
+    if (reason === undefined) return goalsApi().cancelGoal({ goalId });
+    return goalsApi().cancelGoal({ goalId, reason });
+  },
   retryGoal: (goalId: GoalId): Promise<Goal> => goalsApi().retryGoal({ goalId }),
   verifyGoal: (goalId: GoalId): Promise<Goal> => goalsApi().verifyGoal({ goalId }),
 };
@@ -102,27 +109,24 @@ export type ParsedGoalDomainEvent =
       readonly payload: GoalControlRequestedPayload;
     };
 
-function decodeOrNull<A>(schema: Schema.Schema<A, unknown>, value: unknown): A | null {
-  try {
-    const decoded = Schema.decodeUnknownOption(schema)(value);
-    return Option.isSome(decoded) ? decoded.value : null;
-  } catch {
-    return null;
-  }
-}
-
 export function parseGoalDomainEvent(event: GoalDomainEvent): ParsedGoalDomainEvent | null {
   if (event.type === "goal.updated") {
-    const payload = decodeOrNull(GoalUpdated, event.payload);
-    return payload ? { domainType: "goal.updated", payload } : null;
+    const decoded = Schema.decodeUnknownOption(GoalUpdated)(event.payload);
+    return Option.isSome(decoded)
+      ? { domainType: "goal.updated", payload: decoded.value }
+      : null;
   }
   if (event.type === "goal.run-requested") {
-    const payload = decodeOrNull(GoalRunRequested, event.payload);
-    return payload ? { domainType: "goal.run-requested", payload } : null;
+    const decoded = Schema.decodeUnknownOption(GoalRunRequested)(event.payload);
+    return Option.isSome(decoded)
+      ? { domainType: "goal.run-requested", payload: decoded.value }
+      : null;
   }
   if (event.type === "goal.control-requested") {
-    const payload = decodeOrNull(GoalControlRequested, event.payload);
-    return payload ? { domainType: "goal.control-requested", payload } : null;
+    const decoded = Schema.decodeUnknownOption(GoalControlRequested)(event.payload);
+    return Option.isSome(decoded)
+      ? { domainType: "goal.control-requested", payload: decoded.value }
+      : null;
   }
   return null;
 }

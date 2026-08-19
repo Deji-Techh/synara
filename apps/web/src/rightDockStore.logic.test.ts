@@ -29,6 +29,7 @@ describe("RIGHT_DOCK_PANE_KINDS (single source of truth)", () => {
       "git",
       "pullRequest",
       "preview",
+      "goals",
     ]);
   });
 

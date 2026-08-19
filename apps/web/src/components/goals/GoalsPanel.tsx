@@ -29,6 +29,7 @@ import {
 import type {
   Goal,
   GoalActivityEvent,
+  GoalId,
   GoalRun,
   GoalStatus,
 } from "@caide/contracts";
@@ -65,6 +66,7 @@ import {
   activityToolLabel,
   goalRunKindLabel,
   goalRunStatusLabel,
+  goalRunStatusLabelClass,
   goalStatusDotClass,
   goalStatusLabel,
   goalStatusLabelClass,
@@ -413,7 +415,7 @@ function EvidenceTab(props: { goal: Goal }) {
 function GoalList(props: {
   goals: Goal[];
   selectedId: string | null;
-  onSelect: (goalId: string) => void;
+  onSelect: (goalId: GoalId) => void;
 }) {
   const { goals, selectedId, onSelect } = props;
   const ordered = useMemo(() => {
@@ -476,7 +478,7 @@ function GoalDetail(props: {
   const isWorking = GOAL_WORKING_STATUSES.includes(goal.status);
 
   const handleCancel = () => {
-    store.cancelGoal(goal.id, "Cancelled from goals pane");
+    store.cancelGoal(goal.id);
   };
   const handlePauseToggle = () => {
     if (goal.status === "paused" || goal.status === "pausing") {
@@ -504,7 +506,7 @@ function GoalDetail(props: {
           <span className={cn("size-2 shrink-0 rounded-full", goalStatusDotClass(goal.status))} />
           <span className="truncate">{goal.title}</span>
         </div>
-        <Badge className={goalStatusLabelClass(goal.status)}>{goalStatusLabel(goal.status)}</Badge>
+        <Badge variant="outline" className={goalStatusLabelClass(goal.status)}>{goalStatusLabel(goal.status)}</Badge>
         <div className="ml-auto flex items-center gap-0.5">
           {isLive ? (
             <>
@@ -586,7 +588,7 @@ function GoalDetail(props: {
 function GoalEditorDialog(props: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initial?: Goal;
+  initial: Goal | null;
   onSave: (input: {
     title?: string;
     objective: string;
@@ -614,13 +616,26 @@ function GoalEditorDialog(props: {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
-      title: title.trim() || undefined,
-      objective: objective.trim(),
-      executionTarget: target,
-      definitionOfDone: dod.split("\n").map((s) => s.trim()).filter(Boolean),
-      constraints: constraints.split("\n").map((s) => s.trim()).filter(Boolean),
-    });
+    const next: {
+      title?: string;
+      objective: string;
+      executionTarget: "local" | "remote" | "hybrid";
+      definitionOfDone?: string[];
+      constraints?: string[];
+    } = { objective: objective.trim(), executionTarget: target };
+    const trimmedTitle = title.trim();
+    if (trimmedTitle) next.title = trimmedTitle;
+    const dodLines = dod
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (dodLines.length > 0) next.definitionOfDone = dodLines;
+    const constraintLines = constraints
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (constraintLines.length > 0) next.constraints = constraintLines;
+    onSave(next);
     onOpenChange(false);
   };
 
@@ -658,7 +673,7 @@ function GoalEditorDialog(props: {
               <SelectTrigger className="w-full">
                 <SelectValue>{target}</SelectValue>
               </SelectTrigger>
-              <SelectPopup align="center">
+              <SelectPopup align="center" surface="settings">
                 <SelectItem value="local">local</SelectItem>
                 <SelectItem value="hybrid">hybrid</SelectItem>
                 <SelectItem value="remote">remote</SelectItem>
@@ -686,11 +701,9 @@ function GoalEditorDialog(props: {
             />
           </div>
           <DialogFooter className="mt-4">
-            <DialogClose asChild>
-              <Button type="button" variant="ghost">
-                Cancel
-              </Button>
-            </DialogClose>
+            <DialogClose
+              render={<Button type="button" variant="ghost">Cancel</Button>}
+            />
             <Button type="submit">{initial ? "Save changes" : "Create goal"}</Button>
           </DialogFooter>
         </form>
@@ -792,6 +805,7 @@ export function GoalsPanel(props: { onClose?: () => void }) {
       <GoalEditorDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
+        initial={null}
         onSave={(input) => {
           void store.createGoal(input);
         }}
@@ -801,7 +815,7 @@ export function GoalsPanel(props: { onClose?: () => void }) {
         onOpenChange={(open) => {
           if (!open) setEditGoal(null);
         }}
-        initial={editGoal ?? undefined}
+        initial={editGoal}
         onSave={(input) => {
           if (editGoal) void store.editGoal({ goalId: editGoal.id, ...input });
         }}
@@ -820,11 +834,9 @@ export function GoalsPanel(props: { onClose?: () => void }) {
               onChange={(e) => setSteerText(e.target.value)}
             />
             <DialogFooter className="mt-4">
-              <DialogClose asChild>
-                <Button type="button" variant="ghost">
-                  Cancel
-                </Button>
-              </DialogClose>
+              <DialogClose
+              render={<Button type="button" variant="ghost">Cancel</Button>}
+            />
               <Button
                 disabled={!steerText.trim()}
                 onClick={() => {

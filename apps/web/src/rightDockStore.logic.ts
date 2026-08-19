@@ -20,6 +20,7 @@ export const RIGHT_DOCK_PANE_KINDS = [
   "git",
   "pullRequest",
   "preview",
+  "goals",
 ] as const;
 
 export type RightDockPaneKind = (typeof RIGHT_DOCK_PANE_KINDS)[number];

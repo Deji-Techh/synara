@@ -136,6 +136,11 @@ const LazyPreviewPanel = lazy(() =>
     default: module.PreviewPanel,
   })),
 );
+const LazyGoalsPanel = lazy(() =>
+  import("../goals/GoalsPanel").then((module) => ({
+    default: module.GoalsPanel,
+  })),
+);
 
 const DIFF_INLINE_DEFAULT_WIDTH = "max(28rem, calc(50vw - 8rem))";
 const SINGLE_PANEL_MIN_WIDTH = 26 * 16;
@@ -820,6 +825,12 @@ export function SingleChatSurface(props: {
               onUpdatePane={(patch) => updatePane(props.threadId, pane.id, patch)}
               onClose={() => closePane(props.threadId, pane.id)}
             />
+          </Suspense>
+        );
+      case "goals":
+        return (
+          <Suspense fallback={<PanelStateMessage>Loading goals...</PanelStateMessage>}>
+            <LazyGoalsPanel onClose={() => closePane(props.threadId, pane.id)} />
           </Suspense>
         );
       case "pullRequest":

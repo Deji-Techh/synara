@@ -11,6 +11,7 @@ import {
   DiffIcon,
   EyeIcon,
   FileIcon,
+  FlagIcon,
   FoldersIcon,
   GitCommitIcon,
   GitPullRequestIcon,
@@ -50,6 +51,7 @@ export const RIGHT_DOCK_PANE_META: Record<RightDockPaneKind, RightDockPaneMeta> 
   git: { label: "Git", Icon: GitCommitIcon },
   pullRequest: { label: "Pull request", Icon: GitPullRequestIcon },
   preview: { label: "Preview", Icon: EyeIcon },
+  goals: { label: "Goals", Icon: FlagIcon },
 };
 
 // Neutral fallback for any pane kind we no longer recognize (e.g. stale

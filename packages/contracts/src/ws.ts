@@ -73,6 +73,7 @@ import {
   TerminalWriteInput,
 } from "./terminal";
 import { KeybindingRule } from "./keybindings";
+import { GoalDomainEvent } from "./goals.js";
 import {
   ProjectCreateLocalFilePreviewGrantInput,
   ProjectDevServerEvent,
@@ -539,6 +540,7 @@ export interface WsPushPayloadByChannel {
   readonly [ORCHESTRATION_WS_CHANNELS.domainEvent]: OrchestrationEvent;
   readonly [ORCHESTRATION_WS_CHANNELS.shellEvent]: OrchestrationShellStreamItem;
   readonly [ORCHESTRATION_WS_CHANNELS.threadEvent]: OrchestrationThreadStreamItem;
+  readonly [WS_CHANNELS.goalDomainEvent]: GoalDomainEvent;
 }
 
 export type WsPushChannel = keyof WsPushPayloadByChannel;
@@ -606,6 +608,10 @@ export const WsPushOrchestrationThreadEvent = makeWsPushSchema(
   ORCHESTRATION_WS_CHANNELS.threadEvent,
   OrchestrationThreadStreamItem,
 );
+export const WsPushGoalsDomainEvent = makeWsPushSchema(
+  WS_CHANNELS.goalDomainEvent,
+  GoalDomainEvent,
+);
 
 export const WsPushChannelSchema = Schema.Literals([
   WS_CHANNELS.gitActionProgress,
@@ -623,6 +629,7 @@ export const WsPushChannelSchema = Schema.Literals([
   ORCHESTRATION_WS_CHANNELS.domainEvent,
   ORCHESTRATION_WS_CHANNELS.shellEvent,
   ORCHESTRATION_WS_CHANNELS.threadEvent,
+  WS_CHANNELS.goalDomainEvent,
 ]);
 export type WsPushChannelSchema = typeof WsPushChannelSchema.Type;
 
@@ -642,6 +649,7 @@ export const WsPush = Schema.Union([
   WsPushOrchestrationDomainEvent,
   WsPushOrchestrationShellEvent,
   WsPushOrchestrationThreadEvent,
+  WsPushGoalsDomainEvent,
 ]);
 export type WsPush = typeof WsPush.Type;
 
