@@ -8,13 +8,19 @@ import { MODEL_OPTIONS_BY_PROVIDER } from "@caide/contracts";
 type ModelProviderKind =
   | "openai"
   | "anthropic"
-  | "openai"
   | "google"
-  | "openai"
-  | "openai"
-  | "openai"
-  | "openai"
-  | "openai";
+  | "openrouter"
+  | "ollama"
+  | "deepseek"
+  | "groq"
+  | "mistral"
+  | "together"
+  | "cohere"
+  | "xai"
+  | "fireworks"
+  | "opencodeZen"
+  | "opencodeGo"
+  | "engine";
 
 const NON_DROID_MODEL_SLUGS = new Set(
   Object.entries(MODEL_OPTIONS_BY_PROVIDER).flatMap(([provider, models]) =>
@@ -22,7 +28,7 @@ const NON_DROID_MODEL_SLUGS = new Set(
   ),
 );
 const DROID_ONLY_MODEL_SLUGS = new Set(
-  MODEL_OPTIONS_BY_PROVIDER.droid
+  ((MODEL_OPTIONS_BY_PROVIDER as Record<string, { slug: string }[] | undefined>).droid ?? [])
     .map((model) => model.slug.toLowerCase())
     .filter((slug) => !NON_DROID_MODEL_SLUGS.has(slug)),
 );
@@ -51,31 +57,31 @@ function inferProviderFromLabel(label: string): ModelProviderKind | undefined {
   if (/(^|[^a-z0-9])pi([^a-z0-9]|$)/u.test(lowerLabel)) {
     return "openai";
   }
-  if (lowerLabel.includes("openai")) {
+  if (lowerLabel.includes("opencode")) {
     return "openai";
   }
-  if (lowerLabel.includes("openai")) {
+  if (lowerLabel.includes("kilo")) {
     return "openai";
   }
-  if (lowerLabel.includes("openai")) {
+  if (lowerLabel.includes("cursor")) {
     return "openai";
   }
-  if (lowerLabel.includes("google")) {
+  if (lowerLabel.includes("antigravity")) {
     return "google";
   }
-  if (lowerLabel.includes("anthropic") || lowerLabel.includes("anthropic")) {
+  if (lowerLabel.includes("claude") || lowerLabel.includes("anthropic")) {
     return "anthropic";
   }
   if (lowerLabel.includes("gemini") || lowerLabel.includes("google")) {
     return "google";
   }
-  if (lowerLabel.includes("openai") || lowerLabel.includes("xai") || lowerLabel.includes("x.ai")) {
+  if (lowerLabel.includes("grok") || lowerLabel.includes("xai") || lowerLabel.includes("x.ai")) {
+    return "xai";
+  }
+  if (lowerLabel.includes("droid") || lowerLabel.includes("factory")) {
     return "openai";
   }
-  if (lowerLabel.includes("openai") || lowerLabel.includes("factory")) {
-    return "openai";
-  }
-  if (lowerLabel.includes("openai")) {
+  if (lowerLabel.includes("codex") || lowerLabel.includes("openai")) {
     return "openai";
   }
   return undefined;
@@ -85,15 +91,34 @@ function inferLegacyModelProvider(provider: unknown, model: string): ModelProvid
   if (
     provider === "openai" ||
     provider === "anthropic" ||
-    provider === "openai" ||
     provider === "google" ||
-    provider === "openai" ||
-    provider === "openai" ||
-    provider === "openai" ||
-    provider === "openai" ||
-    provider === "openai"
+    provider === "openrouter" ||
+    provider === "ollama" ||
+    provider === "deepseek" ||
+    provider === "groq" ||
+    provider === "mistral" ||
+    provider === "together" ||
+    provider === "cohere" ||
+    provider === "xai" ||
+    provider === "fireworks" ||
+    provider === "opencodeZen" ||
+    provider === "opencodeGo" ||
+    provider === "engine"
   ) {
     return provider;
+  }
+  // Legacy CLI providers → API mapping
+  if (provider === "codex" || provider === "cursor" || provider === "kilo" || provider === "opencode" || provider === "pi" || provider === "droid") {
+    return "openai";
+  }
+  if (provider === "claudeAgent") {
+    return "anthropic";
+  }
+  if (provider === "antigravity") {
+    return "google";
+  }
+  if (provider === "grok") {
+    return "xai";
   }
   if (provider === "gemini") {
     return "google";
@@ -106,17 +131,20 @@ function inferLegacyModelProvider(provider: unknown, model: string): ModelProvid
   }
   const lowerModel = model.toLowerCase();
   // Shared Claude/Gemini/OpenAI slugs remain ambiguous without an instance label;
-  // only Factory-exclusive built-ins are safe to attribute to Droid.
+  // only Factory-exclusive built-ins are safe to attribute to Droid (now openai).
   if (DROID_ONLY_MODEL_SLUGS.has(lowerModel)) {
     return "openai";
   }
-  if (lowerModel.includes("anthropic")) {
+  if (lowerModel.includes("claude") || lowerModel.includes("anthropic")) {
     return "anthropic";
   }
-  if (lowerModel.includes("gemini")) {
+  if (lowerModel.includes("gemini") || lowerModel.includes("google")) {
     return "google";
   }
-  if (lowerModel.includes("openai")) {
+  if (lowerModel.includes("grok") || lowerModel.includes("xai")) {
+    return "xai";
+  }
+  if (lowerModel.includes("openai") || lowerModel.includes("codex") || lowerModel.includes("gpt")) {
     return "openai";
   }
   return "openai";
