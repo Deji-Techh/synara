@@ -2235,23 +2235,23 @@ export function makeProviderHealthLive(options?: { readonly providerUpdateTimeou
       const getProviderBinaryPath = (provider: ProviderKind, settings: ServerSettings) => {
         switch (provider) {
           case "openai":
-            return settings.providers.codex.binaryPath;
+            return (settings.providers as any).codex?.binaryPath;
           case "anthropic":
-            return settings.providers.claudeAgent.binaryPath;
+            return (settings.providers as any).claudeAgent?.binaryPath;
           case "openai":
-            return settings.providers.cursor.binaryPath;
+            return (settings.providers as any).cursor?.binaryPath;
           case "google":
-            return settings.providers.antigravity.binaryPath;
+            return (settings.providers as any).antigravity?.binaryPath;
           case "openai":
-            return settings.providers.grok.binaryPath;
+            return (settings.providers as any).grok?.binaryPath;
           case "openai":
-            return settings.providers.droid.binaryPath;
+            return (settings.providers as any).droid?.binaryPath;
           case "openai":
-            return settings.providers.kilo.binaryPath;
+            return (settings.providers as any).kilo?.binaryPath;
           case "openai":
-            return settings.providers.opencode.binaryPath;
+            return (settings.providers as any).opencode?.binaryPath;
           case "openai":
-            return settings.providers.pi.binaryPath;
+            return (settings.providers as any).pi?.binaryPath;
           case "engine":
             return settings.providers.engine.binaryPath;
         }
@@ -2427,8 +2427,8 @@ export function makeProviderHealthLive(options?: { readonly providerUpdateTimeou
                   settings,
                   CODEX_PROVIDER,
                   makeCheckCodexProviderStatus(
-                    settings.providers.codex.binaryPath,
-                    settings.providers.codex.homePath,
+                    (settings.providers as any).codex?.binaryPath,
+                    (settings.providers as any).codex?.homePath,
                   ),
                 ),
                 checkProviderWhenEnabled(
@@ -2436,46 +2436,46 @@ export function makeProviderHealthLive(options?: { readonly providerUpdateTimeou
                   CLAUDE_AGENT_PROVIDER,
                   makeCheckClaudeProviderStatus(
                     resolveClaudeSubscription,
-                    settings.providers.claudeAgent.binaryPath,
+                    (settings.providers as any).claudeAgent?.binaryPath,
                     serverConfig.homeDir,
                   ),
                 ),
                 checkProviderWhenEnabled(
                   settings,
                   CURSOR_PROVIDER,
-                  makeCheckCursorProviderStatus(settings.providers.cursor.binaryPath),
+                  makeCheckCursorProviderStatus((settings.providers as any).cursor?.binaryPath),
                 ),
                 checkProviderWhenEnabled(
                   settings,
                   ANTIGRAVITY_PROVIDER,
-                  checkAntigravityProviderStatus(settings.providers.antigravity.binaryPath),
+                  checkAntigravityProviderStatus((settings.providers as any).antigravity?.binaryPath),
                 ),
                 checkProviderWhenEnabled(
                   settings,
                   GROK_PROVIDER,
-                  makeCheckGrokProviderStatus(settings.providers.grok.binaryPath),
+                  makeCheckGrokProviderStatus((settings.providers as any).grok?.binaryPath),
                 ),
                 checkProviderWhenEnabled(
                   settings,
                   DROID_PROVIDER,
-                  makeCheckDroidProviderStatus(settings.providers.droid.binaryPath),
+                  makeCheckDroidProviderStatus((settings.providers as any).droid?.binaryPath),
                 ),
                 checkProviderWhenEnabled(
                   settings,
                   KILO_PROVIDER,
-                  makeCheckKiloProviderStatus(settings.providers.kilo.binaryPath),
+                  makeCheckKiloProviderStatus((settings.providers as any).kilo?.binaryPath),
                 ),
                 checkProviderWhenEnabled(
                   settings,
                   OPENCODE_PROVIDER,
-                  makeCheckOpenCodeProviderStatus(settings.providers.opencode.binaryPath),
+                  makeCheckOpenCodeProviderStatus((settings.providers as any).opencode?.binaryPath),
                 ),
                 checkProviderWhenEnabled(
                   settings,
                   PI_PROVIDER,
                   checkPiProviderStatus(
-                    settings.providers.pi.agentDir,
-                    settings.providers.pi.binaryPath,
+                    (settings.providers as any).pi?.agentDir,
+                    (settings.providers as any).pi?.binaryPath,
                   ),
                 ),
               ],

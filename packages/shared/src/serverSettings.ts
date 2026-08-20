@@ -53,37 +53,37 @@ export function providerStartOptionsFromServerSettings(
   const { providers } = settings;
   return {
     codex: {
-      ...(providers.codex.binaryPath ? { binaryPath: providers.codex.binaryPath } : {}),
-      ...(providers.codex.homePath ? { homePath: providers.codex.homePath } : {}),
+      ...((providers as any).codex?.binaryPath ? { binaryPath: (providers as any).codex?.binaryPath } : {}),
+      ...((providers as any).codex?.homePath ? { homePath: (providers as any).codex?.homePath } : {}),
     },
     claudeAgent: {
-      ...(providers.claudeAgent.binaryPath ? { binaryPath: providers.claudeAgent.binaryPath } : {}),
+      ...((providers as any).claudeAgent?.binaryPath ? { binaryPath: (providers as any).claudeAgent?.binaryPath } : {}),
     },
     cursor: {
-      ...(providers.cursor.binaryPath ? { binaryPath: providers.cursor.binaryPath } : {}),
-      ...(providers.cursor.apiEndpoint ? { apiEndpoint: providers.cursor.apiEndpoint } : {}),
+      ...((providers as any).cursor?.binaryPath ? { binaryPath: (providers as any).cursor?.binaryPath } : {}),
+      ...((providers as any).cursor?.apiEndpoint ? { apiEndpoint: (providers as any).cursor?.apiEndpoint } : {}),
     },
     antigravity: {
-      ...(providers.antigravity.binaryPath ? { binaryPath: providers.antigravity.binaryPath } : {}),
+      ...((providers as any).antigravity?.binaryPath ? { binaryPath: (providers as any).antigravity?.binaryPath } : {}),
     },
     grok: {
-      ...(providers.grok.binaryPath ? { binaryPath: providers.grok.binaryPath } : {}),
+      ...((providers as any).grok?.binaryPath ? { binaryPath: (providers as any).grok?.binaryPath } : {}),
     },
     droid: {
-      ...(providers.droid.binaryPath ? { binaryPath: providers.droid.binaryPath } : {}),
+      ...((providers as any).droid?.binaryPath ? { binaryPath: (providers as any).droid?.binaryPath } : {}),
     },
     kilo: {
-      ...(providers.kilo.binaryPath ? { binaryPath: providers.kilo.binaryPath } : {}),
-      ...(providers.kilo.serverUrl ? { serverUrl: providers.kilo.serverUrl } : {}),
+      ...((providers as any).kilo?.binaryPath ? { binaryPath: (providers as any).kilo?.binaryPath } : {}),
+      ...((providers as any).kilo?.serverUrl ? { serverUrl: (providers as any).kilo?.serverUrl } : {}),
     },
     opencode: {
-      ...(providers.opencode.binaryPath ? { binaryPath: providers.opencode.binaryPath } : {}),
-      ...(providers.opencode.serverUrl ? { serverUrl: providers.opencode.serverUrl } : {}),
-      experimentalWebSockets: providers.opencode.experimentalWebSockets,
+      ...((providers as any).opencode?.binaryPath ? { binaryPath: (providers as any).opencode?.binaryPath } : {}),
+      ...((providers as any).opencode?.serverUrl ? { serverUrl: (providers as any).opencode?.serverUrl } : {}),
+      experimentalWebSockets: (providers as any).opencode?.experimentalWebSockets,
     },
     pi: {
-      ...(providers.pi.binaryPath ? { binaryPath: providers.pi.binaryPath } : {}),
-      ...(providers.pi.agentDir ? { agentDir: providers.pi.agentDir } : {}),
+      ...((providers as any).pi?.binaryPath ? { binaryPath: (providers as any).pi?.binaryPath } : {}),
+      ...((providers as any).pi?.agentDir ? { agentDir: (providers as any).pi?.agentDir } : {}),
     },
     engine: {
       ...(providers.engine.binaryPath ? { binaryPath: providers.engine.binaryPath } : {}),

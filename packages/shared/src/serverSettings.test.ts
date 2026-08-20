@@ -12,43 +12,43 @@ describe("providerStartOptionsFromServerSettings", () => {
       providers: {
         ...DEFAULT_SERVER_SETTINGS.providers,
         codex: {
-          ...DEFAULT_SERVER_SETTINGS.providers.codex,
+          ...(DEFAULT_SERVER_SETTINGS.providers as any).codex,
           binaryPath: "",
           homePath: "",
         },
         claudeAgent: {
-          ...DEFAULT_SERVER_SETTINGS.providers.claudeAgent,
+          ...(DEFAULT_SERVER_SETTINGS.providers as any).claudeAgent,
           binaryPath: "",
         },
         cursor: {
-          ...DEFAULT_SERVER_SETTINGS.providers.cursor,
+          ...(DEFAULT_SERVER_SETTINGS.providers as any).cursor,
           binaryPath: "",
           apiEndpoint: "",
         },
         antigravity: {
-          ...DEFAULT_SERVER_SETTINGS.providers.antigravity,
+          ...(DEFAULT_SERVER_SETTINGS.providers as any).antigravity,
           binaryPath: "",
         },
         grok: {
-          ...DEFAULT_SERVER_SETTINGS.providers.grok,
+          ...(DEFAULT_SERVER_SETTINGS.providers as any).grok,
           binaryPath: "",
         },
         droid: {
-          ...DEFAULT_SERVER_SETTINGS.providers.droid,
+          ...(DEFAULT_SERVER_SETTINGS.providers as any).droid,
           binaryPath: "",
         },
         kilo: {
-          ...DEFAULT_SERVER_SETTINGS.providers.kilo,
+          ...(DEFAULT_SERVER_SETTINGS.providers as any).kilo,
           binaryPath: "",
           serverUrl: "",
         },
         opencode: {
-          ...DEFAULT_SERVER_SETTINGS.providers.opencode,
+          ...(DEFAULT_SERVER_SETTINGS.providers as any).opencode,
           binaryPath: "",
           serverUrl: "",
         },
         pi: {
-          ...DEFAULT_SERVER_SETTINGS.providers.pi,
+          ...(DEFAULT_SERVER_SETTINGS.providers as any).pi,
           binaryPath: "",
           agentDir: "",
         },
@@ -85,12 +85,12 @@ describe("providerStartOptionsFromServerSettings", () => {
       providers: {
         ...DEFAULT_SERVER_SETTINGS.providers,
         codex: {
-          ...DEFAULT_SERVER_SETTINGS.providers.codex,
+          ...(DEFAULT_SERVER_SETTINGS.providers as any).codex,
           binaryPath: "/custom/bin/codex",
           homePath: "/custom/codex-home",
         },
         opencode: {
-          ...DEFAULT_SERVER_SETTINGS.providers.opencode,
+          ...(DEFAULT_SERVER_SETTINGS.providers as any).opencode,
           binaryPath: "/custom/bin/opencode",
           serverUrl: "http://127.0.0.1:4096",
           experimentalWebSockets: true,

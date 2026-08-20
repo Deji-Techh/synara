@@ -382,12 +382,12 @@ const makeServerProgram = (input: CliInput) =>
     yield* Effect.forkChild(
       Effect.gen(function* () {
         const settings = yield* serverSettings.getSettings;
-        if (settings.providers.claudeAgent.enabled === false) {
+        if ((settings.providers as any).claudeAgent?.enabled === false) {
           return;
         }
         yield* Effect.sync(() =>
           startClaudeCredentialKeepalive({
-            binaryPath: settings.providers.claudeAgent.binaryPath,
+            binaryPath: (settings.providers as any).claudeAgent?.binaryPath,
             homeDir: config.homeDir,
             log: (message) => Effect.runFork(Effect.logInfo(message)),
           }),

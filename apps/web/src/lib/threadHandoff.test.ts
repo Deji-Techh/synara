@@ -106,7 +106,7 @@ describe("threadHandoff", () => {
     const providerSettings = {
       ...DEFAULT_SERVER_SETTINGS_VIEW.providers,
       antigravity: {
-        ...DEFAULT_SERVER_SETTINGS_VIEW.providers.antigravity,
+        ...(DEFAULT_SERVER_SETTINGS_VIEW.providers as any).antigravity,
         enabled: false,
       },
     };

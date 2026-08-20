@@ -933,7 +933,7 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
     hasOwn(patch, "codexHomePath") ||
     hasOwn(patch, "customCodexModels")
   ) {
-    providers.codex = {
+    (providers as any).codex = {
       ...(hasOwn(patch, "codexBinaryPath") ? { binaryPath: patch.codexBinaryPath ?? "" } : {}),
       ...(hasOwn(patch, "codexHomePath") ? { homePath: patch.codexHomePath ?? "" } : {}),
       ...(hasOwn(patch, "customCodexModels")
@@ -942,7 +942,7 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
     };
   }
   if (hasOwn(patch, "claudeBinaryPath") || hasOwn(patch, "customClaudeModels")) {
-    providers.claudeAgent = {
+    (providers as any).claudeAgent = {
       ...(hasOwn(patch, "claudeBinaryPath") ? { binaryPath: patch.claudeBinaryPath ?? "" } : {}),
       ...(hasOwn(patch, "customClaudeModels")
         ? { customModels: patch.customClaudeModels ?? [] }
@@ -954,7 +954,7 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
     hasOwn(patch, "cursorBinaryPath") ||
     hasOwn(patch, "customCursorModels")
   ) {
-    providers.cursor = {
+    (providers as any).cursor = {
       ...(hasOwn(patch, "cursorApiEndpoint") ? { apiEndpoint: patch.cursorApiEndpoint ?? "" } : {}),
       ...(hasOwn(patch, "cursorBinaryPath") ? { binaryPath: patch.cursorBinaryPath ?? "" } : {}),
       ...(hasOwn(patch, "customCursorModels")
@@ -963,7 +963,7 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
     };
   }
   if (hasOwn(patch, "antigravityBinaryPath") || hasOwn(patch, "customAntigravityModels")) {
-    providers.antigravity = {
+    (providers as any).antigravity = {
       ...(hasOwn(patch, "antigravityBinaryPath")
         ? { binaryPath: patch.antigravityBinaryPath ?? "" }
         : {}),
@@ -973,13 +973,13 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
     };
   }
   if (hasOwn(patch, "grokBinaryPath") || hasOwn(patch, "customGrokModels")) {
-    providers.grok = {
+    (providers as any).grok = {
       ...(hasOwn(patch, "grokBinaryPath") ? { binaryPath: patch.grokBinaryPath ?? "" } : {}),
       ...(hasOwn(patch, "customGrokModels") ? { customModels: patch.customGrokModels ?? [] } : {}),
     };
   }
   if (hasOwn(patch, "droidBinaryPath") || hasOwn(patch, "customDroidModels")) {
-    providers.droid = {
+    (providers as any).droid = {
       ...(hasOwn(patch, "droidBinaryPath") ? { binaryPath: patch.droidBinaryPath ?? "" } : {}),
       ...(hasOwn(patch, "customDroidModels")
         ? { customModels: patch.customDroidModels ?? [] }
@@ -992,7 +992,7 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
     hasOwn(patch, "kiloServerPassword") ||
     hasOwn(patch, "customKiloModels")
   ) {
-    providers.kilo = {
+    (providers as any).kilo = {
       ...(hasOwn(patch, "kiloBinaryPath") ? { binaryPath: patch.kiloBinaryPath ?? "" } : {}),
       ...(hasOwn(patch, "kiloServerUrl") ? { serverUrl: patch.kiloServerUrl ?? "" } : {}),
       ...(hasOwn(patch, "kiloServerPassword")
@@ -1008,7 +1008,7 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
     hasOwn(patch, "openCodeServerPassword") ||
     hasOwn(patch, "customOpenCodeModels")
   ) {
-    providers.opencode = {
+    (providers as any).opencode = {
       ...(hasOwn(patch, "openCodeBinaryPath")
         ? { binaryPath: patch.openCodeBinaryPath ?? "" }
         : {}),
@@ -1029,7 +1029,7 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
     hasOwn(patch, "piBinaryPath") ||
     hasOwn(patch, "customPiModels")
   ) {
-    providers.pi = {
+    (providers as any).pi = {
       ...(hasOwn(patch, "piAgentDir") ? { agentDir: patch.piAgentDir ?? "" } : {}),
       ...(hasOwn(patch, "piBinaryPath") ? { binaryPath: patch.piBinaryPath ?? "" } : {}),
       ...(hasOwn(patch, "customPiModels") ? { customModels: patch.customPiModels ?? [] } : {}),

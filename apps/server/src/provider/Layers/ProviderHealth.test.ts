@@ -163,15 +163,15 @@ const allProvidersDisabledSettings = {
 const allProvidersDisabledServerSettings = {
   ...DEFAULT_SERVER_SETTINGS,
   providers: {
-    codex: { ...DEFAULT_SERVER_SETTINGS.providers.codex, enabled: false },
-    claudeAgent: { ...DEFAULT_SERVER_SETTINGS.providers.claudeAgent, enabled: false },
-    cursor: { ...DEFAULT_SERVER_SETTINGS.providers.cursor, enabled: false },
-    antigravity: { ...DEFAULT_SERVER_SETTINGS.providers.antigravity, enabled: false },
-    grok: { ...DEFAULT_SERVER_SETTINGS.providers.grok, enabled: false },
-    droid: { ...DEFAULT_SERVER_SETTINGS.providers.droid, enabled: false },
-    kilo: { ...DEFAULT_SERVER_SETTINGS.providers.kilo, enabled: false },
-    opencode: { ...DEFAULT_SERVER_SETTINGS.providers.opencode, enabled: false },
-    pi: { ...DEFAULT_SERVER_SETTINGS.providers.pi, enabled: false },
+    codex: { ...(DEFAULT_SERVER_SETTINGS.providers as any).codex, enabled: false },
+    claudeAgent: { ...(DEFAULT_SERVER_SETTINGS.providers as any).claudeAgent, enabled: false },
+    cursor: { ...(DEFAULT_SERVER_SETTINGS.providers as any).cursor, enabled: false },
+    antigravity: { ...(DEFAULT_SERVER_SETTINGS.providers as any).antigravity, enabled: false },
+    grok: { ...(DEFAULT_SERVER_SETTINGS.providers as any).grok, enabled: false },
+    droid: { ...(DEFAULT_SERVER_SETTINGS.providers as any).droid, enabled: false },
+    kilo: { ...(DEFAULT_SERVER_SETTINGS.providers as any).kilo, enabled: false },
+    opencode: { ...(DEFAULT_SERVER_SETTINGS.providers as any).opencode, enabled: false },
+    pi: { ...(DEFAULT_SERVER_SETTINGS.providers as any).pi, enabled: false },
     engine: { ...DEFAULT_SERVER_SETTINGS.providers.engine, enabled: false },
     openai: { ...DEFAULT_SERVER_SETTINGS.providers.openai, enabled: false },
     anthropic: { ...DEFAULT_SERVER_SETTINGS.providers.anthropic, enabled: false },
@@ -376,7 +376,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
           providers: {
             ...allProvidersDisabledServerSettings.providers,
             kilo: {
-              ...DEFAULT_SERVER_SETTINGS.providers.kilo,
+              ...(DEFAULT_SERVER_SETTINGS.providers as any).kilo,
               enabled: true,
               binaryPath:
                 "/Users/test/.nvm/versions/node/v24.13.0/lib/node_modules/@kilocode/cli/bin/kilo",
