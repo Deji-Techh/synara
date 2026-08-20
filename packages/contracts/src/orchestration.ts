@@ -1,4 +1,4 @@
-import { Option, Schema, SchemaIssue, Struct } from "effect";
+import { Effect, Option, Schema, SchemaIssue, Struct } from "effect";
 import { ApiModelOptions, PiModelOptions } from "./model";
 import { ProviderMentionReference, ProviderSkillReference } from "./providerDiscovery";
 import { ProjectKind } from "./project";
@@ -92,6 +92,43 @@ export type ApiProviderKind = (typeof API_PROVIDER_KINDS)[number];
 
 /** Backends that spawn a child process. Only the Flutter engine. */
 export type ProviderCliKind = Extract<ProviderKind, "engine">;
+
+const LEGACY_HANDOFF_PROVIDER_MAP: Record<string, ProviderKind> = {
+  codex: "openai",
+  claudeAgent: "anthropic",
+  cursor: "openai",
+  antigravity: "google",
+  grok: "xai",
+  droid: "openai",
+  kilo: "openai",
+  opencode: "openai",
+  pi: "openai",
+  gemini: "google",
+};
+
+export const ThreadHandoffSourceProvider = Schema.String.pipe(
+  Schema.transformOrFail(ProviderKind, {
+    decode: (input, _options, ast) =>
+      Effect.gen(function* () {
+        const mapped = (LEGACY_HANDOFF_PROVIDER_MAP as Record<string, string>)[input] ?? input;
+        return yield* Schema.decodeUnknown(ProviderKind)(mapped).pipe(
+          Effect.mapError(
+            (issue) =>
+              new Schema.SchemaError([
+                new SchemaIssue.CustomIssue({
+                  message: `Expected ProviderKind, got ${JSON.stringify(input)}`,
+                  ast,
+                  actual: input,
+                  issue,
+                }),
+              ]),
+          ),
+        );
+      }),
+    encode: (output) => Effect.succeed(output),
+    strict: true,
+  }),
+);
 
 export const ProviderApprovalPolicy = Schema.Literals([
   "untrusted",
@@ -556,7 +593,7 @@ export type OrchestrationMessage = typeof OrchestrationMessage.Type;
 
 export const ThreadHandoff = Schema.Struct({
   sourceThreadId: ThreadId,
-  sourceProvider: ProviderKind,
+  sourceProvider: ThreadHandoffSourceProvider,
   importedAt: IsoDateTime,
   bootstrapStatus: ThreadHandoffBootstrapStatus,
 });

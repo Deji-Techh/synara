@@ -612,14 +612,14 @@ export const CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS = MODEL_PROVIDER_SETTINGS.fil
 );
 
 export function normalizeCustomModelSlugs(
-  models: Iterable<string | null | undefined>,
+  models: Iterable<string | null | undefined> | null | undefined,
   provider: ProviderKind = "openai",
 ): string[] {
   const normalizedModels: string[] = [];
   const seen = new Set<string>();
-  const builtInModelSlugs = BUILT_IN_MODEL_SLUGS_BY_PROVIDER[provider];
+  const builtInModelSlugs = BUILT_IN_MODEL_SLUGS_BY_PROVIDER[provider] ?? new Set<string>();
 
-  for (const candidate of models) {
+  for (const candidate of models ?? []) {
     const normalized = normalizeModelSlug(candidate, provider);
     if (
       !normalized ||
