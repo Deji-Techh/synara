@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { DEFAULT_SERVER_SETTINGS, ProviderSessionStartInput } from "@caide/contracts";
 import { Schema } from "effect";
 import { describe, expect, it } from "vitest";

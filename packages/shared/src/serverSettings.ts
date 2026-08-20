@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   DEFAULT_MODEL_BY_PROVIDER,
   type ModelSelection,
@@ -47,45 +46,36 @@ export function applyServerSettingsPatch(
   };
 }
 
+/** API-key providers whose launch options carry a chat-completions base URL. */
+const API_START_OPTION_PROVIDERS = [
+  "openai",
+  "anthropic",
+  "google",
+  "openrouter",
+  "ollama",
+  "deepseek",
+  "groq",
+  "mistral",
+  "together",
+  "cohere",
+  "xai",
+  "fireworks",
+  "opencodeZen",
+  "opencodeGo",
+] as const satisfies readonly (keyof ProviderStartOptions)[];
+
 /** Server-owned launch options derived from the persisted non-secret settings snapshot. */
 export function providerStartOptionsFromServerSettings(
   settings: ServerSettings,
 ): ProviderStartOptions {
-  const { providers } = settings as unknown as Record<string, Record<string, unknown>>;
-  return {
-    // Legacy CLI providers are no-op in the API-only product; keep empty objects
-    // for backward compat so old persisted settings don't throw on decode.
-    ...(providers.openai !== undefined
-      ? {
-          openai: {
-            ...((providers.openai as { baseUrl?: string })?.baseUrl
-              ? { baseUrl: (providers.openai as { baseUrl?: string }).baseUrl }
-              : {}),
-          },
-        }
-      : {}),
-    ...(providers.anthropic !== undefined
-      ? {
-          anthropic: {
-            ...((providers.anthropic as { baseUrl?: string })?.baseUrl
-              ? { baseUrl: (providers.anthropic as { baseUrl?: string }).baseUrl }
-              : {}),
-          },
-        }
-      : {}),
-    ...(providers.google !== undefined
-      ? {
-          google: {
-            ...((providers.google as { baseUrl?: string })?.baseUrl
-              ? { baseUrl: (providers.google as { baseUrl?: string }).baseUrl }
-              : {}),
-          },
-        }
-      : {}),
-    engine: {
-      ...((providers.engine as { binaryPath?: string })?.binaryPath
-        ? { binaryPath: (providers.engine as { binaryPath?: string }).binaryPath }
-        : {}),
-    },
-  } as unknown as ProviderStartOptions;
+  const options: { -readonly [K in keyof ProviderStartOptions]?: ProviderStartOptions[K] } = {};
+  for (const provider of API_START_OPTION_PROVIDERS) {
+    const baseUrl = settings.providers[provider]?.baseUrl;
+    if (baseUrl) {
+      options[provider] = { baseUrl };
+    }
+  }
+  const binaryPath = settings.providers.engine?.binaryPath;
+  options.engine = binaryPath ? { binaryPath } : {};
+  return options as ProviderStartOptions;
 }

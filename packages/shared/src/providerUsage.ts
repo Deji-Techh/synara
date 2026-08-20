@@ -1,4 +1,3 @@
-// @ts-nocheck
 // FILE: providerUsage.ts
 // Purpose: Single source of truth for provider-usage presentation metadata shared by
 // the server (live usage fetchers) and the web app (Settings → Usage, toolbar popover):
@@ -7,7 +6,11 @@
 // Layer: cross-cutting (no runtime deps beyond the ProviderKind type).
 
 import type { ProviderKind } from "@caide/contracts";
-import { PROVIDER_DESCRIPTORS, PROVIDER_DESCRIPTOR_BY_KIND } from "./providerMetadata";
+import {
+  PROVIDER_DESCRIPTORS,
+  PROVIDER_DESCRIPTOR_BY_KIND,
+  type ProviderDescriptor,
+} from "./providerMetadata";
 
 /** Providers, in display order, that expose a live usage source. */
 export const PROVIDER_USAGE_PROVIDERS: ReadonlyArray<ProviderKind> = PROVIDER_DESCRIPTORS.flatMap(
@@ -16,7 +19,7 @@ export const PROVIDER_USAGE_PROVIDERS: ReadonlyArray<ProviderKind> = PROVIDER_DE
 
 // Provider ids cross the WebSocket as plain strings (rate-limit event payloads), so the
 // lookup helpers accept any string and resolve against the typed metadata table at runtime.
-function lookupMeta(provider: string | null | undefined) {
+function lookupMeta(provider: string | null | undefined): ProviderDescriptor | undefined {
   if (!provider) {
     return undefined;
   }
@@ -35,9 +38,7 @@ export function providerUsageDisplayName(provider: string | null | undefined): s
 }
 
 export function providerUsageLearnMoreHref(provider: string | null | undefined): string | null {
-  return (
-    (lookupMeta(provider)?.usage as { learnMoreHref?: string } | undefined)?.learnMoreHref ?? null
-  );
+  return lookupMeta(provider)?.usage?.learnMoreHref ?? null;
 }
 
 /** Detail sentence shown when usage can't be read because the credential is missing/expired. */
@@ -46,5 +47,5 @@ export function providerUsageNeedsAuthDetail(provider: string | null | undefined
   if (!meta) {
     return "Sign in with the provider CLI to see usage.";
   }
-  return `Sign in with \`${(meta.usage as { signInCommand?: string } | undefined)?.signInCommand ?? "provider CLI"}\` to see usage.`;
+  return `Sign in with \`${meta.usage?.signInCommand ?? "provider CLI"}\` to see usage.`;
 }

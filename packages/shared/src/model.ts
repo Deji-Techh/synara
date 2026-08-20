@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   DEFAULT_MODEL_BY_PROVIDER,
   MODEL_CAPABILITIES_INDEX,
@@ -8,9 +7,6 @@ import {
   type ClaudeApiEffort,
   type ClaudeModelOptions,
   type ClaudeCodeEffort,
-  type CodexModelOptions,
-  type GrokModelOptions,
-  type GrokReasoningEffort,
   type ModelCapabilities,
   type ModelSelection,
   type ModelSlug,
@@ -21,7 +17,6 @@ import {
   type PiThinkingLevel,
   type ProviderKind,
   type ProviderWithDefaultModel,
-  CodexReasoningEffort,
 } from "@caide/contracts";
 
 // Legacy CLI providers removed from ProviderKind (013) — tests and persisted
@@ -599,21 +594,6 @@ export function trimOrNull<T extends string>(value: T | null | undefined): T | n
   return trimmed || null;
 }
 
-export function normalizeCodexModelOptions(
-  model: string | null | undefined,
-  modelOptions: CodexModelOptions | null | undefined,
-): CodexModelOptions | undefined {
-  const caps = getModelCapabilities("openai", model);
-  const defaultReasoningEffort = getDefaultEffort(caps) as CodexReasoningEffort;
-  const reasoningEffort = trimOrNull(modelOptions?.reasoningEffort) ?? defaultReasoningEffort;
-  const fastModeEnabled = modelOptions?.fastMode === true;
-  const nextOptions: CodexModelOptions = {
-    ...(reasoningEffort !== defaultReasoningEffort ? { reasoningEffort } : {}),
-    ...(fastModeEnabled ? { fastMode: true } : {}),
-  };
-  return Object.keys(nextOptions).length > 0 ? nextOptions : undefined;
-}
-
 export function normalizeClaudeModelOptions(
   model: string | null | undefined,
   modelOptions: ClaudeModelOptions | null | undefined,
@@ -648,10 +628,6 @@ export function normalizeClaudeModelOptions(
     ...(autoCompactWindow ? { autoCompactWindow } : {}),
   };
   return Object.keys(nextOptions).length > 0 ? nextOptions : undefined;
-}
-
-export function resolveApiModelId(modelSelection: ModelSelection): string {
-  return modelSelection.model;
 }
 
 /**
@@ -717,21 +693,6 @@ export function claudeSelectionRequiresRestart(
   const prev = claudeSpawnProfile(previous);
   const desired = claudeSpawnProfile(next);
   return prev.maxEffort !== desired.maxEffort;
-}
-
-export function normalizeGrokModelOptions(
-  model: string | null | undefined,
-  modelOptions: GrokModelOptions | null | undefined,
-): GrokModelOptions | undefined {
-  const caps = getModelCapabilities("grok", model);
-  const reasoningEffort = trimOrNull(modelOptions?.reasoningEffort);
-  if (!reasoningEffort || !hasEffortLevel(caps, reasoningEffort)) {
-    return undefined;
-  }
-  if (reasoningEffort === getDefaultEffort(caps)) {
-    return undefined;
-  }
-  return { reasoningEffort: reasoningEffort as GrokReasoningEffort };
 }
 
 export function normalizeAntigravityModelOptions(

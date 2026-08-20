@@ -156,10 +156,6 @@
       "types": "./src/subagents.ts",
       "import": "./src/subagents.ts"
     },
-    "./agentMentions": {
-      "types": "./src/agentMentions.ts",
-      "import": "./src/agentMentions.ts"
-    },
     "./automationCompletionPolicy": {
       "types": "./src/automationCompletionPolicy.ts",
       "import": "./src/automationCompletionPolicy.ts"
