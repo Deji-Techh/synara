@@ -33,8 +33,10 @@ describe("ProviderSessionStartInput", () => {
     if (parsed.modelSelection?.provider !== "openai") {
       throw new Error("Expected openai modelSelection");
     }
-    expect(parsed.modelSelection.options?.reasoningEffort).toBe("high");
-    expect(parsed.modelSelection.options?.fastMode).toBe(true);
+    expect((parsed.modelSelection.options as { reasoningEffort?: string })?.reasoningEffort).toBe(
+      "high",
+    );
+    expect((parsed.modelSelection.options as { fastMode?: boolean })?.fastMode).toBe(true);
     expect(parsed.providerOptions?.openai?.baseUrl).toBe("https://api.openai.com/v1");
   });
 
@@ -74,9 +76,11 @@ describe("ProviderSessionStartInput", () => {
     if (parsed.modelSelection?.provider !== "anthropic") {
       throw new Error("Expected anthropic modelSelection");
     }
-    expect(parsed.modelSelection.options?.thinking).toBe(true);
-    expect(parsed.modelSelection.options?.reasoningEffort).toBe("high");
-    expect(parsed.modelSelection.options?.fastMode).toBe(true);
+    expect((parsed.modelSelection.options as { thinking?: boolean })?.thinking).toBe(true);
+    expect((parsed.modelSelection.options as { reasoningEffort?: string })?.reasoningEffort).toBe(
+      "high",
+    );
+    expect((parsed.modelSelection.options as { fastMode?: boolean })?.fastMode).toBe(true);
     expect(parsed.providerOptions?.anthropic?.baseUrl).toBe("https://api.anthropic.com");
     expect(parsed.runtimeMode).toBe("full-access");
   });
@@ -101,8 +105,10 @@ describe("ProviderSendTurnInput", () => {
     if (parsed.modelSelection?.provider !== "openai") {
       throw new Error("Expected openai modelSelection");
     }
-    expect(parsed.modelSelection.options?.reasoningEffort).toBe("xhigh");
-    expect(parsed.modelSelection.options?.fastMode).toBe(true);
+    expect((parsed.modelSelection.options as { reasoningEffort?: string })?.reasoningEffort).toBe(
+      "xhigh",
+    );
+    expect((parsed.modelSelection.options as { fastMode?: boolean })?.fastMode).toBe(true);
   });
 
   it("accepts anthropic modelSelection including thinking", () => {
@@ -123,8 +129,8 @@ describe("ProviderSendTurnInput", () => {
     if (parsed.modelSelection?.provider !== "anthropic") {
       throw new Error("Expected anthropic modelSelection");
     }
-    expect(parsed.modelSelection.options?.thinking).toBe(true);
-    expect(parsed.modelSelection.options?.fastMode).toBe(true);
+    expect((parsed.modelSelection.options as { thinking?: boolean })?.thinking).toBe(true);
+    expect((parsed.modelSelection.options as { fastMode?: boolean })?.fastMode).toBe(true);
   });
 
   it("accepts anthropic modelSelection including xhigh", () => {
@@ -143,6 +149,8 @@ describe("ProviderSendTurnInput", () => {
     if (parsed.modelSelection?.provider !== "anthropic") {
       throw new Error("Expected anthropic modelSelection");
     }
-    expect(parsed.modelSelection.options?.reasoningEffort).toBe("xhigh");
+    expect((parsed.modelSelection.options as { reasoningEffort?: string })?.reasoningEffort).toBe(
+      "xhigh",
+    );
   });
 });

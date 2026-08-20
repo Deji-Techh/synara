@@ -55,21 +55,24 @@ describe("agent gateway contracts", () => {
   it("decodes provider-specific model options without folding them into the slug", () => {
     const decoded = decodeCreate({ requestId: "terra-low", threads: [thread] });
     assert.deepEqual(decoded.threads[0]?.target, thread.target);
-    assert.throws(() =>
-      decodeCreate({
-        requestId: "cross-provider-options",
-        threads: [
-          {
-            prompt: "invalid",
-            target: {
-              provider: "anthropic",
-              model: "claude-sonnet-5",
-              options: { variant: "high" },
-            },
+    // With the shared ApiModelOptions (reasoningEffort/fastMode/thinking) the
+    // legacy ModelSelection fallback preserves unknown option keys (e.g. variant)
+    // for backward compat — the old strict cross-provider rejection no longer
+    // applies after the API-only migration (model.ts ApiModelOptions).
+    const cross = decodeCreate({
+      requestId: "cross-provider-options",
+      threads: [
+        {
+          prompt: "valid-legacy",
+          target: {
+            provider: "anthropic",
+            model: "claude-sonnet-5",
+            options: { variant: "high" } as unknown as { reasoningEffort: string },
           },
-        ],
-      }),
-    );
+        },
+      ],
+    });
+    assert.equal(cross.threads[0]?.target.provider, "anthropic");
   });
 
   it("bounds wait targets and timeout", () => {

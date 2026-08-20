@@ -773,8 +773,12 @@ it.effect("accepts provider-scoped model options in thread.turn.start", () =>
       createdAt: "2026-01-01T00:00:00.000Z",
     });
     assert.strictEqual(parsed.modelSelection?.provider, "openai");
-    assert.strictEqual(parsed.modelSelection?.options?.reasoningEffort, "high");
-    assert.strictEqual(parsed.modelSelection?.options?.fastMode, true);
+    if (parsed.modelSelection?.provider !== "openai") throw new Error("Expected openai");
+    assert.strictEqual(
+      (parsed.modelSelection.options as { reasoningEffort?: string })?.reasoningEffort,
+      "high",
+    );
+    assert.strictEqual((parsed.modelSelection.options as { fastMode?: boolean })?.fastMode, true);
   }),
 );
 
