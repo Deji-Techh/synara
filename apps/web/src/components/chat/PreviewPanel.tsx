@@ -106,10 +106,7 @@ const FRAME_KIND_TO_DEVICE_ID: Record<PreviewFrameKind, PreviewDeviceId> = {
   frameless: "desktop",
 };
 
-const FRAME_KIND_TO_FLUTTER_DEVICE: Record<
-  PreviewFrameKind,
-  "web-server" | "emulator" | "simulator"
-> = {
+const FRAME_KIND_TO_FLUTTER_DEVICE: Record<PreviewFrameKind, "web-server" | "emulator" | "simulator"> = {
   androidPhone: "emulator",
   iPhone: "simulator",
   iPad: "simulator",
@@ -161,20 +158,10 @@ function FlutterToolchainBanner(props: { threadId: ThreadId }) {
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
-    (
-      ensureNativeApi() as unknown as {
-        preview: { flutterToolchainStatus: (i: { threadId: ThreadId }) => Promise<never> };
-      }
-    ).preview
+    (ensureNativeApi() as unknown as { preview: { flutterToolchainStatus: (i: { threadId: ThreadId }) => Promise<never> } }).preview
       .flutterToolchainStatus({ threadId: props.threadId })
       .then((res: unknown) => {
-        const r = res as {
-          supported: boolean;
-          installed: boolean;
-          version: string;
-          estimatedDownloadBytes: number;
-          unsupportedReason: string | null;
-        };
+        const r = res as { supported: boolean; installed: boolean; version: string; estimatedDownloadBytes: number; unsupportedReason: string | null };
         setStatus(r);
       })
       .catch(() => {});
@@ -199,35 +186,13 @@ function FlutterToolchainBanner(props: { threadId: ThreadId }) {
   const handleInstall = useCallback(() => {
     setInstalling(true);
     setError(null);
-    setProgress({
-      phase: "preparing",
-      percent: 1,
-      componentPercent: 0,
-      downloadedBytes: 0,
-      totalBytes: status?.estimatedDownloadBytes ?? null,
-      message: "Preparing Flutter SDK…",
-    });
-    (
-      ensureNativeApi() as unknown as {
-        preview: { flutterToolchainInstall: (i: { threadId: ThreadId }) => Promise<unknown> };
-      }
-    ).preview
+    setProgress({ phase: "preparing", percent: 1, componentPercent: 0, downloadedBytes: 0, totalBytes: status?.estimatedDownloadBytes ?? null, message: "Preparing Flutter SDK…" });
+    (ensureNativeApi() as unknown as { preview: { flutterToolchainInstall: (i: { threadId: ThreadId }) => Promise<unknown> } }).preview
       .flutterToolchainInstall({ threadId: props.threadId })
       .then(() => {
         setInstalling(false);
-        setProgress({
-          phase: "done",
-          percent: 100,
-          componentPercent: 100,
-          downloadedBytes: status?.estimatedDownloadBytes ?? 0,
-          totalBytes: status?.estimatedDownloadBytes ?? null,
-          message: "Flutter SDK ready.",
-        });
-        toastManager.add({
-          type: "success",
-          title: "Flutter SDK installed",
-          description: "Flutter is ready to build and preview.",
-        });
+        setProgress({ phase: "done", percent: 100, componentPercent: 100, downloadedBytes: status?.estimatedDownloadBytes ?? 0, totalBytes: status?.estimatedDownloadBytes ?? null, message: "Flutter SDK ready." });
+        toastManager.add({ type: "success", title: "Flutter SDK installed", description: "Flutter is ready to build and preview." });
         refresh();
         window.setTimeout(() => setProgress(null), 3000);
       })
@@ -235,11 +200,7 @@ function FlutterToolchainBanner(props: { threadId: ThreadId }) {
         setInstalling(false);
         const msg = e instanceof Error ? e.message : String(e);
         setError(msg);
-        toastManager.add({
-          type: "error",
-          title: "Flutter install failed",
-          description: msg.slice(0, 300),
-        });
+        toastManager.add({ type: "error", title: "Flutter install failed", description: msg.slice(0, 300) });
       });
   }, [props.threadId, status?.estimatedDownloadBytes, refresh]);
 
@@ -249,39 +210,24 @@ function FlutterToolchainBanner(props: { threadId: ThreadId }) {
     return (
       <div className="mx-3 mt-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
         Flutter auto-install is not available on this platform. Please install Flutter manually.
-        {status.unsupportedReason && (
-          <span className="block text-amber-600/80">{status.unsupportedReason}</span>
-        )}
+        {status.unsupportedReason && <span className="block text-amber-600/80">{status.unsupportedReason}</span>}
       </div>
     );
   }
 
   const pct = progress ? Math.round(progress.percent) : 0;
-  const downloaded = progress
-    ? `${(progress.downloadedBytes / (1024 * 1024)).toFixed(1)} MB${progress.totalBytes ? ` / ${(progress.totalBytes / (1024 * 1024)).toFixed(1)} MB` : ""}`
-    : null;
+  const downloaded = progress ? `${(progress.downloadedBytes / (1024 * 1024)).toFixed(1)} MB${progress.totalBytes ? ` / ${(progress.totalBytes / (1024 * 1024)).toFixed(1)} MB` : ""}` : null;
 
   return (
     <div className="mx-3 mt-3 rounded-md border border-border bg-muted/50 px-3 py-2.5">
       <div className="flex items-center gap-2">
-        <LoaderIcon
-          aria-hidden="true"
-          className={cn("size-3.5 text-muted-foreground", installing && "animate-spin")}
-        />
+        <LoaderIcon aria-hidden="true" className={cn("size-3.5 text-muted-foreground", installing && "animate-spin")} />
         <span className="text-xs font-medium">
-          {installing
-            ? (progress?.message ?? "Installing Flutter SDK…")
-            : !status.installed
-              ? `Flutter ${status.version} not installed`
-              : "Flutter SDK"}
+          {installing ? progress?.message ?? "Installing Flutter SDK…" : !status.installed ? `Flutter ${status.version} not installed` : "Flutter SDK"}
         </span>
         <span className="min-w-0 flex-1" />
         {!status.installed && !installing && (
-          <button
-            type="button"
-            onClick={handleInstall}
-            className="rounded-md bg-foreground px-2.5 py-1 text-xs font-medium text-background hover:opacity-90"
-          >
+          <button type="button" onClick={handleInstall} className="rounded-md bg-foreground px-2.5 py-1 text-xs font-medium text-background hover:opacity-90">
             Download {status.version}
           </button>
         )}
@@ -290,10 +236,7 @@ function FlutterToolchainBanner(props: { threadId: ThreadId }) {
       {(installing || progress) && (
         <div className="mt-2">
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full bg-foreground transition-all duration-300"
-              style={{ width: `${Math.max(2, pct)}%` }}
-            />
+            <div className="h-full bg-foreground transition-all duration-300" style={{ width: `${Math.max(2, pct)}%` }} />
           </div>
           <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
             <span className="truncate">{progress?.message ?? ""}</span>
@@ -303,10 +246,7 @@ function FlutterToolchainBanner(props: { threadId: ThreadId }) {
       )}
       {error && <p className="mt-1 break-words text-xs text-red-600 dark:text-red-400">{error}</p>}
       {!installing && !status.installed && status.estimatedDownloadBytes > 0 && !progress && (
-        <p className="mt-1 text-[11px] text-muted-foreground">
-          ~{(status.estimatedDownloadBytes / (1024 * 1024)).toFixed(0)} MB download. Progress shows
-          above during install.
-        </p>
+        <p className="mt-1 text-[11px] text-muted-foreground">~{(status.estimatedDownloadBytes / (1024 * 1024)).toFixed(0)} MB download. Progress shows above during install.</p>
       )}
     </div>
   );
@@ -672,12 +612,7 @@ function ReleasePanel(props: {
   onBuild: (options: {
     target: "apk" | "appbundle" | "ipa";
     channel: "debug" | "profile" | "release";
-    signing?: {
-      keystorePath: string;
-      keyAlias: string;
-      storePassword: string;
-      keyPassword: string;
-    } | null;
+    signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null;
   }) => void;
 }) {
   const [target, setTarget] = useState(props.build.target);
@@ -689,11 +624,7 @@ function ReleasePanel(props: {
   const [keyPassword, setKeyPassword] = useState("");
   const isRunning = props.build.running;
   const needsSigning = (target === "apk" || target === "appbundle") && channel === "release";
-  const canBuild =
-    !isRunning &&
-    (!needsSigning ||
-      !showSigning ||
-      (keystorePath.trim() && keyAlias.trim() && storePassword.trim() && keyPassword.trim()));
+  const canBuild = !isRunning && (!needsSigning || !showSigning || (keystorePath.trim() && keyAlias.trim() && storePassword.trim() && keyPassword.trim()));
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-4">
@@ -737,9 +668,7 @@ function ReleasePanel(props: {
           </label>
         </div>
         {target === "ipa" && (
-          <p className="mt-2 text-[11px] text-amber-600 dark:text-amber-400">
-            IPA builds require macOS with Xcode installed.
-          </p>
+          <p className="mt-2 text-[11px] text-amber-600 dark:text-amber-400">IPA builds require macOS with Xcode installed.</p>
         )}
         {needsSigning && (
           <div className="mt-3 rounded-md border border-border bg-muted/30 p-2.5">
@@ -749,10 +678,7 @@ function ReleasePanel(props: {
               className="flex w-full items-center justify-between text-xs font-medium"
             >
               <span>Signing (optional for store release)</span>
-              <ChevronDownIcon
-                aria-hidden="true"
-                className={cn("size-3.5 transition-transform", showSigning && "rotate-180")}
-              />
+              <ChevronDownIcon aria-hidden="true" className={cn("size-3.5 transition-transform", showSigning && "rotate-180")} />
             </button>
             {showSigning && (
               <div className="mt-2 grid grid-cols-1 gap-2">
@@ -794,10 +720,7 @@ function ReleasePanel(props: {
                     />
                   </label>
                 </div>
-                <p className="text-[11px] text-muted-foreground">
-                  If empty, Flutter uses debug signing. For store builds, provide your upload
-                  keystore.
-                </p>
+                <p className="text-[11px] text-muted-foreground">If empty, Flutter uses debug signing. For store builds, provide your upload keystore.</p>
               </div>
             )}
           </div>
@@ -808,22 +731,14 @@ function ReleasePanel(props: {
             props.onBuild({
               target,
               channel,
-              signing:
-                showSigning && keystorePath.trim()
-                  ? {
-                      keystorePath: keystorePath.trim(),
-                      keyAlias: keyAlias.trim(),
-                      storePassword,
-                      keyPassword,
-                    }
-                  : null,
+              signing: showSigning && keystorePath.trim() ? { keystorePath: keystorePath.trim(), keyAlias: keyAlias.trim(), storePassword, keyPassword } : null,
             })
           }
           disabled={!canBuild}
           className={cn(
             "mt-3 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
             "bg-foreground text-background hover:opacity-90",
-            !canBuild && "cursor-not-allowed opacity-60",
+            (!canBuild) && "cursor-not-allowed opacity-60",
           )}
         >
           {isRunning ? (
@@ -856,9 +771,7 @@ function ReleasePanel(props: {
             <span className="break-all text-muted-foreground"> {props.build.outputPath}</span>
           )}
           {(props.build as unknown as { sha256?: string | null }).sha256 && (
-            <span className="break-all font-mono text-[11px] text-muted-foreground">
-              sha256: {(props.build as unknown as { sha256: string }).sha256}
-            </span>
+            <span className="break-all font-mono text-[11px] text-muted-foreground">sha256: {(props.build as unknown as { sha256: string }).sha256}</span>
           )}
         </div>
       )}
@@ -906,8 +819,7 @@ export function PreviewPanel(props: {
   // preset so an untouched pane renders the same frame it always did.
   const threadFrameKind = useDeviceStateStore(selectThreadFrameKind(props.threadId));
   const setFrameKind = useDeviceStateStore((store) => store.setFrameKind);
-  const frameKind: PreviewFrameKind =
-    threadFrameKind ?? DEVICE_ID_FRAME_KIND_FALLBACK[panelState.deviceId];
+  const frameKind: PreviewFrameKind = threadFrameKind ?? DEVICE_ID_FRAME_KIND_FALLBACK[panelState.deviceId];
   // Status states (idle/starting/failed) always draw inside a chassis — there
   // is no frameless "device" to hang a prompt or spinner on — so frameless
   // falls back to the Android phone silhouette rather than showing an empty pane.
@@ -952,9 +864,7 @@ export function PreviewPanel(props: {
     setPanelState((previous) => previewStartRequested(previous));
     const flutterDevice = FRAME_KIND_TO_FLUTTER_DEVICE[frameKind];
     ensureNativeApi()
-      .preview.start({ threadId: props.threadId, device: flutterDevice } as unknown as {
-        threadId: ThreadId;
-      })
+      .preview.start({ threadId: props.threadId, device: flutterDevice } as unknown as { threadId: ThreadId })
       .then((result) => {
         setPanelState((previous) => previewStarted(previous, (result as { url: string }).url, []));
       })
@@ -962,22 +872,9 @@ export function PreviewPanel(props: {
         const message = error instanceof Error ? error.message : "The preview failed to start.";
         const lower = message.toLowerCase();
         if (lower.includes("emulator") && lower.includes("linux") && flutterDevice === "emulator") {
-          toastManager.add({
-            type: "info",
-            title: "Emulator unavailable",
-            description:
-              "Android emulator preview needs Linux/Windows. Falling back to web preview.",
-          });
-        } else if (
-          lower.includes("simulator") &&
-          lower.includes("macos") &&
-          flutterDevice === "simulator"
-        ) {
-          toastManager.add({
-            type: "info",
-            title: "Simulator unavailable",
-            description: "iOS Simulator preview needs macOS. Falling back to web preview.",
-          });
+          toastManager.add({ type: "info", title: "Emulator unavailable", description: "Android emulator preview needs Linux/Windows. Falling back to web preview." });
+        } else if (lower.includes("simulator") && lower.includes("macos") && flutterDevice === "simulator") {
+          toastManager.add({ type: "info", title: "Simulator unavailable", description: "iOS Simulator preview needs macOS. Falling back to web preview." });
         }
         setPanelState((previous) => previewStartFailed(previous, message));
       });
@@ -1129,27 +1026,16 @@ export function PreviewPanel(props: {
     (options: {
       target: "apk" | "appbundle" | "ipa";
       channel: "debug" | "profile" | "release";
-      signing?: {
-        keystorePath: string;
-        keyAlias: string;
-        storePassword: string;
-        keyPassword: string;
-      } | null;
+      signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null;
     }) => {
-      setPanelState((previous) =>
-        buildRequested(previous, { target: options.target, channel: options.channel }),
-      );
+      setPanelState((previous) => buildRequested(previous, { target: options.target, channel: options.channel }));
       ensureNativeApi()
         .preview.buildStart({
           threadId: props.threadId,
           target: options.target,
           channel: options.channel,
           ...(options.signing ? { signing: options.signing } : {}),
-        } as unknown as {
-          threadId: ThreadId;
-          target: "apk" | "appbundle" | "ipa";
-          channel?: "debug" | "profile" | "release";
-        })
+        } as unknown as { threadId: ThreadId; target: "apk" | "appbundle" | "ipa"; channel?: "debug" | "profile" | "release" })
         .then((result) => {
           setPanelState((previous) => buildAccepted(previous, result.buildId));
         })
@@ -1210,18 +1096,10 @@ export function PreviewPanel(props: {
         <div className="min-w-0 flex-1" />
         {isRunning && (
           <div className="flex shrink-0 items-center gap-1 mr-2">
-            <button
-              type="button"
-              onClick={() => handleReload(true)}
-              className="p-1.5 text-muted-foreground hover:text-foreground"
-            >
+            <button type="button" onClick={() => handleReload(true)} className="p-1.5 text-muted-foreground hover:text-foreground">
               <RefreshCwIcon className="size-3.5" />
             </button>
-            <button
-              type="button"
-              onClick={handleStop}
-              className="p-1.5 text-red-500 hover:text-red-400"
-            >
+            <button type="button" onClick={handleStop} className="p-1.5 text-red-500 hover:text-red-400">
               <DeviceRecordStopIcon className="size-3.5" />
             </button>
           </div>
@@ -1263,12 +1141,8 @@ export function PreviewPanel(props: {
                     {panelState.status === "starting" ? (
                       <div className="flex flex-col items-center gap-3 p-6">
                         <LoaderIcon className="size-6 animate-spin text-muted-foreground" />
-                        <p className="text-sm font-medium text-foreground">
-                          Starting Flutter preview…
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Compiling Flutter bundle for Android
-                        </p>
+                        <p className="text-sm font-medium text-foreground">Starting Flutter preview…</p>
+                        <p className="text-xs text-muted-foreground">Compiling Flutter bundle for Android</p>
                       </div>
                     ) : panelState.status === "failed" ? (
                       <div className="flex flex-col items-center gap-3 p-6">
@@ -1333,17 +1207,9 @@ export function PreviewPanel(props: {
             )}
           </div>
         )}
-
-        {panelState.activeTab === "problems" && (
-          <div className="flex-1 overflow-hidden">
-            <ProblemList state={panelState.analyze} />
-          </div>
-        )}
-        {panelState.activeTab === "tests" && (
-          <div className="flex-1 overflow-hidden">
-            <TestResults state={panelState.test} />
-          </div>
-        )}
+        
+        {panelState.activeTab === "problems" && <div className="flex-1 overflow-hidden"><ProblemList state={panelState.analyze} /></div>}
+        {panelState.activeTab === "tests" && <div className="flex-1 overflow-hidden"><TestResults state={panelState.test} /></div>}
         {panelState.activeTab === "qualityGate" && (
           <div className="flex-1 overflow-hidden">
             <QualityGatePanel
@@ -1378,7 +1244,7 @@ export function PreviewPanel(props: {
               onClick={() => handleTabChange(tab.id)}
               className={cn(
                 "flex flex-col items-center gap-1 transition-colors",
-                isSelected ? "text-foreground" : "text-muted-foreground hover:text-foreground/80",
+                isSelected ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"
               )}
             >
               <TabIcon aria-hidden="true" className="size-4" />
