@@ -208,6 +208,8 @@ export class EngineClient {
     appDir: string;
     port?: number;
     hostname?: string;
+    device?: "web-server" | "emulator" | "simulator";
+    deviceId?: string;
   }): Promise<JsonRpcResponse> {
     return this.request("preview/start", params);
   }
@@ -236,6 +238,7 @@ export class EngineClient {
     appDir: string;
     target: "apk" | "appbundle" | "ipa";
     channel?: "debug" | "profile" | "release";
+    signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null;
   }): Promise<JsonRpcResponse> {
     return this.request("build/start", params);
   }
@@ -244,8 +247,20 @@ export class EngineClient {
     return this.request("build/state", params);
   }
 
-  async previewScreenshot(): Promise<JsonRpcResponse> {
-    return this.request("preview/screenshot", {});
+  async previewScreenshot(params?: { deviceId?: string; outputPath?: string; appDir?: string }): Promise<JsonRpcResponse> {
+    return this.request("preview/screenshot", params ?? {});
+  }
+
+  async previewDevices(): Promise<JsonRpcResponse> {
+    return this.request("preview/devices", {});
+  }
+
+  async flutterToolchainStatus(): Promise<JsonRpcResponse> {
+    return this.request("flutter/toolchain/status", {});
+  }
+
+  async flutterToolchainInstall(): Promise<JsonRpcResponse> {
+    return this.request("flutter/toolchain/install", {}, undefined, 45 * 60_000);
   }
 
   async waitForSpawn(): Promise<void> {

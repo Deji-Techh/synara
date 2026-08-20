@@ -50,6 +50,8 @@ export interface EnginePreviewOps {
     appDir?: string;
     port?: number;
     hostname?: string;
+    device?: "web-server" | "emulator" | "simulator";
+    deviceId?: string;
   }): Effect.Effect<PreviewStartResult, ProviderAdapterError>;
   previewStop(input: {
     threadId: ThreadId;
@@ -71,6 +73,7 @@ export interface EnginePreviewOps {
     appDir?: string;
     target: "apk" | "appbundle" | "ipa";
     channel?: "debug" | "profile" | "release";
+    signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null;
   }): Effect.Effect<PreviewBuildStartResult, ProviderAdapterError>;
   previewBuildState(input: {
     threadId: ThreadId;
@@ -78,7 +81,15 @@ export interface EnginePreviewOps {
   }): Effect.Effect<PreviewBuildStateResult, ProviderAdapterError>;
   previewScreenshot(input: {
     threadId: ThreadId;
+    deviceId?: string;
+    appDir?: string;
   }): Effect.Effect<PreviewScreenshotResult, ProviderAdapterError>;
+  previewDevices(input: { threadId: ThreadId }): Effect.Effect<{ devices: Array<{ id: string; name: string; isEmulator: boolean; platform?: "android" | "ios" | "web" }> }, ProviderAdapterError>;
+  flutterToolchainStatus(input: { threadId: ThreadId }): Effect.Effect<
+    { supported: boolean; installed: boolean; version: string; root: string; sdkPath: string; flutterBin: string; estimatedDownloadBytes: number; unsupportedReason: string | null },
+    ProviderAdapterError
+  >;
+  flutterToolchainInstall(input: { threadId: ThreadId }): Effect.Effect<{ status: { supported: boolean; installed: boolean; version: string; root: string; sdkPath: string; flutterBin: string; estimatedDownloadBytes: number; unsupportedReason: string | null } }, ProviderAdapterError>;
 }
 
 /**

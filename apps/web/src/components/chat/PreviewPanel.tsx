@@ -105,6 +105,13 @@ const FRAME_KIND_TO_DEVICE_ID: Record<PreviewFrameKind, PreviewDeviceId> = {
   frameless: "desktop",
 };
 
+const FRAME_KIND_TO_FLUTTER_DEVICE: Record<PreviewFrameKind, "web-server" | "emulator" | "simulator"> = {
+  androidPhone: "emulator",
+  iPhone: "simulator",
+  iPad: "simulator",
+  frameless: "web-server",
+};
+
 const DEVICE_ID_FRAME_KIND_FALLBACK: Record<PreviewDeviceId, PreviewFrameKind> = {
   mobile: "iPhone",
   tablet: "iPad",
@@ -129,6 +136,120 @@ const BUILD_CHANNEL_OPTIONS: readonly { id: "debug" | "profile" | "release"; lab
   { id: "profile", label: "Profile" },
   { id: "release", label: "Release" },
 ];
+
+function FlutterToolchainBanner(props: { threadId: ThreadId }) {
+  const [status, setStatus] = useState<{
+    supported: boolean;
+    installed: boolean;
+    version: string;
+    estimatedDownloadBytes: number;
+    unsupportedReason: string | null;
+  } | null>(null);
+  const [progress, setProgress] = useState<{
+    phase: string;
+    percent: number;
+    componentPercent: number;
+    downloadedBytes: number;
+    totalBytes: number | null;
+    message: string;
+  } | null>(null);
+  const [installing, setInstalling] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(() => {
+    (ensureNativeApi() as unknown as { preview: { flutterToolchainStatus: (i: { threadId: ThreadId }) => Promise<never> } }).preview
+      .flutterToolchainStatus({ threadId: props.threadId })
+      .then((res: unknown) => {
+        const r = res as { supported: boolean; installed: boolean; version: string; estimatedDownloadBytes: number; unsupportedReason: string | null };
+        setStatus(r);
+      })
+      .catch(() => {});
+  }, [props.threadId]);
+
+  useEffect(() => {
+    refresh();
+    const id = window.setInterval(refresh, 5000);
+    return () => window.clearInterval(id);
+  }, [refresh]);
+
+  // Poll progress via status while installing (engine emits progress via logs, but status percent drives bar)
+  useEffect(() => {
+    if (!installing) return;
+    const iv = window.setInterval(() => {
+      // While installing, re-use status polling for fallback + try to read engine logs for progress percent
+      refresh();
+    }, 1000);
+    return () => window.clearInterval(iv);
+  }, [installing, refresh]);
+
+  const handleInstall = useCallback(() => {
+    setInstalling(true);
+    setError(null);
+    setProgress({ phase: "preparing", percent: 1, componentPercent: 0, downloadedBytes: 0, totalBytes: status?.estimatedDownloadBytes ?? null, message: "Preparing Flutter SDK…" });
+    (ensureNativeApi() as unknown as { preview: { flutterToolchainInstall: (i: { threadId: ThreadId }) => Promise<unknown> } }).preview
+      .flutterToolchainInstall({ threadId: props.threadId })
+      .then(() => {
+        setInstalling(false);
+        setProgress({ phase: "done", percent: 100, componentPercent: 100, downloadedBytes: status?.estimatedDownloadBytes ?? 0, totalBytes: status?.estimatedDownloadBytes ?? null, message: "Flutter SDK ready." });
+        toastManager.add({ type: "success", title: "Flutter SDK installed", description: "Flutter is ready to build and preview." });
+        refresh();
+        window.setTimeout(() => setProgress(null), 3000);
+      })
+      .catch((e: unknown) => {
+        setInstalling(false);
+        const msg = e instanceof Error ? e.message : String(e);
+        setError(msg);
+        toastManager.add({ type: "error", title: "Flutter install failed", description: msg.slice(0, 300) });
+      });
+  }, [props.threadId, status?.estimatedDownloadBytes, refresh]);
+
+  if (!status) return null;
+  if (status.installed && !installing && !progress) return null;
+  if (!status.supported) {
+    return (
+      <div className="mx-3 mt-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+        Flutter auto-install is not available on this platform. Please install Flutter manually.
+        {status.unsupportedReason && <span className="block text-amber-600/80">{status.unsupportedReason}</span>}
+      </div>
+    );
+  }
+
+  const pct = progress ? Math.round(progress.percent) : 0;
+  const downloaded = progress ? `${(progress.downloadedBytes / (1024 * 1024)).toFixed(1)} MB${progress.totalBytes ? ` / ${(progress.totalBytes / (1024 * 1024)).toFixed(1)} MB` : ""}` : null;
+
+  return (
+    <div className="mx-3 mt-3 rounded-md border border-border bg-muted/50 px-3 py-2.5">
+      <div className="flex items-center gap-2">
+        <LoaderIcon aria-hidden="true" className={cn("size-3.5 text-muted-foreground", installing && "animate-spin")} />
+        <span className="text-xs font-medium">
+          {installing ? progress?.message ?? "Installing Flutter SDK…" : !status.installed ? `Flutter ${status.version} not installed` : "Flutter SDK"}
+        </span>
+        <span className="min-w-0 flex-1" />
+        {!status.installed && !installing && (
+          <button type="button" onClick={handleInstall} className="rounded-md bg-foreground px-2.5 py-1 text-xs font-medium text-background hover:opacity-90">
+            Download {status.version}
+          </button>
+        )}
+        {installing && <span className="text-xs text-muted-foreground">{pct}%</span>}
+      </div>
+      {(installing || progress) && (
+        <div className="mt-2">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div className="h-full bg-foreground transition-all duration-300" style={{ width: `${Math.max(2, pct)}%` }} />
+          </div>
+          <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+            <span className="truncate">{progress?.message ?? ""}</span>
+            {downloaded && <span className="ml-2 shrink-0">{downloaded}</span>}
+          </div>
+        </div>
+      )}
+      {error && <p className="mt-1 break-words text-xs text-red-600 dark:text-red-400">{error}</p>}
+      {!installing && !status.installed && status.estimatedDownloadBytes > 0 && !progress && (
+        <p className="mt-1 text-[11px] text-muted-foreground">~{(status.estimatedDownloadBytes / (1024 * 1024)).toFixed(0)} MB download. Progress shows above during install.</p>
+      )}
+    </div>
+  );
+}
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message.length > 0 ? error.message : fallback;

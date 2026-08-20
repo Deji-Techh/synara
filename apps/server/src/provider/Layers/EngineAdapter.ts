@@ -1675,6 +1675,8 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 appDir,
                 ...(input.port !== undefined ? { port: input.port } : {}),
                 ...(input.hostname !== undefined ? { hostname: input.hostname } : {}),
+                ...(input.device !== undefined ? { device: input.device } : {}),
+                ...(input.deviceId !== undefined ? { deviceId: input.deviceId } : {}),
               }),
             catch: (cause) =>
               processError(input.threadId, "engine preview/start request failed", cause),
@@ -1887,6 +1889,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 appDir,
                 target: input.target,
                 ...(input.channel !== undefined ? { channel: input.channel } : {}),
+                ...(input.signing !== undefined && input.signing !== null ? { signing: input.signing } : {}),
               }),
             catch: (cause) =>
               processError(input.threadId, "engine build/start request failed", cause),
@@ -1948,6 +1951,9 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             ...(typeof result.data.outputPath === "string"
               ? { outputPath: result.data.outputPath }
               : {}),
+            ...(typeof (result.data as unknown as { sha256?: string }).sha256 === "string"
+              ? { sha256: (result.data as unknown as { sha256: string }).sha256 }
+              : {}),
             ...(typeof result.data.error === "string" ? { error: result.data.error } : {}),
             logs: result.data.logs,
           };
@@ -1956,8 +1962,14 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       previewScreenshot: (input) =>
         Effect.gen(function* () {
           const context = yield* getSession(input.threadId);
+          const appDir = context.previewAppDir ?? context.session.cwd ?? "";
           const response = yield* Effect.tryPromise({
-            try: () => context.client.previewScreenshot(),
+            try: () =>
+              context.client.previewScreenshot({
+                deviceId: input.deviceId ?? "",
+                outputPath: "",
+                appDir,
+              }),
             catch: (cause) =>
               processError(input.threadId, "engine preview/screenshot request failed", cause),
           });
@@ -1980,10 +1992,57 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               ),
             );
           }
-          // The engine writes the screenshot to disk and returns its path.
+          // Engine returns both outputPath and optional image base64
+          const data = result.data as unknown as { outputPath: string; image?: string | null };
+          if (typeof data.image === "string" && data.image.length > 0) {
+            return { image: data.image };
+          }
           return {
-            image: result.data.outputPath,
+            image: data.outputPath,
           };
+        }),
+
+      previewDevices: (input) =>
+        Effect.gen(function* () {
+          const context = yield* getSession(input.threadId);
+          const response = yield* Effect.tryPromise({
+            try: () => context.client.previewDevices(),
+            catch: (cause) => processError(input.threadId, "engine preview/devices request failed", cause),
+          });
+          if (response.error) {
+            return yield* Effect.fail(
+              processError(input.threadId, `engine preview/devices failed: ${response.error.code} ${response.error.message}`, new Error(response.error.message)),
+            );
+          }
+          const parsed = response.result as unknown as { devices: Array<{ id: string; name: string; isEmulator: boolean; platform?: string }> };
+          return { devices: Array.isArray(parsed?.devices) ? parsed.devices : [] };
+        }),
+
+      flutterToolchainStatus: (input) =>
+        Effect.gen(function* () {
+          const context = yield* getSession(input.threadId);
+          const response = yield* Effect.tryPromise({
+            try: () => context.client.flutterToolchainStatus(),
+            catch: (cause) => processError(input.threadId, "engine flutter/toolchain/status request failed", cause),
+          });
+          if (response.error) {
+            return yield* Effect.fail(processError(input.threadId, `engine flutter/toolchain/status failed: ${response.error.code} ${response.error.message}`, new Error(response.error.message)));
+          }
+          return response.result as unknown as { supported: boolean; installed: boolean; version: string; root: string; sdkPath: string; flutterBin: string; estimatedDownloadBytes: number; unsupportedReason: string | null };
+        }),
+
+      flutterToolchainInstall: (input) =>
+        Effect.gen(function* () {
+          const context = yield* getSession(input.threadId);
+          const response = yield* Effect.tryPromise({
+            try: () => context.client.flutterToolchainInstall(),
+            catch: (cause) => processError(input.threadId, "engine flutter/toolchain/install request failed", cause),
+          });
+          if (response.error) {
+            return yield* Effect.fail(processError(input.threadId, `engine flutter/toolchain/install failed: ${response.error.code} ${response.error.message}`, new Error(response.error.message)));
+          }
+          const parsed = response.result as unknown as { status: { supported: boolean; installed: boolean; version: string; root: string; sdkPath: string; flutterBin: string; estimatedDownloadBytes: number; unsupportedReason: string | null } };
+          return { status: parsed.status };
         }),
 
       // ── Goals ────────────────────────────────────────────────────────

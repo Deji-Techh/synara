@@ -40,6 +40,10 @@ import {
   type PreviewTestResult,
   type PreviewScreenshotInput,
   type PreviewScreenshotResult,
+  type PreviewDevicesInput,
+  type PreviewDevicesResult,
+  type FlutterToolchainStatusInput,
+  type FlutterToolchainStatusResult,
 } from "@caide/contracts";
 import { Effect } from "effect";
 
@@ -101,6 +105,15 @@ export interface WsPreviewHandlers {
   readonly [PREVIEW_WS_METHODS.screenshot]: (
     input: PreviewScreenshotInput,
   ) => Effect.Effect<PreviewScreenshotResult, WsRpcError>;
+  readonly [PREVIEW_WS_METHODS.devices]: (
+    input: PreviewDevicesInput,
+  ) => Effect.Effect<PreviewDevicesResult, WsRpcError>;
+  readonly [PREVIEW_WS_METHODS.flutterToolchainStatus]: (
+    input: FlutterToolchainStatusInput,
+  ) => Effect.Effect<FlutterToolchainStatusResult, WsRpcError>;
+  readonly [PREVIEW_WS_METHODS.flutterToolchainInstall]: (
+    input: FlutterToolchainStatusInput,
+  ) => Effect.Effect<{ status: FlutterToolchainStatusResult }, WsRpcError>;
 }
 
 /**
@@ -143,6 +156,8 @@ export function makeWsPreviewHandlers(
           ...(input.appDir !== undefined ? { appDir: input.appDir } : {}),
           ...(input.port !== undefined ? { port: input.port } : {}),
           ...(input.hostname !== undefined ? { hostname: input.hostname } : {}),
+          ...(input.device !== undefined ? { device: input.device } : {}),
+          ...(input.deviceId !== undefined ? { deviceId: input.deviceId } : {}),
         }),
       ),
     [PREVIEW_WS_METHODS.stop]: (input) =>
@@ -177,6 +192,7 @@ export function makeWsPreviewHandlers(
           threadId: ThreadId.makeUnsafe(input.threadId),
           target: input.target,
           ...(input.channel !== undefined ? { channel: input.channel } : {}),
+          ...(input.signing !== undefined ? { signing: input.signing as unknown as { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null } : {}),
         }),
       ),
     [PREVIEW_WS_METHODS.buildState]: (input) =>
@@ -191,6 +207,18 @@ export function makeWsPreviewHandlers(
         adapter.previewScreenshot({
           threadId: ThreadId.makeUnsafe(input.threadId),
         }),
+      ),
+    [PREVIEW_WS_METHODS.devices]: (input) =>
+      withEngineSession(ThreadId.makeUnsafe(input.threadId), (adapter) =>
+        adapter.previewDevices({ threadId: ThreadId.makeUnsafe(input.threadId) }),
+      ),
+    [PREVIEW_WS_METHODS.flutterToolchainStatus]: (input) =>
+      withEngineSession(ThreadId.makeUnsafe(input.threadId), (adapter) =>
+        adapter.flutterToolchainStatus({ threadId: ThreadId.makeUnsafe(input.threadId) }),
+      ),
+    [PREVIEW_WS_METHODS.flutterToolchainInstall]: (input) =>
+      withEngineSession(ThreadId.makeUnsafe(input.threadId), (adapter) =>
+        adapter.flutterToolchainInstall({ threadId: ThreadId.makeUnsafe(input.threadId) }),
       ),
   };
 }
