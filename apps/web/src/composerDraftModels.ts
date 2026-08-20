@@ -167,9 +167,8 @@ export function makeModelSelection(
     model,
     ...(options
       ? { options: options as Extract<ModelSelection, { provider: typeof provider }>["options"] }
-          : {}),
-      };
-  }
+      : {}),
+  };
 }
 
 export function normalizeProviderModelOptions(
