@@ -403,7 +403,7 @@ import { useSpacesController } from "./useSpacesController";
 import { SpaceEmptyState } from "./SpaceEmptyState";
 import { SpaceIcon } from "./SpaceIcon";
 import { SpaceProjectPickerDialog } from "./SpaceProjectPickerDialog";
-import { PROJECT_SPACE_DRAG_MIME, SpaceSwitcher, type SpaceActivityTone } from "./SpaceSwitcher";
+import { PROJECT_SPACE_DRAG_MIME, type SpaceActivityTone } from "./SpaceSwitcher";
 import {
   SIDEBAR_CONTEXT_MENU_ICON_CLASS_NAME,
   SIDEBAR_CONTEXT_MENU_ITEM_CLASS_NAME,
@@ -3837,10 +3837,7 @@ export default function Sidebar() {
     }
     return activity;
   }, [allStandardProjectsBase, resolveThreadStatusForSidebar, sidebarThreadsByProjectId]);
-  const standardProjectsBase = useMemo(
-    () => allStandardProjectsBase.filter((project) => (project.spaceId ?? null) === activeSpaceId),
-    [activeSpaceId, allStandardProjectsBase],
-  );
+  const standardProjectsBase = useMemo(() => allStandardProjectsBase, [allStandardProjectsBase]);
   const pinnedProjectIds = useMemo(
     () =>
       derivePinnedProjectIdsForSidebar({
@@ -3869,11 +3866,7 @@ export default function Sidebar() {
   // one additional page (same size) per click. The full list still feeds derivation and
   // empty-state checks so hidden projects keep their derived thread state when revealed.
   const visibleProjects = useMemo(
-    () =>
-      standardProjects.slice(
-        0,
-        MAX_SIDEBAR_PROJECTS_PREVIEW * (visibleProjectsExtraPages + 1),
-      ),
+    () => standardProjects.slice(0, MAX_SIDEBAR_PROJECTS_PREVIEW * (visibleProjectsExtraPages + 1)),
     [standardProjects, visibleProjectsExtraPages],
   );
   const hasMoreVisibleProjects = visibleProjects.length < standardProjects.length;
@@ -5467,16 +5460,7 @@ export default function Sidebar() {
         id: "import-thread",
         label: "Import thread from...",
         description: "Attach a local thread to an existing provider session.",
-        keywords: [
-          "import",
-          "resume",
-          "thread",
-          "session",
-          "openai",
-          "claude",
-          "openai",
-          "openai",
-        ],
+        keywords: ["import", "resume", "thread", "session", "openai", "claude", "openai", "openai"],
         shortcutLabel: importThreadShortcutLabel,
       },
       {
@@ -5962,7 +5946,6 @@ export default function Sidebar() {
                 // Studio is "just chats": a labeled Studio block holding a flat list of threads
                 // rooted at the Studio workspace (no project-folder chrome).
                 <SidebarGroup className="px-1.5 py-1.5">
-                  {renderPinnedThreadsSection()}
                   {renderListSectionHeader(
                     "Studio",
                     <>
@@ -6029,26 +6012,6 @@ export default function Sidebar() {
                 </SidebarGroup>
               ) : (
                 <SidebarGroup className="px-1.5 py-1.5">
-                  <SpaceSwitcher
-                    spaces={spaces}
-                    activeSpaceId={activeSpaceId}
-                    activityBySpaceId={spaceActivityById}
-                    voidSpace={voidSpace}
-                    onSelect={handleSelectSpace}
-                    onCreate={() => openSpaceCreator()}
-                    onEdit={(space) => openSpaceEditor(space.id)}
-                    onDelete={(space) => void handleDeleteSpace(space.id)}
-                    onReorder={handleReorderSpaces}
-                    onRenameSpace={(space, name) => void handleRenameSpace(space, name)}
-                    onEditVoid={openVoidEditor}
-                    onRenameVoid={handleRenameVoid}
-                    onResetVoid={resetVoidSpace}
-                    onDropProject={(projectId, spaceId) =>
-                      void handleMoveProjectToSpace(projectId, spaceId)
-                    }
-                    jumpShortcutLabelForTab={jumpShortcutLabelForSpaceTab}
-                  />
-                  {renderPinnedThreadsSection()}
                   {renderListSectionHeader(
                     "Projects",
                     <>
@@ -6171,9 +6134,10 @@ export default function Sidebar() {
             </div>
           </>
         )}
-        {!isOnSettings && !isOnStudio && !activityViewEnabled && chatsSectionVisible ? (
+        {false ? (
           // sidebar-surface-enter: mounts on the Studio -> Projects switch, so it
           // animates in step with the keyed surface wrapper above.
+          // Flattened: Chats section removed per M4a — per-project chats only.
           <SidebarGroup className="sidebar-surface-enter px-1.5 pt-1 pb-2">
             <div className="group/collapsible">
               <div className="group/project-header relative">

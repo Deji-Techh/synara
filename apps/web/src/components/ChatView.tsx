@@ -131,6 +131,7 @@ import { stripDiffSearchParams } from "../diffRouteSearch";
 import { resolveSubagentPresentationForThread } from "../lib/subagentPresentation";
 import { ensureHomeChatProject, isHomeChatContainerProject } from "../lib/chatProjects";
 import { ensureStudioProject, isStudioContainerProject } from "../lib/studioProjects";
+import { isCaideAppProject } from "../lib/caideApps";
 import { resolveFirstSendTarget } from "../lib/chatFirstSend";
 import { readActiveSpaceId } from "../spacesUiStore";
 import {
@@ -2072,7 +2073,13 @@ export default function ChatView({
     chatWorkspaceRoot,
     studioWorkspaceRoot,
   });
+  const isCaideApp = isCaideAppProject(activeProject, {
+    homeDir,
+    chatWorkspaceRoot,
+    studioWorkspaceRoot,
+  });
   const isContainerLandingProject = isHomeChatContainer || isStudioContainer;
+  const isBrandingEligibleProject = isContainerLandingProject || isCaideApp;
   const activeProjectDisplayName = isHomeChatContainer
     ? activeProject?.folderName
     : activeProject?.name;
@@ -2360,8 +2367,7 @@ export default function ChatView({
     if (discovered) {
       return discovered;
     }
-    return selectedProvider === "anthropic" &&
-      typeof persistedClaudeSupportsAutoMode === "boolean"
+    return selectedProvider === "anthropic" && typeof persistedClaudeSupportsAutoMode === "boolean"
       ? {
           slug: selectedModel,
           name: selectedModel,
@@ -2383,7 +2389,10 @@ export default function ChatView({
   const selectedPromptEffort = composerProviderState.promptEffort;
   const selectedModelOptionsForDispatch = composerProviderState.modelOptionsForDispatch;
   const selectedModelSelection = useMemo<ModelSelection>(() => {
-    if (selectedProvider === "openai" && draftModelSelectionForSelectedProvider?.provider === "openai") {
+    if (
+      selectedProvider === "openai" &&
+      draftModelSelectionForSelectedProvider?.provider === "openai"
+    ) {
       return buildModelSelection(
         selectedProvider,
         draftModelSelectionForSelectedProvider.model,
@@ -3706,7 +3715,9 @@ export default function ChatView({
       threadId,
       agentDir: selectedProvider === "openai" ? settings.piAgentDir || null : null,
       enabled:
-        (isSkillTrigger || composerTriggerKind === "slash-command" || selectedProvider === "openai") &&
+        (isSkillTrigger ||
+          composerTriggerKind === "slash-command" ||
+          selectedProvider === "openai") &&
         canDiscoverProviderSkills &&
         composerSkillCwd !== null,
     }),
@@ -7734,7 +7745,7 @@ export default function ChatView({
       !pendingAutomationConversation &&
       !shouldSkipBrandingThisSend &&
       (!isServerThread || !hasNativeUserMessages) &&
-      isContainerLandingProject &&
+      isBrandingEligibleProject &&
       (chatModeForSend === "build" || chatModeForSend === "local-agent")
     ) {
       pendingBrandingPromptRef.current = { threadId: activeThread.id, prompt: promptForSend };
@@ -10228,87 +10239,83 @@ export default function ChatView({
     [setPrompt, setRestoredQueuedSourceProposedPlan, threadId],
   );
 
-  const handleBrandingWizardSubmit = useCallback(
-    async (value: BrandingWizardValue) => {
-      const { threadId: brandingThreadId, prompt: originalPrompt } = pendingBrandingPromptRef.current ?? {};
-      pendingBrandingPromptRef.current = null;
-      if (!brandingThreadId) {
-        setIsBrandingWizardOpen(false);
-        return;
-      }
-      const brandingBlock = buildBrandingPromptBlock(value);
-      const amendedPrompt =
-        originalPrompt && originalPrompt.trim().length > 0
-          ? `${originalPrompt.trim()}\n\n${brandingBlock}`
-          : brandingBlock;
-      if (value.mode === "custom" && value.logoFile) {
-        const draftStore = useComposerDraftStore.getState();
-        const draft = draftStore.draftsByThreadId[brandingThreadId];
-        const existingAttachmentCount = effectiveComposerAttachmentCount(draft);
-        const { images } = await prepareComposerImageAttachmentsFromFiles({
-          files: [value.logoFile],
-          existingAttachmentCount,
-        });
-        const image = images[0];
-        if (image) {
-          let blobKey: string | null = null;
-          let imageAdded = false;
-          try {
-            blobKey = await persistComposerImageBlob({
-              threadId: brandingThreadId,
-              imageId: image.id,
-              file: image.file,
-            });
-            draftStore.setPromptHistorySavedDraft(brandingThreadId, null);
-            if (!draftStore.addImage(brandingThreadId, image)) {
-              throw new Error(
-                "The branding logo could not be attached because this message already has the maximum number of references.",
-              );
-            }
-            imageAdded = true;
-            const currentPersistedAttachments =
-              useComposerDraftStore.getState().draftsByThreadId[brandingThreadId]
-                ?.persistedAttachments ?? [];
-            const result = await draftStore.syncPersistedAttachments(brandingThreadId, [
-              ...currentPersistedAttachments.filter(
-                (attachment) => attachment.id !== image.id,
-              ),
-              {
-                id: image.id,
-                name: image.name,
-                mimeType: image.mimeType,
-                sizeBytes: image.sizeBytes,
-                blobKey,
-              },
-            ]);
-            if (result === "rejected") {
-              draftStore.removeImage(brandingThreadId, image.id);
-              await deleteComposerImageBlob(blobKey).catch((error) =>
-                console.warn("[branding] Could not roll back rejected logo", error),
-              );
-            }
-          } catch (error) {
-            if (!imageAdded) {
-              URL.revokeObjectURL(image.previewUrl);
-              if (blobKey) {
-                await deleteComposerImageBlob(blobKey).catch((cleanupError) =>
-                  console.warn("[branding] Could not roll back unattached logo", cleanupError),
-                );
-              }
-            }
-            console.warn("[branding] Could not attach the branding logo", error);
+  const handleBrandingWizardSubmit = useCallback(async (value: BrandingWizardValue) => {
+    const { threadId: brandingThreadId, prompt: originalPrompt } =
+      pendingBrandingPromptRef.current ?? {};
+    pendingBrandingPromptRef.current = null;
+    if (!brandingThreadId) {
+      setIsBrandingWizardOpen(false);
+      return;
+    }
+    const brandingBlock = buildBrandingPromptBlock(value);
+    const amendedPrompt =
+      originalPrompt && originalPrompt.trim().length > 0
+        ? `${originalPrompt.trim()}\n\n${brandingBlock}`
+        : brandingBlock;
+    if (value.mode === "custom" && value.logoFile) {
+      const draftStore = useComposerDraftStore.getState();
+      const draft = draftStore.draftsByThreadId[brandingThreadId];
+      const existingAttachmentCount = effectiveComposerAttachmentCount(draft);
+      const { images } = await prepareComposerImageAttachmentsFromFiles({
+        files: [value.logoFile],
+        existingAttachmentCount,
+      });
+      const image = images[0];
+      if (image) {
+        let blobKey: string | null = null;
+        let imageAdded = false;
+        try {
+          blobKey = await persistComposerImageBlob({
+            threadId: brandingThreadId,
+            imageId: image.id,
+            file: image.file,
+          });
+          draftStore.setPromptHistorySavedDraft(brandingThreadId, null);
+          if (!draftStore.addImage(brandingThreadId, image)) {
+            throw new Error(
+              "The branding logo could not be attached because this message already has the maximum number of references.",
+            );
           }
+          imageAdded = true;
+          const currentPersistedAttachments =
+            useComposerDraftStore.getState().draftsByThreadId[brandingThreadId]
+              ?.persistedAttachments ?? [];
+          const result = await draftStore.syncPersistedAttachments(brandingThreadId, [
+            ...currentPersistedAttachments.filter((attachment) => attachment.id !== image.id),
+            {
+              id: image.id,
+              name: image.name,
+              mimeType: image.mimeType,
+              sizeBytes: image.sizeBytes,
+              blobKey,
+            },
+          ]);
+          if (result === "rejected") {
+            draftStore.removeImage(brandingThreadId, image.id);
+            await deleteComposerImageBlob(blobKey).catch((error) =>
+              console.warn("[branding] Could not roll back rejected logo", error),
+            );
+          }
+        } catch (error) {
+          if (!imageAdded) {
+            URL.revokeObjectURL(image.previewUrl);
+            if (blobKey) {
+              await deleteComposerImageBlob(blobKey).catch((cleanupError) =>
+                console.warn("[branding] Could not roll back unattached logo", cleanupError),
+              );
+            }
+          }
+          console.warn("[branding] Could not attach the branding logo", error);
         }
       }
-      brandingAmendmentRef.current = { threadId: brandingThreadId, prompt: amendedPrompt };
-      skipBrandingWizardForNextSubmitRef.current = true;
-      setIsBrandingWizardOpen(false);
-      requestAnimationFrame(() => {
-        composerFormRef.current?.requestSubmit();
-      });
-    },
-    [],
-  );
+    }
+    brandingAmendmentRef.current = { threadId: brandingThreadId, prompt: amendedPrompt };
+    skipBrandingWizardForNextSubmitRef.current = true;
+    setIsBrandingWizardOpen(false);
+    requestAnimationFrame(() => {
+      composerFormRef.current?.requestSubmit();
+    });
+  }, []);
 
   const clearComposerSlashDraft = useCallback(() => {
     promptRef.current = "";

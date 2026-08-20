@@ -29,6 +29,7 @@ export interface DispatchCommandNormalizerOptions<E> {
   ) => Effect.Effect<string, E>;
   readonly prepareChatWorkspaceRoot?: (workspaceRoot: string) => Effect.Effect<void, E>;
   readonly prepareStudioWorkspaceRoot?: (workspaceRoot: string) => Effect.Effect<void, E>;
+  readonly prepareCaideAppWorkspaceRoot?: (workspaceRoot: string) => Effect.Effect<void, E>;
 }
 
 // Deferred workspace-root scaffolding (mkdir of managed subdirectories like Inbox/Outbox/
@@ -119,6 +120,29 @@ export function makeDispatchCommandNormalizer<E>(options: DispatchCommandNormali
       prepareWhenEqualToRoot: true,
     });
 
+  const maybePrepareCaideAppWorkspaceRoot = (
+    command: Extract<
+      ClientOrchestrationCommand,
+      { type: "project.create" | "project.meta.update" }
+    >,
+    workspaceRoot: string,
+  ) => {
+    if (command.kind !== "project" || command.createWorkspaceRootIfMissing !== true) {
+      return Effect.void;
+    }
+    const prepare = options.prepareCaideAppWorkspaceRoot;
+    if (!prepare) return Effect.void;
+    // Only scaffold when the root is under the configured caide-apps base or looks like one
+    const isCaidePattern =
+      workspaceRoot.includes("/caide-apps/") || workspaceRoot.includes("/dyad-apps/");
+    if (!isCaidePattern) {
+      // Also check against configured base via lexical containment (best-effort)
+      // Fall through to prepare — the scaffold helper itself re-checks containment
+      // and will no-op if not actually a caide app, so we can just call it.
+    }
+    return prepare(workspaceRoot).pipe(Effect.retry(WORKSPACE_ROOT_PREPARE_RETRY_SCHEDULE));
+  };
+
   // Combines the chat + studio scaffolding decisions into a single deferred effect. The
   // decision logic (kinds, prepareWhenEqualToRoot, isWorkspaceRootWithin/workspaceRootsEqual)
   // is evaluated eagerly here (it's pure and side-effect-free), but the resulting `prepare`
@@ -134,6 +158,7 @@ export function makeDispatchCommandNormalizer<E>(options: DispatchCommandNormali
       [
         maybePrepareChatWorkspaceRoot(command, workspaceRoot),
         maybePrepareStudioWorkspaceRoot(command, workspaceRoot),
+        maybePrepareCaideAppWorkspaceRoot(command, workspaceRoot),
       ],
       { discard: true },
     );

@@ -75,6 +75,7 @@ import {
   ensureStudioWorkspaceInstructionsFiles,
   STUDIO_WORKSPACE_SUBDIRECTORIES,
 } from "./studioWorkspaceScaffold";
+import { prepareCaideAppWorkspaceRoot } from "./caideAppScaffold";
 import { DevServerManager, findProjectDevServerForLocalServer } from "./devServerManager";
 import { DeviceService } from "./device/Services/DeviceService";
 import { makeWsDeviceHandlers } from "./device/wsDeviceHandlers";
@@ -634,6 +635,7 @@ const makeWsRpcHandlersLayer = () =>
         canonicalizeProjectWorkspaceRoot,
         prepareChatWorkspaceRoot,
         prepareStudioWorkspaceRoot,
+        prepareCaideAppWorkspaceRoot,
       });
 
       const importThread = makeImportThreadHandler({
@@ -897,95 +899,132 @@ const makeWsRpcHandlersLayer = () =>
       // wire its opaque goal outputs into the RPC contract types.
       const engineAdapterEffect = providerAdapterRegistry.getByProvider("engine").pipe(
         Effect.map(
-          (adapter) =>
-            adapter as import("./provider/Services/EngineAdapter.ts").EngineAdapterShape,
+          (adapter) => adapter as import("./provider/Services/EngineAdapter.ts").EngineAdapterShape,
         ),
         Effect.mapError((cause) => new WsRpcError({ message: cause.message })),
       );
       const adapterHex = {
         goals: {
-          create: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["create"]>[0], label: string) =>
+          create: (
+            input: Parameters<
+              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["create"]
+            >[0],
+            label: string,
+          ) =>
             rpcEffect(
-              engineAdapterEffect.pipe(
-                Effect.flatMap((adapter) => adapter.goals.create(input)),
-              ),
+              engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.create(input))),
               label,
             ),
-          get: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["get"]>[0], label: string) =>
+          get: (
+            input: Parameters<
+              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["get"]
+            >[0],
+            label: string,
+          ) =>
             rpcEffect(
-              engineAdapterEffect.pipe(
-                Effect.flatMap((adapter) => adapter.goals.get(input)),
-              ),
+              engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.get(input))),
               label,
             ),
-          getActive: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["getActive"]>[0], label: string) =>
+          getActive: (
+            input: Parameters<
+              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["getActive"]
+            >[0],
+            label: string,
+          ) =>
             rpcEffect(
-              engineAdapterEffect.pipe(
-                Effect.flatMap((adapter) => adapter.goals.getActive(input)),
-              ),
+              engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.getActive(input))),
               label,
             ),
-          list: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["list"]>[0], label: string) =>
+          list: (
+            input: Parameters<
+              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["list"]
+            >[0],
+            label: string,
+          ) =>
             rpcEffect(
-              engineAdapterEffect.pipe(
-                Effect.flatMap((adapter) => adapter.goals.list(input)),
-              ),
+              engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.list(input))),
               label,
             ),
-          listActivity: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["listActivity"]>[0], label: string) =>
+          listActivity: (
+            input: Parameters<
+              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["listActivity"]
+            >[0],
+            label: string,
+          ) =>
             rpcEffect(
               engineAdapterEffect.pipe(
                 Effect.flatMap((adapter) => adapter.goals.listActivity(input)),
               ),
               label,
             ),
-          pause: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["pause"]>[0], label: string) =>
+          pause: (
+            input: Parameters<
+              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["pause"]
+            >[0],
+            label: string,
+          ) =>
             rpcEffect(
-              engineAdapterEffect.pipe(
-                Effect.flatMap((adapter) => adapter.goals.pause(input)),
-              ),
+              engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.pause(input))),
               label,
             ),
-          resume: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["resume"]>[0], label: string) =>
+          resume: (
+            input: Parameters<
+              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["resume"]
+            >[0],
+            label: string,
+          ) =>
             rpcEffect(
-              engineAdapterEffect.pipe(
-                Effect.flatMap((adapter) => adapter.goals.resume(input)),
-              ),
+              engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.resume(input))),
               label,
             ),
-          cancel: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["cancel"]>[0], label: string) =>
+          cancel: (
+            input: Parameters<
+              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["cancel"]
+            >[0],
+            label: string,
+          ) =>
             rpcEffect(
-              engineAdapterEffect.pipe(
-                Effect.flatMap((adapter) => adapter.goals.cancel(input)),
-              ),
+              engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.cancel(input))),
               label,
             ),
-          edit: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["edit"]>[0], label: string) =>
+          edit: (
+            input: Parameters<
+              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["edit"]
+            >[0],
+            label: string,
+          ) =>
             rpcEffect(
-              engineAdapterEffect.pipe(
-                Effect.flatMap((adapter) => adapter.goals.edit(input)),
-              ),
+              engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.edit(input))),
               label,
             ),
-          steer: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["steer"]>[0], label: string) =>
+          steer: (
+            input: Parameters<
+              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["steer"]
+            >[0],
+            label: string,
+          ) =>
             rpcEffect(
-              engineAdapterEffect.pipe(
-                Effect.flatMap((adapter) => adapter.goals.steer(input)),
-              ),
+              engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.steer(input))),
               label,
             ),
-          retry: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["retry"]>[0], label: string) =>
+          retry: (
+            input: Parameters<
+              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["retry"]
+            >[0],
+            label: string,
+          ) =>
             rpcEffect(
-              engineAdapterEffect.pipe(
-                Effect.flatMap((adapter) => adapter.goals.retry(input)),
-              ),
+              engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.retry(input))),
               label,
             ),
-          verify: (input: Parameters<import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["verify"]>[0], label: string) =>
+          verify: (
+            input: Parameters<
+              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["verify"]
+            >[0],
+            label: string,
+          ) =>
             rpcEffect(
-              engineAdapterEffect.pipe(
-                Effect.flatMap((adapter) => adapter.goals.verify(input)),
-              ),
+              engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.verify(input))),
               label,
             ),
         },
@@ -1000,9 +1039,7 @@ const makeWsRpcHandlersLayer = () =>
       // M4b: aggregate the per-project activity timeline from thread shells
       // (chat rows), engine goals + goal activity (goal/build/analyze/test
       // rows, joined through the engine app rowid), and git commits.
-      const getProjectActivity = (
-        input: OrchestrationGetProjectActivityInput,
-      ) =>
+      const getProjectActivity = (input: OrchestrationGetProjectActivityInput) =>
         Effect.gen(function* () {
           const shell = yield* projectionReadModelQuery.getShellSnapshot();
           const project = shell.projects.find((candidate) => candidate.id === input.projectId);
@@ -1052,8 +1089,7 @@ const makeWsRpcHandlersLayer = () =>
                   at: event.createdAt,
                   summary: event.summary,
                   detail: event.type,
-                  status:
-                    typeof event.metadata?.status === "string" ? event.metadata.status : null,
+                  status: typeof event.metadata?.status === "string" ? event.metadata.status : null,
                 });
               }
             }
@@ -1344,36 +1380,29 @@ const makeWsRpcHandlersLayer = () =>
         // payloads stay opaque at the bridge and are shaped for the web in M4.
         [GOALS_WS_METHODS.createGoal]: (input) =>
           adapterHex.goals.create(input, "create engine goal"),
-        [GOALS_WS_METHODS.getGoal]: (input) =>
-          adapterHex.goals.get(input, "fetch engine goal"),
+        [GOALS_WS_METHODS.getGoal]: (input) => adapterHex.goals.get(input, "fetch engine goal"),
         [GOALS_WS_METHODS.getActiveGoal]: (input) =>
           adapterHex.goals.getActive(input, "fetch active engine goal"),
-        [GOALS_WS_METHODS.listGoals]: (input) =>
-          adapterHex.goals.list(input, "list engine goals"),
+        [GOALS_WS_METHODS.listGoals]: (input) => adapterHex.goals.list(input, "list engine goals"),
         [GOALS_WS_METHODS.listActivity]: (input) =>
           adapterHex.goals.listActivity(input, "list engine goal activity"),
-        [GOALS_WS_METHODS.pauseGoal]: (input) =>
-          adapterHex.goals.pause(input, "pause engine goal"),
+        [GOALS_WS_METHODS.pauseGoal]: (input) => adapterHex.goals.pause(input, "pause engine goal"),
         [GOALS_WS_METHODS.resumeGoal]: (input) =>
           adapterHex.goals.resume(input, "resume engine goal"),
         [GOALS_WS_METHODS.cancelGoal]: (input) =>
           adapterHex.goals.cancel(input, "cancel engine goal"),
-        [GOALS_WS_METHODS.editGoal]: (input) =>
-          adapterHex.goals.edit(input, "edit engine goal"),
-        [GOALS_WS_METHODS.steerGoal]: (input) =>
-          adapterHex.goals.steer(input, "steer engine goal"),
-        [GOALS_WS_METHODS.retryGoal]: (input) =>
-          adapterHex.goals.retry(input, "retry engine goal"),
+        [GOALS_WS_METHODS.editGoal]: (input) => adapterHex.goals.edit(input, "edit engine goal"),
+        [GOALS_WS_METHODS.steerGoal]: (input) => adapterHex.goals.steer(input, "steer engine goal"),
+        [GOALS_WS_METHODS.retryGoal]: (input) => adapterHex.goals.retry(input, "retry engine goal"),
         [GOALS_WS_METHODS.verifyGoal]: (input) =>
           adapterHex.goals.verify(input, "verify engine goal"),
         [WS_GOALS_SUBSCRIBE]: (_, { clientId }) =>
           streamAdmission.guard(
             clientId,
             { key: "goals.domain-events" },
-            bufferLiveUiStream(
-              adapterHex.streamGoalDomainEvents("goals domain event stream"),
-              { label: "goals.domain-events" },
-            ),
+            bufferLiveUiStream(adapterHex.streamGoalDomainEvents("goals domain event stream"), {
+              label: "goals.domain-events",
+            }),
           ),
 
         [ORCHESTRATION_WS_METHODS.getProjectActivity]: (input) =>
