@@ -332,8 +332,8 @@ export function prepareManagedTerminalWrappers(options: {
   }
 
   const targetPathByCliKind: Partial<Record<ManagedTerminalCliKind, string>> = {};
-  for (const cliKind of ["openai", "anthropic"] as const) {
-    const commandName = managedTerminalCommandNameForCliKind(cliKind);
+  for (const cliKind of ["codex", "claude"] as const) {
+    const commandName = managedTerminalCommandNameForCliKind(cliKind as ManagedTerminalCliKind);
     const targetPath = resolveExecutable(commandName, { env: options.baseEnv });
     if (!targetPath) {
       continue;
