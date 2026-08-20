@@ -16,7 +16,6 @@ import {
   type JsonRpcRequest,
   type JsonRpcResponse,
 } from "./protocol.ts";
-import { safeFlutterEnvironment } from "./safeEnvironment.ts";
 
 export class EngineSpawnError extends Error {}
 
@@ -56,7 +55,7 @@ export class EngineClient {
   constructor(private readonly options: EngineClientOptions) {
     this.child = spawn(options.command, [...options.args], {
       cwd: options.cwd,
-      env: options.env ?? safeFlutterEnvironment(),
+      env: options.env ?? process.env,
       stdio: ["pipe", "pipe", "pipe"],
     });
 

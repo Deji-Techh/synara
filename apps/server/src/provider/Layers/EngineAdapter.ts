@@ -28,8 +28,27 @@ import {
   TurnId,
 } from "@caide/contracts";
 import { EngineClient } from "@caide/engine/client";
-import { safeFlutterEnvironment } from "@caide/engine/env";
 import { CAIDE_ENGINE_DIR_ENV } from "@caide/shared/desktopIdentity";
+
+function safeFlutterEnvironment(overrides?: Record<string, string>): NodeJS.ProcessEnv {
+  const ALLOWED_KEYS = [
+    "PATH", "HOME", "USER", "TMPDIR", "TMP", "TEMP",
+    "LANG", "LC_ALL", "LC_CTYPE",
+    "FLUTTER_SDK_DIR", "FLUTTER_SDK_BIN", "FLUTTER_ROOT",
+    "DART_SDK", "PUB_CACHE",
+    "ANDROID_HOME", "ANDROID_SDK_ROOT",
+    "JAVA_HOME",
+    "DEVELOPER_DIR",
+    "CHROME_EXECUTABLE", "PUPPETEER_EXECUTABLE_PATH",
+    "DISPLAY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR",
+    "SSH_AUTH_SOCK",
+  ];
+  const env: NodeJS.ProcessEnv = {};
+  for (const key of ALLOWED_KEYS) {
+    if (process.env[key]) env[key] = process.env[key];
+  }
+  return { ...env, CI: "false", TERM: "dumb", ...overrides };
+}
 import {
   AnalyzeRunResultSchema,
   BuildStartResultSchema,

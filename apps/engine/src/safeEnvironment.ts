@@ -6,11 +6,6 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import {
-  getManagedFlutterBin,
-  getManagedFlutterSdkPath,
-} from "./ipc/services/managed_flutter_toolchain_service";
-
 /**
  * Build a minimal, safe environment for Flutter child processes.
  * Only whitelists essential variables to prevent E2BIG spawn errors.
@@ -45,9 +40,12 @@ export function safeFlutterEnvironment(overrides?: Record<string, string>): Node
   }
 
   // Inject managed Flutter bin if installed (so child inherits without host PATH)
+  // Use lazy require to avoid bundling electron-dependent code into server
   try {
-    const flutterBin = getManagedFlutterBin();
-    const sdkPath = getManagedFlutterSdkPath();
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const managed = require("./ipc/services/managed_flutter_toolchain_service") as typeof import("./ipc/services/managed_flutter_toolchain_service");
+    const flutterBin = managed.getManagedFlutterBin();
+    const sdkPath = managed.getManagedFlutterSdkPath();
     if (sdkPath && typeof sdkPath === "string") {
       if (fs.existsSync(flutterBin)) {
         env.FLUTTER_ROOT = sdkPath;
