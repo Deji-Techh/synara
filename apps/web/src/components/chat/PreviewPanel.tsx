@@ -44,6 +44,7 @@ import {
 import { DeviceScreen, type DeviceKind } from "../device/DeviceFrame";
 import {
   DeviceControlRail,
+  DEVICE_RAIL_HEIGHT_CLASS,
   type DeviceRailAction,
 } from "../device/DeviceControlRail";
 
@@ -113,15 +114,15 @@ const FRAME_KIND_TO_FLUTTER_DEVICE: Record<PreviewFrameKind, "web-server" | "emu
 };
 
 const DEVICE_ID_FRAME_KIND_FALLBACK: Record<PreviewDeviceId, PreviewFrameKind> = {
-  mobile: "iPhone",
+  mobile: "androidPhone",
   tablet: "iPad",
   desktop: "frameless",
 };
 
 const FRAME_KIND_OPTIONS: readonly { id: PreviewFrameKind; label: string }[] = [
-  { id: "androidPhone", label: "Android phone" },
+  { id: "androidPhone", label: "Android Phone" },
+  { id: "iPad", label: "Android Tablet" },
   { id: "iPhone", label: "iPhone" },
-  { id: "iPad", label: "Tablet" },
   { id: "frameless", label: "Frameless" },
 ];
 
@@ -328,94 +329,6 @@ function PreviewFailedState(props: { error: string | null; onRetry: () => void }
         <RefreshCwIcon aria-hidden="true" className="size-3.5" />
         Retry
       </button>
-    </div>
-  );
-}
-
-function PreviewDeviceFrame(props: {
-  threadId: ThreadId;
-  frameKind: PreviewFrameKind;
-  url: string;
-  reloadToken: number;
-  landscape: boolean;
-  onRotate: () => void;
-  onScreenshot: () => void;
-  onRailAction: (action: DeviceRailAction) => void;
-}) {
-  const isNative = !props.url.startsWith("http");
-  const [screenshotBase64, setScreenshotBase64] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!isNative) return;
-    let timer: number;
-    let cancelled = false;
-
-    const poll = () => {
-      ensureNativeApi()
-        .preview.screenshot({ threadId: props.threadId })
-        .then((res) => {
-          if (!cancelled && res.image) {
-            setScreenshotBase64(res.image);
-          }
-        })
-        .finally(() => {
-          if (!cancelled) {
-            timer = window.setTimeout(poll, 1500);
-          }
-        });
-    };
-    poll();
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [isNative, props.threadId]);
-
-  const innerView = isNative ? (
-    screenshotBase64 ? (
-      <img
-        src={`data:image/png;base64,${screenshotBase64}`}
-        alt="Device screenshot"
-        className="h-full w-full object-cover"
-      />
-    ) : (
-      <div className="flex h-full w-full items-center justify-center bg-muted/30">
-        <LoaderIcon aria-hidden="true" className="size-5 animate-spin text-muted-foreground" />
-      </div>
-    )
-  ) : (
-    <iframe
-      key={props.reloadToken}
-      src={props.url}
-      title="Flutter preview"
-      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
-      className="h-full w-full border-0"
-    />
-  );
-
-  // Frameless is the fluid full-bleed view: no chassis and no rail, just the
-  // live surface sized to the pane.
-  if (props.frameKind === "frameless") {
-    return (
-      <div className="flex h-full min-h-0 flex-1 items-center justify-center overflow-auto p-4">
-        {innerView}
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex h-full min-h-0 flex-1 flex-col items-center overflow-auto p-4 py-8">
-      <div className="flex shrink-0 flex-col items-center gap-4">
-        <DeviceScreen kind={props.frameKind} landscape={props.landscape}>
-          {innerView}
-        </DeviceScreen>
-        <DeviceControlRail
-          disabled={false}
-          recording={false}
-          landscape={props.landscape}
-          onAction={props.onRailAction}
-        />
-      </div>
     </div>
   );
 }
@@ -909,8 +822,8 @@ export function PreviewPanel(props: {
   const frameKind: PreviewFrameKind = threadFrameKind ?? DEVICE_ID_FRAME_KIND_FALLBACK[panelState.deviceId];
   // Status states (idle/starting/failed) always draw inside a chassis — there
   // is no frameless "device" to hang a prompt or spinner on — so frameless
-  // falls back to the iPhone silhouette rather than showing an empty pane.
-  const statusFrameKind: DeviceKind = frameKind === "frameless" ? "iPhone" : frameKind;
+  // falls back to the Android phone silhouette rather than showing an empty pane.
+  const statusFrameKind: DeviceKind = frameKind === "frameless" ? "androidPhone" : frameKind;
 
   useEffect(() => {
     setPanelState((previous) =>
@@ -1044,17 +957,26 @@ export function PreviewPanel(props: {
           setLandscape((current) => !current);
           return;
         case "home":
-        case "record":
-        case "shutdown":
-        case "detach":
+          handleReload(false);
           toastManager.add({
             type: "info",
-            title: "Not available in the preview pane",
-            description: "Open the iOS Simulator panel to use this device action.",
+            title: "Navigated Home",
+            description: "Reloaded Flutter preview.",
+          });
+          return;
+        case "shutdown":
+        case "detach":
+          handleStop();
+          return;
+        case "record":
+          toastManager.add({
+            type: "info",
+            title: "Recording unavailable",
+            description: "Screen recording is not available in web preview.",
           });
       }
     },
-    [savePreviewScreenshot],
+    [savePreviewScreenshot, handleReload, handleStop],
   );
 
   const handleTabChange = useCallback((tab: PreviewPaneTab) => {
@@ -1188,44 +1110,103 @@ export function PreviewPanel(props: {
 
       {/* Main Content Area */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-black/5 dark:bg-black/20">
-        <div className={cn("flex-1 overflow-auto", panelState.activeTab === "preview" ? "block" : "hidden")}>
-          {(panelState.status === "idle" || panelState.status === "starting" || panelState.status === "failed") ? (
-            <div className="flex h-full flex-col items-center justify-center p-8">
-              <DeviceScreen kind={statusFrameKind} landscape={landscape}>
-                <div className="flex h-full w-full flex-col items-center justify-center bg-black p-6 text-center">
-                  {panelState.status === "starting" ? (
-                    <>
-                      <LoaderIcon className="size-5 animate-spin text-muted-foreground mb-3" />
-                      <p className="text-sm text-muted-foreground">Starting simulator...</p>
-                    </>
-                  ) : panelState.status === "failed" ? (
-                    <>
-                      <p className="text-sm text-red-500 mb-3">{panelState.error ?? "Failed to start"}</p>
-                      <button onClick={handleStart} className="text-xs bg-white text-black px-3 py-1.5 rounded-full font-medium">Retry</button>
-                    </>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Choose a frame to<br/>preview the Flutter app here.
-                    </p>
-                  )}
+        {panelState.activeTab === "preview" && (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            {frameKind === "frameless" ? (
+              <div className="flex min-h-0 flex-1 flex-col items-center justify-center p-4">
+                {panelState.status === "starting" ? (
+                  <PreviewStartingState />
+                ) : panelState.status === "failed" ? (
+                  <PreviewFailedState error={panelState.error} onRetry={handleStart} />
+                ) : isRunning && panelState.url !== null ? (
+                  <iframe
+                    key={panelState.reloadToken}
+                    src={panelState.url}
+                    title="Flutter preview"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
+                    className="h-full w-full border-0"
+                  />
+                ) : (
+                  <PreviewEmptyState onStart={handleStart} />
+                )}
+              </div>
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col items-center justify-center p-1 sm:p-2">
+                <DeviceScreen
+                  className="min-h-0 w-full flex-1"
+                  kind={statusFrameKind}
+                  landscape={landscape}
+                >
+                  <div className="flex h-full w-full flex-col items-center justify-center bg-black text-center">
+                    {panelState.status === "starting" ? (
+                      <div className="flex flex-col items-center gap-3 p-6">
+                        <LoaderIcon className="size-6 animate-spin text-muted-foreground" />
+                        <p className="text-sm font-medium text-foreground">Starting Flutter preview…</p>
+                        <p className="text-xs text-muted-foreground">Compiling Flutter bundle for Android</p>
+                      </div>
+                    ) : panelState.status === "failed" ? (
+                      <div className="flex flex-col items-center gap-3 p-6">
+                        <CircleAlertIcon className="size-6 text-red-500" />
+                        <p className="max-w-[240px] break-words text-sm text-red-400">
+                          {panelState.error ?? "Failed to start"}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleStart}
+                          className="mt-1 cursor-pointer rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-black transition-opacity hover:opacity-90"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    ) : isRunning && panelState.url !== null ? (
+                      <iframe
+                        key={panelState.reloadToken}
+                        src={panelState.url}
+                        title="Flutter preview"
+                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
+                        className="h-full w-full border-0 bg-background"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center gap-3 p-6">
+                        <div className="flex size-12 items-center justify-center rounded-2xl bg-white/5 ring-1 ring-white/10">
+                          <PlayIcon className="size-5 text-white/80" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-white/90">Flutter App Preview</p>
+                          <p className="mt-1 text-xs text-white/50">Ready to run on Android</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleStart}
+                          className="mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-semibold text-black transition-transform active:scale-95 hover:bg-white/90"
+                        >
+                          <PlayIcon className="size-3.5 fill-black" />
+                          Start Preview
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </DeviceScreen>
+                <div className="relative z-10">
+                  <DeviceControlRail
+                    disabled={!isRunning}
+                    recording={false}
+                    landscape={landscape}
+                    onAction={handleRailAction}
+                  />
                 </div>
-              </DeviceScreen>
-            </div>
-          ) : (
-            isRunning && panelState.url !== null && (
-              <PreviewDeviceFrame
-                threadId={props.threadId}
-                frameKind={frameKind}
-                url={panelState.url}
-                reloadToken={panelState.reloadToken}
-                landscape={landscape}
-                onRotate={() => setLandscape((current) => !current)}
-                onScreenshot={savePreviewScreenshot}
-                onRailAction={handleRailAction}
+              </div>
+            )}
+
+            {showConsole && (
+              <PreviewConsole
+                isOpen={isConsoleOpen}
+                onToggle={() => setIsConsoleOpen((open) => !open)}
+                logs={panelState.logs}
               />
-            )
-          )}
-        </div>
+            )}
+          </div>
+        )}
         
         {panelState.activeTab === "problems" && <div className="flex-1 overflow-hidden"><ProblemList state={panelState.analyze} /></div>}
         {panelState.activeTab === "tests" && <div className="flex-1 overflow-hidden"><TestResults state={panelState.test} /></div>}

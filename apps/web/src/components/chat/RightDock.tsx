@@ -65,8 +65,8 @@ export const RIGHT_DOCK_DEFAULT_WIDTH = "max(28rem, calc(50vw - 8rem))";
 // height-bound), so it opens at the same comfortable width instead of the
 // half-shell split.
 const RIGHT_DOCK_PREFERRED_WIDTH: Partial<Record<RightDockPaneKind, number>> = {
-  device: 38 * 16,
-  preview: 38 * 16,
+  device: 40 * 16,
+  preview: 42 * 16,
 };
 
 interface RightDockProps {

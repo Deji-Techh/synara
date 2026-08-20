@@ -3,16 +3,9 @@
 // Exports: Model state helpers used by persistence, actions, and the public facade.
 
 import {
-  GROK_REASONING_EFFORT_OPTIONS,
   ProviderKind,
-  type ClaudeCodeEffort,
-  type CodexReasoningEffort,
-  type CursorModelOptions,
-  type DroidReasoningEffort,
-  type GrokReasoningEffort,
   type ModelSelection,
   type ModelSlug,
-  type PiThinkingLevel,
   type ProviderModelOptions,
 } from "@caide/contracts";
 import * as Schema from "effect/Schema";
@@ -28,15 +21,21 @@ import type { ComposerThreadDraftState } from "./composerDraftDomain";
 import { classifyProviderReasoningEffortSupport } from "./lib/codexReasoningEffort";
 
 export const COMPOSER_PROVIDER_KINDS = [
+  "engine",
   "openai",
   "anthropic",
-  "openai",
   "google",
-  "openai",
-  "openai",
-  "openai",
-  "openai",
-  "openai",
+  "openrouter",
+  "ollama",
+  "deepseek",
+  "groq",
+  "mistral",
+  "together",
+  "cohere",
+  "xai",
+  "fireworks",
+  "opencodeZen",
+  "opencodeGo",
 ] as const satisfies readonly ProviderKind[];
 
 const isProviderKind = Schema.is(ProviderKind);
@@ -131,110 +130,43 @@ export function makeModelSelection(
   options?: ProviderModelOptions[ProviderKind],
   supportsAutoMode?: boolean,
 ): ModelSelection {
-  switch (provider) {
-    case "google":
-      return {
-        provider,
-        model,
-        ...(options
-          ? {
-              options: options as Extract<ModelSelection, { provider: "google" }>["options"],
-            }
-          : {}),
-      };
-    case "openai":
-      return {
-        provider,
-        model,
-        ...(options
-          ? { options: options as Extract<ModelSelection, { provider: "openai" }>["options"] }
-          : {}),
-      };
-    case "anthropic":
-      return {
-        provider,
-        model,
-        ...(options
-          ? {
-              options: options as Extract<ModelSelection, { provider: "anthropic" }>["options"],
-            }
-          : {}),
-        ...(typeof supportsAutoMode === "boolean" ? { supportsAutoMode } : {}),
-      };
-    case "openai":
-      return {
-        provider,
-        model,
-        ...(options
-          ? { options: options as Extract<ModelSelection, { provider: "openai" }>["options"] }
-          : {}),
-      };
-    case "openai":
-      return {
-        provider,
-        model,
-        ...(options
-          ? { options: options as Extract<ModelSelection, { provider: "openai" }>["options"] }
-          : {}),
-      };
-    case "openai":
-      return {
-        provider,
-        model,
-        ...(options
-          ? { options: options as Extract<ModelSelection, { provider: "openai" }>["options"] }
-          : {}),
-      };
-    case "openai":
-      return {
-        provider,
-        model,
-        ...(options
-          ? { options: options as Extract<ModelSelection, { provider: "openai" }>["options"] }
-          : {}),
-      };
-    case "openai":
-      return {
-        provider,
-        model,
-        ...(options
-          ? { options: options as Extract<ModelSelection, { provider: "openai" }>["options"] }
-          : {}),
-      };
-    case "openai":
-      return {
-        provider,
-        model,
-        ...(options
-          ? { options: options as Extract<ModelSelection, { provider: "openai" }>["options"] }
-          : {}),
-      };
-    case "engine":
-      return {
-        provider,
-        model,
-        ...(options
-          ? { options: options as Extract<ModelSelection, { provider: "engine" }>["options"] }
-          : {}),
-      };
-    case "openai":
-    case "anthropic":
-    case "google":
-    case "openrouter":
-    case "ollama":
-    case "deepseek":
-    case "groq":
-    case "mistral":
-    case "together":
-    case "cohere":
-    case "xai":
-    case "fireworks":
-    case "opencodeZen":
-      return {
-        provider,
-        model,
-        ...(options
-          ? { options: options as Extract<ModelSelection, { provider: "openai" }>["options"] }
+  if (provider === "anthropic") {
+    return {
+      provider,
+      model,
+      ...(options
+        ? {
+            options: options as Extract<ModelSelection, { provider: "anthropic" }>["options"],
+          }
+        : {}),
+      ...(typeof supportsAutoMode === "boolean" ? { supportsAutoMode } : {}),
+    };
+  }
+  if (provider === "google") {
+    return {
+      provider,
+      model,
+      ...(options
+        ? {
+            options: options as Extract<ModelSelection, { provider: "google" }>["options"],
+          }
+        : {}),
+    };
+  }
+  if (provider === "engine") {
+    return {
+      provider,
+      model,
+      ...(options
+        ? { options: options as Extract<ModelSelection, { provider: "engine" }>["options"] }
+        : {}),
+    };
+  }
+  return {
+    provider,
+    model,
+    ...(options
+      ? { options: options as Extract<ModelSelection, { provider: typeof provider }>["options"] }
           : {}),
       };
   }
@@ -246,42 +178,42 @@ export function normalizeProviderModelOptions(
   legacy?: LegacyCodexFields,
 ): ProviderModelOptions | null {
   const candidate = value && typeof value === "object" ? (value as Record<string, unknown>) : null;
-  const codexCandidate =
-    candidate?.codex && typeof candidate.codex === "object"
-      ? (candidate.codex as Record<string, unknown>)
+  // Map legacy CLI provider keys to API providers
+  const legacyMap: Record<string, string> = {
+    codex: "openai",
+    claudeAgent: "anthropic",
+    cursor: "openai",
+    antigravity: "google",
+    grok: "xai",
+    droid: "openai",
+    opencode: "openai",
+    kilo: "openai",
+    pi: "openai",
+  };
+  // Collect candidate for the requested provider, checking both API and legacy keys
+  const getCandidate = (apiProvider: string) => {
+    const direct = candidate?.[apiProvider] && typeof candidate[apiProvider] === "object"
+      ? (candidate[apiProvider] as Record<string, unknown>)
       : null;
-  const claudeCandidate =
-    candidate?.claudeAgent && typeof candidate.claudeAgent === "object"
-      ? (candidate.claudeAgent as Record<string, unknown>)
-      : null;
-  const cursorCandidate =
-    candidate?.cursor && typeof candidate.cursor === "object"
-      ? (candidate.cursor as Record<string, unknown>)
-      : null;
-  const antigravityCandidate =
-    candidate?.antigravity && typeof candidate.antigravity === "object"
-      ? (candidate.antigravity as Record<string, unknown>)
-      : null;
-  const grokCandidate =
-    candidate?.grok && typeof candidate.grok === "object"
-      ? (candidate.grok as Record<string, unknown>)
-      : null;
-  const droidCandidate =
-    candidate?.droid && typeof candidate.droid === "object"
-      ? (candidate.droid as Record<string, unknown>)
-      : null;
-  const openCodeCandidate =
-    candidate?.opencode && typeof candidate.opencode === "object"
-      ? (candidate.opencode as Record<string, unknown>)
-      : null;
-  const kiloCandidate =
-    candidate?.kilo && typeof candidate.kilo === "object"
-      ? (candidate.kilo as Record<string, unknown>)
-      : null;
-  const piCandidate =
-    candidate?.pi && typeof candidate.pi === "object"
-      ? (candidate.pi as Record<string, unknown>)
-      : null;
+    if (direct) return direct;
+    // Check legacy keys that map to this API provider
+    for (const [legacyKey, mapped] of Object.entries(legacyMap)) {
+      if (mapped === apiProvider && candidate?.[legacyKey] && typeof candidate[legacyKey] === "object") {
+        return candidate[legacyKey] as Record<string, unknown>;
+      }
+    }
+    return null;
+  };
+  const codexCandidate = getCandidate("openai");
+  const claudeCandidate = getCandidate("anthropic");
+  const antigravityCandidate = getCandidate("google");
+  const grokCandidate = getCandidate("xai");
+  // For API-only, we only need openai, anthropic, google, xai, and generic API providers
+  const droidCandidate = null;
+  const openCodeCandidate = null;
+  const kiloCandidate = null;
+  const piCandidate = null;
+  const cursorCandidate = null;
 
   const codexReasoningEffort: CodexReasoningEffort | undefined =
     trimStringOrUndefined(codexCandidate?.reasoningEffort) ??
@@ -490,31 +422,17 @@ export function normalizeModelSelection(
         provider === "openai" ? legacy?.legacyCodex : undefined,
       );
   const options =
-    provider === "openai"
-      ? modelOptions?.codex
-      : provider === "anthropic"
-        ? inferredClaudeAutoCompactWindow !== undefined
-          ? {
-              ...modelOptions?.claudeAgent,
-              autoCompactWindow:
-                modelOptions?.claudeAgent?.autoCompactWindow ?? inferredClaudeAutoCompactWindow,
-            }
-          : modelOptions?.claudeAgent
-        : provider === "google"
-          ? modelOptions?.antigravity
-          : provider === "openai"
-            ? modelOptions?.grok
-            : provider === "openai"
-              ? modelOptions?.droid
-              : provider === "openai"
-                ? modelOptions?.kilo
-                : provider === "openai"
-                  ? modelOptions?.cursor
-                  : provider === "openai"
-                    ? modelOptions?.opencode
-                    : provider === "openai"
-                      ? modelOptions?.pi
-                      : undefined;
+    provider === "anthropic"
+      ? inferredClaudeAutoCompactWindow !== undefined
+        ? {
+            ...((modelOptions as any)?.anthropic ?? (modelOptions as any)?.claudeAgent),
+            autoCompactWindow:
+              ((modelOptions as any)?.anthropic ?? (modelOptions as any)?.claudeAgent)?.autoCompactWindow ?? inferredClaudeAutoCompactWindow,
+          }
+        : ((modelOptions as any)?.anthropic ?? (modelOptions as any)?.claudeAgent)
+      : provider === "google"
+        ? ((modelOptions as any)?.google ?? (modelOptions as any)?.antigravity)
+        : ((modelOptions as any)?.[provider] ?? (modelOptions as any)?.[provider === "deepseek" ? "openai" : provider] ?? undefined);
   const normalizedOptions =
     provider === "google" && hasLegacyAntigravityEffort
       ? {

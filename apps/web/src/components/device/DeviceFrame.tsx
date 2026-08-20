@@ -440,7 +440,7 @@ export const DeviceScreen = memo(function DeviceScreen({
         // and clipping it left a hard horizontal cut where the control rail
         // began. Padding keeps the device off the pane edges, and the sizing
         // below already stops the frame itself from escaping the box.
-        "flex h-full min-h-0 items-center justify-center p-6 [container-type:size]",
+        "flex h-full min-h-0 items-center justify-center p-2 sm:p-3 [container-type:size]",
         className,
       )}
     >
