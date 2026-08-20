@@ -88,7 +88,7 @@ function makeThreadShell(
     id: ThreadId.makeUnsafe(id),
     projectId: PROJECT_ID,
     title: `Thread ${id}`,
-    modelSelection: { provider: "codex", model: "gpt-5.5" },
+    modelSelection: { provider: "openai", model: "gpt-5.5" },
     runtimeMode: "approval-required",
     interactionMode: "default",
     envMode: "local",
@@ -195,7 +195,7 @@ function makeAutomationDefinition(
     schedule: { type: "interval", everySeconds: 300 },
     enabled: true,
     nextRunAt: NOW,
-    modelSelection: { provider: "codex", model: "gpt-5.5" },
+    modelSelection: { provider: "openai", model: "gpt-5.5" },
     runtimeMode: "approval-required",
     interactionMode: "default",
     worktreeMode: "local",
@@ -323,7 +323,7 @@ function makeHarnessLayer(
             sessionKey: `session-for-${threadId}`,
             threadId: ThreadId.makeUnsafe(threadId),
             provider:
-              token === "token-parent-claude" ? ("claudeAgent" as const) : ("codex" as const),
+              token === "token-parent-claude" ? ("anthropic" as const) : ("openai" as const),
             issuedAt: 0,
             capabilities:
               token === "token-parent-readonly"
@@ -346,7 +346,7 @@ function makeHarnessLayer(
             sessionKey: `session-for-${threadId}`,
             threadId: ThreadId.makeUnsafe(threadId),
             provider:
-              token === "token-parent-claude" ? ("claudeAgent" as const) : ("codex" as const),
+              token === "token-parent-claude" ? ("anthropic" as const) : ("openai" as const),
             turnId,
           }
         : null;
@@ -816,15 +816,15 @@ function makeHarnessLayer(
   } as unknown as (typeof ProviderDiscoveryService)["Service"]);
 
   const providerKinds: ReadonlyArray<ProviderKind> = [
-    "codex",
-    "claudeAgent",
-    "cursor",
-    "antigravity",
-    "grok",
-    "droid",
-    "kilo",
-    "opencode",
-    "pi",
+    "openai",
+    "anthropic",
+    "openai",
+    "google",
+    "openai",
+    "openai",
+    "openai",
+    "openai",
+    "openai",
   ];
   let providerStatuses =
     options.providerStatuses ??
@@ -1289,7 +1289,7 @@ describe("AgentGateway", () => {
               session: {
                 threadId: thread.id,
                 status: "running" as const,
-                providerName: "claudeAgent",
+                providerName: "anthropic",
                 runtimeMode: thread.runtimeMode,
                 activeTurnId: thread.latestTurn?.turnId ?? null,
                 lastError: null,
@@ -1322,7 +1322,7 @@ describe("AgentGateway", () => {
           threads: [
             {
               prompt: "should not run",
-              target: { provider: "codex", model: "gpt-5.5" },
+              target: { provider: "openai", model: "gpt-5.5" },
             },
           ],
         },
@@ -1368,7 +1368,7 @@ describe("AgentGateway", () => {
             threads: [
               {
                 prompt: requestId,
-                target: { provider: "codex", model: "gpt-5.5" },
+                target: { provider: "openai", model: "gpt-5.5" },
               },
             ],
           },
@@ -1716,7 +1716,7 @@ describe("AgentGateway", () => {
         }),
         makeThreadShell("thread-other", {
           title: "Unrelated task",
-          modelSelection: { provider: "claudeAgent", model: "opus-4.8" },
+          modelSelection: { provider: "anthropic", model: "opus-4.8" },
           updatedAt: "2026-02-01T10:00:00.000Z",
         }),
       ];
@@ -1727,7 +1727,7 @@ describe("AgentGateway", () => {
           token: "token-parent",
           name: "caide_list_threads",
           args: {
-            provider: "codex",
+            provider: "openai",
             status: "working",
             titleContains: "STREAM",
             creationSource: "caide_mcp",
@@ -1895,7 +1895,7 @@ describe("AgentGateway", () => {
           event: {
             type: "runtime.error",
             eventId: EventId.makeUnsafe("runtime-event-diagnostic-9"),
-            provider: "codex",
+            provider: "openai",
             threadId,
             turnId: TurnId.makeUnsafe("turn-parent"),
             createdAt: NOW,
@@ -1961,11 +1961,11 @@ describe("AgentGateway", () => {
       const response = yield* harness.callTool({
         token: "token-parent",
         name: "caide_create_thread",
-        args: { requestId: "create-grok", prompt: "analyze the feature", provider: "grok" },
+        args: { requestId: "create-grok", prompt: "analyze the feature", provider: "openai" },
       });
       assert.isFalse(isToolError(response.result), toolErrorText(response.result));
       const payload = toolResultJson(response.result);
-      assert.equal(payload.provider, "grok");
+      assert.equal(payload.provider, "openai");
       assert.strictEqual("parentThreadId" in payload, false);
 
       assert.equal(harness.dispatched.length, 3);
@@ -1975,7 +1975,7 @@ describe("AgentGateway", () => {
         // Gateway-created threads are ordinary top-level threads, not subagents.
         assert.strictEqual("parentThreadId" in create, false);
         assert.strictEqual("subagentNickname" in create, false);
-        assert.equal(create.modelSelection.provider, "grok");
+        assert.equal(create.modelSelection.provider, "openai");
         // Project and runtime mode default from the calling thread.
         assert.equal(create.projectId, PROJECT_ID);
         assert.equal(create.runtimeMode, "approval-required");
@@ -2005,7 +2005,7 @@ describe("AgentGateway", () => {
             {
               prompt: "plan the OpenCode work",
               target: {
-                provider: "opencode",
+                provider: "openai",
                 model: "openai/gpt-5",
                 options: { agent: "plan" },
               },
@@ -2013,7 +2013,7 @@ describe("AgentGateway", () => {
             {
               prompt: "plan the Kilo work",
               target: {
-                provider: "kilo",
+                provider: "openai",
                 model: "kilo/kilo-auto/free",
                 options: { agent: "plan" },
               },
@@ -2046,7 +2046,7 @@ describe("AgentGateway", () => {
         args: {
           requestId: "create-worktree",
           prompt: "refactor module X",
-          provider: "claudeAgent",
+          provider: "anthropic",
           environment: "worktree",
         },
       });
@@ -2084,7 +2084,7 @@ describe("AgentGateway", () => {
         args: {
           requestId: "explicit-head-from-caller-worktree",
           prompt: "continue from this checkout",
-          provider: "codex",
+          provider: "openai",
           environment: "worktree",
           baseRef: "HEAD",
         },
@@ -2109,7 +2109,7 @@ describe("AgentGateway", () => {
         args: {
           requestId: "github-pr-head",
           prompt: "review the pull request",
-          provider: "codex",
+          provider: "openai",
           environment: "worktree",
           baseRef: "https://github.com/example/repo/pull/425",
         },
@@ -2135,7 +2135,7 @@ describe("AgentGateway", () => {
         args: {
           requestId: "local-pull-path-ref",
           prompt: "continue from the local ref",
-          provider: "codex",
+          provider: "openai",
           environment: "worktree",
           baseRef: "feature/pull/425",
         },
@@ -2162,7 +2162,7 @@ describe("AgentGateway", () => {
       const response = yield* harness.callTool({
         token: "token-parent",
         name: "caide_create_thread",
-        args: { requestId: "create-crowded", prompt: "one more", provider: "codex" },
+        args: { requestId: "create-crowded", prompt: "one more", provider: "openai" },
       });
       assert.isFalse(isToolError(response.result), toolErrorText(response.result));
       assert.equal(harness.dispatched.length, 3);
@@ -2593,7 +2593,7 @@ describe("AgentGateway", () => {
           threads: [
             {
               prompt: "must not reuse it",
-              target: { provider: "codex", model: "gpt-5.5" },
+              target: { provider: "openai", model: "gpt-5.5" },
               environment: "worktree",
               branchName: "agent/user-owned",
             },
@@ -2632,7 +2632,7 @@ describe("AgentGateway", () => {
           threads: [
             {
               prompt: "create too late",
-              target: { provider: "codex", model: "gpt-5.5" },
+              target: { provider: "openai", model: "gpt-5.5" },
             },
           ],
         },
@@ -2670,7 +2670,7 @@ describe("AgentGateway", () => {
                 threads: [
                   {
                     prompt: "worker from turn A",
-                    target: { provider: "codex", model: "gpt-5.5" },
+                    target: { provider: "openai", model: "gpt-5.5" },
                     environment: "worktree",
                   },
                 ],
@@ -2688,7 +2688,7 @@ describe("AgentGateway", () => {
                 threads: [
                   {
                     prompt: "late worker",
-                    target: { provider: "codex", model: "gpt-5.5" },
+                    target: { provider: "openai", model: "gpt-5.5" },
                   },
                 ],
               },
@@ -2750,12 +2750,12 @@ describe("AgentGateway", () => {
           name: "caide_create_threads",
           args: {
             requestId: "late-batch",
-            threads: [{ prompt: "late", target: { provider: "codex", model: "gpt-5.5" } }],
+            threads: [{ prompt: "late", target: { provider: "openai", model: "gpt-5.5" } }],
           },
         },
         {
           name: "caide_create_thread",
-          args: { requestId: "late-single", prompt: "late", provider: "codex" },
+          args: { requestId: "late-single", prompt: "late", provider: "openai" },
         },
         {
           name: "caide_send_message",
@@ -2809,10 +2809,10 @@ describe("AgentGateway", () => {
       const args = {
         requestId: "two-workers",
         threads: [
-          { prompt: "worker one", target: { provider: "codex", model: "gpt-5.5" } },
+          { prompt: "worker one", target: { provider: "openai", model: "gpt-5.5" } },
           {
             prompt: "worker two",
-            target: { provider: "claudeAgent", model: "claude-sonnet-5" },
+            target: { provider: "anthropic", model: "claude-sonnet-5" },
           },
         ],
       };
@@ -2823,7 +2823,7 @@ describe("AgentGateway", () => {
       });
       harness.setProviderStatuses([
         {
-          provider: "codex",
+          provider: "openai",
           status: "error",
           available: false,
           authStatus: "unauthenticated",
@@ -2831,7 +2831,7 @@ describe("AgentGateway", () => {
           message: "temporarily unavailable after dispatch",
         },
         {
-          provider: "claudeAgent",
+          provider: "anthropic",
           status: "error",
           available: false,
           authStatus: "unauthenticated",
@@ -2883,7 +2883,7 @@ describe("AgentGateway", () => {
           threads: [
             {
               prompt: "changed payload",
-              target: { provider: "codex", model: "made-up-model" },
+              target: { provider: "openai", model: "made-up-model" },
             },
           ],
         },
@@ -2930,7 +2930,7 @@ describe("AgentGateway", () => {
             threads: [
               {
                 prompt: "one exact worker",
-                target: { provider: "codex", model: "gpt-5.5" },
+                target: { provider: "openai", model: "gpt-5.5" },
                 environment: "worktree",
               },
             ],
@@ -2968,7 +2968,7 @@ describe("AgentGateway", () => {
           name: "caide_create_threads",
           args: {
             requestId,
-            threads: [{ prompt, target: { provider: "codex", model: "gpt-5.5" } }],
+            threads: [{ prompt, target: { provider: "openai", model: "gpt-5.5" } }],
           },
         });
       yield* create("first-plan", "first");
@@ -2980,7 +2980,7 @@ describe("AgentGateway", () => {
           threads: [
             {
               prompt: "invalid second plan",
-              target: { provider: "codex", model: "made-up-model" },
+              target: { provider: "openai", model: "made-up-model" },
             },
           ],
         },
@@ -3009,7 +3009,7 @@ describe("AgentGateway", () => {
           threads: [
             {
               prompt: "inspect repo",
-              target: { provider: "codex", model: "gpt-5.6-terra-low" },
+              target: { provider: "openai", model: "gpt-5.6-terra-low" },
             },
           ],
         },
@@ -3027,7 +3027,7 @@ describe("AgentGateway", () => {
     const { gatewayLayer, makeHarness } = makeHarnessLayer(baseThreads, [], {
       providerStatuses: [
         {
-          provider: "claudeAgent",
+          provider: "anthropic",
           status: "error",
           available: false,
           authStatus: "unauthenticated",
@@ -3046,7 +3046,7 @@ describe("AgentGateway", () => {
           threads: [
             {
               prompt: "must not dispatch",
-              target: { provider: "claudeAgent", model: "claude-sonnet-5" },
+              target: { provider: "anthropic", model: "claude-sonnet-5" },
             },
           ],
         },
@@ -3073,7 +3073,7 @@ describe("AgentGateway", () => {
             {
               prompt: "inspect repo",
               target: {
-                provider: "codex",
+                provider: "openai",
                 model: "gpt-5.6-terra",
                 options: { reasoningEffort: "low" },
               },
@@ -3086,7 +3086,7 @@ describe("AgentGateway", () => {
       assert.equal(create?.type, "thread.create");
       if (create?.type === "thread.create") {
         assert.deepEqual(create.modelSelection, {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5.6-terra",
           options: { reasoningEffort: "low" },
         });
@@ -3104,10 +3104,10 @@ describe("AgentGateway", () => {
         args: {
           requestId: "atomic-preflight",
           threads: [
-            { prompt: "valid", target: { provider: "codex", model: "gpt-5.5" } },
+            { prompt: "valid", target: { provider: "openai", model: "gpt-5.5" } },
             {
               prompt: "invalid",
-              target: { provider: "claudeAgent", model: "made-up-claude" },
+              target: { provider: "anthropic", model: "made-up-claude" },
             },
           ],
         },
@@ -3133,7 +3133,7 @@ describe("AgentGateway", () => {
             threads: [
               {
                 prompt: "must not leak a worktree",
-                target: { provider: "codex", model: "gpt-5.5" },
+                target: { provider: "openai", model: "gpt-5.5" },
                 environment: "worktree",
               },
             ],
@@ -3171,7 +3171,7 @@ describe("AgentGateway", () => {
           threads: [
             {
               prompt: "retain cleanup evidence",
-              target: { provider: "codex", model: "gpt-5.5" },
+              target: { provider: "openai", model: "gpt-5.5" },
               environment: "worktree",
             },
           ],
@@ -3212,7 +3212,7 @@ describe("AgentGateway", () => {
             threads: [
               {
                 prompt: "must not strand a reserved operation",
-                target: { provider: "codex", model: "gpt-5.5" },
+                target: { provider: "openai", model: "gpt-5.5" },
               },
             ],
           },
@@ -3254,7 +3254,7 @@ describe("AgentGateway", () => {
             threads: [
               {
                 prompt: "must compensate the interrupted worktree",
-                target: { provider: "codex", model: "gpt-5.5" },
+                target: { provider: "openai", model: "gpt-5.5" },
                 environment: "worktree",
               },
             ],
@@ -3317,7 +3317,7 @@ describe("AgentGateway", () => {
             threads: [
               {
                 prompt: "must not block interruption on the setup script",
-                target: { provider: "codex", model: "gpt-5.5" },
+                target: { provider: "openai", model: "gpt-5.5" },
                 environment: "worktree",
               },
             ],
@@ -3365,7 +3365,7 @@ describe("AgentGateway", () => {
             threads: [
               {
                 prompt: "must compensate the interrupted child",
-                target: { provider: "codex", model: "gpt-5.5" },
+                target: { provider: "openai", model: "gpt-5.5" },
               },
             ],
           },
@@ -3414,7 +3414,7 @@ describe("AgentGateway", () => {
         threads: [
           {
             prompt: "keep the committed child",
-            target: { provider: "codex", model: "gpt-5.5" },
+            target: { provider: "openai", model: "gpt-5.5" },
           },
         ],
       },
@@ -3471,12 +3471,12 @@ describe("AgentGateway", () => {
           threads: [
             {
               prompt: "first",
-              target: { provider: "codex", model: "gpt-5.5" },
+              target: { provider: "openai", model: "gpt-5.5" },
               environment: "worktree",
             },
             {
               prompt: "second",
-              target: { provider: "claudeAgent", model: "claude-sonnet-5" },
+              target: { provider: "anthropic", model: "claude-sonnet-5" },
               environment: "worktree",
             },
           ],
@@ -3518,7 +3518,7 @@ describe("AgentGateway", () => {
           threads: [
             {
               prompt: "dispatch then compensate",
-              target: { provider: "codex", model: "gpt-5.5" },
+              target: { provider: "openai", model: "gpt-5.5" },
             },
           ],
         },
@@ -3555,7 +3555,7 @@ describe("AgentGateway", () => {
           threads: [
             {
               prompt: "fail and compensate",
-              target: { provider: "codex", model: "gpt-5.5" },
+              target: { provider: "openai", model: "gpt-5.5" },
             },
           ],
         },
@@ -3794,14 +3794,14 @@ describe("AgentGateway", () => {
           {
             prompt: "What is this repository about?",
             target: {
-              provider: "codex",
+              provider: "openai",
               model: "gpt-5.6-terra",
               options: { reasoningEffort: "low" },
             },
           },
           {
             prompt: "What is this repository about?",
-            target: { provider: "claudeAgent", model: "claude-sonnet-5" },
+            target: { provider: "anthropic", model: "claude-sonnet-5" },
           },
         ],
       };
@@ -3828,11 +3828,11 @@ describe("AgentGateway", () => {
           modelSelection:
             index === 0
               ? {
-                  provider: "codex",
+                  provider: "openai",
                   model: "gpt-5.6-terra",
                   options: { reasoningEffort: "low" },
                 }
-              : { provider: "claudeAgent", model: "claude-sonnet-5" },
+              : { provider: "anthropic", model: "claude-sonnet-5" },
           latestTurn: {
             turnId: runId,
             state: "completed",
@@ -3893,7 +3893,7 @@ describe("AgentGateway", () => {
           threads: [
             {
               prompt: "Try again",
-              target: { provider: "opencode", model: "openai/gpt-5" },
+              target: { provider: "openai", model: "openai/gpt-5" },
             },
           ],
         },
@@ -3908,11 +3908,11 @@ describe("AgentGateway", () => {
         creates.map((command) => command.modelSelection),
         [
           {
-            provider: "codex",
+            provider: "openai",
             model: "gpt-5.6-terra",
             options: { reasoningEffort: "low" },
           },
-          { provider: "claudeAgent", model: "claude-sonnet-5" },
+          { provider: "anthropic", model: "claude-sonnet-5" },
         ],
       );
     }).pipe(Effect.provide(gatewayLayer));
@@ -3932,7 +3932,7 @@ describe("AgentGateway", () => {
       session: {
         threadId: ThreadId.makeUnsafe("thread-wait-failed"),
         status: "error",
-        providerName: "claudeAgent",
+        providerName: "anthropic",
         runtimeMode: "approval-required",
         activeTurnId: null,
         lastError: "Child failed",
@@ -4055,7 +4055,7 @@ describe("AgentGateway", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-child"),
           status: "running",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: TurnId.makeUnsafe("turn-live"),
           lastError: null,
@@ -4211,7 +4211,7 @@ describe("AgentGateway", () => {
         args: {
           requestId: "create-local-rejected",
           prompt: "touch the main checkout",
-          provider: "codex",
+          provider: "openai",
           environment: "local",
         },
       });
@@ -4223,7 +4223,7 @@ describe("AgentGateway", () => {
       const defaulted = yield* harness.callTool({
         token: "token-parent",
         name: "caide_create_thread",
-        args: { requestId: "create-isolated", prompt: "do isolated work", provider: "codex" },
+        args: { requestId: "create-isolated", prompt: "do isolated work", provider: "openai" },
       });
       assert.isFalse(isToolError(defaulted.result), toolErrorText(defaulted.result));
       assert.equal(toolResultJson(defaulted.result).environment, "worktree");
@@ -4245,7 +4245,7 @@ describe("AgentGateway", () => {
         args: {
           requestId: "create-escalated",
           prompt: "escalate please",
-          provider: "codex",
+          provider: "openai",
           runtimeMode: "full-access",
         },
       });

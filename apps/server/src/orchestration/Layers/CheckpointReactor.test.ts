@@ -79,7 +79,7 @@ function createProviderServiceHarness(
   cwd: string,
   hasSession = true,
   sessionCwd = cwd,
-  providerName: ProviderSession["provider"] = "codex",
+  providerName: ProviderSession["provider"] = "openai",
   providerStatus: ProviderSession["status"] = "ready",
   activeTurnId?: TurnId,
 ) {
@@ -320,7 +320,7 @@ describe("CheckpointReactor", () => {
       cwd,
       options?.hasSession ?? true,
       options?.providerSessionCwd ?? cwd,
-      options?.providerName ?? "codex",
+      options?.providerName ?? "openai",
       options?.providerStatus ?? "ready",
       options?.providerActiveTurnId,
     );
@@ -395,7 +395,7 @@ describe("CheckpointReactor", () => {
         title: "Test Project",
         workspaceRoot: options?.projectWorkspaceRoot ?? cwd,
         defaultModelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5-codex",
         },
         createdAt,
@@ -409,7 +409,7 @@ describe("CheckpointReactor", () => {
         projectId: asProjectId("project-1"),
         title: "Thread",
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5-codex",
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -465,7 +465,7 @@ describe("CheckpointReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -478,7 +478,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.started",
       eventId: EventId.makeUnsafe("evt-turn-started-1"),
-      provider: "codex",
+      provider: "openai",
 
       createdAt: new Date().toISOString(),
       threadId: ThreadId.makeUnsafe("thread-1"),
@@ -497,7 +497,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.completed",
       eventId: EventId.makeUnsafe("evt-turn-completed-1"),
-      provider: "codex",
+      provider: "openai",
 
       createdAt: new Date().toISOString(),
       threadId: ThreadId.makeUnsafe("thread-1"),
@@ -568,7 +568,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.started",
       eventId: EventId.makeUnsafe("evt-turn-a-started"),
-      provider: "codex",
+      provider: "openai",
       createdAt,
       threadId,
       turnId: firstTurnId,
@@ -578,7 +578,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.completed",
       eventId: EventId.makeUnsafe("evt-turn-a-completed"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId,
       turnId: firstTurnId,
@@ -614,7 +614,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.started",
       eventId: EventId.makeUnsafe("evt-turn-b-started"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId,
       turnId: secondTurnId,
@@ -624,7 +624,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.completed",
       eventId: EventId.makeUnsafe("evt-turn-b-completed"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId,
       turnId: secondTurnId,
@@ -678,7 +678,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.started",
       eventId: EventId.makeUnsafe("evt-turn-missing-baseline-started"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId,
       turnId,
@@ -708,7 +708,7 @@ describe("CheckpointReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: turnId,
           lastError: null,
@@ -721,7 +721,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.started",
       eventId: EventId.makeUnsafe("evt-turn-started-assistant-race"),
-      provider: "codex",
+      provider: "openai",
       createdAt,
       threadId: ThreadId.makeUnsafe("thread-1"),
       turnId,
@@ -750,7 +750,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.completed",
       eventId: EventId.makeUnsafe("evt-turn-completed-assistant-race"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: ThreadId.makeUnsafe("thread-1"),
       turnId,
@@ -803,7 +803,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.started",
       eventId: EventId.makeUnsafe("evt-turn-started-placeholder-race"),
-      provider: "codex",
+      provider: "openai",
       createdAt,
       threadId: ThreadId.makeUnsafe("thread-1"),
       turnId,
@@ -857,7 +857,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.completed",
       eventId: EventId.makeUnsafe("evt-turn-completed-placeholder-race"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: ThreadId.makeUnsafe("thread-1"),
       turnId,
@@ -903,7 +903,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.started",
       eventId: EventId.makeUnsafe("evt-turn-started-placeholder-final"),
-      provider: "codex",
+      provider: "openai",
       createdAt,
       threadId,
       turnId,
@@ -931,7 +931,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.completed",
       eventId: EventId.makeUnsafe("evt-turn-completed-placeholder-final"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId,
       turnId,
@@ -968,7 +968,7 @@ describe("CheckpointReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-main"),
           lastError: null,
@@ -981,7 +981,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.started",
       eventId: EventId.makeUnsafe("evt-turn-started-main"),
-      provider: "codex",
+      provider: "openai",
 
       createdAt: new Date().toISOString(),
       threadId: ThreadId.makeUnsafe("thread-1"),
@@ -997,7 +997,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.completed",
       eventId: EventId.makeUnsafe("evt-turn-completed-aux"),
-      provider: "codex",
+      provider: "openai",
 
       createdAt: new Date().toISOString(),
       threadId: ThreadId.makeUnsafe("thread-1"),
@@ -1015,7 +1015,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.completed",
       eventId: EventId.makeUnsafe("evt-turn-completed-main"),
-      provider: "codex",
+      provider: "openai",
 
       createdAt: new Date().toISOString(),
       threadId: ThreadId.makeUnsafe("thread-1"),
@@ -1033,7 +1033,7 @@ describe("CheckpointReactor", () => {
   it("captures pre-turn and completion checkpoints for claude runtime events", async () => {
     const harness = await createHarness({
       seedFilesystemCheckpoints: false,
-      providerName: "claudeAgent",
+      providerName: "anthropic",
     });
     const createdAt = new Date().toISOString();
 
@@ -1045,7 +1045,7 @@ describe("CheckpointReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "claudeAgent",
+          providerName: "anthropic",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -1058,7 +1058,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.started",
       eventId: EventId.makeUnsafe("evt-turn-started-claude-1"),
-      provider: "claudeAgent",
+      provider: "anthropic",
       createdAt: new Date().toISOString(),
       threadId: ThreadId.makeUnsafe("thread-1"),
       turnId: asTurnId("turn-claude-1"),
@@ -1072,7 +1072,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.completed",
       eventId: EventId.makeUnsafe("evt-turn-completed-claude-1"),
-      provider: "claudeAgent",
+      provider: "anthropic",
       createdAt: new Date().toISOString(),
       threadId: ThreadId.makeUnsafe("thread-1"),
       turnId: asTurnId("turn-claude-1"),
@@ -1094,7 +1094,7 @@ describe("CheckpointReactor", () => {
   it("derives a live turn-diff placeholder from git for claude file edits mid-turn", async () => {
     const harness = await createHarness({
       seedFilesystemCheckpoints: false,
-      providerName: "claudeAgent",
+      providerName: "anthropic",
     });
     const threadId = ThreadId.makeUnsafe("thread-1");
     const turnId = asTurnId("turn-claude-live");
@@ -1108,7 +1108,7 @@ describe("CheckpointReactor", () => {
         session: {
           threadId,
           status: "running",
-          providerName: "claudeAgent",
+          providerName: "anthropic",
           runtimeMode: "approval-required",
           activeTurnId: turnId,
           lastError: null,
@@ -1121,7 +1121,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.started",
       eventId: EventId.makeUnsafe("evt-turn-started-claude-live"),
-      provider: "claudeAgent",
+      provider: "anthropic",
       createdAt: new Date().toISOString(),
       threadId,
       turnId,
@@ -1133,7 +1133,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "item.completed",
       eventId: EventId.makeUnsafe("evt-item-file-change-live"),
-      provider: "claudeAgent",
+      provider: "anthropic",
       createdAt: new Date().toISOString(),
       threadId,
       turnId,
@@ -1165,7 +1165,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.completed",
       eventId: EventId.makeUnsafe("evt-turn-completed-claude-live"),
-      provider: "claudeAgent",
+      provider: "anthropic",
       createdAt: new Date().toISOString(),
       threadId,
       turnId,
@@ -1196,7 +1196,7 @@ describe("CheckpointReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -1209,7 +1209,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.completed",
       eventId: EventId.makeUnsafe("evt-turn-completed-missing-baseline"),
-      provider: "codex",
+      provider: "openai",
 
       createdAt: new Date().toISOString(),
       threadId: ThreadId.makeUnsafe("thread-1"),
@@ -1284,7 +1284,7 @@ describe("CheckpointReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-missing-cwd"),
           lastError: null,
@@ -1298,7 +1298,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.completed",
       eventId: EventId.makeUnsafe("evt-turn-completed-missing-provider-cwd"),
-      provider: "codex",
+      provider: "openai",
 
       createdAt: new Date().toISOString(),
       threadId: ThreadId.makeUnsafe("thread-1"),
@@ -1331,7 +1331,7 @@ describe("CheckpointReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -1344,7 +1344,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "checkpoint.captured",
       eventId: EventId.makeUnsafe("evt-checkpoint-captured-3"),
-      provider: "codex",
+      provider: "openai",
 
       createdAt: new Date().toISOString(),
       threadId: ThreadId.makeUnsafe("thread-1"),
@@ -1382,7 +1382,7 @@ describe("CheckpointReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -1395,7 +1395,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.completed",
       eventId: EventId.makeUnsafe("evt-runtime-capture-failure"),
-      provider: "codex",
+      provider: "openai",
 
       createdAt: new Date().toISOString(),
       threadId: ThreadId.makeUnsafe("thread-1"),
@@ -1406,7 +1406,7 @@ describe("CheckpointReactor", () => {
     harness.provider.emit({
       type: "turn.started",
       eventId: EventId.makeUnsafe("evt-turn-started-after-runtime-failure"),
-      provider: "codex",
+      provider: "openai",
 
       createdAt: new Date().toISOString(),
       threadId: ThreadId.makeUnsafe("thread-1"),
@@ -1434,7 +1434,7 @@ describe("CheckpointReactor", () => {
   it("undoes turn files without trimming chat or rolling back the Claude conversation", async () => {
     const harness = await createHarness({
       seedFilesystemCheckpoints: false,
-      providerName: "claudeAgent",
+      providerName: "anthropic",
     });
     const createdAt = new Date().toISOString();
     const threadId = ThreadId.makeUnsafe("thread-1");
@@ -1504,7 +1504,7 @@ describe("CheckpointReactor", () => {
         session: {
           threadId,
           status: "ready",
-          providerName: "claudeAgent",
+          providerName: "anthropic",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -1812,7 +1812,7 @@ describe("CheckpointReactor", () => {
         session: {
           threadId,
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -1874,7 +1874,7 @@ describe("CheckpointReactor", () => {
         threadId: childThreadId,
         projectId: asProjectId("project-1"),
         title: "Child revert",
-        modelSelection: { provider: "codex", model: "gpt-5-codex" },
+        modelSelection: { provider: "openai", model: "gpt-5-codex" },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
         runtimeMode: "approval-required",
         parentThreadId: ThreadId.makeUnsafe("thread-1"),
@@ -1926,7 +1926,7 @@ describe("CheckpointReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -2061,7 +2061,7 @@ describe("CheckpointReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -2141,7 +2141,7 @@ describe("CheckpointReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -2337,7 +2337,7 @@ describe("CheckpointReactor", () => {
         session: {
           threadId,
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -2395,7 +2395,7 @@ describe("CheckpointReactor", () => {
         session: {
           threadId,
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -2443,7 +2443,7 @@ describe("CheckpointReactor", () => {
   });
 
   it("executes provider revert and emits thread.reverted for claude sessions", async () => {
-    const harness = await createHarness({ providerName: "claudeAgent" });
+    const harness = await createHarness({ providerName: "anthropic" });
     const createdAt = new Date().toISOString();
 
     await Effect.runPromise(
@@ -2454,7 +2454,7 @@ describe("CheckpointReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "claudeAgent",
+          providerName: "anthropic",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -2524,7 +2524,7 @@ describe("CheckpointReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,

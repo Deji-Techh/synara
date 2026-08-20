@@ -13,7 +13,7 @@ export default Effect.gen(function* () {
     yield* sql.unsafe(`
       ALTER TABLE external_mcp_integrations
       ADD COLUMN client_kind TEXT NOT NULL DEFAULT 'other'
-      CHECK (client_kind IN ('codex', 'claudeCode', 'claudeDesktop', 'other'))
+      CHECK (client_kind IN ('openai', 'claudeCode', 'claudeDesktop', 'other'))
     `);
   }
 

@@ -61,7 +61,7 @@ async function createThreadReadModel(now: string) {
         threadId: THREAD_ID,
         projectId: PROJECT_ID,
         title: "Thread",
-        modelSelection: { provider: "codex", model: "gpt-5-codex" },
+        modelSelection: { provider: "openai", model: "gpt-5-codex" },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
         runtimeMode: "full-access",
         envMode: "local",

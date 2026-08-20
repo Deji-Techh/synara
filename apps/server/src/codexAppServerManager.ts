@@ -84,7 +84,7 @@ import {
   parseCodexSkillsListResponse,
 } from "./provider/codexDiscoveryCatalog.ts";
 
-const log = createLogger("codex");
+const log = createLogger("openai");
 
 type PendingRequestKey = string;
 
@@ -267,7 +267,7 @@ type CodexAppServerReviewTarget = ProviderStartReviewInput["target"];
 
 export interface CodexAppServerStartSessionInput {
   readonly threadId: ThreadId;
-  readonly provider?: "codex";
+  readonly provider?: "openai";
   readonly lifecycleGeneration?: string;
   readonly cwd?: string;
   readonly model?: string;
@@ -1049,7 +1049,7 @@ export class CodexAppServerManager extends EventEmitter<CodexAppServerManagerEve
       const resolvedCwd = input.cwd ?? ensureIsolatedScratchWorkspace(threadId);
 
       const session: ProviderSession = {
-        provider: "codex",
+        provider: "openai",
         status: "connecting",
         runtimeMode: input.runtimeMode,
         model: normalizeCodexModelSlug(input.model),
@@ -1060,7 +1060,7 @@ export class CodexAppServerManager extends EventEmitter<CodexAppServerManagerEve
       };
 
       const codexOptions = readCodexProviderOptions(input);
-      const codexBinaryPath = codexOptions.binaryPath ?? "codex";
+      const codexBinaryPath = codexOptions.binaryPath ?? "openai";
       const codexHomePath = codexOptions.homePath;
       await this.assertSupportedCodexCliVersion({
         binaryPath: codexBinaryPath,
@@ -1267,7 +1267,7 @@ export class CodexAppServerManager extends EventEmitter<CodexAppServerManagerEve
         this.emitEvent({
           id: EventId.makeUnsafe(randomUUID()),
           kind: "error",
-          provider: "codex",
+          provider: "openai",
           threadId,
           createdAt: new Date().toISOString(),
           ...(input.lifecycleGeneration !== undefined
@@ -1759,7 +1759,7 @@ export class CodexAppServerManager extends EventEmitter<CodexAppServerManagerEve
     this.emitEvent({
       id: EventId.makeUnsafe(randomUUID()),
       kind: "notification",
-      provider: "codex",
+      provider: "openai",
       threadId: context.session.threadId,
       createdAt: new Date().toISOString(),
       ...(context.lifecycleGeneration !== undefined
@@ -1827,11 +1827,11 @@ export class CodexAppServerManager extends EventEmitter<CodexAppServerManagerEve
 
       const resolvedCwd = input.cwd ?? ensureIsolatedScratchWorkspace(threadId);
       const session: ProviderSession = {
-        provider: "codex",
+        provider: "openai",
         status: "connecting",
         runtimeMode: input.runtimeMode,
         model:
-          input.modelSelection?.provider === "codex"
+          input.modelSelection?.provider === "openai"
             ? normalizeCodexModelSlug(input.modelSelection.model)
             : undefined,
         cwd: resolvedCwd,
@@ -1846,7 +1846,7 @@ export class CodexAppServerManager extends EventEmitter<CodexAppServerManagerEve
         runtimeMode: input.runtimeMode,
         ...(input.cwd !== undefined ? { cwd: input.cwd } : {}),
       });
-      const codexBinaryPath = codexOptions.binaryPath ?? "codex";
+      const codexBinaryPath = codexOptions.binaryPath ?? "openai";
       const codexHomePath = codexOptions.homePath;
       await this.assertSupportedCodexCliVersion({
         binaryPath: codexBinaryPath,
@@ -1902,14 +1902,14 @@ export class CodexAppServerManager extends EventEmitter<CodexAppServerManagerEve
       }
 
       const normalizedModel =
-        input.modelSelection?.provider === "codex"
+        input.modelSelection?.provider === "openai"
           ? resolveCodexModelForAccount(
               normalizeCodexModelSlug(input.modelSelection.model),
               context.account,
             )
           : undefined;
       const useFastServiceTier =
-        input.modelSelection?.provider === "codex" &&
+        input.modelSelection?.provider === "openai" &&
         getModelSelectionBooleanOptionValue(input.modelSelection, "fastMode") === true;
       const forkParams = {
         threadId: sourceProviderThreadId,
@@ -2013,7 +2013,7 @@ export class CodexAppServerManager extends EventEmitter<CodexAppServerManagerEve
     this.emitEvent({
       id: EventId.makeUnsafe(randomUUID()),
       kind: "notification",
-      provider: "codex",
+      provider: "openai",
       threadId: context.session.threadId,
       createdAt: new Date().toISOString(),
       ...(context.lifecycleGeneration !== undefined
@@ -2079,7 +2079,7 @@ export class CodexAppServerManager extends EventEmitter<CodexAppServerManagerEve
     this.emitEvent({
       id: EventId.makeUnsafe(randomUUID()),
       kind: "notification",
-      provider: "codex",
+      provider: "openai",
       threadId: context.session.threadId,
       createdAt: new Date().toISOString(),
       ...(context.lifecycleGeneration !== undefined
@@ -2171,7 +2171,7 @@ export class CodexAppServerManager extends EventEmitter<CodexAppServerManagerEve
     this.emitEvent({
       id: EventId.makeUnsafe(randomUUID()),
       kind: "notification",
-      provider: "codex",
+      provider: "openai",
       threadId: context.session.threadId,
       createdAt: new Date().toISOString(),
       ...(context.lifecycleGeneration !== undefined
@@ -2532,7 +2532,7 @@ export class CodexAppServerManager extends EventEmitter<CodexAppServerManagerEve
 
   getComposerCapabilities(): ProviderComposerCapabilities {
     return {
-      provider: "codex",
+      provider: "openai",
       supportsSkillMentions: true,
       supportsSkillDiscovery: true,
       supportsNativeSlashCommandDiscovery: false,
@@ -2738,17 +2738,17 @@ export class CodexAppServerManager extends EventEmitter<CodexAppServerManagerEve
 
     const now = new Date().toISOString();
     await this.assertSupportedCodexCliVersion({
-      binaryPath: "codex",
+      binaryPath: "openai",
       cwd: normalizedCwd,
     });
     const child = spawnCodexAppServer({
-      binaryPath: "codex",
+      binaryPath: "openai",
       cwd: normalizedCwd,
       env: await buildCodexProcessEnv(),
     });
     const context: CodexSessionContext = {
       session: {
-        provider: "codex",
+        provider: "openai",
         status: "connecting",
         runtimeMode: "full-access",
         model: CODEX_DEFAULT_MODEL,
@@ -3093,7 +3093,7 @@ export class CodexAppServerManager extends EventEmitter<CodexAppServerManagerEve
     this.emitEvent({
       id: EventId.makeUnsafe(randomUUID()),
       kind: "notification",
-      provider: "codex",
+      provider: "openai",
       threadId: context.session.threadId,
       createdAt: new Date().toISOString(),
       ...(context.lifecycleGeneration !== undefined
@@ -3363,7 +3363,7 @@ export class CodexAppServerManager extends EventEmitter<CodexAppServerManagerEve
     this.emitEvent({
       id: EventId.makeUnsafe(randomUUID()),
       kind: "request",
-      provider: "codex",
+      provider: "openai",
       threadId: context.session.threadId,
       createdAt: new Date().toISOString(),
       ...(context.lifecycleGeneration !== undefined
@@ -3474,7 +3474,7 @@ export class CodexAppServerManager extends EventEmitter<CodexAppServerManagerEve
     this.emitEvent({
       id: EventId.makeUnsafe(randomUUID()),
       kind: "session",
-      provider: "codex",
+      provider: "openai",
       threadId: context.session.threadId,
       createdAt: new Date().toISOString(),
       ...(context.lifecycleGeneration !== undefined
@@ -3492,7 +3492,7 @@ export class CodexAppServerManager extends EventEmitter<CodexAppServerManagerEve
     this.emitEvent({
       id: EventId.makeUnsafe(randomUUID()),
       kind: "error",
-      provider: "codex",
+      provider: "openai",
       threadId: context.session.threadId,
       createdAt: new Date().toISOString(),
       ...(context.lifecycleGeneration !== undefined
@@ -3556,7 +3556,7 @@ export class CodexAppServerManager extends EventEmitter<CodexAppServerManagerEve
       this.emitEvent({
         id: EventId.makeUnsafe(randomUUID()),
         kind: "notification",
-        provider: "codex",
+        provider: "openai",
         threadId: context.session.threadId,
         createdAt: new Date().toISOString(),
         ...(context.lifecycleGeneration !== undefined
@@ -3609,7 +3609,7 @@ export class CodexAppServerManager extends EventEmitter<CodexAppServerManagerEve
     this.emitEvent({
       id: EventId.makeUnsafe(randomUUID()),
       kind: "notification",
-      provider: "codex",
+      provider: "openai",
       threadId: context.session.threadId,
       createdAt: new Date().toISOString(),
       ...(context.lifecycleGeneration !== undefined

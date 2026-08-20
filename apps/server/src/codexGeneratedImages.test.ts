@@ -18,7 +18,7 @@ function makeImageGenerationCompletedEvent(overrides?: {
 }): ProviderRuntimeEvent {
   return {
     eventId: "evt-1",
-    provider: "codex",
+    provider: "openai",
     threadId: "thread-1",
     createdAt: new Date(0).toISOString(),
     type: "item.completed",

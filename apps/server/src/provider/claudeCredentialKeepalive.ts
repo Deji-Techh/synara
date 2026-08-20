@@ -52,7 +52,7 @@ export function isClaudeCredentialKeepaliveEnabled(
 
 // Mirrors the Claude Agent adapter default while honoring persisted custom CLI paths.
 export function resolveClaudeCredentialKeepaliveBinaryPath(binaryPath: string | undefined): string {
-  return binaryPath?.trim() || "claude";
+  return binaryPath?.trim() || "anthropic";
 }
 
 // Caps the tuning knob before setInterval can overflow into Node's 1ms clamp behavior.

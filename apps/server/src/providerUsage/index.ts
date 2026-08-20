@@ -5,7 +5,6 @@
 // plain async API (for tests) and an Effect that reads ServerConfig (for the WS RPC handler).
 
 import type {
-  ProviderCliKind,
   ProviderKind,
   ServerListProviderUsageInput,
   ServerListProviderUsageResult,
@@ -14,18 +13,10 @@ import type {
 import { Effect } from "effect";
 
 import { ServerConfig } from "../config";
-import { buildProviderChildEnvironment, type ProviderChildKind } from "../providerChildEnvironment";
 import { ServerSettingsService } from "../serverSettings";
-import { loadLocalProviderUsageLines } from "../providerUsageSnapshot";
 import { errorSnapshot } from "./parse";
 import { PROVIDER_USAGE_FETCHERS } from "./registry";
 import type { ProviderUsageContext } from "./types";
-
-// Providers whose live snapshot is enriched with on-disk token-total lines (24h/7d/30d).
-const LOCAL_ARCHIVE_PROVIDERS: ReadonlySet<ProviderKind> = new Set(["codex", "claudeAgent"]);
-
-const providerChildKind = (provider: ProviderCliKind): ProviderChildKind =>
-  provider === "claudeAgent" ? "claude" : provider;
 
 function buildContext(): ProviderUsageContext {
   return {
@@ -58,19 +49,10 @@ async function fetchProviderUsage(
 }
 
 function buildProviderContext(
-  provider: ProviderKind,
+  _provider: ProviderKind,
   ctx: ProviderUsageContext,
 ): ProviderUsageContext {
-  if (!PROVIDER_USAGE_FETCHERS[provider]) {
-    return ctx;
-  }
-  return {
-    ...ctx,
-    env: buildProviderChildEnvironment({
-      provider: providerChildKind(provider as ProviderCliKind),
-      baseEnv: ctx.env,
-    }),
-  };
+  return ctx;
 }
 
 // Every UI surface (header chip, branch toolbar, settings panel) plus their periodic refetches
@@ -184,19 +166,9 @@ async function getProviderUsageSnapshot(
 
 async function enrichWithLocalUsage(
   snapshot: ServerProviderUsageSnapshot,
-  ctx: ProviderUsageContext,
+  _ctx: ProviderUsageContext,
 ): Promise<ServerProviderUsageSnapshot> {
-  if ((snapshot.status ?? "ok") !== "ok" || !LOCAL_ARCHIVE_PROVIDERS.has(snapshot.provider)) {
-    return snapshot;
-  }
-  const localLines = await loadLocalProviderUsageLines({
-    provider: snapshot.provider,
-    homeDir: ctx.homeDir,
-  });
-  if (localLines.length === 0) {
-    return snapshot;
-  }
-  return { ...snapshot, usageLines: [...snapshot.usageLines, ...localLines] };
+  return snapshot;
 }
 
 /** Plain async batch fetch for supported providers. Never throws. */
@@ -220,15 +192,13 @@ export async function collectProviderUsageSnapshots(
 
 export const listProviderUsage = Effect.fn(function* (input: ServerListProviderUsageInput) {
   const serverConfig = yield* ServerConfig;
-  const serverSettings = yield* ServerSettingsService;
-  const settings = yield* serverSettings.getSettings;
+  yield* ServerSettingsService;
   return yield* Effect.tryPromise({
     try: () =>
       collectProviderUsageSnapshots(
         {
           ...buildContext(),
           homeDir: serverConfig.homeDir,
-          claudeBinaryPath: settings.providers.claudeAgent.binaryPath,
         },
         {
           forceRefresh: input.forceRefresh === true,

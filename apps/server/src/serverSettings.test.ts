@@ -26,8 +26,8 @@ describe("ServerSettingsService", () => {
       }),
     );
 
-    expect(settings.providers.codex.binaryPath).toBe("codex");
-    expect(settings.providers.grok.binaryPath).toBe("grok");
+    expect(settings.providers.codex.binaryPath).toBe("openai");
+    expect(settings.providers.grok.binaryPath).toBe("openai");
     expect(settings.defaultThreadEnvMode).toBe("local");
     expect(settings.enableProviderUpdateChecks).toBe(true);
   });
@@ -88,7 +88,7 @@ describe("ServerSettingsService", () => {
             migrationVersion: 1,
             settings: {
               textGenerationModelSelection: {
-                provider: "codex",
+                provider: "openai",
                 model: "gpt-5.4-mini",
               },
             },
@@ -192,7 +192,7 @@ describe("ServerSettingsService", () => {
         Effect.provide(
           ServerSettingsService.layerTest({
             textGenerationModelSelection: {
-              provider: "antigravity",
+              provider: "google",
               model: DEFAULT_MODEL_BY_PROVIDER.antigravity,
             },
             providers: {
@@ -203,7 +203,7 @@ describe("ServerSettingsService", () => {
       ),
     );
 
-    expect(settings.textGenerationModelSelection.provider).toBe("codex");
+    expect(settings.textGenerationModelSelection.provider).toBe("openai");
     expect(settings.textGenerationModelSelection.model).toBe(DEFAULT_MODEL_BY_PROVIDER.codex);
   });
 });

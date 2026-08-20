@@ -13,7 +13,7 @@ import type { ToolContext, ToolEntry } from "./toolRuntime.ts";
 const THREAD = "thread-a";
 const DEVICE = "FAKE-0001";
 
-function makeContext(provider: ProviderKind = "claudeAgent"): ToolContext {
+function makeContext(provider: ProviderKind = "anthropic"): ToolContext {
   return {
     principal: {
       kind: "provider-session",
@@ -305,7 +305,7 @@ describe("agent gateway device tools without an approval gate", () => {
       ["device_launch", { udid: DEVICE, bundleId: "com.example.Demo" }],
       ["device_boot", { udid: "FAKE-0002" }],
     ] as const) {
-      const result = await call(name, args, "antigravity");
+      const result = await call(name, args, "google");
       expect(result.isError, `${name} should be refused`).toBe(true);
       const text = result.content.find((entry) => entry.type === "text");
       expect(text && text.type === "text" ? text.text : "").toContain("DeviceApprovalRequired");
@@ -319,9 +319,9 @@ describe("agent gateway device tools without an approval gate", () => {
   it("still allows the read tools for Antigravity", async () => {
     const { call } = await setup();
 
-    const list = await call("device_list", {}, "antigravity");
-    const describe = await call("device_describe_ui", { udid: DEVICE }, "antigravity");
-    const screenshot = await call("device_screenshot", { udid: DEVICE }, "antigravity");
+    const list = await call("device_list", {}, "google");
+    const describe = await call("device_describe_ui", { udid: DEVICE }, "google");
+    const screenshot = await call("device_screenshot", { udid: DEVICE }, "google");
 
     expect(list.isError).toBeUndefined();
     expect(describe.isError).toBeUndefined();
@@ -331,7 +331,7 @@ describe("agent gateway device tools without an approval gate", () => {
   it("allows every tool for providers that do gate approvals", async () => {
     const { call } = await setup();
 
-    const result = await call("device_tap", { udid: DEVICE, x: 5, y: 5 }, "codex");
+    const result = await call("device_tap", { udid: DEVICE, x: 5, y: 5 }, "openai");
 
     expect(result.isError).toBeUndefined();
   });

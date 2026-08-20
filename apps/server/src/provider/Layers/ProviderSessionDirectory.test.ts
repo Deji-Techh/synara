@@ -39,16 +39,16 @@ it.layer(makeDirectoryLayer(SqlitePersistenceMemory))("ProviderSessionDirectoryL
       const initialThreadId = ThreadId.makeUnsafe("thread-1");
 
       yield* directory.upsert({
-        provider: "codex",
+        provider: "openai",
         threadId: initialThreadId,
       });
 
       const provider = yield* directory.getProvider(initialThreadId);
-      assert.equal(provider, "codex");
+      assert.equal(provider, "openai");
       const resolvedBinding = yield* directory.getBinding(initialThreadId);
       assertSome(resolvedBinding, {
         threadId: initialThreadId,
-        provider: "codex",
+        provider: "openai",
       });
       if (Option.isSome(resolvedBinding)) {
         assert.equal(resolvedBinding.value.threadId, initialThreadId);
@@ -57,7 +57,7 @@ it.layer(makeDirectoryLayer(SqlitePersistenceMemory))("ProviderSessionDirectoryL
       const nextThreadId = ThreadId.makeUnsafe("thread-2");
 
       yield* directory.upsert({
-        provider: "codex",
+        provider: "openai",
         threadId: nextThreadId,
       });
       const updatedBinding = yield* directory.getBinding(nextThreadId);
@@ -71,7 +71,7 @@ it.layer(makeDirectoryLayer(SqlitePersistenceMemory))("ProviderSessionDirectoryL
       if (Option.isSome(runtime)) {
         assert.equal(runtime.value.threadId, nextThreadId);
         assert.equal(runtime.value.status, "running");
-        assert.equal(runtime.value.providerName, "codex");
+        assert.equal(runtime.value.providerName, "openai");
       }
 
       const threadIds = yield* directory.listThreadIds();
@@ -96,7 +96,7 @@ it.layer(makeDirectoryLayer(SqlitePersistenceMemory))("ProviderSessionDirectoryL
       const threadId = ThreadId.makeUnsafe("thread-runtime");
 
       yield* directory.upsert({
-        provider: "codex",
+        provider: "openai",
         threadId,
         status: "starting",
         resumeCursor: {
@@ -109,7 +109,7 @@ it.layer(makeDirectoryLayer(SqlitePersistenceMemory))("ProviderSessionDirectoryL
       });
 
       yield* directory.upsert({
-        provider: "codex",
+        provider: "openai",
         threadId,
         status: "running",
         runtimePayload: {
@@ -141,8 +141,8 @@ it.layer(makeDirectoryLayer(SqlitePersistenceMemory))("ProviderSessionDirectoryL
 
       yield* runtimeRepository.upsert({
         threadId,
-        providerName: "claudeAgent",
-        adapterKey: "claudeAgent",
+        providerName: "anthropic",
+        adapterKey: "anthropic",
         runtimeMode: "full-access",
         status: "running",
         lifecycleGeneration: "legacy-test-claude",
@@ -152,15 +152,15 @@ it.layer(makeDirectoryLayer(SqlitePersistenceMemory))("ProviderSessionDirectoryL
       });
 
       yield* directory.upsert({
-        provider: "codex",
+        provider: "openai",
         threadId,
       });
 
       const runtime = yield* runtimeRepository.getByThreadId({ threadId });
       assert.equal(Option.isSome(runtime), true);
       if (Option.isSome(runtime)) {
-        assert.equal(runtime.value.providerName, "codex");
-        assert.equal(runtime.value.adapterKey, "codex");
+        assert.equal(runtime.value.providerName, "openai");
+        assert.equal(runtime.value.adapterKey, "openai");
       }
     }));
 
@@ -175,7 +175,7 @@ it.layer(makeDirectoryLayer(SqlitePersistenceMemory))("ProviderSessionDirectoryL
       yield* Effect.gen(function* () {
         const directory = yield* ProviderSessionDirectory;
         yield* directory.upsert({
-          provider: "codex",
+          provider: "openai",
           threadId,
         });
       }).pipe(Effect.provide(directoryLayer));
@@ -184,12 +184,12 @@ it.layer(makeDirectoryLayer(SqlitePersistenceMemory))("ProviderSessionDirectoryL
         const directory = yield* ProviderSessionDirectory;
         const sql = yield* SqlClient.SqlClient;
         const provider = yield* directory.getProvider(threadId);
-        assert.equal(provider, "codex");
+        assert.equal(provider, "openai");
 
         const resolvedBinding = yield* directory.getBinding(threadId);
         assertSome(resolvedBinding, {
           threadId,
-          provider: "codex",
+          provider: "openai",
         });
         if (Option.isSome(resolvedBinding)) {
           assert.equal(resolvedBinding.value.threadId, threadId);
@@ -217,7 +217,7 @@ it.layer(makeDirectoryLayer(SqlitePersistenceMemory))("ProviderSessionDirectoryL
       yield* Effect.gen(function* () {
         const directory = yield* ProviderSessionDirectory;
         yield* directory.upsert({
-          provider: "opencode",
+          provider: "openai",
           threadId,
         });
       }).pipe(Effect.provide(directoryLayer));
@@ -226,12 +226,12 @@ it.layer(makeDirectoryLayer(SqlitePersistenceMemory))("ProviderSessionDirectoryL
         const directory = yield* ProviderSessionDirectory;
 
         const provider = yield* directory.getProvider(threadId);
-        assert.equal(provider, "opencode");
+        assert.equal(provider, "openai");
 
         const resolvedBinding = yield* directory.getBinding(threadId);
         assertSome(resolvedBinding, {
           threadId,
-          provider: "opencode",
+          provider: "openai",
         });
       }).pipe(Effect.provide(directoryLayer));
 
@@ -248,8 +248,8 @@ it.layer(makeDirectoryLayer(SqlitePersistenceMemory))("ProviderSessionDirectoryL
 
       yield* runtimeRepository.upsert({
         threadId: legacyThreadId,
-        providerName: "kilo",
-        adapterKey: "kilo",
+        providerName: "openai",
+        adapterKey: "openai",
         runtimeMode: "full-access",
         status: "running",
         lifecycleGeneration: "legacy-test-kilo",
@@ -258,7 +258,7 @@ it.layer(makeDirectoryLayer(SqlitePersistenceMemory))("ProviderSessionDirectoryL
         runtimePayload: null,
       });
       yield* directory.upsert({
-        provider: "codex",
+        provider: "openai",
         threadId: codexThreadId,
       });
 

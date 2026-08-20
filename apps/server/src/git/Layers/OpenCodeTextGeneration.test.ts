@@ -141,7 +141,7 @@ const OpenCodeRuntimeTestDouble: OpenCodeRuntimeShape = {
 };
 
 const DEFAULT_TEST_MODEL_SELECTION = {
-  provider: "opencode" as const,
+  provider: "openai" as const,
   model: "openai/gpt-5",
 };
 
@@ -204,7 +204,7 @@ it.layer(OpenCodeTextGenerationTestLayer)("OpenCodeTextGenerationServiceLive", (
         modelSelection: DEFAULT_TEST_MODEL_SELECTION,
       });
 
-      expect(runtimeMock.state.startCalls).toEqual(["opencode"]);
+      expect(runtimeMock.state.startCalls).toEqual(["openai"]);
       expect(runtimeMock.state.promptUrls).toEqual([
         "http://127.0.0.1:4301",
         "http://127.0.0.1:4301",
@@ -239,7 +239,7 @@ it.layer(OpenCodeTextGenerationTestLayer)("OpenCodeTextGenerationServiceLive", (
         modelSelection: DEFAULT_TEST_MODEL_SELECTION,
       });
 
-      expect(runtimeMock.state.startCalls).toEqual(["opencode", "opencode"]);
+      expect(runtimeMock.state.startCalls).toEqual(["openai", "openai"]);
       expect(runtimeMock.state.promptUrls).toEqual([
         "http://127.0.0.1:4301",
         "http://127.0.0.1:4302",
@@ -261,7 +261,7 @@ it.layer(OpenCodeTextGenerationTestLayer)("OpenCodeTextGenerationServiceLive", (
         modelSelection: DEFAULT_TEST_MODEL_SELECTION,
       });
 
-      expect(runtimeMock.state.startCalls).toEqual(["opencode"]);
+      expect(runtimeMock.state.startCalls).toEqual(["openai"]);
       expect(runtimeMock.state.startCwds).toEqual([cwd]);
     }).pipe(Effect.provide(TestClock.layer())),
   );
@@ -285,7 +285,7 @@ it.layer(OpenCodeTextGenerationTestLayer)("OpenCodeTextGenerationServiceLive", (
         modelSelection: DEFAULT_TEST_MODEL_SELECTION,
       });
 
-      expect(runtimeMock.state.startCalls).toEqual(["opencode", "opencode"]);
+      expect(runtimeMock.state.startCalls).toEqual(["openai", "openai"]);
       expect(runtimeMock.state.startCwds).toEqual(["/repo/alpha", "/repo/beta"]);
     }).pipe(Effect.provide(TestClock.layer())),
   );
@@ -326,7 +326,7 @@ it.layer(OpenCodeTextGenerationTestLayer)("OpenCodeTextGenerationServiceLive", (
       releaseFirstPrompt();
       yield* Fiber.join(firstFiber);
 
-      expect(runtimeMock.state.startCalls).toEqual(["opencode", "opencode"]);
+      expect(runtimeMock.state.startCalls).toEqual(["openai", "openai"]);
       expect(runtimeMock.state.startCwds).toEqual(["/repo/alpha", "/repo/beta"]);
       expect(runtimeMock.state.promptUrls).toEqual([
         "http://127.0.0.1:4301",
@@ -397,7 +397,7 @@ it.layer(OpenCodeTextGenerationTestLayer)("OpenCodeTextGenerationServiceLive", (
         cwd: process.cwd(),
         message: "which model are you",
         modelSelection: {
-          provider: "opencode",
+          provider: "openai",
           model: "opencode/big-pickle",
           options: {
             agent: "build",
@@ -408,7 +408,7 @@ it.layer(OpenCodeTextGenerationTestLayer)("OpenCodeTextGenerationServiceLive", (
 
       expect(runtimeMock.state.sessionCreateInputs[0]).toMatchObject({
         model: {
-          providerID: "opencode",
+          providerID: "openai",
           id: "big-pickle",
           variant: "fast",
         },

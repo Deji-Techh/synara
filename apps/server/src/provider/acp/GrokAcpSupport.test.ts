@@ -22,7 +22,7 @@ function initializeWithAuthMethods(ids: ReadonlyArray<string>): Acp.InitializeRe
 describe("buildGrokAcpSpawnInput", () => {
   it("builds the default Grok ACP command", () => {
     expect(buildGrokAcpSpawnInput(undefined, "/tmp/project", "approval-required")).toMatchObject({
-      command: "grok",
+      command: "openai",
       args: ["--permission-mode", "default", "agent", "--no-leader", "stdio"],
       cwd: "/tmp/project",
     });

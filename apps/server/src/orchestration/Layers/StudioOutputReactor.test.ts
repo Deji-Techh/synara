@@ -120,7 +120,7 @@ describe("StudioOutputReactor", () => {
       PubSub.publish(runtimeEvents, {
         type: "turn.started",
         eventId: EventId.makeUnsafe("turn-started"),
-        provider: "codex",
+        provider: "openai",
         threadId,
         turnId,
         createdAt: "2026-07-08T10:00:00.000Z",
@@ -131,7 +131,7 @@ describe("StudioOutputReactor", () => {
       PubSub.publish(runtimeEvents, {
         type: "session.exited",
         eventId: EventId.makeUnsafe("session-exited"),
-        provider: "codex",
+        provider: "openai",
         threadId,
         createdAt: "2026-07-08T10:00:01.000Z",
         payload: { reason: "provider crashed" },

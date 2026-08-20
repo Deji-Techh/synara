@@ -33,7 +33,7 @@ import { ProviderUnsupportedError } from "../Errors.ts";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 
 const fakeCodexAdapter: CodexAdapterShape = {
-  provider: "codex",
+  provider: "openai",
   capabilities: { sessionModelSwitch: "in-session" },
   startSession: vi.fn(),
   sendTurn: vi.fn(),
@@ -50,7 +50,7 @@ const fakeCodexAdapter: CodexAdapterShape = {
 };
 
 const fakeClaudeAdapter: ClaudeAdapterShape = {
-  provider: "claudeAgent",
+  provider: "anthropic",
   capabilities: { sessionModelSwitch: "in-session" },
   startSession: vi.fn(),
   sendTurn: vi.fn(),
@@ -71,7 +71,7 @@ const fakeClaudeAdapter: ClaudeAdapterShape = {
 };
 
 const fakeCursorAdapter: CursorAdapterShape = {
-  provider: "cursor",
+  provider: "openai",
   capabilities: { sessionModelSwitch: "in-session" },
   startSession: vi.fn(),
   sendTurn: vi.fn(),
@@ -88,7 +88,7 @@ const fakeCursorAdapter: CursorAdapterShape = {
 };
 
 const fakeGrokAdapter: GrokAdapterShape = {
-  provider: "grok",
+  provider: "openai",
   capabilities: { sessionModelSwitch: "restart-session" },
   startSession: vi.fn(),
   sendTurn: vi.fn(),
@@ -105,7 +105,7 @@ const fakeGrokAdapter: GrokAdapterShape = {
 };
 
 const fakeDroidAdapter: DroidAdapterShape = {
-  provider: "droid",
+  provider: "openai",
   capabilities: { sessionModelSwitch: "restart-session" },
   startSession: vi.fn(),
   sendTurn: vi.fn(),
@@ -122,7 +122,7 @@ const fakeDroidAdapter: DroidAdapterShape = {
 };
 
 const fakeOpenCodeAdapter: OpenCodeAdapterShape = {
-  provider: "opencode",
+  provider: "openai",
   capabilities: { sessionModelSwitch: "restart-session" },
   startSession: vi.fn(),
   sendTurn: vi.fn(),
@@ -139,7 +139,7 @@ const fakeOpenCodeAdapter: OpenCodeAdapterShape = {
 };
 
 const fakeKiloAdapter: KiloAdapterShape = {
-  provider: "kilo",
+  provider: "openai",
   capabilities: { sessionModelSwitch: "restart-session" },
   startSession: vi.fn(),
   sendTurn: vi.fn(),
@@ -156,7 +156,7 @@ const fakeKiloAdapter: KiloAdapterShape = {
 };
 
 const fakePiAdapter: PiAdapterShape = {
-  provider: "pi",
+  provider: "openai",
   capabilities: { sessionModelSwitch: "restart-session" },
   startSession: vi.fn(),
   sendTurn: vi.fn(),
@@ -216,7 +216,7 @@ const fakeEngineAdapter: EngineAdapterShape = {
 };
 
 const fakeAntigravityAdapter: AntigravityAdapterShape = {
-  provider: "antigravity",
+  provider: "google",
   capabilities: { sessionModelSwitch: "restart-session" },
   startSession: vi.fn(),
   sendTurn: vi.fn(),
@@ -303,15 +303,15 @@ layer("ProviderAdapterRegistryLive", (it) => {
   it.effect("resolves a registered provider adapter", () =>
     Effect.gen(function* () {
       const registry = yield* ProviderAdapterRegistry;
-      const codex = yield* registry.getByProvider("codex");
-      const claude = yield* registry.getByProvider("claudeAgent");
-      const cursor = yield* registry.getByProvider("cursor");
-      const antigravity = yield* registry.getByProvider("antigravity");
-      const grok = yield* registry.getByProvider("grok");
-      const droid = yield* registry.getByProvider("droid");
-      const kilo = yield* registry.getByProvider("kilo");
-      const opencode = yield* registry.getByProvider("opencode");
-      const pi = yield* registry.getByProvider("pi");
+      const codex = yield* registry.getByProvider("openai");
+      const claude = yield* registry.getByProvider("anthropic");
+      const cursor = yield* registry.getByProvider("openai");
+      const antigravity = yield* registry.getByProvider("google");
+      const grok = yield* registry.getByProvider("openai");
+      const droid = yield* registry.getByProvider("openai");
+      const kilo = yield* registry.getByProvider("openai");
+      const opencode = yield* registry.getByProvider("openai");
+      const pi = yield* registry.getByProvider("openai");
       const engine = yield* registry.getByProvider("engine");
       const openai = yield* registry.getByProvider("openai");
       const anthropic = yield* registry.getByProvider("anthropic");
@@ -352,15 +352,15 @@ layer("ProviderAdapterRegistryLive", (it) => {
 
       const providers = yield* registry.listProviders();
       assert.deepEqual(providers, [
-        "codex",
-        "claudeAgent",
-        "cursor",
-        "antigravity",
-        "grok",
-        "droid",
-        "kilo",
-        "opencode",
-        "pi",
+        "openai",
+        "anthropic",
+        "openai",
+        "google",
+        "openai",
+        "openai",
+        "openai",
+        "openai",
+        "openai",
         "engine",
         "openai",
         "anthropic",

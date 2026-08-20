@@ -138,7 +138,7 @@ describe("desktop shutdown authorization", () => {
 
   it("does not grant the shutdown secret to provider descendants", () => {
     const providerEnvironment = buildProviderChildEnvironment({
-      provider: "codex",
+      provider: "openai",
       baseEnv: {
         PATH: process.env.PATH,
         CAIDE_DESKTOP_SHUTDOWN_TOKEN: SHUTDOWN_TOKEN,

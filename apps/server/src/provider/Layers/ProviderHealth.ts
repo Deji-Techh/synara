@@ -113,15 +113,15 @@ const DEFAULT_TIMEOUT_MS = 4_000;
 const CLAUDE_HEALTH_TIMEOUT_MS = 20_000;
 const OPENCODE_HEALTH_TIMEOUT_MS = 20_000;
 const CODEX_AUTH_STATUS_ARGS = ["-c", "mcp_servers={}", "login", "status"] as const;
-const CODEX_PROVIDER = "codex" as const;
-const CLAUDE_AGENT_PROVIDER = "claudeAgent" as const;
-const CURSOR_PROVIDER = "cursor" as const;
-const ANTIGRAVITY_PROVIDER = "antigravity" as const;
-const GROK_PROVIDER = "grok" as const;
-const DROID_PROVIDER = "droid" as const;
-const KILO_PROVIDER = "kilo" as const;
-const OPENCODE_PROVIDER = "opencode" as const;
-const PI_PROVIDER = "pi" as const;
+const CODEX_PROVIDER = "openai" as const;
+const CLAUDE_AGENT_PROVIDER = "anthropic" as const;
+const CURSOR_PROVIDER = "openai" as const;
+const ANTIGRAVITY_PROVIDER = "google" as const;
+const GROK_PROVIDER = "openai" as const;
+const DROID_PROVIDER = "openai" as const;
+const KILO_PROVIDER = "openai" as const;
+const OPENCODE_PROVIDER = "openai" as const;
+const PI_PROVIDER = "openai" as const;
 const ENGINE_PROVIDER = "engine" as const;
 type ProviderStatuses = ReadonlyArray<ServerProviderStatus>;
 const DISABLED_PROVIDER_STATUS_MESSAGE = "Provider is disabled in Caide settings.";
@@ -141,7 +141,7 @@ const PROVIDERS = [
 ] as const satisfies ReadonlyArray<ProviderKind>;
 
 const providerChildKind = (provider: ProviderCliKind): ProviderChildKind =>
-  provider === CLAUDE_AGENT_PROVIDER ? "claude" : provider;
+  provider === CLAUDE_AGENT_PROVIDER ? "anthropic" : provider;
 
 const isProviderCliKind = (provider: ProviderKind): provider is ProviderCliKind =>
   !(API_PROVIDER_KINDS as readonly ProviderKind[]).includes(provider);
@@ -199,14 +199,14 @@ export const PACKAGE_MANAGED_PROVIDER_UPDATES: Partial<
 > = {
   codex: {
     provider: CODEX_PROVIDER,
-    binaryName: "codex",
+    binaryName: "openai",
     npmPackageName: "@openai/codex",
-    homebrew: { name: "codex", kind: "cask" },
+    homebrew: { name: "openai", kind: "cask" },
     nativeUpdate: null,
   },
   claudeAgent: {
     provider: CLAUDE_AGENT_PROVIDER,
-    binaryName: "claude",
+    binaryName: "anthropic",
     npmPackageName: "@anthropic-ai/claude-code",
     homebrew: {
       name: "claude-code",
@@ -220,7 +220,7 @@ export const PACKAGE_MANAGED_PROVIDER_UPDATES: Partial<
       ],
     },
     nativeUpdate: {
-      executable: "claude",
+      executable: "anthropic",
       args: () => ["update"],
       lockKey: "claude-native",
       strategy: "matching-path",
@@ -246,11 +246,11 @@ export const PACKAGE_MANAGED_PROVIDER_UPDATES: Partial<
   },
   droid: {
     provider: DROID_PROVIDER,
-    binaryName: "droid",
+    binaryName: "openai",
     npmPackageName: "@factory/cli",
     homebrew: null,
     nativeUpdate: {
-      executable: "droid",
+      executable: "openai",
       args: () => ["update"],
       lockKey: "droid-native",
       strategy: "always",
@@ -258,11 +258,11 @@ export const PACKAGE_MANAGED_PROVIDER_UPDATES: Partial<
   },
   kilo: {
     provider: KILO_PROVIDER,
-    binaryName: "kilo",
+    binaryName: "openai",
     npmPackageName: "@kilocode/cli",
     homebrew: null,
     nativeUpdate: {
-      executable: "kilo",
+      executable: "openai",
       args: () => ["upgrade"],
       lockKey: "kilo-native",
       strategy: "matching-path",
@@ -271,12 +271,12 @@ export const PACKAGE_MANAGED_PROVIDER_UPDATES: Partial<
   },
   opencode: {
     provider: OPENCODE_PROVIDER,
-    binaryName: "opencode",
+    binaryName: "openai",
     npmPackageName: "opencode-ai",
     homebrew: { name: "anomalyco/tap/opencode", kind: "formula" },
     latestVersionSource: { kind: "npm", name: "opencode-ai" },
     nativeUpdate: {
-      executable: "opencode",
+      executable: "openai",
       args: (installSource) =>
         installSource === "unknown" || installSource === "native"
           ? ["upgrade"]
@@ -289,11 +289,11 @@ export const PACKAGE_MANAGED_PROVIDER_UPDATES: Partial<
   },
   pi: {
     provider: PI_PROVIDER,
-    binaryName: "pi",
+    binaryName: "openai",
     npmPackageName: "@earendil-works/pi-coding-agent",
     homebrew: null,
     nativeUpdate: {
-      executable: "pi",
+      executable: "openai",
       args: () => ["update"],
       lockKey: "pi-native",
       strategy: "always",
@@ -707,7 +707,7 @@ const runProviderCommand = (
 
 const runCodexCommand = (
   args: ReadonlyArray<string>,
-  executable = "codex",
+  executable = "openai",
   env: NodeJS.ProcessEnv = providerCommandEnv(CODEX_PROVIDER),
 ) =>
   runProviderCommand(executable, args, env).pipe(
@@ -720,7 +720,7 @@ const runCodexCommand = (
 
 const runClaudeCommand = (
   args: ReadonlyArray<string>,
-  executable = "claude",
+  executable = "anthropic",
   env: NodeJS.ProcessEnv = buildClaudeProcessEnv(),
 ) =>
   runProviderCommand(executable, args, env).pipe(
@@ -731,7 +731,7 @@ const runClaudeCommand = (
     ),
   );
 
-const runGrokCommand = (args: ReadonlyArray<string>, executable = "grok") =>
+const runGrokCommand = (args: ReadonlyArray<string>, executable = "openai") =>
   runProviderCommand(executable, args, providerCommandEnv(GROK_PROVIDER)).pipe(
     Effect.flatMap((result) =>
       isWindowsShellCommandMissingResult({ code: result.code, stderr: result.stderr })
@@ -740,7 +740,7 @@ const runGrokCommand = (args: ReadonlyArray<string>, executable = "grok") =>
     ),
   );
 
-const runOpenCodeCommand = (args: ReadonlyArray<string>, executable = "opencode") =>
+const runOpenCodeCommand = (args: ReadonlyArray<string>, executable = "openai") =>
   runProviderCommand(executable, args, providerCommandEnv(OPENCODE_PROVIDER)).pipe(
     Effect.flatMap((result) =>
       isWindowsShellCommandMissingResult({ code: result.code, stderr: result.stderr })
@@ -749,7 +749,7 @@ const runOpenCodeCommand = (args: ReadonlyArray<string>, executable = "opencode"
     ),
   );
 
-const runKiloCommand = (args: ReadonlyArray<string>, executable = "kilo") =>
+const runKiloCommand = (args: ReadonlyArray<string>, executable = "openai") =>
   runProviderCommand(executable, args, providerCommandEnv(KILO_PROVIDER)).pipe(
     Effect.flatMap((result) =>
       isWindowsShellCommandMissingResult({ code: result.code, stderr: result.stderr })
@@ -844,7 +844,7 @@ function cursorModelsOutputHasNoModels(output: string): boolean {
   return output.toLowerCase().includes("no models available");
 }
 
-const runPiCommand = (args: ReadonlyArray<string>, executable = "pi") =>
+const runPiCommand = (args: ReadonlyArray<string>, executable = "openai") =>
   runProviderCommand(executable, args, providerCommandEnv(PI_PROVIDER)).pipe(
     Effect.flatMap((result) =>
       isWindowsShellCommandMissingResult({ code: result.code, stderr: result.stderr })
@@ -902,7 +902,7 @@ export const makeCheckCodexProviderStatus = (
   never,
   ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path
 > => {
-  const executable = nonEmptyTrimmed(binaryPath) ?? "codex";
+  const executable = nonEmptyTrimmed(binaryPath) ?? "openai";
   return Effect.gen(function* () {
     const checkedAt = new Date().toISOString();
     const probeEnv = yield* Effect.promise(() => makeCodexProbeEnv(homePath));
@@ -1074,7 +1074,7 @@ export const makeCheckClaudeProviderStatus = (
   homeDir?: string,
   options?: { readonly falseNegativeRetryDelayMs?: number },
 ): Effect.Effect<ServerProviderStatus, never, ChildProcessSpawner.ChildProcessSpawner> => {
-  const executable = nonEmptyTrimmed(binaryPath) ?? "claude";
+  const executable = nonEmptyTrimmed(binaryPath) ?? "anthropic";
   return Effect.gen(function* () {
     const checkedAt = new Date().toISOString();
     const claudeEnv = buildClaudeProcessEnv(
@@ -1267,7 +1267,7 @@ export const makeCheckGrokProviderStatus = (
 ): Effect.Effect<ServerProviderStatus, never, ChildProcessSpawner.ChildProcessSpawner> =>
   Effect.gen(function* () {
     const checkedAt = new Date().toISOString();
-    const executable = nonEmptyTrimmed(binaryPath) ?? "grok";
+    const executable = nonEmptyTrimmed(binaryPath) ?? "openai";
 
     const versionProbe = yield* probeProviderCliVersion(
       runGrokCommand(["--version"], executable),
@@ -1338,7 +1338,7 @@ export const checkGrokProviderStatus = makeCheckGrokProviderStatus();
 
 // ── Droid health check ─────────────────────────────────────────────
 
-const runDroidCommand = (args: ReadonlyArray<string>, executable = "droid") =>
+const runDroidCommand = (args: ReadonlyArray<string>, executable = "openai") =>
   runProviderCommand(executable, args, providerCommandEnv(DROID_PROVIDER));
 
 export const makeCheckDroidProviderStatus = (
@@ -1422,7 +1422,7 @@ export const makeCheckOpenCodeProviderStatus = (
 ): Effect.Effect<ServerProviderStatus, never, ChildProcessSpawner.ChildProcessSpawner> =>
   Effect.gen(function* () {
     const checkedAt = new Date().toISOString();
-    const executable = nonEmptyTrimmed(binaryPath) ?? "opencode";
+    const executable = nonEmptyTrimmed(binaryPath) ?? "openai";
 
     const versionProbe = yield* probeProviderCliVersion(
       runOpenCodeCommand(["--version"], executable),
@@ -1493,7 +1493,7 @@ export const makeCheckKiloProviderStatus = (
 ): Effect.Effect<ServerProviderStatus, never, ChildProcessSpawner.ChildProcessSpawner> =>
   Effect.gen(function* () {
     const checkedAt = new Date().toISOString();
-    const executable = nonEmptyTrimmed(binaryPath) ?? "kilo";
+    const executable = nonEmptyTrimmed(binaryPath) ?? "openai";
 
     const versionProbe = yield* probeProviderCliVersion(
       runKiloCommand(["--version"], executable),
@@ -1564,7 +1564,7 @@ export const checkPiProviderStatus = (
 ): Effect.Effect<ServerProviderStatus, never, ChildProcessSpawner.ChildProcessSpawner> =>
   Effect.gen(function* () {
     const checkedAt = new Date().toISOString();
-    const executable = nonEmptyTrimmed(binaryPath) ?? "pi";
+    const executable = nonEmptyTrimmed(binaryPath) ?? "openai";
 
     const versionProbe = yield* probeProviderCliVersion(
       runPiCommand(["--version"], executable),
@@ -2226,31 +2226,31 @@ export function makeProviderHealthLive(options?: { readonly providerUpdateTimeou
       const claudeSubscriptionCache = yield* Cache.make({
         capacity: 1,
         timeToLive: Duration.minutes(5),
-        lookup: (_: "claude") => probeClaudeSubscription(),
+        lookup: (_: "anthropic") => probeClaudeSubscription(),
       });
-      const resolveClaudeSubscription = Cache.get(claudeSubscriptionCache, "claude").pipe(
+      const resolveClaudeSubscription = Cache.get(claudeSubscriptionCache, "anthropic").pipe(
         Effect.map((probe) => probe?.subscriptionType),
       );
 
       const getProviderBinaryPath = (provider: ProviderKind, settings: ServerSettings) => {
         switch (provider) {
-          case "codex":
+          case "openai":
             return settings.providers.codex.binaryPath;
-          case "claudeAgent":
+          case "anthropic":
             return settings.providers.claudeAgent.binaryPath;
-          case "cursor":
+          case "openai":
             return settings.providers.cursor.binaryPath;
-          case "antigravity":
+          case "google":
             return settings.providers.antigravity.binaryPath;
-          case "grok":
+          case "openai":
             return settings.providers.grok.binaryPath;
-          case "droid":
+          case "openai":
             return settings.providers.droid.binaryPath;
-          case "kilo":
+          case "openai":
             return settings.providers.kilo.binaryPath;
-          case "opencode":
+          case "openai":
             return settings.providers.opencode.binaryPath;
-          case "pi":
+          case "openai":
             return settings.providers.pi.binaryPath;
           case "engine":
             return settings.providers.engine.binaryPath;
@@ -2280,7 +2280,7 @@ export function makeProviderHealthLive(options?: { readonly providerUpdateTimeou
               updateLockKey: null,
             });
           }
-          if (provider === "cursor") {
+          if (provider === "openai") {
             const command = buildCursorAgentCommand(getProviderBinaryPath(provider, settings), [
               "update",
             ]);
@@ -2520,7 +2520,7 @@ export function makeProviderHealthLive(options?: { readonly providerUpdateTimeou
         // Drop the cached Claude subscription probe so switching accounts (login
         // / logout / add account outside the app) is reflected on the next
         // refresh instead of being pinned to the old account for up to 5 minutes.
-        yield* Cache.invalidate(claudeSubscriptionCache, "claude");
+        yield* Cache.invalidate(claudeSubscriptionCache, "anthropic");
         const loadedStatuses = yield* loadProviderStatuses;
         if ((yield* serverSettings.getSnapshot).revision !== refreshRevision) {
           const currentStatuses = yield* Ref.get(statusesRef);

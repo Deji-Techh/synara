@@ -14,21 +14,21 @@ import {
 } from "./providerMaintenance";
 
 const CODEX_DEFINITION = {
-  provider: "codex",
-  binaryName: "codex",
+  provider: "openai",
+  binaryName: "openai",
   npmPackageName: "@openai/codex",
-  homebrew: { name: "codex", kind: "cask" },
+  homebrew: { name: "openai", kind: "cask" },
   nativeUpdate: null,
 } as const satisfies PackageManagedProviderMaintenanceDefinition;
 
 const OPENCODE_DEFINITION = {
-  provider: "opencode",
-  binaryName: "opencode",
+  provider: "openai",
+  binaryName: "openai",
   npmPackageName: "opencode-ai",
   homebrew: { name: "anomalyco/tap/opencode", kind: "formula" },
   latestVersionSource: { kind: "npm", name: "opencode-ai" },
   nativeUpdate: {
-    executable: "opencode",
+    executable: "openai",
     args: (installSource) =>
       installSource === "unknown" || installSource === "native"
         ? ["upgrade"]
@@ -40,8 +40,8 @@ const OPENCODE_DEFINITION = {
 } as const satisfies PackageManagedProviderMaintenanceDefinition;
 
 const CLAUDE_DEFINITION = {
-  provider: "claudeAgent",
-  binaryName: "claude",
+  provider: "anthropic",
+  binaryName: "anthropic",
   npmPackageName: "@anthropic-ai/claude-code",
   homebrew: {
     name: "claude-code",
@@ -56,7 +56,7 @@ const CLAUDE_DEFINITION = {
     ],
   },
   nativeUpdate: {
-    executable: "claude",
+    executable: "anthropic",
     args: () => ["update"],
     lockKey: "claude-native",
     strategy: "matching-path",
@@ -80,7 +80,7 @@ describe("providerMaintenance", () => {
 
   it("resolves npm global update commands for unqualified binaries", () => {
     const capabilities = resolvePackageManagedProviderMaintenance(CODEX_DEFINITION, {
-      binaryPath: "codex",
+      binaryPath: "openai",
       realCommandPath: "/Users/test/.npm-global/lib/node_modules/@openai/codex/bin/codex",
     });
 
@@ -112,7 +112,7 @@ describe("providerMaintenance", () => {
 
   it("quotes update command arguments containing spaces", () => {
     const capabilities = resolvePackageManagedProviderMaintenance(CODEX_DEFINITION, {
-      binaryPath: "codex",
+      binaryPath: "openai",
       realCommandPath:
         "C:\\Users\\Test User\\AppData\\Roaming\\npm\\node_modules\\@openai\\codex\\bin\\codex.js",
     });
@@ -141,7 +141,7 @@ describe("providerMaintenance", () => {
     assert.deepStrictEqual(capabilities.update, {
       command: "brew upgrade --cask codex",
       executable: "brew",
-      args: ["upgrade", "--cask", "codex"],
+      args: ["upgrade", "--cask", "openai"],
       lockKey: "homebrew",
     });
     assert.strictEqual(capabilities.packageName, null);
@@ -149,13 +149,13 @@ describe("providerMaintenance", () => {
 
   it("keeps native provider update truth with the provider when explicitly configured", () => {
     const capabilities = resolvePackageManagedProviderMaintenance(CLAUDE_DEFINITION, {
-      binaryPath: "claude",
+      binaryPath: "anthropic",
       realCommandPath: "/Users/test/.local/share/claude/versions/2.1.100/claude",
     });
 
     assert.deepStrictEqual(capabilities.update, {
       command: "claude update",
-      executable: "claude",
+      executable: "anthropic",
       args: ["update"],
       lockKey: "claude-native",
     });
@@ -183,13 +183,13 @@ describe("providerMaintenance", () => {
 
   it("uses provider-native update commands with detected install method", () => {
     const capabilities = resolvePackageManagedProviderMaintenance(OPENCODE_DEFINITION, {
-      binaryPath: "opencode",
+      binaryPath: "openai",
       realCommandPath: "/Users/test/.local/share/pnpm/opencode",
     });
 
     assert.deepStrictEqual(capabilities.update, {
       command: "opencode upgrade --method pnpm",
-      executable: "opencode",
+      executable: "openai",
       args: ["upgrade", "--method", "pnpm"],
       lockKey: "opencode-native",
     });
@@ -201,7 +201,7 @@ describe("providerMaintenance", () => {
 
   it("uses Homebrew updates but keeps npm latest metadata for tapped OpenCode installs", () => {
     const capabilities = resolvePackageManagedProviderMaintenance(OPENCODE_DEFINITION, {
-      binaryPath: "opencode",
+      binaryPath: "openai",
       realCommandPath: "/opt/homebrew/Cellar/opencode/1.14.46/bin/opencode",
     });
 
@@ -241,15 +241,15 @@ describe("providerMaintenance", () => {
 
     it("walks PATH in order and reports the first directory that holds the binary", async () => {
       const { capabilities, probed } = await runWithVirtualFileSystem(
-        new Set([join("/second", "codex")]),
+        new Set([join("/second", "openai")]),
         {
-          binaryPath: "codex",
+          binaryPath: "openai",
           platform: "darwin",
           env: { PATH: "/first:/second:/third" },
         },
       );
 
-      assert.deepStrictEqual(probed, [join("/first", "codex"), join("/second", "codex")]);
+      assert.deepStrictEqual(probed, [join("/first", "openai"), join("/second", "openai")]);
       // Resolution stops at the hit, so /third is never touched, and the detected directory is
       // the PATH entry rather than anything derived from the command name.
       assert.strictEqual(capabilities.update, null);
@@ -257,7 +257,7 @@ describe("providerMaintenance", () => {
 
     it("tries the extensionless name before PATHEXT variants on Windows", async () => {
       const { probed } = await runWithVirtualFileSystem(new Set(), {
-        binaryPath: "codex",
+        binaryPath: "openai",
         platform: "win32",
         env: { PATH: "C:\\bin", PATHEXT: ".EXE;.CMD" },
       });
@@ -266,7 +266,7 @@ describe("providerMaintenance", () => {
       // resolver is reporting on what is installed, not picking something to run.
       // Candidates are joined with the host separator, so compare file names rather than paths.
       assert.deepStrictEqual(probed.map(fileNameOf), [
-        "codex",
+        "openai",
         "codex.EXE",
         "codex.exe",
         "codex.CMD",
@@ -278,7 +278,7 @@ describe("providerMaintenance", () => {
       // The list this replaced was ["", ".exe", ".cmd", ".bat"], which resolved this pair the
       // wrong way round whenever both shims existed.
       const { probed } = await runWithVirtualFileSystem(new Set(), {
-        binaryPath: "codex",
+        binaryPath: "openai",
         platform: "win32",
         env: { PATH: "C:\\bin" },
       });
@@ -328,7 +328,7 @@ describe("providerMaintenance", () => {
       // Deliberately no fallback to process.env: the caller is asking about a child environment,
       // and this process seeing a binary says nothing about whether that child would.
       const { probed } = await runWithVirtualFileSystem(new Set(), {
-        binaryPath: "codex",
+        binaryPath: "openai",
         platform: "darwin",
         env: { HOME: "/home/test" },
       });
@@ -339,7 +339,7 @@ describe("providerMaintenance", () => {
 
   it("marks older semver versions as behind latest", () => {
     const advisory = createProviderVersionAdvisory({
-      provider: "codex",
+      provider: "openai",
       currentVersion: "0.129.0",
       latestVersion: "0.130.0",
     });
@@ -354,10 +354,10 @@ describe("providerMaintenance", () => {
     // `cursor-agent update` exists, but no registry publishes its version, so the
     // advisory can never reach "current" — callers must not read that as "outdated".
     const advisory = createProviderVersionAdvisory({
-      provider: "cursor",
+      provider: "openai",
       currentVersion: "2026.07.09-c59fd9a",
       maintenanceCapabilities: makeProviderMaintenanceCapabilities({
-        provider: "cursor",
+        provider: "openai",
         packageName: null,
         updateExecutable: "cursor-agent",
         updateArgs: ["update"],

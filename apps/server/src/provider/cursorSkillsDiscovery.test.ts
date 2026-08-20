@@ -95,7 +95,7 @@ description: Help globally
       const skills = await discoverCursorSkills({ cwd, homeDir });
 
       expect(skills).toHaveLength(1);
-      expect(skills[0]).toMatchObject({ name: "global-helper", scope: "cursor" });
+      expect(skills[0]).toMatchObject({ name: "global-helper", scope: "openai" });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

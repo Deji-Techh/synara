@@ -25,32 +25,32 @@ describe("shouldInlineSkillForProvider", () => {
   it("skips codex-native and caide roots for codex but inlines foreign provider roots", () => {
     // Codex loads .codex roots natively and ~/.caide/skills via the extra
     // skill root registered at session start.
-    expect(shouldInlineSkillForProvider("codex", caideSkillPath)).toBe(false);
-    expect(shouldInlineSkillForProvider("codex", codexSkillPath)).toBe(false);
-    expect(shouldInlineSkillForProvider("codex", claudeSkillPath)).toBe(true);
-    expect(shouldInlineSkillForProvider("codex", cursorSkillPath)).toBe(true);
+    expect(shouldInlineSkillForProvider("openai", caideSkillPath)).toBe(false);
+    expect(shouldInlineSkillForProvider("openai", codexSkillPath)).toBe(false);
+    expect(shouldInlineSkillForProvider("openai", claudeSkillPath)).toBe(true);
+    expect(shouldInlineSkillForProvider("openai", cursorSkillPath)).toBe(true);
   });
 
   it("inlines only Caide-owned paths for cursor", () => {
-    expect(shouldInlineSkillForProvider("cursor", caideSkillPath)).toBe(true);
-    expect(shouldInlineSkillForProvider("cursor", cursorSkillPath)).toBe(false);
-    expect(shouldInlineSkillForProvider("cursor", codexSkillPath)).toBe(false);
+    expect(shouldInlineSkillForProvider("openai", caideSkillPath)).toBe(true);
+    expect(shouldInlineSkillForProvider("openai", cursorSkillPath)).toBe(false);
+    expect(shouldInlineSkillForProvider("openai", codexSkillPath)).toBe(false);
   });
 
   it("inlines everything except .claude paths for claudeAgent", () => {
-    expect(shouldInlineSkillForProvider("claudeAgent", claudeSkillPath)).toBe(false);
-    expect(shouldInlineSkillForProvider("claudeAgent", caideSkillPath)).toBe(true);
-    expect(shouldInlineSkillForProvider("claudeAgent", codexSkillPath)).toBe(true);
+    expect(shouldInlineSkillForProvider("anthropic", claudeSkillPath)).toBe(false);
+    expect(shouldInlineSkillForProvider("anthropic", caideSkillPath)).toBe(true);
+    expect(shouldInlineSkillForProvider("anthropic", codexSkillPath)).toBe(true);
   });
 
   it("inlines cross-provider paths for pi but not pi-native skills", () => {
-    expect(shouldInlineSkillForProvider("pi", caideSkillPath)).toBe(true);
-    expect(shouldInlineSkillForProvider("pi", claudeSkillPath)).toBe(true);
-    expect(shouldInlineSkillForProvider("pi", piSkillPath)).toBe(false);
+    expect(shouldInlineSkillForProvider("openai", caideSkillPath)).toBe(true);
+    expect(shouldInlineSkillForProvider("openai", claudeSkillPath)).toBe(true);
+    expect(shouldInlineSkillForProvider("openai", piSkillPath)).toBe(false);
   });
 
   it("always inlines for providers without native skill support", () => {
-    for (const provider of ["antigravity", "grok", "kilo", "opencode"] as const) {
+    for (const provider of ["google", "openai", "openai", "openai"] as const) {
       expect(shouldInlineSkillForProvider(provider, caideSkillPath)).toBe(true);
       expect(shouldInlineSkillForProvider(provider, claudeSkillPath)).toBe(true);
     }
@@ -67,7 +67,7 @@ describe("buildInlineSkillInstructions", () => {
       await writeFile(skillPath, "# Reviewer\n\nAlways review carefully.");
 
       const text = await buildInlineSkillInstructions({
-        provider: "antigravity",
+        provider: "google",
         skills: [
           { name: "reviewer", path: skillPath },
           { name: "missing", path: path.join(root, ".caide", "skills", "missing", "SKILL.md") },
@@ -92,7 +92,7 @@ describe("buildInlineSkillInstructions", () => {
       await writeFile(skillPath, "content".repeat(100));
 
       const text = await buildInlineSkillInstructions({
-        provider: "antigravity",
+        provider: "google",
         skills: [{ name: "reviewer", path: skillPath }],
         maxChars: 50,
       });
@@ -105,7 +105,7 @@ describe("buildInlineSkillInstructions", () => {
 
   it("does not inline caide-rooted skills for codex (covered by the extra skill root)", async () => {
     const text = await buildInlineSkillInstructions({
-      provider: "codex",
+      provider: "openai",
       skills: [{ name: "reviewer", path: caideSkillPath }],
       maxChars: 10_000,
     });

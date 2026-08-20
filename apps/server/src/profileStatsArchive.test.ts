@@ -104,7 +104,7 @@ const seedTwoThreadsWithActivity = Effect.gen(function* () {
         'thread-keep',
         'project-archive',
         'Kept Thread',
-        '{"provider":"claudeAgent","model":"claude-sonnet-4-6","options":{"effort":"max"}}',
+        '{"provider":"anthropic","model":"claude-sonnet-4-6","options":{"effort":"max"}}',
         'full-access', 'default', 'local',
         '2026-06-13T08:00:00.000Z', '2026-06-13T08:00:00.000Z', NULL
       ),
@@ -112,7 +112,7 @@ const seedTwoThreadsWithActivity = Effect.gen(function* () {
         'thread-purge',
         'project-archive',
         'Purged Thread',
-        '{"provider":"codex","model":"gpt-5-codex","options":{"reasoningEffort":"high"}}',
+        '{"provider":"openai","model":"gpt-5-codex","options":{"reasoningEffort":"high"}}',
         'full-access', 'default', 'local',
         '2026-06-13T09:00:00.000Z', '2026-06-13T09:00:00.000Z', NULL
       )
@@ -151,7 +151,7 @@ const seedTwoThreadsWithActivity = Effect.gen(function* () {
       (
         'event-keep-1', 'thread', 'thread-keep', 1, 'thread.turn-start-requested',
         '2026-06-13T08:05:00.000Z', 'cmd-keep-turn', 'client',
-        '{"threadId":"thread-keep","modelSelection":{"provider":"claudeAgent","model":"claude-sonnet-4-6","options":{"effort":"max"}}}',
+        '{"threadId":"thread-keep","modelSelection":{"provider":"anthropic","model":"claude-sonnet-4-6","options":{"effort":"max"}}}',
         '{}'
       ),
       (
@@ -163,7 +163,7 @@ const seedTwoThreadsWithActivity = Effect.gen(function* () {
       (
         'event-purge-1', 'thread', 'thread-purge', 2, 'thread.turn-start-requested',
         '2026-06-13T09:05:00.000Z', 'cmd-purge-turn', 'client',
-        '{"threadId":"thread-purge","modelSelection":{"provider":"codex","model":"gpt-5-codex","options":{"reasoningEffort":"high"}}}',
+        '{"threadId":"thread-purge","modelSelection":{"provider":"openai","model":"gpt-5-codex","options":{"reasoningEffort":"high"}}}',
         '{}'
       ),
       (
@@ -275,35 +275,35 @@ describe("ProfileStatsArchive", () => {
       {
         totalProcessedTokens: 2000,
         usedTokens: 1200,
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5-codex",
         createdAt: "2026-06-13T12:02:00.000Z",
       },
       {
         totalProcessedTokens: null,
         usedTokens: 300,
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5-codex",
         createdAt: "2026-06-13T12:03:00.000Z",
       },
       {
         totalProcessedTokens: 2500,
         usedTokens: 1500,
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5-codex",
         createdAt: "2026-06-13T12:04:00.000Z",
       },
       {
         totalProcessedTokens: null,
         usedTokens: 700,
-        provider: "claudeAgent",
+        provider: "anthropic",
         model: "claude-haiku-4-5",
         createdAt: "2026-06-13T12:11:00.000Z",
       },
       {
         totalProcessedTokens: null,
         usedTokens: 1700,
-        provider: "claudeAgent",
+        provider: "anthropic",
         model: "claude-haiku-4-5",
         createdAt: "2026-06-13T12:12:00.000Z",
       },
@@ -312,25 +312,25 @@ describe("ProfileStatsArchive", () => {
     expect(rows).toEqual([
       {
         createdAt: "2026-06-13T12:02:00.000Z",
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5-codex",
         tokens: 2000,
       },
       {
         createdAt: "2026-06-13T12:04:00.000Z",
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5-codex",
         tokens: 500,
       },
       {
         createdAt: "2026-06-13T12:11:00.000Z",
-        provider: "claudeAgent",
+        provider: "anthropic",
         model: "claude-haiku-4-5",
         tokens: 700,
       },
       {
         createdAt: "2026-06-13T12:12:00.000Z",
-        provider: "claudeAgent",
+        provider: "anthropic",
         model: "claude-haiku-4-5",
         tokens: 1000,
       },
@@ -342,7 +342,7 @@ describe("ProfileStatsArchive", () => {
       {
         totalProcessedTokens: 1_000,
         usedTokens: null,
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5.5",
         dispatchOrigin: "user",
         createdAt: "2026-06-13T12:00:00.000Z",
@@ -350,7 +350,7 @@ describe("ProfileStatsArchive", () => {
       {
         totalProcessedTokens: 2_500,
         usedTokens: null,
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5.5",
         dispatchOrigin: "agent",
         createdAt: "2026-06-13T12:01:00.000Z",
@@ -358,7 +358,7 @@ describe("ProfileStatsArchive", () => {
       {
         totalProcessedTokens: 3_000,
         usedTokens: null,
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5.5",
         dispatchOrigin: "user",
         createdAt: "2026-06-13T12:02:00.000Z",
@@ -377,18 +377,18 @@ describe("ProfileStatsArchive", () => {
         {
           totalProcessedTokens: 1_500,
           usedTokens: null,
-          provider: "claudeAgent",
+          provider: "anthropic",
           model: null,
           createdAt: "2026-06-13T12:00:00.000Z",
         },
       ],
-      { provider: "codex", model: "gpt-5.5" },
+      { provider: "openai", model: "gpt-5.5" },
     );
 
     expect(rows).toEqual([
       {
         createdAt: "2026-06-13T12:00:00.000Z",
-        provider: "claudeAgent",
+        provider: "anthropic",
         model: null,
         tokens: 1_500,
       },
@@ -806,7 +806,7 @@ describe("ProfileStatsArchive", () => {
             'thread-empty-cleanup',
             'project-empty-cleanup',
             'Empty Cleanup',
-            '{"provider":"codex","model":"gpt-5-codex"}',
+            '{"provider":"openai","model":"gpt-5-codex"}',
             'full-access', 'default', 'local',
             '2026-06-13T09:00:00.000Z',
             '2026-06-13T09:00:00.000Z',
@@ -881,7 +881,7 @@ describe("ProfileStatsArchive", () => {
             'thread-message-checkpoint',
             'project-message-checkpoint',
             'Message Checkpoint',
-            '{"provider":"codex","model":"gpt-5-codex"}',
+            '{"provider":"openai","model":"gpt-5-codex"}',
             'full-access', 'default', 'local',
             '2026-06-13T09:00:00.000Z',
             '2026-06-13T09:00:00.000Z',
@@ -984,7 +984,7 @@ describe("ProfileStatsArchive", () => {
             'thread-stale-checkpoint',
             'project-stale-checkpoint',
             'Stale Checkpoint',
-            '{"provider":"codex","model":"gpt-5-codex"}',
+            '{"provider":"openai","model":"gpt-5-codex"}',
             'full-access', 'default', 'local',
             '2026-06-13T09:00:00.000Z',
             '2026-06-13T09:00:00.000Z',
@@ -1110,7 +1110,7 @@ describe("ProfileStatsArchive", () => {
             'thread-failed-purge',
             'project-failed-purge',
             'Failed Purge',
-            '{"provider":"codex","model":"gpt-5-codex"}',
+            '{"provider":"openai","model":"gpt-5-codex"}',
             'full-access', 'default', 'local',
             '2026-06-13T09:00:00.000Z',
             '2026-06-13T09:00:00.000Z',
@@ -1193,7 +1193,7 @@ describe("ProfileStatsArchive", () => {
             'thread-automation-purge',
             'project-automation-purge',
             'Automation Purge',
-            '{"provider":"codex","model":"gpt-5-codex"}',
+            '{"provider":"openai","model":"gpt-5-codex"}',
             'full-access', 'default', 'local',
             '2026-06-13T09:00:00.000Z',
             '2026-06-13T09:00:00.000Z',
@@ -1219,7 +1219,7 @@ describe("ProfileStatsArchive", () => {
             '{"type":"manual"}',
             1,
             NULL,
-            '{"provider":"codex","model":"gpt-5-codex"}',
+            '{"provider":"openai","model":"gpt-5-codex"}',
             NULL,
             'full-access',
             'default',
@@ -1339,19 +1339,19 @@ describe("ProfileStatsArchive", () => {
           )
           VALUES
             (
-              'thread-live', 'project-sweep', 'Live', '{"provider":"codex","model":"gpt-5-codex"}',
+              'thread-live', 'project-sweep', 'Live', '{"provider":"openai","model":"gpt-5-codex"}',
               'full-access', 'default', 'local',
               '2026-06-13T09:00:00.000Z', '2026-06-13T09:00:00.000Z', NULL
             ),
             (
               'thread-manual', 'project-sweep', 'Manual',
-              '{"provider":"codex","model":"gpt-5-codex"}',
+              '{"provider":"openai","model":"gpt-5-codex"}',
               'full-access', 'default', 'local',
               '2026-06-13T09:00:00.000Z', '2026-06-13T09:00:00.000Z', '2026-06-15T10:00:00.000Z'
             ),
             (
               'thread-retention', 'project-sweep', 'Retention',
-              '{"provider":"codex","model":"gpt-5-codex"}',
+              '{"provider":"openai","model":"gpt-5-codex"}',
               'full-access', 'default', 'local',
               '2026-06-08T09:00:00.000Z', '2026-06-08T09:00:00.000Z', '2026-06-15T09:00:00.000Z'
             )

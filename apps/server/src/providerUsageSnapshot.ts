@@ -492,120 +492,12 @@ async function readClaudeUsageSamples(path: string): Promise<ReadonlyArray<Claud
   return samples;
 }
 
-async function loadCodexUsageSnapshot(input: {
-  homeDir: string;
-  homePath?: string;
-}): Promise<UsageSnapshot | null> {
-  const codexHomeDir =
-    input.homePath?.trim() || process.env.CODEX_HOME || nodePath.join(input.homeDir, ".codex");
-  const sessionsRoot = nodePath.join(codexHomeDir, "sessions");
-  const sessionFiles = await listRecentCodexSessionFiles(sessionsRoot);
-  if (sessionFiles.length === 0) {
-    return null;
-  }
-
-  const sessionSummaries = (
-    await mapWithConcurrency(
-      sessionFiles,
-      PROVIDER_USAGE_FILE_READ_CONCURRENCY,
-      readCodexSessionSummary,
-    )
-  ).filter((summary): summary is CodexSessionSummary => summary !== null);
-
-  if (sessionSummaries.length === 0) {
-    return null;
-  }
-
-  const latestSummary = sessionSummaries.reduce((latest, current) =>
-    current.timestampMs > latest.timestampMs ? current : latest,
-  );
-  const nowMs = Date.now();
-  const cutoff24h = nowMs - ONE_DAY_MS;
-  const cutoff7d = nowMs - LOOKBACK_7D_MS;
-  const cutoff30d = nowMs - LOOKBACK_30D_MS;
-
-  const recent24h = sessionSummaries.filter((summary) => summary.timestampMs >= cutoff24h);
-  const recent7d = sessionSummaries.filter((summary) => summary.timestampMs >= cutoff7d);
-  const recent30d = sessionSummaries.filter((summary) => summary.timestampMs >= cutoff30d);
-
-  return {
-    provider: "codex",
-    updatedAt: toIsoString(latestSummary.timestampMs),
-    limits: latestSummary.limits,
-    usageLines: buildUsageLines({
-      tokens24h: recent24h.reduce((total, summary) => total + summary.totalTokens, 0),
-      tokens7d: recent7d.reduce((total, summary) => total + summary.totalTokens, 0),
-      tokens30d: recent30d.reduce((total, summary) => total + summary.totalTokens, 0),
-      sessions24h: recent24h.length,
-      sessions7d: recent7d.length,
-      sessions30d: recent30d.length,
-    }),
-    source: "codex-session-archive",
-  };
-}
-
-async function loadClaudeUsageSnapshot(input: { homeDir: string }): Promise<UsageSnapshot | null> {
-  const projectsRoot = resolveClaudeProjectsRoot(input.homeDir);
-  const transcriptFiles = await listRecentClaudeTranscriptFiles(projectsRoot);
-  if (transcriptFiles.length === 0) {
-    return null;
-  }
-
-  const usageSamples = (
-    await mapWithConcurrency(
-      transcriptFiles,
-      PROVIDER_USAGE_FILE_READ_CONCURRENCY,
-      readClaudeUsageSamples,
-    )
-  ).flat();
-
-  if (usageSamples.length === 0) {
-    return null;
-  }
-
-  const nowMs = Date.now();
-  const cutoff24h = nowMs - ONE_DAY_MS;
-  const cutoff7d = nowMs - LOOKBACK_7D_MS;
-  const cutoff30d = nowMs - LOOKBACK_30D_MS;
-  const recent24h = usageSamples.filter((sample) => sample.timestampMs >= cutoff24h);
-  const recent7d = usageSamples.filter((sample) => sample.timestampMs >= cutoff7d);
-  const recent30d = usageSamples.filter((sample) => sample.timestampMs >= cutoff30d);
-  const latestSample = usageSamples.reduce((latest, current) =>
-    current.timestampMs > latest.timestampMs ? current : latest,
-  );
-
-  return {
-    provider: "claudeAgent",
-    updatedAt: toIsoString(latestSample.timestampMs),
-    limits: [],
-    usageLines: buildUsageLines({
-      tokens24h: recent24h.reduce((total, sample) => total + sample.totalTokens, 0),
-      tokens7d: recent7d.reduce((total, sample) => total + sample.totalTokens, 0),
-      tokens30d: recent30d.reduce((total, sample) => total + sample.totalTokens, 0),
-      sessions24h: new Set(recent24h.map((sample) => sample.sessionId)).size,
-      sessions7d: new Set(recent7d.map((sample) => sample.sessionId)).size,
-      sessions30d: new Set(recent30d.map((sample) => sample.sessionId)).size,
-    }),
-    source: "claude-project-transcripts",
-  };
-}
-
-async function loadProviderUsageSnapshot(input: {
+async function loadProviderUsageSnapshot(_input: {
   provider: ProviderKind;
   homeDir: string;
   homePath?: string;
 }): Promise<ServerGetProviderUsageSnapshotResult> {
-  switch (input.provider) {
-    case "codex":
-      return loadCodexUsageSnapshot({
-        homeDir: input.homeDir,
-        ...(input.homePath ? { homePath: input.homePath } : {}),
-      });
-    case "claudeAgent":
-      return loadClaudeUsageSnapshot({ homeDir: input.homeDir });
-    default:
-      return null;
-  }
+  return null;
 }
 
 async function getCachedProviderUsageSnapshot(input: {
@@ -659,17 +551,11 @@ export const getProviderUsageSnapshot = Effect.fn(function* (
   });
 });
 
-// Reused by the live-usage batch (providerUsage/index.ts) to enrich live snapshots with the
-// locally-derived 24h/7d/30d token-total lines for providers that keep on-disk archives.
-export async function loadLocalProviderUsageLines(input: {
+// Kept for API compatibility; local archives removed with CLI providers.
+export async function loadLocalProviderUsageLines(_input: {
   provider: ProviderKind;
   homeDir: string;
   homePath?: string;
 }): Promise<ReadonlyArray<ServerProviderUsageLine>> {
-  try {
-    const snapshot = await getCachedProviderUsageSnapshot(input);
-    return snapshot?.usageLines ?? [];
-  } catch {
-    return [];
-  }
+  return [];
 }

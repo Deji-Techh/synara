@@ -22,8 +22,8 @@ layer("059_ProviderSessionLifecycleGeneration", (it) => {
           last_seen_at
         ) VALUES (
           'thread-legacy-generation',
-          'codex',
-          'codex',
+          'openai',
+          'openai',
           'full-access',
           'stopped',
           '2026-07-14T13:00:00.000Z'

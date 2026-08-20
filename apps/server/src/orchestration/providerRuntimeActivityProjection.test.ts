@@ -23,7 +23,7 @@ const TURN_ID = TurnId.makeUnsafe("turn-activity-projection");
 
 function runtimeEvent(input: Record<string, unknown> & { eventId: string }): ProviderRuntimeEvent {
   return {
-    provider: "codex",
+    provider: "openai",
     createdAt: CREATED_AT,
     threadId: THREAD_ID,
     ...input,
@@ -282,7 +282,7 @@ describe("provider runtime activity projection", () => {
       runtimeEvent({
         type: "item.completed",
         eventId: "reasoning-cursor",
-        provider: "cursor",
+        provider: "openai",
         turnId: TURN_ID,
         itemId: RuntimeItemId.makeUnsafe("reasoning-cursor"),
         payload: { itemType: "reasoning", status: "completed", detail: "Readable" },
@@ -290,7 +290,7 @@ describe("provider runtime activity projection", () => {
     ];
     expect(absent.map(projectProviderRuntimeActivities)).toEqual([[], [], []]);
 
-    for (const provider of ["codex", "antigravity"] as const) {
+    for (const provider of ["openai", "google"] as const) {
       const [activity] = projectProviderRuntimeActivities(
         runtimeEvent({
           type: "item.completed",
@@ -354,7 +354,7 @@ describe("provider runtime activity projection", () => {
     expect(providerActivityUpdateFingerprint(activity!)).toContain('"kind":"tool.updated"');
   });
 
-  it.each(["antigravity", "codex"] as const)(
+  it.each(["google", "openai"] as const)(
     "projects %s tool lifecycle events through the same canonical activities",
     (provider) => {
       const itemId = RuntimeItemId.makeUnsafe(`${provider}-tool-1`);
@@ -553,7 +553,7 @@ describe("provider runtime activity projection", () => {
       runtimeEvent({
         type: "thread.token-usage.updated",
         eventId: "context-usage",
-        provider: "claudeAgent",
+        provider: "anthropic",
         payload: { usage: { usedTokens: 1_200, maxTokens: 200_000, usedPercent: 0.6 } },
       }),
     );
@@ -563,7 +563,7 @@ describe("provider runtime activity projection", () => {
         usedTokens: 1_200,
         maxTokens: 200_000,
         usedPercent: 0.6,
-        provider: "claudeAgent",
+        provider: "anthropic",
       },
     });
 
@@ -571,7 +571,7 @@ describe("provider runtime activity projection", () => {
       runtimeEvent({
         type: "session.configured",
         eventId: "context-configured",
-        provider: "claudeAgent",
+        provider: "anthropic",
         payload: { config: { autoCompactWindow: "1m" } },
       }),
     );
@@ -584,7 +584,7 @@ describe("provider runtime activity projection", () => {
       runtimeEvent({
         type: "session.configured",
         eventId: "legacy-context-configured",
-        provider: "claudeAgent",
+        provider: "anthropic",
         payload: { config: { contextWindow: "200k" } },
       }),
     );
@@ -597,7 +597,7 @@ describe("provider runtime activity projection", () => {
       runtimeEvent({
         type: "session.configured",
         eventId: "cleared-context-configured",
-        provider: "claudeAgent",
+        provider: "anthropic",
         payload: { config: { autoCompactWindow: null } },
       }),
     );
@@ -610,7 +610,7 @@ describe("provider runtime activity projection", () => {
       runtimeEvent({
         type: "turn.completed",
         eventId: "turn-usage",
-        provider: "claudeAgent",
+        provider: "anthropic",
         turnId: TURN_ID,
         payload: {
           state: "completed",

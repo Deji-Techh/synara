@@ -47,7 +47,7 @@ layer("078_ExternalMcpLiveTurnCapacity", (it) => {
           created_at, updated_at
         ) VALUES (
           'thread-migration-78', 'project-migration-78', 'Migration 78 task',
-          '{"provider":"codex","model":"gpt-5.5"}', 'turn-migration-78',
+          '{"provider":"openai","model":"gpt-5.5"}', 'turn-migration-78',
           '2026-07-21T00:00:00.000Z', '2026-07-21T00:01:00.000Z'
         )
       `;
@@ -55,7 +55,7 @@ layer("078_ExternalMcpLiveTurnCapacity", (it) => {
         INSERT INTO projection_thread_sessions (
           thread_id, status, provider_name, active_turn_id, last_error, updated_at
         ) VALUES (
-          'thread-migration-78', 'error', 'codex', NULL, 'Later startup failed.',
+          'thread-migration-78', 'error', 'openai', NULL, 'Later startup failed.',
           '2026-07-21T00:01:00.000Z'
         )
       `;

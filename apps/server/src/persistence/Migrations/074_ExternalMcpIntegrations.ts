@@ -10,7 +10,7 @@ export default Effect.gen(function* () {
       name TEXT NOT NULL CHECK (length(name) BETWEEN 1 AND 120),
       audience TEXT NOT NULL CHECK (audience = 'caide.external-mcp'),
       client_kind TEXT NOT NULL CHECK (
-        client_kind IN ('codex', 'claudeCode', 'claudeDesktop', 'other')
+        client_kind IN ('openai', 'claudeCode', 'claudeDesktop', 'other')
       ),
       credential_hash TEXT UNIQUE,
       capabilities_json TEXT NOT NULL,

@@ -29,9 +29,9 @@ function initializeWithAuthMethods(ids: ReadonlyArray<string>): Acp.InitializeRe
 
 describe("resolveDroidCliBinaryPath", () => {
   it("prefers ~/.local/bin/droid when it exists", () => {
-    const localBin = join(homedir(), ".local", "bin", "droid");
+    const localBin = join(homedir(), ".local", "bin", "openai");
     const resolved = resolveDroidCliBinaryPath("");
-    expect(resolved).toBe(existsSync(localBin) ? localBin : "droid");
+    expect(resolved).toBe(existsSync(localBin) ? localBin : "openai");
   });
 });
 

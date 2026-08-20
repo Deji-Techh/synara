@@ -18,14 +18,12 @@ import type { FileSystem, Path } from "effect";
 import { Data, Effect, Option } from "effect";
 
 import { resolveThreadWorkspaceCwd } from "../checkpointing/Utils";
-import { loadClaudeAgentSdk } from "../provider/claudeAgentSdk.ts";
 import type { OrchestrationEngineShape } from "./Services/OrchestrationEngine";
 import type { ProjectionSnapshotQueryShape } from "./Services/ProjectionSnapshotQuery";
 import type { ProviderAdapterRegistryShape } from "../provider/Services/ProviderAdapterRegistry";
 import type { ProviderServiceShape } from "../provider/Services/ProviderService";
 import { parseManagedWorktreeWorkspaceRoot } from "../workspace/managedWorktree";
 import {
-  mapClaudeSessionMessages,
   mapCodexSnapshotMessages,
   mapFactorySnapshotMessages,
   mapOpenCodeSnapshotMessages,
@@ -43,13 +41,24 @@ function importMessagesError(message: string): ImportThreadError {
 
 function providerResumeCursorForImport(provider: ProviderKind, externalId: string): unknown {
   switch (provider) {
-    case "claudeAgent":
+    case "anthropic":
       return { resume: externalId };
-    case "droid":
+    case "engine":
       return { schemaVersion: 1, sessionId: externalId };
-    case "kilo":
-    case "opencode":
-      return { openCodeSessionId: externalId };
+    case "openai":
+    case "google":
+    case "openrouter":
+    case "ollama":
+    case "deepseek":
+    case "groq":
+    case "mistral":
+    case "together":
+    case "cohere":
+    case "xai":
+    case "fireworks":
+    case "opencodeZen":
+    case "opencodeGo":
+      return { threadId: externalId };
     default:
       return { threadId: externalId };
   }
@@ -99,44 +108,15 @@ export function makeImportThreadHandler(options: ImportThreadHandlerOptions) {
           createdAt: input.createdAt,
         });
 
-  const ensureClaudeThreadImportable = Effect.fn(function* (input: {
+  const ensureAnthropicThreadImportable = Effect.fn(function* (_input: {
     readonly cwd: string | undefined;
     readonly externalId: string;
   }) {
-    const claudeSessionInfo = yield* Effect.tryPromise({
-      try: async () => {
-        const { getSessionInfo } = await loadClaudeAgentSdk();
-        return getSessionInfo(input.externalId, input.cwd ? { dir: input.cwd } : undefined);
-      },
-      catch: (cause) =>
-        importMessagesError(
-          cause instanceof Error && cause.message.length > 0
-            ? cause.message
-            : "Failed to inspect Claude session metadata.",
-        ),
-    });
-
-    if (claudeSessionInfo) return;
-
-    const sessionFoundElsewhere = yield* Effect.tryPromise({
-      try: async () => {
-        const { getSessionInfo } = await loadClaudeAgentSdk();
-        return getSessionInfo(input.externalId);
-      },
-      catch: () => undefined,
-    });
-
-    return yield* Effect.fail(
-      importMessagesError(
-        sessionFoundElsewhere && input.cwd
-          ? `Claude session '${input.externalId}' exists, but not for this workspace. Claude resume only works when the session file is stored for '${input.cwd}'.`
-          : `Claude session '${input.externalId}' was not found on this machine for this workspace. Claude import only works with a locally persisted Claude session ID.`,
-      ),
-    );
+    return;
   });
 
   const resolveImportedProviderThreadContext = Effect.fn(function* (input: {
-    readonly provider: "codex" | "droid" | "kilo" | "opencode";
+    readonly provider: ProviderKind;
     readonly externalId: string;
     readonly projectWorkspaceRoot: string;
     readonly fallbackCwd?: string;
@@ -221,11 +201,11 @@ export function makeImportThreadHandler(options: ImportThreadHandlerOptions) {
     }
   });
 
-  const importCodexThreadHistory = Effect.fn(function* (input: {
+  const importOpenAiThreadHistory = Effect.fn(function* (input: {
     readonly importedAt: string;
     readonly threadId: ThreadId;
   }) {
-    const adapter = yield* options.providerAdapterRegistry.getByProvider("codex");
+    const adapter = yield* options.providerAdapterRegistry.getByProvider("openai");
     const snapshot = yield* adapter
       .readThread(input.threadId)
       .pipe(
@@ -233,7 +213,7 @@ export function makeImportThreadHandler(options: ImportThreadHandlerOptions) {
           importMessagesError(
             cause instanceof Error && cause.message.length > 0
               ? cause.message
-              : "Failed to read Codex thread history.",
+              : "Failed to read OpenAI thread history.",
           ),
         ),
       );
@@ -249,30 +229,56 @@ export function makeImportThreadHandler(options: ImportThreadHandlerOptions) {
     });
   });
 
-  const importClaudeThreadHistory = Effect.fn(function* (input: {
-    readonly cwd: string | undefined;
-    readonly externalId: string;
+  const importAnthropicThreadHistory = Effect.fn(function* (input: {
     readonly importedAt: string;
     readonly threadId: ThreadId;
   }) {
-    const sessionMessages = yield* Effect.tryPromise({
-      try: async () => {
-        const { getSessionMessages } = await loadClaudeAgentSdk();
-        return getSessionMessages(input.externalId, input.cwd ? { dir: input.cwd } : undefined);
-      },
-      catch: (cause) =>
-        importMessagesError(
-          cause instanceof Error && cause.message.length > 0
-            ? cause.message
-            : "Failed to read Claude session history.",
+    const adapter = yield* options.providerAdapterRegistry.getByProvider("anthropic");
+    const snapshot = yield* adapter
+      .readThread(input.threadId)
+      .pipe(
+        Effect.mapError((cause) =>
+          importMessagesError(
+            cause instanceof Error && cause.message.length > 0
+              ? cause.message
+              : "Failed to read Anthropic session history.",
+          ),
         ),
-    });
+      );
 
     yield* dispatchImportedMessages({
       threadId: input.threadId,
-      messages: mapClaudeSessionMessages({
+      messages: mapCodexSnapshotMessages({
         threadId: input.threadId,
-        messages: sessionMessages,
+        turns: snapshot.turns,
+        importedAt: input.importedAt,
+      }),
+      createdAt: input.importedAt,
+    });
+  });
+
+  const importEngineThreadHistory = Effect.fn(function* (input: {
+    readonly importedAt: string;
+    readonly threadId: ThreadId;
+  }) {
+    const adapter = yield* options.providerAdapterRegistry.getByProvider("engine");
+    const snapshot = yield* adapter
+      .readThread(input.threadId)
+      .pipe(
+        Effect.mapError((cause) =>
+          importMessagesError(
+            cause instanceof Error && cause.message.length > 0
+              ? cause.message
+              : "Failed to read Engine session history.",
+          ),
+        ),
+      );
+
+    yield* dispatchImportedMessages({
+      threadId: input.threadId,
+      messages: mapCodexSnapshotMessages({
+        threadId: input.threadId,
+        turns: snapshot.turns,
         importedAt: input.importedAt,
       }),
       createdAt: input.importedAt,
@@ -281,7 +287,7 @@ export function makeImportThreadHandler(options: ImportThreadHandlerOptions) {
 
   const importOpenCodeCompatibleThreadHistory = Effect.fn(function* (input: {
     readonly importedAt: string;
-    readonly provider: "kilo" | "opencode";
+    readonly provider: ProviderKind;
     readonly threadId: ThreadId;
   }) {
     const adapter = yield* options.providerAdapterRegistry.getByProvider(input.provider);
@@ -292,7 +298,7 @@ export function makeImportThreadHandler(options: ImportThreadHandlerOptions) {
           importMessagesError(
             cause instanceof Error && cause.message.length > 0
               ? cause.message
-              : `Failed to read ${input.provider === "kilo" ? "Kilo" : "OpenCode"} session history.`,
+              : `Failed to read ${String(input.provider)} session history.`,
           ),
         ),
       );
@@ -308,14 +314,15 @@ export function makeImportThreadHandler(options: ImportThreadHandlerOptions) {
     });
   });
 
-  const importDroidThreadHistory = Effect.fn(function* (input: {
+  const importGenericThreadHistory = Effect.fn(function* (input: {
     readonly externalId: string;
     readonly importedAt: string;
     readonly threadId: ThreadId;
+    readonly provider: ProviderKind;
   }) {
-    const adapter = yield* options.providerAdapterRegistry.getByProvider("droid");
+    const adapter = yield* options.providerAdapterRegistry.getByProvider(input.provider);
     if (!adapter.readExternalThread) {
-      return yield* Effect.fail(importMessagesError("Droid session import is unavailable."));
+      return yield* Effect.fail(importMessagesError(`${String(input.provider)} session import is unavailable.`));
     }
     const snapshot = yield* adapter
       .readExternalThread({ externalThreadId: input.externalId })
@@ -324,7 +331,7 @@ export function makeImportThreadHandler(options: ImportThreadHandlerOptions) {
           importMessagesError(
             cause instanceof Error && cause.message.length > 0
               ? cause.message
-              : "Failed to read Droid session history.",
+              : `Failed to read ${String(input.provider)} session history.`,
           ),
         ),
       );
@@ -371,10 +378,10 @@ export function makeImportThreadHandler(options: ImportThreadHandlerOptions) {
     const externalId = body.externalId.trim();
 
     const importedProviderContext =
-      (thread.modelSelection.provider === "codex" ||
-        thread.modelSelection.provider === "droid" ||
-        thread.modelSelection.provider === "kilo" ||
-        thread.modelSelection.provider === "opencode") &&
+      (thread.modelSelection.provider === "openai" ||
+        thread.modelSelection.provider === "anthropic" ||
+        thread.modelSelection.provider === "engine" ||
+        thread.modelSelection.provider === "google") &&
       project
         ? yield* resolveImportedProviderThreadContext({
             provider: thread.modelSelection.provider,
@@ -393,8 +400,8 @@ export function makeImportThreadHandler(options: ImportThreadHandlerOptions) {
       });
     }
 
-    if (thread.modelSelection.provider === "claudeAgent") {
-      yield* ensureClaudeThreadImportable({
+    if (thread.modelSelection.provider === "anthropic") {
+      yield* ensureAnthropicThreadImportable({
         cwd,
         externalId,
       });
@@ -411,45 +418,49 @@ export function makeImportThreadHandler(options: ImportThreadHandlerOptions) {
         ? { cwd: importedProviderContext?.runtimeCwd ?? cwd }
         : {}),
       modelSelection: thread.modelSelection,
-      ...(thread.modelSelection.provider === "codex"
+      ...(thread.modelSelection.provider === "openai"
         ? { forkSourceResumeCursor: importResumeCursor }
         : { resumeCursor: importResumeCursor }),
       runtimeMode: thread.runtimeMode,
     });
 
     yield* Effect.gen(function* () {
-      if (thread.modelSelection.provider === "codex") {
-        yield* importCodexThreadHistory({
+      if (thread.modelSelection.provider === "openai") {
+        yield* importOpenAiThreadHistory({
           threadId: thread.id,
           importedAt: session.updatedAt,
         });
-      } else if (thread.modelSelection.provider === "claudeAgent") {
-        yield* importClaudeThreadHistory({
+      } else if (thread.modelSelection.provider === "anthropic") {
+        yield* importAnthropicThreadHistory({
           threadId: thread.id,
-          externalId,
-          cwd,
           importedAt: session.updatedAt,
         });
-      } else if (thread.modelSelection.provider === "droid") {
-        yield* importDroidThreadHistory({
+      } else if (thread.modelSelection.provider === "engine") {
+        yield* importEngineThreadHistory({
           threadId: thread.id,
-          externalId,
           importedAt: session.updatedAt,
         });
       } else if (
-        thread.modelSelection.provider === "kilo" ||
-        thread.modelSelection.provider === "opencode"
+        thread.modelSelection.provider === "google" ||
+        thread.modelSelection.provider === "openrouter" ||
+        thread.modelSelection.provider === "opencodeZen" ||
+        thread.modelSelection.provider === "opencodeGo"
       ) {
         yield* importOpenCodeCompatibleThreadHistory({
           provider: thread.modelSelection.provider,
           threadId: thread.id,
           importedAt: session.updatedAt,
         });
+      } else {
+        yield* importGenericThreadHistory({
+          provider: thread.modelSelection.provider,
+          threadId: thread.id,
+          externalId,
+          importedAt: session.updatedAt,
+        });
       }
     }).pipe(
       Effect.onError(() =>
-        // Startup precedes history materialization. Roll it back when import
-        // cannot finish so no provider child or persisted binding is orphaned.
         options.providerService.stopSession({ threadId: thread.id }).pipe(Effect.ignore),
       ),
     );

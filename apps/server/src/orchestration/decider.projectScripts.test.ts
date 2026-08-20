@@ -184,7 +184,7 @@ describe("decider project scripts", () => {
           projectId: asProjectId("project-mixed-active"),
           title: "Saved chat",
           modelSelection: {
-            provider: "codex",
+            provider: "openai",
             model: "gpt-5-codex",
           },
           interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -374,7 +374,7 @@ describe("decider project scripts", () => {
           projectId: asProjectId("project-1"),
           title: "Thread",
           modelSelection: {
-            provider: "codex",
+            provider: "openai",
             model: "gpt-5-codex",
           },
           interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -401,7 +401,7 @@ describe("decider project scripts", () => {
             attachments: [],
           },
           modelSelection: {
-            provider: "codex",
+            provider: "openai",
             model: "gpt-5.3-codex",
             options: {
               reasoningEffort: "high",
@@ -431,7 +431,7 @@ describe("decider project scripts", () => {
       threadId: ThreadId.makeUnsafe("thread-1"),
       messageId: asMessageId("message-user-1"),
       modelSelection: {
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5.3-codex",
         options: {
           reasoningEffort: "high",
@@ -485,7 +485,7 @@ describe("decider project scripts", () => {
           projectId: asProjectId("project-1"),
           title: "Thread",
           modelSelection: {
-            provider: "codex",
+            provider: "openai",
             model: "gpt-5-codex",
           },
           interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -568,7 +568,7 @@ describe("decider project scripts", () => {
           projectId: asProjectId("project-1"),
           title: "Thread",
           modelSelection: {
-            provider: "codex",
+            provider: "openai",
             model: "gpt-5-codex",
           },
           interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -651,7 +651,7 @@ describe("decider project scripts", () => {
           projectId: asProjectId("project-handoff"),
           title: "Handoff",
           modelSelection: {
-            provider: "codex",
+            provider: "openai",
             model: "gpt-5-codex",
           },
           interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -660,7 +660,7 @@ describe("decider project scripts", () => {
           worktreePath: null,
           handoff: {
             sourceThreadId: ThreadId.makeUnsafe("thread-original"),
-            sourceProvider: "claudeAgent",
+            sourceProvider: "anthropic",
             importedAt: now,
             bootstrapStatus: "pending",
           },
@@ -706,7 +706,7 @@ describe("decider project scripts", () => {
             projectId: asProjectId("project-handoff"),
             title: "Handoff Copy",
             modelSelection: {
-              provider: "claudeAgent",
+              provider: "anthropic",
               model: "sonnet",
             },
             interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -773,7 +773,7 @@ describe("decider project scripts", () => {
           projectId: asProjectId("project-native-handoff"),
           title: "Handoff",
           modelSelection: {
-            provider: "codex",
+            provider: "openai",
             model: "gpt-5-codex",
           },
           interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -782,7 +782,7 @@ describe("decider project scripts", () => {
           worktreePath: null,
           handoff: {
             sourceThreadId: ThreadId.makeUnsafe("thread-original"),
-            sourceProvider: "claudeAgent",
+            sourceProvider: "anthropic",
             importedAt: now,
             bootstrapStatus: "completed",
           },
@@ -852,7 +852,7 @@ describe("decider project scripts", () => {
           projectId: asProjectId("project-native-handoff"),
           title: "Handoff Copy",
           modelSelection: {
-            provider: "claudeAgent",
+            provider: "anthropic",
             model: "sonnet",
           },
           interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,

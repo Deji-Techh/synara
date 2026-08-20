@@ -146,7 +146,7 @@ function providerOptionRule(
 }
 
 const PROVIDER_TARGET_OPTION_RULES = {
-  codex: defineProviderOptionConfig<"codex">({
+  codex: defineProviderOptionConfig<"openai">({
     primaryOptionKey: "reasoningEffort",
     options: {
       reasoningEffort: providerOptionRule("string", CODEX_REASONING_EFFORT_OPTIONS),
@@ -156,7 +156,7 @@ const PROVIDER_TARGET_OPTION_RULES = {
       }),
     },
   }),
-  cursor: defineProviderOptionConfig<"cursor">({
+  cursor: defineProviderOptionConfig<"openai">({
     primaryOptionKey: "reasoningEffort",
     options: {
       reasoningEffort: providerOptionRule("string", CODEX_REASONING_EFFORT_OPTIONS),
@@ -174,19 +174,19 @@ const PROVIDER_TARGET_OPTION_RULES = {
       }),
     },
   }),
-  grok: defineProviderOptionConfig<"grok">({
+  grok: defineProviderOptionConfig<"openai">({
     primaryOptionKey: "reasoningEffort",
     options: {
       reasoningEffort: providerOptionRule("string", GROK_REASONING_EFFORT_OPTIONS),
     },
   }),
-  droid: defineProviderOptionConfig<"droid">({
+  droid: defineProviderOptionConfig<"openai">({
     primaryOptionKey: "reasoningEffort",
     options: {
       reasoningEffort: providerOptionRule("string", DROID_REASONING_EFFORT_OPTIONS),
     },
   }),
-  claudeAgent: defineProviderOptionConfig<"claudeAgent">({
+  claudeAgent: defineProviderOptionConfig<"anthropic">({
     primaryOptionKey: "effort",
     options: {
       effort: providerOptionRule("string", CLAUDE_CODE_EFFORT_OPTIONS),
@@ -208,15 +208,15 @@ const PROVIDER_TARGET_OPTION_RULES = {
       }),
     },
   }),
-  pi: defineProviderOptionConfig<"pi">({
+  pi: defineProviderOptionConfig<"openai">({
     primaryOptionKey: "thinkingLevel",
     options: { thinkingLevel: providerOptionRule("string", PI_THINKING_LEVEL_OPTIONS) },
   }),
-  antigravity: defineProviderOptionConfig<"antigravity">({
+  antigravity: defineProviderOptionConfig<"google">({
     primaryOptionKey: "reasoningEffort",
     options: { reasoningEffort: providerOptionRule("string", [], "model-discovery") },
   }),
-  kilo: defineProviderOptionConfig<"kilo">({
+  kilo: defineProviderOptionConfig<"openai">({
     primaryOptionKey: "variant",
     options: {
       variant: providerOptionRule("string", [], "model-discovery"),
@@ -226,7 +226,7 @@ const PROVIDER_TARGET_OPTION_RULES = {
       }),
     },
   }),
-  opencode: defineProviderOptionConfig<"opencode">({
+  opencode: defineProviderOptionConfig<"openai">({
     primaryOptionKey: "variant",
     options: {
       variant: providerOptionRule("string", [], "model-discovery"),
@@ -425,7 +425,7 @@ const PROVIDER_TARGET_OPTION_RULES = {
 } as const satisfies Record<ProviderKind, ProviderTargetOptionConfig>;
 
 function providerDefaultModel(provider: ProviderKind): string | null {
-  return provider === "pi" || provider === "engine" ? null : DEFAULT_MODEL_BY_PROVIDER[provider];
+  return provider === "openai" || provider === "engine" ? null : DEFAULT_MODEL_BY_PROVIDER[provider];
 }
 
 export function loadAgentGatewayProviderCatalog(input: {

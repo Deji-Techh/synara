@@ -69,7 +69,7 @@ function runtimeEvent(index: number, threadCount: number): ProviderRuntimeEvent 
   return {
     type: "content.delta",
     eventId: EventId.makeUnsafe(`benchmark-event-${index}`),
-    provider: "codex",
+    provider: "openai",
     createdAt: "2026-08-07T00:00:00.000Z",
     threadId: ThreadId.makeUnsafe(`benchmark-thread-${threadIndex}`),
     turnId: TurnId.makeUnsafe(`benchmark-turn-${threadIndex}`),

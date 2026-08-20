@@ -33,7 +33,7 @@ const readModel: OrchestrationReadModel = {
       title: "Project A",
       workspaceRoot: "/tmp/project-a",
       defaultModelSelection: {
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5-codex",
       },
       scripts: [],
@@ -46,7 +46,7 @@ const readModel: OrchestrationReadModel = {
       title: "Project B",
       workspaceRoot: "/tmp/project-b",
       defaultModelSelection: {
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5-codex",
       },
       scripts: [],
@@ -61,7 +61,7 @@ const readModel: OrchestrationReadModel = {
       projectId: ProjectId.makeUnsafe("project-a"),
       title: "Thread A",
       modelSelection: {
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5-codex",
       },
       interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -84,7 +84,7 @@ const readModel: OrchestrationReadModel = {
       projectId: ProjectId.makeUnsafe("project-b"),
       title: "Thread B",
       modelSelection: {
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5-codex",
       },
       interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -107,7 +107,7 @@ const readModel: OrchestrationReadModel = {
       projectId: ProjectId.makeUnsafe("project-a"),
       title: "Archived Thread",
       modelSelection: {
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5-codex",
       },
       interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -131,7 +131,7 @@ const readModel: OrchestrationReadModel = {
       projectId: ProjectId.makeUnsafe("project-a"),
       title: "Deleted Thread",
       modelSelection: {
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5-codex",
       },
       interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -220,7 +220,7 @@ describe("commandInvariants", () => {
           projectId: ProjectId.makeUnsafe("project-a"),
           title: "new",
           modelSelection: {
-            provider: "codex",
+            provider: "openai",
             model: "gpt-5-codex",
           },
           interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -244,7 +244,7 @@ describe("commandInvariants", () => {
             projectId: ProjectId.makeUnsafe("project-a"),
             title: "dup",
             modelSelection: {
-              provider: "codex",
+              provider: "openai",
               model: "gpt-5-codex",
             },
             interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,

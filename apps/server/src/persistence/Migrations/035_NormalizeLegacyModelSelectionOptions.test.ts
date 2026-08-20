@@ -41,7 +41,7 @@ layer("035_NormalizeLegacyModelSelectionOptions", (it) => {
           'Legacy Options Project',
           '/tmp/legacy-options',
           ${JSON.stringify({
-            instanceId: "codex",
+            instanceId: "openai",
             model: "gpt-5.5",
             options: [{ id: "reasoningEffort", value: "medium" }],
           })},
@@ -169,7 +169,7 @@ layer("035_NormalizeLegacyModelSelectionOptions", (it) => {
             title: "Legacy Options Project",
             workspaceRoot: "/tmp/legacy-options",
             defaultModelSelection: {
-              instanceId: "codex",
+              instanceId: "openai",
               model: "gpt-5.5",
               options: [{ id: "reasoningEffort", value: "low" }],
             },
@@ -195,7 +195,7 @@ layer("035_NormalizeLegacyModelSelectionOptions", (it) => {
             projectId: "project-legacy-options",
             title: "Legacy Options Thread",
             modelSelection: {
-              provider: "codex",
+              provider: "openai",
               model: "gpt-5.5",
               options: [{ id: "reasoningEffort", value: "xhigh" }],
             },
@@ -211,7 +211,7 @@ layer("035_NormalizeLegacyModelSelectionOptions", (it) => {
       `;
 
       const pagedSelectionJson = JSON.stringify({
-        instanceId: "codex",
+        instanceId: "openai",
         model: "gpt-5.5",
         options: [{ id: "reasoningEffort", value: "high" }],
       });
@@ -220,7 +220,7 @@ layer("035_NormalizeLegacyModelSelectionOptions", (it) => {
         projectId: "project-page-fixture",
         title: "Paged fixture",
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5.5",
           options: [{ id: "reasoningEffort", value: "high" }],
         },
@@ -380,39 +380,39 @@ layer("035_NormalizeLegacyModelSelectionOptions", (it) => {
       };
 
       assert.deepStrictEqual(decodeModelSelection(projectSelection), {
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5.5",
         options: { reasoningEffort: "medium" },
       });
       assert.deepStrictEqual(decodeModelSelection(threadSelections.get("claude-opus-4-6")), {
-        provider: "claudeAgent",
+        provider: "anthropic",
         model: "claude-opus-4-6",
         options: { effort: "high", fastMode: true },
       });
       assert.deepStrictEqual(decodeModelSelection(threadSelections.get("openai/gpt-5.4")), {
-        provider: "opencode",
+        provider: "openai",
         model: "openai/gpt-5.4",
         options: { agent: "plan", variant: "fast" },
       });
       assert.deepStrictEqual(decodeModelSelection(threadSelections.get("gpt-5.4")), {
-        provider: "cursor",
+        provider: "openai",
         model: "gpt-5.4",
         options: { reasoningEffort: "high" },
       });
       assert.deepStrictEqual(decodeModelSelection(projectEventPayload.defaultModelSelection), {
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5.5",
         options: { reasoningEffort: "low" },
       });
       assert.deepStrictEqual(decodeModelSelection(threadEventPayload.modelSelection), {
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5.5",
         options: { reasoningEffort: "xhigh" },
       });
       assert.deepStrictEqual(
         decodeModelSelection(JSON.parse(pagedProjectRows[0]!.modelSelection) as unknown),
         {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5.5",
           options: { reasoningEffort: "high" },
         },
@@ -420,7 +420,7 @@ layer("035_NormalizeLegacyModelSelectionOptions", (it) => {
       assert.deepStrictEqual(
         decodeModelSelection(JSON.parse(pagedThreadRows[0]!.modelSelection) as unknown),
         {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5.5",
           options: { reasoningEffort: "high" },
         },
@@ -429,7 +429,7 @@ layer("035_NormalizeLegacyModelSelectionOptions", (it) => {
         readonly modelSelection: unknown;
       };
       assert.deepStrictEqual(decodeModelSelection(pagedEventPayload.modelSelection), {
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5.5",
         options: { reasoningEffort: "high" },
       });

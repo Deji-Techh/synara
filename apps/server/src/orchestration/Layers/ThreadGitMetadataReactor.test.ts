@@ -184,7 +184,7 @@ describe("ThreadGitMetadataReactor", () => {
   const startedEvent = (threadId: ThreadId, turnId: TurnId): ProviderRuntimeEvent => ({
     type: "turn.started",
     eventId: EventId.makeUnsafe(`started-${turnId}`),
-    provider: "codex",
+    provider: "openai",
     threadId,
     turnId,
     createdAt: "2026-08-07T10:00:00.000Z",
@@ -194,7 +194,7 @@ describe("ThreadGitMetadataReactor", () => {
   const completedEvent = (threadId: ThreadId, turnId: TurnId): ProviderRuntimeEvent => ({
     type: "turn.completed",
     eventId: EventId.makeUnsafe(`completed-${turnId}`),
-    provider: "codex",
+    provider: "openai",
     threadId,
     turnId,
     createdAt: "2026-08-07T10:01:00.000Z",
@@ -207,7 +207,7 @@ describe("ThreadGitMetadataReactor", () => {
   ): ProviderRuntimeEvent => ({
     type: "vcs.state.changed",
     eventId: EventId.makeUnsafe(options?.eventId ?? `vcs-${threadId}`),
-    provider: "claudeAgent",
+    provider: "anthropic",
     threadId,
     createdAt: "2026-08-07T10:00:30.000Z",
     payload: { kind: "commit", ...(options?.cwd !== undefined ? { cwd: options.cwd } : {}) },
@@ -216,7 +216,7 @@ describe("ThreadGitMetadataReactor", () => {
   const runtimeErrorEvent = (threadId: ThreadId): ProviderRuntimeEvent => ({
     type: "runtime.error",
     eventId: EventId.makeUnsafe(`runtime-error-${threadId}`),
-    provider: "codex",
+    provider: "openai",
     threadId,
     createdAt: "2026-08-07T10:01:00.000Z",
     payload: { message: "Provider stopped" },

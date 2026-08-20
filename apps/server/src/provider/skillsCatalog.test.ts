@@ -112,7 +112,7 @@ describe("discoverSkillsCatalog", () => {
     await writeSkill(path.join(homeDir, ".grok", "skills", "grok-only"), "grok-only", "Grok");
     await writeSkill(path.join(homeDir, ".kilo", "skills", "kilo-only"), "kilo-only", "Kilo");
     await writeSkill(
-      path.join(homeDir, ".config", "opencode", "skills", "opencode-only"),
+      path.join(homeDir, ".config", "openai", "skills", "opencode-only"),
       "opencode-only",
       "OpenCode",
     );
@@ -122,13 +122,13 @@ describe("discoverSkillsCatalog", () => {
     const byName = new Map(skills.map((skill) => [skill.name, skill]));
 
     expect(byName.get("portable")?.scope).toBe("caide");
-    expect(byName.get("codex-only")?.scope).toBe("codex");
-    expect(byName.get("claude-only")?.scope).toBe("claude");
-    expect(byName.get("cursor-only")?.scope).toBe("cursor");
-    expect(byName.get("grok-only")?.scope).toBe("grok");
-    expect(byName.get("kilo-only")?.scope).toBe("kilo");
-    expect(byName.get("opencode-only")?.scope).toBe("opencode");
-    expect(byName.get("pi-only")?.scope).toBe("pi");
+    expect(byName.get("codex-only")?.scope).toBe("openai");
+    expect(byName.get("claude-only")?.scope).toBe("anthropic");
+    expect(byName.get("cursor-only")?.scope).toBe("openai");
+    expect(byName.get("grok-only")?.scope).toBe("openai");
+    expect(byName.get("kilo-only")?.scope).toBe("openai");
+    expect(byName.get("opencode-only")?.scope).toBe("openai");
+    expect(byName.get("pi-only")?.scope).toBe("openai");
   });
 
   it("discovers only the registered Claude plugin version for Grok with its native namespace", async () => {
@@ -157,11 +157,11 @@ describe("discoverSkillsCatalog", () => {
     const skills = await discoverSkillsCatalog({
       homeDir,
       caideBaseDir,
-      provider: "grok",
+      provider: "openai",
     });
 
     expect(skills.find((skill) => skill.name === "workflow-kit:feature-delivery")).toMatchObject({
-      scope: "claude",
+      scope: "anthropic",
       path: await realpath(path.join(currentInstallPath, "skills", "feature-delivery", "SKILL.md")),
     });
     expect(skills.some((skill) => skill.name.includes("stale-only"))).toBe(false);
@@ -321,7 +321,7 @@ describe("discoverSkillsCatalog", () => {
     });
 
     const linkedSkill = skills.find((skill) => skill.name === "check-code");
-    expect(linkedSkill?.scope).toBe("claude");
+    expect(linkedSkill?.scope).toBe("anthropic");
     expect(linkedSkill?.path).toContain(path.join(".claude", "skills", "check-code", "SKILL.md"));
   });
 
@@ -331,7 +331,7 @@ describe("discoverSkillsCatalog", () => {
 
     const defaultCatalog = await discoverSkillsCatalog({ homeDir, caideBaseDir });
     expect(defaultCatalog.filter((skill) => skill.name === "reviewer")).toHaveLength(1);
-    expect(defaultCatalog.find((skill) => skill.name === "reviewer")?.scope).toBe("codex");
+    expect(defaultCatalog.find((skill) => skill.name === "reviewer")?.scope).toBe("openai");
 
     const settingsCatalog = await discoverSkillsCatalog({
       homeDir,
@@ -339,7 +339,7 @@ describe("discoverSkillsCatalog", () => {
       includeDuplicateOrigins: true,
     });
     expect(settingsCatalog.filter((skill) => skill.name === "reviewer")).toHaveLength(2);
-    expect(settingsCatalog.map((skill) => skill.scope).sort()).toEqual(["claude", "codex"]);
+    expect(settingsCatalog.map((skill) => skill.scope).sort()).toEqual(["anthropic", "openai"]);
   });
 
   it("prefers the provider-native copy and falls back to Caide for that provider", async () => {
@@ -347,9 +347,9 @@ describe("discoverSkillsCatalog", () => {
     await writeSkill(path.join(homeDir, ".codex", "skills", "shared"), "shared", "Codex copy");
     await writeSkill(path.join(caideBaseDir, "skills", "only-caide"), "only-caide", "Fallback");
 
-    const codexView = await discoverSkillsCatalog({ homeDir, caideBaseDir, provider: "codex" });
+    const codexView = await discoverSkillsCatalog({ homeDir, caideBaseDir, provider: "openai" });
     const codexShared = codexView.find((skill) => skill.name === "shared");
-    expect(codexShared?.scope).toBe("codex");
+    expect(codexShared?.scope).toBe("openai");
     expect(codexShared?.path).toContain(path.join(".codex", "skills"));
     expect(codexView.some((skill) => skill.name === "only-caide")).toBe(true);
 
@@ -357,7 +357,7 @@ describe("discoverSkillsCatalog", () => {
     const claudeView = await discoverSkillsCatalog({
       homeDir,
       caideBaseDir,
-      provider: "claudeAgent",
+      provider: "anthropic",
     });
     const claudeShared = claudeView.find((skill) => skill.name === "shared");
     expect(claudeShared?.scope).toBe("caide");
@@ -369,7 +369,7 @@ describe("discoverSkillsCatalog", () => {
     const antigravityView = await discoverSkillsCatalog({
       homeDir,
       caideBaseDir,
-      provider: "antigravity",
+      provider: "google",
     });
 
     expect(antigravityView.find((skill) => skill.name === "shared")?.scope).toBe("agents");
@@ -384,16 +384,16 @@ describe("discoverSkillsCatalog", () => {
     const grokView = await discoverSkillsCatalog({
       homeDir,
       caideBaseDir,
-      provider: "grok",
+      provider: "openai",
     });
     const piView = await discoverSkillsCatalog({
       homeDir,
       caideBaseDir,
-      provider: "pi",
+      provider: "openai",
     });
 
-    expect(grokView.find((skill) => skill.name === "shared")?.scope).toBe("grok");
-    expect(piView.find((skill) => skill.name === "shared")?.scope).toBe("pi");
+    expect(grokView.find((skill) => skill.name === "shared")?.scope).toBe("openai");
+    expect(piView.find((skill) => skill.name === "shared")?.scope).toBe("openai");
   });
 
   it("discovers Pi direct markdown skills from Pi roots", async () => {
@@ -413,7 +413,7 @@ description: Direct Pi markdown skill
     const skills = await discoverSkillsCatalog({ homeDir, caideBaseDir });
 
     const directSkill = skills.find((skill) => skill.name === "direct-review");
-    expect(directSkill?.scope).toBe("pi");
+    expect(directSkill?.scope).toBe("openai");
     expect(directSkill?.path).toContain(path.join(".pi", "agent", "skills", "direct-review.md"));
   });
 
@@ -458,7 +458,7 @@ description: Direct Pi markdown skill
 
     const names = skills.map((skill) => skill.name);
     expect(names.filter((name) => name === "from-codex")).toHaveLength(1);
-    expect(skills.find((skill) => skill.name === "from-codex")?.scope).toBe("codex");
+    expect(skills.find((skill) => skill.name === "from-codex")?.scope).toBe("openai");
     expect(skills.find((skill) => skill.name === "portable")?.scope).toBe("caide");
   });
 

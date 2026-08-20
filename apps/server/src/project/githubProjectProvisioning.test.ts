@@ -16,11 +16,11 @@ function makeInput(destinationParent: string): GitHubProjectProvisionInput {
     operationId: "operation-1",
     repository: "openai/codex",
     destinationParent,
-    directoryName: "codex",
+    directoryName: "openai",
     commandId: CommandId.makeUnsafe("command-1"),
     projectId: ProjectId.makeUnsafe("project-1"),
     newProjectSpaceId: null,
-    defaultModelSelection: { provider: "codex", model: "gpt-5" },
+    defaultModelSelection: { provider: "openai", model: "gpt-5" },
     createdAt: "2026-08-04T00:00:00.000Z",
   };
 }
@@ -141,7 +141,7 @@ describe("GitHub project provisioning", () => {
 
     expect(result.provisioned.checkout).toBe("created");
     expect(result.provisioned.workspaceRoot).toMatch(/[/\\]codex$/);
-    expect(result.entries).toEqual(["codex"]);
+    expect(result.entries).toEqual(["openai"]);
     expect(result.calls).toEqual(["clone public GitHub project", "verify GitHub project clone"]);
   });
 
@@ -151,7 +151,7 @@ describe("GitHub project provisioning", () => {
         const fileSystem = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
         const parent = yield* fileSystem.makeTempDirectoryScoped({ prefix: "caide-provision-" });
-        yield* fileSystem.makeDirectory(path.join(parent, "codex"));
+        yield* fileSystem.makeDirectory(path.join(parent, "openai"));
         const calls: string[] = [];
         const git = {
           execute: (input: Parameters<GitCoreShape["execute"]>[0]) => {
@@ -189,7 +189,7 @@ describe("GitHub project provisioning", () => {
         const fileSystem = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
         const parent = yield* fileSystem.makeTempDirectoryScoped({ prefix: "caide-provision-" });
-        yield* fileSystem.makeDirectory(path.join(parent, "codex"));
+        yield* fileSystem.makeDirectory(path.join(parent, "openai"));
         const git = {
           execute: () =>
             Effect.succeed({
@@ -221,14 +221,14 @@ describe("GitHub project provisioning", () => {
         const fileSystem = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
         const parent = yield* fileSystem.makeTempDirectoryScoped({ prefix: "caide-provision-" });
-        yield* fileSystem.makeDirectory(path.join(parent, "codex"));
+        yield* fileSystem.makeDirectory(path.join(parent, "openai"));
         const git = {
           execute: () =>
             Effect.fail(
               new GitCommandError({
                 operation: "verify GitHub project clone",
                 command: "git remote get-url origin",
-                cwd: path.join(parent, "codex"),
+                cwd: path.join(parent, "openai"),
                 detail: "connection reset",
               }),
             ),

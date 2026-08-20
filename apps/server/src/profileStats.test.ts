@@ -174,7 +174,7 @@ describe("ProfileStatsQuery", () => {
               'thread-codex',
               'project-profile',
               'Codex Thread',
-              '{"provider":"codex","model":"gpt-5-codex","options":{"reasoningEffort":"high"}}',
+              '{"provider":"openai","model":"gpt-5-codex","options":{"reasoningEffort":"high"}}',
               'full-access',
               'default',
               'local',
@@ -186,7 +186,7 @@ describe("ProfileStatsQuery", () => {
               'thread-claude',
               'project-profile',
               'Claude Thread',
-              '{"provider":"claudeAgent","model":"claude-sonnet-4-6","options":{"effort":"max"}}',
+              '{"provider":"anthropic","model":"claude-sonnet-4-6","options":{"effort":"max"}}',
               'full-access',
               'default',
               'local',
@@ -265,7 +265,7 @@ describe("ProfileStatsQuery", () => {
               'thread.turn-start-requested',
               '2026-06-13T09:05:00.000Z',
               'client',
-              '{"threadId":"thread-codex","modelSelection":{"provider":"codex","model":"gpt-5-codex","options":{"reasoningEffort":"high"}}}',
+              '{"threadId":"thread-codex","modelSelection":{"provider":"openai","model":"gpt-5-codex","options":{"reasoningEffort":"high"}}}',
               '{}'
             ),
             (
@@ -276,7 +276,7 @@ describe("ProfileStatsQuery", () => {
               'thread.turn-start-requested',
               '2026-06-13T09:35:00.000Z',
               'client',
-              '{"threadId":"thread-codex","modelSelection":{"provider":"codex","model":"gpt-5-codex","options":{"reasoningEffort":"high"}}}',
+              '{"threadId":"thread-codex","modelSelection":{"provider":"openai","model":"gpt-5-codex","options":{"reasoningEffort":"high"}}}',
               '{}'
             ),
             (
@@ -287,7 +287,7 @@ describe("ProfileStatsQuery", () => {
               'thread.turn-start-requested',
               '2026-06-14T10:05:00.000Z',
               'client',
-              '{"threadId":"thread-claude","modelSelection":{"provider":"claudeAgent","model":"claude-sonnet-4-6","options":{"effort":"max"}}}',
+              '{"threadId":"thread-claude","modelSelection":{"provider":"anthropic","model":"claude-sonnet-4-6","options":{"effort":"max"}}}',
               '{}'
             )
         `;
@@ -298,12 +298,12 @@ describe("ProfileStatsQuery", () => {
         expect(stats.activity.totalThreads).toBe(2);
         expect(stats.activeHours.startHour).toBe(9);
         expect(stats.activeHours.turnCount).toBe(2);
-        expect(stats.insights.topProvider).toBe("codex");
+        expect(stats.insights.topProvider).toBe("openai");
         expect(stats.insights.topProviderPercent).toBeCloseTo(66.7);
         expect(stats.insights.topReasoning).toBe("high");
         expect(stats.insights.topReasoningPercent).toBeCloseTo(66.7);
         expect(stats.providerModels[0]).toMatchObject({
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5-codex",
           turnCount: 2,
         });
@@ -324,13 +324,13 @@ describe("ProfileStatsQuery", () => {
           ) VALUES
             (
               'thread-reused-user', 'project-profile', 'User Thread',
-              '{"provider":"codex","model":"gpt-5-codex"}', 'full-access',
+              '{"provider":"openai","model":"gpt-5-codex"}', 'full-access',
               'default', 'local', '2026-06-13T09:00:00.000Z',
               '2026-06-13T09:00:00.000Z', NULL
             ),
             (
               'thread-reused-agent', 'project-profile', 'Agent Thread',
-              '{"provider":"claudeAgent","model":"claude-sonnet-4-6"}', 'full-access',
+              '{"provider":"anthropic","model":"claude-sonnet-4-6"}', 'full-access',
               'default', 'local', '2026-06-13T10:00:00.000Z',
               '2026-06-13T10:00:00.000Z', NULL
             )
@@ -357,20 +357,20 @@ describe("ProfileStatsQuery", () => {
             (
               'event-reused-user', 'thread', 'thread-reused-user', 1,
               'thread.turn-start-requested', '2026-06-13T09:05:00.000Z', 'client',
-              '{"threadId":"thread-reused-user","messageId":"shared-message-id","modelSelection":{"provider":"codex","model":"gpt-5-codex"}}', '{}'
+              '{"threadId":"thread-reused-user","messageId":"shared-message-id","modelSelection":{"provider":"openai","model":"gpt-5-codex"}}', '{}'
             ),
             (
               'event-reused-agent', 'thread', 'thread-reused-agent', 1,
               'thread.turn-start-requested', '2026-06-13T10:05:00.000Z', 'system',
-              '{"threadId":"thread-reused-agent","messageId":"shared-message-id","modelSelection":{"provider":"claudeAgent","model":"claude-sonnet-4-6"}}', '{}'
+              '{"threadId":"thread-reused-agent","messageId":"shared-message-id","modelSelection":{"provider":"anthropic","model":"claude-sonnet-4-6"}}', '{}'
             )
         `;
 
         const stats = yield* statsQuery.getProfileStats({ utcOffsetMinutes: 0 });
-        expect(stats.insights.topProvider).toBe("codex");
+        expect(stats.insights.topProvider).toBe("openai");
         expect(stats.insights.topProviderPercent).toBe(100);
         expect(stats.providerModels).toEqual([
-          expect.objectContaining({ provider: "codex", model: "gpt-5-codex", turnCount: 1 }),
+          expect.objectContaining({ provider: "openai", model: "gpt-5-codex", turnCount: 1 }),
         ]);
       }),
     );
@@ -400,7 +400,7 @@ describe("ProfileStatsQuery", () => {
               'thread-codex',
               'project-profile',
               'Codex Thread',
-              '{"provider":"codex","model":"gpt-5-codex"}',
+              '{"provider":"openai","model":"gpt-5-codex"}',
               'full-access',
               'default',
               'local',
@@ -412,7 +412,7 @@ describe("ProfileStatsQuery", () => {
               'thread-claude',
               'project-profile',
               'Claude Thread',
-              '{"provider":"claudeAgent","model":"claude-sonnet-4-6"}',
+              '{"provider":"anthropic","model":"claude-sonnet-4-6"}',
               'full-access',
               'default',
               'local',
@@ -443,7 +443,7 @@ describe("ProfileStatsQuery", () => {
               'thread.turn-start-requested',
               '2026-06-13T09:05:00.000Z',
               'client',
-              '{"threadId":"thread-codex","modelSelection":{"provider":"codex","model":"gpt-5-codex"}}',
+              '{"threadId":"thread-codex","modelSelection":{"provider":"openai","model":"gpt-5-codex"}}',
               '{}'
             ),
             (
@@ -454,7 +454,7 @@ describe("ProfileStatsQuery", () => {
               'thread.turn-start-requested',
               '2026-06-13T09:35:00.000Z',
               'client',
-              '{"threadId":"thread-codex","modelSelection":{"provider":"codex","model":"gpt-5-codex"}}',
+              '{"threadId":"thread-codex","modelSelection":{"provider":"openai","model":"gpt-5-codex"}}',
               '{}'
             ),
             (
@@ -465,7 +465,7 @@ describe("ProfileStatsQuery", () => {
               'thread.turn-start-requested',
               '2026-06-13T10:05:00.000Z',
               'client',
-              '{"threadId":"thread-claude","modelSelection":{"provider":"claudeAgent","model":"claude-sonnet-4-6"}}',
+              '{"threadId":"thread-claude","modelSelection":{"provider":"anthropic","model":"claude-sonnet-4-6"}}',
               '{}'
             )
         `;
@@ -512,18 +512,18 @@ describe("ProfileStatsQuery", () => {
         const stats = yield* statsQuery.getProfileStats({ utcOffsetMinutes: 0 });
         const tokenStats = yield* statsQuery.getProfileTokenStats({ utcOffsetMinutes: 0 });
 
-        expect(stats.insights.topProvider).toBe("codex");
+        expect(stats.insights.topProvider).toBe("openai");
         expect(stats.insights.topProviderPercent).toBeCloseTo(66.7);
-        expect(tokenStats.topProvider).toBe("claudeAgent");
+        expect(tokenStats.topProvider).toBe("anthropic");
         expect(tokenStats.topProviderPercent).toBeCloseTo(83.3);
-        expect(tokenStats.providers).toEqual(["claudeAgent", "codex"]);
+        expect(tokenStats.providers).toEqual(["anthropic", "openai"]);
         // Token-based model mix mirrors the token ranking, not the turn counts.
         expect(tokenStats.models).toEqual([
-          { provider: "claudeAgent", model: "claude-sonnet-4-6", tokens: 5000, percent: 83.3 },
-          { provider: "codex", model: "gpt-5-codex", tokens: 1000, percent: 16.7 },
+          { provider: "anthropic", model: "claude-sonnet-4-6", tokens: 5000, percent: 83.3 },
+          { provider: "openai", model: "gpt-5-codex", tokens: 1000, percent: 16.7 },
         ]);
         // Turn-based provider/model mix is unchanged by the token ranking.
-        expect(stats.providerModels[0]).toMatchObject({ provider: "codex", turnCount: 2 });
+        expect(stats.providerModels[0]).toMatchObject({ provider: "openai", turnCount: 2 });
       }),
     );
   });
@@ -556,7 +556,7 @@ describe("ProfileStatsQuery", () => {
               'thread-switch',
               'project-profile',
               'Switch Thread',
-              '{"provider":"claudeAgent","model":"claude-opus-4-8"}',
+              '{"provider":"anthropic","model":"claude-opus-4-8"}',
               'full-access',
               'default',
               'local',
@@ -568,7 +568,7 @@ describe("ProfileStatsQuery", () => {
               'thread-mixed',
               'project-profile',
               'Mixed Counters Thread',
-              '{"provider":"codex","model":"gpt-5-codex"}',
+              '{"provider":"openai","model":"gpt-5-codex"}',
               'full-access',
               'default',
               'local',
@@ -599,7 +599,7 @@ describe("ProfileStatsQuery", () => {
               'thread.turn-start-requested',
               '2026-06-13T09:01:00.000Z',
               'client',
-              '{"threadId":"thread-switch","messageId":"message-switch-1","modelSelection":{"provider":"claudeAgent","model":"claude-fable-5"}}',
+              '{"threadId":"thread-switch","messageId":"message-switch-1","modelSelection":{"provider":"anthropic","model":"claude-fable-5"}}',
               '{}'
             ),
             (
@@ -610,7 +610,7 @@ describe("ProfileStatsQuery", () => {
               'thread.turn-start-requested',
               '2026-06-13T09:20:00.000Z',
               'client',
-              '{"threadId":"thread-switch","messageId":"message-switch-2","modelSelection":{"provider":"claudeAgent","model":"claude-opus-4-8"}}',
+              '{"threadId":"thread-switch","messageId":"message-switch-2","modelSelection":{"provider":"anthropic","model":"claude-opus-4-8"}}',
               '{}'
             )
         `;
@@ -732,11 +732,11 @@ describe("ProfileStatsQuery", () => {
 
         expect(tokenStats.available).toBe(true);
         expect(tokenStats.lifetimeTotalTokens).toBe(11000);
-        expect(tokenStats.topProvider).toBe("codex");
+        expect(tokenStats.topProvider).toBe("openai");
         expect(tokenStats.models).toEqual([
-          { provider: "codex", model: "gpt-5-codex", tokens: 6000, percent: 54.5 },
-          { provider: "claudeAgent", model: "claude-fable-5", tokens: 3000, percent: 27.3 },
-          { provider: "claudeAgent", model: "claude-opus-4-8", tokens: 2000, percent: 18.2 },
+          { provider: "openai", model: "gpt-5-codex", tokens: 6000, percent: 54.5 },
+          { provider: "anthropic", model: "claude-fable-5", tokens: 3000, percent: 27.3 },
+          { provider: "anthropic", model: "claude-opus-4-8", tokens: 2000, percent: 18.2 },
         ]);
       }),
     );
@@ -765,7 +765,7 @@ describe("ProfileStatsQuery", () => {
             'thread-hybrid',
             'project-profile',
             'Hybrid Telemetry Thread',
-            '{"provider":"codex","model":"gpt-5-codex"}',
+            '{"provider":"openai","model":"gpt-5-codex"}',
             'full-access',
             'default',
             'local',
@@ -796,7 +796,7 @@ describe("ProfileStatsQuery", () => {
               'thread.turn-start-requested',
               '2026-06-13T12:01:00.000Z',
               'client',
-              '{"threadId":"thread-hybrid","messageId":"message-hybrid-codex","modelSelection":{"provider":"codex","model":"gpt-5-codex"}}',
+              '{"threadId":"thread-hybrid","messageId":"message-hybrid-codex","modelSelection":{"provider":"openai","model":"gpt-5-codex"}}',
               '{}'
             ),
             (
@@ -807,7 +807,7 @@ describe("ProfileStatsQuery", () => {
               'thread.turn-start-requested',
               '2026-06-13T12:10:00.000Z',
               'client',
-              '{"threadId":"thread-hybrid","messageId":"message-hybrid-claude","modelSelection":{"provider":"claudeAgent","model":"claude-haiku-4-5"}}',
+              '{"threadId":"thread-hybrid","messageId":"message-hybrid-claude","modelSelection":{"provider":"anthropic","model":"claude-haiku-4-5"}}',
               '{}'
             )
         `;
@@ -917,8 +917,8 @@ describe("ProfileStatsQuery", () => {
 
         expect(tokenStats.lifetimeTotalTokens).toBe(4200);
         expect(tokenStats.models).toEqual([
-          { provider: "codex", model: "gpt-5-codex", tokens: 2500, percent: 59.5 },
-          { provider: "claudeAgent", model: "claude-haiku-4-5", tokens: 1700, percent: 40.5 },
+          { provider: "openai", model: "gpt-5-codex", tokens: 2500, percent: 59.5 },
+          { provider: "anthropic", model: "claude-haiku-4-5", tokens: 1700, percent: 40.5 },
         ]);
       }),
     );
@@ -948,7 +948,7 @@ describe("ProfileStatsQuery", () => {
               'thread-skills',
               'project-profile',
               'Skill Thread',
-              '{"provider":"codex","model":"gpt-5-codex"}',
+              '{"provider":"openai","model":"gpt-5-codex"}',
               'full-access',
               'default',
               'local',
@@ -960,7 +960,7 @@ describe("ProfileStatsQuery", () => {
               'thread-retention-hidden',
               'project-profile',
               'Retention Hidden Skill Thread',
-              '{"provider":"codex","model":"gpt-5-codex"}',
+              '{"provider":"openai","model":"gpt-5-codex"}',
               'full-access',
               'default',
               'local',
@@ -972,7 +972,7 @@ describe("ProfileStatsQuery", () => {
               'thread-manual-deleted',
               'project-profile',
               'Manual Deleted Skill Thread',
-              '{"provider":"codex","model":"gpt-5-codex"}',
+              '{"provider":"openai","model":"gpt-5-codex"}',
               'full-access',
               'default',
               'local',
@@ -1187,7 +1187,7 @@ describe("ProfileStatsQuery", () => {
               'thread-alpha',
               'project-alpha',
               'Alpha Thread',
-              '{"provider":"codex","model":"gpt-5-codex"}',
+              '{"provider":"openai","model":"gpt-5-codex"}',
               'full-access',
               'default',
               'local',
@@ -1199,7 +1199,7 @@ describe("ProfileStatsQuery", () => {
               'thread-beta',
               'project-beta',
               'Beta Thread',
-              '{"provider":"codex","model":"gpt-5-codex"}',
+              '{"provider":"openai","model":"gpt-5-codex"}',
               'full-access',
               'default',
               'local',
@@ -1211,7 +1211,7 @@ describe("ProfileStatsQuery", () => {
               'thread-alpha-deleted',
               'project-alpha',
               'Deleted Alpha Thread',
-              '{"provider":"codex","model":"gpt-5-codex"}',
+              '{"provider":"openai","model":"gpt-5-codex"}',
               'full-access',
               'default',
               'local',
@@ -1223,7 +1223,7 @@ describe("ProfileStatsQuery", () => {
               'thread-deleted-project',
               'project-deleted',
               'Deleted Project Thread',
-              '{"provider":"codex","model":"gpt-5-codex"}',
+              '{"provider":"openai","model":"gpt-5-codex"}',
               'full-access',
               'default',
               'local',
@@ -1389,7 +1389,7 @@ describe("ProfileStatsQuery", () => {
             'thread-streak',
             'project-streak',
             'Streak Thread',
-            '{"provider":"codex","model":"gpt-5-codex"}',
+            '{"provider":"openai","model":"gpt-5-codex"}',
             'full-access',
             'default',
             'local',
@@ -1508,7 +1508,7 @@ describe("ProfileStatsQuery", () => {
               'info',
               'context-window.updated',
               'tokens updated',
-              '{"totalProcessedTokens":1000,"provider":"claudeAgent"}',
+              '{"totalProcessedTokens":1000,"provider":"anthropic"}',
               1,
               '2026-06-14T09:05:00.000Z'
             ),
@@ -1519,7 +1519,7 @@ describe("ProfileStatsQuery", () => {
               'info',
               'context-window.updated',
               'tokens updated',
-              '{"totalProcessedTokens":1500,"provider":"claudeAgent"}',
+              '{"totalProcessedTokens":1500,"provider":"anthropic"}',
               2,
               '2026-06-14T09:10:00.000Z'
             )
@@ -1529,9 +1529,9 @@ describe("ProfileStatsQuery", () => {
 
         expect(tokenStats.available).toBe(true);
         expect(tokenStats.lifetimeTotalTokens).toBe(1500);
-        expect(tokenStats.providers).toEqual(["claudeAgent"]);
+        expect(tokenStats.providers).toEqual(["anthropic"]);
         expect(tokenStats.models).toEqual([
-          { provider: "claudeAgent", model: "unknown", tokens: 1500, percent: 100 },
+          { provider: "anthropic", model: "unknown", tokens: 1500, percent: 100 },
         ]);
       }),
     );

@@ -122,10 +122,10 @@ export function buildGrokAcpSpawnInput(
   args.push("stdio");
 
   return {
-    command: grokSettings?.binaryPath || "grok",
+    command: grokSettings?.binaryPath || "openai",
     args,
     cwd,
-    env: buildProviderChildEnvironment({ provider: "grok" }),
+    env: buildProviderChildEnvironment({ provider: "openai" }),
   };
 }
 

@@ -10,15 +10,15 @@ import { Schema } from "effect";
 import { AGENT_GATEWAY_TARGET_OPTIONS_DESCRIPTION } from "./targetResolver.ts";
 
 export const PROVIDER_KINDS: ReadonlyArray<ProviderKind> = [
-  "codex",
-  "claudeAgent",
-  "cursor",
-  "antigravity",
-  "grok",
-  "droid",
-  "kilo",
-  "opencode",
-  "pi",
+  "openai",
+  "anthropic",
+  "openai",
+  "google",
+  "openai",
+  "openai",
+  "openai",
+  "openai",
+  "openai",
 ];
 
 export const MODEL_SELECTION_INPUT_SCHEMA = {
@@ -133,9 +133,9 @@ export function buildModelSelection(
 ): ModelSelection {
   const effectiveModel =
     model ??
-    (provider === "pi" || provider === "engine"
+    (provider === "openai" || provider === "engine"
       ? undefined
-      : DEFAULT_MODEL_BY_PROVIDER[provider as Exclude<ProviderKind, "pi" | "engine">]);
+      : DEFAULT_MODEL_BY_PROVIDER[provider as Exclude<ProviderKind, "openai" | "engine">]);
   if (!effectiveModel) {
     throw new ToolInputError(
       `Provider "${provider}" has no default model; pass an explicit "model" argument.`,

@@ -7,20 +7,20 @@ describe("AgentGatewaySessionRegistry", () => {
   it("allows independent legitimate sessions for the same thread", () => {
     let nextId = 0;
     const registry = makeAgentGatewaySessionRegistry({ randomId: () => String(++nextId) });
-    const first = registry.issue(ThreadId.makeUnsafe("thread-1"), "codex");
-    const second = registry.issue(ThreadId.makeUnsafe("thread-1"), "claudeAgent");
+    const first = registry.issue(ThreadId.makeUnsafe("thread-1"), "openai");
+    const second = registry.issue(ThreadId.makeUnsafe("thread-1"), "anthropic");
     assert.notEqual(first.token, second.token);
     assert.equal(registry.verify(first.token)?.threadId, "thread-1");
     assert.equal(registry.verify(second.token)?.threadId, "thread-1");
-    assert.equal(registry.verify(first.token)?.provider, "codex");
-    assert.equal(registry.verify(second.token)?.provider, "claudeAgent");
+    assert.equal(registry.verify(first.token)?.provider, "openai");
+    assert.equal(registry.verify(second.token)?.provider, "anthropic");
   });
 
   it("keeps replacement runtime credentials independent from outgoing-session revocation", () => {
     let nextId = 0;
     const registry = makeAgentGatewaySessionRegistry({ randomId: () => String(++nextId) });
-    const first = registry.issue(ThreadId.makeUnsafe("thread-1"), "codex");
-    const second = registry.issue(ThreadId.makeUnsafe("thread-1"), "codex");
+    const first = registry.issue(ThreadId.makeUnsafe("thread-1"), "openai");
+    const second = registry.issue(ThreadId.makeUnsafe("thread-1"), "openai");
     assert.notEqual(first.token, second.token);
     assert.equal(registry.verify(first.token)?.threadId, "thread-1");
     assert.equal(registry.verify(second.token)?.threadId, "thread-1");
@@ -32,7 +32,7 @@ describe("AgentGatewaySessionRegistry", () => {
 
   it("binds write authority to one exact turn and invalidates it on revocation", () => {
     const registry = makeAgentGatewaySessionRegistry({ randomId: () => "authority" });
-    const issued = registry.issue(ThreadId.makeUnsafe("thread-1"), "codex");
+    const issued = registry.issue(ThreadId.makeUnsafe("thread-1"), "openai");
     const authority = registry.bindWriteAuthority(issued.token, "turn-a");
 
     assert.isNotNull(authority);
@@ -47,7 +47,7 @@ describe("AgentGatewaySessionRegistry", () => {
   it("permanently fences a terminal turn credential even when A never used it", () => {
     let nextId = 0;
     const registry = makeAgentGatewaySessionRegistry({ randomId: () => String(++nextId) });
-    const outgoing = registry.issue(ThreadId.makeUnsafe("thread-1"), "codex");
+    const outgoing = registry.issue(ThreadId.makeUnsafe("thread-1"), "openai");
 
     assert.isTrue(registry.retireWriteAuthority(outgoing.token, "turn-a"));
     assert.isNull(registry.bindWriteAuthority(outgoing.token, "turn-a"));
@@ -57,7 +57,7 @@ describe("AgentGatewaySessionRegistry", () => {
     assert.isTrue(registry.retireWriteAuthority(outgoing.token, "turn-a"));
     assert.isFalse(registry.retireWriteAuthority(outgoing.token, "turn-b"));
 
-    const replacement = registry.issue(ThreadId.makeUnsafe("thread-1"), "codex");
+    const replacement = registry.issue(ThreadId.makeUnsafe("thread-1"), "openai");
     const turnBAuthority = registry.bindWriteAuthority(replacement.token, "turn-b");
     assert.isNotNull(turnBAuthority);
     assert.isTrue(registry.verifyWriteAuthority(turnBAuthority!));
@@ -69,7 +69,7 @@ describe("AgentGatewaySessionRegistry", () => {
       now: () => time,
       randomId: () => "first",
     });
-    const issued = firstRegistry.issue(ThreadId.makeUnsafe("thread-1"), "codex");
+    const issued = firstRegistry.issue(ThreadId.makeUnsafe("thread-1"), "openai");
     time += 48 * 60 * 60 * 1_000;
     assert.equal(firstRegistry.verify(issued.token)?.threadId, "thread-1");
 
@@ -79,7 +79,7 @@ describe("AgentGatewaySessionRegistry", () => {
 
   it("keeps raw bearer tokens out of verified session identity snapshots", () => {
     const registry = makeAgentGatewaySessionRegistry({ randomId: () => "opaque-secret" });
-    const issued = registry.issue(ThreadId.makeUnsafe("thread-1"), "codex");
+    const issued = registry.issue(ThreadId.makeUnsafe("thread-1"), "openai");
     const verified = registry.verify(issued.token);
     assert.match(issued.token, /^sagw_session_/);
     assert.notProperty(verified, "token");

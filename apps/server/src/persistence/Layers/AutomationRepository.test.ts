@@ -26,7 +26,7 @@ const createInput = {
   prompt: "Check stale dependencies.",
   schedule: { type: "manual" },
   modelSelection: {
-    provider: "codex",
+    provider: "openai",
     model: "gpt-5-codex",
   },
 } satisfies AutomationCreateInput;
@@ -37,9 +37,9 @@ const createInputForProject = (projectId: string) => ({
 });
 
 const permissionSnapshot = {
-  provider: "codex",
+  provider: "openai",
   modelSelection: {
-    provider: "codex",
+    provider: "openai",
     model: "gpt-5-codex",
   },
   runtimeMode: "approval-required",
@@ -110,7 +110,7 @@ layer("AutomationRepository", (it) => {
           '{"type":"manual"}',
           1,
           NULL,
-          '{"provider":"codex","model":"gpt-5-codex"}',
+          '{"provider":"openai","model":"gpt-5-codex"}',
           'approval-required',
           'default',
           'auto',

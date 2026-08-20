@@ -31,7 +31,7 @@ function makeReadModel(
         projectId: PROJECT_ID,
         title: "Claude Auto",
         modelSelection: {
-          provider: "claudeAgent",
+          provider: "anthropic",
           model: "claude-opus-4-6",
           supportsAutoMode,
         },
@@ -94,7 +94,7 @@ describe("decider Auto model compatibility", () => {
             commandId: CommandId.makeUnsafe("cmd-unsupported-claude-model"),
             threadId: THREAD_ID,
             modelSelection: {
-              provider: "claudeAgent",
+              provider: "anthropic",
               model: "claude-haiku-4-5",
               supportsAutoMode: false,
             },
@@ -130,7 +130,7 @@ describe("decider Auto model compatibility", () => {
           commandId: CommandId.makeUnsafe("cmd-supported-claude-model"),
           threadId: THREAD_ID,
           modelSelection: {
-            provider: "claudeAgent",
+            provider: "anthropic",
             model: "claude-fable-5",
             supportsAutoMode: true,
           },
@@ -155,7 +155,7 @@ describe("decider Auto model compatibility", () => {
             projectId: PROJECT_ID,
             title: "User Auto thread",
             modelSelection: {
-              provider: "claudeAgent",
+              provider: "anthropic",
               model: "claude-fable-5",
             },
             interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -187,7 +187,7 @@ describe("decider Auto model compatibility", () => {
           projectId: PROJECT_ID,
           title: "Subagent",
           modelSelection: {
-            provider: "claudeAgent",
+            provider: "anthropic",
             model: "claude-fable-5",
           },
           interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -217,7 +217,7 @@ describe("decider Auto model compatibility", () => {
           commandId: CommandId.makeUnsafe("cmd-subagent-model-update"),
           threadId: THREAD_ID,
           modelSelection: {
-            provider: "claudeAgent",
+            provider: "anthropic",
             model: "claude-fable-5",
           },
         },

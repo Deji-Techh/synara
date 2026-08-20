@@ -44,8 +44,8 @@ describe("claudeCredentialKeepalive", () => {
       resolveClaudeCredentialKeepaliveBinaryPath("  /custom/bin/claude  "),
       "/custom/bin/claude",
     );
-    assert.equal(resolveClaudeCredentialKeepaliveBinaryPath("   "), "claude");
-    assert.equal(resolveClaudeCredentialKeepaliveBinaryPath(undefined), "claude");
+    assert.equal(resolveClaudeCredentialKeepaliveBinaryPath("   "), "anthropic");
+    assert.equal(resolveClaudeCredentialKeepaliveBinaryPath(undefined), "anthropic");
   });
 
   it("clamps keepalive intervals to Node's maximum timer delay", () => {

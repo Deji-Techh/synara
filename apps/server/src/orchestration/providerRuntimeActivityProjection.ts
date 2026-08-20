@@ -473,12 +473,12 @@ export function projectProviderRuntimeActivities(
       ? { sequence }
       : {};
   })();
-  // Codex and Antigravity only render completed reasoning items with a readable summary.
+  // OpenAI and Google only render completed reasoning items with a readable summary.
   // Empty starts/completions are private/encrypted reasoning boundaries, not
   // transcript rows. Waiting for the authoritative completion also avoids
   // per-token activity writes and transcript height churn.
   if (
-    (event.provider === "codex" || event.provider === "antigravity") &&
+    (event.provider === "openai" || event.provider === "google") &&
     event.type === "item.completed" &&
     event.payload.itemType === "reasoning" &&
     event.itemId !== undefined &&
@@ -620,11 +620,9 @@ export function projectProviderRuntimeActivities(
           kind: "runtime.warning",
           summary: isBackgroundMove
             ? "Moved to background"
-            : (event.provider === "opencode" || event.provider === "kilo") &&
+            : event.provider === "openai" &&
                 (nativeType === "session.next.retried" || nativeType === "session.status")
-              ? event.provider === "opencode"
-                ? "OpenCode retrying"
-                : "Kilo retrying"
+              ? "OpenAI retrying"
               : "Runtime warning",
           // Keep the user-visible message even when raw detail is structured.
           payload: toActivityPayload({

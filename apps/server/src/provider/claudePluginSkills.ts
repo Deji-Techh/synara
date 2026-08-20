@@ -9,7 +9,7 @@ import * as nodePath from "node:path";
 
 export interface ClaudePluginSkillRoot {
   readonly path: string;
-  readonly scope: "claude";
+  readonly scope: "anthropic";
   readonly namespace: string;
   readonly followSymlinks: false;
 }
@@ -197,7 +197,7 @@ export async function discoverClaudePluginSkillRoots(input: {
       continue;
     }
     seen.add(key);
-    roots.push({ path: skillsPath, scope: "claude", namespace, followSymlinks: false });
+    roots.push({ path: skillsPath, scope: "anthropic", namespace, followSymlinks: false });
   }
   return roots;
 }

@@ -1524,7 +1524,7 @@ const makeProviderService = (options?: ProviderServiceLiveOptions) =>
         const input = {
           ...parsed,
           threadId,
-          provider: parsed.provider ?? "codex",
+          provider: parsed.provider ?? "openai",
         };
         yield* validateAutoRuntimeMode(
           "ProviderService.startSession",

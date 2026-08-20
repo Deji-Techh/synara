@@ -75,15 +75,15 @@ export interface CaideHarnessPolicyDeliveryState {
 }
 
 const PROVIDERS_WITH_THREAD_SCOPED_CAIDE_MCP = new Set<ProviderKind>([
-  "codex",
-  "claudeAgent",
-  "antigravity",
-  "cursor",
-  "grok",
-  "droid",
-  "opencode",
-  "kilo",
-  "pi",
+  "openai",
+  "anthropic",
+  "google",
+  "openai",
+  "openai",
+  "openai",
+  "openai",
+  "openai",
+  "openai",
 ]);
 
 export function providerHasCaideGatewayControl(input: {

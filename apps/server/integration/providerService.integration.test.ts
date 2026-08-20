@@ -45,10 +45,10 @@ const makeIntegrationFixture = Effect.gen(function* () {
 
   const registry: typeof ProviderAdapterRegistry.Service = {
     getByProvider: (provider) =>
-      provider === "codex"
+      provider === "openai"
         ? Effect.succeed(harness.adapter)
         : Effect.fail(new ProviderUnsupportedError({ provider })),
-    listProviders: () => Effect.succeed(["codex"]),
+    listProviders: () => Effect.succeed(["openai"]),
   };
 
   const directoryLayer = ProviderSessionDirectoryLive.pipe(
@@ -98,7 +98,7 @@ it.effect("replays typed runtime fixture events", () =>
         ThreadId.makeUnsafe("thread-integration-typed"),
         {
           threadId: ThreadId.makeUnsafe("thread-integration-typed"),
-          provider: "codex",
+          provider: "openai",
           cwd: fixture.cwd,
           runtimeMode: "full-access",
         },
@@ -140,7 +140,7 @@ it.effect("replays file-changing fixture turn events", () =>
         ThreadId.makeUnsafe("thread-integration-tools"),
         {
           threadId: ThreadId.makeUnsafe("thread-integration-tools"),
-          provider: "codex",
+          provider: "openai",
           cwd: fixture.cwd,
           runtimeMode: "full-access",
         },
@@ -186,7 +186,7 @@ it.effect("runs multi-turn tool/approval flow", () =>
         ThreadId.makeUnsafe("thread-integration-multi"),
         {
           threadId: ThreadId.makeUnsafe("thread-integration-multi"),
-          provider: "codex",
+          provider: "openai",
           cwd: fixture.cwd,
           runtimeMode: "full-access",
         },
@@ -254,7 +254,7 @@ it.effect("rolls back provider conversation state only", () =>
         ThreadId.makeUnsafe("thread-integration-rollback"),
         {
           threadId: ThreadId.makeUnsafe("thread-integration-rollback"),
-          provider: "codex",
+          provider: "openai",
           cwd: fixture.cwd,
           runtimeMode: "full-access",
         },

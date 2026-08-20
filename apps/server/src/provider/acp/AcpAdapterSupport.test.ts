@@ -159,7 +159,7 @@ describe("AcpAdapterSupport", () => {
 
   it("maps ACP request errors to provider adapter request errors", () => {
     const error = mapAcpToAdapterError(
-      "cursor",
+      "openai",
       "thread-1" as never,
       "session/prompt",
       new AcpErrors.AcpRequestError({
@@ -174,7 +174,7 @@ describe("AcpAdapterSupport", () => {
 
   it("surfaces provider detail from generic ACP internal errors", () => {
     const error = mapAcpToAdapterError(
-      "droid",
+      "openai",
       "thread-1" as never,
       "session/prompt",
       new AcpErrors.AcpRequestError({
@@ -190,7 +190,7 @@ describe("AcpAdapterSupport", () => {
 
   it("preserves filesystem detail from ACP persistence errors", () => {
     const error = mapAcpToAdapterError(
-      "grok",
+      "openai",
       "thread-1" as never,
       "session/start",
       new AcpErrors.AcpRequestError({

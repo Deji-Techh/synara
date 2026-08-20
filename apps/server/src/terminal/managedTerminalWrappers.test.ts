@@ -45,8 +45,8 @@ afterEach(() => {
 
 describeOnPosix("prepareManagedTerminalWrappers", () => {
   it("resolves each CLI through the supplied environment's PATH", () => {
-    const codexPath = installFakeCli("codex");
-    const claudePath = installFakeCli("claude");
+    const codexPath = installFakeCli("openai");
+    const claudePath = installFakeCli("anthropic");
 
     const state = prepare({ PATH: binDir });
 
@@ -55,7 +55,7 @@ describeOnPosix("prepareManagedTerminalWrappers", () => {
   });
 
   it("wraps only the CLIs that are actually installed", () => {
-    const codexPath = installFakeCli("codex");
+    const codexPath = installFakeCli("openai");
 
     const state = prepare({ PATH: binDir });
 
@@ -63,7 +63,7 @@ describeOnPosix("prepareManagedTerminalWrappers", () => {
   });
 
   it("does nothing when the supplied environment cannot see either CLI", () => {
-    installFakeCli("codex");
+    installFakeCli("openai");
 
     // A PATH that does not contain the bin directory must not fall back to this process's PATH,
     // which is exactly where a real `codex` would be found on a developer machine.
@@ -75,31 +75,31 @@ describeOnPosix("prepareManagedTerminalWrappers", () => {
   });
 
   it("ignores a file on PATH that is not executable", () => {
-    writeFileSync(path.join(binDir, "codex"), "#!/bin/sh\n", { mode: 0o644 });
+    writeFileSync(path.join(binDir, "openai"), "#!/bin/sh\n", { mode: 0o644 });
 
     expect(prepare({ PATH: binDir }).targetPathByCliKind).toEqual({});
   });
 
   it("reads PATH under any capitalization", () => {
-    const codexPath = installFakeCli("codex");
+    const codexPath = installFakeCli("openai");
 
     expect(prepare({ Path: binDir }).targetPathByCliKind).toEqual({ codex: codexPath });
     expect(prepare({ path: binDir }).targetPathByCliKind).toEqual({ codex: codexPath });
   });
 
   it("points the generated wrapper at the resolved binary", () => {
-    const codexPath = installFakeCli("codex");
+    const codexPath = installFakeCli("openai");
 
     const state = prepare({ PATH: binDir });
 
-    const wrapper = readFileSync(path.join(rootDir, "codex"), "utf8");
+    const wrapper = readFileSync(path.join(rootDir, "openai"), "utf8");
     expect(wrapper).toContain(codexPath);
     // The wrapper must not re-enter itself: it shadows `codex` on PATH.
-    expect(state.targetPathByCliKind.codex).not.toBe(path.join(rootDir, "codex"));
+    expect(state.targetPathByCliKind.codex).not.toBe(path.join(rootDir, "openai"));
   });
 
   it("prepends the managed bin directory to the PATH key the env already uses", () => {
-    installFakeCli("codex");
+    installFakeCli("openai");
     const state = prepare({ Path: binDir });
 
     const env = applyManagedTerminalAgentWrapperEnv({ Path: binDir }, state);

@@ -11,15 +11,15 @@ import { Cause, Effect, FileSystem, Schema } from "effect";
 import { writeFileStringAtomically } from "../atomicWrite";
 
 const PROVIDER_STATUS_CACHE_IDS = [
-  "codex",
-  "claudeAgent",
-  "cursor",
-  "antigravity",
-  "grok",
-  "droid",
-  "kilo",
-  "opencode",
-  "pi",
+  "openai",
+  "anthropic",
+  "openai",
+  "google",
+  "openai",
+  "openai",
+  "openai",
+  "openai",
+  "openai",
   "engine",
 ] as const satisfies ReadonlyArray<ServerProviderStatus["provider"]>;
 

@@ -15,7 +15,7 @@ import {
 } from "./providerStatusCache";
 
 const readyCodexStatus = {
-  provider: "codex" as const,
+  provider: "openai" as const,
   status: "ready" as const,
   available: true,
   authStatus: "authenticated" as const,
@@ -78,28 +78,28 @@ describe("providerStatusCache", () => {
     expect(
       orderProviderStatuses([
         {
-          provider: "antigravity",
+          provider: "google",
           status: "ready",
           available: true,
           authStatus: "authenticated",
           checkedAt: "2026-04-15T10:02:00.000Z",
         },
         {
-          provider: "claudeAgent",
+          provider: "anthropic",
           status: "warning",
           available: true,
           authStatus: "unknown",
           checkedAt: "2026-04-15T10:01:00.000Z",
         },
         {
-          provider: "cursor",
+          provider: "openai",
           status: "ready",
           available: true,
           authStatus: "unknown",
           checkedAt: "2026-04-15T10:03:00.000Z",
         },
         {
-          provider: "grok",
+          provider: "openai",
           status: "ready",
           available: true,
           authStatus: "unknown",
@@ -110,28 +110,28 @@ describe("providerStatusCache", () => {
     ).toEqual([
       readyCodexStatus,
       {
-        provider: "claudeAgent",
+        provider: "anthropic",
         status: "warning",
         available: true,
         authStatus: "unknown",
         checkedAt: "2026-04-15T10:01:00.000Z",
       },
       {
-        provider: "cursor",
+        provider: "openai",
         status: "ready",
         available: true,
         authStatus: "unknown",
         checkedAt: "2026-04-15T10:03:00.000Z",
       },
       {
-        provider: "antigravity",
+        provider: "google",
         status: "ready",
         available: true,
         authStatus: "authenticated",
         checkedAt: "2026-04-15T10:02:00.000Z",
       },
       {
-        provider: "grok",
+        provider: "openai",
         status: "ready",
         available: true,
         authStatus: "unknown",

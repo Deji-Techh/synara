@@ -16,8 +16,8 @@ export default Effect.gen(function* () {
       ELSE json_object(
         'provider',
         CASE
-          WHEN lower(default_model) LIKE '%claude%' THEN 'claudeAgent'
-          ELSE 'codex'
+          WHEN lower(default_model) LIKE '%claude%' THEN 'anthropic'
+          ELSE 'openai'
         END,
         'model',
         default_model
@@ -42,10 +42,10 @@ export default Effect.gen(function* () {
           WHERE projection_thread_sessions.thread_id = projection_threads.thread_id
         ),
         CASE
-          WHEN lower(model) LIKE '%claude%' THEN 'claudeAgent'
-          ELSE 'codex'
+          WHEN lower(model) LIKE '%claude%' THEN 'anthropic'
+          ELSE 'openai'
         END,
-        'codex'
+        'openai'
       ),
       'model',
       model
@@ -83,8 +83,8 @@ export default Effect.gen(function* () {
                 WHEN json_extract(payload_json, '$.defaultProvider') IS NOT NULL
                 THEN json_extract(payload_json, '$.defaultProvider')
                 WHEN lower(json_extract(payload_json, '$.defaultModel')) LIKE '%claude%'
-                THEN 'claudeAgent'
-                ELSE 'codex'
+                THEN 'anthropic'
+                ELSE 'openai'
               END,
               'model',
               json_extract(payload_json, '$.defaultModel')
@@ -99,10 +99,10 @@ export default Effect.gen(function* () {
                     WHEN json_extract(payload_json, '$.defaultProvider') IS NOT NULL
                     THEN json_extract(payload_json, '$.defaultProvider')
                     WHEN lower(json_extract(payload_json, '$.defaultModel')) LIKE '%claude%'
-                    THEN 'claudeAgent'
-                    ELSE 'codex'
+                    THEN 'anthropic'
+                    ELSE 'openai'
                     END
-                  ) = 'claudeAgent'
+                  ) = 'anthropic'
                   THEN CASE
                     WHEN json_type(payload_json, '$.defaultModelOptions.claudeAgent') IS NOT NULL
                     THEN json_object(
@@ -160,8 +160,8 @@ export default Effect.gen(function* () {
               WHEN json_extract(payload_json, '$.provider') IS NOT NULL
               THEN json_extract(payload_json, '$.provider')
               WHEN lower(json_extract(payload_json, '$.model')) LIKE '%claude%'
-              THEN 'claudeAgent'
-              ELSE 'codex'
+              THEN 'anthropic'
+              ELSE 'openai'
             END,
             'model',
             json_extract(payload_json, '$.model')
@@ -176,10 +176,10 @@ export default Effect.gen(function* () {
                   WHEN json_extract(payload_json, '$.provider') IS NOT NULL
                   THEN json_extract(payload_json, '$.provider')
                   WHEN lower(json_extract(payload_json, '$.model')) LIKE '%claude%'
-                  THEN 'claudeAgent'
-                  ELSE 'codex'
+                  THEN 'anthropic'
+                  ELSE 'openai'
                   END
-              ) = 'claudeAgent'
+              ) = 'anthropic'
               THEN CASE
                 WHEN json_type(payload_json, '$.modelOptions.claudeAgent') IS NOT NULL
                 THEN json_object(
@@ -226,7 +226,7 @@ export default Effect.gen(function* () {
     SET payload_json = json_set(
       payload_json,
       '$.modelSelection',
-      json(json_object('provider', 'codex', 'model', 'gpt-5.5'))
+      json(json_object('provider', 'openai', 'model', 'gpt-5.5'))
     )
     WHERE event_type = 'thread.created'
       AND json_type(payload_json, '$.modelSelection') IS NULL

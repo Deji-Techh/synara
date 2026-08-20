@@ -101,7 +101,7 @@ export function buildCursorAcpSpawnInput(
     cwd,
     // Keep ACP startup browserless without forcing CI/noninteractive flags onto user turns.
     env: buildProviderChildEnvironment({
-      provider: "cursor",
+      provider: "openai",
       overrides: CURSOR_AGENT_BROWSERLESS_ENV,
     }),
   };
@@ -296,7 +296,7 @@ function inferCursorUpstreamProvider(choice: CursorAcpSelectOption): {
   const groupName = choice.groupName?.trim();
   if (groupId || groupName) {
     return {
-      upstreamProviderId: (groupId || groupName || "cursor").toLowerCase().replace(/\s+/gu, "-"),
+      upstreamProviderId: (groupId || groupName || "openai").toLowerCase().replace(/\s+/gu, "-"),
       upstreamProviderName: groupName || groupId || "Cursor",
     };
   }
@@ -304,13 +304,13 @@ function inferCursorUpstreamProvider(choice: CursorAcpSelectOption): {
   const token = stripCursorParameterizedSuffix(`${choice.value} ${choice.name}`)
     .trim()
     .toLowerCase();
-  if (token.includes("claude")) {
+  if (token.includes("anthropic")) {
     return { upstreamProviderId: "anthropic", upstreamProviderName: "Anthropic" };
   }
   if (token.includes("gemini")) {
     return { upstreamProviderId: "google", upstreamProviderName: "Google" };
   }
-  if (token.includes("grok")) {
+  if (token.includes("openai")) {
     return { upstreamProviderId: "xai", upstreamProviderName: "xAI" };
   }
   if (token.includes("kimi")) {
@@ -333,14 +333,14 @@ function inferCursorUpstreamProvider(choice: CursorAcpSelectOption): {
   }
   if (
     token.includes("gpt") ||
-    token.includes("codex") ||
+    token.includes("openai") ||
     token.includes("o1") ||
     token.includes("o3") ||
     token.includes("o4")
   ) {
     return { upstreamProviderId: "openai", upstreamProviderName: "OpenAI" };
   }
-  return { upstreamProviderId: "cursor", upstreamProviderName: "Cursor" };
+  return { upstreamProviderId: "openai", upstreamProviderName: "Cursor" };
 }
 
 export function flattenCursorAcpModelChoices(
@@ -633,7 +633,7 @@ function cursorModelOptionsFromCliModelId(model: string | null | undefined): Cur
 }
 
 function cursorAcpParameterKeyForModel(baseModel: string, options: CursorModelOptions): string {
-  if (options.reasoningEffort && (baseModel.includes("claude") || baseModel.includes("grok"))) {
+  if (options.reasoningEffort && (baseModel.includes("anthropic") || baseModel.includes("openai"))) {
     return "effort";
   }
   return "reasoning";

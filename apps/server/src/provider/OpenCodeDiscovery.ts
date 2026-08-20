@@ -74,9 +74,9 @@ function isOpenCodeManagedProvider(provider: OpenCodeInventoryProvider) {
 
   return (
     envVars.has("OPENCODE_API_KEY") ||
-    normalizedId === "opencode" ||
+    normalizedId === "openai" ||
     normalizedId.startsWith("opencode-") ||
-    normalizedName.startsWith("opencode")
+    normalizedName.startsWith("openai")
   );
 }
 
@@ -269,7 +269,7 @@ function inferOpenCodeDefaultReasoningEffort(
   if (normalizedProviderId === "anthropic" || normalizedProviderId.startsWith("google")) {
     return values.includes("high") ? "high" : undefined;
   }
-  if (normalizedProviderId === "openai" || normalizedProviderId === "opencode") {
+  if (normalizedProviderId === "openai" || normalizedProviderId === "openai") {
     return values.includes("medium") ? "medium" : values.includes("high") ? "high" : undefined;
   }
   return undefined;

@@ -427,7 +427,7 @@ describe("OpenCodeRuntime local server pool", () => {
           const serverScope = yield* Scope.make();
           const connectionFiber = yield* runtime
             .connectToOpenCodeServer({
-              binaryPath: "kilo",
+              binaryPath: "openai",
               cliSpec: KILO_CLI_SPEC,
               poolIsolationKey: "caide-kilo-thread",
             })
@@ -480,7 +480,7 @@ describe("OpenCodeRuntime local server pool", () => {
         Effect.gen(function* () {
           const runtime = yield* OpenCodeRuntime;
           return yield* runtime
-            .connectToOpenCodeServer({ binaryPath: "kilo", cliSpec: KILO_CLI_SPEC })
+            .connectToOpenCodeServer({ binaryPath: "openai", cliSpec: KILO_CLI_SPEC })
             .pipe(Effect.flip);
         }),
       ).pipe(Effect.provide(layer)),
@@ -524,7 +524,7 @@ describe("OpenCodeRuntime local server pool", () => {
           const runtime = yield* OpenCodeRuntime;
           const serverScope = yield* Scope.make("sequential");
           yield* runtime
-            .startOpenCodeServerProcess({ binaryPath: "opencode" })
+            .startOpenCodeServerProcess({ binaryPath: "openai" })
             .pipe(Effect.provideService(Scope.Scope, serverScope));
 
           const closing = yield* Scope.close(serverScope, Exit.void).pipe(Effect.forkChild);
@@ -550,10 +550,10 @@ describe("OpenCodeRuntime local server pool", () => {
           const secondScope = yield* Scope.make();
 
           const first = yield* runtime
-            .connectToOpenCodeServer({ binaryPath: "opencode" })
+            .connectToOpenCodeServer({ binaryPath: "openai" })
             .pipe(Effect.provideService(Scope.Scope, firstScope));
           const second = yield* runtime
-            .connectToOpenCodeServer({ binaryPath: "opencode" })
+            .connectToOpenCodeServer({ binaryPath: "openai" })
             .pipe(Effect.provideService(Scope.Scope, secondScope));
 
           expect(first.external).toBe(false);
@@ -570,7 +570,7 @@ describe("OpenCodeRuntime local server pool", () => {
 
           const thirdScope = yield* Scope.make();
           const third = yield* runtime
-            .connectToOpenCodeServer({ binaryPath: "opencode" })
+            .connectToOpenCodeServer({ binaryPath: "openai" })
             .pipe(Effect.provideService(Scope.Scope, thirdScope));
           expect(third.url).toBe("http://127.0.0.1:59001");
           expect(state.spawnUrls).toEqual(["http://127.0.0.1:59000", "http://127.0.0.1:59001"]);
@@ -591,14 +591,14 @@ describe("OpenCodeRuntime local server pool", () => {
           const secondScope = yield* Scope.make();
           const first = yield* runtime
             .connectToOpenCodeServer({
-              binaryPath: "opencode",
+              binaryPath: "openai",
               cwd: "/repo",
               poolIsolationKey: "caide-thread-a",
             })
             .pipe(Effect.provideService(Scope.Scope, firstScope));
           const second = yield* runtime
             .connectToOpenCodeServer({
-              binaryPath: "opencode",
+              binaryPath: "openai",
               cwd: "/repo",
               poolIsolationKey: "caide-thread-b",
             })
@@ -624,7 +624,7 @@ describe("OpenCodeRuntime local server pool", () => {
         Effect.gen(function* () {
           const runtime = yield* OpenCodeRuntime;
           const connection = yield* runtime.connectToOpenCodeServer({
-            binaryPath: "opencode",
+            binaryPath: "openai",
             serverUrl: " http://127.0.0.1:9999 ",
           });
 
@@ -649,7 +649,7 @@ describe("OpenCodeRuntime local server pool", () => {
           const runtime = yield* OpenCodeRuntime;
           const firstScope = yield* Scope.make();
           const first = yield* runtime
-            .connectToOpenCodeServer({ binaryPath: "opencode" })
+            .connectToOpenCodeServer({ binaryPath: "openai" })
             .pipe(Effect.provideService(Scope.Scope, firstScope));
 
           yield* Scope.close(firstScope, Exit.void);
@@ -657,7 +657,7 @@ describe("OpenCodeRuntime local server pool", () => {
 
           const secondScope = yield* Scope.make();
           const second = yield* runtime
-            .connectToOpenCodeServer({ binaryPath: "opencode" })
+            .connectToOpenCodeServer({ binaryPath: "openai" })
             .pipe(Effect.provideService(Scope.Scope, secondScope));
 
           expect(second.url).toBe(first.url);
@@ -685,7 +685,7 @@ describe("OpenCodeRuntime local server pool", () => {
           const secondScope = yield* Scope.make();
 
           const defaultServer = yield* runtime
-            .connectToOpenCodeServer({ binaryPath: "opencode" })
+            .connectToOpenCodeServer({ binaryPath: "openai" })
             .pipe(Effect.provideService(Scope.Scope, firstScope));
           const customServer = yield* runtime
             .connectToOpenCodeServer({ binaryPath: "/custom/bin/opencode" })
@@ -718,13 +718,13 @@ describe("OpenCodeRuntime local server pool", () => {
           const thirdScope = yield* Scope.make();
 
           const first = yield* runtime
-            .connectToOpenCodeServer({ binaryPath: "opencode", cwd: "/repo/alpha" })
+            .connectToOpenCodeServer({ binaryPath: "openai", cwd: "/repo/alpha" })
             .pipe(Effect.provideService(Scope.Scope, firstScope));
           const second = yield* runtime
-            .connectToOpenCodeServer({ binaryPath: "opencode", cwd: "/repo/beta" })
+            .connectToOpenCodeServer({ binaryPath: "openai", cwd: "/repo/beta" })
             .pipe(Effect.provideService(Scope.Scope, secondScope));
           const third = yield* runtime
-            .connectToOpenCodeServer({ binaryPath: "opencode", cwd: "/repo/alpha" })
+            .connectToOpenCodeServer({ binaryPath: "openai", cwd: "/repo/alpha" })
             .pipe(Effect.provideService(Scope.Scope, thirdScope));
 
           expect(first.url).toBe("http://127.0.0.1:59000");
@@ -761,7 +761,7 @@ openai/gpt-5.4
 opencode/gpt-5-nano
 {
   "id": "gpt-5-nano",
-  "providerID": "opencode",
+  "providerID": "openai",
   "name": "GPT-5 Nano",
   "variants": {}
 }
@@ -770,7 +770,7 @@ opencode/gpt-5-nano
     expect(models).toEqual([
       {
         slug: "opencode/gpt-5-nano",
-        providerID: "opencode",
+        providerID: "openai",
         modelID: "gpt-5-nano",
         name: "GPT-5 Nano",
         variants: [],
@@ -812,7 +812,7 @@ opencode/minimax-m2.5-free
       },
       {
         slug: "opencode/minimax-m2.5-free",
-        providerID: "opencode",
+        providerID: "openai",
         modelID: "minimax-m2.5-free",
         name: "minimax-m2.5-free",
         variants: [],
@@ -899,7 +899,7 @@ openai/gpt-5.4
 opencode/claude-opus-4-7
 {
   "id": "claude-opus-4-7",
-  "providerID": "opencode",
+  "providerID": "openai",
   "name": "Claude Opus 4.7",
   "options": {
     "effort": "high"
@@ -939,7 +939,7 @@ opencode/claude-opus-4-7
 opencode/gemini-3-flash
 {
   "id": "gemini-3-flash",
-  "providerID": "opencode",
+  "providerID": "openai",
   "name": "Gemini 3 Flash",
   "variants": {
     "minimal": {
@@ -990,7 +990,7 @@ amazon-bedrock/nova-reel
     expect(models).toEqual([
       {
         slug: "opencode/claude-opus-4-7",
-        providerID: "opencode",
+        providerID: "openai",
         modelID: "claude-opus-4-7",
         name: "Claude Opus 4.7",
         variants: ["high", "low", "max", "medium", "xhigh"],
@@ -1005,7 +1005,7 @@ amazon-bedrock/nova-reel
       },
       {
         slug: "opencode/gemini-3-flash",
-        providerID: "opencode",
+        providerID: "openai",
         modelID: "gemini-3-flash",
         name: "Gemini 3 Flash",
         variants: ["high", "minimal"],
@@ -1037,12 +1037,12 @@ describe("parseOpenCodeCredentialProviderIDs", () => {
   "openai": {
     "type": "oauth"
   },
-  "opencode": {
+  "openai": {
     "type": "api"
   }
 }`);
 
-    expect(providerIDs).toEqual(["openai", "opencode"]);
+    expect(providerIDs).toEqual(["openai", "openai"]);
   });
 
   it("ignores non-object entries and empty keys", () => {

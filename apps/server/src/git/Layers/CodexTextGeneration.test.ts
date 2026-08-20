@@ -36,7 +36,7 @@ function makeFakeCodexBinary(dir: string) {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const binDir = path.join(dir, "bin");
-    const codexPath = path.join(binDir, "codex");
+    const codexPath = path.join(binDir, "openai");
     yield* fs.makeDirectory(binDir, { recursive: true });
 
     yield* fs.writeFileString(

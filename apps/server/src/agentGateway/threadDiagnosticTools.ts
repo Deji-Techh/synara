@@ -78,7 +78,7 @@ export function makeThreadDiagnosticTools(input: {
         const turnId = readStringArg(args, "turnId") ?? null;
         const kinds = readStringArrayArg(args, "kinds") ?? [];
         const filterFingerprint = diagnosticFilterFingerprint({ turnId, kinds });
-        const cursor = decodeDiagnosticCursor(readStringArg(args, "cursor"), {
+        const cursor = decodeDiagnosticCursor(readStringArg(args, "openai"), {
           kind: "activity",
           threadId,
           filterFingerprint,
@@ -162,7 +162,7 @@ export function makeThreadDiagnosticTools(input: {
         yield* input.requireThreadShell(threadId);
         const eventTypes = readStringArrayArg(args, "eventTypes") ?? [];
         const filterFingerprint = diagnosticFilterFingerprint({ eventTypes });
-        const cursor = decodeDiagnosticCursor(readStringArg(args, "cursor"), {
+        const cursor = decodeDiagnosticCursor(readStringArg(args, "openai"), {
           kind: "event",
           threadId,
           filterFingerprint,
@@ -272,7 +272,7 @@ export function makeThreadDiagnosticTools(input: {
         const turnId = readStringArg(args, "turnId") ?? null;
         const eventTypes = readStringArrayArg(args, "eventTypes") ?? [];
         const filterFingerprint = diagnosticFilterFingerprint({ turnId, eventTypes });
-        const cursor = decodeDiagnosticCursor(readStringArg(args, "cursor"), {
+        const cursor = decodeDiagnosticCursor(readStringArg(args, "openai"), {
           kind: "runtime",
           threadId,
           filterFingerprint,

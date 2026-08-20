@@ -8,8 +8,8 @@ import { assert, it } from "@effect/vitest";
 import { normalizePersistedModelSelection } from "./modelSelectionCompatibility.ts";
 
 it("preserves canonical Pi model selections", () => {
-  assert.deepEqual(normalizePersistedModelSelection({ provider: "pi", model: "openai/gpt-5.5" }), {
-    provider: "pi",
+  assert.deepEqual(normalizePersistedModelSelection({ provider: "openai", model: "openai/gpt-5.5" }), {
+    provider: "openai",
     model: "openai/gpt-5.5",
   });
 });
@@ -17,11 +17,11 @@ it("preserves canonical Pi model selections", () => {
 it("migrates combined Antigravity model and effort labels", () => {
   assert.deepEqual(
     normalizePersistedModelSelection({
-      provider: "antigravity",
+      provider: "google",
       model: "Gemini 3.5 Flash (High)",
     }),
     {
-      provider: "antigravity",
+      provider: "google",
       model: "Gemini 3.5 Flash",
       options: { reasoningEffort: "high" },
     },
@@ -35,7 +35,7 @@ it("infers Antigravity from persisted instance labels", () => {
       model: "Claude Sonnet 4.6 (Thinking)",
     }),
     {
-      provider: "antigravity",
+      provider: "google",
       model: "Claude Sonnet 4.6",
       options: { reasoningEffort: "thinking" },
     },
@@ -49,7 +49,7 @@ it("prefers an explicit Antigravity instance over a model vendor in its label", 
       model: "Claude Sonnet 4.6 (Thinking)",
     }),
     {
-      provider: "antigravity",
+      provider: "google",
       model: "Claude Sonnet 4.6",
       options: { reasoningEffort: "thinking" },
     },
@@ -63,7 +63,7 @@ it("migrates known Gemini models without discarding the saved selection", () => 
       model: "gemini-3.1-pro-preview",
     }),
     {
-      provider: "antigravity",
+      provider: "google",
       model: "Gemini 3.1 Pro",
     },
   );
@@ -76,7 +76,7 @@ it("preserves unknown Gemini models as custom Antigravity selections", () => {
       model: "gemini-custom-preview",
     }),
     {
-      provider: "antigravity",
+      provider: "google",
       model: "gemini-custom-preview",
     },
   );
@@ -89,7 +89,7 @@ it("infers Pi from persisted instance labels", () => {
       model: "openai/gpt-5.5",
     }),
     {
-      provider: "pi",
+      provider: "openai",
       model: "openai/gpt-5.5",
     },
   );
@@ -97,14 +97,14 @@ it("infers Pi from persisted instance labels", () => {
 
 it("infers Droid only for Factory-exclusive provider-less model slugs", () => {
   assert.deepEqual(normalizePersistedModelSelection({ model: "minimax-m3" }), {
-    provider: "droid",
+    provider: "openai",
     model: "minimax-m3",
   });
 });
 
 it("does not steal ambiguous provider-less Claude slugs from Claude Agent", () => {
   assert.deepEqual(normalizePersistedModelSelection({ model: "claude-opus-4-8" }), {
-    provider: "claudeAgent",
+    provider: "anthropic",
     model: "claude-opus-4-8",
   });
 });

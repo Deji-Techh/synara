@@ -132,7 +132,7 @@ function createSendTurnHarness(runtimeMode: RuntimeMode = "full-access") {
   const manager = new CodexAppServerManager();
   const context = {
     session: {
-      provider: "codex",
+      provider: "openai",
       status: "ready",
       threadId: "thread_1",
       runtimeMode,
@@ -182,7 +182,7 @@ function createThreadControlHarness() {
   const context = {
     lifecycleGeneration: "generation-request-a",
     session: {
-      provider: "codex",
+      provider: "openai",
       status: "ready",
       threadId: "thread_1",
       runtimeMode: "full-access",
@@ -223,7 +223,7 @@ function createPendingUserInputHarness() {
   const manager = new CodexAppServerManager();
   const context = {
     session: {
-      provider: "codex",
+      provider: "openai",
       status: "ready",
       threadId: "thread_1",
       runtimeMode: "full-access",
@@ -273,7 +273,7 @@ function createPendingApprovalHarness(runtimeMode: RuntimeMode = "approval-requi
   const context = {
     lifecycleGeneration: "generation-request-a",
     session: {
-      provider: "codex",
+      provider: "openai",
       status: "ready",
       threadId: "thread_1",
       runtimeMode,
@@ -357,7 +357,7 @@ function createCollabNotificationHarness() {
   const manager = new CodexAppServerManager();
   const context = {
     session: {
-      provider: "codex",
+      provider: "openai",
       status: "running",
       threadId: asThreadId("thread_1"),
       runtimeMode: "full-access",
@@ -440,7 +440,7 @@ function createProcessOutputHarness() {
   const manager = new CodexAppServerManager();
   const context = {
     session: {
-      provider: "codex",
+      provider: "openai",
       status: "running",
       threadId: asThreadId("thread_1"),
       runtimeMode: "full-access",
@@ -474,7 +474,7 @@ describe("Codex app-server teardown", () => {
     const threadId = asThreadId("thread-codex-failed-turn");
     const context = {
       session: {
-        provider: "codex",
+        provider: "openai",
         status: "error",
         threadId,
         runtimeMode: "full-access",
@@ -545,12 +545,12 @@ describe("Codex app-server teardown", () => {
         revokeSessionToken,
       },
       threadId,
-      "codex",
+      "openai",
     );
     const context = {
       gatewaySessionLease,
       session: {
-        provider: "codex",
+        provider: "openai",
         status: "ready",
         threadId,
         runtimeMode: "full-access",
@@ -615,12 +615,12 @@ describe("Codex app-server teardown", () => {
         revokeSessionToken,
       },
       threadId,
-      "codex",
+      "openai",
     );
     const context = {
       gatewaySessionLease,
       session: {
-        provider: "codex",
+        provider: "openai",
         status: "ready",
         threadId,
         runtimeMode: "full-access",
@@ -890,7 +890,7 @@ describe("codex CLI version gate", () => {
     vi.stubEnv("CAIDE_HOME", path.join(dir, "runtime"));
 
     const isWindows = process.platform === "win32";
-    const binaryPath = path.join(dir, isWindows ? "codex.cmd" : "codex");
+    const binaryPath = path.join(dir, isWindows ? "codex.cmd" : "openai");
     const writeBinary = (version: string, filler: string) => {
       writeFileSync(
         binaryPath,
@@ -907,11 +907,11 @@ describe("codex CLI version gate", () => {
     reset();
     try {
       writeBinary("9.9.9", "original");
-      await assertSupportedCodexCliVersion({ binaryPath: "codex", cwd: dir, homePath });
+      await assertSupportedCodexCliVersion({ binaryPath: "openai", cwd: dir, homePath });
 
       writeBinary("0.1.0", "replaced-in-place-by-a-downgrade");
       await expect(
-        assertSupportedCodexCliVersion({ binaryPath: "codex", cwd: dir, homePath }),
+        assertSupportedCodexCliVersion({ binaryPath: "openai", cwd: dir, homePath }),
       ).rejects.toThrow(/too old for Caide/);
     } finally {
       reset();
@@ -1591,7 +1591,7 @@ describe("startSession", () => {
       await expect(
         manager.startSession({
           threadId: asThreadId("thread-missing-cwd"),
-          provider: "codex",
+          provider: "openai",
           runtimeMode: "full-access",
           cwd: missingCwd,
           providerOptions: {
@@ -1646,7 +1646,7 @@ describe("startSession", () => {
       await expect(
         manager.startSession({
           threadId: asThreadId("thread-1"),
-          provider: "codex",
+          provider: "openai",
           runtimeMode: "full-access",
         }),
       ).rejects.toThrow(
@@ -1690,7 +1690,7 @@ describe("startSession", () => {
       await expect(
         manager.startSession({
           threadId: asThreadId("thread-auto-version"),
-          provider: "codex",
+          provider: "openai",
           runtimeMode: "auto",
         }),
       ).rejects.toThrow("Codex Auto version gate");
@@ -2056,7 +2056,7 @@ describe("CodexAppServerManager discovery", () => {
     const manager = new CodexAppServerManager();
     const context = {
       session: {
-        provider: "codex",
+        provider: "openai",
         status: "ready",
         threadId: "thread_1",
         runtimeMode: "full-access",
@@ -2102,7 +2102,7 @@ describe("CodexAppServerManager discovery", () => {
     const manager = new CodexAppServerManager();
     const activeContext = {
       session: {
-        provider: "codex",
+        provider: "openai",
         status: "ready",
         threadId: "thread_active",
         runtimeMode: "full-access",
@@ -2133,7 +2133,7 @@ describe("CodexAppServerManager discovery", () => {
     };
     const discoveryContext = {
       session: {
-        provider: "codex",
+        provider: "openai",
         status: "ready",
         threadId: "__codex_discovery__:/repo-b",
         runtimeMode: "full-access",
@@ -2205,7 +2205,7 @@ describe("CodexAppServerManager discovery", () => {
     const manager = new CodexAppServerManager();
     const deadContext = {
       session: {
-        provider: "codex",
+        provider: "openai",
         status: "closed",
         threadId: "thread_dead",
         runtimeMode: "full-access",
@@ -2320,7 +2320,7 @@ describe("CodexAppServerManager discovery", () => {
     const manager = new CodexAppServerManager();
     const context = {
       session: {
-        provider: "codex",
+        provider: "openai",
         status: "ready",
         threadId: "thread_voice",
         runtimeMode: "full-access",
@@ -2389,7 +2389,7 @@ describe("CodexAppServerManager discovery", () => {
     const manager = new CodexAppServerManager();
     const connectingContext = {
       session: {
-        provider: "codex",
+        provider: "openai",
         status: "connecting",
         threadId: "thread_connecting",
         runtimeMode: "full-access",
@@ -2459,7 +2459,7 @@ describe("CodexAppServerManager discovery", () => {
     const manager = new CodexAppServerManager();
     const context = {
       session: {
-        provider: "codex",
+        provider: "openai",
         status: "ready",
         threadId: "thread_1",
         runtimeMode: "full-access",
@@ -2526,7 +2526,7 @@ describe("CodexAppServerManager discovery", () => {
     const manager = new CodexAppServerManager();
     const context = {
       session: {
-        provider: "codex",
+        provider: "openai",
         status: "ready",
         threadId: "thread_1",
         runtimeMode: "full-access",
@@ -2580,7 +2580,7 @@ describe("CodexAppServerManager discovery", () => {
     const manager = new CodexAppServerManager();
     const context = {
       session: {
-        provider: "codex",
+        provider: "openai",
         status: "ready",
         threadId: "thread_1",
         runtimeMode: "full-access",
@@ -2968,7 +2968,7 @@ describe("thread checkpoint control", () => {
       expect(emitEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           kind: "notification",
-          provider: "codex",
+          provider: "openai",
           threadId: "thread_1",
           method: "thread/compacting",
           message: "Compacting context",
@@ -3268,7 +3268,7 @@ describe("respondToUserInput", () => {
     const context = {
       session: {
         sessionId: "sess_1",
-        provider: "codex",
+        provider: "openai",
         status: "ready",
         threadId: asThreadId("thread_1"),
         resumeCursor: { threadId: "thread_1" },
@@ -4320,7 +4320,7 @@ describe("CodexAppServerManager process teardown", () => {
     });
     const context = {
       session: {
-        provider: "codex",
+        provider: "openai",
         status: "ready",
         threadId,
         runtimeMode: "full-access",
@@ -4395,7 +4395,7 @@ describe("CodexAppServerManager process teardown", () => {
     });
     const context = {
       session: {
-        provider: "codex",
+        provider: "openai",
         status: "ready",
         threadId,
         runtimeMode: "full-access",
@@ -4450,7 +4450,7 @@ describe.skipIf(!process.env.CODEX_BINARY_PATH)("startSession live Codex resume"
     try {
       const firstSession = await manager.startSession({
         threadId: asThreadId("thread-live"),
-        provider: "codex",
+        provider: "openai",
         cwd: workspaceDir,
         runtimeMode: "full-access",
         providerOptions: {
@@ -4484,7 +4484,7 @@ describe.skipIf(!process.env.CODEX_BINARY_PATH)("startSession live Codex resume"
 
       const resumedSession = await manager.startSession({
         threadId: firstSession.threadId,
-        provider: "codex",
+        provider: "openai",
         cwd: workspaceDir,
         runtimeMode: "approval-required",
         resumeCursor: firstSession.resumeCursor,

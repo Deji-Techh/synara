@@ -10,12 +10,12 @@ const context: ToolContext = {
     kind: "provider-session",
     sessionKey: "gateway-session:test",
     threadId: "thread-a",
-    provider: "claudeAgent",
+    provider: "anthropic",
     turnId: "turn-a",
   },
   callerThreadId: "thread-a",
   callerSessionKey: "gateway-session:test",
-  callerProvider: "claudeAgent",
+  callerProvider: "anthropic",
   callerCapabilities: new Set(["browser:control"]),
   callerTurnId: "turn-a",
   assertCallerTurnActive: () => Effect.void,
@@ -330,7 +330,7 @@ describe("agent gateway browser tools", () => {
     expect(execute).toHaveBeenCalledWith(
       expect.objectContaining({
         sessionKey: "gateway-session:test",
-        provider: "claudeAgent",
+        provider: "anthropic",
         threadId: "thread-a",
         name: "browser_tabs",
       }),

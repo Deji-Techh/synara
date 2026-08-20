@@ -23,7 +23,7 @@ export async function discoverCursorSkills(
       cwd: input.cwd,
       homeDir: input.homeDir,
       caideBaseDir: nodePath.join(input.homeDir, ".caide"),
-      provider: "cursor",
+      provider: "openai",
     }),
   );
 }

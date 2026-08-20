@@ -19,7 +19,7 @@ function makeThread(threadId: string): OrchestrationThreadShell {
     id: ThreadId.makeUnsafe(threadId),
     projectId: ProjectId.makeUnsafe("project-mcp-cancellation"),
     title: threadId,
-    modelSelection: { provider: "codex", model: "gpt-5.6-sol" },
+    modelSelection: { provider: "openai", model: "gpt-5.6-sol" },
     runtimeMode: "full-access",
     interactionMode: "default",
     envMode: "local",
@@ -97,7 +97,7 @@ function makeTransport(input: {
       if (session) inFlightRequests.revokeSession(session.sessionKey);
     },
     connectionForThread: (threadId: ThreadId) => {
-      const issued = sessionRegistry.issue(threadId, "codex");
+      const issued = sessionRegistry.issue(threadId, "openai");
       return {
         url: "http://127.0.0.1:48123/mcp",
         bearerToken: issued.token,
@@ -111,7 +111,7 @@ function makeTransport(input: {
     const lease = acquireAgentGatewaySessionLease(
       credentials,
       ThreadId.makeUnsafe(threadId),
-      "codex",
+      "openai",
     );
     if (!lease) throw new Error("Expected gateway session lease");
     tokenAliases.set(tokenAlias, lease.connection.bearerToken);

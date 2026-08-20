@@ -91,10 +91,10 @@ function createTextGenerationDouble(label: string) {
 }
 
 function makeProviderTextGenerationTestLayer() {
-  const codex = createTextGenerationDouble("codex");
-  const cursor = createTextGenerationDouble("cursor");
-  const kilo = createTextGenerationDouble("kilo");
-  const opencode = createTextGenerationDouble("opencode");
+  const codex = createTextGenerationDouble("openai");
+  const cursor = createTextGenerationDouble("openai");
+  const kilo = createTextGenerationDouble("openai");
+  const opencode = createTextGenerationDouble("openai");
   const layer = ProviderTextGenerationLive.pipe(
     Layer.provide(Layer.succeed(CodexTextGeneration, codex.service)),
     Layer.provide(Layer.succeed(CursorTextGeneration, cursor.service)),
@@ -156,7 +156,7 @@ describe("ProviderTextGenerationLive", () => {
           cwd: "/repo",
           patch: "diff --git a/file.ts b/file.ts",
           modelSelection: {
-            provider: "kilo",
+            provider: "openai",
             model: "kilo/kilo-auto/free",
           },
         });
@@ -178,7 +178,7 @@ describe("ProviderTextGenerationLive", () => {
           cwd: "/repo",
           message: "Plan the deployment work",
           modelSelection: {
-            provider: "opencode",
+            provider: "openai",
             model: "openai/gpt-5",
             options: {
               agent: "plan",
@@ -199,7 +199,7 @@ describe("ProviderTextGenerationLive", () => {
     expect(opencode.generateThreadTitle).toHaveBeenCalledWith(
       expect.objectContaining({
         modelSelection: {
-          provider: "opencode",
+          provider: "openai",
           model: "openai/gpt-5",
           options: {
             agent: "plan",
@@ -228,7 +228,7 @@ describe("ProviderTextGenerationLive", () => {
           cwd: "/repo",
           message: "Plan the Cursor integration work",
           modelSelection: {
-            provider: "cursor",
+            provider: "openai",
             model: "composer-2",
             options: {
               reasoningEffort: "high",
@@ -249,7 +249,7 @@ describe("ProviderTextGenerationLive", () => {
     expect(cursor.generateThreadTitle).toHaveBeenCalledWith(
       expect.objectContaining({
         modelSelection: {
-          provider: "cursor",
+          provider: "openai",
           model: "composer-2",
           options: {
             reasoningEffort: "high",
@@ -280,7 +280,7 @@ describe("ProviderTextGenerationLive", () => {
           defaultMode: "heartbeat",
           nowIso: "2026-06-19T10:00:00.000Z",
           modelSelection: {
-            provider: "cursor",
+            provider: "openai",
             model: "composer-2",
           },
         });
@@ -312,7 +312,7 @@ describe("ProviderTextGenerationLive", () => {
           runUserMessage: "Check PR readiness.",
           runAssistantText: "Still working.",
           modelSelection: {
-            provider: "cursor",
+            provider: "openai",
             model: "composer-2",
           },
         });

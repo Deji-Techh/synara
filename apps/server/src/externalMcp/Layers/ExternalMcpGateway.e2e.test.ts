@@ -275,20 +275,20 @@ describe("external MCP gateway stdio flow", () => {
     const providerDiscoveryLayer = Layer.succeed(ProviderDiscoveryService, {
       listModels: ({ provider }: { readonly provider: string }) =>
         Effect.succeed({
-          models: provider === "codex" ? [{ slug: "gpt-5.5", name: "GPT-5.5" }] : [],
+          models: provider === "openai" ? [{ slug: "gpt-5.5", name: "GPT-5.5" }] : [],
           source: "test",
         }),
     } as never);
     const providerStatuses: ReadonlyArray<ServerProviderStatus> = [
-      "codex",
-      "claudeAgent",
-      "cursor",
-      "antigravity",
-      "grok",
-      "droid",
-      "kilo",
-      "opencode",
-      "pi",
+      "openai",
+      "anthropic",
+      "openai",
+      "google",
+      "openai",
+      "openai",
+      "openai",
+      "openai",
+      "openai",
     ].map((provider) => ({
       provider: provider as ServerProviderStatus["provider"],
       status: "ready",
@@ -438,7 +438,7 @@ describe("external MCP gateway stdio flow", () => {
               arguments: {
                 requestId: "external-e2e-request",
                 projectId: PROJECT_ID,
-                provider: "codex",
+                provider: "openai",
                 model: "gpt-5.5",
                 prompt,
               },

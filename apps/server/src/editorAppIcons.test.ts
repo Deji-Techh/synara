@@ -141,7 +141,7 @@ describe("resolveCachedEditorIcon", () => {
     });
 
     const icon = await resolveCachedEditorIcon({
-      editorId: "cursor",
+      editorId: "openai",
       cacheDir,
       platform: "linux",
       env: { HOME: homeDir, PATH: "", XDG_DATA_DIRS: "" },
@@ -215,7 +215,7 @@ describe("resolveCachedEditorIcon", () => {
 
     await expect(
       resolveCachedEditorIcon({
-        editorId: "cursor",
+        editorId: "openai",
         cacheDir,
         platform: "linux",
         env: { HOME: homeDir, PATH: "", XDG_DATA_DIRS: "" },

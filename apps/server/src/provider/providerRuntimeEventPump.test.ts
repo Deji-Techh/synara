@@ -14,7 +14,7 @@ function completedEvent(eventId: string): ProviderRuntimeEvent {
   return {
     type: "turn.completed",
     eventId: EventId.makeUnsafe(eventId),
-    provider: "codex",
+    provider: "openai",
     createdAt: "2026-07-23T20:00:00.000Z",
     threadId: THREAD_ID,
     turnId: TURN_ID,
@@ -29,12 +29,12 @@ describe("providerRuntimeEventPump", () => {
         Effect.gen(function* () {
           const queue = yield* Queue.unbounded<ProviderRuntimeEvent>();
           const completed = yield* Deferred.make<void>();
-          const health = makeProviderRuntimeEventPumpHealthRegistry(["codex"]);
+          const health = makeProviderRuntimeEventPumpHealthRegistry(["openai"]);
           const processed: string[] = [];
           let attempts = 0;
 
           const fiber = yield* runProviderRuntimeEventPump({
-            provider: "codex",
+            provider: "openai",
             stream: Stream.fromQueue(queue),
             processEvent: (event) =>
               Effect.gen(function* () {
@@ -58,7 +58,7 @@ describe("providerRuntimeEventPump", () => {
           expect(attempts).toBe(2);
           expect(processed).toEqual(["event-retried"]);
           expect(health.snapshot()[0]).toMatchObject({
-            provider: "codex",
+            provider: "openai",
             status: "healthy",
             consecutiveFailures: 0,
           });
@@ -73,7 +73,7 @@ describe("providerRuntimeEventPump", () => {
         Effect.gen(function* () {
           const queue = yield* Queue.unbounded<ProviderRuntimeEvent>();
           const completed = yield* Deferred.make<void>();
-          const health = makeProviderRuntimeEventPumpHealthRegistry(["codex"]);
+          const health = makeProviderRuntimeEventPumpHealthRegistry(["openai"]);
           let subscriptions = 0;
 
           const stream = Stream.unwrap(
@@ -85,7 +85,7 @@ describe("providerRuntimeEventPump", () => {
             }),
           );
           const fiber = yield* runProviderRuntimeEventPump({
-            provider: "codex",
+            provider: "openai",
             stream,
             processEvent: () => Deferred.succeed(completed, undefined).pipe(Effect.asVoid),
             updateHealth: health.update,
@@ -113,12 +113,12 @@ describe("providerRuntimeEventPump", () => {
         Effect.gen(function* () {
           const queue = yield* Queue.unbounded<ProviderRuntimeEvent>();
           const completed = yield* Deferred.make<void>();
-          const health = makeProviderRuntimeEventPumpHealthRegistry(["codex"]);
+          const health = makeProviderRuntimeEventPumpHealthRegistry(["openai"]);
           const processed: string[] = [];
           const quarantined: string[] = [];
 
           const fiber = yield* runProviderRuntimeEventPump({
-            provider: "codex",
+            provider: "openai",
             stream: Stream.fromQueue(queue),
             processEvent: (event) =>
               event.eventId === "event-poison"
@@ -169,11 +169,11 @@ describe("providerRuntimeEventPump", () => {
         Effect.gen(function* () {
           const queue = yield* Queue.unbounded<ProviderRuntimeEvent>();
           const completed = yield* Deferred.make<void>();
-          const health = makeProviderRuntimeEventPumpHealthRegistry(["codex"]);
+          const health = makeProviderRuntimeEventPumpHealthRegistry(["openai"]);
           const processed: string[] = [];
 
           const fiber = yield* runProviderRuntimeEventPump({
-            provider: "codex",
+            provider: "openai",
             stream: Stream.fromQueue(queue),
             processEvent: (event) =>
               event.eventId === "event-poison"

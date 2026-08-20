@@ -219,7 +219,7 @@ function buildWrapperScript(input: {
   const commandName = managedTerminalCommandNameForCliKind(cliKind);
   const title = defaultTerminalTitleForCliKind(cliKind);
   const commandBody =
-    cliKind === "claude"
+    cliKind === "anthropic"
       ? `exec ${shellQuote(targetPath)} --settings ${shellQuote(claudeSettingsPath)} "$@"`
       : buildCodexWrapperScript({ codexHomeDir, notifyHookPath, targetPath });
   return [
@@ -332,7 +332,7 @@ export function prepareManagedTerminalWrappers(options: {
   }
 
   const targetPathByCliKind: Partial<Record<ManagedTerminalCliKind, string>> = {};
-  for (const cliKind of ["codex", "claude"] as const) {
+  for (const cliKind of ["openai", "anthropic"] as const) {
     const commandName = managedTerminalCommandNameForCliKind(cliKind);
     const targetPath = resolveExecutable(commandName, { env: options.baseEnv });
     if (!targetPath) {

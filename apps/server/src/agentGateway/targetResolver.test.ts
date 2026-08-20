@@ -14,7 +14,7 @@ const discovery = {
     Effect.succeed({
       source: "test",
       models:
-        provider === "codex"
+        provider === "openai"
           ? [
               {
                 slug: "gpt-5.6-terra",
@@ -56,7 +56,7 @@ describe("agent gateway target resolver", () => {
   it.effect("builds examples from the exact model restrictions and preserves option types", () =>
     Effect.gen(function* () {
       const codexCatalog = {
-        provider: "codex" as const,
+        provider: "openai" as const,
         defaultModel: "gpt-5.5",
         enabled: true,
         available: true,
@@ -73,7 +73,7 @@ describe("agent gateway target resolver", () => {
       };
       const codexGuidance = agentGatewayTargetOptionGuidance(codexCatalog);
       assert.deepEqual(codexGuidance.exampleTarget, {
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5.6-terra",
         options: { reasoningEffort: "low" },
       });
@@ -86,7 +86,7 @@ describe("agent gateway target resolver", () => {
       );
 
       const antigravityGuidance = agentGatewayTargetOptionGuidance({
-        provider: "antigravity",
+        provider: "google",
         defaultModel: "Gemini 3.5 Flash",
         enabled: true,
         available: true,
@@ -144,7 +144,7 @@ describe("agent gateway target resolver", () => {
   it.effect("accepts Terra Low as a canonical model plus option", () =>
     Effect.gen(function* () {
       const target = {
-        provider: "codex" as const,
+        provider: "openai" as const,
         model: "gpt-5.6-terra",
         options: { reasoningEffort: "low" },
       };
@@ -155,7 +155,7 @@ describe("agent gateway target resolver", () => {
   it.effect("rejects a guessed model slug before creation", () =>
     Effect.gen(function* () {
       const result = yield* resolveAgentGatewayTarget({
-        target: { provider: "codex", model: "gpt-5.6-terra-low" },
+        target: { provider: "openai", model: "gpt-5.6-terra-low" },
         discovery,
       }).pipe(
         Effect.map(() => ({ code: "unexpected-success" })),
@@ -169,7 +169,7 @@ describe("agent gateway target resolver", () => {
     Effect.gen(function* () {
       const result = yield* resolveAgentGatewayTarget({
         target: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5.6-terra",
           options: { reasoningEffort: "ultra" },
         },
@@ -205,7 +205,7 @@ describe("agent gateway target resolver", () => {
           }),
       } as unknown as ProviderDiscoveryServiceShape;
       const accepted = {
-        provider: "opencode" as const,
+        provider: "openai" as const,
         model: "openai/gpt-5",
         options: { variant: "high" },
       };
@@ -214,7 +214,7 @@ describe("agent gateway target resolver", () => {
         accepted,
       );
       const explicitAgent = {
-        provider: "opencode" as const,
+        provider: "openai" as const,
         model: "openai/gpt-5",
         options: { agent: "build" },
       };
@@ -223,7 +223,7 @@ describe("agent gateway target resolver", () => {
         explicitAgent,
       );
       const kiloAgent = {
-        provider: "kilo" as const,
+        provider: "openai" as const,
         model: "openai/gpt-5",
         options: { agent: "plan" },
       };
@@ -233,7 +233,7 @@ describe("agent gateway target resolver", () => {
       );
       const result = yield* resolveAgentGatewayTarget({
         target: {
-          provider: "opencode",
+          provider: "openai",
           model: "openai/gpt-5",
           options: { inventedOption: "invented-value" },
         } as unknown as ModelSelection,
@@ -245,11 +245,11 @@ describe("agent gateway target resolver", () => {
       assert.equal(result.code, "model_option_unavailable");
 
       const guidance = agentGatewayTargetOptionGuidance({
-        provider: "opencode",
+        provider: "openai",
         defaultModel: "opencode/big-pickle",
         enabled: true,
         available: true,
-        models: (yield* optionDiscovery.listModels({ provider: "opencode" })).models,
+        models: (yield* optionDiscovery.listModels({ provider: "openai" })).models,
       });
       assert.deepEqual(guidance.alternativeOptionKeys, ["agent"]);
     }),
@@ -265,77 +265,77 @@ describe("agent gateway target resolver", () => {
         readonly rejectedValue: string;
       }> = [
         {
-          provider: "codex",
+          provider: "openai",
           descriptor: makeEffortDescriptor("codex-model", "low"),
           optionKey: "reasoningEffort",
           acceptedValue: "low",
           rejectedValue: "invented",
         },
         {
-          provider: "cursor",
+          provider: "openai",
           descriptor: makeEffortDescriptor("cursor-model", "low"),
           optionKey: "reasoningEffort",
           acceptedValue: "low",
           rejectedValue: "invented",
         },
         {
-          provider: "grok",
+          provider: "openai",
           descriptor: makeEffortDescriptor("grok-model", "low"),
           optionKey: "reasoningEffort",
           acceptedValue: "low",
           rejectedValue: "invented",
         },
         {
-          provider: "droid",
+          provider: "openai",
           descriptor: makeEffortDescriptor("droid-model", "low"),
           optionKey: "reasoningEffort",
           acceptedValue: "low",
           rejectedValue: "invented",
         },
         {
-          provider: "claudeAgent",
+          provider: "anthropic",
           descriptor: makeEffortDescriptor("claude-model", "low"),
           optionKey: "effort",
           acceptedValue: "low",
           rejectedValue: "invented",
         },
         {
-          provider: "pi",
+          provider: "openai",
           descriptor: makeEffortDescriptor("pi-model", "low"),
           optionKey: "thinkingLevel",
           acceptedValue: "low",
           rejectedValue: "invented",
         },
         {
-          provider: "antigravity",
+          provider: "google",
           descriptor: makeEffortDescriptor("antigravity-model", "low"),
           optionKey: "reasoningEffort",
           acceptedValue: "low",
           rejectedValue: "invented",
         },
         {
-          provider: "opencode",
+          provider: "openai",
           descriptor: makeVariantDescriptor("opencode-model"),
           optionKey: "variant",
           acceptedValue: "high",
           rejectedValue: "invented",
         },
         {
-          provider: "opencode",
+          provider: "openai",
           descriptor: makeVariantDescriptor("opencode-model"),
           optionKey: "agent",
           acceptedValue: "build",
           rejectedValue: "",
         },
         {
-          provider: "kilo",
+          provider: "openai",
           descriptor: makeVariantDescriptor("kilo-model"),
           optionKey: "variant",
           acceptedValue: "high",
           rejectedValue: "invented",
         },
         {
-          provider: "kilo",
+          provider: "openai",
           descriptor: makeVariantDescriptor("kilo-model"),
           optionKey: "agent",
           acceptedValue: "plan",
@@ -403,7 +403,7 @@ describe("agent gateway target resolver", () => {
         listModels: () => Effect.succeed({ source: "test", models: [descriptor] }),
       } as unknown as ProviderDiscoveryServiceShape;
       const accepted = {
-        provider: "cursor" as const,
+        provider: "openai" as const,
         model: descriptor.slug,
         options: {
           reasoningEffort: "low",
@@ -432,7 +432,7 @@ describe("agent gateway target resolver", () => {
           listModels: () => Effect.succeed({ source: "test", models: [unavailableDescriptor] }),
         } as unknown as ProviderDiscoveryServiceShape;
         const result = yield* resolveAgentGatewayTarget({
-          target: { provider: "cursor", model: descriptor.slug, options },
+          target: { provider: "openai", model: descriptor.slug, options },
           discovery: unavailableDiscovery,
         }).pipe(
           Effect.map(() => ({ code: "unexpected-success" })),
@@ -464,7 +464,7 @@ describe("agent gateway target resolver", () => {
         listModels: () => Effect.succeed({ source: "test", models: [descriptor] }),
       } as unknown as ProviderDiscoveryServiceShape;
       const restrictedGuidance = agentGatewayTargetOptionGuidance({
-        provider: "opencode",
+        provider: "openai",
         defaultModel: descriptor.slug,
         enabled: true,
         available: true,
@@ -478,7 +478,7 @@ describe("agent gateway target resolver", () => {
       );
 
       const accepted = {
-        provider: "opencode" as const,
+        provider: "openai" as const,
         model: descriptor.slug,
         options: { agent: "build" },
       };
@@ -501,7 +501,7 @@ describe("agent gateway target resolver", () => {
           Effect.succeed({ source: "test", models: [makeVariantDescriptor("opencode-model")] }),
       } as unknown as ProviderDiscoveryServiceShape;
       const unrestrictedGuidance = agentGatewayTargetOptionGuidance({
-        provider: "opencode",
+        provider: "openai",
         defaultModel: "opencode-model",
         enabled: true,
         available: true,
@@ -529,7 +529,7 @@ describe("agent gateway target resolver", () => {
         },
       } as unknown as ProviderDiscoveryServiceShape;
       const result = yield* resolveAgentGatewayTarget({
-        target: { provider: "codex", model: "gpt-5.5" },
+        target: { provider: "openai", model: "gpt-5.5" },
         discovery: trackedDiscovery,
         availability: { enabled: false },
       }).pipe(
@@ -544,7 +544,7 @@ describe("agent gateway target resolver", () => {
   it.effect("rejects a known unavailable or unauthenticated provider", () =>
     Effect.gen(function* () {
       const result = yield* resolveAgentGatewayTarget({
-        target: { provider: "codex", model: "gpt-5.5" },
+        target: { provider: "openai", model: "gpt-5.5" },
         discovery,
         availability: {
           enabled: true,
@@ -568,7 +568,7 @@ describe("agent gateway target resolver", () => {
       const unavailableDiscovery = {
         listModels: () => Effect.fail(new Error("temporary discovery failure")),
       } as unknown as ProviderDiscoveryServiceShape;
-      const defaultTarget = { provider: "codex" as const, model: "gpt-5.5" };
+      const defaultTarget = { provider: "openai" as const, model: "gpt-5.5" };
       assert.deepEqual(
         yield* resolveAgentGatewayTarget({
           target: defaultTarget,
@@ -579,7 +579,7 @@ describe("agent gateway target resolver", () => {
       );
 
       const customResult = yield* resolveAgentGatewayTarget({
-        target: { provider: "codex", model: "gpt-5.6-terra" },
+        target: { provider: "openai", model: "gpt-5.6-terra" },
         discovery: unavailableDiscovery,
         availability: { enabled: true, available: true, authStatus: "authenticated" },
       }).pipe(
@@ -590,7 +590,7 @@ describe("agent gateway target resolver", () => {
 
       const invalidOption = yield* resolveAgentGatewayTarget({
         target: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5.5",
           options: { reasoningEffort: "invented" },
         },

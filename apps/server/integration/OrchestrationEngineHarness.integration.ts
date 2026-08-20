@@ -226,7 +226,7 @@ export const makeOrchestrationIntegrationHarness = (
     const path = yield* Path.Path;
     const fileSystem = yield* FileSystem.FileSystem;
 
-    const provider = options?.provider ?? "codex";
+    const provider = options?.provider ?? "openai";
     const useRealCodex = options?.realCodex === true;
     const adapterHarness = useRealCodex
       ? null
@@ -269,10 +269,10 @@ export const makeOrchestrationIntegrationHarness = (
         const codexAdapter = yield* CodexAdapter;
         return {
           getByProvider: (resolvedProvider) =>
-            resolvedProvider === "codex"
+            resolvedProvider === "openai"
               ? Effect.succeed(codexAdapter)
               : Effect.fail(new ProviderUnsupportedError({ provider: resolvedProvider })),
-          listProviders: () => Effect.succeed(["codex"] as const),
+          listProviders: () => Effect.succeed(["openai"] as const),
         } as typeof ProviderAdapterRegistry.Service;
       }),
     ).pipe(

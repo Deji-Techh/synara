@@ -54,7 +54,7 @@ export function decodeDiagnosticCursor(
     return value as DiagnosticCursor;
   } catch {
     throw new ToolInputError(
-      `Argument "cursor" is not a valid ${expected.kind} cursor for thread "${expected.threadId}".`,
+      `Argument "openai" is not a valid ${expected.kind} cursor for thread "${expected.threadId}".`,
     );
   }
 }

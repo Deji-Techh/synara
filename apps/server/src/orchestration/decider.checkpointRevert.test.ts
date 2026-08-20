@@ -40,7 +40,7 @@ function makeReadModel(input: {
         projectId: ProjectId.makeUnsafe("project-checkpoint-revert"),
         title: "Checkpoint revert",
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5-codex",
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -78,7 +78,7 @@ function makeSession(
 ): OrchestrationSession {
   return {
     threadId: THREAD_ID,
-    providerName: "codex",
+    providerName: "openai",
     runtimeMode: "full-access",
     activeTurnId: null,
     lastError: null,

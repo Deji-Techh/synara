@@ -102,7 +102,7 @@ describe("resolvePreferredOpenCodeModelProviders", () => {
     const providers = resolvePreferredOpenCodeModelProviders({
       inventory: {
         providerList: {
-          connected: ["cloudflare-ai-gateway", "openai", "opencode"],
+          connected: ["cloudflare-ai-gateway", "openai", "openai"],
           all: [
             makeProvider({
               id: "cloudflare-ai-gateway",
@@ -115,7 +115,7 @@ describe("resolvePreferredOpenCodeModelProviders", () => {
               source: "api",
             }),
             makeProvider({
-              id: "opencode",
+              id: "openai",
               name: "OpenCode",
               source: "api",
             }),
@@ -128,14 +128,14 @@ describe("resolvePreferredOpenCodeModelProviders", () => {
       credentialProviderIDs: ["openai"],
     });
 
-    expect(providers.map((provider) => provider.id)).toEqual(["openai", "opencode"]);
+    expect(providers.map((provider) => provider.id)).toEqual(["openai", "openai"]);
   });
 
   it("adds console-managed connected providers to the preferred set", () => {
     const providers = resolvePreferredOpenCodeModelProviders({
       inventory: {
         providerList: {
-          connected: ["cloudflare-ai-gateway", "openai", "opencode", "openrouter"],
+          connected: ["cloudflare-ai-gateway", "openai", "openai", "openrouter"],
           all: [
             makeProvider({
               id: "cloudflare-ai-gateway",
@@ -148,7 +148,7 @@ describe("resolvePreferredOpenCodeModelProviders", () => {
               source: "api",
             }),
             makeProvider({
-              id: "opencode",
+              id: "openai",
               name: "OpenCode",
               source: "api",
             }),
@@ -166,14 +166,14 @@ describe("resolvePreferredOpenCodeModelProviders", () => {
       credentialProviderIDs: ["openai"],
     });
 
-    expect(providers.map((provider) => provider.id)).toEqual(["openai", "opencode", "openrouter"]);
+    expect(providers.map((provider) => provider.id)).toEqual(["openai", "openai", "openrouter"]);
   });
 
   it("prefers OpenCode-managed providers before generic non-environment providers", () => {
     const providers = resolvePreferredOpenCodeModelProviders({
       inventory: {
         providerList: {
-          connected: ["cloudflare-ai-gateway", "openai", "opencode"],
+          connected: ["cloudflare-ai-gateway", "openai", "openai"],
           all: [
             makeProvider({
               id: "cloudflare-ai-gateway",
@@ -186,7 +186,7 @@ describe("resolvePreferredOpenCodeModelProviders", () => {
               source: "api",
             }),
             makeProvider({
-              id: "opencode",
+              id: "openai",
               name: "OpenCode",
               source: "api",
             }),
@@ -196,14 +196,14 @@ describe("resolvePreferredOpenCodeModelProviders", () => {
       },
     });
 
-    expect(providers.map((provider) => provider.id)).toEqual(["opencode"]);
+    expect(providers.map((provider) => provider.id)).toEqual(["openai"]);
   });
 
   it("keeps connected config providers with inline apiKey even without auth.json credentials", () => {
     const providers = resolvePreferredOpenCodeModelProviders({
       inventory: {
         providerList: {
-          connected: ["fastapicloud", "opencode"],
+          connected: ["fastapicloud", "openai"],
           all: [
             makeProvider({
               id: "fastapicloud",
@@ -212,7 +212,7 @@ describe("resolvePreferredOpenCodeModelProviders", () => {
               options: { baseURL: "https://example.invalid/v1", apiKey: "test-key" },
             }),
             makeProvider({
-              id: "opencode",
+              id: "openai",
               name: "OpenCode Zen",
               source: "custom",
               env: ["OPENCODE_API_KEY"],
@@ -224,7 +224,7 @@ describe("resolvePreferredOpenCodeModelProviders", () => {
       credentialProviderIDs: ["unrelated"],
     });
 
-    expect(providers.map((provider) => provider.id)).toEqual(["fastapicloud", "opencode"]);
+    expect(providers.map((provider) => provider.id)).toEqual(["fastapicloud", "openai"]);
   });
 
   it("falls back to non-environment connected providers when no stronger OpenCode signals exist", () => {
@@ -299,7 +299,7 @@ describe("flattenOpenCodeModels", () => {
         },
         {
           slug: "opencode/minimax-m2.5-free",
-          providerID: "opencode",
+          providerID: "openai",
           modelID: "minimax-m2.5-free",
           name: "MiniMax M2.5 Free",
           variants: [],
@@ -437,7 +437,7 @@ describe("flattenOpenCodeModels", () => {
       {
         slug: "opencode/minimax-m2.5-free",
         name: "MiniMax M2.5 Free",
-        upstreamProviderId: "opencode",
+        upstreamProviderId: "openai",
         upstreamProviderName: "OpenCode",
       },
       {
@@ -465,10 +465,10 @@ describe("flattenOpenCodeModels", () => {
     const models = flattenOpenCodeModels({
       inventory: {
         providerList: {
-          connected: ["opencode", "openai"],
+          connected: ["openai", "openai"],
           all: [
             makeProvider({
-              id: "opencode",
+              id: "openai",
               name: "OpenCode",
               source: "api",
               models: {
@@ -509,7 +509,7 @@ describe("flattenOpenCodeModels", () => {
       {
         slug: "opencode/nemotron-3-super-free",
         name: "Nemotron 3 Super Free",
-        upstreamProviderId: "opencode",
+        upstreamProviderId: "openai",
         upstreamProviderName: "OpenCode",
         contextWindowOptions: [{ value: "128k", label: "128K", isDefault: true }],
         defaultContextWindow: "128k",
@@ -640,10 +640,10 @@ describe("flattenOpenCodeModels", () => {
     const models = flattenOpenCodeModels({
       inventory: {
         providerList: {
-          connected: ["opencode", "github-copilot"],
+          connected: ["openai", "github-copilot"],
           all: [
             makeProvider({
-              id: "opencode",
+              id: "openai",
               name: "OpenCode",
               source: "api",
               models: {

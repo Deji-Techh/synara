@@ -269,7 +269,7 @@ describe("flattenCursorAcpModelChoices", () => {
         },
       ]),
     ).toEqual([
-      { slug: "auto", name: "Auto", upstreamProviderId: "cursor", upstreamProviderName: "Cursor" },
+      { slug: "auto", name: "Auto", upstreamProviderId: "openai", upstreamProviderName: "Cursor" },
       {
         slug: "claude-sonnet-4-6",
         name: "Claude Sonnet 4.6",
@@ -304,13 +304,13 @@ Tip: use --model <id> (or /model <id> in interactive mode) to switch.
       {
         slug: "auto",
         name: "Auto",
-        upstreamProviderId: "cursor",
+        upstreamProviderId: "openai",
         upstreamProviderName: "Cursor",
       },
       {
         slug: "composer-2-fast",
         name: "Composer 2 Fast",
-        upstreamProviderId: "cursor",
+        upstreamProviderId: "openai",
         upstreamProviderName: "Cursor",
         supportsFastMode: true,
       },

@@ -5,7 +5,7 @@ import { assignDerivedProviderRuntimeEventIds } from "./providerRuntimeEventIden
 
 const base = {
   eventId: EventId.makeUnsafe("native-event"),
-  provider: "codex" as const,
+  provider: "openai" as const,
   threadId: ThreadId.makeUnsafe("thread-derived-events"),
   createdAt: "2026-07-23T20:00:00.000Z",
 };

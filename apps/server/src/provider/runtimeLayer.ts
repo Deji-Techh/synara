@@ -2,22 +2,10 @@ import { Effect, Layer } from "effect";
 
 import { AgentGatewayCredentialsWithSecretsLive } from "../agentGateway/Layers/AgentGatewayCredentials";
 import { ServerConfig } from "../config";
-import {
-  makeProviderServerPasswordResolver,
-  ProviderCredentials,
-  ProviderCredentialsLive,
-} from "../providerCredentials";
+import { ProviderCredentials, ProviderCredentialsLive } from "../providerCredentials";
 import { ServerSettingsLive } from "../serverSettings";
 import { ServerSecretStoreLive } from "../auth/Layers/ServerSecretStore";
-import { makeClaudeAdapterLive } from "./Layers/ClaudeAdapter";
-import { makeCodexAdapterLive } from "./Layers/CodexAdapter";
-import { CursorAdapterLive } from "./Layers/CursorAdapter";
 import { makeEventNdjsonLogger } from "./Layers/EventNdjsonLogger";
-import { AntigravityAdapterLive } from "./Layers/AntigravityAdapter";
-import { DroidAdapterLive } from "./Layers/DroidAdapter";
-import { GrokAdapterLive } from "./Layers/GrokAdapter";
-import { makeKiloAdapterLive, makeOpenCodeAdapterLive } from "./Layers/OpenCodeAdapter";
-import { makePiAdapterLive } from "./Layers/PiAdapter";
 import { ProviderAdapterRegistryLive } from "./Layers/ProviderAdapterRegistry";
 import { EngineAdapterLive } from "./Layers/EngineAdapter";
 import {
@@ -48,7 +36,6 @@ export function makeServerProviderLayer(
 ) {
   return Effect.gen(function* () {
     const credentials = yield* ProviderCredentials;
-    const resolveProviderServerPassword = makeProviderServerPasswordResolver(credentials);
     const { logProviderEvents, providerEventLogPath } = yield* ServerConfig;
     const nativeEventLogger = logProviderEvents
       ? yield* makeEventNdjsonLogger(providerEventLogPath, {
@@ -63,34 +50,8 @@ export function makeServerProviderLayer(
     const providerSessionDirectoryLayer = ProviderSessionDirectoryLive.pipe(
       Layer.provide(ProviderSessionRuntimeRepositoryLive),
     );
-    // Gives gateway-capable sessions their thread-scoped caide_* credentials.
-    // OpenCode/Kilo isolate managed servers before installing MCP; Pi projects
-    // the same MCP catalog/dispatcher through its native custom-tool API.
     const agentGatewayCredentialsLayer =
       options.agentGatewayCredentialsLayer ?? AgentGatewayCredentialsWithSecretsLive;
-    const codexAdapterLayer = makeCodexAdapterLive(
-      nativeEventLogger ? { nativeEventLogger } : undefined,
-    ).pipe(Layer.provide(agentGatewayCredentialsLayer));
-    const claudeAdapterLayer = makeClaudeAdapterLive(
-      nativeEventLogger ? { nativeEventLogger } : undefined,
-    ).pipe(Layer.provide(agentGatewayCredentialsLayer));
-    const antigravityAdapterLayer = AntigravityAdapterLive.pipe(
-      Layer.provide(agentGatewayCredentialsLayer),
-    );
-    const grokAdapterLayer = GrokAdapterLive.pipe(Layer.provide(agentGatewayCredentialsLayer));
-    const droidAdapterLayer = DroidAdapterLive.pipe(Layer.provide(agentGatewayCredentialsLayer));
-    const kiloAdapterLayer = makeKiloAdapterLive({
-      ...(nativeEventLogger ? { nativeEventLogger } : {}),
-      resolveServerPassword: resolveProviderServerPassword,
-    }).pipe(Layer.provide(agentGatewayCredentialsLayer));
-    const openCodeAdapterLayer = makeOpenCodeAdapterLive({
-      ...(nativeEventLogger ? { nativeEventLogger } : {}),
-      resolveServerPassword: resolveProviderServerPassword,
-    }).pipe(Layer.provide(agentGatewayCredentialsLayer));
-    const cursorAdapterLayer = CursorAdapterLive.pipe(Layer.provide(agentGatewayCredentialsLayer));
-    const piAdapterLayer = makePiAdapterLive(
-      nativeEventLogger ? { nativeEventLogger } : undefined,
-    ).pipe(Layer.provide(agentGatewayCredentialsLayer));
     const credentialsLayer = Layer.succeed(ProviderCredentials, credentials);
     const openAiAdapterLayer = OpenAiAdapterLive.pipe(Layer.provide(credentialsLayer));
     const anthropicAdapterLayer = AnthropicAdapterLive.pipe(Layer.provide(credentialsLayer));
@@ -121,15 +82,6 @@ export function makeServerProviderLayer(
       openCodeZenAdapterLayer,
     );
     const adapterRegistryLayer = ProviderAdapterRegistryLive.pipe(
-      Layer.provide(codexAdapterLayer),
-      Layer.provide(claudeAdapterLayer),
-      Layer.provide(cursorAdapterLayer),
-      Layer.provide(antigravityAdapterLayer),
-      Layer.provide(grokAdapterLayer),
-      Layer.provide(droidAdapterLayer),
-      Layer.provide(kiloAdapterLayer),
-      Layer.provide(openCodeAdapterLayer),
-      Layer.provide(piAdapterLayer),
       Layer.provide(
         EngineAdapterLive.pipe(
           Layer.provide(ServerSettingsLive),
@@ -149,8 +101,6 @@ export function makeServerProviderLayer(
     );
     const providerDiscoveryLayer = ProviderDiscoveryServiceLive.pipe(
       Layer.provide(adapterRegistryLayer),
-      // Skill toggles live in server settings; the shared ServerSettingsLive
-      // layer is memoized so this reuses the instance built at the top level.
       Layer.provide(ServerSettingsLive),
     );
     return Layer.mergeAll(

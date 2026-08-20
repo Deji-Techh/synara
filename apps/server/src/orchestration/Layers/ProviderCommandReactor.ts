@@ -290,7 +290,7 @@ export function normalizeSkillMentionTextForProvider(input: {
   readonly messageText: string;
   readonly skills?: ReadonlyArray<ProviderSkillReference>;
 }): string {
-  if (input.provider !== "codex" || !input.skills || input.skills.length === 0) {
+  if (input.provider !== "openai" || !input.skills || input.skills.length === 0) {
     return input.messageText;
   }
 
@@ -438,7 +438,7 @@ function isUnknownPendingUserInputRequestError(cause: Cause.Cause<ProviderServic
 function isClaudeContextWindowUserInputRejection(error: ProviderServiceError): boolean {
   if (
     error._tag !== "ProviderAdapterRequestError" ||
-    error.provider !== "claudeAgent" ||
+    error.provider !== "anthropic" ||
     error.method !== "item/tool/respondToUserInput"
   ) {
     return false;
@@ -492,7 +492,7 @@ function isStaleCodexResumeError(error: unknown): boolean {
 function isStaleClaudeResumeError(error: unknown): boolean {
   if (Schema.is(ProviderAdapterRequestError)(error)) {
     return (
-      error.provider === "claudeAgent" &&
+      error.provider === "anthropic" &&
       error.detail.toLowerCase().includes("no conversation found with session id")
     );
   }
@@ -1288,12 +1288,12 @@ const make = Effect.gen(function* () {
       // session was actually spawned from so spawn-fixed changes still restart.
       const shouldRestartForModelSelectionChange =
         requestedModelSelection !== undefined &&
-        (currentProvider === "claudeAgent"
+        (currentProvider === "anthropic"
           ? claudeSelectionRequiresRestart(
               previousModelSelection ?? thread.modelSelection,
               requestedModelSelection,
             )
-          : (currentProvider === "droid" || currentProvider === "grok") &&
+          : (currentProvider === "openai" || currentProvider === "openai") &&
             !Equal.equals(previousModelSelection, requestedModelSelection));
 
       if (
@@ -1329,7 +1329,7 @@ const make = Effect.gen(function* () {
       const restartedSession = yield* startProviderSession(resumeCursor);
       if (
         shouldRegisterContextBootstrap &&
-        currentProvider === "droid" &&
+        currentProvider === "openai" &&
         !providerChanged &&
         resumeCursor === undefined
       ) {
@@ -1359,7 +1359,7 @@ const make = Effect.gen(function* () {
       if (forked) {
         if (
           shouldRegisterContextBootstrap &&
-          preferredProvider === "droid" &&
+          preferredProvider === "openai" &&
           thread.sidechatSourceThreadId
         ) {
           // Droid's ACP fork preserves the native session but does not guarantee
@@ -1624,7 +1624,7 @@ const make = Effect.gen(function* () {
       });
     }
     const shouldBootstrapPriorTranscriptContext =
-      (((selectedProvider === "kilo" || selectedProvider === "opencode") &&
+      (((selectedProvider === "openai" || selectedProvider === "openai") &&
         activeSessionBeforeEnsure === undefined) ||
         hasPendingPriorTranscriptBootstrap) &&
       !shouldBootstrapHandoff &&
@@ -1835,7 +1835,7 @@ const make = Effect.gen(function* () {
     } else {
       yield* capturePreTurnBaselines;
       pendingContextBootstrapAttempt =
-        activeSession?.provider === "droid" &&
+        activeSession?.provider === "openai" &&
         (sidechatBootstrapText !== null || priorTranscriptBootstrapText !== null)
           ? {
               clearSidechat: sidechatBootstrapText !== null,
@@ -1896,7 +1896,7 @@ const make = Effect.gen(function* () {
       const sentTurn = yield* sendQueuedProviderTurn(normalizedInput).pipe(
         Effect.catch((error) =>
           Effect.gen(function* () {
-            if (selectedProvider !== "claudeAgent" || !isStaleClaudeResumeError(error)) {
+            if (selectedProvider !== "anthropic" || !isStaleClaudeResumeError(error)) {
               return yield* Effect.fail(error);
             }
 

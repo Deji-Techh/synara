@@ -28,7 +28,7 @@ describe("AcpNativeLogging", () => {
 
         const loggers = makeAcpNativeLoggers({
           nativeEventLogger,
-          provider: "cursor",
+          provider: "openai",
           threadId,
         });
         const requestLogger = loggers.requestLogger;

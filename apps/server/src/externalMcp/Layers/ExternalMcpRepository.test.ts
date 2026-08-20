@@ -349,7 +349,7 @@ layer("ExternalMcpRepository", (it) => {
           created_at, updated_at, deleted_at
         ) VALUES (
           'external-running-thread', 'project-running-capacity', 'Running external task',
-          '{"provider":"codex","model":"gpt-5.5"}', 'external-running-turn',
+          '{"provider":"openai","model":"gpt-5.5"}', 'external-running-turn',
           '2026-07-20T00:01:02.000Z', '2026-07-20T00:01:03.000Z', NULL
         )
       `;
@@ -491,7 +491,7 @@ layer("ExternalMcpRepository", (it) => {
           created_at, updated_at, deleted_at
         ) VALUES (
           'external-projection-lag-thread', 'project-projection-lag-capacity',
-          'Projection lag task', '{"provider":"codex","model":"gpt-5.5"}', NULL,
+          'Projection lag task', '{"provider":"openai","model":"gpt-5.5"}', NULL,
           '2026-07-20T00:01:02.000Z', '2026-07-20T00:01:05.000Z', NULL
         )
       `;
@@ -501,7 +501,7 @@ layer("ExternalMcpRepository", (it) => {
         INSERT INTO projection_thread_sessions (
           thread_id, status, provider_name, active_turn_id, last_error, updated_at
         ) VALUES (
-          'external-projection-lag-thread', 'error', 'codex', NULL,
+          'external-projection-lag-thread', 'error', 'openai', NULL,
           'Provider startup failed.', '2026-07-20T00:01:05.000Z'
         )
       `;

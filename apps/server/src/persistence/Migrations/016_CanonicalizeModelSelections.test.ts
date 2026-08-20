@@ -75,7 +75,7 @@ layer("016_CanonicalizeModelSelections", (it) => {
         VALUES (
           'thread-session',
           'running',
-          'claudeAgent',
+          'anthropic',
           'provider-session-1',
           'provider-thread-1',
           NULL,
@@ -111,7 +111,7 @@ layer("016_CanonicalizeModelSelections", (it) => {
           NULL,
           'correlation-project-created',
           'user',
-          '{"projectId":"project-1","title":"Project","workspaceRoot":"/tmp/project","defaultModel":"claude-opus-4-6","defaultModelOptions":{"codex":{"reasoningEffort":"high"},"claudeAgent":{"effort":"max"}},"scripts":[],"createdAt":"2026-01-01T00:00:00.000Z","updatedAt":"2026-01-01T00:00:00.000Z"}',
+          '{"projectId":"project-1","title":"Project","workspaceRoot":"/tmp/project","defaultModel":"claude-opus-4-6","defaultModelOptions":{"openai":{"reasoningEffort":"high"},"anthropic":{"effort":"max"}},"scripts":[],"createdAt":"2026-01-01T00:00:00.000Z","updatedAt":"2026-01-01T00:00:00.000Z"}',
           '{}'
         ),
         (
@@ -125,7 +125,7 @@ layer("016_CanonicalizeModelSelections", (it) => {
           NULL,
           'correlation-project-created-fallback',
           'user',
-          '{"projectId":"project-2","title":"Fallback Project","workspaceRoot":"/tmp/project-2","defaultModel":"claude-opus-4-6","defaultModelOptions":{"codex":{"reasoningEffort":"low"}},"scripts":[],"createdAt":"2026-01-01T00:00:00.000Z","updatedAt":"2026-01-01T00:00:00.000Z"}',
+          '{"projectId":"project-2","title":"Fallback Project","workspaceRoot":"/tmp/project-2","defaultModel":"claude-opus-4-6","defaultModelOptions":{"openai":{"reasoningEffort":"low"}},"scripts":[],"createdAt":"2026-01-01T00:00:00.000Z","updatedAt":"2026-01-01T00:00:00.000Z"}',
           '{}'
         ),
         (
@@ -139,7 +139,7 @@ layer("016_CanonicalizeModelSelections", (it) => {
           NULL,
           'correlation-thread-created',
           'user',
-          '{"threadId":"thread-1","projectId":"project-1","title":"Thread","model":"claude-opus-4-6","modelOptions":{"codex":{"reasoningEffort":"high"},"claudeAgent":{"effort":"max","thinking":false}},"runtimeMode":"full-access","interactionMode":"default","branch":null,"worktreePath":null,"createdAt":"2026-01-01T00:00:00.000Z","updatedAt":"2026-01-01T00:00:00.000Z"}',
+          '{"threadId":"thread-1","projectId":"project-1","title":"Thread","model":"claude-opus-4-6","modelOptions":{"openai":{"reasoningEffort":"high"},"anthropic":{"effort":"max","thinking":false}},"runtimeMode":"full-access","interactionMode":"default","branch":null,"worktreePath":null,"createdAt":"2026-01-01T00:00:00.000Z","updatedAt":"2026-01-01T00:00:00.000Z"}',
           '{}'
         ),
         (
@@ -153,7 +153,7 @@ layer("016_CanonicalizeModelSelections", (it) => {
           NULL,
           'correlation-thread-created-fallback',
           'user',
-          '{"threadId":"thread-2","projectId":"project-1","title":"Fallback Thread","model":"gpt-5.4","modelOptions":{"claudeAgent":{"effort":"max"}},"runtimeMode":"full-access","interactionMode":"default","branch":null,"worktreePath":null,"createdAt":"2026-01-01T00:00:00.000Z","updatedAt":"2026-01-01T00:00:00.000Z"}',
+          '{"threadId":"thread-2","projectId":"project-1","title":"Fallback Thread","model":"gpt-5.4","modelOptions":{"anthropic":{"effort":"max"}},"runtimeMode":"full-access","interactionMode":"default","branch":null,"worktreePath":null,"createdAt":"2026-01-01T00:00:00.000Z","updatedAt":"2026-01-01T00:00:00.000Z"}',
           '{}'
         ),
         (
@@ -167,7 +167,7 @@ layer("016_CanonicalizeModelSelections", (it) => {
           NULL,
           'correlation-turn-start-requested',
           'user',
-          '{"threadId":"thread-1","turnId":"turn-1","input":"hi","model":"gpt-5.4","modelOptions":{"codex":{"fastMode":true},"claudeAgent":{"effort":"max"}},"deliveryMode":"buffered"}',
+          '{"threadId":"thread-1","turnId":"turn-1","input":"hi","model":"gpt-5.4","modelOptions":{"openai":{"fastMode":true},"anthropic":{"effort":"max"}},"deliveryMode":"buffered"}',
           '{}'
         ),
         (
@@ -205,11 +205,11 @@ layer("016_CanonicalizeModelSelections", (it) => {
           assert.deepStrictEqual(projectRows, [
             {
               projectId: "project-claude",
-              defaultModelSelection: '{"provider":"claudeAgent","model":"claude-opus-4-6"}',
+              defaultModelSelection: '{"provider":"anthropic","model":"claude-opus-4-6"}',
             },
             {
               projectId: "project-codex",
-              defaultModelSelection: '{"provider":"codex","model":"gpt-5.4"}',
+              defaultModelSelection: '{"provider":"openai","model":"gpt-5.4"}',
             },
             { projectId: "project-null", defaultModelSelection: null },
           ]);
@@ -227,19 +227,19 @@ layer("016_CanonicalizeModelSelections", (it) => {
           assert.deepStrictEqual(threadRows, [
             {
               threadId: "thread-claude",
-              modelSelection: '{"provider":"claudeAgent","model":"claude-opus-4-6"}',
+              modelSelection: '{"provider":"anthropic","model":"claude-opus-4-6"}',
             },
             {
               threadId: "thread-codex",
-              modelSelection: '{"provider":"codex","model":"gpt-5.4"}',
+              modelSelection: '{"provider":"openai","model":"gpt-5.4"}',
             },
             {
               threadId: "thread-legacy-options",
-              modelSelection: '{"provider":"claudeAgent","model":"claude-opus-4-6"}',
+              modelSelection: '{"provider":"anthropic","model":"claude-opus-4-6"}',
             },
             {
               threadId: "thread-session",
-              modelSelection: '{"provider":"claudeAgent","model":"gpt-5.4"}',
+              modelSelection: '{"provider":"anthropic","model":"gpt-5.4"}',
             },
           ]);
 
@@ -256,7 +256,7 @@ layer("016_CanonicalizeModelSelections", (it) => {
             title: "Project",
             workspaceRoot: "/tmp/project",
             defaultModelSelection: {
-              provider: "claudeAgent",
+              provider: "anthropic",
               model: "claude-opus-4-6",
               options: {
                 effort: "max",
@@ -272,7 +272,7 @@ layer("016_CanonicalizeModelSelections", (it) => {
             title: "Fallback Project",
             workspaceRoot: "/tmp/project-2",
             defaultModelSelection: {
-              provider: "claudeAgent",
+              provider: "anthropic",
               model: "claude-opus-4-6",
               options: {
                 reasoningEffort: "low",
@@ -288,7 +288,7 @@ layer("016_CanonicalizeModelSelections", (it) => {
             projectId: "project-1",
             title: "Thread",
             modelSelection: {
-              provider: "claudeAgent",
+              provider: "anthropic",
               model: "claude-opus-4-6",
               options: {
                 effort: "max",
@@ -308,7 +308,7 @@ layer("016_CanonicalizeModelSelections", (it) => {
             projectId: "project-1",
             title: "Fallback Thread",
             modelSelection: {
-              provider: "codex",
+              provider: "openai",
               model: "gpt-5.4",
               options: {
                 effort: "max",
@@ -327,7 +327,7 @@ layer("016_CanonicalizeModelSelections", (it) => {
             turnId: "turn-1",
             input: "hi",
             modelSelection: {
-              provider: "codex",
+              provider: "openai",
               model: "gpt-5.4",
               options: {
                 fastMode: true,
@@ -341,7 +341,7 @@ layer("016_CanonicalizeModelSelections", (it) => {
             projectId: "project-1",
             title: "Ancient Thread",
             modelSelection: {
-              provider: "codex",
+              provider: "openai",
               model: "gpt-5.5",
             },
             runtimeMode: "full-access",

@@ -17,7 +17,7 @@ export interface ProviderUsageContext {
   readonly platform: NodeJS.Platform;
   /** Reference "now" in epoch ms, used for token-expiry checks (kept injectable for tests). */
   readonly nowMs: number;
-  /** Claude CLI binary (settings.providers.claudeAgent.binaryPath); defaults to "claude". */
+  /** Claude CLI binary (settings.providers.claudeAgent.binaryPath); defaults to "anthropic". */
   readonly claudeBinaryPath?: string;
 }
 

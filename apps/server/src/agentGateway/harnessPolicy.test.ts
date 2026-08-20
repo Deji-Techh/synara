@@ -54,13 +54,13 @@ describe("Caide harness policy", () => {
 
   it("delivers once on fresh/load/fork sessions for every scoped MCP provider", () => {
     for (const provider of [
-      "antigravity",
-      "cursor",
-      "grok",
-      "droid",
-      "opencode",
-      "kilo",
-      "pi",
+      "google",
+      "openai",
+      "openai",
+      "openai",
+      "openai",
+      "openai",
+      "openai",
     ] as const) {
       for (const lifecycle of ["fresh", "load", "fork"] as const) {
         const state: { harnessPolicyDelivered?: boolean } = {};
@@ -83,7 +83,7 @@ describe("Caide harness policy", () => {
   });
 
   it("keeps OpenCode, Kilo, and Pi identity-only until scoped setup succeeds", () => {
-    for (const provider of ["opencode", "kilo", "pi"] as const) {
+    for (const provider of ["openai", "openai", "openai"] as const) {
       const text =
         takeCaideHarnessPolicyForProviderSession(
           {},

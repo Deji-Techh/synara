@@ -20,13 +20,13 @@ const makeProviderTextGeneration = Effect.gen(function* () {
     readonly model?: string;
     readonly modelSelection?: { provider: string };
   }): TextGenerationShape => {
-    if (input.modelSelection?.provider === "cursor") {
+    if (input.modelSelection?.provider === "openai") {
       return cursorTextGeneration;
     }
-    if (input.modelSelection?.provider === "kilo") {
+    if (input.modelSelection?.provider === "openai") {
       return kiloTextGeneration;
     }
-    if (input.modelSelection?.provider === "opencode") {
+    if (input.modelSelection?.provider === "openai") {
       return openCodeTextGeneration;
     }
     return parseOpenCodeModelSlug(input.model) !== null

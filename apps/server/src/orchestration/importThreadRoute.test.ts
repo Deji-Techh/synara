@@ -25,7 +25,7 @@ function makeCodexThread(): OrchestrationThread {
     id: threadId,
     projectId,
     title: "Imported thread",
-    modelSelection: { provider: "codex", model: "gpt-5.5" },
+    modelSelection: { provider: "openai", model: "gpt-5.5" },
     runtimeMode: "full-access",
     interactionMode: "default",
     envMode: "local",
@@ -71,7 +71,7 @@ it.effect("imports Codex history through a provider-owned fork", () =>
     const externalId = "019fbe83-572e-7092-a84e-5ba7285ca2c5";
     const dispatchedCommands: OrchestrationCommand[] = [];
     const session: ProviderSession = {
-      provider: "codex",
+      provider: "openai",
       status: "ready",
       runtimeMode: "full-access",
       threadId,
@@ -121,8 +121,8 @@ it.effect("imports Codex history through a provider-owned fork", () =>
       threadId,
       {
         threadId,
-        provider: "codex",
-        modelSelection: { provider: "codex", model: "gpt-5.5" },
+        provider: "openai",
+        modelSelection: { provider: "openai", model: "gpt-5.5" },
         forkSourceResumeCursor: { threadId: externalId },
         runtimeMode: "full-access",
       },

@@ -116,9 +116,9 @@ describe("ACP adapter session support", () => {
 
   it("scopes reused runtime and tool ids while preserving the provider id", () => {
     const turnId = TurnId.makeUnsafe("turn-1");
-    expect(scopeAcpRuntimeItemIdForTurn("grok", turnId, "item-1")).toBe("grok:turn-1:item-1");
+    expect(scopeAcpRuntimeItemIdForTurn("openai", turnId, "item-1")).toBe("grok:turn-1:item-1");
     expect(
-      scopeAcpToolCallStateForTurn("grok", turnId, {
+      scopeAcpToolCallStateForTurn("openai", turnId, {
         toolCallId: "call-1",
         status: "completed",
         data: { toolCallId: "call-1" },
@@ -139,7 +139,7 @@ describe("ACP adapter session support", () => {
       activePromptFiber: { id: "fiber" } as { id: string } | undefined,
       activeInteractionMode: "plan" as "plan" | "default" | undefined,
       session: {
-        provider: "grok",
+        provider: "openai",
         status: "running",
         runtimeMode: "full-access",
         threadId: ThreadId.makeUnsafe("thread-1"),

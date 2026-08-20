@@ -1,7 +1,7 @@
 import { EventId, RuntimeRequestId } from "@caide/contracts";
 import type { LegacyProviderRuntimeEvent } from "../TestProviderAdapter.integration.ts";
 
-const PROVIDER = "codex" as const;
+const PROVIDER = "openai" as const;
 const SESSION_ID = "fixture-session";
 const THREAD_ID = "fixture-thread";
 const TURN_ID = "fixture-turn";

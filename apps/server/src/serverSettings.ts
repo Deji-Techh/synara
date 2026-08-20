@@ -36,11 +36,7 @@ import {
 import * as Semaphore from "effect/Semaphore";
 import { writeFileStringAtomically } from "./atomicWrite";
 import { ServerConfig } from "./config";
-import {
-  ProviderCredentials,
-  ProviderCredentialsLive,
-  type ExternalProviderServer,
-} from "./providerCredentials";
+import { ProviderCredentials, ProviderCredentialsLive } from "./providerCredentials";
 
 export interface ServerSettingsShape {
   readonly start: Effect.Effect<void, ServerSettingsError>;
@@ -71,7 +67,7 @@ function migrateSettings(settings: ServerSettings, migrationVersion: number): Se
   const selection = settings.textGenerationModelSelection;
   if (
     migrationVersion >= 2 ||
-    selection.provider !== "codex" ||
+    selection.provider !== "openai" ||
     selection.model !== PREVIOUS_GIT_TEXT_GENERATION_MODEL
   ) {
     return settings;
@@ -151,12 +147,7 @@ export class ServerSettingsService extends ServiceMap.Service<
     );
 }
 
-const PROVIDER_ORDER: readonly ProviderWithDefaultModel[] = [
-  "codex",
-  "claudeAgent",
-  "kilo",
-  "opencode",
-];
+const PROVIDER_ORDER: readonly ProviderWithDefaultModel[] = [...API_PROVIDER_KINDS];
 
 function resolveTextGenerationProvider(settings: ServerSettings): ServerSettings {
   const selection = settings.textGenerationModelSelection;
@@ -195,36 +186,18 @@ function normalizeSettings(
   );
 }
 
-const EXTERNAL_SERVER_PROVIDERS = ["kilo", "opencode"] as const;
-
-function readLegacyProviderPasswords(raw: string): ReadonlyMap<ExternalProviderServer, string> {
-  try {
-    const parsed = JSON.parse(raw) as {
-      providers?: Partial<Record<ExternalProviderServer, { readonly serverPassword?: unknown }>>;
-    };
-    const passwords = new Map<ExternalProviderServer, string>();
-    for (const provider of EXTERNAL_SERVER_PROVIDERS) {
-      const value = parsed.providers?.[provider]?.serverPassword;
-      if (typeof value === "string" && value.trim().length > 0) {
-        passwords.set(provider, value.trim());
-      }
-    }
-    return passwords;
-  } catch {
-    return new Map();
-  }
+function readLegacyProviderPasswords(_raw: string): ReadonlyMap<string, string> {
+  return new Map();
 }
 
 function omitProviderPasswords(patch: ServerSettingsPatch): ServerSettingsPatch {
   if (!patch.providers) return patch;
-  // CLI providers may carry a serverPassword (kilo/opencode); every API provider
-  // may carry an apiKey. The secret store holds the real values, so never
+  // API providers may carry an apiKey. The secret store holds the real values, so never
   // persist them inside settings.json.
   const providers = {} as NonNullable<ServerSettingsPatch["providers"]>;
   for (const [name, providerSettings] of Object.entries(patch.providers)) {
     if (!providerSettings) continue;
-    const { serverPassword: _serverPassword, apiKey: _apiKey, ...rest } = providerSettings as {
-      serverPassword?: unknown;
+    const { apiKey: _apiKey, ...rest } = providerSettings as {
       apiKey?: unknown;
     };
     Object.defineProperty(providers, name, {
@@ -288,19 +261,11 @@ const makeServerSettings = Effect.gen(function* () {
 
   const withCredentialState = (settings: ServerSettings) =>
     Effect.all(
-      [
-        ...API_PROVIDER_KINDS.map((provider) =>
-          providerCredentials
-            .isApiKeyConfigured(provider)
-            .pipe(Effect.map((isConfigured) => [provider, isConfigured] as const)),
-        ),
+      API_PROVIDER_KINDS.map((provider) =>
         providerCredentials
-          .isServerPasswordConfigured("kilo")
-          .pipe(Effect.map((isConfigured) => ["kilo", isConfigured] as const)),
-        providerCredentials
-          .isServerPasswordConfigured("opencode")
-          .pipe(Effect.map((isConfigured) => ["opencode", isConfigured] as const)),
-      ],
+          .isApiKeyConfigured(provider)
+          .pipe(Effect.map((isConfigured) => [provider, isConfigured] as const)),
+      ),
       { concurrency: "unbounded" },
     ).pipe(
       Effect.map((entries) => {
@@ -318,14 +283,6 @@ const makeServerSettings = Effect.gen(function* () {
                 },
               ]),
             ),
-            kilo: {
-              ...settings.providers.kilo,
-              serverPasswordConfigured: configured.get("kilo") ?? false,
-            },
-            opencode: {
-              ...settings.providers.opencode,
-              serverPasswordConfigured: configured.get("opencode") ?? false,
-            },
           } satisfies ServerSettings["providers"],
         };
       }),
@@ -383,30 +340,14 @@ const makeServerSettings = Effect.gen(function* () {
         migrated: false,
       };
     }
-    const legacyPasswords = readLegacyProviderPasswords(raw);
-    yield* Effect.forEach(
-      legacyPasswords,
-      ([provider, password]) => providerCredentials.replaceServerPassword(provider, password),
-      { discard: true },
-    ).pipe(
-      Effect.mapError(
-        (cause) =>
-          new ServerSettingsError({
-            settingsPath,
-            detail: "failed to migrate provider credentials",
-            cause,
-          }),
-      ),
-    );
+    const _legacyPasswords = readLegacyProviderPasswords(raw);
     return {
       settings: yield* withCredentialState(
         migrateSettings(decoded.value, decoded.migrationVersion),
       ),
       revision: decoded.revision,
       migrated:
-        legacyPasswords.size > 0 ||
-        decoded.legacyFormat ||
-        decoded.migrationVersion !== SERVER_SETTINGS_MIGRATION_VERSION,
+        decoded.legacyFormat || decoded.migrationVersion !== SERVER_SETTINGS_MIGRATION_VERSION,
     };
   });
 
@@ -471,21 +412,6 @@ const makeServerSettings = Effect.gen(function* () {
       Effect.gen(function* () {
         const disk = yield* loadSettingsFromDisk;
         const current = disk.settings;
-        for (const provider of EXTERNAL_SERVER_PROVIDERS) {
-          const password = patch.providers?.[provider]?.serverPassword;
-          if (password !== undefined) {
-            yield* providerCredentials.replaceServerPassword(provider, password).pipe(
-              Effect.mapError(
-                (cause) =>
-                  new ServerSettingsError({
-                    settingsPath,
-                    detail: `failed to update ${provider} server password`,
-                    cause,
-                  }),
-              ),
-            );
-          }
-        }
         for (const provider of API_PROVIDER_KINDS) {
           const apiKey = patch.providers?.[provider]?.apiKey;
           if (apiKey !== undefined) {

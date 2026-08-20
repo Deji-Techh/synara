@@ -80,7 +80,7 @@ export function resolveDroidCliBinaryPath(binaryPath?: string | null): string {
   if (configured) {
     return configured;
   }
-  const name = "droid";
+  const name = "openai";
   const searchPath = process.env.PATH ?? "";
   for (const directory of searchPath.split(nodePath.delimiter)) {
     if (!directory.trim()) {
@@ -122,7 +122,7 @@ export function buildDroidAcpSpawnInput(
     command: resolveDroidCliBinaryPath(droidSettings?.binaryPath),
     args,
     cwd,
-    env: buildProviderChildEnvironment({ provider: "droid" }),
+    env: buildProviderChildEnvironment({ provider: "openai" }),
   };
 }
 

@@ -46,7 +46,7 @@ const project: OrchestrationProjectShell = {
   title: "Automation Project",
   workspaceRoot: "/tmp/automation-project",
   defaultModelSelection: {
-    provider: "codex",
+    provider: "openai",
     model: "gpt-5-codex",
   },
   scripts: [],
@@ -331,7 +331,7 @@ const createInput = (
   prompt: "Check stale dependencies.",
   schedule: { type: "manual" },
   modelSelection: {
-    provider: "codex",
+    provider: "openai",
     model: "gpt-5-codex",
   },
   worktreeMode,
@@ -535,7 +535,7 @@ layer("AutomationService", (it) => {
       resetHarness();
       const service = yield* AutomationService;
       const unsupportedModelSelection = {
-        provider: "claudeAgent" as const,
+        provider: "anthropic" as const,
         model: "claude-haiku-4-5",
         supportsAutoMode: false,
       };
@@ -1901,8 +1901,8 @@ layer("AutomationService", (it) => {
         trigger: { type: "manual" },
         scheduledFor: "2000-01-01T00:00:00.000Z",
         permissionSnapshot: {
-          provider: "codex",
-          modelSelection: { provider: "codex", model: "gpt-5-codex" },
+          provider: "openai",
+          modelSelection: { provider: "openai", model: "gpt-5-codex" },
           runtimeMode: "approval-required",
           interactionMode: "default",
           worktreeMode: "local",
@@ -1966,8 +1966,8 @@ layer("AutomationService", (it) => {
         trigger: { type: "manual" },
         scheduledFor: "2000-01-01T00:00:00.000Z",
         permissionSnapshot: {
-          provider: "codex",
-          modelSelection: { provider: "codex", model: "gpt-5-codex" },
+          provider: "openai",
+          modelSelection: { provider: "openai", model: "gpt-5-codex" },
           runtimeMode: "approval-required",
           interactionMode: "default",
           worktreeMode: "local",
@@ -2962,7 +2962,7 @@ layer("AutomationService", (it) => {
       threadShell = Option.some(makeThreadShell({ id: targetThreadId }));
       yield* serverSettings.updateSettings({
         textGenerationModelSelection: {
-          provider: "cursor",
+          provider: "openai",
           model: "composer-2",
         },
       });
@@ -2972,7 +2972,7 @@ layer("AutomationService", (it) => {
         mode: "heartbeat",
         targetThreadId,
         modelSelection: {
-          provider: "claudeAgent",
+          provider: "anthropic",
           model: "claude-opus-4-8",
         },
         completionPolicy: aiCompletionPolicy("the PR is ready"),
@@ -2994,7 +2994,7 @@ layer("AutomationService", (it) => {
       });
 
       assert.deepStrictEqual(completionEvaluationInputs.at(-1)?.modelSelection, {
-        provider: "cursor",
+        provider: "openai",
         model: "composer-2",
       });
     }),
@@ -4754,8 +4754,8 @@ layer("AutomationService", (it) => {
         trigger: { type: "scheduled" },
         scheduledFor: "2026-06-16T10:00:00.000Z",
         permissionSnapshot: {
-          provider: "codex",
-          modelSelection: { provider: "codex", model: "gpt-5-codex" },
+          provider: "openai",
+          modelSelection: { provider: "openai", model: "gpt-5-codex" },
           runtimeMode: "approval-required",
           interactionMode: "default",
           worktreeMode: "local",
@@ -4812,8 +4812,8 @@ layer("AutomationService", (it) => {
             trigger: { type: "scheduled" },
             scheduledFor: now,
             permissionSnapshot: {
-              provider: "codex",
-              modelSelection: { provider: "codex", model: "gpt-5-codex" },
+              provider: "openai",
+              modelSelection: { provider: "openai", model: "gpt-5-codex" },
               runtimeMode: "approval-required",
               interactionMode: "default",
               worktreeMode: "local",
@@ -4862,8 +4862,8 @@ layer("AutomationService", (it) => {
         trigger: { type: "scheduled" },
         scheduledFor: "2026-06-16T10:00:00.000Z",
         permissionSnapshot: {
-          provider: "codex",
-          modelSelection: { provider: "codex", model: "gpt-5-codex" },
+          provider: "openai",
+          modelSelection: { provider: "openai", model: "gpt-5-codex" },
           runtimeMode: "approval-required",
           interactionMode: "default",
           worktreeMode: "local",
@@ -5007,8 +5007,8 @@ layer("AutomationService", (it) => {
           trigger: { type: "scheduled" },
           scheduledFor,
           permissionSnapshot: {
-            provider: "codex",
-            modelSelection: { provider: "codex", model: "gpt-5-codex" },
+            provider: "openai",
+            modelSelection: { provider: "openai", model: "gpt-5-codex" },
             runtimeMode: "approval-required",
             interactionMode: "default",
             worktreeMode: "local",

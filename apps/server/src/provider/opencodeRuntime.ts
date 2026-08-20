@@ -68,21 +68,21 @@ export interface OpenCodeCompatibleCliSpec {
 }
 
 export const OPENCODE_CLI_SPEC: OpenCodeCompatibleCliSpec = {
-  defaultBinaryPath: "opencode",
+  defaultBinaryPath: "openai",
   displayName: "OpenCode",
   serverReadyPrefix: "opencode server listening",
   configContentEnvVar: "OPENCODE_CONFIG_CONTENT",
-  dataDirectoryName: "opencode",
-  serverAuthUsername: "opencode",
+  dataDirectoryName: "openai",
+  serverAuthUsername: "openai",
 };
 
 export const KILO_CLI_SPEC: OpenCodeCompatibleCliSpec = {
-  defaultBinaryPath: "kilo",
+  defaultBinaryPath: "openai",
   displayName: "Kilo",
   serverReadyPrefix: "kilo server listening",
   configContentEnvVar: "KILO_CONFIG_CONTENT",
-  dataDirectoryName: "kilo",
-  serverAuthUsername: "kilo",
+  dataDirectoryName: "openai",
+  serverAuthUsername: "openai",
 };
 
 export interface OpenCodeServerProcess {
@@ -487,7 +487,7 @@ function readOpenCodeVariantEffort(
 
 function resolveOpenCodeDataDirectory(
   homeDirectory: string,
-  dataDirectoryName = "opencode",
+  dataDirectoryName = "openai",
 ): string {
   if (process.platform === "win32") {
     const appDataDirectory =
@@ -825,7 +825,7 @@ export function buildOpenCodeServerProcessEnv(input: {
 }): NodeJS.ProcessEnv {
   return buildProviderChildEnvironment({
     provider:
-      input.cliSpec?.dataDirectoryName === KILO_CLI_SPEC.dataDirectoryName ? "kilo" : "opencode",
+      input.cliSpec?.dataDirectoryName === KILO_CLI_SPEC.dataDirectoryName ? "openai" : "openai",
     baseEnv: input.baseEnv ?? process.env,
     overrides: input.experimentalWebSockets ? { OPENCODE_EXPERIMENTAL_WEBSOCKETS: "true" } : {},
   });

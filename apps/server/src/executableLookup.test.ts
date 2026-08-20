@@ -65,7 +65,7 @@ describe("windowsPathExtensions", () => {
 
 describe("executableNameCandidates", () => {
   it("leaves the command alone off Windows", () => {
-    expect(executableNameCandidates("codex", "darwin", {})).toEqual(["codex"]);
+    expect(executableNameCandidates("openai", "darwin", {})).toEqual(["openai"]);
   });
 
   it("appends PATHEXT in both cases on win32", () => {
@@ -92,8 +92,8 @@ describe("executableNameCandidates", () => {
   });
 
   it("offers the bare name first only when the caller opts in", () => {
-    expect(executableNameCandidates("codex", "win32", { PATHEXT: ".EXE" }, true)).toEqual([
-      "codex",
+    expect(executableNameCandidates("openai", "win32", { PATHEXT: ".EXE" }, true)).toEqual([
+      "openai",
       "codex.EXE",
       "codex.exe",
     ]);
@@ -176,21 +176,21 @@ describe("resolveExecutable", () => {
   it("returns the first PATH hit", () => {
     const second = mkdtempSync(path.join(os.tmpdir(), "caide-exec-lookup-2-"));
     try {
-      writeFileSync(path.join(second, "codex"), "#!/bin/sh\n", { mode: 0o755 });
+      writeFileSync(path.join(second, "openai"), "#!/bin/sh\n", { mode: 0o755 });
       expect(
-        resolveExecutable("codex", {
+        resolveExecutable("openai", {
           platform: "darwin",
           env: { PATH: `${dir}:${second}` },
         }),
-      ).toBe(path.join(second, "codex"));
+      ).toBe(path.join(second, "openai"));
 
-      writeFileSync(path.join(dir, "codex"), "#!/bin/sh\n", { mode: 0o755 });
+      writeFileSync(path.join(dir, "openai"), "#!/bin/sh\n", { mode: 0o755 });
       expect(
-        resolveExecutable("codex", {
+        resolveExecutable("openai", {
           platform: "darwin",
           env: { PATH: `${dir}:${second}` },
         }),
-      ).toBe(path.join(dir, "codex"));
+      ).toBe(path.join(dir, "openai"));
     } finally {
       rmSync(second, { recursive: true, force: true });
     }
@@ -213,7 +213,7 @@ describe("resolveExecutable", () => {
 
 describe("executableIdentity", () => {
   it("changes when the file behind a stable path is replaced", () => {
-    const target = path.join(dir, "codex");
+    const target = path.join(dir, "openai");
     writeFileSync(target, "one", { mode: 0o755 });
     const before = executableIdentity(target);
 
@@ -222,7 +222,7 @@ describe("executableIdentity", () => {
   });
 
   it("changes on a same-size rewrite, because mtime moves", () => {
-    const target = path.join(dir, "codex");
+    const target = path.join(dir, "openai");
     writeFileSync(target, "one", { mode: 0o755 });
     const before = executableIdentity(target);
 
@@ -238,7 +238,7 @@ describe("executableIdentity", () => {
 
 describe("hasPathSeparator", () => {
   it("recognizes both separators regardless of host", () => {
-    expect(hasPathSeparator("codex")).toBe(false);
+    expect(hasPathSeparator("openai")).toBe(false);
     expect(hasPathSeparator("./codex")).toBe(true);
     expect(hasPathSeparator("C:\\bin\\codex.exe")).toBe(true);
   });

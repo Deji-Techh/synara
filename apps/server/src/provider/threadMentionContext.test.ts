@@ -17,7 +17,7 @@ function thread(messages: ReadonlyArray<{ role: "user" | "assistant"; text: stri
     id: "mentioned-thread",
     projectId: "project-1",
     title: "Release planning",
-    modelSelection: { provider: "codex", model: "gpt-test" },
+    modelSelection: { provider: "openai", model: "gpt-test" },
     messages: messages.map((message, index) => ({
       id: `message-${index}`,
       ...message,

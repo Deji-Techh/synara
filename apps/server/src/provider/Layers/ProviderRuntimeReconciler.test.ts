@@ -59,7 +59,7 @@ function staleShellSnapshot(): OrchestrationShellSnapshot {
         session: {
           threadId: THREAD_ID,
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "full-access",
           activeTurnId: null,
           lastError: null,
@@ -73,7 +73,7 @@ function staleShellSnapshot(): OrchestrationShellSnapshot {
 
 function readyProviderSession(): ProviderSession {
   return {
-    provider: "codex",
+    provider: "openai",
     status: "ready",
     runtimeMode: "full-access",
     threadId: THREAD_ID,
@@ -111,7 +111,7 @@ describe("ProviderRuntimeReconcilerLive", () => {
         Effect.succeed([
           {
             threadId: THREAD_ID,
-            provider: "codex" as const,
+            provider: "openai" as const,
             status: bindingStatus,
             runtimePayload: { activeTurnId: null },
           },
@@ -122,7 +122,7 @@ describe("ProviderRuntimeReconcilerLive", () => {
       getRuntimeEventPumpHealth: () =>
         Effect.succeed([
           {
-            provider: "codex" as const,
+            provider: "openai" as const,
             status: "recovering" as const,
             consecutiveFailures: 1,
             updatedAt: "2026-07-23T20:00:00.000Z",

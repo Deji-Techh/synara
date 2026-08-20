@@ -16,7 +16,7 @@ const cacheKeyMock = vi.fn<(ctx: ProviderUsageContext) => Promise<string>>();
 vi.mock("./registry", () => ({
   PROVIDER_USAGE_FETCHERS: {
     codex: {
-      provider: "codex",
+      provider: "openai",
       cacheKey: (ctx: ProviderUsageContext) => cacheKeyMock(ctx),
       fetch: (ctx: ProviderUsageContext) => fetchMock(ctx),
     } satisfies ProviderUsageFetcher,
@@ -36,7 +36,7 @@ function makeCtx(nowMs: number, account = "account-a"): ProviderUsageContext {
 
 function okSnapshot(nowMs: number, source = "live"): ServerProviderUsageSnapshot {
   return {
-    provider: "codex",
+    provider: "openai",
     updatedAt: new Date(nowMs).toISOString(),
     limits: [],
     usageLines: [],

@@ -120,7 +120,7 @@ const runListModels = (input: {
   const testLayer = ProviderDiscoveryServiceLive.pipe(Layer.provideMerge(baseLayer));
   const program = Effect.gen(function* () {
     const discovery = yield* ProviderDiscoveryService;
-    return yield* discovery.listModels({ provider: "cursor" });
+    return yield* discovery.listModels({ provider: "openai" });
   }).pipe(Effect.provide(testLayer));
   return Effect.runPromise(
     program as unknown as Effect.Effect<ProviderListModelsResult, never, never>,
@@ -144,7 +144,7 @@ describe("ProviderDiscoveryService.listSkills", () => {
   it("serves the unified catalog for providers without native skill discovery", async () => {
     await writeSkill(path.join(baseDir, "skills", "portable"), "portable");
 
-    const result = await runListSkills({ adapter: {}, provider: "antigravity" });
+    const result = await runListSkills({ adapter: {}, provider: "google" });
 
     expect(result.skills.map((skill) => skill.name)).toEqual(["portable"]);
   });
@@ -164,7 +164,7 @@ describe("ProviderDiscoveryService.listSkills", () => {
         listSkills: () =>
           Effect.succeed({ skills: [nativeShared], source: "codex-app-server", cached: false }),
       },
-      provider: "codex",
+      provider: "openai",
     });
 
     const shared = result.skills.find((skill) => skill.name === "shared");
@@ -179,7 +179,7 @@ describe("ProviderDiscoveryService.listSkills", () => {
     const result = await runListSkills({
       adapter: {},
       disabled: ["Muted"],
-      provider: "opencode",
+      provider: "openai",
     });
 
     expect(result.skills.map((skill) => skill.name)).toEqual(["portable"]);
@@ -193,13 +193,13 @@ describe("ProviderDiscoveryService.listSkills", () => {
         listSkills: () =>
           Effect.fail(
             new ProviderAdapterRequestError({
-              provider: "codex",
+              provider: "openai",
               method: "skills/list",
               detail: "codex binary missing",
             }),
           ),
       },
-      provider: "codex",
+      provider: "openai",
     });
 
     expect(result.skills.map((skill) => skill.name)).toEqual(["portable"]);
@@ -217,7 +217,7 @@ describe("ProviderDiscoveryService.getComposerCapabilities", () => {
 
     const program = Effect.gen(function* () {
       const discovery = yield* ProviderDiscoveryService;
-      return yield* discovery.getComposerCapabilities({ provider: "grok" });
+      return yield* discovery.getComposerCapabilities({ provider: "openai" });
     }).pipe(Effect.provide(testLayer));
     const capabilities = await Effect.runPromise(
       program as unknown as Effect.Effect<ProviderComposerCapabilities, never, never>,

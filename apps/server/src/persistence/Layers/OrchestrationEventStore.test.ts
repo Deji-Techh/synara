@@ -216,7 +216,7 @@ layer("OrchestrationEventStore", (it) => {
         causationEventId: null,
         correlationId: CommandId.makeUnsafe("cmd-store-roundtrip"),
         metadata: {
-          adapterKey: "codex",
+          adapterKey: "openai",
         },
         payload: {
           projectId: ProjectId.makeUnsafe("project-roundtrip"),
@@ -249,7 +249,7 @@ layer("OrchestrationEventStore", (it) => {
       ).pipe(Effect.map((chunk) => Array.from(chunk)));
       assert.equal(replayed.length, 1);
       assert.equal(replayed[0]?.type, "project.created");
-      assert.equal(replayed[0]?.metadata.adapterKey, "codex");
+      assert.equal(replayed[0]?.metadata.adapterKey, "openai");
     }),
   );
 
@@ -337,7 +337,7 @@ layer("OrchestrationEventStore", (it) => {
             title: "Imported Project",
             workspaceRoot: "/tmp/imported",
             defaultModelSelection: {
-              instanceId: "codex",
+              instanceId: "openai",
               model: "imported-project-model",
             },
             scripts: [],
@@ -362,7 +362,7 @@ layer("OrchestrationEventStore", (it) => {
             projectId: "project-imported",
             title: "Imported Thread",
             modelSelection: {
-              provider: "codex",
+              provider: "openai",
               model: "gpt-5.5",
               options: [{ id: "reasoningEffort", value: "medium" }],
             },
@@ -390,7 +390,7 @@ layer("OrchestrationEventStore", (it) => {
             threadId: "thread-imported",
             messageId: "message-imported",
             modelSelection: {
-              provider: "codex",
+              provider: "openai",
               model: "gpt-5.5",
               options: [{ id: "reasoningEffort", value: "medium" }],
             },
@@ -421,14 +421,14 @@ layer("OrchestrationEventStore", (it) => {
           ? projectCreated.payload.defaultModelSelection
           : null,
         {
-          provider: "codex",
+          provider: "openai",
           model: "imported-project-model",
         },
       );
       assert.deepStrictEqual(
         threadCreated?.type === "thread.created" ? threadCreated.payload.modelSelection : null,
         {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5.5",
           options: {
             reasoningEffort: "medium",
@@ -440,7 +440,7 @@ layer("OrchestrationEventStore", (it) => {
           ? turnStartRequested.payload.modelSelection
           : null,
         {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5.5",
           options: {
             reasoningEffort: "medium",

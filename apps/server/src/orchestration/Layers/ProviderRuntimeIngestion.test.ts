@@ -94,7 +94,7 @@ function createProviderServiceHarness() {
     getCapabilities: (provider) =>
       Effect.succeed({
         sessionModelSwitch: "in-session",
-        supportsLiveTurnDiffPatch: provider === "codex",
+        supportsLiveTurnDiffPatch: provider === "openai",
       }),
     rollbackConversation: () => unsupported(),
     compactThread: () => unsupported(),
@@ -199,7 +199,7 @@ describe("ProviderRuntimeIngestion", () => {
     const event: ProviderRuntimeEvent = {
       type: "runtime.warning",
       eventId: asEventId("evt-already-persisted-stream"),
-      provider: "codex",
+      provider: "openai",
       createdAt: "2026-08-07T00:00:00.000Z",
       threadId: asThreadId("thread-1"),
       payload: { message: "already durable" },
@@ -301,7 +301,7 @@ describe("ProviderRuntimeIngestion", () => {
         title: "Provider Project",
         workspaceRoot,
         defaultModelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5-codex",
         },
         createdAt,
@@ -315,7 +315,7 @@ describe("ProviderRuntimeIngestion", () => {
         projectId: asProjectId("project-1"),
         title: "Thread",
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5-codex",
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -333,7 +333,7 @@ describe("ProviderRuntimeIngestion", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           updatedAt: createdAt,
@@ -343,7 +343,7 @@ describe("ProviderRuntimeIngestion", () => {
       }),
     );
     provider.setSession({
-      provider: "codex",
+      provider: "openai",
       status: "ready",
       runtimeMode: "approval-required",
       threadId: ThreadId.makeUnsafe("thread-1"),
@@ -366,7 +366,7 @@ describe("ProviderRuntimeIngestion", () => {
     const event: ProviderRuntimeEvent = {
       type: "runtime.warning",
       eventId: asEventId("evt-runtime-journal-before-subscribe"),
-      provider: "codex",
+      provider: "openai",
       createdAt: "2026-07-14T00:00:00.000Z",
       threadId: asThreadId("thread-1"),
       payload: {
@@ -429,7 +429,7 @@ describe("ProviderRuntimeIngestion", () => {
     const collisionEvent: ProviderRuntimeEvent = {
       type: "runtime.warning",
       eventId: asEventId("evt-command-identity-collision"),
-      provider: "cursor",
+      provider: "openai",
       createdAt: "2026-07-14T00:00:00.000Z",
       threadId,
       payload: { message: "Current warning shape" },
@@ -466,7 +466,7 @@ describe("ProviderRuntimeIngestion", () => {
       harness.runtimeEventRepository.append({
         type: "turn.started",
         eventId: asEventId("evt-turn-started-after-command-collision"),
-        provider: "cursor",
+        provider: "openai",
         createdAt: "2026-07-14T00:00:00.500Z",
         threadId,
         turnId,
@@ -477,7 +477,7 @@ describe("ProviderRuntimeIngestion", () => {
       harness.runtimeEventRepository.append({
         type: "content.delta",
         eventId: asEventId("evt-assistant-after-command-collision"),
-        provider: "cursor",
+        provider: "openai",
         createdAt: "2026-07-14T00:00:01.000Z",
         threadId,
         turnId,
@@ -492,7 +492,7 @@ describe("ProviderRuntimeIngestion", () => {
       harness.runtimeEventRepository.append({
         type: "item.completed",
         eventId: asEventId("evt-assistant-complete-after-command-collision"),
-        provider: "cursor",
+        provider: "openai",
         createdAt: "2026-07-14T00:00:02.000Z",
         threadId,
         turnId,
@@ -504,7 +504,7 @@ describe("ProviderRuntimeIngestion", () => {
       harness.runtimeEventRepository.append({
         type: "turn.completed",
         eventId: asEventId("evt-turn-complete-after-command-collision"),
-        provider: "cursor",
+        provider: "openai",
         createdAt: "2026-07-14T00:00:03.000Z",
         threadId,
         turnId,
@@ -548,7 +548,7 @@ describe("ProviderRuntimeIngestion", () => {
     const rejectedEvent: ProviderRuntimeEvent = {
       type: "runtime.warning",
       eventId: asEventId("evt-previously-rejected"),
-      provider: "cursor",
+      provider: "openai",
       createdAt: "2026-07-14T00:00:00.000Z",
       threadId: lateThreadId,
       payload: { message: "Warning for a rejected command" },
@@ -593,7 +593,7 @@ describe("ProviderRuntimeIngestion", () => {
         projectId: asProjectId("project-1"),
         title: "Late thread",
         modelSelection: {
-          provider: "cursor",
+          provider: "openai",
           model: "cursor-default",
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -611,7 +611,7 @@ describe("ProviderRuntimeIngestion", () => {
       harness.runtimeEventRepository.append({
         type: "turn.started",
         eventId: asEventId("evt-turn-started-after-rejected-command"),
-        provider: "cursor",
+        provider: "openai",
         createdAt: "2026-07-14T00:00:00.500Z",
         threadId,
         turnId,
@@ -622,7 +622,7 @@ describe("ProviderRuntimeIngestion", () => {
       harness.runtimeEventRepository.append({
         type: "content.delta",
         eventId: asEventId("evt-assistant-after-rejected-command"),
-        provider: "cursor",
+        provider: "openai",
         createdAt: "2026-07-14T00:00:01.000Z",
         threadId,
         turnId,
@@ -637,7 +637,7 @@ describe("ProviderRuntimeIngestion", () => {
       harness.runtimeEventRepository.append({
         type: "item.completed",
         eventId: asEventId("evt-assistant-complete-after-rejected-command"),
-        provider: "cursor",
+        provider: "openai",
         createdAt: "2026-07-14T00:00:02.000Z",
         threadId,
         turnId,
@@ -649,7 +649,7 @@ describe("ProviderRuntimeIngestion", () => {
       harness.runtimeEventRepository.append({
         type: "turn.completed",
         eventId: asEventId("evt-turn-complete-after-rejected-command"),
-        provider: "cursor",
+        provider: "openai",
         createdAt: "2026-07-14T00:00:03.000Z",
         threadId,
         turnId,
@@ -687,7 +687,7 @@ describe("ProviderRuntimeIngestion", () => {
     const bufferedEvent: ProviderRuntimeEvent = {
       type: "content.delta",
       eventId: asEventId("evt-buffered-before-restart"),
-      provider: "codex",
+      provider: "openai",
       createdAt: "2026-07-14T00:01:00.000Z",
       threadId: asThreadId("thread-1"),
       turnId,
@@ -713,7 +713,7 @@ describe("ProviderRuntimeIngestion", () => {
       harness.runtimeEventRepository.append({
         type: "item.completed",
         eventId: asEventId("evt-buffered-after-restart-complete"),
-        provider: "codex",
+        provider: "openai",
         createdAt: "2026-07-14T00:01:02.000Z",
         threadId: asThreadId("thread-1"),
         turnId,
@@ -744,7 +744,7 @@ describe("ProviderRuntimeIngestion", () => {
     const event: ProviderRuntimeEvent = {
       type: "content.delta",
       eventId: asEventId("evt-streaming-before-restart"),
-      provider: "codex",
+      provider: "openai",
       createdAt: "2026-07-14T00:02:00.000Z",
       threadId: asThreadId("thread-1"),
       turnId,
@@ -778,7 +778,7 @@ describe("ProviderRuntimeIngestion", () => {
       harness.runtimeEventRepository.append({
         type: "item.completed",
         eventId: asEventId("evt-streaming-after-restart-complete"),
-        provider: "codex",
+        provider: "openai",
         createdAt: "2026-07-14T00:02:02.000Z",
         threadId: asThreadId("thread-1"),
         turnId,
@@ -801,7 +801,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started"),
-      provider: "codex",
+      provider: "openai",
       threadId: asThreadId("thread-1"),
       createdAt: now,
       turnId: asTurnId("turn-1"),
@@ -815,7 +815,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed"),
-      provider: "codex",
+      provider: "openai",
       threadId: asThreadId("thread-1"),
       createdAt: new Date().toISOString(),
       turnId: asTurnId("turn-1"),
@@ -843,7 +843,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "session.state.changed",
       eventId: asEventId("evt-session-state-waiting"),
-      provider: "codex",
+      provider: "openai",
       threadId: asThreadId("thread-1"),
       createdAt: waitingAt,
       payload: {
@@ -862,7 +862,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "session.state.changed",
       eventId: asEventId("evt-session-state-error"),
-      provider: "codex",
+      provider: "openai",
       threadId: asThreadId("thread-1"),
       createdAt: new Date().toISOString(),
       payload: {
@@ -884,7 +884,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "session.state.changed",
       eventId: asEventId("evt-session-state-stopped"),
-      provider: "codex",
+      provider: "openai",
       threadId: asThreadId("thread-1"),
       createdAt: new Date().toISOString(),
       payload: {
@@ -905,7 +905,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "session.state.changed",
       eventId: asEventId("evt-session-state-ready"),
-      provider: "codex",
+      provider: "openai",
       threadId: asThreadId("thread-1"),
       createdAt: new Date().toISOString(),
       payload: {
@@ -930,7 +930,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-before-ready"),
-      provider: "opencode",
+      provider: "openai",
       threadId: asThreadId("thread-1"),
       createdAt: new Date().toISOString(),
       turnId: asTurnId("turn-ready-clears"),
@@ -946,7 +946,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "session.state.changed",
       eventId: asEventId("evt-session-ready-clears-turn"),
-      provider: "opencode",
+      provider: "openai",
       threadId: asThreadId("thread-1"),
       createdAt: new Date().toISOString(),
       turnId: asTurnId("turn-ready-clears"),
@@ -970,7 +970,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-midturn-lifecycle"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-midturn-lifecycle"),
@@ -986,14 +986,14 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "thread.started",
       eventId: asEventId("evt-thread-started-midturn-lifecycle"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
     });
     harness.emit({
       type: "session.started",
       eventId: asEventId("evt-session-started-midturn-lifecycle"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
     });
@@ -1010,7 +1010,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-midturn-lifecycle"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-midturn-lifecycle"),
@@ -1054,7 +1054,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "session.started",
       eventId: asEventId("evt-session-restarted-orphaned"),
-      provider: "codex",
+      provider: "openai",
       threadId: asThreadId("thread-1"),
       createdAt: new Date().toISOString(),
     });
@@ -1077,7 +1077,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "session.started",
       eventId: asEventId("evt-session-restarted-orphaned-again"),
-      provider: "codex",
+      provider: "openai",
       threadId: asThreadId("thread-1"),
       createdAt: new Date().toISOString(),
     });
@@ -1096,7 +1096,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-stop-aborted"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-stop-aborted"),
@@ -1112,7 +1112,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-turn-delta-stop-aborted"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-stop-aborted"),
@@ -1126,7 +1126,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.aborted",
       eventId: asEventId("evt-turn-aborted-stop-aborted"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       payload: {
@@ -1153,7 +1153,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-completed-interrupted"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1163,7 +1163,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-interrupted"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1195,7 +1195,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-image"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1203,7 +1203,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-image-answer-delta"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1216,7 +1216,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-image-answer-complete"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1239,7 +1239,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-generated-image-complete"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1259,7 +1259,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-image"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1320,7 +1320,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-persisted-recovery-turn-started"),
-      provider: "codex",
+      provider: "openai",
       createdAt,
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1328,7 +1328,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-persisted-recovery-answer-complete"),
-      provider: "codex",
+      provider: "openai",
       createdAt,
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1371,7 +1371,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-persisted-recovery-turn-completed"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1403,7 +1403,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-empty-final-turn-started"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1411,7 +1411,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-empty-final-commentary-delta"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1424,7 +1424,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-empty-final-commentary-complete"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1441,7 +1441,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-empty-final-image-complete"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1458,7 +1458,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-empty-final-answer-complete"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1468,7 +1468,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-empty-final-turn-completed"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1502,7 +1502,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-replay-turn-started"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1510,7 +1510,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-replay-answer-delta"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1520,7 +1520,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-replay-answer-complete"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1540,7 +1540,7 @@ describe("ProviderRuntimeIngestion", () => {
     const imageEvent = {
       type: "item.completed" as const,
       eventId: asEventId("evt-replay-image-complete"),
-      provider: "codex" as const,
+      provider: "openai" as const,
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1558,7 +1558,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-replay-turn-completed"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId,
@@ -1622,7 +1622,7 @@ describe("ProviderRuntimeIngestion", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "claudeAgent",
+          providerName: "anthropic",
           runtimeMode: "approval-required",
           activeTurnId: null,
           updatedAt: seededAt,
@@ -1635,7 +1635,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-claude-placeholder"),
-      provider: "claudeAgent",
+      provider: "anthropic",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-claude-placeholder"),
@@ -1651,7 +1651,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-claude-placeholder"),
-      provider: "claudeAgent",
+      provider: "anthropic",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-claude-placeholder"),
@@ -1671,7 +1671,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-primary"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-primary"),
@@ -1686,7 +1686,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-aux"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-aux"),
@@ -1704,7 +1704,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-primary"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-primary"),
@@ -1724,7 +1724,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-guarded"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-guarded-main"),
@@ -1740,7 +1740,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-guarded-other"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-guarded-other"),
@@ -1758,7 +1758,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-guarded-main"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-guarded-main"),
@@ -1778,7 +1778,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-message-delta-1"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-2"),
@@ -1791,7 +1791,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-message-delta-2"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-2"),
@@ -1804,7 +1804,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-message-completed"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-2"),
@@ -1835,7 +1835,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-reasoning-delta"),
-      provider: "cursor",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-reasoning"),
@@ -1849,7 +1849,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-reasoning-turn-completed"),
-      provider: "cursor",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-reasoning"),
@@ -1880,7 +1880,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.started",
       eventId: asEventId("evt-reasoning-started"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-reasoning"),
@@ -1894,7 +1894,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-stale-reasoning-summary-delta"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-reasoning"),
@@ -1908,7 +1908,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-reasoning-completed"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-reasoning"),
@@ -1952,7 +1952,7 @@ describe("ProviderRuntimeIngestion", () => {
     const now = new Date().toISOString();
     const detail = "I will inspect the current working directory before continuing.";
     const baseEvent = {
-      provider: "antigravity" as const,
+      provider: "google" as const,
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-antigravity-reasoning"),
@@ -2019,7 +2019,7 @@ describe("ProviderRuntimeIngestion", () => {
     const harness = await createHarness();
     const now = new Date().toISOString();
     const baseEvent = {
-      provider: "codex" as const,
+      provider: "openai" as const,
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-buffered-reasoning"),
@@ -2097,7 +2097,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-aborted-reasoning-delta"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-aborted-reasoning"),
@@ -2111,7 +2111,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.aborted",
       eventId: asEventId("evt-aborted-reasoning-terminal"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-aborted-reasoning"),
@@ -2145,7 +2145,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-failed-turn-reasoning-delta"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-failed-reasoning"),
@@ -2159,7 +2159,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-failed-turn-reasoning-terminal"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-failed-reasoning"),
@@ -2193,7 +2193,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-errored-reasoning-delta"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-errored-reasoning"),
@@ -2207,7 +2207,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "runtime.error",
       eventId: asEventId("evt-errored-reasoning-terminal"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-errored-reasoning"),
@@ -2241,7 +2241,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.started",
       eventId: asEventId("evt-empty-reasoning-started"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-empty-reasoning"),
@@ -2255,7 +2255,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-empty-reasoning-raw-delta"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-empty-reasoning"),
@@ -2269,7 +2269,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-empty-reasoning-completed"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-empty-reasoning"),
@@ -2284,7 +2284,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-empty-reasoning-turn-completed"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-empty-reasoning"),
@@ -2312,7 +2312,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.started",
       eventId: asEventId("evt-pi-reasoning-started"),
-      provider: "pi",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-reasoning"),
@@ -2326,7 +2326,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-pi-reasoning-completed"),
-      provider: "pi",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-reasoning"),
@@ -2340,7 +2340,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.started",
       eventId: asEventId("evt-codex-reasoning-without-item-id"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-reasoning"),
@@ -2353,7 +2353,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-reasoning-filter-turn-completed"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-reasoning"),
@@ -2379,7 +2379,7 @@ describe("ProviderRuntimeIngestion", () => {
 
     harness.setProviderSession({
       threadId: asThreadId("thread-1"),
-      provider: "claudeAgent",
+      provider: "anthropic",
       status: "running",
       runtimeMode: "approval-required",
       createdAt: "2026-03-01T10:00:00.000Z",
@@ -2390,7 +2390,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-model-usage"),
-      provider: "claudeAgent",
+      provider: "anthropic",
       createdAt: "2026-03-01T10:00:01.000Z",
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-1"),
@@ -2449,7 +2449,7 @@ describe("ProviderRuntimeIngestion", () => {
 
     harness.setProviderSession({
       threadId: asThreadId("thread-1"),
-      provider: "codex",
+      provider: "openai",
       status: "running",
       runtimeMode: "approval-required",
       createdAt: "2026-03-01T10:00:00.000Z",
@@ -2460,7 +2460,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "tool.progress",
       eventId: asEventId("evt-mcp-progress"),
-      provider: "codex",
+      provider: "openai",
       createdAt: "2026-03-01T10:00:01.000Z",
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-1"),
@@ -2506,7 +2506,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-assistant-item-completed-no-delta"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-no-delta"),
@@ -2538,7 +2538,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.proposed.completed",
       eventId: asEventId("evt-plan-item-completed"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-plan-final"),
@@ -2577,7 +2577,7 @@ describe("ProviderRuntimeIngestion", () => {
         projectId: asProjectId("project-1"),
         title: "Plan Source",
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5-codex",
         },
         interactionMode: "plan",
@@ -2595,7 +2595,7 @@ describe("ProviderRuntimeIngestion", () => {
         session: {
           threadId: sourceThreadId,
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           updatedAt: createdAt,
@@ -2612,7 +2612,7 @@ describe("ProviderRuntimeIngestion", () => {
         projectId: asProjectId("project-1"),
         title: "Plan Target",
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5-codex",
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -2630,7 +2630,7 @@ describe("ProviderRuntimeIngestion", () => {
         session: {
           threadId: targetThreadId,
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           updatedAt: createdAt,
@@ -2640,7 +2640,7 @@ describe("ProviderRuntimeIngestion", () => {
       }),
     );
     harness.setProviderSession({
-      provider: "codex",
+      provider: "openai",
       status: "ready",
       runtimeMode: "approval-required",
       threadId: targetThreadId,
@@ -2652,7 +2652,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.proposed.completed",
       eventId: asEventId("evt-plan-source-completed"),
-      provider: "codex",
+      provider: "openai",
       createdAt,
       threadId: sourceThreadId,
       turnId: sourceTurnId,
@@ -2722,7 +2722,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-plan-target-started"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: targetThreadId,
       turnId: targetTurnId,
@@ -2764,7 +2764,7 @@ describe("ProviderRuntimeIngestion", () => {
         projectId: asProjectId("project-1"),
         title: "Plan Source",
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5-codex",
         },
         interactionMode: "plan",
@@ -2782,7 +2782,7 @@ describe("ProviderRuntimeIngestion", () => {
         session: {
           threadId: sourceThreadId,
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           updatedAt: createdAt,
@@ -2792,7 +2792,7 @@ describe("ProviderRuntimeIngestion", () => {
       }),
     );
     harness.setProviderSession({
-      provider: "codex",
+      provider: "openai",
       status: "running",
       runtimeMode: "approval-required",
       threadId: targetThreadId,
@@ -2804,7 +2804,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-already-running"),
-      provider: "codex",
+      provider: "openai",
       createdAt,
       threadId: targetThreadId,
       turnId: activeTurnId,
@@ -2821,7 +2821,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.proposed.completed",
       eventId: asEventId("evt-plan-source-completed-guarded"),
-      provider: "codex",
+      provider: "openai",
       createdAt,
       threadId: sourceThreadId,
       turnId: sourceTurnId,
@@ -2874,7 +2874,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-stale-plan-implementation"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: targetThreadId,
       turnId: staleTurnId,
@@ -2917,7 +2917,7 @@ describe("ProviderRuntimeIngestion", () => {
         projectId: asProjectId("project-1"),
         title: "Plan Source",
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5-codex",
         },
         interactionMode: "plan",
@@ -2935,7 +2935,7 @@ describe("ProviderRuntimeIngestion", () => {
         session: {
           threadId: sourceThreadId,
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           updatedAt: createdAt,
@@ -2952,7 +2952,7 @@ describe("ProviderRuntimeIngestion", () => {
         projectId: asProjectId("project-1"),
         title: "Plan Target",
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5-codex",
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -2970,7 +2970,7 @@ describe("ProviderRuntimeIngestion", () => {
         session: {
           threadId: targetThreadId,
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           updatedAt: createdAt,
@@ -2983,7 +2983,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.proposed.completed",
       eventId: asEventId("evt-plan-source-completed-unrelated"),
-      provider: "codex",
+      provider: "openai",
       createdAt,
       threadId: sourceThreadId,
       turnId: sourceTurnId,
@@ -3034,7 +3034,7 @@ describe("ProviderRuntimeIngestion", () => {
     );
 
     harness.setProviderSession({
-      provider: "codex",
+      provider: "openai",
       status: "running",
       runtimeMode: "approval-required",
       threadId: targetThreadId,
@@ -3046,7 +3046,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-unrelated-plan-implementation"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: targetThreadId,
       turnId: replayedTurnId,
@@ -3073,7 +3073,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-plan-buffer"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-plan-buffer"),
@@ -3088,7 +3088,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.proposed.delta",
       eventId: asEventId("evt-plan-delta-1"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-plan-buffer"),
@@ -3099,7 +3099,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.proposed.delta",
       eventId: asEventId("evt-plan-delta-2"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-plan-buffer"),
@@ -3110,7 +3110,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-plan-buffer"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-plan-buffer"),
@@ -3139,7 +3139,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-buffered"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-buffered"),
@@ -3153,7 +3153,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-message-delta-buffered"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-buffered"),
@@ -3178,7 +3178,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-message-completed-buffered"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-buffered"),
@@ -3209,7 +3209,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-buffered-whitespace"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-buffered-whitespace"),
@@ -3224,7 +3224,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-message-delta-buffered-whitespace"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-buffered-whitespace"),
@@ -3250,7 +3250,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-message-completed-buffered-whitespace"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-buffered-whitespace"),
@@ -3300,7 +3300,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-streaming-mode"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-streaming-mode"),
@@ -3315,7 +3315,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-message-delta-streaming-mode"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-streaming-mode"),
@@ -3342,7 +3342,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-message-completed-streaming-mode"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-streaming-mode"),
@@ -3410,7 +3410,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-same-thread-buffered"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-same-thread-buffered"),
@@ -3418,7 +3418,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-same-thread-streaming"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-same-thread-streaming"),
@@ -3428,7 +3428,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-delta-same-thread-buffered"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-same-thread-buffered"),
@@ -3438,7 +3438,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-delta-same-thread-streaming"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-same-thread-streaming"),
@@ -3465,7 +3465,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-completed-same-thread-buffered"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-same-thread-buffered"),
@@ -3507,7 +3507,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-active-a"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-active-a"),
@@ -3520,7 +3520,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-delta-active-a-before-b"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-active-a"),
@@ -3547,7 +3547,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-delta-active-a-after-b"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-active-a"),
@@ -3557,7 +3557,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-active-b"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-active-b"),
@@ -3565,7 +3565,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-delta-active-b"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-active-b"),
@@ -3591,7 +3591,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-completed-active-a"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-active-a"),
@@ -3620,7 +3620,7 @@ describe("ProviderRuntimeIngestion", () => {
         threadId: secondThreadId,
         projectId: asProjectId("project-1"),
         title: "Buffered Thread",
-        modelSelection: { provider: "codex", model: "gpt-5-codex" },
+        modelSelection: { provider: "openai", model: "gpt-5-codex" },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
         runtimeMode: "approval-required",
         branch: null,
@@ -3636,7 +3636,7 @@ describe("ProviderRuntimeIngestion", () => {
         session: {
           threadId: secondThreadId,
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           updatedAt: now,
@@ -3685,7 +3685,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-overlap-streaming"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-overlap-streaming"),
@@ -3693,7 +3693,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-overlap-buffered"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: secondThreadId,
       turnId: asTurnId("turn-overlap-buffered"),
@@ -3703,7 +3703,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-delta-overlap-streaming"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-overlap-streaming"),
@@ -3713,7 +3713,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-delta-overlap-buffered"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: secondThreadId,
       turnId: asTurnId("turn-overlap-buffered"),
@@ -3751,7 +3751,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-completed-overlap-buffered"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: secondThreadId,
       turnId: asTurnId("turn-overlap-buffered"),
@@ -3780,7 +3780,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-overlap-buffered"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: secondThreadId,
       turnId: asTurnId("turn-overlap-buffered"),
@@ -3798,7 +3798,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-late-delta-overlap-buffered"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: secondThreadId,
       turnId: asTurnId("turn-overlap-buffered"),
@@ -3808,7 +3808,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-second-delta-overlap-streaming"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-overlap-streaming"),
@@ -3843,7 +3843,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-late-completed-overlap-buffered"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: secondThreadId,
       turnId: asTurnId("turn-overlap-buffered"),
@@ -3890,7 +3890,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-late-streaming-mode"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-late-streaming-mode"),
@@ -3905,7 +3905,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-message-delta-late-streaming-mode"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-late-streaming-mode"),
@@ -3988,7 +3988,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-delta-without-turn-started"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-without-started"),
@@ -4032,7 +4032,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-terminal-without-started"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-terminal-without-started"),
@@ -4062,7 +4062,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-started-after-terminal-without-started"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-after-terminal-without-started"),
@@ -4070,7 +4070,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-delta-after-terminal-without-started"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-after-terminal-without-started"),
@@ -4096,7 +4096,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-started-before-request-then-terminal"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-started-before-request-then-terminal"),
@@ -4105,7 +4105,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-completed-before-request-then-terminal"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-started-before-request-then-terminal"),
@@ -4156,7 +4156,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-future-started-after-unmatched-terminal"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-future-after-unmatched-terminal"),
@@ -4164,7 +4164,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-future-delta-after-unmatched-terminal"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-future-after-unmatched-terminal"),
@@ -4189,7 +4189,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-buffered-session-exit"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-buffered-session-exit"),
@@ -4204,7 +4204,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-message-delta-buffered-session-exit"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-buffered-session-exit"),
@@ -4219,7 +4219,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "session.exited",
       eventId: asEventId("evt-session-exited-buffered-session-exit"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
     });
@@ -4246,7 +4246,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-buffered-runtime-error"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-buffered-runtime-error"),
@@ -4261,7 +4261,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-message-delta-buffered-runtime-error"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-buffered-runtime-error"),
@@ -4276,7 +4276,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "runtime.error",
       eventId: asEventId("evt-runtime-error-buffered-runtime-error"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-buffered-runtime-error"),
@@ -4311,7 +4311,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-buffer-spill"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-buffer-spill"),
@@ -4326,7 +4326,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-message-delta-buffer-spill"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-buffer-spill"),
@@ -4339,7 +4339,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-message-completed-buffer-spill"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-buffer-spill"),
@@ -4371,7 +4371,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-for-complete-dedup"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-complete-dedup"),
@@ -4387,7 +4387,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-message-delta-for-complete-dedup"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-complete-dedup"),
@@ -4400,7 +4400,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-message-completed-for-complete-dedup"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-complete-dedup"),
@@ -4413,7 +4413,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-for-complete-dedup"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-complete-dedup"),
@@ -4461,7 +4461,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-late-completion"),
-      provider: "cursor",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-late-completion"),
@@ -4477,7 +4477,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-message-delta-late-completion"),
-      provider: "cursor",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-late-completion"),
@@ -4490,7 +4490,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-late-completion"),
-      provider: "cursor",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-late-completion"),
@@ -4514,7 +4514,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-item-completed-late-without-turn"),
-      provider: "cursor",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       itemId: asItemId("item-late-completion"),
@@ -4566,7 +4566,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-late-reassign-source"),
-      provider: "cursor",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-late-reassign-source"),
@@ -4580,7 +4580,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-message-delta-late-reassign-source"),
-      provider: "cursor",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-late-reassign-source"),
@@ -4594,7 +4594,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-late-reassign-source"),
-      provider: "cursor",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-late-reassign-source"),
@@ -4618,7 +4618,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-late-reassign-next"),
-      provider: "cursor",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-late-reassign-next"),
@@ -4632,7 +4632,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-item-completed-late-reassign-wrong-turn"),
-      provider: "cursor",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-late-reassign-next"),
@@ -4688,7 +4688,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-missing-completion-item-id"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-missing-completion-item-id"),
@@ -4704,7 +4704,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-assistant-delta-missing-completion-item-id"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-missing-completion-item-id"),
@@ -4727,7 +4727,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-assistant-completed-missing-completion-item-id"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-missing-completion-item-id"),
@@ -4780,7 +4780,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-late-completion-item-id"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-late-completion-item-id"),
@@ -4796,7 +4796,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-assistant-delta-late-completion-item-id"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-late-completion-item-id"),
@@ -4818,7 +4818,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-assistant-completed-late-completion-item-id"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-late-completion-item-id"),
@@ -4872,7 +4872,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-turn-started-multiple-assistant-items"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-multiple-assistant-items"),
@@ -4888,7 +4888,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-assistant-delta-multiple-assistant-items-a"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-multiple-assistant-items"),
@@ -4901,7 +4901,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-assistant-delta-multiple-assistant-items-b"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-multiple-assistant-items"),
@@ -4925,7 +4925,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-assistant-completed-multiple-assistant-items-a"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-multiple-assistant-items"),
@@ -4965,7 +4965,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "request.opened",
       eventId: asEventId("evt-request-opened"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       lifecycleGeneration: "approval-generation",
@@ -4979,7 +4979,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "request.resolved",
       eventId: asEventId("evt-request-resolved"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       lifecycleGeneration: "approval-generation",
@@ -5036,7 +5036,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-large-tool-data"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-large-tool-data"),
@@ -5092,7 +5092,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-command-output-1"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-command-output"),
@@ -5105,7 +5105,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-command-output-2"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-command-output"),
@@ -5118,7 +5118,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-command-completed"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-command-output"),
@@ -5161,7 +5161,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-empty-stream-buffered-output"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-empty-stream-output"),
@@ -5174,7 +5174,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-empty-stream-completed"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-empty-stream-output"),
@@ -5228,7 +5228,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-pathological-tool-data"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-pathological-tool-data"),
@@ -5265,7 +5265,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "runtime.error",
       eventId: asEventId("evt-runtime-error"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-3"),
@@ -5292,7 +5292,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-warning-turn-started"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-warning"),
@@ -5302,7 +5302,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "runtime.warning",
       eventId: asEventId("evt-warning-runtime"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-warning"),
@@ -5336,7 +5336,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "runtime.warning",
       eventId: asEventId("evt-opencode-retry-warning"),
-      provider: "opencode",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-opencode"),
@@ -5388,7 +5388,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "runtime.warning",
       eventId: asEventId("evt-background-move-notice"),
-      provider: "claudeAgent",
+      provider: "anthropic",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-background"),
@@ -5430,7 +5430,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "session.started",
       eventId: asEventId("evt-session-started"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       message: "session started",
@@ -5438,14 +5438,14 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "thread.started",
       eventId: asEventId("evt-thread-started"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
     });
     harness.emit({
       type: "item.started",
       eventId: asEventId("evt-tool-started"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-9"),
@@ -5482,7 +5482,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "thread.metadata.updated",
       eventId: asEventId("evt-thread-metadata-updated"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       payload: {
@@ -5494,7 +5494,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.tasks.updated",
       eventId: asEventId("evt-turn-tasks-updated"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-p1"),
@@ -5510,7 +5510,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.updated",
       eventId: asEventId("evt-item-updated"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-p1"),
@@ -5527,7 +5527,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "runtime.warning",
       eventId: asEventId("evt-runtime-warning"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-p1"),
@@ -5540,7 +5540,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.diff.updated",
       eventId: asEventId("evt-turn-diff-updated"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-p1"),
@@ -5629,7 +5629,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.diff.updated",
       eventId: asEventId("evt-turn-diff-first"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-live"),
@@ -5657,7 +5657,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.diff.updated",
       eventId: asEventId("evt-turn-diff-second"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-live"),
@@ -5712,7 +5712,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.diff.updated",
       eventId: asEventId("evt-claude-diff-placeholder"),
-      provider: "claudeAgent",
+      provider: "anthropic",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-claude"),
@@ -5753,7 +5753,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "thread.token-usage.updated",
       eventId: asEventId("evt-thread-token-usage-updated"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       payload: {
@@ -5806,7 +5806,7 @@ describe("ProviderRuntimeIngestion", () => {
     const makeUsageEvent = (eventId: string, usedTokens: number) => ({
       type: "thread.token-usage.updated" as const,
       eventId: asEventId(eventId),
-      provider: "claudeAgent" as const,
+      provider: "anthropic" as const,
       createdAt: now,
       threadId: asThreadId("thread-1"),
       payload: {
@@ -5842,7 +5842,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "thread.token-usage.updated",
       eventId: asEventId("evt-thread-token-usage-updated-percent"),
-      provider: "cursor",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       payload: {
@@ -5877,7 +5877,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "thread.token-usage.updated",
       eventId: asEventId("evt-thread-token-usage-updated-zero-percent"),
-      provider: "cursor",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       payload: {
@@ -5912,7 +5912,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "session.configured",
       eventId: asEventId("evt-session-configured-context-window"),
-      provider: "claudeAgent",
+      provider: "anthropic",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       payload: {
@@ -5945,7 +5945,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "thread.token-usage.updated",
       eventId: asEventId("evt-thread-token-usage-updated-camel"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       payload: {
@@ -5998,7 +5998,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "thread.token-usage.updated",
       eventId: asEventId("evt-thread-token-usage-updated-claude-window"),
-      provider: "claudeAgent",
+      provider: "anthropic",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       payload: {
@@ -6042,7 +6042,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "thread.state.changed",
       eventId: asEventId("evt-thread-compacted"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-1"),
@@ -6072,7 +6072,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.updated",
       eventId: asEventId("evt-thread-compacting"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       payload: {
@@ -6106,7 +6106,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-thread-compaction-completed"),
-      provider: "grok",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       payload: {
@@ -6117,7 +6117,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-thread-compaction-failed"),
-      provider: "grok",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       payload: {
@@ -6155,7 +6155,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "task.started",
       eventId: asEventId("evt-task-started"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-task-1"),
@@ -6168,7 +6168,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "task.progress",
       eventId: asEventId("evt-task-progress"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-task-1"),
@@ -6182,7 +6182,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "task.completed",
       eventId: asEventId("evt-task-completed"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-task-1"),
@@ -6195,7 +6195,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.proposed.completed",
       eventId: asEventId("evt-task-proposed-plan-completed"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-task-1"),
@@ -6258,7 +6258,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-no-cost"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-no-cost"),
@@ -6294,7 +6294,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "user-input.requested",
       eventId: asEventId("evt-user-input-requested"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-user-input"),
@@ -6320,7 +6320,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "user-input.resolved",
       eventId: asEventId("evt-user-input-resolved"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-user-input"),
@@ -6377,7 +6377,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.updated",
       eventId: asEventId("evt-collab-updated"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-parent"),
@@ -6405,7 +6405,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.started",
       eventId: asEventId("evt-child-turn-started"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-child"),
@@ -6454,7 +6454,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.updated",
       eventId: asEventId("evt-collab-child-thread-event"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-child"),
@@ -6508,7 +6508,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.updated",
       eventId: asEventId("evt-collab-receiver-agents"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-parent"),
@@ -6550,7 +6550,7 @@ describe("ProviderRuntimeIngestion", () => {
     const childThreadId = asThreadId("subagent:thread-1:child-provider-deleted");
     const collabEvent = {
       type: "item.updated",
-      provider: "codex",
+      provider: "openai",
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-deleted-child"),
       itemId: asItemId("item-collab-deleted"),
@@ -6607,7 +6607,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "runtime.warning",
       eventId: asEventId("evt-after-deleted-child"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       payload: { message: "still ingesting" },
@@ -6627,7 +6627,7 @@ describe("ProviderRuntimeIngestion", () => {
     const event: ProviderRuntimeEvent = {
       type: "item.updated",
       eventId,
-      provider: "codex",
+      provider: "openai",
       createdAt: "2026-07-14T00:03:00.000Z",
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-open-turn-unreplayable"),
@@ -6658,7 +6658,7 @@ describe("ProviderRuntimeIngestion", () => {
           threadId: asThreadId("thread-1"),
           projectId: asProjectId("project-1"),
           title: "Duplicate",
-          modelSelection: { provider: "codex", model: "gpt-5-codex" },
+          modelSelection: { provider: "openai", model: "gpt-5-codex" },
           interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
           runtimeMode: "approval-required",
           branch: null,
@@ -6686,7 +6686,7 @@ describe("ProviderRuntimeIngestion", () => {
       harness.runtimeEventRepository.append({
         type: "runtime.warning",
         eventId: asEventId("evt-after-unreplayable-open-turn"),
-        provider: "codex",
+        provider: "openai",
         createdAt: "2026-07-14T00:03:01.000Z",
         threadId: asThreadId("thread-1"),
         payload: { message: "still ingesting" },
@@ -6708,7 +6708,7 @@ describe("ProviderRuntimeIngestion", () => {
     const event = {
       type: "item.updated",
       eventId: asEventId("evt-collab-overflow"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-native-budget"),
@@ -6778,7 +6778,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-unmapped-child-message-delta"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: childTurnId,
@@ -6792,7 +6792,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-unmapped-child-message-completed"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: childTurnId,
@@ -6806,7 +6806,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "request.opened",
       eventId: asEventId("evt-unmapped-child-approval-requested"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: childTurnId,
@@ -6820,7 +6820,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "user-input.requested",
       eventId: asEventId("evt-unmapped-child-user-input-requested"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: childTurnId,
@@ -6871,7 +6871,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "request.resolved",
       eventId: asEventId("evt-unmapped-child-approval-resolved"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: childTurnId,
@@ -6885,7 +6885,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "user-input.resolved",
       eventId: asEventId("evt-unmapped-child-user-input-resolved"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: childTurnId,
@@ -6900,7 +6900,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.tasks.updated",
       eventId: asEventId("evt-unmapped-child-tasks"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: childTurnId,
@@ -6913,7 +6913,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "item.completed",
       eventId: asEventId("evt-unmapped-child-file-change"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: childTurnId,
@@ -6932,7 +6932,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "turn.diff.updated",
       eventId: asEventId("evt-unmapped-child-diff"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: childTurnId,
@@ -7005,7 +7005,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "content.delta",
       eventId: asEventId("evt-invalid-delta"),
-      provider: "codex",
+      provider: "openai",
       createdAt: now,
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-invalid"),
@@ -7019,7 +7019,7 @@ describe("ProviderRuntimeIngestion", () => {
     harness.emit({
       type: "runtime.error",
       eventId: asEventId("evt-runtime-error-after-failure"),
-      provider: "codex",
+      provider: "openai",
       createdAt: new Date().toISOString(),
       threadId: asThreadId("thread-1"),
       turnId: asTurnId("turn-after-failure"),

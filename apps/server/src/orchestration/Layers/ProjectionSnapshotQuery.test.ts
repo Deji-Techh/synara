@@ -101,7 +101,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           'project-1',
           'Project 1',
           '/tmp/project-1',
-          '{"provider":"codex","model":"gpt-5-codex"}',
+          '{"provider":"openai","model":"gpt-5-codex"}',
           '[{"id":"script-1","name":"Build","command":"bun run build","icon":"build","runOnWorktreeCreate":false}]',
           '2026-02-24T00:00:00.000Z',
           '2026-02-24T00:00:01.000Z',
@@ -126,7 +126,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           'thread-1',
           'project-1',
           'Thread 1',
-          '{"provider":"codex","model":"gpt-5-codex"}',
+          '{"provider":"openai","model":"gpt-5-codex"}',
           NULL,
           NULL,
           'turn-1',
@@ -251,7 +251,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
         VALUES (
           'thread-1',
           'running',
-          'codex',
+          'openai',
           'provider-session-1',
           'provider-thread-1',
           'approval-required',
@@ -342,7 +342,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           title: "Project 1",
           workspaceRoot: "/tmp/project-1",
           defaultModelSelection: {
-            provider: "codex",
+            provider: "openai",
             model: "gpt-5-codex",
           },
           scripts: [
@@ -366,7 +366,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           projectId: asProjectId("project-1"),
           title: "Thread 1",
           modelSelection: {
-            provider: "codex",
+            provider: "openai",
             model: "gpt-5-codex",
           },
           interactionMode: "default",
@@ -501,7 +501,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           session: {
             threadId: ThreadId.makeUnsafe("thread-1"),
             status: "running",
-            providerName: "codex",
+            providerName: "openai",
             runtimeMode: "approval-required",
             activeTurnId: asTurnId("turn-1"),
             lastError: null,
@@ -536,7 +536,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           'project-activity-cap',
           'Project Activity Cap',
           '/tmp/project-activity-cap',
-          '{"provider":"codex","model":"gpt-5-codex"}',
+          '{"provider":"openai","model":"gpt-5-codex"}',
           '[]',
           '2026-02-24T00:00:00.000Z',
           '2026-02-24T00:00:00.000Z',
@@ -560,7 +560,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           'thread-activity-cap',
           'project-activity-cap',
           'Thread Activity Cap',
-          '{"provider":"codex","model":"gpt-5-codex"}',
+          '{"provider":"openai","model":"gpt-5-codex"}',
           NULL,
           NULL,
           NULL,
@@ -743,7 +743,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           scripts_json, created_at, updated_at, deleted_at
         ) VALUES (
           'project-turn-window', 'Turn window', '/tmp/turn-window',
-          '{"provider":"codex","model":"gpt-5-codex"}', '[]',
+          '{"provider":"openai","model":"gpt-5-codex"}', '[]',
           '2026-02-24T00:00:00.000Z', '2026-02-24T00:00:00.000Z', NULL
         )
       `;
@@ -753,7 +753,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           latest_turn_id, created_at, updated_at, deleted_at
         ) VALUES (
           'thread-turn-window', 'project-turn-window', 'Turn Window',
-          '{"provider":"codex","model":"gpt-5-codex"}', NULL, NULL, NULL,
+          '{"provider":"openai","model":"gpt-5-codex"}', NULL, NULL, NULL,
           '2026-02-24T00:00:00.000Z', '2026-02-24T00:00:00.000Z', NULL
         )
       `;
@@ -829,7 +829,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           scripts_json, created_at, updated_at, deleted_at
         ) VALUES (
           'project-oversized-turn', 'Oversized turn', '/tmp/oversized-turn',
-          '{"provider":"codex","model":"gpt-5-codex"}', '[]',
+          '{"provider":"openai","model":"gpt-5-codex"}', '[]',
           '2026-02-24T00:00:00.000Z', '2026-02-24T00:00:00.000Z', NULL
         )
       `;
@@ -839,7 +839,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           latest_turn_id, created_at, updated_at, deleted_at
         ) VALUES (
           'thread-oversized-turn', 'project-oversized-turn', 'Oversized Turn',
-          '{"provider":"codex","model":"gpt-5-codex"}', NULL, NULL, NULL,
+          '{"provider":"openai","model":"gpt-5-codex"}', NULL, NULL, NULL,
           '2026-02-24T00:00:00.000Z', '2026-02-24T00:00:00.000Z', NULL
         )
       `;
@@ -901,7 +901,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           'project-export-message-cap',
           'Project Export Message Cap',
           '/tmp/project-export-message-cap',
-          '{"provider":"codex","model":"gpt-5-codex"}',
+          '{"provider":"openai","model":"gpt-5-codex"}',
           '[]',
           '2026-02-24T00:00:00.000Z',
           '2026-02-24T00:00:00.000Z',
@@ -925,7 +925,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           'thread-export-message-cap',
           'project-export-message-cap',
           'Thread Export Message Cap',
-          '{"provider":"codex","model":"gpt-5-codex"}',
+          '{"provider":"openai","model":"gpt-5-codex"}',
           NULL,
           NULL,
           NULL,
@@ -994,7 +994,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
         ) VALUES (
           'project-causal-message-snapshot', 'Causal Message Snapshot',
           '/tmp/project-causal-message-snapshot',
-          '{"provider":"codex","model":"gpt-5-codex"}', '[]',
+          '{"provider":"openai","model":"gpt-5-codex"}', '[]',
           '2026-07-14T12:00:00.000Z', '2026-07-14T12:00:00.000Z', NULL
         )
       `;
@@ -1004,7 +1004,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           latest_turn_id, created_at, updated_at, deleted_at
         ) VALUES (
           'thread-causal-message-snapshot', 'project-causal-message-snapshot',
-          'Causal Message Snapshot', '{"provider":"codex","model":"gpt-5-codex"}',
+          'Causal Message Snapshot', '{"provider":"openai","model":"gpt-5-codex"}',
           NULL, NULL, NULL,
           '2026-07-14T12:00:00.000Z', '2026-07-14T12:00:00.000Z', NULL
         )
@@ -1106,7 +1106,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           'project-imported-shape',
           'Imported Shape Project',
           '/tmp/imported-shape',
-          '{"instanceId":"codex","model":"imported-project-model","options":[{"id":"reasoningEffort","value":"medium"}]}',
+          '{"instanceId":"openai","model":"imported-project-model","options":[{"id":"reasoningEffort","value":"medium"}]}',
           '[]',
           '2026-05-05T14:39:18.000Z',
           '2026-05-05T14:39:19.000Z',
@@ -1133,7 +1133,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           'thread-imported-shape',
           'project-imported-shape',
           'Imported Shape Thread',
-          '{"provider":"codex","model":"gpt-5.5","options":[{"id":"reasoningEffort","value":"medium"}]}',
+          '{"provider":"openai","model":"gpt-5.5","options":[{"id":"reasoningEffort","value":"medium"}]}',
           NULL,
           NULL,
           'full-access',
@@ -1146,12 +1146,12 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
       `;
 
       const expectedProjectSelection = {
-        provider: "codex",
+        provider: "openai",
         model: "imported-project-model",
         options: { reasoningEffort: "medium" },
       } as const;
       const expectedThreadSelection = {
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5.5",
         options: { reasoningEffort: "medium" },
       } as const;
@@ -1242,7 +1242,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
             'project',
             'Folder Project',
             '/tmp/folder-project',
-            '{"provider":"codex","model":"gpt-5-codex"}',
+            '{"provider":"openai","model":"gpt-5-codex"}',
             '[]',
             '2026-02-25T00:00:00.000Z',
             '2026-02-25T00:00:01.000Z',
@@ -1253,7 +1253,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
             'chat',
             'Home',
             '/Users/tester',
-            '{"provider":"codex","model":"gpt-5-codex"}',
+            '{"provider":"openai","model":"gpt-5-codex"}',
             '[]',
             '2026-02-25T00:00:02.000Z',
             '2026-02-25T00:00:03.000Z',
@@ -1320,7 +1320,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           'project',
           'PR Project',
           '/tmp/pr-project',
-          '{"provider":"codex","model":"gpt-5-codex"}',
+          '{"provider":"openai","model":"gpt-5-codex"}',
           '[]',
           '2026-02-25T00:00:00.000Z',
           '2026-02-25T00:00:01.000Z',
@@ -1343,7 +1343,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           'thread-pr',
           'project-pr',
           'Thread with PR',
-          '{"provider":"codex","model":"gpt-5-codex"}',
+          '{"provider":"openai","model":"gpt-5-codex"}',
           '{"number":1,"title":"Add placeholder temp files","url":"https://github.com/Emanuele-web04/openclap/pull/1","baseBranch":"main","headBranch":"caide/greeting-1","state":"open"}',
           '2026-02-25T00:00:02.000Z',
           '2026-02-25T00:00:03.000Z',
@@ -1426,7 +1426,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
             'thread-first',
             'project-active',
             'First Thread',
-            '{"provider":"codex","model":"gpt-5-codex"}',
+            '{"provider":"openai","model":"gpt-5-codex"}',
             'full-access',
             'default',
             'local',
@@ -1443,7 +1443,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
             'thread-second',
             'project-active',
             'Second Thread',
-            '{"provider":"codex","model":"gpt-5-codex"}',
+            '{"provider":"openai","model":"gpt-5-codex"}',
             'full-access',
             'default',
             'local',
@@ -1460,7 +1460,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
             'thread-deleted',
             'project-active',
             'Deleted Thread',
-            '{"provider":"codex","model":"gpt-5-codex"}',
+            '{"provider":"openai","model":"gpt-5-codex"}',
             'full-access',
             'default',
             'local',
@@ -1529,7 +1529,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           'project-shell',
           'Shell Project',
           '/tmp/project-shell',
-          '{"provider":"codex","model":"gpt-5-codex"}',
+          '{"provider":"openai","model":"gpt-5-codex"}',
           '[]',
           '2026-03-03T00:00:00.000Z',
           '2026-03-03T00:00:01.000Z',
@@ -1563,7 +1563,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           'thread-shell',
           'project-shell',
           'Shell Thread',
-          '{"provider":"codex","model":"gpt-5-codex"}',
+          '{"provider":"openai","model":"gpt-5-codex"}',
           'full-access',
           'default',
           'local',
@@ -1597,7 +1597,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
         VALUES (
           'thread-shell',
           'ready',
-          'codex',
+          'openai',
           'provider-session-shell',
           'provider-thread-shell',
           'full-access',
@@ -1666,7 +1666,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           projectId: asProjectId("project-shell"),
           title: "Shell Thread",
           modelSelection: {
-            provider: "codex",
+            provider: "openai",
             model: "gpt-5-codex",
           },
           interactionMode: "default",
@@ -1712,7 +1712,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           session: {
             threadId: ThreadId.makeUnsafe("thread-shell"),
             status: "ready",
-            providerName: "codex",
+            providerName: "openai",
             runtimeMode: "full-access",
             activeTurnId: null,
             lastError: null,
@@ -1786,7 +1786,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           'thread-context',
           'project-context',
           'Context Thread',
-          '{"provider":"codex","model":"gpt-5-codex"}',
+          '{"provider":"openai","model":"gpt-5-codex"}',
           'full-access',
           'default',
           'local',
@@ -2068,7 +2068,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           scripts_json, created_at, updated_at, deleted_at
         ) VALUES (
           'project-revert-lifecycle', 'Revert lifecycle', '/tmp/revert-lifecycle',
-          '{"provider":"codex","model":"gpt-5-codex"}', '[]',
+          '{"provider":"openai","model":"gpt-5-codex"}', '[]',
           '2026-07-21T00:00:00.000Z', '2026-07-21T00:00:00.000Z', NULL
         )
       `;
@@ -2078,7 +2078,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           latest_turn_id, created_at, updated_at, deleted_at
         ) VALUES (
           'thread-revert-lifecycle', 'project-revert-lifecycle', 'Revert lifecycle',
-          '{"provider":"codex","model":"gpt-5-codex"}', NULL, NULL, NULL,
+          '{"provider":"openai","model":"gpt-5-codex"}', NULL, NULL, NULL,
           '2026-07-21T00:00:00.000Z', '2026-07-21T00:00:00.000Z', NULL
         )
       `;
@@ -2133,7 +2133,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           scripts_json, created_at, updated_at, deleted_at
         ) VALUES (
           'project-runtime-candidates', 'Runtime candidates', '/tmp/runtime-candidates',
-          '{"provider":"codex","model":"gpt-5-codex"}', '[]',
+          '{"provider":"openai","model":"gpt-5-codex"}', '[]',
           '2026-07-23T00:00:00.000Z', '2026-07-23T00:00:00.000Z', NULL
         )
       `;
@@ -2144,33 +2144,33 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
         ) VALUES
           (
             'thread-stale-running', 'project-runtime-candidates', 'Stale',
-            '{"provider":"codex","model":"gpt-5-codex"}', NULL, NULL, NULL,
+            '{"provider":"openai","model":"gpt-5-codex"}', NULL, NULL, NULL,
             '2026-07-23T00:00:00.000Z', '2026-07-23T00:00:00.000Z', NULL, NULL
           ),
           (
             'thread-fresh-running', 'project-runtime-candidates', 'Fresh',
-            '{"provider":"codex","model":"gpt-5-codex"}', NULL, NULL, NULL,
+            '{"provider":"openai","model":"gpt-5-codex"}', NULL, NULL, NULL,
             '2026-07-23T00:00:00.000Z', '2026-07-23T09:59:00.000Z', NULL, NULL
           ),
           (
             'thread-settled', 'project-runtime-candidates', 'Settled',
-            '{"provider":"codex","model":"gpt-5-codex"}', NULL, NULL, NULL,
+            '{"provider":"openai","model":"gpt-5-codex"}', NULL, NULL, NULL,
             '2026-07-23T00:00:00.000Z', '2026-07-23T00:00:00.000Z', NULL, NULL
           ),
           (
             'thread-archived-running', 'project-runtime-candidates', 'Archived',
-            '{"provider":"codex","model":"gpt-5-codex"}', NULL, NULL, NULL,
+            '{"provider":"openai","model":"gpt-5-codex"}', NULL, NULL, NULL,
             '2026-07-23T00:00:00.000Z', '2026-07-23T00:00:00.000Z',
             '2026-07-23T08:00:00.000Z', NULL
           ),
           (
             'thread-unbound-oldest', 'project-runtime-candidates', 'Unbound',
-            '{"provider":"codex","model":"gpt-5-codex"}', NULL, NULL, NULL,
+            '{"provider":"openai","model":"gpt-5-codex"}', NULL, NULL, NULL,
             '2026-07-22T00:00:00.000Z', '2026-07-22T00:00:00.000Z', NULL, NULL
           ),
           (
             'thread-queued-oldest', 'project-runtime-candidates', 'Queued',
-            '{"provider":"codex","model":"gpt-5-codex"}', NULL, NULL, 'turn-queued',
+            '{"provider":"openai","model":"gpt-5-codex"}', NULL, NULL, 'turn-queued',
             '2026-07-21T00:00:00.000Z', '2026-07-21T00:00:00.000Z', NULL, NULL
           )
       `;
@@ -2192,27 +2192,27 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           runtime_mode, active_turn_id, last_error, updated_at
         ) VALUES
           (
-            'thread-stale-running', 'running', 'codex', NULL, NULL,
+            'thread-stale-running', 'running', 'openai', NULL, NULL,
             'full-access', 'turn-stale', NULL, '2026-07-23T00:00:00.000Z'
           ),
           (
-            'thread-fresh-running', 'running', 'codex', NULL, NULL,
+            'thread-fresh-running', 'running', 'openai', NULL, NULL,
             'full-access', 'turn-fresh', NULL, '2026-07-23T09:59:00.000Z'
           ),
           (
-            'thread-settled', 'ready', 'codex', NULL, NULL,
+            'thread-settled', 'ready', 'openai', NULL, NULL,
             'full-access', NULL, NULL, '2026-07-23T00:00:00.000Z'
           ),
           (
-            'thread-archived-running', 'running', 'codex', NULL, NULL,
+            'thread-archived-running', 'running', 'openai', NULL, NULL,
             'full-access', 'turn-archived', NULL, '2026-07-23T00:00:00.000Z'
           ),
           (
-            'thread-unbound-oldest', 'running', 'codex', NULL, NULL,
+            'thread-unbound-oldest', 'running', 'openai', NULL, NULL,
             'full-access', 'turn-unbound', NULL, '2026-07-22T00:00:00.000Z'
           ),
           (
-            'thread-queued-oldest', 'starting', 'codex', NULL, NULL,
+            'thread-queued-oldest', 'starting', 'openai', NULL, NULL,
             'full-access', NULL, NULL, '2026-07-21T00:00:00.000Z'
           )
       `;
@@ -2222,15 +2222,15 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           lifecycle_generation, last_seen_at, runtime_payload_json
         ) VALUES
           (
-            'thread-stale-running', 'codex', 'codex', 'full-access', 'running',
+            'thread-stale-running', 'openai', 'openai', 'full-access', 'running',
             'generation-stale', '2026-07-23T00:00:00.000Z', NULL
           ),
           (
-            'thread-fresh-running', 'codex', 'codex', 'full-access', 'running',
+            'thread-fresh-running', 'openai', 'openai', 'full-access', 'running',
             'generation-fresh', '2026-07-23T09:59:00.000Z', NULL
           ),
           (
-            'thread-queued-oldest', 'codex', 'codex', 'full-access', 'starting',
+            'thread-queued-oldest', 'openai', 'openai', 'full-access', 'starting',
             'generation-queued', '2026-07-21T00:00:00.000Z', '{}'
           )
         ON CONFLICT (thread_id) DO UPDATE SET
@@ -2286,7 +2286,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           scripts_json, created_at, updated_at, deleted_at
         ) VALUES (
           'project-soft-delete', 'Soft delete', '/tmp/soft-delete',
-          '{"provider":"codex","model":"gpt-5-codex"}', '[]',
+          '{"provider":"openai","model":"gpt-5-codex"}', '[]',
           '2026-07-24T00:00:00.000Z', '2026-07-24T00:00:00.000Z', NULL
         )
       `;
@@ -2297,12 +2297,12 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
         ) VALUES
           (
             'thread-live', 'project-soft-delete', 'Live',
-            '{"provider":"codex","model":"gpt-5-codex"}', NULL, NULL, NULL,
+            '{"provider":"openai","model":"gpt-5-codex"}', NULL, NULL, NULL,
             '2026-07-24T00:00:01.000Z', '2026-07-24T00:00:01.000Z', NULL
           ),
           (
             'thread-soft-deleted', 'project-soft-delete', 'Retention deleted',
-            '{"provider":"codex","model":"gpt-5-codex"}', NULL, NULL, NULL,
+            '{"provider":"openai","model":"gpt-5-codex"}', NULL, NULL, NULL,
             '2026-07-24T00:00:02.000Z', '2026-07-24T00:00:09.000Z',
             '2026-07-24T00:00:09.000Z'
           )
@@ -2370,7 +2370,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           scripts_json, created_at, updated_at, deleted_at
         ) VALUES (
           'project-deleted-command', 'Deleted command', '/tmp/deleted-command',
-          '{"provider":"codex","model":"gpt-5-codex"}', '[]',
+          '{"provider":"openai","model":"gpt-5-codex"}', '[]',
           '2026-07-24T00:00:00.000Z', '2026-07-24T00:00:00.000Z', NULL
         )
       `;
@@ -2380,7 +2380,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           latest_turn_id, created_at, updated_at, deleted_at
         ) VALUES (
           'thread-deleted-command', 'project-deleted-command', 'Deleted command',
-          '{"provider":"codex","model":"gpt-5-codex"}', NULL, NULL, NULL,
+          '{"provider":"openai","model":"gpt-5-codex"}', NULL, NULL, NULL,
           '2026-07-24T00:00:01.000Z', '2026-07-24T00:00:09.000Z',
           '2026-07-24T00:00:09.000Z'
         )
@@ -2421,7 +2421,7 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
           scripts_json, created_at, updated_at, deleted_at
         ) VALUES (
           'project-worktrees', 'Worktrees', '/tmp/worktrees',
-          '{"provider":"codex","model":"gpt-5-codex"}', '[]',
+          '{"provider":"openai","model":"gpt-5-codex"}', '[]',
           '2026-07-24T00:00:00.000Z', '2026-07-24T00:00:00.000Z', NULL
         )
       `;
@@ -2433,20 +2433,20 @@ projectionSnapshotLayer("ProjectionSnapshotQuery", (it) => {
         ) VALUES
           (
             'thread-worktree-active', 'project-worktrees', 'Active',
-            '{"provider":"codex","model":"gpt-5-codex"}', NULL, '/tmp/wt/active',
+            '{"provider":"openai","model":"gpt-5-codex"}', NULL, '/tmp/wt/active',
             NULL, NULL, '2026-07-24T00:00:01.000Z', '2026-07-24T00:00:01.000Z',
             NULL, NULL
           ),
           (
             'thread-worktree-deleted', 'project-worktrees', 'Retention deleted',
-            '{"provider":"codex","model":"gpt-5-codex"}', NULL, '/tmp/wt/deleted',
+            '{"provider":"openai","model":"gpt-5-codex"}', NULL, '/tmp/wt/deleted',
             '/tmp/wt/deleted-assoc', NULL, '2026-07-24T00:00:02.000Z',
             '2026-07-24T00:00:09.000Z', '2026-07-24T00:00:08.000Z',
             '2026-07-24T00:00:09.000Z'
           ),
           (
             'thread-no-worktree', 'project-worktrees', 'No worktree',
-            '{"provider":"codex","model":"gpt-5-codex"}', NULL, NULL,
+            '{"provider":"openai","model":"gpt-5-codex"}', NULL, NULL,
             NULL, NULL, '2026-07-24T00:00:03.000Z', '2026-07-24T00:00:03.000Z',
             NULL, NULL
           )

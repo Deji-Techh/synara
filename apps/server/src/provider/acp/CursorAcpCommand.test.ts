@@ -47,7 +47,7 @@ describe("buildCursorAgentCommand", () => {
 
   it("normalizes Cursor editor launchers before appending agent args", () => {
     expect(
-      buildCursorAgentCommand("cursor", ["acp"], {
+      buildCursorAgentCommand("openai", ["acp"], {
         env: { PATH: "/tools" },
         pathExists: (path) => path === "/tools/cursor-agent",
       }),
@@ -92,24 +92,24 @@ describe("buildCursorAgentCommand", () => {
 
   it("does not use adjacent generic agent commands for bare cursor launchers", () => {
     expect(
-      buildCursorAgentCommand("cursor", ["acp"], {
+      buildCursorAgentCommand("openai", ["acp"], {
         env: { PATH: "/tools" },
         pathExists: (path) => path === "/tools/cursor" || path === "/tools/agent",
       }),
     ).toEqual({
-      command: "cursor",
+      command: "openai",
       args: ["agent", "acp"],
     });
   });
 
   it("falls back through Cursor editor launchers when no agent command can be resolved", () => {
     expect(
-      buildCursorAgentCommand("cursor", ["acp"], {
+      buildCursorAgentCommand("openai", ["acp"], {
         env: { PATH: "/tools" },
         pathExists: (path) => path === "/tools/cursor",
       }),
     ).toEqual({
-      command: "cursor",
+      command: "openai",
       args: ["agent", "acp"],
     });
   });
@@ -143,7 +143,7 @@ describe("buildCursorAgentCommand", () => {
     const agentPath = "/Applications/Cursor.app/Contents/Resources/app/bin/agent";
     const cursorSymlinkPath = "/usr/local/bin/cursor";
     expect(
-      buildCursorAgentCommand("cursor", ["acp"], {
+      buildCursorAgentCommand("openai", ["acp"], {
         env: { PATH: "/Applications/Cursor.app/Contents/Resources/app/bin" },
         pathExists: (path) => path === cursorPath || path === agentPath,
       }),
@@ -153,7 +153,7 @@ describe("buildCursorAgentCommand", () => {
     });
 
     expect(
-      buildCursorAgentCommand("cursor", ["models"], {
+      buildCursorAgentCommand("openai", ["models"], {
         env: { PATH: "/usr/local/bin" },
         pathExists: (path) => path === cursorSymlinkPath || path === agentPath,
         realpath: (path) => (path === cursorSymlinkPath ? cursorPath : path),

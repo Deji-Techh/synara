@@ -1,5 +1,5 @@
 // FILE: providerCredentials.ts
-// Purpose: Owns server-only credentials used to connect to external provider servers.
+// Purpose: Owns server-only API key credentials used to connect to external providers.
 // Layer: Server provider security boundary
 
 import type { ApiProviderKind } from "@caide/contracts";
@@ -8,24 +8,9 @@ import { Effect, Layer, ServiceMap } from "effect";
 import { ServerSecretStoreLive } from "./auth/Layers/ServerSecretStore";
 import { ServerSecretStore, type SecretStoreError } from "./auth/Services/ServerSecretStore";
 
-export type ExternalProviderServer = "kilo" | "opencode";
-
-const secretName = (provider: ExternalProviderServer): string =>
-  `provider-${provider}-server-password`;
-
 const apiKeySecretName = (provider: ApiProviderKind): string => `provider-${provider}-api-key`;
 
 export interface ProviderCredentialsShape {
-  readonly getServerPassword: (
-    provider: ExternalProviderServer,
-  ) => Effect.Effect<string | null, SecretStoreError>;
-  readonly replaceServerPassword: (
-    provider: ExternalProviderServer,
-    password: string | null,
-  ) => Effect.Effect<void, SecretStoreError>;
-  readonly isServerPasswordConfigured: (
-    provider: ExternalProviderServer,
-  ) => Effect.Effect<boolean, SecretStoreError>;
   readonly getApiKey: (provider: ApiProviderKind) => Effect.Effect<string | null, SecretStoreError>;
   readonly replaceApiKey: (
     provider: ApiProviderKind,
@@ -40,20 +25,6 @@ export class ProviderCredentials extends ServiceMap.Service<
   ProviderCredentials,
   ProviderCredentialsShape
 >()("caide/providerCredentials/ProviderCredentials") {}
-
-export const resolveProviderServerPassword = (provider: ExternalProviderServer) =>
-  Effect.gen(function* () {
-    const credentials = yield* ProviderCredentials;
-    return (yield* credentials.getServerPassword(provider)) ?? undefined;
-  }).pipe(Effect.orDie);
-
-export const makeProviderServerPasswordResolver =
-  (credentials: ProviderCredentialsShape) =>
-  (provider: ExternalProviderServer): Effect.Effect<string | undefined> =>
-    credentials.getServerPassword(provider).pipe(
-      Effect.map((password) => password ?? undefined),
-      Effect.orDie,
-    );
 
 export const resolveProviderApiKey = (provider: ApiProviderKind) =>
   Effect.gen(function* () {
@@ -73,29 +44,6 @@ const makeProviderCredentials = Effect.gen(function* () {
   const secrets = yield* ServerSecretStore;
   const encoder = new TextEncoder();
   const decoder = new TextDecoder("utf-8", { fatal: true });
-
-  const getServerPassword: ProviderCredentialsShape["getServerPassword"] = (provider) =>
-    secrets.get(secretName(provider)).pipe(
-      Effect.map((value) => {
-        if (!value || value.byteLength === 0) return null;
-        const password = decoder.decode(value);
-        return password.length > 0 ? password : null;
-      }),
-    );
-
-  const replaceServerPassword: ProviderCredentialsShape["replaceServerPassword"] = (
-    provider,
-    password,
-  ) => {
-    const normalized = password?.trim() ?? "";
-    return normalized.length > 0
-      ? secrets.set(secretName(provider), encoder.encode(normalized))
-      : secrets.remove(secretName(provider));
-  };
-
-  const isServerPasswordConfigured: ProviderCredentialsShape["isServerPasswordConfigured"] = (
-    provider,
-  ) => getServerPassword(provider).pipe(Effect.map((password) => password !== null));
 
   const getApiKey: ProviderCredentialsShape["getApiKey"] = (provider) =>
     secrets.get(apiKeySecretName(provider)).pipe(
@@ -117,9 +65,6 @@ const makeProviderCredentials = Effect.gen(function* () {
     getApiKey(provider).pipe(Effect.map((key) => key !== null));
 
   return {
-    getServerPassword,
-    replaceServerPassword,
-    isServerPasswordConfigured,
     getApiKey,
     replaceApiKey,
     isApiKeyConfigured,

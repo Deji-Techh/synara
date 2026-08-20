@@ -197,7 +197,7 @@ const disabledProviderHealthLayer = ProviderHealthLive.pipe(
 );
 
 const cachedReadyCodexStatus = {
-  provider: "codex" as const,
+  provider: "openai" as const,
   status: "ready" as const,
   available: true,
   authStatus: "authenticated" as const,
@@ -267,14 +267,14 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
       assert.ok(definition);
 
       const capabilities = resolvePackageManagedProviderMaintenance(definition, {
-        binaryPath: "claude",
+        binaryPath: "anthropic",
         realCommandPath: "/Users/test/.local/share/claude/versions/2.1.100/claude",
       });
 
       assert.strictEqual(capabilities.latestVersionSource, null);
       assert.deepStrictEqual(capabilities.update, {
         command: "claude update",
-        executable: "claude",
+        executable: "anthropic",
         args: ["update"],
         lockKey: "claude-native",
       });
@@ -326,7 +326,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
       assert.ok(definition);
 
       const capabilities = resolvePackageManagedProviderMaintenance(definition, {
-        binaryPath: "kilo",
+        binaryPath: "openai",
         realCommandPath:
           "/Users/test/.nvm/versions/node/v24.13.0/lib/node_modules/@kilocode/cli/bin/kilo",
         commandDirectory: "/Users/test/.nvm/versions/node/v24.13.0/bin",
@@ -359,10 +359,10 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         yield* writeProviderStatusCache({
           filePath: resolveProviderStatusCachePath({
             stateDir: path.join(baseDir, "userdata"),
-            provider: "kilo",
+            provider: "openai",
           }),
           provider: {
-            provider: "kilo",
+            provider: "openai",
             status: "ready",
             available: true,
             authStatus: "authenticated",
@@ -399,9 +399,9 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
 
         const result = yield* Effect.gen(function* () {
           const providerHealth = yield* ProviderHealth;
-          return yield* TestClock.withLive(providerHealth.updateProvider({ provider: "kilo" }));
+          return yield* TestClock.withLive(providerHealth.updateProvider({ provider: "openai" }));
         }).pipe(Effect.provide(layer));
-        const kilo = result.providers.find((provider) => provider.provider === "kilo");
+        const kilo = result.providers.find((provider) => provider.provider === "openai");
 
         assert.strictEqual(killed, true);
         assert.strictEqual(kilo?.updateState?.status, "failed");
@@ -415,8 +415,8 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
 
   describe("disabled provider handling", () => {
     it("builds an inert status for disabled providers", () => {
-      assert.deepStrictEqual(makeDisabledProviderStatus("kilo", "2026-06-16T12:00:00.000Z"), {
-        provider: "kilo",
+      assert.deepStrictEqual(makeDisabledProviderStatus("openai", "2026-06-16T12:00:00.000Z"), {
+        provider: "openai",
         status: "warning",
         available: false,
         authStatus: "unknown",
@@ -431,7 +431,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         allProvidersDisabledServerSettings,
         "2026-06-16T12:05:00.000Z",
       );
-      const codex = statuses.find((status) => status.provider === "codex");
+      const codex = statuses.find((status) => status.provider === "openai");
 
       assert.strictEqual(statuses.length, 23);
       assert.strictEqual(codex?.available, false);
@@ -458,7 +458,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         { ...DEFAULT_SERVER_SETTINGS, enableProviderUpdateChecks: false },
         "2026-06-16T12:05:00.000Z",
       );
-      const codex = statuses.find((status) => status.provider === "codex");
+      const codex = statuses.find((status) => status.provider === "openai");
 
       assert.strictEqual(codex?.available, true);
       assert.strictEqual(codex?.version, "0.129.0");
@@ -477,7 +477,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         });
         const cachePath = resolveProviderStatusCachePath({
           stateDir: path.join(baseDir, "userdata"),
-          provider: "codex",
+          provider: "openai",
         });
         yield* writeProviderStatusCache({
           filePath: cachePath,
@@ -492,7 +492,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
           const providerHealth = yield* ProviderHealth;
           return yield* providerHealth.getStatuses;
         }).pipe(Effect.provide(layer));
-        const codex = statuses.find((status) => status.provider === "codex");
+        const codex = statuses.find((status) => status.provider === "openai");
         const cachedCodex = yield* readProviderStatusCache(cachePath);
 
         assert.strictEqual(codex?.available, false);
@@ -510,7 +510,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         });
         const cachePath = resolveProviderStatusCachePath({
           stateDir: path.join(baseDir, "userdata"),
-          provider: "codex",
+          provider: "openai",
         });
         yield* writeProviderStatusCache({
           filePath: cachePath,
@@ -540,7 +540,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
           const providerHealth = yield* ProviderHealth;
           const serverSettings = yield* ServerSettingsService;
           const disabledStatuses = yield* providerHealth.getStatuses;
-          const disabledCodex = disabledStatuses.find((status) => status.provider === "codex");
+          const disabledCodex = disabledStatuses.find((status) => status.provider === "openai");
 
           assert.strictEqual(disabledCodex?.available, false);
           assert.strictEqual(disabledCodex?.message, "Provider is disabled in Caide settings.");
@@ -554,7 +554,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
           });
 
           const currentStatuses = yield* providerHealth.getStatuses;
-          const currentCodex = currentStatuses.find((status) => status.provider === "codex");
+          const currentCodex = currentStatuses.find((status) => status.provider === "openai");
           assert.strictEqual(currentCodex?.available, true);
           assert.strictEqual(currentCodex?.authStatus, "authenticated");
           assert.notStrictEqual(currentCodex?.message, "Provider is disabled in Caide settings.");
@@ -582,10 +582,10 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("rejects one-click updates for disabled providers", () =>
       Effect.gen(function* () {
         const providerHealth = yield* ProviderHealth;
-        const error = yield* Effect.flip(providerHealth.updateProvider({ provider: "kilo" }));
+        const error = yield* Effect.flip(providerHealth.updateProvider({ provider: "openai" }));
 
         assert.ok(error instanceof ServerProviderUpdateError);
-        assert.strictEqual(error.provider, "kilo");
+        assert.strictEqual(error.provider, "openai");
         assert.strictEqual(error.reason, "Provider is disabled in Caide settings.");
       }).pipe(Effect.provide(disabledProviderHealthLayer)),
     );
@@ -635,7 +635,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
 
   describe("stabilizeProviderStatusesAgainstTransientTimeouts", () => {
     const previousReadyOpenCode = {
-      provider: "opencode",
+      provider: "openai",
       status: "ready",
       available: true,
       authStatus: "unknown",
@@ -650,7 +650,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         [previousReadyOpenCode],
         [
           {
-            provider: "opencode",
+            provider: "openai",
             status: "error",
             available: false,
             authStatus: "unknown",
@@ -687,7 +687,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         [previousWithUpdate],
         [
           {
-            provider: "opencode",
+            provider: "openai",
             status: "error",
             available: false,
             authStatus: "unknown",
@@ -713,7 +713,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
 
     it("does not hide non-timeout provider failures", () => {
       const unavailableStatus = {
-        provider: "opencode",
+        provider: "openai",
         status: "error",
         available: false,
         authStatus: "unknown",
@@ -732,7 +732,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
 
     it("keeps an already usable provider ready after a transient auth timeout warning", () => {
       const previousReadyClaude = {
-        provider: "claudeAgent",
+        provider: "anthropic",
         status: "ready",
         available: true,
         authStatus: "authenticated",
@@ -744,7 +744,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         [previousReadyClaude],
         [
           {
-            provider: "claudeAgent",
+            provider: "anthropic",
             status: "warning",
             available: true,
             authStatus: "unknown",
@@ -766,7 +766,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
 
     it("does not keep a stale Claude auth error after a transient auth timeout", () => {
       const previousUnauthenticatedClaude = {
-        provider: "claudeAgent",
+        provider: "anthropic",
         status: "error",
         available: true,
         authStatus: "unauthenticated",
@@ -775,7 +775,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         message: "Claude is not authenticated. Run `claude auth login` and try again.",
       } satisfies ServerProviderStatus;
       const authTimeoutWarning = {
-        provider: "claudeAgent",
+        provider: "anthropic",
         status: "warning",
         available: true,
         authStatus: "unknown",
@@ -796,7 +796,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
 
   describe("providerStatusesEqual", () => {
     const readyCursor = {
-      provider: "cursor",
+      provider: "openai",
       status: "ready",
       available: true,
       authStatus: "unknown",
@@ -856,9 +856,9 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it("detects Auto capability and probe-binary changes", () => {
       const readyCodex = {
         ...readyCursor,
-        provider: "codex",
+        provider: "openai",
         supportsAutoRuntimeMode: true,
-        autoRuntimeModeBinaryPath: "codex",
+        autoRuntimeModeBinaryPath: "openai",
       } satisfies ServerProviderStatus;
 
       assert.strictEqual(
@@ -888,7 +888,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         // default code path (OpenAI provider, auth probe runs) is exercised.
         yield* withTempCodexHome();
         const status = yield* checkCodexProviderStatus;
-        assert.strictEqual(status.provider, "codex");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "ready");
         assert.strictEqual(status.available, true);
         assert.strictEqual(status.authStatus, "authenticated");
@@ -969,7 +969,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         );
         expectedCodexHome = path.join(runtimeDir, CAIDE_CODEX_HOME_OVERLAY_DIR);
 
-        const status = yield* makeCheckCodexProviderStatus("codex", configuredHome);
+        const status = yield* makeCheckCodexProviderStatus("openai", configuredHome);
         assert.strictEqual(status.status, "ready");
         assert.strictEqual(status.message, undefined);
         assert.strictEqual(sawLoginStatusProbe, true);
@@ -994,7 +994,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
       Effect.gen(function* () {
         yield* withTempCodexHome();
         const status = yield* checkCodexProviderStatus;
-        assert.strictEqual(status.provider, "codex");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "error");
         assert.strictEqual(status.available, false);
         assert.strictEqual(status.authStatus, "unknown");
@@ -1006,7 +1006,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
       Effect.gen(function* () {
         yield* withTempCodexHome();
         const status = yield* checkCodexProviderStatus;
-        assert.strictEqual(status.provider, "codex");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "error");
         assert.strictEqual(status.available, false);
         assert.strictEqual(status.authStatus, "unknown");
@@ -1049,7 +1049,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
       Effect.gen(function* () {
         yield* withTempCodexHome();
         const status = yield* checkCodexProviderStatus;
-        assert.strictEqual(status.provider, "codex");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "error");
         assert.strictEqual(status.available, true);
         assert.strictEqual(status.authStatus, "unauthenticated");
@@ -1075,7 +1075,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
       Effect.gen(function* () {
         yield* withTempCodexHome();
         const status = yield* checkCodexProviderStatus;
-        assert.strictEqual(status.provider, "codex");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "error");
         assert.strictEqual(status.available, true);
         assert.strictEqual(status.authStatus, "unauthenticated");
@@ -1100,7 +1100,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
       Effect.gen(function* () {
         yield* withTempCodexHome();
         const status = yield* checkCodexProviderStatus;
-        assert.strictEqual(status.provider, "codex");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "warning");
         assert.strictEqual(status.available, true);
         assert.strictEqual(status.authStatus, "unknown");
@@ -1138,7 +1138,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
           ].join("\n"),
         );
         const status = yield* checkCodexProviderStatus;
-        assert.strictEqual(status.provider, "codex");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "ready");
         assert.strictEqual(status.available, true);
         assert.strictEqual(status.authStatus, "unknown");
@@ -1359,7 +1359,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("returns ready when claude is installed and authenticated", () =>
       Effect.gen(function* () {
         const status = yield* checkClaudeProviderStatus;
-        assert.strictEqual(status.provider, "claudeAgent");
+        assert.strictEqual(status.provider, "anthropic");
         assert.strictEqual(status.status, "ready");
         assert.strictEqual(status.available, true);
         assert.strictEqual(status.authStatus, "authenticated");
@@ -1386,7 +1386,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         assert.strictEqual(status.status, "ready");
         assert.strictEqual(status.available, true);
         assert.strictEqual(status.supportsAutoRuntimeMode, false);
-        assert.strictEqual(status.autoRuntimeModeBinaryPath, "claude");
+        assert.strictEqual(status.autoRuntimeModeBinaryPath, "anthropic");
       }).pipe(
         Effect.provide(
           mockSpawnerLayer((args) => {
@@ -1484,10 +1484,10 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
               }),
           );
 
-          const status = yield* makeCheckClaudeProviderStatus(undefined, "claude", homeDir).pipe(
+          const status = yield* makeCheckClaudeProviderStatus(undefined, "anthropic", homeDir).pipe(
             Effect.provide(
               mockSpawnerLayer((args, command, env) => {
-                assert.strictEqual(command, "claude");
+                assert.strictEqual(command, "anthropic");
                 assert.strictEqual(env?.ANTHROPIC_API_KEY, undefined);
                 assert.strictEqual(env?.ANTHROPIC_AUTH_TOKEN, undefined);
                 assert.strictEqual(env?.CLAUDE_CODE_OAUTH_TOKEN, undefined);
@@ -1505,7 +1505,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
             ),
           );
 
-          assert.strictEqual(status.provider, "claudeAgent");
+          assert.strictEqual(status.provider, "anthropic");
           assert.strictEqual(status.status, "ready");
           assert.strictEqual(status.authStatus, "authenticated");
         }),
@@ -1538,7 +1538,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
             sdkProbeCalls += 1;
             return "max";
           }),
-          "claude",
+          "anthropic",
           homeDir,
         ).pipe(
           Effect.provide(
@@ -1559,7 +1559,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         );
 
         assert.strictEqual(sdkProbeCalls, 1);
-        assert.strictEqual(status.provider, "claudeAgent");
+        assert.strictEqual(status.provider, "anthropic");
         assert.strictEqual(status.status, "ready");
         assert.strictEqual(status.authStatus, "authenticated");
         assert.strictEqual(status.authType, "max");
@@ -1589,7 +1589,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
           }),
         );
 
-        const status = yield* makeCheckClaudeProviderStatus(undefined, "claude", homeDir).pipe(
+        const status = yield* makeCheckClaudeProviderStatus(undefined, "anthropic", homeDir).pipe(
           Effect.provide(
             mockSpawnerLayer((args) => {
               const joined = args.join(" ");
@@ -1607,7 +1607,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
           ),
         );
 
-        assert.strictEqual(status.provider, "claudeAgent");
+        assert.strictEqual(status.provider, "anthropic");
         assert.strictEqual(status.status, "error");
         assert.strictEqual(status.authStatus, "unauthenticated");
         assert.strictEqual(status.authType, undefined);
@@ -1638,7 +1638,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
             }),
           );
 
-          const status = yield* makeCheckClaudeProviderStatus(undefined, "claude", homeDir).pipe(
+          const status = yield* makeCheckClaudeProviderStatus(undefined, "anthropic", homeDir).pipe(
             Effect.provide(
               mockSpawnerLayer((args) => {
                 const joined = args.join(" ");
@@ -1656,7 +1656,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
             ),
           );
 
-          assert.strictEqual(status.provider, "claudeAgent");
+          assert.strictEqual(status.provider, "anthropic");
           assert.strictEqual(status.status, "error");
           assert.strictEqual(status.authStatus, "unauthenticated");
           assert.strictEqual(status.authType, undefined);
@@ -1675,7 +1675,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
           });
 
           let authStatusCalls = 0;
-          const status = yield* makeCheckClaudeProviderStatus(undefined, "claude", homeDir, {
+          const status = yield* makeCheckClaudeProviderStatus(undefined, "anthropic", homeDir, {
             falseNegativeRetryDelayMs: 0,
           }).pipe(
             Effect.provide(
@@ -1707,7 +1707,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
           );
 
           assert.strictEqual(authStatusCalls, 2);
-          assert.strictEqual(status.provider, "claudeAgent");
+          assert.strictEqual(status.provider, "anthropic");
           assert.strictEqual(status.status, "ready");
           assert.strictEqual(status.authStatus, "authenticated");
           assert.strictEqual(status.authType, "max");
@@ -1724,7 +1724,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
           });
 
           let authStatusCalls = 0;
-          const status = yield* makeCheckClaudeProviderStatus(undefined, "claude", homeDir, {
+          const status = yield* makeCheckClaudeProviderStatus(undefined, "anthropic", homeDir, {
             falseNegativeRetryDelayMs: 0,
           }).pipe(
             Effect.provide(
@@ -1747,7 +1747,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
           );
 
           assert.strictEqual(authStatusCalls, 2);
-          assert.strictEqual(status.provider, "claudeAgent");
+          assert.strictEqual(status.provider, "anthropic");
           assert.strictEqual(status.status, "error");
           assert.strictEqual(status.authStatus, "unauthenticated");
           assert.match(status.message ?? "", /not authenticated/i);
@@ -1757,7 +1757,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("returns unavailable when claude is missing", () =>
       Effect.gen(function* () {
         const status = yield* checkClaudeProviderStatus;
-        assert.strictEqual(status.provider, "claudeAgent");
+        assert.strictEqual(status.provider, "anthropic");
         assert.strictEqual(status.status, "error");
         assert.strictEqual(status.available, false);
         assert.strictEqual(status.authStatus, "unknown");
@@ -1771,7 +1771,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("returns error when version check fails with non-zero exit code", () =>
       Effect.gen(function* () {
         const status = yield* checkClaudeProviderStatus;
-        assert.strictEqual(status.provider, "claudeAgent");
+        assert.strictEqual(status.provider, "anthropic");
         assert.strictEqual(status.status, "error");
         assert.strictEqual(status.available, false);
       }).pipe(
@@ -1789,7 +1789,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("returns unauthenticated when auth status reports not logged in", () =>
       Effect.gen(function* () {
         const status = yield* checkClaudeProviderStatus;
-        assert.strictEqual(status.provider, "claudeAgent");
+        assert.strictEqual(status.provider, "anthropic");
         assert.strictEqual(status.status, "error");
         assert.strictEqual(status.available, true);
         assert.strictEqual(status.authStatus, "unauthenticated");
@@ -1817,7 +1817,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("returns unauthenticated when output includes 'not logged in'", () =>
       Effect.gen(function* () {
         const status = yield* checkClaudeProviderStatus;
-        assert.strictEqual(status.provider, "claudeAgent");
+        assert.strictEqual(status.provider, "anthropic");
         assert.strictEqual(status.status, "error");
         assert.strictEqual(status.available, true);
         assert.strictEqual(status.authStatus, "unauthenticated");
@@ -1836,7 +1836,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("returns warning when auth status command is unsupported", () =>
       Effect.gen(function* () {
         const status = yield* checkClaudeProviderStatus;
-        assert.strictEqual(status.provider, "claudeAgent");
+        assert.strictEqual(status.provider, "anthropic");
         assert.strictEqual(status.status, "warning");
         assert.strictEqual(status.available, true);
         assert.strictEqual(status.authStatus, "unknown");
@@ -1862,7 +1862,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("returns ready when opencode is installed", () =>
       Effect.gen(function* () {
         const status = yield* checkOpenCodeProviderStatus;
-        assert.strictEqual(status.provider, "opencode");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "ready");
         assert.strictEqual(status.available, true);
         assert.strictEqual(status.authStatus, "unknown");
@@ -1896,7 +1896,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("returns unavailable when opencode is missing", () =>
       Effect.gen(function* () {
         const status = yield* checkOpenCodeProviderStatus;
-        assert.strictEqual(status.provider, "opencode");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "error");
         assert.strictEqual(status.available, false);
         assert.strictEqual(status.authStatus, "unknown");
@@ -1930,7 +1930,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("returns ready using only the Pi CLI version probe", () =>
       Effect.gen(function* () {
         const status = yield* checkPiProviderStatus();
-        assert.strictEqual(status.provider, "pi");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "ready");
         assert.strictEqual(status.available, true);
         assert.strictEqual(status.authStatus, "unknown");
@@ -1941,7 +1941,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
       }).pipe(
         Effect.provide(
           mockSpawnerLayer((args, command) => {
-            assert.strictEqual(command, "pi");
+            assert.strictEqual(command, "openai");
             const joined = args.join(" ");
             if (joined === "--version") return { stdout: "pi 0.74.0\n", stderr: "", code: 0 };
             throw new Error(`Unexpected args: ${joined}`);
@@ -1973,7 +1973,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("keeps Pi usable when the advisory CLI probe is missing", () =>
       Effect.gen(function* () {
         const status = yield* checkPiProviderStatus();
-        assert.strictEqual(status.provider, "pi");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "warning");
         assert.strictEqual(status.available, true);
         assert.strictEqual(status.authStatus, "unknown");
@@ -2012,7 +2012,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("returns ready when Antigravity lists authenticated models", () =>
       Effect.gen(function* () {
         const status = yield* checkAntigravityProviderStatus();
-        assert.strictEqual(status.provider, "antigravity");
+        assert.strictEqual(status.provider, "google");
         assert.strictEqual(status.status, "ready");
         assert.strictEqual(status.available, true);
         assert.strictEqual(status.authStatus, "authenticated");
@@ -2063,7 +2063,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
       delete process.env.GROK_CODE_XAI_API_KEY;
       return Effect.gen(function* () {
         const status = yield* checkGrokProviderStatus;
-        assert.strictEqual(status.provider, "grok");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "ready");
         assert.strictEqual(status.available, true);
         assert.strictEqual(status.authStatus, "unknown");
@@ -2147,7 +2147,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("returns unavailable when Grok CLI is missing", () =>
       Effect.gen(function* () {
         const status = yield* checkGrokProviderStatus;
-        assert.strictEqual(status.provider, "grok");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "error");
         assert.strictEqual(status.available, false);
         assert.strictEqual(status.authStatus, "unknown");
@@ -2160,7 +2160,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("returns ready when Cursor Agent is authenticated and has models", () =>
       Effect.gen(function* () {
         const status = yield* checkCursorProviderStatus;
-        assert.strictEqual(status.provider, "cursor");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "ready");
         assert.strictEqual(status.available, true);
         assert.strictEqual(status.authStatus, "authenticated");
@@ -2279,7 +2279,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("returns unavailable when Cursor Agent is missing", () =>
       Effect.gen(function* () {
         const status = yield* checkCursorProviderStatus;
-        assert.strictEqual(status.provider, "cursor");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "error");
         assert.strictEqual(status.available, false);
         assert.strictEqual(status.authStatus, "unknown");
@@ -2293,7 +2293,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("returns unavailable when Cursor Agent exits with an error", () =>
       Effect.gen(function* () {
         const status = yield* checkCursorProviderStatus;
-        assert.strictEqual(status.provider, "cursor");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "error");
         assert.strictEqual(status.available, false);
         assert.strictEqual(status.authStatus, "unknown");
@@ -2318,7 +2318,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("returns unauthenticated when Cursor Agent status requires login", () =>
       Effect.gen(function* () {
         const status = yield* checkCursorProviderStatus;
-        assert.strictEqual(status.provider, "cursor");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "error");
         assert.strictEqual(status.available, true);
         assert.strictEqual(status.authStatus, "unauthenticated");
@@ -2351,7 +2351,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("returns unauthenticated when Cursor Agent says not authenticated", () =>
       Effect.gen(function* () {
         const status = yield* checkCursorProviderStatus;
-        assert.strictEqual(status.provider, "cursor");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "error");
         assert.strictEqual(status.available, true);
         assert.strictEqual(status.authStatus, "unauthenticated");
@@ -2375,7 +2375,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("returns unavailable when Cursor Agent has no account models", () =>
       Effect.gen(function* () {
         const status = yield* checkCursorProviderStatus;
-        assert.strictEqual(status.provider, "cursor");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "error");
         assert.strictEqual(status.available, false);
         assert.strictEqual(status.authStatus, "authenticated");
@@ -2406,7 +2406,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("returns warning when Cursor Agent model discovery fails to spawn", () =>
       Effect.gen(function* () {
         const status = yield* checkCursorProviderStatus;
-        assert.strictEqual(status.provider, "cursor");
+        assert.strictEqual(status.provider, "openai");
         assert.strictEqual(status.status, "warning");
         assert.strictEqual(status.available, true);
         assert.strictEqual(status.authStatus, "authenticated");

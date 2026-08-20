@@ -4,16 +4,16 @@
 
 export type ProviderChildKind =
   | "acp"
-  | "antigravity"
-  | "claude"
-  | "codex"
-  | "cursor"
-  | "droid"
+  | "google"
+  | "anthropic"
+  | "openai"
+  | "openai"
+  | "openai"
   | "engine"
-  | "grok"
-  | "kilo"
-  | "opencode"
-  | "pi";
+  | "openai"
+  | "openai"
+  | "openai"
+  | "openai";
 
 const PROVIDER_CREDENTIAL_KEYS = new Set([
   "ANTHROPIC_API_KEY",
