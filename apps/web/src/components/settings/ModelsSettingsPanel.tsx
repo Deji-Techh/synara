@@ -158,9 +158,12 @@ export function ModelsSettingsPanel({
         option.provider === currentGitTextGenerationProvider &&
         option.slug === currentGitTextGenerationModel,
     )?.name ?? currentGitTextGenerationModel;
-  const selectedCustomModelProviderSettings = CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS.find(
-    (config) => config.provider === selectedCustomModelProvider,
-  )!;
+  const selectedCustomModelProviderSettings =
+    CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS.find(
+      (config) => config.provider === selectedCustomModelProvider,
+    ) ??
+    CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS.find((config) => config.provider === "openai") ??
+    CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS[0]!;
   const selectedCustomModelInput = customModelInputByProvider[selectedCustomModelProvider] ?? "";
   const selectedCustomModelError = customModelErrorByProvider[selectedCustomModelProvider] ?? null;
   const savedCustomModelRows = useMemo(
