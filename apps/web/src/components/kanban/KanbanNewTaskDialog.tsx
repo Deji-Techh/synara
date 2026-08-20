@@ -331,7 +331,7 @@ export function KanbanNewTaskDialog({
     if (selectedModel !== null) {
       return;
     }
-    const firstOption = modelOptionsByProvider[selectedProvider][0];
+    const firstOption = (modelOptionsByProvider[selectedProvider] ?? [])[0];
     if (firstOption) {
       useComposerDraftStore.getState().setModelSelection(
         scratchThreadId,

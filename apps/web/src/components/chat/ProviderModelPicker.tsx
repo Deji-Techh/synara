@@ -251,7 +251,7 @@ export const ProviderModelMenuItems = function ProviderModelMenuItems(
     const resolvedModel = resolveSelectableModel(
       provider,
       value,
-      props.modelOptionsByProvider[provider],
+      (props.modelOptionsByProvider[provider] ?? []),
     );
     if (!resolvedModel) return;
     props.onProviderModelChange(provider, resolvedModel);
@@ -283,7 +283,7 @@ export const ProviderModelMenuItems = function ProviderModelMenuItems(
       );
     }
 
-    const providerOptions = props.modelOptionsByProvider[provider];
+    const providerOptions = props.modelOptionsByProvider[provider] ?? [];
     const shouldShowSearch =
       (provider === "openai" ||
         provider === "openai" ||
@@ -446,7 +446,7 @@ export function resolveProviderModelLabel(input: {
   return resolveSelectedModelLabel({
     provider: activeProvider,
     model: input.model,
-    options: input.modelOptionsByProvider[activeProvider],
+    options: input.modelOptionsByProvider[activeProvider] ?? [],
   });
 }
 

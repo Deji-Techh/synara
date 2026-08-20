@@ -2409,7 +2409,7 @@ export default function ChatView({
       ? selectedModelSelection.model
       : selectedModel;
   const selectedModelForPickerWithCustomFallback = useMemo(() => {
-    const currentOptions = modelOptionsByProvider[selectedProvider];
+    const currentOptions = modelOptionsByProvider[selectedProvider] ?? [];
     return currentOptions.some((option) => option.slug === selectedModelForPicker)
       ? selectedModelForPicker
       : (normalizeModelSlug(selectedModelForPicker, selectedProvider) ?? selectedModelForPicker);
@@ -6259,7 +6259,7 @@ export default function ChatView({
       }
       const resolvedModel = resolveCommittedProviderModel({
         selectedModel: model,
-        availableOptions: modelOptionsByProvider[provider],
+        availableOptions: modelOptionsByProvider[provider] ?? [],
         fallback: () => resolveAppModelSelection(provider, customModelsByProvider, model),
       });
       const runtimeModel = resolveRuntimeModelDescriptor({

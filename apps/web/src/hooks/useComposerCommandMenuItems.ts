@@ -222,7 +222,7 @@ export function buildSearchableModelOptions(input: {
         : protectedProviderSet.has(option.value) || !hiddenProviderSet.has(option.value),
     )
     .flatMap((option) =>
-      input.modelOptionsByProvider[option.value].map(
+      (input.modelOptionsByProvider[option.value] ?? []).map(
         ({ slug, name, upstreamProviderId, upstreamProviderName }) => ({
           provider: option.value,
           providerLabel: option.label,
