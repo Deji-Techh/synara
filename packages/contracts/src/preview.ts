@@ -239,3 +239,11 @@ export const FlutterToolchainProgress = Schema.Struct({
   message: Schema.String.check(Schema.isMaxLength(512)),
 });
 export type FlutterToolchainProgress = typeof FlutterToolchainProgress.Type;
+
+export const FlutterToolchainInstallInput = Schema.Struct({
+  threadId: ThreadId,
+});
+export type FlutterToolchainInstallInput = typeof FlutterToolchainInstallInput.Type;
+
+export const FlutterToolchainInstallResult = FlutterToolchainStatusResult;
+export type FlutterToolchainInstallResult = typeof FlutterToolchainInstallResult.Type;

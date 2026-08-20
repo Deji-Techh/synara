@@ -156,6 +156,12 @@ import {
   PreviewTestResult,
   PreviewScreenshotInput,
   PreviewScreenshotResult,
+  PreviewDevicesInput,
+  PreviewDevicesResult,
+  FlutterToolchainStatusInput,
+  FlutterToolchainStatusResult,
+  FlutterToolchainInstallInput,
+  FlutterToolchainInstallResult,
   PREVIEW_WS_METHODS,
 } from "./preview";
 import {
@@ -700,6 +706,24 @@ export const WsPreviewScreenshotRpc = Rpc.make(PREVIEW_WS_METHODS.screenshot, {
   error: WsRpcError,
 });
 
+export const WsPreviewDevicesRpc = Rpc.make(PREVIEW_WS_METHODS.devices, {
+  payload: PreviewDevicesInput,
+  success: PreviewDevicesResult,
+  error: WsRpcError,
+});
+
+export const WsPreviewFlutterToolchainStatusRpc = Rpc.make(PREVIEW_WS_METHODS.flutterToolchainStatus, {
+  payload: FlutterToolchainStatusInput,
+  success: FlutterToolchainStatusResult,
+  error: WsRpcError,
+});
+
+export const WsPreviewFlutterToolchainInstallRpc = Rpc.make(PREVIEW_WS_METHODS.flutterToolchainInstall, {
+  payload: FlutterToolchainInstallInput,
+  success: FlutterToolchainInstallResult,
+  error: WsRpcError,
+});
+
 export const WsPreviewSupervisorGetStateRpc = Rpc.make(
   PREVIEW_SUPERVISOR_WS_METHODS.getState,
   {
@@ -719,6 +743,9 @@ export const WsPreviewRpcGroup = RpcGroup.make(
   WsPreviewBuildStartRpc,
   WsPreviewBuildStateRpc,
   WsPreviewScreenshotRpc,
+  WsPreviewDevicesRpc,
+  WsPreviewFlutterToolchainStatusRpc,
+  WsPreviewFlutterToolchainInstallRpc,
   WsPreviewSupervisorGetStateRpc,
 );
 
