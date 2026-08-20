@@ -43,13 +43,13 @@ function isImportableThreadActivity(
 }
 
 export function isEligibleHandoffTargetProvider(input: {
-  readonly sourceProvider: ProviderKind;
+  readonly sourceProvider: string;
   readonly targetProvider: ProviderKind;
   readonly targetProviderEnabled: boolean | null | undefined;
   readonly targetProviderStatus: ServerProviderStatus | null | undefined;
 }): boolean {
   return (
-    input.targetProvider !== input.sourceProvider &&
+    input.targetProvider !== (input.sourceProvider as ProviderKind) &&
     input.targetProviderEnabled === true &&
     input.targetProviderStatus?.provider === input.targetProvider &&
     isProviderUsable(input.targetProviderStatus)
@@ -57,7 +57,7 @@ export function isEligibleHandoffTargetProvider(input: {
 }
 
 export function resolveAvailableHandoffTargetProviders(input: {
-  readonly sourceProvider: ProviderKind;
+  readonly sourceProvider: string;
   readonly providerSettings: ServerSettingsView["providers"] | null | undefined;
   readonly providerStatuses: readonly ServerProviderStatus[];
 }): ReadonlyArray<ProviderKind> {
@@ -65,7 +65,7 @@ export function resolveAvailableHandoffTargetProviders(input: {
     isEligibleHandoffTargetProvider({
       sourceProvider: input.sourceProvider,
       targetProvider,
-      targetProviderEnabled: input.providerSettings?.[targetProvider].enabled,
+      targetProviderEnabled: (input.providerSettings as any)?.[targetProvider]?.enabled,
       targetProviderStatus: findProviderStatus(input.providerStatuses, targetProvider),
     }),
   );
@@ -75,7 +75,7 @@ export function resolveThreadHandoffBadgeLabel(thread: Pick<Thread, "handoff">):
   if (!thread.handoff) {
     return null;
   }
-  return `Handoff from ${PROVIDER_DISPLAY_NAMES[thread.handoff.sourceProvider]}`;
+  return `Handoff from ${PROVIDER_DISPLAY_NAMES[thread.handoff.sourceProvider as ProviderKind] ?? thread.handoff.sourceProvider}`;
 }
 
 // Preserve the visible source thread name when creating the destination thread.

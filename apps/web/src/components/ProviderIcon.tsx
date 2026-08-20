@@ -59,7 +59,9 @@ export function ProviderIcon({
     return fallback;
   }
 
-  const Icon = PROVIDER_ICON_COMPONENT_BY_PROVIDER[provider];
+  const Icon =
+    (PROVIDER_ICON_COMPONENT_BY_PROVIDER as Record<string, Icon | undefined>)[provider] ?? HammerIcon;
+  if (!Icon) return fallback;
   return (
     <Icon
       aria-hidden={ariaHidden}
