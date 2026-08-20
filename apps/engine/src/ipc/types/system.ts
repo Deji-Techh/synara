@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  defineContract,
-  defineEvent,
-  createClient,
-  createEventClient,
-} from "../contracts/core";
+import { defineContract, defineEvent, createClient, createEventClient } from "../contracts/core";
 
 // =============================================================================
 // System Schemas
@@ -34,24 +29,14 @@ export const InstallManagedNodeResultSchema = z.object({
   nodeVersion: z.string(),
 });
 
-export type InstallManagedNodeResult = z.infer<
-  typeof InstallManagedNodeResultSchema
->;
+export type InstallManagedNodeResult = z.infer<typeof InstallManagedNodeResultSchema>;
 
 export const ManagedNodeInstallProgressSchema = z.object({
-  phase: z.enum([
-    "downloading",
-    "verifying",
-    "extracting",
-    "installing",
-    "done",
-  ]),
+  phase: z.enum(["downloading", "verifying", "extracting", "installing", "done"]),
   percent: z.number().min(0).max(100),
 });
 
-export type ManagedNodeInstallProgress = z.infer<
-  typeof ManagedNodeInstallProgressSchema
->;
+export type ManagedNodeInstallProgress = z.infer<typeof ManagedNodeInstallProgressSchema>;
 
 export const SystemDebugInfoSchema = z.object({
   nodeVersion: z.string().nullable(),
@@ -77,9 +62,7 @@ export const SelectNodeFolderResultSchema = z.object({
   selectedPath: z.string().nullable(),
 });
 
-export type SelectNodeFolderResult = z.infer<
-  typeof SelectNodeFolderResultSchema
->;
+export type SelectNodeFolderResult = z.infer<typeof SelectNodeFolderResultSchema>;
 
 export const SelectAppFolderResultSchema = z.object({
   path: z.string().nullable(),
@@ -101,9 +84,7 @@ export const DoesReleaseNoteExistParamsSchema = z.object({
   version: z.string(),
 });
 
-export type DoesReleaseNoteExistParams = z.infer<
-  typeof DoesReleaseNoteExistParamsSchema
->;
+export type DoesReleaseNoteExistParams = z.infer<typeof DoesReleaseNoteExistParamsSchema>;
 
 export const DoesReleaseNoteExistResultSchema = z.object({
   exists: z.boolean(),

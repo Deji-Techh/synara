@@ -24,7 +24,7 @@ export const GoalStatus = Schema.Literals([
   "blocked",
   "awaiting-user",
   "completed",
-  "cancelled"
+  "cancelled",
 ]);
 export type GoalStatus = typeof GoalStatus.Type;
 
@@ -41,7 +41,7 @@ export const GoalTaskStatus = Schema.Literals([
   "awaiting-approval",
   "verified",
   "skipped",
-  "cancelled"
+  "cancelled",
 ]);
 export type GoalTaskStatus = typeof GoalTaskStatus.Type;
 
@@ -51,7 +51,7 @@ export const GoalRunStatus = Schema.Literals([
   "running",
   "succeeded",
   "failed",
-  "cancelled"
+  "cancelled",
 ]);
 export type GoalRunStatus = typeof GoalRunStatus.Type;
 
@@ -89,7 +89,7 @@ export const GoalEvidence = Schema.Struct({
     "command-output",
     "deployment",
     "manual-confirmation",
-    "other"
+    "other",
   ]),
   label: Schema.String,
   reference: Schema.String,

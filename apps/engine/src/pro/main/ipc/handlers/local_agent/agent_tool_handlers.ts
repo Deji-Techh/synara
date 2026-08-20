@@ -36,28 +36,19 @@ export function registerAgentToolHandlers() {
   });
 
   // Set consent for a single tool
-  handle(
-    "agent-tool:set-consent",
-    async (_event, params: SetAgentToolConsentParams) => {
-      setAgentToolConsent(params.toolName as AgentToolName, params.consent);
-      return { success: true };
-    },
-  );
+  handle("agent-tool:set-consent", async (_event, params: SetAgentToolConsentParams) => {
+    setAgentToolConsent(params.toolName as AgentToolName, params.consent);
+    return { success: true };
+  });
 
   // Handle consent response from renderer
-  handle(
-    "agent-tool:consent-response",
-    async (_event, params: AgentToolConsentResponseParams) => {
-      resolveAgentToolConsent(params.requestId, params.decision);
-    },
-  );
+  handle("agent-tool:consent-response", async (_event, params: AgentToolConsentResponseParams) => {
+    resolveAgentToolConsent(params.requestId, params.decision);
+  });
 
-  handle(
-    "agent-tool:env-var-response",
-    async (_event, params: PromptEnvVarResponseParams) => {
-      envVarResolver.resolve(params.requestId, params.envVars);
-    },
-  );
+  handle("agent-tool:env-var-response", async (_event, params: PromptEnvVarResponseParams) => {
+    envVarResolver.resolve(params.requestId, params.envVars);
+  });
 
   handle("agent-tool:list-background-tasks", async () => {
     return getBackgroundTasks().map((task) => ({

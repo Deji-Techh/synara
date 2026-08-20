@@ -3047,11 +3047,7 @@ function backendEnv(): NodeJS.ProcessEnv {
           // unpacked extraResource and we point the server at it. The migration
           // folder travels with it (drizzle sits next to dist in the payload).
           [CAIDE_ENGINE_DIR_ENV]: Path.join(process.resourcesPath, "engine"),
-          [CAIDE_ENGINE_DRIZZLE_DIR_ENV]: Path.join(
-            process.resourcesPath,
-            "engine",
-            "drizzle",
-          ),
+          [CAIDE_ENGINE_DRIZZLE_DIR_ENV]: Path.join(process.resourcesPath, "engine", "drizzle"),
         }
       : {}),
     CAIDE_MODE: "desktop",

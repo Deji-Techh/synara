@@ -81,11 +81,7 @@ vi.mock("@/main/settings", () => ({
 }));
 
 import { handleDeleteBranch } from "@/ipc/handlers/git_branch_handlers";
-import {
-  gitListBranches,
-  gitListRemoteBranches,
-  gitDeleteBranch,
-} from "@/ipc/utils/git_utils";
+import { gitListBranches, gitListRemoteBranches, gitDeleteBranch } from "@/ipc/utils/git_utils";
 import { db } from "@/db";
 
 const mockEvent = {} as IpcMainInvokeEvent;
@@ -120,9 +116,7 @@ describe("handleDeleteBranch", () => {
     vi.mocked(gitListBranches).mockResolvedValue(["main"]);
     vi.mocked(gitListRemoteBranches).mockResolvedValue(["main", "feature"]);
 
-    await expect(
-      handleDeleteBranch(mockEvent, { appId: 1, branch: "feature" }),
-    ).rejects.toThrow(
+    await expect(handleDeleteBranch(mockEvent, { appId: 1, branch: "feature" })).rejects.toThrow(
       /only exists on the remote.*https:\/\/github\.com\/test-org\/test-repo\/branches/,
     );
   });
@@ -138,13 +132,9 @@ describe("handleDeleteBranch", () => {
 
   it("throws error when branch doesn't exist locally and remote listing fails", async () => {
     vi.mocked(gitListBranches).mockResolvedValue(["main"]);
-    vi.mocked(gitListRemoteBranches).mockRejectedValue(
-      new Error("network error"),
-    );
+    vi.mocked(gitListRemoteBranches).mockRejectedValue(new Error("network error"));
 
-    await expect(
-      handleDeleteBranch(mockEvent, { appId: 1, branch: "feature" }),
-    ).rejects.toThrow(
+    await expect(handleDeleteBranch(mockEvent, { appId: 1, branch: "feature" })).rejects.toThrow(
       /does not exist locally and remote branches could not be checked/,
     );
   });
@@ -160,9 +150,7 @@ describe("handleDeleteBranch", () => {
     vi.mocked(gitListBranches).mockResolvedValue(["main"]);
     vi.mocked(gitListRemoteBranches).mockResolvedValue(["main", "feature"]);
 
-    await expect(
-      handleDeleteBranch(mockEvent, { appId: 1, branch: "feature" }),
-    ).rejects.toThrow(
+    await expect(handleDeleteBranch(mockEvent, { appId: 1, branch: "feature" })).rejects.toThrow(
       /only exists on the remote and cannot be deleted locally.*remote Git hosting provider/,
     );
   });
@@ -170,8 +158,8 @@ describe("handleDeleteBranch", () => {
   it("throws when app not found", async () => {
     vi.mocked(db.query.apps.findFirst).mockResolvedValue(undefined);
 
-    await expect(
-      handleDeleteBranch(mockEvent, { appId: 999, branch: "feature" }),
-    ).rejects.toThrow("App not found");
+    await expect(handleDeleteBranch(mockEvent, { appId: 999, branch: "feature" })).rejects.toThrow(
+      "App not found",
+    );
   });
 });

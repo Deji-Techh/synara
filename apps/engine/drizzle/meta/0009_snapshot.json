@@ -181,12 +181,8 @@
           "name": "chats_app_id_apps_id_fk",
           "tableFrom": "chats",
           "tableTo": "apps",
-          "columnsFrom": [
-            "app_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["app_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -331,12 +327,8 @@
           "name": "language_models_custom_provider_id_language_model_providers_id_fk",
           "tableFrom": "language_models",
           "tableTo": "language_model_providers",
-          "columnsFrom": [
-            "custom_provider_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["custom_provider_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -405,12 +397,8 @@
           "name": "messages_chat_id_chats_id_fk",
           "tableFrom": "messages",
           "tableTo": "chats",
-          "columnsFrom": [
-            "chat_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["chat_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -470,10 +458,7 @@
       "indexes": {
         "versions_app_commit_unique": {
           "name": "versions_app_commit_unique",
-          "columns": [
-            "app_id",
-            "commit_hash"
-          ],
+          "columns": ["app_id", "commit_hash"],
           "isUnique": true
         }
       },
@@ -482,12 +467,8 @@
           "name": "versions_app_id_apps_id_fk",
           "tableFrom": "versions",
           "tableTo": "apps",
-          "columnsFrom": [
-            "app_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["app_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

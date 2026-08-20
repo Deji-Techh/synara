@@ -80,9 +80,7 @@ export const ProviderSendTurnInput = Schema.Struct({
   modelSelection: Schema.optional(ModelSelection),
   interactionMode: Schema.optional(ProviderInteractionMode),
   /** Engine chat mode (build/ask/plan/local-agent); defaults to build. */
-  mode: Schema.optional(ChatMode).pipe(
-    Schema.withDecodingDefault(() => DEFAULT_CHAT_MODE),
-  ),
+  mode: Schema.optional(ChatMode).pipe(Schema.withDecodingDefault(() => DEFAULT_CHAT_MODE)),
   systemPrompt: Schema.optional(Schema.String),
 });
 export type ProviderSendTurnInput = typeof ProviderSendTurnInput.Type;

@@ -18,11 +18,7 @@ function makeApp(): string {
   return appPath;
 }
 
-function writeRecording(
-  appPath: string,
-  relPath: string,
-  mtimeMs: number,
-): void {
+function writeRecording(appPath: string, relPath: string, mtimeMs: number): void {
   const abs = path.join(appPath, relPath);
   fs.mkdirSync(path.dirname(abs), { recursive: true });
   fs.writeFileSync(abs, "");
@@ -37,9 +33,7 @@ afterEach(() => {
 
 describe("recordingKind", () => {
   it("recognizes trace zips and webm videos, rejects everything else", () => {
-    expect(recordingKind("test-results/signup.spec.ts-w1-trace.zip")).toBe(
-      "trace",
-    );
+    expect(recordingKind("test-results/signup.spec.ts-w1-trace.zip")).toBe("trace");
     expect(recordingKind("signup.spec.ts-1-signup-test.webm")).toBe("video");
     expect(recordingKind("test-results/signup.spec.ts-1.png")).toBeNull();
     expect(recordingKind("test-results/results.json")).toBeNull();
@@ -87,12 +81,8 @@ describe("clearTestRecordings", () => {
 
     expect(fs.existsSync(path.join(appPath, "test-results"))).toBe(true);
     expect(listRunRecordings(appPath)).toEqual({ traceZips: [], videos: [] });
-    expect(
-      fs.existsSync(path.join(appPath, "test-results/a.spec.ts-1.png")),
-    ).toBe(true);
-    expect(fs.existsSync(path.join(appPath, "test-results/results.json"))).toBe(
-      true,
-    );
+    expect(fs.existsSync(path.join(appPath, "test-results/a.spec.ts-1.png"))).toBe(true);
+    expect(fs.existsSync(path.join(appPath, "test-results/results.json"))).toBe(true);
   });
 });
 
@@ -100,13 +90,8 @@ describe("resolveRecordingPath", () => {
   it("resolves an app-relative recording to an absolute path inside it", () => {
     const appPath = makeApp();
     writeRecording(appPath, "test-results/a.spec.ts-w1-trace.zip", 1);
-    const resolved = resolveRecordingPath(
-      appPath,
-      "test-results/a.spec.ts-w1-trace.zip",
-    );
-    expect(resolved).toBe(
-      path.join(appPath, "test-results/a.spec.ts-w1-trace.zip"),
-    );
+    const resolved = resolveRecordingPath(appPath, "test-results/a.spec.ts-w1-trace.zip");
+    expect(resolved).toBe(path.join(appPath, "test-results/a.spec.ts-w1-trace.zip"));
   });
 
   it("rejects files that aren't recordings, escape the app, or sit outside test-results", () => {
@@ -114,16 +99,12 @@ describe("resolveRecordingPath", () => {
     writeRecording(appPath, "test-results/a.spec.ts-1.png", 1);
     writeRecording(appPath, "test-results/a.spec.ts-1.webm", 1);
 
-    expect(resolveRecordingPath(appPath, "test-results/a.spec.ts-1.png")).toBe(
-      null,
-    );
+    expect(resolveRecordingPath(appPath, "test-results/a.spec.ts-1.png")).toBe(null);
     expect(resolveRecordingPath(appPath, "test-results/a.spec.ts-1.webm")).toBe(
       path.join(appPath, "test-results/a.spec.ts-1.webm"),
     );
     // Path traversal out of the app.
-    expect(
-      resolveRecordingPath(appPath, "../escape.spec.ts-w1-trace.zip"),
-    ).toBe(null);
+    expect(resolveRecordingPath(appPath, "../escape.spec.ts-w1-trace.zip")).toBe(null);
     // Not under test-results/.
     expect(resolveRecordingPath(appPath, "src/x-trace.zip")).toBe(null);
   });

@@ -29,17 +29,12 @@ describe("ChatStreamParamsSchema attachment limits", () => {
     const result = ChatStreamParamsSchema.safeParse({
       chatId: 1,
       prompt: "hello",
-      attachments: Array.from(
-        { length: MAX_CHAT_ATTACHMENTS + 1 },
-        () => validAttachment,
-      ),
+      attachments: Array.from({ length: MAX_CHAT_ATTACHMENTS + 1 }, () => validAttachment),
     });
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0]?.message).toBe(
-        CHAT_ATTACHMENT_COUNT_LIMIT_MESSAGE,
-      );
+      expect(result.error.issues[0]?.message).toBe(CHAT_ATTACHMENT_COUNT_LIMIT_MESSAGE);
     }
   });
 
@@ -56,17 +51,12 @@ describe("ChatStreamParamsSchema attachment limits", () => {
     const result = ChatStreamParamsSchema.safeParse({
       chatId: 1,
       prompt: "hello",
-      attachments: Array.from(
-        { length: MAX_CHAT_ATTACHMENTS + 1 },
-        () => unreadAttachment,
-      ),
+      attachments: Array.from({ length: MAX_CHAT_ATTACHMENTS + 1 }, () => unreadAttachment),
     });
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0]?.message).toBe(
-        CHAT_ATTACHMENT_COUNT_LIMIT_MESSAGE,
-      );
+      expect(result.error.issues[0]?.message).toBe(CHAT_ATTACHMENT_COUNT_LIMIT_MESSAGE);
     }
   });
 

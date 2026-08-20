@@ -54,10 +54,7 @@ function resolveParentBranchId(appData: AppRow): string | null {
  * safely skip auth provisioning.
  */
 async function appUsesNeonAuth(appData: AppRow): Promise<boolean> {
-  if (
-    appData.neonDevelopmentAuthCookieSecret ||
-    appData.neonProductionAuthCookieSecret
-  ) {
+  if (appData.neonDevelopmentAuthCookieSecret || appData.neonProductionAuthCookieSecret) {
     return true;
   }
 
@@ -65,25 +62,16 @@ async function appUsesNeonAuth(appData: AppRow): Promise<boolean> {
     const appPath = getCaideAppPath(appData.path);
     const envVars = await readEnvVarsOrEmpty({ appPath });
     return envVars.some(
-      (envVar) =>
-        envVar.key === "NEON_AUTH_BASE_URL" ||
-        envVar.key === "NEON_AUTH_COOKIE_SECRET",
+      (envVar) => envVar.key === "NEON_AUTH_BASE_URL" || envVar.key === "NEON_AUTH_COOKIE_SECRET",
     );
   } catch (error) {
-    logger.warn(
-      `Couldn't inspect .env.local for Neon Auth markers on app ${appData.id}: ${error}`,
-    );
+    logger.warn(`Couldn't inspect .env.local for Neon Auth markers on app ${appData.id}: ${error}`);
     return true;
   }
 }
 
-function resolveAuthBranchType(
-  appData: AppRow,
-  branchId: string,
-): "development" | "production" {
-  return branchId === appData.neonDevelopmentBranchId
-    ? "development"
-    : "production";
+function resolveAuthBranchType(appData: AppRow, branchId: string): "development" | "production" {
+  return branchId === appData.neonDevelopmentBranchId ? "development" : "production";
 }
 
 /**
@@ -97,9 +85,7 @@ function resolveAuthBranchType(
  *
  * Throws `CaideError` if the app has no Neon project or no parent branch.
  */
-export async function createTempTestBranch(
-  appData: AppRow,
-): Promise<TempTestBranch> {
+export async function createTempTestBranch(appData: AppRow): Promise<TempTestBranch> {
   const projectId = appData.neonProjectId;
   if (!projectId) {
     throw new CaideError(
@@ -124,10 +110,7 @@ export async function createTempTestBranch(
   // untracked and unrecoverable on a crash. Dead-end instead and let startup
   // reconciliation retry the prior branch on the next launch.
   if (appData.neonTestBranchId) {
-    const priorCleanupOk = await deleteBranchBestEffort(
-      projectId,
-      appData.neonTestBranchId,
-    );
+    const priorCleanupOk = await deleteBranchBestEffort(projectId, appData.neonTestBranchId);
     if (!priorCleanupOk) {
       throw new CaideError(
         `Couldn't clean up the previous Neon test branch for app ${appData.id}. Skipping this run to avoid leaking a branch; it will be retried on the next launch.`,
@@ -174,10 +157,7 @@ export async function createTempTestBranch(
   // delete it, so remove the branch we just created before rethrowing rather
   // than leaking it.
   try {
-    await db
-      .update(apps)
-      .set({ neonTestBranchId: branch.id })
-      .where(eq(apps.id, appData.id));
+    await db.update(apps).set({ neonTestBranchId: branch.id }).where(eq(apps.id, appData.id));
   } catch (error) {
     await deleteBranchBestEffort(projectId, branch.id);
     throw error;
@@ -226,10 +206,7 @@ export async function createTempTestBranch(
       // later try to re-delete a branch that's already gone. If the delete
       // failed, leave the column set so startup reconciliation retries it.
       if (deleted) {
-        await db
-          .update(apps)
-          .set({ neonTestBranchId: null })
-          .where(eq(apps.id, appData.id));
+        await db.update(apps).set({ neonTestBranchId: null }).where(eq(apps.id, appData.id));
       }
       throw new CaideError(
         "Couldn't set up isolated Neon Auth for the test branch.",
@@ -238,9 +215,7 @@ export async function createTempTestBranch(
     }
   }
 
-  logger.info(
-    `Created test branch ${branch.id} (parent ${parentBranchId}) for app ${appData.id}`,
-  );
+  logger.info(`Created test branch ${branch.id} (parent ${parentBranchId}) for app ${appData.id}`);
 
   return {
     branchId: branch.id,
@@ -265,17 +240,11 @@ export async function deleteTempTestBranch(appData: AppRow): Promise<void> {
   // the startup reconciliation sweep relies on this id to find it again.
   const deleted = await deleteBranchBestEffort(projectId, branchId);
   if (deleted) {
-    await db
-      .update(apps)
-      .set({ neonTestBranchId: null })
-      .where(eq(apps.id, appData.id));
+    await db.update(apps).set({ neonTestBranchId: null }).where(eq(apps.id, appData.id));
   }
 }
 
-async function deleteBranchBestEffort(
-  projectId: string,
-  branchId: string,
-): Promise<boolean> {
+async function deleteBranchBestEffort(projectId: string, branchId: string): Promise<boolean> {
   try {
     const neonClient = await getNeonClient();
     await retryOnLocked(
@@ -337,9 +306,7 @@ async function restoreRealBranchEnvVars(appData: AppRow): Promise<boolean> {
         `Restore Neon Auth env for app ${appData.id}`,
       );
       if (!neonAuthBaseUrl) {
-        throw new Error(
-          "Neon Auth could not be resolved for the app's real branch.",
-        );
+        throw new Error("Neon Auth could not be resolved for the app's real branch.");
       }
       if (frameworkType === "nextjs") {
         cookieSecret = await getOrCreateNeonAuthCookieSecret({
@@ -374,16 +341,11 @@ async function restoreRealBranchEnvVars(appData: AppRow): Promise<boolean> {
  */
 export async function reconcileOrphanTestBranches(): Promise<void> {
   try {
-    const rows = await db
-      .select()
-      .from(apps)
-      .where(isNotNull(apps.neonTestBranchId));
+    const rows = await db.select().from(apps).where(isNotNull(apps.neonTestBranchId));
     if (rows.length === 0) {
       return;
     }
-    logger.info(
-      `Reconciling ${rows.length} orphaned Neon test branch(es) from a previous session`,
-    );
+    logger.info(`Reconciling ${rows.length} orphaned Neon test branch(es) from a previous session`);
     for (const appData of rows) {
       // Serialize against user-initiated test runs on the same app: both this
       // sweep and a run swap .env.local and restart the dev server, so an

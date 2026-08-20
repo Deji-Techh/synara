@@ -35,8 +35,7 @@ type LineComparator = (fileLine: string, patternLine: string) => boolean;
  * Pass 1: Exact Match
  * file_line == pattern_line
  */
-const exactMatch: LineComparator = (fileLine, patternLine) =>
-  fileLine === patternLine;
+const exactMatch: LineComparator = (fileLine, patternLine) => fileLine === patternLine;
 
 /**
  * Pass 2: Trailing Whitespace Ignored
@@ -147,8 +146,7 @@ function findBestPartialMatch(
     if (matchingLines > bestMatchingLines) {
       bestMatchingLines = matchingLines;
       bestStartIndex = i;
-      bestFirstMismatchIndex =
-        firstMismatchIndex === -1 ? searchLines.length : firstMismatchIndex;
+      bestFirstMismatchIndex = firstMismatchIndex === -1 ? searchLines.length : firstMismatchIndex;
     }
   }
 
@@ -162,14 +160,8 @@ function findBestPartialMatch(
 /**
  * Log detailed information about a failed match to help diagnose issues
  */
-function logMatchFailure(
-  resultLines: string[],
-  searchLines: string[],
-  blockIndex: number,
-): void {
-  logger.error(
-    `=== SEARCH/REPLACE MATCH FAILURE (Block ${blockIndex + 1}) ===`,
-  );
+function logMatchFailure(resultLines: string[], searchLines: string[], blockIndex: number): void {
+  logger.error(`=== SEARCH/REPLACE MATCH FAILURE (Block ${blockIndex + 1}) ===`);
 
   // Log search content
   logger.error(`\n--- SEARCH CONTENT (${searchLines.length} lines) ---`);
@@ -186,9 +178,7 @@ function logMatchFailure(
   logger.error(
     `    Location: lines ${bestMatch.startIndex + 1}-${bestMatch.startIndex + searchLines.length} of original file`,
   );
-  logger.error(
-    `    First mismatch at search line: ${bestMatch.firstMismatchIndex + 1}`,
-  );
+  logger.error(`    First mismatch at search line: ${bestMatch.firstMismatchIndex + 1}`);
 
   // Show the relevant section of the original file with context
   const contextLines = 5;
@@ -203,8 +193,7 @@ function logMatchFailure(
   );
   for (let i = startLine; i < endLine; i++) {
     const isInMatchRegion =
-      i >= bestMatch.startIndex &&
-      i < bestMatch.startIndex + searchLines.length;
+      i >= bestMatch.startIndex && i < bestMatch.startIndex + searchLines.length;
     const searchLineIndex = i - bestMatch.startIndex;
     const matchesSearch =
       isInMatchRegion &&
@@ -212,15 +201,12 @@ function logMatchFailure(
       unicodeNormalized(resultLines[i], searchLines[searchLineIndex]);
 
     const marker = isInMatchRegion ? (matchesSearch ? ">" : "X") : " ";
-    logger.error(
-      `  ${marker} ${String(i + 1).padStart(4)}: ${JSON.stringify(resultLines[i])}`,
-    );
+    logger.error(`  ${marker} ${String(i + 1).padStart(4)}: ${JSON.stringify(resultLines[i])}`);
   }
 
   // If there's a mismatch, show the specific comparison
   if (bestMatch.firstMismatchIndex < searchLines.length) {
-    const mismatchFileIndex =
-      bestMatch.startIndex + bestMatch.firstMismatchIndex;
+    const mismatchFileIndex = bestMatch.startIndex + bestMatch.firstMismatchIndex;
     if (mismatchFileIndex < resultLines.length) {
       logger.error(`\n--- FIRST MISMATCH DETAILS ---`);
       logger.error(
@@ -246,11 +232,7 @@ function cascadingMatch(
   const passesToTry = MATCHING_PASSES;
 
   for (const pass of passesToTry) {
-    const positions = findMatchPositions(
-      resultLines,
-      searchLines,
-      pass.comparator,
-    );
+    const positions = findMatchPositions(resultLines, searchLines, pass.comparator);
 
     if (positions.length > 1) {
       return {
@@ -299,8 +281,7 @@ export function applySearchReplace(
     replaceContent = unescapeMarkers(replaceContent);
 
     let searchLines = searchContent === "" ? [] : searchContent.split(/\r?\n/);
-    let replaceLines =
-      replaceContent === "" ? [] : replaceContent.split(/\r?\n/);
+    let replaceLines = replaceContent === "" ? [] : replaceContent.split(/\r?\n/);
 
     if (searchLines.length === 0) {
       return {
@@ -325,9 +306,7 @@ export function applySearchReplace(
         if (!trimmedResult.error) {
           matchResult = trimmedResult;
           searchLines = trimmedSearchLines;
-          logger.debug(
-            "Matched after trimming leading/trailing empty lines from search content",
-          );
+          logger.debug("Matched after trimming leading/trailing empty lines from search content");
         }
       }
     }
@@ -343,10 +322,7 @@ export function applySearchReplace(
 
     const matchIndex = matchResult.matchIndex;
 
-    const matchedLines = resultLines.slice(
-      matchIndex,
-      matchIndex + searchLines.length,
-    );
+    const matchedLines = resultLines.slice(matchIndex, matchIndex + searchLines.length);
 
     // Preserve indentation relative to first matched line
     const originalIndents = matchedLines.map((line) => {
@@ -370,10 +346,7 @@ export function applySearchReplace(
 
       const finalIndent =
         relativeLevel < 0
-          ? matchedIndent.slice(
-              0,
-              Math.max(0, matchedIndent.length + relativeLevel),
-            )
+          ? matchedIndent.slice(0, Math.max(0, matchedIndent.length + relativeLevel))
           : matchedIndent + currentIndent.slice(searchBaseLevel);
 
       return finalIndent + line.trim();

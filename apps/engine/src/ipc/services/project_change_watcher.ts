@@ -50,9 +50,7 @@ export async function watchProjectTree(
   const flushChanges = () => {
     if (closed) return;
     changeTimer = undefined;
-    const changes = fullReconcileRequested
-      ? null
-      : new Set<string>(pendingPaths);
+    const changes = fullReconcileRequested ? null : new Set<string>(pendingPaths);
     fullReconcileRequested = false;
     pendingPaths.clear();
     void Promise.resolve(options.onChange(changes)).catch(() => undefined);
@@ -67,10 +65,7 @@ export async function watchProjectTree(
     changeTimer = setTimeout(flushChanges, debounceMs);
   };
 
-  const collectDirectories = async (
-    directory: string,
-    result: Set<string>,
-  ): Promise<void> => {
+  const collectDirectories = async (directory: string, result: Set<string>): Promise<void> => {
     if (closed) return;
     result.add(directory);
     let entries: Dirent[];
@@ -101,25 +96,17 @@ export async function watchProjectTree(
     for (const directory of directories) {
       if (closed || watchers.has(directory)) continue;
       try {
-        const watcher = watch(
-          directory,
-          { persistent: false },
-          (eventType, filename) => {
-            const absolute = filename
-              ? path.join(directory, filename.toString())
-              : directory;
-            queueChange(toRelativePath(absolute));
-            if (eventType === "rename") {
-              if (rescanTimer) clearTimeout(rescanTimer);
-              rescanTimer = setTimeout(() => {
-                rescanTimer = undefined;
-                void syncDirectoryWatchers().catch(() =>
-                  queueChange(null, true),
-                );
-              }, 180);
-            }
-          },
-        );
+        const watcher = watch(directory, { persistent: false }, (eventType, filename) => {
+          const absolute = filename ? path.join(directory, filename.toString()) : directory;
+          queueChange(toRelativePath(absolute));
+          if (eventType === "rename") {
+            if (rescanTimer) clearTimeout(rescanTimer);
+            rescanTimer = setTimeout(() => {
+              rescanTimer = undefined;
+              void syncDirectoryWatchers().catch(() => queueChange(null, true));
+            }, 180);
+          }
+        });
         watcher.on("error", () => {
           watcher.close();
           watchers.delete(directory);

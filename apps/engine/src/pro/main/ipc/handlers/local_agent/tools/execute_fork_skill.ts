@@ -5,10 +5,7 @@ import { readSettings } from "@/main/settings";
 import { getModelClient } from "@/ipc/utils/get_model_client";
 import { getAiHeaders, getProviderOptions } from "@/ipc/utils/provider_options";
 import { withSystemCacheBreakpoint } from "@/ipc/utils/cache_breakpoints";
-import {
-  cancelOrphanedBaseStream,
-  fastTextOutput,
-} from "@/ipc/utils/stream_text_utils";
+import { cancelOrphanedBaseStream, fastTextOutput } from "@/ipc/utils/stream_text_utils";
 import { getMaxTokens, getTemperature } from "@/ipc/utils/token_utils";
 import { buildTool, type AgentContext } from "./types";
 import { COMPANION_SKILL_FRONTMATTERS } from "@/prompts/mobile_ui_skill_pack";
@@ -25,22 +22,15 @@ for (const [id, fm] of Object.entries(WEB3_SKILL_FRONTMATTERS)) {
 const knownSkillIds = Object.keys(FORK_SKILL_REGISTRY).join(", ");
 
 const executeForkSkillSchema = z.object({
-  skill_id: z
-    .string()
-    .describe(`The skill identifier. Known skills: ${knownSkillIds}`),
-  task: z
-    .string()
-    .describe("The specific task to delegate to this skill sub-agent"),
+  skill_id: z.string().describe(`The skill identifier. Known skills: ${knownSkillIds}`),
+  task: z.string().describe("The specific task to delegate to this skill sub-agent"),
   context: z
     .string()
     .optional()
     .describe("Optional file paths or data for the sub-agent to work with"),
 });
 
-async function executeForkSkillFn(
-  args: z.infer<typeof executeForkSkillSchema>,
-  ctx: AgentContext,
-) {
+async function executeForkSkillFn(args: z.infer<typeof executeForkSkillSchema>, ctx: AgentContext) {
   const { skill_id, task, context } = args;
 
   const subSystemPrompt = [
@@ -80,10 +70,7 @@ async function executeForkSkillFn(
     maxOutputTokens: maxTokens,
     temperature: await getTemperature(subagentModel),
     maxRetries: 1,
-    system: withSystemCacheBreakpoint(
-      subSystemPrompt,
-      modelInfo.modelClient.builtinProviderId,
-    ),
+    system: withSystemCacheBreakpoint(subSystemPrompt, modelInfo.modelClient.builtinProviderId),
     prompt: task,
     abortSignal: ctx.abortSignal,
   });
@@ -97,11 +84,9 @@ async function executeForkSkillFn(
   }
 
   const fullText = collectedChunks.join("");
-  return [
-    `<fork-skill-execution skill="${skill_id}">`,
-    fullText,
-    `</fork-skill-execution>`,
-  ].join("\n");
+  return [`<fork-skill-execution skill="${skill_id}">`, fullText, `</fork-skill-execution>`].join(
+    "\n",
+  );
 }
 
 export const executeForkSkillTool = buildTool({

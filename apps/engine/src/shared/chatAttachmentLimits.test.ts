@@ -32,8 +32,7 @@ describe("chat attachment file limits", () => {
         { name: "second.bin", size: MAX_CHAT_ATTACHMENT_BYTES },
         {
           name: "third.bin",
-          size:
-            MAX_CHAT_ATTACHMENTS_TOTAL_BYTES - 2 * MAX_CHAT_ATTACHMENT_BYTES,
+          size: MAX_CHAT_ATTACHMENTS_TOTAL_BYTES - 2 * MAX_CHAT_ATTACHMENT_BYTES,
         },
       ]),
     ).toEqual({
@@ -65,8 +64,7 @@ describe("chat attachment file limits", () => {
       { name: "second.bin", size: MAX_CHAT_ATTACHMENT_BYTES },
       {
         name: "third.bin",
-        size:
-          MAX_CHAT_ATTACHMENTS_TOTAL_BYTES - 2 * MAX_CHAT_ATTACHMENT_BYTES + 1,
+        size: MAX_CHAT_ATTACHMENTS_TOTAL_BYTES - 2 * MAX_CHAT_ATTACHMENT_BYTES + 1,
       },
     ]);
     expect(result).toMatchObject({ ok: false, code: "total-too-large" });
@@ -90,9 +88,7 @@ describe("serialized chat attachment limits", () => {
     "data:text/plain;base64,SGVsbG8*",
     "data:text/plain;base64,SG=VsbG8",
   ])("rejects a malformed base64 data URL: %s", (data) => {
-    const result = validateSerializedChatAttachments([
-      { name: "bad.txt", data },
-    ]);
+    const result = validateSerializedChatAttachments([{ name: "bad.txt", data }]);
     expect(result).toMatchObject({ ok: false, code: "invalid-data-url" });
   });
 

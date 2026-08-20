@@ -9,10 +9,7 @@ import { AGENT_TEST_WRITING_GUIDANCE } from "./system_prompt";
 import { buildPlatformPrompt } from "./platform_contracts";
 import { CAIDE_WEB_UI_SKILL_PACK } from "./web_ui_skill_pack";
 import { CAIDE_FLUTTER_UI_SKILL_PACK } from "./flutter_skill_pack";
-import {
-  CAIDE_MOBILE_UI_SKILL_PACK,
-  COMPANION_SKILL_FRONTMATTERS,
-} from "./mobile_ui_skill_pack";
+import { CAIDE_MOBILE_UI_SKILL_PACK, COMPANION_SKILL_FRONTMATTERS } from "./mobile_ui_skill_pack";
 import { WEB3_SKILL_FRONTMATTERS } from "./web3_skill_pack";
 import { DEFAULT_AI_RULES } from "./ai_rules";
 
@@ -419,14 +416,9 @@ function buildLocalAgentSystemPrompt({
   testingEnabled: boolean;
   frameworkType?: AppFrameworkType | null;
 }): string {
-  const appCommands =
-    frameworkType === "flutter"
-      ? FLUTTER_APP_COMMANDS_BLOCK
-      : APP_COMMANDS_BLOCK;
+  const appCommands = frameworkType === "flutter" ? FLUTTER_APP_COMMANDS_BLOCK : APP_COMMANDS_BLOCK;
   const isFlutter = frameworkType === "flutter";
-  const imageGenerationBlock = isFlutter
-    ? FLUTTER_IMAGE_GENERATION_BLOCK
-    : IMAGE_GENERATION_BLOCK;
+  const imageGenerationBlock = isFlutter ? FLUTTER_IMAGE_GENERATION_BLOCK : IMAGE_GENERATION_BLOCK;
   return `
  ${ROLE_BLOCK}
 
@@ -462,10 +454,7 @@ function buildLocalAgentBasicSystemPrompt(
   testingEnabled: boolean,
   frameworkType?: AppFrameworkType | null,
 ): string {
-  const appCommands =
-    frameworkType === "flutter"
-      ? FLUTTER_APP_COMMANDS_BLOCK
-      : APP_COMMANDS_BLOCK;
+  const appCommands = frameworkType === "flutter" ? FLUTTER_APP_COMMANDS_BLOCK : APP_COMMANDS_BLOCK;
   const isFlutter = frameworkType === "flutter";
   return `
  ${ROLE_BLOCK}
@@ -562,9 +551,7 @@ export function constructLocalAgentPrompt(
       : CAIDE_MOBILE_UI_SKILL_PACK;
   let prompt = basePrompt
     .replace("[[PLATFORM_UI_SKILL_PACK]]", () => uiSkillPack)
-    .replace("[[PLATFORM_CONTRACT]]", () =>
-      buildPlatformPrompt(target, options?.frameworkType),
-    )
+    .replace("[[PLATFORM_CONTRACT]]", () => buildPlatformPrompt(target, options?.frameworkType))
     .replace("[[SERVER_LAYER]]", () => serverLayer)
     .replace("[[AI_RULES]]", () => aiRules ?? DEFAULT_AI_RULES);
 

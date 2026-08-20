@@ -77,31 +77,19 @@ export function defaultShouldRetryThisError(error: any): boolean {
       error?.response?.status ||
       inner?.statusCode ||
       inner?.status;
-    if (
-      statusCode &&
-      (RETRYABLE_STATUS_CODES.has(statusCode) || statusCode >= 500)
-    ) {
+    if (statusCode && (RETRYABLE_STATUS_CODES.has(statusCode) || statusCode >= 500)) {
       return true;
     }
 
     // Concatenate fields from both the outer error and the inner wrapper
     // so we don't miss nested codes/types.
     const errorString =
-      [
-        error?.message,
-        error?.code,
-        error?.type,
-        inner?.message,
-        inner?.code,
-        inner?.type,
-      ]
+      [error?.message, error?.code, error?.type, inner?.message, inner?.code, inner?.type]
         .filter(Boolean)
         .join(" ")
         .toLowerCase() || JSON.stringify(error).toLowerCase();
 
-    const isRetryable = RETRYABLE_ERROR_PATTERNS.some((pattern) =>
-      errorString.includes(pattern),
-    );
+    const isRetryable = RETRYABLE_ERROR_PATTERNS.some((pattern) => errorString.includes(pattern));
     logger.info(
       `Error retryable=${isRetryable}, statusCode=${statusCode ?? "none"}, errorString="${errorString.slice(0, 200)}"`,
     );
@@ -149,9 +137,7 @@ class FallbackModel implements LanguageModelV3 {
     return this.getUnderlyingModel().provider;
   }
 
-  get supportedUrls():
-    | Record<string, RegExp[]>
-    | PromiseLike<Record<string, RegExp[]>> {
+  get supportedUrls(): Record<string, RegExp[]> | PromiseLike<Record<string, RegExp[]>> {
     return this.getUnderlyingModel().supportedUrls;
   }
 
@@ -182,18 +168,14 @@ class FallbackModel implements LanguageModelV3 {
     if (this.isRetrying) return;
 
     const now = Date.now();
-    if (
-      this.currentModelIndex !== 0 &&
-      now - this.lastModelReset >= this.modelResetInterval
-    ) {
+    if (this.currentModelIndex !== 0 && now - this.lastModelReset >= this.modelResetInterval) {
       this.currentModelIndex = 0;
       this.lastModelReset = now;
     }
   }
 
   private switchToNextModel(): void {
-    this.currentModelIndex =
-      (this.currentModelIndex + 1) % this.settings.models.length;
+    this.currentModelIndex = (this.currentModelIndex + 1) % this.settings.models.length;
   }
 
   private async retry<T>(
@@ -221,9 +203,7 @@ class FallbackModel implements LanguageModelV3 {
 
           // Check if we should retry this error
           if (!defaultShouldRetryThisError(err)) {
-            logger.warn(
-              `Non-retryable error from model ${this.modelId}, not falling back`,
-            );
+            logger.warn(`Non-retryable error from model ${this.modelId}, not falling back`);
             throw err;
           }
 
@@ -250,19 +230,14 @@ class FallbackModel implements LanguageModelV3 {
       }
 
       // Should never reach here, but just in case
-      throw new Error(
-        `Max retries (${this.maxRetries}) exceeded for ${operationName}`,
-      );
+      throw new Error(`Max retries (${this.maxRetries}) exceeded for ${operationName}`);
     } finally {
       this.isRetrying = false;
     }
   }
 
   async doGenerate(): Promise<any> {
-    throw new CaideError(
-      "doGenerate is not supported for fallback model",
-      CaideErrorKind.External,
-    );
+    throw new CaideError("doGenerate is not supported for fallback model", CaideErrorKind.External);
   }
 
   async doStream(options: LanguageModelV3CallOptions): Promise<StreamResult> {
@@ -272,11 +247,7 @@ class FallbackModel implements LanguageModelV3 {
       const result = await this.getUnderlyingModel().doStream(options);
 
       // Create a wrapped stream that handles errors gracefully
-      const wrappedStream = this.createWrappedStream(
-        result.stream,
-        options,
-        retryState,
-      );
+      const wrappedStream = this.createWrappedStream(result.stream, options, retryState);
 
       return {
         ...result,
@@ -296,8 +267,7 @@ class FallbackModel implements LanguageModelV3 {
 
     return new ReadableStream<LanguageModelV3StreamPart>({
       async start(controller) {
-        let reader: ReadableStreamDefaultReader<LanguageModelV3StreamPart> | null =
-          null;
+        let reader: ReadableStreamDefaultReader<LanguageModelV3StreamPart> | null = null;
 
         const processStream = async (
           stream: ReadableStream<LanguageModelV3StreamPart>,
@@ -358,17 +328,14 @@ class FallbackModel implements LanguageModelV3 {
 
             // Check if we've tried all models
             if (
-              retryState.modelsAttempted.size ===
-                fallbackModel.settings.models.length &&
+              retryState.modelsAttempted.size === fallbackModel.settings.models.length &&
               retryState.attemptNumber >= fallbackModel.maxRetries
             ) {
               logger.error(
                 `All models exhausted during streaming after ${retryState.attemptNumber} attempts`,
               );
               controller.error(
-                new Error(
-                  `All models failed during streaming. Last error: ${err.message}`,
-                ),
+                new Error(`All models failed during streaming. Last error: ${err.message}`),
               );
               return;
             }
@@ -378,9 +345,7 @@ class FallbackModel implements LanguageModelV3 {
             );
 
             try {
-              const nextResult = await fallbackModel
-                .getUnderlyingModel()
-                .doStream(options);
+              const nextResult = await fallbackModel.getUnderlyingModel().doStream(options);
               await processStream(nextResult.stream);
             } catch (nextError) {
               controller.error(nextError);
@@ -406,20 +371,11 @@ export { defaultShouldRetryThisError as isRetryableError };
 
 // Type guards for better error handling
 export function isNetworkError(error: any): boolean {
-  const networkErrorCodes = [
-    "ECONNREFUSED",
-    "ENOTFOUND",
-    "ECONNRESET",
-    "EPIPE",
-    "ETIMEDOUT",
-  ];
+  const networkErrorCodes = ["ECONNREFUSED", "ENOTFOUND", "ECONNRESET", "EPIPE", "ETIMEDOUT"];
   return error?.code && networkErrorCodes.includes(error.code);
 }
 
 export function isRateLimitError(error: any): boolean {
   const statusCode = error?.statusCode || error?.status;
-  return (
-    statusCode === 429 ||
-    (error?.message && error.message.toLowerCase().includes("rate"))
-  );
+  return statusCode === 429 || (error?.message && error.message.toLowerCase().includes("rate"));
 }

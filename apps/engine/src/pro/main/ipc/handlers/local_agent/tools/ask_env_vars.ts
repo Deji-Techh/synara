@@ -8,13 +8,8 @@ import { envVarResolver } from "../userInputResolvers";
 const logger = log.scope("ask_env_vars");
 
 const EnvVarRequestSchema = z.object({
-  key: z
-    .string()
-    .describe("The name of the environment variable (e.g. OPENAI_API_KEY)"),
-  description: z
-    .string()
-    .optional()
-    .describe("A brief description of what this key is used for"),
+  key: z.string().describe("The name of the environment variable (e.g. OPENAI_API_KEY)"),
+  description: z.string().optional().describe("A brief description of what this key is used for"),
   instructionsUrl: z
     .string()
     .optional()
@@ -48,47 +43,39 @@ Each object should have:
 </input_schema>
 `;
 
-export const askEnvVarsTool: ToolDefinition<z.infer<typeof askEnvVarsSchema>> =
-  {
-    name: "ask_env_vars",
-    description: DESCRIPTION,
-    inputSchema: askEnvVarsSchema,
-    defaultConsent: "always",
-    isReadOnly: true,
-    execute: async (args, ctx: AgentContext) => {
-      const requestId = crypto.randomUUID();
+export const askEnvVarsTool: ToolDefinition<z.infer<typeof askEnvVarsSchema>> = {
+  name: "ask_env_vars",
+  description: DESCRIPTION,
+  inputSchema: askEnvVarsSchema,
+  defaultConsent: "always",
+  isReadOnly: true,
+  execute: async (args, ctx: AgentContext) => {
+    const requestId = crypto.randomUUID();
 
-      logger.info(
-        `Agent requesting env vars: ${args.vars.map((v) => v.key).join(", ")}`,
-      );
+    logger.info(`Agent requesting env vars: ${args.vars.map((v) => v.key).join(", ")}`);
 
-      // Send IPC event to frontend to display the modal
-      safeSend(ctx.event.sender, "agent-tool:prompt-env-vars", {
-        requestId,
-        chatId: ctx.chatId,
-        vars: args.vars,
-      });
+    // Send IPC event to frontend to display the modal
+    safeSend(ctx.event.sender, "agent-tool:prompt-env-vars", {
+      requestId,
+      chatId: ctx.chatId,
+      vars: args.vars,
+    });
 
-      // Wait for the user to respond via respondToEnvVarPrompt IPC
-      const result = await envVarResolver.wait(
-        requestId,
-        ctx.chatId,
-        ctx.abortSignal,
-      );
+    // Wait for the user to respond via respondToEnvVarPrompt IPC
+    const result = await envVarResolver.wait(requestId, ctx.chatId, ctx.abortSignal);
 
-      if (result === null) {
-        return "User aborted or timed out without providing the environment variables. You must ask the user how they would like to proceed without these variables.";
-      }
+    if (result === null) {
+      return "User aborted or timed out without providing the environment variables. You must ask the user how they would like to proceed without these variables.";
+    }
 
-      // Format the result as text for the agent
-      let textResult =
-        "User provided the following environment variables:\\n\\n";
-      for (const [key, value] of Object.entries(result)) {
-        textResult += `${key}=${value}\\n`;
-      }
-      textResult +=
-        "\\nYou must now save these variables to the appropriate environment file (e.g. .env.local) and continue with your task.";
+    // Format the result as text for the agent
+    let textResult = "User provided the following environment variables:\\n\\n";
+    for (const [key, value] of Object.entries(result)) {
+      textResult += `${key}=${value}\\n`;
+    }
+    textResult +=
+      "\\nYou must now save these variables to the appropriate environment file (e.g. .env.local) and continue with your task.";
 
-      return textResult;
-    },
-  };
+    return textResult;
+  },
+};

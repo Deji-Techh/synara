@@ -254,10 +254,8 @@ describe("searchReplaceTool", () => {
       const result = await searchReplaceTool.execute(
         {
           file_path: "test.ts",
-          old_string:
-            "function test() {\n  console.log('hello');\n  return true;",
-          new_string:
-            "function test() {\n  console.log('goodbye');\n  return false;",
+          old_string: "function test() {\n  console.log('hello');\n  return true;",
+          new_string: "function test() {\n  console.log('goodbye');\n  return false;",
         },
         mockContext,
       );
@@ -270,12 +268,9 @@ describe("searchReplaceTool", () => {
     });
 
     it("matches when old_string has extra trailing newline not in source", async () => {
-      const originalContent = [
-        "function test() {",
-        "  const x = 1;",
-        "  return x;",
-        "}",
-      ].join("\n");
+      const originalContent = ["function test() {", "  const x = 1;", "  return x;", "}"].join(
+        "\n",
+      );
 
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.promises.readFile).mockResolvedValue(originalContent);
@@ -298,12 +293,9 @@ describe("searchReplaceTool", () => {
     });
 
     it("matches when old_string has extra leading newline not in source", async () => {
-      const originalContent = [
-        "function test() {",
-        "  const x = 1;",
-        "  return x;",
-        "}",
-      ].join("\n");
+      const originalContent = ["function test() {", "  const x = 1;", "  return x;", "}"].join(
+        "\n",
+      );
 
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.promises.readFile).mockResolvedValue(originalContent);
@@ -326,12 +318,9 @@ describe("searchReplaceTool", () => {
     });
 
     it("matches when old_string has both leading and trailing newlines", async () => {
-      const originalContent = [
-        "function test() {",
-        "  const x = 1;",
-        "  return x;",
-        "}",
-      ].join("\n");
+      const originalContent = ["function test() {", "  const x = 1;", "  return x;", "}"].join(
+        "\n",
+      );
 
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.promises.readFile).mockResolvedValue(originalContent);

@@ -22,15 +22,11 @@ export async function stopPublicPreview(_appId: number): Promise<void> {
   // no-op
 }
 
-export async function getPublicPreviewStatus(
-  _appId: number,
-): Promise<PublicPreviewStatus | null> {
+export async function getPublicPreviewStatus(_appId: number): Promise<PublicPreviewStatus | null> {
   return null;
 }
 
-export async function refreshPublicPreview(
-  _appId: number,
-): Promise<PublicPreviewStatus> {
+export async function refreshPublicPreview(_appId: number): Promise<PublicPreviewStatus> {
   throw new CaideError(
     "Public previews are not available in the Flutter Builder engine.",
     CaideErrorKind.Precondition,

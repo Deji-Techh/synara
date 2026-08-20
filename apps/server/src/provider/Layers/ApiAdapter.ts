@@ -41,7 +41,10 @@ import { TogetherAdapter, type TogetherAdapterShape } from "../Services/Together
 import { CohereAdapter, type CohereAdapterShape } from "../Services/CohereAdapter.ts";
 import { XaiAdapter, type XaiAdapterShape } from "../Services/XaiAdapter.ts";
 import { FireworksAdapter, type FireworksAdapterShape } from "../Services/FireworksAdapter.ts";
-import { OpenCodeZenAdapter, type OpenCodeZenAdapterShape } from "../Services/OpenCodeZenAdapter.ts";
+import {
+  OpenCodeZenAdapter,
+  type OpenCodeZenAdapterShape,
+} from "../Services/OpenCodeZenAdapter.ts";
 import { OpenCodeGoAdapter, type OpenCodeGoAdapterShape } from "../Services/OpenCodeGoAdapter.ts";
 import { type ProviderAdapterShape } from "../Services/ProviderAdapter.ts";
 import { ProviderCredentials, resolveProviderApiKey } from "../../providerCredentials.ts";
@@ -314,9 +317,7 @@ export const makeApiAdapter = (provider: ApiProviderKind) =>
         // sensible single default rather than a shared generic list.
         const defaultModel = DEFAULT_MODEL_BY_PROVIDER[provider] ?? "default";
         const fallbacks =
-          provider === "ollama"
-            ? ["llama3.3", "qwen2.5-coder", "deepseek-r1"]
-            : [defaultModel];
+          provider === "ollama" ? ["llama3.3", "qwen2.5-coder", "deepseek-r1"] : [defaultModel];
         return {
           models: fallbacks.map((slug) => ({
             slug,
@@ -717,11 +718,7 @@ export const DeepseekAdapterLive = Layer.effect(
 
 export const GroqAdapterLive = Layer.effect(
   GroqAdapter,
-  makeApiAdapter("groq") as unknown as Effect.Effect<
-    GroqAdapterShape,
-    never,
-    ProviderCredentials
-  >,
+  makeApiAdapter("groq") as unknown as Effect.Effect<GroqAdapterShape, never, ProviderCredentials>,
 );
 
 export const MistralAdapterLive = Layer.effect(
@@ -753,11 +750,7 @@ export const CohereAdapterLive = Layer.effect(
 
 export const XaiAdapterLive = Layer.effect(
   XaiAdapter,
-  makeApiAdapter("xai") as unknown as Effect.Effect<
-    XaiAdapterShape,
-    never,
-    ProviderCredentials
-  >,
+  makeApiAdapter("xai") as unknown as Effect.Effect<XaiAdapterShape, never, ProviderCredentials>,
 );
 
 export const FireworksAdapterLive = Layer.effect(

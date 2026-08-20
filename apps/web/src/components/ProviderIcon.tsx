@@ -60,7 +60,8 @@ export function ProviderIcon({
   }
 
   const Icon =
-    (PROVIDER_ICON_COMPONENT_BY_PROVIDER as Record<string, Icon | undefined>)[provider] ?? HammerIcon;
+    (PROVIDER_ICON_COMPONENT_BY_PROVIDER as Record<string, Icon | undefined>)[provider] ??
+    HammerIcon;
   if (!Icon) return fallback;
   return (
     <Icon

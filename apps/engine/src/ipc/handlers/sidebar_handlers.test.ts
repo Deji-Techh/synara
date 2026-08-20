@@ -6,9 +6,7 @@ import { ActiveSubagentSchema } from "../types/sidebar";
 describe("sidebar getActiveSubagents handler", () => {
   it("returns an empty array when no subagents are registered", async () => {
     registerSidebarHandlers();
-    const handler = getRegisteredHandlerForTesting(
-      "sidebar:getActiveSubagents",
-    );
+    const handler = getRegisteredHandlerForTesting("sidebar:getActiveSubagents");
     const globalStore = (globalThis as any).__caideActiveSubagents;
     (globalThis as any).__caideActiveSubagents = undefined;
     try {
@@ -20,9 +18,7 @@ describe("sidebar getActiveSubagents handler", () => {
   });
 
   it("converts the Map store into an array conforming to ActiveSubagentSchema", async () => {
-    const handler = getRegisteredHandlerForTesting(
-      "sidebar:getActiveSubagents",
-    );
+    const handler = getRegisteredHandlerForTesting("sidebar:getActiveSubagents");
     const globalStore = (globalThis as any).__caideActiveSubagents;
     (globalThis as any).__caideActiveSubagents = new Map([
       [

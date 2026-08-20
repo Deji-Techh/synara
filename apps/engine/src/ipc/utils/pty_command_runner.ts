@@ -1,9 +1,6 @@
 import { spawn as spawnProcess } from "node:child_process";
 import { spawn as spawnPty } from "node-pty";
-import {
-  BoundedOutputBuffer,
-  DEFAULT_MAX_BUFFERED_OUTPUT_BYTES,
-} from "./bounded_output_buffer";
+import { BoundedOutputBuffer, DEFAULT_MAX_BUFFERED_OUTPUT_BYTES } from "./bounded_output_buffer";
 
 const DEFAULT_PTY_NAME = "xterm-color";
 const DEFAULT_PTY_COLS = 160;
@@ -30,10 +27,7 @@ class StreamingAnsiStripper {
     let output = "";
     let visibleStart = this.state === "text" ? 0 : -1;
 
-    const enterControlSequence = (
-      index: number,
-      state: Exclude<AnsiParserState, "text">,
-    ) => {
+    const enterControlSequence = (index: number, state: Exclude<AnsiParserState, "text">) => {
       if (visibleStart >= 0) {
         output += value.slice(visibleStart, index);
       }
@@ -201,10 +195,7 @@ function buildDisplayedCommand(command: string, args: string[]): string {
   return [command, ...args].join(" ");
 }
 
-function buildTimeoutMessage(
-  displayedCommand: string,
-  timeoutMs: number,
-): string {
+function buildTimeoutMessage(displayedCommand: string, timeoutMs: number): string {
   return `Command '${displayedCommand}' timed out after ${formatDuration(timeoutMs)}. The command may be stuck. Check your network or environment and try again.`;
 }
 
@@ -291,10 +282,7 @@ export function terminatePtyProcess(
   ptyProcess.kill();
 }
 
-export function normalizePtyOutput(
-  value: string,
-  options: NormalizePtyOutputOptions = {},
-): string {
+export function normalizePtyOutput(value: string, options: NormalizePtyOutputOptions = {}): string {
   const strippedValue = stripAnsiSequences(value).replace(/\r\n/g, "\n");
   const normalizedLines: string[] = [];
   let currentLine = "";
@@ -320,8 +308,7 @@ export function normalizePtyOutput(
     }
 
     const codePoint = character.codePointAt(0) ?? 0;
-    const isControlCharacter =
-      codePoint < 0x20 || (codePoint >= 0x7f && codePoint <= 0x9f);
+    const isControlCharacter = codePoint < 0x20 || (codePoint >= 0x7f && codePoint <= 0x9f);
     if (isControlCharacter && character !== "\t") {
       continue;
     }
@@ -343,8 +330,7 @@ export async function runPtyCommand(
   ptySpawner: PtySpawner = spawnPty,
 ): Promise<PtyCommandExecutionResult> {
   return new Promise((resolve, reject) => {
-    const displayedCommand =
-      options.displayCommand ?? buildDisplayedCommand(command, args);
+    const displayedCommand = options.displayCommand ?? buildDisplayedCommand(command, args);
     const timeoutMs = options.timeoutMs ?? DEFAULT_PTY_COMMAND_TIMEOUT_MS;
     const outputBuffer = new BoundedOutputBuffer(
       options.maxOutputBytes ?? DEFAULT_MAX_BUFFERED_OUTPUT_BYTES,
@@ -380,8 +366,7 @@ export async function runPtyCommand(
         rows: options.rows ?? DEFAULT_PTY_ROWS,
       });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unknown PTY launch failure";
+      const message = error instanceof Error ? error.message : "Unknown PTY launch failure";
       reject(
         new PtyCommandExecutionError({
           message: `Failed to run command '${displayedCommand}': ${message}`,

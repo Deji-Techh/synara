@@ -23,13 +23,7 @@ const MANAGED_WEB_LOGO_PATHS = [
   "public/caide-icon-192.png",
   "public/caide-icon-512.png",
 ] as const;
-const ANDROID_ICON_DENSITIES = [
-  "mdpi",
-  "hdpi",
-  "xhdpi",
-  "xxhdpi",
-  "xxxhdpi",
-] as const;
+const ANDROID_ICON_DENSITIES = ["mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"] as const;
 const IOS_ICON_SIZES = [40, 60, 58, 87, 80, 120, 180, 1024] as const;
 const MAX_DECODED_LOGO_BYTES = 12 * 1024 * 1024;
 const MIN_LOGO_DIMENSION = 512;
@@ -71,9 +65,7 @@ function replaceJsStringProperty(
   property: string,
   value: string,
 ): { source: string; changed: boolean } {
-  const pattern = new RegExp(
-    `(\\b${property}\\s*:\\s*)(["'\`])(?:\\\\.|(?!\\2).)*\\2`,
-  );
+  const pattern = new RegExp(`(\\b${property}\\s*:\\s*)(["'\`])(?:\\\\.|(?!\\2).)*\\2`);
   if (!pattern.test(source)) return { source, changed: false };
   return {
     source: source.replace(pattern, `$1${JSON.stringify(value)}`),
@@ -86,11 +78,7 @@ async function synchronizeCapacitorConfig(
   identity: AppIdentity,
   warnings: string[],
 ) {
-  const configNames = [
-    "capacitor.config.ts",
-    "capacitor.config.js",
-    "capacitor.config.json",
-  ];
+  const configNames = ["capacitor.config.ts", "capacitor.config.js", "capacitor.config.json"];
   for (const configName of configNames) {
     const configPath = path.join(appPath, configName);
     if (!(await fileExists(configPath))) continue;
@@ -106,20 +94,10 @@ async function synchronizeCapacitorConfig(
       }
       return;
     }
-    const appId = replaceJsStringProperty(
-      source,
-      "appId",
-      identity.applicationId,
-    );
-    const appName = replaceJsStringProperty(
-      appId.source,
-      "appName",
-      identity.displayName,
-    );
+    const appId = replaceJsStringProperty(source, "appId", identity.applicationId);
+    const appName = replaceJsStringProperty(appId.source, "appName", identity.displayName);
     if (!appId.changed || !appName.changed) {
-      warnings.push(
-        `${configName} uses an unsupported shape; CAIDE left it unchanged.`,
-      );
+      warnings.push(`${configName} uses an unsupported shape; CAIDE left it unchanged.`);
       return;
     }
     await atomicWrite(configPath, appName.source);
@@ -127,11 +105,7 @@ async function synchronizeCapacitorConfig(
   }
 }
 
-async function synchronizeWebMetadata(
-  appPath: string,
-  identity: AppIdentity,
-  warnings: string[],
-) {
+async function synchronizeWebMetadata(appPath: string, identity: AppIdentity, warnings: string[]) {
   const indexPath = path.join(appPath, "index.html");
   if (await fileExists(indexPath)) {
     const source = await fs.readFile(indexPath, "utf8");
@@ -142,16 +116,14 @@ async function synchronizeWebMetadata(
     if (next !== source) await atomicWrite(indexPath, next);
   }
 
-  for (const relativePath of [
-    "public/manifest.json",
-    "public/manifest.webmanifest",
-  ]) {
+  for (const relativePath of ["public/manifest.json", "public/manifest.webmanifest"]) {
     const manifestPath = path.join(appPath, relativePath);
     if (!(await fileExists(manifestPath))) continue;
     try {
-      const manifest = JSON.parse(
-        await fs.readFile(manifestPath, "utf8"),
-      ) as Record<string, unknown>;
+      const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8")) as Record<
+        string,
+        unknown
+      >;
       manifest.name = identity.displayName;
       manifest.short_name = identity.shortName;
       manifest.description = identity.description;
@@ -176,26 +148,15 @@ async function synchronizeWebMetadata(
   }
 }
 
-async function synchronizeAndroidMetadata(
-  appPath: string,
-  identity: AppIdentity,
-) {
+async function synchronizeAndroidMetadata(appPath: string, identity: AppIdentity) {
   const label = identity.androidLabel ?? identity.displayName;
   const applicationId = identity.androidApplicationId ?? identity.applicationId;
-  const stringsPath = path.join(
-    appPath,
-    "android/app/src/main/res/values/strings.xml",
-  );
+  const stringsPath = path.join(appPath, "android/app/src/main/res/values/strings.xml");
   if (await fileExists(stringsPath)) {
     const source = await fs.readFile(stringsPath, "utf8");
     const appName = `<string name="app_name">${escapeXml(label)}</string>`;
-    const next = /<string\s+name=["']app_name["']>[\s\S]*?<\/string>/i.test(
-      source,
-    )
-      ? source.replace(
-          /<string\s+name=["']app_name["']>[\s\S]*?<\/string>/i,
-          appName,
-        )
+    const next = /<string\s+name=["']app_name["']>[\s\S]*?<\/string>/i.test(source)
+      ? source.replace(/<string\s+name=["']app_name["']>[\s\S]*?<\/string>/i, appName)
       : source.replace(/<\/resources>/i, `  ${appName}\n</resources>`);
     if (next !== source) await atomicWrite(stringsPath, next);
   }
@@ -205,18 +166,9 @@ async function synchronizeAndroidMetadata(
     if (!(await fileExists(gradlePath))) continue;
     const source = await fs.readFile(gradlePath, "utf8");
     const next = source
-      .replace(
-        /(\bapplicationId\s*(?:=\s*)?)["'][^"']+["']/,
-        `$1"${applicationId}"`,
-      )
-      .replace(
-        /(\bnamespace\s*(?:=\s*)?)["'][^"']+["']/,
-        `$1"${applicationId}"`,
-      )
-      .replace(
-        /(\bversionName\s*(?:=\s*)?)["'][^"']+["']/,
-        `$1"${identity.versionName}"`,
-      )
+      .replace(/(\bapplicationId\s*(?:=\s*)?)["'][^"']+["']/, `$1"${applicationId}"`)
+      .replace(/(\bnamespace\s*(?:=\s*)?)["'][^"']+["']/, `$1"${applicationId}"`)
+      .replace(/(\bversionName\s*(?:=\s*)?)["'][^"']+["']/, `$1"${identity.versionName}"`)
       .replace(/(\bversionCode\s*(?:=\s*)?)\d+/, `$1${identity.versionCode}`);
     if (next !== source) await atomicWrite(gradlePath, next);
     break;
@@ -224,27 +176,18 @@ async function synchronizeAndroidMetadata(
 }
 
 async function synchronizeIosMetadata(appPath: string, identity: AppIdentity) {
-  const projectPath = path.join(
-    appPath,
-    "ios/App/App.xcodeproj/project.pbxproj",
-  );
+  const projectPath = path.join(appPath, "ios/App/App.xcodeproj/project.pbxproj");
   if (!(await fileExists(projectPath))) return;
   const source = await fs.readFile(projectPath, "utf8");
   const bundleId = identity.iosBundleId ?? identity.applicationId;
   const displayName = identity.iosDisplayName ?? identity.displayName;
   const next = source
-    .replace(
-      /PRODUCT_BUNDLE_IDENTIFIER\s*=\s*[^;]+;/g,
-      `PRODUCT_BUNDLE_IDENTIFIER = ${bundleId};`,
-    )
+    .replace(/PRODUCT_BUNDLE_IDENTIFIER\s*=\s*[^;]+;/g, `PRODUCT_BUNDLE_IDENTIFIER = ${bundleId};`)
     .replace(
       /INFOPLIST_KEY_CFBundleDisplayName\s*=\s*[^;]+;/g,
       `INFOPLIST_KEY_CFBundleDisplayName = "${displayName.replaceAll('"', '\\"')}";`,
     )
-    .replace(
-      /MARKETING_VERSION\s*=\s*[^;]+;/g,
-      `MARKETING_VERSION = ${identity.versionName};`,
-    )
+    .replace(/MARKETING_VERSION\s*=\s*[^;]+;/g, `MARKETING_VERSION = ${identity.versionName};`)
     .replace(
       /CURRENT_PROJECT_VERSION\s*=\s*[^;]+;/g,
       `CURRENT_PROJECT_VERSION = ${identity.versionCode};`,
@@ -254,10 +197,7 @@ async function synchronizeIosMetadata(appPath: string, identity: AppIdentity) {
 
 function decodedLogo(dataUrl: string) {
   if (!/^data:image\/(?:png|jpe?g|webp);base64,/i.test(dataUrl)) {
-    throw new CaideError(
-      "Choose a PNG, JPEG, or WebP logo.",
-      CaideErrorKind.Validation,
-    );
+    throw new CaideError("Choose a PNG, JPEG, or WebP logo.", CaideErrorKind.Validation);
   }
   const encoded = dataUrl.slice(dataUrl.indexOf(",") + 1);
   if (Buffer.byteLength(encoded, "base64") > MAX_DECODED_LOGO_BYTES) {
@@ -268,22 +208,15 @@ function decodedLogo(dataUrl: string) {
   }
   const image = nativeImage.createFromDataURL(dataUrl);
   if (image.isEmpty()) {
-    throw new CaideError(
-      "CAIDE could not decode that logo.",
-      CaideErrorKind.Validation,
-    );
+    throw new CaideError("CAIDE could not decode that logo.", CaideErrorKind.Validation);
   }
   const size = image.getSize();
   if (
     size.width < MIN_LOGO_DIMENSION ||
     size.height < MIN_LOGO_DIMENSION ||
-    Math.abs(size.width - size.height) >
-      Math.max(size.width, size.height) * 0.02
+    Math.abs(size.width - size.height) > Math.max(size.width, size.height) * 0.02
   ) {
-    throw new CaideError(
-      "Use a square logo at least 512 × 512 pixels.",
-      CaideErrorKind.Validation,
-    );
+    throw new CaideError("Use a square logo at least 512 × 512 pixels.", CaideErrorKind.Validation);
   }
   return image;
 }
@@ -292,10 +225,7 @@ async function writePng(appPath: string, relativePath: string, png: Buffer) {
   await atomicWrite(path.join(appPath, relativePath), png);
 }
 
-async function generateLogoAssets(
-  appPath: string,
-  dataUrl: string,
-): Promise<string> {
+async function generateLogoAssets(appPath: string, dataUrl: string): Promise<string> {
   const image = decodedLogo(dataUrl);
   const pngAt = (size: number) =>
     image.resize({ width: size, height: size, quality: "best" }).toPNG();
@@ -345,11 +275,7 @@ async function generateLogoAssets(
     ];
     await Promise.all(
       iosIcons.map((entry) =>
-        writePng(
-          appPath,
-          `${iosIconRoot}/AppIcon-${entry.px}.png`,
-          pngAt(entry.px),
-        ),
+        writePng(appPath, `${iosIconRoot}/AppIcon-${entry.px}.png`, pngAt(entry.px)),
       ),
     );
     await atomicWrite(
@@ -378,14 +304,11 @@ async function removeManagedLogoAssets(appPath: string) {
       `android/app/src/main/res/mipmap-${density}/ic_launcher_round.png`,
     ]),
     ...IOS_ICON_SIZES.map(
-      (size) =>
-        `ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-${size}.png`,
+      (size) => `ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-${size}.png`,
     ),
   ];
   await Promise.all(
-    managedPaths.map((relativePath) =>
-      fs.rm(path.join(appPath, relativePath), { force: true }),
-    ),
+    managedPaths.map((relativePath) => fs.rm(path.join(appPath, relativePath), { force: true })),
   );
 }
 
@@ -454,9 +377,7 @@ export async function updateAppIdentity(input: {
   return { identity, warnings };
 }
 
-export async function synchronizeAppIdentity(
-  appId: number,
-): Promise<SyncResult> {
+export async function synchronizeAppIdentity(appId: number): Promise<SyncResult> {
   const record = await appRecord(appId);
   const identity = parseStoredAppIdentity(record.appIdentity, record.name);
   const appPath = getCaideAppPath(record.path);
@@ -464,9 +385,9 @@ export async function synchronizeAppIdentity(
   if (identity.logoPath) {
     const sourcePath = path.join(appPath, identity.logoPath);
     if (await fileExists(sourcePath)) {
-      const sourceDataUrl = `data:image/png;base64,${(
-        await fs.readFile(sourcePath)
-      ).toString("base64")}`;
+      const sourceDataUrl = `data:image/png;base64,${(await fs.readFile(sourcePath)).toString(
+        "base64",
+      )}`;
       await generateLogoAssets(appPath, sourceDataUrl);
     } else {
       warnings.push("The managed logo file is missing.");

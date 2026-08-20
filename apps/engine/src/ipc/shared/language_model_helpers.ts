@@ -23,13 +23,9 @@ const logger = log.scope("language_model_helpers");
  * merging them with custom providers taking precedence.
  * @returns A promise that resolves to an array of LanguageModelProvider objects.
  */
-export async function getLanguageModelProviders(): Promise<
-  LanguageModelProvider[]
-> {
+export async function getLanguageModelProviders(): Promise<LanguageModelProvider[]> {
   // Fetch custom providers from the database
-  const customProvidersDb = await db
-    .select()
-    .from(languageModelProvidersSchema);
+  const customProvidersDb = await db.select().from(languageModelProvidersSchema);
 
   const customProvidersMap = new Map<string, LanguageModelProvider>();
   for (const cp of customProvidersDb) {
@@ -51,9 +47,7 @@ export async function getLanguageModelProviders(): Promise<
     providerCount: builtinCatalog.providers.length,
   });
 
-  const hardcodedProviders: LanguageModelProvider[] = [
-    ...builtinCatalog.providers,
-  ];
+  const hardcodedProviders: LanguageModelProvider[] = [...builtinCatalog.providers];
 
   // Merge in any CLOUD_PROVIDERS not present in the remote catalog
   // (e.g. auto, azure, bedrock which are not in the remote API).
@@ -67,11 +61,9 @@ export async function getLanguageModelProviders(): Promise<
         gatewayPrefix: providerDetails.gatewayPrefix,
         secondary: providerDetails.secondary,
         envVarName:
-          PROVIDER_TO_ENV_VAR[providerId as keyof typeof PROVIDER_TO_ENV_VAR] ??
-          undefined,
+          PROVIDER_TO_ENV_VAR[providerId as keyof typeof PROVIDER_TO_ENV_VAR] ?? undefined,
         type: "cloud",
-        configured:
-          providerId === "chatgpt" ? Boolean(readChatGPTTokens()) : undefined,
+        configured: providerId === "chatgpt" ? Boolean(readChatGPTTokens()) : undefined,
       });
     }
   }
@@ -130,19 +122,14 @@ export async function getLanguageModels({
         displayName: apiName
           .split("-")
           .map((part) =>
-            part.toLowerCase() === "gpt"
-              ? "GPT"
-              : part.charAt(0).toUpperCase() + part.slice(1),
+            part.toLowerCase() === "gpt" ? "GPT" : part.charAt(0).toUpperCase() + part.slice(1),
           )
           .join(" "),
         description: "Available through your connected ChatGPT plan",
         type: "cloud" as const,
       }));
     } catch (error) {
-      logger.warn(
-        "Could not discover models for the connected ChatGPT account",
-        error,
-      );
+      logger.warn("Could not discover models for the connected ChatGPT account", error);
       return [];
     }
   }
@@ -176,10 +163,7 @@ export async function getLanguageModels({
       type: "custom",
     }));
   } catch (error) {
-    console.error(
-      `Error fetching custom models for provider "${providerId}" from DB:`,
-      error,
-    );
+    console.error(`Error fetching custom models for provider "${providerId}" from DB:`, error);
     // Continue with empty custom models array
   }
 
@@ -230,9 +214,7 @@ export async function getLanguageModels({
  * Fetches all language models grouped by their provider IDs.
  * @returns A promise that resolves to a Record mapping provider IDs to arrays of LanguageModel objects.
  */
-export async function getLanguageModelsByProviders(): Promise<
-  Record<string, LanguageModel[]>
-> {
+export async function getLanguageModelsByProviders(): Promise<Record<string, LanguageModel[]>> {
   const providers = await getLanguageModelProviders();
 
   // Fetch all models concurrently

@@ -84,21 +84,13 @@ function isStructuredObject(value: unknown): value is StructuredObject {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function isNodeErrorWithCode(
-  error: unknown,
-  code: string,
-): error is NodeJS.ErrnoException {
+function isNodeErrorWithCode(error: unknown, code: string): error is NodeJS.ErrnoException {
   return (
-    error instanceof Error &&
-    "code" in error &&
-    (error as NodeJS.ErrnoException).code === code
+    error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === code
   );
 }
 
-function parseOptionalNonNegativeInteger(
-  value: unknown,
-  name: string,
-): number | undefined {
+function parseOptionalNonNegativeInteger(value: unknown, name: string): number | undefined {
   if (value === undefined) {
     return undefined;
   }
@@ -116,10 +108,7 @@ function parseReadOptions(value: unknown): SandboxReadFileOptions {
     return {};
   }
   if (!isStructuredObject(value)) {
-    throw new CaideError(
-      "read_file options must be an object.",
-      CaideErrorKind.Validation,
-    );
+    throw new CaideError("read_file options must be an object.", CaideErrorKind.Validation);
   }
 
   const start = value.start;
@@ -149,10 +138,7 @@ export function assertAllowedGuestPath(guestPath: string): void {
     (path.isAbsolute(guestPath) || /^[A-Za-z]:[/\\]/.test(guestPath)) &&
     !require("node:fs").existsSync(guestPath)
   ) {
-    throw new CaideError(
-      "Absolute path does not exist on disk.",
-      CaideErrorKind.Validation,
-    );
+    throw new CaideError("Absolute path does not exist on disk.", CaideErrorKind.Validation);
   }
   if (guestPath.startsWith("~/") || guestPath.startsWith("\\\\")) {
     throw new CaideError(
@@ -232,15 +218,9 @@ async function resolveSandboxPath(params: {
   guestPath: string;
 }): Promise<{ filePath: string; displayPath: string }> {
   if (params.guestPath.startsWith("attachments:")) {
-    const attachment = await resolveAttachmentLogicalPath(
-      params.appPath,
-      params.guestPath,
-    );
+    const attachment = await resolveAttachmentLogicalPath(params.appPath, params.guestPath);
     if (!attachment) {
-      throw new CaideError(
-        `Attachment not found: ${params.guestPath}`,
-        CaideErrorKind.NotFound,
-      );
+      throw new CaideError(`Attachment not found: ${params.guestPath}`, CaideErrorKind.NotFound);
     }
     return {
       filePath: attachment.filePath,
@@ -268,10 +248,7 @@ async function assertResolvedPathAllowed(params: {
     realFilePath = await fs.realpath(params.filePath);
   } catch (error) {
     if (isNodeErrorWithCode(error, "ENOENT")) {
-      throw new CaideError(
-        `File not found: ${params.displayPath}`,
-        CaideErrorKind.NotFound,
-      );
+      throw new CaideError(`File not found: ${params.displayPath}`, CaideErrorKind.NotFound);
     }
     throw error;
   }
@@ -325,10 +302,7 @@ export async function sandboxReadFile(
   }
 
   const start = options.start ?? 0;
-  if (
-    options.length !== undefined &&
-    options.length > SANDBOX_READ_FILE_LIMIT_BYTES
-  ) {
+  if (options.length !== undefined && options.length > SANDBOX_READ_FILE_LIMIT_BYTES) {
     throw new CaideError(
       `read_file length ${options.length} exceeds the ${SANDBOX_READ_FILE_LIMIT_BYTES} byte limit. Read the file in chunks with start and length instead.`,
       CaideErrorKind.Validation,
@@ -382,16 +356,11 @@ export async function sandboxFileStats(
   };
 }
 
-export async function sandboxListFiles(
-  appPath: string,
-  guestDir?: string,
-): Promise<string[]> {
+export async function sandboxListFiles(appPath: string, guestDir?: string): Promise<string[]> {
   const dir = guestDir ?? ".";
   if (dir === "attachments:" || dir === "attachments") {
     const attachments = await listStoredAttachments(appPath);
-    return attachments.map((attachment) =>
-      toAttachmentLogicalPath(attachment.logicalName),
-    );
+    return attachments.map((attachment) => toAttachmentLogicalPath(attachment.logicalName));
   }
 
   assertAllowedGuestPath(dir);
@@ -402,10 +371,7 @@ export async function sandboxListFiles(
     realDirPath = await fs.realpath(dirPath);
   } catch (error) {
     if (isNodeErrorWithCode(error, "ENOENT")) {
-      throw new CaideError(
-        `Directory not found: ${dir}`,
-        CaideErrorKind.NotFound,
-      );
+      throw new CaideError(`Directory not found: ${dir}`, CaideErrorKind.NotFound);
     }
     throw error;
   }
@@ -420,10 +386,7 @@ export async function sandboxListFiles(
   return entries
     .filter((entry) => !DENIED_PATH_PATTERNS.some((p) => p.test(entry.name)))
     .map((entry) => {
-      const relativePath = path
-        .join(relative, entry.name)
-        .split(path.sep)
-        .join("/");
+      const relativePath = path.join(relative, entry.name).split(path.sep).join("/");
       return entry.isDirectory() ? `${relativePath}/` : relativePath;
     })
     .sort();
@@ -440,30 +403,21 @@ export function buildSandboxCapabilitiesWithObserver(
   return {
     read_file: (guestPath: unknown, options?: unknown) => {
       if (typeof guestPath !== "string") {
-        throw new CaideError(
-          "read_file path must be a string.",
-          CaideErrorKind.Validation,
-        );
+        throw new CaideError("read_file path must be a string.", CaideErrorKind.Validation);
       }
       onHostCall?.({ name: "read_file", path: guestPath as string });
       return sandboxReadFile(appPath, guestPath, options);
     },
     list_files: (dir?: unknown) => {
       if (dir !== undefined && typeof dir !== "string") {
-        throw new CaideError(
-          "list_files directory must be a string.",
-          CaideErrorKind.Validation,
-        );
+        throw new CaideError("list_files directory must be a string.", CaideErrorKind.Validation);
       }
       onHostCall?.({ name: "list_files", path: dir as string });
       return sandboxListFiles(appPath, dir as string);
     },
     file_stats: (guestPath: unknown) => {
       if (typeof guestPath !== "string") {
-        throw new CaideError(
-          "file_stats path must be a string.",
-          CaideErrorKind.Validation,
-        );
+        throw new CaideError("file_stats path must be a string.", CaideErrorKind.Validation);
       }
       onHostCall?.({ name: "file_stats", path: guestPath });
       return sandboxFileStats(appPath, guestPath as string);

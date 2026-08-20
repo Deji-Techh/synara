@@ -132,14 +132,8 @@ When exploring the codebase, identify:
 Use this context to inform your implementation plan and ensure consistency with existing patterns.
 `;
 
-export function constructPlanModePrompt(
-  aiRules: string | undefined,
-  themePrompt?: string,
-): string {
-  let prompt = PLAN_MODE_SYSTEM_PROMPT.replace(
-    "[[AI_RULES]]",
-    aiRules ?? DEFAULT_PLAN_AI_RULES,
-  );
+export function constructPlanModePrompt(aiRules: string | undefined, themePrompt?: string): string {
+  let prompt = PLAN_MODE_SYSTEM_PROMPT.replace("[[AI_RULES]]", aiRules ?? DEFAULT_PLAN_AI_RULES);
 
   if (themePrompt) {
     prompt += "\n\n" + themePrompt;

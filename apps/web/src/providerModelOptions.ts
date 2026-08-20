@@ -125,7 +125,9 @@ export function mergeDynamicModelOptions(input: {
   const staticBuiltInModels = input.staticOptions.filter(
     (model) => !("isCustom" in model) || (model as any).isCustom !== true,
   );
-  const missingStaticBuiltIns = staticBuiltInModels.filter((model) => !dynamicNormalizedSlugs.has(model.slug));
+  const missingStaticBuiltIns = staticBuiltInModels.filter(
+    (model) => !dynamicNormalizedSlugs.has(model.slug),
+  );
 
   const orderedDynamicOptions = normalizedDynamicOptions;
 

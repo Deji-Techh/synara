@@ -9,14 +9,8 @@ import { getCaideAppPath } from "../../paths/paths";
 import { getCurrentCommitHash } from "../utils/git_utils";
 import { createTypedHandler } from "./base";
 import { chatContracts } from "../types/chat";
-import {
-  getInitialChatModeForNewChat,
-  normalizeStoredChatMode,
-} from "./chat_mode_resolution";
-import {
-  rendererMessageColumns,
-  toRendererMessage,
-} from "../utils/renderer_chat_message";
+import { getInitialChatModeForNewChat, normalizeStoredChatMode } from "./chat_mode_resolution";
+import { rendererMessageColumns, toRendererMessage } from "../utils/renderer_chat_message";
 import { backgroundTaskRegistry } from "../utils/background_task_registry";
 
 const logger = log.scope("chat_handlers");
@@ -24,9 +18,7 @@ const logger = log.scope("chat_handlers");
 export function registerChatHandlers() {
   createTypedHandler(chatContracts.createChat, async (_, input) => {
     const { appId, initialChatMode } =
-      typeof input === "number"
-        ? { appId: input, initialChatMode: undefined }
-        : input;
+      typeof input === "number" ? { appId: input, initialChatMode: undefined } : input;
 
     // Get the app's path first
     const app = await db.query.apps.findFirst({
@@ -80,8 +72,7 @@ export function registerChatHandlers() {
     const sourceChat = await db.query.chats.findFirst({
       where: eq(chats.id, sourceChatId),
     });
-    if (!sourceChat)
-      throw new CaideError("Chat not found", CaideErrorKind.NotFound);
+    if (!sourceChat) throw new CaideError("Chat not found", CaideErrorKind.NotFound);
 
     // Get messages to copy
     const sourceMessages = await db.query.messages.findMany({
@@ -92,14 +83,9 @@ export function registerChatHandlers() {
     // Find the cutoff point
     let messagesToCopy = sourceMessages;
     if (targetMessageId !== undefined) {
-      const targetIndex = sourceMessages.findIndex(
-        (m) => m.id === targetMessageId,
-      );
+      const targetIndex = sourceMessages.findIndex((m) => m.id === targetMessageId);
       if (targetIndex === -1) {
-        throw new CaideError(
-          "Target message not found in chat",
-          CaideErrorKind.NotFound,
-        );
+        throw new CaideError("Target message not found in chat", CaideErrorKind.NotFound);
       }
       messagesToCopy = sourceMessages.slice(0, targetIndex + 1);
     }
@@ -257,11 +243,7 @@ export function registerChatHandlers() {
     const { appId, prompt, title } = params;
 
     const taskId = `task_${Math.random().toString(36).substring(2, 9)}`;
-    backgroundTaskRegistry.registerTask(
-      taskId,
-      title || "Silent Auto-Fix Agent",
-      "running",
-    );
+    backgroundTaskRegistry.registerTask(taskId, title || "Silent Auto-Fix Agent", "running");
 
     try {
       // Find the most recent active chat for this app or create a new one
@@ -339,15 +321,10 @@ export function registerChatHandlers() {
 
     // Combine: keep title matches and per-message matches
     const combined: ChatSearchResult[] = [...titleResults, ...messageResults];
-    const uniqueChats = Array.from(
-      new Map(combined.map((item) => [item.id, item])).values(),
-    );
+    const uniqueChats = Array.from(new Map(combined.map((item) => [item.id, item])).values());
 
     // Sort newest chats first
-    uniqueChats.sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
+    uniqueChats.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return uniqueChats;
   });

@@ -1,7 +1,4 @@
-export const PROVIDERS_THAT_SUPPORT_THINKING: (keyof typeof MODEL_OPTIONS)[] = [
-  "google",
-  "vertex",
-];
+export const PROVIDERS_THAT_SUPPORT_THINKING: (keyof typeof MODEL_OPTIONS)[] = ["google", "vertex"];
 
 export interface ModelOption {
   name: string;
@@ -231,8 +228,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
     {
       name: "gpt-5.1",
       displayName: "GPT 5.1",
-      description:
-        "OpenAI's flagship model- smarter, faster, and more conversational",
+      description: "OpenAI's flagship model- smarter, faster, and more conversational",
       // Technically it's 128k but OpenAI errors if you set max_tokens instead of max_completion_tokens
       maxOutputTokens: undefined,
       contextWindow: 400_000,
@@ -322,8 +318,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
     {
       name: "claude-opus-4-6",
       displayName: "Claude Opus 4.6",
-      description:
-        "Anthropic's best model for coding (note: this model is very expensive!)",
+      description: "Anthropic's best model for coding (note: this model is very expensive!)",
       // Set to 32k since context window is 1M tokens
       maxOutputTokens: 32_000,
       contextWindow: 1_000_000,
@@ -334,8 +329,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
     {
       name: SONNET_4_6,
       displayName: "Claude Sonnet 4.6",
-      description:
-        "Anthropic's fast and intelligent model (note: >200k tokens is very expensive!)",
+      description: "Anthropic's fast and intelligent model (note: >200k tokens is very expensive!)",
       // Set to 32k since context window is 1M tokens
       maxOutputTokens: 32_000,
       contextWindow: 1_000_000,
@@ -437,8 +431,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
     {
       name: "openrouter/free",
       displayName: "Free (OpenRouter)",
-      description:
-        "Uses one of the free OpenRouter models (data may be used for training)",
+      description: "Uses one of the free OpenRouter models (data may be used for training)",
       maxOutputTokens: 32_000,
       contextWindow: 200_000,
       temperature: 0,
@@ -677,8 +670,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
     {
       name: "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
       displayName: "Claude 4.5 Sonnet",
-      description:
-        "Anthropic's best model for coding (note: >200k tokens is very expensive!)",
+      description: "Anthropic's best model for coding (note: >200k tokens is very expensive!)",
       maxOutputTokens: 32_000,
       contextWindow: 1_000_000,
       temperature: 1,
@@ -725,14 +717,15 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
   ],
 };
 
-export const FREE_OPENROUTER_MODEL_NAMES = MODEL_OPTIONS.openrouter.reduce<
-  string[]
->((names, model) => {
-  if (model.name.endsWith(":free") || model.name.endsWith("/free")) {
-    names.push(model.name);
-  }
-  return names;
-}, []);
+export const FREE_OPENROUTER_MODEL_NAMES = MODEL_OPTIONS.openrouter.reduce<string[]>(
+  (names, model) => {
+    if (model.name.endsWith(":free") || model.name.endsWith("/free")) {
+      names.push(model.name);
+    }
+    return names;
+  },
+  [],
+);
 
 export const PROVIDER_TO_ENV_VAR: Record<string, string> = {
   deepseek: "DEEPSEEK_API_KEY",

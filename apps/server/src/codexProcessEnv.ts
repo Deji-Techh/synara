@@ -744,19 +744,41 @@ export async function buildCodexProcessEnv(
 
   // Guard against E2BIG: if the environment is too large, strip non-essential
   // vars to stay under Linux's ~128KB execve limit.
-  const envSize = Object.entries(effectiveEnv)
-    .reduce((acc, [k, v]) => acc + (k?.length ?? 0) + (v?.length ?? 0) + 2, 0);
-  if (envSize > 100_000) { // 100KB safety threshold
+  const envSize = Object.entries(effectiveEnv).reduce(
+    (acc, [k, v]) => acc + (k?.length ?? 0) + (v?.length ?? 0) + 2,
+    0,
+  );
+  if (envSize > 100_000) {
+    // 100KB safety threshold
     const ESSENTIAL_KEYS = new Set([
-      "PATH", "HOME", "USER", "SHELL", "TMPDIR", "TMP", "TEMP",
-      "LANG", "LC_ALL", "TERM", "CODEX_HOME", "SSH_AUTH_SOCK",
-      "FLUTTER_SDK_DIR", "FLUTTER_SDK_BIN", "ANDROID_HOME", "JAVA_HOME",
-      "DISPLAY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR",
+      "PATH",
+      "HOME",
+      "USER",
+      "SHELL",
+      "TMPDIR",
+      "TMP",
+      "TEMP",
+      "LANG",
+      "LC_ALL",
+      "TERM",
+      "CODEX_HOME",
+      "SSH_AUTH_SOCK",
+      "FLUTTER_SDK_DIR",
+      "FLUTTER_SDK_BIN",
+      "ANDROID_HOME",
+      "JAVA_HOME",
+      "DISPLAY",
+      "WAYLAND_DISPLAY",
+      "XDG_RUNTIME_DIR",
     ]);
     for (const key of Object.keys(effectiveEnv)) {
-      if (!ESSENTIAL_KEYS.has(key) && !key.startsWith("CAIDE_") &&
-          !key.includes("API_KEY") && !key.includes("TOKEN") &&
-          !key.startsWith("CODEX_")) {
+      if (
+        !ESSENTIAL_KEYS.has(key) &&
+        !key.startsWith("CAIDE_") &&
+        !key.includes("API_KEY") &&
+        !key.includes("TOKEN") &&
+        !key.startsWith("CODEX_")
+      ) {
         delete effectiveEnv[key];
       }
     }

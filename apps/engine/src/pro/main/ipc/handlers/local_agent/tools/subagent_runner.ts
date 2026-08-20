@@ -3,14 +3,8 @@ import { streamText, stepCountIs, type ToolSet } from "ai";
 import { readSettings } from "@/main/settings";
 import { getModelClient } from "@/ipc/utils/get_model_client";
 import { getAiHeaders, getProviderOptions } from "@/ipc/utils/provider_options";
-import {
-  withSystemCacheBreakpoint,
-  withToolCacheBreakpoint,
-} from "@/ipc/utils/cache_breakpoints";
-import {
-  cancelOrphanedBaseStream,
-  fastTextOutput,
-} from "@/ipc/utils/stream_text_utils";
+import { withSystemCacheBreakpoint, withToolCacheBreakpoint } from "@/ipc/utils/cache_breakpoints";
+import { cancelOrphanedBaseStream, fastTextOutput } from "@/ipc/utils/stream_text_utils";
 import { getMaxTokens, getTemperature } from "@/ipc/utils/token_utils";
 import type { AgentContext } from "./types";
 
@@ -49,18 +43,8 @@ export interface SubagentRunResult {
  * Returns a SubagentRunResult containing the final text output and execution metadata.
  * Callers that do not need the return value can safely ignore it (backward-compatible).
  */
-export async function runSubagentLoop(
-  params: SubagentRunnerParams,
-): Promise<SubagentRunResult> {
-  const {
-    ctx,
-    system,
-    prompt,
-    tools,
-    maxSteps,
-    stopWhen = [],
-    prepareStep,
-  } = params;
+export async function runSubagentLoop(params: SubagentRunnerParams): Promise<SubagentRunResult> {
+  const { ctx, system, prompt, tools, maxSteps, stopWhen = [], prepareStep } = params;
 
   if (!(globalThis as any).__caideActiveSubagents) {
     (globalThis as any).__caideActiveSubagents = new Map();
@@ -104,15 +88,9 @@ export async function runSubagentLoop(
     maxOutputTokens,
     temperature,
     maxRetries: params.maxRetries ?? 1,
-    system: withSystemCacheBreakpoint(
-      system,
-      modelInfo.modelClient.builtinProviderId,
-    ),
+    system: withSystemCacheBreakpoint(system, modelInfo.modelClient.builtinProviderId),
     prompt,
-    tools: withToolCacheBreakpoint(
-      tools,
-      modelInfo.modelClient.builtinProviderId,
-    ),
+    tools: withToolCacheBreakpoint(tools, modelInfo.modelClient.builtinProviderId),
     prepareStep,
     stopWhen: [
       stepCountIs(maxSteps),

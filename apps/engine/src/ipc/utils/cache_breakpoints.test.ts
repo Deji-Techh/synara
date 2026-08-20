@@ -18,10 +18,7 @@ describe("isAnthropicProvider", () => {
 
 describe("withSystemCacheBreakpoint", () => {
   it("wraps the system prompt in SystemModelMessage[] with an anthropic cache breakpoint", () => {
-    const result = withSystemCacheBreakpoint(
-      "You are a helpful agent.",
-      "anthropic",
-    );
+    const result = withSystemCacheBreakpoint("You are a helpful agent.", "anthropic");
     expect(result).toEqual([
       {
         role: "system",
@@ -87,9 +84,7 @@ describe("withToolCacheBreakpoint", () => {
       read_file: { description: "read", inputSchema: z.object({}) },
       dynamic: () => ({ description: "dynamic", inputSchema: z.object({}) }),
     };
-    expect(withToolCacheBreakpoint(fnTools as ToolSet, "anthropic")).toBe(
-      fnTools,
-    );
+    expect(withToolCacheBreakpoint(fnTools as ToolSet, "anthropic")).toBe(fnTools);
   });
 
   it("preserves existing providerOptions on the last tool", () => {

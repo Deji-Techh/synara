@@ -39,9 +39,7 @@ describe("sanitizePathEnv", () => {
       const pathValue = `%${envVarName}%/__caide_missing_path_segment__`;
 
       expect(sanitizePathEnv({ PATH: pathValue }).PATH).toBe(pathValue);
-      expect(sanitizePathEnv({ PATH: pathValue, [envVarName]: "" }).PATH).toBe(
-        "",
-      );
+      expect(sanitizePathEnv({ PATH: pathValue, [envVarName]: "" }).PATH).toBe("");
     });
   });
 

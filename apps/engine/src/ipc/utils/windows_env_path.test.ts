@@ -98,9 +98,7 @@ describe("parseRegQueryPathOutput", () => {
       "    Path    REG_SZ    C:\\Users\\john\\AppData\\Roaming\\npm",
     ].join("\r\n");
 
-    expect(parseRegQueryPathOutput(output)).toBe(
-      "C:\\Users\\john\\AppData\\Roaming\\npm",
-    );
+    expect(parseRegQueryPathOutput(output)).toBe("C:\\Users\\john\\AppData\\Roaming\\npm");
   });
 
   it("returns null for missing value or empty output", () => {
@@ -124,9 +122,7 @@ describe("expandWindowsEnvVars", () => {
   });
 
   it("leaves unknown variables untouched", () => {
-    expect(expandWindowsEnvVars("%NOT_A_REAL_VAR%\\bin", {})).toBe(
-      "%NOT_A_REAL_VAR%\\bin",
-    );
+    expect(expandWindowsEnvVars("%NOT_A_REAL_VAR%\\bin", {})).toBe("%NOT_A_REAL_VAR%\\bin");
   });
 });
 
@@ -137,17 +133,12 @@ describe("mergeWindowsPathSegments", () => {
         "C:\\caide\\managed;C:\\Windows\\system32",
         "C:\\Windows\\system32;C:\\Program Files\\nodejs",
       ),
-    ).toBe(
-      "C:\\caide\\managed;C:\\Windows\\system32;C:\\Program Files\\nodejs",
-    );
+    ).toBe("C:\\caide\\managed;C:\\Windows\\system32;C:\\Program Files\\nodejs");
   });
 
   it("dedupes case-insensitively and ignores trailing slashes", () => {
     expect(
-      mergeWindowsPathSegments(
-        "C:\\Program Files\\nodejs\\",
-        "c:\\program files\\nodejs",
-      ),
+      mergeWindowsPathSegments("C:\\Program Files\\nodejs\\", "c:\\program files\\nodejs"),
     ).toBe("C:\\Program Files\\nodejs\\");
   });
 
@@ -295,8 +286,6 @@ describe("readRefreshedWindowsPath", () => {
   it("returns null when both registry readers fail", async () => {
     spawnMock.mockImplementation(() => spawnFailure());
 
-    await expect(
-      readRefreshedWindowsPath("C:\\session-only"),
-    ).resolves.toBeNull();
+    await expect(readRefreshedWindowsPath("C:\\session-only")).resolves.toBeNull();
   });
 });

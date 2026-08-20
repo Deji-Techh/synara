@@ -1,16 +1,9 @@
 import path from "node:path";
 
-import {
-  isLocalAgentBackedMode,
-  type ChatMode,
-  type UserSettings,
-} from "@/lib/schemas";
+import { isLocalAgentBackedMode, type ChatMode, type UserSettings } from "@/lib/schemas";
 import { isSandboxSupportedPlatform } from "@/ipc/utils/sandbox/runner";
 import { isSandboxScriptExecutionEnabled } from "@/pro/main/ipc/handlers/local_agent/tools/execute_sandbox_script";
-import {
-  toAttachmentLogicalPath,
-  type StoredAttachmentInfo,
-} from "@/ipc/utils/media_path_utils";
+import { toAttachmentLogicalPath, type StoredAttachmentInfo } from "@/ipc/utils/media_path_utils";
 
 export type StoredChatAttachment = StoredAttachmentInfo & {
   attachmentType: "upload-to-codebase" | "chat-context";
@@ -33,23 +26,8 @@ export type AttachmentDeliveryConfig = {
   addSystemVisionInstructions: boolean;
 };
 
-const TEXT_FILE_EXTENSIONS = [
-  ".md",
-  ".txt",
-  ".json",
-  ".csv",
-  ".js",
-  ".ts",
-  ".html",
-  ".css",
-];
-const INLINE_IMAGE_EXTENSIONS = new Set([
-  ".jpg",
-  ".jpeg",
-  ".png",
-  ".gif",
-  ".webp",
-]);
+const TEXT_FILE_EXTENSIONS = [".md", ".txt", ".json", ".csv", ".js", ".ts", ".html", ".css"];
+const INLINE_IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp"]);
 
 export function getInlineImageMimeType(filePath: string): string | null {
   const ext = path.extname(filePath).toLowerCase();
@@ -63,9 +41,7 @@ export function isInlineImageAttachmentPath(filePath: string): boolean {
   return getInlineImageMimeType(filePath) !== null;
 }
 
-export function isInlineImageAttachment(
-  attachment: StoredChatAttachment,
-): boolean {
+export function isInlineImageAttachment(attachment: StoredChatAttachment): boolean {
   return isInlineImageAttachmentPath(attachment.filePath);
 }
 
@@ -91,8 +67,7 @@ export function buildLocalAgentAttachmentInfo(
   const diskAttachments = attachments.filter(
     (attachment) =>
       !isInlineImageAttachment(attachment) ||
-      (deliveryConfig.includeCopyFileHint &&
-        attachment.attachmentType === "upload-to-codebase"),
+      (deliveryConfig.includeCopyFileHint && attachment.attachmentType === "upload-to-codebase"),
   );
   if (diskAttachments.length === 0) {
     return "";
@@ -106,15 +81,12 @@ export function buildLocalAgentAttachmentInfo(
       ? [
           "Attachments available on disk (use attachments:<name> with read_file / execute_sandbox_script):",
         ]
-      : [
-          "Attachments available on disk (use attachments:<name> with read_file):",
-        ]
+      : ["Attachments available on disk (use attachments:<name> with read_file):"]
     : ["Attachments available on disk for copying into the codebase:"];
 
   for (const attachment of diskAttachments) {
     const uploadNote =
-      deliveryConfig.includeCopyFileHint &&
-      attachment.attachmentType === "upload-to-codebase"
+      deliveryConfig.includeCopyFileHint && attachment.attachmentType === "upload-to-codebase"
         ? "; if this should become part of the project, use copy_file from this attachment path"
         : "";
     lines.push(
@@ -125,9 +97,7 @@ export function buildLocalAgentAttachmentInfo(
   return `\n\n${lines.join("\n")}\n`;
 }
 
-export function hasScriptReadableAttachment(
-  attachments: StoredChatAttachment[],
-): boolean {
+export function hasScriptReadableAttachment(attachments: StoredChatAttachment[]): boolean {
   return attachments.some((attachment) => !isInlineImageAttachment(attachment));
 }
 
@@ -154,8 +124,7 @@ export function resolveAttachmentDeliveryConfig({
       isSandboxScriptExecutionEnabled(settings) &&
       isSandboxSupportedPlatform(),
     includeCopyFileHint: mode === "local-agent",
-    addSystemCopyInstructions:
-      !willUseLocalAgentStream && hasUploadedAttachments && mode !== "ask",
+    addSystemCopyInstructions: !willUseLocalAgentStream && hasUploadedAttachments && mode !== "ask",
     addSystemVisionInstructions:
       hasImageAttachments &&
       (!willUseLocalAgentStream || mode === "plan") &&

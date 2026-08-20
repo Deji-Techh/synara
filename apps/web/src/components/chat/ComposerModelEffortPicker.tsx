@@ -94,7 +94,9 @@ export function ComposerModelEffortPicker(props: ComposerModelEffortPickerProps)
 
   const activeProvider = props.lockedProvider ?? props.provider;
   const ProviderIcon =
-    (PROVIDER_ICON_COMPONENT_BY_PROVIDER as Record<string, typeof HammerIcon | undefined>)[activeProvider] ?? HammerIcon;
+    (PROVIDER_ICON_COMPONENT_BY_PROVIDER as Record<string, typeof HammerIcon | undefined>)[
+      activeProvider
+    ] ?? HammerIcon;
   const modelLabel = resolveProviderModelLabel({
     provider: props.provider,
     lockedProvider: props.lockedProvider,

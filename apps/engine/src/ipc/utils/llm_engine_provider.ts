@@ -1,11 +1,7 @@
 import { OpenAICompatibleChatLanguageModel } from "@ai-sdk/openai-compatible";
 import { OpenAIResponsesLanguageModel } from "@ai-sdk/openai/internal";
 import { createAnthropic } from "@ai-sdk/anthropic";
-import {
-  FetchFunction,
-  loadApiKey,
-  withoutTrailingSlash,
-} from "@ai-sdk/provider-utils";
+import { FetchFunction, loadApiKey, withoutTrailingSlash } from "@ai-sdk/provider-utils";
 
 import log from "electron-log";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
@@ -71,19 +67,14 @@ Creates a chat model for text generation.
 */
   chatModel(modelId: ExampleChatModelId, chatParams: ChatParams): LanguageModel;
 
-  freeChatModel(
-    modelId: ExampleChatModelId,
-    chatParams: ChatParams,
-  ): LanguageModel;
+  freeChatModel(modelId: ExampleChatModelId, chatParams: ChatParams): LanguageModel;
 
   responses(modelId: ExampleChatModelId, chatParams: ChatParams): LanguageModel;
 
   anthropic(modelId: ExampleChatModelId, chatParams: ChatParams): LanguageModel;
 }
 
-export function createCaideEngine(
-  options: ExampleProviderSettings,
-): CaideEngineProvider {
+export function createCaideEngine(options: ExampleProviderSettings): CaideEngineProvider {
   const baseURL = withoutTrailingSlash(options.baseURL);
   logger.debug("creating caide engine with baseURL", baseURL);
 
@@ -183,9 +174,7 @@ export function createCaideEngine(
         // models don't forward providerOptions, so we pass it via header).
         const requestId =
           getCaideOption("caideRequestId") ??
-          (init.headers as Record<string, string> | undefined)?.[
-            CAIDE_INTERNAL_REQUEST_ID_HEADER
-          ];
+          (init.headers as Record<string, string> | undefined)?.[CAIDE_INTERNAL_REQUEST_ID_HEADER];
         if ("caideRequestId" in parsedBody) {
           delete parsedBody.caideRequestId;
         }
@@ -193,8 +182,7 @@ export function createCaideEngine(
         if ("caideAppId" in parsedBody) {
           delete parsedBody.caideAppId;
         }
-        const caideDisableFiles =
-          disableCaideOptions || getCaideOption("caideDisableFiles");
+        const caideDisableFiles = disableCaideOptions || getCaideOption("caideDisableFiles");
         if ("caideDisableFiles" in parsedBody) {
           delete parsedBody.caideDisableFiles;
         }
@@ -221,8 +209,7 @@ export function createCaideEngine(
             files: caideFiles,
             versioned_files: caideVersionedFiles,
             enable_lazy_edits: options.caideOptions.enableLazyEdits,
-            enable_smart_files_context:
-              options.caideOptions.enableSmartFilesContext,
+            enable_smart_files_context: options.caideOptions.enableSmartFilesContext,
             smart_context_mode: caideSmartContextMode,
             enable_web_search: options.caideOptions.enableWebSearch,
             app_id: caideAppId,
@@ -277,15 +264,10 @@ export function createCaideEngine(
     return new OpenAICompatibleChatLanguageModel(modelId, config);
   };
 
-  const createFreeChatModel = (
-    modelId: ExampleChatModelId,
-    chatParams: ChatParams,
-  ) => createChatModel(modelId, chatParams, "/free");
+  const createFreeChatModel = (modelId: ExampleChatModelId, chatParams: ChatParams) =>
+    createChatModel(modelId, chatParams, "/free");
 
-  const createResponsesModel = (
-    modelId: ExampleChatModelId,
-    chatParams: ChatParams,
-  ) => {
+  const createResponsesModel = (modelId: ExampleChatModelId, chatParams: ChatParams) => {
     const config = {
       ...getCommonModelConfig(),
       fetch: createCaideFetch({ providerId: chatParams.providerId }),
@@ -294,10 +276,7 @@ export function createCaideEngine(
     return new OpenAIResponsesLanguageModel(modelId, config);
   };
 
-  const createAnthropicModel = (
-    modelId: ExampleChatModelId,
-    chatParams: ChatParams,
-  ) => {
+  const createAnthropicModel = (modelId: ExampleChatModelId, chatParams: ChatParams) => {
     const createModel = (caideProviderOptions?: CaideEngineProviderOptions) => {
       const provider = createAnthropic({
         authToken: getCaideEngineApiKey(options.apiKey),
@@ -313,12 +292,8 @@ export function createCaideEngine(
       return provider(modelId);
     };
     const model = createModel();
-    const getCaideProviderOptions = (callOptions: {
-      providerOptions?: Record<string, unknown>;
-    }) =>
-      callOptions.providerOptions?.["caide-engine"] as
-        | CaideEngineProviderOptions
-        | undefined;
+    const getCaideProviderOptions = (callOptions: { providerOptions?: Record<string, unknown> }) =>
+      callOptions.providerOptions?.["caide-engine"] as CaideEngineProviderOptions | undefined;
 
     const wrappedModel = {
       specificationVersion: model.specificationVersion,
@@ -326,9 +301,7 @@ export function createCaideEngine(
       modelId: model.modelId,
       supportedUrls: model.supportedUrls,
       doGenerate: (callOptions) =>
-        createModel(getCaideProviderOptions(callOptions)).doGenerate(
-          callOptions,
-        ),
+        createModel(getCaideProviderOptions(callOptions)).doGenerate(callOptions),
       doStream: (callOptions) =>
         createModel(getCaideProviderOptions(callOptions)).doStream(callOptions),
     } satisfies LanguageModel;

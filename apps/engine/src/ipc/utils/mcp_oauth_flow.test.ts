@@ -213,9 +213,7 @@ describe("OAuth loopback listener (state CSRF check)", () => {
     // IPv6 stack. CSRF correctness itself is covered by the
     // state-mismatch test below.
     await new Promise((r) => setTimeout(r, 50));
-    const probe = await fetch(
-      `http://[::1]:${callbackPort}/callback?code=x&state=wrong`,
-    );
+    const probe = await fetch(`http://[::1]:${callbackPort}/callback?code=x&state=wrong`);
     expect(probe.status).toBe(400);
 
     // Mismatched-state callbacks no longer terminate the flow (a
@@ -255,9 +253,7 @@ describe("OAuth loopback listener (state CSRF check)", () => {
     // The new listener must be reachable -- probe via a malformed
     // state callback that the listener will 400 (proving the new
     // listener is bound).
-    const probe = await fetch(
-      `http://127.0.0.1:${callbackPort}/callback?code=x&state=wrong`,
-    );
+    const probe = await fetch(`http://127.0.0.1:${callbackPort}/callback?code=x&state=wrong`);
     expect(probe.status).toBe(400);
 
     // First flow must surface a clean error result (not a hang).

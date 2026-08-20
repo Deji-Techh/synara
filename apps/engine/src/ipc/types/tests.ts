@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  createClient,
-  createEventClient,
-  defineContract,
-  defineEvent,
-} from "../contracts/core";
+import { createClient, createEventClient, defineContract, defineEvent } from "../contracts/core";
 
 // =============================================================================
 // E2E spec-file identity
@@ -25,9 +20,7 @@ export const TEST_SPEC_EXT_ALTERNATION = TEST_SPEC_EXTENSIONS.join("|");
 export const TEST_SPEC_GLOB = `tests/**/*.spec.{${TEST_SPEC_EXTENSIONS.join(",")}}`;
 
 /** Matches a filename with a spec extension (any directory). */
-export const SPEC_FILE_RE = new RegExp(
-  `\\.spec\\.(${TEST_SPEC_EXT_ALTERNATION})$`,
-);
+export const SPEC_FILE_RE = new RegExp(`\\.spec\\.(${TEST_SPEC_EXT_ALTERNATION})$`);
 
 // =============================================================================
 // Tests Schemas

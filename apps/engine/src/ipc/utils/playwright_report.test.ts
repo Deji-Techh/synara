@@ -8,22 +8,14 @@ import {
 
 describe("classifyErrorText", () => {
   it("classifies timeouts / selector failures as infra", () => {
-    expect(
-      classifyErrorText("Timed out 5000ms waiting for locator('text=Hi')"),
-    ).toBe("infra");
-    expect(classifyErrorText("strict mode violation: 2 elements")).toBe(
-      "infra",
-    );
-    expect(
-      classifyErrorText("browserType.launch: Executable doesn't exist"),
-    ).toBe("infra");
+    expect(classifyErrorText("Timed out 5000ms waiting for locator('text=Hi')")).toBe("infra");
+    expect(classifyErrorText("strict mode violation: 2 elements")).toBe("infra");
+    expect(classifyErrorText("browserType.launch: Executable doesn't exist")).toBe("infra");
     expect(classifyErrorText("net::ERR_CONNECTION_REFUSED")).toBe("infra");
   });
 
   it("classifies assertion failures as assertion", () => {
-    expect(
-      classifyErrorText("expect(received).toBe(expected)\n\nExpected: 5"),
-    ).toBe("assertion");
+    expect(classifyErrorText("expect(received).toBe(expected)\n\nExpected: 5")).toBe("assertion");
   });
 
   it("defaults to assertion when no error text", () => {
@@ -31,11 +23,7 @@ describe("classifyErrorText", () => {
   });
 });
 
-function specResult(
-  file: string,
-  status: string,
-  errorMessage?: string,
-): PwReport["suites"] {
+function specResult(file: string, status: string, errorMessage?: string): PwReport["suites"] {
   return [
     {
       file,
@@ -83,11 +71,7 @@ describe("parsePlaywrightReport", () => {
 
   it("maps assertion failures to failed (red)", () => {
     const report: PwReport = {
-      suites: specResult(
-        "tests/a.spec.ts",
-        "failed",
-        "expect(received).toBe(expected)",
-      ),
+      suites: specResult("tests/a.spec.ts", "failed", "expect(received).toBe(expected)"),
     };
     const [result] = parsePlaywrightReport(report, appPath);
     expect(result.status).toBe("failed");
@@ -96,11 +80,7 @@ describe("parsePlaywrightReport", () => {
 
   it("maps selector/timeout failures to inconclusive (amber)", () => {
     const report: PwReport = {
-      suites: specResult(
-        "tests/a.spec.ts",
-        "failed",
-        "Timed out 5000ms waiting for locator",
-      ),
+      suites: specResult("tests/a.spec.ts", "failed", "Timed out 5000ms waiting for locator"),
     };
     const [result] = parsePlaywrightReport(report, appPath);
     expect(result.status).toBe("inconclusive");

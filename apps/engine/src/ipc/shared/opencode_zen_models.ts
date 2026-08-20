@@ -40,9 +40,7 @@ export async function getOpenCodeZenFreeModels(
     });
 
     if (!response.ok) {
-      throw new Error(
-        `OpenCode Zen model catalogue returned HTTP ${response.status}`,
-      );
+      throw new Error(`OpenCode Zen model catalogue returned HTTP ${response.status}`);
     }
 
     const payload = (await response.json()) as OpenCodeZenModelsResponse;
@@ -63,10 +61,8 @@ export async function getOpenCodeZenFreeModels(
 
     return modelIds
       .sort((left, right) => {
-        const leftIndex =
-          knownFreeModelOrder.get(left) ?? Number.MAX_SAFE_INTEGER;
-        const rightIndex =
-          knownFreeModelOrder.get(right) ?? Number.MAX_SAFE_INTEGER;
+        const leftIndex = knownFreeModelOrder.get(left) ?? Number.MAX_SAFE_INTEGER;
+        const rightIndex = knownFreeModelOrder.get(right) ?? Number.MAX_SAFE_INTEGER;
         return leftIndex - rightIndex || left.localeCompare(right);
       })
       .map(toLanguageModel);
@@ -86,9 +82,7 @@ function getFallbackModels(): LanguageModel[] {
 }
 
 function toLanguageModel(modelId: string): LanguageModel {
-  const bundledModel = MODEL_OPTIONS["opencode-zen"].find(
-    (model) => model.name === modelId,
-  );
+  const bundledModel = MODEL_OPTIONS["opencode-zen"].find((model) => model.name === modelId);
   if (bundledModel) {
     return modelOptionToLanguageModel(bundledModel);
   }

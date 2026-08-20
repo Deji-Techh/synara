@@ -57,15 +57,8 @@ export function detectFrameworkType(appPath: string): AppFrameworkType | null {
   }
 }
 
-function hasNitro(
-  appPath: string,
-  deps: Record<string, string> | null,
-): boolean {
-  const nitroConfigs = [
-    "nitro.config.ts",
-    "nitro.config.js",
-    "nitro.config.mjs",
-  ];
+function hasNitro(appPath: string, deps: Record<string, string> | null): boolean {
+  const nitroConfigs = ["nitro.config.ts", "nitro.config.js", "nitro.config.mjs"];
   for (const config of nitroConfigs) {
     if (fs.existsSync(path.join(appPath, config))) return true;
   }
@@ -101,8 +94,7 @@ export function detectNextJsMajorVersion(appPath: string): number | null {
       return null;
     }
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-    const nextVersion =
-      packageJson.dependencies?.next ?? packageJson.devDependencies?.next;
+    const nextVersion = packageJson.dependencies?.next ?? packageJson.devDependencies?.next;
     if (typeof nextVersion !== "string") {
       return null;
     }

@@ -387,9 +387,7 @@ export function PluginLibrary() {
   const codexCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("openai"));
   const claudeCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("anthropic"));
   const cursorCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("openai"));
-  const antigravityCapabilitiesQuery = useQuery(
-    providerComposerCapabilitiesQueryOptions("google"),
-  );
+  const antigravityCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("google"));
   const grokCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("openai"));
   const droidCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("openai"));
   const kiloCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("openai"));

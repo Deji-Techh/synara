@@ -1,20 +1,12 @@
 import { z } from "zod";
 import log from "electron-log";
-import {
-  ToolDefinition,
-  AgentContext,
-  escapeXmlAttr,
-  escapeXmlContent,
-} from "./types";
+import { ToolDefinition, AgentContext, escapeXmlAttr, escapeXmlContent } from "./types";
 import { extractCodebase } from "../../../../../../utils/codebase";
 import { engineFetch } from "./engine_fetch";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
 import { readSettings } from "@/main/settings";
 import { isCodeExplorerReady } from "@/ipc/processors/code_explorer";
-import {
-  filterCaideInternalFiles,
-  resolveTargetAppPath,
-} from "./resolve_app_context";
+import { filterCaideInternalFiles, resolveTargetAppPath } from "./resolve_app_context";
 
 const logger = log.scope("code_search");
 
@@ -41,9 +33,7 @@ type CodeSearchArgs = z.infer<typeof codeSearchSchema>;
 
 function buildCodeSearchAttributes(args: Partial<CodeSearchArgs>) {
   const queryAttr = args.query ? ` query="${escapeXmlAttr(args.query)}"` : "";
-  const appNameAttr = args.app_name
-    ? ` app_name="${escapeXmlAttr(args.app_name)}"`
-    : "";
+  const appNameAttr = args.app_name ? ` app_name="${escapeXmlAttr(args.app_name)}"` : "";
   return `${queryAttr}${appNameAttr}`;
 }
 
@@ -111,8 +101,7 @@ export const codeSearchTool: ToolDefinition<CodeSearchArgs> = {
   // discovery, so we hide `code_search` to keep a single discovery tool. This
   // mirrors the prompt gating in chat_stream_handlers (`codeExplorerAvailable`).
   isEnabled: (ctx) =>
-    ctx.isCaidePro &&
-    !(readSettings().enableCodeExplorer && isCodeExplorerReady(ctx.appPath)),
+    ctx.isCaidePro && !(readSettings().enableCodeExplorer && isCodeExplorerReady(ctx.appPath)),
 
   getConsentPreview: (args) =>
     args.app_name
@@ -147,9 +136,7 @@ export const codeSearchTool: ToolDefinition<CodeSearchArgs> = {
       content: file.content,
     }));
 
-    logger.log(
-      `Searching ${filesContext.length} files for query: "${args.query}"`,
-    );
+    logger.log(`Searching ${filesContext.length} files for query: "${args.query}"`);
 
     // Call the code-search endpoint
     const relevantFiles = await callCodeSearch(

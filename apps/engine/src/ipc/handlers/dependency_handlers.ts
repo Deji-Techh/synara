@@ -13,10 +13,7 @@ const handle = createLoggedHandler(logger);
 export function registerDependencyHandlers() {
   handle(
     "chat:add-dep",
-    async (
-      _event,
-      { chatId, packages }: { chatId: number; packages: string[] },
-    ): Promise<void> => {
+    async (_event, { chatId, packages }: { chatId: number; packages: string[] }): Promise<void> => {
       // Find the message from the database
       const foundMessages = await db.query.messages.findMany({
         where: eq(messages.chatId, chatId),
@@ -28,10 +25,7 @@ export function registerDependencyHandlers() {
       });
 
       if (!chat) {
-        throw new CaideError(
-          `Chat ${chatId} not found`,
-          CaideErrorKind.NotFound,
-        );
+        throw new CaideError(`Chat ${chatId} not found`, CaideErrorKind.NotFound);
       }
 
       // Get the app using the appId from the chat
@@ -40,24 +34,15 @@ export function registerDependencyHandlers() {
       });
 
       if (!app) {
-        throw new CaideError(
-          `App for chat ${chatId} not found`,
-          CaideErrorKind.NotFound,
-        );
+        throw new CaideError(`App for chat ${chatId} not found`, CaideErrorKind.NotFound);
       }
 
       const message = [...foundMessages]
         .reverse()
-        .find((m) =>
-          m.content.includes(
-            `<caide-add-dependency packages="${packages.join(" ")}">`,
-          ),
-        );
+        .find((m) => m.content.includes(`<caide-add-dependency packages="${packages.join(" ")}">`));
 
       if (!message) {
-        throw new Error(
-          `Message with packages ${packages.join(", ")} not found`,
-        );
+        throw new Error(`Message with packages ${packages.join(", ")} not found`);
       }
 
       await executeAddDependency({

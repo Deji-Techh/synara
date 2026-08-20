@@ -1,9 +1,6 @@
 import fs from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  detectFrameworkType,
-  detectNextJsMajorVersion,
-} from "./framework_utils";
+import { detectFrameworkType, detectNextJsMajorVersion } from "./framework_utils";
 
 vi.mock("node:fs", () => ({
   default: {
@@ -87,9 +84,7 @@ describe("detectNextJsMajorVersion", () => {
     vi.mocked(fs.existsSync).mockImplementation((candidate) =>
       String(candidate).endsWith("package.json"),
     );
-    vi.mocked(fs.readFileSync).mockReturnValue(
-      JSON.stringify({ dependencies: {} }),
-    );
+    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ dependencies: {} }));
 
     expect(detectNextJsMajorVersion("/tmp/example-app")).toBeNull();
   });

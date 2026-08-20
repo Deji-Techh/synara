@@ -42,9 +42,7 @@ export function getPostCompactionMessages<
     // Include: the compaction summary + all messages with id >= triggering user message
     // (excluding older compaction summaries from prior compactions)
     return messages.filter(
-      (m) =>
-        m.id === latestSummary.id ||
-        (m.id >= triggeringUserMsg.id && !m.isCompactionSummary),
+      (m) => m.id === latestSummary.id || (m.id >= triggeringUserMsg.id && !m.isCompactionSummary),
     );
   }
 

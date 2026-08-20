@@ -154,18 +154,15 @@ export function buildMcpCapabilityMap(params: {
         args,
       });
 
-      const { approved, autoApprovedReason } = await requireMcpToolConsent(
-        params.event,
-        {
-          serverId: def.serverId,
-          serverName: def.serverName,
-          toolName: def.toolName,
-          toolDescription: def.description,
-          inputPreview,
-          chatId: params.ctx.chatId,
-          autoApprove,
-        },
-      );
+      const { approved, autoApprovedReason } = await requireMcpToolConsent(params.event, {
+        serverId: def.serverId,
+        serverName: def.serverName,
+        toolName: def.toolName,
+        toolDescription: def.description,
+        inputPreview,
+        chatId: params.ctx.chatId,
+        autoApprove,
+      });
       if (!approved) {
         throw new CaideError(
           `User declined running tool ${def.toolKey}`,
@@ -200,19 +197,15 @@ export function buildMcpCapabilityMap(params: {
         // tools. Wrap it into the McpResult shape we advertise in the
         // declarations so scripts can rely on `.content` regardless.
         const normalized =
-          typeof res === "string"
-            ? { content: [{ type: "text", text: res }] }
-            : res;
+          typeof res === "string" ? { content: [{ type: "text", text: res }] } : res;
         const resultStr = typeof res === "string" ? res : JSON.stringify(res);
         params.ctx.onXmlComplete(
           `<caide-mcp-tool-result server="${escapeXmlAttr(def.serverName)}" tool="${escapeXmlAttr(def.toolName)}" call-id="${escapeXmlAttr(callId)}">\n${escapeXmlContent(resultStr)}\n</caide-mcp-tool-result>`,
         );
         return normalized;
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        const errorStack =
-          error instanceof Error && error.stack ? error.stack : "";
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error && error.stack ? error.stack : "";
         // Terminate the merged card in an error state instead of leaving it
         // stuck on "Running".
         params.ctx.onXmlComplete(
@@ -256,9 +249,7 @@ export function buildMcpTypeDefsBlock(defs: McpToolDef[]): string {
         const oneLine = def.description.replace(/\s+/g, " ").trim();
         sections.push(`/** ${oneLine.replace(/\*\//g, "*\\/")} */`);
       }
-      sections.push(
-        `declare function ${def.jsName}(args: ${argsType}): Promise<McpResult>;`,
-      );
+      sections.push(`declare function ${def.jsName}(args: ${argsType}): Promise<McpResult>;`);
       sections.push("");
     }
   }

@@ -55,9 +55,7 @@ function runFlutterAnalyze(appPath: string): Promise<string> {
         logger.error(`flutter analyze timed out for ${appPath}`);
         reject(
           new CaideError(
-            `flutter analyze timed out after ${
-              FLUTTER_ANALYZE_TIMEOUT_MS / 1000
-            }s`,
+            `flutter analyze timed out after ${FLUTTER_ANALYZE_TIMEOUT_MS / 1000}s`,
             CaideErrorKind.External,
           ),
         );
@@ -88,9 +86,7 @@ function runFlutterAnalyze(appPath: string): Promise<string> {
           resolve(`${stdout}\n${stderr}`);
           return;
         }
-        logger.error(
-          `flutter analyze failed for ${appPath} (exit ${code}): ${stderr}`,
-        );
+        logger.error(`flutter analyze failed for ${appPath} (exit ${code}): ${stderr}`);
         reject(
           new CaideError(
             `flutter analyze failed (exit code ${code ?? "unknown"}).\n\n${[
@@ -113,8 +109,7 @@ function parseMachineProblems(output: string, appPath: string): Problem[] {
     const line = rawLine.trim();
     if (!MACHINE_LINE_PREFIX.test(line)) continue;
     // SEVERITY|errorType|code|file|line|column|length|message
-    const [severity, errorType, code, file, lineNo, colNo, , ...rest] =
-      line.split("|");
+    const [severity, errorType, code, file, lineNo, colNo, , ...rest] = line.split("|");
     void severity;
     void errorType;
     const message = rest.join("|");
@@ -134,9 +129,7 @@ function parseMachineProblems(output: string, appPath: string): Problem[] {
   return problems;
 }
 
-export async function generateFlutterProblemReport(
-  appPath: string,
-): Promise<ProblemReport> {
+export async function generateFlutterProblemReport(appPath: string): Promise<ProblemReport> {
   const output = await runFlutterAnalyze(appPath);
   return { problems: parseMachineProblems(output, appPath) };
 }

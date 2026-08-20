@@ -1060,8 +1060,7 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
   // the app dir as packable -> would swallow node_modules into app.asar).
   yield* Effect.log("[desktop-artifact] Staging Flutter engine payload...");
   const enginePayload = yield* Effect.try({
-    try: () =>
-      stageEnginePayload(repoRoot, stageRoot, options.verbose),
+    try: () => stageEnginePayload(repoRoot, stageRoot, options.verbose),
     catch: (cause) =>
       new BuildScriptError({
         message: "Could not stage Flutter engine payload.",

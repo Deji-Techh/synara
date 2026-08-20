@@ -2,11 +2,7 @@ import { z } from "zod";
 import log from "electron-log";
 import { ToolDefinition, escapeXmlContent, AgentContext } from "./types";
 import { engineFetch } from "./engine_fetch";
-import {
-  getImageDimensionsFromDataUrl,
-  isImageTooLarge,
-  MAX_IMAGE_DIMENSION,
-} from "./image_utils";
+import { getImageDimensionsFromDataUrl, isImageTooLarge, MAX_IMAGE_DIMENSION } from "./image_utils";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
 
 const logger = log.scope("web_crawl");
@@ -95,9 +91,7 @@ async function callWebCrawl(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(
-      `Web crawl failed: ${response.status} ${response.statusText} - ${errorText}`,
-    );
+    throw new Error(`Web crawl failed: ${response.status} ${response.statusText} - ${errorText}`);
   }
 
   const data = webCrawlResponseSchema.parse(await response.json());
@@ -129,31 +123,21 @@ export const webCrawlTool: ToolDefinition<z.infer<typeof webCrawlSchema>> = {
     const result = await callWebCrawl(args.url, ctx);
 
     if (!result) {
-      throw new CaideError(
-        "Web crawl returned no results",
-        CaideErrorKind.External,
-      );
+      throw new CaideError("Web crawl returned no results", CaideErrorKind.External);
     }
 
     if (!result.markdown) {
-      throw new CaideError(
-        "No content available from web crawl",
-        CaideErrorKind.External,
-      );
+      throw new CaideError("No content available from web crawl", CaideErrorKind.External);
     }
 
     if (!result.screenshot) {
-      throw new CaideError(
-        "No screenshot available from web crawl",
-        CaideErrorKind.External,
-      );
+      throw new CaideError("No screenshot available from web crawl", CaideErrorKind.External);
     }
     logger.log(`Web crawl completed for URL: ${args.url}`);
 
     // Check image dimensions before sending to LLM
     const imageDimensions = getImageDimensionsFromDataUrl(result.screenshot);
-    const imageExceedsSizeLimit =
-      imageDimensions && isImageTooLarge(imageDimensions);
+    const imageExceedsSizeLimit = imageDimensions && isImageTooLarge(imageDimensions);
 
     if (imageExceedsSizeLimit) {
       logger.warn(
@@ -196,11 +180,7 @@ const MAX_TEXT_SNIPPET_LENGTH = 16_000;
 
 // Format a code snippet with a label and language, truncating if necessary.
 // Sanitizes triple backticks in content to prevent code block breakout.
-export function formatSnippet(
-  label: string,
-  value: string,
-  lang: string,
-): string {
+export function formatSnippet(label: string, value: string, lang: string): string {
   const sanitized = truncateText(value).replace(/```/g, "` ` `");
   return `${label}:\n\`\`\`${lang}\n${sanitized}\n\`\`\``;
 }

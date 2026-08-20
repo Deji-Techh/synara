@@ -7,9 +7,8 @@ import { freeModelQuotaContracts } from "../types/free_model_quota";
  * reports an unlimited status (no network call, no key requirement).
  */
 export function registerFreeModelQuotaHandlers() {
-  createTypedHandler(
-    freeModelQuotaContracts.getFreeModelQuotaStatus,
-    async () => getFreeModelQuotaStatus(),
+  createTypedHandler(freeModelQuotaContracts.getFreeModelQuotaStatus, async () =>
+    getFreeModelQuotaStatus(),
   );
 }
 

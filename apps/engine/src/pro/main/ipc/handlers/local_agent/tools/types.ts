@@ -171,9 +171,7 @@ export interface AgentContext {
  * Parse partial/streaming JSON into a partial object using jsonrepair.
  * Handles incomplete JSON gracefully during streaming.
  */
-export function parsePartialJson<T extends Record<string, unknown>>(
-  jsonText: string,
-): Partial<T> {
+export function parsePartialJson<T extends Record<string, unknown>>(jsonText: string): Partial<T> {
   if (!jsonText.trim()) {
     return {} as Partial<T>;
   }
@@ -325,11 +323,7 @@ export interface ToolDef<T = any> {
 export function buildTool<T>(def: ToolDef<T>): ToolDefinition<T> {
   const isReadOnly =
     def.isReadOnly ??
-    (def.modifiesState === false
-      ? true
-      : def.modifiesState === true
-        ? false
-        : undefined);
+    (def.modifiesState === false ? true : def.modifiesState === true ? false : undefined);
   return {
     ...def,
     isReadOnly,

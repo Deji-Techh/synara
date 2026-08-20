@@ -21,9 +21,7 @@ function escapeRegexLiteral(value: string): string {
  * prompts and cached prompts remain readable during the caide→caide rebrand.
  */
 function normalizeTagAliases(fullResponse: string): string {
-  return fullResponse
-    .replace(/<\/caide-/g, "</caide-")
-    .replace(/<caide-/g, "<caide-");
+  return fullResponse.replace(/<\/caide-/g, "</caide-").replace(/<caide-/g, "<caide-");
 }
 
 /**
@@ -32,15 +30,9 @@ function normalizeTagAliases(fullResponse: string): string {
  * `<caide-generate-test>` extraction: both carry a `path`/`description` and a
  * body with optional surrounding markdown fences.
  */
-function parseCaideFileTags(
-  fullResponse: string,
-  tagName: string,
-): CaideFileTag[] {
+function parseCaideFileTags(fullResponse: string, tagName: string): CaideFileTag[] {
   const escapedTagName = escapeRegexLiteral(tagName);
-  const tagRegex = new RegExp(
-    `<${escapedTagName}([^>]*)>([\\s\\S]*?)</${escapedTagName}>`,
-    "gi",
-  );
+  const tagRegex = new RegExp(`<${escapedTagName}([^>]*)>([\\s\\S]*?)</${escapedTagName}>`, "gi");
   const pathRegex = /path="([^"]+)"/;
   const descriptionRegex = /description="([^"]+)"/;
 
@@ -56,9 +48,7 @@ function parseCaideFileTags(
 
     if (pathMatch && pathMatch[1]) {
       const path = unescapeXmlAttr(pathMatch[1]);
-      const description = descriptionMatch?.[1]
-        ? unescapeXmlAttr(descriptionMatch[1])
-        : undefined;
+      const description = descriptionMatch?.[1] ? unescapeXmlAttr(descriptionMatch[1]) : undefined;
 
       const contentLines = content.split("\n");
       if (contentLines[0]?.startsWith("```")) {
@@ -71,10 +61,7 @@ function parseCaideFileTags(
 
       tags.push({ path: normalizePath(path), content, description });
     } else {
-      logger.warn(
-        `Found <${tagName}> tag without a valid 'path' attribute:`,
-        match[0],
-      );
+      logger.warn(`Found <${tagName}> tag without a valid 'path' attribute:`, match[0]);
     }
   }
   return tags;
@@ -85,10 +72,7 @@ export function getCaideWriteTags(fullResponse: string): CaideFileTag[] {
 }
 
 export function getCaideGenerateTestTags(fullResponse: string): CaideFileTag[] {
-  return parseCaideFileTags(
-    normalizeTagAliases(fullResponse),
-    "caide-generate-test",
-  );
+  return parseCaideFileTags(normalizeTagAliases(fullResponse), "caide-generate-test");
 }
 
 export function getCaideRenameTags(fullResponse: string): {
@@ -115,8 +99,7 @@ export function getCaideCopyTags(fullResponse: string): {
   description?: string;
 }[] {
   const normalized = normalizeTagAliases(fullResponse);
-  const caideCopyRegex =
-    /<caide-copy([^>]*?)(?:>([\s\S]*?)<\/caide-copy>|\/>)/gi;
+  const caideCopyRegex = /<caide-copy([^>]*?)(?:>([\s\S]*?)<\/caide-copy>|\/>)/gi;
   const fromRegex = /from="([^"]+)"/;
   const toRegex = /to="([^"]+)"/;
   const descriptionRegex = /description="([^"]+)"/;
@@ -134,15 +117,10 @@ export function getCaideCopyTags(fullResponse: string): {
       tags.push({
         from: normalizePath(unescapeXmlAttr(fromMatch[1])),
         to: normalizePath(unescapeXmlAttr(toMatch[1])),
-        description: descriptionMatch?.[1]
-          ? unescapeXmlAttr(descriptionMatch[1])
-          : undefined,
+        description: descriptionMatch?.[1] ? unescapeXmlAttr(descriptionMatch[1]) : undefined,
       });
     } else {
-      logger.warn(
-        "Found <caide-copy> tag without valid 'from' or 'to' attributes:",
-        match[0],
-      );
+      logger.warn("Found <caide-copy> tag without valid 'from' or 'to' attributes:", match[0]);
     }
   }
   return tags;
@@ -150,8 +128,7 @@ export function getCaideCopyTags(fullResponse: string): {
 
 export function getCaideDeleteTags(fullResponse: string): string[] {
   const normalized = normalizeTagAliases(fullResponse);
-  const caideDeleteRegex =
-    /<caide-delete path="([^"]+)"[^>]*>([\s\S]*?)<\/caide-delete>/g;
+  const caideDeleteRegex = /<caide-delete path="([^"]+)"[^>]*>([\s\S]*?)<\/caide-delete>/g;
   let match;
   const paths: string[] = [];
   while ((match = caideDeleteRegex.exec(normalized)) !== null) {
@@ -174,8 +151,7 @@ export function getCaideAddDependencyTags(fullResponse: string): string[] {
 
 export function getCaideChatSummaryTag(fullResponse: string): string | null {
   const normalized = normalizeTagAliases(fullResponse);
-  const caideChatSummaryRegex =
-    /<caide-chat-summary>([\s\S]*?)<\/caide-chat-summary>/g;
+  const caideChatSummaryRegex = /<caide-chat-summary>([\s\S]*?)<\/caide-chat-summary>/g;
   const match = caideChatSummaryRegex.exec(normalized);
   if (match && match[1]) {
     return unescapeXmlContent(match[1].trim());
@@ -185,8 +161,7 @@ export function getCaideChatSummaryTag(fullResponse: string): string | null {
 
 export function getCaideExecuteSqlTags(fullResponse: string): SqlQuery[] {
   const normalized = normalizeTagAliases(fullResponse);
-  const caideExecuteSqlRegex =
-    /<caide-execute-sql([^>]*)>([\s\S]*?)<\/caide-execute-sql>/g;
+  const caideExecuteSqlRegex = /<caide-execute-sql([^>]*)>([\s\S]*?)<\/caide-execute-sql>/g;
   const descriptionRegex = /description="([^"]+)"/;
   let match;
   const queries: { content: string; description?: string }[] = [];
@@ -195,9 +170,7 @@ export function getCaideExecuteSqlTags(fullResponse: string): SqlQuery[] {
     const attributesString = match[1] || "";
     let content = unescapeXmlContent(match[2].trim());
     const descriptionMatch = descriptionRegex.exec(attributesString);
-    const description = descriptionMatch?.[1]
-      ? unescapeXmlAttr(descriptionMatch[1])
-      : undefined;
+    const description = descriptionMatch?.[1] ? unescapeXmlAttr(descriptionMatch[1]) : undefined;
 
     // Handle markdown code blocks if present
     const contentLines = content.split("\n");
@@ -217,8 +190,7 @@ export function getCaideExecuteSqlTags(fullResponse: string): SqlQuery[] {
 
 export function getCaideCommandTags(fullResponse: string): string[] {
   const normalized = normalizeTagAliases(fullResponse);
-  const caideCommandRegex =
-    /<caide-command type="([^"]+)"[^>]*><\/caide-command>/g;
+  const caideCommandRegex = /<caide-command type="([^"]+)"[^>]*><\/caide-command>/g;
   let match;
   const commands: string[] = [];
 
@@ -252,9 +224,7 @@ export function getCaideSearchReplaceTags(fullResponse: string): {
 
     if (pathMatch && pathMatch[1]) {
       const path = unescapeXmlAttr(pathMatch[1]);
-      const description = descriptionMatch?.[1]
-        ? unescapeXmlAttr(descriptionMatch[1])
-        : undefined;
+      const description = descriptionMatch?.[1] ? unescapeXmlAttr(descriptionMatch[1]) : undefined;
 
       // Handle markdown code fences if present
       const contentLines = content.split("\n");
@@ -268,10 +238,7 @@ export function getCaideSearchReplaceTags(fullResponse: string): {
 
       tags.push({ path: normalizePath(path), content, description });
     } else {
-      logger.warn(
-        "Found <caide-search-replace> tag without a valid 'path' attribute:",
-        match[0],
-      );
+      logger.warn("Found <caide-search-replace> tag without a valid 'path' attribute:", match[0]);
     }
   }
   return tags;

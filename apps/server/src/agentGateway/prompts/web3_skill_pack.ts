@@ -458,11 +458,7 @@ context: inline
 - Static analysis (Slither for EVM)
 - Economic attack scenario testing
 `;
-import {
-  stripFrontmatter,
-  parseFrontmatter,
-  type SkillFrontmatter,
-} from "./skill_frontmatter";
+import { stripFrontmatter, parseFrontmatter, type SkillFrontmatter } from "./skill_frontmatter";
 
 export const WEB3_SKILL_FRONTMATTERS: Record<string, SkillFrontmatter> = {
   "web3-solana": parseFrontmatter(solanaSkill).frontmatter,
@@ -489,10 +485,7 @@ const modules = [
 ];
 
 const modulesBlock = modules
-  .map(
-    (m) =>
-      `<web3-module name="${m.name}">\n${stripFrontmatter(m.content)}\n</web3-module>`,
-  )
+  .map((m) => `<web3-module name="${m.name}">\n${stripFrontmatter(m.content)}\n</web3-module>`)
   .join("\n\n");
 
 export const WEB3_SKILL_PACK = `

@@ -1,13 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import {
-  getOpenCodeZenFreeModels,
-  isOpenCodeZenFreeModelId,
-} from "./opencode_zen_models";
-import {
-  OPENCODE_ZEN_FREE_MODEL_IDS,
-  OPENCODE_ZEN_MODELS_URL,
-} from "./language_model_constants";
+import { getOpenCodeZenFreeModels, isOpenCodeZenFreeModelId } from "./opencode_zen_models";
+import { OPENCODE_ZEN_FREE_MODEL_IDS, OPENCODE_ZEN_MODELS_URL } from "./language_model_constants";
 
 describe("OpenCode Zen free-model discovery", () => {
   it("loads only free routes from the live catalogue", async () => {
@@ -50,9 +44,7 @@ describe("OpenCode Zen free-model discovery", () => {
 
     const models = await getOpenCodeZenFreeModels(fetchImpl);
 
-    expect(models.map((model) => model.apiName)).toEqual(
-      OPENCODE_ZEN_FREE_MODEL_IDS,
-    );
+    expect(models.map((model) => model.apiName)).toEqual(OPENCODE_ZEN_FREE_MODEL_IDS);
   });
 
   it("recognizes suffixed free models and the Big Pickle exception", () => {

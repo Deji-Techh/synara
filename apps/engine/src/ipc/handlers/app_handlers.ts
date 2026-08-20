@@ -105,19 +105,12 @@ import {
   startTunnelPreview,
   stopTunnelPreview,
 } from "../services/preview_tunnel_service";
-import {
-  getAppIdentity,
-  updateAppIdentity,
-} from "../services/app_identity_service";
+import { getAppIdentity, updateAppIdentity } from "../services/app_identity_service";
 import { broadcastCollaborationFileSnapshot } from "../services/collaboration_service";
 import { createFromTemplate } from "./createFromTemplate";
 import { getInitialChatModeForNewChat } from "./chat_mode_resolution";
 import { ensureCaideGitignored } from "./gitignoreUtils";
-import {
-  gitListBranches,
-  gitRenameBranch,
-  getCurrentCommitHash,
-} from "../utils/git_utils";
+import { gitListBranches, gitRenameBranch, getCurrentCommitHash } from "../utils/git_utils";
 import { gitService } from "../services/git_service";
 import { normalizePath } from "../../../shared/normalizePath";
 import { safeJoin } from "../utils/path_utils";
@@ -206,10 +199,7 @@ async function copyDir(
   await fsPromises.cp(source, destination, {
     recursive: true,
     filter: (src: string) => {
-      if (
-        options?.excludeNodeModules &&
-        path.basename(src) === "node_modules"
-      ) {
+      if (options?.excludeNodeModules && path.basename(src) === "node_modules") {
         return false;
       }
       if (filter) {
@@ -263,9 +253,7 @@ async function searchAppFilesWithRipgrep({
           const absolutePath = path.isAbsolute(matchPath)
             ? matchPath
             : path.join(appPath, matchPath);
-          const relativePath = normalizePath(
-            path.relative(appPath, absolutePath),
-          );
+          const relativePath = normalizePath(path.relative(appPath, absolutePath));
           if (relativePath.startsWith("..")) {
             continue; // outside app directory
           }
@@ -273,11 +261,7 @@ async function searchAppFilesWithRipgrep({
           const lineText = event.data.lines?.text as string;
           const lineNumber = event.data.line_number as number;
           const submatch = event.data.submatches?.[0];
-          if (
-            typeof lineText !== "string" ||
-            typeof lineNumber !== "number" ||
-            !submatch
-          ) {
+          if (typeof lineText !== "string" || typeof lineNumber !== "number" || !submatch) {
             continue;
           }
 
@@ -301,9 +285,7 @@ async function searchAppFilesWithRipgrep({
               existing.snippets = [];
             }
             // Only add if this line number isn't already in the snippets
-            const existingLine = existing.snippets.find(
-              (s) => s.line === snippet.line,
-            );
+            const existingLine = existing.snippets.find((s) => s.line === snippet.line);
             if (!existingLine) {
               existing.snippets.push(snippet);
             }
@@ -412,10 +394,7 @@ export function registerAppHandlers() {
     }
 
     if (fs.existsSync(fullAppPath)) {
-      throw new CaideError(
-        `App already exists at: ${fullAppPath}`,
-        CaideErrorKind.Conflict,
-      );
+      throw new CaideError(`App already exists at: ${fullAppPath}`, CaideErrorKind.Conflict);
     }
     // Create a new app
     const settings = readSettings();
@@ -429,9 +408,7 @@ export function registerAppHandlers() {
       })
       .returning();
 
-    const initialChatMode = await getInitialChatModeForNewChat(
-      params.initialChatMode,
-    );
+    const initialChatMode = await getInitialChatModeForNewChat(params.initialChatMode);
 
     // Create an initial chat for this app
     const [chat] = await db
@@ -481,10 +458,7 @@ export function registerAppHandlers() {
     });
 
     if (existingApp) {
-      throw new CaideError(
-        `An app named "${newAppName}" already exists.`,
-        CaideErrorKind.Conflict,
-      );
+      throw new CaideError(`An app named "${newAppName}" already exists.`, CaideErrorKind.Conflict);
     }
 
     // 2. Find the original app
@@ -520,10 +494,7 @@ export function registerAppHandlers() {
       );
     } catch (error) {
       logger.error("Failed to copy app directory:", error);
-      throw new CaideError(
-        "Failed to copy app directory.",
-        CaideErrorKind.External,
-      );
+      throw new CaideError("Failed to copy app directory.", CaideErrorKind.External);
     }
 
     if (!withHistory) {
@@ -601,8 +572,7 @@ export function registerAppHandlers() {
     // Check for multi-organization credentials or legacy single account
     const hasSupabaseCredentials =
       (app.supabaseOrganizationSlug &&
-        settings.supabase?.organizations?.[app.supabaseOrganizationSlug]
-          ?.accessToken?.value) ||
+        settings.supabase?.organizations?.[app.supabaseOrganizationSlug]?.accessToken?.value) ||
       settings.supabase?.accessToken?.value;
     if (app.supabaseProjectId && hasSupabaseCredentials) {
       supabaseProjectName = await getSupabaseProjectName(
@@ -730,10 +700,7 @@ export function registerAppHandlers() {
       } catch (error: any) {
         logger.error(`Error running app ${appId}:`, error);
         // Ensure cleanup if error happens during setup but before process events are handled
-        if (
-          runningApps.has(appId) &&
-          runningApps.get(appId)?.processId === processCounter.value
-        ) {
+        if (runningApps.has(appId) && runningApps.get(appId)?.processId === processCounter.value) {
           runningApps.delete(appId);
         }
         throw new CaideError(
@@ -746,16 +713,12 @@ export function registerAppHandlers() {
 
   createTypedHandler(appContracts.stopApp, async (_, params) => {
     const { appId } = params;
-    logger.log(
-      `Attempting to stop app ${appId}. Current running apps: ${runningApps.size}`,
-    );
+    logger.log(`Attempting to stop app ${appId}. Current running apps: ${runningApps.size}`);
     return withLock(appId, async () => {
       const appInfo = runningApps.get(appId);
 
       if (!appInfo) {
-        logger.log(
-          `App ${appId} not found in running apps map. Assuming already stopped.`,
-        );
+        logger.log(`App ${appId} not found in running apps map. Assuming already stopped.`);
         return;
       }
 
@@ -765,10 +728,7 @@ export function registerAppHandlers() {
       );
 
       // Check if the process is already exited or closed
-      if (
-        process &&
-        (process.exitCode !== null || process.signalCode !== null)
-      ) {
+      if (process && (process.exitCode !== null || process.signalCode !== null)) {
         logger.log(
           `Process for app ${appId} (PID: ${process.pid}) already exited (code: ${process.exitCode}, signal: ${process.signalCode}). Cleaning up map.`,
         );
@@ -804,81 +764,60 @@ export function registerAppHandlers() {
     });
   });
 
-  createTypedHandler(
-    appContracts.getCloudSandboxStatus,
-    async (event, params) => {
-      const { appId } = params;
-      const appInfo = runningApps.get(appId);
+  createTypedHandler(appContracts.getCloudSandboxStatus, async (event, params) => {
+    const { appId } = params;
+    const appInfo = runningApps.get(appId);
 
-      if (!appInfo || appInfo.mode !== "cloud" || !appInfo.cloudSandboxId) {
-        return null;
-      }
+    if (!appInfo || appInfo.mode !== "cloud" || !appInfo.cloudSandboxId) {
+      return null;
+    }
 
-      try {
-        const status = await getCloudSandboxStatus(appInfo.cloudSandboxId);
-        const previewChanged =
-          appInfo.cloudPreviewUrl !== status.previewUrl ||
-          appInfo.cloudPreviewAuthToken !== status.previewAuthToken;
-        appInfo.cloudPreviewUrl = status.previewUrl;
-        appInfo.cloudPreviewAuthToken = status.previewAuthToken;
+    try {
+      const status = await getCloudSandboxStatus(appInfo.cloudSandboxId);
+      const previewChanged =
+        appInfo.cloudPreviewUrl !== status.previewUrl ||
+        appInfo.cloudPreviewAuthToken !== status.previewAuthToken;
+      appInfo.cloudPreviewUrl = status.previewUrl;
+      appInfo.cloudPreviewAuthToken = status.previewAuthToken;
 
-        if (previewChanged && appInfo.proxyWorker) {
-          await ensureProxyForRunningApp({
-            appId,
-            event,
-            originalUrl: status.previewUrl,
-            mode: "cloud",
-          });
-        } else {
-          appInfo.originalUrl = status.previewUrl;
-        }
-
-        return {
-          ...status,
-          localSyncErrorMessage: appInfo.cloudSyncErrorMessage ?? null,
-        };
-      } catch (error) {
-        logger.error(
-          `Failed to fetch cloud sandbox status for app ${appId}:`,
-          error,
-        );
-        throw new CaideError(
-          formatCloudSandboxError(error),
-          CaideErrorKind.External,
-        );
-      }
-    },
-  );
-
-  createTypedHandler(
-    appContracts.createCloudSandboxShareLink,
-    async (_, params) => {
-      const { appId, expiresInSeconds } = params;
-      const appInfo = runningApps.get(appId);
-
-      if (!appInfo || appInfo.mode !== "cloud" || !appInfo.cloudSandboxId) {
-        throw new CaideError(
-          `App ${appId} is not running in cloud mode`,
-          CaideErrorKind.External,
-        );
-      }
-
-      try {
-        return await createCloudSandboxShareLink(appInfo.cloudSandboxId, {
-          expiresInSeconds,
+      if (previewChanged && appInfo.proxyWorker) {
+        await ensureProxyForRunningApp({
+          appId,
+          event,
+          originalUrl: status.previewUrl,
+          mode: "cloud",
         });
-      } catch (error) {
-        logger.error(
-          `Failed to create cloud sandbox share link for app ${appId}:`,
-          error,
-        );
-        throw new CaideError(
-          formatCloudSandboxError(error),
-          CaideErrorKind.External,
-        );
+      } else {
+        appInfo.originalUrl = status.previewUrl;
       }
-    },
-  );
+
+      return {
+        ...status,
+        localSyncErrorMessage: appInfo.cloudSyncErrorMessage ?? null,
+      };
+    } catch (error) {
+      logger.error(`Failed to fetch cloud sandbox status for app ${appId}:`, error);
+      throw new CaideError(formatCloudSandboxError(error), CaideErrorKind.External);
+    }
+  });
+
+  createTypedHandler(appContracts.createCloudSandboxShareLink, async (_, params) => {
+    const { appId, expiresInSeconds } = params;
+    const appInfo = runningApps.get(appId);
+
+    if (!appInfo || appInfo.mode !== "cloud" || !appInfo.cloudSandboxId) {
+      throw new CaideError(`App ${appId} is not running in cloud mode`, CaideErrorKind.External);
+    }
+
+    try {
+      return await createCloudSandboxShareLink(appInfo.cloudSandboxId, {
+        expiresInSeconds,
+      });
+    } catch (error) {
+      logger.error(`Failed to create cloud sandbox share link for app ${appId}:`, error);
+      throw new CaideError(formatCloudSandboxError(error), CaideErrorKind.External);
+    }
+  });
 
   createTypedHandler(appContracts.startPublicPreview, async (_, params) => {
     return startPublicPreview(params);
@@ -931,17 +870,10 @@ export function registerAppHandlers() {
 
         // First stop the app if it's running
         const appInfo = runningApps.get(appId);
-        if (
-          appInfo &&
-          appInfo.mode === "cloud" &&
-          appInfo.cloudSandboxId &&
-          !recreateSandbox
-        ) {
+        if (appInfo && appInfo.mode === "cloud" && appInfo.cloudSandboxId && !recreateSandbox) {
           logger.log(`Restarting cloud sandbox app ${appId} in place`);
 
-          const restartResult = await restartCloudSandbox(
-            appInfo.cloudSandboxId,
-          );
+          const restartResult = await restartCloudSandbox(appInfo.cloudSandboxId);
           appInfo.cloudPreviewUrl = restartResult.previewUrl;
           appInfo.cloudPreviewAuthToken = restartResult.previewAuthToken;
           appInfo.lastViewedAt = Date.now();
@@ -968,9 +900,7 @@ export function registerAppHandlers() {
 
         if (appInfo) {
           const { processId } = appInfo;
-          logger.log(
-            `Stopping app ${appId} (processId ${processId}) before restart`,
-          );
+          logger.log(`Stopping app ${appId} (processId ${processId}) before restart`);
           await stopAppByInfo(appId, appInfo);
         } else {
           logger.log(`App ${appId} not running. Proceeding to start.`);
@@ -985,9 +915,7 @@ export function registerAppHandlers() {
           const runtimeMode = settings.runtimeMode2 ?? "host";
 
           const nodeModulesPath = path.join(appPath, "node_modules");
-          logger.log(
-            `Removing node_modules for app ${appId} at ${nodeModulesPath}`,
-          );
+          logger.log(`Removing node_modules for app ${appId} at ${nodeModulesPath}`);
           if (fs.existsSync(nodeModulesPath)) {
             await fsPromises.rm(nodeModulesPath, {
               recursive: true,
@@ -1005,21 +933,15 @@ export function registerAppHandlers() {
             );
             try {
               await removeDockerVolumesForApp(appId);
-              logger.log(
-                `Removed Docker volumes for app ${appId} (caide-pnpm-${appId}).`,
-              );
+              logger.log(`Removed Docker volumes for app ${appId} (caide-pnpm-${appId}).`);
             } catch (e) {
               // Best-effort cleanup; log and continue
-              logger.warn(
-                `Failed to remove Docker volumes for app ${appId}. Continuing: ${e}`,
-              );
+              logger.warn(`Failed to remove Docker volumes for app ${appId}. Continuing: ${e}`);
             }
           }
         }
 
-        logger.debug(
-          `Executing app ${appId} in path ${app.path} after restart request`,
-        ); // Adjusted log
+        logger.debug(`Executing app ${appId} in path ${app.path} after restart request`); // Adjusted log
 
         await executeApp({
           appPath,
@@ -1077,10 +999,7 @@ export function registerAppHandlers() {
         content,
         origin: "caide-write",
       }).catch((error) =>
-        logger.warn(
-          `Failed to broadcast collaborative update for ${filePath}:`,
-          error,
-        ),
+        logger.warn(`Failed to broadcast collaborative update for ${filePath}:`, error),
       );
 
       // Check if git repository exists and commit the change
@@ -1093,10 +1012,7 @@ export function registerAppHandlers() {
       }
     } catch (error: any) {
       logger.error(`Error writing file ${filePath} for app ${appId}:`, error);
-      throw new CaideError(
-        `Failed to write file: ${error.message}`,
-        CaideErrorKind.External,
-      );
+      throw new CaideError(`Failed to write file: ${error.message}`, CaideErrorKind.External);
     }
 
     queueCloudSandboxSnapshotSync({
@@ -1108,9 +1024,7 @@ export function registerAppHandlers() {
       // Check if shared module was modified - redeploy all functions
       if (isSharedServerModule(filePath)) {
         try {
-          logger.info(
-            `Shared module ${filePath} modified, redeploying all Supabase functions`,
-          );
+          logger.info(`Shared module ${filePath} modified, redeploying all Supabase functions`);
           const settings = readSettings();
           const deployErrors = await deployAllSupabaseFunctions({
             appPath,
@@ -1124,10 +1038,7 @@ export function registerAppHandlers() {
             };
           }
         } catch (error) {
-          logger.error(
-            `Error redeploying Supabase functions after shared module change:`,
-            error,
-          );
+          logger.error(`Error redeploying Supabase functions after shared module change:`, error);
           return {
             warning: `File saved, but failed to redeploy Supabase functions: ${error}`,
           };
@@ -1180,10 +1091,7 @@ export function registerAppHandlers() {
           content,
           origin: "caide-write",
         }).catch((error) =>
-          logger.warn(
-            `Failed to broadcast reviewed-file restore for ${filePath}:`,
-            error,
-          ),
+          logger.warn(`Failed to broadcast reviewed-file restore for ${filePath}:`, error),
         );
       }
 
@@ -1244,10 +1152,7 @@ export function registerAppHandlers() {
           .limit(1);
 
         if (result.length === 0) {
-          throw new CaideError(
-            `App with ID ${appId} not found.`,
-            CaideErrorKind.NotFound,
-          );
+          throw new CaideError(`App with ID ${appId} not found.`, CaideErrorKind.NotFound);
         }
 
         const currentIsFavorite = result[0].isFavorite;
@@ -1260,18 +1165,13 @@ export function registerAppHandlers() {
           .returning({ isFavorite: apps.isFavorite });
 
         if (updated.length === 0) {
-          throw new Error(
-            `Failed to update favorite status for app ID ${appId}.`,
-          );
+          throw new Error(`Failed to update favorite status for app ID ${appId}.`);
         }
 
         // Return the updated isFavorite value
         return { isFavorite: updated[0].isFavorite };
       } catch (error: any) {
-        logger.error(
-          `Error in add-to-favorite handler for app ID ${appId}:`,
-          error,
-        );
+        logger.error(`Error in add-to-favorite handler for app ID ${appId}:`, error);
         throw new CaideError(
           `Failed to toggle favorite status: ${error.message}`,
           CaideErrorKind.External,
@@ -1290,10 +1190,7 @@ export function registerAppHandlers() {
         .returning({ testingEnabled: apps.testingEnabled });
 
       if (updated.length === 0) {
-        throw new CaideError(
-          `App with ID ${appId} not found.`,
-          CaideErrorKind.NotFound,
-        );
+        throw new CaideError(`App with ID ${appId} not found.`, CaideErrorKind.NotFound);
       }
 
       return { testingEnabled: updated[0].testingEnabled };
@@ -1335,8 +1232,7 @@ export function registerAppHandlers() {
       // Validate path for invalid characters when path changes (only for relative paths)
       if (pathChanged) {
         const invalidChars = /[<>:"|?*/\\]/;
-        const hasInvalidChars =
-          invalidChars.test(appPath) || /[\x00-\x1f]/.test(appPath);
+        const hasInvalidChars = invalidChars.test(appPath) || /[\x00-\x1f]/.test(appPath);
 
         if (hasInvalidChars) {
           throw new Error(
@@ -1366,7 +1262,10 @@ export function registerAppHandlers() {
 
       let hasPathConflict = false;
       if (pathChanged) {
-        const allApps = (await db.query.apps.findMany()) as unknown as { id: number; path: string }[];
+        const allApps = (await db.query.apps.findMany()) as unknown as {
+          id: number;
+          path: string;
+        }[];
         hasPathConflict = allApps.some((existingApp) => {
           if (existingApp.id === appId) {
             return false;
@@ -1389,9 +1288,7 @@ export function registerAppHandlers() {
           await stopAppByInfo(appId, appInfo);
         } catch (error: any) {
           logger.error(`Error stopping app ${appId} before renaming:`, error);
-          throw new Error(
-            `Failed to stop app before renaming: ${error.message}`,
-          );
+          throw new Error(`Failed to stop app before renaming: ${error.message}`);
         }
       }
 
@@ -1418,10 +1315,7 @@ export function registerAppHandlers() {
             excludeNodeModules: true,
           });
         } catch (error: any) {
-          logger.error(
-            `Error moving app files from ${oldAppPath} to ${newAppPath}:`,
-            error,
-          );
+          logger.error(`Error moving app files from ${oldAppPath} to ${newAppPath}:`, error);
           if (isCaideError(error)) {
             throw error;
           }
@@ -1433,10 +1327,7 @@ export function registerAppHandlers() {
                 force: true,
               });
             } catch (cleanupError) {
-              logger.warn(
-                `Failed to clean up partial move at ${newAppPath}:`,
-                cleanupError,
-              );
+              logger.warn(`Failed to clean up partial move at ${newAppPath}:`, cleanupError);
             }
           }
           throw new CaideError(
@@ -1483,10 +1374,7 @@ export function registerAppHandlers() {
             // Delete the new directory
             await fsPromises.rm(newAppPath, { recursive: true, force: true });
           } catch (rollbackError) {
-            logger.error(
-              `Failed to rollback file move during rename error:`,
-              rollbackError,
-            );
+            logger.error(`Failed to rollback file move during rename error:`, rollbackError);
           }
         }
 
@@ -1550,9 +1438,7 @@ export function registerAppHandlers() {
     // Delete any app paths that were in the database before we deleted it
     for (const { appPath } of allAppPaths) {
       // We don't rely on getCaideAppPath here because we've already cleared the settings
-      const resolvedAppPath = path.isAbsolute(appPath)
-        ? appPath
-        : path.join(basePath, appPath);
+      const resolvedAppPath = path.isAbsolute(appPath) ? appPath : path.join(basePath, appPath);
       await fsPromises.rm(resolvedAppPath, {
         recursive: true,
         force: true,
@@ -1593,10 +1479,7 @@ export function registerAppHandlers() {
         // Check if the old branch exists
         const branches = await gitListBranches({ path: appPath });
         if (!branches.includes(oldBranchName)) {
-          throw new CaideError(
-            `Branch '${oldBranchName}' not found.`,
-            CaideErrorKind.NotFound,
-          );
+          throw new CaideError(`Branch '${oldBranchName}' not found.`, CaideErrorKind.NotFound);
         }
 
         // Check if the new branch name already exists
@@ -1605,9 +1488,7 @@ export function registerAppHandlers() {
           // and 'main' already exists, we might want to allow this if 'main' is the current branch
           // and just switch to it, or delete 'master'.
           // For now, let's keep it simple and throw an error.
-          throw new Error(
-            `Branch '${newBranchName}' already exists. Cannot rename.`,
-          );
+          throw new Error(`Branch '${newBranchName}' already exists. Cannot rename.`);
         }
 
         await gitRenameBranch({
@@ -1619,9 +1500,7 @@ export function registerAppHandlers() {
           `Branch renamed from '${oldBranchName}' to '${newBranchName}' for app ${appId}`,
         );
       } catch (error: any) {
-        logger.error(
-          `Failed to rename branch for app ${appId}: ${error.message}`,
-        );
+        logger.error(`Failed to rename branch for app ${appId}: ${error.message}`);
         throw new Error(
           `Failed to rename branch '${oldBranchName}' to '${newBranchName}': ${error.message}`,
         );
@@ -1632,18 +1511,12 @@ export function registerAppHandlers() {
   createTypedHandler(appContracts.respondToAppInput, async (_, params) => {
     const { appId, response } = params;
     if (response !== "y" && response !== "n") {
-      throw new CaideError(
-        `Invalid response: ${response}`,
-        CaideErrorKind.Validation,
-      );
+      throw new CaideError(`Invalid response: ${response}`, CaideErrorKind.Validation);
     }
     const appInfo = runningApps.get(appId);
 
     if (!appInfo) {
-      throw new CaideError(
-        `App ${appId} is not running`,
-        CaideErrorKind.External,
-      );
+      throw new CaideError(`App ${appId} is not running`, CaideErrorKind.External);
     }
 
     const { process } = appInfo;
@@ -1654,10 +1527,7 @@ export function registerAppHandlers() {
     }
 
     if (!process.stdin) {
-      throw new CaideError(
-        `App ${appId} process has no stdin available`,
-        CaideErrorKind.External,
-      );
+      throw new CaideError(`App ${appId} process has no stdin available`, CaideErrorKind.External);
     }
 
     try {
@@ -1700,90 +1570,78 @@ export function registerAppHandlers() {
   });
 
   // search-app is not in app contracts - keep using handle
-  handle(
-    "search-app",
-    async (_, searchQuery: string): Promise<AppSearchResult[]> => {
-      // Use parameterized query to prevent SQL injection
-      const pattern = `%${searchQuery.replace(/[%_]/g, "\\$&")}%`;
+  handle("search-app", async (_, searchQuery: string): Promise<AppSearchResult[]> => {
+    // Use parameterized query to prevent SQL injection
+    const pattern = `%${searchQuery.replace(/[%_]/g, "\\$&")}%`;
 
-      // 1) Apps whose name matches
-      const appNameMatches = await db
-        .select({
-          id: apps.id,
-          name: apps.name,
-          createdAt: apps.createdAt,
-        })
-        .from(apps)
-        .where(like(apps.name, pattern))
-        .orderBy(desc(apps.createdAt));
+    // 1) Apps whose name matches
+    const appNameMatches = await db
+      .select({
+        id: apps.id,
+        name: apps.name,
+        createdAt: apps.createdAt,
+      })
+      .from(apps)
+      .where(like(apps.name, pattern))
+      .orderBy(desc(apps.createdAt));
 
-      const appNameMatchesResult: AppSearchResult[] = appNameMatches.map(
-        (r) => ({
-          id: r.id,
-          name: r.name,
-          createdAt: r.createdAt,
-          matchedChatTitle: null,
-          matchedChatMessage: null,
-        }),
-      );
+    const appNameMatchesResult: AppSearchResult[] = appNameMatches.map((r) => ({
+      id: r.id,
+      name: r.name,
+      createdAt: r.createdAt,
+      matchedChatTitle: null,
+      matchedChatMessage: null,
+    }));
 
-      // 2) Apps whose chat title matches
-      const chatTitleMatches = await db
-        .select({
-          id: apps.id,
-          name: apps.name,
-          createdAt: apps.createdAt,
-          matchedChatTitle: chats.title,
-        })
-        .from(apps)
-        .innerJoin(chats, eq(apps.id, chats.appId))
-        .where(like(chats.title, pattern))
-        .orderBy(desc(apps.createdAt));
+    // 2) Apps whose chat title matches
+    const chatTitleMatches = await db
+      .select({
+        id: apps.id,
+        name: apps.name,
+        createdAt: apps.createdAt,
+        matchedChatTitle: chats.title,
+      })
+      .from(apps)
+      .innerJoin(chats, eq(apps.id, chats.appId))
+      .where(like(chats.title, pattern))
+      .orderBy(desc(apps.createdAt));
 
-      const chatTitleMatchesResult: AppSearchResult[] = chatTitleMatches.map(
-        (r) => ({
-          id: r.id,
-          name: r.name,
-          createdAt: r.createdAt,
-          matchedChatTitle: r.matchedChatTitle,
-          matchedChatMessage: null,
-        }),
-      );
+    const chatTitleMatchesResult: AppSearchResult[] = chatTitleMatches.map((r) => ({
+      id: r.id,
+      name: r.name,
+      createdAt: r.createdAt,
+      matchedChatTitle: r.matchedChatTitle,
+      matchedChatMessage: null,
+    }));
 
-      // 3) Apps whose chat message content matches
-      const chatMessageMatches = await db
-        .select({
-          id: apps.id,
-          name: apps.name,
-          createdAt: apps.createdAt,
-          matchedChatTitle: chats.title,
-          matchedChatMessage: messages.content,
-        })
-        .from(apps)
-        .innerJoin(chats, eq(apps.id, chats.appId))
-        .innerJoin(messages, eq(chats.id, messages.chatId))
-        .where(like(messages.content, pattern))
-        .orderBy(desc(apps.createdAt));
+    // 3) Apps whose chat message content matches
+    const chatMessageMatches = await db
+      .select({
+        id: apps.id,
+        name: apps.name,
+        createdAt: apps.createdAt,
+        matchedChatTitle: chats.title,
+        matchedChatMessage: messages.content,
+      })
+      .from(apps)
+      .innerJoin(chats, eq(apps.id, chats.appId))
+      .innerJoin(messages, eq(chats.id, messages.chatId))
+      .where(like(messages.content, pattern))
+      .orderBy(desc(apps.createdAt));
 
-      // Flatten and dedupe by app id
-      const allMatches: AppSearchResult[] = [
-        ...appNameMatchesResult,
-        ...chatTitleMatchesResult,
-        ...chatMessageMatches,
-      ];
-      const uniqueApps = Array.from(
-        new Map(allMatches.map((app) => [app.id, app])).values(),
-      );
+    // Flatten and dedupe by app id
+    const allMatches: AppSearchResult[] = [
+      ...appNameMatchesResult,
+      ...chatTitleMatchesResult,
+      ...chatMessageMatches,
+    ];
+    const uniqueApps = Array.from(new Map(allMatches.map((app) => [app.id, app])).values());
 
-      // Sort newest apps first
-      uniqueApps.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
+    // Sort newest apps first
+    uniqueApps.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-      return uniqueApps;
-    },
-  );
+    return uniqueApps;
+  });
 
   // Handler for adding logs to central store from renderer
   createTypedHandler(miscContracts.addLog, async (_, entry) => {
@@ -1832,9 +1690,7 @@ export function registerAppHandlers() {
 
     // Both commands must be provided together, or both must be null
     if ((trimmedInstall === null) !== (trimmedStart === null)) {
-      throw new Error(
-        "Both install and start commands are required when customizing",
-      );
+      throw new Error("Both install and start commands are required when customizing");
     }
 
     await db
@@ -1852,10 +1708,7 @@ export function registerAppHandlers() {
     const { appId, parentDirectory } = params;
 
     if (!parentDirectory) {
-      throw new CaideError(
-        "No destination folder provided.",
-        CaideErrorKind.External,
-      );
+      throw new CaideError("No destination folder provided.", CaideErrorKind.External);
     }
 
     if (!path.isAbsolute(parentDirectory)) {
@@ -1886,10 +1739,7 @@ export function registerAppHandlers() {
       if (currentResolvedPath === nextResolvedPath) {
         // Path hasn't changed, but we should update to absolute path format if needed
         if (!path.isAbsolute(app.path)) {
-          await db
-            .update(apps)
-            .set({ path: nextResolvedPath })
-            .where(eq(apps.id, appId));
+          await db.update(apps).set({ path: nextResolvedPath }).where(eq(apps.id, appId));
         }
         return {
           resolvedPath: nextResolvedPath,
@@ -1899,8 +1749,7 @@ export function registerAppHandlers() {
       const allApps = (await db.query.apps.findMany()) as unknown as { id: number; path: string }[];
       const conflict = allApps.some(
         (existingApp) =>
-          existingApp.id !== appId &&
-          getCaideAppPath(existingApp.path) === nextResolvedPath,
+          existingApp.id !== appId && getCaideAppPath(existingApp.path) === nextResolvedPath,
       );
 
       if (conflict) {
@@ -1921,10 +1770,7 @@ export function registerAppHandlers() {
         logger.warn(
           `Source path ${currentResolvedPath} does not exist. Updating database path only.`,
         );
-        await db
-          .update(apps)
-          .set({ path: nextResolvedPath })
-          .where(eq(apps.id, appId));
+        await db.update(apps).set({ path: nextResolvedPath }).where(eq(apps.id, appId));
         return {
           resolvedPath: nextResolvedPath,
         };
@@ -1952,10 +1798,7 @@ export function registerAppHandlers() {
         });
 
         // Update path to absolute path
-        await db
-          .update(apps)
-          .set({ path: nextResolvedPath })
-          .where(eq(apps.id, appId));
+        await db.update(apps).set({ path: nextResolvedPath }).where(eq(apps.id, appId));
 
         try {
           await fsPromises.rm(currentResolvedPath, {
@@ -1963,10 +1806,7 @@ export function registerAppHandlers() {
             force: true,
           });
         } catch (error: any) {
-          logger.warn(
-            `Error deleting old app directory ${currentResolvedPath}:`,
-            error,
-          );
+          logger.warn(`Error deleting old app directory ${currentResolvedPath}:`, error);
         }
 
         return {
@@ -1981,61 +1821,49 @@ export function registerAppHandlers() {
               force: true,
             });
           } catch (cleanupError) {
-            logger.warn(
-              `Failed to clean up partial move at ${nextResolvedPath}:`,
-              cleanupError,
-            );
+            logger.warn(`Failed to clean up partial move at ${nextResolvedPath}:`, cleanupError);
           }
         }
         logger.error(
           `Error moving app files from ${currentResolvedPath} to ${nextResolvedPath}:`,
           error,
         );
-        throw new CaideError(
-          `Failed to move app files: ${error.message}`,
-          CaideErrorKind.External,
-        );
+        throw new CaideError(`Failed to move app files: ${error.message}`, CaideErrorKind.External);
       }
     });
   });
 
   // Handler for selecting an app for preview (updates lastViewedAt to prevent GC)
-  createTypedHandler(
-    appContracts.selectAppForPreview,
-    async (event, params) => {
-      const { appId } = params;
-      const previousAppId = getCurrentlySelectedAppId();
-      if (previousAppId !== null && previousAppId !== appId) {
-        const previousApp = runningApps.get(previousAppId);
-        if (
-          previousApp?.proxyListenHost === "0.0.0.0" &&
-          previousApp.originalUrl
-        ) {
-          try {
-            await ensureProxyForRunningApp({
-              appId: previousAppId,
-              event,
-              originalUrl: previousApp.originalUrl,
-              mode: previousApp.mode,
-              listenHost: "localhost",
-            });
-          } catch (error) {
-            logger.warn(
-              `Failed to disable mobile preview for app ${previousAppId} while switching apps:`,
-              error,
-            );
-          }
+  createTypedHandler(appContracts.selectAppForPreview, async (event, params) => {
+    const { appId } = params;
+    const previousAppId = getCurrentlySelectedAppId();
+    if (previousAppId !== null && previousAppId !== appId) {
+      const previousApp = runningApps.get(previousAppId);
+      if (previousApp?.proxyListenHost === "0.0.0.0" && previousApp.originalUrl) {
+        try {
+          await ensureProxyForRunningApp({
+            appId: previousAppId,
+            event,
+            originalUrl: previousApp.originalUrl,
+            mode: previousApp.mode,
+            listenHost: "localhost",
+          });
+        } catch (error) {
+          logger.warn(
+            `Failed to disable mobile preview for app ${previousAppId} while switching apps:`,
+            error,
+          );
         }
       }
-      if (appId !== null) {
-        logger.debug(`App ${appId} selected for preview`);
-        setCurrentlySelectedAppId(appId);
-      } else {
-        logger.debug("No app selected for preview");
-        setCurrentlySelectedAppId(null);
-      }
-    },
-  );
+    }
+    if (appId !== null) {
+      logger.debug(`App ${appId} selected for preview`);
+      setCurrentlySelectedAppId(appId);
+    } else {
+      logger.debug("No app selected for preview");
+      setCurrentlySelectedAppId(null);
+    }
+  });
 
   // Screenshot handlers
   createTypedHandler(appContracts.getCurrentCommitHash, async (_, params) => {
@@ -2062,10 +1890,7 @@ export function registerAppHandlers() {
 
     // Validate data URL format
     if (!/^data:image\/(png|jpe?g|webp);base64,/.test(dataUrl)) {
-      throw new CaideError(
-        "Invalid screenshot data URL format",
-        CaideErrorKind.Validation,
-      );
+      throw new CaideError("Invalid screenshot data URL format", CaideErrorKind.Validation);
     }
 
     // Enforce a max size of 5 MB
@@ -2087,9 +1912,7 @@ export function registerAppHandlers() {
     const appPath = getCaideAppPath(appRecord.path);
 
     if (!SCREENSHOT_FILENAME_REGEX.test(`${commitHash}.png`)) {
-      logger.warn(
-        `Skipping screenshot save for app ${appId}: unexpected commit hash format`,
-      );
+      logger.warn(`Skipping screenshot save for app ${appId}: unexpected commit hash format`);
       return;
     }
 
@@ -2098,19 +1921,14 @@ export function registerAppHandlers() {
 
     const base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, "");
     const buffer = Buffer.from(base64Data, "base64");
-    await fsPromises.writeFile(
-      path.join(screenshotDir, `${commitHash}.png`),
-      buffer,
-    );
+    await fsPromises.writeFile(path.join(screenshotDir, `${commitHash}.png`), buffer);
 
     // Prune: keep only the newest MAX_SCREENSHOTS_PER_APP by mtime.
     // Swallow ENOENT on unlink to tolerate concurrent saves.
     try {
       const screenshots = await readScreenshotEntries(screenshotDir);
       for (const extra of screenshots.slice(MAX_SCREENSHOTS_PER_APP)) {
-        await fsPromises
-          .unlink(path.join(screenshotDir, extra.name))
-          .catch(() => {});
+        await fsPromises.unlink(path.join(screenshotDir, extra.name)).catch(() => {});
       }
     } catch (err) {
       logger.warn(`Failed to prune screenshots for app ${appId}`, err);
@@ -2193,26 +2011,23 @@ export function registerAppHandlers() {
   }
 
   // Mobile preview toggle — restart proxy on 0.0.0.0 for LAN access
-  createTypedHandler(
-    appContracts.setAppMobilePreview,
-    async (event, { appId, enabled }) => {
-      const appInfo = runningApps.get(appId);
-      if (!appInfo) return null;
+  createTypedHandler(appContracts.setAppMobilePreview, async (event, { appId, enabled }) => {
+    const appInfo = runningApps.get(appId);
+    if (!appInfo) return null;
 
-      const listenHost = enabled ? "0.0.0.0" : "localhost";
-      const originalUrl = appInfo.originalUrl;
+    const listenHost = enabled ? "0.0.0.0" : "localhost";
+    const originalUrl = appInfo.originalUrl;
 
-      if (!originalUrl) return null;
+    if (!originalUrl) return null;
 
-      return ensureProxyForRunningApp({
-        appId,
-        event,
-        originalUrl,
-        mode: appInfo.mode,
-        listenHost,
-      });
-    },
-  );
+    return ensureProxyForRunningApp({
+      appId,
+      event,
+      originalUrl,
+      mode: appInfo.mode,
+      listenHost,
+    });
+  });
 
   // Start the garbage collection for idle apps
   startAppGarbageCollection();

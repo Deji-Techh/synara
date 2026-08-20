@@ -1,10 +1,7 @@
 import log from "electron-log";
 import { z } from "zod";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
-import type {
-  LanguageModel,
-  LanguageModelProvider,
-} from "@/ipc/types/language-model";
+import type { LanguageModel, LanguageModelProvider } from "@/ipc/types/language-model";
 import {
   ThemeGenerationModelOptionSchema,
   type ThemeGenerationModelOption,
@@ -109,9 +106,7 @@ const LanguageModelCatalogResponseSchema = z.object({
     .optional(),
 });
 
-type LanguageModelCatalogResponse = z.infer<
-  typeof LanguageModelCatalogResponseSchema
->;
+type LanguageModelCatalogResponse = z.infer<typeof LanguageModelCatalogResponseSchema>;
 
 type BuiltinLanguageModelCatalog = {
   providers: LanguageModelProvider[];
@@ -129,8 +124,7 @@ type ResolvedBuiltinModel = {
 };
 
 let builtinCatalogCache: BuiltinLanguageModelCatalog | null = null;
-let builtinCatalogFetchPromise: Promise<BuiltinLanguageModelCatalog> | null =
-  null;
+let builtinCatalogFetchPromise: Promise<BuiltinLanguageModelCatalog> | null = null;
 
 const DEFAULT_THEME_GENERATION_OPTIONS: ThemeGenerationModelOption[] = [
   { id: "dyad/theme-generator/google", label: "Google" },
@@ -152,20 +146,18 @@ const CAIDE_THEME_ALIASES: Record<string, ResolvedBuiltinModel> = {
 };
 
 function buildFallbackCatalog(): BuiltinLanguageModelCatalog {
-  const providers: LanguageModelProvider[] = Object.entries(
-    CLOUD_PROVIDERS,
-  ).map(([providerId, provider]) => ({
-    id: providerId,
-    name: provider.displayName,
-    hasFreeTier: provider.hasFreeTier,
-    websiteUrl: provider.websiteUrl,
-    gatewayPrefix: provider.gatewayPrefix,
-    secondary: provider.secondary,
-    envVarName:
-      PROVIDER_TO_ENV_VAR[providerId as keyof typeof PROVIDER_TO_ENV_VAR] ??
-      undefined,
-    type: "cloud",
-  }));
+  const providers: LanguageModelProvider[] = Object.entries(CLOUD_PROVIDERS).map(
+    ([providerId, provider]) => ({
+      id: providerId,
+      name: provider.displayName,
+      hasFreeTier: provider.hasFreeTier,
+      websiteUrl: provider.websiteUrl,
+      gatewayPrefix: provider.gatewayPrefix,
+      secondary: provider.secondary,
+      envVarName: PROVIDER_TO_ENV_VAR[providerId as keyof typeof PROVIDER_TO_ENV_VAR] ?? undefined,
+      type: "cloud",
+    }),
+  );
 
   const modelsByProvider: Record<string, LanguageModel[]> = {};
   for (const [providerId, models] of Object.entries(MODEL_OPTIONS)) {
@@ -269,42 +261,35 @@ function buildFallbackCatalog(): BuiltinLanguageModelCatalog {
 function convertRemoteCatalog(
   remoteCatalog: LanguageModelCatalogResponse,
 ): BuiltinLanguageModelCatalog {
-  const providers: LanguageModelProvider[] = remoteCatalog.providers.map(
-    (provider) => ({
-      id: provider.id,
-      name: provider.displayName,
-      hasFreeTier: provider.hasFreeTier,
-      websiteUrl: provider.websiteUrl,
-      gatewayPrefix:
-        provider.gatewayPrefix ??
-        CLOUD_PROVIDERS[provider.id as keyof typeof CLOUD_PROVIDERS]
-          ?.gatewayPrefix,
-      secondary: provider.secondary,
-      envVarName:
-        PROVIDER_TO_ENV_VAR[provider.id as keyof typeof PROVIDER_TO_ENV_VAR] ??
-        undefined,
-      type: "cloud",
-    }),
-  );
+  const providers: LanguageModelProvider[] = remoteCatalog.providers.map((provider) => ({
+    id: provider.id,
+    name: provider.displayName,
+    hasFreeTier: provider.hasFreeTier,
+    websiteUrl: provider.websiteUrl,
+    gatewayPrefix:
+      provider.gatewayPrefix ??
+      CLOUD_PROVIDERS[provider.id as keyof typeof CLOUD_PROVIDERS]?.gatewayPrefix,
+    secondary: provider.secondary,
+    envVarName: PROVIDER_TO_ENV_VAR[provider.id as keyof typeof PROVIDER_TO_ENV_VAR] ?? undefined,
+    type: "cloud",
+  }));
 
   const modelsByProvider = Object.fromEntries(
-    Object.entries(remoteCatalog.modelsByProvider).map(
-      ([providerId, models]) => [
-        providerId,
-        models.map((model) => ({
-          apiName: model.apiName,
-          displayName: model.displayName,
-          description: model.description,
-          tag: model.tag,
-          tagColor: model.tagColor,
-          maxOutputTokens: model.maxOutputTokens,
-          contextWindow: model.contextWindow,
-          temperature: model.temperature,
-          dollarSigns: model.dollarSigns,
-          type: "cloud" as const,
-        })),
-      ],
-    ),
+    Object.entries(remoteCatalog.modelsByProvider).map(([providerId, models]) => [
+      providerId,
+      models.map((model) => ({
+        apiName: model.apiName,
+        displayName: model.displayName,
+        description: model.description,
+        tag: model.tag,
+        tagColor: model.tagColor,
+        maxOutputTokens: model.maxOutputTokens,
+        contextWindow: model.contextWindow,
+        temperature: model.temperature,
+        dollarSigns: model.dollarSigns,
+        type: "cloud" as const,
+      })),
+    ]),
   );
   const remoteAutoModels = modelsByProvider.auto ?? [];
   const fallbackAutoModels = MODEL_OPTIONS.auto.map((model) => ({
@@ -339,8 +324,7 @@ function convertRemoteCatalog(
     providers,
     modelsByProvider,
     aliases: mergedAliases,
-    themeGenerationOptions: remoteCatalog.curatedSelections
-      ?.themeGenerationOptions?.length
+    themeGenerationOptions: remoteCatalog.curatedSelections?.themeGenerationOptions?.length
       ? remoteCatalog.curatedSelections.themeGenerationOptions
       : DEFAULT_THEME_GENERATION_OPTIONS,
     expiresAt:
@@ -355,10 +339,7 @@ function convertRemoteCatalog(
 async function fetchRemoteCatalog(): Promise<BuiltinLanguageModelCatalog | null> {
   const controller = new AbortController();
   const catalogUrl = getRemoteLanguageModelCatalogUrl();
-  const timeoutId = setTimeout(
-    () => controller.abort(),
-    REMOTE_LANGUAGE_MODEL_CATALOG_TIMEOUT_MS,
-  );
+  const timeoutId = setTimeout(() => controller.abort(), REMOTE_LANGUAGE_MODEL_CATALOG_TIMEOUT_MS);
 
   try {
     logger.info("Fetching remote language model catalog", {
@@ -386,8 +367,7 @@ async function fetchRemoteCatalog(): Promise<BuiltinLanguageModelCatalog | null>
       version: convertedCatalog.version,
       providerCount: convertedCatalog.providers.length,
       aliasCount: convertedCatalog.aliases.length,
-      themeGenerationOptionCount:
-        convertedCatalog.themeGenerationOptions.length,
+      themeGenerationOptionCount: convertedCatalog.themeGenerationOptions.length,
     });
 
     return convertedCatalog;
@@ -426,9 +406,7 @@ function triggerBackgroundRefresh(): void {
       }
     })();
   } else {
-    logger.info(
-      "Skipping language model catalog refresh because one is in flight",
-    );
+    logger.info("Skipping language model catalog refresh because one is in flight");
   }
 }
 
@@ -445,13 +423,10 @@ export async function getBuiltinLanguageModelCatalog(): Promise<BuiltinLanguageM
   // Serve stale data while revalidating in the background to avoid blocking
   // callers on a network fetch (stale-while-revalidate pattern).
   if (builtinCatalogCache) {
-    logger.info(
-      "Returning stale language model catalog and refreshing in background",
-      {
-        source: builtinCatalogCache.source,
-        version: builtinCatalogCache.version,
-      },
-    );
+    logger.info("Returning stale language model catalog and refreshing in background", {
+      source: builtinCatalogCache.source,
+      version: builtinCatalogCache.version,
+    });
     triggerBackgroundRefresh();
     return builtinCatalogCache;
   }
@@ -464,15 +439,12 @@ export async function getBuiltinLanguageModelCatalog(): Promise<BuiltinLanguageM
       try {
         const remoteCatalog = await fetchRemoteCatalog();
         builtinCatalogCache = remoteCatalog ?? getFallbackCatalog();
-        logger.info(
-          "Initialized language model catalog after cold start fetch",
-          {
-            source: builtinCatalogCache.source,
-            version: builtinCatalogCache.version,
-            providerCount: builtinCatalogCache.providers.length,
-            aliasCount: builtinCatalogCache.aliases.length,
-          },
-        );
+        logger.info("Initialized language model catalog after cold start fetch", {
+          source: builtinCatalogCache.source,
+          version: builtinCatalogCache.version,
+          providerCount: builtinCatalogCache.providers.length,
+          aliasCount: builtinCatalogCache.aliases.length,
+        });
         return builtinCatalogCache;
       } finally {
         builtinCatalogFetchPromise = null;
@@ -485,9 +457,7 @@ export async function getBuiltinLanguageModelCatalog(): Promise<BuiltinLanguageM
   return builtinCatalogFetchPromise;
 }
 
-export async function getThemeGenerationModelOptions(): Promise<
-  ThemeGenerationModelOption[]
-> {
+export async function getThemeGenerationModelOptions(): Promise<ThemeGenerationModelOption[]> {
   const catalog = await getBuiltinLanguageModelCatalog();
   const options = [...catalog.themeGenerationOptions];
   for (const requiredOption of DEFAULT_THEME_GENERATION_OPTIONS) {
@@ -506,8 +476,7 @@ export async function resolveBuiltinModelAlias(
 
   const catalog = await getBuiltinLanguageModelCatalog();
   const resolvedModel =
-    catalog.aliases.find((alias) => alias.id === aliasId)?.resolvedModel ??
-    null;
+    catalog.aliases.find((alias) => alias.id === aliasId)?.resolvedModel ?? null;
 
   logger.info("Resolved builtin model alias", {
     aliasId,

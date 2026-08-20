@@ -23,9 +23,7 @@ export interface ImageDimensions {
  * @param dataUrl - A base64 data URL (e.g., "data:image/png;base64,...")
  * @returns The image dimensions, or null if unable to determine
  */
-export function getImageDimensionsFromDataUrl(
-  dataUrl: string,
-): ImageDimensions | null {
+export function getImageDimensionsFromDataUrl(dataUrl: string): ImageDimensions | null {
   try {
     // Parse the data URL
     const match = dataUrl.match(/^data:image\/([^;]+);base64,(.+)$/i);
@@ -167,13 +165,7 @@ function getJpegDimensions(buffer: Buffer): ImageDimensions | null {
 
     // SOF markers (Start of Frame) contain dimensions
     // SOF0 (0xC0) through SOF15 (0xCF), excluding DHT (0xC4), DAC (0xCC)
-    if (
-      marker >= 0xc0 &&
-      marker <= 0xcf &&
-      marker !== 0xc4 &&
-      marker !== 0xc8 &&
-      marker !== 0xcc
-    ) {
+    if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
       if (offset + 9 > buffer.length) {
         return null;
       }

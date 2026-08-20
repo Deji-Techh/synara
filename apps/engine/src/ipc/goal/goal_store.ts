@@ -7,10 +7,7 @@ import { eq } from "drizzle-orm";
 import { getCaideAppPath } from "@/paths/paths";
 import { generateCuteAppName } from "@/lib/utils";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
-import {
-  PersistedGoalStateSchema,
-  type PersistedGoalState,
-} from "@/shared/goal_state";
+import { PersistedGoalStateSchema, type PersistedGoalState } from "@/shared/goal_state";
 import type {
   Goal,
   GoalEvidence,
@@ -174,9 +171,9 @@ export function ensureGoalTables(): void {
       WHERE status IN ('pending', 'claimed', 'running');
   `);
 
-  const goalColumns = sqlite()
-    .prepare("PRAGMA table_info(caide_goals)")
-    .all() as Array<{ name: string }>;
+  const goalColumns = sqlite().prepare("PRAGMA table_info(caide_goals)").all() as Array<{
+    name: string;
+  }>;
   if (!goalColumns.some((column) => column.name === "state_json")) {
     sqlite().exec("ALTER TABLE caide_goals ADD COLUMN state_json TEXT");
   }
@@ -197,21 +194,16 @@ function hashState(state: PersistedGoalState): string {
 
 async function resolveAppPath(appId: number): Promise<string> {
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
-  if (!app)
-    throw new CaideError(`App not found: ${appId}`, CaideErrorKind.NotFound);
+  if (!app) throw new CaideError(`App not found: ${appId}`, CaideErrorKind.NotFound);
   return getCaideAppPath(app.path);
 }
 
-async function resolveCommonGitDirectory(
-  gitDirectory: string,
-): Promise<string> {
+async function resolveCommonGitDirectory(gitDirectory: string): Promise<string> {
   try {
     const commonDirectory = (
       await fs.promises.readFile(path.join(gitDirectory, "commondir"), "utf8")
     ).trim();
-    return commonDirectory
-      ? path.resolve(gitDirectory, commonDirectory)
-      : gitDirectory;
+    return commonDirectory ? path.resolve(gitDirectory, commonDirectory) : gitDirectory;
   } catch {
     return gitDirectory;
   }
@@ -257,20 +249,8 @@ async function ensureGoalStateExcludedFromGit(appPath: string): Promise<void> {
 
 export async function getGoalStatePath(goal: Pick<GoalRow, "id" | "app_id">) {
   const appPath = await resolveAppPath(goal.app_id);
-  const caidePath = path.join(
-    appPath,
-    ".caide",
-    "goals",
-    goal.id,
-    "state.json",
-  );
-  const legacyPath = path.join(
-    appPath,
-    ".caide",
-    "goals",
-    goal.id,
-    "state.json",
-  );
+  const caidePath = path.join(appPath, ".caide", "goals", goal.id, "state.json");
+  const legacyPath = path.join(appPath, ".caide", "goals", goal.id, "state.json");
   if (!fs.existsSync(caidePath) && fs.existsSync(legacyPath)) {
     return legacyPath;
   }
@@ -297,10 +277,7 @@ function parseStateForRow(row: GoalRow, value: unknown): PersistedGoalState {
 async function readState(row: GoalRow): Promise<PersistedGoalState | null> {
   const statePath = await getGoalStatePath(row);
   try {
-    return parseStateForRow(
-      row,
-      JSON.parse(await fs.promises.readFile(statePath, "utf8")),
-    );
+    return parseStateForRow(row, JSON.parse(await fs.promises.readFile(statePath, "utf8")));
   } catch {
     if (!row.state_json) return null;
     try {
@@ -326,18 +303,13 @@ async function writeState(row: GoalRow, state: PersistedGoalState) {
   const tempPath = `${statePath}.${process.pid}.${Date.now()}.tmp`;
   const serialized = JSON.stringify(state);
   sqlite()
-    .prepare(
-      "UPDATE caide_goals SET state_json = ?, state_hash = ? WHERE id = ?",
-    )
+    .prepare("UPDATE caide_goals SET state_json = ?, state_hash = ? WHERE id = ?")
     .run(serialized, hashState(state), row.id);
   await fs.promises.writeFile(tempPath, `${JSON.stringify(state, null, 2)}\n`);
   await fs.promises.rename(tempPath, statePath);
 }
 
-function stateTasks(
-  row: GoalRow,
-  state: PersistedGoalState | null,
-): GoalTask[] {
+function stateTasks(row: GoalRow, state: PersistedGoalState | null): GoalTask[] {
   return (state?.tasks ?? []).map((task) => ({
     ...task,
     goalId: row.id,
@@ -346,10 +318,7 @@ function stateTasks(
   }));
 }
 
-function stateEvidence(
-  row: GoalRow,
-  state: PersistedGoalState | null,
-): GoalEvidence[] {
+function stateEvidence(row: GoalRow, state: PersistedGoalState | null): GoalEvidence[] {
   return (state?.evidence ?? []).map((evidence) => ({
     ...evidence,
     goalId: row.id,
@@ -376,8 +345,7 @@ async function hydrateGoal(row: GoalRow): Promise<Goal> {
     blocker: state?.blocker ?? parseJson(row.blocker_json, null),
     nextRetryAt: row.next_retry_at,
     consecutiveFailures: row.consecutive_failures,
-    verifiedTaskCount: tasks.filter((task) => task.status === "verified")
-      .length,
+    verifiedTaskCount: tasks.filter((task) => task.status === "verified").length,
     totalTaskCount: tasks.filter((task) => task.required).length,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -392,11 +360,10 @@ async function hydrateGoal(row: GoalRow): Promise<Goal> {
 }
 
 function rowById(goalId: string): GoalRow {
-  const row = sqlite()
-    .prepare("SELECT * FROM caide_goals WHERE id = ?")
-    .get(goalId) as GoalRow | undefined;
-  if (!row)
-    throw new CaideError(`Goal not found: ${goalId}`, CaideErrorKind.NotFound);
+  const row = sqlite().prepare("SELECT * FROM caide_goals WHERE id = ?").get(goalId) as
+    | GoalRow
+    | undefined;
+  if (!row) throw new CaideError(`Goal not found: ${goalId}`, CaideErrorKind.NotFound);
   return row;
 }
 
@@ -412,14 +379,7 @@ function appendEvent(
        (id, goal_id, type, summary, metadata_json, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
     )
-    .run(
-      randomUUID(),
-      goalId,
-      type,
-      summary,
-      JSON.stringify(metadata),
-      Date.now(),
-    );
+    .run(randomUUID(), goalId, type, summary, JSON.stringify(metadata), Date.now());
 }
 
 function createGoalChat(appId: number, title: string): number {
@@ -455,23 +415,19 @@ function initialState(
         order: 0,
         required: true,
         dependencies: [],
-        completionCriteria: [
-          "The task graph covers the full objective and definition of done.",
-        ],
+        completionCriteria: ["The task graph covers the full objective and definition of done."],
         verificationMethod: "Review the persisted goal task graph.",
       },
       {
         id: "implement-objective",
         title: "Implement the complete objective",
-        description:
-          "Implement every required feature and integration without placeholders.",
+        description: "Implement every required feature and integration without placeholders.",
         status: "pending",
         order: 1,
         required: true,
         dependencies: ["plan-objective"],
         completionCriteria: definitionOfDone,
-        verificationMethod:
-          "Inspect source changes and execute relevant tests.",
+        verificationMethod: "Inspect source changes and execute relevant tests.",
       },
       {
         id: "production-verification",
@@ -483,8 +439,7 @@ function initialState(
         required: true,
         dependencies: ["implement-objective"],
         completionCriteria: definitionOfDone,
-        verificationMethod:
-          "Independent verification against the latest source revision.",
+        verificationMethod: "Independent verification against the latest source revision.",
       },
     ],
     evidence: [],
@@ -543,8 +498,7 @@ export async function createGoal(input: {
     ? requestedDefinition
     : DEFAULT_DEFINITION_OF_DONE;
   const constraints = input.constraints?.filter(Boolean) ?? [];
-  const title =
-    input.title?.trim() || objective.split(/\r?\n/)[0].slice(0, 100).trim();
+  const title = input.title?.trim() || objective.split(/\r?\n/)[0].slice(0, 100).trim();
   const id = randomUUID();
   const now = Date.now();
   const goalChatId = createGoalChat(effectiveAppId, title);
@@ -594,9 +548,7 @@ export async function getGoal(goalId: string): Promise<Goal> {
   return hydrateGoal(rowById(goalId));
 }
 
-export async function getActiveGoal(
-  appId?: number | null,
-): Promise<Goal | null> {
+export async function getActiveGoal(appId?: number | null): Promise<Goal | null> {
   ensureGoalTables();
   const placeholders = LIVE_GOAL_STATUSES.map(() => "?").join(",");
   const query =
@@ -607,10 +559,7 @@ export async function getActiveGoal(
       : `SELECT * FROM caide_goals
          WHERE status IN (${placeholders})
          ORDER BY updated_at DESC LIMIT 1`;
-  const args =
-    appId && appId > 0
-      ? [appId, ...LIVE_GOAL_STATUSES]
-      : [...LIVE_GOAL_STATUSES];
+  const args = appId && appId > 0 ? [appId, ...LIVE_GOAL_STATUSES] : [...LIVE_GOAL_STATUSES];
   const row = sqlite()
     .prepare(query)
     .get(...args) as GoalRow | undefined;
@@ -654,10 +603,7 @@ export async function updateGoalStatus(
 ): Promise<Goal> {
   const row = rowById(goalId);
   if (row.status === "cancelled" || row.status === "completed") {
-    throw new CaideError(
-      `Cannot change a ${row.status} goal.`,
-      CaideErrorKind.Validation,
-    );
+    throw new CaideError(`Cannot change a ${row.status} goal.`, CaideErrorKind.Validation);
   }
   const now = Date.now();
   const completedAt = status === "completed" ? now : null;
@@ -685,11 +631,7 @@ export async function updateGoalStatus(
       cancelledAt,
       goalId,
     );
-  appendEvent(
-    goalId,
-    status,
-    options.reason ?? `Goal status changed to ${status}`,
-  );
+  appendEvent(goalId, status, options.reason ?? `Goal status changed to ${status}`);
   if (status === "completed" || status === "cancelled") {
     const row = rowById(goalId);
     cleanupGoalStateFile(row).catch(() => {});
@@ -697,10 +639,7 @@ export async function updateGoalStatus(
   return hydrateGoal(rowById(goalId));
 }
 
-export async function pauseGoal(
-  goalId: string,
-  reason?: string,
-): Promise<Goal> {
+export async function pauseGoal(goalId: string, reason?: string): Promise<Goal> {
   return updateGoalStatus(goalId, "pausing", {
     reason: reason ?? "Pause requested",
   });
@@ -714,15 +653,8 @@ export async function finishPause(goalId: string): Promise<Goal> {
 
 export async function resumeGoal(goalId: string): Promise<Goal> {
   const row = rowById(goalId);
-  if (
-    row.status !== "paused" &&
-    row.status !== "blocked" &&
-    row.status !== "awaiting-user"
-  ) {
-    throw new CaideError(
-      `Goal cannot resume from ${row.status}.`,
-      CaideErrorKind.Validation,
-    );
+  if (row.status !== "paused" && row.status !== "blocked" && row.status !== "awaiting-user") {
+    throw new CaideError(`Goal cannot resume from ${row.status}.`, CaideErrorKind.Validation);
   }
   await forceGoalStateActive(goalId);
   return updateGoalStatus(goalId, "active", {
@@ -731,9 +663,7 @@ export async function resumeGoal(goalId: string): Promise<Goal> {
   });
 }
 
-async function cleanupGoalStateFile(
-  goal: Pick<GoalRow, "id" | "app_id">,
-): Promise<void> {
+async function cleanupGoalStateFile(goal: Pick<GoalRow, "id" | "app_id">): Promise<void> {
   try {
     const appPath = await resolveAppPath(goal.app_id);
     const stateDir = path.join(appPath, ".caide", "goals", goal.id);
@@ -743,10 +673,7 @@ async function cleanupGoalStateFile(
   }
 }
 
-export async function cancelGoal(
-  goalId: string,
-  reason?: string,
-): Promise<Goal> {
+export async function cancelGoal(goalId: string, reason?: string): Promise<Goal> {
   return updateGoalStatus(goalId, "cancelled", {
     reason: reason ?? "Goal cancelled by user",
   });
@@ -765,8 +692,7 @@ export async function editGoal(
   const row = rowById(goalId);
   const nextObjective = updates.objective ?? row.objective;
   const nextDefinition =
-    updates.definitionOfDone ??
-    parseJson<string[]>(row.definition_of_done_json, []);
+    updates.definitionOfDone ?? parseJson<string[]>(row.definition_of_done_json, []);
   sqlite()
     .prepare(
       `UPDATE caide_goals SET title = ?, objective = ?, definition_of_done_json = ?,
@@ -776,9 +702,7 @@ export async function editGoal(
       updates.title ?? row.title,
       nextObjective,
       JSON.stringify(nextDefinition),
-      JSON.stringify(
-        updates.constraints ?? parseJson<string[]>(row.constraints_json, []),
-      ),
+      JSON.stringify(updates.constraints ?? parseJson<string[]>(row.constraints_json, [])),
       updates.executionTarget ?? row.execution_target,
       Date.now(),
       goalId,
@@ -809,23 +733,14 @@ export async function editGoal(
   return hydrateGoal(rowById(goalId));
 }
 
-export async function steerGoal(
-  goalId: string,
-  instruction: string,
-): Promise<Goal> {
+export async function steerGoal(goalId: string, instruction: string): Promise<Goal> {
   const row = rowById(goalId);
   if (["completed", "cancelled"].includes(row.status)) {
-    throw new CaideError(
-      `Cannot steer a ${row.status} goal.`,
-      CaideErrorKind.Validation,
-    );
+    throw new CaideError(`Cannot steer a ${row.status} goal.`, CaideErrorKind.Validation);
   }
   const state = await readState(row);
   if (state) {
-    state.steering = [
-      ...state.steering,
-      { instruction, createdAt: Date.now() },
-    ].slice(-100);
+    state.steering = [...state.steering, { instruction, createdAt: Date.now() }].slice(-100);
     state.status = "active";
     state.blocker = null;
     state.verification.passed = false;
@@ -882,17 +797,10 @@ function runFromRow(row: RunRow): GoalRun {
   };
 }
 
-export function createRun(
-  goalId: string,
-  kind: GoalRunKind,
-  prompt: string,
-): GoalRun | null {
+export function createRun(goalId: string, kind: GoalRunKind, prompt: string): GoalRun | null {
   const goal = rowById(goalId);
   if (!goal.goal_chat_id)
-    throw new CaideError(
-      "Goal has no execution chat.",
-      CaideErrorKind.Precondition,
-    );
+    throw new CaideError("Goal has no execution chat.", CaideErrorKind.Precondition);
   const existing = sqlite()
     .prepare(
       `SELECT * FROM caide_goal_runs WHERE goal_id = ?
@@ -901,9 +809,7 @@ export function createRun(
     .get(goalId) as RunRow | undefined;
   if (existing) return null;
   const attemptRow = sqlite()
-    .prepare(
-      "SELECT COALESCE(MAX(attempt), 0) AS value FROM caide_goal_runs WHERE goal_id = ?",
-    )
+    .prepare("SELECT COALESCE(MAX(attempt), 0) AS value FROM caide_goal_runs WHERE goal_id = ?")
     .get(goalId) as { value: number };
   const id = randomUUID();
   const now = Date.now();
@@ -925,9 +831,7 @@ export function createRun(
     );
   appendEvent(goalId, "run-created", `${kind} run queued`, { runId: id });
   return runFromRow(
-    sqlite()
-      .prepare("SELECT * FROM caide_goal_runs WHERE id = ?")
-      .get(id) as RunRow,
+    sqlite().prepare("SELECT * FROM caide_goal_runs WHERE id = ?").get(id) as RunRow,
   );
 }
 
@@ -1007,11 +911,7 @@ export function listRunnableRuns(limit = 10): GoalRun[] {
   ).map(runFromRow);
 }
 
-export function claimRun(
-  runId: string,
-  runnerId: string,
-  leaseMs = 30_000,
-): GoalRun | null {
+export function claimRun(runId: string, runnerId: string, leaseMs = 30_000): GoalRun | null {
   const now = Date.now();
   const result = sqlite()
     .prepare(
@@ -1026,10 +926,7 @@ export function claimRun(
       `SELECT status FROM caide_goals WHERE id = (SELECT goal_id FROM caide_goal_runs WHERE id = ?)`,
     )
     .get(runId) as { status: string } | undefined;
-  if (
-    goalCheck &&
-    (goalCheck.status === "cancelled" || goalCheck.status === "completed")
-  ) {
+  if (goalCheck && (goalCheck.status === "cancelled" || goalCheck.status === "completed")) {
     sqlite()
       .prepare(
         `UPDATE caide_goal_runs SET status = 'cancelled', finished_at = ?
@@ -1038,19 +935,13 @@ export function claimRun(
       .run(now, runId);
     return null;
   }
-  const row = sqlite()
-    .prepare("SELECT * FROM caide_goal_runs WHERE id = ?")
-    .get(runId) as RunRow;
+  const row = sqlite().prepare("SELECT * FROM caide_goal_runs WHERE id = ?").get(runId) as RunRow;
   sqlite()
     .prepare(
       "UPDATE caide_goals SET status = ?, last_heartbeat_at = ?, updated_at = ? WHERE id = ?",
     )
     .run(
-      row.kind === "verify"
-        ? "verifying"
-        : row.kind === "repair"
-          ? "repairing"
-          : "running",
+      row.kind === "verify" ? "verifying" : row.kind === "repair" ? "repairing" : "running",
       now,
       now,
       row.goal_id,
@@ -1062,15 +953,11 @@ export function claimRun(
   return runFromRow(row);
 }
 
-export function heartbeatRun(
-  runId: string,
-  runnerId: string,
-  leaseMs = 30_000,
-): boolean {
+export function heartbeatRun(runId: string, runnerId: string, leaseMs = 30_000): boolean {
   const now = Date.now();
-  const row = sqlite()
-    .prepare("SELECT goal_id FROM caide_goal_runs WHERE id = ?")
-    .get(runId) as { goal_id: string } | undefined;
+  const row = sqlite().prepare("SELECT goal_id FROM caide_goal_runs WHERE id = ?").get(runId) as
+    | { goal_id: string }
+    | undefined;
   if (!row) return false;
   const result = sqlite()
     .prepare(
@@ -1098,11 +985,7 @@ export async function setRunWaiting(input: {
        WHERE id = ? AND runner_id = ? AND status = 'running'`,
     )
     .get(input.runId, input.runnerId) as RunRow | undefined;
-  if (!run)
-    throw new CaideError(
-      "Goal run lease is no longer valid.",
-      CaideErrorKind.Validation,
-    );
+  if (!run) throw new CaideError("Goal run lease is no longer valid.", CaideErrorKind.Validation);
   const now = Date.now();
   const nextStatus: GoalStatus = input.waiting
     ? "awaiting-user"
@@ -1116,8 +999,7 @@ export async function setRunWaiting(input: {
         reason:
           input.reason ??
           "Tool approval required for active goal run. Open the goal chat to review it.",
-        userAction:
-          "Approve or decline the pending tool request in the goal chat.",
+        userAction: "Approve or decline the pending tool request in the goal chat.",
         retryable: false,
         detectedAt: now,
       }
@@ -1127,18 +1009,11 @@ export async function setRunWaiting(input: {
       `UPDATE caide_goals SET status = ?, blocker_json = ?, updated_at = ?
        WHERE id = ?`,
     )
-    .run(
-      nextStatus,
-      blocker ? JSON.stringify(blocker) : null,
-      now,
-      run.goal_id,
-    );
+    .run(nextStatus, blocker ? JSON.stringify(blocker) : null, now, run.goal_id);
   appendEvent(
     run.goal_id,
     input.waiting ? "awaiting-approval" : "approval-resolved",
-    input.waiting
-      ? blocker!.reason
-      : "Pending tool approval resolved; execution continued",
+    input.waiting ? blocker!.reason : "Pending tool approval resolved; execution continued",
     { runId: run.id },
   );
   return hydrateGoal(rowById(run.goal_id));
@@ -1159,10 +1034,7 @@ export function finishRun(input: {
     )
     .run(status, now, input.error ?? null, input.runId, input.runnerId);
   if (!result.changes)
-    throw new CaideError(
-      "Goal run lease is no longer valid.",
-      CaideErrorKind.Validation,
-    );
+    throw new CaideError("Goal run lease is no longer valid.", CaideErrorKind.Validation);
   const row = sqlite()
     .prepare("SELECT * FROM caide_goal_runs WHERE id = ?")
     .get(input.runId) as RunRow;
@@ -1185,8 +1057,7 @@ export async function syncGoalFromState(goalId: string): Promise<{
 }> {
   const row = rowById(goalId);
   const state = await readState(row);
-  if (!state)
-    return { goal: await hydrateGoal(row), state: null, changed: false };
+  if (!state) return { goal: await hydrateGoal(row), state: null, changed: false };
   const nextHash = hashState(state);
   const changed = nextHash !== row.state_hash;
   const statusFromState: GoalStatus =
@@ -1241,10 +1112,7 @@ export function hasCurrentVerificationApproval(goalId: string): boolean {
        ORDER BY created_at DESC, rowid DESC LIMIT 1`,
     )
     .get(goalId) as { metadata_json: string } | undefined;
-  const metadata = parseJson<{ stateHash?: string }>(
-    event?.metadata_json ?? null,
-    {},
-  );
+  const metadata = parseJson<{ stateHash?: string }>(event?.metadata_json ?? null, {});
   return metadata.stateHash === row.state_hash;
 }
 

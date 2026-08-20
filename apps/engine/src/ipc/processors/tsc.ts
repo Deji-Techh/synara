@@ -5,11 +5,7 @@ import { utilityProcess } from "electron";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
 import { ProblemReport } from "@/ipc/types";
 import log from "electron-log";
-import {
-  TscWorkerErrorKind,
-  WorkerInput,
-  WorkerOutput,
-} from "../../../shared/tsc_types";
+import { TscWorkerErrorKind, WorkerInput, WorkerOutput } from "../../../shared/tsc_types";
 
 import {
   getCaideDeleteTags,
@@ -25,11 +21,7 @@ const logger = log.scope("tsc");
 export class TypeCheckPreconditionError extends CaideError {
   readonly typeCheckKind: TscWorkerErrorKind;
 
-  constructor(
-    typeCheckKind: TscWorkerErrorKind,
-    message: string,
-    options?: { cause?: unknown },
-  ) {
+  constructor(typeCheckKind: TscWorkerErrorKind, message: string, options?: { cause?: unknown }) {
     super(message, CaideErrorKind.Precondition, options);
     this.name = "TypeCheckPreconditionError";
     this.typeCheckKind = typeCheckKind;
@@ -53,22 +45,17 @@ function getStringMatchedTypeCheckPreconditionKind(
   return undefined;
 }
 
-export function getTypeCheckPreconditionKind(
-  error: unknown,
-): TscWorkerErrorKind | undefined {
+export function getTypeCheckPreconditionKind(error: unknown): TscWorkerErrorKind | undefined {
   if (error instanceof TypeCheckPreconditionError) {
     return error.typeCheckKind;
   }
 
-  const message =
-    error instanceof Error ? error.message : String(error ?? "Unknown error");
+  const message = error instanceof Error ? error.message : String(error ?? "Unknown error");
 
   return getStringMatchedTypeCheckPreconditionKind(message);
 }
 
-async function packageJsonDeclaresTypeScript(
-  appPath: string,
-): Promise<boolean> {
+async function packageJsonDeclaresTypeScript(appPath: string): Promise<boolean> {
   try {
     const raw = await fs.readFile(path.join(appPath, "package.json"), "utf8");
     const parsed = JSON.parse(raw) as {
@@ -117,19 +104,14 @@ export async function getTypeCheckPreconditionGuidance({
  * Map expected type-check setup failures to CaideError so they are not sent to
  * PostHog as `$exception` events (missing deps, no tsconfig, etc.).
  */
-export function toProblemReportError(
-  error: unknown,
-  errorKind?: TscWorkerErrorKind,
-): Error {
+export function toProblemReportError(error: unknown, errorKind?: TscWorkerErrorKind): Error {
   if (error instanceof CaideError) {
     // Already classified; keep the original kind rather than re-wrapping.
     return error;
   }
 
-  const message =
-    error instanceof Error ? error.message : String(error ?? "Unknown error");
-  const typeCheckKind =
-    errorKind ?? getStringMatchedTypeCheckPreconditionKind(message);
+  const message = error instanceof Error ? error.message : String(error ?? "Unknown error");
+  const typeCheckKind = errorKind ?? getStringMatchedTypeCheckPreconditionKind(message);
 
   if (typeCheckKind) {
     return new TypeCheckPreconditionError(typeCheckKind, message, {
@@ -149,9 +131,8 @@ export async function generateProblemReport({
   fullResponse: string;
   appPath: string;
 }): Promise<ProblemReport> {
-  const report = await typescriptUtilityProcessScheduler.runExclusive(
-    "tsc",
-    () => runProblemReportWorker({ fullResponse, appPath }),
+  const report = await typescriptUtilityProcessScheduler.runExclusive("tsc", () =>
+    runProblemReportWorker({ fullResponse, appPath }),
   );
 
   return {
@@ -187,21 +168,20 @@ function runProblemReportWorker({
       resolveExit = exitResolve;
     });
     let killRequested = false;
-    const registration =
-      typescriptUtilityProcessScheduler.registerResidentProcess({
-        kind: "tsc",
-        reusable: false,
-        token: child,
-        stop: async () => {
-          if (!killRequested) {
-            if (!child.kill()) {
-              throw new Error("Failed to terminate TSC worker");
-            }
-            killRequested = true;
+    const registration = typescriptUtilityProcessScheduler.registerResidentProcess({
+      kind: "tsc",
+      reusable: false,
+      token: child,
+      stop: async () => {
+        if (!killRequested) {
+          if (!child.kill()) {
+            throw new Error("Failed to terminate TSC worker");
           }
-          await exitPromise;
-        },
-      });
+          killRequested = true;
+        }
+        await exitPromise;
+      },
+    });
 
     const stopChild = () => {
       void registration.stop().catch((error) => {
@@ -223,14 +203,10 @@ function runProblemReportWorker({
 
     const timeout = setTimeout(() => {
       settle(() => {
-        logger.error(
-          `TSC worker timed out after ${TSC_WORKER_TIMEOUT_MS}ms for app ${appPath}`,
-        );
+        logger.error(`TSC worker timed out after ${TSC_WORKER_TIMEOUT_MS}ms for app ${appPath}`);
         reject(
           toProblemReportError(
-            new Error(
-              `Type check timed out after ${TSC_WORKER_TIMEOUT_MS / 1000}s`,
-            ),
+            new Error(`Type check timed out after ${TSC_WORKER_TIMEOUT_MS / 1000}s`),
           ),
         );
       });
@@ -260,10 +236,7 @@ function runProblemReportWorker({
     // still fires afterwards, but settle() guards against double rejection.
     // NOTE: Electron's UtilityProcess "error" event is currently experimental.
     child.on("error", (type, location, report) => {
-      logger.error(
-        `TSC worker fatal error for app ${appPath}: ${type} at ${location}`,
-        report,
-      );
+      logger.error(`TSC worker fatal error for app ${appPath}: ${type} at ${location}`, report);
       // A V8 FatalError in the worker is almost always heap exhaustion while
       // type-checking a very large app; surface that instead of the raw type.
       const message: string =
@@ -281,9 +254,7 @@ function runProblemReportWorker({
       resolveExit();
       settle(() => {
         logger.error(`TSC worker exited with code ${code} for app ${appPath}`);
-        reject(
-          toProblemReportError(new Error(`Worker exited with code ${code}`)),
-        );
+        reject(toProblemReportError(new Error(`Worker exited with code ${code}`)));
       });
     });
 

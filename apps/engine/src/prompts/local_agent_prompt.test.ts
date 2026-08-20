@@ -26,18 +26,12 @@ describe("local_agent_prompt", () => {
     });
     expect(prompt).toMatchSnapshot();
     expect(prompt).toContain("use `explore_code` first");
-    expect(prompt).toContain(
-      "do not warm up with `list_files`, `grep`, or `read_file` before it",
-    );
+    expect(prompt).toContain("do not warm up with `list_files`, `grep`, or `read_file` before it");
     expect(prompt).toContain(
       "Follow the report's Action exactly as documented in the `explore_code` tool",
     );
-    expect(prompt).toContain(
-      "do not call `explore_code` again for the same investigation",
-    );
-    expect(prompt).toContain(
-      "When no authoritative explore_code report is available",
-    );
+    expect(prompt).toContain("do not call `explore_code` again for the same investigation");
+    expect(prompt).toContain("When no authoritative explore_code report is available");
     expect(prompt).not.toContain("Use `grep` and `code_search`");
   });
 
@@ -127,9 +121,7 @@ describe("local_agent_prompt", () => {
       testingEnabled: true,
     });
     expect(prompt).toContain("# Writing end-to-end tests");
-    expect(prompt).toContain(
-      'page.getByRole("button", { name: "+", exact: true })',
-    );
+    expect(prompt).toContain('page.getByRole("button", { name: "+", exact: true })');
   });
 
   it("basic agent mode gates test-writing guidance on testingEnabled", () => {

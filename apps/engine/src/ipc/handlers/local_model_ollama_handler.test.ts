@@ -1,8 +1,5 @@
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
-import {
-  fetchOllamaModels,
-  parseOllamaHost,
-} from "@/ipc/handlers/local_model_ollama_handler";
+import { fetchOllamaModels, parseOllamaHost } from "@/ipc/handlers/local_model_ollama_handler";
 import { afterEach, describe, it, expect, vi } from "vitest";
 
 afterEach(() => {
@@ -157,14 +154,10 @@ describe("parseOllamaHost", () => {
 
 describe("fetchOllamaModels", () => {
   it("classifies Ollama connection failures as filtered precondition errors", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockRejectedValue(new TypeError("fetch failed")),
-    );
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("fetch failed")));
 
     await expect(fetchOllamaModels()).rejects.toMatchObject({
-      message:
-        "Could not connect to Ollama. Make sure it's running at http://localhost:11434",
+      message: "Could not connect to Ollama. Make sure it's running at http://localhost:11434",
       kind: CaideErrorKind.Precondition,
     });
   });
@@ -179,10 +172,7 @@ describe("fetchOllamaModels", () => {
     );
 
     await expect(fetchOllamaModels()).rejects.toEqual(
-      new CaideError(
-        "Failed to fetch model: Service Unavailable",
-        CaideErrorKind.External,
-      ),
+      new CaideError("Failed to fetch model: Service Unavailable", CaideErrorKind.External),
     );
   });
 });

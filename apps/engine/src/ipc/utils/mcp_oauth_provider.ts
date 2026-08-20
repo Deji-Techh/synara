@@ -30,10 +30,7 @@ interface StoredOAuthState {
 // auth header per RFC 6749 §2.3.1.
 function formUrlEncode(s: string): string {
   return encodeURIComponent(s)
-    .replace(
-      /[!'()*]/g,
-      (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`,
-    )
+    .replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)
     .replace(/%20/g, "+");
 }
 
@@ -45,9 +42,7 @@ export function encryptToString(plaintext: string): string {
   if (!safeStorage.isEncryptionAvailable()) {
     // No keyring (e.g. Linux without libsecret): store plaintext
     // rather than blocking OAuth on those hosts.
-    logger.warn(
-      "safeStorage encryption unavailable; OAuth state written as plaintext",
-    );
+    logger.warn("safeStorage encryption unavailable; OAuth state written as plaintext");
     return PLAINTEXT_PREFIX + Buffer.from(plaintext, "utf8").toString("base64");
   }
   return safeStorage.encryptString(plaintext).toString("base64");
@@ -55,10 +50,7 @@ export function encryptToString(plaintext: string): string {
 
 export function decryptFromString(stored: string): string {
   if (stored.startsWith(PLAINTEXT_PREFIX)) {
-    return Buffer.from(
-      stored.slice(PLAINTEXT_PREFIX.length),
-      "base64",
-    ).toString("utf8");
+    return Buffer.from(stored.slice(PLAINTEXT_PREFIX.length), "base64").toString("utf8");
   }
   const buf = Buffer.from(stored, "base64");
   if (!safeStorage.isEncryptionAvailable()) {
@@ -77,10 +69,7 @@ export function decryptFromString(stored: string): string {
     // (recoverable) or undecryptable ciphertext (yields garbage that
     // JSON.parse upstream drops as empty state). Return bytes either
     // way and let the caller decide.
-    logger.warn(
-      "safeStorage.decryptString rejected OAuth state; treating as plaintext",
-      err,
-    );
+    logger.warn("safeStorage.decryptString rejected OAuth state; treating as plaintext", err);
     return buf.toString("utf8");
   }
 }
@@ -117,18 +106,12 @@ async function readState(serverId: number): Promise<StoredOAuthState> {
   }
 }
 
-async function writeState(
-  serverId: number,
-  state: StoredOAuthState,
-): Promise<void> {
+async function writeState(serverId: number, state: StoredOAuthState): Promise<void> {
   // No tokens and no client info: store NULL instead of an encrypted
   // empty object, so the column clearly means "nothing stored".
   const isEmpty = !state.tokens && !state.clientInformation;
   const blob = isEmpty ? null : encryptToString(JSON.stringify(state));
-  await db
-    .update(mcpServers)
-    .set({ oauthState: blob })
-    .where(eq(mcpServers.id, serverId));
+  await db.update(mcpServers).set({ oauthState: blob }).where(eq(mcpServers.id, serverId));
 }
 
 // Per-server queue so concurrent read-modify-write callers on the same
@@ -137,10 +120,7 @@ async function writeState(
 // us row-level locking.
 const stateLocks = new Map<number, Promise<unknown>>();
 
-async function withStateLock<T>(
-  serverId: number,
-  fn: () => Promise<T>,
-): Promise<T> {
+async function withStateLock<T>(serverId: number, fn: () => Promise<T>): Promise<T> {
   const prev = stateLocks.get(serverId) ?? Promise.resolve();
   // Catch so a rejected previous task doesn't block the queue.
   const next = prev.catch(() => undefined).then(fn);
@@ -226,9 +206,7 @@ export class CaideOAuthClientProvider implements OAuthClientProvider {
   get clientMetadata(): OAuthClientMetadata {
     // Match `addClientAuthentication` below: Basic for confidential
     // clients, `none` for public (plain PKCE).
-    const tokenEndpointAuthMethod = this.preregisteredClientSecret
-      ? "client_secret_basic"
-      : "none";
+    const tokenEndpointAuthMethod = this.preregisteredClientSecret ? "client_secret_basic" : "none";
     return {
       redirect_uris: [this.redirectUrl],
       grant_types: ["authorization_code", "refresh_token"],
@@ -294,9 +272,7 @@ export class CaideOAuthClientProvider implements OAuthClientProvider {
     });
   }
 
-  async saveClientInformation(
-    clientInformation: OAuthClientInformation,
-  ): Promise<void> {
+  async saveClientInformation(clientInformation: OAuthClientInformation): Promise<void> {
     // Update the in-memory copy before the DB write -- the SDK may
     // call `addClientAuthentication` (which reads it) before this
     // returns.
@@ -398,9 +374,8 @@ export class CaideOAuthClientProvider implements OAuthClientProvider {
       );
       return;
     }
-    const dcrMethod = (
-      info as OAuthClientInformation & { token_endpoint_auth_method?: string }
-    ).token_endpoint_auth_method;
+    const dcrMethod = (info as OAuthClientInformation & { token_endpoint_auth_method?: string })
+      .token_endpoint_auth_method;
     const hasSecret = Boolean(info.client_secret);
     const supported = metadata?.token_endpoint_auth_methods_supported ?? [];
     // Mirror the SDK's `selectClientAuthMethod` preference order
@@ -446,18 +421,12 @@ export class CaideOAuthClientProvider implements OAuthClientProvider {
     params.set("client_id", info.client_id);
   };
 
-  async invalidateCredentials(
-    scope: "all" | "client" | "tokens" | "verifier",
-  ): Promise<void> {
-    logger.debug(
-      `invalidateCredentials(${scope}) for MCP server ${this.serverId}`,
-    );
+  async invalidateCredentials(scope: "all" | "client" | "tokens" | "verifier"): Promise<void> {
+    logger.debug(`invalidateCredentials(${scope}) for MCP server ${this.serverId}`);
     // The SDK only ever calls with "all" or "tokens"; warn (rather
     // than silently no-op) if that ever changes so we notice.
     if (scope !== "all" && scope !== "tokens") {
-      logger.warn(
-        `invalidateCredentials(${scope}) is unhandled; SDK only calls 'all'/'tokens'`,
-      );
+      logger.warn(`invalidateCredentials(${scope}) is unhandled; SDK only calls 'all'/'tokens'`);
       return;
     }
     // Non-interactive providers (cached listTools probes, background

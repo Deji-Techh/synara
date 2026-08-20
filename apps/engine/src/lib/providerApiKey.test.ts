@@ -11,9 +11,7 @@ describe("providerApiKey", () => {
   });
 
   it("accepts printable ASCII key characters", () => {
-    expect(
-      findInvalidProviderApiKeyCharacter("sk-test_123.ABC/+=:"),
-    ).toBeNull();
+    expect(findInvalidProviderApiKeyCharacter("sk-test_123.ABC/+=:")).toBeNull();
   });
 
   it("finds non-ASCII characters that cannot be used in Authorization headers", () => {

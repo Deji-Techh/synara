@@ -3,9 +3,7 @@ import type { SubagentObservation } from "./explore_code_subagent_candidates";
 const MAX_QUERY_CHARS = 72;
 const MAX_PROGRESS_LINES = 30;
 
-export function formatExploreProgressLog(
-  observations: SubagentObservation[],
-): string {
+export function formatExploreProgressLog(observations: SubagentObservation[]): string {
   if (observations.length === 0) {
     return "Exploring...";
   }
@@ -75,9 +73,7 @@ function formatObservationSummary(observation: SubagentObservation): string {
       const directory = readStringField(args, "directory");
       const recursive = readBooleanField(args, "recursive");
       if (directory) {
-        return recursive
-          ? `list_files ${directory} (recursive)`
-          : `list_files ${directory}`;
+        return recursive ? `list_files ${directory} (recursive)` : `list_files ${directory}`;
       }
       return recursive ? "list_files (recursive)" : "list_files";
     }

@@ -217,14 +217,10 @@ describe("buildRetryReplayMessages", () => {
       type: string;
       toolCallId?: string;
     }>;
-    expect(assistantContent.some((c) => c.toolCallId === "incomplete")).toBe(
-      false,
-    );
+    expect(assistantContent.some((c) => c.toolCallId === "incomplete")).toBe(false);
 
     expect(messages[2].role).toBe("assistant");
-    expect(messages[2].content).toEqual([
-      { type: "text", text: "More work..." },
-    ]);
+    expect(messages[2].content).toEqual([{ type: "text", text: "More work..." }]);
   });
 
   it("excludes incomplete parallel calls mixed with complete ones", () => {
@@ -366,9 +362,7 @@ describe("maybeCaptureRetryReplayText", () => {
   });
 
   it("concatenates to existing trailing text event", () => {
-    const events: RetryReplayEvent[] = [
-      { type: "assistant-text", text: "hel" },
-    ];
+    const events: RetryReplayEvent[] = [{ type: "assistant-text", text: "hel" }];
     maybeCaptureRetryReplayText(events, "lo");
     expect(events).toHaveLength(1);
     expect(events[0]).toEqual({ type: "assistant-text", text: "hello" });

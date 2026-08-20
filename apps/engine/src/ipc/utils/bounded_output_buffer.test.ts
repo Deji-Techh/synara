@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  BoundedOutputBuffer,
-  OUTPUT_TRUNCATION_MARKER,
-} from "./bounded_output_buffer";
+import { BoundedOutputBuffer, OUTPUT_TRUNCATION_MARKER } from "./bounded_output_buffer";
 
 describe("BoundedOutputBuffer", () => {
   it("keeps only the newest bytes from very large output", () => {
@@ -13,9 +10,7 @@ describe("BoundedOutputBuffer", () => {
 
     expect(output.byteLength).toBe(16);
     expect(output.wasTruncated).toBe(true);
-    expect(output.toString()).toBe(
-      OUTPUT_TRUNCATION_MARKER + "0123456789abcdef",
-    );
+    expect(output.toString()).toBe(OUTPUT_TRUNCATION_MARKER + "0123456789abcdef");
   });
 
   it("wraps small appends around the ring and reassembles them in order", () => {

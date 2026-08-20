@@ -148,8 +148,7 @@ mcp.registerTool(
   "whoami",
   {
     title: "Who Am I",
-    description:
-      "Returns the bearer-token client_id this request authenticated as",
+    description: "Returns the bearer-token client_id this request authenticated as",
     inputSchema: {},
   },
   async (_args, _extra) => {
@@ -206,10 +205,7 @@ const httpServer = createServer(async (req, res) => {
     }
 
     // RFC 8414 discovery
-    if (
-      req.method === "GET" &&
-      url.pathname === "/.well-known/oauth-authorization-server"
-    ) {
+    if (req.method === "GET" && url.pathname === "/.well-known/oauth-authorization-server") {
       const meta = {
         issuer: BASE,
         authorization_endpoint: `${BASE}/authorize`,
@@ -227,10 +223,7 @@ const httpServer = createServer(async (req, res) => {
     }
 
     // RFC 9728 protected-resource metadata (the SDK looks here too)
-    if (
-      req.method === "GET" &&
-      url.pathname === "/.well-known/oauth-protected-resource"
-    ) {
+    if (req.method === "GET" && url.pathname === "/.well-known/oauth-protected-resource") {
       jsonResponse(res, 200, {
         resource: BASE,
         authorization_servers: [BASE],
@@ -252,19 +245,14 @@ const httpServer = createServer(async (req, res) => {
       // Persist the registered redirect_uris so /authorize can enforce
       // exact-match (RFC 6749 §3.1.2.2 / §10.6) instead of trusting
       // whatever the request says.
-      const redirectUris = Array.isArray(body.redirect_uris)
-        ? body.redirect_uris
-        : [];
+      const redirectUris = Array.isArray(body.redirect_uris) ? body.redirect_uris : [];
       registeredClients.set(clientId, { redirect_uris: redirectUris });
       jsonResponse(res, 201, {
         client_id: clientId,
         client_id_issued_at: Math.floor(Date.now() / 1000),
         redirect_uris: redirectUris,
         token_endpoint_auth_method: "none",
-        grant_types: body.grant_types ?? [
-          "authorization_code",
-          "refresh_token",
-        ],
+        grant_types: body.grant_types ?? ["authorization_code", "refresh_token"],
         response_types: body.response_types ?? ["code"],
       });
       return;
@@ -282,9 +270,7 @@ const httpServer = createServer(async (req, res) => {
 
       if (!clientId || !registeredClients.has(clientId)) {
         res.writeHead(400, { "Content-Type": "text/html" });
-        res.end(
-          "<h1>Invalid client. The client_id provided does not match.</h1>",
-        );
+        res.end("<h1>Invalid client. The client_id provided does not match.</h1>");
         return;
       }
       if (responseType !== "code") {
@@ -306,10 +292,7 @@ const httpServer = createServer(async (req, res) => {
       // native apps that pick an ephemeral callback port still work.
       const registered = registeredClients.get(clientId);
       const allowed = registered?.redirect_uris;
-      if (
-        Array.isArray(allowed) &&
-        !matchesRegisteredRedirect(redirectUri, allowed)
-      ) {
+      if (Array.isArray(allowed) && !matchesRegisteredRedirect(redirectUri, allowed)) {
         res.writeHead(400).end("redirect_uri does not match registered URIs");
         return;
       }
@@ -347,9 +330,7 @@ const httpServer = createServer(async (req, res) => {
       // also what the SDK's client_secret_basic auth method uses).
       const authHeader = req.headers.authorization;
       if (!clientId && authHeader?.toLowerCase().startsWith("basic ")) {
-        const decoded = Buffer.from(authHeader.slice(6), "base64").toString(
-          "utf8",
-        );
+        const decoded = Buffer.from(authHeader.slice(6), "base64").toString("utf8");
         const idx = decoded.indexOf(":");
         if (idx >= 0) {
           // Reverse the provider's formUrlEncode (+ → space, %XX decoded).
@@ -369,10 +350,7 @@ const httpServer = createServer(async (req, res) => {
       const registered = registeredClients.get(clientId);
       // If we configured a static client_secret, require it on the token
       // request. (Tests for the "none" auth method run without this set.)
-      if (
-        registered.client_secret &&
-        registered.client_secret !== clientSecret
-      ) {
+      if (registered.client_secret && registered.client_secret !== clientSecret) {
         jsonResponse(res, 401, {
           error: "invalid_client",
           error_description: "client_secret mismatch",
@@ -395,10 +373,7 @@ const httpServer = createServer(async (req, res) => {
           });
           return;
         }
-        if (
-          !codeVerifier ||
-          !verifyPkce(codeVerifier, pending.code_challenge)
-        ) {
+        if (!codeVerifier || !verifyPkce(codeVerifier, pending.code_challenge)) {
           jsonResponse(res, 400, {
             error: "invalid_grant",
             error_description: "PKCE failure",
@@ -497,14 +472,10 @@ httpServer.listen(PORT, "127.0.0.1", () => {
   if (NO_OAUTH) {
     console.log("  OAuth: disabled (all OAuth endpoints 404; /mcp open)");
   }
-  console.log(
-    `  DCR: ${DCR_ENABLED ? "enabled" : "disabled (static client_id only)"}`,
-  );
+  console.log(`  DCR: ${DCR_ENABLED ? "enabled" : "disabled (static client_id only)"}`);
   if (STATIC_CLIENT_ID) {
     console.log(`  static client_id: ${STATIC_CLIENT_ID}`);
-    console.log(
-      `  static client_secret: ${STATIC_CLIENT_SECRET ? "set" : "(none)"}`,
-    );
+    console.log(`  static client_secret: ${STATIC_CLIENT_SECRET ? "set" : "(none)"}`);
   }
   if (REQUIRED_SCOPE) console.log(`  required scope: ${REQUIRED_SCOPE}`);
   console.log(`  MCP endpoint: ${BASE}/mcp`);

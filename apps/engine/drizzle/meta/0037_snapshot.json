@@ -41,9 +41,7 @@
       "indexes": {
         "app_collections_name_unique": {
           "name": "app_collections_name_unique",
-          "columns": [
-            "name"
-          ],
+          "columns": ["name"],
           "isUnique": true
         }
       },
@@ -338,16 +336,12 @@
       "indexes": {
         "apps_source_type_idx": {
           "name": "apps_source_type_idx",
-          "columns": [
-            "source_type"
-          ],
+          "columns": ["source_type"],
           "isUnique": false
         },
         "apps_source_share_id_idx": {
           "name": "apps_source_share_id_idx",
-          "columns": [
-            "source_share_id"
-          ],
+          "columns": ["source_share_id"],
           "isUnique": false
         }
       },
@@ -356,12 +350,8 @@
           "name": "apps_collection_id_app_collections_id_fk",
           "tableFrom": "apps",
           "tableTo": "app_collections",
-          "columnsFrom": [
-            "collection_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["collection_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -444,12 +434,8 @@
           "name": "chats_app_id_apps_id_fk",
           "tableFrom": "chats",
           "tableTo": "apps",
-          "columnsFrom": [
-            "app_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["app_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -648,12 +634,8 @@
           "name": "language_models_custom_provider_id_language_model_providers_id_fk",
           "tableFrom": "language_models",
           "tableTo": "language_model_providers",
-          "columnsFrom": [
-            "custom_provider_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["custom_provider_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -839,10 +821,7 @@
       "indexes": {
         "uniq_mcp_consent": {
           "name": "uniq_mcp_consent",
-          "columns": [
-            "server_id",
-            "tool_name"
-          ],
+          "columns": ["server_id", "tool_name"],
           "isUnique": true
         }
       },
@@ -851,12 +830,8 @@
           "name": "mcp_tool_consents_server_id_mcp_servers_id_fk",
           "tableFrom": "mcp_tool_consents",
           "tableTo": "mcp_servers",
-          "columnsFrom": [
-            "server_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["server_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -974,12 +949,8 @@
           "name": "messages_chat_id_chats_id_fk",
           "tableFrom": "messages",
           "tableTo": "chats",
-          "columnsFrom": [
-            "chat_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["chat_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1046,9 +1017,7 @@
       "indexes": {
         "prompts_slug_unique": {
           "name": "prompts_slug_unique",
-          "columns": [
-            "slug"
-          ],
+          "columns": ["slug"],
           "isUnique": true
         }
       },
@@ -1123,10 +1092,7 @@
       "indexes": {
         "versions_app_commit_unique": {
           "name": "versions_app_commit_unique",
-          "columns": [
-            "app_id",
-            "commit_hash"
-          ],
+          "columns": ["app_id", "commit_hash"],
           "isUnique": true
         }
       },
@@ -1135,12 +1101,8 @@
           "name": "versions_app_id_apps_id_fk",
           "tableFrom": "versions",
           "tableTo": "apps",
-          "columnsFrom": [
-            "app_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["app_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

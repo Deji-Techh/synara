@@ -1,18 +1,8 @@
 import { describe, expect, it } from "vitest";
-import {
-  ChatModeSchema,
-  StoredChatModeSchema,
-  migrateStoredChatMode,
-} from "@/lib/schemas";
+import { ChatModeSchema, StoredChatModeSchema, migrateStoredChatMode } from "@/lib/schemas";
 import { normalizeStoredChatMode, resolveChatMode } from "@/lib/chatMode";
-import {
-  constructSystemPrompt,
-  getSystemPromptForChatMode,
-} from "@/prompts/system_prompt";
-import {
-  buildPlatformPrompt,
-  FLUTTER_PRODUCT_CONTRACT,
-} from "@/prompts/platform_contracts";
+import { constructSystemPrompt, getSystemPromptForChatMode } from "@/prompts/system_prompt";
+import { buildPlatformPrompt, FLUTTER_PRODUCT_CONTRACT } from "@/prompts/platform_contracts";
 import { EngineTurnModeSchema } from "@/protocol";
 
 // The four agent command/mode flows CAIDE exposes over `chat:stream`:
@@ -94,15 +84,9 @@ describe("mode → prompt routing", () => {
   // must inject the Flutter product contract (buildPlatformPrompt always
   // returns the Flutter contract for the Caide product).
   it("build mode selects the Flutter product contract regardless of appTarget", () => {
-    expect(FLUTTER_PRODUCT_CONTRACT).toContain(
-      "# PLATFORM CONTRACT — FLUTTER APP",
-    );
-    expect(buildPlatformPrompt("mobile", "flutter")).toContain(
-      "FLUTTER ONLY — NEVER web/React",
-    );
-    expect(buildPlatformPrompt("mobile", "flutter")).toContain(
-      "PLATFORM SPEC (always remember)",
-    );
+    expect(FLUTTER_PRODUCT_CONTRACT).toContain("# PLATFORM CONTRACT — FLUTTER APP");
+    expect(buildPlatformPrompt("mobile", "flutter")).toContain("FLUTTER ONLY — NEVER web/React");
+    expect(buildPlatformPrompt("mobile", "flutter")).toContain("PLATFORM SPEC (always remember)");
 
     const buildPrompt = constructSystemPrompt({
       aiRules: undefined,

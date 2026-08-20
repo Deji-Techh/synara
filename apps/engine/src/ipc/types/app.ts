@@ -2,10 +2,7 @@ import { z } from "zod";
 import { defineContract, createClient } from "../contracts/core";
 import { APP_FRAMEWORK_TYPES } from "../../lib/framework_constants";
 import { ChatModeSchema } from "../../lib/schemas";
-import {
-  AppIdentitySchema,
-  EditableAppIdentitySchema,
-} from "../../shared/app_identity";
+import { AppIdentitySchema, EditableAppIdentitySchema } from "../../shared/app_identity";
 import { CheckAppNameParamsSchema, CheckAppNameResultSchema } from "./import";
 
 // =============================================================================
@@ -171,12 +168,7 @@ export const CloudSandboxStatusSchema = z.object({
   lastActiveAt: z.string(),
   lastSuccessfulSyncAt: z.string().nullable(),
   expiresAt: z.string(),
-  billingState: z.enum([
-    "active",
-    "charging",
-    "terminated",
-    "billing_unavailable",
-  ]),
+  billingState: z.enum(["active", "charging", "terminated", "billing_unavailable"]),
   billingStartedAt: z.string(),
   billingLockedAt: z.string().nullable(),
   lastChargedAt: z.string().nullable(),
@@ -184,12 +176,7 @@ export const CloudSandboxStatusSchema = z.object({
   billingSlicesCharged: z.number().int().nonnegative(),
   creditsCharged: z.number().nonnegative(),
   terminationReason: z
-    .enum([
-      "manual",
-      "idle_timeout",
-      "credits_exhausted",
-      "billing_unavailable",
-    ])
+    .enum(["manual", "idle_timeout", "credits_exhausted", "billing_unavailable"])
     .nullable(),
   lastErrorCode: z.string().nullable(),
   lastErrorMessage: z.string().nullable(),
@@ -233,12 +220,7 @@ export const StartPublicPreviewParamsSchema = z.object({
   expiresInSeconds: z.number().int().positive().optional(),
 });
 
-export const TunnelPreviewStateSchema = z.enum([
-  "connecting",
-  "live",
-  "stopped",
-  "expired",
-]);
+export const TunnelPreviewStateSchema = z.enum(["connecting", "live", "stopped", "expired"]);
 
 export const TunnelPreviewStatusSchema = z.object({
   appId: z.number(),
@@ -663,9 +645,7 @@ export const appContracts = {
     channel: "app:list-screenshots",
     input: z.object({ appId: z.number() }),
     output: z.object({
-      screenshots: z.array(
-        z.object({ commitHash: z.string(), url: z.string() }),
-      ),
+      screenshots: z.array(z.object({ commitHash: z.string(), url: z.string() })),
     }),
   }),
 
@@ -714,20 +694,12 @@ export type CreateAppParams = z.infer<typeof CreateAppParamsSchema>;
 export type CreateAppResult = z.infer<typeof CreateAppResultSchema>;
 export type CopyAppParams = z.infer<typeof CopyAppParamsSchema>;
 export type EditAppFileReturnType = z.infer<typeof EditAppFileResultSchema>;
-export type RespondToAppInputParams = z.infer<
-  typeof RespondToAppInputParamsSchema
->;
+export type RespondToAppInputParams = z.infer<typeof RespondToAppInputParamsSchema>;
 export type AppFileSearchResult = z.infer<typeof AppFileSearchResultSchema>;
-export type ChangeAppLocationParams = z.infer<
-  typeof ChangeAppLocationParamsSchema
->;
-export type ChangeAppLocationResult = z.infer<
-  typeof ChangeAppLocationResultSchema
->;
+export type ChangeAppLocationParams = z.infer<typeof ChangeAppLocationParamsSchema>;
+export type ChangeAppLocationResult = z.infer<typeof ChangeAppLocationResultSchema>;
 export type ListAppsResponse = z.infer<typeof ListAppsResponseSchema>;
 export type RenameBranchParams = z.infer<typeof RenameBranchParamsSchema>;
 export type AppSearchResult = z.infer<typeof AppSearchResultSchema>;
-export type UpdateAppCommandsParams = z.infer<
-  typeof UpdateAppCommandsParamsSchema
->;
+export type UpdateAppCommandsParams = z.infer<typeof UpdateAppCommandsParamsSchema>;
 export type CloudSandboxStatus = z.infer<typeof CloudSandboxStatusSchema>;

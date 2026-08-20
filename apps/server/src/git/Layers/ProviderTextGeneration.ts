@@ -3,10 +3,8 @@ import { Effect, Layer } from "effect";
 import { TextGeneration, type TextGenerationShape } from "../Services/TextGeneration.ts";
 
 const stubTextGeneration: TextGenerationShape = {
-  generateCommitMessage: () =>
-    Effect.succeed({ subject: "chore: update", body: "" }),
-  generatePrContent: () =>
-    Effect.succeed({ title: "chore: update", body: "" }),
+  generateCommitMessage: () => Effect.succeed({ subject: "chore: update", body: "" }),
+  generatePrContent: () => Effect.succeed({ title: "chore: update", body: "" }),
   generateDiffSummary: () => Effect.succeed({ summary: "" }),
   generateBranchName: () => Effect.succeed({ branch: "chore/update" }),
   generateThreadTitle: () => Effect.succeed({ title: "New thread" }),
@@ -22,7 +20,4 @@ const stubTextGeneration: TextGenerationShape = {
     Effect.succeed({ completed: false, reason: "not implemented" }),
 };
 
-export const ProviderTextGenerationLive = Layer.succeed(
-  TextGeneration,
-  stubTextGeneration,
-);
+export const ProviderTextGenerationLive = Layer.succeed(TextGeneration, stubTextGeneration);

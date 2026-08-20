@@ -20,17 +20,10 @@ function stripItemIdFromPart(part: Record<string, unknown>): boolean {
     const container = part[field];
     if (!container || typeof container !== "object") continue;
 
-    const containerRecord = container as Record<
-      string,
-      Record<string, unknown>
-    >;
+    const containerRecord = container as Record<string, Record<string, unknown>>;
     for (const key of PROVIDER_KEYS_WITH_ITEM_ID) {
       const providerData = containerRecord[key];
-      if (
-        providerData &&
-        typeof providerData === "object" &&
-        "itemId" in providerData
-      ) {
+      if (providerData && typeof providerData === "object" && "itemId" in providerData) {
         delete providerData.itemId;
         didStrip = true;
         // Clean up empty provider data
@@ -71,10 +64,7 @@ export function cleanMessage<T extends ModelMessage>(message: T): T {
   let didModify = false;
 
   for (let i = 0; i < message.content.length; i++) {
-    const part = message.content[i] as { type?: string } & Record<
-      string,
-      unknown
-    >;
+    const part = message.content[i] as { type?: string } & Record<string, unknown>;
 
     // Strip itemId from provider metadata
     if (stripItemIdFromPart(part)) {
@@ -83,10 +73,7 @@ export function cleanMessage<T extends ModelMessage>(message: T): T {
 
     // Ensure tool-call input is always a valid object (prevents LiteLLM
     // sending empty string as a tool_ input when converting OpenAI→Anthropic format)
-    if (
-      part.type === "tool-call" &&
-      (!part.input || typeof part.input !== "object")
-    ) {
+    if (part.type === "tool-call" && (!part.input || typeof part.input !== "object")) {
       part.input = {};
       didModify = true;
     }
@@ -136,9 +123,7 @@ function cleanMessages(messages: ModelMessage[]): ModelMessage[] {
  * Pairs that are fully answered are left untouched. Returns the original array
  * if nothing needed changing.
  */
-export function sanitizeToolCallMessages<T extends ModelMessage>(
-  messages: T[],
-): T[] {
+export function sanitizeToolCallMessages<T extends ModelMessage>(messages: T[]): T[] {
   if (messages.length === 0) return messages;
 
   // Every tool-call id declared by an assistant message.
@@ -161,11 +146,7 @@ export function sanitizeToolCallMessages<T extends ModelMessage>(
     if (message.role !== "tool" || !Array.isArray(message.content)) continue;
     for (const part of message.content) {
       const p = part as { type?: string; toolCallId?: string };
-      if (
-        p.type === "tool-result" &&
-        p.toolCallId &&
-        declaredIds.has(p.toolCallId)
-      ) {
+      if (p.type === "tool-result" && p.toolCallId && declaredIds.has(p.toolCallId)) {
         answeredIds.add(p.toolCallId);
       }
     }
@@ -256,16 +237,12 @@ const REASONING_CONSISTENCY_SENTINEL = " ";
  * message. Non-assistant messages and histories without any reasoning parts are
  * left untouched. Returns the original array if nothing needed changing.
  */
-export function ensureReasoningConsistency<T extends ModelMessage>(
-  messages: T[],
-): T[] {
+export function ensureReasoningConsistency<T extends ModelMessage>(messages: T[]): T[] {
   const hasReasoning = messages.some(
     (m) =>
       m.role === "assistant" &&
       Array.isArray(m.content) &&
-      m.content.some(
-        (part) => (part as { type?: string }).type === "reasoning",
-      ),
+      m.content.some((part) => (part as { type?: string }).type === "reasoning"),
   );
   if (!hasReasoning) {
     return messages;
@@ -276,21 +253,14 @@ export function ensureReasoningConsistency<T extends ModelMessage>(
     if (m.role !== "assistant") {
       return m;
     }
-    const content = Array.isArray(m.content)
-      ? m.content
-      : [{ type: "text", text: m.content }];
-    if (
-      content.some((part) => (part as { type?: string }).type === "reasoning")
-    ) {
+    const content = Array.isArray(m.content) ? m.content : [{ type: "text", text: m.content }];
+    if (content.some((part) => (part as { type?: string }).type === "reasoning")) {
       return m;
     }
     didModify = true;
     return {
       ...m,
-      content: [
-        ...content,
-        { type: "reasoning", text: REASONING_CONSISTENCY_SENTINEL },
-      ],
+      content: [...content, { type: "reasoning", text: REASONING_CONSISTENCY_SENTINEL }],
     } as T;
   });
   return didModify ? result : messages;
@@ -320,9 +290,7 @@ export function getAiMessagesJsonIfWithinLimit(
     return payload;
   }
 
-  logger.warn(
-    `ai_messages_json too large (${jsonStr.length} bytes), skipping save`,
-  );
+  logger.warn(`ai_messages_json too large (${jsonStr.length} bytes), skipping save`);
   return undefined;
 }
 
@@ -344,10 +312,7 @@ export function parseAiMessagesJson(msg: DbMessageForParsing): ModelMessage[] {
     const parsed = msg.aiMessagesJson;
 
     // Legacy shape: stored directly as a ModelMessage[]
-    if (
-      Array.isArray(parsed) &&
-      parsed.every((m) => m && typeof m.role === "string")
-    ) {
+    if (Array.isArray(parsed) && parsed.every((m) => m && typeof m.role === "string")) {
       return cleanMessages(parsed);
     }
 

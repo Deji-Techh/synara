@@ -1,10 +1,7 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { StringDecoder } from "node:string_decoder";
 import treeKill from "tree-kill";
-import {
-  BoundedOutputBuffer,
-  DEFAULT_MAX_BUFFERED_OUTPUT_BYTES,
-} from "./bounded_output_buffer";
+import { BoundedOutputBuffer, DEFAULT_MAX_BUFFERED_OUTPUT_BYTES } from "./bounded_output_buffer";
 
 export const DEFAULT_BUFFERED_PROCESS_TIMEOUT_MS = 10 * 60 * 1000;
 export const BUFFERED_PROCESS_FORCE_KILL_GRACE_MS = 5_000;
@@ -75,19 +72,14 @@ export async function runBufferedProcess(
     };
   }
 
-  const maxOutputBytes =
-    options.maxOutputBytes ?? DEFAULT_MAX_BUFFERED_OUTPUT_BYTES;
+  const maxOutputBytes = options.maxOutputBytes ?? DEFAULT_MAX_BUFFERED_OUTPUT_BYTES;
   const timeoutMs = options.timeoutMs ?? DEFAULT_BUFFERED_PROCESS_TIMEOUT_MS;
 
   return new Promise<BufferedProcessResult>((resolve, reject) => {
     const stdoutBuffer = new BoundedOutputBuffer(maxOutputBytes);
     const stderrBuffer = new BoundedOutputBuffer(maxOutputBytes);
-    const stdoutDecoder = options.onStdout
-      ? new StringDecoder("utf8")
-      : undefined;
-    const stderrDecoder = options.onStderr
-      ? new StringDecoder("utf8")
-      : undefined;
+    const stdoutDecoder = options.onStdout ? new StringDecoder("utf8") : undefined;
+    const stderrDecoder = options.onStderr ? new StringDecoder("utf8") : undefined;
 
     let child: ChildProcess;
     try {
@@ -138,9 +130,7 @@ export async function runBufferedProcess(
       settled = true;
       cleanup();
       const succeeded = code === 0 && !aborted && !timedOut;
-      const output = snapshotOutput(
-        !succeeded || options.captureOutputOnSuccess !== false,
-      );
+      const output = snapshotOutput(!succeeded || options.captureOutputOnSuccess !== false);
       resolve({ code, signal, ...output, aborted, timedOut });
     };
 
@@ -220,16 +210,10 @@ export async function runBufferedProcess(
     }
 
     function handleClose(code: number | null, signal: NodeJS.Signals | null) {
-      if (
-        stdoutDecoder &&
-        !invokeOutputCallback(options.onStdout, stdoutDecoder.end())
-      ) {
+      if (stdoutDecoder && !invokeOutputCallback(options.onStdout, stdoutDecoder.end())) {
         return;
       }
-      if (
-        stderrDecoder &&
-        !invokeOutputCallback(options.onStderr, stderrDecoder.end())
-      ) {
+      if (stderrDecoder && !invokeOutputCallback(options.onStderr, stderrDecoder.end())) {
         return;
       }
       finish(code, signal);

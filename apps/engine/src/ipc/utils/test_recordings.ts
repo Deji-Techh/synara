@@ -70,8 +70,7 @@ export function listRunRecordings(appPath: string): TestRecordings {
     if (kind === "trace") traces.push(rel);
     else videos.push(rel);
   }
-  const withPrefix = (arr: string[]) =>
-    arr.map((f) => `${TEST_RESULTS_DIR}/${f}`);
+  const withPrefix = (arr: string[]) => arr.map((f) => `${TEST_RESULTS_DIR}/${f}`);
   return {
     traceZips: withPrefix(newestFirst(appPath, traces)),
     videos: withPrefix(newestFirst(appPath, videos)),
@@ -104,10 +103,7 @@ export function clearTestRecordings(appPath: string): void {
  * sides (symlinks inside the app could otherwise escape it) and requires the
  * file to live under `test-results/`. Never throws.
  */
-export function resolveRecordingPath(
-  appPath: string,
-  relPath: string,
-): string | null {
+export function resolveRecordingPath(appPath: string, relPath: string): string | null {
   if (!recordingKind(relPath)) return null;
   const resolved = path.resolve(appPath, relPath);
   let realAppPath: string;

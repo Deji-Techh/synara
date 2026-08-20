@@ -4,10 +4,7 @@ import path from "node:path";
 import os from "node:os";
 import { readFileTool } from "./read_file";
 import type { AgentContext } from "./types";
-import {
-  appendAttachmentManifestEntries,
-  getCaideMediaDir,
-} from "@/ipc/utils/media_path_utils";
+import { appendAttachmentManifestEntries, getCaideMediaDir } from "@/ipc/utils/media_path_utils";
 import {
   AGENT_READ_FILE_RESULT_LIMIT_BYTES,
   AGENT_READ_FILE_TRUNCATION_NOTICE,
@@ -36,21 +33,13 @@ line 4
 line 5`;
 
   beforeEach(async () => {
-    testDir = await fs.promises.mkdtemp(
-      path.join(os.tmpdir(), "read-file-test-"),
-    );
+    testDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "read-file-test-"));
 
-    await fs.promises.writeFile(
-      path.join(testDir, "test.txt"),
-      testFileContent,
-    );
+    await fs.promises.writeFile(path.join(testDir, "test.txt"), testFileContent);
 
     await fs.promises.writeFile(path.join(testDir, "empty.txt"), "");
 
-    await fs.promises.writeFile(
-      path.join(testDir, "single-line.txt"),
-      "only one line",
-    );
+    await fs.promises.writeFile(path.join(testDir, "single-line.txt"), "only one line");
 
     await fs.promises.writeFile(
       path.join(testDir, "trailing-newline.txt"),
@@ -123,9 +112,7 @@ line 5`;
 
     it("accepts optional start_line_one_indexed", () => {
       const schema = readFileTool.inputSchema;
-      expect(() =>
-        schema.parse({ path: "foo.txt", start_line_one_indexed: 5 }),
-      ).not.toThrow();
+      expect(() => schema.parse({ path: "foo.txt", start_line_one_indexed: 5 })).not.toThrow();
     });
 
     it("accepts optional end_line_one_indexed_inclusive", () => {
@@ -148,23 +135,17 @@ line 5`;
 
     it("rejects start_line_one_indexed less than 1", () => {
       const schema = readFileTool.inputSchema;
-      expect(() =>
-        schema.parse({ path: "foo.txt", start_line_one_indexed: 0 }),
-      ).toThrow();
+      expect(() => schema.parse({ path: "foo.txt", start_line_one_indexed: 0 })).toThrow();
     });
 
     it("rejects end_line_one_indexed_inclusive less than 1", () => {
       const schema = readFileTool.inputSchema;
-      expect(() =>
-        schema.parse({ path: "foo.txt", end_line_one_indexed_inclusive: 0 }),
-      ).toThrow();
+      expect(() => schema.parse({ path: "foo.txt", end_line_one_indexed_inclusive: 0 })).toThrow();
     });
 
     it("rejects non-integer line numbers", () => {
       const schema = readFileTool.inputSchema;
-      expect(() =>
-        schema.parse({ path: "foo.txt", start_line_one_indexed: 1.5 }),
-      ).toThrow();
+      expect(() => schema.parse({ path: "foo.txt", start_line_one_indexed: 1.5 })).toThrow();
     });
 
     it("rejects start_line > end_line", () => {
@@ -175,33 +156,25 @@ line 5`;
           start_line_one_indexed: 4,
           end_line_one_indexed_inclusive: 2,
         }),
-      ).toThrow(
-        "start_line_one_indexed must be <= end_line_one_indexed_inclusive",
-      );
+      ).toThrow("start_line_one_indexed must be <= end_line_one_indexed_inclusive");
     });
   });
 
   describe("execute - full file read", () => {
     it("reads entire file when no line range is specified", async () => {
-      const result = await readFileTool.execute(
-        { path: "test.txt" },
-        mockContext,
-      );
+      const result = await readFileTool.execute({ path: "test.txt" }, mockContext);
       expect(result).toBe(testFileContent);
     });
 
     it("returns empty string for empty files", async () => {
-      const result = await readFileTool.execute(
-        { path: "empty.txt" },
-        mockContext,
-      );
+      const result = await readFileTool.execute({ path: "empty.txt" }, mockContext);
       expect(result).toBe("");
     });
 
     it("throws error for non-existent file", async () => {
-      await expect(
-        readFileTool.execute({ path: "nope.txt" }, mockContext),
-      ).rejects.toThrow("File does not exist: nope.txt");
+      await expect(readFileTool.execute({ path: "nope.txt" }, mockContext)).rejects.toThrow(
+        "File does not exist: nope.txt",
+      );
     });
 
     it("reads attachment logical paths", async () => {
@@ -223,10 +196,7 @@ line 5`;
         "a".repeat(AGENT_READ_FILE_RESULT_LIMIT_BYTES * 2),
       );
 
-      const result = await readFileTool.execute(
-        { path: "large.txt" },
-        mockContext,
-      );
+      const result = await readFileTool.execute({ path: "large.txt" }, mockContext);
 
       expect(Buffer.byteLength(result, "utf8")).toBeLessThanOrEqual(
         AGENT_READ_FILE_RESULT_LIMIT_BYTES,
@@ -259,9 +229,9 @@ line 5`;
         Buffer.from([0x61, 0x00, 0x62]),
       );
 
-      await expect(
-        readFileTool.execute({ path: "binary.dat" }, mockContext),
-      ).rejects.toThrow("Cannot read binary file as UTF-8 text: binary.dat");
+      await expect(readFileTool.execute({ path: "binary.dat" }, mockContext)).rejects.toThrow(
+        "Cannot read binary file as UTF-8 text: binary.dat",
+      );
     });
   });
 
@@ -373,10 +343,7 @@ line 5`;
 
   describe("execute - single-line file", () => {
     it("reads full single-line file", async () => {
-      const result = await readFileTool.execute(
-        { path: "single-line.txt" },
-        mockContext,
-      );
+      const result = await readFileTool.execute({ path: "single-line.txt" }, mockContext);
       expect(result).toBe("only one line");
     });
 
@@ -419,10 +386,7 @@ line 5`;
     });
 
     it("full file read matches line-range full read", async () => {
-      const fullRead = await readFileTool.execute(
-        { path: "trailing-newline.txt" },
-        mockContext,
-      );
+      const fullRead = await readFileTool.execute({ path: "trailing-newline.txt" }, mockContext);
       const rangeRead = await readFileTool.execute(
         {
           path: "trailing-newline.txt",
@@ -485,9 +449,7 @@ line 5`;
         { path: "src/App.tsx", start_line_one_indexed: 10 },
         false,
       );
-      expect(result).toBe(
-        '<caide-read path="src/App.tsx" start_line="10"></caide-read>',
-      );
+      expect(result).toBe('<caide-read path="src/App.tsx" start_line="10"></caide-read>');
     });
 
     it("includes end_line attribute when provided", () => {
@@ -495,9 +457,7 @@ line 5`;
         { path: "src/App.tsx", end_line_one_indexed_inclusive: 50 },
         false,
       );
-      expect(result).toBe(
-        '<caide-read path="src/App.tsx" end_line="50"></caide-read>',
-      );
+      expect(result).toBe('<caide-read path="src/App.tsx" end_line="50"></caide-read>');
     });
 
     it("includes both line range attributes", () => {
@@ -515,23 +475,15 @@ line 5`;
     });
 
     it("escapes special characters in path", () => {
-      const result = readFileTool.buildXml?.(
-        { path: 'file "with" <special>.ts' },
-        false,
-      );
+      const result = readFileTool.buildXml?.({ path: 'file "with" <special>.ts' }, false);
       expect(result).toContain("&quot;");
       expect(result).toContain("&lt;");
       expect(result).toContain("&gt;");
     });
 
     it("includes app_name attribute when provided", () => {
-      const result = readFileTool.buildXml?.(
-        { path: "src/App.tsx", app_name: "other-app" },
-        false,
-      );
-      expect(result).toBe(
-        '<caide-read path="src/App.tsx" app_name="other-app"></caide-read>',
-      );
+      const result = readFileTool.buildXml?.({ path: "src/App.tsx", app_name: "other-app" }, false);
+      expect(result).toBe('<caide-read path="src/App.tsx" app_name="other-app"></caide-read>');
     });
   });
 
@@ -539,13 +491,8 @@ line 5`;
     let otherAppDir: string;
 
     beforeEach(async () => {
-      otherAppDir = await fs.promises.mkdtemp(
-        path.join(os.tmpdir(), "read-file-other-app-"),
-      );
-      await fs.promises.writeFile(
-        path.join(otherAppDir, "other.txt"),
-        "hello from the other app",
-      );
+      otherAppDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "read-file-other-app-"));
+      await fs.promises.writeFile(path.join(otherAppDir, "other.txt"), "hello from the other app");
     });
 
     afterEach(async () => {
@@ -563,20 +510,14 @@ line 5`;
 
     it("reads from current app when app_name is omitted even if referencedApps is populated", async () => {
       mockContext.referencedApps.set("other-app", otherAppDir);
-      const result = await readFileTool.execute(
-        { path: "test.txt" },
-        mockContext,
-      );
+      const result = await readFileTool.execute({ path: "test.txt" }, mockContext);
       expect(result).toBe(testFileContent);
     });
 
     it("throws a clear error when app_name is not in the allow-list", async () => {
       mockContext.referencedApps.set("other-app", otherAppDir);
       await expect(
-        readFileTool.execute(
-          { path: "other.txt", app_name: "does-not-exist" },
-          mockContext,
-        ),
+        readFileTool.execute({ path: "other.txt", app_name: "does-not-exist" }, mockContext),
       ).rejects.toThrow(/Unknown app_name 'does-not-exist'/);
     });
 
@@ -584,29 +525,20 @@ line 5`;
       mockContext.referencedApps.set("app-a", otherAppDir);
       mockContext.referencedApps.set("app-b", otherAppDir);
       await expect(
-        readFileTool.execute(
-          { path: "other.txt", app_name: "nope" },
-          mockContext,
-        ),
+        readFileTool.execute({ path: "other.txt", app_name: "nope" }, mockContext),
       ).rejects.toThrow(/app-a, app-b/);
     });
 
     it("error indicates none available when referencedApps is empty", async () => {
       await expect(
-        readFileTool.execute(
-          { path: "other.txt", app_name: "whatever" },
-          mockContext,
-        ),
+        readFileTool.execute({ path: "other.txt", app_name: "whatever" }, mockContext),
       ).rejects.toThrow(/\(none available\)/);
     });
 
     it("file-not-found error includes app_name when reading from a referenced app", async () => {
       mockContext.referencedApps.set("other-app", otherAppDir);
       await expect(
-        readFileTool.execute(
-          { path: "missing.txt", app_name: "other-app" },
-          mockContext,
-        ),
+        readFileTool.execute({ path: "missing.txt", app_name: "other-app" }, mockContext),
       ).rejects.toThrow("File does not exist: missing.txt (in app: other-app)");
     });
 
@@ -624,10 +556,7 @@ line 5`;
       mockContext.referencedApps.set("other-app", otherAppDir);
       const caideDir = path.join(otherAppDir, ".caide");
       await fs.promises.mkdir(caideDir, { recursive: true });
-      await fs.promises.writeFile(
-        path.join(caideDir, "secret.md"),
-        "should not be exposed",
-      );
+      await fs.promises.writeFile(path.join(caideDir, "secret.md"), "should not be exposed");
       await fs.promises.mkdir(path.join(otherAppDir, "src"), {
         recursive: true,
       });
@@ -648,16 +577,10 @@ line 5`;
         await fs.promises.mkdir(caideDir, { recursive: true });
         const privateFile = path.join(caideDir, "private.txt");
         await fs.promises.writeFile(privateFile, "private");
-        await fs.promises.symlink(
-          privateFile,
-          path.join(otherAppDir, "public-link.txt"),
-        );
+        await fs.promises.symlink(privateFile, path.join(otherAppDir, "public-link.txt"));
 
         await expect(
-          readFileTool.execute(
-            { path: "public-link.txt", app_name: "other-app" },
-            mockContext,
-          ),
+          readFileTool.execute({ path: "public-link.txt", app_name: "other-app" }, mockContext),
         ).rejects.toThrow(/Cannot read \.caide\/ paths from referenced apps/);
       },
     );
@@ -665,14 +588,8 @@ line 5`;
     it("allows .caide/ paths on the current app (no app_name)", async () => {
       const caideDir = path.join(testDir, ".caide");
       await fs.promises.mkdir(caideDir, { recursive: true });
-      await fs.promises.writeFile(
-        path.join(caideDir, "notes.md"),
-        "local caide metadata",
-      );
-      const result = await readFileTool.execute(
-        { path: ".caide/notes.md" },
-        mockContext,
-      );
+      await fs.promises.writeFile(path.join(caideDir, "notes.md"), "local caide metadata");
+      const result = await readFileTool.execute({ path: ".caide/notes.md" }, mockContext);
       expect(result).toBe("local caide metadata");
     });
   });

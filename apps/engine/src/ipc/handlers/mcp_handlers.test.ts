@@ -40,10 +40,7 @@ let lastInsertPayload: Record<string, unknown> | null = null;
 
 vi.mock("electron", () => ({
   ipcMain: {
-    handle: (
-      channel: string,
-      fn: (event: unknown, input: unknown) => unknown,
-    ) => {
+    handle: (channel: string, fn: (event: unknown, input: unknown) => unknown) => {
       handlers.set(channel, fn);
     },
   },
@@ -101,11 +98,9 @@ vi.mock("@/db", () => ({
             oauthEnabled: Boolean(values.oauthEnabled),
             oauthState: (values.oauthState as string | null) ?? null,
             oauthClientId: (values.oauthClientId as string | null) ?? null,
-            oauthClientSecret:
-              (values.oauthClientSecret as string | null) ?? null,
+            oauthClientSecret: (values.oauthClientSecret as string | null) ?? null,
             oauthScope: (values.oauthScope as string | null) ?? null,
-            oauthCallbackPort:
-              (values.oauthCallbackPort as number | null) ?? null,
+            oauthCallbackPort: (values.oauthCallbackPort as number | null) ?? null,
             bearerToken: (values.bearerToken as string | null) ?? null,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -277,9 +272,7 @@ describe("mcp listTools handler", () => {
     // returned client's `tools()` blows up (e.g. transport 401 after
     // tokens expired AND refresh failed). Same UI contract: no
     // crash, empty list.
-    const failingTools = vi
-      .fn()
-      .mockRejectedValueOnce(new Error("401 Unauthorized"));
+    const failingTools = vi.fn().mockRejectedValueOnce(new Error("401 Unauthorized"));
     getClientMock.mockResolvedValueOnce({ tools: failingTools });
 
     const result = await invoke("mcp:list-tools", 2);
@@ -308,9 +301,7 @@ describe("mcp bearer token handlers", () => {
     expect(stored.bearerToken).not.toContain("plaintext-token");
     // The mocked safeStorage wraps plaintext in "enc:..." before the
     // base64 encode in encryptToString.
-    expect(Buffer.from(stored.bearerToken!, "base64").toString("utf8")).toMatch(
-      /^enc:/,
-    );
+    expect(Buffer.from(stored.bearerToken!, "base64").toString("utf8")).toMatch(/^enc:/);
     expect(disposeMock).toHaveBeenCalledWith(50);
   });
 

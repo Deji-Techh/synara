@@ -29,29 +29,24 @@ html[data-caide-motion-diagnostic="slow"] {
 
 .caide-motion-screen {
   min-width: 0;
-  animation: caide-screen-enter
-    var(--caide-region-duration, var(--caide-motion-navigation))
+  animation: caide-screen-enter var(--caide-region-duration, var(--caide-motion-navigation))
     var(--caide-ease-emphasized) both;
 }
 
 .caide-motion-presence[data-state="open"] {
-  animation: caide-presence-enter
-    var(--caide-region-duration, var(--caide-motion-standard))
+  animation: caide-presence-enter var(--caide-region-duration, var(--caide-motion-standard))
     var(--caide-ease-emphasized) both;
 }
 
 .caide-motion-presence[data-state="closed"] {
   pointer-events: none;
-  animation: caide-presence-exit
-    var(--caide-region-duration, var(--caide-motion-standard)) ease-in both;
+  animation: caide-presence-exit var(--caide-region-duration, var(--caide-motion-standard)) ease-in
+    both;
 }
 
 .caide-motion-stagger-item {
-  animation: caide-stagger-enter var(--caide-motion-standard)
-    var(--caide-ease-emphasized) both;
-  animation-delay: calc(
-    var(--caide-stagger-index, 0) * var(--caide-stagger-gap, 45ms)
-  );
+  animation: caide-stagger-enter var(--caide-motion-standard) var(--caide-ease-emphasized) both;
+  animation-delay: calc(var(--caide-stagger-index, 0) * var(--caide-stagger-gap, 45ms));
 }
 
 .caide-motion-success {
@@ -59,8 +54,7 @@ html[data-caide-motion-diagnostic="slow"] {
   min-height: 2.75rem;
   align-items: center;
   gap: 0.625rem;
-  animation: caide-status-enter var(--caide-motion-standard)
-    var(--caide-ease-emphasized) both;
+  animation: caide-status-enter var(--caide-motion-standard) var(--caide-ease-emphasized) both;
 }
 
 .caide-motion-success-mark {
@@ -72,8 +66,7 @@ html[data-caide-motion-diagnostic="slow"] {
   background: var(--caide-success);
   color: white;
   font-weight: 800;
-  animation: caide-success-pop var(--caide-motion-expressive)
-    var(--caide-ease-emphasized) both;
+  animation: caide-success-pop var(--caide-motion-expressive) var(--caide-ease-emphasized) both;
 }
 
 @keyframes caide-screen-enter {

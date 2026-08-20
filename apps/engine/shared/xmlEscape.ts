@@ -37,10 +37,7 @@ export function unescapeXmlAttr(str: string): string {
  */
 export function escapeXmlContent(str: string | null | undefined): string {
   if (str == null) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 /**

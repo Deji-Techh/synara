@@ -57,9 +57,7 @@ describe("deployAllFunctionsIfNeeded", () => {
   });
 
   it("returns deploy warnings from the shared helper", async () => {
-    mocks.deployAffectedSupabaseFunctions.mockResolvedValueOnce([
-      "Failed to bundle alpha",
-    ]);
+    mocks.deployAffectedSupabaseFunctions.mockResolvedValueOnce(["Failed to bundle alpha"]);
     const result = await deployAllFunctionsIfNeeded({
       appPath: "/apps/test",
       supabaseProjectId: "project-id",
@@ -73,8 +71,7 @@ describe("deployAllFunctionsIfNeeded", () => {
 
     expect(result).toEqual({
       success: true,
-      warning:
-        "Some Supabase functions failed to deploy: Failed to bundle alpha",
+      warning: "Some Supabase functions failed to deploy: Failed to bundle alpha",
     });
   });
 });

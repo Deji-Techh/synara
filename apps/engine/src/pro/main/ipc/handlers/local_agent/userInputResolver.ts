@@ -25,11 +25,7 @@ export interface UserInputResolverOptions {
 }
 
 export interface UserInputResolver<T> {
-  wait(
-    requestId: string,
-    chatId: number,
-    abortSignal?: AbortSignal,
-  ): Promise<T | null>;
+  wait(requestId: string, chatId: number, abortSignal?: AbortSignal): Promise<T | null>;
   /** Returns true if a pending entry was found and resolved. */
   resolve(requestId: string, value: T | null): boolean;
   /** Resolve all pending entries for a chat with `null`. */

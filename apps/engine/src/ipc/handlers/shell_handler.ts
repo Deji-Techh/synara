@@ -82,18 +82,13 @@ export function registerShellHandlers() {
     // Defense-in-depth: only allow known media file extensions
     const ext = path.extname(resolvedPath).toLowerCase();
     if (!ALLOWED_MEDIA_EXTENSIONS.has(ext)) {
-      throw new Error(
-        `File type '${ext}' is not allowed. Only media files can be opened.`,
-      );
+      throw new Error(`File type '${ext}' is not allowed. Only media files can be opened.`);
     }
 
     const result = await shell.openPath(resolvedPath);
     if (result) {
       // shell.openPath returns an error string if it fails, empty string on success
-      throw new CaideError(
-        `Failed to open file: ${result}`,
-        CaideErrorKind.External,
-      );
+      throw new CaideError(`Failed to open file: ${result}`, CaideErrorKind.External);
     }
     logger.debug("Opened file:", resolvedPath);
   });

@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  ToolDefinition,
-  AgentContext,
-  escapeXmlAttr,
-  escapeXmlContent,
-} from "./types";
+import { ToolDefinition, AgentContext, escapeXmlAttr, escapeXmlContent } from "./types";
 import { buildMcpTypeDefsBlock, resolveMcpToolDefs } from "./mcp_type_defs";
 
 const getMcpToolSchemaSchema = z.object({
@@ -45,8 +40,7 @@ export const getMcpToolSchemaTool: ToolDefinition<GetMcpToolSchemaArgs> = {
   // Only registered in search mode; see ctx.isMcpToolSearchAvailable.
   isEnabled: (ctx) => !!ctx.isMcpToolSearchAvailable,
 
-  getConsentPreview: (args) =>
-    `Get schema for MCP tool(s): ${args.tools.join(", ")}`,
+  getConsentPreview: (args) => `Get schema for MCP tool(s): ${args.tools.join(", ")}`,
 
   buildXml: (args, isComplete) => {
     if (isComplete) return undefined;
@@ -81,8 +75,7 @@ export const getMcpToolSchemaTool: ToolDefinition<GetMcpToolSchemaArgs> = {
     }
 
     const block = buildMcpTypeDefsBlock(found);
-    const missingNote =
-      missing.length > 0 ? `\n\n// No match for: ${missing.join(", ")}` : "";
+    const missingNote = missing.length > 0 ? `\n\n// No match for: ${missing.join(", ")}` : "";
 
     return finish(
       `Signature(s) for ${found.length} MCP tool(s). Call these as host ` +

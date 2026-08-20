@@ -133,7 +133,11 @@ export function BrandingWizardModal(props: {
                   onClick={handleGenerate}
                 >
                   <span className="flex items-center gap-2 font-medium">
-                    <CentralIcon name="arrow-rotate-sparkle" className="size-4" aria-hidden="true" />
+                    <CentralIcon
+                      name="arrow-rotate-sparkle"
+                      className="size-4"
+                      aria-hidden="true"
+                    />
                     Generate them for me
                   </span>
                   <span className="text-xs opacity-80">AI will pick a name, logo, and colors</span>

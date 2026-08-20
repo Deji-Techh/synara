@@ -65,10 +65,7 @@ export function parsePsProcessTable(output: string): PsProcessEntry[] {
  * using the parent-pid links in the ps snapshot. The root entry itself is
  * included when present. Guards against ppid cycles.
  */
-export function collectProcessTree(
-  rootPid: number,
-  entries: PsProcessEntry[],
-): PsProcessEntry[] {
+export function collectProcessTree(rootPid: number, entries: PsProcessEntry[]): PsProcessEntry[] {
   const childrenByPpid = new Map<number, PsProcessEntry[]>();
   const byPid = new Map<number, PsProcessEntry>();
   for (const entry of entries) {
@@ -138,13 +135,9 @@ export function parseVmStat(output: string): VmStatSummary | null {
  * `vm.swapusage: total = 2048.00M  used = 1017.75M  free = 1030.25M  (encrypted)`.
  * Returns sizes in MB, or null if the output doesn't match.
  */
-export function parseSwapUsage(
-  output: string,
-): { totalMb: number; usedMb: number } | null {
+export function parseSwapUsage(output: string): { totalMb: number; usedMb: number } | null {
   const parseSize = (name: string): number | null => {
-    const match = output.match(
-      new RegExp(`${name}\\s*=\\s*([\\d.]+)([KMGT]?)`, "i"),
-    );
+    const match = output.match(new RegExp(`${name}\\s*=\\s*([\\d.]+)([KMGT]?)`, "i"));
     if (!match) return null;
     const value = Number(match[1]);
     switch (match[2].toUpperCase()) {
@@ -306,8 +299,7 @@ async function collectAppProcessTrees(
   try {
     // Imported lazily: process_manager pulls in Electron-dependent modules
     // that must not load when this module is imported in unit tests.
-    const { getRunningAppProcessPids } =
-      await import("../ipc/utils/process_manager");
+    const { getRunningAppProcessPids } = await import("../ipc/utils/process_manager");
     const appPids = getRunningAppProcessPids();
     if (appPids.length === 0) {
       return { supported: true, trees: [] };
@@ -323,10 +315,7 @@ async function collectAppProcessTrees(
     const trees: AppProcessTree[] = [];
     for (const { appId, pid } of appPids) {
       const treeEntries = collectProcessTree(pid, psEntries);
-      const totalRssKb = treeEntries.reduce(
-        (sum, entry) => sum + entry.rssKb,
-        0,
-      );
+      const totalRssKb = treeEntries.reduce((sum, entry) => sum + entry.rssKb, 0);
       trees.push({
         appId,
         rootPid: pid,
@@ -386,10 +375,7 @@ export async function collectSystemMemorySignals(
 
   if (vmStatResult.status === "fulfilled") {
     const vmStat = parseVmStat(vmStatResult.value);
-    const swap =
-      swapResult.status === "fulfilled"
-        ? parseSwapUsage(swapResult.value)
-        : null;
+    const swap = swapResult.status === "fulfilled" ? parseSwapUsage(swapResult.value) : null;
     if (!vmStat) {
       result.error = "Failed to parse vm_stat output";
       return result;
@@ -401,10 +387,8 @@ export async function collectSystemMemorySignals(
     // minus purgeable pages the OS can drop on demand.
     result.appMemoryMb = Math.max(
       0,
-      pagesToMb(
-        vmStat.activePages + vmStat.wiredPages + vmStat.compressorPages,
-        pageSizeBytes,
-      ) - pagesToMb(vmStat.purgeablePages, pageSizeBytes),
+      pagesToMb(vmStat.activePages + vmStat.wiredPages + vmStat.compressorPages, pageSizeBytes) -
+        pagesToMb(vmStat.purgeablePages, pageSizeBytes),
     );
     // Reclaimable: inactive (mostly file cache), speculative, and purgeable
     // pages can all be reclaimed without swapping.
@@ -418,8 +402,7 @@ export async function collectSystemMemorySignals(
       result.swapTotalMb = swap.totalMb;
     }
 
-    const availableRatio =
-      (result.freeMb + result.reclaimableMb) / totalMemoryMb;
+    const availableRatio = (result.freeMb + result.reclaimableMb) / totalMemoryMb;
     result.pressureDetected =
       availableRatio < PRESSURE_FREE_RATIO_THRESHOLD ||
       (result.swapUsedMb ?? 0) > PRESSURE_SWAP_USED_MB_THRESHOLD;
@@ -430,13 +413,9 @@ export async function collectSystemMemorySignals(
     result.error = `Failed to collect vm_stat: ${errorToString(vmStatResult.reason)}`;
     // Still provide the (misleading, but better than nothing) os fallback.
     result.fallback = {
-      usedMemoryMb: Math.round(
-        (totalMemoryBytes - freeMemoryBytes) / BYTES_PER_MB,
-      ),
+      usedMemoryMb: Math.round((totalMemoryBytes - freeMemoryBytes) / BYTES_PER_MB),
       freeMemoryMb: Math.round(freeMemoryBytes / BYTES_PER_MB),
-      usagePercent: round2(
-        ((totalMemoryBytes - freeMemoryBytes) / totalMemoryBytes) * 100,
-      ),
+      usagePercent: round2(((totalMemoryBytes - freeMemoryBytes) / totalMemoryBytes) * 100),
     };
   }
   return result;

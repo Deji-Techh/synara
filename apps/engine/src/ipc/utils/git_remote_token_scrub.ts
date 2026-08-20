@@ -11,8 +11,7 @@ const logger = log.scope("git_remote_token_scrub");
 // https://<token>:x-oauth-basic@github.com/owner/repo.git
 // The lookahead ensures the host is exactly github.com, not a
 // prefixed host like github.company.com.
-const EMBEDDED_GITHUB_CREDENTIALS_REGEX =
-  /(https?:\/\/)[^@/\s]+@github\.com(?=[/:\s]|$)/g;
+const EMBEDDED_GITHUB_CREDENTIALS_REGEX = /(https?:\/\/)[^@/\s]+@github\.com(?=[/:\s]|$)/g;
 
 /**
  * Removes GitHub access tokens that older Caide versions embedded in remote
@@ -26,11 +25,7 @@ export async function scrubGithubTokenFromRemotes(): Promise<void> {
 
     const counts = await Promise.all(
       allApps.map(async (app) => {
-        const configPath = path.join(
-          getCaideAppPath(app.path),
-          ".git",
-          "config",
-        );
+        const configPath = path.join(getCaideAppPath(app.path), ".git", "config");
 
         let original: string;
         try {
@@ -39,10 +34,7 @@ export async function scrubGithubTokenFromRemotes(): Promise<void> {
           return 0;
         }
 
-        const scrubbed = original.replace(
-          EMBEDDED_GITHUB_CREDENTIALS_REGEX,
-          "$1github.com",
-        );
+        const scrubbed = original.replace(EMBEDDED_GITHUB_CREDENTIALS_REGEX, "$1github.com");
         if (scrubbed === original) {
           return 0;
         }
@@ -63,9 +55,7 @@ export async function scrubGithubTokenFromRemotes(): Promise<void> {
 
     const totalScrubbed = counts.reduce<number>((sum, n) => sum + n, 0);
     if (totalScrubbed > 0) {
-      logger.log(
-        `Scrubbed embedded GitHub credentials from ${totalScrubbed} app git config(s)`,
-      );
+      logger.log(`Scrubbed embedded GitHub credentials from ${totalScrubbed} app git config(s)`);
     }
   } catch (err) {
     logger.warn("Failed to scrub GitHub tokens from git remotes:", err);

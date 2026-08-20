@@ -2,10 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import log from "electron-log";
 
-import {
-  installPackages,
-  ExecuteAddDependencyError,
-} from "@/ipc/processors/executeAddDependency";
+import { installPackages, ExecuteAddDependencyError } from "@/ipc/processors/executeAddDependency";
 import { appendNitroRules, restoreAiRules } from "@/ipc/utils/ai_rules_patcher";
 import {
   addNitroToViteConfig,
@@ -65,12 +62,9 @@ export interface EnsureNitroResult {
  * anything throws. Callers can also invoke the returned `rollback` if a
  * subsequent step fails and they want to undo the Nitro setup.
  */
-export async function ensureNitroOnViteApp(
-  appPath: string,
-): Promise<EnsureNitroResult> {
+export async function ensureNitroOnViteApp(appPath: string): Promise<EnsureNitroResult> {
   const rulesBackup = await appendNitroRules(appPath);
-  let nitroConfigResult: { filePath: string; wasCreated: boolean } | null =
-    null;
+  let nitroConfigResult: { filePath: string; wasCreated: boolean } | null = null;
   let serverDirCreated = false;
   let viteConfigBackup: ViteConfigBackup | null = null;
   const serverDirPath = path.join(appPath, "server");
@@ -90,10 +84,7 @@ export async function ensureNitroOnViteApp(
         await restoreViteConfig(viteConfigBackup);
       }
     } catch (rollbackError) {
-      logger.error(
-        "Rollback failed during ensureNitroOnViteApp:",
-        rollbackError,
-      );
+      logger.error("Rollback failed during ensureNitroOnViteApp:", rollbackError);
     }
   };
 
@@ -109,11 +100,7 @@ export async function ensureNitroOnViteApp(
     await fs.mkdir(path.join(serverDirPath, "routes", "api"), {
       recursive: true,
     });
-    await fs.writeFile(
-      path.join(serverDirPath, "routes", "api", ".gitkeep"),
-      "",
-      "utf8",
-    );
+    await fs.writeFile(path.join(serverDirPath, "routes", "api", ".gitkeep"), "", "utf8");
 
     viteConfigBackup = await addNitroToViteConfig(appPath);
 
@@ -143,17 +130,14 @@ export async function ensureNitroOnViteApp(
  * generic provider error. Returns an empty result + no-op rollback when the
  * app is not Vite.
  */
-export async function ensureNitroIfVite(
-  resolvedAppPath: string,
-): Promise<EnsureNitroResult> {
+export async function ensureNitroIfVite(resolvedAppPath: string): Promise<EnsureNitroResult> {
   if (detectFrameworkType(resolvedAppPath) !== "vite") {
     return { warningMessages: [], rollback: async () => {} };
   }
   try {
     return await ensureNitroOnViteApp(resolvedAppPath);
   } catch (nitroError: unknown) {
-    const message =
-      nitroError instanceof Error ? nitroError.message : String(nitroError);
+    const message = nitroError instanceof Error ? nitroError.message : String(nitroError);
     throw new CaideError(
       `Failed to set up Nitro server layer: ${message}`,
       CaideErrorKind.External,

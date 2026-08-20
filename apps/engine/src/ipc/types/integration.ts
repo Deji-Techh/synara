@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  defineEvent,
-  createEventClient,
-  defineContract,
-  createClient,
-} from "../contracts/core";
+import { defineEvent, createEventClient, defineContract, createClient } from "../contracts/core";
 
 export const IntegrationPromptSchema = z.object({
   chatId: z.number(),
@@ -20,9 +15,7 @@ export const IntegrationResponseSchema = z.object({
   completed: z.boolean(),
 });
 
-export type IntegrationResponsePayload = z.infer<
-  typeof IntegrationResponseSchema
->;
+export type IntegrationResponsePayload = z.infer<typeof IntegrationResponseSchema>;
 
 export const integrationEvents = {
   prompt: defineEvent({

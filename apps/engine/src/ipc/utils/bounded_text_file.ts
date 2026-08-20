@@ -11,8 +11,7 @@ export const AGENT_READ_FILE_TRUNCATION_NOTICE =
 const STREAM_CHUNK_BYTES = 64 * 1024;
 const BINARY_SAMPLE_BYTES = 8 * 1024;
 const AGENT_READ_FILE_CONTENT_LIMIT_BYTES =
-  AGENT_READ_FILE_RESULT_LIMIT_BYTES -
-  Buffer.byteLength(AGENT_READ_FILE_TRUNCATION_NOTICE, "utf8");
+  AGENT_READ_FILE_RESULT_LIMIT_BYTES - Buffer.byteLength(AGENT_READ_FILE_TRUNCATION_NOTICE, "utf8");
 
 interface OpenContainedFileParams {
   rootPath: string;
@@ -38,14 +37,9 @@ export interface ReadTextFileLinesResult {
   truncated: boolean;
 }
 
-function isNodeErrorWithCode(
-  error: unknown,
-  code: string,
-): error is NodeJS.ErrnoException {
+function isNodeErrorWithCode(error: unknown, code: string): error is NodeJS.ErrnoException {
   return (
-    error instanceof Error &&
-    "code" in error &&
-    (error as NodeJS.ErrnoException).code === code
+    error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === code
   );
 }
 
@@ -60,10 +54,7 @@ async function openContainedFile({
     realPath = await fs.realpath(filePath);
   } catch (error) {
     if (isNodeErrorWithCode(error, "ENOENT")) {
-      throw new CaideError(
-        `File does not exist: ${displayPath}`,
-        CaideErrorKind.NotFound,
-      );
+      throw new CaideError(`File does not exist: ${displayPath}`, CaideErrorKind.NotFound);
     }
     throw error;
   }
@@ -72,10 +63,7 @@ async function openContainedFile({
   try {
     const stat = await handle.stat();
     if (!stat.isFile()) {
-      throw new CaideError(
-        `Path is not a file: ${displayPath}`,
-        CaideErrorKind.Validation,
-      );
+      throw new CaideError(`Path is not a file: ${displayPath}`, CaideErrorKind.Validation);
     }
     return { handle, realPath, realRootPath, size: stat.size };
   } catch (error) {
@@ -125,9 +113,7 @@ async function assertTextSample(
   }
 }
 
-export async function readAppFileForEditor(
-  params: OpenContainedFileParams,
-): Promise<string> {
+export async function readAppFileForEditor(params: OpenContainedFileParams): Promise<string> {
   const opened = await openContainedFile(params);
   try {
     if (opened.size > APP_FILE_EDITOR_LIMIT_BYTES) {
@@ -247,15 +233,10 @@ export async function readTextFileLines({
         const hasNewline = newlineIndex !== -1;
         const segmentEnd = hasNewline ? newlineIndex + 1 : chunk.length;
         const inRange =
-          currentLine >= startLine &&
-          (endLineInclusive == null || currentLine <= endLineInclusive);
+          currentLine >= startLine && (endLineInclusive == null || currentLine <= endLineInclusive);
 
         if (inRange) {
-          if (
-            hasNewline &&
-            endLineInclusive != null &&
-            currentLine === endLineInclusive
-          ) {
+          if (hasNewline && endLineInclusive != null && currentLine === endLineInclusive) {
             const startIdx = appendStart !== -1 ? appendStart : offset;
             if (!appendBytes(chunk.subarray(startIdx, newlineIndex))) break;
             appendStart = -1;

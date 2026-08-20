@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  isPersistedGoalComplete,
-  PersistedGoalStateSchema,
-} from "./goal_state";
+import { isPersistedGoalComplete, PersistedGoalStateSchema } from "./goal_state";
 
 function state() {
   return PersistedGoalStateSchema.parse({

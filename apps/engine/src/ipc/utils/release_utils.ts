@@ -79,13 +79,7 @@ export async function buildWebApp(appPath: string): Promise<BuildResult> {
 
 export async function syncCapacitor(appPath: string): Promise<BuildResult> {
   const logs: BuildLog[] = [];
-  logs.push(
-    makeLog(
-      "android-project",
-      "running",
-      "Syncing Capacitor Android project...",
-    ),
-  );
+  logs.push(makeLog("android-project", "running", "Syncing Capacitor Android project..."));
 
   try {
     await simpleSpawn({
@@ -94,54 +88,33 @@ export async function syncCapacitor(appPath: string): Promise<BuildResult> {
       successMessage: "Capacitor sync complete",
       errorPrefix: "Capacitor sync failed",
     });
-    logs.push(
-      makeLog(
-        "android-project",
-        "success",
-        "Android project generated at android/",
-      ),
-    );
+    logs.push(makeLog("android-project", "success", "Android project generated at android/"));
     return { success: true, logs, outputPath: capacitorDir(appPath) };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logs.push(
-      makeLog("android-project", "failed", "Capacitor sync failed", message),
-    );
+    logs.push(makeLog("android-project", "failed", "Capacitor sync failed", message));
     return { success: false, logs };
   }
 }
 
-export async function buildAndroidApkDebug(
-  appPath: string,
-): Promise<BuildResult> {
+export async function buildAndroidApkDebug(appPath: string): Promise<BuildResult> {
   const logs: BuildLog[] = [];
 
   logs.push(makeLog("apk-debug", "running", "Building debug APK..."));
 
   try {
     const appName = await getAppName(appPath);
-    const artifact = await buildAndroidArtifact(
-      appPath,
-      appName,
-      "debug-apk",
-      null,
-    );
-    logs.push(
-      makeLog("apk-debug", "success", `Debug APK built at ${artifact.path}`),
-    );
+    const artifact = await buildAndroidArtifact(appPath, appName, "debug-apk", null);
+    logs.push(makeLog("apk-debug", "success", `Debug APK built at ${artifact.path}`));
     return { success: true, logs, outputPath: artifact.path };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logs.push(
-      makeLog("apk-debug", "failed", "Debug APK build failed", message),
-    );
+    logs.push(makeLog("apk-debug", "failed", "Debug APK build failed", message));
     return { success: false, logs };
   }
 }
 
-export async function checkDependencies(
-  appPath: string,
-): Promise<DependencyDiagnostic[]> {
+export async function checkDependencies(appPath: string): Promise<DependencyDiagnostic[]> {
   const diagnostics: DependencyDiagnostic[] = [];
 
   const hasCapacitor = isCapacitorInstalled(appPath);
@@ -216,10 +189,7 @@ export async function checkDependencies(
   return diagnostics;
 }
 
-export async function verifyApp(
-  appPath: string,
-  files: string[],
-): Promise<VerificationResult> {
+export async function verifyApp(appPath: string, files: string[]): Promise<VerificationResult> {
   const issues: VerificationIssue[] = [];
 
   for (const file of files) {
@@ -261,8 +231,7 @@ export async function verifyApp(
       issues.push({
         category: "security",
         severity: "warning",
-        message:
-          'External links opened in a new tab need rel="noopener noreferrer"',
+        message: 'External links opened in a new tab need rel="noopener noreferrer"',
         file,
       });
     }
@@ -280,8 +249,7 @@ export async function verifyApp(
       issues.push({
         category: "ux-flow",
         severity: "warning",
-        message:
-          "Click handler on a non-interactive element may break keyboard navigation",
+        message: "Click handler on a non-interactive element may break keyboard navigation",
         file,
       });
     }
@@ -290,8 +258,7 @@ export async function verifyApp(
       issues.push({
         category: "ui-quality",
         severity: "info",
-        message:
-          "Avoid transition-all; animate explicit compositor-safe properties",
+        message: "Avoid transition-all; animate explicit compositor-safe properties",
         file,
       });
     }
@@ -300,30 +267,21 @@ export async function verifyApp(
       issues.push({
         category: "accessibility",
         severity: "warning",
-        message:
-          "Text below 12px can become unreadable on compact mobile screens",
+        message: "Text below 12px can become unreadable on compact mobile screens",
         file,
       });
     }
 
-    if (
-      /data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]{100000,}/.test(
-        content,
-      )
-    ) {
+    if (/data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]{100000,}/.test(content)) {
       issues.push({
         category: "performance",
         severity: "warning",
-        message:
-          "Large inline image increases startup and bundle cost; use an optimized asset",
+        message: "Large inline image increases startup and bundle cost; use an optimized asset",
         file,
       });
     }
 
-    if (
-      file.endsWith(".tsx") &&
-      /import\s+\{[^}]*\}\s+from\s['"][^'"]+['"];?\s*$/.test(content)
-    ) {
+    if (file.endsWith(".tsx") && /import\s+\{[^}]*\}\s+from\s['"][^'"]+['"];?\s*$/.test(content)) {
       const lines = content.split("\n");
       for (let i = 0; i < lines.length; i++) {
         if (/overflow-x\s*:\s*(auto|scroll)/i.test(lines[i])) {
@@ -362,39 +320,26 @@ export async function detectPwaCapability(appPath: string): Promise<boolean> {
   try {
     const files = await fs.readdir(appPath);
     return (
-      files.some((f) => f.includes("service-worker")) ||
-      files.some((f) => f.includes("manifest"))
+      files.some((f) => f.includes("service-worker")) || files.some((f) => f.includes("manifest"))
     );
   } catch {
     return false;
   }
 }
 
-export async function buildAndroidApkRelease(
-  appPath: string,
-): Promise<BuildResult> {
+export async function buildAndroidApkRelease(appPath: string): Promise<BuildResult> {
   const logs: BuildLog[] = [];
   const androidDir = capacitorDir(appPath);
   const androidProjectExists = fsSync.existsSync(path.join(androidDir, "app"));
 
   if (!androidProjectExists) {
     logs.push(
-      makeLog(
-        "apk-signed",
-        "failed",
-        "Android project not found. Run mobile setup first.",
-      ),
+      makeLog("apk-signed", "failed", "Android project not found. Run mobile setup first."),
     );
     return { success: false, logs };
   }
 
-  logs.push(
-    makeLog(
-      "apk-signed",
-      "running",
-      "Building release APK via native pipeline...",
-    ),
-  );
+  logs.push(makeLog("apk-signed", "running", "Building release APK via native pipeline..."));
 
   try {
     await simpleSpawn({
@@ -403,14 +348,7 @@ export async function buildAndroidApkRelease(
       successMessage: "Release APK compiled",
       errorPrefix: "Release APK build failed",
     });
-    const apkPath = path.join(
-      androidDir,
-      "app",
-      "build",
-      "outputs",
-      "apk",
-      "release",
-    );
+    const apkPath = path.join(androidDir, "app", "build", "outputs", "apk", "release");
     logs.push(
       makeLog(
         "apk-signed",
@@ -421,34 +359,24 @@ export async function buildAndroidApkRelease(
     return { success: true, logs, outputPath: apkPath };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logs.push(
-      makeLog("apk-signed", "failed", "Release APK build failed", message),
-    );
+    logs.push(makeLog("apk-signed", "failed", "Release APK build failed", message));
     return { success: false, logs };
   }
 }
 
-export async function buildAndroidAabRelease(
-  appPath: string,
-): Promise<BuildResult> {
+export async function buildAndroidAabRelease(appPath: string): Promise<BuildResult> {
   const logs: BuildLog[] = [];
   const androidDir = capacitorDir(appPath);
   const androidProjectExists = fsSync.existsSync(path.join(androidDir, "app"));
 
   if (!androidProjectExists) {
     logs.push(
-      makeLog(
-        "aab-signed",
-        "failed",
-        "Android project not found. Run mobile setup first.",
-      ),
+      makeLog("aab-signed", "failed", "Android project not found. Run mobile setup first."),
     );
     return { success: false, logs };
   }
 
-  logs.push(
-    makeLog("aab-signed", "running", "Building AAB via native pipeline..."),
-  );
+  logs.push(makeLog("aab-signed", "running", "Building AAB via native pipeline..."));
 
   try {
     await simpleSpawn({
@@ -457,14 +385,7 @@ export async function buildAndroidAabRelease(
       successMessage: "AAB compiled",
       errorPrefix: "AAB build failed",
     });
-    const aabPath = path.join(
-      androidDir,
-      "app",
-      "build",
-      "outputs",
-      "bundle",
-      "release",
-    );
+    const aabPath = path.join(androidDir, "app", "build", "outputs", "bundle", "release");
     logs.push(
       makeLog(
         "aab-signed",
@@ -482,9 +403,7 @@ export async function buildAndroidAabRelease(
 
 export async function getAppName(appPath: string): Promise<string> {
   try {
-    const pkg = JSON.parse(
-      await fs.readFile(path.join(appPath, "package.json"), "utf8"),
-    );
+    const pkg = JSON.parse(await fs.readFile(path.join(appPath, "package.json"), "utf8"));
     return pkg.name || "app";
   } catch {
     return "app";

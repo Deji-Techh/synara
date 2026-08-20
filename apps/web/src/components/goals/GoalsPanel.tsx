@@ -26,13 +26,7 @@ import {
   SteerIcon,
   XIcon,
 } from "~/lib/icons";
-import type {
-  Goal,
-  GoalActivityEvent,
-  GoalId,
-  GoalRun,
-  GoalStatus,
-} from "@caide/contracts";
+import type { Goal, GoalActivityEvent, GoalId, GoalRun, GoalStatus } from "@caide/contracts";
 
 import { IconButton } from "../ui/icon-button";
 import { Badge } from "../ui/badge";
@@ -47,13 +41,7 @@ import {
   DialogPopup,
   DialogTitle,
 } from "../ui/dialog";
-import {
-  Select,
-  SelectItem,
-  SelectPopup,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
+import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 
 import { DockPaneHeader } from "../chat/DockPaneHeader";
 import { PanelStateMessage } from "../chat/PanelStateMessage";
@@ -89,9 +77,7 @@ const TASK_STATUS_ORDER: Record<string, number> = {
 function GoalProgress(props: { goal: Goal }) {
   const { goal } = props;
   const pct =
-    goal.totalTaskCount > 0
-      ? Math.round((goal.verifiedTaskCount / goal.totalTaskCount) * 100)
-      : 0;
+    goal.totalTaskCount > 0 ? Math.round((goal.verifiedTaskCount / goal.totalTaskCount) * 100) : 0;
   return (
     <div className="flex items-center gap-2">
       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
@@ -123,13 +109,9 @@ function BlockerAlert(props: { goal: Goal }) {
         <CircleAlertIcon className="mt-0.5 size-4 shrink-0 text-red-500" />
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-medium text-foreground">Blocker</p>
-          <p className="text-[12px] leading-relaxed text-muted-foreground">
-            {blocker.reason}
-          </p>
+          <p className="text-[12px] leading-relaxed text-muted-foreground">{blocker.reason}</p>
           {blocker.userAction ? (
-            <p className="mt-1 text-[12px] text-foreground/80">
-              Action: {blocker.userAction}
-            </p>
+            <p className="mt-1 text-[12px] text-foreground/80">Action: {blocker.userAction}</p>
           ) : null}
         </div>
       </div>
@@ -203,8 +185,7 @@ function taskStatusIcon(status: string) {
 function TasksTab(props: { goal: Goal }) {
   const tasks = useMemo(() => {
     return [...props.goal.tasks].sort((a, b) => {
-      const statusDiff =
-        (TASK_STATUS_ORDER[a.status] ?? 99) - (TASK_STATUS_ORDER[b.status] ?? 99);
+      const statusDiff = (TASK_STATUS_ORDER[a.status] ?? 99) - (TASK_STATUS_ORDER[b.status] ?? 99);
       if (statusDiff !== 0) return statusDiff;
       return a.order - b.order;
     });
@@ -212,15 +193,15 @@ function TasksTab(props: { goal: Goal }) {
 
   if (tasks.length === 0) {
     return (
-<PanelStateMessage>
-      <div className="flex flex-col items-center gap-1.5">
-        <ListTodoIcon className="size-6 text-muted-foreground/60" />
-        <span className="text-sm font-medium text-foreground/70">No tasks yet</span>
-        <span className="text-xs text-muted-foreground">
-          Tasks are broken out when the goal starts running.
-        </span>
-      </div>
-    </PanelStateMessage>
+      <PanelStateMessage>
+        <div className="flex flex-col items-center gap-1.5">
+          <ListTodoIcon className="size-6 text-muted-foreground/60" />
+          <span className="text-sm font-medium text-foreground/70">No tasks yet</span>
+          <span className="text-xs text-muted-foreground">
+            Tasks are broken out when the goal starts running.
+          </span>
+        </div>
+      </PanelStateMessage>
     );
   }
 
@@ -300,9 +281,7 @@ function ActivityRow(props: { event: GoalActivityEvent }) {
         <p className="mt-0.5 text-[11px] text-muted-foreground">
           {subagent ? subagent : null}
           {tool ? (
-            <span className="ml-1.5 rounded bg-muted px-1 py-px font-mono text-[10px]">
-              {tool}
-            </span>
+            <span className="ml-1.5 rounded bg-muted px-1 py-px font-mono text-[10px]">{tool}</span>
           ) : null}
           <span className="ml-1.5">{formatGoalRelativeTime(event.createdAt)}</span>
         </p>
@@ -367,15 +346,15 @@ function EvidenceTab(props: { goal: Goal }) {
   const evidence = goal.evidence;
   if (!evidence || evidence.length === 0) {
     return (
-<PanelStateMessage>
-      <div className="flex flex-col items-center gap-1.5">
-        <CheckCircle2Icon className="size-6 text-muted-foreground/60" />
-        <span className="text-sm font-medium text-foreground/70">No evidence captured</span>
-        <span className="text-xs text-muted-foreground">
-          Failed checks and verification results will be listed here.
-        </span>
-      </div>
-    </PanelStateMessage>
+      <PanelStateMessage>
+        <div className="flex flex-col items-center gap-1.5">
+          <CheckCircle2Icon className="size-6 text-muted-foreground/60" />
+          <span className="text-sm font-medium text-foreground/70">No evidence captured</span>
+          <span className="text-xs text-muted-foreground">
+            Failed checks and verification results will be listed here.
+          </span>
+        </div>
+      </PanelStateMessage>
     );
   }
   return (
@@ -420,7 +399,9 @@ function GoalList(props: {
   const { goals, selectedId, onSelect } = props;
   const ordered = useMemo(() => {
     return [...goals].sort((a, b) => {
-      const liveDiff = Number(GOAL_LIVE_STATUSES.includes(a.status)) - Number(GOAL_LIVE_STATUSES.includes(b.status));
+      const liveDiff =
+        Number(GOAL_LIVE_STATUSES.includes(a.status)) -
+        Number(GOAL_LIVE_STATUSES.includes(b.status));
       if (liveDiff !== 0) return liveDiff;
       return b.createdAt - a.createdAt;
     });
@@ -441,13 +422,13 @@ function GoalList(props: {
               selected ? "bg-accent/50" : "hover:bg-accent/40",
             )}
           >
-            <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", goalStatusDotClass(goal.status))} />
+            <span
+              className={cn("mt-1.5 size-2 shrink-0 rounded-full", goalStatusDotClass(goal.status))}
+            />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <p className="truncate text-[13px] font-medium text-foreground">{goal.title}</p>
-                {isLive ? (
-                  <span className="size-1.5 shrink-0 rounded-full bg-primary" />
-                ) : null}
+                {isLive ? <span className="size-1.5 shrink-0 rounded-full bg-primary" /> : null}
               </div>
               <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
                 {goalStatusLabel(goal.status)}
@@ -506,7 +487,9 @@ function GoalDetail(props: {
           <span className={cn("size-2 shrink-0 rounded-full", goalStatusDotClass(goal.status))} />
           <span className="truncate">{goal.title}</span>
         </div>
-        <Badge variant="outline" className={goalStatusLabelClass(goal.status)}>{goalStatusLabel(goal.status)}</Badge>
+        <Badge variant="outline" className={goalStatusLabelClass(goal.status)}>
+          {goalStatusLabel(goal.status)}
+        </Badge>
         <div className="ml-auto flex items-center gap-0.5">
           {isLive ? (
             <>
@@ -575,9 +558,7 @@ function GoalDetail(props: {
         <div className="p-3">
           {tab === "overview" ? <OverviewTab goal={goal} /> : null}
           {tab === "tasks" ? <TasksTab goal={goal} /> : null}
-          {tab === "subagents" ? (
-            <SubagentsTab runs={runs} events={runActivity} />
-          ) : null}
+          {tab === "subagents" ? <SubagentsTab runs={runs} events={runActivity} /> : null}
           {tab === "evidence" ? <EvidenceTab goal={goal} /> : null}
         </div>
       </ScrollArea>
@@ -647,66 +628,72 @@ function GoalEditorDialog(props: {
         </DialogHeader>
         <DialogPanel>
           <form className="space-y-3" onSubmit={handleSubmit}>
-          <div className="space-y-1.5">
-            <label className="text-[12px] font-medium text-muted-foreground">Title</label>
-            <input
-              className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-[13px] outline-none focus:border-primary"
-              value={title}
-              placeholder={initial ? undefined : "e.g. Fix checkout flow"}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[12px] font-medium text-muted-foreground">
-              Objective <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              className="min-h-16 w-full resize-y rounded-md border border-border bg-background px-2.5 py-1.5 text-[13px] outline-none focus:border-primary"
-              value={objective}
-              required
-              onChange={(e) => setObjective(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[12px] font-medium text-muted-foreground">Execution target</label>
-            <Select value={target} onValueChange={(v) => setTarget(v as typeof target)}>
-              <SelectTrigger className="w-full">
-                <SelectValue>{target}</SelectValue>
-              </SelectTrigger>
-              <SelectPopup align="center" surface="settings">
-                <SelectItem value="local">local</SelectItem>
-                <SelectItem value="hybrid">hybrid</SelectItem>
-                <SelectItem value="remote">remote</SelectItem>
-              </SelectPopup>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[12px] font-medium text-muted-foreground">
-              Definition of done (one per line)
-            </label>
-            <textarea
-              className="min-h-16 w-full resize-y rounded-md border border-border bg-background px-2.5 py-1.5 text-[13px] outline-none focus:border-primary"
-              value={dod}
-              onChange={(e) => setDod(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[12px] font-medium text-muted-foreground">
-              Constraints (one per line)
-            </label>
-            <textarea
-              className="min-h-12 w-full resize-y rounded-md border border-border bg-background px-2.5 py-1.5 text-[13px] outline-none focus:border-primary"
-              value={constraints}
-              onChange={(e) => setConstraints(e.target.value)}
-            />
-          </div>
-          <DialogFooter className="mt-4">
-            <DialogClose
-              render={<Button type="button" variant="ghost">Cancel</Button>}
-            />
-            <Button type="submit">{initial ? "Save changes" : "Create goal"}</Button>
-          </DialogFooter>
-        </form>
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-medium text-muted-foreground">Title</label>
+              <input
+                className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-[13px] outline-none focus:border-primary"
+                value={title}
+                placeholder={initial ? undefined : "e.g. Fix checkout flow"}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-medium text-muted-foreground">
+                Objective <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                className="min-h-16 w-full resize-y rounded-md border border-border bg-background px-2.5 py-1.5 text-[13px] outline-none focus:border-primary"
+                value={objective}
+                required
+                onChange={(e) => setObjective(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-medium text-muted-foreground">
+                Execution target
+              </label>
+              <Select value={target} onValueChange={(v) => setTarget(v as typeof target)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue>{target}</SelectValue>
+                </SelectTrigger>
+                <SelectPopup align="center" surface="settings">
+                  <SelectItem value="local">local</SelectItem>
+                  <SelectItem value="hybrid">hybrid</SelectItem>
+                  <SelectItem value="remote">remote</SelectItem>
+                </SelectPopup>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-medium text-muted-foreground">
+                Definition of done (one per line)
+              </label>
+              <textarea
+                className="min-h-16 w-full resize-y rounded-md border border-border bg-background px-2.5 py-1.5 text-[13px] outline-none focus:border-primary"
+                value={dod}
+                onChange={(e) => setDod(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[12px] font-medium text-muted-foreground">
+                Constraints (one per line)
+              </label>
+              <textarea
+                className="min-h-12 w-full resize-y rounded-md border border-border bg-background px-2.5 py-1.5 text-[13px] outline-none focus:border-primary"
+                value={constraints}
+                onChange={(e) => setConstraints(e.target.value)}
+              />
+            </div>
+            <DialogFooter className="mt-4">
+              <DialogClose
+                render={
+                  <Button type="button" variant="ghost">
+                    Cancel
+                  </Button>
+                }
+              />
+              <Button type="submit">{initial ? "Save changes" : "Create goal"}</Button>
+            </DialogFooter>
+          </form>
         </DialogPanel>
       </DialogPopup>
     </Dialog>
@@ -722,8 +709,8 @@ export function GoalsPanel(props: { onClose?: () => void }) {
 
   const goals = store.goals;
   const selected = goals.find((goal) => goal.id === store.selectedGoalId) ?? goals[0] ?? null;
-  const runs = selected ? store.runsByGoalId[selected.id] ?? [] : [];
-  const activity = selected ? store.activityByGoalId[selected.id] ?? [] : [];
+  const runs = selected ? (store.runsByGoalId[selected.id] ?? []) : [];
+  const activity = selected ? (store.activityByGoalId[selected.id] ?? []) : [];
 
   useEffect(() => {
     void store.refresh();
@@ -745,10 +732,19 @@ export function GoalsPanel(props: { onClose?: () => void }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <DockPaneHeader
-        title={<span className="flex items-center gap-2"><FlagIcon className="size-4 text-muted-foreground" /> Goals</span>}
+        title={
+          <span className="flex items-center gap-2">
+            <FlagIcon className="size-4 text-muted-foreground" /> Goals
+          </span>
+        }
         onClose={props.onClose}
         actions={
-          <IconButton size="icon-sm" variant="ghost" label="New goal" onClick={() => setCreateOpen(true)}>
+          <IconButton
+            size="icon-sm"
+            variant="ghost"
+            label="New goal"
+            onClick={() => setCreateOpen(true)}
+          >
             <PlusIcon className="size-3.5" />
           </IconButton>
         }
@@ -778,7 +774,11 @@ export function GoalsPanel(props: { onClose?: () => void }) {
         <div className="grid h-full min-h-0 grid-cols-[220px_minmax(0,1fr)]">
           <div className="min-h-0 border-r border-border/60">
             <ScrollArea className="h-full">
-              <GoalList goals={goals} selectedId={store.selectedGoalId} onSelect={store.selectGoal} />
+              <GoalList
+                goals={goals}
+                selectedId={store.selectedGoalId}
+                onSelect={store.selectGoal}
+              />
             </ScrollArea>
           </div>
           <div className="min-h-0">
@@ -835,8 +835,12 @@ export function GoalsPanel(props: { onClose?: () => void }) {
             />
             <DialogFooter className="mt-4">
               <DialogClose
-              render={<Button type="button" variant="ghost">Cancel</Button>}
-            />
+                render={
+                  <Button type="button" variant="ghost">
+                    Cancel
+                  </Button>
+                }
+              />
               <Button
                 disabled={!steerText.trim()}
                 onClick={() => {

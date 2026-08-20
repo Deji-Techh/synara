@@ -3,8 +3,7 @@ export { slugify } from "@/shared/slugify";
 
 export function buildFrontmatter(meta: Record<string, string>): string {
   const lines = Object.entries(meta).map(
-    ([k, v]) =>
-      `${k}: "${v.replace(/\\/g, "\\\\").replace(/\n/g, " ").replace(/"/g, '\\"')}"`,
+    ([k, v]) => `${k}: "${v.replace(/\\/g, "\\\\").replace(/\n/g, " ").replace(/"/g, '\\"')}"`,
   );
   return `---\n${lines.join("\n")}\n---\n\n`;
 }

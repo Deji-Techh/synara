@@ -1,12 +1,7 @@
 import fs from "node:fs";
 import { z } from "zod";
 import log from "electron-log";
-import {
-  ToolDefinition,
-  AgentContext,
-  escapeXmlAttr,
-  escapeXmlContent,
-} from "./types";
+import { ToolDefinition, AgentContext, escapeXmlAttr, escapeXmlContent } from "./types";
 import { safeJoin } from "@/ipc/utils/path_utils";
 import { applySearchReplace } from "@/pro/main/ipc/processors/search_replace_processor";
 import { escapeSearchReplaceMarkers } from "@/pro/shared/search_replace_markers";
@@ -24,9 +19,7 @@ import { withLock, getFileWriteKey } from "@/ipc/utils/lock_utils";
 const logger = log.scope("search_replace");
 
 const searchReplaceSchema = z.object({
-  file_path: z
-    .string()
-    .describe("The path to the file you want to search and replace in."),
+  file_path: z.string().describe("The path to the file you want to search and replace in."),
   old_string: z
     .string()
     .describe(
@@ -34,14 +27,10 @@ const searchReplaceSchema = z.object({
     ),
   new_string: z
     .string()
-    .describe(
-      "The edited text to replace the old_string (must be different from the old_string)",
-    ),
+    .describe("The edited text to replace the old_string (must be different from the old_string)"),
 });
 
-export const searchReplaceTool: ToolDefinition<
-  z.infer<typeof searchReplaceSchema>
-> = {
+export const searchReplaceTool: ToolDefinition<z.infer<typeof searchReplaceSchema>> = {
   name: "search_replace",
   description: `Use this tool to propose a search and replace operation on an existing file.
 
@@ -114,10 +103,7 @@ CRITICAL REQUIREMENTS FOR USING THIS TOOL:
 
     await withLock(getFileWriteKey(fullFilePath), async () => {
       if (!fs.existsSync(fullFilePath)) {
-        throw new CaideError(
-          `File does not exist: ${args.file_path}`,
-          CaideErrorKind.NotFound,
-        );
+        throw new CaideError(`File does not exist: ${args.file_path}`, CaideErrorKind.NotFound);
       }
 
       const original = await fs.promises.readFile(fullFilePath, "utf8");

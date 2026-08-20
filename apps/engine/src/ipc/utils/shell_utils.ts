@@ -28,9 +28,7 @@ export function getSystemShell(rawCommand: string): SystemShellSpec {
  * Returns standard non-interactive environment flags to prevent
  * spawned commands from hanging on terminal input prompts.
  */
-export function getStandardShellEnv(
-  extraEnv?: Record<string, string>,
-): Record<string, string> {
+export function getStandardShellEnv(extraEnv?: Record<string, string>): Record<string, string> {
   return {
     ...process.env,
     TERM: "dumb",

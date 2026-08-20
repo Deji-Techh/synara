@@ -56,13 +56,7 @@ export const PersistedGoalStateSchema = z.object({
   version: z.number().describe("Must be 1"),
   goalId: z.string().min(1),
   objective: z.string().min(1),
-  status: z.enum([
-    "active",
-    "blocked",
-    "awaiting-user",
-    "completion-candidate",
-    "completed",
-  ]),
+  status: z.enum(["active", "blocked", "awaiting-user", "completion-candidate", "completed"]),
   currentPhase: z.string().nullable(),
   currentTask: z.string().nullable(),
   tasks: z.array(PersistedGoalTaskStateSchema),
@@ -92,9 +86,7 @@ export const PersistedGoalStateSchema = z.object({
   updatedAt: z.number(),
 });
 
-export type PersistedGoalTaskState = z.infer<
-  typeof PersistedGoalTaskStateSchema
->;
+export type PersistedGoalTaskState = z.infer<typeof PersistedGoalTaskStateSchema>;
 export type PersistedGoalEvidence = z.infer<typeof PersistedGoalEvidenceSchema>;
 export type PersistedGoalState = z.infer<typeof PersistedGoalStateSchema>;
 
@@ -113,10 +105,7 @@ export function isPersistedGoalComplete(state: PersistedGoalState): boolean {
       if (!criterion.passed || criterion.evidence.length === 0) return false;
       return criterion.evidence.every((evidenceId) => {
         const evidence = evidenceById.get(evidenceId);
-        return (
-          evidence?.passed === true &&
-          evidence.revision === verificationRevision
-        );
+        return evidence?.passed === true && evidence.revision === verificationRevision;
       });
     });
   return (

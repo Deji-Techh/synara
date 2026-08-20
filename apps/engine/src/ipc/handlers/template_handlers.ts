@@ -58,9 +58,7 @@ async function allocateNewAppPath({
     const trial = i === 0 ? desired : `${desired}-${i}`;
     const trialAbs = getCaideAppPath(trial);
 
-    const conflictDb = allApps.some(
-      (a) => a.id !== appId && getCaideAppPath(a.path) === trialAbs,
-    );
+    const conflictDb = allApps.some((a) => a.id !== appId && getCaideAppPath(a.path) === trialAbs);
     if (conflictDb) continue;
 
     if (fs.existsSync(trialAbs)) continue;
@@ -74,13 +72,7 @@ async function allocateNewAppPath({
   );
 }
 
-async function copyPreservedEntries({
-  fromPath,
-  toPath,
-}: {
-  fromPath: string;
-  toPath: string;
-}) {
+async function copyPreservedEntries({ fromPath, toPath }: { fromPath: string; toPath: string }) {
   const entries = await fsPromises.readdir(fromPath, { withFileTypes: true });
   for (const entry of entries) {
     if (!shouldPreservePath(entry.name)) continue;
@@ -103,9 +95,7 @@ async function applyTemplateInPlace({
   appPath: string;
   templateId: string;
 }): Promise<{ appWasStopped: boolean }> {
-  const tempRoot = await fsPromises.mkdtemp(
-    path.join(os.tmpdir(), "caide-template-"),
-  );
+  const tempRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), "caide-template-"));
   const stagedTemplatePath = path.join(tempRoot, "app");
 
   let appWasStopped = false;
@@ -125,10 +115,7 @@ async function applyTemplateInPlace({
       await clearAppDirectoryForTemplateSwap(appPath);
       await fsPromises.cp(stagedTemplatePath, appPath, { recursive: true });
     } catch (error) {
-      logger.error(
-        `Failed to stage template ${templateId} for app ${appId} at ${appPath}:`,
-        error,
-      );
+      logger.error(`Failed to stage template ${templateId} for app ${appId} at ${appPath}:`, error);
       if (appWasStopped) {
         throw new CaideError(
           `Failed to apply template "${templateId}". The dev server was stopped before the failure and will need to be started manually. (${
@@ -212,9 +199,7 @@ export function registerTemplateHandlers() {
         // preserved files (.git, .caide, .env*) from the old directory, update
         // the DB, then best-effort delete the old directory. This avoids
         // Windows file-lock failures on node_modules/build artifacts.
-        const tempRoot = await fsPromises.mkdtemp(
-          path.join(os.tmpdir(), "caide-template-"),
-        );
+        const tempRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), "caide-template-"));
         const stagedTemplatePath = path.join(tempRoot, "app");
 
         let newDirCreated = false;
@@ -266,10 +251,7 @@ export function registerTemplateHandlers() {
             return { applied: false, needsRestart: appWasStopped };
           }
 
-          await db
-            .update(apps)
-            .set({ path: newSlug })
-            .where(eq(apps.id, appId));
+          await db.update(apps).set({ path: newSlug }).where(eq(apps.id, appId));
           dbUpdated = true;
 
           if (chatId) {
@@ -352,9 +334,7 @@ export function registerTemplateHandlers() {
         message: `Apply ${templateId} template`,
       });
       if (commitHash === null) {
-        logger.info(
-          `Template ${templateId} already applied to app ${appId}, skipping commit`,
-        );
+        logger.info(`Template ${templateId} already applied to app ${appId}, skipping commit`);
         return { applied: false, needsRestart: appWasStopped };
       }
 
@@ -364,10 +344,7 @@ export function registerTemplateHandlers() {
           columns: { initialCommitHash: true },
         });
         if (!chatRecord?.initialCommitHash) {
-          await db
-            .update(chats)
-            .set({ initialCommitHash: commitHash })
-            .where(eq(chats.id, chatId));
+          await db.update(chats).set({ initialCommitHash: commitHash }).where(eq(chats.id, chatId));
         }
       }
 

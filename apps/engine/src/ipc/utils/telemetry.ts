@@ -1,9 +1,6 @@
 import { BrowserWindow } from "electron";
 import log from "electron-log";
-import {
-  CaideError,
-  isCaideErrorKindFilteredFromTelemetry,
-} from "@/errors/caide_error";
+import { CaideError, isCaideErrorKindFilteredFromTelemetry } from "@/errors/caide_error";
 import { isGenericFetchFailedError } from "@/lib/posthogTelemetry";
 import { TelemetryEventPayload } from "@/ipc/types";
 import { safeSendToBrowserWindow } from "@/ipc/utils/safe_window_send";
@@ -17,15 +14,11 @@ const FILTERED_EXCEPTION_MESSAGES = new Set([
  * Sends a telemetry event from the main process to the renderer,
  * where PostHog can capture it.
  */
-export function sendTelemetryEvent(
-  eventName: string,
-  properties?: Record<string, unknown>,
-): void {
+export function sendTelemetryEvent(eventName: string, properties?: Record<string, unknown>): void {
   try {
     const windows = BrowserWindow.getAllWindows();
     const window = windows.find(
-      (candidate) =>
-        !candidate.isDestroyed() && !candidate.webContents.isDestroyed(),
+      (candidate) => !candidate.isDestroyed() && !candidate.webContents.isDestroyed(),
     );
     if (window) {
       safeSendToBrowserWindow(window, "telemetry:event", {
@@ -41,14 +34,8 @@ export function sendTelemetryEvent(
 /**
  * Sends an exception from the main process to the renderer as a PostHog $exception event.
  */
-export function sendTelemetryException(
-  error: unknown,
-  context?: Record<string, unknown>,
-): void {
-  const err =
-    error instanceof Error
-      ? error
-      : new Error(String(error ?? "Unknown error"));
+export function sendTelemetryException(error: unknown, context?: Record<string, unknown>): void {
+  const err = error instanceof Error ? error : new Error(String(error ?? "Unknown error"));
 
   if (shouldFilterTelemetryException(err)) {
     return;
@@ -75,15 +62,11 @@ export function shouldFilterTelemetryException(error: unknown): boolean {
     return true;
   }
 
-  if (
-    error instanceof Error &&
-    isGenericFetchFailedError(error.name, error.message)
-  ) {
+  if (error instanceof Error && isGenericFetchFailedError(error.name, error.message)) {
     return true;
   }
 
-  const message =
-    error instanceof Error ? error.message : String(error ?? "Unknown error");
+  const message = error instanceof Error ? error.message : String(error ?? "Unknown error");
 
   return FILTERED_EXCEPTION_MESSAGES.has(message);
 }

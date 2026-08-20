@@ -21,9 +21,7 @@ export function stripCancelledResponseNotice(content: string): string {
     return content;
   }
 
-  return trimmedContent
-    .slice(0, -RESPONSE_CANCELLED_BY_USER_NOTICE.length)
-    .trimEnd();
+  return trimmedContent.slice(0, -RESPONSE_CANCELLED_BY_USER_NOTICE.length).trimEnd();
 }
 
 export function applyCancellationNoticeToLastAssistantMessage<

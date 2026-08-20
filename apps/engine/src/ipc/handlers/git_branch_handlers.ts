@@ -68,10 +68,7 @@ async function handleFetchFromGithub(
   }
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
   if (!app || !app.githubOrg || !app.githubRepo) {
-    throw new CaideError(
-      "App is not linked to a GitHub repo.",
-      CaideErrorKind.Precondition,
-    );
+    throw new CaideError("App is not linked to a GitHub repo.", CaideErrorKind.Precondition);
   }
   const appPath = getCaideAppPath(app.path);
 
@@ -95,10 +92,7 @@ async function handleCreateBranch(
     );
   }
   if (!/^[a-zA-Z0-9/_.-]+$/.test(branch) || /\.\./.test(branch)) {
-    throw new CaideError(
-      "Branch name contains invalid characters",
-      CaideErrorKind.Validation,
-    );
+    throw new CaideError("Branch name contains invalid characters", CaideErrorKind.Validation);
   }
   if (
     branch.startsWith("-") ||
@@ -434,10 +428,7 @@ async function handlePullFromGithub(
   }
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
   if (!app || !app.githubOrg || !app.githubRepo) {
-    throw new CaideError(
-      "App is not linked to a GitHub repo.",
-      CaideErrorKind.Precondition,
-    );
+    throw new CaideError("App is not linked to a GitHub repo.", CaideErrorKind.Precondition);
   }
   const appPath = getCaideAppPath(app.path);
   const currentBranch = await gitCurrentBranch({ path: appPath });
@@ -455,8 +446,7 @@ async function handlePullFromGithub(
     const isMissingRemoteBranch =
       pullError?.code === "MissingRefError" ||
       (pullError?.code === "NotFoundError" &&
-        (errorMessage.includes("remote ref") ||
-          errorMessage.includes("remote branch"))) ||
+        (errorMessage.includes("remote ref") || errorMessage.includes("remote branch"))) ||
       errorMessage.includes("couldn't find remote ref") ||
       errorMessage.includes("Cannot read properties of null");
 
@@ -465,10 +455,7 @@ async function handlePullFromGithub(
     if (!isMissingRemoteBranch) {
       throw pullError;
     } else {
-      logger.debug(
-        "[GitHub Handler] Remote branch missing during pull, continuing",
-        errorMessage,
-      );
+      logger.debug("[GitHub Handler] Remote branch missing during pull, continuing", errorMessage);
     }
   }
 }
@@ -483,27 +470,15 @@ export function registerGithubBranchHandlers() {
   createTypedHandler(githubContracts.switchBranch, handleSwitchBranch);
   createTypedHandler(githubContracts.renameBranch, handleRenameBranch);
   createTypedHandler(githubContracts.mergeBranch, handleMergeBranch);
-  createTypedHandler(
-    githubContracts.listLocalBranches,
-    handleListLocalBranches,
-  );
-  createTypedHandler(
-    githubContracts.listRemoteBranches,
-    handleListRemoteBranches,
-  );
-  createTypedHandler(
-    gitContracts.getUncommittedFiles,
-    handleGetUncommittedFiles,
-  );
+  createTypedHandler(githubContracts.listLocalBranches, handleListLocalBranches);
+  createTypedHandler(githubContracts.listRemoteBranches, handleListRemoteBranches);
+  createTypedHandler(gitContracts.getUncommittedFiles, handleGetUncommittedFiles);
   createTypedHandler(gitContracts.commitChanges, handleCommitChanges);
   createTypedHandler(gitContracts.discardChanges, handleDiscardChanges);
   createTypedHandler(gitContracts.smartSync, handleSmartSync);
 }
 
-async function handleSmartSync(
-  event: IpcMainInvokeEvent,
-  { appId }: GitBranchAppIdParams,
-) {
+async function handleSmartSync(event: IpcMainInvokeEvent, { appId }: GitBranchAppIdParams) {
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
   if (!app) throw new CaideError("App not found", CaideErrorKind.NotFound);
   const appPath = getCaideAppPath(app.path);
@@ -536,10 +511,7 @@ async function handleSmartSync(
   // API key is configured, so Magic Auto-Sync always works offline.
   let finalMessage = buildSmartSyncMessage(files);
   try {
-    const { modelClient } = await getModelClient(
-      { provider: "auto", name: "auto" },
-      settings,
-    );
+    const { modelClient } = await getModelClient({ provider: "auto", name: "auto" }, settings);
     const { text: commitMessage } = await generateText({
       model: modelClient.model,
       prompt: `Generate a concise, semantic commit message for the following git diff. Output ONLY the commit message and nothing else.\n\nDiff:\n${diff.substring(0, 10000)}`,

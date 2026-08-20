@@ -2,12 +2,7 @@ import { z } from "zod";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import fs from "node:fs";
-import {
-  buildTool,
-  type AgentContext,
-  escapeXmlAttr,
-  escapeXmlContent,
-} from "./types";
+import { buildTool, type AgentContext, escapeXmlAttr, escapeXmlContent } from "./types";
 import { killProcessTree } from "@/ipc/utils/process_tree";
 import { getSystemShell, getStandardShellEnv } from "@/ipc/utils/shell_utils";
 import { globalProcessSemaphore } from "@/ipc/utils/process_semaphore";
@@ -48,9 +43,7 @@ const runCommandSchema = z.object({
     .max(300)
     .optional()
     .default(120)
-    .describe(
-      "Max seconds to wait before killing the command (default 120, max 300)",
-    ),
+    .describe("Max seconds to wait before killing the command (default 120, max 300)"),
   working_directory: z
     .string()
     .optional()
@@ -81,8 +74,7 @@ Rules:
   modifiesState: true,
 
   getConsentPreview: (args) =>
-    `$ ${args.command}` +
-    (args.working_directory ? ` (in ./${args.working_directory})` : ""),
+    `$ ${args.command}` + (args.working_directory ? ` (in ./${args.working_directory})` : ""),
 
   buildXml: (args, isComplete) => {
     if (!args.command) return undefined;
@@ -170,9 +162,7 @@ Rules:
           const parts: string[] = [];
 
           if (abortedBySignal) {
-            parts.push(
-              "[ABORTED — process group was terminated due to turn cancellation]",
-            );
+            parts.push("[ABORTED — process group was terminated due to turn cancellation]");
           } else if (timedOut) {
             parts.push(
               `[TIMED OUT after ${args.timeout_seconds ?? 120}s — process group was killed]`,
@@ -182,9 +172,7 @@ Rules:
           }
 
           const formatOutput = (buf: string, truncated: boolean) =>
-            truncated
-              ? `...[truncated, showing last ${MAX_OUTPUT_CHARS} chars]\n${buf}`
-              : buf;
+            truncated ? `...[truncated, showing last ${MAX_OUTPUT_CHARS} chars]\n${buf}` : buf;
 
           if (stdoutBuf) {
             parts.push(
@@ -198,10 +186,7 @@ Rules:
           }
 
           const result = parts.join("\n\n") || "(no output)";
-          const status =
-            code === 0 && !timedOut && !abortedBySignal
-              ? "finished"
-              : "aborted";
+          const status = code === 0 && !timedOut && !abortedBySignal ? "finished" : "aborted";
 
           ctx.onXmlComplete(
             `<caide-status title="$ ${escapeXmlAttr(args.command)}" state="${status}">\n${escapeXmlContent(result)}\n</caide-status>`,

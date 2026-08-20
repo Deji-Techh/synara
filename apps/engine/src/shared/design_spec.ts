@@ -12,11 +12,7 @@ export const DesignEmphasisSchema = z.enum([
 
 export const DesignReferenceSchema = z.object({
   app: z.string().trim().min(1).max(100),
-  purpose: z.enum([
-    "information-architecture",
-    "interaction",
-    "visual-character",
-  ]),
+  purpose: z.enum(["information-architecture", "interaction", "visual-character"]),
   patternToStudy: z.string().trim().min(8).max(300),
   prohibitedCopying: z.array(z.string().trim().min(2).max(120)).min(1).max(8),
 });
@@ -202,9 +198,7 @@ export function designSpecCompleteness(spec: CaideDesignSpec): number {
     spec.screens.length >= 2,
     spec.components.length >= 3,
     spec.screens.every((screen) => screen.contentHierarchy.length >= 2),
-    spec.components.every((component) =>
-      component.states.includes("focus-visible"),
-    ),
+    spec.components.every((component) => component.states.includes("focus-visible")),
     spec.quality.minimumOverallScore >= 94,
     spec.quality.minimumAccessibilityScore >= 95,
     spec.quality.minimumMotionScore >= 92,

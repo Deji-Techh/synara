@@ -575,8 +575,7 @@ function SettingsRouteView() {
           {renderBooleanSettingRow({
             settingKey: "showEnvironmentMarkers",
             title: "Text markers",
-            description:
-              "Show highlighted and underlined transcript text in the Context panel.",
+            description: "Show highlighted and underlined transcript text in the Context panel.",
             resetLabel: "text markers section",
             ariaLabel: "Show the Text markers section in the Context panel",
           })}
@@ -1139,7 +1138,10 @@ function SettingsRouteView() {
                   resetEpoch={resetEpoch}
                 />
                 <ExternalMcpSettingsPanel active={activeSection === "integrations"} />
-                <AdvancedSettingsPanel active={activeSection === "advanced"} resetEpoch={resetEpoch} />
+                <AdvancedSettingsPanel
+                  active={activeSection === "advanced"}
+                  resetEpoch={resetEpoch}
+                />
               </div>
             </div>
           </div>

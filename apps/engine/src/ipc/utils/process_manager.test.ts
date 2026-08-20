@@ -1,14 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const {
-  destroyCloudSandboxMock,
-  stopCloudSandboxFileSyncMock,
-  unregisterRunningCloudSandboxMock,
-} = vi.hoisted(() => ({
-  destroyCloudSandboxMock: vi.fn(),
-  stopCloudSandboxFileSyncMock: vi.fn(),
-  unregisterRunningCloudSandboxMock: vi.fn(),
-}));
+const { destroyCloudSandboxMock, stopCloudSandboxFileSyncMock, unregisterRunningCloudSandboxMock } =
+  vi.hoisted(() => ({
+    destroyCloudSandboxMock: vi.fn(),
+    stopCloudSandboxFileSyncMock: vi.fn(),
+    unregisterRunningCloudSandboxMock: vi.fn(),
+  }));
 
 vi.mock("./cloud_sandbox_provider", () => ({
   destroyCloudSandbox: destroyCloudSandboxMock,

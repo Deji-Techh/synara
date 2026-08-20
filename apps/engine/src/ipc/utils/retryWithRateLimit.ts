@@ -26,9 +26,7 @@ export class RateLimitError extends Error {
  * in milliseconds, or undefined if the header is missing or unparseable.
  * Negative dates (in the past) clamp to 0.
  */
-export function parseRetryAfter(
-  headerValue: string | null,
-): number | undefined {
+export function parseRetryAfter(headerValue: string | null): number | undefined {
   if (!headerValue) return undefined;
   const trimmed = headerValue.trim();
   if (/^\d+$/.test(trimmed)) {
@@ -87,10 +85,7 @@ export function isTransientNetworkError(error: unknown): boolean {
     if (candidate.code && TRANSIENT_NETWORK_CODES.has(candidate.code)) {
       return true;
     }
-    if (
-      current instanceof TypeError &&
-      candidate.message?.toLowerCase() === "fetch failed"
-    ) {
+    if (current instanceof TypeError && candidate.message?.toLowerCase() === "fetch failed") {
       return true;
     }
     current = candidate.cause;
@@ -140,12 +135,9 @@ export async function retryWithRateLimit<T>(
   const maxRetries = options?.maxRetries ?? RETRY_CONFIG.maxRetries;
   const baseDelay = options?.baseDelay ?? RETRY_CONFIG.baseDelay;
   const maxDelay = options?.maxDelay ?? RETRY_CONFIG.maxDelay;
-  const maxNetworkRetries =
-    options?.maxNetworkRetries ?? RETRY_CONFIG.maxNetworkRetries;
-  const networkBaseDelay =
-    options?.networkBaseDelay ?? RETRY_CONFIG.networkBaseDelay;
-  const networkMaxDelay =
-    options?.networkMaxDelay ?? RETRY_CONFIG.networkMaxDelay;
+  const maxNetworkRetries = options?.maxNetworkRetries ?? RETRY_CONFIG.maxNetworkRetries;
+  const networkBaseDelay = options?.networkBaseDelay ?? RETRY_CONFIG.networkBaseDelay;
+  const networkMaxDelay = options?.networkMaxDelay ?? RETRY_CONFIG.networkMaxDelay;
 
   let rateLimitRetries = 0;
   let networkRetries = 0;
@@ -172,10 +164,7 @@ export async function retryWithRateLimit<T>(
           throw error;
         }
 
-        const delay = Math.min(
-          networkBaseDelay * Math.pow(2, networkRetries),
-          networkMaxDelay,
-        );
+        const delay = Math.min(networkBaseDelay * Math.pow(2, networkRetries), networkMaxDelay);
         networkRetries++;
         const code = error?.cause?.code ?? error?.code ?? "fetch failed";
         logger.warn(
@@ -186,9 +175,7 @@ export async function retryWithRateLimit<T>(
       }
 
       if (rateLimitRetries >= maxRetries) {
-        logger.error(
-          `${context}: Failed after ${maxRetries + 1} attempts due to rate limit`,
-        );
+        logger.error(`${context}: Failed after ${maxRetries + 1} attempts due to rate limit`);
         throw error;
       }
 
@@ -196,8 +183,7 @@ export async function retryWithRateLimit<T>(
 
       // Honor server-supplied Retry-After when present. It can legitimately
       // exceed maxDelay — the server knows best; clamping would just 429 again.
-      const retryAfterMs =
-        error instanceof RateLimitError ? error.retryAfterMs : undefined;
+      const retryAfterMs = error instanceof RateLimitError ? error.retryAfterMs : undefined;
       if (retryAfterMs !== undefined) {
         // Clamp to the 32-bit signed int max (~24.8 days) that setTimeout
         // accepts. In practice Retry-After from Supabase is seconds to
@@ -210,8 +196,7 @@ export async function retryWithRateLimit<T>(
       } else {
         // Exponential backoff with jitter
         const exponentialDelay = baseDelay * Math.pow(2, rateLimitRetries);
-        const jitter =
-          exponentialDelay * RETRY_CONFIG.jitterFactor * Math.random();
+        const jitter = exponentialDelay * RETRY_CONFIG.jitterFactor * Math.random();
         delay = Math.min(exponentialDelay + jitter, maxDelay);
         logger.warn(
           `${context}: Rate limited (${rateLimitRetries + 1}/${maxRetries}), retrying in ${Math.round(delay)}ms`,
@@ -244,9 +229,7 @@ export async function fetchWithRetry(
     async () => {
       const response = await fetch(input, init);
       if (response.status === 429) {
-        const retryAfterMs = parseRetryAfter(
-          response.headers.get("Retry-After"),
-        );
+        const retryAfterMs = parseRetryAfter(response.headers.get("Retry-After"));
         throw new RateLimitError(
           `Rate limited (429): ${response.statusText}`,
           response,

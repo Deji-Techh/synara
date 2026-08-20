@@ -81,19 +81,13 @@ function safeDestination(root: string, archivePath: string): string {
   const normalized = normalizeArchivePath(archivePath);
   const resolvedRoot = path.resolve(root);
   const destination = path.resolve(resolvedRoot, ...normalized.split("/"));
-  if (
-    destination !== resolvedRoot &&
-    !destination.startsWith(`${resolvedRoot}${path.sep}`)
-  ) {
+  if (destination !== resolvedRoot && !destination.startsWith(`${resolvedRoot}${path.sep}`)) {
     throw new Error(`Package path escapes extraction root: ${archivePath}`);
   }
   return destination;
 }
 
-async function writeRecord(
-  stream: WriteStream | NodeJS.WritableStream,
-  record: ArchiveRecord,
-) {
+async function writeRecord(stream: WriteStream | NodeJS.WritableStream, record: ArchiveRecord) {
   const line = `${JSON.stringify(record)}\n`;
   if (!stream.write(line)) await once(stream, "drain");
 }
@@ -106,9 +100,7 @@ export async function sha256File(filePath: string): Promise<string> {
   return hash.digest("hex");
 }
 
-export async function writeProjectArchive(
-  input: ArchiveWriteInput,
-): Promise<void> {
+export async function writeProjectArchive(input: ArchiveWriteInput): Promise<void> {
   await fsp.mkdir(path.dirname(input.destination), { recursive: true });
   let ownsDestination = false;
   let output: WriteStream | undefined;
@@ -143,16 +135,9 @@ export async function writeProjectArchive(
         for (let index = 0; index < chunks; index += 1) {
           const expected = Math.min(CHUNK_BYTES, file.size - position);
           const buffer = Buffer.alloc(expected);
-          const { bytesRead } = await handle.read(
-            buffer,
-            0,
-            expected,
-            position,
-          );
+          const { bytesRead } = await handle.read(buffer, 0, expected, position);
           if (bytesRead !== expected) {
-            throw new Error(
-              `Unexpected EOF while packaging ${file.sourcePath}`,
-            );
+            throw new Error(`Unexpected EOF while packaging ${file.sourcePath}`);
           }
           position += bytesRead;
           await writeRecord(gzip, {
@@ -283,8 +268,7 @@ export async function readProjectArchive(
           throw new Error(`Invalid chunk count for ${record.path}`);
         }
         fileCount += 1;
-        if (fileCount > limits.maxFiles)
-          throw new Error("Package contains too many files");
+        if (fileCount > limits.maxFiles) throw new Error("Package contains too many files");
         if (record.size < 0 || record.size > limits.maxFileBytes) {
           throw new Error(`Package file exceeds size limit: ${record.path}`);
         }
@@ -296,10 +280,7 @@ export async function readProjectArchive(
         let destination: string | undefined;
         let stream: WriteStream | undefined;
         if (options.destinationDirectory) {
-          destination = safeDestination(
-            options.destinationDirectory,
-            normalized,
-          );
+          destination = safeDestination(options.destinationDirectory, normalized);
           await fsp.mkdir(path.dirname(destination), { recursive: true });
           stream = fs.createWriteStream(destination, { flags: "wx" });
         }
@@ -327,17 +308,13 @@ export async function readProjectArchive(
           throw new Error(`Invalid package chunk for ${current.archivePath}`);
         }
         if (record.index !== current.receivedChunks) {
-          throw new Error(
-            `Out-of-order package chunk for ${current.archivePath}`,
-          );
+          throw new Error(`Out-of-order package chunk for ${current.archivePath}`);
         }
         const buffer = Buffer.from(record.data, "base64");
         current.receivedChunks += 1;
         current.receivedBytes += buffer.length;
         if (current.receivedBytes > current.expectedSize) {
-          throw new Error(
-            `Package file exceeds declared size: ${current.archivePath}`,
-          );
+          throw new Error(`Package file exceeds declared size: ${current.archivePath}`);
         }
         current.hash.update(buffer);
         if (current.stream && !current.stream.write(buffer)) {
@@ -355,8 +332,7 @@ export async function readProjectArchive(
       throw new Error("Unknown CAIDE package record");
     }
 
-    if (!sawMagic || !sawEnd)
-      throw new Error("Incomplete CAIDE project package");
+    if (!sawMagic || !sawEnd) throw new Error("Incomplete CAIDE project package");
   } catch (error) {
     current?.stream?.destroy();
     throw error;

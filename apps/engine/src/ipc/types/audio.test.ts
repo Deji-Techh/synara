@@ -73,17 +73,14 @@ describe("TranscribeAudioParamsSchema", () => {
     ).toBe(false);
   });
 
-  it.each([".", "..", " . ", " .. "])(
-    "rejects the traversal filename %j",
-    (filename) => {
-      expect(
-        TranscribeAudioParamsSchema.safeParse({
-          ...validRequest,
-          filename,
-        }).success,
-      ).toBe(false);
-    },
-  );
+  it.each([".", "..", " . ", " .. "])("rejects the traversal filename %j", (filename) => {
+    expect(
+      TranscribeAudioParamsSchema.safeParse({
+        ...validRequest,
+        filename,
+      }).success,
+    ).toBe(false);
+  });
 
   it("accepts header-safe request IDs and rejects invalid characters", () => {
     expect(
@@ -93,11 +90,7 @@ describe("TranscribeAudioParamsSchema", () => {
       }).success,
     ).toBe(true);
 
-    for (const requestId of [
-      "request id",
-      "request\r\nX-Injected: true",
-      "request-id-💥",
-    ]) {
+    for (const requestId of ["request id", "request\r\nX-Injected: true", "request-id-💥"]) {
       expect(
         TranscribeAudioParamsSchema.safeParse({
           ...validRequest,

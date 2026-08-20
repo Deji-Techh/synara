@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  defineEvent,
-  createEventClient,
-  defineContract,
-  createClient,
-} from "../contracts/core";
+import { defineEvent, createEventClient, defineContract, createClient } from "../contracts/core";
 
 // Plan Schemas
 
@@ -53,9 +48,7 @@ export const QuestionnaireResponseSchema = z.object({
   answers: z.record(z.string(), z.string()).nullable(),
 });
 
-export type QuestionnaireResponsePayload = z.infer<
-  typeof QuestionnaireResponseSchema
->;
+export type QuestionnaireResponsePayload = z.infer<typeof QuestionnaireResponseSchema>;
 
 export const PlanSchema = z.object({
   id: z.string(),

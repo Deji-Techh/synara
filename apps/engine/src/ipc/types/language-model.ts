@@ -65,9 +65,7 @@ export const CreateCustomLanguageModelParamsSchema = z.object({
   contextWindow: z.number().optional(),
 });
 
-export type CreateCustomLanguageModelParams = z.infer<
-  typeof CreateCustomLanguageModelParamsSchema
->;
+export type CreateCustomLanguageModelParams = z.infer<typeof CreateCustomLanguageModelParamsSchema>;
 
 export const DeleteCustomModelParamsSchema = z.object({
   providerId: z.string(),

@@ -32,7 +32,10 @@ async function ensureFlutterForCreate(): Promise<string> {
 }
 
 function createFlutterProjectViaToolchain(fullAppPath: string): Promise<void> {
-  const appName = path.basename(fullAppPath).replace(/[^a-zA-Z0-9_]/g, "_").toLowerCase();
+  const appName = path
+    .basename(fullAppPath)
+    .replace(/[^a-zA-Z0-9_]/g, "_")
+    .toLowerCase();
   return new Promise(async (resolve, reject) => {
     const flutter = await ensureFlutterForCreate();
     let settled = false;
@@ -44,12 +47,7 @@ function createFlutterProjectViaToolchain(fullAppPath: string): Promise<void> {
     };
     const timeout = setTimeout(() => {
       settle(() =>
-        reject(
-          new CaideError(
-            `flutter create timed out (${flutter})`,
-            CaideErrorKind.External,
-          ),
-        ),
+        reject(new CaideError(`flutter create timed out (${flutter})`, CaideErrorKind.External)),
       );
     }, 5 * 60_000);
     const child = spawn(
@@ -114,7 +112,9 @@ export async function createFromTemplate({
       // No committed template or a broken build-artifact dump (e.g. only
       // android/ios/build debris): use the toolchain so the app is always a
       // real Flutter project. Ensure managed SDK first.
-      logger.info(`flutter: scaffold invalid/missing at ${candidatePath}, running flutter create for ${fullAppPath}`);
+      logger.info(
+        `flutter: scaffold invalid/missing at ${candidatePath}, running flutter create for ${fullAppPath}`,
+      );
       try {
         await ensureFlutterSdkAvailable((p) => {
           try {
@@ -142,10 +142,7 @@ export async function createFromTemplate({
 
   const template = await getTemplateOrThrow(templateId);
   if (!template.githubUrl) {
-    throw new CaideError(
-      `Template ${templateId} has no GitHub URL`,
-      CaideErrorKind.External,
-    );
+    throw new CaideError(`Template ${templateId} has no GitHub URL`, CaideErrorKind.External);
   }
   const repoCachePath = await cloneRepo(template.githubUrl);
   await copyRepoToApp(repoCachePath, fullAppPath);
@@ -154,25 +151,17 @@ export async function createFromTemplate({
 async function cloneRepo(repoUrl: string): Promise<string> {
   const url = new URL(repoUrl);
   if (url.protocol !== "https:") {
-    throw new CaideError(
-      "Repository URL must use HTTPS.",
-      CaideErrorKind.External,
-    );
+    throw new CaideError("Repository URL must use HTTPS.", CaideErrorKind.External);
   }
   if (url.hostname !== "github.com") {
-    throw new CaideError(
-      "Repository URL must be a github.com URL.",
-      CaideErrorKind.Validation,
-    );
+    throw new CaideError("Repository URL must be a github.com URL.", CaideErrorKind.Validation);
   }
 
   // Pathname will be like "/org/repo" or "/org/repo.git"
   const pathParts = url.pathname.split("/").filter((part) => part.length > 0);
 
   if (pathParts.length !== 2) {
-    throw new Error(
-      "Invalid repository URL format. Expected 'https://github.com/org/repo'",
-    );
+    throw new Error("Invalid repository URL format. Expected 'https://github.com/org/repo'");
   }
 
   const orgName = pathParts[0];
@@ -180,18 +169,11 @@ async function cloneRepo(repoUrl: string): Promise<string> {
 
   if (!orgName || !repoName) {
     // This case should ideally be caught by pathParts.length !== 2
-    throw new Error(
-      "Failed to parse organization or repository name from URL.",
-    );
+    throw new Error("Failed to parse organization or repository name from URL.");
   }
   logger.info(`Parsed org: ${orgName}, repo: ${repoName} from ${repoUrl}`);
 
-  const cachePath = path.join(
-    app.getPath("userData"),
-    "templates",
-    orgName,
-    repoName,
-  );
+  const cachePath = path.join(app.getPath("userData"), "templates", orgName, repoName);
 
   if (fs.existsSync(cachePath)) {
     try {
@@ -221,10 +203,7 @@ async function cloneRepo(repoUrl: string): Promise<string> {
       const commitData = (await response.json()) as { sha?: string };
       const remoteSha = commitData.sha;
       if (!remoteSha) {
-        throw new CaideError(
-          "SHA not found in GitHub API response.",
-          CaideErrorKind.NotFound,
-        );
+        throw new CaideError("SHA not found in GitHub API response.", CaideErrorKind.NotFound);
       }
 
       logger.info(`Successfully fetched remote SHA: ${remoteSha}`);
@@ -282,10 +261,7 @@ async function copyRepoToApp(repoCachePath: string, appPath: string) {
     });
     logger.info("Finished copying repository contents.");
   } catch (err) {
-    logger.error(
-      `Error copying repository from ${repoCachePath} to ${appPath}: `,
-      err,
-    );
+    logger.error(`Error copying repository from ${repoCachePath} to ${appPath}: `, err);
     throw err; // Re-throw the error after logging
   }
 }

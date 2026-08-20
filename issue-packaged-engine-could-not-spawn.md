@@ -24,10 +24,10 @@ We thought the remaining step for Milestone M5 was just "build the AppImage". It
    `initializeDatabase()` searched upward from the engine for a `drizzle/` folder next to the bundle. That works in the repo; in an unpacked product dir there is no sibling `drizzle/`, so the DB never initialized.
 
 5. **electron-builder strips `node_modules` out of `extraResources`.**
-   The engine is a standalone Node program (better-sqlite3, node-pty native bindings) spawned by the server via plain `node` — which **cannot read `app.asar`**. It must ship as an *unpacked* directory at `resources/engine` with its prod deps **co-located** at `resources/engine/node_modules` (Node walks up, it will never see the packed hoisted tree). Getting electron-builder to actually keep `node_modules` there was a whole hunt:
+   The engine is a standalone Node program (better-sqlite3, node-pty native bindings) spawned by the server via plain `node` — which **cannot read `app.asar`**. It must ship as an _unpacked_ directory at `resources/engine` with its prod deps **co-located** at `resources/engine/node_modules` (Node walks up, it will never see the packed hoisted tree). Getting electron-builder to actually keep `node_modules` there was a whole hunt:
    - extraResources alone unpacked dist/drizzle/manifests but **pruned node_modules**.
-   - Staging the payload *inside* the app dir made electron-builder pack it into `app.asar` (swallowing node_modules there too).
-   - Injecting *after* electron-builder ran was too late — the AppImage was already compressed.
+   - Staging the payload _inside_ the app dir made electron-builder pack it into `app.asar` (swallowing node_modules there too).
+   - Injecting _after_ electron-builder ran was too late — the AppImage was already compressed.
    - The payload initially installed the **entire monorepo** (1418 packages, ~1.4 GB) because a fresh install of the whole workspace was the only way `bun install --frozen-lockfile` matched the repository lockfile → also caused `ENOSPC` on a full disk mid-assembly.
 
 ---
@@ -35,27 +35,32 @@ We thought the remaining step for Milestone M5 was just "build the AppImage". It
 ## How I fixed it
 
 ### 1. Make the engine bootable headless (`979fb21d`)
+
 - Bundled `pg-schema-classifier` into `apps/engine/dist` via tsdown (`noExternal: (id) => id.startsWith("@caide/") || id === "pg-schema-classifier"`), so no `.ts` resolves at runtime and no workspace symlink is required.
 - Switched the engine's `electron-log/main` imports to `electron-log/node` (the headless entry that does not require Electron).
 
 ### 2. Fix engine resolution in the bundled server (`979fb21d`)
+
 - `resolveEngineCommand()` now checks, in order: `CAIDE_ENGINE_DIR` env (packaged desktop), the bundled-server repo layout (`../../../apps/engine` from `apps/server/dist`), and the source/vitest layout (`../../../../engine`). Falls back to a one-time `bun run build` in the engine when no bundle exists.
 
 ### 3. Surface engine stdio failures (`6d60f331`)
+
 - The stdio loop now catches request rejections and writes a JSON-RPC error back instead of dropping them — so the supervisor sees the cause instead of a timeout.
 - `initializeDatabase()` resolves the migrations folder via `CAIDE_ENGINE_DRIZZLE_DIR` first (with a fallback to the upward walk) and validates the folder actually contains `drizzle/meta`.
 
 ### 4. One source of truth for the packaged layout (`979fb21d`, `6d60f331`)
+
 - Added `CAIDE_ENGINE_DIR_ENV` and `CAIDE_ENGINE_DRIZZLE_DIR_ENV` to `@caide/shared/desktopIdentity` — packaging, the desktop main, and the server adapter all derive the same constants.
 - The desktop main injects `CAIDE_ENGINE_DIR = <resourcesPath>/engine` and `CAIDE_ENGINE_DRIZZLE_DIR = <resourcesPath>/engine/drizzle` when packaged, and the server reads them.
 
 ### 5. Ship the engine as a lean, unpacked, self-contained payload (`c2770f7d`, `721cf88b`)
-- **`scripts/lib/stage-engine-payload.ts`** builds a payload *outside* the app dir (`stageRoot/engine-payload`):
+
+- **`scripts/lib/stage-engine-payload.ts`** builds a payload _outside_ the app dir (`stageRoot/engine-payload`):
   - installs **only the engine's real prod deps** (resolved from the workspace catalog, no workspace members — those are bundled), `--omit=dev --ignore-scripts --linker hoisted`, ~250 MB instead of the 1.4 GB full-workspace install;
   - copies `apps/engine/dist` + `apps/engine/drizzle`;
   - copies the repo-compiled native bindings (`better-sqlite3.node`, `pty.node`) into the payload — the same trick the desktop stage already uses for `node-pty`.
 - **`scripts/build-desktop-artifact.ts`** registers the payload as an `extraResources` entry (`from: <absolute payload dir>, to: "engine"`) so it lands unpacked at `resources/engine`, and — because electron-builder prunes `node_modules` from extraResources after the fact — wires an **afterPack hook**:
-  - **`scripts/lib/engine-afterpack-hook.cjs`** (copied into the stage, referenced as `afterPack` in the electron-builder config, payload passed via `CAIDE_ENGINE_PAYLOAD_DIR`) re-injects the payload's `node_modules` into `resources/engine` *after* unpacking and *before* the AppImage is assembled. That fixed the ordering/timing trap.
+  - **`scripts/lib/engine-afterpack-hook.cjs`** (copied into the stage, referenced as `afterPack` in the electron-builder config, payload passed via `CAIDE_ENGINE_PAYLOAD_DIR`) re-injects the payload's `node_modules` into `resources/engine` _after_ unpacking and _before_ the AppImage is assembled. That fixed the ordering/timing trap.
 
 ---
 
@@ -69,6 +74,7 @@ We thought the remaining step for Milestone M5 was just "build the AppImage". It
   262 packages, `better_sqlite3.node` + `pty.node` present, 42 migrations, engine `dist` boots and serves JSON-RPC.
 
 ### Key files
+
 - `apps/server/src/provider/Layers/EngineAdapter.ts` — engine resolver (env → repo layouts)
 - `apps/desktop/src/main.ts` — injects `CAIDE_ENGINE_DIR` / `CAIDE_ENGINE_DRIZZLE_DIR` when packaged
 - `apps/engine/src/index.ts` — surfaced stdio rejections

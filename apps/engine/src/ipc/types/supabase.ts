@@ -11,9 +11,7 @@ export const SupabaseOrganizationInfoSchema = z.object({
   ownerEmail: z.string().optional(),
 });
 
-export type SupabaseOrganizationInfo = z.infer<
-  typeof SupabaseOrganizationInfoSchema
->;
+export type SupabaseOrganizationInfo = z.infer<typeof SupabaseOrganizationInfoSchema>;
 
 export const SupabaseProjectSchema = z.object({
   id: z.string(),
@@ -72,9 +70,7 @@ export const SetSupabaseAppProjectParamsSchema = z.object({
   organizationSlug: z.string().nullable().optional(),
 });
 
-export type SetSupabaseAppProjectParams = z.infer<
-  typeof SetSupabaseAppProjectParamsSchema
->;
+export type SetSupabaseAppProjectParams = z.infer<typeof SetSupabaseAppProjectParamsSchema>;
 
 export const SocialAuthProviderIdSchema = z.enum([
   "google",
@@ -99,9 +95,7 @@ export const SocialAuthProviderStatusSchema = z.object({
   setupUrl: z.string().url(),
 });
 
-export type SocialAuthProviderStatus = z.infer<
-  typeof SocialAuthProviderStatusSchema
->;
+export type SocialAuthProviderStatus = z.infer<typeof SocialAuthProviderStatusSchema>;
 
 // =============================================================================
 // Supabase Contracts

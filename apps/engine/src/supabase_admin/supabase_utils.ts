@@ -37,8 +37,6 @@ export function extractFunctionNameFromPath(..._args: unknown[]): string | null 
   return null;
 }
 
-export function deployAllSupabaseFunctions(
-  ..._args: unknown[]
-): Promise<SupabaseDeployError[]> {
+export function deployAllSupabaseFunctions(..._args: unknown[]): Promise<SupabaseDeployError[]> {
   return Promise.resolve([]);
 }

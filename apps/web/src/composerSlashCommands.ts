@@ -726,7 +726,11 @@ export function parseForkSlashCommandArgs(args: string): {
 }
 
 export type BuildSlashCommandArgs =
-  | { target: "apk" | "appbundle" | "ipa"; channel: "debug" | "profile" | "release"; invalid: false }
+  | {
+      target: "apk" | "appbundle" | "ipa";
+      channel: "debug" | "profile" | "release";
+      invalid: false;
+    }
   | { target: null; channel: null; invalid: boolean };
 
 export function parseBuildSlashCommandArgs(args: string): BuildSlashCommandArgs {

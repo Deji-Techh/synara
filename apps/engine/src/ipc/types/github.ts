@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  defineContract,
-  defineEvent,
-  createClient,
-  createEventClient,
-} from "../contracts/core";
+import { defineContract, defineEvent, createClient, createEventClient } from "../contracts/core";
 import { AppSchema } from "./app";
 
 // =============================================================================
@@ -372,9 +367,7 @@ export type GitBranchAppIdParams = z.infer<typeof GitBranchAppIdParamsSchema>;
 export type GitBranchParams = z.infer<typeof GitBranchParamsSchema>;
 export type CreateGitBranchParams = z.infer<typeof CreateGitBranchParamsSchema>;
 export type RenameGitBranchParams = z.infer<typeof RenameGitBranchParamsSchema>;
-export type ListRemoteGitBranchesParams = z.infer<
-  typeof ListRemoteGitBranchesParamsSchema
->;
+export type ListRemoteGitBranchesParams = z.infer<typeof ListRemoteGitBranchesParamsSchema>;
 export type CommitChangesParams = z.infer<typeof CommitChangesParamsSchema>;
 export type UncommittedFile = z.infer<typeof UncommittedFileSchema>;
 export type UncommittedFileStatus = UncommittedFile["status"];

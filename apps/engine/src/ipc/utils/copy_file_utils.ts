@@ -76,16 +76,11 @@ export async function executeCopyFile({
     if (from.startsWith("attachments:")) {
       const attachment = await resolveAttachmentLogicalPath(appPath, from);
       if (!attachment) {
-        throw new CaideError(
-          `Attachment does not exist: ${from}`,
-          CaideErrorKind.NotFound,
-        );
+        throw new CaideError(`Attachment does not exist: ${from}`, CaideErrorKind.NotFound);
       }
       fromFullPath = attachment.filePath;
     } else if (from.startsWith("~") || path.isAbsolute(from)) {
-      const rawPath = from.startsWith("~")
-        ? path.join(os.homedir(), from.slice(1))
-        : from;
+      const rawPath = from.startsWith("~") ? path.join(os.homedir(), from.slice(1)) : from;
       fromFullPath = path.resolve(rawPath);
     } else {
       fromFullPath = safeJoin(appPath, from);
@@ -120,9 +115,7 @@ export async function executeCopyFile({
     const stat = fs.statSync(realFromPath);
     if (stat.isDirectory()) {
       fs.cpSync(realFromPath, toFullPath, { recursive: true });
-      logger.log(
-        `Successfully copied directory: ${realFromPath} -> ${toFullPath}`,
-      );
+      logger.log(`Successfully copied directory: ${realFromPath} -> ${toFullPath}`);
     } else {
       fs.copyFileSync(realFromPath, toFullPath);
       logger.log(`Successfully copied file: ${realFromPath} -> ${toFullPath}`);
@@ -133,8 +126,7 @@ export async function executeCopyFile({
 
     // Deploy Supabase function if applicable
     const sharedModuleChanged = isSharedServerModule(to);
-    const effectiveSharedModulesChanged =
-      isSharedModulesChanged || sharedModuleChanged;
+    const effectiveSharedModulesChanged = isSharedModulesChanged || sharedModuleChanged;
     let deployError: unknown;
     let skippedFunctionDeploy: string | undefined;
     if (supabaseProjectId && isServerFunction(to)) {

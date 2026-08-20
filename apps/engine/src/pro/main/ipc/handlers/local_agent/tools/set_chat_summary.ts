@@ -8,9 +8,7 @@ const setChatSummarySchema = z.object({
   summary: z.string().describe("A short summary/title for the chat"),
 });
 
-export const setChatSummaryTool: ToolDefinition<
-  z.infer<typeof setChatSummarySchema>
-> = {
+export const setChatSummaryTool: ToolDefinition<z.infer<typeof setChatSummarySchema>> = {
   name: "set_chat_summary",
   description:
     "Set the title/summary for this chat. Call this tool exactly once early in the turn, as soon as you understand the user's request well enough to write a short title. Do not wait until the end of the turn.",

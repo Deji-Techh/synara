@@ -22,10 +22,7 @@ export function isLockHeld(lockId: number | string): boolean {
  * @param fn The function to execute with the lock
  * @returns Result of the function
  */
-export function withLock<T>(
-  lockId: number | string,
-  fn: () => Promise<T>,
-): Promise<T> {
+export function withLock<T>(lockId: number | string, fn: () => Promise<T>): Promise<T> {
   const lastOperation = locks.get(lockId) ?? Promise.resolve();
 
   let resolve: () => void;

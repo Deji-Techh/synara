@@ -1,9 +1,5 @@
 import { z } from "zod";
-import {
-  CaideError,
-  CaideErrorKind,
-  isCaideError,
-} from "../../errors/caide_error";
+import { CaideError, CaideErrorKind, isCaideError } from "../../errors/caide_error";
 import { beginAsyncActivity } from "../../lib/async_activity";
 
 // =============================================================================
@@ -28,10 +24,7 @@ export interface IpcContract<
  * Event contract for pub/sub pattern (main -> renderer).
  * Used for events pushed from main process to renderer.
  */
-export interface EventContract<
-  TChannel extends string,
-  TPayload extends z.ZodType,
-> {
+export interface EventContract<TChannel extends string, TPayload extends z.ZodType> {
   readonly channel: TChannel;
   readonly payload: TPayload;
 }
@@ -82,10 +75,7 @@ export function defineContract<
  * Creates a typed event contract definition.
  * Used for main -> renderer pub/sub events.
  */
-export function defineEvent<
-  TChannel extends string,
-  TPayload extends z.ZodType,
->(event: {
+export function defineEvent<TChannel extends string, TPayload extends z.ZodType>(event: {
   channel: TChannel;
   payload: TPayload;
 }): EventContract<TChannel, TPayload> {
@@ -114,20 +104,16 @@ export function defineStream<
 // =============================================================================
 
 /** Extract the input type from a contract */
-export type ContractInput<T> =
-  T extends IpcContract<any, infer I, any> ? z.infer<I> : never;
+export type ContractInput<T> = T extends IpcContract<any, infer I, any> ? z.infer<I> : never;
 
 /** Extract the output type from a contract */
-export type ContractOutput<T> =
-  T extends IpcContract<any, any, infer O> ? z.infer<O> : never;
+export type ContractOutput<T> = T extends IpcContract<any, any, infer O> ? z.infer<O> : never;
 
 /** Extract the channel name from a contract */
-export type ContractChannel<T> =
-  T extends IpcContract<infer C, any, any> ? C : never;
+export type ContractChannel<T> = T extends IpcContract<infer C, any, any> ? C : never;
 
 /** Extract the payload type from an event contract */
-export type EventPayload<T> =
-  T extends EventContract<any, infer P> ? z.infer<P> : never;
+export type EventPayload<T> = T extends EventContract<any, infer P> ? z.infer<P> : never;
 
 /** Extract the channel name from an event contract */
 export type EventChannel<T> = T extends EventContract<infer C, any> ? C : never;
@@ -173,14 +159,11 @@ export function createIpcErrorEnvelope(error: unknown): IpcInvokeEnvelope {
   };
 }
 
-export function isIpcInvokeEnvelope(
-  value: unknown,
-): value is IpcInvokeEnvelope {
+export function isIpcInvokeEnvelope(value: unknown): value is IpcInvokeEnvelope {
   return (
     typeof value === "object" &&
     value !== null &&
-    (value as { __caideIpcEnvelope?: unknown }).__caideIpcEnvelope ===
-      IPC_ENVELOPE_MARKER &&
+    (value as { __caideIpcEnvelope?: unknown }).__caideIpcEnvelope === IPC_ENVELOPE_MARKER &&
     typeof (value as { ok?: unknown }).ok === "boolean"
   );
 }
@@ -208,8 +191,7 @@ export function serializeIpcError(error: unknown): SerializedIpcError {
 
 function isCaideErrorKind(value: unknown): value is CaideErrorKind {
   return (
-    typeof value === "string" &&
-    Object.values(CaideErrorKind).includes(value as CaideErrorKind)
+    typeof value === "string" && Object.values(CaideErrorKind).includes(value as CaideErrorKind)
   );
 }
 
@@ -234,12 +216,8 @@ export function unwrapIpcEnvelope<T>(response: IpcInvokeEnvelope<T>): T {
 }
 
 /** Type to convert contracts object to client methods */
-type ClientFromContracts<
-  T extends Record<string, IpcContract<string, z.ZodType, z.ZodType>>,
-> = {
-  [K in keyof T]: (
-    input: z.infer<T[K]["input"]>,
-  ) => Promise<z.infer<T[K]["output"]>>;
+type ClientFromContracts<T extends Record<string, IpcContract<string, z.ZodType, z.ZodType>>> = {
+  [K in keyof T]: (input: z.infer<T[K]["input"]>) => Promise<z.infer<T[K]["output"]>>;
 };
 
 /**
@@ -254,9 +232,9 @@ type ClientFromContracts<
  * const appClient = createClient(appContracts);
  * // appClient.createApp(params) - params/result types derived automatically
  */
-export function createClient<
-  T extends Record<string, IpcContract<string, z.ZodType, z.ZodType>>,
->(contracts: T): ClientFromContracts<T> {
+export function createClient<T extends Record<string, IpcContract<string, z.ZodType, z.ZodType>>>(
+  contracts: T,
+): ClientFromContracts<T> {
   // Access ipcRenderer from the window.electron exposed by preload
   const getIpcRenderer = () => (window as any).electron?.ipcRenderer;
 
@@ -276,9 +254,7 @@ export function createClient<
             ? ipcRenderer.invokeEnvelope
             : ipcRenderer.invoke;
         const response = await invoke(contract.channel, input);
-        return isIpcInvokeEnvelope(response)
-          ? unwrapIpcEnvelope(response)
-          : response;
+        return isIpcInvokeEnvelope(response) ? unwrapIpcEnvelope(response) : response;
       } finally {
         finishActivity();
       }
@@ -292,14 +268,10 @@ export function createClient<
 // =============================================================================
 
 /** Capitalize first letter of a string type */
-type Capitalize<S extends string> = S extends `${infer F}${infer R}`
-  ? `${Uppercase<F>}${R}`
-  : S;
+type Capitalize<S extends string> = S extends `${infer F}${infer R}` ? `${Uppercase<F>}${R}` : S;
 
 /** Type to convert event contracts object to event client methods */
-type EventClientFromContracts<
-  T extends Record<string, EventContract<string, z.ZodType>>,
-> = {
+type EventClientFromContracts<T extends Record<string, EventContract<string, z.ZodType>>> = {
   [K in keyof T as `on${Capitalize<string & K>}`]: (
     handler: (payload: z.infer<T[K]["payload"]>) => void,
   ) => () => void; // Returns unsubscribe function
@@ -316,9 +288,9 @@ type EventClientFromContracts<
  * const agentEventClient = createEventClient(agentEvents);
  * // agentEventClient.onTodosUpdate(handler) -> unsubscribe fn
  */
-export function createEventClient<
-  T extends Record<string, EventContract<string, z.ZodType>>,
->(events: T): EventClientFromContracts<T> {
+export function createEventClient<T extends Record<string, EventContract<string, z.ZodType>>>(
+  events: T,
+): EventClientFromContracts<T> {
   const getIpcRenderer = () => (window as any).electron?.ipcRenderer;
 
   const client = {} as EventClientFromContracts<T>;
@@ -339,10 +311,7 @@ export function createEventClient<
         if (parsed.success) {
           handler(parsed.data);
         } else {
-          console.error(
-            `[${event.channel}] Invalid payload:`,
-            parsed.error.format(),
-          );
+          console.error(`[${event.channel}] Invalid payload:`, parsed.error.format());
         }
       };
 
@@ -408,9 +377,7 @@ export function createStreamClient<
     ipcRenderer.on(contract.events.chunk.channel, (data: unknown) => {
       const parsed = contract.events.chunk.payload.safeParse(data);
       if (parsed.success) {
-        const key = (parsed.data as Record<string, unknown>)[
-          contract.keyField
-        ] as KeyValue;
+        const key = (parsed.data as Record<string, unknown>)[contract.keyField] as KeyValue;
         streams.get(key)?.onChunk(parsed.data);
       }
     });
@@ -418,9 +385,7 @@ export function createStreamClient<
     ipcRenderer.on(contract.events.end.channel, (data: unknown) => {
       const parsed = contract.events.end.payload.safeParse(data);
       if (parsed.success) {
-        const key = (parsed.data as Record<string, unknown>)[
-          contract.keyField
-        ] as KeyValue;
+        const key = (parsed.data as Record<string, unknown>)[contract.keyField] as KeyValue;
         streams.get(key)?.onEnd(parsed.data);
         streams.delete(key);
       }
@@ -429,9 +394,7 @@ export function createStreamClient<
     ipcRenderer.on(contract.events.error.channel, (data: unknown) => {
       const parsed = contract.events.error.payload.safeParse(data);
       if (parsed.success) {
-        const key = (parsed.data as Record<string, unknown>)[
-          contract.keyField
-        ] as KeyValue;
+        const key = (parsed.data as Record<string, unknown>)[contract.keyField] as KeyValue;
         streams.get(key)?.onError(parsed.data);
         streams.delete(key);
       }
@@ -457,17 +420,13 @@ export function createStreamClient<
       const ipcRenderer = getIpcRenderer();
       if (!ipcRenderer) {
         callbacks.onError({
-          [contract.keyField]: (input as Record<string, unknown>)[
-            contract.keyField
-          ],
+          [contract.keyField]: (input as Record<string, unknown>)[contract.keyField],
           error: "IPC renderer not available",
         } as any);
         return;
       }
 
-      const key = (input as Record<string, unknown>)[
-        contract.keyField
-      ] as KeyValue;
+      const key = (input as Record<string, unknown>)[contract.keyField] as KeyValue;
       streams.set(key, callbacks);
 
       ipcRenderer.invoke(contract.channel, input).catch((err: Error) => {
@@ -503,9 +462,9 @@ export function createStreamClient<
  * Extract all invoke channels from a contracts object.
  * Used for building the preload whitelist.
  */
-export function getInvokeChannels<
-  T extends Record<string, { channel: string }>,
->(contracts: T): T[keyof T]["channel"][] {
+export function getInvokeChannels<T extends Record<string, { channel: string }>>(
+  contracts: T,
+): T[keyof T]["channel"][] {
   return Object.values(contracts).map((c) => c.channel);
 }
 
@@ -513,9 +472,9 @@ export function getInvokeChannels<
  * Extract all receive (event) channels from an events object.
  * Used for building the preload whitelist.
  */
-export function getReceiveChannels<
-  T extends Record<string, { channel: string }>,
->(events: T): T[keyof T]["channel"][] {
+export function getReceiveChannels<T extends Record<string, { channel: string }>>(
+  events: T,
+): T[keyof T]["channel"][] {
   return Object.values(events).map((e) => e.channel);
 }
 
@@ -534,10 +493,6 @@ export function getStreamChannels<
 ): { invoke: TChannel; receive: string[] } {
   return {
     invoke: stream.channel,
-    receive: [
-      stream.events.chunk.channel,
-      stream.events.end.channel,
-      stream.events.error.channel,
-    ],
+    receive: [stream.events.chunk.channel, stream.events.end.channel, stream.events.error.channel],
   };
 }

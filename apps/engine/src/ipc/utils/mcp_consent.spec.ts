@@ -106,9 +106,6 @@ describe("requireMcpToolConsent (classifier race)", () => {
     await vi.waitFor(() => expect(send).toHaveBeenCalled());
     resolveConsent(lastRequestId(send), "decline");
     await expect(pending).resolves.toEqual({ approved: false });
-    expect(send).not.toHaveBeenCalledWith(
-      "mcp:tool-consent-resolved",
-      expect.anything(),
-    );
+    expect(send).not.toHaveBeenCalledWith("mcp:tool-consent-resolved", expect.anything());
   });
 });

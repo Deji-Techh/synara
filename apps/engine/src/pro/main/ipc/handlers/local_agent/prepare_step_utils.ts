@@ -59,9 +59,7 @@ export interface InjectedMessage {
  * For images, validates dimensions and returns a text message if the image
  * exceeds the maximum allowed size (8000px in any dimension).
  */
-export function transformContentPart(
-  part: UserMessageContentPart,
-): TextPart | ImagePart {
+export function transformContentPart(part: UserMessageContentPart): TextPart | ImagePart {
   if (part.type === "text") {
     return { type: "text", text: part.text };
   }
@@ -161,11 +159,7 @@ export function prepareStepMessages<
   const { messages, ...rest } = options;
 
   // Move any new pending messages to the permanent injected list
-  processPendingMessages(
-    pendingUserMessages,
-    allInjectedMessages,
-    messages.length,
-  );
+  processPendingMessages(pendingUserMessages, allInjectedMessages, messages.length);
 
   // Clean messages for OpenAI compatibility during multi-step agent flows.
   // Strips itemId (prevents "Item with id not found" errors); reasoning parts
@@ -174,9 +168,7 @@ export function prepareStepMessages<
 
   // Check if we need to return modified options
   const hasInjections = allInjectedMessages.length > 0;
-  const hasFilteredContent = filteredMessages.some(
-    (msg, i) => msg !== messages[i],
-  );
+  const hasFilteredContent = filteredMessages.some((msg, i) => msg !== messages[i]);
 
   if (!hasInjections && !hasFilteredContent) {
     return undefined;
@@ -185,10 +177,7 @@ export function prepareStepMessages<
   // Build the new messages array with injections
   // Cast is safe because InjectedMessage["message"] is a valid ModelMessage
   const newMessages = hasInjections
-    ? (injectMessagesAtPositions(
-        filteredMessages,
-        allInjectedMessages,
-      ) as TMessage[])
+    ? (injectMessagesAtPositions(filteredMessages, allInjectedMessages) as TMessage[])
     : filteredMessages;
 
   return { messages: newMessages, ...rest };
@@ -204,9 +193,7 @@ export function prepareStepMessages<
  *
  * Returns a new array if changes were made, or null if no fix was needed.
  */
-export function ensureToolResultOrdering<T extends ModelMessage>(
-  messages: T[],
-): T[] | null {
+export function ensureToolResultOrdering<T extends ModelMessage>(messages: T[]): T[] | null {
   const result = [...messages] as T[];
   let changed = false;
   const pendingToolCallIds = new Set<string>();
@@ -233,10 +220,7 @@ export function ensureToolResultOrdering<T extends ModelMessage>(
       // them as a batch, preserving their FIFO order.
       const misplacedStart = i;
       let misplacedEnd = i;
-      while (
-        misplacedEnd + 1 < result.length &&
-        result[misplacedEnd + 1].role === "user"
-      ) {
+      while (misplacedEnd + 1 < result.length && result[misplacedEnd + 1].role === "user") {
         misplacedEnd++;
       }
       const misplacedCount = misplacedEnd - misplacedStart + 1;
@@ -283,9 +267,7 @@ export function ensureToolResultOrdering<T extends ModelMessage>(
   return changed ? result : null;
 }
 
-function isToolCallPart(
-  part: unknown,
-): part is { type: "tool-call"; toolCallId: string } {
+function isToolCallPart(part: unknown): part is { type: "tool-call"; toolCallId: string } {
   return (
     typeof part === "object" &&
     part !== null &&
@@ -295,9 +277,7 @@ function isToolCallPart(
   );
 }
 
-function isToolResultPart(
-  part: unknown,
-): part is { type: "tool-result"; toolCallId: string } {
+function isToolResultPart(part: unknown): part is { type: "tool-result"; toolCallId: string } {
   return (
     typeof part === "object" &&
     part !== null &&

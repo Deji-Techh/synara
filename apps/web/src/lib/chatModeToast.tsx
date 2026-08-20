@@ -49,9 +49,7 @@ export function showChatModeFallbackToast({
     action: {
       label: "Switch mode",
       onClick: () => {
-        const trigger = document.querySelector<HTMLElement>(
-          '[data-testid="chat-mode-selector"]',
-        );
+        const trigger = document.querySelector<HTMLElement>('[data-testid="chat-mode-selector"]');
         if (trigger) {
           trigger.focus();
           trigger.click();

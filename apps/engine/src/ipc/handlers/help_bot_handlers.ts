@@ -4,15 +4,8 @@ import { readSettings } from "../../main/settings";
 
 import log from "electron-log";
 import { safeSend } from "../utils/safe_sender";
-import {
-  cancelOrphanedBaseStream,
-  fastTextOutput,
-} from "../utils/stream_text_utils";
-import {
-  createOpenAI,
-  openai,
-  OpenAIResponsesProviderOptions,
-} from "@ai-sdk/openai";
+import { cancelOrphanedBaseStream, fastTextOutput } from "../utils/stream_text_utils";
+import { createOpenAI, openai, OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 import { createTypedHandler } from "./base";
 import { helpContracts } from "../types/help";
 import { getTestFetchOption } from "../utils/test_fetch_override";
@@ -41,10 +34,7 @@ export function registerHelpBotHandlers() {
     const { sessionId, message } = params;
     try {
       if (!sessionId || !message?.trim()) {
-        throw new CaideError(
-          "Missing sessionId or message",
-          CaideErrorKind.External,
-        );
+        throw new CaideError("Missing sessionId or message", CaideErrorKind.External);
       }
 
       // Clear any existing active streams (only one session at a time)
@@ -56,10 +46,7 @@ export function registerHelpBotHandlers() {
 
       // Append user message to session history
       const history = helpSessions.get(sessionId) ?? [];
-      const updatedHistory: HelpMessage[] = [
-        ...history,
-        { role: "user", content: message },
-      ];
+      const updatedHistory: HelpMessage[] = [...history, { role: "user", content: message }];
 
       const abortController = new AbortController();
       activeHelpStreams.set(sessionId, abortController);
@@ -70,9 +57,7 @@ export function registerHelpBotHandlers() {
         apiKey,
         ...getTestFetchOption(),
       });
-      const helpBotModel = await resolveBuiltinModelAlias(
-        "dyad/help-bot/default",
-      );
+      const helpBotModel = await resolveBuiltinModelAlias("dyad/help-bot/default");
 
       if (!helpBotModel || helpBotModel.providerId !== "openai") {
         // Help bot requires OpenAI provider because it uses the OpenAI

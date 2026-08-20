@@ -27,8 +27,7 @@ const ENGINE_DATA_DIR =
   process.env.CAIDE_ENGINE_DATA_DIR ??
   path.join(process.env.HOME ?? process.cwd(), ".caide", "engine");
 const ENGINE_APP_DIR =
-  process.env.CAIDE_ENGINE_APP_PATH ??
-  path.dirname(fileURLToPath(import.meta.url));
+  process.env.CAIDE_ENGINE_APP_PATH ?? path.dirname(fileURLToPath(import.meta.url));
 
 export interface WebContentsLike {
   readonly id: number;
@@ -61,7 +60,10 @@ class SenderShim implements WebContentsLike {
   }
 }
 
-const INVOKE_HANDLERS = new Map<string, (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown>();
+const INVOKE_HANDLERS = new Map<
+  string,
+  (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown
+>();
 const EVENT_LISTENERS = new EventEmitter();
 EVENT_LISTENERS.setMaxListeners(0);
 
@@ -131,7 +133,12 @@ export const app = {
   getAppMetrics(): Array<{
     type?: string;
     pid?: number;
-    memory?: { workingSetSize?: number; peakWorkingSetSize?: number; privateBytes?: number; sharedBytes?: number };
+    memory?: {
+      workingSetSize?: number;
+      peakWorkingSetSize?: number;
+      privateBytes?: number;
+      sharedBytes?: number;
+    };
     creationTime?: number;
     name?: string;
     serviceName?: string;
@@ -140,7 +147,9 @@ export const app = {
     return [];
   },
   relaunch(): void {
-    log.info("electron-shim: app.relaunch() → not spawned by engine itself; supervisor manages respawn");
+    log.info(
+      "electron-shim: app.relaunch() → not spawned by engine itself; supervisor manages respawn",
+    );
   },
   quit(): void {
     log.info("electron-shim: app.quit() → exiting engine");
@@ -194,7 +203,8 @@ export const dialog = {
 };
 
 function openWithSystemDefault(target: string): void {
-  const opener = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
+  const opener =
+    process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
   if (opener === "start") {
     // `start` is a shell builtin; best-effort via cmd
     void import("node:child_process").then(({ execFile }) => {
@@ -292,10 +302,7 @@ export class BrowserWindow extends FakeBrowserWindow {
 
 export interface UtilityProcessLike {
   readonly pid: number;
-  on(
-    event: "message" | "exit" | "spawn" | "error",
-    listener: (...args: any[]) => void,
-  ): void;
+  on(event: "message" | "exit" | "spawn" | "error", listener: (...args: any[]) => void): void;
   postMessage(message: any): void;
   kill(): boolean;
 }
@@ -366,8 +373,16 @@ export const clipboard = {
     return "";
   },
   writeImage(): void {},
-  readImage(): { isEmpty(): boolean; toPNG(): Buffer; getSize(): { width: number; height: number } } {
-    return { isEmpty: () => true, toPNG: () => Buffer.alloc(0), getSize: () => ({ width: 0, height: 0 }) };
+  readImage(): {
+    isEmpty(): boolean;
+    toPNG(): Buffer;
+    getSize(): { width: number; height: number };
+  } {
+    return {
+      isEmpty: () => true,
+      toPNG: () => Buffer.alloc(0),
+      getSize: () => ({ width: 0, height: 0 }),
+    };
   },
 };
 

@@ -13,9 +13,7 @@ const getNeonProjectInfoSchema = z.object({
     ),
 });
 
-export const getNeonProjectInfoTool: ToolDefinition<
-  z.infer<typeof getNeonProjectInfoSchema>
-> = {
+export const getNeonProjectInfoTool: ToolDefinition<z.infer<typeof getNeonProjectInfoSchema>> = {
   name: "get_neon_project_info",
   description:
     "Get Neon project overview: project ID, branches, and table names. Use this to discover what tables exist before fetching detailed schemas.",
@@ -27,10 +25,7 @@ export const getNeonProjectInfoTool: ToolDefinition<
 
   execute: async (_args, ctx: AgentContext) => {
     if (!ctx.neonProjectId || !ctx.neonActiveBranchId) {
-      throw new CaideError(
-        "Neon is not connected to this app",
-        CaideErrorKind.Precondition,
-      );
+      throw new CaideError("Neon is not connected to this app", CaideErrorKind.Precondition);
     }
 
     ctx.onXmlStream("<caide-neon-project-info></caide-neon-project-info>");

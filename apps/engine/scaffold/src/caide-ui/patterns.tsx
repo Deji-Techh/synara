@@ -26,9 +26,7 @@ export function CaideAppHeader({
       <div className="flex min-w-0 items-start gap-3">
         {leading}
         <div className="min-w-0">
-          <h1 className="text-balance text-2xl font-bold tracking-[-0.025em]">
-            {title}
-          </h1>
+          <h1 className="text-balance text-2xl font-bold tracking-[-0.025em]">{title}</h1>
           {description ? (
             <p className="mt-1 max-w-[68ch] text-sm leading-6 text-[var(--caide-text-secondary)]">
               {description}
@@ -72,10 +70,7 @@ export function CaideStatePanel({
         </p>
       </div>
       {actionLabel && onAction ? (
-        <CaideButton
-          variant={tone === "error" ? "danger" : "secondary"}
-          onClick={onAction}
-        >
+        <CaideButton variant={tone === "error" ? "danger" : "secondary"} onClick={onAction}>
           {actionLabel}
         </CaideButton>
       ) : null}

@@ -22,10 +22,10 @@ function getManagedFlutterCandidates(): string[] {
 
 function findFlutterOnPath(): string | null {
   try {
-    const resolved = execSync(
-      process.platform === "win32" ? "where flutter" : "which flutter",
-      { stdio: "pipe", timeout: 5_000 },
-    )
+    const resolved = execSync(process.platform === "win32" ? "where flutter" : "which flutter", {
+      stdio: "pipe",
+      timeout: 5_000,
+    })
       .toString()
       .trim()
       .split(/\r?\n/)[0];
@@ -81,7 +81,10 @@ export function isFlutterApp(appPath: string): boolean {
 function managedRootCandidate(): string | null {
   try {
     const sdkPath = getManagedFlutterSdkPathStatic();
-    if (fs.existsSync(path.join(sdkPath, "bin", "flutter")) || fs.existsSync(path.join(sdkPath, "bin", "flutter.exe"))) {
+    if (
+      fs.existsSync(path.join(sdkPath, "bin", "flutter")) ||
+      fs.existsSync(path.join(sdkPath, "bin", "flutter.exe"))
+    ) {
       return sdkPath;
     }
   } catch {}
@@ -117,14 +120,7 @@ export function getDartExecutable(): string {
     if (fs.existsSync(dartBin)) return dartBin;
   } catch {}
   for (const root of flutterRootCandidates()) {
-    const candidate = path.join(
-      root,
-      "bin",
-      "cache",
-      "dart-sdk",
-      "bin",
-      "dart",
-    );
+    const candidate = path.join(root, "bin", "cache", "dart-sdk", "bin", "dart");
     try {
       if (fs.existsSync(candidate)) {
         return candidate;
@@ -150,14 +146,19 @@ export function hasFlutterBinary(): boolean {
   }
 }
 
-export type FlutterProgressCallback = (p: import("@/ipc/services/managed_flutter_toolchain_service").FlutterToolchainProgress) => void;
+export type FlutterProgressCallback = (
+  p: import("@/ipc/services/managed_flutter_toolchain_service").FlutterToolchainProgress,
+) => void;
 
 /**
  * Ensure a runnable Flutter SDK is available.
  * - Returns immediately if host or managed flutter exists.
  * - Otherwise auto-installs the managed SDK (download indicator via onProgress).
  */
-export async function ensureFlutterSdkAvailable(onProgress?: FlutterProgressCallback, signal?: AbortSignal): Promise<string> {
+export async function ensureFlutterSdkAvailable(
+  onProgress?: FlutterProgressCallback,
+  signal?: AbortSignal,
+): Promise<string> {
   if (hasFlutterBinary()) return getFlutterExecutable();
   return ensureManagedFlutterStatic({ onProgress, signal });
 }

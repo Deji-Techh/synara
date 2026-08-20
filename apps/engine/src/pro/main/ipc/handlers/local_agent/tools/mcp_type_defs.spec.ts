@@ -171,14 +171,8 @@ describe("resolveMcpToolDefs", () => {
   ];
 
   it("resolves by jsName and by raw toolName", () => {
-    const { found, missing } = resolveMcpToolDefs(defs, [
-      "github__create_issue",
-      "send_message",
-    ]);
-    expect(found.map((d) => d.jsName)).toEqual([
-      "github__create_issue",
-      "slack__send_message",
-    ]);
+    const { found, missing } = resolveMcpToolDefs(defs, ["github__create_issue", "send_message"]);
+    expect(found.map((d) => d.jsName)).toEqual(["github__create_issue", "slack__send_message"]);
     expect(missing).toEqual([]);
   });
 
@@ -197,13 +191,8 @@ describe("resolveMcpToolDefs", () => {
       def({ jsName: "github__create_issue", toolName: "create_issue" }),
       def({ jsName: "linear__create_issue", toolName: "create_issue" }),
     ];
-    const { found, missing } = resolveMcpToolDefs(collidingDefs, [
-      "create_issue",
-    ]);
-    expect(found.map((d) => d.jsName)).toEqual([
-      "github__create_issue",
-      "linear__create_issue",
-    ]);
+    const { found, missing } = resolveMcpToolDefs(collidingDefs, ["create_issue"]);
+    expect(found.map((d) => d.jsName)).toEqual(["github__create_issue", "linear__create_issue"]);
     expect(missing).toEqual([]);
   });
 
@@ -212,9 +201,7 @@ describe("resolveMcpToolDefs", () => {
       def({ jsName: "github__create_issue", toolName: "create_issue" }),
       def({ jsName: "linear__create_issue", toolName: "create_issue" }),
     ];
-    const { found } = resolveMcpToolDefs(collidingDefs, [
-      "linear__create_issue",
-    ]);
+    const { found } = resolveMcpToolDefs(collidingDefs, ["linear__create_issue"]);
     expect(found.map((d) => d.jsName)).toEqual(["linear__create_issue"]);
   });
 });
@@ -385,9 +372,7 @@ describe("buildMcpCapabilityMap", () => {
     }
     expect(rejection).toBeInstanceOf(CaideError);
     expect((rejection as CaideError).kind).toBe(CaideErrorKind.UserCancelled);
-    expect((rejection as CaideError).message).toBe(
-      "User declined running tool srv__hello",
-    );
+    expect((rejection as CaideError).message).toBe("User declined running tool srv__hello");
     expect(execute).not.toHaveBeenCalled();
     expect(ctx.onXmlComplete).not.toHaveBeenCalled();
   });
@@ -434,9 +419,7 @@ describe("buildMcpCapabilityMap", () => {
     }
     expect(rejection).toBeInstanceOf(CaideError);
     expect((rejection as CaideError).kind).toBe(CaideErrorKind.NotFound);
-    expect((rejection as CaideError).message).toBe(
-      "MCP tool srv__hello not found at runtime",
-    );
+    expect((rejection as CaideError).message).toBe("MCP tool srv__hello not found at runtime");
   });
 
   it("emits a failed tool-result and error <caide-output> and re-throws when the MCP tool execute() fails", async () => {
@@ -457,18 +440,10 @@ describe("buildMcpCapabilityMap", () => {
     const xmls = vi.mocked(ctx.onXmlComplete).mock.calls.map((c) => c[0]);
     expect(xmls.some((x) => x.startsWith("<caide-mcp-tool-call"))).toBe(true);
     expect(
-      xmls.some(
-        (x) =>
-          x.startsWith("<caide-output") &&
-          x.includes("MCP tool 'srv__hello' failed"),
-      ),
+      xmls.some((x) => x.startsWith("<caide-output") && x.includes("MCP tool 'srv__hello' failed")),
     ).toBe(true);
     expect(
-      xmls.some(
-        (x) =>
-          x.startsWith("<caide-mcp-tool-result") &&
-          x.includes('is-error="true"'),
-      ),
+      xmls.some((x) => x.startsWith("<caide-mcp-tool-result") && x.includes('is-error="true"')),
     ).toBe(true);
   });
 });

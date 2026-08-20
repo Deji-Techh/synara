@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  detectSqlDataDeletion,
-  detectSqlSchemaMutation,
-} from "../src/index.js";
+import { detectSqlDataDeletion, detectSqlSchemaMutation } from "../src/index.js";
 
 describe("detectSqlSchemaMutation", () => {
   it("does not flag ordinary reads or DML", () => {
@@ -48,8 +45,7 @@ describe("detectSqlSchemaMutation", () => {
 
   it("flags select into table creation", () => {
     expect(
-      detectSqlSchemaMutation("SELECT id, name INTO archived_users FROM users")
-        .mutatesSchema,
+      detectSqlSchemaMutation("SELECT id, name INTO archived_users FROM users").mutatesSchema,
     ).toBe(true);
     expect(
       detectSqlSchemaMutation(
@@ -78,25 +74,21 @@ describe("detectSqlSchemaMutation", () => {
 
   it("flags cron functions only when schema-qualified", () => {
     expect(
-      detectSqlSchemaMutation(
-        "SELECT cron.schedule('nightly', '0 3 * * *', 'VACUUM')",
-      ).mutatesSchema,
+      detectSqlSchemaMutation("SELECT cron.schedule('nightly', '0 3 * * *', 'VACUUM')")
+        .mutatesSchema,
     ).toBe(true);
     expect(
-      detectSqlSchemaMutation(
-        `SELECT "cron"."schedule"('nightly', '0 3 * * *', 'VACUUM')`,
-      ).mutatesSchema,
+      detectSqlSchemaMutation(`SELECT "cron"."schedule"('nightly', '0 3 * * *', 'VACUUM')`)
+        .mutatesSchema,
     ).toBe(true);
 
     // A user-defined function that happens to be named `schedule` is not pg_cron.
+    expect(detectSqlSchemaMutation("SELECT schedule(meeting_id, '2026-01-01')").mutatesSchema).toBe(
+      false,
+    );
     expect(
-      detectSqlSchemaMutation("SELECT schedule(meeting_id, '2026-01-01')")
+      detectSqlSchemaMutation("SELECT cron = schedule(meeting_id, '2026-01-01') FROM meetings")
         .mutatesSchema,
-    ).toBe(false);
-    expect(
-      detectSqlSchemaMutation(
-        "SELECT cron = schedule(meeting_id, '2026-01-01') FROM meetings",
-      ).mutatesSchema,
     ).toBe(false);
   });
 
@@ -117,9 +109,8 @@ describe("detectSqlSchemaMutation", () => {
 
   it("detects an extension function nested in DML", () => {
     expect(
-      detectSqlSchemaMutation(
-        "INSERT INTO log SELECT create_hypertable('metrics', 'ts')",
-      ).mutatesSchema,
+      detectSqlSchemaMutation("INSERT INTO log SELECT create_hypertable('metrics', 'ts')")
+        .mutatesSchema,
     ).toBe(true);
   });
 
@@ -152,9 +143,11 @@ describe("detectSqlSchemaMutation", () => {
     `);
 
     expect(result.mutatesSchema).toBe(true);
-    expect(
-      result.statements.map((statement) => statement.mutatesSchema),
-    ).toEqual([false, true, false]);
+    expect(result.statements.map((statement) => statement.mutatesSchema)).toEqual([
+      false,
+      true,
+      false,
+    ]);
   });
 
   it("ignores semicolons and keywords inside quoted regions and comments", () => {
@@ -249,16 +242,12 @@ describe("detectSqlDataDeletion", () => {
     for (const sql of ["SELECT 'unterminated", "SELECT 1 /* inspect"]) {
       const result = detectSqlDataDeletion(sql);
       expect(result.deletesData, sql).toBe(true);
-      expect(result.statements[0]?.reason, sql).toBe(
-        "unparseable_or_incomplete",
-      );
+      expect(result.statements[0]?.reason, sql).toBe("unparseable_or_incomplete");
     }
   });
 
   it("treats EOF line comments as complete SQL", () => {
-    expect(detectSqlDataDeletion("SELECT 1 -- inspect").deletesData).toBe(
-      false,
-    );
+    expect(detectSqlDataDeletion("SELECT 1 -- inspect").deletesData).toBe(false);
 
     const deleteResult = detectSqlDataDeletion("DELETE FROM users -- cleanup");
     expect(deleteResult.deletesData).toBe(true);
@@ -310,31 +299,20 @@ describe("detectSqlDataDeletion", () => {
   });
 
   it("only flags EXPLAIN-wrapped deletes when the statement executes", () => {
+    expect(detectSqlDataDeletion("EXPLAIN DELETE FROM users WHERE id = 1").deletesData).toBe(false);
     expect(
-      detectSqlDataDeletion("EXPLAIN DELETE FROM users WHERE id = 1")
-        .deletesData,
+      detectSqlDataDeletion("EXPLAIN ANALYZE DELETE FROM users WHERE id = 1").deletesData,
+    ).toBe(true);
+    expect(
+      detectSqlDataDeletion("EXPLAIN (ANALYZE false) DELETE FROM users WHERE id = 1").deletesData,
     ).toBe(false);
     expect(
-      detectSqlDataDeletion("EXPLAIN ANALYZE DELETE FROM users WHERE id = 1")
+      detectSqlDataDeletion("EXPLAIN (ANALYZE true) DELETE FROM users WHERE id = 1").deletesData,
+    ).toBe(true);
+    expect(detectSqlDataDeletion("EXPLAIN ANALYZE DROP TABLE users").deletesData).toBe(true);
+    expect(
+      detectSqlDataDeletion("EXPLAIN (ANALYZE true) ALTER TABLE users DROP COLUMN legacy_id")
         .deletesData,
-    ).toBe(true);
-    expect(
-      detectSqlDataDeletion(
-        "EXPLAIN (ANALYZE false) DELETE FROM users WHERE id = 1",
-      ).deletesData,
-    ).toBe(false);
-    expect(
-      detectSqlDataDeletion(
-        "EXPLAIN (ANALYZE true) DELETE FROM users WHERE id = 1",
-      ).deletesData,
-    ).toBe(true);
-    expect(
-      detectSqlDataDeletion("EXPLAIN ANALYZE DROP TABLE users").deletesData,
-    ).toBe(true);
-    expect(
-      detectSqlDataDeletion(
-        "EXPLAIN (ANALYZE true) ALTER TABLE users DROP COLUMN legacy_id",
-      ).deletesData,
     ).toBe(true);
     expect(
       detectSqlDataDeletion(
@@ -342,19 +320,15 @@ describe("detectSqlDataDeletion", () => {
       ).deletesData,
     ).toBe(true);
     expect(
-      detectSqlDataDeletion(
-        "EXPLAIN (ANALYZE true) UPDATE users SET email = NULL",
-      ).deletesData,
+      detectSqlDataDeletion("EXPLAIN (ANALYZE true) UPDATE users SET email = NULL").deletesData,
     ).toBe(true);
     expect(
-      detectSqlDataDeletion(
-        "EXPLAIN SELECT dblink_exec('dbname=app', 'DELETE FROM users')",
-      ).deletesData,
+      detectSqlDataDeletion("EXPLAIN SELECT dblink_exec('dbname=app', 'DELETE FROM users')")
+        .deletesData,
     ).toBe(false);
     expect(
-      detectSqlDataDeletion(
-        "EXPLAIN ANALYZE SELECT dblink_exec('dbname=app', 'DELETE FROM users')",
-      ).deletesData,
+      detectSqlDataDeletion("EXPLAIN ANALYZE SELECT dblink_exec('dbname=app', 'DELETE FROM users')")
+        .deletesData,
     ).toBe(true);
   });
 
@@ -365,8 +339,6 @@ describe("detectSqlDataDeletion", () => {
     `);
 
     expect(result.deletesData).toBe(true);
-    expect(result.statements.map((statement) => statement.deletesData)).toEqual(
-      [false, true],
-    );
+    expect(result.statements.map((statement) => statement.deletesData)).toEqual([false, true]);
   });
 });

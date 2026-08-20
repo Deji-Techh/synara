@@ -3,21 +3,13 @@
  */
 
 import log from "electron-log";
-import {
-  gitCommit,
-  gitAddAll,
-  getGitUncommittedFiles,
-} from "@/ipc/utils/git_utils";
+import { gitCommit, gitAddAll, getGitUncommittedFiles } from "@/ipc/utils/git_utils";
 import {
   deployAffectedSupabaseFunctions,
   type SupabaseDeployProgress,
 } from "../../../../../../supabase_admin/supabase_utils";
 import { readSettings } from "../../../../../../main/settings";
-import {
-  escapeXmlAttr,
-  escapeXmlContent,
-  type AgentContext,
-} from "../tools/types";
+import { escapeXmlAttr, escapeXmlContent, type AgentContext } from "../tools/types";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
 
 const logger = log.scope("file_operations");
@@ -29,8 +21,7 @@ export interface FileOperationResult {
 }
 
 function renderSupabaseDeployStatus(progress: SupabaseDeployProgress): string {
-  const isComplete =
-    progress.phase === "finished" || progress.phase === "failed";
+  const isComplete = progress.phase === "finished" || progress.phase === "failed";
   const title =
     progress.phase === "finished"
       ? `Supabase functions deployed: ${progress.completed}/${progress.total} complete`
@@ -142,10 +133,7 @@ export async function commitAllChanges(
           message: message,
         });
       } catch (error) {
-        logger.error(
-          `Failed to commit extra files: ${uncommittedFiles.join(", ")}`,
-          error,
-        );
+        logger.error(`Failed to commit extra files: ${uncommittedFiles.join(", ")}`, error);
       }
     }
 
@@ -154,9 +142,6 @@ export async function commitAllChanges(
     };
   } catch (error) {
     logger.error(`Failed to commit changes: ${error}`);
-    throw new CaideError(
-      `Failed to commit changes: ${error}`,
-      CaideErrorKind.External,
-    );
+    throw new CaideError(`Failed to commit changes: ${error}`, CaideErrorKind.External);
   }
 }

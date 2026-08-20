@@ -10,10 +10,7 @@ const E2E_APP_PORT_RANGE = 1_000;
 const E2E_PROXY_PORT_RANGE = 1_000;
 
 function getE2ePortBlockBase(): number | null {
-  const raw =
-    typeof process === "undefined"
-      ? undefined
-      : process.env.CAIDE_E2E_PORT_BLOCK_INDEX;
+  const raw = typeof process === "undefined" ? undefined : process.env.CAIDE_E2E_PORT_BLOCK_INDEX;
   if (raw == null || raw.trim() === "") {
     return null;
   }
@@ -75,11 +72,7 @@ export function getProxyFallbackPortStart(): number {
 export function getAppProxyPort(appId: number): number {
   const e2ePortBlockBase = getE2ePortBlockBase();
   if (e2ePortBlockBase != null) {
-    return (
-      e2ePortBlockBase +
-      E2E_APP_PORT_RANGE +
-      (Math.abs(appId) % E2E_PROXY_PORT_RANGE)
-    );
+    return e2ePortBlockBase + E2E_APP_PORT_RANGE + (Math.abs(appId) % E2E_PROXY_PORT_RANGE);
   }
 
   return PROXY_PORT_BASE + (Math.abs(appId) % PROXY_PORT_RANGE);

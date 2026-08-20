@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  buildSandboxFailureMessage,
-  classifySandboxFailure,
-} from "./failure_message";
+import { buildSandboxFailureMessage, classifySandboxFailure } from "./failure_message";
 
 describe("sandbox failure messages", () => {
   it("classifies directory reads as host-function failures", () => {
@@ -25,14 +22,10 @@ describe("sandbox failure messages", () => {
   });
 
   it("keeps actual parser failures classified as syntax errors", () => {
-    expect(classifySandboxFailure("SyntaxError: Unexpected token class")).toBe(
-      "syntax",
-    );
+    expect(classifySandboxFailure("SyntaxError: Unexpected token class")).toBe("syntax");
   });
 
   it("classifies timeouts separately", () => {
-    expect(
-      classifySandboxFailure("Sandbox script timed out after 3000ms"),
-    ).toBe("timeout");
+    expect(classifySandboxFailure("Sandbox script timed out after 3000ms")).toBe("timeout");
   });
 });

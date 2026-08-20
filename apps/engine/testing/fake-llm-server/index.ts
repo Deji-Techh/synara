@@ -116,9 +116,7 @@ async function parseCloudSandboxUpload(req: express.Request) {
   if (!req.is("multipart/form-data")) {
     return {
       replaceAll: req.body.replaceAll === true,
-      deletedFiles: Array.isArray(req.body.deletedFiles)
-        ? req.body.deletedFiles
-        : [],
+      deletedFiles: Array.isArray(req.body.deletedFiles) ? req.body.deletedFiles : [],
       files: Object.fromEntries(
         Object.entries(req.body.files ?? {}).map(([filePath, content]) => [
           filePath,
@@ -159,10 +157,7 @@ async function parseCloudSandboxUpload(req: express.Request) {
 }
 
 function escapeHtml(text: string) {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function getSandboxPreviewHtml(sandbox: FakeCloudSandbox) {
@@ -179,8 +174,8 @@ function getSandboxPreviewHtml(sandbox: FakeCloudSandbox) {
     .map((file) => `<li>${escapeHtml(file)}</li>`)
     .join("");
   const snapshotHasher = crypto.createHash("sha1");
-  for (const [filePath, content] of Object.entries(sandbox.files).sort(
-    ([leftPath], [rightPath]) => leftPath.localeCompare(rightPath),
+  for (const [filePath, content] of Object.entries(sandbox.files).sort(([leftPath], [rightPath]) =>
+    leftPath.localeCompare(rightPath),
   )) {
     snapshotHasher.update(filePath);
     snapshotHasher.update("\0");
@@ -501,70 +496,59 @@ export function createFakeLlmApp(getPort: () => number) {
     res.json(lmStudioModels);
   });
 
-  app.post(
-    /^\/google\/v1beta\/models\/.+:(streamGenerateContent|generateContent)/,
-    (req, res) => {
-      const apiKeyHeader = req.headers["x-goog-api-key"];
-      const apiKey =
-        typeof apiKeyHeader === "string"
-          ? apiKeyHeader
-          : Array.isArray(apiKeyHeader)
-            ? apiKeyHeader.join(",")
-            : "";
+  app.post(/^\/google\/v1beta\/models\/.+:(streamGenerateContent|generateContent)/, (req, res) => {
+    const apiKeyHeader = req.headers["x-goog-api-key"];
+    const apiKey =
+      typeof apiKeyHeader === "string"
+        ? apiKeyHeader
+        : Array.isArray(apiKeyHeader)
+          ? apiKeyHeader.join(",")
+          : "";
 
-      if (/invalid/i.test(apiKey)) {
-        return res.status(401).json({
-          error: {
-            code: 401,
-            message: "Invalid API key",
-            status: "UNAUTHENTICATED",
-          },
-        });
-      }
-
-      const response = {
-        candidates: [
-          {
-            content: {
-              role: "model",
-              parts: [{ text: "5" }],
-            },
-            finishReason: "STOP",
-          },
-        ],
-        usageMetadata: {
-          promptTokenCount: 8,
-          candidatesTokenCount: 1,
-          totalTokenCount: 9,
+    if (/invalid/i.test(apiKey)) {
+      return res.status(401).json({
+        error: {
+          code: 401,
+          message: "Invalid API key",
+          status: "UNAUTHENTICATED",
         },
-      };
+      });
+    }
 
-      if (req.path.includes("streamGenerateContent")) {
-        res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
-        res.setHeader("Cache-Control", "no-cache");
-        res.write(`data: ${JSON.stringify(response)}\n\n`);
-        res.end();
-        return;
-      }
+    const response = {
+      candidates: [
+        {
+          content: {
+            role: "model",
+            parts: [{ text: "5" }],
+          },
+          finishReason: "STOP",
+        },
+      ],
+      usageMetadata: {
+        promptTokenCount: 8,
+        candidatesTokenCount: 1,
+        totalTokenCount: 9,
+      },
+    };
 
-      res.json(response);
-    },
-  );
+    if (req.path.includes("streamGenerateContent")) {
+      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache");
+      res.write(`data: ${JSON.stringify(response)}\n\n`);
+      res.end();
+      return;
+    }
 
-  ["lmstudio", "gateway", "engine", "ollama", "azure", "openrouter"].forEach(
-    (provider) => {
-      app.post(
-        `/${provider}/v1/chat/completions`,
-        createChatCompletionHandler(provider),
-      );
-      // Also add responses API endpoints for each provider
-      app.post(`/${provider}/v1/responses`, createResponsesHandler(provider));
-      app.post(
-        `/${provider}/v1/messages`,
-        createAnthropicMessagesHandler(provider),
-      );
-    },
-  );
+    res.json(response);
+  });
+
+  ["lmstudio", "gateway", "engine", "ollama", "azure", "openrouter"].forEach((provider) => {
+    app.post(`/${provider}/v1/chat/completions`, createChatCompletionHandler(provider));
+    // Also add responses API endpoints for each provider
+    app.post(`/${provider}/v1/responses`, createResponsesHandler(provider));
+    app.post(`/${provider}/v1/messages`, createAnthropicMessagesHandler(provider));
+  });
 
   // Azure-specific endpoints (Azure client uses different URL patterns)
   app.post("/azure/chat/completions", createChatCompletionHandler("azure"));
@@ -592,18 +576,9 @@ export function createFakeLlmApp(getPort: () => number) {
   app.post("/github/api/user/repos", handleUserRepos);
   app.get("/github/api/repos/:owner/:repo", handleRepo);
   app.get("/github/api/repos/:owner/:repo/branches", handleRepoBranches);
-  app.get(
-    "/github/api/repos/:owner/:repo/collaborators",
-    handleRepoCollaborators,
-  );
-  app.put(
-    "/github/api/repos/:owner/:repo/collaborators/:username",
-    handleRepoCollaborators,
-  );
-  app.delete(
-    "/github/api/repos/:owner/:repo/collaborators/:username",
-    handleRepoCollaborators,
-  );
+  app.get("/github/api/repos/:owner/:repo/collaborators", handleRepoCollaborators);
+  app.put("/github/api/repos/:owner/:repo/collaborators/:username", handleRepoCollaborators);
+  app.delete("/github/api/repos/:owner/:repo/collaborators/:username", handleRepoCollaborators);
   app.post("/github/api/orgs/:org/repos", handleOrgRepos);
 
   // GitHub test endpoints for verifying push operations
@@ -631,16 +606,12 @@ export function createFakeLlmApp(getPort: () => number) {
   // Dyad Engine code-search endpoint for code_search tool
   app.post("/engine/v1/tools/code-search", (req, res) => {
     const { query, filesContext } = req.body;
-    fakeLlmLog(
-      `* code-search: "${query}" - searching ${filesContext?.length || 0} files`,
-    );
+    fakeLlmLog(`* code-search: "${query}" - searching ${filesContext?.length || 0} files`);
 
     try {
       // Return mock relevant files based on the files provided
       // For testing, return the first few files that exist in the context
-      const relevantFiles = (filesContext || [])
-        .slice(0, 3)
-        .map((f: { path: string }) => f.path);
+      const relevantFiles = (filesContext || []).slice(0, 3).map((f: { path: string }) => f.path);
 
       res.json({ relevantFiles });
     } catch (error) {
@@ -652,9 +623,7 @@ export function createFakeLlmApp(getPort: () => number) {
   // Dyad Engine image generation endpoint for generate_image tool
   app.post("/engine/v1/images/generations", (req, res) => {
     const { prompt, model } = req.body;
-    fakeLlmLog(
-      `* images/generations: model=${model}, prompt="${prompt?.slice(0, 50)}..."`,
-    );
+    fakeLlmLog(`* images/generations: model=${model}, prompt="${prompt?.slice(0, 50)}..."`);
 
     try {
       // Return a small 1x1 white PNG as base64 for testing
@@ -796,9 +765,7 @@ export function createFakeLlmApp(getPort: () => number) {
         lastSuccessfulSyncAt: sandbox.lastSuccessfulSyncAt
           ? new Date(sandbox.lastSuccessfulSyncAt).toISOString()
           : null,
-        expiresAt: new Date(
-          sandbox.lastActiveAt + 10 * 60 * 1000,
-        ).toISOString(),
+        expiresAt: new Date(sandbox.lastActiveAt + 10 * 60 * 1000).toISOString(),
         billingState: "active",
         billingStartedAt: new Date(sandbox.createdAt).toISOString(),
         billingLockedAt: null,
@@ -836,9 +803,7 @@ export function createFakeLlmApp(getPort: () => number) {
     }
 
     const expiresInSeconds =
-      typeof req.body.expiresInSeconds === "number"
-        ? req.body.expiresInSeconds
-        : 600;
+      typeof req.body.expiresInSeconds === "number" ? req.body.expiresInSeconds : 600;
     const shareLinkId = `share-link-${sandbox.id}`;
 
     res.json(

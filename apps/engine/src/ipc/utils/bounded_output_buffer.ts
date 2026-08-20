@@ -39,8 +39,7 @@ export class BoundedOutputBuffer {
       bytes.copy(this.storage, 0, bytes.byteLength - this.maxBytes);
       this.writeOffset = 0;
       this.retainedByteLength = this.maxBytes;
-      this.truncated ||=
-        bytes.byteLength > this.maxBytes || discardedPreviousOutput;
+      this.truncated ||= bytes.byteLength > this.maxBytes || discardedPreviousOutput;
       return;
     }
 
@@ -99,10 +98,7 @@ export class BoundedOutputBuffer {
     // continuation bytes rather than returning a replacement character.
     let start = 0;
     if (this.truncated) {
-      while (
-        start < retainedBytes.byteLength &&
-        (retainedBytes[start] & 0xc0) === 0x80
-      ) {
+      while (start < retainedBytes.byteLength && (retainedBytes[start] & 0xc0) === 0x80) {
         start += 1;
       }
     }

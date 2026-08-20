@@ -632,8 +632,7 @@ export const getSystemPromptForChatMode = ({
   // Vite-only paragraph in every build-mode prompt. Supabase-connected apps
   // also skip the nudge — Edge Functions cover the same use case and offering
   // both layers confuses the model.
-  const shouldAppendNitroNudge =
-    frameworkType === "vite" && !hasSupabaseProject;
+  const shouldAppendNitroNudge = frameworkType === "vite" && !hasSupabaseProject;
   const target: AppTarget = appTarget ?? "mobile";
   const isFlutter = frameworkType === "flutter";
   const uiSkillPack = isFlutter
@@ -642,15 +641,10 @@ export const getSystemPromptForChatMode = ({
       ? CAIDE_WEB_UI_SKILL_PACK
       : CAIDE_MOBILE_UI_SKILL_PACK;
   const buildPrompt =
-    BUILD_SYSTEM_PROMPT_BASE.replace(
-      "[[PLATFORM_UI_SKILL_PACK]]",
-      () => uiSkillPack,
-    )
+    BUILD_SYSTEM_PROMPT_BASE.replace("[[PLATFORM_UI_SKILL_PACK]]", () => uiSkillPack)
       // Keep the platform contract near the top, right after the role block,
       // so it is never diluted by the rest of the prompt.
-      .replace("[[PLATFORM_CONTRACT]]", () =>
-        buildPlatformPrompt(target, frameworkType),
-      ) +
+      .replace("[[PLATFORM_CONTRACT]]", () => buildPlatformPrompt(target, frameworkType)) +
     // Keep the test guidance right after the base (i.e. after the postfix's
     // "ONLY use <caide-write>" mandate) so it carries as the exception.
     (testingEnabled ? `\n\n${TEST_WRITING_GUIDANCE}` : "") +
@@ -664,9 +658,7 @@ export const readAiRules = async (caideAppPath: string) => {
     const aiRules = await fs.promises.readFile(aiRulesPath, "utf8");
     return aiRules;
   } catch (error) {
-    logger.info(
-      `Error reading AI_RULES.md, fallback to default AI rules: ${error}`,
-    );
+    logger.info(`Error reading AI_RULES.md, fallback to default AI rules: ${error}`);
     return DEFAULT_AI_RULES;
   }
 };

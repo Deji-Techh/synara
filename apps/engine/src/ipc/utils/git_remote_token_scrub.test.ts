@@ -35,10 +35,7 @@ vi.mock("electron-log", () => ({
 
 import { scrubGithubTokenFromRemotes } from "./git_remote_token_scrub";
 
-async function createAppWithGitConfig(
-  appName: string,
-  configContents: string,
-): Promise<string> {
+async function createAppWithGitConfig(appName: string, configContents: string): Promise<string> {
   const configPath = path.join(appsBaseDir, appName, ".git", "config");
   await fs.mkdir(path.dirname(configPath), { recursive: true });
   await fs.writeFile(configPath, configContents, "utf8");
@@ -47,9 +44,7 @@ async function createAppWithGitConfig(
 
 describe("scrubGithubTokenFromRemotes", () => {
   beforeEach(async () => {
-    appsBaseDir = await fs.mkdtemp(
-      path.join(os.tmpdir(), "caide-token-scrub-"),
-    );
+    appsBaseDir = await fs.mkdtemp(path.join(os.tmpdir(), "caide-token-scrub-"));
     appRows = [];
   });
 
@@ -82,11 +77,9 @@ describe("scrubGithubTokenFromRemotes", () => {
   });
 
   it("leaves configs without embedded credentials unchanged", async () => {
-    const original = [
-      '[remote "origin"]',
-      "\turl = https://github.com/owner/repo.git",
-      "",
-    ].join("\n");
+    const original = ['[remote "origin"]', "\turl = https://github.com/owner/repo.git", ""].join(
+      "\n",
+    );
     const configPath = await createAppWithGitConfig("clean-app", original);
     appRows = [{ path: "clean-app" }];
 

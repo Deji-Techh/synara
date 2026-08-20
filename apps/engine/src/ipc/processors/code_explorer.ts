@@ -38,9 +38,7 @@ export function isCodeExplorerReady(appPath: string): boolean {
 // common path), and called only ~3x per turn — so it runs uncached. That also
 // means a freshly-installed TypeScript or added tsconfig is reflected
 // immediately rather than after a cache TTL.
-export function getCodeExplorerAvailability(
-  appPath: string,
-): CodeExplorerAvailability {
+export function getCodeExplorerAvailability(appPath: string): CodeExplorerAvailability {
   try {
     require.resolve("typescript", { paths: [appPath] });
   } catch {
@@ -67,9 +65,7 @@ export function getCodeExplorerAvailability(
   };
 }
 
-export function formatCodeExplorerDisabledReason(
-  availability: CodeExplorerAvailability,
-): string {
+export function formatCodeExplorerDisabledReason(availability: CodeExplorerAvailability): string {
   if (availability.ready) {
     return "available";
   }
@@ -146,17 +142,14 @@ function discoverPackageLikeChildren(appPath: string): string[] {
       .readdirSync(appPath, { withFileTypes: true })
       .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
       .filter((entry) => entry.name !== "node_modules")
-      .filter((entry) =>
-        fs.existsSync(path.join(appPath, entry.name, "package.json")),
-      )
+      .filter((entry) => fs.existsSync(path.join(appPath, entry.name, "package.json")))
       .map((entry) => entry.name),
   );
 }
 
 function sortWorkspaceConfigChildren(children: string[]): string[] {
   return [...children].sort((left, right) => {
-    const scoreDelta =
-      workspaceConfigChildScore(left) - workspaceConfigChildScore(right);
+    const scoreDelta = workspaceConfigChildScore(left) - workspaceConfigChildScore(right);
     if (scoreDelta !== 0) {
       return scoreDelta;
     }
@@ -170,9 +163,7 @@ function workspaceConfigChildScore(child: string): number {
   if (/\b(web|dashboard|frontend|front|client|app)\b/.test(normalized)) {
     score -= 10;
   }
-  if (
-    /\b(docs?|examples?|storybook|playground|e2e|tests?)\b/.test(normalized)
-  ) {
+  if (/\b(docs?|examples?|storybook|playground|e2e|tests?)\b/.test(normalized)) {
     score += 20;
   }
   return score;
@@ -183,8 +174,7 @@ export function toCodeExplorerError(error: unknown): Error {
     return error;
   }
 
-  const message =
-    error instanceof Error ? error.message : String(error ?? "Unknown error");
+  const message = error instanceof Error ? error.message : String(error ?? "Unknown error");
 
   if (
     message.startsWith("Failed to load TypeScript from") ||
@@ -241,9 +231,7 @@ const keyQueues = new Map<string, Promise<unknown>>();
 const lastCrashAtByKey = new Map<string, number>();
 const unavailableKeys = new Set<string>();
 
-export async function runCodeExplorer(
-  input: CodeExplorerWorkerInput,
-): Promise<CodeExplorerResult> {
+export async function runCodeExplorer(input: CodeExplorerWorkerInput): Promise<CodeExplorerResult> {
   const workerInput: CodeExplorerWorkerInput = {
     ...input,
     tsBuildInfoCacheDir: getTypeScriptCachePath(),
@@ -301,9 +289,7 @@ async function sendToHost(
     // a detached process; a later queued request will lazily start a new one.
     if (host !== hostForRequest) {
       reject(
-        toCodeExplorerError(
-          new Error("Code explorer host exited before accepting the request"),
-        ),
+        toCodeExplorerError(new Error("Code explorer host exited before accepting the request")),
       );
       return;
     }
@@ -432,10 +418,7 @@ function getHost(): CodeExplorerHost {
   // afterwards and performs the pending-request cleanup.
   child.on("error", (type, location, report) => {
     fatalError = { type, location };
-    logger.error(
-      `Code explorer host fatal error: ${type} at ${location}`,
-      report,
-    );
+    logger.error(`Code explorer host fatal error: ${type} at ${location}`, report);
     if (!killRequested) {
       killRequested = true;
       child.kill();
@@ -447,9 +430,7 @@ function getHost(): CodeExplorerHost {
     resolveExit();
     if (!spawned) {
       rejectReady(
-        toCodeExplorerError(
-          new Error(`Code explorer host exited with code ${code} before spawn`),
-        ),
+        toCodeExplorerError(new Error(`Code explorer host exited with code ${code} before spawn`)),
       );
     }
     if (host === hostState) {
@@ -472,9 +453,7 @@ function getHost(): CodeExplorerHost {
     // one oversized project.
     const activeRequest = failed[0]?.[1];
     const crashLoopedKey =
-      !intentionallyStopped &&
-      activeRequest &&
-      recordHostDeathForKey(activeRequest.key)
+      !intentionallyStopped && activeRequest && recordHostDeathForKey(activeRequest.key)
         ? activeRequest.key
         : null;
     const crashReason = intentionallyStopped
@@ -507,9 +486,7 @@ function getHost(): CodeExplorerHost {
         request.key === crashLoopedKey
           ? keyUnavailableError()
           : toCodeExplorerError(
-              new Error(
-                `Code explorer host exited with code ${code} before replying`,
-              ),
+              new Error(`Code explorer host exited with code ${code} before replying`),
             ),
       );
     }

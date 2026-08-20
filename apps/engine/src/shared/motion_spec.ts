@@ -11,9 +11,7 @@ export const MotionEngineSchema = z.enum([
 
 export type MotionEngine = z.infer<typeof MotionEngineSchema>;
 
-export const MOTION_ENGINE_PACKAGES: Readonly<
-  Record<MotionEngine, readonly string[]>
-> = {
+export const MOTION_ENGINE_PACKAGES: Readonly<Record<MotionEngine, readonly string[]>> = {
   "native-css-waapi": [],
   "motion-react": ["motion"],
   dotlottie: ["@lottiefiles/dotlottie-react"],
@@ -47,13 +45,7 @@ export const MotionTransitionSchema = z.object({
   source: z.string().trim().min(1).max(160),
   destination: z.string().trim().min(1).max(160),
   purpose: z.string().trim().min(8).max(360),
-  hierarchy: z.enum([
-    "feedback",
-    "status",
-    "continuity",
-    "navigation",
-    "delight",
-  ]),
+  hierarchy: z.enum(["feedback", "status", "continuity", "navigation", "delight"]),
   technique: z.enum([
     "none",
     "fade",
@@ -102,14 +94,7 @@ export const MotionAssetSchema = z.object({
 
 export const MotionCoreFlowStepSchema = z
   .object({
-    action: z.enum([
-      "click",
-      "fill",
-      "press",
-      "expect-visible",
-      "expect-text",
-      "wait-for-hidden",
-    ]),
+    action: z.enum(["click", "fill", "press", "expect-visible", "expect-text", "wait-for-hidden"]),
     selector: z.string().trim().min(1).max(300).optional(),
     value: z.string().max(1000).optional(),
     text: z.string().max(500).optional(),
@@ -164,10 +149,7 @@ export const CaideMotionSpecSchema = z.object({
     primaryEngine: MotionEngineSchema,
     allowedEngines: z.array(MotionEngineSchema).min(1).max(6),
     motionPrinciple: z.string().trim().min(12).max(400),
-    prohibitedPatterns: z
-      .array(z.string().trim().min(4).max(180))
-      .min(3)
-      .max(20),
+    prohibitedPatterns: z.array(z.string().trim().min(4).max(180)).min(3).max(20),
   }),
   tokens: z.object({
     instantMs: z.number().int().min(0).max(80),
@@ -222,11 +204,7 @@ export function requiredMotionPackages(
     if (asset.type === "rive") engines.add("rive");
     if (asset.type === "three") engines.add("three");
   }
-  return [
-    ...new Set(
-      [...engines].flatMap((engine) => MOTION_ENGINE_PACKAGES[engine]),
-    ),
-  ];
+  return [...new Set([...engines].flatMap((engine) => MOTION_ENGINE_PACKAGES[engine]))];
 }
 
 export function motionSpecCompleteness(spec: CaideMotionSpec): number {
@@ -238,9 +216,7 @@ export function motionSpecCompleteness(spec: CaideMotionSpec): number {
     spec.transitions.some((item) => item.hierarchy === "feedback"),
     spec.transitions.some((item) => item.hierarchy === "navigation"),
     spec.transitions.every((item) => item.interruptible),
-    spec.transitions.every(
-      (item) => item.reducedMotion.preservesMeaning.length >= 8,
-    ),
+    spec.transitions.every((item) => item.reducedMotion.preservesMeaning.length >= 8),
     spec.audit.routes.length >= 1,
     spec.audit.coreFlows.length >= 1,
     spec.audit.coreFlows.every((flow) => flow.steps.length >= 1),

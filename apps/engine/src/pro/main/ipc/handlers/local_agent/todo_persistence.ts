@@ -26,19 +26,11 @@ export function getTodosFilePath(appPath: string, chatId: number): string {
  *
  * Creates the `.caide/todos/` directory if it does not exist.
  */
-export async function saveTodos(
-  appPath: string,
-  chatId: number,
-  todos: Todo[],
-): Promise<void> {
+export async function saveTodos(appPath: string, chatId: number, todos: Todo[]): Promise<void> {
   const filePath = getTodosFilePath(appPath, chatId);
   try {
     await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
-    const data = JSON.stringify(
-      { todos, updatedAt: new Date().toISOString() },
-      null,
-      2,
-    );
+    const data = JSON.stringify({ todos, updatedAt: new Date().toISOString() }, null, 2);
     await fs.promises.writeFile(filePath, data, "utf-8");
   } catch (err) {
     logger.warn("Failed to save todos:", err);
@@ -50,10 +42,7 @@ export async function saveTodos(
  *
  * Returns `[]` if the file does not exist or is corrupted.
  */
-export async function loadTodos(
-  appPath: string,
-  chatId: number,
-): Promise<Todo[]> {
+export async function loadTodos(appPath: string, chatId: number): Promise<Todo[]> {
   const filePath = getTodosFilePath(appPath, chatId);
   try {
     const raw = await fs.promises.readFile(filePath, "utf-8");
@@ -81,10 +70,7 @@ export async function loadTodos(
 /**
  * Delete the todos file for a chat (e.g. when all todos are completed).
  */
-export async function deleteTodos(
-  appPath: string,
-  chatId: number,
-): Promise<void> {
+export async function deleteTodos(appPath: string, chatId: number): Promise<void> {
   const filePath = getTodosFilePath(appPath, chatId);
   try {
     await fs.promises.unlink(filePath);

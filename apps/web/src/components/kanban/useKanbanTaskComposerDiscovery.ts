@@ -154,7 +154,9 @@ export function useKanbanTaskComposerDiscovery(input: UseKanbanTaskComposerDisco
       threadId: scratchThreadId,
       agentDir: selectedProvider === "openai" ? piAgentDir : null,
       enabled:
-        (isSkillTrigger || composerTriggerKind === "slash-command" || selectedProvider === "openai") &&
+        (isSkillTrigger ||
+          composerTriggerKind === "slash-command" ||
+          selectedProvider === "openai") &&
         canDiscoverProviderSkills &&
         composerSkillCwd !== null,
     }),

@@ -8,15 +8,13 @@ import {
 
 describe("normalizeFlutterTestFile / isFlutterTestFile", () => {
   it("accepts Dart test files under test/ and integration_test/", () => {
-    expect(normalizeFlutterTestFile("test/widget_test.dart")).toBe(
-      "test/widget_test.dart",
-    );
+    expect(normalizeFlutterTestFile("test/widget_test.dart")).toBe("test/widget_test.dart");
     expect(normalizeFlutterTestFile("integration_test/app_test.dart")).toBe(
       "integration_test/app_test.dart",
     );
-    expect(
-      normalizeFlutterTestFile("test/features/counter/counter_test.dart"),
-    ).toBe("test/features/counter/counter_test.dart");
+    expect(normalizeFlutterTestFile("test/features/counter/counter_test.dart")).toBe(
+      "test/features/counter/counter_test.dart",
+    );
     expect(isFlutterTestFile("test/widget_test.dart")).toBe(true);
   });
 
@@ -25,12 +23,8 @@ describe("normalizeFlutterTestFile / isFlutterTestFile", () => {
     expect(normalizeFlutterTestFile("test/../widget_test.dart")).toBeNull();
     expect(normalizeFlutterTestFile("test/-x_test.dart")).toBeNull();
     expect(normalizeFlutterTestFile("tests/widget_test.dart")).toBeNull();
-    expect(normalizeFlutterTestFile("test/not_a_test.dart")).toBe(
-      "test/not_a_test.dart",
-    );
-    expect(normalizeFlutterTestFile("test\\widget_test.dart")).toBe(
-      "test/widget_test.dart",
-    );
+    expect(normalizeFlutterTestFile("test/not_a_test.dart")).toBe("test/not_a_test.dart");
+    expect(normalizeFlutterTestFile("test\\widget_test.dart")).toBe("test/widget_test.dart");
   });
 });
 

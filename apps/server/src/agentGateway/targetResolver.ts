@@ -425,7 +425,9 @@ const PROVIDER_TARGET_OPTION_RULES = {
 } as const satisfies Record<ProviderKind, ProviderTargetOptionConfig>;
 
 function providerDefaultModel(provider: ProviderKind): string | null {
-  return provider === "openai" || provider === "engine" ? null : DEFAULT_MODEL_BY_PROVIDER[provider];
+  return provider === "openai" || provider === "engine"
+    ? null
+    : DEFAULT_MODEL_BY_PROVIDER[provider];
 }
 
 export function loadAgentGatewayProviderCatalog(input: {

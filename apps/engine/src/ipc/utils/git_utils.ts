@@ -1,11 +1,7 @@
 import { getGitAuthor } from "./git_author";
 import git from "isomorphic-git";
 import http from "isomorphic-git/http/node";
-import {
-  exec,
-  type IGitStringExecutionOptions,
-  type IGitStringResult,
-} from "dugite";
+import { exec, type IGitStringExecutionOptions, type IGitStringResult } from "dugite";
 import fs from "node:fs";
 import { promises as fsPromises } from "node:fs";
 import pathModule from "node:path";
@@ -33,9 +29,7 @@ function isUserVisibleGitPath(filePath: string) {
  * git commands to be intercepted by WSL's relay system, resulting in errors
  * like "execvpe(/bin/bash) failed: No such file or directory".
  */
-function getWindowsSanitizedEnv():
-  | Record<string, string | undefined>
-  | undefined {
+function getWindowsSanitizedEnv(): Record<string, string | undefined> | undefined {
   if (platform() !== "win32") {
     return undefined;
   }
@@ -45,28 +39,26 @@ function getWindowsSanitizedEnv():
   const pathSeparator = ";";
 
   // Filter out PATH entries that could trigger WSL interop
-  const sanitizedPathEntries = currentPath
-    .split(pathSeparator)
-    .filter((entry) => {
-      const lowerEntry = entry.toLowerCase();
-      // Filter out WSL-related paths:
-      // - \\wsl$\ or \\wsl.localhost\ network paths
-      // - Paths containing 'windowsapps' that might have WSL shims
-      // - Linux-style paths that somehow got into Windows PATH
-      if (
-        lowerEntry.includes("\\wsl$\\") ||
-        lowerEntry.includes("\\wsl.localhost\\") ||
-        lowerEntry.includes("windowsapps") ||
-        lowerEntry.startsWith("/mnt/") ||
-        lowerEntry.startsWith("/usr/") ||
-        lowerEntry.startsWith("/bin/") ||
-        lowerEntry.startsWith("/home/")
-      ) {
-        logger.debug(`Filtering WSL-related PATH entry: ${entry}`);
-        return false;
-      }
-      return true;
-    });
+  const sanitizedPathEntries = currentPath.split(pathSeparator).filter((entry) => {
+    const lowerEntry = entry.toLowerCase();
+    // Filter out WSL-related paths:
+    // - \\wsl$\ or \\wsl.localhost\ network paths
+    // - Paths containing 'windowsapps' that might have WSL shims
+    // - Linux-style paths that somehow got into Windows PATH
+    if (
+      lowerEntry.includes("\\wsl$\\") ||
+      lowerEntry.includes("\\wsl.localhost\\") ||
+      lowerEntry.includes("windowsapps") ||
+      lowerEntry.startsWith("/mnt/") ||
+      lowerEntry.startsWith("/usr/") ||
+      lowerEntry.startsWith("/bin/") ||
+      lowerEntry.startsWith("/home/")
+    ) {
+      logger.debug(`Filtering WSL-related PATH entry: ${entry}`);
+      return false;
+    }
+    return true;
+  });
 
   return {
     ...process.env,
@@ -110,8 +102,7 @@ async function execGit(
   // already have libcurl-gnutls.so.4.
   const shimDir = ensureLibcurlShimOnLinux();
   if (shimDir) {
-    const existingLdPath =
-      options?.env?.LD_LIBRARY_PATH ?? process.env.LD_LIBRARY_PATH;
+    const existingLdPath = options?.env?.LD_LIBRARY_PATH ?? process.env.LD_LIBRARY_PATH;
     const ldLibraryPath = [shimDir, existingLdPath].filter(Boolean).join(":");
     return exec(args, path, {
       ...options,
@@ -168,13 +159,8 @@ function getGitNetworkEnv(accessToken?: string): Record<string, string> {
     ["credential.helper", ""],
   ];
   if (accessToken) {
-    const basicAuth = Buffer.from(`${accessToken}:x-oauth-basic`).toString(
-      "base64",
-    );
-    configs.push([
-      "http.https://github.com/.extraheader",
-      `Authorization: Basic ${basicAuth}`,
-    ]);
+    const basicAuth = Buffer.from(`${accessToken}:x-oauth-basic`).toString("base64");
+    configs.push(["http.https://github.com/.extraheader", `Authorization: Basic ${basicAuth}`]);
   }
   const env: Record<string, string> = {
     GIT_TERMINAL_PROMPT: "0",
@@ -216,9 +202,7 @@ const gitLineEndingConfigPromises = new Map<string, Promise<void>>();
 
 function isAlreadyExistsError(error: unknown): boolean {
   return (
-    typeof error === "object" &&
-    error !== null &&
-    (error as { code?: string }).code === "EEXIST"
+    typeof error === "object" && error !== null && (error as { code?: string }).code === "EEXIST"
   );
 }
 
@@ -298,13 +282,7 @@ export async function ensureGitLineEndingPolicy({
  */
 export async function withGitAuthor(args: string[]): Promise<string[]> {
   const author = await getGitAuthor();
-  return [
-    "-c",
-    `user.name=${author.name}`,
-    "-c",
-    `user.email=${author.email}`,
-    ...args,
-  ];
+  return ["-c", `user.name=${author.name}`, "-c", `user.email=${author.email}`, ...args];
 }
 
 /**
@@ -319,10 +297,7 @@ export async function gitAddSafeDirectory(directory: string): Promise<void> {
 
   try {
     // First check if the directory is already in the safe.directory list
-    const checkResult = await execGit(
-      ["config", "--global", "--get-all", "safe.directory"],
-      ".",
-    );
+    const checkResult = await execGit(["config", "--global", "--get-all", "safe.directory"], ".");
 
     // Parse existing safe directories (one per line), normalizing for comparison
     const existingSafeDirectories = checkResult.stdout
@@ -336,10 +311,7 @@ export async function gitAddSafeDirectory(directory: string): Promise<void> {
       return;
     }
 
-    const result = await execGit(
-      ["config", "--global", "--add", "safe.directory", directory],
-      ".",
-    );
+    const result = await execGit(["config", "--global", "--add", "safe.directory", directory], ".");
     if (result.exitCode !== 0) {
       logger.warn(
         `Failed to add safe directory '${directory}': ${result.stderr.trim() || result.stdout.trim()}`,
@@ -348,16 +320,11 @@ export async function gitAddSafeDirectory(directory: string): Promise<void> {
       logger.info(`Added safe directory: ${directory}`);
     }
   } catch (error: any) {
-    logger.warn(
-      `Failed to add safe directory '${directory}': ${error.message}`,
-    );
+    logger.warn(`Failed to add safe directory '${directory}': ${error.message}`);
   }
 }
 
-export async function getCurrentCommitHash({
-  path,
-  ref = "HEAD",
-}: GitInitParams): Promise<string> {
+export async function getCurrentCommitHash({ path, ref = "HEAD" }: GitInitParams): Promise<string> {
   const settings = readSettings();
   if (settings.enableNativeGit) {
     const result = await execGit(["rev-parse", ref], path);
@@ -383,10 +350,7 @@ export async function gitCommitExists({
 }: GitBaseParams & { commitHash: string }): Promise<boolean> {
   const settings = readSettings();
   if (settings.enableNativeGit) {
-    const result = await execGit(
-      ["cat-file", "-e", `${commitHash}^{commit}`],
-      path,
-    );
+    const result = await execGit(["cat-file", "-e", `${commitHash}^{commit}`], path);
     return result.exitCode === 0;
   }
 
@@ -402,20 +366,13 @@ export async function gitCommitExists({
   }
 }
 
-export async function isGitStatusClean({
-  path,
-}: {
-  path: string;
-}): Promise<boolean> {
+export async function isGitStatusClean({ path }: { path: string }): Promise<boolean> {
   const settings = readSettings();
   if (settings.enableNativeGit) {
     const result = await execGit(["status", "--porcelain"], path);
 
     if (result.exitCode !== 0) {
-      throw new CaideError(
-        `Failed to get status: ${result.stderr}`,
-        CaideErrorKind.Conflict,
-      );
+      throw new CaideError(`Failed to get status: ${result.stderr}`, CaideErrorKind.Conflict);
     }
 
     // If output is empty, working directory is clean (no changes)
@@ -423,17 +380,11 @@ export async function isGitStatusClean({
     return isClean;
   } else {
     const statusMatrix = await git.statusMatrix({ fs, dir: path });
-    return statusMatrix.every(
-      (row) => row[1] === 1 && row[2] === 1 && row[3] === 1,
-    );
+    return statusMatrix.every((row) => row[1] === 1 && row[2] === 1 && row[3] === 1);
   }
 }
 
-export async function hasStagedChanges({
-  path,
-}: {
-  path: string;
-}): Promise<boolean> {
+export async function hasStagedChanges({ path }: { path: string }): Promise<boolean> {
   const settings = readSettings();
   if (settings.enableNativeGit) {
     // git diff --cached --quiet exits with 1 if there are staged changes, 0 if none
@@ -453,11 +404,7 @@ export async function hasStagedChanges({
   }
 }
 
-export async function gitCommit({
-  path,
-  message,
-  amend,
-}: GitCommitParams): Promise<string> {
+export async function gitCommit({ path, message, amend }: GitCommitParams): Promise<string> {
   const settings = readSettings();
   if (settings.enableNativeGit) {
     // Perform the commit using dugite with -c user.name/email config
@@ -487,27 +434,17 @@ export async function gitCommit({
   }
 }
 
-export async function gitCheckout({
-  path,
-  ref,
-}: GitCheckoutParams): Promise<void> {
+export async function gitCheckout({ path, ref }: GitCheckoutParams): Promise<void> {
   const settings = readSettings();
   if (settings.enableNativeGit) {
-    await execOrThrow(
-      ["checkout", ref],
-      path,
-      `Failed to checkout ref '${ref}'`,
-    );
+    await execOrThrow(["checkout", ref], path, `Failed to checkout ref '${ref}'`);
     return;
   } else {
     return git.checkout({ fs, dir: path, ref });
   }
 }
 
-export async function gitStageToRevert({
-  path,
-  targetOid,
-}: GitStageToRevertParams): Promise<void> {
+export async function gitStageToRevert({ path, targetOid }: GitStageToRevertParams): Promise<void> {
   const settings = readSettings();
   if (settings.enableNativeGit) {
     // Get the current HEAD commit hash
@@ -659,10 +596,7 @@ export async function gitAdd({ path, filepath }: GitFileParams): Promise<void> {
   }
 }
 
-export async function gitResetFile({
-  path,
-  filepath,
-}: GitFileParams): Promise<void> {
+export async function gitResetFile({ path, filepath }: GitFileParams): Promise<void> {
   const normalizedFilepath = normalizePath(filepath);
   const settings = readSettings();
   if (settings.enableNativeGit) {
@@ -697,23 +631,13 @@ export async function gitReset({ path }: GitBaseParams): Promise<void> {
   }
 }
 
-export async function gitDiscardAllChanges({
-  path,
-}: GitBaseParams): Promise<void> {
+export async function gitDiscardAllChanges({ path }: GitBaseParams): Promise<void> {
   const settings = readSettings();
   if (settings.enableNativeGit) {
     // Reset all tracked files (index + working tree) to HEAD state
-    await execOrThrow(
-      ["reset", "--hard", "HEAD"],
-      path,
-      "Failed to reset to HEAD",
-    );
+    await execOrThrow(["reset", "--hard", "HEAD"], path, "Failed to reset to HEAD");
     // Remove untracked files and directories
-    await execOrThrow(
-      ["clean", "-fd"],
-      path,
-      "Failed to remove untracked files",
-    );
+    await execOrThrow(["clean", "-fd"], path, "Failed to remove untracked files");
   } else {
     const matrix = await git.statusMatrix({ fs, dir: path });
     const removedFileDirs = new Set<string>();
@@ -776,10 +700,7 @@ export async function gitDiscardAllChanges({
   }
 }
 
-export async function gitInit({
-  path,
-  ref = "main",
-}: GitInitParams): Promise<void> {
+export async function gitInit({ path, ref = "main" }: GitInitParams): Promise<void> {
   const settings = readSettings();
   if (settings.enableNativeGit) {
     await execOrThrow(
@@ -796,17 +717,10 @@ export async function gitInit({
   }
 }
 
-export async function gitRemove({
-  path,
-  filepath,
-}: GitFileParams): Promise<void> {
+export async function gitRemove({ path, filepath }: GitFileParams): Promise<void> {
   const settings = readSettings();
   if (settings.enableNativeGit) {
-    await execOrThrow(
-      ["rm", "-f", "--", filepath],
-      path,
-      `Failed to remove file '${filepath}'`,
-    );
+    await execOrThrow(["rm", "-f", "--", filepath], path, `Failed to remove file '${filepath}'`);
   } else {
     await git.remove({
       fs,
@@ -816,9 +730,7 @@ export async function gitRemove({
   }
 }
 
-export async function getGitUncommittedFiles({
-  path,
-}: GitBaseParams): Promise<string[]> {
+export async function getGitUncommittedFiles({ path }: GitBaseParams): Promise<string[]> {
   const settings = readSettings();
   if (settings.enableNativeGit) {
     const result = await execGit(["status", "--porcelain"], path);
@@ -866,9 +778,7 @@ export async function getGitUncommittedFilesWithStatus({
       .filter((line) => {
         const filePath = line.slice(3).trim();
         return isUserVisibleGitPath(
-          filePath.includes(" -> ")
-            ? filePath.substring(filePath.indexOf(" -> ") + 4)
-            : filePath,
+          filePath.includes(" -> ") ? filePath.substring(filePath.indexOf(" -> ") + 4) : filePath,
         );
       })
       .map((line) => {
@@ -949,9 +859,7 @@ export async function getFileAtCommit({
       }
       return result.stdout;
     } catch (error: any) {
-      logger.error(
-        `Error getting file at commit ${commitHash}: ${error.message}`,
-      );
+      logger.error(`Error getting file at commit ${commitHash}: ${error.message}`);
       // File doesn't exist at this commit
       return null;
     }
@@ -965,9 +873,7 @@ export async function getFileAtCommit({
       });
       return Buffer.from(blob).toString("utf-8");
     } catch (error: any) {
-      logger.error(
-        `Error getting file at commit ${commitHash}: ${error.message}`,
-      );
+      logger.error(`Error getting file at commit ${commitHash}: ${error.message}`);
       // File doesn't exist at this commit
       return null;
     }
@@ -988,10 +894,7 @@ async function getParentCommitOid({
     // may be unable to read objects in shallow/partial clones that native git
     // handles fine. `--verify --quiet` exits non-zero (without erroring) for a
     // root commit, where `<commit>^` does not resolve.
-    const result = await execGit(
-      ["rev-parse", "--verify", "--quiet", `${commitHash}^`],
-      path,
-    );
+    const result = await execGit(["rev-parse", "--verify", "--quiet", `${commitHash}^`], path);
     if (result.exitCode !== 0) {
       return null;
     }
@@ -1077,9 +980,7 @@ export async function getChangedFilesForCommit({
     }
 
     // Output is a flat NUL-delimited stream: status, path, status, path, ...
-    const tokens = result.stdout
-      .split("\0")
-      .filter((token) => token.length > 0);
+    const tokens = result.stdout.split("\0").filter((token) => token.length > 0);
     const changes: GitChangedFile[] = [];
     for (let i = 0; i + 1 < tokens.length; i += 2) {
       const status = tokens[i];
@@ -1144,10 +1045,7 @@ export async function getChangedFilesForCommit({
         return { path: filepath, type: "deleted" as GitChangedFileType };
       }
 
-      const [parentBlobOid, currentBlobOid] = await Promise.all([
-        parent!.oid(),
-        current!.oid(),
-      ]);
+      const [parentBlobOid, currentBlobOid] = await Promise.all([parent!.oid(), current!.oid()]);
       if (parentBlobOid === currentBlobOid) {
         return undefined;
       }
@@ -1177,9 +1075,7 @@ function mapDiffStatusToChangeType(status: string): GitChangedFileType | null {
   }
 }
 
-export async function gitListBranches({
-  path,
-}: GitBaseParams): Promise<string[]> {
+export async function gitListBranches({ path }: GitBaseParams): Promise<string[]> {
   const settings = readSettings();
 
   if (settings.enableNativeGit) {
@@ -1228,10 +1124,7 @@ export async function gitListRemoteBranches({
         }
         return null;
       })
-      .filter(
-        (line): line is string =>
-          line !== null && line.length > 0 && !line.includes("HEAD"),
-      );
+      .filter((line): line is string => line !== null && line.length > 0 && !line.includes("HEAD"));
   } else {
     const allBranches = await git.listBranches({
       fs,
@@ -1345,10 +1238,7 @@ export async function gitClone({
   }
 }
 
-export async function gitSetRemoteUrl({
-  path,
-  remoteUrl,
-}: GitSetRemoteUrlParams): Promise<void> {
+export async function gitSetRemoteUrl({ path, remoteUrl }: GitSetRemoteUrlParams): Promise<void> {
   const settings = readSettings();
 
   // Validate remoteUrl to prevent argument injection attacks
@@ -1361,17 +1251,11 @@ export async function gitSetRemoteUrl({
     // Dugite version
     try {
       // Try to add the remote
-      const result = await execGit(
-        ["remote", "add", "origin", remoteUrl],
-        path,
-      );
+      const result = await execGit(["remote", "add", "origin", remoteUrl], path);
 
       // If remote already exists, update it instead
       if (result.exitCode !== 0 && result.stderr.includes("already exists")) {
-        const updateResult = await execGit(
-          ["remote", "set-url", "origin", remoteUrl],
-          path,
-        );
+        const updateResult = await execGit(["remote", "set-url", "origin", remoteUrl], path);
 
         if (updateResult.exitCode !== 0) {
           throw new CaideError(
@@ -1381,10 +1265,7 @@ export async function gitSetRemoteUrl({
         }
       } else if (result.exitCode !== 0) {
         // Handle other errors
-        throw new CaideError(
-          `Failed to add remote: ${result.stderr}`,
-          CaideErrorKind.Conflict,
-        );
+        throw new CaideError(`Failed to add remote: ${result.stderr}`, CaideErrorKind.Conflict);
       }
     } catch (error: any) {
       logger.error("Error setting up remote:", error);
@@ -1432,18 +1313,12 @@ export async function gitPush({
       });
       if (result.exitCode !== 0) {
         const errorMsg = result.stderr.toString() || result.stdout.toString();
-        throw new CaideError(
-          `Git push failed: ${errorMsg}`,
-          CaideErrorKind.Conflict,
-        );
+        throw new CaideError(`Git push failed: ${errorMsg}`, CaideErrorKind.Conflict);
       }
       return;
     } catch (error: any) {
       logger.error("Error during git push:", error);
-      throw new CaideError(
-        `Git push failed: ${error.message}`,
-        CaideErrorKind.Conflict,
-      );
+      throw new CaideError(`Git push failed: ${error.message}`, CaideErrorKind.Conflict);
     }
   }
 
@@ -1488,9 +1363,7 @@ export async function gitRebaseAbort({ path }: GitBaseParams): Promise<void> {
   await execOrThrow(["rebase", "--abort"], path, "Failed to abort rebase");
 }
 
-export async function gitRebaseContinue({
-  path,
-}: GitBaseParams): Promise<void> {
+export async function gitRebaseContinue({ path }: GitBaseParams): Promise<void> {
   const settings = readSettings();
   if (!settings.enableNativeGit) {
     throw new CaideError(
@@ -1509,13 +1382,7 @@ export async function gitRebaseContinue({
   );
 }
 
-export async function gitRebase({
-  path,
-  branch,
-}: {
-  path: string;
-  branch: string;
-}): Promise<void> {
+export async function gitRebase({ path, branch }: { path: string; branch: string }): Promise<void> {
   const settings = readSettings();
   if (!settings.enableNativeGit) {
     throw new CaideError(
@@ -1546,9 +1413,7 @@ export async function gitMergeAbort({ path }: GitBaseParams): Promise<void> {
   await execOrThrow(["merge", "--abort"], path, "Failed to abort merge");
 }
 
-export async function gitCurrentBranch({
-  path,
-}: GitBaseParams): Promise<string | null> {
+export async function gitCurrentBranch({ path }: GitBaseParams): Promise<string | null> {
   const settings = readSettings();
   if (settings.enableNativeGit) {
     // Dugite version
@@ -1572,10 +1437,7 @@ export async function gitCurrentBranch({
   }
 }
 
-export async function gitLog({
-  path,
-  depth = 100_000,
-}: GitLogParams): Promise<GitCommit[]> {
+export async function gitLog({ path, depth = 100_000 }: GitLogParams): Promise<GitCommit[]> {
   const settings = readSettings();
 
   if (settings.enableNativeGit) {
@@ -1590,10 +1452,7 @@ export async function gitLog({
   }
 }
 
-export async function gitIsIgnored({
-  path,
-  filepath,
-}: GitFileParams): Promise<boolean> {
+export async function gitIsIgnored({ path, filepath }: GitFileParams): Promise<boolean> {
   const settings = readSettings();
 
   if (settings.enableNativeGit) {
@@ -1618,10 +1477,7 @@ export async function gitIsIgnored({
 /**
  * Check whether a specific file/directory is gitignored using isomorphic-git
  */
-export async function gitIsIgnoredIso({
-  path,
-  filepath,
-}: GitFileParams): Promise<boolean> {
+export async function gitIsIgnoredIso({ path, filepath }: GitFileParams): Promise<boolean> {
   return await git.isIgnored({
     fs,
     dir: path,
@@ -1663,10 +1519,7 @@ export async function gitListFilesNative({
   return result.stdout.split("\0").filter(Boolean).map(normalizePath);
 }
 
-export async function gitLogNative(
-  path: string,
-  depth = 100_000,
-): Promise<GitCommit[]> {
+export async function gitLogNative(path: string, depth = 100_000): Promise<GitCommit[]> {
   // Use git log with custom format to get all data in a single process
   // Format: %H = commit hash, %at = author timestamp (unix), %B = raw body (message)
   // Using null byte as field separator and custom delimiter between commits
@@ -1724,13 +1577,9 @@ export async function gitFetch({
 }: GitFetchParams): Promise<void> {
   const settings = readSettings();
   if (settings.enableNativeGit) {
-    await execOrThrow(
-      ["fetch", remote],
-      path,
-      "Failed to fetch from remote",
-      undefined,
-      { env: getGitNetworkEnv(accessToken) },
-    );
+    await execOrThrow(["fetch", remote], path, "Failed to fetch from remote", undefined, {
+      env: getGitNetworkEnv(accessToken),
+    });
   } else {
     await git.fetch({
       fs,
@@ -1794,20 +1643,11 @@ export async function gitPull({
   if (settings.enableNativeGit) {
     // Use withGitAuthor since pull may need to create merge commits
     // and requires user.name and user.email
-    const pullArgs = await withGitAuthor([
-      "pull",
-      "--rebase=false",
-      remote,
-      branch,
-    ]);
+    const pullArgs = await withGitAuthor(["pull", "--rebase=false", remote, branch]);
     try {
-      await execOrThrow(
-        pullArgs,
-        path,
-        "Failed to pull from remote",
-        undefined,
-        { env: getGitNetworkEnv(accessToken) },
-      );
+      await execOrThrow(pullArgs, path, "Failed to pull from remote", undefined, {
+        env: getGitNetworkEnv(accessToken),
+      });
     } catch (error: any) {
       // Check git state files to detect conflicts instead of parsing error messages
       if (hasGitConflictState({ path })) {
@@ -1852,11 +1692,7 @@ export async function gitPull({
   }
 }
 
-export async function gitMerge({
-  path,
-  branch,
-  author,
-}: GitMergeParams): Promise<void> {
+export async function gitMerge({ path, branch, author }: GitMergeParams): Promise<void> {
   const settings = readSettings();
   if (settings.enableNativeGit) {
     // Use withGitAuthor since merge may need to create merge commits
@@ -1907,11 +1743,7 @@ export async function gitCreateBranch({
 }: GitCreateBranchParams): Promise<void> {
   const settings = readSettings();
   if (settings.enableNativeGit) {
-    await execOrThrow(
-      ["branch", branch, from],
-      path,
-      `Failed to create branch ${branch}`,
-    );
+    await execOrThrow(["branch", branch, from], path, `Failed to create branch ${branch}`);
     return;
   }
   // isomorphic-git: branch creation uses the current HEAD; it does not honor "from"
@@ -1931,17 +1763,10 @@ export async function gitCreateBranch({
   });
 }
 
-export async function gitDeleteBranch({
-  path,
-  branch,
-}: GitDeleteBranchParams): Promise<void> {
+export async function gitDeleteBranch({ path, branch }: GitDeleteBranchParams): Promise<void> {
   const settings = readSettings();
   if (settings.enableNativeGit) {
-    await execOrThrow(
-      ["branch", "-D", branch],
-      path,
-      `Failed to delete branch ${branch}`,
-    );
+    await execOrThrow(["branch", "-D", branch], path, `Failed to delete branch ${branch}`);
   } else {
     await git.deleteBranch({
       fs,
@@ -1951,16 +1776,11 @@ export async function gitDeleteBranch({
   }
 }
 
-export async function gitGetMergeConflicts({
-  path,
-}: GitBaseParams): Promise<string[]> {
+export async function gitGetMergeConflicts({ path }: GitBaseParams): Promise<string[]> {
   const settings = readSettings();
   if (settings.enableNativeGit) {
     // git diff --name-only --diff-filter=U
-    const result = (await execGit(
-      ["diff", "--name-only", "--diff-filter=U"],
-      path,
-    )) as unknown as {
+    const result = (await execGit(["diff", "--name-only", "--diff-filter=U"], path)) as unknown as {
       stdout: string;
       stderr: string;
       exitCode: number;

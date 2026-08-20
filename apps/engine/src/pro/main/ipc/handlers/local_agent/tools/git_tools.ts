@@ -1,16 +1,7 @@
 import { z } from "zod";
 import { spawn } from "node:child_process";
-import {
-  getGitUncommittedFilesWithStatus,
-  gitCommit,
-  gitAddAll,
-} from "@/ipc/utils/git_utils";
-import {
-  buildTool,
-  type AgentContext,
-  escapeXmlAttr,
-  escapeXmlContent,
-} from "./types";
+import { getGitUncommittedFilesWithStatus, gitCommit, gitAddAll } from "@/ipc/utils/git_utils";
+import { buildTool, type AgentContext, escapeXmlAttr, escapeXmlContent } from "./types";
 
 // ============================================================================
 // git_status
@@ -61,10 +52,7 @@ const gitDiffSchema = z.object({
     .boolean()
     .optional()
     .describe("If true, show staged (index) diff instead of working tree diff"),
-  path: z
-    .string()
-    .optional()
-    .describe("Limit diff to this relative file or directory path"),
+  path: z.string().optional().describe("Limit diff to this relative file or directory path"),
 });
 
 const MAX_DIFF_CHARS = 20_000;
@@ -83,12 +71,8 @@ function runGitCommandSync(
     });
     child.stdout.on("data", (d: Buffer) => (stdout += d.toString()));
     child.stderr.on("data", (d: Buffer) => (stderr += d.toString()));
-    child.on("close", (code) =>
-      resolve({ stdout, stderr, exitCode: code ?? 1 }),
-    );
-    child.on("error", (err) =>
-      resolve({ stdout: "", stderr: err.message, exitCode: 1 }),
-    );
+    child.on("close", (code) => resolve({ stdout, stderr, exitCode: code ?? 1 }));
+    child.on("error", (err) => resolve({ stdout: "", stderr: err.message, exitCode: 1 }));
   });
 }
 
@@ -116,9 +100,7 @@ Useful for reviewing what you've changed before committing, or verifying that a 
 
     const diff = result.stdout;
     if (!diff.trim()) {
-      return args.staged
-        ? "No staged changes."
-        : "No unstaged changes in working tree.";
+      return args.staged ? "No staged changes." : "No unstaged changes in working tree.";
     }
 
     if (diff.length > MAX_DIFF_CHARS) {
@@ -154,12 +136,7 @@ Useful for understanding the project history, finding a specific commit, or conf
 
   execute: async (args, ctx: AgentContext) => {
     const result = await runGitCommandSync(
-      [
-        "log",
-        `--max-count=${args.limit ?? 10}`,
-        "--format=%h %ad %s",
-        "--date=short",
-      ],
+      ["log", `--max-count=${args.limit ?? 10}`, "--format=%h %ad %s", "--date=short"],
       ctx.appPath,
     );
 

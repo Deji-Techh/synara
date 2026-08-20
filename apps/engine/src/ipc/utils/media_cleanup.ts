@@ -60,10 +60,7 @@ export async function cleanupOldMediaFiles(): Promise<void> {
         try {
           await pruneAttachmentManifest(appPath);
         } catch (err) {
-          logger.warn(
-            `Failed to prune attachment manifest for ${mediaDir}:`,
-            err,
-          );
+          logger.warn(`Failed to prune attachment manifest for ${mediaDir}:`, err);
         }
         return results.reduce<number>((sum, n) => sum + n, 0);
       }),

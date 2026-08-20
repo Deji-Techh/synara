@@ -17,23 +17,16 @@ import type { UserSettings } from "@/lib/schemas";
 const VALID_TEMPLATE_IDS = new Set(localTemplatesData.map((t) => t.id));
 const VALID_THEME_IDS = new Set(themesData.map((t) => t.id));
 
-const formatIdList = (ids: Iterable<string>) =>
-  Array.from(ids, (id) => `"${id}"`).join(", ");
+const formatIdList = (ids: Iterable<string>) => Array.from(ids, (id) => `"${id}"`).join(", ");
 const VALID_TEMPLATE_IDS_LIST = formatIdList(VALID_TEMPLATE_IDS);
 const VALID_THEME_IDS_LIST = formatIdList(VALID_THEME_IDS);
 
-function resolveTemplateId(
-  provided: string | undefined,
-  settings: UserSettings,
-): string {
+function resolveTemplateId(provided: string | undefined, settings: UserSettings): string {
   if (provided && VALID_TEMPLATE_IDS.has(provided)) return provided;
   return settings.selectedTemplateId;
 }
 
-function resolveThemeId(
-  provided: string | undefined,
-  settings: UserSettings,
-): string {
+function resolveThemeId(provided: string | undefined, settings: UserSettings): string {
   if (provided && VALID_THEME_IDS.has(provided)) return provided;
   return settings.selectedThemeId ?? "default";
 }
@@ -58,12 +51,8 @@ function getCachedSettings(): UserSettings {
 }
 
 const VisualEntrySchema = z.object({
-  type: AppBlueprintVisualTypeSchema.describe(
-    "The type of visual asset needed",
-  ),
-  description: z
-    .string()
-    .describe("What this visual is for and where it will be used in the app"),
+  type: AppBlueprintVisualTypeSchema.describe("The type of visual asset needed"),
+  description: z.string().describe("What this visual is for and where it will be used in the app"),
   prompt: z
     .string()
     .describe(
@@ -74,14 +63,10 @@ const VisualEntrySchema = z.object({
 const writeAppBlueprintSchema = z.object({
   app_name: z
     .string()
-    .describe(
-      "A creative, memorable app name generated based on the user's prompt",
-    ),
+    .describe("A creative, memorable app name generated based on the user's prompt"),
   user_prompt: z
     .string()
-    .describe(
-      "The original user prompt that describes what they want to build",
-    ),
+    .describe("The original user prompt that describes what they want to build"),
   attachments: z
     .array(z.string())
     .optional()
@@ -106,10 +91,7 @@ const writeAppBlueprintSchema = z.object({
     ),
   primary_color: z
     .string()
-    .regex(
-      /^#[0-9a-fA-F]{6}$/,
-      "primary_color must be a 6-digit hex code like '#3B82F6'",
-    )
+    .regex(/^#[0-9a-fA-F]{6}$/, "primary_color must be a 6-digit hex code like '#3B82F6'")
     .describe(
       "The primary/accent color for the app as a 6-digit hex code (e.g. '#3B82F6'). Choose based on the industry and design direction.",
     ),
@@ -162,9 +144,7 @@ Use this tool AFTER gathering any needed preferences (via planning_questionnaire
 }
 </example>`;
 
-export const writeAppBlueprintTool: ToolDefinition<
-  z.infer<typeof writeAppBlueprintSchema>
-> = {
+export const writeAppBlueprintTool: ToolDefinition<z.infer<typeof writeAppBlueprintSchema>> = {
   name: "write_app_blueprint",
   description: DESCRIPTION,
   inputSchema: writeAppBlueprintSchema,
@@ -178,16 +158,10 @@ export const writeAppBlueprintTool: ToolDefinition<
 
     const settings = getCachedSettings();
     const appName = escapeXmlAttr(args.app_name);
-    const template = escapeXmlAttr(
-      resolveTemplateId(args.template_id, settings),
-    );
+    const template = escapeXmlAttr(resolveTemplateId(args.template_id, settings));
     const theme = escapeXmlAttr(resolveThemeId(args.theme_id, settings));
-    const designDirection = args.design_direction
-      ? escapeXmlAttr(args.design_direction)
-      : "";
-    const primaryColor = args.primary_color
-      ? escapeXmlAttr(args.primary_color)
-      : "";
+    const designDirection = args.design_direction ? escapeXmlAttr(args.design_direction) : "";
+    const primaryColor = args.primary_color ? escapeXmlAttr(args.primary_color) : "";
 
     return `<dyad-app-blueprint app-name="${appName}" template="${template}" theme="${theme}" design-direction="${designDirection}" primary-color="${primaryColor}" complete="${isComplete}"></dyad-app-blueprint>`;
   },

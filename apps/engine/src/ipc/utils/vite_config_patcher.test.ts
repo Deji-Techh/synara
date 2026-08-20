@@ -182,9 +182,7 @@ export default defineConfig({
 `;
     await writeConfig("vite.config.ts", original);
 
-    await expect(addNitroToViteConfig(appPath)).rejects.toBeInstanceOf(
-      ViteConfigPatchError,
-    );
+    await expect(addNitroToViteConfig(appPath)).rejects.toBeInstanceOf(ViteConfigPatchError);
   });
 
   it("throws ViteConfigPatchError when no defineConfig export is present", async () => {
@@ -196,15 +194,11 @@ export default {
 `;
     await writeConfig("vite.config.ts", original);
 
-    await expect(addNitroToViteConfig(appPath)).rejects.toBeInstanceOf(
-      ViteConfigPatchError,
-    );
+    await expect(addNitroToViteConfig(appPath)).rejects.toBeInstanceOf(ViteConfigPatchError);
   });
 
   it("throws ViteConfigPatchError when no vite.config.* file exists", async () => {
-    await expect(addNitroToViteConfig(appPath)).rejects.toBeInstanceOf(
-      ViteConfigPatchError,
-    );
+    await expect(addNitroToViteConfig(appPath)).rejects.toBeInstanceOf(ViteConfigPatchError);
   });
 
   it("falls back to .mjs when .ts is absent", async () => {
@@ -268,9 +262,7 @@ export default defineConfig(() => ({
 `;
     await writeConfig("vite.config.ts", original);
 
-    await expect(addNitroToViteConfig(appPath)).rejects.toBeInstanceOf(
-      ViteConfigPatchError,
-    );
+    await expect(addNitroToViteConfig(appPath)).rejects.toBeInstanceOf(ViteConfigPatchError);
 
     expect(await readConfig("vite.config.ts")).toBe(original);
   });

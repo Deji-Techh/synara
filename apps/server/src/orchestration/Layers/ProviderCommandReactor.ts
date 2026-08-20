@@ -3788,10 +3788,7 @@ const make = Effect.gen(function* () {
           consumerName: PROVIDER_COMMAND_REACTOR_CONSUMER,
           threadId: event.payload.threadId,
         });
-        if (
-          Option.isSome(blocker) &&
-          isLaunchTransportFailure(blocker.value.lastError)
-        ) {
+        if (Option.isSome(blocker) && isLaunchTransportFailure(blocker.value.lastError)) {
           const reconciled = yield* deliveryRepository.reconcile({
             reconciliationId: crypto.randomUUID(),
             consumerName: PROVIDER_COMMAND_REACTOR_CONSUMER,

@@ -20,20 +20,17 @@ const SQL_DANGER_PATTERNS: SqlDangerPattern[] = [
   {
     pattern: /\bDROP\s+DATABASE\b/i,
     severity: "critical",
-    explanation:
-      "DROP DATABASE will permanently delete the entire database and all its data.",
+    explanation: "DROP DATABASE will permanently delete the entire database and all its data.",
   },
   {
     pattern: /\bDROP\s+TABLE\b/i,
     severity: "critical",
-    explanation:
-      "DROP TABLE will permanently delete the table and all its data.",
+    explanation: "DROP TABLE will permanently delete the table and all its data.",
   },
   {
     pattern: /\bDROP\s+SCHEMA\b/i,
     severity: "critical",
-    explanation:
-      "DROP SCHEMA will permanently delete the schema and all objects within it.",
+    explanation: "DROP SCHEMA will permanently delete the schema and all objects within it.",
   },
   {
     pattern: /\bTRUNCATE\b/i,
@@ -44,20 +41,17 @@ const SQL_DANGER_PATTERNS: SqlDangerPattern[] = [
   {
     pattern: /\bALTER\s+TABLE\b[\s\S]*?\bDROP\s+COLUMN\b/i,
     severity: "high",
-    explanation:
-      "ALTER TABLE ... DROP COLUMN permanently removes the column and all its data.",
+    explanation: "ALTER TABLE ... DROP COLUMN permanently removes the column and all its data.",
   },
   {
     pattern: /\bDELETE\s+FROM\s+\w[\w.]*\s*(?:;|$)/i,
     severity: "high",
-    explanation:
-      "DELETE FROM without a WHERE clause will delete all rows in the table.",
+    explanation: "DELETE FROM without a WHERE clause will delete all rows in the table.",
   },
   {
     pattern: /\bDROP\s+(?:INDEX|FUNCTION|PROCEDURE|TRIGGER|VIEW)\b/i,
     severity: "medium",
-    explanation:
-      "This DROP statement will permanently remove a database object.",
+    explanation: "This DROP statement will permanently remove a database object.",
   },
   {
     pattern: /\bGRANT\s+ALL\b/i,
@@ -91,20 +85,13 @@ export function checkSqlDanger(sql: string): DangerCheckResult | null {
   const strippedSql = stripSqlComments(sql);
 
   // Find the most severe danger (critical > high > medium)
-  const severityOrder: DangerCheckResult["severity"][] = [
-    "critical",
-    "high",
-    "medium",
-  ];
+  const severityOrder: DangerCheckResult["severity"][] = ["critical", "high", "medium"];
 
   let worst: (SqlDangerPattern & { matched: true }) | null = null;
 
   for (const { pattern, severity, explanation } of SQL_DANGER_PATTERNS) {
     if (pattern.test(strippedSql)) {
-      if (
-        !worst ||
-        severityOrder.indexOf(severity) < severityOrder.indexOf(worst.severity)
-      ) {
+      if (!worst || severityOrder.indexOf(severity) < severityOrder.indexOf(worst.severity)) {
         worst = { pattern, severity, explanation, matched: true };
       }
     }

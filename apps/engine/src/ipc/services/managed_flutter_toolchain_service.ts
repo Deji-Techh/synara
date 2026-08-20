@@ -138,7 +138,10 @@ function flutterSdkReady(): boolean {
 
 function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) {
-    throw new CaideError("Flutter toolchain installation was cancelled.", CaideErrorKind.UserCancelled);
+    throw new CaideError(
+      "Flutter toolchain installation was cancelled.",
+      CaideErrorKind.UserCancelled,
+    );
   }
 }
 
@@ -167,7 +170,9 @@ export async function inspectManagedFlutterToolchain(): Promise<FlutterToolchain
   };
 }
 
-export function buildManagedFlutterEnvironment(base: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+export function buildManagedFlutterEnvironment(
+  base: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
   const env = { ...base };
   const sdkPath = getManagedFlutterSdkPath();
   if (flutterSdkReady()) {
@@ -176,7 +181,9 @@ export function buildManagedFlutterEnvironment(base: NodeJS.ProcessEnv = process
     const binDir = path.join(sdkPath, "bin");
     const dartBinDir = path.join(sdkPath, "bin", "cache", "dart-sdk", "bin");
     const additions = [binDir, dartBinDir];
-    env.PATH = [...additions, base.PATH ?? process.env.PATH ?? ""].filter(Boolean).join(path.delimiter);
+    env.PATH = [...additions, base.PATH ?? process.env.PATH ?? ""]
+      .filter(Boolean)
+      .join(path.delimiter);
   }
   return env;
 }
@@ -205,7 +212,10 @@ async function downloadToFile(params: {
       headers: { "User-Agent": "CAIDE-Mobile-Builder" },
     });
     if (!response.ok || !response.body) {
-      throw new CaideError(`Flutter download failed with HTTP ${response.status}.`, CaideErrorKind.External);
+      throw new CaideError(
+        `Flutter download failed with HTTP ${response.status}.`,
+        CaideErrorKind.External,
+      );
     }
     const totalHeader = response.headers.get("content-length");
     const totalBytes = totalHeader ? Number.parseInt(totalHeader, 10) : null;
@@ -223,7 +233,10 @@ async function downloadToFile(params: {
     }
     const sha256 = hash.digest("hex");
     if (params.expectedSha256 && sha256.toLowerCase() !== params.expectedSha256.toLowerCase()) {
-      throw new CaideError("Downloaded Flutter archive failed SHA-256 verification.", CaideErrorKind.External);
+      throw new CaideError(
+        "Downloaded Flutter archive failed SHA-256 verification.",
+        CaideErrorKind.External,
+      );
     }
     return { sha256, sizeBytes: downloadedBytes };
   } finally {
@@ -240,7 +253,11 @@ async function readAt(handle: FileHandle, length: number, position: number): Pro
   return buffer;
 }
 
-async function extractZip(archivePath: string, destination: string, signal?: AbortSignal): Promise<void> {
+async function extractZip(
+  archivePath: string,
+  destination: string,
+  signal?: AbortSignal,
+): Promise<void> {
   await fsp.mkdir(destination, { recursive: true });
   const handle = await fsp.open(archivePath, "r");
   try {
@@ -258,14 +275,19 @@ async function extractZip(archivePath: string, destination: string, signal?: Abo
     const entryCount = tail.readUInt16LE(eocdOffset + 10);
     const centralDirectorySize = tail.readUInt32LE(eocdOffset + 12);
     const centralDirectoryOffset = tail.readUInt32LE(eocdOffset + 16);
-    if (entryCount === 0xffff || centralDirectorySize === 0xffffffff || centralDirectoryOffset === 0xffffffff) {
+    if (
+      entryCount === 0xffff ||
+      centralDirectorySize === 0xffffffff ||
+      centralDirectoryOffset === 0xffffffff
+    ) {
       throw new Error("ZIP64 archives are not supported by this installer.");
     }
     const directory = await readAt(handle, centralDirectorySize, centralDirectoryOffset);
     let offset = 0;
     for (let index = 0; index < entryCount; index += 1) {
       throwIfAborted(signal);
-      if (directory.readUInt32LE(offset) !== 0x02014b50) throw new Error("Invalid ZIP central directory entry.");
+      if (directory.readUInt32LE(offset) !== 0x02014b50)
+        throw new Error("Invalid ZIP central directory entry.");
       const compressionMethod = directory.readUInt16LE(offset + 10);
       const compressedSize = directory.readUInt32LE(offset + 20);
       const uncompressedSize = directory.readUInt32LE(offset + 24);
@@ -274,7 +296,9 @@ async function extractZip(archivePath: string, destination: string, signal?: Abo
       const commentLength = directory.readUInt16LE(offset + 32);
       const externalAttributes = directory.readUInt32LE(offset + 38);
       const localHeaderOffset = directory.readUInt32LE(offset + 42);
-      const rawName = directory.subarray(offset + 46, offset + 46 + fileNameLength).toString("utf8");
+      const rawName = directory
+        .subarray(offset + 46, offset + 46 + fileNameLength)
+        .toString("utf8");
       const entryName = safeArchiveEntryPath(rawName);
       const outputPath = path.join(destination, ...entryName.split("/"));
       const isDirectory = rawName.endsWith("/");
@@ -282,7 +306,8 @@ async function extractZip(archivePath: string, destination: string, signal?: Abo
         await fsp.mkdir(outputPath, { recursive: true });
       } else {
         const localHeader = await readAt(handle, 30, localHeaderOffset);
-        if (localHeader.readUInt32LE(0) !== 0x04034b50) throw new Error("Invalid ZIP local-file header.");
+        if (localHeader.readUInt32LE(0) !== 0x04034b50)
+          throw new Error("Invalid ZIP local-file header.");
         const localNameLength = localHeader.readUInt16LE(26);
         const localExtraLength = localHeader.readUInt16LE(28);
         const dataOffset = localHeaderOffset + 30 + localNameLength + localExtraLength;
@@ -295,7 +320,8 @@ async function extractZip(archivePath: string, destination: string, signal?: Abo
               : (() => {
                   throw new Error(`Unsupported ZIP compression method ${compressionMethod}.`);
                 })();
-        if (output.length !== uncompressedSize) throw new Error(`ZIP size verification failed for ${entryName}.`);
+        if (output.length !== uncompressedSize)
+          throw new Error(`ZIP size verification failed for ${entryName}.`);
         await fsp.mkdir(path.dirname(outputPath), { recursive: true });
         await fsp.writeFile(outputPath, output);
         const unixMode = (externalAttributes >>> 16) & 0xffff;
@@ -343,18 +369,32 @@ async function runProcess(params: {
     child.once("close", (code) => {
       clearTimeout(timeout);
       if (params.signal?.aborted) {
-        reject(new CaideError("Flutter toolchain installation was cancelled.", CaideErrorKind.UserCancelled));
+        reject(
+          new CaideError(
+            "Flutter toolchain installation was cancelled.",
+            CaideErrorKind.UserCancelled,
+          ),
+        );
       } else if (code === 0) {
         resolve();
       } else {
-        reject(new CaideError(`Toolchain command failed with exit code ${code ?? "unknown"}.\n${stderr}`, CaideErrorKind.External));
+        reject(
+          new CaideError(
+            `Toolchain command failed with exit code ${code ?? "unknown"}.\n${stderr}`,
+            CaideErrorKind.External,
+          ),
+        );
       }
     });
     child.stdin.end();
   });
 }
 
-async function extractTar(archivePath: string, destination: string, signal?: AbortSignal): Promise<void> {
+async function extractTar(
+  archivePath: string,
+  destination: string,
+  signal?: AbortSignal,
+): Promise<void> {
   await fsp.mkdir(destination, { recursive: true });
   // Use system tar; handles .tar.xz and .tar.gz via auto-detect (bsdtar/gnutar)
   await runProcess({
@@ -368,7 +408,10 @@ async function extractTar(archivePath: string, destination: string, signal?: Abo
 
 async function verifyManagedFlutter(): Promise<void> {
   if (!flutterSdkReady()) {
-    throw new CaideError("Flutter SDK installation completed but flutter binary is missing.", CaideErrorKind.External);
+    throw new CaideError(
+      "Flutter SDK installation completed but flutter binary is missing.",
+      CaideErrorKind.External,
+    );
   }
   // Best-effort version check (flutter --version must exit 0)
   await runProcess({
@@ -384,7 +427,10 @@ export async function installManagedFlutterToolchain(params: {
   signal?: AbortSignal;
 }): Promise<FlutterToolchainStatus> {
   if (!isSupportedHost()) {
-    throw new CaideError("Flutter managed toolchain is unavailable on this platform.", CaideErrorKind.Precondition);
+    throw new CaideError(
+      "Flutter managed toolchain is unavailable on this platform.",
+      CaideErrorKind.Precondition,
+    );
   }
   if (activeInstall) return activeInstall;
 
@@ -393,7 +439,8 @@ export async function installManagedFlutterToolchain(params: {
     const stagingRoot = path.join(root, ".staging");
     await fsp.mkdir(stagingRoot, { recursive: true });
     const artifact = resolveArtifact();
-    if (!artifact) throw new CaideError("No Flutter artifact for this platform.", CaideErrorKind.Precondition);
+    if (!artifact)
+      throw new CaideError("No Flutter artifact for this platform.", CaideErrorKind.Precondition);
 
     try {
       emit(params.onProgress, {
@@ -412,7 +459,9 @@ export async function installManagedFlutterToolchain(params: {
         expectedSha256: artifact.sha256 ?? undefined,
         signal: params.signal,
         onBytes: (downloadedBytes, totalBytes) => {
-          const componentPercent = totalBytes ? Math.round((downloadedBytes / totalBytes) * 100) : 0;
+          const componentPercent = totalBytes
+            ? Math.round((downloadedBytes / totalBytes) * 100)
+            : 0;
           emit(params.onProgress, {
             phase: "download-flutter",
             percent: 1 + componentPercent * 0.6,
@@ -532,7 +581,10 @@ export async function ensureManagedFlutter(params?: {
   if (flutterSdkReady()) return getManagedFlutterBin();
   // Host flutter available → use host (no download)
   // Check FLUTTER_ROOT or PATH
-  if (process.env.FLUTTER_ROOT && fs.existsSync(path.join(process.env.FLUTTER_ROOT, "bin", executableName("flutter")))) {
+  if (
+    process.env.FLUTTER_ROOT &&
+    fs.existsSync(path.join(process.env.FLUTTER_ROOT, "bin", executableName("flutter")))
+  ) {
     return path.join(process.env.FLUTTER_ROOT, "bin", executableName("flutter"));
   }
   try {

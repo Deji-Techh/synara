@@ -72,9 +72,7 @@ async function callWebFetch(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(
-      `Web fetch failed: ${response.status} ${response.statusText} - ${errorText}`,
-    );
+    throw new Error(`Web fetch failed: ${response.status} ${response.statusText} - ${errorText}`);
   }
 
   const data = webFetchResponseSchema.parse(await response.json());
@@ -111,10 +109,7 @@ export const webFetchTool: ToolDefinition<z.infer<typeof webFetchSchema>> = {
       const result = await callWebFetch(args.url, ctx);
 
       if (!result) {
-        throw new CaideError(
-          "Web fetch returned no results",
-          CaideErrorKind.NotFound,
-        );
+        throw new CaideError("Web fetch returned no results", CaideErrorKind.NotFound);
       }
 
       // Combine markdown from all pages
@@ -123,25 +118,16 @@ export const webFetchTool: ToolDefinition<z.infer<typeof webFetchSchema>> = {
         .join("\n\n---\n\n");
 
       if (!allContent) {
-        throw new CaideError(
-          "No content available from web fetch",
-          CaideErrorKind.NotFound,
-        );
+        throw new CaideError("No content available from web fetch", CaideErrorKind.NotFound);
       }
 
-      logger.log(
-        `Web fetch completed for URL: ${args.url} (${result.pages.length} pages)`,
-      );
+      logger.log(`Web fetch completed for URL: ${args.url} (${result.pages.length} pages)`);
 
-      ctx.onXmlComplete(
-        `<caide-web-fetch>${escapeXmlContent(args.url)}</caide-web-fetch>`,
-      );
+      ctx.onXmlComplete(`<caide-web-fetch>${escapeXmlContent(args.url)}</caide-web-fetch>`);
 
       return truncateContent(allContent);
     } catch (error) {
-      ctx.onXmlComplete(
-        `<caide-web-fetch>${escapeXmlContent(args.url)}</caide-web-fetch>`,
-      );
+      ctx.onXmlComplete(`<caide-web-fetch>${escapeXmlContent(args.url)}</caide-web-fetch>`);
       throw error;
     }
   },

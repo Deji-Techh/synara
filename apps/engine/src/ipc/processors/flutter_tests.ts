@@ -16,12 +16,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { getFlutterExecutable, isFlutterApp } from "@/ipc/utils/flutter_utils";
 import { spawnStreaming } from "@/ipc/utils/spawn_streaming";
-import type {
-  TestCase,
-  TestCaseResult,
-  TestResult,
-  RunAppTestsResult,
-} from "@/ipc/types/tests";
+import type { TestCase, TestCaseResult, TestResult, RunAppTestsResult } from "@/ipc/types/tests";
 
 // ============================================================================
 // Flutter spec identity
@@ -180,10 +175,7 @@ export function parseFlutterMachineResults(
       existing.push({
         title: meta.name,
         status,
-        durationMs:
-          typeof event.time === "number"
-            ? Math.round(event.time / 1000)
-            : undefined,
+        durationMs: typeof event.time === "number" ? Math.round(event.time / 1000) : undefined,
         error: testError,
       });
       fileTests.set(file, existing);
@@ -191,11 +183,7 @@ export function parseFlutterMachineResults(
         file,
         mergeStatus(
           fileStatus.get(file),
-          status === "inconclusive"
-            ? "inconclusive"
-            : failed
-              ? "failed"
-              : "passed",
+          status === "inconclusive" ? "inconclusive" : failed ? "failed" : "passed",
         ),
       );
       if (failed && testError && !perFileError.has(file)) {
@@ -262,8 +250,7 @@ export async function runFlutterAppTestsCore({
   signal,
   onOutput,
 }: RunFlutterAppTestsOptions): Promise<RunAppTestsResult> {
-  const emit = (chunk: string, phase: "setup" | "running") =>
-    onOutput?.(chunk, phase);
+  const emit = (chunk: string, phase: "setup" | "running") => onOutput?.(chunk, phase);
   const flutter = getFlutterExecutable();
 
   // Resolve a line-target to the Dart test's title and pass it to flutter via
@@ -283,9 +270,7 @@ export async function runFlutterAppTestsCore({
     if (testLine && Number.isInteger(testLine) && testLine > 0) {
       try {
         const source = fs.readFileSync(path.join(appPath, normalized), "utf8");
-        const caseAtLine = parseFlutterTestCases(source).find(
-          (tc) => tc.line === testLine,
-        );
+        const caseAtLine = parseFlutterTestCases(source).find((tc) => tc.line === testLine);
         plainName = caseAtLine?.title;
         if (!caseAtLine) {
           return {

@@ -20,9 +20,7 @@ function firstNumberMatch(source: string, patterns: RegExp[]): number | null {
   return null;
 }
 
-export function parseAndroidRequirementsFromSources(
-  sources: string[],
-): AndroidProjectRequirements {
+export function parseAndroidRequirementsFromSources(sources: string[]): AndroidProjectRequirements {
   const source = sources.join("\n");
   const compileSdk =
     firstNumberMatch(source, [
@@ -32,8 +30,7 @@ export function parseAndroidRequirementsFromSources(
     ]) ?? DEFAULT_COMPILE_SDK;
 
   const buildToolsVersion =
-    source.match(/\bbuildToolsVersion\s*(?:=)?\s*["']([^"']+)["']/m)?.[1] ??
-    DEFAULT_BUILD_TOOLS;
+    source.match(/\bbuildToolsVersion\s*(?:=)?\s*["']([^"']+)["']/m)?.[1] ?? DEFAULT_BUILD_TOOLS;
 
   return {
     compileSdk,

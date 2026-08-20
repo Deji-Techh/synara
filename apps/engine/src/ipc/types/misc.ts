@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  defineContract,
-  defineEvent,
-  createClient,
-  createEventClient,
-} from "../contracts/core";
+import { defineContract, defineEvent, createClient, createEventClient } from "../contracts/core";
 import { ProblemReportSchema } from "./agent";
 import { ConsoleEntrySchema } from "./supabase";
 
@@ -375,17 +370,13 @@ export const ProcessMemoryDiagnosticsSchema = z.object({
 
 export type ProcessMetric = z.infer<typeof ProcessMetricSchema>;
 export type ElectronProcessMetric = z.infer<typeof ElectronProcessMetricSchema>;
-export type ElectronProcessMetricsResult = z.infer<
-  typeof ElectronProcessMetricsResultSchema
->;
+export type ElectronProcessMetricsResult = z.infer<typeof ElectronProcessMetricsResultSchema>;
 export type AppProcessTree = z.infer<typeof AppProcessTreeSchema>;
 export type AppProcessTreesResult = z.infer<typeof AppProcessTreesResultSchema>;
 export type VmStatSummary = z.infer<typeof VmStatSummarySchema>;
 export type SystemMemorySignals = z.infer<typeof SystemMemorySignalsSchema>;
 export type TopProcessesResult = z.infer<typeof TopProcessesResultSchema>;
-export type ProcessMemoryDiagnostics = z.infer<
-  typeof ProcessMemoryDiagnosticsSchema
->;
+export type ProcessMemoryDiagnostics = z.infer<typeof ProcessMemoryDiagnosticsSchema>;
 
 // -- Top-level bundle --
 

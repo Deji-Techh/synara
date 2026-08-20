@@ -34,40 +34,112 @@ export const AGENT_MENTION_ALIASES_BY_PROVIDER: Record<
 > = {
   engine: {},
   openai: {
-    "gpt-4o": { provider: "openai", kind: "model", model: "gpt-4o", displayName: "GPT-4o", color: "teal" },
+    "gpt-4o": {
+      provider: "openai",
+      kind: "model",
+      model: "gpt-4o",
+      displayName: "GPT-4o",
+      color: "teal",
+    },
   },
   anthropic: {
-    "sonnet": { provider: "anthropic", kind: "model", model: "claude-3-5-sonnet", displayName: "Claude 3.5 Sonnet", color: "amber" },
+    sonnet: {
+      provider: "anthropic",
+      kind: "model",
+      model: "claude-3-5-sonnet",
+      displayName: "Claude 3.5 Sonnet",
+      color: "amber",
+    },
   },
   google: {
-    "gemini": { provider: "google", kind: "model", model: "gemini-1.5-pro", displayName: "Gemini 1.5 Pro", color: "cyan" },
+    gemini: {
+      provider: "google",
+      kind: "model",
+      model: "gemini-1.5-pro",
+      displayName: "Gemini 1.5 Pro",
+      color: "cyan",
+    },
   },
   openrouter: {
-    "openrouter": { provider: "openrouter", kind: "model", model: "auto", displayName: "OpenRouter Auto", color: "violet" },
+    openrouter: {
+      provider: "openrouter",
+      kind: "model",
+      model: "auto",
+      displayName: "OpenRouter Auto",
+      color: "violet",
+    },
   },
   ollama: {
-    "llama3": { provider: "ollama", kind: "model", model: "llama3.1", displayName: "Llama 3.1", color: "orange" },
+    llama3: {
+      provider: "ollama",
+      kind: "model",
+      model: "llama3.1",
+      displayName: "Llama 3.1",
+      color: "orange",
+    },
   },
   deepseek: {
-    "deepseek": { provider: "deepseek", kind: "model", model: "deepseek-coder", displayName: "DeepSeek Coder", color: "teal" },
+    deepseek: {
+      provider: "deepseek",
+      kind: "model",
+      model: "deepseek-coder",
+      displayName: "DeepSeek Coder",
+      color: "teal",
+    },
   },
   groq: {
-    "groq": { provider: "groq", kind: "model", model: "llama-3.1-70b-versatile", displayName: "Llama 3.1 (Groq)", color: "fuchsia" },
+    groq: {
+      provider: "groq",
+      kind: "model",
+      model: "llama-3.1-70b-versatile",
+      displayName: "Llama 3.1 (Groq)",
+      color: "fuchsia",
+    },
   },
   mistral: {
-    "mistral": { provider: "mistral", kind: "model", model: "mistral-large-latest", displayName: "Mistral Large", color: "cyan" },
+    mistral: {
+      provider: "mistral",
+      kind: "model",
+      model: "mistral-large-latest",
+      displayName: "Mistral Large",
+      color: "cyan",
+    },
   },
   together: {
-    "together": { provider: "together", kind: "model", model: "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo", displayName: "Llama 3.1 (Together)", color: "cyan" },
+    together: {
+      provider: "together",
+      kind: "model",
+      model: "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
+      displayName: "Llama 3.1 (Together)",
+      color: "cyan",
+    },
   },
   cohere: {
-    "cohere": { provider: "cohere", kind: "model", model: "command-r-plus", displayName: "Command R+", color: "violet" },
+    cohere: {
+      provider: "cohere",
+      kind: "model",
+      model: "command-r-plus",
+      displayName: "Command R+",
+      color: "violet",
+    },
   },
   xai: {
-    "grok": { provider: "xai", kind: "model", model: "grok-2", displayName: "Grok 2", color: "amber" },
+    grok: {
+      provider: "xai",
+      kind: "model",
+      model: "grok-2",
+      displayName: "Grok 2",
+      color: "amber",
+    },
   },
   fireworks: {
-    "fireworks": { provider: "fireworks", kind: "model", model: "accounts/fireworks/models/llama-v3p1-70b-instruct", displayName: "Llama 3.1 (Fireworks)", color: "orange" },
+    fireworks: {
+      provider: "fireworks",
+      kind: "model",
+      model: "accounts/fireworks/models/llama-v3p1-70b-instruct",
+      displayName: "Llama 3.1 (Fireworks)",
+      color: "orange",
+    },
   },
   opencodeZen: {},
   opencodeGo: {},

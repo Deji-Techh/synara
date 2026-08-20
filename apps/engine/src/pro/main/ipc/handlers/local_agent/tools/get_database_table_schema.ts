@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  ToolDefinition,
-  AgentContext,
-  escapeXmlAttr,
-  escapeXmlContent,
-} from "./types";
+import { ToolDefinition, AgentContext, escapeXmlAttr, escapeXmlContent } from "./types";
 import { getSupabaseTableSchema } from "../../../../../../supabase_admin/supabase_context";
 import { getNeonTableSchema } from "../../../../../../neon_admin/neon_context";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
@@ -13,9 +8,7 @@ const getDatabaseTableSchemaSchema = z.object({
   tableName: z
     .string()
     .optional()
-    .describe(
-      "Optional table name to get schema for. If omitted, returns schema for all tables.",
-    ),
+    .describe("Optional table name to get schema for. If omitted, returns schema for all tables."),
 });
 
 export const getDatabaseTableSchemaTool: ToolDefinition<
@@ -26,19 +19,13 @@ export const getDatabaseTableSchemaTool: ToolDefinition<
     "Get database table schema. If tableName is provided, returns schema for that specific table (columns, policies/constraints, triggers/indexes). If omitted, returns schema for all tables.",
   inputSchema: getDatabaseTableSchemaSchema,
   defaultConsent: "always",
-  isEnabled: (ctx) =>
-    !!ctx.supabaseProjectId ||
-    (!!ctx.neonProjectId && !!ctx.neonActiveBranchId),
+  isEnabled: (ctx) => !!ctx.supabaseProjectId || (!!ctx.neonProjectId && !!ctx.neonActiveBranchId),
 
   getConsentPreview: (args) =>
-    args.tableName
-      ? `Get schema for table "${args.tableName}"`
-      : "Get schema for all tables",
+    args.tableName ? `Get schema for table "${args.tableName}"` : "Get schema for all tables",
 
   execute: async (args, ctx: AgentContext) => {
-    const tableAttr = args.tableName
-      ? ` table="${escapeXmlAttr(args.tableName)}"`
-      : "";
+    const tableAttr = args.tableName ? ` table="${escapeXmlAttr(args.tableName)}"` : "";
 
     if (ctx.neonProjectId && ctx.neonActiveBranchId) {
       ctx.onXmlStream(
@@ -76,9 +63,6 @@ export const getDatabaseTableSchemaTool: ToolDefinition<
       return schema;
     }
 
-    throw new CaideError(
-      "No database is connected to this app",
-      CaideErrorKind.Precondition,
-    );
+    throw new CaideError("No database is connected to this app", CaideErrorKind.Precondition);
   },
 };

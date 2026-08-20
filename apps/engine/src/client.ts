@@ -172,14 +172,18 @@ export class EngineClient {
       timeoutMsOverride ?? 5 * 60_000,
     );
     const value = response.result as
-      | { __caideIpcEnvelope?: string; ok: boolean; value?: unknown; data?: unknown; error?: unknown }
+      | {
+          __caideIpcEnvelope?: string;
+          ok: boolean;
+          value?: unknown;
+          data?: unknown;
+          error?: unknown;
+        }
       | undefined;
     if (!value || value.ok !== true) {
       const message =
         value?.error !== undefined
-          ? typeof value.error === "object" &&
-            value.error !== null &&
-            "message" in value.error
+          ? typeof value.error === "object" && value.error !== null && "message" in value.error
             ? String((value.error as { message: unknown }).message)
             : String(value.error)
           : `engine channel "${channel}" failed (ok=false)`;
@@ -237,7 +241,12 @@ export class EngineClient {
     appDir: string;
     target: "apk" | "appbundle" | "ipa";
     channel?: "debug" | "profile" | "release";
-    signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null;
+    signing?: {
+      keystorePath: string;
+      keyAlias: string;
+      storePassword: string;
+      keyPassword: string;
+    } | null;
   }): Promise<JsonRpcResponse> {
     return this.request("build/start", params);
   }
@@ -246,7 +255,11 @@ export class EngineClient {
     return this.request("build/state", params);
   }
 
-  async previewScreenshot(params?: { deviceId?: string; outputPath?: string; appDir?: string }): Promise<JsonRpcResponse> {
+  async previewScreenshot(params?: {
+    deviceId?: string;
+    outputPath?: string;
+    appDir?: string;
+  }): Promise<JsonRpcResponse> {
     return this.request("preview/screenshot", params ?? {});
   }
 

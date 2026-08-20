@@ -23,10 +23,7 @@ export function parseMediaMentions(prompt: string): string[] {
  * Strip resolved @media mentions from prompt text while preserving all other text.
  * This only removes exact mention tokens that were successfully resolved.
  */
-export function stripResolvedMediaMentions(
-  prompt: string,
-  resolvedMediaRefs: string[],
-): string {
+export function stripResolvedMediaMentions(prompt: string, resolvedMediaRefs: string[]): string {
   if (resolvedMediaRefs.length === 0) {
     return prompt.trim();
   }
@@ -36,10 +33,7 @@ export function stripResolvedMediaMentions(
     const token = `@media:${mediaRef}`;
     // Replace the token and collapse only the immediate surrounding spaces
     // (not newlines or other whitespace) left behind by removal.
-    stripped = stripped.replace(
-      new RegExp(`[ ]*${escapeRegExp(token)}[ ]*`, "g"),
-      " ",
-    );
+    stripped = stripped.replace(new RegExp(`[ ]*${escapeRegExp(token)}[ ]*`, "g"), " ");
   }
 
   return stripped.trim();

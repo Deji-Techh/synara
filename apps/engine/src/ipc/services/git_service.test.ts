@@ -48,12 +48,7 @@ describe("GitService", () => {
   it("initRepoWithInitialCommit inits, stages all, then commits", async () => {
     const hash = await service.initRepoWithInitialCommit({ path: "/repo" });
 
-    expect(callOrder).toEqual([
-      "gitInit",
-      "ensureGitLineEndingPolicy",
-      "gitAddAll",
-      "gitCommit",
-    ]);
+    expect(callOrder).toEqual(["gitInit", "ensureGitLineEndingPolicy", "gitAddAll", "gitCommit"]);
     expect(mocks.gitInit).toHaveBeenCalledWith({ path: "/repo", ref: "main" });
     expect(mocks.ensureGitLineEndingPolicy).toHaveBeenCalledWith({
       path: "/repo",
@@ -202,9 +197,7 @@ describe("GitService", () => {
     mocks.gitAdd
       .mockImplementationOnce(async () => {
         callOrder.push("gitAdd");
-        throw new Error(
-          "fatal: Unable to create '/repo/.git/index.lock': File exists.",
-        );
+        throw new Error("fatal: Unable to create '/repo/.git/index.lock': File exists.");
       })
       .mockImplementationOnce(async () => {
         callOrder.push("gitAdd");
@@ -219,18 +212,11 @@ describe("GitService", () => {
     ).resolves.toBe("commit-hash");
 
     expect(mocks.gitAdd).toHaveBeenCalledTimes(2);
-    expect(callOrder).toEqual([
-      "gitAdd",
-      "gitAdd",
-      "hasStagedChanges",
-      "gitCommit",
-    ]);
+    expect(callOrder).toEqual(["gitAdd", "gitAdd", "hasStagedChanges", "gitCommit"]);
   });
 
   it("removes a stale git index lock before retrying", async () => {
-    const repoPath = await fs.promises.mkdtemp(
-      pathModule.join(os.tmpdir(), "git-service-"),
-    );
+    const repoPath = await fs.promises.mkdtemp(pathModule.join(os.tmpdir(), "git-service-"));
     temporaryDirectories.push(repoPath);
     const gitPath = pathModule.join(repoPath, ".git");
     const lockPath = pathModule.join(gitPath, "index.lock");

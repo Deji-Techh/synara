@@ -17,12 +17,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html"],
       reportsDirectory: "./coverage",
-      exclude: [
-        "src/components/ui/**",
-        "src/test/**",
-        "src/vite-env.d.ts",
-        "src/main.tsx",
-      ],
+      exclude: ["src/components/ui/**", "src/test/**", "src/vite-env.d.ts", "src/main.tsx"],
     },
   },
 });

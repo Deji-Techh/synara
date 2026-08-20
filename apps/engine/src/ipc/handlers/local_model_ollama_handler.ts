@@ -22,11 +22,7 @@ export function parseOllamaHost(host?: string): string {
   }
 
   // Check for regular host:port (but not plain IPv6)
-  if (
-    host.includes(":") &&
-    !host.includes("::") &&
-    host.split(":").length === 2
-  ) {
+  if (host.includes(":") && !host.includes("::") && host.split(":").length === 2) {
     return `http://${host}`;
   }
 
@@ -92,20 +88,13 @@ export async function fetchOllamaModels(): Promise<{ models: LocalModel[] }> {
     if (error instanceof CaideError) {
       throw error;
     }
-    if (
-      error instanceof TypeError &&
-      (error as Error).message.includes("fetch failed")
-    ) {
+    if (error instanceof TypeError && (error as Error).message.includes("fetch failed")) {
       throw new CaideError(
-        "Could not connect to Ollama. Make sure it's running at " +
-          getOllamaApiUrl(),
+        "Could not connect to Ollama. Make sure it's running at " + getOllamaApiUrl(),
         CaideErrorKind.Precondition,
       );
     }
-    throw new CaideError(
-      "Failed to fetch models from Ollama",
-      CaideErrorKind.External,
-    );
+    throw new CaideError("Failed to fetch models from Ollama", CaideErrorKind.External);
   }
 }
 

@@ -3,22 +3,13 @@ import { getPostCompactionMessages } from "@/ipc/handlers/compaction/compaction_
 
 type Msg = { id: number; role: string; isCompactionSummary: boolean | null };
 
-function msg(
-  id: number,
-  role: string,
-  isCompactionSummary: boolean | null = null,
-): Msg {
+function msg(id: number, role: string, isCompactionSummary: boolean | null = null): Msg {
   return { id, role, isCompactionSummary };
 }
 
 describe("getPostCompactionMessages", () => {
   it("returns all messages when there is no compaction summary", () => {
-    const messages = [
-      msg(1, "user"),
-      msg(2, "assistant"),
-      msg(3, "user"),
-      msg(4, "assistant"),
-    ];
+    const messages = [msg(1, "user"), msg(2, "assistant"), msg(3, "user"), msg(4, "assistant")];
     expect(getPostCompactionMessages(messages)).toEqual(messages);
   });
 
@@ -39,11 +30,7 @@ describe("getPostCompactionMessages", () => {
       msg(7, "assistant", true), // compaction summary
     ];
     const result = getPostCompactionMessages(messages);
-    expect(result).toEqual([
-      msg(5, "user"),
-      msg(6, "assistant"),
-      msg(7, "assistant", true),
-    ]);
+    expect(result).toEqual([msg(5, "user"), msg(6, "assistant"), msg(7, "assistant", true)]);
   });
 
   it("includes messages after the compaction summary", () => {
@@ -83,11 +70,7 @@ describe("getPostCompactionMessages", () => {
     const result = getPostCompactionMessages(messages);
     // Should use id=10 as latest summary, id=8 as triggering user msg
     // Excludes id=5 (older compaction summary)
-    expect(result).toEqual([
-      msg(8, "user"),
-      msg(9, "assistant"),
-      msg(10, "assistant", true),
-    ]);
+    expect(result).toEqual([msg(8, "user"), msg(9, "assistant"), msg(10, "assistant", true)]);
   });
 
   it("handles compaction summary with no preceding user message", () => {
@@ -99,11 +82,7 @@ describe("getPostCompactionMessages", () => {
       msg(3, "assistant"),
     ];
     const result = getPostCompactionMessages(messages);
-    expect(result).toEqual([
-      msg(1, "assistant", true),
-      msg(2, "user"),
-      msg(3, "assistant"),
-    ]);
+    expect(result).toEqual([msg(1, "assistant", true), msg(2, "user"), msg(3, "assistant")]);
   });
 
   it("handles compaction summary as the only message", () => {

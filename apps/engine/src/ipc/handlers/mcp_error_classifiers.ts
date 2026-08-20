@@ -5,9 +5,7 @@
 // `@ai-sdk/mcp` SDK. We only match shapes confirmed in upstream
 // source (`node_modules/@ai-sdk/mcp/dist/index.mjs`).
 
-export function classifyOAuthError(
-  msg: string | null,
-): "discovery_failed" | "other" | null {
+export function classifyOAuthError(msg: string | null): "discovery_failed" | "other" | null {
   if (!msg) return null;
   const lower = msg.toLowerCase();
 

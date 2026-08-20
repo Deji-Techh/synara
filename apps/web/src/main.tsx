@@ -48,8 +48,8 @@ class CaideErrorBoundary extends React.Component<
         <div style={{ padding: 24, fontFamily: "system-ui", maxWidth: 720, margin: "0 auto" }}>
           <h1 style={{ fontSize: 18, fontWeight: 600 }}>Caide hit an unexpected error</h1>
           <p style={{ color: "#666", marginTop: 8 }}>
-            The app caught a render error and stayed alive so you can try again or reload. Details are
-            in the console and in <code>~/.caide/userdata/logs</code>.
+            The app caught a render error and stayed alive so you can try again or reload. Details
+            are in the console and in <code>~/.caide/userdata/logs</code>.
           </p>
           <pre
             style={{

@@ -243,7 +243,7 @@ export const PreviewDevicesResultSchema = z.object({
       name: z.string(),
       isEmulator: z.boolean(),
       platform: z.enum(["android", "ios", "web"]).optional(),
-    })
+    }),
   ),
 });
 export type PreviewDevicesResult = z.infer<typeof PreviewDevicesResultSchema>;

@@ -18,8 +18,7 @@ export function createProblemFixPrompt(problemReport: ProblemReport): string {
     : `Fix these ${totalProblems} TypeScript compile-time error${totalProblems === 1 ? "" : "s"}:\n\n`;
 
   problems.forEach((problem, index) => {
-    const problemCode =
-      problem.code >= 9000 ? `CAIDE${problem.code}` : `TS${problem.code}`;
+    const problemCode = problem.code >= 9000 ? `CAIDE${problem.code}` : `TS${problem.code}`;
     prompt += `${index + 1}. ${problem.file}:${problem.line}:${problem.column} - ${problem.message} (${problemCode})\n`;
     if (problem.snippet) {
       prompt += `\`\`\`\n${problem.snippet}\n\`\`\`\n`;

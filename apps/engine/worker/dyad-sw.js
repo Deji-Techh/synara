@@ -33,8 +33,7 @@ self.addEventListener("fetch", (event) => {
   // surface CSS/image/font loads. If a future framework hits a similar
   // MIME-type issue with another destination, narrow the filter here rather
   // than dropping all observability for that resource type.
-  if (request.destination === "script" || request.destination === "worker")
-    return;
+  if (request.destination === "script" || request.destination === "worker") return;
 
   // Only handle http(s)
   let urlObj;
@@ -46,8 +45,7 @@ self.addEventListener("fetch", (event) => {
   if (urlObj.protocol !== "http:" && urlObj.protocol !== "https:") return;
 
   // Chrome SW footgun: only-if-cached must be same-origin or it throws.
-  if (request.cache === "only-if-cached" && request.mode !== "same-origin")
-    return;
+  if (request.cache === "only-if-cached" && request.mode !== "same-origin") return;
 
   // Skip noisy Vite and Next.js development module requests
   const pathname = urlObj.pathname;

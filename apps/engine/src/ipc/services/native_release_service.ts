@@ -89,9 +89,7 @@ async function runCommand(
     try {
       child = spawn(command, args, {
         cwd: options.cwd,
-        env:
-          options.env ??
-          buildManagedToolchainEnvironment(getPackageManagerCommandEnv()),
+        env: options.env ?? buildManagedToolchainEnvironment(getPackageManagerCommandEnv()),
         shell: process.platform === "win32" && /\.(?:bat|cmd)$/i.test(command),
         windowsHide: true,
         stdio: "pipe",
@@ -127,12 +125,7 @@ async function runCommand(
       if (options.signal.aborted) {
         clearTimeout(timeout);
         settled = true;
-        reject(
-          new CaideError(
-            `${options.label} was cancelled`,
-            CaideErrorKind.UserCancelled,
-          ),
-        );
+        reject(new CaideError(`${options.label} was cancelled`, CaideErrorKind.UserCancelled));
         return;
       }
     }
@@ -205,11 +198,9 @@ function hostPlatform(): NativeReleaseStatus["hostPlatform"] {
 }
 
 export function isCapacitorInstalled(appPath: string): boolean {
-  return [
-    "capacitor.config.js",
-    "capacitor.config.ts",
-    "capacitor.config.json",
-  ].some((fileName) => fs.existsSync(path.join(appPath, fileName)));
+  return ["capacitor.config.js", "capacitor.config.ts", "capacitor.config.json"].some((fileName) =>
+    fs.existsSync(path.join(appPath, fileName)),
+  );
 }
 
 function executableName(name: string): string {
@@ -227,17 +218,13 @@ function resolveAndroidSdkPath(): string | null {
   const home = os.homedir();
   return firstExisting([
     process.env.CAIDE_ANDROID_SDK_ROOT,
-    fs.existsSync(getManagedAndroidSdkPath())
-      ? getManagedAndroidSdkPath()
-      : null,
+    fs.existsSync(getManagedAndroidSdkPath()) ? getManagedAndroidSdkPath() : null,
     process.env.ANDROID_SDK_ROOT,
     process.env.ANDROID_HOME,
     process.platform === "win32" && process.env.LOCALAPPDATA
       ? path.join(process.env.LOCALAPPDATA, "Android", "Sdk")
       : null,
-    process.platform === "darwin"
-      ? path.join(home, "Library", "Android", "sdk")
-      : null,
+    process.platform === "darwin" ? path.join(home, "Library", "Android", "sdk") : null,
     process.platform === "linux" ? path.join(home, "Android", "Sdk") : null,
     "/var/lib/flatpak/app/com.google.AndroidStudio/current/active/files/Android/Sdk",
     "/snap/android-studio/current/android-studio/Android/Sdk",
@@ -257,50 +244,32 @@ function latestDirectory(parent: string | null): string | null {
 
 function resolveAndroidEnvironment(): AndroidEnvironment {
   const sdkPath = resolveAndroidSdkPath();
-  const buildToolsPath = latestDirectory(
-    sdkPath ? path.join(sdkPath, "build-tools") : null,
-  );
-  const platformPath = latestDirectory(
-    sdkPath ? path.join(sdkPath, "platforms") : null,
-  );
+  const buildToolsPath = latestDirectory(sdkPath ? path.join(sdkPath, "build-tools") : null);
+  const platformPath = latestDirectory(sdkPath ? path.join(sdkPath, "platforms") : null);
   const javaHome = process.env.JAVA_HOME;
   const javaBin = javaHome ? path.join(javaHome, "bin") : null;
   const javaPath =
-    firstExisting([
-      javaBin ? path.join(javaBin, executableName("java")) : null,
-    ]) ?? "java";
+    firstExisting([javaBin ? path.join(javaBin, executableName("java")) : null]) ?? "java";
   const keytoolPath =
-    firstExisting([
-      javaBin ? path.join(javaBin, executableName("keytool")) : null,
-    ]) ?? "keytool";
+    firstExisting([javaBin ? path.join(javaBin, executableName("keytool")) : null]) ?? "keytool";
   const jarsignerPath =
-    firstExisting([
-      javaBin ? path.join(javaBin, executableName("jarsigner")) : null,
-    ]) ?? "jarsigner";
+    firstExisting([javaBin ? path.join(javaBin, executableName("jarsigner")) : null]) ??
+    "jarsigner";
 
   return {
     sdkPath,
     buildToolsPath,
     buildToolsVersion: buildToolsPath ? path.basename(buildToolsPath) : null,
-    platformVersion: platformPath
-      ? path.basename(platformPath).replace(/^android-/, "")
-      : null,
+    platformVersion: platformPath ? path.basename(platformPath).replace(/^android-/, "") : null,
     adbPath: firstExisting([
-      sdkPath
-        ? path.join(sdkPath, "platform-tools", executableName("adb"))
-        : null,
+      sdkPath ? path.join(sdkPath, "platform-tools", executableName("adb")) : null,
     ]),
     zipalignPath: firstExisting([
-      buildToolsPath
-        ? path.join(buildToolsPath, executableName("zipalign"))
-        : null,
+      buildToolsPath ? path.join(buildToolsPath, executableName("zipalign")) : null,
     ]),
     apksignerPath: firstExisting([
       buildToolsPath
-        ? path.join(
-            buildToolsPath,
-            process.platform === "win32" ? "apksigner.bat" : "apksigner",
-          )
+        ? path.join(buildToolsPath, process.platform === "win32" ? "apksigner.bat" : "apksigner")
         : null,
     ]),
     javaPath,
@@ -315,22 +284,10 @@ export function resolveAndroidStudioPath(): string | null {
     return firstExisting([
       process.env.ANDROID_STUDIO_PATH,
       process.env.ProgramFiles
-        ? path.join(
-            process.env.ProgramFiles,
-            "Android",
-            "Android Studio",
-            "bin",
-            "studio64.exe",
-          )
+        ? path.join(process.env.ProgramFiles, "Android", "Android Studio", "bin", "studio64.exe")
         : null,
       process.env.LOCALAPPDATA
-        ? path.join(
-            process.env.LOCALAPPDATA,
-            "Programs",
-            "Android Studio",
-            "bin",
-            "studio64.exe",
-          )
+        ? path.join(process.env.LOCALAPPDATA, "Programs", "Android Studio", "bin", "studio64.exe")
         : null,
     ]);
   }
@@ -370,10 +327,7 @@ function extractVersion(output: string): string | null {
   return firstLine?.slice(0, 160) ?? null;
 }
 
-async function readNativeAppInfo(
-  appPath: string,
-  fallbackName: string,
-): Promise<NativeAppInfo> {
+async function readNativeAppInfo(appPath: string, fallbackName: string): Promise<NativeAppInfo> {
   if (isFlutterApp(appPath)) {
     return readFlutterAppInfo(appPath, fallbackName);
   }
@@ -383,8 +337,7 @@ async function readNativeAppInfo(
     const packageJson = JSON.parse(
       await fsp.readFile(path.join(appPath, "package.json"), "utf8"),
     ) as { version?: unknown; name?: unknown };
-    packageVersion =
-      typeof packageJson.version === "string" ? packageJson.version : null;
+    packageVersion = typeof packageJson.version === "string" ? packageJson.version : null;
     if (!fallbackName && typeof packageJson.name === "string") {
       fallbackName = packageJson.name;
     }
@@ -395,11 +348,7 @@ async function readNativeAppInfo(
   let config = { appId: null, appName: null, webDir: null } as ReturnType<
     typeof parseCapacitorConfigText
   >;
-  for (const fileName of [
-    "capacitor.config.ts",
-    "capacitor.config.js",
-    "capacitor.config.json",
-  ]) {
+  for (const fileName of ["capacitor.config.ts", "capacitor.config.js", "capacitor.config.json"]) {
     const configPath = path.join(appPath, fileName);
     if (!fs.existsSync(configPath)) continue;
     config = parseCapacitorConfigText(
@@ -431,10 +380,7 @@ async function readNativeAppInfo(
   };
 }
 
-async function readFlutterAppInfo(
-  appPath: string,
-  fallbackName: string,
-): Promise<NativeAppInfo> {
+async function readFlutterAppInfo(appPath: string, fallbackName: string): Promise<NativeAppInfo> {
   let appName = fallbackName;
   let versionName: string | null = null;
   let versionCode: number | null = null;
@@ -444,8 +390,7 @@ async function readFlutterAppInfo(
       const pubspec = await fsp.readFile(pubspecPath, "utf8");
       const nameMatch = /^name:\s*["']?([^"'\s]+)/m.exec(pubspec);
       if (nameMatch?.[1]) appName = nameMatch[1];
-      const versionMatch =
-        /^version:\s*([0-9]+\.[0-9]+\.[0-9]+(?:\+[0-9]+)?)/m.exec(pubspec);
+      const versionMatch = /^version:\s*([0-9]+\.[0-9]+\.[0-9]+(?:\+[0-9]+)?)/m.exec(pubspec);
       if (versionMatch?.[1]) {
         const [semver, build] = versionMatch[1].split("+");
         versionName = semver;
@@ -514,8 +459,7 @@ async function artifactFromPath(
     sizeBytes: stat.size,
     createdAt: stat.mtime.toISOString(),
     sha256,
-    signed:
-      kind === "debug-apk" || !fileName.toLowerCase().includes("unsigned"),
+    signed: kind === "debug-apk" || !fileName.toLowerCase().includes("unsigned"),
     installable: kind === "debug-apk" || kind === "release-apk",
   };
 }
@@ -533,11 +477,7 @@ async function hashFile(filePath: string): Promise<string> {
 
 async function recordArtifactChecksum(filePath: string): Promise<string> {
   const checksum = await hashFile(filePath);
-  await fsp.writeFile(
-    `${filePath}.sha256`,
-    `${checksum}  ${path.basename(filePath)}\n`,
-    "utf8",
-  );
+  await fsp.writeFile(`${filePath}.sha256`, `${checksum}  ${path.basename(filePath)}\n`, "utf8");
   return checksum;
 }
 
@@ -552,19 +492,11 @@ async function readRecordedChecksum(filePath: string): Promise<string | null> {
 }
 
 async function collectArtifacts(appPath: string): Promise<NativeArtifact[]> {
-  const androidOutputs = path.join(
-    appPath,
-    "android",
-    "app",
-    "build",
-    "outputs",
-  );
+  const androidOutputs = path.join(appPath, "android", "app", "build", "outputs");
   const artifactPaths = await walkArtifacts(androidOutputs);
   const relevantArtifacts = artifactPaths.filter((artifactPath) => {
     const name = path.basename(artifactPath).toLowerCase();
-    return (
-      name.endsWith(".apk") || name.endsWith(".aab") || name.endsWith(".ipa")
-    );
+    return name.endsWith(".apk") || name.endsWith(".aab") || name.endsWith(".ipa");
   });
   const artifacts = await Promise.all(
     relevantArtifacts.map(async (artifactPath) =>
@@ -604,19 +536,12 @@ export async function inspectNativeRelease(
   const androidPath = path.join(appPath, "android");
   const iosPath = path.join(appPath, "ios");
   const gradleWrapper = firstExisting([
-    path.join(
-      androidPath,
-      process.platform === "win32" ? "gradlew.bat" : "gradlew",
-    ),
+    path.join(androidPath, process.platform === "win32" ? "gradlew.bat" : "gradlew"),
   ]);
   const javacPath = resolveJdkHomeSafe();
   const [javaProbe, adbProbe, xcodeProbe] = await Promise.all([
     javacPath
-      ? probeCommand(
-          path.join(javacPath, "bin", executableName("javac")),
-          ["-version"],
-          appPath,
-        )
+      ? probeCommand(path.join(javacPath, "bin", executableName("javac")), ["-version"], appPath)
       : probeCommand(executableName("javac"), ["-version"], appPath),
     environment.adbPath
       ? probeCommand(environment.adbPath, ["version"], appPath)
@@ -635,16 +560,12 @@ export async function inspectNativeRelease(
     tool({
       id: "node",
       label: "Node.js",
-      description:
-        "Builds the web application before it is packaged for mobile.",
+      description: "Builds the web application before it is packaged for mobile.",
       requiredForAndroidBuild: true,
       state: nodeMajor >= 20 ? "ready" : "missing",
       version: process.version,
       location: process.execPath,
-      remediation:
-        nodeMajor >= 20
-          ? null
-          : "Install Node.js 20 or newer, then restart CAIDE.",
+      remediation: nodeMajor >= 20 ? null : "Install Node.js 20 or newer, then restart CAIDE.",
     }),
     tool({
       id: "java",
@@ -684,9 +605,7 @@ export async function inspectNativeRelease(
       description: "Creates, aligns, signs, and verifies APK and AAB files.",
       requiredForAndroidBuild: true,
       state:
-        environment.buildToolsPath &&
-        environment.zipalignPath &&
-        environment.apksignerPath
+        environment.buildToolsPath && environment.zipalignPath && environment.apksignerPath
           ? "ready"
           : "missing",
       version: environment.buildToolsVersion,
@@ -733,8 +652,7 @@ export async function inspectNativeRelease(
     tool({
       id: "xcode",
       label: "Xcode",
-      description:
-        "Apple's required macOS toolchain for iOS signing and distribution.",
+      description: "Apple's required macOS toolchain for iOS signing and distribution.",
       requiredForAndroidBuild: false,
       state:
         process.platform !== "darwin"
@@ -755,9 +673,7 @@ export async function inspectNativeRelease(
   const canBuildAndroid =
     capacitorInstalled &&
     androidProjectExists &&
-    tools
-      .filter((item) => item.requiredForAndroidBuild)
-      .every((item) => item.state === "ready");
+    tools.filter((item) => item.requiredForAndroidBuild).every((item) => item.state === "ready");
 
   return {
     hostPlatform: hostPlatform(),
@@ -791,20 +707,13 @@ async function inspectFlutterRelease(
   const androidPath = path.join(appPath, "android");
   const iosPath = path.join(appPath, "ios");
   const gradleWrapper = firstExisting([
-    path.join(
-      androidPath,
-      process.platform === "win32" ? "gradlew.bat" : "gradlew",
-    ),
+    path.join(androidPath, process.platform === "win32" ? "gradlew.bat" : "gradlew"),
   ]);
   const javacPath = resolveJdkHomeSafe();
   const [flutterProbe, javaProbe, adbProbe, xcodeProbe] = await Promise.all([
     probeCommand(flutterExecutable, ["--version"], appPath),
     javacPath
-      ? probeCommand(
-          path.join(javacPath, "bin", executableName("javac")),
-          ["-version"],
-          appPath,
-        )
+      ? probeCommand(path.join(javacPath, "bin", executableName("javac")), ["-version"], appPath)
       : probeCommand(executableName("javac"), ["-version"], appPath),
     environment.adbPath
       ? probeCommand(environment.adbPath, ["version"], appPath)
@@ -821,8 +730,7 @@ async function inspectFlutterRelease(
     tool({
       id: "flutter",
       label: "Flutter SDK",
-      description:
-        "Builds, analyzes, tests, and packages the Dart code for mobile and web.",
+      description: "Builds, analyzes, tests, and packages the Dart code for mobile and web.",
       requiredForAndroidBuild: true,
       state: flutterProbe.available ? "ready" : "missing",
       version: extractVersion(flutterProbe.output),
@@ -869,9 +777,7 @@ async function inspectFlutterRelease(
       description: "Creates, aligns, signs, and verifies APK and AAB files.",
       requiredForAndroidBuild: true,
       state:
-        environment.buildToolsPath &&
-        environment.zipalignPath &&
-        environment.apksignerPath
+        environment.buildToolsPath && environment.zipalignPath && environment.apksignerPath
           ? "ready"
           : "missing",
       version: environment.buildToolsVersion,
@@ -918,8 +824,7 @@ async function inspectFlutterRelease(
     tool({
       id: "xcode",
       label: "Xcode",
-      description:
-        "Apple's required macOS toolchain for iOS signing and distribution.",
+      description: "Apple's required macOS toolchain for iOS signing and distribution.",
       requiredForAndroidBuild: false,
       state:
         process.platform !== "darwin"
@@ -939,9 +844,7 @@ async function inspectFlutterRelease(
 
   const canBuildAndroid =
     androidProjectExists &&
-    tools
-      .filter((item) => item.requiredForAndroidBuild)
-      .every((item) => item.state === "ready");
+    tools.filter((item) => item.requiredForAndroidBuild).every((item) => item.state === "ready");
 
   return {
     hostPlatform: hostPlatform(),
@@ -959,21 +862,15 @@ async function inspectFlutterRelease(
   };
 }
 
-async function collectFlutterArtifacts(
-  appPath: string,
-): Promise<NativeArtifact[]> {
+async function collectFlutterArtifacts(appPath: string): Promise<NativeArtifact[]> {
   const roots = [
     path.join(appPath, "build", "app", "outputs"),
     path.join(appPath, "build", "ios", "ipa"),
   ];
-  const artifactPaths = (
-    await Promise.all(roots.map((root) => walkArtifacts(root)))
-  ).flat();
+  const artifactPaths = (await Promise.all(roots.map((root) => walkArtifacts(root)))).flat();
   const relevantArtifacts = artifactPaths.filter((artifactPath) => {
     const name = path.basename(artifactPath).toLowerCase();
-    return (
-      name.endsWith(".apk") || name.endsWith(".aab") || name.endsWith(".ipa")
-    );
+    return name.endsWith(".apk") || name.endsWith(".aab") || name.endsWith(".ipa");
   });
   const artifacts = await Promise.all(
     relevantArtifacts.map(async (artifactPath) =>
@@ -985,16 +882,9 @@ async function collectFlutterArtifacts(
     .slice(0, 20);
 }
 
-async function checkGradleDistributionReachable(
-  androidPath: string,
-): Promise<void> {
+async function checkGradleDistributionReachable(androidPath: string): Promise<void> {
   try {
-    const propsPath = path.join(
-      androidPath,
-      "gradle",
-      "wrapper",
-      "gradle-wrapper.properties",
-    );
+    const propsPath = path.join(androidPath, "gradle", "wrapper", "gradle-wrapper.properties");
     const content = fs.readFileSync(propsPath, "utf8");
     const url = content.match(/distributionUrl=(https?:\/\/[^\s]+)/)?.[1];
     if (!url) return;
@@ -1019,12 +909,7 @@ async function checkGradleDistributionReachable(
 }
 
 function useBinZipInWrapper(androidPath: string): void {
-  const propsPath = path.join(
-    androidPath,
-    "gradle",
-    "wrapper",
-    "gradle-wrapper.properties",
-  );
+  const propsPath = path.join(androidPath, "gradle", "wrapper", "gradle-wrapper.properties");
   try {
     let content = fs.readFileSync(propsPath, "utf8");
     const original = content;
@@ -1066,19 +951,13 @@ function ensureAndroidLocalProperties(androidPath: string): void {
 }
 
 function isGradleDistributionCached(androidPath: string): boolean {
-  const propsPath = path.join(
-    androidPath,
-    "gradle",
-    "wrapper",
-    "gradle-wrapper.properties",
-  );
+  const propsPath = path.join(androidPath, "gradle", "wrapper", "gradle-wrapper.properties");
   try {
     const content = fs.readFileSync(propsPath, "utf8");
     const match = content.match(/distributionUrl=.*\/(gradle-[^\s]+\.zip)/);
     if (!match) return false;
     const distName = match[1];
-    const gradleUserHome =
-      process.env.GRADLE_USER_HOME || path.join(os.homedir(), ".gradle");
+    const gradleUserHome = process.env.GRADLE_USER_HOME || path.join(os.homedir(), ".gradle");
     const versionDir = path.join(gradleUserHome, "wrapper", "dists", distName);
     if (!fs.existsSync(versionDir)) return false;
     for (const sub of fs.readdirSync(versionDir)) {
@@ -1112,9 +991,7 @@ export async function syncCapacitorProject(
   const distDir = path.join(appPath, "dist");
   // Always rebuild if a remoteApiUrl is provided to ensure it gets baked in
   const webBuildUpToDate =
-    !remoteApiUrl &&
-    fs.existsSync(distDir) &&
-    fs.readdirSync(distDir).length > 0;
+    !remoteApiUrl && fs.existsSync(distDir) && fs.readdirSync(distDir).length > 0;
   if (!webBuildUpToDate) {
     const env = { ...getPackageManagerCommandEnv() };
     if (remoteApiUrl) {
@@ -1143,9 +1020,7 @@ export async function syncCapacitorProject(
     env: {
       ...getPackageManagerCommandEnv(),
       LANG: "en_US.UTF-8",
-      ...(capSdkPath
-        ? { ANDROID_HOME: capSdkPath, ANDROID_SDK_ROOT: capSdkPath }
-        : {}),
+      ...(capSdkPath ? { ANDROID_HOME: capSdkPath, ANDROID_SDK_ROOT: capSdkPath } : {}),
     },
     signal,
   });
@@ -1167,10 +1042,7 @@ function gradleCommand(androidPath: string, task: string): string {
   return `${wrapper} ${task}`;
 }
 
-async function newestFile(
-  root: string,
-  predicate: (filePath: string) => boolean,
-): Promise<string> {
+async function newestFile(root: string, predicate: (filePath: string) => boolean): Promise<string> {
   const files = (await walkArtifacts(root)).filter(predicate);
   if (files.length === 0) {
     throw new CaideError(
@@ -1188,9 +1060,7 @@ async function newestFile(
   return withStats[0].filePath;
 }
 
-function signingEnvironment(
-  signing: AndroidSigningCredentials,
-): NodeJS.ProcessEnv {
+function signingEnvironment(signing: AndroidSigningCredentials): NodeJS.ProcessEnv {
   return {
     ...buildManagedToolchainEnvironment(getPackageManagerCommandEnv()),
     CAIDE_ANDROID_STORE_PASSWORD: signing.storePassword,
@@ -1229,9 +1099,7 @@ async function verifySigningCredentials(
 }
 
 function artifactFileStem(app: NativeAppInfo): string {
-  return sanitizeArtifactName(
-    [app.name, app.versionName].filter(Boolean).join("-"),
-  );
+  return sanitizeArtifactName([app.name, app.versionName].filter(Boolean).join("-"));
 }
 
 const GRADLE_LOCK_TIMEOUT_MS = 300_000;
@@ -1247,10 +1115,8 @@ function platformJdkRemediation(): string {
     linux:
       process.platform === "linux"
         ? (() => {
-            if (fs.existsSync("/etc/arch-release"))
-              return "sudo pacman -S jdk21-openjdk";
-            if (fs.existsSync("/etc/debian_version"))
-              return "sudo apt install openjdk-21-jdk";
+            if (fs.existsSync("/etc/arch-release")) return "sudo pacman -S jdk21-openjdk";
+            if (fs.existsSync("/etc/debian_version")) return "sudo apt install openjdk-21-jdk";
             if (fs.existsSync("/etc/fedora-release"))
               return "sudo dnf install java-21-openjdk-devel";
             return "Install a JDK 21 package for your distro";
@@ -1265,22 +1131,16 @@ function platformJdkRemediation(): string {
 
 function resolveJdkHomeSafe(): string | undefined {
   const managedJdkHome = getManagedJdkHome();
-  if (
-    fs.existsSync(path.join(managedJdkHome, "bin", executableName("javac")))
-  ) {
+  if (fs.existsSync(path.join(managedJdkHome, "bin", executableName("javac")))) {
     return managedJdkHome;
   }
   const candidate = process.env.CAIDE_JAVA_HOME ?? process.env.JAVA_HOME;
-  if (
-    candidate &&
-    fs.existsSync(path.join(candidate, "bin", executableName("javac")))
-  )
+  if (candidate && fs.existsSync(path.join(candidate, "bin", executableName("javac"))))
     return candidate;
   const jvmDir = "/usr/lib/jvm";
   if (process.platform === "darwin") {
     const homebrew = "/opt/homebrew/opt/openjdk@21";
-    if (fs.existsSync(path.join(homebrew, "bin", executableName("javac"))))
-      return homebrew;
+    if (fs.existsSync(path.join(homebrew, "bin", executableName("javac")))) return homebrew;
   }
   if (fs.existsSync(jvmDir)) {
     const entries = fs.readdirSync(jvmDir).sort().reverse();
@@ -1359,8 +1219,7 @@ async function gradleSpawn(
         command,
         cwd: androidPath,
         successMessage,
-        errorPrefix:
-          attempt > 0 ? `${errorPrefix} (retry ${attempt})` : errorPrefix,
+        errorPrefix: attempt > 0 ? `${errorPrefix} (retry ${attempt})` : errorPrefix,
         timeoutMs: NATIVE_BUILD_TIMEOUT_MS,
         signal,
         env,
@@ -1380,9 +1239,7 @@ async function gradleSpawn(
         error.message?.includes("Timeout of") &&
         error.message?.includes("waiting for exclusive access");
       if (isLockTimeout && attempt < maxRetries && !signal?.aborted) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, (attempt + 1) * 5_000),
-        );
+        await new Promise((resolve) => setTimeout(resolve, (attempt + 1) * 5_000));
         continue;
       }
       throw error;
@@ -1408,15 +1265,12 @@ function withProgressHeartbeat(
     }
     if (onProgress) {
       const elapsed = Date.now() - startTime;
-      const taskMsg = gradleTaskRef?.current
-        ? ` — ${gradleTaskRef.current}`
-        : "";
+      const taskMsg = gradleTaskRef?.current ? ` — ${gradleTaskRef.current}` : "";
       onProgress({
         phase,
         percent: Math.min(
           endPercent - 1,
-          startPercent +
-            Math.min(elapsed / rampDurationMs, 1) * (endPercent - startPercent),
+          startPercent + Math.min(elapsed / rampDurationMs, 1) * (endPercent - startPercent),
         ),
         message: `${label}${taskMsg}${elapsed > 30000 ? " (this may take a few minutes)" : ""}...`,
       });
@@ -1426,13 +1280,7 @@ function withProgressHeartbeat(
 }
 
 export type BuildProgressCallback = (progress: {
-  phase:
-    | "web-build"
-    | "capacitor-sync"
-    | "gradle-compile"
-    | "signing"
-    | "packaging"
-    | "done";
+  phase: "web-build" | "capacitor-sync" | "gradle-compile" | "signing" | "packaging" | "done";
   percent: number;
   message: string;
 }) => void;
@@ -1469,18 +1317,11 @@ async function buildFlutterArtifact(
     percent: 10,
     message: `${label}...`,
   });
-  if (signal?.aborted)
-    throw new CaideError("Build cancelled", CaideErrorKind.UserCancelled);
+  if (signal?.aborted) throw new CaideError("Build cancelled", CaideErrorKind.UserCancelled);
 
-  const stopHeartbeat = withProgressHeartbeat(
-    onProgress,
-    10,
-    85,
-    "gradle-compile",
-    label,
-    signal,
-    { current: "" },
-  );
+  const stopHeartbeat = withProgressHeartbeat(onProgress, 10, 85, "gradle-compile", label, signal, {
+    current: "",
+  });
   try {
     await runCommand(flutter, args, {
       cwd: appPath,
@@ -1494,32 +1335,10 @@ async function buildFlutterArtifact(
 
   const artifactPath =
     target === "debug-apk"
-      ? path.join(
-          appPath,
-          "build",
-          "app",
-          "outputs",
-          "flutter-apk",
-          "app-debug.apk",
-        )
+      ? path.join(appPath, "build", "app", "outputs", "flutter-apk", "app-debug.apk")
       : target === "release-apk"
-        ? path.join(
-            appPath,
-            "build",
-            "app",
-            "outputs",
-            "flutter-apk",
-            "app-release.apk",
-          )
-        : path.join(
-            appPath,
-            "build",
-            "app",
-            "outputs",
-            "bundle",
-            "release",
-            "app-release.aab",
-          );
+        ? path.join(appPath, "build", "app", "outputs", "flutter-apk", "app-release.apk")
+        : path.join(appPath, "build", "app", "outputs", "bundle", "release", "app-release.aab");
   if (!fs.existsSync(artifactPath)) {
     throw new CaideError(
       `Flutter build finished but the artifact was not found at ${artifactPath}`,
@@ -1532,10 +1351,7 @@ async function buildFlutterArtifact(
     percent: 90,
     message: "Computing checksum...",
   });
-  const artifact = await artifactFromPath(
-    artifactPath,
-    await recordArtifactChecksum(artifactPath),
-  );
+  const artifact = await artifactFromPath(artifactPath, await recordArtifactChecksum(artifactPath));
   onProgress?.({ phase: "done", percent: 100, message: "Build ready" });
   return artifact;
 }
@@ -1550,10 +1366,7 @@ export async function buildFlutterIpa(
   signal?: AbortSignal,
 ): Promise<NativeArtifact> {
   if (process.platform !== "darwin") {
-    throw new CaideError(
-      "iOS builds require macOS with Xcode.",
-      CaideErrorKind.Precondition,
-    );
+    throw new CaideError("iOS builds require macOS with Xcode.", CaideErrorKind.Precondition);
   }
   const flutter = getFlutterExecutable();
   onProgress?.({
@@ -1561,8 +1374,7 @@ export async function buildFlutterIpa(
     percent: 10,
     message: "Building Flutter iOS archive...",
   });
-  if (signal?.aborted)
-    throw new CaideError("Build cancelled", CaideErrorKind.UserCancelled);
+  if (signal?.aborted) throw new CaideError("Build cancelled", CaideErrorKind.UserCancelled);
 
   const stopHeartbeat = withProgressHeartbeat(
     onProgress,
@@ -1574,33 +1386,24 @@ export async function buildFlutterIpa(
     { current: "" },
   );
   try {
-    await runCommand(
-      flutter,
-      ["build", "ipa", ...getDartDefineFromFileArgs(appPath)],
-      {
-        cwd: appPath,
-        label: "Building Flutter iOS archive",
-        timeoutMs: NATIVE_BUILD_TIMEOUT_MS,
-        signal,
-      },
-    );
+    await runCommand(flutter, ["build", "ipa", ...getDartDefineFromFileArgs(appPath)], {
+      cwd: appPath,
+      label: "Building Flutter iOS archive",
+      timeoutMs: NATIVE_BUILD_TIMEOUT_MS,
+      signal,
+    });
   } finally {
     stopHeartbeat();
   }
 
   const ipaDir = path.join(appPath, "build", "ios", "ipa");
-  const ipaPath = await newestFile(ipaDir, (filePath) =>
-    filePath.toLowerCase().endsWith(".ipa"),
-  );
+  const ipaPath = await newestFile(ipaDir, (filePath) => filePath.toLowerCase().endsWith(".ipa"));
   onProgress?.({
     phase: "packaging",
     percent: 90,
     message: "Computing checksum...",
   });
-  const artifact = await artifactFromPath(
-    ipaPath,
-    await recordArtifactChecksum(ipaPath),
-  );
+  const artifact = await artifactFromPath(ipaPath, await recordArtifactChecksum(ipaPath));
   onProgress?.({ phase: "done", percent: 100, message: "iOS archive ready" });
   return artifact;
 }
@@ -1609,10 +1412,7 @@ export async function buildFlutterIpa(
  * Ensure a Flutter project's dependencies are resolved (like `flutter pub
  * get`), mirroring the Capacitor sync step for Flutter apps.
  */
-export async function syncFlutterProject(
-  appPath: string,
-  signal?: AbortSignal,
-): Promise<void> {
+export async function syncFlutterProject(appPath: string, signal?: AbortSignal): Promise<void> {
   const flutter = getFlutterExecutable();
   await runCommand(flutter, ["pub", "get"], {
     cwd: appPath,
@@ -1639,8 +1439,7 @@ export async function buildAndroidArtifact(
     return buildFlutterArtifact(appPath, target, onProgress, signal);
   }
 
-  const status =
-    releaseStatus ?? (await inspectNativeRelease(appPath, fallbackName));
+  const status = releaseStatus ?? (await inspectNativeRelease(appPath, fallbackName));
   if (!status.canBuildAndroid) {
     const missing = status.tools
       .filter((item) => item.requiredForAndroidBuild && item.state !== "ready")
@@ -1663,13 +1462,7 @@ export async function buildAndroidArtifact(
   if (!isGradleDistributionCached(androidPath) && fs.existsSync(androidPath)) {
     await checkGradleDistributionReachable(androidPath);
   }
-  const outputDirectory = path.join(
-    androidPath,
-    "app",
-    "build",
-    "outputs",
-    "caide",
-  );
+  const outputDirectory = path.join(androidPath, "app", "build", "outputs", "caide");
   await fsp.mkdir(outputDirectory, { recursive: true });
 
   onProgress?.({
@@ -1677,8 +1470,7 @@ export async function buildAndroidArtifact(
     percent: 5,
     message: "Building web application...",
   });
-  if (signal?.aborted)
-    throw new CaideError("Build cancelled", CaideErrorKind.UserCancelled);
+  if (signal?.aborted) throw new CaideError("Build cancelled", CaideErrorKind.UserCancelled);
   await syncCapacitorProject(appPath, "android", signal, remoteApiUrl);
   onProgress?.({
     phase: "capacitor-sync",
@@ -1695,8 +1487,7 @@ export async function buildAndroidArtifact(
       percent: 30,
       message: "Compiling debug APK with Gradle...",
     });
-    if (signal?.aborted)
-      throw new CaideError("Build cancelled", CaideErrorKind.UserCancelled);
+    if (signal?.aborted) throw new CaideError("Build cancelled", CaideErrorKind.UserCancelled);
     const stopDebugHeartbeat = withProgressHeartbeat(
       onProgress,
       30,
@@ -1729,27 +1520,17 @@ export async function buildAndroidArtifact(
       path.join(androidPath, "app", "build", "outputs", "apk", "debug"),
       (filePath) => {
         const lower = filePath.toLowerCase();
-        return (
-          lower.endsWith(".apk") &&
-          !lower.includes("-armeabi") &&
-          !lower.includes("-x86")
-        );
+        return lower.endsWith(".apk") && !lower.includes("-armeabi") && !lower.includes("-x86");
       },
     );
-    const destination = path.join(
-      outputDirectory,
-      `${stem}-${buildStamp}-debug.apk`,
-    );
+    const destination = path.join(outputDirectory, `${stem}-${buildStamp}-debug.apk`);
     await fsp.copyFile(source, destination);
     onProgress?.({
       phase: "packaging",
       percent: 90,
       message: "Computing checksum...",
     });
-    const artifact = await artifactFromPath(
-      destination,
-      await recordArtifactChecksum(destination),
-    );
+    const artifact = await artifactFromPath(destination, await recordArtifactChecksum(destination));
     onProgress?.({ phase: "done", percent: 100, message: "Debug APK ready" });
     return artifact;
   }
@@ -1770,8 +1551,7 @@ export async function buildAndroidArtifact(
       percent: 30,
       message: "Compiling release APK with Gradle...",
     });
-    if (signal?.aborted)
-      throw new CaideError("Build cancelled", CaideErrorKind.UserCancelled);
+    if (signal?.aborted) throw new CaideError("Build cancelled", CaideErrorKind.UserCancelled);
     const stopReleaseHeartbeat = withProgressHeartbeat(
       onProgress,
       30,
@@ -1801,26 +1581,19 @@ export async function buildAndroidArtifact(
         filePath.toLowerCase().endsWith(".apk") &&
         !filePath.includes(`${path.sep}caide${path.sep}`),
     );
-    const aligned = path.join(
-      outputDirectory,
-      `${stem}-${buildStamp}-release-aligned.apk`,
-    );
-    const destination = path.join(
-      outputDirectory,
-      `${stem}-${buildStamp}-release.apk`,
-    );
+    const aligned = path.join(outputDirectory, `${stem}-${buildStamp}-release-aligned.apk`);
+    const destination = path.join(outputDirectory, `${stem}-${buildStamp}-release.apk`);
     onProgress?.({
       phase: "signing",
       percent: 70,
       message: "Aligning and signing release APK...",
     });
-    if (signal?.aborted)
-      throw new CaideError("Build cancelled", CaideErrorKind.UserCancelled);
-    await runCommand(
-      environment.zipalignPath,
-      ["-f", "-v", "4", source, aligned],
-      { cwd: appPath, label: "Aligning release APK", signal },
-    );
+    if (signal?.aborted) throw new CaideError("Build cancelled", CaideErrorKind.UserCancelled);
+    await runCommand(environment.zipalignPath, ["-f", "-v", "4", source, aligned], {
+      cwd: appPath,
+      label: "Aligning release APK",
+      signal,
+    });
     try {
       await runCommand(
         environment.apksignerPath,
@@ -1845,11 +1618,11 @@ export async function buildAndroidArtifact(
           signal,
         },
       );
-      await runCommand(
-        environment.apksignerPath,
-        ["verify", "--verbose", destination],
-        { cwd: appPath, label: "Verifying release APK", signal },
-      );
+      await runCommand(environment.apksignerPath, ["verify", "--verbose", destination], {
+        cwd: appPath,
+        label: "Verifying release APK",
+        signal,
+      });
     } finally {
       await fsp.rm(aligned, { force: true });
     }
@@ -1871,8 +1644,7 @@ export async function buildAndroidArtifact(
     percent: 30,
     message: "Compiling Android App Bundle with Gradle...",
   });
-  if (signal?.aborted)
-    throw new CaideError("Build cancelled", CaideErrorKind.UserCancelled);
+  if (signal?.aborted) throw new CaideError("Build cancelled", CaideErrorKind.UserCancelled);
   const stopBundleHeartbeat = withProgressHeartbeat(
     onProgress,
     30,
@@ -1901,13 +1673,9 @@ export async function buildAndroidArtifact(
     path.join(androidPath, "app", "build", "outputs", "bundle", "release"),
     (filePath) => filePath.toLowerCase().endsWith(".aab"),
   );
-  const destination = path.join(
-    outputDirectory,
-    `${stem}-${buildStamp}-release.aab`,
-  );
+  const destination = path.join(outputDirectory, `${stem}-${buildStamp}-release.aab`);
   await fsp.copyFile(source, destination);
-  if (signal?.aborted)
-    throw new CaideError("Build cancelled", CaideErrorKind.UserCancelled);
+  if (signal?.aborted) throw new CaideError("Build cancelled", CaideErrorKind.UserCancelled);
   await runCommand(
     environment.jarsignerPath,
     [
@@ -1931,11 +1699,11 @@ export async function buildAndroidArtifact(
       signal,
     },
   );
-  await runCommand(
-    environment.jarsignerPath,
-    ["-verify", "-verbose", "-certs", destination],
-    { cwd: appPath, label: "Verifying Android App Bundle", signal },
-  );
+  await runCommand(environment.jarsignerPath, ["-verify", "-verbose", "-certs", destination], {
+    cwd: appPath,
+    label: "Verifying Android App Bundle",
+    signal,
+  });
   onProgress?.({
     phase: "signing",
     percent: 85,
@@ -1946,10 +1714,7 @@ export async function buildAndroidArtifact(
     percent: 90,
     message: "Computing checksum...",
   });
-  const aab = await artifactFromPath(
-    destination,
-    await recordArtifactChecksum(destination),
-  );
+  const aab = await artifactFromPath(destination, await recordArtifactChecksum(destination));
   onProgress?.({
     phase: "done",
     percent: 100,
@@ -2037,20 +1802,14 @@ function isPathInside(parent: string, candidate: string): boolean {
   }
 }
 
-export function assertNativeArtifactPath(
-  appPath: string,
-  artifactPath: string,
-): void {
+export function assertNativeArtifactPath(appPath: string, artifactPath: string): void {
   if (!fs.existsSync(artifactPath)) {
     throw new CaideError(
       "The requested native artifact no longer exists.",
       CaideErrorKind.NotFound,
     );
   }
-  if (
-    !isPathInside(appPath, artifactPath) ||
-    !inferArtifactKind(artifactPath)
-  ) {
+  if (!isPathInside(appPath, artifactPath) || !inferArtifactKind(artifactPath)) {
     throw new CaideError(
       "The requested artifact is outside this CAIDE project.",
       CaideErrorKind.Validation,
@@ -2058,10 +1817,7 @@ export function assertNativeArtifactPath(
   }
 }
 
-export async function installAndroidArtifact(
-  appPath: string,
-  artifactPath: string,
-): Promise<void> {
+export async function installAndroidArtifact(appPath: string, artifactPath: string): Promise<void> {
   if (!artifactPath.toLowerCase().endsWith(".apk")) {
     throw new CaideError(
       "Android App Bundles cannot be installed directly. Build an APK for device testing.",

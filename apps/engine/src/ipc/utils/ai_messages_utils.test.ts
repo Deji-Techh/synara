@@ -108,9 +108,7 @@ describe("parseAiMessagesJson", () => {
       };
 
       const result = parseAiMessagesJson(msg);
-      expect(result).toEqual([
-        { role: "assistant", content: "Direct content" },
-      ]);
+      expect(result).toEqual([{ role: "assistant", content: "Direct content" }]);
     });
 
     it("should fallback for user messages", () => {
@@ -137,9 +135,7 @@ describe("parseAiMessagesJson", () => {
       };
 
       const result = parseAiMessagesJson(msg);
-      expect(result).toEqual([
-        { role: "assistant", content: "fallback content" },
-      ]);
+      expect(result).toEqual([{ role: "assistant", content: "fallback content" }]);
     });
 
     it("should fallback when messages array is missing role", () => {
@@ -154,9 +150,7 @@ describe("parseAiMessagesJson", () => {
       };
 
       const result = parseAiMessagesJson(msg);
-      expect(result).toEqual([
-        { role: "assistant", content: "fallback content" },
-      ]);
+      expect(result).toEqual([{ role: "assistant", content: "fallback content" }]);
     });
 
     it("should fallback when aiMessagesJson is an empty object", () => {
@@ -176,16 +170,11 @@ describe("parseAiMessagesJson", () => {
         id: 10,
         role: "assistant",
         content: "fallback content",
-        aiMessagesJson: [
-          { role: "user", content: "valid" },
-          { noRole: true } as any,
-        ] as any,
+        aiMessagesJson: [{ role: "user", content: "valid" }, { noRole: true } as any] as any,
       };
 
       const result = parseAiMessagesJson(msg);
-      expect(result).toEqual([
-        { role: "assistant", content: "fallback content" },
-      ]);
+      expect(result).toEqual([{ role: "assistant", content: "fallback content" }]);
     });
 
     it("should fallback when messages is not an array", () => {
@@ -200,9 +189,7 @@ describe("parseAiMessagesJson", () => {
       };
 
       const result = parseAiMessagesJson(msg);
-      expect(result).toEqual([
-        { role: "assistant", content: "fallback content" },
-      ]);
+      expect(result).toEqual([{ role: "assistant", content: "fallback content" }]);
     });
   });
 
@@ -392,9 +379,7 @@ describe("parseAiMessagesJson", () => {
       const reasoningPart = (result[0].content as any[])[0];
       expect(reasoningPart.text).toBe("thinking...");
       expect(reasoningPart.providerOptions.openai.itemId).toBeUndefined();
-      expect(
-        reasoningPart.providerOptions.openai.reasoningEncryptedContent,
-      ).toBe("encrypted-data");
+      expect(reasoningPart.providerOptions.openai.reasoningEncryptedContent).toBe("encrypted-data");
     });
 
     it("should filter out orphaned reasoning parts without following output", () => {
@@ -707,9 +692,7 @@ describe("getAiMessagesJsonIfWithinLimit", () => {
   it("should return undefined for messages exceeding size limit", () => {
     // Create a message that exceeds 1MB
     const largeContent = "x".repeat(MAX_AI_MESSAGES_SIZE + 1000);
-    const messages: ModelMessage[] = [
-      { role: "assistant", content: largeContent },
-    ];
+    const messages: ModelMessage[] = [{ role: "assistant", content: largeContent }];
 
     const result = getAiMessagesJsonIfWithinLimit(messages);
     expect(result).toBeUndefined();
@@ -724,9 +707,7 @@ describe("getAiMessagesJsonIfWithinLimit", () => {
     const baseSize = JSON.stringify(basePayload).length;
     const remainingSpace = MAX_AI_MESSAGES_SIZE - baseSize;
 
-    const messages: ModelMessage[] = [
-      { role: "assistant", content: "a".repeat(remainingSpace) },
-    ];
+    const messages: ModelMessage[] = [{ role: "assistant", content: "a".repeat(remainingSpace) }];
 
     const result = getAiMessagesJsonIfWithinLimit(messages);
     expect(result).toBeDefined();
@@ -776,9 +757,7 @@ describe("sanitizeToolCallMessages", () => {
       { role: "user", content: "again" },
       {
         role: "assistant",
-        content: [
-          { type: "tool-call", toolCallId: "c2", toolName: "list_files" },
-        ],
+        content: [{ type: "tool-call", toolCallId: "c2", toolName: "list_files" }],
       },
     ] as ModelMessage[];
 
@@ -903,9 +882,7 @@ describe("sanitizeToolCallMessages", () => {
       { role: "user", content: "ok" },
       { role: "assistant", content: [{ type: "reasoning", text: "…" }] },
     ] as ModelMessage[];
-    expect(sanitizeToolCallMessages(messages)).toEqual([
-      { role: "user", content: "ok" },
-    ]);
+    expect(sanitizeToolCallMessages(messages)).toEqual([{ role: "user", content: "ok" }]);
   });
 
   it("drops an assistant message left with empty content", () => {
@@ -913,9 +890,7 @@ describe("sanitizeToolCallMessages", () => {
       { role: "user", content: "ok" },
       { role: "assistant", content: [] },
     ] as ModelMessage[];
-    expect(sanitizeToolCallMessages(messages)).toEqual([
-      { role: "user", content: "ok" },
-    ]);
+    expect(sanitizeToolCallMessages(messages)).toEqual([{ role: "user", content: "ok" }]);
   });
 });
 
@@ -997,9 +972,7 @@ describe("ensureReasoningConsistency", () => {
     ];
     const result = ensureReasoningConsistency(messages);
     expect(Array.isArray(result[1].content)).toBe(true);
-    expect(
-      (result[1] as { content: Array<Record<string, unknown>> }).content[0],
-    ).toEqual({
+    expect((result[1] as { content: Array<Record<string, unknown>> }).content[0]).toEqual({
       type: "text",
       text: "plain response",
     });

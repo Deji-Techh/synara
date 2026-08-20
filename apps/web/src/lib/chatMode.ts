@@ -7,9 +7,7 @@ export interface ChatModeResolution {
   fallbackReason?: ChatModeFallbackReason;
 }
 
-export function normalizeStoredChatMode(
-  mode: string | null | undefined,
-): ChatMode | null {
+export function normalizeStoredChatMode(mode: string | null | undefined): ChatMode | null {
   if (!mode) return null;
   const validModes: ChatMode[] = ["build", "ask", "local-agent", "plan"];
   if (validModes.includes(mode as ChatMode)) return mode as ChatMode;
@@ -17,9 +15,7 @@ export function normalizeStoredChatMode(
   return null;
 }
 
-export function getEffectiveDefaultChatMode(
-  settings: ServerSettingsView,
-): ChatMode {
+export function getEffectiveDefaultChatMode(settings: ServerSettingsView): ChatMode {
   // simplified for the new app
   return "build";
 }

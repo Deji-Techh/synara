@@ -1,10 +1,7 @@
 /**
  * Returns the explicit slug for a prompt, or null if none is set.
  */
-export function slugForPrompt(p: {
-  title: string;
-  slug: string | null;
-}): string | null {
+export function slugForPrompt(p: { title: string; slug: string | null }): string | null {
   return p.slug || null;
 }
 
@@ -18,8 +15,7 @@ export function replaceSlashSkillReference(
   userPrompt: string,
   promptsBySlug: Record<string, string>,
 ): string {
-  if (typeof userPrompt !== "string" || userPrompt.length === 0)
-    return userPrompt;
+  if (typeof userPrompt !== "string" || userPrompt.length === 0) return userPrompt;
   if (Object.keys(promptsBySlug).length === 0) return userPrompt;
 
   return userPrompt.replace(

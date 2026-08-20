@@ -14,9 +14,7 @@ describe("safeJoin", () => {
   describe("safe paths", () => {
     it("should join simple relative paths", () => {
       const result = safeJoin(testBaseDir, "src", "components", "Button.tsx");
-      expect(result).toBe(
-        path.join(testBaseDir, "src", "components", "Button.tsx"),
-      );
+      expect(result).toBe(path.join(testBaseDir, "src", "components", "Button.tsx"));
     });
 
     it("should handle single file names", () => {
@@ -41,9 +39,7 @@ describe("safeJoin", () => {
 
     it("should handle multiple path segments", () => {
       const result = safeJoin(testBaseDir, "a", "b", "c", "d", "file.txt");
-      expect(result).toBe(
-        path.join(testBaseDir, "a", "b", "c", "d", "file.txt"),
-      );
+      expect(result).toBe(path.join(testBaseDir, "a", "b", "c", "d", "file.txt"));
     });
 
     it("should work with actual temp directory", () => {
@@ -55,28 +51,19 @@ describe("safeJoin", () => {
     it("should handle Windows-style relative paths with backslashes", () => {
       const result = safeJoin(testBaseDir, "src\\components\\Button.tsx");
       // safeJoin normalizes backslashes to forward slashes
-      expect(toPosixPath(result)).toBe(
-        "/app/workspace/src/components/Button.tsx",
-      );
+      expect(toPosixPath(result)).toBe("/app/workspace/src/components/Button.tsx");
     });
 
     it("should handle mixed forward/backslashes in relative paths", () => {
       const result = safeJoin(testBaseDir, "src/components\\ui/button.tsx");
       // safeJoin normalizes backslashes to forward slashes
-      expect(toPosixPath(result)).toBe(
-        "/app/workspace/src/components/ui/button.tsx",
-      );
+      expect(toPosixPath(result)).toBe("/app/workspace/src/components/ui/button.tsx");
     });
 
     it("should handle Windows-style nested directories", () => {
-      const result = safeJoin(
-        testBaseDir,
-        "pages\\home\\components\\index.tsx",
-      );
+      const result = safeJoin(testBaseDir, "pages\\home\\components\\index.tsx");
       // safeJoin normalizes backslashes to forward slashes
-      expect(toPosixPath(result)).toBe(
-        "/app/workspace/pages/home/components/index.tsx",
-      );
+      expect(toPosixPath(result)).toBe("/app/workspace/pages/home/components/index.tsx");
     });
 
     it("should handle relative paths starting with dot and backslash", () => {
@@ -112,29 +99,19 @@ describe("safeJoin", () => {
     });
 
     it("resolves mixed traversal with valid components", () => {
-      expect(
-        safeJoin(
-          testBaseDir,
-          "src",
-          "components",
-          "..",
-          "..",
-          "..",
-          "outside.txt",
-        ),
-      ).toBe(path.join(testBaseDir, "..", "outside.txt"));
-    });
-
-    it("resolves absolute Unix paths as-is", () => {
-      expect(safeJoin(testBaseDir, "/etc/passwd")).toBe(
-        path.resolve("/etc/passwd"),
+      expect(safeJoin(testBaseDir, "src", "components", "..", "..", "..", "outside.txt")).toBe(
+        path.join(testBaseDir, "..", "outside.txt"),
       );
     });
 
+    it("resolves absolute Unix paths as-is", () => {
+      expect(safeJoin(testBaseDir, "/etc/passwd")).toBe(path.resolve("/etc/passwd"));
+    });
+
     it("throws on Windows drive absolute paths (invalid or cross-drive)", () => {
-      expect(() =>
-        safeJoin(testBaseDir, "C:\\Windows\\System32\\config"),
-      ).toThrow(/would escape the base directory/);
+      expect(() => safeJoin(testBaseDir, "C:\\Windows\\System32\\config")).toThrow(
+        /would escape the base directory/,
+      );
     });
 
     it("resolves Windows UNC paths as absolute paths", () => {
@@ -143,9 +120,7 @@ describe("safeJoin", () => {
     });
 
     it("expands home directory shortcuts and resolves them", () => {
-      expect(safeJoin(testBaseDir, "~/secrets.txt")).toBe(
-        path.join(os.homedir(), "secrets.txt"),
-      );
+      expect(safeJoin(testBaseDir, "~/secrets.txt")).toBe(path.join(os.homedir(), "secrets.txt"));
     });
   });
 
@@ -168,9 +143,7 @@ describe("safeJoin", () => {
 
     it("should handle nested current directory references", () => {
       const result = safeJoin(testBaseDir, "src/./components/./Button.tsx");
-      expect(result).toBe(
-        path.join(testBaseDir, "src/./components/./Button.tsx"),
-      );
+      expect(result).toBe(path.join(testBaseDir, "src/./components/./Button.tsx"));
     });
 
     it("resolves current-dir plus traversal escapes", () => {
@@ -199,9 +172,7 @@ describe("safeJoin", () => {
       // Single backslashes in the middle are fine - it's only \\ at the start that's UNC
       // safeJoin normalizes backslashes to forward slashes
       const result = safeJoin(testBaseDir, "src\\\\components\\\\Button.tsx");
-      expect(toPosixPath(result)).toBe(
-        "/app/workspace/src/components/Button.tsx",
-      );
+      expect(toPosixPath(result)).toBe("/app/workspace/src/components/Button.tsx");
     });
 
     it("provides descriptive error messages for Windows drive paths", () => {
@@ -234,9 +205,7 @@ describe("safeJoin", () => {
     });
 
     it("resolves traversal from the filesystem root", () => {
-      expect(safeJoin("/tmp", "../etc/passwd")).toBe(
-        path.join("/", "etc", "passwd"),
-      );
+      expect(safeJoin("/tmp", "../etc/passwd")).toBe(path.join("/", "etc", "passwd"));
     });
   });
 });

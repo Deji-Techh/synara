@@ -19,9 +19,7 @@ import { IS_TEST_BUILD } from "./test_utils";
 
 let testFetchOverride: FetchFunction | undefined;
 
-export function setModelClientFetchForTesting(
-  fetchImpl: FetchFunction | undefined,
-): void {
+export function setModelClientFetchForTesting(fetchImpl: FetchFunction | undefined): void {
   if (!process.env.VITEST && !IS_TEST_BUILD) {
     throw new Error(
       "setModelClientFetchForTesting is test-only (requires vitest or an E2E test build)",

@@ -9,11 +9,7 @@ const copyFileSchema = z.object({
     .describe(
       "The source file or folder path (can be attachments:<name>, a .caide/media path, an absolute path like ~/Downloads/image.png or /tmp/..., or a path relative to the app root)",
     ),
-  to: z
-    .string()
-    .describe(
-      "The destination file or directory path relative to the app root",
-    ),
+  to: z.string().describe("The destination file or directory path relative to the app root"),
   description: z
     .string()
     .optional()

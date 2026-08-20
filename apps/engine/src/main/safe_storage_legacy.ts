@@ -86,10 +86,7 @@ function decryptLegacyV10ToBuffer(ciphertext: Buffer, key: Buffer): Buffer {
  * Decrypts a Chromium "v10" ciphertext buffer to a UTF-8 string.
  * Throws if the "v10" prefix is missing or PKCS#7 padding is invalid.
  */
-export function decryptLegacyV10Ciphertext(
-  ciphertext: Buffer,
-  key: Buffer,
-): string {
+export function decryptLegacyV10Ciphertext(ciphertext: Buffer, key: Buffer): string {
   return decryptLegacyV10ToBuffer(ciphertext, key).toString("utf8");
 }
 
@@ -218,19 +215,9 @@ export class SecurityCliKeychainPasswordReader implements KeychainPasswordReader
     return password;
   }
 
-  private readPasswordUncached(
-    service: string,
-    account: string,
-  ): string | null {
+  private readPasswordUncached(service: string, account: string): string | null {
     try {
-      const args = [
-        "find-generic-password",
-        "-s",
-        service,
-        "-a",
-        account,
-        "-w",
-      ];
+      const args = ["find-generic-password", "-s", service, "-a", account, "-w"];
       if (this.keychainPath) {
         args.push(this.keychainPath);
       }
@@ -277,9 +264,7 @@ export class InProcessKeychainPasswordReader implements KeychainPasswordReader {
     }
     const result = this.readPasswordUncached(service, account);
     const password =
-      result.status === ERR_SEC_SUCCESS && result.password !== null
-        ? result.password
-        : null;
+      result.status === ERR_SEC_SUCCESS && result.password !== null ? result.password : null;
     if (!this.allowUI && isSilentReadInteractionNeededStatus(result.status)) {
       interactionNeededIdentities.add(cacheKey);
     }
@@ -287,22 +272,14 @@ export class InProcessKeychainPasswordReader implements KeychainPasswordReader {
     return password;
   }
 
-  private readPasswordUncached(
-    service: string,
-    account: string,
-  ): KeychainReadResult {
+  private readPasswordUncached(service: string, account: string): KeychainReadResult {
     const binding = loadInProcessKeychainReaderBinding();
     if (binding === null) {
       return { status: -1, password: null };
     }
     try {
       return normalizeReadResult(
-        binding.readGenericPassword(
-          service,
-          account,
-          this.keychainPath,
-          this.allowUI,
-        ),
+        binding.readGenericPassword(service, account, this.keychainPath, this.allowUI),
       );
     } catch (error) {
       logger.debug("In-process Keychain reader failed", error);
@@ -434,9 +411,7 @@ export function retryRecoveryWithKeychainUnlock(): boolean {
   const unlockStatus = unlockDefaultKeychainForSafeStorageRecovery();
   if (unlockStatus !== ERR_SEC_SUCCESS) {
     if (unlockStatus !== null && isUnlockCanceledStatus(unlockStatus)) {
-      logger.info(
-        "Keychain unlock was canceled; legacy safeStorage ciphertexts remain preserved.",
-      );
+      logger.info("Keychain unlock was canceled; legacy safeStorage ciphertexts remain preserved.");
     } else {
       logger.info(
         `Keychain unlock failed with status ${unlockStatus ?? "unknown"}; legacy safeStorage ciphertexts remain preserved.`,
@@ -448,9 +423,7 @@ export function retryRecoveryWithKeychainUnlock(): boolean {
   clearRecoveryFailureCache();
   interactionNeededIdentities = new Set();
   defaultReader = new InProcessKeychainPasswordReader();
-  logger.info(
-    "Keychain unlock completed; retrying legacy safeStorage recovery.",
-  );
+  logger.info("Keychain unlock completed; retrying legacy safeStorage recovery.");
   return true;
 }
 
@@ -474,9 +447,7 @@ export function recoverLegacySafeStorageSecret(
   }
 
   const ciphertext = Buffer.from(ciphertextBase64, "base64");
-  if (
-    ciphertext.subarray(0, V10_PREFIX.length).toString("ascii") !== V10_PREFIX
-  ) {
+  if (ciphertext.subarray(0, V10_PREFIX.length).toString("ascii") !== V10_PREFIX) {
     // Not a legacy os_crypt ciphertext; the reader is never invoked.
     return null;
   }
@@ -485,8 +456,7 @@ export function recoverLegacySafeStorageSecret(
     return recoveryCache.get(ciphertextBase64) ?? null;
   }
 
-  const activeReader =
-    reader ?? (defaultReader ??= createDefaultKeychainPasswordReader());
+  const activeReader = reader ?? (defaultReader ??= createDefaultKeychainPasswordReader());
 
   stats.attempted++;
 
@@ -496,10 +466,7 @@ export function recoverLegacySafeStorageSecret(
   }> = [];
 
   for (const identity of LEGACY_IDENTITIES) {
-    const password = activeReader.readPassword(
-      identity.service,
-      identity.account,
-    );
+    const password = activeReader.readPassword(identity.service, identity.account);
     if (password === null) {
       continue;
     }
@@ -521,9 +488,7 @@ export function recoverLegacySafeStorageSecret(
     const [{ identity, plaintext }] = plausibleRecoveries;
     stats.recovered++;
     recoveryCache.set(ciphertextBase64, plaintext);
-    logger.info(
-      `Recovered legacy safeStorage secret using identity "${identity.service}"`,
-    );
+    logger.info(`Recovered legacy safeStorage secret using identity "${identity.service}"`);
     return plaintext;
   }
 
@@ -551,8 +516,7 @@ export function clearRecoveryCacheForTesting(): void {
   unlockPromptAttempted = false;
   inProcessBinding = undefined;
   inProcessBindingLoadFailureLogged = false;
-  inProcessBindingLoader = () =>
-    require("caide-keychain-reader") as KeychainReaderBinding;
+  inProcessBindingLoader = () => require("caide-keychain-reader") as KeychainReaderBinding;
 }
 
 /** Test-only: snapshot of the recovery counters. */

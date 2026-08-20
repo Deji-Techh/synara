@@ -872,10 +872,11 @@ export function createWsNativeApi(): NativeApi {
       buildState: (input) => transport.request(PREVIEW_WS_METHODS.buildState, input),
       screenshot: (input) => transport.request(PREVIEW_WS_METHODS.screenshot, input),
       devices: (input) => transport.request(PREVIEW_WS_METHODS.devices, input),
-      flutterToolchainStatus: (input) => transport.request(PREVIEW_WS_METHODS.flutterToolchainStatus, input),
-      flutterToolchainInstall: (input) => transport.request(PREVIEW_WS_METHODS.flutterToolchainInstall, input, { timeoutMs: null }),
-      supervisorState: (input) =>
-        transport.request(PREVIEW_SUPERVISOR_WS_METHODS.getState, input),
+      flutterToolchainStatus: (input) =>
+        transport.request(PREVIEW_WS_METHODS.flutterToolchainStatus, input),
+      flutterToolchainInstall: (input) =>
+        transport.request(PREVIEW_WS_METHODS.flutterToolchainInstall, input, { timeoutMs: null }),
+      supervisorState: (input) => transport.request(PREVIEW_SUPERVISOR_WS_METHODS.getState, input),
     },
     browser: {
       open: async (input) => {

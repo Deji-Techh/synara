@@ -15,16 +15,9 @@
  * the test suite in `json_schema_to_ts.spec.ts`. Anything that changes
  * the rendered output should be backed by a test there.
  */
-export function jsonSchemaToTs(
-  schema: any,
-  indent = 0,
-  ctx?: JsonSchemaToTsCtx,
-): string {
+export function jsonSchemaToTs(schema: any, indent = 0, ctx?: JsonSchemaToTsCtx): string {
   const realCtx = ctx ?? { root: schema, visited: new Set() };
-  return appendNullableSuffix(
-    schema,
-    jsonSchemaToTsInner(schema, indent, realCtx),
-  );
+  return appendNullableSuffix(schema, jsonSchemaToTsInner(schema, indent, realCtx));
 }
 
 /**
@@ -97,8 +90,7 @@ function hasStructuralKeyword(schema: any): boolean {
 function isObjectShaped(schema: any): boolean {
   if (!schema || typeof schema !== "object") return false;
   if (typeof schema.type === "string" && schema.type !== "object") return false;
-  if (Array.isArray(schema.type) && !schema.type.includes("object"))
-    return false;
+  if (Array.isArray(schema.type) && !schema.type.includes("object")) return false;
   return (
     schema.type === "object" ||
     schema.properties !== undefined ||
@@ -157,23 +149,16 @@ function mergeSchemas(sources: any[]): any {
       }
     }
     if ("additionalProperties" in s) {
-      ap =
-        ap === false || s.additionalProperties === false
-          ? false
-          : s.additionalProperties;
+      ap = ap === false || s.additionalProperties === false ? false : s.additionalProperties;
     }
     if ("unevaluatedProperties" in s) {
-      up =
-        up === false || s.unevaluatedProperties === false
-          ? false
-          : s.unevaluatedProperties;
+      up = up === false || s.unevaluatedProperties === false ? false : s.unevaluatedProperties;
     }
   }
 
   if (Object.keys(props).length > 0) merged.properties = props;
   if (required.size > 0) merged.required = [...required];
-  if (Object.keys(patternProps).length > 0)
-    merged.patternProperties = patternProps;
+  if (Object.keys(patternProps).length > 0) merged.patternProperties = patternProps;
   if (ap !== undefined) merged.additionalProperties = ap;
   if (up !== undefined) merged.unevaluatedProperties = up;
   return merged;
@@ -230,11 +215,9 @@ function computeIfThenElseBranches(
   }
 
   const thenSources: any[] = [parent, thenNarrow];
-  if (thenSchema && typeof thenSchema === "object")
-    thenSources.push(thenSchema);
+  if (thenSchema && typeof thenSchema === "object") thenSources.push(thenSchema);
   const elseSources: any[] = [parent, elseNarrow];
-  if (elseSchema && typeof elseSchema === "object")
-    elseSources.push(elseSchema);
+  if (elseSchema && typeof elseSchema === "object") elseSources.push(elseSchema);
 
   return {
     thenBranch: mergeSchemas(thenSources),
@@ -251,11 +234,7 @@ function computeIfThenElseBranches(
 function renderLiteralType(value: unknown): string {
   if (typeof value === "string") return JSON.stringify(value);
   if (value === null) return "null";
-  if (
-    typeof value === "number" ||
-    typeof value === "boolean" ||
-    typeof value === "bigint"
-  ) {
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
     return String(value);
   }
   // Objects and arrays: JSON encoding doubles as a valid TS literal type.
@@ -304,11 +283,7 @@ function appendNullableSuffix(schema: any, rendered: string): string {
   return rendered;
 }
 
-function jsonSchemaToTsInner(
-  schema: any,
-  indent: number,
-  ctx: JsonSchemaToTsCtx,
-): string {
+function jsonSchemaToTsInner(schema: any, indent: number, ctx: JsonSchemaToTsCtx): string {
   // JSON Schema boolean schemas: `true` accepts anything, `false` rejects
   // everything. Map to `unknown` / `never` accordingly.
   if (schema === true) return "unknown";
@@ -333,9 +308,7 @@ function jsonSchemaToTsInner(
   // structural keywords, we drop it silently and render the rest
   // (deliberate lossy choice — see deviation #3 in the spec file).
   if (schema.not !== undefined) {
-    const hasOther = Object.keys(schema).some(
-      (k) => STRUCTURAL_KEYWORDS.has(k) && k !== "not",
-    );
+    const hasOther = Object.keys(schema).some((k) => STRUCTURAL_KEYWORDS.has(k) && k !== "not");
     if (!hasOther) return "unknown";
     return jsonSchemaToTs(stripKeywords(schema, ["not"]), indent, ctx);
   }
@@ -362,11 +335,7 @@ function jsonSchemaToTsInner(
     const siblings = stripKeywords(schema, ["$ref"]);
     if (hasStructuralKeyword(siblings)) {
       if (isObjectShaped(resolved) && isObjectShaped(siblings)) {
-        return jsonSchemaToTs(
-          mergeSchemas([resolved, siblings]),
-          indent,
-          nextCtx,
-        );
+        return jsonSchemaToTs(mergeSchemas([resolved, siblings]), indent, nextCtx);
       }
       return `${jsonSchemaToTs(resolved, indent, nextCtx)} & ${jsonSchemaToTs(
         siblings,
@@ -459,9 +428,7 @@ function jsonSchemaToTsInner(
 
   const type = schema.type;
   if (Array.isArray(type)) {
-    return type
-      .map((t: string) => jsonSchemaToTs({ ...schema, type: t }, indent, ctx))
-      .join(" | ");
+    return type.map((t: string) => jsonSchemaToTs({ ...schema, type: t }, indent, ctx)).join(" | ");
   }
 
   switch (type) {
@@ -490,12 +457,9 @@ function jsonSchemaToTsInner(
           ? schema.items
           : null;
       if (prefixSrc) {
-        const rest = Array.isArray(schema.prefixItems)
-          ? schema.items
-          : schema.additionalItems;
+        const rest = Array.isArray(schema.prefixItems) ? schema.items : schema.additionalItems;
         // Omitted `minItems` defaults to 0 — instances may be empty.
-        const minItems =
-          typeof schema.minItems === "number" ? schema.minItems : 0;
+        const minItems = typeof schema.minItems === "number" ? schema.minItems : 0;
         // Effective upper bound: `false` rest caps at the prefix
         // length, otherwise `maxItems` (or unbounded). If `minItems`
         // exceeds it, the tuple is unsatisfiable — no instance can
@@ -534,9 +498,7 @@ function jsonSchemaToTsInner(
           schema.maxItems <= BOUNDED_TUPLE_CAP
         ) {
           const len =
-            rest === false
-              ? Math.min(schema.maxItems, prefixSrc.length)
-              : schema.maxItems;
+            rest === false ? Math.min(schema.maxItems, prefixSrc.length) : schema.maxItems;
           const elts: string[] = [];
           for (let i = 0; i < len; i++) {
             const src = i < prefixSrc.length ? prefixSrc[i] : null;
@@ -549,8 +511,7 @@ function jsonSchemaToTsInner(
         // `maxItems` is set but above the cap we keep the open form and
         // clamp the prefix to it (documented deviation).
         const maxItems =
-          typeof schema.maxItems === "number" &&
-          schema.maxItems < prefixSrc.length
+          typeof schema.maxItems === "number" && schema.maxItems < prefixSrc.length
             ? schema.maxItems
             : prefixSrc.length;
         const parts = prefixSrc.slice(0, maxItems).map((s: any, i: number) => {
@@ -570,17 +531,13 @@ function jsonSchemaToTsInner(
         const min = typeof schema.minItems === "number" ? schema.minItems : 0;
         return min > 0 ? "never" : "[]";
       }
-      const items = schema.items
-        ? jsonSchemaToTs(schema.items, indent, ctx)
-        : "unknown";
+      const items = schema.items ? jsonSchemaToTs(schema.items, indent, ctx) : "unknown";
       return `Array<${items}>`;
     }
     case "object":
     case undefined: {
       const props = schema.properties ?? {};
-      const required: string[] = Array.isArray(schema.required)
-        ? schema.required
-        : [];
+      const required: string[] = Array.isArray(schema.required) ? schema.required : [];
       const keys = Object.keys(props);
       const rawIndexType = buildIndexSignatureType(schema, indent, ctx);
       // When named properties exist alongside a typed index signature
@@ -595,9 +552,7 @@ function jsonSchemaToTsInner(
       // object branch above keeps the precise type, since there's no
       // named-prop conflict possible there.
       const indexType =
-        keys.length > 0 && rawIndexType && rawIndexType !== "unknown"
-          ? "unknown"
-          : rawIndexType;
+        keys.length > 0 && rawIndexType && rawIndexType !== "unknown" ? "unknown" : rawIndexType;
       if (keys.length === 0) {
         return indexType ? `Record<string, ${indexType}>` : "{}";
       }
@@ -608,9 +563,7 @@ function jsonSchemaToTsInner(
         const propSchema = props[key];
         const desc = propSchema?.description;
         const typeStr = jsonSchemaToTs(propSchema, indent + 1, ctx);
-        const safeKey = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key)
-          ? key
-          : JSON.stringify(key);
+        const safeKey = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key) ? key : JSON.stringify(key);
         const docLine = desc
           ? `${pad}/** ${String(desc).replace(/\s+/g, " ").trim().replace(/\*\//g, "*\\/")} */\n`
           : "";

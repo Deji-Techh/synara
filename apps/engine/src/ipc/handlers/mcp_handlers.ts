@@ -9,10 +9,7 @@ import { resolveConsent } from "../utils/mcp_consent";
 import { getStoredConsent } from "../utils/mcp_consent";
 import { mcpManager } from "../utils/mcp_manager";
 import { disconnectOAuth, runOAuthFlow } from "../utils/mcp_oauth_flow";
-import {
-  encryptToString,
-  oauthStateHasTokens,
-} from "../utils/mcp_oauth_provider";
+import { encryptToString, oauthStateHasTokens } from "../utils/mcp_oauth_provider";
 import {
   mcpContracts,
   DEFAULT_OAUTH_CALLBACK_PORT,
@@ -23,10 +20,7 @@ import {
 import { findAvailablePort } from "../utils/port_utils";
 import net from "node:net";
 import { safeStorage } from "electron";
-import {
-  classifyOAuthError,
-  looksLikeUnauthorized,
-} from "./mcp_error_classifiers";
+import { classifyOAuthError, looksLikeUnauthorized } from "./mcp_error_classifiers";
 
 const logger = log.scope("mcp_handlers");
 
@@ -54,19 +48,13 @@ async function isPortFreeOnBothLoopbacks(port: number): Promise<boolean> {
 // Parse a JSON string from the renderer and surface a clear error
 // instead of letting the main process see a raw SyntaxError. Returns
 // `null` if the input is falsy.
-function parseJsonField<T>(
-  value: string | null | undefined,
-  field: string,
-): T | null {
+function parseJsonField<T>(value: string | null | undefined, field: string): T | null {
   if (!value) return null;
   try {
     return JSON.parse(value) as T;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    throw new CaideError(
-      `Invalid JSON for "${field}": ${message}`,
-      CaideErrorKind.Validation,
-    );
+    throw new CaideError(`Invalid JSON for "${field}": ${message}`, CaideErrorKind.Validation);
   }
 }
 
@@ -121,9 +109,7 @@ export function registerMcpHandlers() {
     } = params;
     // Handle args: can be string (JSON), array, or null/undefined
     const parsedArgs =
-      typeof args === "string"
-        ? parseJsonField<string[]>(args, "args")
-        : (args ?? null);
+      typeof args === "string" ? parseJsonField<string[]>(args, "args") : (args ?? null);
     // Handle envJson: can be string (JSON), object, or null/undefined
     const parsedEnvJson =
       typeof envJson === "string"
@@ -148,20 +134,13 @@ export function registerMcpHandlers() {
         // OAuth only applies to HTTP transport.
         oauthEnabled: transport === "http" ? !!oauthEnabled : false,
         oauthClientId: oauthClientId ?? null,
-        oauthClientSecret: oauthClientSecret
-          ? encryptToString(oauthClientSecret)
-          : null,
+        oauthClientSecret: oauthClientSecret ? encryptToString(oauthClientSecret) : null,
         oauthScope: oauthScope ?? null,
-        oauthCallbackPort:
-          typeof oauthCallbackPort === "number" ? oauthCallbackPort : null,
+        oauthCallbackPort: typeof oauthCallbackPort === "number" ? oauthCallbackPort : null,
         bearerToken: bearerToken ? encryptToString(bearerToken) : null,
       })
       .returning();
-    if (!result[0])
-      throw new CaideError(
-        "Failed to create MCP server.",
-        CaideErrorKind.Internal,
-      );
+    if (!result[0]) throw new CaideError("Failed to create MCP server.", CaideErrorKind.Internal);
     return toMcpServer(result[0]);
   });
 
@@ -170,8 +149,7 @@ export function registerMcpHandlers() {
     if (params.name !== undefined) update.name = params.name;
     if (params.transport !== undefined) update.transport = params.transport;
     if (params.command !== undefined) update.command = params.command;
-    if (params.args !== undefined)
-      update.args = parseJsonField<string[]>(params.args, "args");
+    if (params.args !== undefined) update.args = parseJsonField<string[]>(params.args, "args");
     if (params.envJson !== undefined)
       update.envJson =
         typeof params.envJson === "string"
@@ -180,10 +158,7 @@ export function registerMcpHandlers() {
     if (params.headersJson !== undefined)
       update.headersJson =
         typeof params.headersJson === "string"
-          ? parseJsonField<Record<string, string>>(
-              params.headersJson,
-              "headersJson",
-            )
+          ? parseJsonField<Record<string, string>>(params.headersJson, "headersJson")
           : (params.headersJson ?? null);
     if (params.url !== undefined) update.url = params.url;
     if (params.enabled !== undefined) update.enabled = !!params.enabled;
@@ -208,10 +183,7 @@ export function registerMcpHandlers() {
       .where(eq(mcpServers.id, params.id))
       .returning();
     if (!result[0])
-      throw new CaideError(
-        `MCP server not found: ${params.id}`,
-        CaideErrorKind.NotFound,
-      );
+      throw new CaideError(`MCP server not found: ${params.id}`, CaideErrorKind.NotFound);
     // Config may have changed; dispose the cached client so the next
     // use rebuilds the transport with the updated row. Fire-and-forget: a
     // hung transport's close must not block the handler.
@@ -240,9 +212,7 @@ export function registerMcpHandlers() {
         Object.entries(remoteTools).map(async ([name, mcpTool]) => ({
           name,
           description: mcpTool.description ?? null,
-          consent: (await getStoredConsent(serverId, name)) as
-            | McpConsentValue
-            | undefined,
+          consent: (await getStoredConsent(serverId, name)) as McpConsentValue | undefined,
         })),
       );
       return { tools, status: "ok" as const };
@@ -271,8 +241,7 @@ export function registerMcpHandlers() {
       // an FD on every subsequent poll. Fire-and-forget: awaiting a hung
       // transport's close would hang this handler.
       void mcpManager.dispose(serverId).catch(() => {});
-      const message =
-        e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+      const message = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
       logger.error(`Failed to list tools for server ${serverId}: ${message}`);
       // Report a 401 so the UI can persistently flag a server that
       // needs auth; everything else is a generic error.
@@ -420,10 +389,7 @@ export function registerMcpHandlers() {
       .where(eq(mcpServers.id, serverId))
       .returning();
     if (!result[0])
-      throw new CaideError(
-        `MCP server not found: ${serverId}`,
-        CaideErrorKind.NotFound,
-      );
+      throw new CaideError(`MCP server not found: ${serverId}`, CaideErrorKind.NotFound);
     // Token may have changed; rebuild the transport with the new header/env.
     void mcpManager.dispose(serverId).catch(() => {});
   });
@@ -436,10 +402,7 @@ export function registerMcpHandlers() {
       .where(eq(mcpServers.id, serverId))
       .returning();
     if (!result[0])
-      throw new CaideError(
-        `MCP server not found: ${serverId}`,
-        CaideErrorKind.NotFound,
-      );
+      throw new CaideError(`MCP server not found: ${serverId}`, CaideErrorKind.NotFound);
     void mcpManager.dispose(serverId).catch(() => {});
   });
 

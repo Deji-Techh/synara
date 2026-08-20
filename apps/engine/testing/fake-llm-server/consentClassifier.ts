@@ -23,15 +23,9 @@ export interface ConsentClassifierMatch {
  * be hijacked into a JSON decision), and decide off the tool NAME only so
  * conversation context containing e.g. "delete" doesn't flip the decision.
  */
-export function matchConsentClassifierPayload(
-  text: string,
-): ConsentClassifierMatch | null {
+export function matchConsentClassifierPayload(text: string): ConsentClassifierMatch | null {
   const toolMatch = text.match(/^Tool: (.+)$/m);
-  if (
-    !toolMatch ||
-    !/^MCP server: /m.test(text) ||
-    !/^Arguments: /m.test(text)
-  ) {
+  if (!toolMatch || !/^MCP server: /m.test(text) || !/^Arguments: /m.test(text)) {
     return null;
   }
   const toolName = toolMatch[1].trim();

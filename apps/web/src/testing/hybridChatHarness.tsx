@@ -75,7 +75,7 @@ export function setupHybridChatHarness(fixture: TestFixture) {
           return;
         }
       });
-    })
+    }),
   );
 
   return {
@@ -85,11 +85,11 @@ export function setupHybridChatHarness(fixture: TestFixture) {
       const router = getRouter(
         createMemoryHistory({
           initialEntries: [initialEntry],
-        })
+        }),
       );
-      
+
       const renderResult = render(<RouterProvider router={router} />);
       return { ...renderResult, router };
-    }
+    },
   };
 }

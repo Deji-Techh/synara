@@ -42,10 +42,7 @@ export const goalClient = {
   getActiveGoal: (appId?: number | null): Promise<Goal | null> =>
     goalsApi().getActiveGoal({ appId: appId ?? null }),
   getGoal: (goalId: GoalId): Promise<Goal> => goalsApi().getGoal({ goalId }),
-  listActivity: (
-    goalId: GoalId,
-    limit?: number,
-  ): Promise<GoalActivityEvent[]> => {
+  listActivity: (goalId: GoalId, limit?: number): Promise<GoalActivityEvent[]> => {
     if (limit === undefined) return goalsApi().listActivity({ goalId });
     return goalsApi().listActivity({ goalId, limit });
   },
@@ -112,9 +109,7 @@ export type ParsedGoalDomainEvent =
 export function parseGoalDomainEvent(event: GoalDomainEvent): ParsedGoalDomainEvent | null {
   if (event.type === "goal.updated") {
     const decoded = Schema.decodeUnknownOption(GoalUpdated)(event.payload);
-    return Option.isSome(decoded)
-      ? { domainType: "goal.updated", payload: decoded.value }
-      : null;
+    return Option.isSome(decoded) ? { domainType: "goal.updated", payload: decoded.value } : null;
   }
   if (event.type === "goal.run-requested") {
     const decoded = Schema.decodeUnknownOption(GoalRunRequested)(event.payload);
@@ -136,9 +131,7 @@ export function parseGoalDomainEvent(event: GoalDomainEvent): ParsedGoalDomainEv
  * wired: without a native API there is nothing to subscribe to, so it no-ops
  * instead of throwing.
  */
-export function subscribeGoalDomainEvents(
-  listener: (event: GoalDomainEvent) => void,
-): () => void {
+export function subscribeGoalDomainEvents(listener: (event: GoalDomainEvent) => void): () => void {
   const api = readNativeApi();
   if (!api) {
     return () => undefined;

@@ -157,7 +157,9 @@ describe("EngineAdapter", () => {
 
           // Subscribe first so goal:updated / goal:run-requested relays are
           // captured as the engine schedules the run.
-          const eventsFiber = yield* Stream.runCollect(Stream.take(adapter.streamGoalDomainEvents, 2)).pipe(
+          const eventsFiber = yield* Stream.runCollect(
+            Stream.take(adapter.streamGoalDomainEvents, 2),
+          ).pipe(
             Effect.timeout("30 seconds"),
             Effect.map((maybe) => {
               if (maybe === undefined) throw new Error("no goal domain events");

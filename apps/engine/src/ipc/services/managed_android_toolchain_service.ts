@@ -8,10 +8,7 @@ import path from "node:path";
 import { inflateRawSync } from "node:zlib";
 
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
-import type {
-  ManagedToolchainProgress,
-  ManagedToolchainStatus,
-} from "../types/capacitor";
+import type { ManagedToolchainProgress, ManagedToolchainStatus } from "../types/capacitor";
 import {
   parseAndroidRequirementsFromSources,
   parseSdkManagerPercent,
@@ -40,9 +37,7 @@ const ANDROID_COMMAND_LINE_ARTIFACTS = {
 } as const;
 
 type SupportedHost = keyof typeof ANDROID_COMMAND_LINE_ARTIFACTS;
-type ProgressCallback = (
-  progress: Omit<ManagedToolchainProgress, "appId">,
-) => void;
+type ProgressCallback = (progress: Omit<ManagedToolchainProgress, "appId">) => void;
 
 interface DownloadResult {
   sha256: string;
@@ -67,11 +62,7 @@ function commandName(name: string): string {
 }
 
 export function getManagedToolchainRoot(): string {
-  return path.join(
-    electronApp.getPath("userData"),
-    "toolchains",
-    MANAGED_TOOLCHAIN_VERSION,
-  );
+  return path.join(electronApp.getPath("userData"), "toolchains", MANAGED_TOOLCHAIN_VERSION);
 }
 
 export function getManagedAndroidSdkPath(): string {
@@ -83,10 +74,7 @@ export function getManagedJdkHome(): string {
 }
 
 function isSupportedHost(): boolean {
-  return (
-    (process.platform === "win32" || process.platform === "linux") &&
-    process.arch === "x64"
-  );
+  return (process.platform === "win32" || process.platform === "linux") && process.arch === "x64";
 }
 
 function throwIfAborted(signal?: AbortSignal): void {
@@ -124,15 +112,11 @@ export async function inspectAndroidProjectRequirements(
     path.join(appPath, "android", "app", "build.gradle.kts"),
     path.join(appPath, "android", "gradle", "libs.versions.toml"),
   ];
-  return parseAndroidRequirementsFromSources(
-    await Promise.all(candidates.map(readIfExists)),
-  );
+  return parseAndroidRequirementsFromSources(await Promise.all(candidates.map(readIfExists)));
 }
 
 function managedJdkReady(): boolean {
-  return fs.existsSync(
-    path.join(getManagedJdkHome(), "bin", executableName("javac")),
-  );
+  return fs.existsSync(path.join(getManagedJdkHome(), "bin", executableName("javac")));
 }
 
 function managedSdkManagerPath(): string {
@@ -145,31 +129,14 @@ function managedSdkManagerPath(): string {
   );
 }
 
-function managedSdkToolsReady(
-  requirements: AndroidProjectRequirements,
-): boolean {
+function managedSdkToolsReady(requirements: AndroidProjectRequirements): boolean {
   const sdk = getManagedAndroidSdkPath();
   return [
     managedSdkManagerPath(),
     path.join(sdk, "platform-tools", executableName("adb")),
-    path.join(
-      sdk,
-      "platforms",
-      `android-${requirements.compileSdk}`,
-      "android.jar",
-    ),
-    path.join(
-      sdk,
-      "build-tools",
-      requirements.buildToolsVersion,
-      executableName("zipalign"),
-    ),
-    path.join(
-      sdk,
-      "build-tools",
-      requirements.buildToolsVersion,
-      commandName("apksigner"),
-    ),
+    path.join(sdk, "platforms", `android-${requirements.compileSdk}`, "android.jar"),
+    path.join(sdk, "build-tools", requirements.buildToolsVersion, executableName("zipalign")),
+    path.join(sdk, "build-tools", requirements.buildToolsVersion, commandName("apksigner")),
   ].every((candidate) => fs.existsSync(candidate));
 }
 
@@ -191,8 +158,7 @@ export async function inspectManagedAndroidToolchain(
 
   return {
     supported,
-    installed:
-      jdkInstalled && commandLineToolsInstalled && sdkPackagesInstalled,
+    installed: jdkInstalled && commandLineToolsInstalled && sdkPackagesInstalled,
     root: getManagedToolchainRoot(),
     androidSdkPath: getManagedAndroidSdkPath(),
     jdkHome: getManagedJdkHome(),
@@ -281,10 +247,7 @@ async function downloadToFile(params: {
       params.onBytes?.(downloadedBytes, totalBytes);
     }
     const sha256 = hash.digest("hex");
-    if (
-      params.expectedSha256 &&
-      sha256.toLowerCase() !== params.expectedSha256.toLowerCase()
-    ) {
+    if (params.expectedSha256 && sha256.toLowerCase() !== params.expectedSha256.toLowerCase()) {
       throw new CaideError(
         "Downloaded toolchain archive failed its SHA-256 verification.",
         CaideErrorKind.External,
@@ -298,11 +261,7 @@ async function downloadToFile(params: {
   }
 }
 
-async function readAt(
-  handle: FileHandle,
-  length: number,
-  position: number,
-): Promise<Buffer> {
+async function readAt(handle: FileHandle, length: number, position: number): Promise<Buffer> {
   const buffer = Buffer.alloc(length);
   const { bytesRead } = await handle.read(buffer, 0, length, position);
   if (bytesRead !== length) {
@@ -340,11 +299,7 @@ async function extractZip(
     ) {
       throw new Error("ZIP64 archives are not supported by this installer.");
     }
-    const directory = await readAt(
-      handle,
-      centralDirectorySize,
-      centralDirectoryOffset,
-    );
+    const directory = await readAt(handle, centralDirectorySize, centralDirectoryOffset);
     let offset = 0;
     for (let index = 0; index < entryCount; index += 1) {
       throwIfAborted(signal);
@@ -374,8 +329,7 @@ async function extractZip(
         }
         const localNameLength = localHeader.readUInt16LE(26);
         const localExtraLength = localHeader.readUInt16LE(28);
-        const dataOffset =
-          localHeaderOffset + 30 + localNameLength + localExtraLength;
+        const dataOffset = localHeaderOffset + 30 + localNameLength + localExtraLength;
         const compressed = await readAt(handle, compressedSize, dataOffset);
         const output =
           compressionMethod === 0
@@ -383,9 +337,7 @@ async function extractZip(
             : compressionMethod === 8
               ? inflateRawSync(compressed)
               : (() => {
-                  throw new Error(
-                    `Unsupported ZIP compression method ${compressionMethod}.`,
-                  );
+                  throw new Error(`Unsupported ZIP compression method ${compressionMethod}.`);
                 })();
         if (output.length !== uncompressedSize) {
           throw new Error(`ZIP size verification failed for ${entryName}.`);
@@ -475,10 +427,7 @@ async function extractTarGz(
   });
 }
 
-async function moveDirectory(
-  source: string,
-  destination: string,
-): Promise<void> {
+async function moveDirectory(source: string, destination: string): Promise<void> {
   await fsp.rm(destination, { recursive: true, force: true });
   await fsp.mkdir(path.dirname(destination), { recursive: true });
   try {
@@ -490,29 +439,21 @@ async function moveDirectory(
   }
 }
 
-async function findDirectoryContaining(
-  root: string,
-  relativeExecutable: string,
-): Promise<string> {
+async function findDirectoryContaining(root: string, relativeExecutable: string): Promise<string> {
   const entries = await fsp.readdir(root, { withFileTypes: true });
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const candidate = path.join(root, entry.name);
-    if (fs.existsSync(path.join(candidate, relativeExecutable)))
-      return candidate;
+    if (fs.existsSync(path.join(candidate, relativeExecutable))) return candidate;
   }
   if (fs.existsSync(path.join(root, relativeExecutable))) return root;
   throw new Error(`Extracted archive does not contain ${relativeExecutable}.`);
 }
 
-async function resolveAdoptiumPackage(
-  signal?: AbortSignal,
-): Promise<AdoptiumPackage> {
+async function resolveAdoptiumPackage(signal?: AbortSignal): Promise<AdoptiumPackage> {
   const architecture = process.arch === "arm64" ? "aarch64" : "x64";
   const osName = process.platform === "win32" ? "windows" : "linux";
-  const url = new URL(
-    `https://api.adoptium.net/v3/assets/latest/${JDK_FEATURE_VERSION}/hotspot`,
-  );
+  const url = new URL(`https://api.adoptium.net/v3/assets/latest/${JDK_FEATURE_VERSION}/hotspot`);
   url.searchParams.set("architecture", architecture);
   url.searchParams.set("image_type", "jdk");
   url.searchParams.set("os", osName);
@@ -532,9 +473,7 @@ async function resolveAdoptiumPackage(
   }>;
   const packageInfo = assets.find(
     (asset) =>
-      asset.binary?.package?.link &&
-      asset.binary.package.checksum &&
-      asset.binary.package.name,
+      asset.binary?.package?.link && asset.binary.package.checksum && asset.binary.package.name,
   )?.binary?.package;
   if (
     !packageInfo?.link ||
@@ -572,9 +511,7 @@ async function installJdk(
     expectedSha256: packageInfo.checksum,
     signal,
     onBytes: (downloadedBytes, totalBytes) => {
-      const componentPercent = totalBytes
-        ? Math.round((downloadedBytes / totalBytes) * 100)
-        : 0;
+      const componentPercent = totalBytes ? Math.round((downloadedBytes / totalBytes) * 100) : 0;
       emit(onProgress, {
         phase: "download-jdk",
         percent: 3 + componentPercent * 0.24,
@@ -621,8 +558,7 @@ async function installAndroidCommandLineTools(
       CaideErrorKind.Precondition,
     );
   }
-  const artifact =
-    ANDROID_COMMAND_LINE_ARTIFACTS[process.platform as SupportedHost];
+  const artifact = ANDROID_COMMAND_LINE_ARTIFACTS[process.platform as SupportedHost];
   const archivePath = path.join(stagingRoot, artifact.fileName);
   const downloadUrl = `https://dl.google.com/android/repository/${artifact.fileName}`;
   await downloadToFile({
@@ -631,9 +567,7 @@ async function installAndroidCommandLineTools(
     expectedSha256: artifact.sha256,
     signal,
     onBytes: (downloadedBytes, totalBytes) => {
-      const componentPercent = totalBytes
-        ? Math.round((downloadedBytes / totalBytes) * 100)
-        : 0;
+      const componentPercent = totalBytes ? Math.round((downloadedBytes / totalBytes) * 100) : 0;
       emit(onProgress, {
         phase: "download-android-tools",
         percent: 31 + componentPercent * 0.24,
@@ -660,17 +594,9 @@ async function installAndroidCommandLineTools(
   if (!fs.existsSync(source)) {
     throw new Error("Android command-line archive has an unexpected layout.");
   }
-  await moveDirectory(
-    source,
-    path.join(getManagedAndroidSdkPath(), "cmdline-tools", "latest"),
-  );
+  await moveDirectory(source, path.join(getManagedAndroidSdkPath(), "cmdline-tools", "latest"));
   if (process.platform !== "win32") {
-    const binPath = path.join(
-      getManagedAndroidSdkPath(),
-      "cmdline-tools",
-      "latest",
-      "bin",
-    );
+    const binPath = path.join(getManagedAndroidSdkPath(), "cmdline-tools", "latest", "bin");
     for (const name of await fsp.readdir(binPath)) {
       await fsp.chmod(path.join(binPath, name), 0o755).catch(() => undefined);
     }
@@ -788,9 +714,7 @@ export async function installManagedAndroidToolchain(params: {
     const root = getManagedToolchainRoot();
     const stagingRoot = path.join(root, ".staging");
     await fsp.mkdir(stagingRoot, { recursive: true });
-    const requirements = await inspectAndroidProjectRequirements(
-      params.appPath,
-    );
+    const requirements = await inspectAndroidProjectRequirements(params.appPath);
     try {
       emit(params.onProgress, {
         phase: "preparing",
@@ -801,17 +725,9 @@ export async function installManagedAndroidToolchain(params: {
         message: "Preparing Caide Managed Android tools…",
       });
       await installJdk(stagingRoot, params.onProgress, params.signal);
-      await installAndroidCommandLineTools(
-        stagingRoot,
-        params.onProgress,
-        params.signal,
-      );
+      await installAndroidCommandLineTools(stagingRoot, params.onProgress, params.signal);
       await installSdkPackages(requirements, params.onProgress, params.signal);
-      await verifyManagedToolchain(
-        requirements,
-        params.onProgress,
-        params.signal,
-      );
+      await verifyManagedToolchain(requirements, params.onProgress, params.signal);
       emit(params.onProgress, {
         phase: "done",
         percent: 100,
@@ -822,9 +738,7 @@ export async function installManagedAndroidToolchain(params: {
       });
       return await inspectManagedAndroidToolchain(params.appPath);
     } finally {
-      await fsp
-        .rm(stagingRoot, { recursive: true, force: true })
-        .catch(() => undefined);
+      await fsp.rm(stagingRoot, { recursive: true, force: true }).catch(() => undefined);
     }
   })();
   activeInstall = installPromise;

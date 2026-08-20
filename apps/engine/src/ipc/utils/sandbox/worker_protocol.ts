@@ -29,9 +29,7 @@ export type SandboxWorkerMessage =
   | { type: "result"; result: SandboxRunResult }
   | { type: "error"; error: SerializedSandboxWorkerError };
 
-export function serializeSandboxWorkerError(
-  error: unknown,
-): SerializedSandboxWorkerError {
+export function serializeSandboxWorkerError(error: unknown): SerializedSandboxWorkerError {
   if (isCaideError(error)) {
     return {
       name: error.name,
@@ -54,14 +52,11 @@ export function serializeSandboxWorkerError(
 
 function isCaideErrorKind(value: unknown): value is CaideErrorKind {
   return (
-    typeof value === "string" &&
-    Object.values(CaideErrorKind).includes(value as CaideErrorKind)
+    typeof value === "string" && Object.values(CaideErrorKind).includes(value as CaideErrorKind)
   );
 }
 
-export function deserializeSandboxWorkerError(
-  error: SerializedSandboxWorkerError,
-): Error {
+export function deserializeSandboxWorkerError(error: SerializedSandboxWorkerError): Error {
   if (isCaideErrorKind(error.kind)) {
     const caideError = new CaideError(error.message, error.kind);
     caideError.stack = error.stack;

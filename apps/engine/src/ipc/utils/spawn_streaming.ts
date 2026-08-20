@@ -22,18 +22,14 @@ const WINDOWS_SHELL_META_RE = /[&|<>^%!()"'`;\r\n]/;
 /** Append `chunk` to `buffer`, keeping only the last MAX_BUFFERED_OUTPUT chars. */
 function appendCapped(buffer: string, chunk: string): string {
   const next = buffer + chunk;
-  return next.length > MAX_BUFFERED_OUTPUT
-    ? next.slice(-MAX_BUFFERED_OUTPUT)
-    : next;
+  return next.length > MAX_BUFFERED_OUTPUT ? next.slice(-MAX_BUFFERED_OUTPUT) : next;
 }
 
 function assertWindowsShellSafe(command: string, args: string[]): void {
   if (process.platform !== "win32") return;
   for (const value of [command, ...args]) {
     if (WINDOWS_SHELL_META_RE.test(value)) {
-      throw new Error(
-        `Unsafe shell metacharacter in command argument: ${value}`,
-      );
+      throw new Error(`Unsafe shell metacharacter in command argument: ${value}`);
     }
   }
 }
@@ -174,9 +170,7 @@ export async function spawnStreaming({
     const scheduleForceKill = (reason: string) => {
       if (forceKillTimer) return;
       forceKillTimer = setTimeout(() => {
-        logger.warn(
-          `${reason}: process did not exit after ${FORCE_KILL_GRACE_MS}ms; forcing kill`,
-        );
+        logger.warn(`${reason}: process did not exit after ${FORCE_KILL_GRACE_MS}ms; forcing kill`);
         if (timedOut) {
           onOutput?.("\nProcess did not stop cleanly — forcing it to exit.\n");
         }
@@ -194,9 +188,7 @@ export async function spawnStreaming({
       timeoutMs !== undefined
         ? setTimeout(() => {
             timedOut = true;
-            onOutput?.(
-              `\nTimed out after ${Math.round(timeoutMs / 1000)}s — stopping.\n`,
-            );
+            onOutput?.(`\nTimed out after ${Math.round(timeoutMs / 1000)}s — stopping.\n`);
             killTree("Timed out", "SIGTERM");
             scheduleForceKill("Timed out");
           }, timeoutMs)

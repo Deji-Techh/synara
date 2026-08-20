@@ -26,9 +26,7 @@ export function clampSandboxTimeoutMs(timeoutMs: number | undefined): number {
   );
 }
 
-export function clampSandboxWallClockTimeoutMs(
-  timeoutMs: number | undefined,
-): number {
+export function clampSandboxWallClockTimeoutMs(timeoutMs: number | undefined): number {
   if (!Number.isFinite(timeoutMs)) {
     return SANDBOX_WALL_CLOCK_TIMEOUT_MS;
   }

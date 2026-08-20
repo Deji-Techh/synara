@@ -29,9 +29,7 @@ describe("safeSendToBrowserWindow", () => {
   it("sends to a live window", () => {
     const { window, send } = createWindow();
 
-    expect(safeSendToBrowserWindow(window, "status", { ready: true })).toBe(
-      true,
-    );
+    expect(safeSendToBrowserWindow(window, "status", { ready: true })).toBe(true);
     expect(send).toHaveBeenCalledWith("status", { ready: true });
   });
 
@@ -41,12 +39,8 @@ describe("safeSendToBrowserWindow", () => {
       webContentsDestroyed: true,
     });
 
-    expect(
-      safeSendToBrowserWindow(destroyedWindow.window, "status", null),
-    ).toBe(false);
-    expect(
-      safeSendToBrowserWindow(destroyedWebContents.window, "status", null),
-    ).toBe(false);
+    expect(safeSendToBrowserWindow(destroyedWindow.window, "status", null)).toBe(false);
+    expect(safeSendToBrowserWindow(destroyedWebContents.window, "status", null)).toBe(false);
     expect(destroyedWindow.send).not.toHaveBeenCalled();
     expect(destroyedWebContents.send).not.toHaveBeenCalled();
   });
@@ -56,9 +50,7 @@ describe("safeSendToBrowserWindow", () => {
     const onError = vi.fn();
     const { window } = createWindow({ sendError });
 
-    expect(safeSendToBrowserWindow(window, "status", null, onError)).toBe(
-      false,
-    );
+    expect(safeSendToBrowserWindow(window, "status", null, onError)).toBe(false);
     expect(onError).toHaveBeenCalledWith(sendError);
   });
 });

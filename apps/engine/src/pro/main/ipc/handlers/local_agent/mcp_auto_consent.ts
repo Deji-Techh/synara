@@ -20,9 +20,7 @@ const logger = log.scope("mcp-auto-consent");
 // generous budget there. Read at call time, not import time, because harness
 // setup (which sets FAKE_LLM_PORT/E2E_TEST_BUILD) runs after module load.
 function classifierTimeoutMs(): number {
-  return process.env.FAKE_LLM_PORT || process.env.E2E_TEST_BUILD === "true"
-    ? 30_000
-    : 8_000;
+  return process.env.FAKE_LLM_PORT || process.env.E2E_TEST_BUILD === "true" ? 30_000 : 8_000;
 }
 
 export interface McpConsentDecision {
@@ -60,9 +58,7 @@ function extractJson(text: string): string | null {
 }
 
 function buildUserPayload(input: ClassifyMcpToolConsentInput): string {
-  const schema = input.inputSchema
-    ? JSON.stringify(input.inputSchema)
-    : "(none)";
+  const schema = input.inputSchema ? JSON.stringify(input.inputSchema) : "(none)";
   const lines = [
     `MCP server: ${input.serverName}`,
     `Tool: ${input.toolName}`,
@@ -71,11 +67,7 @@ function buildUserPayload(input: ClassifyMcpToolConsentInput): string {
     `Arguments: ${JSON.stringify(input.args)}`,
   ];
   if (input.recentTurns.length > 0) {
-    lines.push(
-      "",
-      "Recent conversation (oldest first):",
-      formatRecentTurns(input.recentTurns),
-    );
+    lines.push("", "Recent conversation (oldest first):", formatRecentTurns(input.recentTurns));
   }
   return lines.join("\n");
 }
@@ -95,10 +87,7 @@ export async function classifyMcpToolConsent(
     }, classifierTimeoutMs());
   });
   try {
-    const { modelClient } = await getModelClient(
-      input.settings.selectedModel,
-      input.settings,
-    );
+    const { modelClient } = await getModelClient(input.settings.selectedModel, input.settings);
 
     const stream = streamText({
       output: fastTextOutput(),
@@ -128,10 +117,7 @@ export async function classifyMcpToolConsent(
     );
     return decision;
   } catch (error) {
-    logger.warn(
-      `Classifier failed for ${input.serverName}/${input.toolName}, asking:`,
-      error,
-    );
+    logger.warn(`Classifier failed for ${input.serverName}/${input.toolName}, asking:`, error);
     return ask("Could not evaluate the tool call automatically.");
   } finally {
     clearTimeout(timer);

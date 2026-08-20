@@ -105,9 +105,7 @@ only vite
 trailer`;
 
     for (const fw of ["nextjs", "vite-nitro", "vite", "other", null] as const) {
-      expect(() => filterGuideByFramework(onlyVite, fw)).toThrow(
-        /<nextjs-only>/,
-      );
+      expect(() => filterGuideByFramework(onlyVite, fw)).toThrow(/<nextjs-only>/);
     }
   });
 
@@ -119,9 +117,7 @@ only next
 trailer`;
 
     for (const fw of ["nextjs", "vite-nitro", "vite", "other", null] as const) {
-      expect(() => filterGuideByFramework(onlyNext, fw)).toThrow(
-        /<vite-nitro-only>/,
-      );
+      expect(() => filterGuideByFramework(onlyNext, fw)).toThrow(/<vite-nitro-only>/);
     }
   });
 });

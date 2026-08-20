@@ -49,28 +49,19 @@ export function installGoalBackgroundWindowBehavior(
     event.preventDefault();
     window.hide();
     ensureTray();
-    logger.info(
-      "Main window hidden while unfinished goals continue in the background",
-    );
+    logger.info("Main window hidden while unfinished goals continue in the background");
   });
 
   let recoveryScheduled = false;
   window.webContents.on("render-process-gone", (_event, details) => {
-    if (
-      quitting ||
-      recoveryScheduled ||
-      details.reason === "clean-exit" ||
-      !hasContinuingGoals()
-    ) {
+    if (quitting || recoveryScheduled || details.reason === "clean-exit" || !hasContinuingGoals()) {
       return;
     }
     recoveryScheduled = true;
     setTimeout(() => {
       recoveryScheduled = false;
       if (!window.isDestroyed() && !window.webContents.isDestroyed()) {
-        logger.warn(
-          "Reloading the renderer so durable goal execution can recover",
-        );
+        logger.warn("Reloading the renderer so durable goal execution can recover");
         window.reload();
       }
     }, 2_000);

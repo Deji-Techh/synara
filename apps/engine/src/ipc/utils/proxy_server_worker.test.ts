@@ -62,18 +62,15 @@ describe("preview proxy worker", () => {
     const proxyPort = await listen(portReservation);
     await close(portReservation);
 
-    const worker = new Worker(
-      path.resolve(process.cwd(), "worker/proxy_server.cjs"),
-      {
-        workerData: {
-          targetOrigin: `http://127.0.0.1:${upstreamPort}`,
-          port: proxyPort,
-          listenHost: "127.0.0.1",
-          fallbackPortStart: proxyPort + 1,
-          maxPortAttempts: 3,
-        },
+    const worker = new Worker(path.resolve(process.cwd(), "worker/proxy_server.cjs"), {
+      workerData: {
+        targetOrigin: `http://127.0.0.1:${upstreamPort}`,
+        port: proxyPort,
+        listenHost: "127.0.0.1",
+        fallbackPortStart: proxyPort + 1,
+        maxPortAttempts: 3,
       },
-    );
+    });
     workers.push(worker);
 
     await new Promise<void>((resolve, reject) => {
@@ -84,19 +81,15 @@ describe("preview proxy worker", () => {
     });
 
     await new Promise<void>((resolve, reject) => {
-      const request = http.get(
-        `http://127.0.0.1:${proxyPort}/slow`,
-        (response) => {
-          response.once("data", () => {
-            response.destroy();
-            request.destroy();
-            resolve();
-          });
-        },
-      );
+      const request = http.get(`http://127.0.0.1:${proxyPort}/slow`, (response) => {
+        response.once("data", () => {
+          response.destroy();
+          request.destroy();
+          resolve();
+        });
+      });
       request.once("error", (error) => {
-        if ((error as NodeJS.ErrnoException).code !== "ECONNRESET")
-          reject(error);
+        if ((error as NodeJS.ErrnoException).code !== "ECONNRESET") reject(error);
       });
     });
 

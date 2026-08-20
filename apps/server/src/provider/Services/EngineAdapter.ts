@@ -73,7 +73,12 @@ export interface EnginePreviewOps {
     appDir?: string;
     target: "apk" | "appbundle" | "ipa";
     channel?: "debug" | "profile" | "release";
-    signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null;
+    signing?: {
+      keystorePath: string;
+      keyAlias: string;
+      storePassword: string;
+      keyPassword: string;
+    } | null;
   }): Effect.Effect<PreviewBuildStartResult, ProviderAdapterError>;
   previewBuildState(input: {
     threadId: ThreadId;
@@ -84,12 +89,45 @@ export interface EnginePreviewOps {
     deviceId?: string;
     appDir?: string;
   }): Effect.Effect<PreviewScreenshotResult, ProviderAdapterError>;
-  previewDevices(input: { threadId: ThreadId }): Effect.Effect<{ devices: Array<{ id: string; name: string; isEmulator: boolean; platform?: "android" | "ios" | "web" }> }, ProviderAdapterError>;
-  flutterToolchainStatus(input: { threadId: ThreadId }): Effect.Effect<
-    { supported: boolean; installed: boolean; version: string; root: string; sdkPath: string; flutterBin: string; estimatedDownloadBytes: number; unsupportedReason: string | null },
+  previewDevices(input: { threadId: ThreadId }): Effect.Effect<
+    {
+      devices: Array<{
+        id: string;
+        name: string;
+        isEmulator: boolean;
+        platform?: "android" | "ios" | "web";
+      }>;
+    },
     ProviderAdapterError
   >;
-  flutterToolchainInstall(input: { threadId: ThreadId }): Effect.Effect<{ status: { supported: boolean; installed: boolean; version: string; root: string; sdkPath: string; flutterBin: string; estimatedDownloadBytes: number; unsupportedReason: string | null } }, ProviderAdapterError>;
+  flutterToolchainStatus(input: { threadId: ThreadId }): Effect.Effect<
+    {
+      supported: boolean;
+      installed: boolean;
+      version: string;
+      root: string;
+      sdkPath: string;
+      flutterBin: string;
+      estimatedDownloadBytes: number;
+      unsupportedReason: string | null;
+    },
+    ProviderAdapterError
+  >;
+  flutterToolchainInstall(input: { threadId: ThreadId }): Effect.Effect<
+    {
+      status: {
+        supported: boolean;
+        installed: boolean;
+        version: string;
+        root: string;
+        sdkPath: string;
+        flutterBin: string;
+        estimatedDownloadBytes: number;
+        unsupportedReason: string | null;
+      };
+    },
+    ProviderAdapterError
+  >;
 }
 
 /**
@@ -112,7 +150,9 @@ export interface EngineGoalsApi {
     executionTarget?: GoalExecutionTarget | undefined;
   }): Effect.Effect<Goal, ProviderAdapterError>;
   get(input: { goalId: GoalId }): Effect.Effect<Goal, ProviderAdapterError>;
-  getActive(input: { appId?: number | null | undefined }): Effect.Effect<Goal | null, ProviderAdapterError>;
+  getActive(input: {
+    appId?: number | null | undefined;
+  }): Effect.Effect<Goal | null, ProviderAdapterError>;
   list(input: {
     appId?: number | undefined;
     statuses?: ReadonlyArray<GoalStatus> | undefined;
@@ -121,9 +161,15 @@ export interface EngineGoalsApi {
     goalId: GoalId;
     limit?: number | undefined;
   }): Effect.Effect<Array<GoalActivityEvent>, ProviderAdapterError>;
-  pause(input: { goalId: GoalId; reason?: string | undefined }): Effect.Effect<Goal, ProviderAdapterError>;
+  pause(input: {
+    goalId: GoalId;
+    reason?: string | undefined;
+  }): Effect.Effect<Goal, ProviderAdapterError>;
   resume(input: { goalId: GoalId }): Effect.Effect<Goal, ProviderAdapterError>;
-  cancel(input: { goalId: GoalId; reason?: string | undefined }): Effect.Effect<Goal, ProviderAdapterError>;
+  cancel(input: {
+    goalId: GoalId;
+    reason?: string | undefined;
+  }): Effect.Effect<Goal, ProviderAdapterError>;
   edit(input: {
     goalId: GoalId;
     title?: string | undefined;

@@ -56,9 +56,7 @@ function sessionPath(): string {
 
 export function readChatGPTTokens(): ChatGPTTokens | undefined {
   try {
-    const stored = SecretSchema.parse(
-      JSON.parse(fs.readFileSync(sessionPath(), "utf8")),
-    );
+    const stored = SecretSchema.parse(JSON.parse(fs.readFileSync(sessionPath(), "utf8")));
     const parsed = JSON.parse(decrypt(stored)) as ChatGPTTokens;
     return parsed?.accessToken ? parsed : undefined;
   } catch (error) {
@@ -94,9 +92,7 @@ export function clearChatGPTTokens(): void {
   }
 }
 
-function decodeJwt(
-  token: string | undefined,
-): Record<string, unknown> | undefined {
+function decodeJwt(token: string | undefined): Record<string, unknown> | undefined {
   if (!token) return undefined;
   const payload = token.split(".")[1];
   if (!payload) return undefined;
@@ -123,25 +119,18 @@ function tokenExpiry(token: string | undefined): number | undefined {
   return typeof expiry === "number" ? expiry * 1000 : undefined;
 }
 
-export function getChatGPTUser(
-  tokens = readChatGPTTokens(),
-): ChatGPTUser | undefined {
+export function getChatGPTUser(tokens = readChatGPTTokens()): ChatGPTUser | undefined {
   if (!tokens) return undefined;
   const claims = decodeJwt(tokens.idToken) ?? {};
   const auth = isRecord(claims[AUTH_CLAIM]) ? claims[AUTH_CLAIM] : {};
   const accountId =
-    tokens.accountId ??
-    deriveAccountId(tokens.idToken) ??
-    deriveAccountId(tokens.accessToken);
+    tokens.accountId ?? deriveAccountId(tokens.idToken) ?? deriveAccountId(tokens.accessToken);
   if (!accountId) return undefined;
   return {
     accountId,
     email: typeof claims.email === "string" ? claims.email : undefined,
     name: typeof claims.name === "string" ? claims.name : undefined,
-    plan:
-      typeof auth.chatgpt_plan_type === "string"
-        ? auth.chatgpt_plan_type
-        : undefined,
+    plan: typeof auth.chatgpt_plan_type === "string" ? auth.chatgpt_plan_type : undefined,
   };
 }
 
@@ -179,10 +168,7 @@ export async function requestChatGPTDeviceCode(): Promise<ChatGPTDeviceCode> {
     deviceAuthId: raw.device_auth_id,
     userCode,
     verificationUrl: `${ISSUER}/codex/device`,
-    interval:
-      Number.isFinite(parsedInterval) && parsedInterval > 0
-        ? parsedInterval
-        : 5,
+    interval: Number.isFinite(parsedInterval) && parsedInterval > 0 ? parsedInterval : 5,
     expiresAt: Date.now() + DEVICE_CODE_TTL_MS,
   };
 }
@@ -208,8 +194,7 @@ export async function pollChatGPTDeviceCode(
     authorization_code?: string;
     code_verifier?: string;
   };
-  if (!raw.authorization_code || !raw.code_verifier)
-    return { status: "pending" };
+  if (!raw.authorization_code || !raw.code_verifier) return { status: "pending" };
   return {
     status: "authorized",
     authorizationCode: raw.authorization_code,
@@ -226,14 +211,12 @@ function normalizeTokens(
   },
   previousRefreshToken?: string,
 ): ChatGPTTokens {
-  if (!raw.access_token)
-    throw new Error("ChatGPT token response did not include an access token.");
+  if (!raw.access_token) throw new Error("ChatGPT token response did not include an access token.");
   return {
     accessToken: raw.access_token,
     refreshToken: raw.refresh_token ?? previousRefreshToken,
     idToken: raw.id_token,
-    accountId:
-      deriveAccountId(raw.id_token) ?? deriveAccountId(raw.access_token),
+    accountId: deriveAccountId(raw.id_token) ?? deriveAccountId(raw.access_token),
     expiresAt:
       typeof raw.expires_in === "number"
         ? Date.now() + raw.expires_in * 1000
@@ -266,9 +249,7 @@ export async function exchangeChatGPTDeviceCode(
   return normalizeTokens(await response.json());
 }
 
-async function refreshChatGPTTokens(
-  refreshToken: string,
-): Promise<ChatGPTTokens> {
+async function refreshChatGPTTokens(refreshToken: string): Promise<ChatGPTTokens> {
   const response = await fetch(`${ISSUER}/oauth/token`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -289,16 +270,11 @@ async function refreshChatGPTTokens(
 
 export async function getFreshChatGPTTokens(): Promise<ChatGPTTokens> {
   const tokens = readChatGPTTokens();
-  if (!tokens)
-    throw new Error(
-      "Connect a ChatGPT account in Settings before using this model.",
-    );
+  if (!tokens) throw new Error("Connect a ChatGPT account in Settings before using this model.");
   const expiresAt = tokens.expiresAt ?? tokenExpiry(tokens.accessToken);
   if (!expiresAt || expiresAt > Date.now() + EXPIRY_MARGIN_MS) return tokens;
   if (!tokens.refreshToken)
-    throw new Error(
-      "Your ChatGPT session expired. Connect it again in Settings.",
-    );
+    throw new Error("Your ChatGPT session expired. Connect it again in Settings.");
   const refreshed = await refreshChatGPTTokens(tokens.refreshToken);
   writeChatGPTTokens(refreshed);
   return refreshed;
@@ -312,23 +288,15 @@ interface CodexRequest {
   signal?: AbortSignal | null;
 }
 
-async function readRequest(
-  input: RequestInfo | URL,
-  init?: RequestInit,
-): Promise<CodexRequest> {
+async function readRequest(input: RequestInfo | URL, init?: RequestInit): Promise<CodexRequest> {
   if (input instanceof Request) {
     const headers = new Headers(input.headers);
-    if (init?.headers)
-      new Headers(init.headers).forEach((value, key) =>
-        headers.set(key, value),
-      );
+    if (init?.headers) new Headers(init.headers).forEach((value, key) => headers.set(key, value));
     return {
       url: input.url,
       method: init?.method ?? input.method,
       headers,
-      body:
-        init?.body ??
-        (input.body == null ? undefined : await input.clone().text()),
+      body: init?.body ?? (input.body == null ? undefined : await input.clone().text()),
       signal: init?.signal ?? input.signal,
     };
   }
@@ -341,9 +309,7 @@ async function readRequest(
   };
 }
 
-function normalizeCodexBody(
-  body: Record<string, unknown>,
-): Record<string, unknown> {
+function normalizeCodexBody(body: Record<string, unknown>): Record<string, unknown> {
   const output = { ...body };
   output.instructions ??=
     "You are CAIDE's coding agent. Build and repair complete production-quality mobile applications.";
@@ -359,9 +325,7 @@ function normalizeCodexBody(
   };
   const include = new Set(
     Array.isArray(output.include)
-      ? output.include.filter(
-          (item): item is string => typeof item === "string",
-        )
+      ? output.include.filter((item): item is string => typeof item === "string")
       : [],
   );
   include.add("reasoning.encrypted_content");
@@ -392,19 +356,12 @@ function codexTargetUrl(input: string): string {
 }
 
 export const chatGPTCodexFetch: FetchFunction = async (input, init) => {
-  const request = await readRequest(
-    input as RequestInfo | URL,
-    init as RequestInit | undefined,
-  );
+  const request = await readRequest(input as RequestInfo | URL, init as RequestInit | undefined);
   const tokens = await getFreshChatGPTTokens();
   const accountId =
-    tokens.accountId ??
-    deriveAccountId(tokens.idToken) ??
-    deriveAccountId(tokens.accessToken);
+    tokens.accountId ?? deriveAccountId(tokens.idToken) ?? deriveAccountId(tokens.accessToken);
   if (!accountId)
-    throw new Error(
-      "The ChatGPT session is missing an account identifier. Connect it again.",
-    );
+    throw new Error("The ChatGPT session is missing an account identifier. Connect it again.");
   const headers = new Headers(request.headers);
   headers.set("Authorization", `Bearer ${tokens.accessToken}`);
   headers.set("chatgpt-account-id", accountId);
@@ -435,15 +392,12 @@ export async function listChatGPTModels(): Promise<string[]> {
     method: "GET",
     headers: { Accept: "application/json" },
   });
-  if (!response.ok)
-    throw new Error(`Could not load ChatGPT models (${response.status}).`);
+  if (!response.ok) throw new Error(`Could not load ChatGPT models (${response.status}).`);
   const value = (await response.json()) as unknown;
   const lists = Array.isArray(value)
     ? [value]
     : isRecord(value)
-      ? [value.models, value.data, value.items, value.available_models].filter(
-          Array.isArray,
-        )
+      ? [value.models, value.data, value.items, value.available_models].filter(Array.isArray)
       : [];
   const models = new Set<string>();
   for (const list of lists) {
@@ -454,8 +408,7 @@ export async function listChatGPTModels(): Promise<string[]> {
           : isRecord(item)
             ? (item.slug ?? item.id ?? item.model ?? item.name)
             : undefined;
-      if (typeof candidate === "string" && candidate.trim())
-        models.add(candidate.trim());
+      if (typeof candidate === "string" && candidate.trim()) models.add(candidate.trim());
     }
   }
   return [...models];

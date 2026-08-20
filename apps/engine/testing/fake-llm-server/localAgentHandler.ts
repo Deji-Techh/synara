@@ -41,10 +41,7 @@ function getSessionId(messages: any[]): string {
   if (!firstUserMsg) {
     return crypto.randomUUID();
   }
-  return crypto
-    .createHash("md5")
-    .update(JSON.stringify(firstUserMsg))
-    .digest("hex");
+  return crypto.createHash("md5").update(JSON.stringify(firstUserMsg)).digest("hex");
 }
 
 /**
@@ -69,9 +66,7 @@ function isToolResultMessage(msg: any): boolean {
   }
   return (
     Array.isArray(msg?.content) &&
-    msg.content.some(
-      (p: any) => p.type === "tool-result" || p.type === "tool_result",
-    )
+    msg.content.some((p: any) => p.type === "tool-result" || p.type === "tool_result")
   );
 }
 
@@ -155,9 +150,7 @@ async function loadFixture(fixtureName: string): Promise<LocalAgentFixture> {
     const fixture = module.fixture as LocalAgentFixture;
 
     if (!fixture || (!fixture.turns && !fixture.passes)) {
-      throw new Error(
-        `Invalid fixture: missing 'fixture' export or 'turns'/'passes' array`,
-      );
+      throw new Error(`Invalid fixture: missing 'fixture' export or 'turns'/'passes' array`);
     }
 
     fixtureCache.set(fixtureName, fixture);
@@ -172,10 +165,7 @@ async function loadFixture(fixtureName: string): Promise<LocalAgentFixture> {
  * Get the turns for the current pass from a fixture.
  * Supports both simple fixtures (with `turns`) and multi-pass fixtures (with `passes`).
  */
-function getTurnsForPass(
-  fixture: LocalAgentFixture,
-  passIndex: number,
-): Turn[] {
+function getTurnsForPass(fixture: LocalAgentFixture, passIndex: number): Turn[] {
   // If fixture uses passes, get the appropriate pass
   if (fixture.passes && fixture.passes.length > 0) {
     if (passIndex >= fixture.passes.length) {
@@ -354,9 +344,7 @@ async function streamToolCallResponse(
   }
 
   if (options?.dropAfterToolCalls) {
-    fakeLlmLog(
-      `[local-agent] Simulating connection drop after streaming tool calls`,
-    );
+    fakeLlmLog(`[local-agent] Simulating connection drop after streaming tool calls`);
     // Drop before finish_reason/[DONE] so tool calls were emitted but the
     // provider response did not complete.
     res.socket?.destroy();
@@ -364,8 +352,7 @@ async function streamToolCallResponse(
   }
 
   // 4) Send finish (with optional usage data)
-  const finishReason =
-    turn.toolCalls && turn.toolCalls.length > 0 ? "tool_calls" : "stop";
+  const finishReason = turn.toolCalls && turn.toolCalls.length > 0 ? "tool_calls" : "stop";
   const finishChunk: any = {
     id: `chatcmpl-${now}`,
     object: "chat.completion.chunk",
@@ -415,11 +402,7 @@ function startAnthropicStream(res: Response, usage?: Turn["usage"]) {
   });
 }
 
-async function streamAnthropicTextBlock(
-  res: Response,
-  index: number,
-  text: string,
-) {
+async function streamAnthropicTextBlock(res: Response, index: number, text: string) {
   text = normalizeFixtureText(text);
 
   writeAnthropicEvent(res, "content_block_start", {
@@ -460,11 +443,7 @@ function finishAnthropicStream(
   res.end();
 }
 
-async function streamAnthropicTextResponse(
-  res: Response,
-  text: string,
-  usage?: Turn["usage"],
-) {
+async function streamAnthropicTextResponse(res: Response, text: string, usage?: Turn["usage"]) {
   startAnthropicStream(res, usage);
   await streamAnthropicTextBlock(res, 0, text);
   finishAnthropicStream(res, "end_turn", usage);
@@ -518,9 +497,7 @@ async function streamAnthropicToolCallResponse(
   }
 
   if (options?.dropAfterToolCalls) {
-    fakeLlmLog(
-      `[local-agent] Simulating Anthropic connection drop after streaming tool calls`,
-    );
+    fakeLlmLog(`[local-agent] Simulating Anthropic connection drop after streaming tool calls`);
     res.socket?.destroy();
     return;
   }
@@ -567,21 +544,16 @@ export async function handleLocalAgentFixture(
 
     if (turnIndex >= turns.length) {
       // All turns exhausted for this pass, send a simple completion message
-      fakeLlmLog(
-        `[local-agent] All turns exhausted for pass ${passIndex}, sending completion`,
-      );
+      fakeLlmLog(`[local-agent] All turns exhausted for pass ${passIndex}, sending completion`);
       await streamTextResponse(res, "Task completed.", undefined, protocol);
       return;
     }
 
     let turn = turns[turnIndex];
-    fakeLlmLog(
-      `[local-agent] Executing pass ${passIndex}, turn ${turnIndex}:`,
-      {
-        hasText: !!turn.text,
-        toolCallCount: turn.toolCalls?.length ?? 0,
-      },
-    );
+    fakeLlmLog(`[local-agent] Executing pass ${passIndex}, turn ${turnIndex}:`, {
+      hasText: !!turn.text,
+      toolCallCount: turn.toolCalls?.length ?? 0,
+    });
 
     // Replace {{ATTACHMENT_PATH}} placeholders in tool call args
     // with the actual path extracted from the user message
@@ -605,12 +577,11 @@ export async function handleLocalAgentFixture(
 
     // Check if we should simulate a connection drop for this attempt
     const turnScopedDropAttempts =
-      fixture.dropConnectionByTurn?.find((rule) => rule.turnIndex === turnIndex)
-        ?.attempts ?? fixture.dropConnectionOnAttempts;
-    const turnScopedDropAfterToolCallAttempts =
-      fixture.dropConnectionAfterToolCallByTurn?.find(
-        (rule) => rule.turnIndex === turnIndex,
-      )?.attempts;
+      fixture.dropConnectionByTurn?.find((rule) => rule.turnIndex === turnIndex)?.attempts ??
+      fixture.dropConnectionOnAttempts;
+    const turnScopedDropAfterToolCallAttempts = fixture.dropConnectionAfterToolCallByTurn?.find(
+      (rule) => rule.turnIndex === turnIndex,
+    )?.attempts;
 
     if (turnScopedDropAttempts && turnScopedDropAttempts.length > 0) {
       const attemptKey = `${sessionId}-${passIndex}-${turnIndex}`;
@@ -623,9 +594,7 @@ export async function handleLocalAgentFixture(
       );
 
       if (turnScopedDropAttempts.includes(currentAttempt)) {
-        fakeLlmLog(
-          `[local-agent] Simulating connection drop on attempt ${currentAttempt}`,
-        );
+        fakeLlmLog(`[local-agent] Simulating connection drop on attempt ${currentAttempt}`);
         // Stream partial data then destroy the socket to simulate a network interruption
         if (protocol === "anthropic") {
           startAnthropicStream(res);
@@ -646,12 +615,7 @@ export async function handleLocalAgentFixture(
           res.setHeader("Content-Type", "text/event-stream");
           res.setHeader("Cache-Control", "no-cache");
           res.setHeader("Connection", "keep-alive");
-          res.write(
-            createStreamChunk(
-              "Partial response before connection dr",
-              "assistant",
-            ),
-          );
+          res.write(createStreamChunk("Partial response before connection dr", "assistant"));
         }
         // Destroy the underlying socket to trigger a "terminated" error on the client
         res.socket?.destroy();
@@ -685,16 +649,12 @@ export async function handleLocalAgentFixture(
     // If this turn has tool calls, stream them
     if (turn.toolCalls && turn.toolCalls.length > 0) {
       const dropAfterToolCalls =
-        turnScopedDropAfterToolCallAttempts &&
-        turnScopedDropAfterToolCallAttempts.length > 0
+        turnScopedDropAfterToolCallAttempts && turnScopedDropAfterToolCallAttempts.length > 0
           ? (() => {
               const attemptKey = `${sessionId}-${passIndex}-${turnIndex}-after-tool-call`;
-              const currentAttempt =
-                (connectionAttempts.get(attemptKey) || 0) + 1;
+              const currentAttempt = (connectionAttempts.get(attemptKey) || 0) + 1;
               connectionAttempts.set(attemptKey, currentAttempt);
-              return turnScopedDropAfterToolCallAttempts.includes(
-                currentAttempt,
-              );
+              return turnScopedDropAfterToolCallAttempts.includes(currentAttempt);
             })()
           : false;
 

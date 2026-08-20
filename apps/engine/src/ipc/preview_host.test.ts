@@ -97,26 +97,21 @@ describe("parseAnalyzeIssues", () => {
         path: "lib/main.dart",
         line: 3,
         column: 7,
-        message:
-          "unused_local_variable: The value of the local variable 'unused' isn't used.",
+        message: "unused_local_variable: The value of the local variable 'unused' isn't used.",
       },
       {
         severity: "info",
         path: "lib/main.dart",
         line: 4,
         column: 5,
-        message:
-          "prefer_const_constructors: Prefer const with constant constructors.",
+        message: "prefer_const_constructors: Prefer const with constant constructors.",
       },
     ]);
   });
 
   it("prepends the rule name when the machine code is non-numeric", () => {
-    const output =
-      "WARNING|hint|avoid_print|lib/main.dart|1|3|4|Avoid print calls.";
-    expect(parseAnalyzeIssues(output, appPath)[0]?.message).toBe(
-      "avoid_print: Avoid print calls.",
-    );
+    const output = "WARNING|hint|avoid_print|lib/main.dart|1|3|4|Avoid print calls.";
+    expect(parseAnalyzeIssues(output, appPath)[0]?.message).toBe("avoid_print: Avoid print calls.");
   });
 
   it("ignores non-machine lines", () => {
@@ -212,9 +207,9 @@ describe("preview RPC router (no live flutter)", () => {
   });
 
   it("preview/stop returns stopped=false for an unknown appDir", async () => {
-    await expect(
-      router.handle("preview/stop", { appDir: "/tmp/does-not-exist" }),
-    ).resolves.toEqual({ stopped: false });
+    await expect(router.handle("preview/stop", { appDir: "/tmp/does-not-exist" })).resolves.toEqual(
+      { stopped: false },
+    );
   });
 
   it("preview/reload returns reloaded=false when nothing is running", async () => {
@@ -254,7 +249,16 @@ describe("analyze/run integration (real flutter)", () => {
       try {
         const result = (await router.handle("analyze/run", {
           appDir: fixture,
-        })) as { issues: { severity: string; path: string; line?: number; column?: number; message: string }[]; output: string };
+        })) as {
+          issues: {
+            severity: string;
+            path: string;
+            line?: number;
+            column?: number;
+            message: string;
+          }[];
+          output: string;
+        };
         expect(Array.isArray(result.issues)).toBe(true);
         expect(result.output).toBeTypeOf("string");
         expect(

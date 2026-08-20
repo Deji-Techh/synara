@@ -51,11 +51,7 @@ export interface TerminalSessionManagerDeps {
   pathExists(path: string): boolean | Promise<boolean>;
   ptySpawner: TerminalPtySpawner;
   getShellEnv(): Record<string, string | undefined>;
-  send(
-    sender: WebContents | null | undefined,
-    channel: string,
-    payload: unknown,
-  ): void;
+  send(sender: WebContents | null | undefined, channel: string, payload: unknown): void;
   now(): number;
 }
 
@@ -174,9 +170,7 @@ function trimScrollback(value: string): string {
   return next;
 }
 
-async function defaultResolveApp(
-  appId: number,
-): Promise<ResolvedTerminalApp | null> {
+async function defaultResolveApp(appId: number): Promise<ResolvedTerminalApp | null> {
   const app = await db.query.apps.findFirst({
     where: eq(apps.id, appId),
     columns: {
@@ -211,9 +205,7 @@ export class PtySessionManager {
 
   constructor(private readonly deps: TerminalSessionManagerDeps) {}
 
-  async openSession(
-    params: OpenTerminalSessionParams,
-  ): Promise<OpenTerminalSessionResult> {
+  async openSession(params: OpenTerminalSessionParams): Promise<OpenTerminalSessionResult> {
     const existingSession = this.sessions.get(params.appId);
     if (existingSession) {
       this.attach(params.sender, existingSession);
@@ -330,37 +322,23 @@ export class PtySessionManager {
   write(sessionId: string, data: string, sender?: WebContents): void {
     const session = this.findAuthorizedSession(sessionId, sender);
     if (!session?.pty) {
-      throw new CaideError(
-        "Terminal session is not running",
-        CaideErrorKind.Precondition,
-      );
+      throw new CaideError("Terminal session is not running", CaideErrorKind.Precondition);
     }
     session.lastUsedAt = this.deps.now();
     session.pty.write(data);
   }
 
-  resize(
-    sessionId: string,
-    cols: number,
-    rows: number,
-    sender?: WebContents,
-  ): void {
+  resize(sessionId: string, cols: number, rows: number, sender?: WebContents): void {
     const session = this.findAuthorizedSession(sessionId, sender);
     if (!session?.pty) return;
     session.lastUsedAt = this.deps.now();
     session.pty.resize(cols, rows);
   }
 
-  serialize(
-    sessionId: string,
-    sender?: WebContents,
-  ): SerializedTerminalSession {
+  serialize(sessionId: string, sender?: WebContents): SerializedTerminalSession {
     const session = this.findAuthorizedSession(sessionId, sender);
     if (!session) {
-      throw new CaideError(
-        "Terminal session not found",
-        CaideErrorKind.NotFound,
-      );
+      throw new CaideError("Terminal session not found", CaideErrorKind.NotFound);
     }
     if (sender) {
       const subscriber = session.subscribers.get(sender.id);
@@ -397,8 +375,7 @@ export class PtySessionManager {
   }
 
   getLiveSessionCount(): number {
-    return Array.from(this.sessions.values()).filter((session) => session.pty)
-      .length;
+    return Array.from(this.sessions.values()).filter((session) => session.pty).length;
   }
 
   private attach(sender: WebContents | undefined, session: PtySession): void {
@@ -418,15 +395,10 @@ export class PtySessionManager {
   }
 
   private findSession(sessionId: string): PtySession | undefined {
-    return Array.from(this.sessions.values()).find(
-      (session) => session.sessionId === sessionId,
-    );
+    return Array.from(this.sessions.values()).find((session) => session.sessionId === sessionId);
   }
 
-  private findAuthorizedSession(
-    sessionId: string,
-    sender?: WebContents,
-  ): PtySession | undefined {
+  private findAuthorizedSession(sessionId: string, sender?: WebContents): PtySession | undefined {
     const session = this.findSession(sessionId);
     if (!session || !sender) {
       return session;
@@ -450,11 +422,7 @@ export class PtySessionManager {
     }
   }
 
-  private sendToSubscribers(
-    session: PtySession,
-    channel: string,
-    payload: unknown,
-  ): void {
+  private sendToSubscribers(session: PtySession, channel: string, payload: unknown): void {
     this.removeDestroyedSubscribers(session);
     for (const subscriber of session.subscribers.values()) {
       this.deps.send(subscriber.webContents, channel, payload);
@@ -512,15 +480,11 @@ export class PtySessionManager {
     session.pty = null;
     session.dataSubscription.dispose();
     session.exitSubscription.dispose();
-    this.sendToSubscribers(
-      session,
-      buildTerminalExitChannel(session.sessionId),
-      {
-        sessionId: session.sessionId,
-        exitCode: exit.exitCode,
-        signal: exit.signal ?? null,
-      },
-    );
+    this.sendToSubscribers(session, buildTerminalExitChannel(session.sessionId), {
+      sessionId: session.sessionId,
+      exitCode: exit.exitCode,
+      signal: exit.signal ?? null,
+    });
     this.scheduleExitedSessionReap(session);
   }
 
@@ -563,15 +527,11 @@ export class PtySessionManager {
     session.exitSubscription.dispose();
 
     if (options.notifyExit && !session.exited) {
-      this.sendToSubscribers(
-        session,
-        buildTerminalExitChannel(session.sessionId),
-        {
-          sessionId: session.sessionId,
-          exitCode: null,
-          signal: null,
-        },
-      );
+      this.sendToSubscribers(session, buildTerminalExitChannel(session.sessionId), {
+        sessionId: session.sessionId,
+        exitCode: null,
+        signal: null,
+      });
     }
 
     session.pty = null;
@@ -582,16 +542,12 @@ export class PtySessionManager {
     }
   }
 
-  private evictLeastRecentlyUsedSession():
-    | { appId: number; appName: string }
-    | undefined {
+  private evictLeastRecentlyUsedSession(): { appId: number; appName: string } | undefined {
     if (this.getLiveSessionCount() < MAX_LIVE_SESSIONS) {
       return undefined;
     }
 
-    const liveSessions = Array.from(this.sessions.values()).filter(
-      (session) => session.pty,
-    );
+    const liveSessions = Array.from(this.sessions.values()).filter((session) => session.pty);
     liveSessions.sort((a, b) => a.lastUsedAt - b.lastUsedAt);
     const sessionToEvict = liveSessions[0];
     if (!sessionToEvict) {

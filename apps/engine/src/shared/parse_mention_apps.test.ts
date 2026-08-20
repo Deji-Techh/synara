@@ -154,8 +154,7 @@ Line 3 has @app:App3`;
   });
 
   it("should stop parsing at invalid non-dot characters", () => {
-    const prompt =
-      "Check @app:MyApp@InvalidPart and @app:AnotherApp.InvalidPart";
+    const prompt = "Check @app:MyApp@InvalidPart and @app:AnotherApp.InvalidPart";
     const result = parseAppMentions(prompt);
     expect(result).toEqual(["MyApp", "AnotherApp.InvalidPart"]);
   });
@@ -274,9 +273,7 @@ describe("splitAppMentionTrailingDots", () => {
 
 describe("parseKnownAppMentions", () => {
   it("matches dotted app names from the known app list", () => {
-    const result = parseKnownAppMentions("Check @app:foo.app.com", [
-      "foo.app.com",
-    ]);
+    const result = parseKnownAppMentions("Check @app:foo.app.com", ["foo.app.com"]);
 
     expect(result).toEqual(["foo.app.com"]);
   });
@@ -298,18 +295,16 @@ describe("parseKnownAppMentions", () => {
   });
 
   it("allows a trailing sentence period after the known app name", () => {
-    const result = parseKnownAppMentions("Check @app:foo.app.com.", [
-      "foo.app.com",
-    ]);
+    const result = parseKnownAppMentions("Check @app:foo.app.com.", ["foo.app.com"]);
 
     expect(result).toEqual(["foo.app.com"]);
   });
 
   it("preserves prompt order and known app name casing", () => {
-    const result = parseKnownAppMentions(
-      "Check @app:foo.app.com then @app:BAR",
-      ["Foo.App.Com", "bar"],
-    );
+    const result = parseKnownAppMentions("Check @app:foo.app.com then @app:BAR", [
+      "Foo.App.Com",
+      "bar",
+    ]);
 
     expect(result).toEqual(["Foo.App.Com", "bar"]);
   });
@@ -321,9 +316,7 @@ describe("parseKnownAppMentions", () => {
   });
 
   it("stops a known dotted app mention before a path suffix", () => {
-    const result = parseKnownAppMentions("@app:foo.app.com/path", [
-      "foo.app.com",
-    ]);
+    const result = parseKnownAppMentions("@app:foo.app.com/path", ["foo.app.com"]);
 
     expect(result).toEqual(["foo.app.com"]);
   });
@@ -337,18 +330,13 @@ describe("parseKnownAppMentions", () => {
 
 describe("formatKnownAppMentionsForPrompt", () => {
   it("allows terminal periods after visible app mentions", () => {
-    const result = formatKnownAppMentionsForPrompt("Fix bug in @MyApp.", [
-      "MyApp",
-    ]);
+    const result = formatKnownAppMentionsForPrompt("Fix bug in @MyApp.", ["MyApp"]);
 
     expect(result).toBe("Fix bug in @app:MyApp.");
   });
 
   it("prefers the longest visible app mention", () => {
-    const result = formatKnownAppMentionsForPrompt("Fix @foo.app.com", [
-      "foo",
-      "foo.app.com",
-    ]);
+    const result = formatKnownAppMentionsForPrompt("Fix @foo.app.com", ["foo", "foo.app.com"]);
 
     expect(result).toBe("Fix @app:foo.app.com");
   });
@@ -360,10 +348,7 @@ describe("formatKnownAppMentionsForPrompt", () => {
   });
 
   it("does not rewrite already-internal app mentions", () => {
-    const result = formatKnownAppMentionsForPrompt("Fix @app:Foo", [
-      "app",
-      "Foo",
-    ]);
+    const result = formatKnownAppMentionsForPrompt("Fix @app:Foo", ["app", "Foo"]);
 
     expect(result).toBe("Fix @app:Foo");
   });

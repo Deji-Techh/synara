@@ -19,9 +19,7 @@ interface MockPtyController {
 
 function createMockPtyController(): MockPtyController {
   const dataListeners = new Set<(data: string) => void>();
-  const exitListeners = new Set<
-    (event: { exitCode: number; signal?: number }) => void
-  >();
+  const exitListeners = new Set<(event: { exitCode: number; signal?: number }) => void>();
 
   return {
     emitData(data) {
@@ -43,12 +41,10 @@ function createMockPtyController(): MockPtyController {
         dataListeners.add(listener);
         return { dispose: () => dataListeners.delete(listener) };
       }),
-      onExit: vi.fn(
-        (listener: (event: { exitCode: number; signal?: number }) => void) => {
-          exitListeners.add(listener);
-          return { dispose: () => exitListeners.delete(listener) };
-        },
-      ),
+      onExit: vi.fn((listener: (event: { exitCode: number; signal?: number }) => void) => {
+        exitListeners.add(listener);
+        return { dispose: () => exitListeners.delete(listener) };
+      }),
     },
   };
 }
@@ -96,9 +92,7 @@ function createManager() {
 
 describe("getDefaultShell", () => {
   it("uses COMSPEC on Windows", () => {
-    expect(
-      getDefaultShell("win32", { COMSPEC: "C:\\Windows\\System32\\cmd.exe" }),
-    ).toEqual({
+    expect(getDefaultShell("win32", { COMSPEC: "C:\\Windows\\System32\\cmd.exe" })).toEqual({
       shell: "C:\\Windows\\System32\\cmd.exe",
       args: [],
     });
@@ -167,16 +161,12 @@ describe("PtySessionManager", () => {
     await vi.advanceTimersByTimeAsync(8);
 
     expect(send).toHaveBeenCalledTimes(1);
-    expect(send).toHaveBeenCalledWith(
-      expect.anything(),
-      `terminal:data:${session.sessionId}`,
-      {
-        sessionId: session.sessionId,
-        chunk: "ab",
-        startOffset: 0,
-        endOffset: 2,
-      },
-    );
+    expect(send).toHaveBeenCalledWith(expect.anything(), `terminal:data:${session.sessionId}`, {
+      sessionId: session.sessionId,
+      chunk: "ab",
+      startOffset: 0,
+      endOffset: 2,
+    });
     expect(manager.serialize(session.sessionId)).toEqual({
       scrollback: "ab",
       scrollbackEndOffset: 2,
@@ -217,11 +207,11 @@ describe("PtySessionManager", () => {
     expect(controllers[0].pty.write).toHaveBeenCalledWith("echo hi\n");
     expect(controllers[0].pty.resize).toHaveBeenCalledWith(120, 40);
     expect(controllers[0].pty.kill).toHaveBeenCalledTimes(1);
-    expect(send).toHaveBeenCalledWith(
-      expect.anything(),
-      `terminal:exit:${session.sessionId}`,
-      { sessionId: session.sessionId, exitCode: null, signal: null },
-    );
+    expect(send).toHaveBeenCalledWith(expect.anything(), `terminal:exit:${session.sessionId}`, {
+      sessionId: session.sessionId,
+      exitCode: null,
+      signal: null,
+    });
     expect(manager.getSessionCount()).toBe(0);
   });
 
@@ -232,9 +222,9 @@ describe("PtySessionManager", () => {
       sender: webContents(1),
     });
 
-    expect(() =>
-      manager.write(session.sessionId, "echo nope\n", webContents(2)),
-    ).toThrow("Terminal session is not attached to this window");
+    expect(() => manager.write(session.sessionId, "echo nope\n", webContents(2))).toThrow(
+      "Terminal session is not attached to this window",
+    );
     expect(controllers[0].pty.write).not.toHaveBeenCalled();
   });
 
@@ -318,28 +308,18 @@ describe("PtySessionManager", () => {
     await vi.advanceTimersByTimeAsync(8);
 
     expect(send).toHaveBeenCalledTimes(2);
-    expect(send).toHaveBeenNthCalledWith(
-      1,
-      firstSender,
-      `terminal:data:${session.sessionId}`,
-      {
-        sessionId: session.sessionId,
-        chunk: "earlylate",
-        startOffset: 0,
-        endOffset: 9,
-      },
-    );
-    expect(send).toHaveBeenNthCalledWith(
-      2,
-      secondSender,
-      `terminal:data:${session.sessionId}`,
-      {
-        sessionId: session.sessionId,
-        chunk: "late",
-        startOffset: 5,
-        endOffset: 9,
-      },
-    );
+    expect(send).toHaveBeenNthCalledWith(1, firstSender, `terminal:data:${session.sessionId}`, {
+      sessionId: session.sessionId,
+      chunk: "earlylate",
+      startOffset: 0,
+      endOffset: 9,
+    });
+    expect(send).toHaveBeenNthCalledWith(2, secondSender, `terminal:data:${session.sessionId}`, {
+      sessionId: session.sessionId,
+      chunk: "late",
+      startOffset: 5,
+      endOffset: 9,
+    });
   });
 
   it("keeps exited sessions available for scrollback and restart UI", async () => {
@@ -359,11 +339,11 @@ describe("PtySessionManager", () => {
     expect(reattach.created).toBe(false);
     expect(reattach.scrollback).toBe("done\n");
     expect(reattach.exited).toEqual({ exitCode: 7, signal: null });
-    expect(send).toHaveBeenCalledWith(
-      expect.anything(),
-      `terminal:exit:${session.sessionId}`,
-      { sessionId: session.sessionId, exitCode: 7, signal: null },
-    );
+    expect(send).toHaveBeenCalledWith(expect.anything(), `terminal:exit:${session.sessionId}`, {
+      sessionId: session.sessionId,
+      exitCode: 7,
+      signal: null,
+    });
   });
 
   it("reaps detached exited sessions after the retention TTL", async () => {
@@ -392,9 +372,7 @@ describe("PtySessionManager", () => {
     controllers[0].emitData("😀".repeat(600_000));
 
     const { scrollback } = manager.serialize(session.sessionId);
-    expect(Buffer.byteLength(scrollback, "utf8")).toBeLessThanOrEqual(
-      2 * 1024 * 1024,
-    );
+    expect(Buffer.byteLength(scrollback, "utf8")).toBeLessThanOrEqual(2 * 1024 * 1024);
     expect(scrollback).not.toContain("\uFFFD");
   });
 

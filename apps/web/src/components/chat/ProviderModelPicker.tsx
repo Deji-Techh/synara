@@ -251,7 +251,7 @@ export const ProviderModelMenuItems = function ProviderModelMenuItems(
     const resolvedModel = resolveSelectableModel(
       provider,
       value,
-      (props.modelOptionsByProvider[provider] ?? []),
+      props.modelOptionsByProvider[provider] ?? [],
     );
     if (!resolvedModel) return;
     props.onProviderModelChange(provider, resolvedModel);
@@ -377,7 +377,9 @@ export const ProviderModelMenuItems = function ProviderModelMenuItems(
     <>
       {visibleAvailableProviderOptions.map((option) => {
         const OptionIcon =
-          (PROVIDER_ICON_COMPONENT_BY_PROVIDER as Record<string, typeof HammerIcon | undefined>)[option.value] ?? HammerIcon;
+          (PROVIDER_ICON_COMPONENT_BY_PROVIDER as Record<string, typeof HammerIcon | undefined>)[
+            option.value
+          ] ?? HammerIcon;
         const liveProvider = props.providers?.find((entry) => entry.provider === option.value);
         const availability = resolveLiveProviderAvailability(liveProvider);
         if (availability.disabled) {
@@ -421,7 +423,9 @@ export const ProviderModelMenuItems = function ProviderModelMenuItems(
       {visibleUnavailableProviderOptions.length > 0 && <MenuSeparator />}
       {visibleUnavailableProviderOptions.map((option) => {
         const OptionIcon =
-          (PROVIDER_ICON_COMPONENT_BY_PROVIDER as Record<string, typeof HammerIcon | undefined>)[option.value] ?? HammerIcon;
+          (PROVIDER_ICON_COMPONENT_BY_PROVIDER as Record<string, typeof HammerIcon | undefined>)[
+            option.value
+          ] ?? HammerIcon;
         return (
           <MenuItem key={option.value} disabled>
             <OptionIcon
@@ -493,7 +497,9 @@ export const ProviderModelPicker = function ProviderModelPicker(props: ProviderM
     modelOptionsByProvider: props.modelOptionsByProvider,
   });
   const ProviderIcon =
-    (PROVIDER_ICON_COMPONENT_BY_PROVIDER as Record<string, typeof HammerIcon | undefined>)[activeProvider] ?? HammerIcon;
+    (PROVIDER_ICON_COMPONENT_BY_PROVIDER as Record<string, typeof HammerIcon | undefined>)[
+      activeProvider
+    ] ?? HammerIcon;
 
   const setMenuOpen = (nextOpen: boolean) => {
     if (open === undefined) {

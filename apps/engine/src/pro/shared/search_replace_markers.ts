@@ -15,7 +15,6 @@ export function escapeSearchReplaceMarkers(content: string | null): string {
   if (!content) return "";
   return content.replace(
     /^(\\)?(<<<<<<<|=======|>>>>>>>)/gm,
-    (full, maybeSlash: string | undefined, marker: string) =>
-      maybeSlash ? full : `\\${marker}`,
+    (full, maybeSlash: string | undefined, marker: string) => (maybeSlash ? full : `\\${marker}`),
   );
 }

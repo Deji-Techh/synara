@@ -41,9 +41,7 @@ describe("IPC invoke envelopes", () => {
   });
 
   it("unwraps success envelopes in generated clients", async () => {
-    const invokeEnvelope = vi
-      .fn()
-      .mockResolvedValue(createIpcSuccessEnvelope({ value: 42 }));
+    const invokeEnvelope = vi.fn().mockResolvedValue(createIpcSuccessEnvelope({ value: 42 }));
     (window as any).electron = { ipcRenderer: { invokeEnvelope } };
 
     const client = createClient({
@@ -62,9 +60,7 @@ describe("IPC invoke envelopes", () => {
     const invokeEnvelope = vi
       .fn()
       .mockResolvedValue(
-        createIpcErrorEnvelope(
-          new CaideError("No matching app", CaideErrorKind.NotFound),
-        ),
+        createIpcErrorEnvelope(new CaideError("No matching app", CaideErrorKind.NotFound)),
       );
     (window as any).electron = { ipcRenderer: { invokeEnvelope } };
 

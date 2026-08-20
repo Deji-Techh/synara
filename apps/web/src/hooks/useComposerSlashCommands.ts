@@ -662,14 +662,7 @@ export function useComposerSlashCommands(input: {
       if (parsed.kind === "subcommand") {
         const { subcommand, argument } = parsed;
         const activeGoal = store.activeGoal;
-        const controlActions = [
-          "pause",
-          "resume",
-          "cancel",
-          "retry",
-          "verify",
-          "steer",
-        ] as const;
+        const controlActions = ["pause", "resume", "cancel", "retry", "verify", "steer"] as const;
 
         if ((controlActions as readonly string[]).includes(subcommand)) {
           if (!activeGoal) {
@@ -764,7 +757,8 @@ export function useComposerSlashCommands(input: {
           toastManager.add({
             type: "error",
             title: "Could not create goal",
-            description: "An error occurred while creating the goal. See the Goals pane for details.",
+            description:
+              "An error occurred while creating the goal. See the Goals pane for details.",
           });
         }
         openGoalsPane();
@@ -1036,8 +1030,7 @@ export function useComposerSlashCommands(input: {
             toastManager.add({
               type: "warning",
               title: "Invalid /build command",
-              description:
-                "Use /build, /build apk|appbundle|ipa, or /build <target> <channel>.",
+              description: "Use /build, /build apk|appbundle|ipa, or /build <target> <channel>.",
             });
             return true;
           }
@@ -1343,11 +1336,7 @@ export function useComposerSlashCommands(input: {
         return;
       }
 
-      if (
-        item.command === "goals" ||
-        item.command === "commands" ||
-        item.command === "help"
-      ) {
+      if (item.command === "goals" || item.command === "commands" || item.command === "help") {
         const applied = clearSlashCommandFromComposer();
         if (!wasPromptReplacementApplied(applied)) {
           return;

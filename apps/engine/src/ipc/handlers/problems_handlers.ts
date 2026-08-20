@@ -24,10 +24,7 @@ export function registerProblemsHandlers() {
       });
 
       if (!app) {
-        throw new CaideError(
-          `App not found: ${params.appId}`,
-          CaideErrorKind.NotFound,
-        );
+        throw new CaideError(`App not found: ${params.appId}`, CaideErrorKind.NotFound);
       }
 
       appPath = getCaideAppPath(app.path);

@@ -72,9 +72,7 @@ export const settingsClient = createClient(settingsContracts);
 // =============================================================================
 
 /** Input type for getUserSettings */
-export type GetUserSettingsInput = z.infer<
-  (typeof settingsContracts)["getUserSettings"]["input"]
->;
+export type GetUserSettingsInput = z.infer<(typeof settingsContracts)["getUserSettings"]["input"]>;
 
 /** Output type for getUserSettings */
 export type GetUserSettingsOutput = z.infer<
@@ -82,9 +80,7 @@ export type GetUserSettingsOutput = z.infer<
 >;
 
 /** Input type for setUserSettings */
-export type SetUserSettingsInput = z.infer<
-  (typeof settingsContracts)["setUserSettings"]["input"]
->;
+export type SetUserSettingsInput = z.infer<(typeof settingsContracts)["setUserSettings"]["input"]>;
 
 /** Output type for setUserSettings */
 export type SetUserSettingsOutput = z.infer<

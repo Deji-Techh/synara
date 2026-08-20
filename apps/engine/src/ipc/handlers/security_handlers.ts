@@ -7,57 +7,48 @@ import type { SecurityFinding } from "../types/security";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
 
 export function registerSecurityHandlers() {
-  createTypedHandler(
-    securityContracts.getLatestSecurityReview,
-    async (_, appId) => {
-      if (!appId) {
-        throw new CaideError("App ID is required", CaideErrorKind.Validation);
-      }
+  createTypedHandler(securityContracts.getLatestSecurityReview, async (_, appId) => {
+    if (!appId) {
+      throw new CaideError("App ID is required", CaideErrorKind.Validation);
+    }
 
-      // Query for the most recent message with security findings
-      // Use database filtering instead of loading all data into memory
-      const result = await db
-        .select({
-          content: messages.content,
-          createdAt: messages.createdAt,
-          chatId: messages.chatId,
-        })
-        .from(messages)
-        .innerJoin(chats, eq(messages.chatId, chats.id))
-        .where(
-          and(
-            eq(chats.appId, appId),
-            eq(messages.role, "assistant"),
-            like(messages.content, "%<caide-security-finding%"),
-          ),
-        )
-        .orderBy(desc(messages.createdAt))
-        .limit(1);
+    // Query for the most recent message with security findings
+    // Use database filtering instead of loading all data into memory
+    const result = await db
+      .select({
+        content: messages.content,
+        createdAt: messages.createdAt,
+        chatId: messages.chatId,
+      })
+      .from(messages)
+      .innerJoin(chats, eq(messages.chatId, chats.id))
+      .where(
+        and(
+          eq(chats.appId, appId),
+          eq(messages.role, "assistant"),
+          like(messages.content, "%<caide-security-finding%"),
+        ),
+      )
+      .orderBy(desc(messages.createdAt))
+      .limit(1);
 
-      if (result.length === 0) {
-        throw new CaideError(
-          "No security review found for this app",
-          CaideErrorKind.NotFound,
-        );
-      }
+    if (result.length === 0) {
+      throw new CaideError("No security review found for this app", CaideErrorKind.NotFound);
+    }
 
-      const message = result[0];
-      const findings = parseSecurityFindings(message.content);
+    const message = result[0];
+    const findings = parseSecurityFindings(message.content);
 
-      if (findings.length === 0) {
-        throw new CaideError(
-          "No security review found for this app",
-          CaideErrorKind.NotFound,
-        );
-      }
+    if (findings.length === 0) {
+      throw new CaideError("No security review found for this app", CaideErrorKind.NotFound);
+    }
 
-      return {
-        findings,
-        timestamp: message.createdAt.toISOString(),
-        chatId: message.chatId,
-      };
-    },
-  );
+    return {
+      findings,
+      timestamp: message.createdAt.toISOString(),
+      chatId: message.chatId,
+    };
+  });
 }
 
 function parseSecurityFindings(content: string): SecurityFinding[] {

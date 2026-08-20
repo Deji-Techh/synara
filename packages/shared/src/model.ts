@@ -25,10 +25,26 @@ import {
 
 const MODEL_SLUG_SET_BY_PROVIDER: Record<ProviderKind, ReadonlySet<ModelSlug>> = {
   engine: new Set<ModelSlug>(),
-  openai: new Set((MODEL_OPTIONS_BY_PROVIDER as Record<string, { slug: string }[] | undefined>).openai?.map((option) => option.slug) ?? []),
-  anthropic: new Set((MODEL_OPTIONS_BY_PROVIDER as Record<string, { slug: string }[] | undefined>).anthropic?.map((option) => option.slug) ?? []),
-  google: new Set((MODEL_OPTIONS_BY_PROVIDER as Record<string, { slug: string }[] | undefined>).google?.map((option) => option.slug) ?? []),
-  openrouter: new Set((MODEL_OPTIONS_BY_PROVIDER as Record<string, { slug: string }[] | undefined>).openrouter?.map((option) => option.slug) ?? []),
+  openai: new Set(
+    (MODEL_OPTIONS_BY_PROVIDER as Record<string, { slug: string }[] | undefined>).openai?.map(
+      (option) => option.slug,
+    ) ?? [],
+  ),
+  anthropic: new Set(
+    (MODEL_OPTIONS_BY_PROVIDER as Record<string, { slug: string }[] | undefined>).anthropic?.map(
+      (option) => option.slug,
+    ) ?? [],
+  ),
+  google: new Set(
+    (MODEL_OPTIONS_BY_PROVIDER as Record<string, { slug: string }[] | undefined>).google?.map(
+      (option) => option.slug,
+    ) ?? [],
+  ),
+  openrouter: new Set(
+    (MODEL_OPTIONS_BY_PROVIDER as Record<string, { slug: string }[] | undefined>).openrouter?.map(
+      (option) => option.slug,
+    ) ?? [],
+  ),
   ollama: new Set<ModelSlug>(),
   deepseek: new Set<ModelSlug>(),
   groq: new Set<ModelSlug>(),
@@ -37,8 +53,16 @@ const MODEL_SLUG_SET_BY_PROVIDER: Record<ProviderKind, ReadonlySet<ModelSlug>> =
   cohere: new Set<ModelSlug>(),
   xai: new Set<ModelSlug>(),
   fireworks: new Set<ModelSlug>(),
-  opencodeZen: new Set((MODEL_OPTIONS_BY_PROVIDER as Record<string, { slug: string }[] | undefined>).opencodeZen?.map((option) => option.slug) ?? []),
-  opencodeGo: new Set((MODEL_OPTIONS_BY_PROVIDER as Record<string, { slug: string }[] | undefined>).opencodeGo?.map((option) => option.slug) ?? []),
+  opencodeZen: new Set(
+    (MODEL_OPTIONS_BY_PROVIDER as Record<string, { slug: string }[] | undefined>).opencodeZen?.map(
+      (option) => option.slug,
+    ) ?? [],
+  ),
+  opencodeGo: new Set(
+    (MODEL_OPTIONS_BY_PROVIDER as Record<string, { slug: string }[] | undefined>).opencodeGo?.map(
+      (option) => option.slug,
+    ) ?? [],
+  ),
 };
 
 export interface SelectableModelOption {
@@ -74,7 +98,9 @@ export function getDefaultModel(provider: "engine"): null;
 export function getDefaultModel(provider?: ProviderWithDefaultModel): ModelSlug;
 export function getDefaultModel(provider: ProviderKind): ModelSlug | null;
 export function getDefaultModel(provider: ProviderKind = "openai"): ModelSlug | null {
-  return hasDefaultModel(provider) ? DEFAULT_MODEL_BY_PROVIDER[provider as ProviderWithDefaultModel] : null;
+  return hasDefaultModel(provider)
+    ? DEFAULT_MODEL_BY_PROVIDER[provider as ProviderWithDefaultModel]
+    : null;
 }
 
 const MODEL_NAME_BY_SLUG = new Map(

@@ -32,10 +32,7 @@ export async function engineFetch(
   const apiKey = settings.providerSettings?.auto?.apiKey?.value;
 
   if (!apiKey) {
-    throw new CaideError(
-      "CAIDE Gateway API key is required",
-      CaideErrorKind.Auth,
-    );
+    throw new CaideError("CAIDE Gateway API key is required", CaideErrorKind.Auth);
   }
 
   const { headers: extraHeaders, ...restOptions } = options;

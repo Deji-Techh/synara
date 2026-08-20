@@ -57,10 +57,7 @@ export interface StoredAttachmentInfo {
   filePath: string;
 }
 
-export type AttachmentManifestEntryInput = Omit<
-  AttachmentManifestEntry,
-  "logicalName"
-> & {
+export type AttachmentManifestEntryInput = Omit<AttachmentManifestEntry, "logicalName"> & {
   requestedLogicalName: string;
 };
 
@@ -68,14 +65,9 @@ export type AttachmentManifestEntryInput = Omit<
  * Check if an absolute path falls within the app's .caide/media directory.
  * Used to validate that file copy operations only read from allowed media dirs.
  */
-export function isWithinCaideMediaDir(
-  absPath: string,
-  appPath: string,
-): boolean {
+export function isWithinCaideMediaDir(absPath: string, appPath: string): boolean {
   const resolved = path.resolve(absPath);
-  const resolvedCaideMediaDir = path.resolve(
-    path.join(appPath, CAIDE_MEDIA_DIR_NAME),
-  );
+  const resolvedCaideMediaDir = path.resolve(path.join(appPath, CAIDE_MEDIA_DIR_NAME));
 
   const relCaide = path.relative(resolvedCaideMediaDir, resolved);
 
@@ -157,9 +149,7 @@ export function createUniqueAttachmentLogicalName(
   }
 }
 
-async function readAttachmentManifest(
-  appPath: string,
-): Promise<AttachmentManifestEntry[]> {
+async function readAttachmentManifest(appPath: string): Promise<AttachmentManifestEntry[]> {
   try {
     const raw = await fs.readFile(getAttachmentsManifestPath(appPath), "utf8");
     const parsed = JSON.parse(raw);
@@ -177,10 +167,7 @@ async function readAttachmentManifest(
         typeof entry.createdAt === "string",
     );
   } catch (error) {
-    if (
-      (error as NodeJS.ErrnoException).code === "ENOENT" ||
-      error instanceof SyntaxError
-    ) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT" || error instanceof SyntaxError) {
       return [];
     }
     throw error;
@@ -205,9 +192,7 @@ async function appendAttachmentManifestEntriesUnlocked(
   for (const entry of entries) {
     byLogicalName.set(entry.logicalName, entry);
   }
-  await writeAttachmentManifestAtomic(manifestPath, [
-    ...byLogicalName.values(),
-  ]);
+  await writeAttachmentManifestAtomic(manifestPath, [...byLogicalName.values()]);
 }
 
 async function appendAttachmentManifestEntriesWithLogicalNamesUnlocked(
@@ -242,19 +227,14 @@ async function appendAttachmentManifestEntriesWithLogicalNamesUnlocked(
 
     const newEntry = {
       ...entry,
-      logicalName: createUniqueAttachmentLogicalName(
-        requestedLogicalName,
-        usedNames,
-      ),
+      logicalName: createUniqueAttachmentLogicalName(requestedLogicalName, usedNames),
     };
     finalized.push(newEntry);
     byLogicalName.set(newEntry.logicalName, newEntry);
     byStoredFileName.set(newEntry.storedFileName, newEntry);
   }
 
-  await writeAttachmentManifestAtomic(manifestPath, [
-    ...byLogicalName.values(),
-  ]);
+  await writeAttachmentManifestAtomic(manifestPath, [...byLogicalName.values()]);
 
   return finalized;
 }
@@ -294,9 +274,7 @@ export async function appendAttachmentManifestEntriesWithLogicalNames(
   );
 }
 
-async function pruneAttachmentManifestUnlocked(
-  appPath: string,
-): Promise<number> {
+async function pruneAttachmentManifestUnlocked(appPath: string): Promise<number> {
   const entries = await readAttachmentManifest(appPath);
   if (entries.length === 0) {
     return 0;
@@ -305,10 +283,7 @@ async function pruneAttachmentManifestUnlocked(
   const mediaDir = getCaideMediaDir(appPath);
   const keptEntries: AttachmentManifestEntry[] = [];
   for (const entry of entries) {
-    const storedAttachment = await toStoredAttachmentInfoIfPresent(
-      mediaDir,
-      entry,
-    );
+    const storedAttachment = await toStoredAttachmentInfoIfPresent(mediaDir, entry);
     if (storedAttachment) {
       keptEntries.push(entry);
     }
@@ -316,18 +291,13 @@ async function pruneAttachmentManifestUnlocked(
 
   const removedCount = entries.length - keptEntries.length;
   if (removedCount > 0) {
-    await writeAttachmentManifestAtomic(
-      getAttachmentsManifestPath(appPath),
-      keptEntries,
-    );
+    await writeAttachmentManifestAtomic(getAttachmentsManifestPath(appPath), keptEntries);
   }
 
   return removedCount;
 }
 
-export async function pruneAttachmentManifest(
-  appPath: string,
-): Promise<number> {
+export async function pruneAttachmentManifest(appPath: string): Promise<number> {
   return withLock(`attachments-manifest:${appPath}`, () =>
     pruneAttachmentManifestUnlocked(appPath),
   );
@@ -355,17 +325,12 @@ async function toStoredAttachmentInfoIfPresent(
   };
 }
 
-export async function listStoredAttachments(
-  appPath: string,
-): Promise<StoredAttachmentInfo[]> {
+export async function listStoredAttachments(appPath: string): Promise<StoredAttachmentInfo[]> {
   const mediaDir = getCaideMediaDir(appPath);
   const entries = await readAttachmentManifest(appPath);
   const storedAttachments: StoredAttachmentInfo[] = [];
   for (const entry of entries) {
-    const storedAttachment = await toStoredAttachmentInfoIfPresent(
-      mediaDir,
-      entry,
-    );
+    const storedAttachment = await toStoredAttachmentInfoIfPresent(mediaDir, entry);
     if (storedAttachment) {
       storedAttachments.push(storedAttachment);
     }

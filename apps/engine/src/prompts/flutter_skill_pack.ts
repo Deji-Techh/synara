@@ -10,10 +10,7 @@
 
 import { FLUTTER_DESIGN_ENGINE_CONTRACT } from "./design_engine_contract";
 
-export const FLUTTER_SKILL_FRONTMATTERS: Record<
-  string,
-  { description?: string }
-> = {
+export const FLUTTER_SKILL_FRONTMATTERS: Record<string, { description?: string }> = {
   "motion-interaction": {
     description:
       "Animations and motion with Flutter implicit/explicit animation widgets and Material timing semantics.",

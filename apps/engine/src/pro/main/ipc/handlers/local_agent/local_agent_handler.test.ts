@@ -225,9 +225,7 @@ vi.mock("@/ipc/utils/safe_sender", () => ({
 }));
 
 let mockStreamResult: FakeStreamResult | null = null;
-let mockStreamTextImpl:
-  | ((options: Record<string, any>) => FakeStreamResult)
-  | null = null;
+let mockStreamTextImpl: ((options: Record<string, any>) => FakeStreamResult) | null = null;
 
 vi.mock("ai", async () => {
   const actual = await vi.importActual<typeof import("ai")>("ai");
@@ -290,23 +288,17 @@ vi.mock("@/pro/main/ipc/handlers/local_agent/userInputResolvers", () => ({
   },
 }));
 
-vi.mock(
-  "@/pro/main/ipc/handlers/local_agent/processors/file_operations",
-  () => ({
-    deployAllFunctionsIfNeeded: vi.fn(async () => ({ success: true })),
-    commitAllChanges: vi.fn(async () => ({ commitHash: "abc123" })),
-  }),
-);
-
-const {
-  mockIsChatPendingCompaction,
-  mockPerformCompaction,
-  mockCheckAndMarkForCompaction,
-} = vi.hoisted(() => ({
-  mockIsChatPendingCompaction: vi.fn(async () => false),
-  mockPerformCompaction: vi.fn(async () => ({ success: true })),
-  mockCheckAndMarkForCompaction: vi.fn(async () => false),
+vi.mock("@/pro/main/ipc/handlers/local_agent/processors/file_operations", () => ({
+  deployAllFunctionsIfNeeded: vi.fn(async () => ({ success: true })),
+  commitAllChanges: vi.fn(async () => ({ commitHash: "abc123" })),
 }));
+
+const { mockIsChatPendingCompaction, mockPerformCompaction, mockCheckAndMarkForCompaction } =
+  vi.hoisted(() => ({
+    mockIsChatPendingCompaction: vi.fn(async () => false),
+    mockPerformCompaction: vi.fn(async () => ({ success: true })),
+    mockCheckAndMarkForCompaction: vi.fn(async () => false),
+  }));
 
 vi.mock("@/ipc/handlers/compaction/compaction_handler", () => ({
   isChatPendingCompaction: mockIsChatPendingCompaction,
@@ -350,31 +342,21 @@ describe("handleLocalAgentStream", () => {
     it.each([
       { enableCaidePro: false, hasApiKey: false },
       { enableCaidePro: true, hasApiKey: false },
-    ])(
-      "does not gate the local agent behind legacy Pro settings",
-      async (settings) => {
-        const { event, getMessagesByChannel } = createFakeEvent();
-        mockSettings = buildTestSettings(settings);
-        mockChatData = buildTestChat();
-        mockStreamResult = createFakeStream([
-          { type: "text-delta", text: "Agent ready" },
-        ]);
+    ])("does not gate the local agent behind legacy Pro settings", async (settings) => {
+      const { event, getMessagesByChannel } = createFakeEvent();
+      mockSettings = buildTestSettings(settings);
+      mockChatData = buildTestChat();
+      mockStreamResult = createFakeStream([{ type: "text-delta", text: "Agent ready" }]);
 
-        await handleLocalAgentStream(
-          event,
-          { chatId: 1, prompt: "test" },
-          new AbortController(),
-          {
-            placeholderMessageId: 10,
-            systemPrompt: "You are helpful",
-            caideRequestId,
-          },
-        );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
-        expect(getMessagesByChannel("chat:response:error")).toHaveLength(0);
-        expect(streamText).toHaveBeenCalled();
-      },
-    );
+      expect(getMessagesByChannel("chat:response:error")).toHaveLength(0);
+      expect(streamText).toHaveBeenCalled();
+    });
   });
 
   describe("Chat lookup", () => {
@@ -386,16 +368,11 @@ describe("handleLocalAgentStream", () => {
 
       // Act & Assert
       await expect(
-        handleLocalAgentStream(
-          event,
-          { chatId: 999, prompt: "test" },
-          new AbortController(),
-          {
-            placeholderMessageId: 10,
-            systemPrompt: "You are helpful",
-            caideRequestId,
-          },
-        ),
+        handleLocalAgentStream(event, { chatId: 999, prompt: "test" }, new AbortController(), {
+          placeholderMessageId: 10,
+          systemPrompt: "You are helpful",
+          caideRequestId,
+        }),
       ).rejects.toThrow("Chat not found: 999");
     });
 
@@ -407,16 +384,11 @@ describe("handleLocalAgentStream", () => {
 
       // Act & Assert
       await expect(
-        handleLocalAgentStream(
-          event,
-          { chatId: 1, prompt: "test" },
-          new AbortController(),
-          {
-            placeholderMessageId: 10,
-            systemPrompt: "You are helpful",
-            caideRequestId,
-          },
-        ),
+        handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+          placeholderMessageId: 10,
+          systemPrompt: "You are helpful",
+          caideRequestId,
+        }),
       ).rejects.toThrow("Chat not found: 1");
     });
   });
@@ -448,16 +420,11 @@ describe("handleLocalAgentStream", () => {
         steps: Promise.resolve([]),
       });
 
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       const errorMessages = getMessagesByChannel("chat:response:error");
       expect(errorMessages).toHaveLength(1);
@@ -475,36 +442,24 @@ describe("handleLocalAgentStream", () => {
         supabaseProjectId: "supabase-project-id",
       });
       mockStreamResult = createFakeStream([{ type: "text-delta", text: "ok" }]);
-      vi.mocked(deployAllFunctionsIfNeeded).mockImplementationOnce(
-        async (ctx) => {
-          ctx.onXmlComplete(
-            '<caide-status title="Supabase functions deployed: 2/2 complete" state="finished">\n2 succeeded\n0 failed\n</caide-status>',
-          );
-          return { success: true };
-        },
-      );
+      vi.mocked(deployAllFunctionsIfNeeded).mockImplementationOnce(async (ctx) => {
+        ctx.onXmlComplete(
+          '<caide-status title="Supabase functions deployed: 2/2 complete" state="finished">\n2 succeeded\n0 failed\n</caide-status>',
+        );
+        return { success: true };
+      });
 
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
-      const contentUpdates = dbOperations.updates.filter(
-        (u) => u.data.content !== undefined,
-      );
-      const finalContent = contentUpdates[contentUpdates.length - 1].data
-        .content as string;
+      const contentUpdates = dbOperations.updates.filter((u) => u.data.content !== undefined);
+      const finalContent = contentUpdates[contentUpdates.length - 1].data.content as string;
 
       expect(finalContent).toContain("<caide-status");
-      expect(finalContent).toContain(
-        'title="Supabase functions deployed: 2/2 complete"',
-      );
+      expect(finalContent).toContain('title="Supabase functions deployed: 2/2 complete"');
       expect(commitAllChanges).toHaveBeenCalled();
 
       const aiMessagesUpdates = dbOperations.updates.filter(
@@ -513,8 +468,9 @@ describe("handleLocalAgentStream", () => {
       expect(aiMessagesUpdates.length).toBeGreaterThan(0);
       const persistedAiMessages = JSON.stringify(
         (
-          aiMessagesUpdates[aiMessagesUpdates.length - 1].data
-            .aiMessagesJson as { messages: unknown[] }
+          aiMessagesUpdates[aiMessagesUpdates.length - 1].data.aiMessagesJson as {
+            messages: unknown[];
+          }
         ).messages,
       );
       expect(persistedAiMessages).toContain("<caide-status");
@@ -536,27 +492,17 @@ describe("handleLocalAgentStream", () => {
           "Some Supabase functions failed to deploy: Failed to bundle get-user-role: Rate limited (429): Too Many Requests",
       });
 
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
-      const contentUpdates = dbOperations.updates.filter(
-        (u) => u.data.content !== undefined,
-      );
-      const finalContent = contentUpdates[contentUpdates.length - 1].data
-        .content as string;
+      const contentUpdates = dbOperations.updates.filter((u) => u.data.content !== undefined);
+      const finalContent = contentUpdates[contentUpdates.length - 1].data.content as string;
 
       expect(finalContent).toContain('<caide-output type="warning"');
-      expect(finalContent).toContain(
-        'message="Supabase function deploy warning"',
-      );
+      expect(finalContent).toContain('message="Supabase function deploy warning"');
       expect(finalContent).toContain(
         "Some Supabase functions failed to deploy: Failed to bundle get-user-role: Rate limited (429): Too Many Requests",
       );
@@ -569,14 +515,13 @@ describe("handleLocalAgentStream", () => {
       expect(aiMessagesUpdates.length).toBeGreaterThan(0);
       const persistedAiMessages = JSON.stringify(
         (
-          aiMessagesUpdates[aiMessagesUpdates.length - 1].data
-            .aiMessagesJson as { messages: unknown[] }
+          aiMessagesUpdates[aiMessagesUpdates.length - 1].data.aiMessagesJson as {
+            messages: unknown[];
+          }
         ).messages,
       );
       expect(persistedAiMessages).toContain('<caide-output type=\\"warning\\"');
-      expect(persistedAiMessages).toContain(
-        'message=\\"Supabase function deploy warning\\"',
-      );
+      expect(persistedAiMessages).toContain('message=\\"Supabase function deploy warning\\"');
     });
 
     it("appends shared-module Supabase deploy failures as caide-output and still commits", async () => {
@@ -592,30 +537,20 @@ describe("handleLocalAgentStream", () => {
           "Failed to redeploy Supabase functions: RateLimitError: Rate limited (429): Too Many Requests",
       });
 
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       const errorMessages = getMessagesByChannel("chat:response:error");
       expect(errorMessages).toHaveLength(0);
 
-      const contentUpdates = dbOperations.updates.filter(
-        (u) => u.data.content !== undefined,
-      );
-      const finalContent = contentUpdates[contentUpdates.length - 1].data
-        .content as string;
+      const contentUpdates = dbOperations.updates.filter((u) => u.data.content !== undefined);
+      const finalContent = contentUpdates[contentUpdates.length - 1].data.content as string;
 
       expect(finalContent).toContain('<caide-output type="error"');
-      expect(finalContent).toContain(
-        'message="Failed to deploy Supabase functions"',
-      );
+      expect(finalContent).toContain('message="Failed to deploy Supabase functions"');
       expect(finalContent).toContain(
         "Failed to redeploy Supabase functions: RateLimitError: Rate limited (429): Too Many Requests",
       );
@@ -628,14 +563,13 @@ describe("handleLocalAgentStream", () => {
       expect(aiMessagesUpdates.length).toBeGreaterThan(0);
       const persistedAiMessages = JSON.stringify(
         (
-          aiMessagesUpdates[aiMessagesUpdates.length - 1].data
-            .aiMessagesJson as { messages: unknown[] }
+          aiMessagesUpdates[aiMessagesUpdates.length - 1].data.aiMessagesJson as {
+            messages: unknown[];
+          }
         ).messages,
       );
       expect(persistedAiMessages).toContain('<caide-output type=\\"error\\"');
-      expect(persistedAiMessages).toContain(
-        'message=\\"Failed to deploy Supabase functions\\"',
-      );
+      expect(persistedAiMessages).toContain('message=\\"Failed to deploy Supabase functions\\"');
     });
 
     it("warns when a sandbox script does not read the current attachment", async () => {
@@ -651,25 +585,17 @@ describe("handleLocalAgentStream", () => {
         { type: "text-delta", text: "I checked the project file." },
       ]);
 
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-          currentTurnHasOnDiskAttachment: true,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+        currentTurnHasOnDiskAttachment: true,
+      });
 
       const finalContent = [...dbOperations.updates]
         .reverse()
-        .find((update) => typeof update.data.content === "string")
-        ?.data.content;
-      expect(finalContent).toContain(
-        "Your model did not reference the attached file",
-      );
+        .find((update) => typeof update.data.content === "string")?.data.content;
+      expect(finalContent).toContain("Your model did not reference the attached file");
     });
 
     it("does not warn when a sandbox script reads an attachment path", async () => {
@@ -685,25 +611,17 @@ describe("handleLocalAgentStream", () => {
         { type: "text-delta", text: "I checked the attachment." },
       ]);
 
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-          currentTurnHasOnDiskAttachment: true,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+        currentTurnHasOnDiskAttachment: true,
+      });
 
       const finalContent = [...dbOperations.updates]
         .reverse()
-        .find((update) => typeof update.data.content === "string")
-        ?.data.content;
-      expect(finalContent).not.toContain(
-        "Your model did not reference the attached file",
-      );
+        .find((update) => typeof update.data.content === "string")?.data.content;
+      expect(finalContent).not.toContain("Your model did not reference the attached file");
     });
 
     it("does not warn when a sandbox script uses the attachments alias", async () => {
@@ -719,25 +637,17 @@ describe("handleLocalAgentStream", () => {
         { type: "text-delta", text: "I checked the attachment list." },
       ]);
 
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-          currentTurnHasOnDiskAttachment: true,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+        currentTurnHasOnDiskAttachment: true,
+      });
 
       const finalContent = [...dbOperations.updates]
         .reverse()
-        .find((update) => typeof update.data.content === "string")
-        ?.data.content;
-      expect(finalContent).not.toContain(
-        "Your model did not reference the attached file",
-      );
+        .find((update) => typeof update.data.content === "string")?.data.content;
+      expect(finalContent).not.toContain("Your model did not reference the attached file");
     });
 
     it("warns when a sandbox script only mentions attachments in prose", async () => {
@@ -753,25 +663,17 @@ describe("handleLocalAgentStream", () => {
         { type: "text-delta", text: "I checked the project file." },
       ]);
 
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-          currentTurnHasOnDiskAttachment: true,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+        currentTurnHasOnDiskAttachment: true,
+      });
 
       const finalContent = [...dbOperations.updates]
         .reverse()
-        .find((update) => typeof update.data.content === "string")
-        ?.data.content;
-      expect(finalContent).toContain(
-        "Your model did not reference the attached file",
-      );
+        .find((update) => typeof update.data.content === "string")?.data.content;
+      expect(finalContent).toContain("Your model did not reference the attached file");
     });
   });
 
@@ -788,16 +690,11 @@ describe("handleLocalAgentStream", () => {
       mockIsChatPendingCompaction.mockResolvedValue(true);
 
       // Act
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       // Assert
       expect(mockPerformCompaction).not.toHaveBeenCalled();
@@ -904,16 +801,11 @@ describe("handleLocalAgentStream", () => {
       };
 
       // Act
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       // Assert
       expect(mockCheckAndMarkForCompaction).toHaveBeenCalledWith(1, 200_000);
@@ -928,34 +820,24 @@ describe("handleLocalAgentStream", () => {
       );
       expect(secondStepPreparedMessages).toBeDefined();
 
-      const secondStepContents = (secondStepPreparedMessages ?? []).map(
-        (msg: any) =>
-          typeof msg.content === "string"
-            ? msg.content
-            : JSON.stringify(msg.content),
+      const secondStepContents = (secondStepPreparedMessages ?? []).map((msg: any) =>
+        typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content),
       );
 
       expect(
-        secondStepContents.some((content: string) =>
-          content.includes("Conversation compacted"),
-        ),
+        secondStepContents.some((content: string) => content.includes("Conversation compacted")),
       ).toBe(true);
       expect(secondStepContents).not.toContain("old context user");
       expect(secondStepContents).not.toContain("old context assistant");
       expect(secondStepContents).toContain("tool state assistant");
       expect(secondStepContents).toContain("tool state result");
 
-      const contentUpdates = dbOperations.updates.filter(
-        (u) => u.data.content !== undefined,
-      );
-      const finalContent = contentUpdates[contentUpdates.length - 1].data
-        .content as string;
+      const contentUpdates = dbOperations.updates.filter((u) => u.data.content !== undefined);
+      const finalContent = contentUpdates[contentUpdates.length - 1].data.content as string;
       const beforeCompactionIndex = finalContent.indexOf("before-compaction");
       const compactionIndex = finalContent.indexOf("Conversation compacted");
       const doneIndex = finalContent.indexOf("done");
-      const backupPathIndex = finalContent.indexOf(
-        ".caide/chats/1/compaction-test.md",
-      );
+      const backupPathIndex = finalContent.indexOf(".caide/chats/1/compaction-test.md");
 
       expect(beforeCompactionIndex).toBeGreaterThanOrEqual(0);
       expect(compactionIndex).toBeGreaterThan(beforeCompactionIndex);
@@ -1095,10 +977,7 @@ describe("handleLocalAgentStream", () => {
               toolCalls: [{}],
             });
 
-            const secondStepMessages = [
-              ...firstStepMessages,
-              ...preCompactionGenerated,
-            ];
+            const secondStepMessages = [...firstStepMessages, ...preCompactionGenerated];
             await options.prepareStep?.({
               messages: secondStepMessages,
               stepNumber: 1,
@@ -1121,10 +1000,7 @@ describe("handleLocalAgentStream", () => {
             },
             {
               response: {
-                messages: [
-                  ...preCompactionGenerated,
-                  ...postCompactionGenerated,
-                ],
+                messages: [...preCompactionGenerated, ...postCompactionGenerated],
               },
               toolCalls: [], // Last step has no tool calls (ended with text)
             },
@@ -1133,16 +1009,11 @@ describe("handleLocalAgentStream", () => {
       };
 
       // Act
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       // Assert
       const aiMessagesUpdates = dbOperations.updates.filter(
@@ -1150,8 +1021,7 @@ describe("handleLocalAgentStream", () => {
       );
       expect(aiMessagesUpdates).toHaveLength(1);
       expect(
-        (aiMessagesUpdates[0].data.aiMessagesJson as { messages: unknown[] })
-          .messages,
+        (aiMessagesUpdates[0].data.aiMessagesJson as { messages: unknown[] }).messages,
       ).toEqual(postCompactionGenerated);
     });
   });
@@ -1178,29 +1048,20 @@ describe("handleLocalAgentStream", () => {
           },
         ],
       });
-      mockStreamResult = createFakeStream([
-        { type: "text-delta", text: "Done" },
-      ]);
+      mockStreamResult = createFakeStream([{ type: "text-delta", text: "Done" }]);
 
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       const fullChunks = getMessagesByChannel("chat:response:chunk")
         .map((message) => message.args[0] as { messages?: unknown[] })
         .filter((payload) => payload.messages !== undefined);
       expect(fullChunks.length).toBeGreaterThan(0);
       expect(JSON.stringify(fullChunks)).not.toContain("aiMessagesJson");
-      expect(JSON.stringify(fullChunks)).not.toContain(
-        "MAIN_PROCESS_ONLY_SECRET_PAYLOAD",
-      );
+      expect(JSON.stringify(fullChunks)).not.toContain("MAIN_PROCESS_ONLY_SECRET_PAYLOAD");
     });
 
     it("should accumulate text-delta parts and update database", async () => {
@@ -1216,16 +1077,11 @@ describe("handleLocalAgentStream", () => {
       ]);
 
       // Act
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       // Assert - check that chunks were sent
       const chunkMessages = getMessagesByChannel("chat:response:chunk");
@@ -1240,9 +1096,7 @@ describe("handleLocalAgentStream", () => {
       });
 
       // Assert - verify database was updated with accumulated content
-      const contentUpdates = dbOperations.updates.filter(
-        (u) => u.data.content !== undefined,
-      );
+      const contentUpdates = dbOperations.updates.filter((u) => u.data.content !== undefined);
       expect(contentUpdates.length).toBeGreaterThan(0);
       // Final content should contain both chunks
       const lastContentUpdate = contentUpdates[contentUpdates.length - 1];
@@ -1290,32 +1144,22 @@ describe("handleLocalAgentStream", () => {
       };
 
       // Act
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       // Assert
       expect(attemptCount).toBe(2);
       expect(getMessagesByChannel("chat:response:error")).toHaveLength(0);
 
-      const contentUpdates = dbOperations.updates.filter(
-        (u) => u.data.content !== undefined,
-      );
-      const finalContent = contentUpdates[contentUpdates.length - 1].data
-        .content as string;
+      const contentUpdates = dbOperations.updates.filter((u) => u.data.content !== undefined);
+      const finalContent = contentUpdates[contentUpdates.length - 1].data.content as string;
       expect(finalContent).toContain("Partial response.");
       expect(finalContent).toContain("Recovered output.");
 
-      const continuationInstructionFound = (
-        streamMessagesByAttempt[1] ?? []
-      ).some(
+      const continuationInstructionFound = (streamMessagesByAttempt[1] ?? []).some(
         (message: any) =>
           message.role === "user" &&
           Array.isArray(message.content) &&
@@ -1383,16 +1227,11 @@ describe("handleLocalAgentStream", () => {
       };
 
       // Act
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       // Assert
       expect(attemptCount).toBe(2);
@@ -1476,24 +1315,17 @@ describe("handleLocalAgentStream", () => {
       };
 
       // Act
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       // Assert
       expect(attemptCount).toBe(2);
       expect(getMessagesByChannel("chat:response:error")).toHaveLength(0);
 
-      const continuationInstructionFound = (
-        streamMessagesByAttempt[1] ?? []
-      ).some(
+      const continuationInstructionFound = (streamMessagesByAttempt[1] ?? []).some(
         (message: any) =>
           message.role === "user" &&
           Array.isArray(message.content) &&
@@ -1530,16 +1362,11 @@ describe("handleLocalAgentStream", () => {
       };
 
       // Act
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       // Assert
       const errorMessages = getMessagesByChannel("chat:response:error");
@@ -1565,25 +1392,17 @@ describe("handleLocalAgentStream", () => {
       ]);
 
       // Act
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       // Assert - find the final content update
-      const contentUpdates = dbOperations.updates.filter(
-        (u) => u.data.content !== undefined,
-      );
+      const contentUpdates = dbOperations.updates.filter((u) => u.data.content !== undefined);
       expect(contentUpdates.length).toBeGreaterThan(0);
 
-      const finalContent = contentUpdates[contentUpdates.length - 1].data
-        .content as string;
+      const finalContent = contentUpdates[contentUpdates.length - 1].data.content as string;
       expect(finalContent).toContain("<think>");
       expect(finalContent).toContain("Let me think...");
       expect(finalContent).toContain("</think>");
@@ -1602,23 +1421,15 @@ describe("handleLocalAgentStream", () => {
       ]);
 
       // Act
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       // Assert
-      const contentUpdates = dbOperations.updates.filter(
-        (u) => u.data.content !== undefined,
-      );
-      const finalContent = contentUpdates[contentUpdates.length - 1].data
-        .content as string;
+      const contentUpdates = dbOperations.updates.filter((u) => u.data.content !== undefined);
+      const finalContent = contentUpdates[contentUpdates.length - 1].data.content as string;
 
       // The thinking block should be closed before the answer
       expect(finalContent).toContain("<think>");
@@ -1648,9 +1459,7 @@ describe("handleLocalAgentStream", () => {
       let secondStepPreparedMessages: any[] | undefined;
 
       mockStreamTextImpl = (options) => {
-        const firstStepMessages = [
-          { role: "user", content: "Help me plan this app" },
-        ];
+        const firstStepMessages = [{ role: "user", content: "Help me plan this app" }];
 
         return {
           fullStream: (async function* () {
@@ -1706,9 +1515,7 @@ describe("handleLocalAgentStream", () => {
             messages: [
               {
                 role: "assistant",
-                content: [
-                  { type: "text", text: "I fixed the questionnaire call." },
-                ],
+                content: [{ type: "text", text: "I fixed the questionnaire call." }],
               },
             ],
           }),
@@ -1717,16 +1524,11 @@ describe("handleLocalAgentStream", () => {
       };
 
       // Act
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       // Assert
       expect(secondStepPreparedMessages).toBeDefined();
@@ -1738,9 +1540,7 @@ describe("handleLocalAgentStream", () => {
             (part: any) =>
               part.type === "text" &&
               typeof part.text === "string" &&
-              part.text.includes(
-                "planning_questionnaire tool call had a format error",
-              ),
+              part.text.includes("planning_questionnaire tool call had a format error"),
           ),
       );
       expect(reflectionMessage).toBeDefined();
@@ -1750,8 +1550,7 @@ describe("handleLocalAgentStream", () => {
       );
       expect(aiMessagesUpdate).toBeDefined();
       const persistedAiMessages = JSON.stringify(
-        (aiMessagesUpdate!.data.aiMessagesJson as { messages: unknown[] })
-          .messages,
+        (aiMessagesUpdate!.data.aiMessagesJson as { messages: unknown[] }).messages,
       );
       expect(persistedAiMessages).not.toContain(
         "planning_questionnaire tool call had a format error",
@@ -1768,16 +1567,11 @@ describe("handleLocalAgentStream", () => {
       mockStreamResult = createFakeStream([]);
 
       // Act
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       // Assert
       const streamOptions = vi.mocked(streamText).mock.calls[0]?.[0] as any;
@@ -1797,15 +1591,10 @@ describe("handleLocalAgentStream", () => {
           update_todos: {
             execute: async (args: any) => {
               if (args.merge) {
-                const todosById = new Map(
-                  ctx.todos.map((todo) => [todo.id, todo]),
-                );
+                const todosById = new Map(ctx.todos.map((todo) => [todo.id, todo]));
                 for (const todo of args.todos) {
                   const existing = todosById.get(todo.id);
-                  todosById.set(
-                    todo.id,
-                    existing ? { ...existing, ...todo } : todo,
-                  );
+                  todosById.set(todo.id, existing ? { ...existing, ...todo } : todo);
                 }
                 ctx.todos = Array.from(todosById.values());
               } else {
@@ -1884,16 +1673,11 @@ describe("handleLocalAgentStream", () => {
       };
 
       // Act
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       // Assert
       expect(passCount).toBe(2);
@@ -1938,27 +1722,19 @@ describe("handleLocalAgentStream", () => {
       };
 
       // Act
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        abortController,
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, abortController, {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       // Assert - only first chunk should be processed (stream breaks on abort)
       expect(yieldCount).toBe(1);
 
       // Verify only the first chunk made it into the response
-      const contentUpdates = dbOperations.updates.filter(
-        (u) => u.data.content !== undefined,
-      );
+      const contentUpdates = dbOperations.updates.filter((u) => u.data.content !== undefined);
       expect(contentUpdates.length).toBeGreaterThan(0);
-      const finalContent = contentUpdates[contentUpdates.length - 1].data
-        .content as string;
+      const finalContent = contentUpdates[contentUpdates.length - 1].data.content as string;
       expect(finalContent).toContain("First");
       expect(finalContent).not.toContain("Second");
     });
@@ -1976,30 +1752,20 @@ describe("handleLocalAgentStream", () => {
           yield { type: "text-delta", text: "Partial response" };
           abortController.abort();
           // This will not be processed due to abort
-          throw new CaideError(
-            "Simulated abort error",
-            CaideErrorKind.Internal,
-          );
+          throw new CaideError("Simulated abort error", CaideErrorKind.Internal);
         })(),
         response: Promise.resolve({ messages: [] }),
       };
 
       // Act
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        abortController,
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, abortController, {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       // Assert - should have saved cancellation message
-      const contentUpdates = dbOperations.updates.filter(
-        (u) => u.data.content !== undefined,
-      );
+      const contentUpdates = dbOperations.updates.filter((u) => u.data.content !== undefined);
       const hasCancellationNote = contentUpdates.some((u) =>
         (u.data.content as string).includes("[Response cancelled by user]"),
       );
@@ -2013,26 +1779,17 @@ describe("handleLocalAgentStream", () => {
       const { event } = createFakeEvent();
       mockSettings = buildTestSettings({ enableCaidePro: true });
       mockChatData = buildTestChat();
-      mockStreamResult = createFakeStream([
-        { type: "text-delta", text: "Done" },
-      ]);
+      mockStreamResult = createFakeStream([{ type: "text-delta", text: "Done" }]);
 
       // Act
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       // Assert - commit hash should be saved
-      const commitUpdates = dbOperations.updates.filter(
-        (u) => u.data.commitHash !== undefined,
-      );
+      const commitUpdates = dbOperations.updates.filter((u) => u.data.commitHash !== undefined);
       expect(commitUpdates).toHaveLength(1);
       expect(commitUpdates[0].data.commitHash).toBe("abc123");
     });
@@ -2042,21 +1799,14 @@ describe("handleLocalAgentStream", () => {
       const { event } = createFakeEvent();
       mockSettings = buildTestSettings({ enableCaidePro: true });
       mockChatData = buildTestChat();
-      mockStreamResult = createFakeStream([
-        { type: "text-delta", text: "Done" },
-      ]);
+      mockStreamResult = createFakeStream([{ type: "text-delta", text: "Done" }]);
 
       // Act
-      await handleLocalAgentStream(
-        event,
-        { chatId: 1, prompt: "test" },
-        new AbortController(),
-        {
-          placeholderMessageId: 10,
-          systemPrompt: "You are helpful",
-          caideRequestId,
-        },
-      );
+      await handleLocalAgentStream(event, { chatId: 1, prompt: "test" }, new AbortController(), {
+        placeholderMessageId: 10,
+        systemPrompt: "You are helpful",
+        caideRequestId,
+      });
 
       // Assert - approval state should be set
       const approvalUpdates = dbOperations.updates.filter(

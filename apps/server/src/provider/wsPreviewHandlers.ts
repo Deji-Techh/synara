@@ -192,7 +192,16 @@ export function makeWsPreviewHandlers(
           threadId: ThreadId.makeUnsafe(input.threadId),
           target: input.target,
           ...(input.channel !== undefined ? { channel: input.channel } : {}),
-          ...(input.signing !== undefined ? { signing: input.signing as unknown as { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null } : {}),
+          ...(input.signing !== undefined
+            ? {
+                signing: input.signing as unknown as {
+                  keystorePath: string;
+                  keyAlias: string;
+                  storePassword: string;
+                  keyPassword: string;
+                } | null,
+              }
+            : {}),
         }),
       ),
     [PREVIEW_WS_METHODS.buildState]: (input) =>

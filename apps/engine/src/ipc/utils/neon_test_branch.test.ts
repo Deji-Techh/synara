@@ -148,9 +148,9 @@ describe("createTempTestBranch", () => {
   });
 
   it("throws when the app has no Neon project", async () => {
-    await expect(
-      createTempTestBranch(makeApp({ neonProjectId: null })),
-    ).rejects.toThrow(/not connected to a Neon project/);
+    await expect(createTempTestBranch(makeApp({ neonProjectId: null }))).rejects.toThrow(
+      /not connected to a Neon project/,
+    );
   });
 
   it("attaches auth details when Neon Auth activates", async () => {
@@ -203,9 +203,7 @@ describe("createTempTestBranch", () => {
   it("dead-ends when the app uses Neon Auth but provisioning fails", async () => {
     // ensureNeonAuth resolves undefined (default) → auth could not be activated.
     await expect(
-      createTempTestBranch(
-        makeApp({ neonDevelopmentAuthCookieSecret: "dev-secret" }),
-      ),
+      createTempTestBranch(makeApp({ neonDevelopmentAuthCookieSecret: "dev-secret" })),
     ).rejects.toThrow(/Neon Auth/);
     // The just-created branch is deleted and the column cleared so we don't
     // orphan it or run the app against real auth with an isolated DB branch.
@@ -222,9 +220,7 @@ describe("createTempTestBranch", () => {
     // reconciliation sweep can retry the delete.
     mocks.deleteProjectBranch.mockRejectedValueOnce(new Error("neon down"));
     await expect(
-      createTempTestBranch(
-        makeApp({ neonDevelopmentAuthCookieSecret: "dev-secret" }),
-      ),
+      createTempTestBranch(makeApp({ neonDevelopmentAuthCookieSecret: "dev-secret" })),
     ).rejects.toThrow(/Neon Auth/);
     expect(mocks.set).not.toHaveBeenCalledWith({ neonTestBranchId: null });
   });
@@ -235,9 +231,7 @@ describe("createTempTestBranch", () => {
     mocks.createProjectBranch.mockResolvedValueOnce({
       data: { branch: { id: "partial-br" }, connection_uris: [] },
     });
-    await expect(createTempTestBranch(makeApp())).rejects.toThrow(
-      /connection string/,
-    );
+    await expect(createTempTestBranch(makeApp())).rejects.toThrow(/connection string/);
     expect(mocks.deleteProjectBranch).toHaveBeenCalledWith({
       projectId: "proj-1",
       branchId: "partial-br",
@@ -249,9 +243,9 @@ describe("createTempTestBranch", () => {
     // the column pointing at it for the reconciliation sweep instead of the new
     // branch id.
     mocks.deleteProjectBranch.mockRejectedValueOnce(new Error("neon down"));
-    await expect(
-      createTempTestBranch(makeApp({ neonTestBranchId: "old-br" })),
-    ).rejects.toThrow(/previous Neon test branch/);
+    await expect(createTempTestBranch(makeApp({ neonTestBranchId: "old-br" }))).rejects.toThrow(
+      /previous Neon test branch/,
+    );
     expect(mocks.set).not.toHaveBeenCalledWith({
       neonTestBranchId: "test-new-branch-id",
     });
@@ -324,9 +318,7 @@ describe("reconcileOrphanTestBranches", () => {
   });
 
   it("keeps the orphan branch tracked when real env repair fails", async () => {
-    mocks.selectWhere.mockResolvedValue([
-      makeApp({ neonTestBranchId: "leaked-br" }),
-    ]);
+    mocks.selectWhere.mockResolvedValue([makeApp({ neonTestBranchId: "leaked-br" })]);
     mocks.getConnectionUri.mockRejectedValue(new Error("neon down"));
 
     await reconcileOrphanTestBranches();

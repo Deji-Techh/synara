@@ -1,12 +1,7 @@
 import fs from "node:fs";
 import { z } from "zod";
 import log from "electron-log";
-import {
-  ToolDefinition,
-  AgentContext,
-  escapeXmlAttr,
-  escapeXmlContent,
-} from "./types";
+import { ToolDefinition, AgentContext, escapeXmlAttr, escapeXmlContent } from "./types";
 import { safeJoin } from "@/ipc/utils/path_utils";
 import { deploySupabaseFunction } from "@/supabase_admin/supabase_management_client";
 import {
@@ -22,21 +17,13 @@ import { withLock, getFileWriteKey } from "@/ipc/utils/lock_utils";
 const logger = log.scope("multi_replace");
 
 const replacementChunkSchema = z.object({
-  startLine: z
-    .number()
-    .describe("The starting line number (1-indexed) of the chunk to replace."),
-  endLine: z
-    .number()
-    .describe("The ending line number (1-indexed) of the chunk to replace."),
-  replacementContent: z
-    .string()
-    .describe("The content to replace the target chunk with."),
+  startLine: z.number().describe("The starting line number (1-indexed) of the chunk to replace."),
+  endLine: z.number().describe("The ending line number (1-indexed) of the chunk to replace."),
+  replacementContent: z.string().describe("The content to replace the target chunk with."),
 });
 
 const multiReplaceSchema = z.object({
-  file_path: z
-    .string()
-    .describe("The path to the file you want to search and replace in."),
+  file_path: z.string().describe("The path to the file you want to search and replace in."),
   chunks: z
     .array(replacementChunkSchema)
     .min(1)
@@ -45,9 +32,7 @@ const multiReplaceSchema = z.object({
     ),
 });
 
-export const multiReplaceTool: ToolDefinition<
-  z.infer<typeof multiReplaceSchema>
-> = {
+export const multiReplaceTool: ToolDefinition<z.infer<typeof multiReplaceSchema>> = {
   name: "multi_replace",
   description: `Use this tool to propose multiple, targeted line-based edits to an existing file.
 
@@ -64,8 +49,7 @@ CRITICAL REQUIREMENTS:
   defaultConsent: "always",
   modifiesState: true,
 
-  getConsentPreview: (args) =>
-    `Edit ${args.file_path} (${args.chunks?.length ?? 0} chunks)`,
+  getConsentPreview: (args) => `Edit ${args.file_path} (${args.chunks?.length ?? 0} chunks)`,
 
   buildXml: (args, isComplete) => {
     if (!args.file_path) return undefined;
@@ -97,10 +81,7 @@ CRITICAL REQUIREMENTS:
 
     await withLock(getFileWriteKey(fullFilePath), async () => {
       if (!fs.existsSync(fullFilePath)) {
-        throw new CaideError(
-          `File does not exist: ${args.file_path}`,
-          CaideErrorKind.NotFound,
-        );
+        throw new CaideError(`File does not exist: ${args.file_path}`, CaideErrorKind.NotFound);
       }
 
       const original = await fs.promises.readFile(fullFilePath, "utf8");
@@ -118,10 +99,7 @@ CRITICAL REQUIREMENTS:
           );
         }
         if (chunk.endLine < chunk.startLine || chunk.endLine > lines.length) {
-          throw new CaideError(
-            `Invalid endLine: ${chunk.endLine}`,
-            CaideErrorKind.Validation,
-          );
+          throw new CaideError(`Invalid endLine: ${chunk.endLine}`, CaideErrorKind.Validation);
         }
         if (i > 0) {
           if (args.chunks[i - 1].endLine >= chunk.startLine) {
@@ -134,9 +112,7 @@ CRITICAL REQUIREMENTS:
       }
 
       // Apply changes from bottom to top to avoid line numbers shifting!
-      const sortedChunks = [...args.chunks].sort(
-        (a, b) => b.startLine - a.startLine,
-      );
+      const sortedChunks = [...args.chunks].sort((a, b) => b.startLine - a.startLine);
 
       for (const chunk of sortedChunks) {
         // Convert 1-indexed to 0-indexed

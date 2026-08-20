@@ -4,14 +4,8 @@ import path from "node:path";
 import { gitAddAll, gitCommit } from "./git_utils";
 import { simpleSpawn } from "./simpleSpawn";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
-import {
-  isPnpmIgnoredBuildsError,
-  PNPM_PM_ON_FAIL_IGNORE_ARG,
-} from "./socket_firewall";
-import {
-  recordAndReportDeniedPnpmBuilds,
-  resolvePnpmIgnoredBuilds,
-} from "./pnpm_denied_builds";
+import { isPnpmIgnoredBuildsError, PNPM_PM_ON_FAIL_IGNORE_ARG } from "./socket_firewall";
+import { recordAndReportDeniedPnpmBuilds, resolvePnpmIgnoredBuilds } from "./pnpm_denied_builds";
 
 export const logger = log.scope("app_upgrade_utils");
 
@@ -124,16 +118,11 @@ export async function applyComponentTagger(
     );
   }
 
-  const originalViteContent = await fs.promises.readFile(
-    viteConfigPath,
-    "utf-8",
-  );
+  const originalViteContent = await fs.promises.readFile(viteConfigPath, "utf-8");
   let content = originalViteContent;
 
   if (
-    !content.includes(
-      "import caideComponentTagger from '@dyad-sh/react-vite-component-tagger';",
-    )
+    !content.includes("import caideComponentTagger from '@dyad-sh/react-vite-component-tagger';")
   ) {
     const lines = content.split("\n");
     let lastImportIndex = -1;
@@ -176,9 +165,7 @@ export async function applyComponentTagger(
     if (!content.includes("caideComponentTagger()")) {
       const bracketIdx = pluginsIdx + matchStr.indexOf("[");
       content =
-        content.slice(0, bracketIdx) +
-        "[caideComponentTagger(), " +
-        content.slice(bracketIdx + 1);
+        content.slice(0, bracketIdx) + "[caideComponentTagger(), " + content.slice(bracketIdx + 1);
     }
   } else {
     throw new CaideError(
@@ -194,19 +181,16 @@ export async function applyComponentTagger(
       await simpleSpawnWithDeniedPnpmBuildSelfHeal({
         command: `pnpm ${PNPM_PM_ON_FAIL_IGNORE_ARG} add --ignore-workspace-root-check -D @dyad-sh/react-vite-component-tagger`,
         cwd: appPath,
-        successMessage:
-          "component-tagger dependency installed successfully with pnpm",
+        successMessage: "component-tagger dependency installed successfully with pnpm",
         errorPrefix: "Failed to install dependency via pnpm",
       });
     } catch (pnpmErr) {
       logger.info("pnpm install failed, falling back to npm", pnpmErr);
       try {
         await simpleSpawn({
-          command:
-            "npm install --save-dev --legacy-peer-deps @dyad-sh/react-vite-component-tagger",
+          command: "npm install --save-dev --legacy-peer-deps @dyad-sh/react-vite-component-tagger",
           cwd: appPath,
-          successMessage:
-            "component-tagger dependency installed successfully with npm",
+          successMessage: "component-tagger dependency installed successfully with npm",
           errorPrefix: "Failed to install dependency via npm",
         });
       } catch (npmErr) {
@@ -227,9 +211,7 @@ export async function applyComponentTagger(
     }
   } else {
     try {
-      const packageJson = JSON.parse(
-        await fs.promises.readFile(packageJsonPath, "utf-8"),
-      );
+      const packageJson = JSON.parse(await fs.promises.readFile(packageJsonPath, "utf-8"));
       packageJson.devDependencies ??= {};
       packageJson.devDependencies["@dyad-sh/react-vite-component-tagger"] =
         COMPONENT_TAGGER_VERSION;
@@ -239,10 +221,7 @@ export async function applyComponentTagger(
           delete packageJson.dependencies;
         }
       }
-      await fs.promises.writeFile(
-        packageJsonPath,
-        `${JSON.stringify(packageJson, null, 2)}\n`,
-      );
+      await fs.promises.writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
     } catch (err) {
       logger.warn(
         "Failed to update package.json for component tagger, rolling back vite config changes",

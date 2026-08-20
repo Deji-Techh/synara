@@ -1,8 +1,7 @@
 import { z } from "zod";
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
-const REVERSE_DOMAIN =
-  /^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*){1,}(?:\.[a-z][a-z0-9_]*)*$/;
+const REVERSE_DOMAIN = /^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*){1,}(?:\.[a-z][a-z0-9_]*)*$/;
 const DEEP_LINK_SCHEME = /^[a-z][a-z0-9+.-]*$/;
 const VERSION_NAME = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
 
@@ -15,12 +14,7 @@ export const AppIdentitySchema = z.object({
   accentColor: z.string().regex(HEX_COLOR),
   applicationId: z.string().trim().max(160).regex(REVERSE_DOMAIN),
   iosBundleId: z.string().trim().max(160).regex(REVERSE_DOMAIN).nullable(),
-  androidApplicationId: z
-    .string()
-    .trim()
-    .max(160)
-    .regex(REVERSE_DOMAIN)
-    .nullable(),
+  androidApplicationId: z.string().trim().max(160).regex(REVERSE_DOMAIN).nullable(),
   iosDisplayName: z.string().trim().min(1).max(80).nullable(),
   androidLabel: z.string().trim().min(1).max(80).nullable(),
   versionName: z.string().trim().max(64).regex(VERSION_NAME),
@@ -72,10 +66,7 @@ export function defaultAppIdentity(appName: string): AppIdentity {
   };
 }
 
-export function parseStoredAppIdentity(
-  value: unknown,
-  appName: string,
-): AppIdentity {
+export function parseStoredAppIdentity(value: unknown, appName: string): AppIdentity {
   const parsed = AppIdentitySchema.safeParse(value);
   return parsed.success ? parsed.data : defaultAppIdentity(appName);
 }

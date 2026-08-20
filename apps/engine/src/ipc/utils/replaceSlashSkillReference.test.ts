@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  replaceSlashSkillReference,
-  slugForPrompt,
-} from "@/ipc/utils/replaceSlashSkillReference";
+import { replaceSlashSkillReference, slugForPrompt } from "@/ipc/utils/replaceSlashSkillReference";
 
 describe("replaceSlashSkillReference", () => {
   it("returns original when no slash-slug pattern present", () => {
@@ -32,9 +29,7 @@ describe("replaceSlashSkillReference", () => {
       "github-actions-debugging": "Debug failing GitHub Actions workflows.",
     };
     const output = replaceSlashSkillReference(input, promptsBySlug);
-    expect(output).toBe(
-      "Please do Debug failing GitHub Actions workflows. now",
-    );
+    expect(output).toBe("Please do Debug failing GitHub Actions workflows. now");
   });
 
   it("replaces multiple /slug occurrences", () => {
@@ -82,9 +77,7 @@ describe("replaceSlashSkillReference", () => {
 
 describe("slugForPrompt", () => {
   it("returns explicit slug when set", () => {
-    expect(slugForPrompt({ title: "My Prompt", slug: "custom" })).toBe(
-      "custom",
-    );
+    expect(slugForPrompt({ title: "My Prompt", slug: "custom" })).toBe("custom");
   });
 
   it("returns null when slug is null", () => {

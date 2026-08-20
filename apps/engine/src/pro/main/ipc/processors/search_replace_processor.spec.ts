@@ -103,9 +103,7 @@ FOUR
 `;
     const { success, content } = applySearchReplace(original, diff);
     expect(success).toBe(true);
-    expect(content).toBe(
-      ["ONE", "ONE-EXTRA", "2", "3", "FOUR", "5"].join("\n"),
-    );
+    expect(content).toBe(["ONE", "ONE-EXTRA", "2", "3", "FOUR", "5"].join("\n"));
   });
 
   it("detects and strips line-numbered content, inferring start line when omitted", () => {
@@ -123,13 +121,7 @@ A\nB
   });
 
   it("preserves indentation relative to matched block", () => {
-    const original = [
-      "function test() {",
-      "  if (x) {",
-      "    doThing();",
-      "  }",
-      "}",
-    ].join("\n");
+    const original = ["function test() {", "  if (x) {", "    doThing();", "  }", "}"].join("\n");
     const diff = `
 <<<<<<< SEARCH
   if (x) {
@@ -488,9 +480,7 @@ describe("search_replace_processor - options", () => {
       // Should match via trimming since exact match with empty line fails
       expect(content).toContain("return 2");
       // Original structure preserved (no extra empty lines added)
-      expect(content).toBe(
-        ["function test() {", "  return 2;", "}"].join("\n"),
-      );
+      expect(content).toBe(["function test() {", "  return 2;", "}"].join("\n"));
     });
 
     it("does not trim if exact match succeeds", () => {
@@ -546,9 +536,7 @@ function greet() {
     expect(error).toContain("did not match");
 
     // Verify detailed logging was called with expected diagnostic information
-    const allErrorCalls = mockError.mock.calls
-      .map((call) => call[0])
-      .join("\n");
+    const allErrorCalls = mockError.mock.calls.map((call) => call[0]).join("\n");
     expect(allErrorCalls).toMatchInlineSnapshot(`
       "=== SEARCH/REPLACE MATCH FAILURE (Block 1) ===
 
@@ -583,13 +571,7 @@ function greet() {
   });
 
   it("logs the correct number of matching lines in partial match", () => {
-    const original = [
-      "line one",
-      "line two",
-      "line three",
-      "line four",
-      "line five",
-    ].join("\n");
+    const original = ["line one", "line two", "line three", "line four", "line five"].join("\n");
 
     // Search for content where 2 out of 3 lines match
     const diff = `
@@ -606,9 +588,7 @@ replaced
     expect(success).toBe(false);
 
     // Verify logging shows partial match info
-    const allErrorCalls = mockError.mock.calls
-      .map((call) => call[0])
-      .join("\n");
+    const allErrorCalls = mockError.mock.calls.map((call) => call[0]).join("\n");
     expect(allErrorCalls).toMatchInlineSnapshot(`
       "=== SEARCH/REPLACE MATCH FAILURE (Block 1) ===
 
@@ -652,9 +632,7 @@ replaced
     expect(success).toBe(false);
 
     // Verify JSON.stringify is used (shows \t as escaped in the output)
-    const allErrorCalls = mockError.mock.calls
-      .map((call) => call[0])
-      .join("\n");
+    const allErrorCalls = mockError.mock.calls.map((call) => call[0]).join("\n");
     expect(allErrorCalls).toMatchInlineSnapshot(`
       "=== SEARCH/REPLACE MATCH FAILURE (Block 1) ===
 

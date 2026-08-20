@@ -44,9 +44,7 @@ describe("mention app utilities", () => {
   });
 
   it("does not query apps when the prompt has no app mentions", async () => {
-    const result = await extractMentionedAppsReferencesFromPrompt(
-      "Please update the landing page",
-    );
+    const result = await extractMentionedAppsReferencesFromPrompt("Please update the landing page");
 
     expect(result).toEqual([]);
     expect(dbMocks.findMany).not.toHaveBeenCalled();

@@ -35,13 +35,7 @@ describe("calculateFileChecksum", () => {
     const fd = fs.openSync(file, "w");
     try {
       fs.ftruncateSync(fd, 128 * 1024 * 1024);
-      fs.writeSync(
-        fd,
-        Buffer.from("sqlite-tail"),
-        0,
-        11,
-        128 * 1024 * 1024 - 11,
-      );
+      fs.writeSync(fd, Buffer.from("sqlite-tail"), 0, 11, 128 * 1024 * 1024 - 11);
     } finally {
       fs.closeSync(fd);
     }

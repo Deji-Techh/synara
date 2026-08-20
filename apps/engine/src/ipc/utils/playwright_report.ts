@@ -63,9 +63,7 @@ export const PLAYWRIGHT_REPORT_ERROR_FILE = "__playwright_runner__";
  * (role/text locators + auto-waiting) keep most real failures on the
  * assertion side.
  */
-export function classifyErrorText(
-  errorText: string | undefined,
-): "infra" | "assertion" {
+export function classifyErrorText(errorText: string | undefined): "infra" | "assertion" {
   if (!errorText) return "assertion";
   const text = errorText.toLowerCase();
   const infraSignals = [
@@ -102,9 +100,7 @@ function resultErrorText(r: PwTestResult): string | undefined {
 }
 
 function screenshotFromResult(r: PwTestResult): string | undefined {
-  const shot = r.attachments?.find(
-    (a) => a.name === "screenshot" && typeof a.path === "string",
-  );
+  const shot = r.attachments?.find((a) => a.name === "screenshot" && typeof a.path === "string");
   return shot?.path;
 }
 
@@ -197,9 +193,7 @@ function reduceSpec(spec: PwSpec): TestCaseResult | null {
     // the raw per-run result and never short-circuit on "unexpected".
     const errText = resultErrorText(final);
     const kind =
-      status === "timedOut" || status === "interrupted"
-        ? "infra"
-        : classifyErrorText(errText);
+      status === "timedOut" || status === "interrupted" ? "infra" : classifyErrorText(errText);
 
     if (kind === "infra") {
       hasInfra = true;
@@ -240,10 +234,7 @@ function reduceSpec(spec: PwSpec): TestCaseResult | null {
  * pass, assertion wins over infra (so a flaky/broken-test file never reads as
  * "you broke your app").
  */
-export function aggregateTestResults(
-  file: string,
-  tests: TestCaseResult[],
-): TestResult {
+export function aggregateTestResults(file: string, tests: TestCaseResult[]): TestResult {
   let durationMs = 0;
   let hasInfra = false;
   let hasAssertion = false;
@@ -286,10 +277,7 @@ export function aggregateTestResults(
  * carries its individual `test()` cases (`tests`) so the UI can show a tree and
  * surface per-test status; the file-level status aggregates them.
  */
-export function parsePlaywrightReport(
-  report: PwReport,
-  appPath: string,
-): TestResult[] {
+export function parsePlaywrightReport(report: PwReport, appPath: string): TestResult[] {
   const specs: SpecWithFile[] = [];
   for (const suite of report.suites ?? []) {
     collectSpecs(suite, undefined, specs);
@@ -299,9 +287,7 @@ export function parsePlaywrightReport(
 
   for (const { spec, file: rawFile } of specs) {
     if (!rawFile) continue;
-    const file = path.isAbsolute(rawFile)
-      ? path.relative(appPath, rawFile)
-      : rawFile;
+    const file = path.isAbsolute(rawFile) ? path.relative(appPath, rawFile) : rawFile;
     // Normalize all separators to POSIX. A global replace is more robust than
     // split(path.sep) because Playwright may report mixed separators on Windows.
     const normalized = file.replace(/\\/g, "/");
@@ -320,8 +306,7 @@ export function parsePlaywrightReport(
     results.push(aggregateTestResults(file, tests));
   }
 
-  const reportErrors =
-    report.errors?.map((e) => e.message).filter((m): m is string => !!m) ?? [];
+  const reportErrors = report.errors?.map((e) => e.message).filter((m): m is string => !!m) ?? [];
   if (reportErrors.length > 0) {
     const error = reportErrors.join("\n");
     results.push({

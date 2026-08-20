@@ -16,10 +16,7 @@ export function registerSettingsHandlers() {
     return readEffectiveSettings();
   });
 
-  createTypedHandler(
-    settingsContracts.validateProviderApiKey,
-    async (_, params) => {
-      return validateProviderApiKey(params);
-    },
-  );
+  createTypedHandler(settingsContracts.validateProviderApiKey, async (_, params) => {
+    return validateProviderApiKey(params);
+  });
 }

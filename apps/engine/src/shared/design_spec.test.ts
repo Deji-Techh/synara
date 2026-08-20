@@ -9,20 +9,13 @@ import {
 } from "./design_spec";
 
 function completeSpec() {
-  const spec = JSON.parse(
-    readFileSync(path.resolve("scaffold/.caide/design-spec.json"), "utf8"),
-  );
+  const spec = JSON.parse(readFileSync(path.resolve("scaffold/.caide/design-spec.json"), "utf8"));
   spec.status = "approved";
   spec.product.name = "Campus";
   spec.product.archetype = "social";
   spec.product.primaryUser = "University students";
-  spec.product.primaryGoal =
-    "Share campus updates and coordinate student activities.";
-  spec.product.coreActions = [
-    "Read the feed",
-    "Create a post",
-    "Message a classmate",
-  ];
+  spec.product.primaryGoal = "Share campus updates and coordinate student activities.";
+  spec.product.coreActions = ["Read the feed", "Create a post", "Message a classmate"];
   spec.product.risks = ["Harassment and unwanted disclosure"];
   spec.direction.references.push({
     app: "Discord",
@@ -41,8 +34,7 @@ function completeSpec() {
     {
       ...spec.components[0],
       name: "PostRow",
-      purpose:
-        "Present author, context, content, media, and engagement actions.",
+      purpose: "Present author, context, content, media, and engagement actions.",
     },
     {
       ...spec.components[0],
@@ -76,23 +68,11 @@ describe("CAIDE design specification", () => {
   it("ships strict visual, motion, accessibility, and flow defaults", () => {
     expect(DEFAULT_DESIGN_ENGINE_CONFIG.version).toBe(2);
     expect(DEFAULT_DESIGN_ENGINE_CONFIG.requireMotionSpecBeforeCode).toBe(true);
-    expect(DEFAULT_DESIGN_ENGINE_CONFIG.qualityGates.minimumOverallScore).toBe(
-      94,
-    );
-    expect(DEFAULT_DESIGN_ENGINE_CONFIG.qualityGates.minimumMotionScore).toBe(
-      92,
-    );
-    expect(
-      DEFAULT_DESIGN_ENGINE_CONFIG.qualityGates.minimumAccessibilityScore,
-    ).toBe(95);
-    expect(DEFAULT_DESIGN_ENGINE_CONFIG.qualityGates.minimumCoreFlowScore).toBe(
-      98,
-    );
-    expect(DEFAULT_DESIGN_ENGINE_CONFIG.qualityGates.maximumMajorIssues).toBe(
-      0,
-    );
-    expect(DEFAULT_DESIGN_ENGINE_CONFIG.componentPolicy.allowNestedCards).toBe(
-      false,
-    );
+    expect(DEFAULT_DESIGN_ENGINE_CONFIG.qualityGates.minimumOverallScore).toBe(94);
+    expect(DEFAULT_DESIGN_ENGINE_CONFIG.qualityGates.minimumMotionScore).toBe(92);
+    expect(DEFAULT_DESIGN_ENGINE_CONFIG.qualityGates.minimumAccessibilityScore).toBe(95);
+    expect(DEFAULT_DESIGN_ENGINE_CONFIG.qualityGates.minimumCoreFlowScore).toBe(98);
+    expect(DEFAULT_DESIGN_ENGINE_CONFIG.qualityGates.maximumMajorIssues).toBe(0);
+    expect(DEFAULT_DESIGN_ENGINE_CONFIG.componentPolicy.allowNestedCards).toBe(false);
   });
 });

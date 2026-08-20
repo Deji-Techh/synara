@@ -11,10 +11,10 @@ export interface GenericApiAdapterShape extends ProviderAdapterShape<ProviderAda
 export const makeGenericApiAdapter = (provider: ApiProviderKind) =>
   Effect.gen(function* () {
     const credentials = yield* ProviderCredentials;
-    
+
     const adapter: ProviderAdapterShape<ProviderAdapterError> = {
       provider,
-      
+
       startTurn: (threadId, request, options) =>
         Effect.gen(function* () {
           // Foundation for OpenAI-compatible endpoint wrapper
@@ -32,19 +32,19 @@ export const makeGenericApiAdapter = (provider: ApiProviderKind) =>
             },
           };
         }),
-        
+
       getEventStream: () => Stream.empty,
-      
+
       handleDecision: () => Effect.succeed({}),
-      
+
       handleUserInput: () => Effect.succeed({}),
-      
+
       recoverThread: () => Effect.succeed({}),
-      
+
       rollbackThread: () => Effect.succeed({} as any),
-      
+
       listModels: () => Effect.succeed([]),
     };
-    
+
     return adapter;
   });

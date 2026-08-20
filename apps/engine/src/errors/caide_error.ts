@@ -33,9 +33,7 @@ const TELEMETRY_FILTERED_KINDS: ReadonlySet<CaideErrorKind> = new Set([
 /**
  * Returns true if this kind should not be sent to PostHog as an `$exception` event.
  */
-export function isCaideErrorKindFilteredFromTelemetry(
-  kind: CaideErrorKind,
-): boolean {
+export function isCaideErrorKindFilteredFromTelemetry(kind: CaideErrorKind): boolean {
   return TELEMETRY_FILTERED_KINDS.has(kind);
 }
 
@@ -43,11 +41,7 @@ export class CaideError extends Error {
   readonly kind: CaideErrorKind;
   readonly cause?: unknown;
 
-  constructor(
-    message: string,
-    kind: CaideErrorKind,
-    options?: { cause?: unknown },
-  ) {
+  constructor(message: string, kind: CaideErrorKind, options?: { cause?: unknown }) {
     super(message);
     this.name = "CAIDEError";
     this.kind = kind;

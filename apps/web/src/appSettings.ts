@@ -375,7 +375,8 @@ export function isGitTextGenerationSettingsDirty(
   defaults: AppSettings,
 ): boolean {
   return (
-    (settings.textGenerationProvider ?? "openai") !== (defaults.textGenerationProvider ?? "openai") ||
+    (settings.textGenerationProvider ?? "openai") !==
+      (defaults.textGenerationProvider ?? "openai") ||
     (settings.textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL) !==
       (defaults.textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL)
   );
@@ -739,10 +740,7 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
     grokBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.grokBinaryPath),
     droidBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.droidBinaryPath),
     kiloBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.kiloBinaryPath),
-    openCodeBinaryPath: normalizeProviderBinaryPathOverride(
-      "openai",
-      settings.openCodeBinaryPath,
-    ),
+    openCodeBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.openCodeBinaryPath),
     piBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.piBinaryPath),
     uiDensity: normalizeUiDensityValue(settings.uiDensity),
     chatFontSizePx: normalizeChatFontSizePx(settings.chatFontSizePx),
@@ -803,7 +801,8 @@ function serverSettingsToAppSettings(settings: ServerSettingsView): Partial<AppS
     kiloServerUrl: (settings.providers as any).kilo?.serverUrl,
     openCodeBinaryPath: (settings.providers as any).opencode?.binaryPath,
     openCodeExperimentalWebSockets: (settings.providers as any).opencode?.experimentalWebSockets,
-    openCodeServerPasswordConfigured: (settings.providers as any).opencode?.serverPasswordConfigured,
+    openCodeServerPasswordConfigured: (settings.providers as any).opencode
+      ?.serverPasswordConfigured,
     openCodeServerUrl: (settings.providers as any).opencode?.serverUrl,
     piAgentDir: (settings.providers as any).pi?.agentDir,
     piBinaryPath: (settings.providers as any).pi?.binaryPath,
@@ -1101,75 +1100,52 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
     };
   }
 
-  if (
-    hasOwn(patch, "groqApiKey") ||
-    hasOwn(patch, "groqBaseUrl")
-  ) {
+  if (hasOwn(patch, "groqApiKey") || hasOwn(patch, "groqBaseUrl")) {
     providers.groq = {
       ...(hasOwn(patch, "groqApiKey") ? { apiKey: patch.groqApiKey ?? "" } : {}),
       ...(hasOwn(patch, "groqBaseUrl") ? { baseUrl: patch.groqBaseUrl ?? "" } : {}),
     };
   }
 
-  if (
-    hasOwn(patch, "mistralApiKey") ||
-    hasOwn(patch, "mistralBaseUrl")
-  ) {
+  if (hasOwn(patch, "mistralApiKey") || hasOwn(patch, "mistralBaseUrl")) {
     providers.mistral = {
       ...(hasOwn(patch, "mistralApiKey") ? { apiKey: patch.mistralApiKey ?? "" } : {}),
       ...(hasOwn(patch, "mistralBaseUrl") ? { baseUrl: patch.mistralBaseUrl ?? "" } : {}),
     };
   }
 
-  if (
-    hasOwn(patch, "togetherApiKey") ||
-    hasOwn(patch, "togetherBaseUrl")
-  ) {
+  if (hasOwn(patch, "togetherApiKey") || hasOwn(patch, "togetherBaseUrl")) {
     providers.together = {
       ...(hasOwn(patch, "togetherApiKey") ? { apiKey: patch.togetherApiKey ?? "" } : {}),
       ...(hasOwn(patch, "togetherBaseUrl") ? { baseUrl: patch.togetherBaseUrl ?? "" } : {}),
     };
   }
 
-  if (
-    hasOwn(patch, "cohereApiKey") ||
-    hasOwn(patch, "cohereBaseUrl")
-  ) {
+  if (hasOwn(patch, "cohereApiKey") || hasOwn(patch, "cohereBaseUrl")) {
     providers.cohere = {
       ...(hasOwn(patch, "cohereApiKey") ? { apiKey: patch.cohereApiKey ?? "" } : {}),
       ...(hasOwn(patch, "cohereBaseUrl") ? { baseUrl: patch.cohereBaseUrl ?? "" } : {}),
     };
   }
 
-  if (
-    hasOwn(patch, "xaiApiKey") ||
-    hasOwn(patch, "xaiBaseUrl")
-  ) {
+  if (hasOwn(patch, "xaiApiKey") || hasOwn(patch, "xaiBaseUrl")) {
     providers.xai = {
       ...(hasOwn(patch, "xaiApiKey") ? { apiKey: patch.xaiApiKey ?? "" } : {}),
       ...(hasOwn(patch, "xaiBaseUrl") ? { baseUrl: patch.xaiBaseUrl ?? "" } : {}),
     };
   }
 
-  if (
-    hasOwn(patch, "fireworksApiKey") ||
-    hasOwn(patch, "fireworksBaseUrl")
-  ) {
+  if (hasOwn(patch, "fireworksApiKey") || hasOwn(patch, "fireworksBaseUrl")) {
     providers.fireworks = {
       ...(hasOwn(patch, "fireworksApiKey") ? { apiKey: patch.fireworksApiKey ?? "" } : {}),
       ...(hasOwn(patch, "fireworksBaseUrl") ? { baseUrl: patch.fireworksBaseUrl ?? "" } : {}),
     };
   }
 
-  if (
-    hasOwn(patch, "opencodeZenApiKey") ||
-    hasOwn(patch, "opencodeZenBaseUrl")
-  ) {
+  if (hasOwn(patch, "opencodeZenApiKey") || hasOwn(patch, "opencodeZenBaseUrl")) {
     providers.opencodeZen = {
       ...(hasOwn(patch, "opencodeZenApiKey") ? { apiKey: patch.opencodeZenApiKey ?? "" } : {}),
-      ...(hasOwn(patch, "opencodeZenBaseUrl")
-        ? { baseUrl: patch.opencodeZenBaseUrl ?? "" }
-        : {}),
+      ...(hasOwn(patch, "opencodeZenBaseUrl") ? { baseUrl: patch.opencodeZenBaseUrl ?? "" } : {}),
     };
   }
 

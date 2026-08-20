@@ -207,9 +207,7 @@ async function collectRawExploreObservation({
     args: effectiveArgs,
   });
   const resultText = formatRawExploreCodeResult(rawResult);
-  const candidates = candidateRegistry.register(
-    candidatesFromRawExploreCodeResult(rawResult),
-  );
+  const candidates = candidateRegistry.register(candidatesFromRawExploreCodeResult(rawResult));
   pushObservation(
     observations,
     {
@@ -385,11 +383,9 @@ function buildObservedExploreCodeTool({
           app_name: parentArgs.app_name,
           tsconfig_path: parentArgs.tsconfig_path,
           max_files:
-            toolArgs.max_files ??
-            (parentArgs.intent === "explain" ? MAX_FILES : undefined),
+            toolArgs.max_files ?? (parentArgs.intent === "explain" ? MAX_FILES : undefined),
           max_depth:
-            toolArgs.max_depth ??
-            (parentArgs.intent === "explain" ? MAX_DEPTH : undefined),
+            toolArgs.max_depth ?? (parentArgs.intent === "explain" ? MAX_DEPTH : undefined),
         };
         const targetAppPath = resolveTargetAppPath(ctx, lockedArgs.app_name);
         const effectiveToolArgs = normalizeExploreCodeArgsForApp({
@@ -494,8 +490,7 @@ function wrapSubagentTool<TArgs>({
         }
 
         const result = await tool.execute(toolArgs, ctx);
-        const resultText =
-          typeof result === "string" ? result : JSON.stringify(result, null, 2);
+        const resultText = typeof result === "string" ? result : JSON.stringify(result, null, 2);
         const registeredCandidates = candidateRegistry.register(
           candidatesFromResult(toolArgs, result),
         );
@@ -566,9 +561,8 @@ function prepareExploreCodeSubagentStep({
   acceptedRef: { current: AcceptedReport | null };
   stepCount: number;
 }) {
-  let forcedStep: ReturnType<
-    typeof forceExploreCodeStep | typeof forceSubmitReportStep
-  > | null = null;
+  let forcedStep: ReturnType<typeof forceExploreCodeStep | typeof forceSubmitReportStep> | null =
+    null;
 
   // First step must use the compiler-backed explorer.
   if (observations.length === 0) {
@@ -583,9 +577,7 @@ function prepareExploreCodeSubagentStep({
   }
 
   const cleanedMessages = messages.map(cleanMessage);
-  const hasCleanedMessages = cleanedMessages.some(
-    (message, index) => message !== messages[index],
-  );
+  const hasCleanedMessages = cleanedMessages.some((message, index) => message !== messages[index]);
 
   if (!hasCleanedMessages) {
     return forcedStep ?? undefined;

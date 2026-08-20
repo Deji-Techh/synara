@@ -145,13 +145,7 @@ describe("providerModelsPrefetchQueryOptions", () => {
       cwd: "/tmp/project",
     });
     expect(antigravityOptions.queryKey).toEqual(
-      providerDiscoveryQueryKeys.models(
-        "google",
-        "/bin/antigravity",
-        null,
-        null,
-        "/tmp/project",
-      ),
+      providerDiscoveryQueryKeys.models("google", "/bin/antigravity", null, null, "/tmp/project"),
     );
 
     const codexOptions = providerModelsPrefetchQueryOptions({

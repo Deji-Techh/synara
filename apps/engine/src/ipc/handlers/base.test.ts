@@ -3,11 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
-import {
-  defineContract,
-  unwrapIpcEnvelope,
-  type IpcInvokeEnvelope,
-} from "../contracts/core";
+import { defineContract, unwrapIpcEnvelope, type IpcInvokeEnvelope } from "../contracts/core";
 
 const mocks = vi.hoisted(() => ({
   handlers: new Map<string, (event: unknown, input: unknown) => unknown>(),
@@ -16,11 +12,9 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("electron", () => ({
   ipcMain: {
-    handle: vi.fn(
-      (channel: string, fn: (event: unknown, input: unknown) => unknown) => {
-        mocks.handlers.set(channel, fn);
-      },
-    ),
+    handle: vi.fn((channel: string, fn: (event: unknown, input: unknown) => unknown) => {
+      mocks.handlers.set(channel, fn);
+    }),
   },
 }));
 
@@ -35,10 +29,7 @@ vi.mock("../utils/test_utils", () => ({
 const { createTypedHandler } = await import("./base");
 const { createLoggedHandler } = await import("./safe_handle");
 
-function getEnvelope(
-  channel: string,
-  input?: unknown,
-): Promise<IpcInvokeEnvelope> {
+function getEnvelope(channel: string, input?: unknown): Promise<IpcInvokeEnvelope> {
   const handler = mocks.handlers.get(channel);
   if (!handler) {
     throw new Error(`No handler registered for ${channel}`);
@@ -81,9 +72,7 @@ describe("IPC handler envelopes", () => {
     const envelope = await getEnvelope("validation-channel", { value: "nope" });
 
     expect(() => unwrapIpcEnvelope(envelope)).toThrow(CaideError);
-    expect(() => unwrapIpcEnvelope(envelope)).toThrow(
-      "[validation-channel] Invalid input",
-    );
+    expect(() => unwrapIpcEnvelope(envelope)).toThrow("[validation-channel] Invalid input");
     expect(envelope.ok).toBe(false);
     if (envelope.ok === false) {
       expect(envelope.error.kind).toBe(CaideErrorKind.Validation);

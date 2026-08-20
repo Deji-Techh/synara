@@ -712,26 +712,29 @@ export const WsPreviewDevicesRpc = Rpc.make(PREVIEW_WS_METHODS.devices, {
   error: WsRpcError,
 });
 
-export const WsPreviewFlutterToolchainStatusRpc = Rpc.make(PREVIEW_WS_METHODS.flutterToolchainStatus, {
-  payload: FlutterToolchainStatusInput,
-  success: FlutterToolchainStatusResult,
-  error: WsRpcError,
-});
-
-export const WsPreviewFlutterToolchainInstallRpc = Rpc.make(PREVIEW_WS_METHODS.flutterToolchainInstall, {
-  payload: FlutterToolchainInstallInput,
-  success: FlutterToolchainInstallResult,
-  error: WsRpcError,
-});
-
-export const WsPreviewSupervisorGetStateRpc = Rpc.make(
-  PREVIEW_SUPERVISOR_WS_METHODS.getState,
+export const WsPreviewFlutterToolchainStatusRpc = Rpc.make(
+  PREVIEW_WS_METHODS.flutterToolchainStatus,
   {
-    payload: PreviewSupervisorGetStateInput,
-    success: PreviewSupervisorSnapshot,
+    payload: FlutterToolchainStatusInput,
+    success: FlutterToolchainStatusResult,
     error: WsRpcError,
   },
 );
+
+export const WsPreviewFlutterToolchainInstallRpc = Rpc.make(
+  PREVIEW_WS_METHODS.flutterToolchainInstall,
+  {
+    payload: FlutterToolchainInstallInput,
+    success: FlutterToolchainInstallResult,
+    error: WsRpcError,
+  },
+);
+
+export const WsPreviewSupervisorGetStateRpc = Rpc.make(PREVIEW_SUPERVISOR_WS_METHODS.getState, {
+  payload: PreviewSupervisorGetStateInput,
+  success: PreviewSupervisorSnapshot,
+  error: WsRpcError,
+});
 
 export const WsPreviewRpcGroup = RpcGroup.make(
   WsPreviewStartRpc,

@@ -9,9 +9,7 @@ export function listDumpFiles(dir: string): string[] {
   } catch {
     return [];
   }
-  const dumps = entries
-    .filter((f) => f.endsWith(".dmp"))
-    .map((f) => path.join(dir, f));
+  const dumps = entries.filter((f) => f.endsWith(".dmp")).map((f) => path.join(dir, f));
   return sortNewestFirst(dumps);
 }
 

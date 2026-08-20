@@ -1,12 +1,7 @@
 import path from "node:path";
 import { z } from "zod";
 import { glob } from "glob";
-import {
-  ToolDefinition,
-  AgentContext,
-  escapeXmlAttr,
-  escapeXmlContent,
-} from "./types";
+import { ToolDefinition, AgentContext, escapeXmlAttr, escapeXmlContent } from "./types";
 import { listCodebaseFileMetadata } from "../../../../../../utils/codebase";
 import { resolveDirectoryWithinAppPath } from "./path_safety";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
@@ -26,10 +21,7 @@ const listFilesSchema = z.object({
     .describe(
       "Optional. Name of a referenced app (from `@app:Name` mentions in the user's prompt) to list from instead of the current app. Omit to list the current app.",
     ),
-  recursive: z
-    .boolean()
-    .optional()
-    .describe("Whether to list files recursively (default: false)"),
+  recursive: z.boolean().optional().describe("Whether to list files recursively (default: false)"),
   include_ignored: z
     .boolean()
     .optional()
@@ -59,21 +51,13 @@ function sortListedPaths(entries: ListedPath[]): ListedPath[] {
 }
 
 function getXmlAttributes(args: ListFilesArgs, count?: number, total?: number) {
-  const dirAttr = args.directory
-    ? ` directory="${escapeXmlAttr(args.directory)}"`
-    : "";
-  const appNameAttr = args.app_name
-    ? ` app_name="${escapeXmlAttr(args.app_name)}"`
-    : "";
-  const recursiveAttr =
-    args.recursive !== undefined ? ` recursive="${args.recursive}"` : "";
+  const dirAttr = args.directory ? ` directory="${escapeXmlAttr(args.directory)}"` : "";
+  const appNameAttr = args.app_name ? ` app_name="${escapeXmlAttr(args.app_name)}"` : "";
+  const recursiveAttr = args.recursive !== undefined ? ` recursive="${args.recursive}"` : "";
   const includeIgnoredAttr =
-    args.include_ignored !== undefined
-      ? ` include_ignored="${args.include_ignored}"`
-      : "";
+    args.include_ignored !== undefined ? ` include_ignored="${args.include_ignored}"` : "";
   const countAttr = count !== undefined ? ` count="${count}"` : "";
-  const totalAttr =
-    total !== undefined && total > (count ?? 0) ? ` total="${total}"` : "";
+  const totalAttr = total !== undefined && total > (count ?? 0) ? ` total="${total}"` : "";
   const truncatedAttr = totalAttr ? ` truncated="true"` : "";
   return `${dirAttr}${appNameAttr}${recursiveAttr}${includeIgnoredAttr}${countAttr}${totalAttr}${truncatedAttr}`;
 }
@@ -139,15 +123,12 @@ export const listFilesTool: ToolDefinition<ListFilesArgs> = {
 
     // Use "**" for recursive, "*" for non-recursive (immediate children only)
     const globSuffix = args.recursive ? "/**" : "/*";
-    const globPath = sanitizedDirectory
-      ? sanitizedDirectory + globSuffix
-      : globSuffix.slice(1); // Remove leading "/" for root directory
+    const globPath = sanitizedDirectory ? sanitizedDirectory + globSuffix : globSuffix.slice(1); // Remove leading "/" for root directory
 
     let allPaths: ListedPath[];
 
     const isOutsideApp = Boolean(
-      sanitizedDirectory &&
-      (sanitizedDirectory.startsWith("../") || sanitizedDirectory === ".."),
+      sanitizedDirectory && (sanitizedDirectory.startsWith("../") || sanitizedDirectory === ".."),
     );
 
     if (args.include_ignored || isOutsideApp) {
@@ -164,10 +145,7 @@ export const listFilesTool: ToolDefinition<ListFilesArgs> = {
 
       allPaths = sortListedPaths(
         ignoredPaths.map((entry) => ({
-          path: path
-            .relative(targetAppPath, entry.fullpath())
-            .split(path.sep)
-            .join("/"),
+          path: path.relative(targetAppPath, entry.fullpath()).split(path.sep).join("/"),
           isDirectory: entry.isDirectory(),
         })),
       );
@@ -198,9 +176,7 @@ export const listFilesTool: ToolDefinition<ListFilesArgs> = {
         for (const file of filteredFiles) {
           if (sanitizedDirectory && !file.path.startsWith(prefix)) continue;
 
-          const remainder = sanitizedDirectory
-            ? file.path.slice(prefix.length)
-            : file.path;
+          const remainder = sanitizedDirectory ? file.path.slice(prefix.length) : file.path;
           const slashIndex = remainder.indexOf("/");
 
           if (slashIndex === -1) {
@@ -228,9 +204,7 @@ export const listFilesTool: ToolDefinition<ListFilesArgs> = {
     const wasTruncated = totalCount > cappedPaths.length;
 
     // Build full file list for LLM
-    const allFilesList =
-      cappedPaths.map((entry) => " - " + getDisplayPath(entry)).join("\n") ||
-      "";
+    const allFilesList = cappedPaths.map((entry) => " - " + getDisplayPath(entry)).join("\n") || "";
     const resultText = wasTruncated
       ? `${allFilesList}\n\n[TRUNCATED: Showing ${cappedPaths.length} of ${totalCount} paths. Use directory to narrow the listing.]`
       : allFilesList;
@@ -239,8 +213,7 @@ export const listFilesTool: ToolDefinition<ListFilesArgs> = {
     const MAX_FILES_TO_SHOW = 20;
     const displayedFiles = cappedPaths.slice(0, MAX_FILES_TO_SHOW);
     const abbreviatedList =
-      displayedFiles.map((entry) => " - " + getDisplayPath(entry)).join("\n") ||
-      "";
+      displayedFiles.map((entry) => " - " + getDisplayPath(entry)).join("\n") || "";
     const countInfo =
       totalCount > MAX_FILES_TO_SHOW
         ? `\n... and ${totalCount - MAX_FILES_TO_SHOW} more paths (${totalCount} total)`

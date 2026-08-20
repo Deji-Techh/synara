@@ -34,9 +34,7 @@ describe("toProblemReportError", () => {
     );
 
     expect(error).toBeInstanceOf(TypeCheckPreconditionError);
-    expect((error as TypeCheckPreconditionError).kind).toBe(
-      CaideErrorKind.Precondition,
-    );
+    expect((error as TypeCheckPreconditionError).kind).toBe(CaideErrorKind.Precondition);
     expect(getTypeCheckPreconditionKind(error)).toBe("typescript-not-found");
     expect(shouldFilterTelemetryException(error)).toBe(true);
   });
@@ -106,8 +104,7 @@ describe("generateProblemReport", () => {
     vi.useRealTimers();
   });
 
-  const start = () =>
-    generateProblemReport({ fullResponse: "", appPath: "/fake/app" });
+  const start = () => generateProblemReport({ fullResponse: "", appPath: "/fake/app" });
 
   it("resolves with the worker's report, posting input only after spawn", async () => {
     const report: ProblemReport = { problems: [] };
@@ -181,9 +178,7 @@ describe("generateProblemReport", () => {
 
     const promise = start();
     child.emit("spawn");
-    const expectation = expect(promise).rejects.toThrow(
-      "Type check timed out after 300s",
-    );
+    const expectation = expect(promise).rejects.toThrow("Type check timed out after 300s");
 
     await vi.advanceTimersByTimeAsync(TSC_WORKER_TIMEOUT_MS);
 

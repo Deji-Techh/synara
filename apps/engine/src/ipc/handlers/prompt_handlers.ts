@@ -66,10 +66,7 @@ export function registerPromptHandlers() {
   createTypedHandler(promptContracts.create, async (_, params) => {
     const { title, content, description, slug } = params;
     if (!title || !content) {
-      throw new CaideError(
-        "Title and content are required",
-        CaideErrorKind.External,
-      );
+      throw new CaideError("Title and content are required", CaideErrorKind.External);
     }
     const result = db
       .insert(prompts)

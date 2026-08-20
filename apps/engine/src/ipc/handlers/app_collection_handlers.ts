@@ -24,23 +24,14 @@ function buildAppCollectionDto(
 }
 
 function isUniqueNameError(error: unknown): boolean {
-  const message =
-    error instanceof Error
-      ? error.message
-      : typeof error === "string"
-        ? error
-        : "";
+  const message = error instanceof Error ? error.message : typeof error === "string" ? error : "";
   return message.includes("UNIQUE constraint failed: app_collections.name");
 }
 
 export function registerAppCollectionHandlers() {
   createTypedHandler(appCollectionContracts.list, async () => {
     const { db } = getHandlerContext();
-    const rows = db
-      .select()
-      .from(appCollections)
-      .orderBy(appCollections.name)
-      .all();
+    const rows = db.select().from(appCollections).orderBy(appCollections.name).all();
     const appRows = db
       .select({ id: apps.id, collectionId: apps.collectionId })
       .from(apps)
@@ -53,9 +44,7 @@ export function registerAppCollectionHandlers() {
       list.push(row.id);
       appsByCollection.set(row.collectionId, list);
     }
-    return rows.map((r) =>
-      buildAppCollectionDto(r, appsByCollection.get(r.id) ?? []),
-    );
+    return rows.map((r) => buildAppCollectionDto(r, appsByCollection.get(r.id) ?? []));
   });
 
   createTypedHandler(appCollectionContracts.create, async (_, params) => {
@@ -63,48 +52,29 @@ export function registerAppCollectionHandlers() {
     const { name, appIds } = params;
     const trimmed = name.trim();
     if (!trimmed) {
-      throw new CaideError(
-        "Collection name is required",
-        CaideErrorKind.Validation,
-      );
+      throw new CaideError("Collection name is required", CaideErrorKind.Validation);
     }
 
     let id: number;
     try {
       id = db.transaction((tx) => {
-        const insertResult = tx
-          .insert(appCollections)
-          .values({ name: trimmed })
-          .run();
+        const insertResult = tx.insert(appCollections).values({ name: trimmed }).run();
         const newId = Number(insertResult.lastInsertRowid);
         if (appIds && appIds.length > 0) {
-          tx.update(apps)
-            .set({ collectionId: newId })
-            .where(inArray(apps.id, appIds))
-            .run();
+          tx.update(apps).set({ collectionId: newId }).where(inArray(apps.id, appIds)).run();
         }
         return newId;
       });
     } catch (error) {
       if (isUniqueNameError(error)) {
-        throw new CaideError(
-          "A collection with that name already exists",
-          CaideErrorKind.Conflict,
-        );
+        throw new CaideError("A collection with that name already exists", CaideErrorKind.Conflict);
       }
       throw error;
     }
 
-    const row = db
-      .select()
-      .from(appCollections)
-      .where(eq(appCollections.id, id))
-      .get();
+    const row = db.select().from(appCollections).where(eq(appCollections.id, id)).get();
     if (!row) {
-      throw new CaideError(
-        "Failed to fetch created collection",
-        CaideErrorKind.Internal,
-      );
+      throw new CaideError("Failed to fetch created collection", CaideErrorKind.Internal);
     }
     const memberAppRows = db
       .select({ id: apps.id })
@@ -122,10 +92,7 @@ export function registerAppCollectionHandlers() {
     const { id, name, appIds } = params;
     const trimmed = name.trim();
     if (!trimmed) {
-      throw new CaideError(
-        "Collection name is required",
-        CaideErrorKind.Validation,
-      );
+      throw new CaideError("Collection name is required", CaideErrorKind.Validation);
     }
     try {
       db.transaction((tx) => {
@@ -150,29 +117,18 @@ export function registerAppCollectionHandlers() {
           const before = new Set(existing.map((a) => a.id));
           const after = new Set(appIds);
           const toAdd = appIds.filter((appId) => !before.has(appId));
-          const toRemove = existing
-            .map((a) => a.id)
-            .filter((appId) => !after.has(appId));
+          const toRemove = existing.map((a) => a.id).filter((appId) => !after.has(appId));
           if (toAdd.length > 0) {
-            tx.update(apps)
-              .set({ collectionId: id })
-              .where(inArray(apps.id, toAdd))
-              .run();
+            tx.update(apps).set({ collectionId: id }).where(inArray(apps.id, toAdd)).run();
           }
           if (toRemove.length > 0) {
-            tx.update(apps)
-              .set({ collectionId: null })
-              .where(inArray(apps.id, toRemove))
-              .run();
+            tx.update(apps).set({ collectionId: null }).where(inArray(apps.id, toRemove)).run();
           }
         }
       });
     } catch (error) {
       if (isUniqueNameError(error)) {
-        throw new CaideError(
-          "A collection with that name already exists",
-          CaideErrorKind.Conflict,
-        );
+        throw new CaideError("A collection with that name already exists", CaideErrorKind.Conflict);
       }
       throw error;
     }
@@ -192,10 +148,7 @@ export function registerAppCollectionHandlers() {
       if (!existingCollection) {
         throw new CaideError("Collection not found", CaideErrorKind.NotFound);
       }
-      tx.update(apps)
-        .set({ collectionId: null })
-        .where(eq(apps.collectionId, id))
-        .run();
+      tx.update(apps).set({ collectionId: null }).where(eq(apps.collectionId, id)).run();
       tx.delete(appCollections).where(eq(appCollections.id, id)).run();
     });
   });
@@ -215,10 +168,7 @@ export function registerAppCollectionHandlers() {
           throw new CaideError("Collection not found", CaideErrorKind.NotFound);
         }
       }
-      tx.update(apps)
-        .set({ collectionId })
-        .where(inArray(apps.id, appIds))
-        .run();
+      tx.update(apps).set({ collectionId }).where(inArray(apps.id, appIds)).run();
     });
   });
 }

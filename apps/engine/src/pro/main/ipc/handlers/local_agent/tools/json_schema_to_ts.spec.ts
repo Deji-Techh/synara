@@ -14,9 +14,7 @@ describe("jsonSchemaToTs", () => {
     });
 
     it("renders type-as-array as a union", () => {
-      expect(jsonSchemaToTs({ type: ["string", "null"] })).toBe(
-        "string | null",
-      );
+      expect(jsonSchemaToTs({ type: ["string", "null"] })).toBe("string | null");
     });
   });
 
@@ -32,9 +30,7 @@ describe("jsonSchemaToTs", () => {
 
   describe("array", () => {
     it("renders arrays of primitives and arrays of objects", () => {
-      expect(jsonSchemaToTs({ type: "array", items: { type: "string" } })).toBe(
-        "Array<string>",
-      );
+      expect(jsonSchemaToTs({ type: "array", items: { type: "string" } })).toBe("Array<string>");
       expect(jsonSchemaToTs({ type: "array" })).toBe("Array<unknown>");
       const arrOfObj = jsonSchemaToTs({
         type: "array",
@@ -59,9 +55,7 @@ describe("jsonSchemaToTs", () => {
       // element values the schema would reject.
       expect(jsonSchemaToTs({ type: "array", items: false })).toBe("[]");
       // Required elements with no element schema is unsatisfiable.
-      expect(jsonSchemaToTs({ type: "array", items: false, minItems: 1 })).toBe(
-        "never",
-      );
+      expect(jsonSchemaToTs({ type: "array", items: false, minItems: 1 })).toBe("never");
     });
   });
 
@@ -137,11 +131,7 @@ describe("jsonSchemaToTs", () => {
       expect(
         jsonSchemaToTs({
           type: "array",
-          prefixItems: [
-            { type: "boolean" },
-            { type: "string" },
-            { type: "number" },
-          ],
+          prefixItems: [{ type: "boolean" }, { type: "string" }, { type: "number" }],
           maxItems: 1,
         }),
       ).toBe("[boolean?]");
@@ -302,9 +292,9 @@ describe("jsonSchemaToTs", () => {
     });
 
     it("renders additionalProperties as Record when there are no named properties", () => {
-      expect(
-        jsonSchemaToTs({ type: "object", additionalProperties: true }),
-      ).toBe("Record<string, unknown>");
+      expect(jsonSchemaToTs({ type: "object", additionalProperties: true })).toBe(
+        "Record<string, unknown>",
+      );
       expect(
         jsonSchemaToTs({
           type: "object",
@@ -356,15 +346,9 @@ describe("jsonSchemaToTs", () => {
       // setting → falls back to the spec default of `true`, producing an
       // open `Record<string, unknown>`. An explicitly closed empty object
       // is tested by the additionalProperties: false case below.
-      expect(jsonSchemaToTs({ type: "object" })).toBe(
-        "Record<string, unknown>",
-      );
-      expect(jsonSchemaToTs({ type: "object", properties: {} })).toBe(
-        "Record<string, unknown>",
-      );
-      expect(
-        jsonSchemaToTs({ type: "object", additionalProperties: false }),
-      ).toBe("{}");
+      expect(jsonSchemaToTs({ type: "object" })).toBe("Record<string, unknown>");
+      expect(jsonSchemaToTs({ type: "object", properties: {} })).toBe("Record<string, unknown>");
+      expect(jsonSchemaToTs({ type: "object", additionalProperties: false })).toBe("{}");
     });
 
     it("quotes property keys that aren't valid JS identifiers", () => {
@@ -530,22 +514,16 @@ describe("jsonSchemaToTs", () => {
 
   describe("enum", () => {
     it("renders string and number enums as literal unions", () => {
-      expect(jsonSchemaToTs({ enum: ["red", "blue", "green"] })).toBe(
-        '"red" | "blue" | "green"',
-      );
+      expect(jsonSchemaToTs({ enum: ["red", "blue", "green"] })).toBe('"red" | "blue" | "green"');
       expect(jsonSchemaToTs({ enum: [1, 2, 3] })).toBe("1 | 2 | 3");
     });
 
     it("renders heterogeneous enums (mixing booleans, numbers, strings)", () => {
-      expect(jsonSchemaToTs({ enum: [true, 42, "foo", null] })).toBe(
-        'true | 42 | "foo" | null',
-      );
+      expect(jsonSchemaToTs({ enum: [true, 42, "foo", null] })).toBe('true | 42 | "foo" | null');
     });
 
     it("renders enums whose values are objects or arrays as literal types", () => {
-      expect(jsonSchemaToTs({ enum: [{ foo: "bar" }, [1, 2]] })).toBe(
-        '{"foo":"bar"} | [1,2]',
-      );
+      expect(jsonSchemaToTs({ enum: [{ foo: "bar" }, [1, 2]] })).toBe('{"foo":"bar"} | [1,2]');
     });
 
     // Omitted: deriving an enum schema from a TypeScript enum
@@ -563,9 +541,7 @@ describe("jsonSchemaToTs", () => {
     });
 
     it("renders const values that are objects or arrays as literal types", () => {
-      expect(jsonSchemaToTs({ const: { foo: "bar", n: 1 } })).toBe(
-        '{"foo":"bar","n":1}',
-      );
+      expect(jsonSchemaToTs({ const: { foo: "bar", n: 1 } })).toBe('{"foo":"bar","n":1}');
       expect(jsonSchemaToTs({ const: ["a", "b"] })).toBe('["a","b"]');
     });
   });
@@ -653,17 +629,15 @@ describe("jsonSchemaToTs", () => {
     });
 
     it("narrows allOf of incompatible primitive types to `never` (impossible-schema detection)", () => {
-      expect(
-        jsonSchemaToTs({ allOf: [{ type: "string" }, { type: "number" }] }),
-      ).toBe("never");
+      expect(jsonSchemaToTs({ allOf: [{ type: "string" }, { type: "number" }] })).toBe("never");
     });
   });
 
   describe("anyOf", () => {
     it("renders anyOf as a union of the branches", () => {
-      expect(
-        jsonSchemaToTs({ anyOf: [{ type: "string" }, { type: "number" }] }),
-      ).toBe("string | number");
+      expect(jsonSchemaToTs({ anyOf: [{ type: "string" }, { type: "number" }] })).toBe(
+        "string | number",
+      );
     });
 
     it("merges anyOf with sibling constraints (e.g. base properties + variant anyOf)", () => {
@@ -693,9 +667,9 @@ describe("jsonSchemaToTs", () => {
 
   describe("oneOf", () => {
     it("renders oneOf as a union of the branches", () => {
-      expect(
-        jsonSchemaToTs({ oneOf: [{ type: "boolean" }, { type: "null" }] }),
-      ).toBe("boolean | null");
+      expect(jsonSchemaToTs({ oneOf: [{ type: "boolean" }, { type: "null" }] })).toBe(
+        "boolean | null",
+      );
     });
 
     it("renders oneOf with discriminator-style required-property variants", () => {
@@ -733,9 +707,7 @@ describe("jsonSchemaToTs", () => {
     });
 
     it("ignores `not` when other constraints are present", () => {
-      expect(jsonSchemaToTs({ type: "string", not: { const: "foo" } })).toBe(
-        "string",
-      );
+      expect(jsonSchemaToTs({ type: "string", not: { const: "foo" } })).toBe("string");
       const out = jsonSchemaToTs({
         type: "object",
         properties: { x: { type: "string" } },
@@ -829,12 +801,8 @@ describe("jsonSchemaToTs", () => {
 
   describe("nullable", () => {
     it("appends `| null` for OpenAPI-style nullable: true on primitives", () => {
-      expect(jsonSchemaToTs({ type: "string", nullable: true })).toBe(
-        "string | null",
-      );
-      expect(jsonSchemaToTs({ type: "integer", nullable: true })).toBe(
-        "number | null",
-      );
+      expect(jsonSchemaToTs({ type: "string", nullable: true })).toBe("string | null");
+      expect(jsonSchemaToTs({ type: "integer", nullable: true })).toBe("number | null");
     });
 
     it("appends `| null` to object schemas with nullable: true", () => {
@@ -938,9 +906,7 @@ describe("jsonSchemaToTs", () => {
     });
 
     it("renders unresolved or remote $ref as `unknown`", () => {
-      expect(jsonSchemaToTs({ $ref: "http://example.com/foo.json" })).toBe(
-        "unknown",
-      );
+      expect(jsonSchemaToTs({ $ref: "http://example.com/foo.json" })).toBe("unknown");
       expect(jsonSchemaToTs({ $ref: "./other.json" })).toBe("unknown");
       expect(jsonSchemaToTs({ $ref: "#/$defs/Missing" })).toBe("unknown");
     });

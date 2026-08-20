@@ -12,9 +12,7 @@ describe("async activity tracking", () => {
 
   it("tracks overlapping IPC work and finishes idempotently", () => {
     const finishShare = beginAsyncActivity("share:create-remote");
-    const finishCollaboration = beginAsyncActivity(
-      "collaboration:create-session",
-    );
+    const finishCollaboration = beginAsyncActivity("collaboration:create-session");
 
     expect(getAsyncActivitySnapshot()).toMatchObject({
       count: 2,
@@ -49,8 +47,6 @@ describe("async activity tracking", () => {
   });
 
   it("creates readable fallback labels", () => {
-    expect(getAsyncActivityLabel("figma:import-design-file")).toBe(
-      "Import design file",
-    );
+    expect(getAsyncActivityLabel("figma:import-design-file")).toBe("Import design file");
   });
 });

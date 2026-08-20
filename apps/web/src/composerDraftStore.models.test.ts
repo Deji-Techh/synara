@@ -145,7 +145,9 @@ describe("composerDraftStore modelSelection", () => {
       modelSelection("openai", "grok-build"),
     );
     expect(state.draftsByThreadId[threadId]?.activeProvider).toBe("openai");
-    expect(state.stickyModelSelectionByProvider.grok).toEqual(modelSelection("openai", "grok-build"));
+    expect(state.stickyModelSelectionByProvider.grok).toEqual(
+      modelSelection("openai", "grok-build"),
+    );
     expect(state.stickyActiveProvider).toBe("openai");
   });
 

@@ -59,10 +59,7 @@ vi.mock("@/ipc/utils/media_path_utils", () => ({
   pruneAttachmentManifest: mediaPathMocks.pruneAttachmentManifest,
 }));
 
-import {
-  MEDIA_TTL_DAYS,
-  cleanupOldMediaFiles,
-} from "@/ipc/utils/media_cleanup";
+import { MEDIA_TTL_DAYS, cleanupOldMediaFiles } from "@/ipc/utils/media_cleanup";
 
 describe("cleanupOldMediaFiles", () => {
   beforeEach(() => {
@@ -122,12 +119,8 @@ describe("cleanupOldMediaFiles", () => {
     await cleanupOldMediaFiles();
 
     expect(fsMocks.unlink).toHaveBeenCalledTimes(1);
-    expect(fsMocks.unlink).toHaveBeenCalledWith(
-      path.join(mediaDir, "old-image.png"),
-    );
-    expect(mediaPathMocks.pruneAttachmentManifest).toHaveBeenCalledWith(
-      appPath,
-    );
+    expect(fsMocks.unlink).toHaveBeenCalledWith(path.join(mediaDir, "old-image.png"));
+    expect(mediaPathMocks.pruneAttachmentManifest).toHaveBeenCalledWith(appPath);
     expect(logMocks.log).toHaveBeenCalledWith("Cleaned up 1 old media files");
     expect(logMocks.warn).not.toHaveBeenCalled();
   });
@@ -166,9 +159,7 @@ describe("cleanupOldMediaFiles", () => {
     await expect(cleanupOldMediaFiles()).resolves.toBeUndefined();
 
     expect(logMocks.warn).toHaveBeenCalledTimes(1);
-    expect(logMocks.warn.mock.calls[0][0]).toContain(
-      "Failed to process media file",
-    );
+    expect(logMocks.warn.mock.calls[0][0]).toContain("Failed to process media file");
     expect(logMocks.warn.mock.calls[0][1]).toBe(statError);
   });
 
@@ -194,9 +185,7 @@ describe("cleanupOldMediaFiles", () => {
     await cleanupOldMediaFiles();
 
     expect(fsMocks.unlink).toHaveBeenCalledTimes(1);
-    expect(fsMocks.unlink).toHaveBeenCalledWith(
-      expect.stringContaining("old-file.png"),
-    );
+    expect(fsMocks.unlink).toHaveBeenCalledWith(expect.stringContaining("old-file.png"));
     expect(mediaPathMocks.pruneAttachmentManifest).toHaveBeenCalledWith(
       path.join("/home/user/caide-apps", "my-app"),
     );
@@ -214,11 +203,7 @@ describe("cleanupOldMediaFiles", () => {
     fsMocks.stat.mockResolvedValue({ isFile: () => true, mtimeMs: oldMtimeMs });
     fsMocks.unlink.mockResolvedValue(undefined);
     mediaPathMocks.pruneAttachmentManifest.mockRejectedValue(pruneError);
-    const mediaDir = path.join(
-      "/home/user/caide-apps",
-      "my-app",
-      ".caide/media",
-    );
+    const mediaDir = path.join("/home/user/caide-apps", "my-app", ".caide/media");
 
     await cleanupOldMediaFiles();
 
@@ -237,19 +222,14 @@ describe("cleanupOldMediaFiles", () => {
     const oldMtimeMs = Date.now() - 31 * 24 * 60 * 60 * 1000;
 
     dbMocks.from.mockResolvedValue([{ path: "my-app" }]);
-    fsMocks.readdir.mockResolvedValue([
-      "attachments-manifest.json",
-      "old-file.png",
-    ]);
+    fsMocks.readdir.mockResolvedValue(["attachments-manifest.json", "old-file.png"]);
     fsMocks.stat.mockResolvedValue({ isFile: () => true, mtimeMs: oldMtimeMs });
     fsMocks.unlink.mockResolvedValue(undefined);
 
     await cleanupOldMediaFiles();
 
     expect(fsMocks.unlink).toHaveBeenCalledTimes(1);
-    expect(fsMocks.unlink).toHaveBeenCalledWith(
-      expect.stringContaining("old-file.png"),
-    );
+    expect(fsMocks.unlink).toHaveBeenCalledWith(expect.stringContaining("old-file.png"));
   });
 
   it("should iterate over multiple apps", async () => {
@@ -294,8 +274,6 @@ describe("cleanupOldMediaFiles", () => {
     await cleanupOldMediaFiles();
 
     expect(fsMocks.unlink).toHaveBeenCalledTimes(1);
-    expect(fsMocks.unlink).toHaveBeenCalledWith(
-      path.join(mediaDir, "old-image.png"),
-    );
+    expect(fsMocks.unlink).toHaveBeenCalledWith(path.join(mediaDir, "old-image.png"));
   });
 });

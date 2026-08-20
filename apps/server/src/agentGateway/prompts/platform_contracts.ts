@@ -76,7 +76,6 @@ update it if the platform rules changed. Content: one-line target ("mobile" or
  */
 export function buildPlatformPrompt(appTarget?: AppTarget): string {
   const target: AppTarget = appTarget ?? "mobile";
-  const contract =
-    target === "web" ? WEB_PRODUCT_CONTRACT : MOBILE_PRODUCT_CONTRACT;
+  const contract = target === "web" ? WEB_PRODUCT_CONTRACT : MOBILE_PRODUCT_CONTRACT;
   return `${contract}\n${PLATFORM_SPEC_SYNC_RULE}`;
 }

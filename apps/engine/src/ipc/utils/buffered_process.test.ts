@@ -16,17 +16,11 @@ const { spawnMock, treeKillMock } = vi.hoisted(() => ({
 }));
 
 vi.mock("node:child_process", async () => {
-  const actual =
-    await vi.importActual<typeof import("node:child_process")>(
-      "node:child_process",
-    );
+  const actual = await vi.importActual<typeof import("node:child_process")>("node:child_process");
   return {
     ...actual,
     default: {
-      ...(("default" in actual ? actual.default : actual) as Record<
-        string,
-        unknown
-      >),
+      ...(("default" in actual ? actual.default : actual) as Record<string, unknown>),
       spawn: spawnMock,
     },
     spawn: spawnMock,
@@ -80,8 +74,7 @@ describe("runBufferedProcess", () => {
     vi.clearAllMocks();
     vi.useRealTimers();
     treeKillMock.mockImplementation(
-      (_pid: number, _signal: string, callback: (error?: Error) => void) =>
-        callback(),
+      (_pid: number, _signal: string, callback: (error?: Error) => void) => callback(),
     );
   });
 
@@ -126,9 +119,7 @@ describe("runBufferedProcess", () => {
     await expect(promise).resolves.toMatchObject({
       stdout: "before 🙂 after",
     });
-    expect(onStdout.mock.calls.map(([chunk]) => chunk).join("")).toBe(
-      "before 🙂 after",
-    );
+    expect(onStdout.mock.calls.map(([chunk]) => chunk).join("")).toBe("before 🙂 after");
   });
 
   it("does not decode retained logs when successful output is unused", async () => {
@@ -167,11 +158,7 @@ describe("runBufferedProcess", () => {
     });
 
     await vi.advanceTimersByTimeAsync(25);
-    expect(treeKillMock).toHaveBeenCalledWith(
-      4321,
-      "SIGTERM",
-      expect.any(Function),
-    );
+    expect(treeKillMock).toHaveBeenCalledWith(4321, "SIGTERM", expect.any(Function));
 
     await vi.advanceTimersByTimeAsync(BUFFERED_PROCESS_FORCE_KILL_GRACE_MS);
     await expect(promise).resolves.toMatchObject({
@@ -179,11 +166,7 @@ describe("runBufferedProcess", () => {
       signal: "SIGKILL",
       timedOut: true,
     });
-    expect(treeKillMock).toHaveBeenLastCalledWith(
-      4321,
-      "SIGKILL",
-      expect.any(Function),
-    );
+    expect(treeKillMock).toHaveBeenLastCalledWith(4321, "SIGKILL", expect.any(Function));
     expect(controller.stdout.listenerCount("data")).toBe(0);
     expect(controller.stderr.listenerCount("data")).toBe(0);
     expect(controller.child.listenerCount("close")).toBe(0);
@@ -195,10 +178,7 @@ describe("runBufferedProcess", () => {
     const controller = createMockChildController();
     spawnMock.mockReturnValue(controller.child);
     const abortController = new AbortController();
-    const removeEventListener = vi.spyOn(
-      abortController.signal,
-      "removeEventListener",
-    );
+    const removeEventListener = vi.spyOn(abortController.signal, "removeEventListener");
 
     const promise = runBufferedProcess({
       command: "npm test",
@@ -213,10 +193,7 @@ describe("runBufferedProcess", () => {
       aborted: true,
       signal: "SIGTERM",
     });
-    expect(removeEventListener).toHaveBeenCalledWith(
-      "abort",
-      expect.any(Function),
-    );
+    expect(removeEventListener).toHaveBeenCalledWith("abort", expect.any(Function));
   });
 
   it("includes bounded stdout and stderr when spawning fails", async () => {
@@ -259,11 +236,7 @@ describe("runBufferedProcess", () => {
       message: "output callback failed",
       stdout: "some output",
     } satisfies Partial<BufferedProcessSpawnError>);
-    expect(treeKillMock).toHaveBeenCalledWith(
-      4321,
-      "SIGKILL",
-      expect.any(Function),
-    );
+    expect(treeKillMock).toHaveBeenCalledWith(4321, "SIGKILL", expect.any(Function));
     expect(controller.stdout.listenerCount("data")).toBe(0);
   });
 });

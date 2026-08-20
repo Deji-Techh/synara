@@ -51,9 +51,7 @@ export const ApplyAppTemplateParamsSchema = z.object({
   chatId: z.number().optional(),
 });
 
-export type ApplyAppTemplateParams = z.infer<
-  typeof ApplyAppTemplateParamsSchema
->;
+export type ApplyAppTemplateParams = z.infer<typeof ApplyAppTemplateParamsSchema>;
 
 export const ApplyAppTemplateResultSchema = z.object({
   applied: z.boolean(),
@@ -63,9 +61,7 @@ export const ApplyAppTemplateResultSchema = z.object({
   needsRestart: z.boolean(),
 });
 
-export type ApplyAppTemplateResult = z.infer<
-  typeof ApplyAppTemplateResultSchema
->;
+export type ApplyAppTemplateResult = z.infer<typeof ApplyAppTemplateResultSchema>;
 
 // =============================================================================
 // Custom Theme Schemas
@@ -88,9 +84,7 @@ export const CreateCustomThemeParamsSchema = z.object({
   prompt: z.string(),
 });
 
-export type CreateCustomThemeParams = z.infer<
-  typeof CreateCustomThemeParamsSchema
->;
+export type CreateCustomThemeParams = z.infer<typeof CreateCustomThemeParamsSchema>;
 
 export const UpdateCustomThemeParamsSchema = z.object({
   id: z.number(),
@@ -99,17 +93,13 @@ export const UpdateCustomThemeParamsSchema = z.object({
   prompt: z.string().optional(),
 });
 
-export type UpdateCustomThemeParams = z.infer<
-  typeof UpdateCustomThemeParamsSchema
->;
+export type UpdateCustomThemeParams = z.infer<typeof UpdateCustomThemeParamsSchema>;
 
 export const DeleteCustomThemeParamsSchema = z.object({
   id: z.number(),
 });
 
-export type DeleteCustomThemeParams = z.infer<
-  typeof DeleteCustomThemeParamsSchema
->;
+export type DeleteCustomThemeParams = z.infer<typeof DeleteCustomThemeParamsSchema>;
 
 // Theme generation types
 export const ThemeGenerationModeSchema = z.enum(["inspired", "high-fidelity"]);
@@ -122,9 +112,7 @@ export const ThemeGenerationModelOptionSchema = z.object({
   id: z.string(),
   label: z.string(),
 });
-export type ThemeGenerationModelOption = z.infer<
-  typeof ThemeGenerationModelOptionSchema
->;
+export type ThemeGenerationModelOption = z.infer<typeof ThemeGenerationModelOptionSchema>;
 
 // Theme input source (images or URL)
 export const ThemeInputSourceSchema = z.enum(["images", "url"]);
@@ -141,17 +129,13 @@ export const GenerateThemePromptParamsSchema = z.object({
   model: ThemeGenerationModelSchema,
 });
 
-export type GenerateThemePromptParams = z.infer<
-  typeof GenerateThemePromptParamsSchema
->;
+export type GenerateThemePromptParams = z.infer<typeof GenerateThemePromptParamsSchema>;
 
 export const GenerateThemePromptResultSchema = z.object({
   prompt: z.string(),
 });
 
-export type GenerateThemePromptResult = z.infer<
-  typeof GenerateThemePromptResultSchema
->;
+export type GenerateThemePromptResult = z.infer<typeof GenerateThemePromptResultSchema>;
 
 // URL-based theme generation params
 export const GenerateThemeFromUrlParamsSchema = z.object({
@@ -174,9 +158,7 @@ export const GenerateThemeFromUrlParamsSchema = z.object({
   model: ThemeGenerationModelSchema,
 });
 
-export type GenerateThemeFromUrlParams = z.infer<
-  typeof GenerateThemeFromUrlParamsSchema
->;
+export type GenerateThemeFromUrlParams = z.infer<typeof GenerateThemeFromUrlParamsSchema>;
 
 export const SaveThemeImageParamsSchema = z.object({
   data: z.string(),
@@ -195,9 +177,7 @@ export const CleanupThemeImagesParamsSchema = z.object({
   paths: z.array(z.string()),
 });
 
-export type CleanupThemeImagesParams = z.infer<
-  typeof CleanupThemeImagesParamsSchema
->;
+export type CleanupThemeImagesParams = z.infer<typeof CleanupThemeImagesParamsSchema>;
 
 // =============================================================================
 // Template/Theme Contracts

@@ -28,9 +28,7 @@ describe("executeSqlTool", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.executeSupabaseSqlMock.mockResolvedValue("[]");
-    mocks.writeMigrationFileMock.mockResolvedValue(
-      "supabase/migrations/0000_test.sql",
-    );
+    mocks.writeMigrationFileMock.mockResolvedValue("supabase/migrations/0000_test.sql");
     mocks.readSettingsMock.mockReturnValue({
       enableSupabaseWriteSqlMigration: true,
     });

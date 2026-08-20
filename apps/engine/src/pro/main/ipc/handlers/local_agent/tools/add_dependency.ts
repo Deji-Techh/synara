@@ -13,9 +13,7 @@ const addDependencySchema = z.object({
   packages: z.array(z.string()).describe("Array of package names to install"),
 });
 
-export const addDependencyTool: ToolDefinition<
-  z.infer<typeof addDependencySchema>
-> = {
+export const addDependencyTool: ToolDefinition<z.infer<typeof addDependencySchema>> = {
   name: "add_dependency",
   description: "Install npm packages",
   inputSchema: addDependencySchema,
@@ -37,10 +35,7 @@ export const addDependencyTool: ToolDefinition<
       : undefined;
 
     if (!message) {
-      throw new CaideError(
-        "Message not found for adding dependencies",
-        CaideErrorKind.NotFound,
-      );
+      throw new CaideError("Message not found for adding dependencies", CaideErrorKind.NotFound);
     }
 
     try {

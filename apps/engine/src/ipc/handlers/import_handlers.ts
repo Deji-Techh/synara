@@ -35,10 +35,7 @@ export function registerImportHandlers() {
       );
     }
     if (!fs.existsSync(fullAppPath)) {
-      throw new CaideError(
-        `App path does not exist: ${fullAppPath}`,
-        CaideErrorKind.NotFound,
-      );
+      throw new CaideError(`App path does not exist: ${fullAppPath}`, CaideErrorKind.NotFound);
     }
 
     const existing = await db.query.apps.findFirst({
@@ -86,9 +83,6 @@ export function registerImportHandlers() {
 
 async function createInitialChat(appId: number): Promise<number> {
   const initialChatMode = await getInitialChatModeForNewChat(undefined);
-  const [chat] = await db
-    .insert(chats)
-    .values({ appId, chatMode: initialChatMode })
-    .returning();
+  const [chat] = await db.insert(chats).values({ appId, chatMode: initialChatMode }).returning();
   return chat.id;
 }

@@ -322,7 +322,9 @@ export function makeImportThreadHandler(options: ImportThreadHandlerOptions) {
   }) {
     const adapter = yield* options.providerAdapterRegistry.getByProvider(input.provider);
     if (!adapter.readExternalThread) {
-      return yield* Effect.fail(importMessagesError(`${String(input.provider)} session import is unavailable.`));
+      return yield* Effect.fail(
+        importMessagesError(`${String(input.provider)} session import is unavailable.`),
+      );
     }
     const snapshot = yield* adapter
       .readExternalThread({ externalThreadId: input.externalId })

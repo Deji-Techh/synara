@@ -10,11 +10,7 @@ import { app } from "electron";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
 
 export const MAX_FILE_SEARCH_SIZE = 1024 * 1024;
-export const RIPGREP_EXCLUDED_GLOBS = [
-  "!node_modules/**",
-  "!.git/**",
-  "!.next/**",
-];
+export const RIPGREP_EXCLUDED_GLOBS = ["!node_modules/**", "!.git/**", "!.next/**"];
 
 function isUsableExecutable(candidate: string): boolean {
   try {
@@ -60,14 +56,7 @@ export function getRgExecutableCandidates(): string[] {
   const appPath = app.getAppPath();
   const candidates = [
     process.env.CAIDE_RG_PATH,
-    path.join(
-      appPath,
-      "node_modules",
-      "@vscode",
-      "ripgrep",
-      "bin",
-      executableName,
-    ),
+    path.join(appPath, "node_modules", "@vscode", "ripgrep", "bin", executableName),
     path.join(
       appPath,
       "node_modules",
@@ -83,13 +72,7 @@ export function getRgExecutableCandidates(): string[] {
       : path.join((process as any).resourcesPath, "app.asar.unpacked");
 
     candidates.push(
-      path.join(
-        (process as any).resourcesPath,
-        "@vscode",
-        "ripgrep",
-        "bin",
-        executableName,
-      ),
+      path.join((process as any).resourcesPath, "@vscode", "ripgrep", "bin", executableName),
       path.join(
         (process as any).resourcesPath,
         "node_modules",
@@ -98,20 +81,11 @@ export function getRgExecutableCandidates(): string[] {
         "bin",
         executableName,
       ),
-      path.join(
-        unpackedAppPath,
-        "node_modules",
-        "@vscode",
-        "ripgrep",
-        "bin",
-        executableName,
-      ),
+      path.join(unpackedAppPath, "node_modules", "@vscode", "ripgrep", "bin", executableName),
     );
   }
 
-  return Array.from(
-    new Set(candidates.filter((candidate): candidate is string => !!candidate)),
-  );
+  return Array.from(new Set(candidates.filter((candidate): candidate is string => !!candidate)));
 }
 
 /**

@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  defineContract,
-  defineStream,
-  createClient,
-  createStreamClient,
-} from "../contracts/core";
+import { defineContract, defineStream, createClient, createStreamClient } from "../contracts/core";
 import {
   ChatModeSchema,
   StoredChatModeSchema,
@@ -136,9 +131,7 @@ export const ChatStreamParamsSchema = z
     suppressUserMessage: z.boolean().optional(),
   })
   .superRefine((params, context) => {
-    const validation = validateSerializedChatAttachments(
-      params.attachments ?? [],
-    );
+    const validation = validateSerializedChatAttachments(params.attachments ?? []);
     if (!validation.ok) {
       context.addIssue({
         code: "custom",

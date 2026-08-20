@@ -23,9 +23,7 @@ export const ProjectPackageManifestSchema = z.object({
   }),
 });
 
-export type ProjectPackageManifest = z.infer<
-  typeof ProjectPackageManifestSchema
->;
+export type ProjectPackageManifest = z.infer<typeof ProjectPackageManifestSchema>;
 
 export const ProjectPackageSecurityReportSchema = z.object({
   excludedFiles: z.array(z.string()),
@@ -34,9 +32,7 @@ export const ProjectPackageSecurityReportSchema = z.object({
   warnings: z.array(z.string()),
 });
 
-export type ProjectPackageSecurityReport = z.infer<
-  typeof ProjectPackageSecurityReportSchema
->;
+export type ProjectPackageSecurityReport = z.infer<typeof ProjectPackageSecurityReportSchema>;
 
 export const ProjectPackageInspectionSchema = z.object({
   path: z.string(),
@@ -49,9 +45,7 @@ export const ProjectPackageInspectionSchema = z.object({
   securityReport: ProjectPackageSecurityReportSchema,
 });
 
-export type ProjectPackageInspection = z.infer<
-  typeof ProjectPackageInspectionSchema
->;
+export type ProjectPackageInspection = z.infer<typeof ProjectPackageInspectionSchema>;
 
 export const ProjectPackageMetadataSchema = z.object({
   app: z.record(z.string(), z.unknown()),
@@ -61,6 +55,4 @@ export const ProjectPackageMetadataSchema = z.object({
   securityReport: ProjectPackageSecurityReportSchema,
 });
 
-export type ProjectPackageMetadata = z.infer<
-  typeof ProjectPackageMetadataSchema
->;
+export type ProjectPackageMetadata = z.infer<typeof ProjectPackageMetadataSchema>;

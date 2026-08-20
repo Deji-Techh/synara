@@ -12,8 +12,7 @@ vi.mock("./mcp_manager", () => ({
   },
 }));
 
-const { createMcpBeforeQuitHandler, disposeMcpClientsForShutdown } =
-  await import("./mcp_shutdown");
+const { createMcpBeforeQuitHandler, disposeMcpClientsForShutdown } = await import("./mcp_shutdown");
 
 function deferred(): { promise: Promise<void>; resolve: () => void } {
   let resolve!: () => void;

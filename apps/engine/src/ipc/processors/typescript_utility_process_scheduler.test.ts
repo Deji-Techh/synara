@@ -106,11 +106,7 @@ describe("TypeScriptUtilityProcessScheduler", () => {
 
     finishStop();
     await Promise.all([stopping, next]);
-    expect(events).toEqual([
-      "explorer:stopping",
-      "explorer:stopped",
-      "explorer:next",
-    ]);
+    expect(events).toEqual(["explorer:stopping", "explorer:stopped", "explorer:next"]);
   });
 
   it("stops a non-reusable TSC process before the next TSC run", async () => {
@@ -174,9 +170,7 @@ describe("TypeScriptUtilityProcessScheduler", () => {
     expect(firstOperation).not.toHaveBeenCalled();
 
     const secondOperation = vi.fn(async () => undefined);
-    await expect(
-      scheduler.runExclusive("tsc", secondOperation),
-    ).resolves.toBeUndefined();
+    await expect(scheduler.runExclusive("tsc", secondOperation)).resolves.toBeUndefined();
     expect(stopAttempts).toBe(2);
     expect(secondOperation).toHaveBeenCalledOnce();
   });
@@ -202,16 +196,12 @@ describe("TypeScriptUtilityProcessScheduler", () => {
     });
 
     // Idle shutdown path: the stop fails, leaving the resident registered.
-    await expect(registration!.stop()).rejects.toThrow(
-      "temporary stop failure",
-    );
+    await expect(registration!.stop()).rejects.toThrow("temporary stop failure");
 
     // A same-kind operation must retry the stop instead of reusing the
     // resident, since the owner already detached its handle.
     const nextOperation = vi.fn(async () => undefined);
-    await expect(
-      scheduler.runExclusive("code-explorer", nextOperation),
-    ).resolves.toBeUndefined();
+    await expect(scheduler.runExclusive("code-explorer", nextOperation)).resolves.toBeUndefined();
     expect(stopAttempts).toBe(2);
     expect(nextOperation).toHaveBeenCalledOnce();
   });
@@ -241,8 +231,6 @@ describe("TypeScriptUtilityProcessScheduler", () => {
 
     // A later real exit clears the resident and lets the queue recover.
     registration!.clear();
-    await expect(
-      scheduler.runExclusive("tsc", async () => "recovered"),
-    ).resolves.toBe("recovered");
+    await expect(scheduler.runExclusive("tsc", async () => "recovered")).resolves.toBe("recovered");
   });
 });

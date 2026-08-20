@@ -1,12 +1,6 @@
-export type SandboxFailureCategory =
-  | "syntax"
-  | "host-function"
-  | "timeout"
-  | "runtime";
+export type SandboxFailureCategory = "syntax" | "host-function" | "timeout" | "runtime";
 
-export function classifySandboxFailure(
-  errorMessage: string,
-): SandboxFailureCategory {
+export function classifySandboxFailure(errorMessage: string): SandboxFailureCategory {
   if (/timed out|timeout/i.test(errorMessage)) {
     return "timeout";
   }

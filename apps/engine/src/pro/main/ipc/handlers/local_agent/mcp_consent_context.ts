@@ -58,9 +58,7 @@ export function assistantTrace(parsed: ModelMessage[]): string {
   return out.join("\n").trim();
 }
 
-export async function getRecentTurnsForConsent(
-  chatId: number,
-): Promise<RecentTurn[]> {
+export async function getRecentTurnsForConsent(chatId: number): Promise<RecentTurn[]> {
   const rows = await db
     .select({
       id: messages.id,

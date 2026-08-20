@@ -9,11 +9,7 @@ import { createTypedHandler } from "./base";
 import { planContracts } from "../types/plan";
 import { questionnaireResolver } from "../../pro/main/ipc/handlers/local_agent/userInputResolvers";
 import { buildFrontmatter, validatePlanId, parsePlanFile } from "./planUtils";
-import {
-  normalizePlanStatus,
-  planDirForAppPath,
-  savePlanToDisk,
-} from "./planPersistence";
+import { normalizePlanStatus, planDirForAppPath, savePlanToDisk } from "./planPersistence";
 import { ensureCaideGitignored } from "./gitignoreUtils";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
 
@@ -48,14 +44,7 @@ export function registerPlanHandlers() {
       status: "accepted",
     });
 
-    logger.info(
-      "Accepted plan:",
-      slug,
-      "for app:",
-      appId,
-      "with title:",
-      title,
-    );
+    logger.info("Accepted plan:", slug, "for app:", appId, "with title:", title);
 
     return slug;
   });
@@ -69,10 +58,7 @@ export function registerPlanHandlers() {
       raw = await fs.promises.readFile(filePath, "utf-8");
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code === "ENOENT") {
-        throw new CaideError(
-          `Plan not found: ${planId}`,
-          CaideErrorKind.NotFound,
-        );
+        throw new CaideError(`Plan not found: ${planId}`, CaideErrorKind.NotFound);
       }
       throw err;
     }
@@ -91,69 +77,61 @@ export function registerPlanHandlers() {
     };
   });
 
-  createTypedHandler(
-    planContracts.getPlanForChat,
-    async (_, { appId, chatId }) => {
-      const planDir = await getPlanDir(appId);
-      let files: string[];
-      try {
-        files = await fs.promises.readdir(planDir);
-      } catch {
-        return null;
-      }
+  createTypedHandler(planContracts.getPlanForChat, async (_, { appId, chatId }) => {
+    const planDir = await getPlanDir(appId);
+    let files: string[];
+    try {
+      files = await fs.promises.readdir(planDir);
+    } catch {
+      return null;
+    }
 
-      const mdFiles = files.filter((f) => f.endsWith(".md"));
+    const mdFiles = files.filter((f) => f.endsWith(".md"));
 
-      const prefix = `chat-${chatId}-`;
-      const matches = mdFiles.filter((f) => f.startsWith(prefix));
-      if (matches.length === 0) return null;
+    const prefix = `chat-${chatId}-`;
+    const matches = mdFiles.filter((f) => f.startsWith(prefix));
+    if (matches.length === 0) return null;
 
-      // A chat normally has a single stable-slug plan file, but legacy
-      // timestamped files may coexist. Pick the most recently updated one so
-      // filename ordering can't surface a stale plan over a newer draft.
-      // A single unreadable file (concurrent deletion, permission issue, etc.)
-      // must not prevent the chat from loading its other plans, so read each
-      // file defensively and drop the ones that fail.
-      const parsedResults = await Promise.all(
-        matches.map(async (file) => {
-          try {
-            const raw = await fs.promises.readFile(
-              path.join(planDir, file),
-              "utf-8",
-            );
-            return { slug: file.replace(/\.md$/, ""), ...parsePlanFile(raw) };
-          } catch (err) {
-            logger.warn(`Failed to read plan file ${file}:`, err);
-            return null;
-          }
-        }),
-      );
-      const parsed = parsedResults.filter(
-        (p): p is NonNullable<typeof p> => p !== null,
-      );
-      if (parsed.length === 0) return null;
-      // Fall back to createdAt (then empty) so a missing updatedAt can't sort a
-      // stale legacy plan ahead of a newer one.
-      parsed.sort((a, b) => {
-        const aTime = a.meta.updatedAt || a.meta.createdAt || "";
-        const bTime = b.meta.updatedAt || b.meta.createdAt || "";
-        return aTime.localeCompare(bTime);
-      });
-      const { slug, meta, content } = parsed[parsed.length - 1];
+    // A chat normally has a single stable-slug plan file, but legacy
+    // timestamped files may coexist. Pick the most recently updated one so
+    // filename ordering can't surface a stale plan over a newer draft.
+    // A single unreadable file (concurrent deletion, permission issue, etc.)
+    // must not prevent the chat from loading its other plans, so read each
+    // file defensively and drop the ones that fail.
+    const parsedResults = await Promise.all(
+      matches.map(async (file) => {
+        try {
+          const raw = await fs.promises.readFile(path.join(planDir, file), "utf-8");
+          return { slug: file.replace(/\.md$/, ""), ...parsePlanFile(raw) };
+        } catch (err) {
+          logger.warn(`Failed to read plan file ${file}:`, err);
+          return null;
+        }
+      }),
+    );
+    const parsed = parsedResults.filter((p): p is NonNullable<typeof p> => p !== null);
+    if (parsed.length === 0) return null;
+    // Fall back to createdAt (then empty) so a missing updatedAt can't sort a
+    // stale legacy plan ahead of a newer one.
+    parsed.sort((a, b) => {
+      const aTime = a.meta.updatedAt || a.meta.createdAt || "";
+      const bTime = b.meta.updatedAt || b.meta.createdAt || "";
+      return aTime.localeCompare(bTime);
+    });
+    const { slug, meta, content } = parsed[parsed.length - 1];
 
-      return {
-        id: slug,
-        appId,
-        chatId: meta.chatId ? Number(meta.chatId) : chatId,
-        title: meta.title ?? "",
-        summary: meta.summary || null,
-        content,
-        status: normalizePlanStatus(meta.status),
-        createdAt: meta.createdAt ?? new Date().toISOString(),
-        updatedAt: meta.updatedAt ?? new Date().toISOString(),
-      };
-    },
-  );
+    return {
+      id: slug,
+      appId,
+      chatId: meta.chatId ? Number(meta.chatId) : chatId,
+      title: meta.title ?? "",
+      summary: meta.summary || null,
+      content,
+      status: normalizePlanStatus(meta.status),
+      createdAt: meta.createdAt ?? new Date().toISOString(),
+      updatedAt: meta.updatedAt ?? new Date().toISOString(),
+    };
+  });
 
   createTypedHandler(planContracts.updatePlan, async (_, params) => {
     const { appId, id, ...updates } = params;
@@ -167,8 +145,7 @@ export function registerPlanHandlers() {
     if (updates.summary !== undefined) meta.summary = updates.summary;
     meta.updatedAt = new Date().toISOString();
 
-    const newContent =
-      updates.content !== undefined ? updates.content : content;
+    const newContent = updates.content !== undefined ? updates.content : content;
     const frontmatter = buildFrontmatter(meta);
     await fs.promises.writeFile(filePath, frontmatter + newContent, "utf-8");
 
@@ -183,20 +160,14 @@ export function registerPlanHandlers() {
       await fs.promises.unlink(filePath);
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code === "ENOENT") {
-        throw new CaideError(
-          `Plan not found: ${planId}`,
-          CaideErrorKind.NotFound,
-        );
+        throw new CaideError(`Plan not found: ${planId}`, CaideErrorKind.NotFound);
       }
       throw err;
     }
     logger.info("Deleted plan:", planId);
   });
 
-  createTypedHandler(
-    planContracts.respondToQuestionnaire,
-    async (_, params) => {
-      questionnaireResolver.resolve(params.requestId, params.answers);
-    },
-  );
+  createTypedHandler(planContracts.respondToQuestionnaire, async (_, params) => {
+    questionnaireResolver.resolve(params.requestId, params.answers);
+  });
 }

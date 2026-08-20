@@ -45,9 +45,7 @@ describe("App Identity", () => {
 
     expect(prompt).toContain("Display name: Atlas");
     expect(prompt).toContain("iOS bundle ID: com.example.atlas.ios");
-    expect(prompt).toContain(
-      "Android application ID: com.example.atlas.android",
-    );
+    expect(prompt).toContain("Android application ID: com.example.atlas.android");
     expect(prompt).toContain("Managed app logo: public/caide-app-icon.png");
     expect(prompt).toContain("Treat these values as authoritative");
   });

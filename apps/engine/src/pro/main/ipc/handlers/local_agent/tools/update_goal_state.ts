@@ -7,14 +7,10 @@ import { PersistedGoalStateSchema } from "@/shared/goal_state";
 
 const updateGoalStateSchema = z.object({
   goalId: z.string().describe("The ID of the active Goal"),
-  state: PersistedGoalStateSchema.describe(
-    "The fully updated goal state object",
-  ),
+  state: PersistedGoalStateSchema.describe("The fully updated goal state object"),
 });
 
-export const updateGoalStateTool: ToolDefinition<
-  z.infer<typeof updateGoalStateSchema>
-> = {
+export const updateGoalStateTool: ToolDefinition<z.infer<typeof updateGoalStateSchema>> = {
   name: "update_goal_state",
   description:
     "Update the durable state for an active CAIDE Goal. Use this instead of modifying state.json directly to ensure the schema is strictly enforced. Pass the entire mutated state object.",

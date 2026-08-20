@@ -17,10 +17,7 @@ const logger = log.scope("write_file");
 const writeFileSchema = z.object({
   path: z.string().describe("The file path relative to the app root"),
   content: z.string().describe("The content to write to the file"),
-  description: z
-    .string()
-    .optional()
-    .describe("Brief description of the change"),
+  description: z.string().optional().describe("Brief description of the change"),
 });
 
 export const writeFileTool: ToolDefinition<z.infer<typeof writeFileSchema>> = {

@@ -23,11 +23,7 @@ export async function resolveMediaMentions(
   for (const encodedFileName of mediaRefs) {
     try {
       const fileName = decodeURIComponent(encodedFileName);
-      const filePath = safeJoin(
-        resolvedAppPath,
-        CAIDE_MEDIA_DIR_NAME,
-        fileName,
-      );
+      const filePath = safeJoin(resolvedAppPath, CAIDE_MEDIA_DIR_NAME, fileName);
       if (!fs.existsSync(filePath)) continue;
 
       const ext = path.extname(fileName).toLowerCase();

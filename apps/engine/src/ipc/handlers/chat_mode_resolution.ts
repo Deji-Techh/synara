@@ -1,13 +1,5 @@
-import {
-  getEffectiveDefaultChatMode,
-  type ChatMode,
-  type UserSettings,
-} from "@/lib/schemas";
-import {
-  normalizeStoredChatMode,
-  resolveChatMode,
-  type ChatModeResolution,
-} from "@/lib/chatMode";
+import { getEffectiveDefaultChatMode, type ChatMode, type UserSettings } from "@/lib/schemas";
+import { normalizeStoredChatMode, resolveChatMode, type ChatModeResolution } from "@/lib/chatMode";
 import { readSettings } from "@/main/settings";
 import { PROVIDER_TO_ENV_VAR } from "@/ipc/shared/language_model_constants";
 import { getEnvVar } from "@/ipc/utils/read_env";
@@ -42,9 +34,7 @@ export async function resolveChatModeForTurn({
   };
 }
 
-export async function getInitialChatModeForNewChat(
-  initialChatMode?: ChatMode,
-): Promise<ChatMode> {
+export async function getInitialChatModeForNewChat(initialChatMode?: ChatMode): Promise<ChatMode> {
   if (initialChatMode) {
     return initialChatMode;
   }
@@ -58,23 +48,13 @@ export async function getInitialChatModeForNewChat(
   }
 
   const envVars = getChatModeEnvVars();
-  const freeAgentQuotaAvailable = await getFreeAgentQuotaAvailableIfNeeded(
-    settings,
-    null,
-  );
+  const freeAgentQuotaAvailable = await getFreeAgentQuotaAvailableIfNeeded(settings, null);
 
-  return getEffectiveDefaultChatMode(
-    settings,
-    envVars,
-    freeAgentQuotaAvailable,
-  );
+  return getEffectiveDefaultChatMode(settings, envVars, freeAgentQuotaAvailable);
 }
 
 function getChatModeEnvVars(): Record<string, string | undefined> {
-  const envVarNames = new Set([
-    ...Object.values(PROVIDER_TO_ENV_VAR),
-    "AZURE_RESOURCE_NAME",
-  ]);
+  const envVarNames = new Set([...Object.values(PROVIDER_TO_ENV_VAR), "AZURE_RESOURCE_NAME"]);
 
   return Object.fromEntries(
     [...envVarNames].map((envVarName) => [envVarName, getEnvVar(envVarName)]),

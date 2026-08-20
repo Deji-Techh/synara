@@ -7,9 +7,7 @@ import { ensureNitroOnViteApp } from "@/ipc/utils/nitro_setup";
 const enableNitroSchema = z.object({
   reason: z
     .string()
-    .describe(
-      "One sentence explaining why server-side code is needed for this prompt.",
-    ),
+    .describe("One sentence explaining why server-side code is needed for this prompt."),
 });
 
 const ENABLE_NITRO_DESCRIPTION = `
@@ -33,16 +31,13 @@ will already be in place when the integration completes. Only call
 server-only secrets) when no provider is involved.
 `.trim();
 
-export const enableNitroTool: ToolDefinition<
-  z.infer<typeof enableNitroSchema>
-> = {
+export const enableNitroTool: ToolDefinition<z.infer<typeof enableNitroSchema>> = {
   name: "enable_nitro",
   description: ENABLE_NITRO_DESCRIPTION,
   inputSchema: enableNitroSchema,
   defaultConsent: "always",
   modifiesState: true,
-  isEnabled: (ctx) =>
-    ctx.frameworkType === "vite" && ctx.supabaseProjectId === null,
+  isEnabled: (ctx) => ctx.frameworkType === "vite" && ctx.supabaseProjectId === null,
 
   getConsentPreview: (args) => `Add Nitro server layer (${args.reason})`,
 

@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  defineContract,
-  defineEvent,
-  createClient,
-  createEventClient,
-} from "../contracts/core";
+import { defineContract, defineEvent, createClient, createEventClient } from "../contracts/core";
 
 // Arbitrary loopback port for the OAuth callback listener -- not from
 // the OAuth or MCP specs. Must stay stable: users pre-registering an
@@ -84,13 +79,7 @@ export const CreateMcpServerSchema = z.object({
     .nullable()
     .optional(),
   // Null falls back to DEFAULT_OAUTH_CALLBACK_PORT.
-  oauthCallbackPort: z
-    .number()
-    .int()
-    .min(1024)
-    .max(65535)
-    .nullable()
-    .optional(),
+  oauthCallbackPort: z.number().int().min(1024).max(65535).nullable().optional(),
   // Plaintext bearer token on create. The handler encrypts it before
   // storing and never returns it via `McpServerSchema`.
   bearerToken: z.string().nullable().optional(),
@@ -105,9 +94,7 @@ export const McpServerUpdateSchema = z.object({
   command: z.string().optional(),
   args: z.string().optional(),
   envJson: z.union([z.record(z.string(), z.string()), z.string()]).optional(),
-  headersJson: z
-    .union([z.record(z.string(), z.string()), z.string()])
-    .optional(),
+  headersJson: z.union([z.record(z.string(), z.string()), z.string()]).optional(),
   url: z.string().optional(),
   enabled: z.boolean().optional(),
   oauthEnabled: z.boolean().optional(),
@@ -121,9 +108,7 @@ export const SetMcpBearerTokenParamsSchema = z.object({
   token: z.string(),
 });
 
-export type SetMcpBearerTokenParams = z.infer<
-  typeof SetMcpBearerTokenParamsSchema
->;
+export type SetMcpBearerTokenParams = z.infer<typeof SetMcpBearerTokenParamsSchema>;
 
 export const McpConsentEnum = z.enum(["ask", "always", "denied"]);
 export type McpConsentValue = z.infer<typeof McpConsentEnum>;
@@ -162,9 +147,7 @@ export const SetMcpToolConsentParamsSchema = z.object({
   consent: McpConsentEnum,
 });
 
-export type SetMcpToolConsentParams = z.infer<
-  typeof SetMcpToolConsentParamsSchema
->;
+export type SetMcpToolConsentParams = z.infer<typeof SetMcpToolConsentParamsSchema>;
 
 export const McpConsentRequestSchema = z.object({
   requestId: z.string(),
@@ -197,11 +180,7 @@ export const McpConsentClassifiedSchema = z.object({
   serverName: z.string().nullable().optional(),
 });
 
-export const McpConsentDecisionEnum = z.enum([
-  "accept-once",
-  "accept-always",
-  "decline",
-]);
+export const McpConsentDecisionEnum = z.enum(["accept-once", "accept-always", "decline"]);
 export type McpConsentDecision = z.infer<typeof McpConsentDecisionEnum>;
 
 export const McpConsentResponseSchema = z.object({

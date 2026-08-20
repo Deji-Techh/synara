@@ -1,9 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import type {
-  LanguageModelV3,
-  LanguageModelV3CallOptions,
-} from "@ai-sdk/provider";
+import type { LanguageModelV3, LanguageModelV3CallOptions } from "@ai-sdk/provider";
 
 import type { UserSettings } from "../../lib/schemas";
 import { createCaideEngine } from "./llm_engine_provider";
@@ -68,9 +65,7 @@ describe("createCaideEngine", () => {
 
     expect(requests).toHaveLength(1);
     const request = requests[0];
-    expect(String(request.input)).toBe(
-      "https://engine.example.test/v1/messages",
-    );
+    expect(String(request.input)).toBe("https://engine.example.test/v1/messages");
     expect(request.init?.headers).toMatchObject({
       authorization: "Bearer caide-pro-key",
       "X-Caide-Request-Id": "request-1:attempt-1",
@@ -144,9 +139,7 @@ describe("createCaideEngine", () => {
 
     expect(requests).toHaveLength(1);
     const url = new URL(String(requests[0].input));
-    expect(url.origin + url.pathname).toBe(
-      "https://engine.example.test/v1/messages",
-    );
+    expect(url.origin + url.pathname).toBe("https://engine.example.test/v1/messages");
     expect(url.searchParams.get("feature")).toBe("anthropic-direct");
     expect(url.searchParams.get("source")).toBe("test");
   });
@@ -205,9 +198,7 @@ describe("createCaideEngine", () => {
     } satisfies LanguageModelV3CallOptions);
 
     expect(requests).toHaveLength(1);
-    expect(String(requests[0].input)).toBe(
-      "https://engine.example.test/v1/free/chat/completions",
-    );
+    expect(String(requests[0].input)).toBe("https://engine.example.test/v1/free/chat/completions");
     expect(requests[0].init?.headers).toMatchObject({
       "X-Caide-Request-Id": "visible-turn-1:attempt-1",
       "X-Caide-Free-Quota-Key": "visible-turn-1",

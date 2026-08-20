@@ -12,10 +12,7 @@ import { streamText, TextPart, ImagePart } from "ai";
 import { readSettings } from "../../../../main/settings";
 import { IS_TEST_BUILD } from "@/ipc/utils/test_utils";
 import { getModelClient } from "../../../../ipc/utils/get_model_client";
-import {
-  cancelOrphanedBaseStream,
-  fastTextOutput,
-} from "../../../../ipc/utils/stream_text_utils";
+import { cancelOrphanedBaseStream, fastTextOutput } from "../../../../ipc/utils/stream_text_utils";
 import { v4 as uuidv4 } from "uuid";
 import type {
   SetAppThemeParams,
@@ -81,10 +78,7 @@ if (!fs.existsSync(THEME_IMAGES_TEMP_DIR)) {
 function getMimeTypeFromExtension(
   ext: string,
 ): "image/jpeg" | "image/png" | "image/gif" | "image/webp" {
-  const mimeMap: Record<
-    string,
-    "image/jpeg" | "image/png" | "image/gif" | "image/webp"
-  > = {
+  const mimeMap: Record<string, "image/jpeg" | "image/png" | "image/gif" | "image/webp"> = {
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
     ".png": "image/png",
@@ -281,33 +275,27 @@ export function registerThemesHandlers() {
   });
 
   // Set app theme (built-in or custom theme ID)
-  handle(
-    "set-app-theme",
-    async (_, params: SetAppThemeParams): Promise<void> => {
-      const { appId, themeId } = params;
-      // Use raw SQL to properly set NULL when themeId is null (representing "no theme")
-      if (!themeId) {
-        await db
-          .update(apps)
-          .set({ themeId: sql`NULL` })
-          .where(eq(apps.id, appId));
-      } else {
-        await db.update(apps).set({ themeId }).where(eq(apps.id, appId));
-      }
-    },
-  );
+  handle("set-app-theme", async (_, params: SetAppThemeParams): Promise<void> => {
+    const { appId, themeId } = params;
+    // Use raw SQL to properly set NULL when themeId is null (representing "no theme")
+    if (!themeId) {
+      await db
+        .update(apps)
+        .set({ themeId: sql`NULL` })
+        .where(eq(apps.id, appId));
+    } else {
+      await db.update(apps).set({ themeId }).where(eq(apps.id, appId));
+    }
+  });
 
   // Get app theme
-  handle(
-    "get-app-theme",
-    async (_, params: GetAppThemeParams): Promise<string | null> => {
-      const app = await db.query.apps.findFirst({
-        where: eq(apps.id, params.appId),
-        columns: { themeId: true },
-      });
-      return app?.themeId ?? null;
-    },
-  );
+  handle("get-app-theme", async (_, params: GetAppThemeParams): Promise<string | null> => {
+    const app = await db.query.apps.findFirst({
+      where: eq(apps.id, params.appId),
+      columns: { themeId: true },
+    });
+    return app?.themeId ?? null;
+  });
 
   // Get all custom themes
   handle("get-custom-themes", async (): Promise<CustomTheme[]> => {
@@ -325,12 +313,9 @@ export function registerThemesHandlers() {
     }));
   });
 
-  handle(
-    "get-theme-generation-model-options",
-    async (): Promise<ThemeGenerationModelOption[]> => {
-      return getThemeGenerationModelOptions();
-    },
-  );
+  handle("get-theme-generation-model-options", async (): Promise<ThemeGenerationModelOption[]> => {
+    return getThemeGenerationModelOptions();
+  });
 
   // Create custom theme
   handle(
@@ -343,10 +328,7 @@ export function registerThemesHandlers() {
 
       // Validate name
       if (!trimmedName) {
-        throw new CaideError(
-          "Theme name is required",
-          CaideErrorKind.Validation,
-        );
+        throw new CaideError("Theme name is required", CaideErrorKind.Validation);
       }
       if (trimmedName.length > 100) {
         throw new CaideError(
@@ -365,10 +347,7 @@ export function registerThemesHandlers() {
 
       // Validate prompt
       if (!trimmedPrompt) {
-        throw new CaideError(
-          "Theme prompt is required",
-          CaideErrorKind.Validation,
-        );
+        throw new CaideError("Theme prompt is required", CaideErrorKind.Validation);
       }
       if (trimmedPrompt.length > 50000) {
         throw new CaideError(
@@ -435,10 +414,7 @@ export function registerThemesHandlers() {
       if (params.name !== undefined) {
         const trimmedName = params.name.trim();
         if (!trimmedName) {
-          throw new CaideError(
-            "Theme name is required",
-            CaideErrorKind.Validation,
-          );
+          throw new CaideError("Theme name is required", CaideErrorKind.Validation);
         }
         if (trimmedName.length > 100) {
           throw new CaideError(
@@ -477,10 +453,7 @@ export function registerThemesHandlers() {
       if (params.prompt !== undefined) {
         const trimmedPrompt = params.prompt.trim();
         if (!trimmedPrompt) {
-          throw new CaideError(
-            "Theme prompt is required",
-            CaideErrorKind.Validation,
-          );
+          throw new CaideError("Theme prompt is required", CaideErrorKind.Validation);
         }
         if (trimmedPrompt.length > 50000) {
           throw new CaideError(
@@ -514,12 +487,9 @@ export function registerThemesHandlers() {
   );
 
   // Delete custom theme
-  handle(
-    "delete-custom-theme",
-    async (_, params: DeleteCustomThemeParams): Promise<void> => {
-      await db.delete(customThemes).where(eq(customThemes.id, params.id));
-    },
-  );
+  handle("delete-custom-theme", async (_, params: DeleteCustomThemeParams): Promise<void> => {
+    await db.delete(customThemes).where(eq(customThemes.id, params.id));
+  });
 
   // Save theme image to temp directory
   handle(
@@ -548,10 +518,7 @@ export function registerThemesHandlers() {
       // Validate size (base64 to bytes approximation)
       const sizeInBytes = (data.length * 3) / 4;
       if (sizeInBytes > 10 * 1024 * 1024) {
-        throw new CaideError(
-          "Image size exceeds 10MB limit",
-          CaideErrorKind.Validation,
-        );
+        throw new CaideError("Image size exceeds 10MB limit", CaideErrorKind.Validation);
       }
 
       // Ensure temp directory exists
@@ -566,45 +533,34 @@ export function registerThemesHandlers() {
   );
 
   // Cleanup theme images from temp directory
-  handle(
-    "cleanup-theme-images",
-    async (_, params: CleanupThemeImagesParams): Promise<void> => {
-      const { paths } = params;
+  handle("cleanup-theme-images", async (_, params: CleanupThemeImagesParams): Promise<void> => {
+    const { paths } = params;
 
-      for (const filePath of paths) {
-        // Security: only delete files in our temp directory
-        // Use path.resolve() to normalize and prevent path traversal attacks
-        const normalizedPath = path.resolve(filePath);
-        const normalizedTempDir = path.resolve(THEME_IMAGES_TEMP_DIR);
-        if (!normalizedPath.startsWith(normalizedTempDir + path.sep)) {
-          throw new Error(
-            "Invalid path: cannot delete files outside temp directory",
-          );
-        }
+    for (const filePath of paths) {
+      // Security: only delete files in our temp directory
+      // Use path.resolve() to normalize and prevent path traversal attacks
+      const normalizedPath = path.resolve(filePath);
+      const normalizedTempDir = path.resolve(THEME_IMAGES_TEMP_DIR);
+      if (!normalizedPath.startsWith(normalizedTempDir + path.sep)) {
+        throw new Error("Invalid path: cannot delete files outside temp directory");
+      }
 
-        try {
-          await unlink(filePath);
-          logger.log(`Cleaned up theme image: ${filePath}`);
-        } catch (error) {
-          // File might already be deleted (ENOENT), that's okay
-          // But other errors (permissions, etc.) should be reported
-          if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-            throw new CaideError(
-              "Failed to cleanup temporary image file",
-              CaideErrorKind.External,
-            );
-          }
+      try {
+        await unlink(filePath);
+        logger.log(`Cleaned up theme image: ${filePath}`);
+      } catch (error) {
+        // File might already be deleted (ENOENT), that's okay
+        // But other errors (permissions, etc.) should be reported
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+          throw new CaideError("Failed to cleanup temporary image file", CaideErrorKind.External);
         }
       }
-    },
-  );
+    }
+  });
 
   handle(
     "generate-theme-prompt",
-    async (
-      _,
-      params: GenerateThemePromptParams,
-    ): Promise<GenerateThemePromptResult> => {
+    async (_, params: GenerateThemePromptParams): Promise<GenerateThemePromptResult> => {
       const settings = readSettings();
 
       // Return mock response in test mode
@@ -629,10 +585,7 @@ Modern dark theme with purple accents for testing.
       }
 
       if (params.imagePaths.length > 5) {
-        throw new CaideError(
-          "Maximum 5 images allowed",
-          CaideErrorKind.External,
-        );
+        throw new CaideError("Maximum 5 images allowed", CaideErrorKind.External);
       }
 
       // Validate keywords length
@@ -645,18 +598,13 @@ Modern dark theme with purple accents for testing.
 
       // Validate generation mode
       if (!["inspired", "high-fidelity"].includes(params.generationMode)) {
-        throw new CaideError(
-          "Invalid generation mode",
-          CaideErrorKind.Validation,
-        );
+        throw new CaideError("Invalid generation mode", CaideErrorKind.Validation);
       }
 
       // Validate and map model selection
       const selectedModel = await resolveBuiltinModelAlias(params.model);
       if (!selectedModel) {
-        throw new Error(
-          `Invalid model selection: alias "${params.model}" could not be resolved`,
-        );
+        throw new Error(`Invalid model selection: alias "${params.model}" could not be resolved`);
       }
 
       // Use the selected model for theme generation
@@ -677,9 +625,7 @@ Modern dark theme with purple accents for testing.
       // Build the user input prompt (sanitize user-provided keywords)
       const keywordsPart = sanitizeKeywords(params.keywords) || "N/A";
       const imagesPart =
-        params.imagePaths.length > 0
-          ? `${params.imagePaths.length} image(s) attached`
-          : "N/A";
+        params.imagePaths.length > 0 ? `${params.imagePaths.length} image(s) attached` : "N/A";
       const userInput = `inspired by: ${keywordsPart}
 images: ${imagesPart}`;
 
@@ -697,9 +643,7 @@ images: ${imagesPart}`;
           const normalizedImagePath = path.resolve(imagePath);
           const normalizedTempDir = path.resolve(THEME_IMAGES_TEMP_DIR);
           if (!normalizedImagePath.startsWith(normalizedTempDir + path.sep)) {
-            throw new Error(
-              "Invalid image path: images must be uploaded through the theme dialog",
-            );
+            throw new Error("Invalid image path: images must be uploaded through the theme dialog");
           }
 
           try {
@@ -714,9 +658,7 @@ images: ${imagesPart}`;
               mimeType,
             } as ImagePart);
           } catch {
-            throw new Error(
-              `Failed to read image file: ${path.basename(imagePath)}`,
-            );
+            throw new Error(`Failed to read image file: ${path.basename(imagePath)}`);
           }
         }
 
@@ -752,10 +694,7 @@ images: ${imagesPart}`;
   // Generate theme prompt from website URL via web crawl
   handle(
     "generate-theme-from-url",
-    async (
-      _,
-      params: GenerateThemeFromUrlParams,
-    ): Promise<GenerateThemePromptResult> => {
+    async (_, params: GenerateThemeFromUrlParams): Promise<GenerateThemePromptResult> => {
       const settings = readSettings();
 
       // Return mock response in test mode
@@ -784,9 +723,7 @@ Modern theme extracted from website for testing.
 
       // Only allow HTTP/HTTPS protocols (security: prevent file://, javascript://, etc.)
       if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
-        throw new Error(
-          "Invalid URL protocol. Only HTTP and HTTPS URLs are supported.",
-        );
+        throw new Error("Invalid URL protocol. Only HTTP and HTTPS URLs are supported.");
       }
 
       // SSRF protection: block internal/private network addresses
@@ -802,10 +739,7 @@ Modern theme extracted from website for testing.
         /\.local$/i,
       ];
       if (blockedPatterns.some((p) => p.test(hostname))) {
-        throw new CaideError(
-          "Cannot crawl internal network addresses.",
-          CaideErrorKind.External,
-        );
+        throw new CaideError("Cannot crawl internal network addresses.", CaideErrorKind.External);
       }
 
       // Validate keywords length
@@ -818,18 +752,13 @@ Modern theme extracted from website for testing.
 
       // Validate generation mode
       if (!["inspired", "high-fidelity"].includes(params.generationMode)) {
-        throw new CaideError(
-          "Invalid generation mode",
-          CaideErrorKind.Validation,
-        );
+        throw new CaideError("Invalid generation mode", CaideErrorKind.Validation);
       }
 
       // Validate and map model selection
       const selectedModel = await resolveBuiltinModelAlias(params.model);
       if (!selectedModel) {
-        throw new Error(
-          `Invalid model selection: alias "${params.model}" could not be resolved`,
-        );
+        throw new Error(`Invalid model selection: alias "${params.model}" could not be resolved`);
       }
 
       // Get API key for Caide Engine
@@ -846,31 +775,23 @@ Modern theme extracted from website for testing.
 
       // Create AbortController for timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(
-        () => controller.abort(),
-        WEB_CRAWL_TIMEOUT_MS,
-      );
+      const timeoutId = setTimeout(() => controller.abort(), WEB_CRAWL_TIMEOUT_MS);
 
       let crawlResponse: Response;
       try {
-        crawlResponse = await fetch(
-          `${getCaideEngineBaseUrl()}/tools/web-crawl`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${apiKey}`,
-              "X-Caide-Request-Id": `theme-crawl-${uuidv4()}`,
-            },
-            body: JSON.stringify({ url: params.url }),
-            signal: controller.signal,
+        crawlResponse = await fetch(`${getCaideEngineBaseUrl()}/tools/web-crawl`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+            "X-Caide-Request-Id": `theme-crawl-${uuidv4()}`,
           },
-        );
+          body: JSON.stringify({ url: params.url }),
+          signal: controller.signal,
+        });
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
-          throw new Error(
-            "Website crawl timed out. The website may be too slow or unresponsive.",
-          );
+          throw new Error("Website crawl timed out. The website may be too slow or unresponsive.");
         }
         throw new Error(
           "Failed to connect to crawl service. Please check your internet connection and try again.",
@@ -881,9 +802,7 @@ Modern theme extracted from website for testing.
 
       if (!crawlResponse.ok) {
         const errorText = await crawlResponse.text();
-        throw new Error(
-          `Failed to crawl website: ${crawlResponse.status} - ${errorText}`,
-        );
+        throw new Error(`Failed to crawl website: ${crawlResponse.status} - ${errorText}`);
       }
 
       // Validate response with Zod schema
@@ -891,22 +810,16 @@ Modern theme extracted from website for testing.
       const parseResult = webCrawlResponseSchema.safeParse(rawCrawlResult);
       if (!parseResult.success) {
         logger.error("Invalid crawl response structure:", parseResult.error);
-        throw new Error(
-          "Received invalid response from crawl service. Please try again.",
-        );
+        throw new Error("Received invalid response from crawl service. Please try again.");
       }
       const crawlResult = parseResult.data;
 
       if (!crawlResult.screenshot) {
-        throw new Error(
-          "Failed to capture website screenshot. Please try a different URL.",
-        );
+        throw new Error("Failed to capture website screenshot. Please try a different URL.");
       }
 
       if (!crawlResult.markdown) {
-        throw new Error(
-          "Failed to extract website content. Please try a different URL.",
-        );
+        throw new Error("Failed to extract website content. Please try a different URL.");
       }
 
       logger.log(`Website crawled successfully: ${params.url}`);
@@ -935,8 +848,7 @@ source: Live website (screenshot and content provided)`;
       const MAX_MARKDOWN_LENGTH = 16000;
       const truncatedMarkdown =
         crawlResult.markdown.length > MAX_MARKDOWN_LENGTH
-          ? crawlResult.markdown.slice(0, MAX_MARKDOWN_LENGTH) +
-            "\n<!-- truncated -->"
+          ? crawlResult.markdown.slice(0, MAX_MARKDOWN_LENGTH) + "\n<!-- truncated -->"
           : crawlResult.markdown;
 
       // Sanitize crawled content to prevent prompt injection

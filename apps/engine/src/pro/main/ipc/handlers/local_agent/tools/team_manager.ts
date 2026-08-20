@@ -36,23 +36,15 @@ export function getAllSubagentTasks(): SubagentTask[] {
 }
 
 const spawnSubagentSchema = z.object({
-  role: z
-    .string()
-    .describe(
-      "The role of the subagent (e.g., 'Database Expert', 'UI Specialist').",
-    ),
-  task: z
-    .string()
-    .describe("The specific task the subagent should accomplish."),
+  role: z.string().describe("The role of the subagent (e.g., 'Database Expert', 'UI Specialist')."),
+  task: z.string().describe("The specific task the subagent should accomplish."),
 });
 
 const checkSubagentSchema = z.object({
   task_id: z.string().describe("The ID of the subagent task to check."),
 });
 
-export const spawnSubagentTool: ToolDefinition<
-  z.infer<typeof spawnSubagentSchema>
-> = {
+export const spawnSubagentTool: ToolDefinition<z.infer<typeof spawnSubagentSchema>> = {
   name: "spawn_subagent",
   description: `Delegate a complex task to a specialized subagent. 
 This tool runs the subagent in the background and returns a task ID immediately, allowing you to work on other files in parallel. 
@@ -146,9 +138,7 @@ Do not ask for user input, as you are running in the background. If you are stuc
   },
 };
 
-export const checkSubagentStatusTool: ToolDefinition<
-  z.infer<typeof checkSubagentSchema>
-> = {
+export const checkSubagentStatusTool: ToolDefinition<z.infer<typeof checkSubagentSchema>> = {
   name: "check_subagent_status",
   description: `Check the status and final output of a background subagent.`,
   inputSchema: checkSubagentSchema,

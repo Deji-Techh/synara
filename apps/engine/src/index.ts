@@ -90,7 +90,12 @@ function makeResponse(request: JsonRpcRequest, result?: unknown): JsonRpcRespons
   return { jsonrpc: "2.0", id: request.id, ...(result === undefined ? {} : { result }) };
 }
 
-function makeError(request: JsonRpcRequest, code: number, message: string, data?: unknown): JsonRpcResponse {
+function makeError(
+  request: JsonRpcRequest,
+  code: number,
+  message: string,
+  data?: unknown,
+): JsonRpcResponse {
   return {
     jsonrpc: "2.0",
     id: request.id,
@@ -164,7 +169,11 @@ async function shutdown(): Promise<void> {
 // ── dyad.invoke dispatch ────────────────────────────────────────────
 
 function isEnvelope(value: unknown): value is { ok: boolean } {
-  return typeof value === "object" && value !== null && typeof (value as { ok?: unknown }).ok === "boolean";
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { ok?: unknown }).ok === "boolean"
+  );
 }
 
 async function dispatchDyadInvoke(channel: string, payload: unknown): Promise<unknown> {
@@ -280,11 +289,23 @@ rl.on("line", (line) => {
   try {
     parsed = JSON.parse(line);
   } catch {
-    send({ jsonrpc: "2.0", id: null, error: { code: JSON_RPC_PARSE_ERROR, message: "invalid JSON" } });
+    send({
+      jsonrpc: "2.0",
+      id: null,
+      error: { code: JSON_RPC_PARSE_ERROR, message: "invalid JSON" },
+    });
     return;
   }
-  if (parsed === null || typeof parsed !== "object" || typeof (parsed as JsonRpcRequest).method !== "string") {
-    send({ jsonrpc: "2.0", id: null, error: { code: JSON_RPC_INVALID_REQUEST, message: "invalid request" } });
+  if (
+    parsed === null ||
+    typeof parsed !== "object" ||
+    typeof (parsed as JsonRpcRequest).method !== "string"
+  ) {
+    send({
+      jsonrpc: "2.0",
+      id: null,
+      error: { code: JSON_RPC_INVALID_REQUEST, message: "invalid request" },
+    });
     return;
   }
   handleRequest(parsed as JsonRpcRequest).then(

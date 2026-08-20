@@ -9,10 +9,7 @@ import { normalizeTestPath } from "../utils/normalize_test_path";
 import { SPEC_FILE_RE } from "../types/tests";
 
 import log from "electron-log";
-import {
-  executeAddDependency,
-  ExecuteAddDependencyError,
-} from "./executeAddDependency";
+import { executeAddDependency, ExecuteAddDependencyError } from "./executeAddDependency";
 import {
   deleteSupabaseFunction,
   deploySupabaseFunction,
@@ -95,8 +92,7 @@ export async function dryRunSearchReplace({
       if (!result.success || typeof result.content !== "string") {
         issues.push({
           filePath,
-          error:
-            "Unable to apply search-replace to file because: " + result.error,
+          error: "Unable to apply search-replace to file because: " + result.error,
         });
         logger.warn(
           `Unable to apply search-replace to file ${filePath} because: ${result.error}. Original content:\n${original}\n Diff content:\n${tag.content}`,
@@ -145,8 +141,7 @@ export async function processFullResponseActions(
 
   if (
     chatWithApp.app.neonProjectId &&
-    (chatWithApp.app.neonActiveBranchId ||
-      chatWithApp.app.neonDevelopmentBranchId)
+    (chatWithApp.app.neonActiveBranchId || chatWithApp.app.neonDevelopmentBranchId)
   ) {
     try {
       await storeDbTimestampAtCurrentVersion({
@@ -180,11 +175,8 @@ export async function processFullResponseActions(
     const caideRenameTags = getCaideRenameTags(fullResponse);
     const caideDeletePaths = getCaideDeleteTags(fullResponse);
     const caideAddDependencyPackages = getCaideAddDependencyTags(fullResponse);
-    const hasDbProvider =
-      chatWithApp.app.supabaseProjectId || chatWithApp.app.neonProjectId;
-    const caideExecuteSqlQueries = hasDbProvider
-      ? getCaideExecuteSqlTags(fullResponse)
-      : [];
+    const hasDbProvider = chatWithApp.app.supabaseProjectId || chatWithApp.app.neonProjectId;
+    const caideExecuteSqlQueries = hasDbProvider ? getCaideExecuteSqlTags(fullResponse) : [];
 
     const message = await db.query.messages.findFirst({
       where: and(
@@ -206,8 +198,7 @@ export async function processFullResponseActions(
           if (chatWithApp.app.neonProjectId) {
             // Route to Neon executor
             const branchId =
-              chatWithApp.app.neonActiveBranchId ??
-              chatWithApp.app.neonDevelopmentBranchId;
+              chatWithApp.app.neonActiveBranchId ?? chatWithApp.app.neonDevelopmentBranchId;
             if (!branchId) {
               throw new CaideError(
                 "No active Neon branch found for SQL execution. Please select a branch in the Neon integration settings.",
@@ -221,10 +212,7 @@ export async function processFullResponseActions(
                 query: query.content,
               });
             } catch (neonError) {
-              const errorMsg =
-                neonError instanceof Error
-                  ? neonError.message
-                  : String(neonError);
+              const errorMsg = neonError instanceof Error ? neonError.message : String(neonError);
               // These substrings come from @neondatabase/serverless wrapping
               // Postgres auth errors. If the client library ever exposes
               // structured error codes, prefer those over message matching.
@@ -238,25 +226,18 @@ export async function processFullResponseActions(
                   CaideErrorKind.Auth,
                 );
               }
-              throw new CaideError(
-                `Neon SQL query failed: ${errorMsg}`,
-                CaideErrorKind.External,
-              );
+              throw new CaideError(`Neon SQL query failed: ${errorMsg}`, CaideErrorKind.External);
             }
           } else if (chatWithApp.app.supabaseProjectId) {
             // Route to Supabase executor
             await executeSupabaseSql({
               supabaseProjectId: chatWithApp.app.supabaseProjectId,
               query: query.content,
-              organizationSlug:
-                chatWithApp.app.supabaseOrganizationSlug ?? null,
+              organizationSlug: chatWithApp.app.supabaseOrganizationSlug ?? null,
             });
 
             // Only write migration file if SQL execution succeeded
-            if (
-              settings.enableSupabaseWriteSqlMigration &&
-              doesSqlMutateSchema(query.content)
-            ) {
+            if (settings.enableSupabaseWriteSqlMigration && doesSqlMutateSchema(query.content)) {
               try {
                 const migrationFilePath = await writeMigrationFile(
                   appPath,
@@ -436,8 +417,7 @@ export async function processFullResponseActions(
               supabaseProjectId: chatWithApp.app.supabaseProjectId!,
               functionName,
               appPath,
-              organizationSlug:
-                chatWithApp.app.supabaseOrganizationSlug ?? null,
+              organizationSlug: chatWithApp.app.supabaseOrganizationSlug ?? null,
             });
           } catch (error) {
             errors.push({
@@ -491,8 +471,7 @@ export async function processFullResponseActions(
                 supabaseProjectId: chatWithApp.app.supabaseProjectId!,
                 functionName,
                 appPath,
-                organizationSlug:
-                  chatWithApp.app.supabaseOrganizationSlug ?? null,
+                organizationSlug: chatWithApp.app.supabaseOrganizationSlug ?? null,
               });
             } catch (error) {
               errors.push({
@@ -584,8 +563,7 @@ export async function processFullResponseActions(
               supabaseProjectId: chatWithApp.app.supabaseProjectId!,
               functionName,
               appPath,
-              organizationSlug:
-                chatWithApp.app.supabaseOrganizationSlug ?? null,
+              organizationSlug: chatWithApp.app.supabaseOrganizationSlug ?? null,
             });
           } catch (error) {
             errors.push({
@@ -638,8 +616,7 @@ export async function processFullResponseActions(
         const deployErrors = await deployAffectedSupabaseFunctions({
           appPath,
           supabaseProjectId: chatWithApp.app.supabaseProjectId,
-          supabaseOrganizationSlug:
-            chatWithApp.app.supabaseOrganizationSlug ?? null,
+          supabaseOrganizationSlug: chatWithApp.app.supabaseOrganizationSlug ?? null,
           skipPruneEdgeFunctions: settings.skipPruneEdgeFunctions ?? false,
           sharedModulesChanged,
           changedSharedModulePaths,
@@ -649,16 +626,14 @@ export async function processFullResponseActions(
         if (deployErrors.length > 0) {
           for (const err of deployErrors) {
             errors.push({
-              message:
-                "Failed to deploy Supabase function after shared module change",
+              message: "Failed to deploy Supabase function after shared module change",
               error: err,
             });
           }
         }
       } catch (error) {
         errors.push({
-          message:
-            "Failed to redeploy Supabase functions after shared module change",
+          message: "Failed to redeploy Supabase functions after shared module change",
           error: error,
         });
       }
@@ -685,16 +660,11 @@ export async function processFullResponseActions(
 
       // Create commit with details of all changes
       const changes = [];
-      if (writtenFiles.length > 0)
-        changes.push(`wrote ${writtenFiles.length} file(s)`);
-      if (renamedFiles.length > 0)
-        changes.push(`renamed ${renamedFiles.length} file(s)`);
-      if (deletedFiles.length > 0)
-        changes.push(`deleted ${deletedFiles.length} file(s)`);
+      if (writtenFiles.length > 0) changes.push(`wrote ${writtenFiles.length} file(s)`);
+      if (renamedFiles.length > 0) changes.push(`renamed ${renamedFiles.length} file(s)`);
+      if (deletedFiles.length > 0) changes.push(`deleted ${deletedFiles.length} file(s)`);
       if (caideAddDependencyPackages.length > 0)
-        changes.push(
-          `added ${caideAddDependencyPackages.join(", ")} package(s)`,
-        );
+        changes.push(`added ${caideAddDependencyPackages.join(", ")} package(s)`);
       if (caideExecuteSqlQueries.length > 0)
         changes.push(`executed ${caideExecuteSqlQueries.length} SQL queries`);
 
@@ -768,10 +738,7 @@ export async function processFullResponseActions(
       queueCloudSandboxSnapshotSync({
         appId: chatWithApp.app.id,
         changedPaths: [...writtenFiles, ...renamedFiles],
-        deletedPaths: [
-          ...caideDeletePaths,
-          ...caideRenameTags.map((renameTag) => renameTag.from),
-        ],
+        deletedPaths: [...caideDeletePaths, ...caideRenameTags.map((renameTag) => renameTag.from)],
       });
     }
 
@@ -779,15 +746,13 @@ export async function processFullResponseActions(
       updatedFiles: hasChanges,
       extraFiles: uncommittedFiles.length > 0 ? uncommittedFiles : undefined,
       extraFilesError,
-      warningMessages:
-        warningMessages.length > 0 ? [...new Set(warningMessages)] : undefined,
+      warningMessages: warningMessages.length > 0 ? [...new Set(warningMessages)] : undefined,
     };
   } catch (error: unknown) {
     logger.error("Error processing files:", error);
     return {
       error: (error as any).toString(),
-      warningMessages:
-        warningMessages.length > 0 ? [...new Set(warningMessages)] : undefined,
+      warningMessages: warningMessages.length > 0 ? [...new Set(warningMessages)] : undefined,
     };
   } finally {
     const appendedContent = `

@@ -16,15 +16,7 @@
 //      non-DCR case real public MCP services generally don't expose.
 
 import { spawn, type ChildProcess } from "node:child_process";
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 // --- DB mock identical in shape to the other oauth tests ----------------
 type Row = {
@@ -78,9 +70,7 @@ vi.mock("@/db", () => ({
     select: vi.fn(() => ({
       from: () => ({
         where: () =>
-          Promise.resolve(
-            dbStore.has(currentTargetId) ? [dbStore.get(currentTargetId)!] : [],
-          ),
+          Promise.resolve(dbStore.has(currentTargetId) ? [dbStore.get(currentTargetId)!] : []),
       }),
     })),
     update: vi.fn(() => ({
@@ -117,8 +107,7 @@ const electronImport = await import("electron");
 const flowImport = await import("@/ipc/utils/mcp_oauth_flow");
 const providerImport = await import("@/ipc/utils/mcp_oauth_provider");
 const { runOAuthFlow } = flowImport;
-const { oauthStateHasTokens, CaideOAuthClientProvider, encryptToString } =
-  providerImport;
+const { oauthStateHasTokens, CaideOAuthClientProvider, encryptToString } = providerImport;
 const { shell } = electronImport;
 
 // --- Fake-server lifecycle ----------------------------------------------
@@ -144,9 +133,7 @@ const SCOPE_CALLBACK_PORT_BASE = 54100;
 async function waitForReady(baseUrl: string, attempts = 40): Promise<void> {
   for (let i = 0; i < attempts; i++) {
     try {
-      const r = await fetch(
-        `${baseUrl}/.well-known/oauth-authorization-server`,
-      );
+      const r = await fetch(`${baseUrl}/.well-known/oauth-authorization-server`);
       if (r.ok) return;
     } catch {
       // ECONNREFUSED until the listener binds.
@@ -208,10 +195,7 @@ function rowIsConnected(id: number): boolean {
 // `port` is the SERVER_PORT constant for that block. Registers the
 // standard beforeAll/afterAll/beforeEach hooks for the surrounding
 // describe and returns the base URL.
-function setupFakeServer(
-  env: Record<string, string>,
-  port: number,
-): { base: string } {
+function setupFakeServer(env: Record<string, string>, port: number): { base: string } {
   let child: ChildProcess;
   const base = `http://localhost:${port}`;
   beforeAll(async () => {
@@ -267,12 +251,7 @@ describe("OAuth integration: DCR mode against fake server", () => {
     let registerHits = 0;
     const originalFetch = globalThis.fetch;
     const teeFetch: typeof fetch = async (input, init) => {
-      const url =
-        typeof input === "string"
-          ? input
-          : input instanceof URL
-            ? input.href
-            : input.url;
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url.includes("/register")) registerHits += 1;
       return originalFetch(input, init);
     };
@@ -327,12 +306,7 @@ describe("OAuth integration: static client_id mode against fake server", () => {
     let registerHits = 0;
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async (input, init) => {
-      const url =
-        typeof input === "string"
-          ? input
-          : input instanceof URL
-            ? input.href
-            : input.url;
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url.includes("/register")) registerHits += 1;
       return originalFetch(input, init);
     };
@@ -362,10 +336,7 @@ describe("OAuth integration: refresh-token rotation against fake server", () => 
   // `auth()` call. Refresh rotation (old refresh_token dies, new one
   // is issued) is verified by checking the stored token blob between
   // the two flows.
-  const { base } = setupFakeServer(
-    { FAKE_DCR: "1", FAKE_TOKEN_TTL_SEC: "1" },
-    REFRESH_SERVER_PORT,
-  );
+  const { base } = setupFakeServer({ FAKE_DCR: "1", FAKE_TOKEN_TTL_SEC: "1" }, REFRESH_SERVER_PORT);
   let nextCallbackPort = REFRESH_CALLBACK_PORT_BASE;
 
   it("silently refreshes when tokens have expired (no second browser open)", async () => {

@@ -59,15 +59,13 @@ describe("getExtraProviderOptions", () => {
   });
 
   it("returns Anthropic engine body thinking options", () => {
-    expect(getExtraProviderOptionsForEngine("anthropic", baseSettings)).toEqual(
-      {
-        thinking: {
-          type: "adaptive",
-          display: "summarized",
-        },
-        output_config: { effort: "medium" },
+    expect(getExtraProviderOptionsForEngine("anthropic", baseSettings)).toEqual({
+      thinking: {
+        type: "adaptive",
+        display: "summarized",
       },
-    );
+      output_config: { effort: "medium" },
+    });
   });
 
   it("maps Anthropic thinking budget settings to effort", () => {

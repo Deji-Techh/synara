@@ -55,24 +55,16 @@ export function shouldFilterPostHogExceptionEvent(
 
   if (
     isGenericFetchFailedError(
-      typeof properties.exception_name === "string"
-        ? properties.exception_name
-        : undefined,
-      typeof properties.exception_message === "string"
-        ? properties.exception_message
-        : undefined,
+      typeof properties.exception_name === "string" ? properties.exception_name : undefined,
+      typeof properties.exception_message === "string" ? properties.exception_message : undefined,
     )
   ) {
     return true;
   }
 
   return isGenericFetchFailedError(
-    typeof properties.$exception_type === "string"
-      ? properties.$exception_type
-      : undefined,
-    typeof properties.$exception_message === "string"
-      ? properties.$exception_message
-      : undefined,
+    typeof properties.$exception_type === "string" ? properties.$exception_type : undefined,
+    typeof properties.$exception_message === "string" ? properties.$exception_message : undefined,
   );
 }
 

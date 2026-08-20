@@ -6,9 +6,7 @@ import type { ReferenceEntry } from "@/ipc/types/reference";
 const logger = log.scope("reference_store");
 
 function getReferenceDir(chatId: number, appPath?: string): string {
-  const base = appPath
-    ? path.join(appPath, ".caide")
-    : path.join(process.cwd(), ".caide");
+  const base = appPath ? path.join(appPath, ".caide") : path.join(process.cwd(), ".caide");
   return path.join(base, "references", String(chatId));
 }
 
@@ -31,11 +29,7 @@ function loadMetadata(refDir: string): ReferenceEntry[] {
 function saveMetadata(refDir: string, entries: ReferenceEntry[]): void {
   try {
     fs.mkdirSync(refDir, { recursive: true });
-    fs.writeFileSync(
-      getMetadataPath(refDir),
-      JSON.stringify(entries, null, 2),
-      "utf-8",
-    );
+    fs.writeFileSync(getMetadataPath(refDir), JSON.stringify(entries, null, 2), "utf-8");
   } catch (err) {
     logger.error("Failed to save reference metadata", err);
     throw err;
@@ -65,11 +59,7 @@ function copyRecursive(src: string, dest: string): void {
   }
 }
 
-export function addReference(
-  chatId: number,
-  paths: string[],
-  appPath?: string,
-): ReferenceEntry[] {
+export function addReference(chatId: number, paths: string[], appPath?: string): ReferenceEntry[] {
   const refDir = getReferenceDir(chatId, appPath);
   fs.mkdirSync(refDir, { recursive: true });
 
@@ -104,20 +94,13 @@ export function addReference(
   return newEntries;
 }
 
-export function listReferences(
-  chatId: number,
-  appPath?: string,
-): ReferenceEntry[] {
+export function listReferences(chatId: number, appPath?: string): ReferenceEntry[] {
   const refDir = getReferenceDir(chatId, appPath);
   if (!fs.existsSync(refDir)) return [];
   return loadMetadata(refDir);
 }
 
-export function removeReference(
-  chatId: number,
-  referencePath: string,
-  appPath?: string,
-): void {
+export function removeReference(chatId: number, referencePath: string, appPath?: string): void {
   const refDir = getReferenceDir(chatId, appPath);
   const entries = loadMetadata(refDir);
   const idx = entries.findIndex((e) => e.referencePath === referencePath);

@@ -2,18 +2,8 @@ import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
-import {
-  PersistedGoalStateSchema,
-  type PersistedGoalState,
-} from "../shared/goal_state";
-import type {
-  Goal,
-  GoalEvidence,
-  GoalRun,
-  GoalRunKind,
-  GoalStatus,
-  GoalTask,
-} from "./goal_types";
+import { PersistedGoalStateSchema, type PersistedGoalState } from "../shared/goal_state";
+import type { Goal, GoalEvidence, GoalRun, GoalRunKind, GoalStatus, GoalTask } from "./goal_types";
 
 const LIVE_GOAL_STATUSES = [
   "draft",

@@ -4,7 +4,6 @@ import * as RpcGroup from "effect/unstable/rpc/RpcGroup";
 import { WsRpcError } from "./rpc";
 import { Goal, GoalId, GoalStatus, GoalActivityEvent, GoalExecutionTarget } from "./goals";
 
-
 export const GOALS_WS_METHODS = {
   createGoal: "goals:create",
   getGoal: "goals:get",

@@ -50,22 +50,17 @@ export function CaideMotionProvider({
   reducedMotion?: "user" | "always" | "never";
 }) {
   const systemReduced = useSystemReducedMotion();
-  const reduced =
-    reducedMotion === "always" || (reducedMotion === "user" && systemReduced);
+  const reduced = reducedMotion === "always" || (reducedMotion === "user" && systemReduced);
   const value = useMemo(() => ({ reduced, intensity }), [reduced, intensity]);
 
   useEffect(() => {
-    document.documentElement.dataset.caideMotion = reduced
-      ? "reduced"
-      : intensity;
+    document.documentElement.dataset.caideMotion = reduced ? "reduced" : intensity;
     return () => {
       delete document.documentElement.dataset.caideMotion;
     };
   }, [intensity, reduced]);
 
-  return (
-    <MotionContext.Provider value={value}>{children}</MotionContext.Provider>
-  );
+  return <MotionContext.Provider value={value}>{children}</MotionContext.Provider>;
 }
 
 export function useCaideMotion() {
@@ -85,16 +80,12 @@ export function useCaideAnimate<T extends HTMLElement>() {
     [],
   );
 
-  const applyReducedFrame = (
-    element: T,
-    keyframes: Keyframe[] | PropertyIndexedKeyframes,
-  ) => {
+  const applyReducedFrame = (element: T, keyframes: Keyframe[] | PropertyIndexedKeyframes) => {
     const frame: Record<string, unknown> = {};
     if (Array.isArray(keyframes)) {
       const finalFrame = keyframes.at(-1) ?? {};
       for (const [property, value] of Object.entries(finalFrame)) {
-        if (!["offset", "easing", "composite"].includes(property))
-          frame[property] = value;
+        if (!["offset", "easing", "composite"].includes(property)) frame[property] = value;
       }
     } else {
       for (const [property, value] of Object.entries(keyframes)) {
@@ -120,9 +111,7 @@ export function useCaideAnimate<T extends HTMLElement>() {
       ...options,
     });
     animations.current.add(animation);
-    animation.finished
-      .finally(() => animations.current.delete(animation))
-      .catch(() => {});
+    animation.finished.finally(() => animations.current.delete(animation)).catch(() => {});
     return animation;
   };
 
@@ -136,14 +125,7 @@ export const CaidePressable = forwardRef<
     auditSafe?: boolean;
   }
 >(function CaidePressable(
-  {
-    className,
-    children,
-    motionId = "pressable",
-    auditSafe = false,
-    type = "button",
-    ...props
-  },
+  { className, children, motionId = "pressable", auditSafe = false, type = "button", ...props },
   ref,
 ) {
   return (

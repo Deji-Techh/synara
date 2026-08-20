@@ -23,9 +23,7 @@ function readPackageManagerField(appPath: string): string | null {
   try {
     const packageJsonPath = path.join(appPath, "package.json");
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-    return typeof packageJson.packageManager === "string"
-      ? packageJson.packageManager
-      : null;
+    return typeof packageJson.packageManager === "string" ? packageJson.packageManager : null;
   } catch {
     return null;
   }
@@ -37,9 +35,7 @@ export function getPackageManagerSignal(appPath: string): PackageManagerSignal {
     hasPnpmLockfile: fileExists(path.join(appPath, "pnpm-lock.yaml")),
     hasNpmLockfile: fileExists(path.join(appPath, "package-lock.json")),
     hasPnpmNodeModules: fileExists(path.join(appPath, "node_modules", ".pnpm")),
-    hasNpmNodeModules: fileExists(
-      path.join(appPath, "node_modules", ".package-lock.json"),
-    ),
+    hasNpmNodeModules: fileExists(path.join(appPath, "node_modules", ".package-lock.json")),
   };
 }
 
@@ -98,9 +94,7 @@ export function choosePackageManagerFromSignal({
  * relevant to the app, including while it temporarily falls back to npm.
  */
 export function signalPrefersPnpm(signal: PackageManagerSignal): boolean {
-  return (
-    choosePackageManagerFromSignal({ signal, pnpmAvailable: true }) === "pnpm"
-  );
+  return choosePackageManagerFromSignal({ signal, pnpmAvailable: true }) === "pnpm";
 }
 
 export function choosePackageManagerForApp(

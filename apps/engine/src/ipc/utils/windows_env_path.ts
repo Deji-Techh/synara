@@ -15,10 +15,7 @@ function getSystemRoot(): string {
   return process.env.SystemRoot ?? process.env.windir ?? "C:\\Windows";
 }
 
-async function runWindowsCommand(
-  executable: string,
-  args: string[],
-): Promise<string | null> {
+async function runWindowsCommand(executable: string, args: string[]): Promise<string | null> {
   // No shell, absolute executable path: a corrupted PATH entry must not be
   // able to break the PATH refresh itself with a spawn ENOENT.
   return new Promise((resolve) => {
@@ -42,9 +39,7 @@ async function runWindowsCommand(
     let timedOut = false;
     const timeout = setTimeout(() => {
       timedOut = true;
-      logger.warn(
-        `${executable} timed out after ${WINDOWS_COMMAND_TIMEOUT_MS}ms`,
-      );
+      logger.warn(`${executable} timed out after ${WINDOWS_COMMAND_TIMEOUT_MS}ms`);
       child.kill();
       settle(null);
     }, WINDOWS_COMMAND_TIMEOUT_MS);
@@ -154,27 +149,19 @@ async function readPathViaRegQuery(): Promise<string | null> {
   if (machine === null && user === null) {
     return null;
   }
-  const combined = [machine, user]
-    .filter((value): value is string => Boolean(value))
-    .join(";");
+  const combined = [machine, user].filter((value): value is string => Boolean(value)).join(";");
   return expandWindowsEnvVars(combined, process.env);
 }
 
 function normalizePathSegment(segment: string): string {
   let normalized = segment.toLowerCase();
-  while (
-    normalized.length > 3 &&
-    (normalized.endsWith("\\") || normalized.endsWith("/"))
-  ) {
+  while (normalized.length > 3 && (normalized.endsWith("\\") || normalized.endsWith("/"))) {
     normalized = normalized.slice(0, -1);
   }
   return normalized;
 }
 
-export function mergeWindowsPathSegments(
-  currentPath: string,
-  registryPath: string,
-): string {
+export function mergeWindowsPathSegments(currentPath: string, registryPath: string): string {
   // Keep true session-only additions first (e.g. a version manager's env from
   // the shell that launched Caide), then use the freshly read registry ordering
   // for every registry-known entry. This preserves Windows machine-before-user
@@ -227,15 +214,10 @@ export function mergeWindowsPathSegments(
  * (and their children) keep the stale copy. Re-reading the registry is the
  * only way to pick up the new entries without restarting Caide.
  */
-export async function readRefreshedWindowsPath(
-  currentPath: string,
-): Promise<string | null> {
-  const registryPath =
-    (await readPathViaPowerShell()) ?? (await readPathViaRegQuery());
+export async function readRefreshedWindowsPath(currentPath: string): Promise<string | null> {
+  const registryPath = (await readPathViaPowerShell()) ?? (await readPathViaRegQuery());
   if (!registryPath) {
-    logger.warn(
-      "Could not read PATH from the Windows registry; keeping the current PATH.",
-    );
+    logger.warn("Could not read PATH from the Windows registry; keeping the current PATH.");
     return null;
   }
   return mergeWindowsPathSegments(currentPath, registryPath);

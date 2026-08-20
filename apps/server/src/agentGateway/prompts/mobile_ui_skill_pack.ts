@@ -6873,14 +6873,9 @@ Before calling the welcome screen done, self-audit:
 `;
 import { DESIGN_ENGINE_CONTRACT } from "./design_engine_contract";
 import { DESIGN_REFERENCE_INDEX_PROMPT } from "./design_reference_index";
-import {
-  stripFrontmatter,
-  parseFrontmatter,
-  type SkillFrontmatter,
-} from "./skill_frontmatter";
+import { stripFrontmatter, parseFrontmatter, type SkillFrontmatter } from "./skill_frontmatter";
 
-export const UIUX_SKILL_FRONTMATTER =
-  parseFrontmatter(uiUxMasterySkill).frontmatter;
+export const UIUX_SKILL_FRONTMATTER = parseFrontmatter(uiUxMasterySkill).frontmatter;
 export const COMPANION_SKILL_FRONTMATTERS: Record<string, SkillFrontmatter> = {
   "motion-interaction": parseFrontmatter(motionInteractionSkill).frontmatter,
   "product-flow": parseFrontmatter(productFlowSkill).frontmatter,

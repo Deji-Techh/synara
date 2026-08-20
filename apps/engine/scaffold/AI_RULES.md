@@ -34,19 +34,27 @@ Available packages and libraries:
 
 This project includes a custom CAIDE UI layer on top of shadcn/ui. Use these components for the main screen structure. Import them from `@/caide-ui`.
 
-| Component | Purpose | Key Props |
-|-----------|---------|-----------|
-| `<CaideScreen>` | Full-viewport root container (replaces a plain `<div className="min-h-dvh w-full">`) | `className` |
-| `<CaideAnimatedScreen>` | Like CaideScreen but with a view-transition animation | `transitionId` (string), `className` |
-| `<CaideSection>` | Content section with horizontal padding and max-width centering | `className` |
-| `<CaideStack>` | Vertical flex stack with a configurable gap | `gap` (number, default 4), `className` |
-| `<CaideSurface>` | Card-like surface with elevation levels | `level` ("flat" \| "raised" \| "overlay"), `className` |
-| `<CaideStaggerGroup>` | Wrapper that staggers child entrance animations | `className` |
-| `<CaideStaggerItem>` | Individual animated child inside CaideStaggerGroup | `index` (number — controls delay), `className` |
+| Component               | Purpose                                                                              | Key Props                                              |
+| ----------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| `<CaideScreen>`         | Full-viewport root container (replaces a plain `<div className="min-h-dvh w-full">`) | `className`                                            |
+| `<CaideAnimatedScreen>` | Like CaideScreen but with a view-transition animation                                | `transitionId` (string), `className`                   |
+| `<CaideSection>`        | Content section with horizontal padding and max-width centering                      | `className`                                            |
+| `<CaideStack>`          | Vertical flex stack with a configurable gap                                          | `gap` (number, default 4), `className`                 |
+| `<CaideSurface>`        | Card-like surface with elevation levels                                              | `level` ("flat" \| "raised" \| "overlay"), `className` |
+| `<CaideStaggerGroup>`   | Wrapper that staggers child entrance animations                                      | `className`                                            |
+| `<CaideStaggerItem>`    | Individual animated child inside CaideStaggerGroup                                   | `index` (number — controls delay), `className`         |
 
 **Usage example:**
+
 ```tsx
-import { CaideScreen, CaideSection, CaideStack, CaideSurface, CaideStaggerGroup, CaideStaggerItem } from "@/caide-ui";
+import {
+  CaideScreen,
+  CaideSection,
+  CaideStack,
+  CaideSurface,
+  CaideStaggerGroup,
+  CaideStaggerItem,
+} from "@/caide-ui";
 
 const MyPage = () => (
   <CaideScreen>
@@ -69,6 +77,7 @@ const MyPage = () => (
 ```
 
 **CSS tokens (use these instead of raw hex colors):**
+
 - `var(--caide-accent)` — primary accent colour
 - `var(--caide-text-secondary)` — muted/secondary text
 - `var(--caide-surface-raised)` — raised card background
@@ -77,6 +86,7 @@ const MyPage = () => (
 # Toast Notifications
 
 Use **Sonner** (already installed, already mounted in App.tsx):
+
 ```tsx
 import { toast } from "sonner";
 

@@ -18,9 +18,7 @@ const captureScreenshotSchema = z.object({});
  * `xcrun simctl io booted screenshot` (macOS only). Falls back to the CAIDE
  * window (which includes the web-server preview) when no device is reachable.
  */
-async function captureFlutterDeviceScreen(
-  evidenceDir: string,
-): Promise<string | null> {
+async function captureFlutterDeviceScreen(evidenceDir: string): Promise<string | null> {
   const deadline = path.join(evidenceDir, `device_${Date.now()}.png`);
 
   // Android: prefer a single connected device (emulator or USB).
@@ -36,15 +34,11 @@ async function captureFlutterDeviceScreen(
       .filter((serial) => serial.length > 0 && !serial.startsWith("*"));
     if (serials.length > 0) {
       const serial = serials[0];
-      const png = execFileSync(
-        "adb",
-        ["-s", serial, "exec-out", "screencap", "-p"],
-        {
-          stdio: ["ignore", "pipe", "ignore"],
-          encoding: "buffer",
-          timeout: 10_000,
-        },
-      );
+      const png = execFileSync("adb", ["-s", serial, "exec-out", "screencap", "-p"], {
+        stdio: ["ignore", "pipe", "ignore"],
+        encoding: "buffer",
+        timeout: 10_000,
+      });
       if (png && png.length > 0) {
         await fs.writeFile(deadline, png);
         return deadline;
@@ -57,13 +51,9 @@ async function captureFlutterDeviceScreen(
   // iOS simulator: only on macOS with a booted simulator.
   if (process.platform === "darwin") {
     try {
-      await execFileAsync(
-        "xcrun",
-        ["simctl", "io", "booted", "screenshot", deadline],
-        {
-          timeout: 10_000,
-        },
-      );
+      await execFileAsync("xcrun", ["simctl", "io", "booted", "screenshot", deadline], {
+        timeout: 10_000,
+      });
       await fs.access(deadline);
       return deadline;
     } catch {

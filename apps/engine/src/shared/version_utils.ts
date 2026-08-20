@@ -2,9 +2,7 @@ function parseVersionParts(version: string): {
   parts: [number, number, number];
   hasPrerelease: boolean;
 } | null {
-  const match = version
-    .trim()
-    .match(/^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?/);
+  const match = version.trim().match(/^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?/);
   if (!match) {
     return null;
   }

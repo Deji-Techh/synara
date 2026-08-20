@@ -108,7 +108,14 @@ function inferLegacyModelProvider(provider: unknown, model: string): ModelProvid
     return provider;
   }
   // Legacy CLI providers → API mapping
-  if (provider === "codex" || provider === "cursor" || provider === "kilo" || provider === "opencode" || provider === "pi" || provider === "droid") {
+  if (
+    provider === "codex" ||
+    provider === "cursor" ||
+    provider === "kilo" ||
+    provider === "opencode" ||
+    provider === "pi" ||
+    provider === "droid"
+  ) {
     return "openai";
   }
   if (provider === "claudeAgent") {

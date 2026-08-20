@@ -65,8 +65,7 @@ export function parseDslTestCases(content: string): TestCase[] {
     const match = matches[i];
     const testName = match[1].trim();
     const startIndex = match.index! + match[0].length;
-    const endIndex =
-      i + 1 < matches.length ? matches[i + 1].index! : content.length;
+    const endIndex = i + 1 < matches.length ? matches[i + 1].index! : content.length;
     const testContent = content.slice(startIndex, endIndex);
 
     const testCase = parseTestCase(testName, testContent);
@@ -80,9 +79,7 @@ export function parseDslTestCases(content: string): TestCase[] {
 
 function parseTestCase(name: string, content: string): TestCase | null {
   // Extract original file content
-  const originalMatch = content.match(
-    /<original_file>\r?\n([\s\S]*?)<\/original_file>/,
-  );
+  const originalMatch = content.match(/<original_file>\r?\n([\s\S]*?)<\/original_file>/);
   if (!originalMatch) {
     console.warn(`Test case "${name}": missing <original_file> tag`);
     return null;
@@ -107,9 +104,7 @@ function parseTestCase(name: string, content: string): TestCase | null {
   } else if (errorPatternIndex !== -1) {
     diff = afterOriginal.slice(0, errorPatternIndex);
   } else {
-    console.warn(
-      `Test case "${name}": missing <output_file> or <error_pattern> tag`,
-    );
+    console.warn(`Test case "${name}": missing <output_file> or <error_pattern> tag`);
     return null;
   }
 
@@ -117,9 +112,7 @@ function parseTestCase(name: string, content: string): TestCase | null {
   diff = diff.trim();
 
   // Check for output_file (passing test)
-  const outputMatch = content.match(
-    /<output_file>\r?\n([\s\S]*?)<\/output_file>/,
-  );
+  const outputMatch = content.match(/<output_file>\r?\n([\s\S]*?)<\/output_file>/);
   if (outputMatch) {
     return {
       name,
@@ -130,9 +123,7 @@ function parseTestCase(name: string, content: string): TestCase | null {
   }
 
   // Check for error_pattern (failing test)
-  const errorMatch = content.match(
-    /<error_pattern>\r?\n([\s\S]*?)<\/error_pattern>/,
-  );
+  const errorMatch = content.match(/<error_pattern>\r?\n([\s\S]*?)<\/error_pattern>/);
   if (errorMatch) {
     const patternStr = errorMatch[1].trim();
     try {
@@ -143,15 +134,11 @@ function parseTestCase(name: string, content: string): TestCase | null {
         errorPattern: new RegExp(patternStr, "i"),
       };
     } catch {
-      console.warn(
-        `Test case "${name}": invalid regex pattern "${patternStr}"`,
-      );
+      console.warn(`Test case "${name}": invalid regex pattern "${patternStr}"`);
       return null;
     }
   }
 
-  console.warn(
-    `Test case "${name}": missing <output_file> or <error_pattern> tag`,
-  );
+  console.warn(`Test case "${name}": missing <output_file> or <error_pattern> tag`);
   return null;
 }

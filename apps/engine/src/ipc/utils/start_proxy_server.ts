@@ -4,10 +4,7 @@ import { Worker } from "worker_threads";
 import path from "path";
 import log from "electron-log";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
-import {
-  PROXY_FALLBACK_MAX_ATTEMPTS,
-  getProxyFallbackPortStart,
-} from "../../../shared/ports";
+import { PROXY_FALLBACK_MAX_ATTEMPTS, getProxyFallbackPortStart } from "../../../shared/ports";
 
 const logger = log.scope("start_proxy_server");
 
@@ -28,31 +25,20 @@ export async function startProxy(
       "startProxy: targetOrigin must be absolute http/https URL",
       CaideErrorKind.Validation,
     );
-  const {
-    port,
-    onStarted,
-    onError,
-    onWorkerError,
-    onExit,
-    fixedHeaders,
-    listenHost,
-  } = opts;
+  const { port, onStarted, onError, onWorkerError, onExit, fixedHeaders, listenHost } = opts;
   const fallbackPortStart = getProxyFallbackPortStart();
   logger.info("Starting proxy on port", port);
 
-  const worker = new Worker(
-    path.resolve(__dirname, "..", "..", "worker", "proxy_server.cjs"),
-    {
-      workerData: {
-        targetOrigin,
-        port,
-        fallbackPortStart,
-        maxPortAttempts: PROXY_FALLBACK_MAX_ATTEMPTS,
-        fixedHeaders,
-        listenHost,
-      },
+  const worker = new Worker(path.resolve(__dirname, "..", "..", "worker", "proxy_server.cjs"), {
+    workerData: {
+      targetOrigin,
+      port,
+      fallbackPortStart,
+      maxPortAttempts: PROXY_FALLBACK_MAX_ATTEMPTS,
+      fixedHeaders,
+      listenHost,
     },
-  );
+  });
 
   worker.on("message", (m) => {
     logger.info("[proxy]", m);

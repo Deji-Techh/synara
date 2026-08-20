@@ -10,30 +10,23 @@ import { FREE_AGENT_QUOTA_LIMIT } from "@/lib/free_agent_quota_limit";
 export { FREE_AGENT_QUOTA_LIMIT };
 
 export function registerFreeAgentQuotaHandlers() {
-  createTypedHandler(
-    freeAgentQuotaContracts.getFreeAgentQuotaStatus,
-    async () => {
-      return getFreeAgentQuotaStatus();
-    },
-  );
+  createTypedHandler(freeAgentQuotaContracts.getFreeAgentQuotaStatus, async () => {
+    return getFreeAgentQuotaStatus();
+  });
 }
 
 /**
  * Retained for call-site compatibility. No-op — CAIDE no longer limits
  * Agent mode by a message quota.
  */
-export async function markMessageAsUsingFreeAgentQuota(
-  _messageId: number,
-): Promise<void> {
+export async function markMessageAsUsingFreeAgentQuota(_messageId: number): Promise<void> {
   // No-op.
 }
 
 /**
  * Retained for call-site compatibility. No-op.
  */
-export async function unmarkMessageAsUsingFreeAgentQuota(
-  _messageId: number,
-): Promise<void> {
+export async function unmarkMessageAsUsingFreeAgentQuota(_messageId: number): Promise<void> {
   // No-op.
 }
 

@@ -41,8 +41,7 @@ vi.mock("electron-log", () => ({
 
 const GNUTLS_LINE =
   "\tlibcurl-gnutls.so.4 (libc6,x86-64) => /lib/x86_64-linux-gnu/libcurl-gnutls.so.4";
-const LIBCURL_LINE =
-  "\tlibcurl.so.4 (libc6,x86-64) => /lib/x86_64-linux-gnu/libcurl.so.4";
+const LIBCURL_LINE = "\tlibcurl.so.4 (libc6,x86-64) => /lib/x86_64-linux-gnu/libcurl.so.4";
 const LIBCURL_PATH = "/lib/x86_64-linux-gnu/libcurl.so.4";
 const SHIM_DIR = path.join("/userdata", "native-shims");
 const SHIM_LINK = path.join(SHIM_DIR, "libcurl-gnutls.so.4");
@@ -161,9 +160,7 @@ describe("parseLdconfig", () => {
     const libs = parseLdconfig(output, "x86-64");
 
     expect(libs.get("libcurl.so.4")).toBe("/lib/x86_64-linux-gnu/libcurl.so.4");
-    expect(libs.get("libcurl-gnutls.so.4")).toBe(
-      "/lib/x86_64-linux-gnu/libcurl-gnutls.so.4",
-    );
+    expect(libs.get("libcurl-gnutls.so.4")).toBe("/lib/x86_64-linux-gnu/libcurl-gnutls.so.4");
   });
 
   it("skips entries whose arch tag does not match (e.g. i386)", () => {
@@ -191,9 +188,7 @@ describe("parseLdconfig", () => {
   });
 
   it("includes all matching archs when no arch tag is given", () => {
-    const output = [
-      "\tlibcurl.so.4 (libc6) => /lib/i386-linux-gnu/libcurl.so.4",
-    ].join("\n");
+    const output = ["\tlibcurl.so.4 (libc6) => /lib/i386-linux-gnu/libcurl.so.4"].join("\n");
 
     const libs = parseLdconfig(output, undefined);
 

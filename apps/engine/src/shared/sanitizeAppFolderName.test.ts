@@ -8,15 +8,11 @@ describe("sanitizeAppFolderName", () => {
   });
 
   it("replaces characters rejected by renameApp with dashes", () => {
-    expect(sanitizeAppFolderName('weird<>:"|?*/\\name')).toBe(
-      "weird---------name",
-    );
+    expect(sanitizeAppFolderName('weird<>:"|?*/\\name')).toBe("weird---------name");
   });
 
   it("strips ASCII control characters", () => {
-    expect(sanitizeAppFolderName("name\x00with\x1fcontrol")).toBe(
-      "namewithcontrol",
-    );
+    expect(sanitizeAppFolderName("name\x00with\x1fcontrol")).toBe("namewithcontrol");
   });
 
   it("collapses runs of whitespace", () => {

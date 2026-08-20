@@ -108,25 +108,19 @@ export function killProcess(process: ChildProcess): Promise<void> {
     // Handle potential errors during kill/close sequence
     process.on("error", (err) => {
       clearTimeout(timeout);
-      logger.error(
-        `Error during stop sequence for process (PID: ${process.pid}): ${err.message}`,
-      );
+      logger.error(`Error during stop sequence for process (PID: ${process.pid}): ${err.message}`);
       resolve();
     });
 
     // Ensure PID exists before attempting to kill
     if (process.pid) {
       // Use tree-kill to terminate the entire process tree
-      logger.info(
-        `Attempting to tree-kill process tree starting at PID ${process.pid}.`,
-      );
+      logger.info(`Attempting to tree-kill process tree starting at PID ${process.pid}.`);
       treeKill(process.pid, "SIGTERM", (err: Error | undefined) => {
         if (err) {
           logger.warn(`tree-kill error for PID ${process.pid}: ${err.message}`);
         } else {
-          logger.info(
-            `tree-kill signal sent successfully to PID ${process.pid}.`,
-          );
+          logger.info(`tree-kill signal sent successfully to PID ${process.pid}.`);
         }
       });
     } else {
@@ -165,10 +159,7 @@ export function removeDockerVolumesForApp(appId: number): Promise<void> {
 /**
  * Stops an app based on its RunningAppInfo (container vs host) and removes it from the running map.
  */
-export async function stopAppByInfo(
-  appId: number,
-  appInfo: RunningAppInfo,
-): Promise<void> {
+export async function stopAppByInfo(appId: number, appInfo: RunningAppInfo): Promise<void> {
   appInfo.stopRequested = true;
   stopCloudSandboxFileSync(appId);
 
@@ -202,16 +193,11 @@ export async function stopAppByInfo(
  * @param appId The app ID
  * @param process The process to check against
  */
-export function removeAppIfCurrentProcess(
-  appId: number,
-  process: ChildProcess,
-): void {
+export function removeAppIfCurrentProcess(appId: number, process: ChildProcess): void {
   const currentAppInfo = runningApps.get(appId);
   if (currentAppInfo && currentAppInfo.process === process) {
     if (currentAppInfo.proxyWorker || currentAppInfo.proxyReadyPromise) {
-      currentAppInfo.proxyReadyReject?.(
-        new Error("The app preview process exited."),
-      );
+      currentAppInfo.proxyReadyReject?.(new Error("The app preview process exited."));
       void currentAppInfo.proxyWorker?.terminate();
       currentAppInfo.proxyWorker = undefined;
       currentAppInfo.proxyReadyPromise = undefined;
@@ -226,9 +212,7 @@ export function removeAppIfCurrentProcess(
       `Removed app ${appId} (processId ${currentAppInfo.processId}) from running map. Current size: ${runningApps.size}`,
     );
   } else {
-    logger.info(
-      `App ${appId} process was already removed or replaced in running map. Ignoring.`,
-    );
+    logger.info(`App ${appId} process was already removed or replaced in running map. Ignoring.`);
   }
 }
 
@@ -320,9 +304,7 @@ export async function garbageCollectIdleApps(): Promise<void> {
         // Re-check idle time under lock in case the app was viewed/restarted
         const recheckIdle = Date.now() - appInfo.lastViewedAt;
         if (recheckIdle < IDLE_TIMEOUT_MS) {
-          logger.info(
-            `Skipping GC for app ${appId}: idle time refreshed during lock wait`,
-          );
+          logger.info(`Skipping GC for app ${appId}: idle time refreshed during lock wait`);
           return;
         }
         logger.info(`Garbage collecting idle app ${appId}`);
@@ -437,9 +419,7 @@ export function stopAllAppsSync(): void {
       // treeKill sends SIGTERM synchronously
       treeKill(pid, "SIGTERM", (err: Error | undefined) => {
         if (err) {
-          logger.warn(
-            `tree-kill error for app ${appId} (PID ${pid}): ${err.message}`,
-          );
+          logger.warn(`tree-kill error for app ${appId} (PID ${pid}): ${err.message}`);
         }
       });
       logger.info(`Sent SIGTERM to app ${appId} (PID ${pid})`);

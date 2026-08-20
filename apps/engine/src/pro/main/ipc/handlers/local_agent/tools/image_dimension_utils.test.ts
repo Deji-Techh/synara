@@ -9,15 +9,11 @@ import {
 describe("image_dimension_utils", () => {
   describe("getImageDimensionsFromDataUrl", () => {
     it("returns null for non-data URLs", () => {
-      expect(
-        getImageDimensionsFromDataUrl("https://example.com/image.png"),
-      ).toBeNull();
+      expect(getImageDimensionsFromDataUrl("https://example.com/image.png")).toBeNull();
     });
 
     it("returns null for invalid data URL format", () => {
-      expect(
-        getImageDimensionsFromDataUrl("data:text/plain;base64,SGVsbG8="),
-      ).toBeNull();
+      expect(getImageDimensionsFromDataUrl("data:text/plain;base64,SGVsbG8=")).toBeNull();
     });
 
     it("parses PNG dimensions correctly", () => {
@@ -66,8 +62,7 @@ describe("image_dimension_utils", () => {
 
     it("returns null for invalid PNG signature", () => {
       // Invalid PNG (wrong signature)
-      const invalidPng =
-        "data:image/png;base64,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+      const invalidPng = "data:image/png;base64,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
       expect(getImageDimensionsFromDataUrl(invalidPng)).toBeNull();
     });
 
@@ -101,12 +96,8 @@ describe("image_dimension_utils", () => {
     });
 
     it("respects custom max dimension", () => {
-      expect(exceedsMaxDimension({ width: 1500, height: 1500 }, 1000)).toBe(
-        true,
-      );
-      expect(exceedsMaxDimension({ width: 800, height: 800 }, 1000)).toBe(
-        false,
-      );
+      expect(exceedsMaxDimension({ width: 1500, height: 1500 }, 1000)).toBe(true);
+      expect(exceedsMaxDimension({ width: 800, height: 800 }, 1000)).toBe(false);
     });
   });
 

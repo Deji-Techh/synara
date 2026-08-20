@@ -11,7 +11,10 @@ const oldReturnEnd = `    </div>
   );
 }`;
 
-const oldReturnStr = content.substring(content.indexOf(oldReturnStart), content.lastIndexOf(oldReturnEnd) + oldReturnEnd.length);
+const oldReturnStr = content.substring(
+  content.indexOf(oldReturnStart),
+  content.lastIndexOf(oldReturnEnd) + oldReturnEnd.length,
+);
 
 const newReturnStr = `  return (
     <div className="flex h-full min-h-0 flex-col bg-background" data-testid="preview-pane">

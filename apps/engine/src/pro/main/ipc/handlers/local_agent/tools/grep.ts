@@ -1,20 +1,12 @@
 import { z } from "zod";
 import { spawn } from "node:child_process";
-import {
-  ToolDefinition,
-  AgentContext,
-  escapeXmlAttr,
-  escapeXmlContent,
-} from "./types";
+import { ToolDefinition, AgentContext, escapeXmlAttr, escapeXmlContent } from "./types";
 import {
   getRgExecutablePath,
   MAX_FILE_SEARCH_SIZE,
   RIPGREP_EXCLUDED_GLOBS,
 } from "@/ipc/utils/ripgrep_utils";
-import {
-  CAIDE_INTERNAL_RIPGREP_EXCLUDE,
-  resolveTargetAppPath,
-} from "./resolve_app_context";
+import { CAIDE_INTERNAL_RIPGREP_EXCLUDE, resolveTargetAppPath } from "./resolve_app_context";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
 import log from "electron-log";
 
@@ -27,9 +19,7 @@ const MAX_LINE_LENGTH = 500;
 const grepSchema = z.object({
   query: z
     .string()
-    .describe(
-      "The regex pattern to search for, or the exact text when literal is true",
-    ),
+    .describe("The regex pattern to search for, or the exact text when literal is true"),
   app_name: z
     .string()
     .optional()
@@ -39,13 +29,8 @@ const grepSchema = z.object({
   include_pattern: z
     .string()
     .optional()
-    .describe(
-      "Glob pattern for files to include (e.g. '*.ts' for TypeScript files)",
-    ),
-  exclude_pattern: z
-    .string()
-    .optional()
-    .describe("Glob pattern for files to exclude"),
+    .describe("Glob pattern for files to include (e.g. '*.ts' for TypeScript files)"),
+  exclude_pattern: z.string().optional().describe("Glob pattern for files to exclude"),
   include_ignored: z
     .boolean()
     .optional()
@@ -160,12 +145,7 @@ async function runRipgrep({
   return new Promise((resolve, reject) => {
     const results: RipgrepMatch[] = [];
     let stoppedEarly = false;
-    const args: string[] = [
-      "--json",
-      "--no-config",
-      "--max-filesize",
-      `${MAX_FILE_SEARCH_SIZE}`,
-    ];
+    const args: string[] = ["--json", "--no-config", "--max-filesize", `${MAX_FILE_SEARCH_SIZE}`];
 
     if (includeIgnored) {
       args.push("--no-ignore", "--hidden");
@@ -357,11 +337,7 @@ export const grepTool: ToolDefinition<z.infer<typeof grepSchema>> = {
       // retry with literal=true) rather than silently re-running the query as a
       // literal search. This preserves the historical "invalid regex fails"
       // behavior, just with a more actionable message.
-      if (
-        !args.literal &&
-        error instanceof RipgrepError &&
-        isRegexParseError(error.stderr)
-      ) {
+      if (!args.literal && error instanceof RipgrepError && isRegexParseError(error.stderr)) {
         throw new CaideError(
           formatRegexParseError(args.query, error.stderr),
           CaideErrorKind.Validation,
@@ -386,9 +362,7 @@ export const grepTool: ToolDefinition<z.infer<typeof grepSchema>> = {
     }
 
     // Format output: path:line: content (with truncated line text)
-    const lines = matches.map(
-      (m) => `${m.path}:${m.lineNumber}: ${truncateLineText(m.lineText)}`,
-    );
+    const lines = matches.map((m) => `${m.path}:${m.lineNumber}: ${truncateLineText(m.lineText)}`);
     let resultText = lines.join("\n");
 
     // Add truncation notice for the AI
@@ -401,9 +375,7 @@ export const grepTool: ToolDefinition<z.infer<typeof grepSchema>> = {
     if (includePatWasWildcard) {
       resultText += `\n\n[NOTE: include_pattern="*" was ignored because it matches all files including git-ignored files! Omit include_pattern to search all files, or use a specific glob like "*.ts".]`;
     }
-    ctx.onXmlComplete(
-      `<caide-grep ${attrs}>\n${escapeXmlContent(resultText)}\n</caide-grep>`,
-    );
+    ctx.onXmlComplete(`<caide-grep ${attrs}>\n${escapeXmlContent(resultText)}\n</caide-grep>`);
 
     return resultText;
   },

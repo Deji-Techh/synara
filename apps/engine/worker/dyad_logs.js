@@ -56,16 +56,10 @@
         if (suffixByteLength > maxBytes) {
           let suffixEnd = 0;
           let usedBytes = 0;
-          for (
-            let suffixIndex = 0;
-            suffixIndex < VALUE_TRUNCATION_SUFFIX.length;
-          ) {
-            const suffixCodePoint =
-              VALUE_TRUNCATION_SUFFIX.codePointAt(suffixIndex) ?? 0;
-            const nextSuffixIndex =
-              suffixIndex + (suffixCodePoint > 0xffff ? 2 : 1);
-            const nextBytes =
-              usedBytes + utf8CodePointByteLength(suffixCodePoint);
+          for (let suffixIndex = 0; suffixIndex < VALUE_TRUNCATION_SUFFIX.length; ) {
+            const suffixCodePoint = VALUE_TRUNCATION_SUFFIX.codePointAt(suffixIndex) ?? 0;
+            const nextSuffixIndex = suffixIndex + (suffixCodePoint > 0xffff ? 2 : 1);
+            const nextBytes = usedBytes + utf8CodePointByteLength(suffixCodePoint);
             if (nextBytes > maxBytes) break;
             usedBytes = nextBytes;
             suffixEnd = nextSuffixIndex;
@@ -84,10 +78,7 @@
   function takeStringWithinBudget(value, state, maxBytes) {
     const availableBytes = Math.min(maxBytes, state.remainingBytes);
     const boundedValue = truncateUtf8(value, availableBytes);
-    state.remainingBytes = Math.max(
-      0,
-      state.remainingBytes - utf8ByteLength(boundedValue),
-    );
+    state.remainingBytes = Math.max(0, state.remainingBytes - utf8ByteLength(boundedValue));
     return boundedValue;
   }
 
@@ -110,19 +101,11 @@
       );
     }
     if (typeof value === "symbol") {
-      return takeStringWithinBudget(
-        String(value),
-        state,
-        MAX_STRING_VALUE_BYTES,
-      );
+      return takeStringWithinBudget(String(value), state, MAX_STRING_VALUE_BYTES);
     }
     if (state.remainingBytes <= 0) return "";
     if (depth >= MAX_OBJECT_DEPTH) {
-      return takeStringWithinBudget(
-        "[Maximum log depth reached]",
-        state,
-        MAX_STRING_VALUE_BYTES,
-      );
+      return takeStringWithinBudget("[Maximum log depth reached]", state, MAX_STRING_VALUE_BYTES);
     }
     if (state.remainingNodes <= 0) {
       return takeStringWithinBudget(
@@ -132,11 +115,7 @@
       );
     }
     if (state.seen.has(value)) {
-      return takeStringWithinBudget(
-        "[Circular]",
-        state,
-        MAX_STRING_VALUE_BYTES,
-      );
+      return takeStringWithinBudget("[Circular]", state, MAX_STRING_VALUE_BYTES);
     }
 
     state.remainingNodes--;
@@ -158,30 +137,14 @@
 
     if (value instanceof Error) {
       return {
-        name: takeStringWithinBudget(
-          String(value.name),
-          state,
-          MAX_STRING_VALUE_BYTES,
-        ),
-        message: takeStringWithinBudget(
-          String(value.message),
-          state,
-          MAX_STRING_VALUE_BYTES,
-        ),
-        stack: takeStringWithinBudget(
-          String(value.stack ?? ""),
-          state,
-          MAX_STRING_VALUE_BYTES,
-        ),
+        name: takeStringWithinBudget(String(value.name), state, MAX_STRING_VALUE_BYTES),
+        message: takeStringWithinBudget(String(value.message), state, MAX_STRING_VALUE_BYTES),
+        stack: takeStringWithinBudget(String(value.stack ?? ""), state, MAX_STRING_VALUE_BYTES),
       };
     }
 
     if (Array.isArray(value)) {
-      const itemCount = Math.min(
-        value.length,
-        MAX_OBJECT_KEYS,
-        state.remainingNodes,
-      );
+      const itemCount = Math.min(value.length, MAX_OBJECT_KEYS, state.remainingNodes);
       const result = [];
       let index = 0;
       for (; index < itemCount && state.remainingBytes > 0; index++) {
@@ -214,11 +177,7 @@
           break;
         }
         includedKeys++;
-        const safeKey = takeStringWithinBudget(
-          key,
-          state,
-          MAX_OBJECT_KEY_BYTES,
-        );
+        const safeKey = takeStringWithinBudget(key, state, MAX_OBJECT_KEY_BYTES);
         if (!safeKey && key !== "") {
           hasMoreKeys = true;
           break;
@@ -234,11 +193,7 @@
         }
       }
     } catch {
-      return takeStringWithinBudget(
-        "[Object: unable to enumerate]",
-        state,
-        MAX_STRING_VALUE_BYTES,
-      );
+      return takeStringWithinBudget("[Object: unable to enumerate]", state, MAX_STRING_VALUE_BYTES);
     }
     if (hasMoreKeys && state.remainingBytes > 0) {
       result.__dyad_truncated__ = takeStringWithinBudget(
@@ -251,10 +206,7 @@
   }
 
   function stringifyArg(arg, maxBytes = MAX_ARGUMENT_BYTES) {
-    const argumentByteBudget = Math.min(
-      MAX_ARGUMENT_BYTES,
-      Math.max(0, maxBytes),
-    );
+    const argumentByteBudget = Math.min(MAX_ARGUMENT_BYTES, Math.max(0, maxBytes));
     if (argumentByteBudget === 0) return "";
     if (arg === null) return truncateUtf8("null", argumentByteBudget);
     if (arg === undefined) return truncateUtf8("undefined", argumentByteBudget);
@@ -281,10 +233,7 @@
         },
         0,
       );
-      return truncateUtf8(
-        JSON.stringify(sanitized, null, 2),
-        argumentByteBudget,
-      );
+      return truncateUtf8(JSON.stringify(sanitized, null, 2), argumentByteBudget);
     } catch {
       return "[Object: unable to stringify]";
     }
@@ -306,10 +255,7 @@
       const remainingBytes = valueByteBudget - usedBytes;
       if (remainingBytes <= 0) break;
 
-      const stringified = stringifyArg(
-        args[index],
-        Math.min(MAX_ARGUMENT_BYTES, remainingBytes),
-      );
+      const stringified = stringifyArg(args[index], Math.min(MAX_ARGUMENT_BYTES, remainingBytes));
       includedArgs.push(stringified);
       usedBytes += utf8ByteLength(stringified);
     }

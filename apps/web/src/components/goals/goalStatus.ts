@@ -6,12 +6,7 @@
 // Exports: status labels, tone/dot class names, run kind labels, subagent
 //          metadata detection, and timestamp formatters.
 
-import type {
-  GoalRunKind,
-  GoalRunStatus,
-  GoalStatus,
-  GoalTaskStatus,
-} from "@caide/contracts";
+import type { GoalRunKind, GoalRunStatus, GoalStatus, GoalTaskStatus } from "@caide/contracts";
 
 /** Terminal goal states: no live execution, no recovery controls offered. */
 export const GOAL_TERMINAL_STATUSES: readonly GoalStatus[] = ["completed", "cancelled"];
@@ -30,11 +25,7 @@ export const GOAL_LIVE_STATUSES: readonly GoalStatus[] = [
 ];
 
 /** States where the engine is actively doing work (spinner + "running" look). */
-export const GOAL_WORKING_STATUSES: readonly GoalStatus[] = [
-  "running",
-  "verifying",
-  "repairing",
-];
+export const GOAL_WORKING_STATUSES: readonly GoalStatus[] = ["running", "verifying", "repairing"];
 
 export function goalStatusLabel(status: GoalStatus): string {
   return status.replace(/-/g, " ");

@@ -59,9 +59,7 @@ export type RawExploreCodeArgs = z.infer<typeof rawExploreCodeSchema> & {
   intent?: ExploreCodeArgs["intent"];
 };
 
-export function normalizeExploreCodeArgsForApp<
-  TArgs extends RawExploreCodeArgs,
->({
+export function normalizeExploreCodeArgsForApp<TArgs extends RawExploreCodeArgs>({
   appPath,
   args,
   fallbackTsconfigPath,
@@ -144,10 +142,7 @@ export function formatRawExploreCodeResult(result: CodeExplorerResult): string {
       .slice(0, 6)
       .map((symbol) => `${symbol.name} (${symbol.kind}:${symbol.line})`)
       .join(", ");
-    lines.push(
-      "",
-      `#### ${file.path}${symbolSummary ? ` - ${symbolSummary}` : ""}`,
-    );
+    lines.push("", `#### ${file.path}${symbolSummary ? ` - ${symbolSummary}` : ""}`);
 
     for (const window of file.windows) {
       lines.push(

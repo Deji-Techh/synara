@@ -108,8 +108,7 @@ export function ProjectActivityView({ projectId }: { projectId: ProjectId }) {
                         tabIndex={item.kind === "chat" ? 0 : undefined}
                         className={cn(
                           "group flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[length:var(--app-font-size-ui,12px)]",
-                          item.kind === "chat" &&
-                            "cursor-pointer hover:bg-[var(--sidebar-accent)]",
+                          item.kind === "chat" && "cursor-pointer hover:bg-[var(--sidebar-accent)]",
                         )}
                         onClick={() => {
                           if (item.kind !== "chat") return;

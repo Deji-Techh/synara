@@ -40,17 +40,13 @@ export function registerGoalHandlers(): void {
     return goal;
   });
 
-  createTypedHandler(goalContracts.getGoal, async (_event, { goalId }) =>
-    getGoal(goalId),
-  );
+  createTypedHandler(goalContracts.getGoal, async (_event, { goalId }) => getGoal(goalId));
 
   createTypedHandler(goalContracts.getActiveGoal, async (_event, { appId }) =>
     getActiveGoal(appId),
   );
 
-  createTypedHandler(goalContracts.listGoals, async (_event, input) =>
-    listGoals(input),
-  );
+  createTypedHandler(goalContracts.listGoals, async (_event, input) => listGoals(input));
 
   createTypedHandler(goalContracts.listActivity, async (_event, input) =>
     listActivity(input.goalId, input.limit),
@@ -83,10 +79,7 @@ export function registerGoalHandlers(): void {
   createTypedHandler(goalContracts.editGoal, async (_event, input) => {
     const { goalId, ...updates } = input;
     const goal = await editGoal(goalId, updates);
-    cancelOpenRuns(
-      goal.id,
-      "Goal contract changed; stale execution interrupted",
-    );
+    cancelOpenRuns(goal.id, "Goal contract changed; stale execution interrupted");
     emitGoalControlRequested(goal.id, goal.goalChatId, "interrupt");
     await notifyGoalUpdated(goal.id, "edited");
     wakeGoalScheduler();
@@ -95,19 +88,14 @@ export function registerGoalHandlers(): void {
 
   createTypedHandler(goalContracts.steerGoal, async (_event, input) => {
     const goal = await steerGoal(input.goalId, input.instruction);
-    cancelOpenRuns(
-      goal.id,
-      "Goal steering changed; stale execution interrupted",
-    );
+    cancelOpenRuns(goal.id, "Goal steering changed; stale execution interrupted");
     emitGoalControlRequested(goal.id, goal.goalChatId, "interrupt");
     await notifyGoalUpdated(goal.id, "steered");
     wakeGoalScheduler();
     return goal;
   });
 
-  createTypedHandler(goalContracts.retryGoal, async (_event, { goalId }) =>
-    retryGoalNow(goalId),
-  );
+  createTypedHandler(goalContracts.retryGoal, async (_event, { goalId }) => retryGoalNow(goalId));
 
   createTypedHandler(goalContracts.verifyGoal, async (_event, { goalId }) => {
     const goal = await getGoal(goalId);
@@ -116,9 +104,7 @@ export function registerGoalHandlers(): void {
     return verifyGoalNow(goalId);
   });
 
-  createTypedHandler(goalContracts.listRunnableRuns, async () =>
-    listRunnableRuns(20),
-  );
+  createTypedHandler(goalContracts.listRunnableRuns, async () => listRunnableRuns(20));
 
   createTypedHandler(goalContracts.claimRun, async (_event, input) =>
     claimRun(input.runId, input.runnerId),
@@ -130,14 +116,9 @@ export function registerGoalHandlers(): void {
 
   createTypedHandler(goalContracts.setRunWaiting, async (_event, input) => {
     const goal = await setRunWaiting(input);
-    await notifyGoalUpdated(
-      goal.id,
-      input.waiting ? "awaiting-approval" : "approval-resolved",
-    );
+    await notifyGoalUpdated(goal.id, input.waiting ? "awaiting-approval" : "approval-resolved");
     return goal;
   });
 
-  createTypedHandler(goalContracts.completeRun, async (_event, input) =>
-    handleCompletedRun(input),
-  );
+  createTypedHandler(goalContracts.completeRun, async (_event, input) => handleCompletedRun(input));
 }

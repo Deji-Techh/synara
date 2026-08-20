@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  defineContract,
-  defineEvent,
-  createClient,
-  createEventClient,
-} from "../contracts/core";
+import { defineContract, defineEvent, createClient, createEventClient } from "../contracts/core";
 import { AgentToolConsentSchema } from "../../lib/schemas";
 import { SqlConsentMetadataSchema } from "../../shared/sqlConsentMetadata";
 
@@ -33,22 +28,14 @@ export const AgentToolConsentRequestSchema = z.object({
   metadata: SqlConsentMetadataSchema.nullable().optional(),
 });
 
-export type AgentToolConsentRequestPayload = z.infer<
-  typeof AgentToolConsentRequestSchema
->;
+export type AgentToolConsentRequestPayload = z.infer<typeof AgentToolConsentRequestSchema>;
 
 /**
  * Schema for agent tool consent decision.
  */
-export const AgentToolConsentDecisionSchema = z.enum([
-  "accept-once",
-  "accept-always",
-  "decline",
-]);
+export const AgentToolConsentDecisionSchema = z.enum(["accept-once", "accept-always", "decline"]);
 
-export type AgentToolConsentDecision = z.infer<
-  typeof AgentToolConsentDecisionSchema
->;
+export type AgentToolConsentDecision = z.infer<typeof AgentToolConsentDecisionSchema>;
 
 /**
  * Schema for agent tool consent response params.
@@ -58,9 +45,7 @@ export const AgentToolConsentResponseParamsSchema = z.object({
   decision: AgentToolConsentDecisionSchema,
 });
 
-export type AgentToolConsentResponseParams = z.infer<
-  typeof AgentToolConsentResponseParamsSchema
->;
+export type AgentToolConsentResponseParams = z.infer<typeof AgentToolConsentResponseParamsSchema>;
 
 /**
  * Schema for agent todo item.
@@ -116,9 +101,7 @@ export const AgentProblemsUpdateSchema = z.object({
   problems: ProblemReportSchema,
 });
 
-export type AgentProblemsUpdatePayload = z.infer<
-  typeof AgentProblemsUpdateSchema
->;
+export type AgentProblemsUpdatePayload = z.infer<typeof AgentProblemsUpdateSchema>;
 
 /**
  * Schema for env var prompting
@@ -135,18 +118,14 @@ export const PromptEnvVarRequestSchema = z.object({
   ),
 });
 
-export type PromptEnvVarRequestPayload = z.infer<
-  typeof PromptEnvVarRequestSchema
->;
+export type PromptEnvVarRequestPayload = z.infer<typeof PromptEnvVarRequestSchema>;
 
 export const PromptEnvVarResponseParamsSchema = z.object({
   requestId: z.string(),
   envVars: z.record(z.string(), z.string()),
 });
 
-export type PromptEnvVarResponseParams = z.infer<
-  typeof PromptEnvVarResponseParamsSchema
->;
+export type PromptEnvVarResponseParams = z.infer<typeof PromptEnvVarResponseParamsSchema>;
 
 /**
  * Schema for agent tool info.
@@ -168,9 +147,7 @@ export const SetAgentToolConsentParamsSchema = z.object({
   consent: AgentToolConsentSchema,
 });
 
-export type SetAgentToolConsentParams = z.infer<
-  typeof SetAgentToolConsentParamsSchema
->;
+export type SetAgentToolConsentParams = z.infer<typeof SetAgentToolConsentParamsSchema>;
 
 // =============================================================================
 // Agent Contracts (Invoke/Response)

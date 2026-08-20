@@ -37,7 +37,9 @@ export const PreviewStartInput = Schema.Struct({
   port: Schema.optional(Schema.Int.check(Schema.isGreaterThan(0))),
   hostname: Schema.optional(TrimmedNonEmptyString.check(Schema.isMaxLength(256))),
   device: Schema.optional(Schema.Literals(["web-server", "emulator", "simulator"] as const)),
-  deviceId: Schema.optional(TrimmedNonEmptyString.check(Schema.isMaxLength(PREVIEW_PATH_MAX_LENGTH))),
+  deviceId: Schema.optional(
+    TrimmedNonEmptyString.check(Schema.isMaxLength(PREVIEW_PATH_MAX_LENGTH)),
+  ),
 });
 export type PreviewStartInput = typeof PreviewStartInput.Type;
 
@@ -231,7 +233,13 @@ export const FlutterToolchainStatusResult = Schema.Struct({
 export type FlutterToolchainStatusResult = typeof FlutterToolchainStatusResult.Type;
 
 export const FlutterToolchainProgress = Schema.Struct({
-  phase: Schema.Literals(["preparing", "download-flutter", "extract-flutter", "verifying", "done"] as const),
+  phase: Schema.Literals([
+    "preparing",
+    "download-flutter",
+    "extract-flutter",
+    "verifying",
+    "done",
+  ] as const),
   percent: Schema.Number,
   componentPercent: Schema.Number,
   downloadedBytes: Schema.Number,

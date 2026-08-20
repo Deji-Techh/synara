@@ -16,9 +16,7 @@ const addIntegrationSchema = z.object({
     ),
 });
 
-export const addIntegrationTool: ToolDefinition<
-  z.infer<typeof addIntegrationSchema>
-> = {
+export const addIntegrationTool: ToolDefinition<z.infer<typeof addIntegrationSchema>> = {
   name: "add_integration",
   description:
     "Prompt the user to choose and set up a database provider for the app. Do NOT set the provider parameter unless the user explicitly names a specific provider (e.g. 'Supabase' or 'Neon') in their message. The tool blocks until the user finishes the setup inside the chat and clicks Continue, then returns; you should then proceed with the next step.",
@@ -38,8 +36,7 @@ export const addIntegrationTool: ToolDefinition<
 
   execute: async (args, ctx: AgentContext) => {
     const requestId = `integration:${crypto.randomUUID()}`;
-    const provider =
-      args.provider && args.provider !== "none" ? args.provider : undefined;
+    const provider = args.provider && args.provider !== "none" ? args.provider : undefined;
 
     logger.log(
       `Presenting integration setup (provider: ${provider ?? "user-choice"}), requestId: ${requestId}`,
@@ -51,11 +48,7 @@ export const addIntegrationTool: ToolDefinition<
       provider,
     });
 
-    const result = await integrationResolver.wait(
-      requestId,
-      ctx.chatId,
-      ctx.abortSignal,
-    );
+    const result = await integrationResolver.wait(requestId, ctx.chatId, ctx.abortSignal);
 
     if (!result) {
       return "The user dismissed the integration setup without completing it. Ask them how they'd like to proceed.";

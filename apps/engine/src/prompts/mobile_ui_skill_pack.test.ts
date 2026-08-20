@@ -49,20 +49,12 @@ describe("CAIDE UI/UX mastery skill", () => {
     expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("<ui-ux-references>");
     expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("<ui-ux-templates>");
     expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain('name="Product Archetypes"');
-    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain(
-      'name="Anti-Slop and Distinctiveness"',
-    );
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain('name="Anti-Slop and Distinctiveness"');
     expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain('name="Screen Spec"');
     expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain('name="Design Audit"');
-    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain(
-      "# Product Archetype Decision Matrix",
-    );
-    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain(
-      "# Screen Specification Template",
-    );
-    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain(
-      "# Anti-Slop and Distinctiveness Reference",
-    );
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("# Product Archetype Decision Matrix");
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("# Screen Specification Template");
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("# Anti-Slop and Distinctiveness Reference");
   });
 
   it("is always injected into the standard build agent", () => {

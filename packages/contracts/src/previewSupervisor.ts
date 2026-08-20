@@ -1,11 +1,7 @@
 import { Schema } from "effect";
 
 import { ThreadId } from "./baseSchemas";
-import {
-  PreviewBuildChannel,
-  PreviewBuildStatus,
-  PreviewBuildTarget,
-} from "./preview";
+import { PreviewBuildChannel, PreviewBuildStatus, PreviewBuildTarget } from "./preview";
 
 // ── WebSocket surface ────────────────────────────────────────────────
 // Supervisor snapshot (M5): a server-side read-only mirror of the engine's

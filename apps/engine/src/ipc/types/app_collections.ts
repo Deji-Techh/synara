@@ -20,9 +20,7 @@ export const CreateAppCollectionParamsSchema = z.object({
   appIds: z.array(z.number()).optional(),
 });
 
-export type CreateAppCollectionParams = z.infer<
-  typeof CreateAppCollectionParamsSchema
->;
+export type CreateAppCollectionParams = z.infer<typeof CreateAppCollectionParamsSchema>;
 
 export const UpdateAppCollectionParamsSchema = z.object({
   id: z.number(),
@@ -30,9 +28,7 @@ export const UpdateAppCollectionParamsSchema = z.object({
   appIds: z.array(z.number()).optional(),
 });
 
-export type UpdateAppCollectionParams = z.infer<
-  typeof UpdateAppCollectionParamsSchema
->;
+export type UpdateAppCollectionParams = z.infer<typeof UpdateAppCollectionParamsSchema>;
 
 export const AssignAppsParamsSchema = z.object({
   collectionId: z.number().nullable(),

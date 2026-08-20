@@ -69,17 +69,12 @@ export function transformToolTags(content: string): string {
  * Format messages as an XML-structured conversation transcript
  * that is easy for a future LLM to read.
  */
-export function formatAsTranscript(
-  messages: CompactionMessage[],
-  chatId: number,
-): string {
+export function formatAsTranscript(messages: CompactionMessage[], chatId: number): string {
   const timestamp = new Date().toISOString();
   const header = `<transcript chatId="${chatId}" messageCount="${messages.length}" compactedAt="${timestamp}">`;
 
   const body = messages
-    .map(
-      (m) => `<msg role="${m.role}">\n${transformToolTags(m.content)}\n</msg>`,
-    )
+    .map((m) => `<msg role="${m.role}">\n${transformToolTags(m.content)}\n</msg>`)
     .join("\n\n");
 
   return `${header}\n\n${body}\n\n</transcript>`;
@@ -114,16 +109,11 @@ export async function storePreCompactionMessages(
 
   try {
     fs.writeFileSync(backupPath, transcript);
-    logger.info(
-      `Stored compaction backup for chat ${chatId}: ${messages.length} messages`,
-    );
+    logger.info(`Stored compaction backup for chat ${chatId}: ${messages.length} messages`);
     // Return the relative path from the app directory
     return path.relative(appPath, backupPath);
   } catch (error) {
-    logger.error(
-      `Failed to store compaction backup for chat ${chatId}:`,
-      error,
-    );
+    logger.error(`Failed to store compaction backup for chat ${chatId}:`, error);
     throw error;
   }
 }

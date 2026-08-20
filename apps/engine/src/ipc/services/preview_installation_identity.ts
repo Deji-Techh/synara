@@ -10,8 +10,7 @@ type PreviewIdentity = {
 };
 
 const API_URL = (
-  process.env.CAIDE_PREVIEW_CONTROL_PLANE_URL ??
-  "https://caide-preview-api.onrender.com"
+  process.env.CAIDE_PREVIEW_CONTROL_PLANE_URL ?? "https://caide-preview-api.onrender.com"
 ).replace(/\/$/, "");
 
 function identityPath() {
@@ -32,10 +31,7 @@ async function request<T>(
       ...init.headers,
     },
   });
-  const body = (await response.json().catch(() => null)) as
-    | T
-    | { error?: string }
-    | null;
+  const body = (await response.json().catch(() => null)) as T | { error?: string } | null;
   if (!response.ok) {
     throw new Error(
       (body && typeof body === "object" && "error" in body && body.error) ||
@@ -53,16 +49,13 @@ export async function getPreviewIdentity(): Promise<PreviewIdentity> {
   if (existing?.deviceId && existing?.accessToken) return existing;
 
   const deviceId = crypto.randomUUID() + crypto.randomUUID();
-  const registered = await request<{ accessToken: string }>(
-    "/v1/installations/register",
-    {
-      method: "POST",
-      body: JSON.stringify({
-        deviceId,
-        displayName: os.userInfo().username || "CAIDE user",
-      }),
-    },
-  );
+  const registered = await request<{ accessToken: string }>("/v1/installations/register", {
+    method: "POST",
+    body: JSON.stringify({
+      deviceId,
+      displayName: os.userInfo().username || "CAIDE user",
+    }),
+  });
   const identity = { deviceId, accessToken: registered.accessToken };
   await fs.writeFile(identityPath(), JSON.stringify(identity), { mode: 0o600 });
   return identity;
@@ -72,10 +65,7 @@ export function previewApiUrl() {
   return API_URL;
 }
 
-export async function previewApiRequest<T>(
-  pathname: string,
-  init: RequestInit = {},
-): Promise<T> {
+export async function previewApiRequest<T>(pathname: string, init: RequestInit = {}): Promise<T> {
   const identity = await getPreviewIdentity();
   return request<T>(pathname, init, identity.accessToken);
 }

@@ -17,9 +17,7 @@
  *   const post = await api.post<Post>("/posts", { title: "Hello" }, { token });
  */
 
-const API_BASE =
-  (import.meta.env.VITE_API_URL as string | undefined) ??
-  "http://localhost:3001";
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:3001";
 
 // ---------------------------------------------------------------------------
 // Response envelope shape (mirrors scaffold-api/src/lib/response.ts)
@@ -82,11 +80,7 @@ export class ApiRequestError extends Error {
 // Core fetch helper
 // ---------------------------------------------------------------------------
 
-async function request<T>(
-  method: string,
-  path: string,
-  options: RequestOptions = {},
-): Promise<T> {
+async function request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
   const { token, body, headers: extraHeaders, ...rest } = options;
 
   const headers: Record<string, string> = {
@@ -124,8 +118,7 @@ async function request<T>(
 // ---------------------------------------------------------------------------
 
 export const api = {
-  get: <T>(path: string, options?: RequestOptions) =>
-    request<T>("GET", path, options),
+  get: <T>(path: string, options?: RequestOptions) => request<T>("GET", path, options),
 
   post: <T>(path: string, body?: unknown, options?: RequestOptions) =>
     request<T>("POST", path, { ...options, body }),
@@ -136,6 +129,5 @@ export const api = {
   patch: <T>(path: string, body?: unknown, options?: RequestOptions) =>
     request<T>("PATCH", path, { ...options, body }),
 
-  delete: <T>(path: string, options?: RequestOptions) =>
-    request<T>("DELETE", path, options),
+  delete: <T>(path: string, options?: RequestOptions) => request<T>("DELETE", path, options),
 };

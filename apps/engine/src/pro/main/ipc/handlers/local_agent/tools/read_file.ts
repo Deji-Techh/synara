@@ -2,10 +2,7 @@ import { z } from "zod";
 import { ToolDefinition, AgentContext, escapeXmlAttr } from "./types";
 import { safeJoin } from "@/ipc/utils/path_utils";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
-import {
-  assertCaideInternalAccessAllowed,
-  resolveTargetAppPath,
-} from "./resolve_app_context";
+import { assertCaideInternalAccessAllowed, resolveTargetAppPath } from "./resolve_app_context";
 import { resolveAttachmentLogicalPath } from "@/ipc/utils/media_path_utils";
 import {
   AGENT_READ_FILE_TRUNCATION_NOTICE,
@@ -26,9 +23,7 @@ const readFileSchema = z
       .int()
       .min(1)
       .optional()
-      .describe(
-        "The one-indexed line number to start reading from (inclusive).",
-      ),
+      .describe("The one-indexed line number to start reading from (inclusive)."),
     end_line_one_indexed_inclusive: z
       .number()
       .int()
@@ -38,19 +33,13 @@ const readFileSchema = z
   })
   .refine(
     (data) => {
-      if (
-        data.start_line_one_indexed != null &&
-        data.end_line_one_indexed_inclusive != null
-      ) {
-        return (
-          data.start_line_one_indexed <= data.end_line_one_indexed_inclusive
-        );
+      if (data.start_line_one_indexed != null && data.end_line_one_indexed_inclusive != null) {
+        return data.start_line_one_indexed <= data.end_line_one_indexed_inclusive;
       }
       return true;
     },
     {
-      message:
-        "start_line_one_indexed must be <= end_line_one_indexed_inclusive",
+      message: "start_line_one_indexed must be <= end_line_one_indexed_inclusive",
     },
   );
 
@@ -63,9 +52,7 @@ export const readFileTool: ToolDefinition<z.infer<typeof readFileSchema>> = {
   defaultConsent: "always",
 
   getConsentPreview: (args) => {
-    const location = args.app_name
-      ? `${args.app_name}:${args.path}`
-      : args.path;
+    const location = args.app_name ? `${args.app_name}:${args.path}` : args.path;
     const start = args.start_line_one_indexed;
     const end = args.end_line_one_indexed_inclusive;
     if (start != null && end != null) {
@@ -85,14 +72,10 @@ export const readFileTool: ToolDefinition<z.infer<typeof readFileSchema>> = {
       attrs.push(`app_name="${escapeXmlAttr(args.app_name)}"`);
     }
     if (args.start_line_one_indexed != null) {
-      attrs.push(
-        `start_line="${escapeXmlAttr(String(args.start_line_one_indexed))}"`,
-      );
+      attrs.push(`start_line="${escapeXmlAttr(String(args.start_line_one_indexed))}"`);
     }
     if (args.end_line_one_indexed_inclusive != null) {
-      attrs.push(
-        `end_line="${escapeXmlAttr(String(args.end_line_one_indexed_inclusive))}"`,
-      );
+      attrs.push(`end_line="${escapeXmlAttr(String(args.end_line_one_indexed_inclusive))}"`);
     }
     return `<caide-read ${attrs.join(" ")}></caide-read>`;
   },
@@ -101,10 +84,7 @@ export const readFileTool: ToolDefinition<z.infer<typeof readFileSchema>> = {
     const targetAppPath = resolveTargetAppPath(ctx, args.app_name);
     let fullFilePath: string;
     if (args.path.startsWith("attachments:")) {
-      const attachment = await resolveAttachmentLogicalPath(
-        targetAppPath,
-        args.path,
-      );
+      const attachment = await resolveAttachmentLogicalPath(targetAppPath, args.path);
       if (!attachment) {
         const appContext = args.app_name ? ` (in app: ${args.app_name})` : "";
         throw new CaideError(
@@ -123,9 +103,7 @@ export const readFileTool: ToolDefinition<z.infer<typeof readFileSchema>> = {
       appName: args.app_name,
     });
 
-    const displayPath = args.app_name
-      ? `${args.path} (in app: ${args.app_name})`
-      : args.path;
+    const displayPath = args.app_name ? `${args.path} (in app: ${args.app_name})` : args.path;
 
     const result = await readTextFileLines({
       rootPath: targetAppPath,
@@ -141,8 +119,6 @@ export const readFileTool: ToolDefinition<z.infer<typeof readFileSchema>> = {
         }),
     });
 
-    return result.truncated
-      ? result.content + AGENT_READ_FILE_TRUNCATION_NOTICE
-      : result.content;
+    return result.truncated ? result.content + AGENT_READ_FILE_TRUNCATION_NOTICE : result.content;
   },
 };

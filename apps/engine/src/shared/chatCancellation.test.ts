@@ -9,21 +9,15 @@ import {
 describe("chatCancellation", () => {
   describe("isCancelledResponseContent", () => {
     it("should return true for content ending with cancellation notice", () => {
-      expect(
-        isCancelledResponseContent("Some text\n\n[Response cancelled by user]"),
-      ).toBe(true);
+      expect(isCancelledResponseContent("Some text\n\n[Response cancelled by user]")).toBe(true);
     });
 
     it("should return true for only the cancellation notice", () => {
-      expect(isCancelledResponseContent("[Response cancelled by user]")).toBe(
-        true,
-      );
+      expect(isCancelledResponseContent("[Response cancelled by user]")).toBe(true);
     });
 
     it("should return true with trailing whitespace", () => {
-      expect(
-        isCancelledResponseContent("[Response cancelled by user]   "),
-      ).toBe(true);
+      expect(isCancelledResponseContent("[Response cancelled by user]   ")).toBe(true);
     });
 
     it("should return false for empty string", () => {
@@ -47,9 +41,7 @@ describe("chatCancellation", () => {
     });
 
     it("should return just the notice for empty string", () => {
-      expect(appendCancelledResponseNotice("")).toBe(
-        "[Response cancelled by user]",
-      );
+      expect(appendCancelledResponseNotice("")).toBe("[Response cancelled by user]");
     });
 
     it("should be idempotent - calling twice returns same result", () => {
@@ -65,25 +57,19 @@ describe("chatCancellation", () => {
     });
 
     it("should return just the notice for whitespace-only string", () => {
-      expect(appendCancelledResponseNotice("   ")).toBe(
-        "[Response cancelled by user]",
-      );
+      expect(appendCancelledResponseNotice("   ")).toBe("[Response cancelled by user]");
     });
   });
 
   describe("stripCancelledResponseNotice", () => {
     it("should strip the notice from content", () => {
-      expect(
-        stripCancelledResponseNotice(
-          "Some text\n\n[Response cancelled by user]",
-        ),
-      ).toBe("Some text");
+      expect(stripCancelledResponseNotice("Some text\n\n[Response cancelled by user]")).toBe(
+        "Some text",
+      );
     });
 
     it("should return empty string when content is only the notice", () => {
-      expect(stripCancelledResponseNotice("[Response cancelled by user]")).toBe(
-        "",
-      );
+      expect(stripCancelledResponseNotice("[Response cancelled by user]")).toBe("");
     });
 
     it("should return original content when no notice present", () => {
@@ -91,11 +77,9 @@ describe("chatCancellation", () => {
     });
 
     it("should handle trailing whitespace after notice", () => {
-      expect(
-        stripCancelledResponseNotice(
-          "Some text\n\n[Response cancelled by user]   ",
-        ),
-      ).toBe("Some text");
+      expect(stripCancelledResponseNotice("Some text\n\n[Response cancelled by user]   ")).toBe(
+        "Some text",
+      );
     });
 
     it("should return empty string for empty input", () => {
@@ -117,9 +101,7 @@ describe("chatCancellation", () => {
         { role: "assistant", content: "Hi there" },
       ];
       const result = applyCancellationNoticeToLastAssistantMessage(messages);
-      expect(result[1].content).toBe(
-        "Hi there\n\n[Response cancelled by user]",
-      );
+      expect(result[1].content).toBe("Hi there\n\n[Response cancelled by user]");
     });
 
     it("should not modify original array", () => {

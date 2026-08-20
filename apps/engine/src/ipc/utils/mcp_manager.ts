@@ -5,10 +5,7 @@ import { eq } from "drizzle-orm";
 
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
-import {
-  CaideOAuthClientProvider,
-  decryptFromString,
-} from "./mcp_oauth_provider";
+import { CaideOAuthClientProvider, decryptFromString } from "./mcp_oauth_provider";
 import { settleWithinTimeout } from "./promise_utils";
 
 type ClientInitialization = {
@@ -78,19 +75,14 @@ export class McpManager {
   }
 
   private async createClient(serverId: number): Promise<MCPClient> {
-    const server = await db
-      .select()
-      .from(mcpServers)
-      .where(eq(mcpServers.id, serverId));
+    const server = await db.select().from(mcpServers).where(eq(mcpServers.id, serverId));
     const s = server.find((x) => x.id === serverId);
     if (!s) throw new Error(`MCP server not found: ${serverId}`);
 
     let client: MCPClient;
     // Static bearer token (encrypted at rest). Injected as an
     // Authorization header for HTTP, and as an env var for stdio.
-    const bearerToken = s.bearerToken
-      ? decryptFromString(s.bearerToken)
-      : undefined;
+    const bearerToken = s.bearerToken ? decryptFromString(s.bearerToken) : undefined;
     if (s.transport === "stdio") {
       const args = s.args ?? [];
       const env = {
@@ -129,10 +121,7 @@ export class McpManager {
         },
       });
     } else {
-      throw new CaideError(
-        `Unsupported MCP transport: ${s.transport}`,
-        CaideErrorKind.Validation,
-      );
+      throw new CaideError(`Unsupported MCP transport: ${s.transport}`, CaideErrorKind.Validation);
     }
 
     return client;

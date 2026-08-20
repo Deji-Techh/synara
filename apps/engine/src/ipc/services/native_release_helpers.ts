@@ -9,17 +9,11 @@ export interface ParsedCapacitorConfig {
 }
 
 function readQuotedProperty(source: string, property: string): string | null {
-  const match = new RegExp(
-    `(?:^|[,{\\s])${property}\\s*:\\s*["']([^"']+)["']`,
-    "m",
-  ).exec(source);
+  const match = new RegExp(`(?:^|[,{\\s])${property}\\s*:\\s*["']([^"']+)["']`, "m").exec(source);
   return match?.[1]?.trim() || null;
 }
 
-export function parseCapacitorConfigText(
-  source: string,
-  extension: string,
-): ParsedCapacitorConfig {
+export function parseCapacitorConfigText(source: string, extension: string): ParsedCapacitorConfig {
   if (extension.toLowerCase() === ".json") {
     try {
       const parsed = JSON.parse(source) as Record<string, unknown>;

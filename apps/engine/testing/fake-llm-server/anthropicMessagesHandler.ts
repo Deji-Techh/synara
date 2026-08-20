@@ -3,10 +3,7 @@ import fs from "fs";
 import path from "path";
 import { generateDump } from "./chatCompletionHandler";
 import { resolveFixturesDir } from "./paths";
-import {
-  extractLocalAgentFixture,
-  handleLocalAgentFixture,
-} from "./localAgentHandler";
+import { extractLocalAgentFixture, handleLocalAgentFixture } from "./localAgentHandler";
 import {
   buildExploreCodeNestedToolArgs,
   buildExploreCodeSubmitReportArgs,
@@ -27,9 +24,7 @@ function getTextContent(message: any): string {
   }
   if (Array.isArray(message?.content)) {
     return message.content
-      .filter(
-        (part: any) => part.type === "text" && typeof part.text === "string",
-      )
+      .filter((part: any) => part.type === "text" && typeof part.text === "string")
       .map((part: any) => part.text)
       .join("\n");
   }
@@ -60,9 +55,7 @@ function hasExploreCodeToolResult(messages: any[]): boolean {
     }
     const text = getTextContent(message);
     return (
-      text.includes("Found ") ||
-      text.includes("Code exploration:") ||
-      text.includes("src/App.tsx")
+      text.includes("Found ") || text.includes("Code exploration:") || text.includes("src/App.tsx")
     );
   });
 }
@@ -280,22 +273,15 @@ export const createAnthropicMessagesHandler =
     const userTextContent = getTextContent(lastUserMessage);
 
     let localAgentFixture = extractLocalAgentFixture(userTextContent);
-    const lastMessage = Array.isArray(messages)
-      ? messages[messages.length - 1]
-      : undefined;
+    const lastMessage = Array.isArray(messages) ? messages[messages.length - 1] : undefined;
     if (
       !localAgentFixture &&
-      (isToolResultMessage(lastMessage) ||
-        isSyntheticContinuationUserText(userTextContent))
+      (isToolResultMessage(lastMessage) || isSyntheticContinuationUserText(userTextContent))
     ) {
       localAgentFixture = findOriginalLocalAgentFixture(userMessages);
     }
 
-    if (
-      getLatestMatchingUserText(messages, (text) =>
-        text.includes("I accept this plan"),
-      )
-    ) {
+    if (getLatestMatchingUserText(messages, (text) => text.includes("I accept this plan"))) {
       return handleLocalAgentFixture(req, res, "exit-plan", {
         protocol: "anthropic",
       });
@@ -306,8 +292,7 @@ export const createAnthropicMessagesHandler =
       text.includes("I have the following comments on the plan"),
     );
     if (planCommentsMessage) {
-      messageContent =
-        "I'll update the plan based on your comments.\n\n" + generateDump(req);
+      messageContent = "I'll update the plan based on your comments.\n\n" + generateDump(req);
     }
     if (userTextContent.includes("[dump]")) {
       messageContent = generateDump(req);
@@ -315,24 +300,17 @@ export const createAnthropicMessagesHandler =
     if (userTextContent.startsWith("/security-review")) {
       messageContent =
         fs
-          .readFileSync(
-            path.join(resolveFixturesDir(), "security-review", "findings.md"),
-            "utf-8",
-          )
+          .readFileSync(path.join(resolveFixturesDir(), "security-review", "findings.md"), "utf-8")
           .replace(/\r\n/g, "\n") +
         "\n\n" +
         generateDump(req);
     }
-    if (
-      userTextContent.startsWith("Please summarize the following conversation:")
-    ) {
+    if (userTextContent.startsWith("Please summarize the following conversation:")) {
       messageContent =
         "## Key Decisions Made\n- Completed initial task as requested\n\n## Current Task State\nConversation was compacted to save context space.";
     }
     if (isExploreCodeSubagentPrompt(userTextContent)) {
-      const toolName = hasExploreCodeToolResult(messages)
-        ? "submit_report"
-        : "explore_code";
+      const toolName = hasExploreCodeToolResult(messages) ? "submit_report" : "explore_code";
       const input =
         toolName === "submit_report"
           ? buildExploreCodeSubmitReportArgs()

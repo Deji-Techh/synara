@@ -1,18 +1,9 @@
 import React from "react";
 import { type ChatMode } from "@caide/contracts";
 import { cn } from "~/lib/utils";
-import {
-  Select,
-  SelectPopup,
-  SelectItem,
-  SelectValue
-} from "~/components/ui/select";
+import { Select, SelectPopup, SelectItem, SelectValue } from "~/components/ui/select";
 import { Select as SelectPrimitive } from "@base-ui/react/select";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipPopup,
-} from "~/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipPopup } from "~/components/ui/tooltip";
 import {
   HammerIcon as Hammer,
   BotIcon as Bot,
@@ -90,9 +81,7 @@ export function ChatModeSelector({ mode, onChatModeChange }: ChatModeSelectorPro
               </span>
             </SelectValue>
           </TooltipTrigger>
-          <TooltipPopup>
-            Open mode menu (Ctrl + . to toggle)
-          </TooltipPopup>
+          <TooltipPopup>Open mode menu (Ctrl + . to toggle)</TooltipPopup>
         </Tooltip>
         <SelectPopup surface="composer" align="start">
           {CHAT_MODE_ORDER.map((m) => {
@@ -102,11 +91,16 @@ export function ChatModeSelector({ mode, onChatModeChange }: ChatModeSelectorPro
               <SelectItem key={m} value={m}>
                 <div className="flex flex-col items-start">
                   <div className="flex items-center gap-1.5">
-                    <MIcon size={14} className={
-                      m === "plan" ? "text-blue-500" :
-                      m === "ask" ? "text-purple-500" :
-                      "text-muted-foreground"
-                    } />
+                    <MIcon
+                      size={14}
+                      className={
+                        m === "plan"
+                          ? "text-blue-500"
+                          : m === "ask"
+                            ? "text-purple-500"
+                            : "text-muted-foreground"
+                      }
+                    />
                     <span className="font-medium">{mMeta.name}</span>
                   </div>
                   <span className="text-xs text-muted-foreground ml-[22px]">

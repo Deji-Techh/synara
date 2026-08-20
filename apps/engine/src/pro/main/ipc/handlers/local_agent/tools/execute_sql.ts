@@ -1,19 +1,11 @@
 import { z } from "zod";
-import {
-  ToolDefinition,
-  AgentContext,
-  escapeXmlAttr,
-  escapeXmlContent,
-} from "./types";
+import { ToolDefinition, AgentContext, escapeXmlAttr, escapeXmlContent } from "./types";
 import { executeSupabaseSql } from "../../../../../../supabase_admin/supabase_management_client";
 import { executeNeonSql } from "../../../../../../neon_admin/neon_context";
 import { writeMigrationFile } from "../../../../../../ipc/utils/file_utils";
 import { readSettings } from "../../../../../../main/settings";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
-import {
-  doesSqlDeleteData,
-  doesSqlMutateSchema,
-} from "@/lib/sqlSchemaMutation";
+import { doesSqlDeleteData, doesSqlMutateSchema } from "@/lib/sqlSchemaMutation";
 import { checkSqlDanger } from "./danger_detection/sql_heuristics";
 
 const executeSqlSchema = z.object({
@@ -21,79 +13,70 @@ const executeSqlSchema = z.object({
   description: z.string().optional().describe("Brief description of the query"),
 });
 
-export const executeSqlTool: ToolDefinition<z.infer<typeof executeSqlSchema>> =
-  {
-    name: "execute_sql",
-    description:
-      "Execute SQL on the connected database. Important: execute each SQL command separately (do not group multiple commands in a single query).",
-    inputSchema: executeSqlSchema,
-    defaultConsent: "ask",
-    modifiesState: true,
-    isEnabled: (ctx) =>
-      !!ctx.supabaseProjectId ||
-      (!!ctx.neonProjectId && !!ctx.neonActiveBranchId),
+export const executeSqlTool: ToolDefinition<z.infer<typeof executeSqlSchema>> = {
+  name: "execute_sql",
+  description:
+    "Execute SQL on the connected database. Important: execute each SQL command separately (do not group multiple commands in a single query).",
+  inputSchema: executeSqlSchema,
+  defaultConsent: "ask",
+  modifiesState: true,
+  isEnabled: (ctx) => !!ctx.supabaseProjectId || (!!ctx.neonProjectId && !!ctx.neonActiveBranchId),
 
-    getConsentPreview: (args) => args.query,
+  getConsentPreview: (args) => args.query,
 
-    getConsentMetadata: (args) => ({
-      sqlMutatesSchema: doesSqlMutateSchema(args.query),
-      sqlDeletesData: doesSqlDeleteData(args.query),
-    }),
+  getConsentMetadata: (args) => ({
+    sqlMutatesSchema: doesSqlMutateSchema(args.query),
+    sqlDeletesData: doesSqlDeleteData(args.query),
+  }),
 
-    dangerCheck: (args) => checkSqlDanger(args.query),
+  dangerCheck: (args) => checkSqlDanger(args.query),
 
-    buildXml: (args, isComplete) => {
-      if (args.query == undefined) return undefined;
+  buildXml: (args, isComplete) => {
+    if (args.query == undefined) return undefined;
 
-      let xml = `<caide-execute-sql description="${escapeXmlAttr(args.description ?? "")}">\n${escapeXmlContent(args.query)}`;
-      if (isComplete) {
-        xml += "\n</caide-execute-sql>";
-      }
-      return xml;
-    },
+    let xml = `<caide-execute-sql description="${escapeXmlAttr(args.description ?? "")}">\n${escapeXmlContent(args.query)}`;
+    if (isComplete) {
+      xml += "\n</caide-execute-sql>";
+    }
+    return xml;
+  },
 
-    execute: async (args, ctx: AgentContext) => {
-      if (ctx.neonProjectId && ctx.neonActiveBranchId) {
-        const sqlResult = await executeNeonSql({
-          projectId: ctx.neonProjectId,
-          branchId: ctx.neonActiveBranchId,
-          query: args.query,
-        });
-        return `Successfully executed SQL query.\n\nSQL result:\n${sqlResult}`;
-      }
+  execute: async (args, ctx: AgentContext) => {
+    if (ctx.neonProjectId && ctx.neonActiveBranchId) {
+      const sqlResult = await executeNeonSql({
+        projectId: ctx.neonProjectId,
+        branchId: ctx.neonActiveBranchId,
+        query: args.query,
+      });
+      return `Successfully executed SQL query.\n\nSQL result:\n${sqlResult}`;
+    }
 
-      if (ctx.neonProjectId && !ctx.neonActiveBranchId) {
-        throw new CaideError(
-          "Neon active branch not configured. Please select a branch in the Neon integration settings.",
-          CaideErrorKind.Precondition,
-        );
-      }
-
-      if (ctx.supabaseProjectId) {
-        const sqlResult = await executeSupabaseSql({
-          supabaseProjectId: ctx.supabaseProjectId,
-          query: args.query,
-          organizationSlug: ctx.supabaseOrganizationSlug ?? null,
-        });
-
-        const settings = readSettings();
-        if (
-          settings.enableSupabaseWriteSqlMigration &&
-          doesSqlMutateSchema(args.query)
-        ) {
-          try {
-            await writeMigrationFile(ctx.appPath, args.query, args.description);
-          } catch (error) {
-            return `SQL executed, but failed to write migration file: ${error}\n\nSQL result:\n${sqlResult}`;
-          }
-        }
-
-        return `Successfully executed SQL query.\n\nSQL result:\n${sqlResult}`;
-      }
-
+    if (ctx.neonProjectId && !ctx.neonActiveBranchId) {
       throw new CaideError(
-        "No database is connected to this app",
+        "Neon active branch not configured. Please select a branch in the Neon integration settings.",
         CaideErrorKind.Precondition,
       );
-    },
-  };
+    }
+
+    if (ctx.supabaseProjectId) {
+      const sqlResult = await executeSupabaseSql({
+        supabaseProjectId: ctx.supabaseProjectId,
+        query: args.query,
+        organizationSlug: ctx.supabaseOrganizationSlug ?? null,
+      });
+
+      const settings = readSettings();
+      if (settings.enableSupabaseWriteSqlMigration && doesSqlMutateSchema(args.query)) {
+        try {
+          await writeMigrationFile(ctx.appPath, args.query, args.description);
+        } catch (error) {
+          return `SQL executed, but failed to write migration file: ${error}\n\nSQL result:\n${sqlResult}`;
+        }
+      }
+
+      return `Successfully executed SQL query.\n\nSQL result:\n${sqlResult}`;
+    }
+
+    throw new CaideError("No database is connected to this app", CaideErrorKind.Precondition);
+  },
+};

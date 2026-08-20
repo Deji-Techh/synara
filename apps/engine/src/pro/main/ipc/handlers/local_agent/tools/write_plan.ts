@@ -8,9 +8,7 @@ const logger = log.scope("write_plan");
 
 const writePlanSchema = z.object({
   title: z.string().describe("Title of the implementation plan"),
-  summary: z
-    .string()
-    .describe("Brief summary (1-2 sentences) of what will be built"),
+  summary: z.string().describe("Brief summary (1-2 sentences) of what will be built"),
   plan: z
     .string()
     .describe(

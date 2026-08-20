@@ -1,9 +1,4 @@
-import {
-  forwardRef,
-  type ButtonHTMLAttributes,
-  type HTMLAttributes,
-  type ReactNode,
-} from "react";
+import { forwardRef, type ButtonHTMLAttributes, type HTMLAttributes, type ReactNode } from "react";
 import { clsx } from "clsx";
 
 type ElementProps = HTMLAttributes<HTMLElement>;
@@ -34,10 +29,7 @@ export function CaideSection({
   ...props
 }: ElementProps & { children: ReactNode }) {
   return (
-    <section
-      className={clsx("mx-auto w-full max-w-[68rem] min-w-0", className)}
-      {...props}
-    >
+    <section className={clsx("mx-auto w-full max-w-[68rem] min-w-0", className)} {...props}>
       {children}
     </section>
   );
@@ -79,10 +71,7 @@ export function CaideInline({
 }: HTMLAttributes<HTMLDivElement> & { children: ReactNode }) {
   return (
     <div
-      className={clsx(
-        "flex min-w-0 flex-wrap items-center gap-[var(--caide-space-3)]",
-        className,
-      )}
+      className={clsx("flex min-w-0 flex-wrap items-center gap-[var(--caide-space-3)]", className)}
       {...props}
     >
       {children}

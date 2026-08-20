@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  ToolDefinition,
-  AgentContext,
-  escapeXmlAttr,
-  escapeXmlContent,
-} from "./types";
+import { ToolDefinition, AgentContext, escapeXmlAttr, escapeXmlContent } from "./types";
 import { buildMcpTypeDefsBlock, type McpToolDef } from "./mcp_type_defs";
 import { bm25Ranker, type ToolRanker } from "./bm25";
 import { sanitizeMcpName } from "@/ipc/utils/mcp_tool_utils";
@@ -34,10 +29,7 @@ type SearchMcpToolsArgs = z.infer<typeof searchMcpToolsSchema>;
 
 function matchesServer(def: McpToolDef, server: string): boolean {
   const a = def.serverName ?? "";
-  return (
-    a.toLowerCase() === server.toLowerCase() ||
-    sanitizeMcpName(a) === sanitizeMcpName(server)
-  );
+  return a.toLowerCase() === server.toLowerCase() || sanitizeMcpName(a) === sanitizeMcpName(server);
 }
 
 function uniqueServerNames(defs: McpToolDef[]): string[] {
@@ -46,9 +38,7 @@ function uniqueServerNames(defs: McpToolDef[]): string[] {
 
 function buildSearchAttributes(args: Partial<SearchMcpToolsArgs>): string {
   const queryAttr = args.query ? ` query="${escapeXmlAttr(args.query)}"` : "";
-  const serverAttr = args.server
-    ? ` server="${escapeXmlAttr(args.server)}"`
-    : "";
+  const serverAttr = args.server ? ` server="${escapeXmlAttr(args.server)}"` : "";
   return `${queryAttr}${serverAttr}`;
 }
 
@@ -102,9 +92,7 @@ export const searchMcpToolsTool: ToolDefinition<SearchMcpToolsArgs> = {
     }
     const allDefs = ctx.mcpToolDefs;
 
-    const scoped = args.server
-      ? allDefs.filter((d) => matchesServer(d, args.server!))
-      : allDefs;
+    const scoped = args.server ? allDefs.filter((d) => matchesServer(d, args.server!)) : allDefs;
 
     if (scoped.length === 0) {
       const servers = uniqueServerNames(allDefs);

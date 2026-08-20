@@ -4,10 +4,7 @@ import log from "electron-log";
 import { ToolDefinition, AgentContext } from "./types";
 import { safeSend } from "@/ipc/utils/safe_sender";
 import { questionnaireResolver } from "../userInputResolvers";
-import {
-  escapeXmlAttr,
-  escapeXmlContent,
-} from "../../../../../../../shared/xmlEscape";
+import { escapeXmlAttr, escapeXmlContent } from "../../../../../../../shared/xmlEscape";
 
 const logger = log.scope("planning_questionnaire");
 
@@ -16,15 +13,11 @@ const QuestionSchema = z
     id: z
       .string()
       .optional()
-      .describe(
-        "Unique identifier for this question (auto-generated if omitted)",
-      ),
+      .describe("Unique identifier for this question (auto-generated if omitted)"),
     question: z.string().describe("The question text to display to the user"),
     type: z
       .enum(["text", "radio", "checkbox"])
-      .describe(
-        "text for free-form input, radio for single choice, checkbox for multiple choice",
-      ),
+      .describe("text for free-form input, radio for single choice, checkbox for multiple choice"),
     options: z
       .array(z.string())
       .min(1)
@@ -37,10 +30,7 @@ const QuestionSchema = z
       .boolean()
       .optional()
       .describe("Whether this question requires an answer (defaults to true)"),
-    placeholder: z
-      .string()
-      .optional()
-      .describe("Placeholder text for text inputs"),
+    placeholder: z.string().optional().describe("Placeholder text for text inputs"),
   })
   .refine((q) => q.type === "text" || (q.options && q.options.length >= 1), {
     message: "options are required for radio and checkbox questions",
@@ -124,8 +114,7 @@ export const planningQuestionnaireTool: ToolDefinition<
   defaultConsent: "always",
   modifiesState: true,
 
-  getConsentPreview: (args) =>
-    `Questionnaire (${args.questions.length} questions)`,
+  getConsentPreview: (args) => `Questionnaire (${args.questions.length} questions)`,
 
   execute: async (args, ctx: AgentContext) => {
     const requestId = `questionnaire:${crypto.randomUUID()}`;
@@ -136,9 +125,7 @@ export const planningQuestionnaireTool: ToolDefinition<
       id: q.id || `q_${crypto.randomUUID().slice(0, 8)}`,
     }));
 
-    logger.log(
-      `Presenting questionnaire (${questions.length} questions), requestId: ${requestId}`,
-    );
+    logger.log(`Presenting questionnaire (${questions.length} questions), requestId: ${requestId}`);
 
     safeSend(ctx.event.sender, "plan:questionnaire", {
       chatId: ctx.chatId,

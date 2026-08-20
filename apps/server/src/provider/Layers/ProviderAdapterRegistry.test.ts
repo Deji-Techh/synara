@@ -67,9 +67,7 @@ const fakeEngineAdapter: EngineAdapterShape = {
   streamGoalDomainEvents: Stream.empty,
 };
 
-const makeFakeApiAdapter = <P extends ApiProviderKind>(
-  provider: P,
-) => ({
+const makeFakeApiAdapter = <P extends ApiProviderKind>(provider: P) => ({
   provider,
   capabilities: { sessionModelSwitch: "in-session" as const },
   startSession: vi.fn(),

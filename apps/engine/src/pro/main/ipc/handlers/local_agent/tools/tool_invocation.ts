@@ -73,10 +73,7 @@ export async function requireToolConsentOrThrow<T>(
     dangerInfo,
   } as any); // using any for now since we haven't updated the ConsentPayload type yet
   if (!allowed) {
-    throw new CaideError(
-      `User denied permission for ${tool.name}`,
-      CaideErrorKind.UserCancelled,
-    );
+    throw new CaideError(`User denied permission for ${tool.name}`, CaideErrorKind.UserCancelled);
   }
 }
 

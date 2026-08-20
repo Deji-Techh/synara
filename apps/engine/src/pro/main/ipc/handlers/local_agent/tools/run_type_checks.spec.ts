@@ -5,17 +5,13 @@ import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AgentContext } from "./types";
-import {
-  generateProblemReport,
-  TypeCheckPreconditionError,
-} from "@/ipc/processors/tsc";
+import { generateProblemReport, TypeCheckPreconditionError } from "@/ipc/processors/tsc";
 import { safeSend } from "@/ipc/utils/safe_sender";
 import { runTypeChecksTool } from "./run_type_checks";
 
 vi.mock("@/ipc/processors/tsc", async () => {
-  const actual = await vi.importActual<typeof import("@/ipc/processors/tsc")>(
-    "@/ipc/processors/tsc",
-  );
+  const actual =
+    await vi.importActual<typeof import("@/ipc/processors/tsc")>("@/ipc/processors/tsc");
 
   return {
     ...actual,
@@ -36,19 +32,14 @@ describe("runTypeChecksTool precondition guidance", () => {
   });
 
   afterEach(async () => {
-    await Promise.all(
-      tempDirs.map((dir) => fs.rm(dir, { recursive: true, force: true })),
-    );
+    await Promise.all(tempDirs.map((dir) => fs.rm(dir, { recursive: true, force: true })));
     tempDirs = [];
   });
 
   async function makeApp(packageJson: object): Promise<string> {
     const appPath = await fs.mkdtemp(path.join(os.tmpdir(), "caide-tsc-"));
     tempDirs.push(appPath);
-    await fs.writeFile(
-      path.join(appPath, "package.json"),
-      JSON.stringify(packageJson),
-    );
+    await fs.writeFile(path.join(appPath, "package.json"), JSON.stringify(packageJson));
     return appPath;
   }
 
@@ -65,9 +56,7 @@ describe("runTypeChecksTool precondition guidance", () => {
   function expectWarningOutput(ctx: AgentContext): string {
     expect(ctx.onXmlComplete).toHaveBeenCalledTimes(1);
     const output = vi.mocked(ctx.onXmlComplete).mock.calls[0][0];
-    expect(output).toContain(
-      '<caide-output type="warning" message="Type checking unavailable">',
-    );
+    expect(output).toContain('<caide-output type="warning" message="Type checking unavailable">');
     expect(output).not.toContain("<caide-status");
     expect(output).not.toContain('type="error"');
     return output;
@@ -79,10 +68,7 @@ describe("runTypeChecksTool precondition guidance", () => {
     });
     const ctx = makeCtx(appPath);
     vi.mocked(generateProblemReport).mockRejectedValue(
-      new TypeCheckPreconditionError(
-        "typescript-not-found",
-        "Failed to load TypeScript from app",
-      ),
+      new TypeCheckPreconditionError("typescript-not-found", "Failed to load TypeScript from app"),
     );
 
     const result = await runTypeChecksTool.execute({}, ctx);
@@ -93,30 +79,19 @@ describe("runTypeChecksTool precondition guidance", () => {
     expect(result).toContain('<caide-command type="rebuild">');
     expect(result).not.toContain("add_dependency");
     expect(result).toContain("retry `run_type_checks`");
-    expect(safeSend).toHaveBeenCalledWith(
-      undefined,
-      "agent-tool:problems-update",
-      {
-        appId: 1,
-        problems: { problems: [] },
-      },
-    );
-    expect(expectWarningOutput(ctx)).toContain(
-      "TypeScript is listed in package.json",
-    );
-    expect(expectWarningOutput(ctx)).toContain(
-      '&lt;caide-command type="rebuild"',
-    );
+    expect(safeSend).toHaveBeenCalledWith(undefined, "agent-tool:problems-update", {
+      appId: 1,
+      problems: { problems: [] },
+    });
+    expect(expectWarningOutput(ctx)).toContain("TypeScript is listed in package.json");
+    expect(expectWarningOutput(ctx)).toContain('&lt;caide-command type="rebuild"');
   });
 
   it("tells the agent not to retry and to suggest adding TypeScript for plain JavaScript projects", async () => {
     const appPath = await makeApp({ dependencies: { react: "^19.0.0" } });
     const ctx = makeCtx(appPath);
     vi.mocked(generateProblemReport).mockRejectedValue(
-      new TypeCheckPreconditionError(
-        "typescript-not-found",
-        "Failed to load TypeScript from app",
-      ),
+      new TypeCheckPreconditionError("typescript-not-found", "Failed to load TypeScript from app"),
     );
 
     const result = await runTypeChecksTool.execute({}, ctx);
@@ -125,9 +100,7 @@ describe("runTypeChecksTool precondition guidance", () => {
     expect(result).toContain("does not use TypeScript");
     expect(result).toContain("Do not call `run_type_checks` again");
     expect(result).toContain('<caide-command type="add-typescript">');
-    expect(expectWarningOutput(ctx)).toContain(
-      '&lt;caide-command type="add-typescript"',
-    );
+    expect(expectWarningOutput(ctx)).toContain('&lt;caide-command type="add-typescript"');
   });
 
   it("explains missing tsconfig separately", async () => {
@@ -156,13 +129,9 @@ describe("runTypeChecksTool precondition guidance", () => {
       devDependencies: { typescript: "^5.0.0" },
     });
     const ctx = makeCtx(appPath);
-    vi.mocked(generateProblemReport).mockRejectedValue(
-      new Error("worker exploded"),
-    );
+    vi.mocked(generateProblemReport).mockRejectedValue(new Error("worker exploded"));
 
-    await expect(runTypeChecksTool.execute({}, ctx)).rejects.toThrow(
-      "worker exploded",
-    );
+    await expect(runTypeChecksTool.execute({}, ctx)).rejects.toThrow("worker exploded");
 
     expect(ctx.onXmlComplete).not.toHaveBeenCalled();
     expect(safeSend).not.toHaveBeenCalled();

@@ -77,9 +77,7 @@ describe("deleteFileTool", () => {
 
     it("rejects whitespace-only path", () => {
       const schema = deleteFileTool.inputSchema;
-      expect(() => schema.parse({ path: "   " })).toThrow(
-        "Path cannot be empty",
-      );
+      expect(() => schema.parse({ path: "   " })).toThrow("Path cannot be empty");
     });
   });
 
@@ -87,9 +85,9 @@ describe("deleteFileTool", () => {
     it.each([".", "./", ".\\", "foo/..", "foo\\.."])(
       "rejects project-root-equivalent path: %s",
       async (path) => {
-        await expect(
-          deleteFileTool.execute({ path }, mockContext),
-        ).rejects.toThrow(/Refusing to delete project root/);
+        await expect(deleteFileTool.execute({ path }, mockContext)).rejects.toThrow(
+          /Refusing to delete project root/,
+        );
 
         expect(fs.existsSync).not.toHaveBeenCalled();
         expect(fs.unlinkSync).not.toHaveBeenCalled();
@@ -106,14 +104,9 @@ describe("deleteFileTool", () => {
         isDirectory: () => false,
       } as any);
 
-      const result = await deleteFileTool.execute(
-        { path: "src/file.ts" },
-        mockContext,
-      );
+      const result = await deleteFileTool.execute({ path: "src/file.ts" }, mockContext);
 
-      expect(fs.unlinkSync).toHaveBeenCalledWith(
-        path.join(mockContext.appPath, "src/file.ts"),
-      );
+      expect(fs.unlinkSync).toHaveBeenCalledWith(path.join(mockContext.appPath, "src/file.ts"));
       expect(fs.rmdirSync).not.toHaveBeenCalled();
       expect(gitRemove).toHaveBeenCalledWith({
         path: "/test/app",
@@ -128,18 +121,12 @@ describe("deleteFileTool", () => {
         isDirectory: () => true,
       } as any);
 
-      const result = await deleteFileTool.execute(
-        { path: "src/dir" },
-        mockContext,
-      );
+      const result = await deleteFileTool.execute({ path: "src/dir" }, mockContext);
 
-      expect(fs.rmSync).toHaveBeenCalledWith(
-        path.join(mockContext.appPath, "src/dir"),
-        {
-          recursive: true,
-          force: true,
-        },
-      );
+      expect(fs.rmSync).toHaveBeenCalledWith(path.join(mockContext.appPath, "src/dir"), {
+        recursive: true,
+        force: true,
+      });
       expect(fs.unlinkSync).not.toHaveBeenCalled();
       expect(result).toBe("Successfully deleted src/dir");
     });

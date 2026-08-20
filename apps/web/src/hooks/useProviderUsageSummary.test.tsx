@@ -112,10 +112,7 @@ describe("useProviderUsageSummary", () => {
     queryClient.setQueryData(serverQueryKeys.allProviderUsage(), [
       snapshot({ status: "needs-auth", detail: "Sign in with claude to see usage." }),
     ]);
-    queryClient.setQueryData(
-      serverQueryKeys.providerUsage("anthropic", null),
-      fallbackSnapshot(),
-    );
+    queryClient.setQueryData(serverQueryKeys.providerUsage("anthropic", null), fallbackSnapshot());
 
     const summary = readProviderUsageSummary({ queryClient });
 
@@ -126,10 +123,7 @@ describe("useProviderUsageSummary", () => {
   it("still uses local fallback rows when no live snapshot exists", () => {
     const queryClient = createQueryClient();
     queryClient.setQueryData(serverQueryKeys.allProviderUsage(), []);
-    queryClient.setQueryData(
-      serverQueryKeys.providerUsage("anthropic", null),
-      fallbackSnapshot(),
-    );
+    queryClient.setQueryData(serverQueryKeys.providerUsage("anthropic", null), fallbackSnapshot());
 
     const summary = readProviderUsageSummary({ queryClient });
 
@@ -204,10 +198,7 @@ describe("useProviderUsageSummary", () => {
   it("does not show fallback rows when an explicit provider card snapshot is non-ok", () => {
     const queryClient = createQueryClient();
     queryClient.setQueryData(serverQueryKeys.allProviderUsage(), []);
-    queryClient.setQueryData(
-      serverQueryKeys.providerUsage("anthropic", null),
-      fallbackSnapshot(),
-    );
+    queryClient.setQueryData(serverQueryKeys.providerUsage("anthropic", null), fallbackSnapshot());
 
     const summary = readProviderUsageSummary({
       queryClient,

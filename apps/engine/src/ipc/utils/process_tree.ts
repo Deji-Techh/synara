@@ -8,10 +8,7 @@ const logger = log.scope("process_tree");
  * On POSIX systems, passing a negative PID (-pid) to process.kill sends the signal
  * to the entire process group. On Windows, taskkill /F /T /PID is used.
  */
-export function killProcessTree(
-  pid: number | undefined,
-  signal = "SIGTERM",
-): void {
+export function killProcessTree(pid: number | undefined, signal = "SIGTERM"): void {
   if (!pid || pid <= 0) return;
 
   if (process.platform === "win32") {

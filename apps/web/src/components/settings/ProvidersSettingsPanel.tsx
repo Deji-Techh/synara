@@ -2,10 +2,7 @@
 // Purpose: Own provider picker, update, and CLI installation settings workflows.
 // Layer: Settings panel
 
-import {
-  PROVIDER_DISPLAY_NAMES,
-  type ProviderKind,
-} from "@caide/contracts";
+import { PROVIDER_DISPLAY_NAMES, type ProviderKind } from "@caide/contracts";
 import { PROVIDER_DESCRIPTORS } from "@caide/shared/providerMetadata";
 import { pluralize } from "@caide/shared/text";
 import {
@@ -107,9 +104,7 @@ type ProviderInstallPasswordField = {
   readonly placeholder: string;
   readonly description: ReactNode;
 };
-type ProviderInstallField =
-  | ProviderInstallTextField
-  | ProviderInstallPasswordField;
+type ProviderInstallField = ProviderInstallTextField | ProviderInstallPasswordField;
 type ProviderInstallSettings = {
   readonly provider: ProviderKind;
   readonly docs: ReadonlyArray<{ readonly label: string; readonly href: string }>;
@@ -245,9 +240,7 @@ const PROVIDER_INSTALL_SETTINGS: readonly ProviderInstallSettings[] = [
   },
   {
     provider: "deepseek",
-    docs: [
-      { label: "API Keys", href: "https://platform.deepseek.com/api_keys" },
-    ],
+    docs: [{ label: "API Keys", href: "https://platform.deepseek.com/api_keys" }],
     fields: [
       {
         kind: "password",
@@ -268,9 +261,7 @@ const PROVIDER_INSTALL_SETTINGS: readonly ProviderInstallSettings[] = [
   },
   {
     provider: "groq",
-    docs: [
-      { label: "API Keys", href: "https://console.groq.com/keys" },
-    ],
+    docs: [{ label: "API Keys", href: "https://console.groq.com/keys" }],
     fields: [
       {
         kind: "password",
@@ -291,9 +282,7 @@ const PROVIDER_INSTALL_SETTINGS: readonly ProviderInstallSettings[] = [
   },
   {
     provider: "mistral",
-    docs: [
-      { label: "API Keys", href: "https://console.mistral.ai/api-keys/" },
-    ],
+    docs: [{ label: "API Keys", href: "https://console.mistral.ai/api-keys/" }],
     fields: [
       {
         kind: "password",
@@ -314,9 +303,7 @@ const PROVIDER_INSTALL_SETTINGS: readonly ProviderInstallSettings[] = [
   },
   {
     provider: "together",
-    docs: [
-      { label: "API Keys", href: "https://api.together.ai/settings/api-keys" },
-    ],
+    docs: [{ label: "API Keys", href: "https://api.together.ai/settings/api-keys" }],
     fields: [
       {
         kind: "password",
@@ -337,9 +324,7 @@ const PROVIDER_INSTALL_SETTINGS: readonly ProviderInstallSettings[] = [
   },
   {
     provider: "cohere",
-    docs: [
-      { label: "API Keys", href: "https://dashboard.cohere.com/api-keys" },
-    ],
+    docs: [{ label: "API Keys", href: "https://dashboard.cohere.com/api-keys" }],
     fields: [
       {
         kind: "password",
@@ -360,9 +345,7 @@ const PROVIDER_INSTALL_SETTINGS: readonly ProviderInstallSettings[] = [
   },
   {
     provider: "xai",
-    docs: [
-      { label: "API Keys", href: "https://console.x.ai/" },
-    ],
+    docs: [{ label: "API Keys", href: "https://console.x.ai/" }],
     fields: [
       {
         kind: "password",
@@ -383,9 +366,7 @@ const PROVIDER_INSTALL_SETTINGS: readonly ProviderInstallSettings[] = [
   },
   {
     provider: "fireworks",
-    docs: [
-      { label: "API Keys", href: "https://fireworks.ai/api-keys" },
-    ],
+    docs: [{ label: "API Keys", href: "https://fireworks.ai/api-keys" }],
     fields: [
       {
         kind: "password",
@@ -417,7 +398,8 @@ const PROVIDER_INSTALL_SETTINGS: readonly ProviderInstallSettings[] = [
         configuredKey: "opencodeZenApiKeyConfigured",
         label: "OpenCode Zen API key",
         placeholder: "API Key",
-        description: "Your OpenCode Zen API key. The API provider is separate from the OpenCode CLI provider.",
+        description:
+          "Your OpenCode Zen API key. The API provider is separate from the OpenCode CLI provider.",
       },
       {
         kind: "text",
@@ -736,7 +718,6 @@ export function ProvidersSettingsPanel({
 
   return (
     <div className="space-y-6">
-
       <SettingsSection title="Provider picker">
         <SettingsRow
           title="Visible providers"
@@ -799,7 +780,7 @@ export function ProvidersSettingsPanel({
         <SettingsSection title="Provider tools">
           <SettingsRow
             title="API providers"
-            description="Configure API keys and base URLs for each provider. Open a row to edit its credentials." 
+            description="Configure API keys and base URLs for each provider. Open a row to edit its credentials."
             resetAction={
               installSettingsDirty ? (
                 <SettingResetButton

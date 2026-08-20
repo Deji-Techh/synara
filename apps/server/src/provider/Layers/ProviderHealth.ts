@@ -2448,7 +2448,9 @@ export function makeProviderHealthLive(options?: { readonly providerUpdateTimeou
                 checkProviderWhenEnabled(
                   settings,
                   ANTIGRAVITY_PROVIDER,
-                  checkAntigravityProviderStatus((settings.providers as any).antigravity?.binaryPath),
+                  checkAntigravityProviderStatus(
+                    (settings.providers as any).antigravity?.binaryPath,
+                  ),
                 ),
                 checkProviderWhenEnabled(
                   settings,

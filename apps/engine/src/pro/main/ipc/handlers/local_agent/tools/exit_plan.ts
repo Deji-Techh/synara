@@ -12,9 +12,7 @@ const logger = log.scope("exit_plan");
 const exitPlanSchema = z.object({
   confirmation: z
     .boolean()
-    .describe(
-      "Whether the user has accepted the plan. Must be true to proceed.",
-    ),
+    .describe("Whether the user has accepted the plan. Must be true to proceed."),
 });
 
 const DESCRIPTION = `
@@ -67,15 +65,9 @@ export const exitPlanTool: ToolDefinition<z.infer<typeof exitPlanSchema>> = {
     logger.log("Exiting plan mode, transitioning to implementation");
 
     try {
-      await db
-        .update(apps)
-        .set({ needsAppBlueprint: false })
-        .where(eq(apps.id, ctx.appId));
+      await db.update(apps).set({ needsAppBlueprint: false }).where(eq(apps.id, ctx.appId));
     } catch (error) {
-      logger.warn(
-        `Failed to clear needsAppBlueprint for app ${ctx.appId} on plan exit`,
-        error,
-      );
+      logger.warn(`Failed to clear needsAppBlueprint for app ${ctx.appId} on plan exit`, error);
     }
 
     safeSend(ctx.event.sender, "plan:exit", {

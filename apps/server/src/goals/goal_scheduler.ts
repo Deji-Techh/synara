@@ -1,12 +1,5 @@
-import {
-  type Goal,
-  type GoalRun,
-  type GoalRunKind,
-} from "./goal_types";
-import {
-  isPersistedGoalComplete,
-  type PersistedGoalState,
-} from "../shared/goal_state";
+import { type Goal, type GoalRun, type GoalRunKind } from "./goal_types";
+import { isPersistedGoalComplete, type PersistedGoalState } from "../shared/goal_state";
 import {
   createRun,
   ensureGoalTables,
@@ -72,9 +65,7 @@ function candidateForVerification(state: PersistedGoalState | null): boolean {
   }
   return (
     state.tasks.filter((task) => task.required).length > 0 &&
-    state.tasks
-      .filter((task) => task.required)
-      .every((task) => task.status === "verified") &&
+    state.tasks.filter((task) => task.required).every((task) => task.status === "verified") &&
     !state.verification.passed
   );
 }
@@ -83,10 +74,7 @@ function nextRetryDelay(failures: number): number {
   return Math.min(RETRY_BASE_MS * 2 ** Math.max(0, failures - 1), RETRY_MAX_MS);
 }
 
-async function queueNextRun(
-  goal: Goal,
-  kind: GoalRunKind,
-): Promise<GoalRun | null> {
+async function queueNextRun(goal: Goal, kind: GoalRunKind): Promise<GoalRun | null> {
   if (goal.executionTarget === "remote") {
     return null;
   }

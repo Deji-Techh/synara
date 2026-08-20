@@ -5,17 +5,9 @@ import {
   formatCodeExplorerDisabledReason,
   getCodeExplorerAvailability,
 } from "@/ipc/processors/code_explorer";
-import {
-  AgentContext,
-  ToolDefinition,
-  escapeXmlAttr,
-  escapeXmlContent,
-} from "./types";
+import { AgentContext, ToolDefinition, escapeXmlAttr, escapeXmlContent } from "./types";
 import type { CodeExplorerResult } from "../../../../../../../shared/code_explorer_types";
-import {
-  exploreCodeSchema,
-  normalizeExploreCodeArgsForApp,
-} from "./explore_code_raw";
+import { exploreCodeSchema, normalizeExploreCodeArgsForApp } from "./explore_code_raw";
 import { runExploreCodeSubagent } from "./explore_code_subagent";
 import { resolveTargetAppPath } from "./resolve_app_context";
 
@@ -75,9 +67,7 @@ function buildExploreCodeAttributes(
   return attrs.join(" ");
 }
 
-export const exploreCodeTool: ToolDefinition<
-  z.infer<typeof exploreCodeSchema>
-> = {
+export const exploreCodeTool: ToolDefinition<z.infer<typeof exploreCodeSchema>> = {
   name: "explore_code",
   description: `Ask a code reconnaissance sub-agent to explore code included in a configured TypeScript project.
 
@@ -117,10 +107,7 @@ Only use this for files included in the app's TypeScript config. JavaScript and 
 
   execute: async (args, ctx: AgentContext) => {
     const targetAppPath = resolveTargetAppPath(ctx, args.app_name);
-    const availability = getExploreCodeAvailabilityForAppPath(
-      ctx,
-      targetAppPath,
-    );
+    const availability = getExploreCodeAvailabilityForAppPath(ctx, targetAppPath);
     const effectiveArgs = normalizeExploreCodeArgsForApp({
       appPath: targetAppPath,
       args,

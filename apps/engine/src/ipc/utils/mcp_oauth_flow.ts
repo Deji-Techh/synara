@@ -1,18 +1,10 @@
-import {
-  createServer,
-  type IncomingMessage,
-  type Server,
-  type ServerResponse,
-} from "node:http";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import log from "electron-log";
 import { auth } from "@ai-sdk/mcp";
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { mcpServers } from "../../db/schema";
-import {
-  CaideOAuthClientProvider,
-  decryptFromString,
-} from "./mcp_oauth_provider";
+import { CaideOAuthClientProvider, decryptFromString } from "./mcp_oauth_provider";
 import { DEFAULT_OAUTH_CALLBACK_PORT } from "../types/mcp";
 import { mcpManager } from "./mcp_manager";
 import { CaideError, CaideErrorKind } from "../../errors/caide_error";
@@ -187,9 +179,7 @@ async function startCallbackListener(
     logger.info(`Superseding stale OAuth flow on port ${port}`);
     if (existing.timeout) clearTimeout(existing.timeout);
     pendingFlows.delete(port);
-    existing.reject(
-      new Error("OAuth flow superseded by a new Connect attempt."),
-    );
+    existing.reject(new Error("OAuth flow superseded by a new Connect attempt."));
     // Wait for any in-flight `tryBind` calls so `existing.servers`
     // includes every socket that successfully bound, even ones that
     // bound after the supersede flipped `disposed`.
@@ -306,18 +296,12 @@ async function startCallbackListener(
           message: errParam ?? "missing code",
         }),
       );
-      settle(() =>
-        rejectCode(
-          new Error(`OAuth callback error: ${errParam ?? "missing code"}`),
-        ),
-      );
+      settle(() => rejectCode(new Error(`OAuth callback error: ${errParam ?? "missing code"}`)));
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       logger.warn(`OAuth callback handler crashed: ${message}`);
       if (!res.headersSent) {
-        res
-          .writeHead(500, { "Content-Type": "text/plain" })
-          .end("Internal error");
+        res.writeHead(500, { "Content-Type": "text/plain" }).end("Internal error");
       }
       settle(() => rejectCode(err instanceof Error ? err : new Error(message)));
     }
@@ -326,17 +310,12 @@ async function startCallbackListener(
   // EADDRINUSE means the other process owns the address; "other"
   // means the stack is unavailable (e.g. IPv6 disabled). Partial-bind
   // is safe only for the second case.
-  type BindResult =
-    | { server: Server }
-    | { error: "in_use" }
-    | { error: "other" };
+  type BindResult = { server: Server } | { error: "in_use" } | { error: "other" };
   const tryBind = (host: string): Promise<BindResult> =>
     new Promise((resolveBind) => {
       const s = createServer(handler);
       const onError = (err: Error & { code?: string }) => {
-        logger.warn(
-          `Could not bind OAuth callback listener on ${host}:${port}: ${err.message}`,
-        );
+        logger.warn(`Could not bind OAuth callback listener on ${host}:${port}: ${err.message}`);
         resolveBind({ error: err.code === "EADDRINUSE" ? "in_use" : "other" });
       };
       s.once("error", onError);
@@ -430,10 +409,7 @@ interface RunOAuthFlowParams {
 export async function runOAuthFlow(
   params: RunOAuthFlowParams,
 ): Promise<{ success: boolean; error: string | null }> {
-  const rows = await db
-    .select()
-    .from(mcpServers)
-    .where(eq(mcpServers.id, params.serverId));
+  const rows = await db.select().from(mcpServers).where(eq(mcpServers.id, params.serverId));
   const s = rows[0];
   if (!s) {
     return {
@@ -454,8 +430,7 @@ export async function runOAuthFlow(
     };
   }
 
-  const callbackPort =
-    params.callbackPort ?? s.oauthCallbackPort ?? DEFAULT_OAUTH_CALLBACK_PORT;
+  const callbackPort = params.callbackPort ?? s.oauthCallbackPort ?? DEFAULT_OAUTH_CALLBACK_PORT;
   // Scope values are defined by each OAuth server; there is no
   // universal default that works across providers. Pass through
   // whatever the user configured, otherwise omit the `scope`
@@ -484,9 +459,7 @@ export async function runOAuthFlow(
     listener = await startCallbackListener(callbackPort, expectedState);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.warn(
-      `Could not start OAuth callback listener for server ${s.id}: ${message}`,
-    );
+    logger.warn(`Could not start OAuth callback listener for server ${s.id}: ${message}`);
     return { success: false, error: message };
   }
   // Side-handler so an early bind-failure rejection isn't unhandled
@@ -537,18 +510,13 @@ export async function runOAuthFlow(
   }
 }
 
-export async function disconnectOAuth(
-  serverId: number,
-): Promise<{ success: boolean }> {
+export async function disconnectOAuth(serverId: number): Promise<{ success: boolean }> {
   const rows = await db
     .select({ id: mcpServers.id })
     .from(mcpServers)
     .where(eq(mcpServers.id, serverId));
   if (!rows[0]) {
-    throw new CaideError(
-      `MCP server not found: ${serverId}`,
-      CaideErrorKind.NotFound,
-    );
+    throw new CaideError(`MCP server not found: ${serverId}`, CaideErrorKind.NotFound);
   }
   // `invalidateCredentials` only deletes state; no need to read /
   // decrypt the pre-registered client_id / client_secret.

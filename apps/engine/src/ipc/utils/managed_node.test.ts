@@ -49,12 +49,12 @@ describe("swapManagedNodeInstallDir", () => {
       }),
     ).rejects.toThrow("rename blocked");
 
-    await expect(
-      fsp.readFile(path.join(finalInstallDir, "runtime.txt"), "utf8"),
-    ).resolves.toBe("old");
+    await expect(fsp.readFile(path.join(finalInstallDir, "runtime.txt"), "utf8")).resolves.toBe(
+      "old",
+    );
     await expect(fsp.access(backupInstallDir)).rejects.toThrow();
-    await expect(
-      fsp.readFile(path.join(tempInstallDir, "runtime.txt"), "utf8"),
-    ).resolves.toBe("new");
+    await expect(fsp.readFile(path.join(tempInstallDir, "runtime.txt"), "utf8")).resolves.toBe(
+      "new",
+    );
   });
 });

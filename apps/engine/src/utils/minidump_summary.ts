@@ -172,10 +172,7 @@ export function parseMinidumpBuffer(
 ): MinidumpSummary | null {
   try {
     const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
-    if (
-      buf.length < HEADER_SIZE ||
-      view.getUint32(0, true) !== MINIDUMP_SIGNATURE
-    ) {
+    if (buf.length < HEADER_SIZE || view.getUint32(0, true) !== MINIDUMP_SIGNATURE) {
       return null;
     }
     const numStreams = view.getUint32(HEADER_STREAM_COUNT_OFF, true);
@@ -219,14 +216,8 @@ export function parseMinidumpBuffer(
     // context; the IP sits at an arch-specific offset within it.
     let instructionPointer = 0n;
     const ipOffset = IP_OFFSET_IN_CONTEXT[arch];
-    if (
-      ipOffset !== undefined &&
-      exceptionRva + EXC_CONTEXT_RVA_OFF + 4 <= buf.length
-    ) {
-      const contextRva = view.getUint32(
-        exceptionRva + EXC_CONTEXT_RVA_OFF,
-        true,
-      );
+    if (ipOffset !== undefined && exceptionRva + EXC_CONTEXT_RVA_OFF + 4 <= buf.length) {
+      const contextRva = view.getUint32(exceptionRva + EXC_CONTEXT_RVA_OFF, true);
       if (contextRva + ipOffset + 8 <= buf.length) {
         instructionPointer = view.getBigUint64(contextRva + ipOffset, true);
       }
@@ -236,22 +227,14 @@ export function parseMinidumpBuffer(
     // Crashpad records an address_mask to recover the real address before module
     // lookup.
     if (instructionPointer !== 0n && crashpadInfoRva) {
-      const mask = readAddressMask(
-        view,
-        buf,
-        crashpadInfoRva,
-        crashpadInfoSize,
-      );
+      const mask = readAddressMask(view, buf, crashpadInfoRva, crashpadInfoSize);
       instructionPointer = applyAddressMask(instructionPointer, mask);
     }
 
     let faultingModule: string | undefined;
     let faultingOffset: string | undefined;
     if (moduleListRva !== 0 && instructionPointer !== 0n) {
-      const module = findModule(
-        parseModules(view, buf, moduleListRva),
-        instructionPointer,
-      );
+      const module = findModule(parseModules(view, buf, moduleListRva), instructionPointer);
       if (module) {
         faultingModule = basename(module.name);
         faultingOffset = "0x" + (instructionPointer - module.base).toString(16);
@@ -263,9 +246,7 @@ export function parseMinidumpBuffer(
       exceptionCode,
       faultingModule,
       faultingOffset,
-      ptype: crashpadInfoRva
-        ? parsePtype(view, buf, crashpadInfoRva)
-        : undefined,
+      ptype: crashpadInfoRva ? parsePtype(view, buf, crashpadInfoRva) : undefined,
     };
   } catch {
     return null;
@@ -284,19 +265,12 @@ export function parseMinidumpBuffer(
 //     annotation                ->  name rva @ +0, value rva @ +8
 //
 // name and value are length-prefixed UTF-8; return the value named "ptype".
-function parsePtype(
-  view: DataView,
-  buf: Buffer,
-  infoRva: number,
-): string | undefined {
+function parsePtype(view: DataView, buf: Buffer, infoRva: number): string | undefined {
   try {
     if (infoRva + CRASHPAD_MODULE_LIST_RVA_OFF + 4 > buf.length) {
       return undefined;
     }
-    const modListRva = view.getUint32(
-      infoRva + CRASHPAD_MODULE_LIST_RVA_OFF,
-      true,
-    );
+    const modListRva = view.getUint32(infoRva + CRASHPAD_MODULE_LIST_RVA_OFF, true);
     if (modListRva === 0 || modListRva + 4 > buf.length) return undefined;
     const moduleCount = view.getUint32(modListRva, true);
     for (let i = 0; i < moduleCount; i++) {
@@ -310,9 +284,7 @@ function parsePtype(
       for (let j = 0; j < objectCount; j++) {
         const obj = objectsRva + 4 + j * 12;
         if (obj + 12 > buf.length) break;
-        if (
-          readLengthPrefixed(view, buf, view.getUint32(obj, true)) === "ptype"
-        ) {
+        if (readLengthPrefixed(view, buf, view.getUint32(obj, true)) === "ptype") {
           return readLengthPrefixed(view, buf, view.getUint32(obj + 8, true));
         }
       }
@@ -326,12 +298,7 @@ function parsePtype(
 // Read the address_mask from the MinidumpCrashpadInfo stream, used to strip
 // pointer-tag bits from addresses (arm64). Returns 0n when absent — older dumps
 // don't have the field, so only read it when the stream is long enough.
-function readAddressMask(
-  view: DataView,
-  buf: Buffer,
-  infoRva: number,
-  infoSize: number,
-): bigint {
+function readAddressMask(view: DataView, buf: Buffer, infoRva: number, infoSize: number): bigint {
   if (
     infoSize < CRASHPAD_INFO_MIN_SIZE_FOR_MASK ||
     infoRva + CRASHPAD_ADDRESS_MASK_OFF + 8 > buf.length
@@ -362,11 +329,7 @@ function readLengthPrefixed(view: DataView, buf: Buffer, rva: number): string {
 // Parse the module list stream into the base address, size, and name of each
 // loaded module. (MINIDUMP_MODULE_LIST: a u32 count, then `count` fixed-size
 // module records.)
-function parseModules(
-  view: DataView,
-  buf: Buffer,
-  rva: number,
-): MinidumpModule[] {
+function parseModules(view: DataView, buf: Buffer, rva: number): MinidumpModule[] {
   if (rva + 4 > buf.length) return [];
   const count = view.getUint32(rva, true);
   const modules: MinidumpModule[] = [];
@@ -383,13 +346,8 @@ function parseModules(
 
 // Find the loaded module whose address range contains the given address (the
 // crash IP), or undefined if it falls outside every module.
-function findModule(
-  modules: MinidumpModule[],
-  address: bigint,
-): MinidumpModule | undefined {
-  return modules.find(
-    (m) => address >= m.base && address < m.base + BigInt(m.size),
-  );
+function findModule(modules: MinidumpModule[], address: bigint): MinidumpModule | undefined {
+  return modules.find((m) => address >= m.base && address < m.base + BigInt(m.size));
 }
 
 // MINIDUMP_STRING: u32 byte-length followed by UTF-16LE.

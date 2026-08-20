@@ -1,15 +1,7 @@
 import { app, BrowserWindow, Notification } from "electron";
 import log from "electron-log";
-import {
-  goalEvents,
-  type Goal,
-  type GoalRun,
-  type GoalRunKind,
-} from "@/ipc/types/goal";
-import {
-  isPersistedGoalComplete,
-  type PersistedGoalState,
-} from "@/shared/goal_state";
+import { goalEvents, type Goal, type GoalRun, type GoalRunKind } from "@/ipc/types/goal";
+import { isPersistedGoalComplete, type PersistedGoalState } from "@/shared/goal_state";
 import {
   createRun,
   ensureGoalTables,
@@ -126,9 +118,7 @@ function candidateForVerification(state: PersistedGoalState | null): boolean {
   }
   return (
     state.tasks.filter((task) => task.required).length > 0 &&
-    state.tasks
-      .filter((task) => task.required)
-      .every((task) => task.status === "verified") &&
+    state.tasks.filter((task) => task.required).every((task) => task.status === "verified") &&
     !state.verification.passed
   );
 }
@@ -137,14 +127,10 @@ function nextRetryDelay(failures: number): number {
   return Math.min(RETRY_BASE_MS * 2 ** Math.max(0, failures - 1), RETRY_MAX_MS);
 }
 
-async function queueNextRun(
-  goal: Goal,
-  kind: GoalRunKind,
-): Promise<GoalRun | null> {
+async function queueNextRun(goal: Goal, kind: GoalRunKind): Promise<GoalRun | null> {
   if (goal.executionTarget === "remote") {
     const blocker = {
-      reason:
-        "This goal is configured for a remote runner, but no remote runner is connected.",
+      reason: "This goal is configured for a remote runner, but no remote runner is connected.",
       userAction:
         "Connect a CAIDE remote runner or change the goal execution target to local/hybrid.",
       retryable: true,
@@ -176,19 +162,11 @@ async function reconcileGoal(goalId: string): Promise<Goal> {
     return paused;
   }
 
-  if (
-    goal.status === "cancelled" ||
-    goal.status === "paused" ||
-    goal.status === "completed"
-  ) {
+  if (goal.status === "cancelled" || goal.status === "paused" || goal.status === "completed") {
     return goal;
   }
 
-  if (
-    state &&
-    isPersistedGoalComplete(state) &&
-    hasCurrentVerificationApproval(goal.id)
-  ) {
+  if (state && isPersistedGoalComplete(state) && hasCurrentVerificationApproval(goal.id)) {
     const completed = await updateGoalStatus(goal.id, "completed", {
       reason: "Every required task and verification criterion passed",
       resetFailures: true,
@@ -230,11 +208,7 @@ async function reconcileGoal(goalId: string): Promise<Goal> {
       : "execute";
   const active = await updateGoalStatus(
     goal.id,
-    nextKind === "verify"
-      ? "verifying"
-      : nextKind === "repair"
-        ? "repairing"
-        : "active",
+    nextKind === "verify" ? "verifying" : nextKind === "repair" ? "repairing" : "active",
     { reason: `Scheduling ${nextKind} continuation` },
   );
   await queueNextRun(active, nextKind);
@@ -302,8 +276,7 @@ export async function handleCompletedRun(input: {
   if (before.status === "pausing") {
     return finishPause(before.id);
   }
-  if (before.status === "cancelled" || before.status === "paused")
-    return before;
+  if (before.status === "cancelled" || before.status === "paused") return before;
 
   if (!input.success) {
     const failures = before.consecutiveFailures + 1;
@@ -318,16 +291,12 @@ export async function handleCompletedRun(input: {
             detectedAt: Date.now(),
           }
         : undefined;
-    const failed = await updateGoalStatus(
-      before.id,
-      blocker ? "blocked" : "repairing",
-      {
-        reason: input.error ?? "Goal run failed; repair scheduled",
-        blocker,
-        nextRetryAt,
-        incrementFailure: true,
-      },
-    );
+    const failed = await updateGoalStatus(before.id, blocker ? "blocked" : "repairing", {
+      reason: input.error ?? "Goal run failed; repair scheduled",
+      blocker,
+      nextRetryAt,
+      incrementFailure: true,
+    });
     emitUpdated(failed, "run-failed");
     notifyUser(
       "CAIDE goal run failed",

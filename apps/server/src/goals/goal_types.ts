@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  createClient,
-  createEventClient,
-  defineContract,
-  defineEvent,
-} from "../contracts/core";
+import { createClient, createEventClient, defineContract, defineEvent } from "../contracts/core";
 
 export const GoalStatusSchema = z.enum([
   "draft",
@@ -48,12 +43,7 @@ export const GoalRunStatusSchema = z.enum([
 ]);
 export type GoalRunStatus = z.infer<typeof GoalRunStatusSchema>;
 
-export const GoalRunKindSchema = z.enum([
-  "plan",
-  "execute",
-  "repair",
-  "verify",
-]);
+export const GoalRunKindSchema = z.enum(["plan", "execute", "repair", "verify"]);
 export type GoalRunKind = z.infer<typeof GoalRunKindSchema>;
 
 export const GoalTaskSchema = z.object({

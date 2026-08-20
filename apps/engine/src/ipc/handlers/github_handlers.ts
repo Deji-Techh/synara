@@ -39,10 +39,7 @@ import { githubContracts } from "../types/github";
 import type { CloneRepoParams, CloneRepoResult } from "../types/github";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
 import { slugifyAppPath } from "@/shared/slugify";
-import {
-  isComponentTaggerUpgradeNeeded,
-  applyComponentTagger,
-} from "../utils/app_upgrade_utils";
+import { isComponentTaggerUpgradeNeeded, applyComponentTagger } from "../utils/app_upgrade_utils";
 
 const logger = log.scope("github_handlers");
 
@@ -83,15 +80,11 @@ function getGitHubAccessTokenUrl() {
 }
 
 function getGitHubApiBase() {
-  return isGitHubTestBuild()
-    ? `${getGitHubTestServerBase()}/github/api`
-    : "https://api.github.com";
+  return isGitHubTestBuild() ? `${getGitHubTestServerBase()}/github/api` : "https://api.github.com";
 }
 
 function getGitHubGitBase() {
-  return isGitHubTestBuild()
-    ? `${getGitHubTestServerBase()}/github/git`
-    : "https://github.com";
+  return isGitHubTestBuild() ? `${getGitHubTestServerBase()}/github/git` : "https://github.com";
 }
 
 const GITHUB_SCOPES = "repo,user,workflow"; // Define the scopes needed
@@ -211,8 +204,7 @@ export async function prepareLocalBranch({
         try {
           const commitHash = await gitService.stageAllAndCommit({
             path: appPath,
-            message:
-              "chore: auto-commit local changes before connecting to GitHub",
+            message: "chore: auto-commit local changes before connecting to GitHub",
           });
           logger.info(
             `[GitHub Handler] Auto-committed local changes (${commitHash}) before preparing branch '${targetBranch}'.`,
@@ -327,8 +319,7 @@ export async function prepareLocalBranch({
     logger.error("[GitHub Handler] Failed to prepare local branch:", gitError);
     // Check if error is about uncommitted changes (fallback in case check above missed it)
     const errorMessage =
-      gitError?.message ||
-      "Failed to prepare local branch for the connected repository.";
+      gitError?.message || "Failed to prepare local branch for the connected repository.";
     const lowerMessage = errorMessage.toLowerCase();
     if (
       lowerMessage.includes("local changes") ||
@@ -403,10 +394,7 @@ async function pollForAccessToken(event: IpcMainInvokeEvent) {
             message: "Waiting for user authorization...",
           });
           // Schedule next poll
-          currentFlowState.timeoutId = setTimeout(
-            () => pollForAccessToken(event),
-            interval * 1000,
-          );
+          currentFlowState.timeoutId = setTimeout(() => pollForAccessToken(event), interval * 1000);
           break;
         case "slow_down":
           const newInterval = interval + 5;
@@ -435,9 +423,7 @@ async function pollForAccessToken(event: IpcMainInvokeEvent) {
           stopPolling();
           break;
         default:
-          logger.error(
-            `Unknown GitHub error: ${data.error_description || data.error}`,
-          );
+          logger.error(`Unknown GitHub error: ${data.error_description || data.error}`);
           event.sender.send("github:flow-error", {
             error: `GitHub authorization error: ${data.error_description || data.error}`,
           });
@@ -475,10 +461,7 @@ function stopPolling() {
 
 // --- IPC Handlers ---
 
-function handleStartGithubFlow(
-  event: IpcMainInvokeEvent,
-  args: { appId: number | null },
-) {
+function handleStartGithubFlow(event: IpcMainInvokeEvent, args: { appId: number | null }) {
   logger.debug(`Received github:start-flow for appId: ${args.appId}`);
 
   // If a flow is already in progress, maybe cancel it or send an error
@@ -523,9 +506,7 @@ function handleStartGithubFlow(
     .then((res) => {
       if (!res.ok) {
         return res.json().then((errData: any) => {
-          throw new Error(
-            `GitHub API Error: ${errData.error_description || res.statusText}`,
-          );
+          throw new Error(`GitHub API Error: ${errData.error_description || res.statusText}`);
         });
       }
       return res.json() as Promise<{
@@ -575,28 +556,20 @@ async function handleListGithubRepos(): Promise<
     const settings = readSettings();
     const accessToken = settings.githubAccessToken?.value;
     if (!accessToken) {
-      throw new CaideError(
-        "Not authenticated with GitHub.",
-        CaideErrorKind.Auth,
-      );
+      throw new CaideError("Not authenticated with GitHub.", CaideErrorKind.Auth);
     }
 
     // Fetch user's repositories
-    const response = await fetch(
-      `${getGitHubApiBase()}/user/repos?per_page=100&sort=updated`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          Accept: "application/vnd.github+json",
-        },
+    const response = await fetch(`${getGitHubApiBase()}/user/repos?per_page=100&sort=updated`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/vnd.github+json",
       },
-    );
+    });
 
     if (!response.ok) {
       const errorData = (await response.json()) as any;
-      throw new Error(
-        `GitHub API error: ${errorData.message || response.statusText}`,
-      );
+      throw new Error(`GitHub API error: ${errorData.message || response.statusText}`);
     }
 
     const repos = (await response.json()) as any[];
@@ -622,28 +595,20 @@ async function handleGetRepoBranches(
     const settings = readSettings();
     const accessToken = settings.githubAccessToken?.value;
     if (!accessToken) {
-      throw new CaideError(
-        "Not authenticated with GitHub.",
-        CaideErrorKind.Auth,
-      );
+      throw new CaideError("Not authenticated with GitHub.", CaideErrorKind.Auth);
     }
 
     // Fetch repository branches
-    const response = await fetch(
-      `${getGitHubApiBase()}/repos/${owner}/${repo}/branches`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          Accept: "application/vnd.github+json",
-        },
+    const response = await fetch(`${getGitHubApiBase()}/repos/${owner}/${repo}/branches`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/vnd.github+json",
       },
-    );
+    });
 
     if (!response.ok) {
       const errorData = (await response.json()) as any;
-      throw new Error(
-        `GitHub API error: ${errorData.message || response.statusText}`,
-      );
+      throw new Error(`GitHub API error: ${errorData.message || response.statusText}`);
     }
 
     const branches = (await response.json()) as any[];
@@ -702,12 +667,7 @@ async function handleIsRepoAvailable(
 // --- GitHub Create Repo Handler ---
 async function handleCreateRepo(
   event: IpcMainInvokeEvent,
-  {
-    org,
-    repo,
-    appId,
-    branch,
-  }: { org: string; repo: string; appId: number; branch?: string },
+  { org, repo, appId, branch }: { org: string; repo: string; appId: number; branch?: string },
 ): Promise<void> {
   // Normalize the repo name to match GitHub's automatic normalization
   // GitHub converts spaces to hyphens when creating repositories
@@ -776,8 +736,7 @@ async function handleCreateRepo(
       logger.error("Failed to parse GitHub API error response:", {
         status: res.status,
         statusText: res.statusText,
-        jsonError:
-          jsonError instanceof Error ? jsonError.message : String(jsonError),
+        jsonError: jsonError instanceof Error ? jsonError.message : String(jsonError),
       });
       errorMessage = `GitHub API error: ${res.status} ${res.statusText}`;
     }
@@ -810,40 +769,27 @@ async function handleCreateRepo(
 // --- GitHub Connect to Existing Repo Handler ---
 async function handleConnectToExistingRepo(
   event: IpcMainInvokeEvent,
-  {
-    owner,
-    repo,
-    branch,
-    appId,
-  }: { owner: string; repo: string; branch: string; appId: number },
+  { owner, repo, branch, appId }: { owner: string; repo: string; branch: string; appId: number },
 ): Promise<void> {
   try {
     // Get access token from settings
     const settings = readSettings();
     const accessToken = settings.githubAccessToken?.value;
     if (!accessToken) {
-      throw new CaideError(
-        "Not authenticated with GitHub.",
-        CaideErrorKind.Auth,
-      );
+      throw new CaideError("Not authenticated with GitHub.", CaideErrorKind.Auth);
     }
 
     // Verify the repository exists and user has access
-    const repoResponse = await fetch(
-      `${getGitHubApiBase()}/repos/${owner}/${repo}`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          Accept: "application/vnd.github+json",
-        },
+    const repoResponse = await fetch(`${getGitHubApiBase()}/repos/${owner}/${repo}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/vnd.github+json",
       },
-    );
+    });
 
     if (!repoResponse.ok) {
       const errorData = (await repoResponse.json()) as { message?: string };
-      throw new Error(
-        `Repository not found or access denied: ${errorData.message}`,
-      );
+      throw new Error(`Repository not found or access denied: ${errorData.message}`);
     }
 
     // Set up remote URL before preparing branch (credentials are never
@@ -890,10 +836,7 @@ async function handlePushToGithub(
   // Get app info from DB
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
   if (!app || !app.githubOrg || !app.githubRepo) {
-    throw new CaideError(
-      "App is not linked to a GitHub repo.",
-      CaideErrorKind.Precondition,
-    );
+    throw new CaideError("App is not linked to a GitHub repo.", CaideErrorKind.Precondition);
   }
   const appPath = getCaideAppPath(app.path);
   const branch = app.githubBranch || "main";
@@ -942,8 +885,7 @@ async function handlePushToGithub(
       const isMissingRemoteBranch =
         pullError?.code === "MissingRefError" ||
         (pullError?.code === "NotFoundError" &&
-          (errorMessage.includes("remote ref") ||
-            errorMessage.includes("remote branch"))) ||
+          (errorMessage.includes("remote ref") || errorMessage.includes("remote branch"))) ||
         errorMessage.includes("couldn't find remote ref") ||
         // isomorphic-git throws a TypeError when the remote repo is empty
         errorMessage.includes("Cannot read properties of null");
@@ -1003,10 +945,7 @@ async function handleRebaseFromGithub(
   }
   const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
   if (!app || !app.githubOrg || !app.githubRepo) {
-    throw new CaideError(
-      "App is not linked to a GitHub repo.",
-      CaideErrorKind.Precondition,
-    );
+    throw new CaideError("App is not linked to a GitHub repo.", CaideErrorKind.Precondition);
   }
   const appPath = getCaideAppPath(app.path);
   const branch = app.githubBranch || "main";
@@ -1075,18 +1014,12 @@ async function handleListCollaborators(
     const settings = readSettings();
     const accessToken = settings.githubAccessToken?.value;
     if (!accessToken) {
-      throw new CaideError(
-        "Not authenticated with GitHub.",
-        CaideErrorKind.Auth,
-      );
+      throw new CaideError("Not authenticated with GitHub.", CaideErrorKind.Auth);
     }
 
     const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
     if (!app || !app.githubOrg || !app.githubRepo) {
-      throw new CaideError(
-        "App is not linked to a GitHub repo.",
-        CaideErrorKind.Precondition,
-      );
+      throw new CaideError("App is not linked to a GitHub repo.", CaideErrorKind.Precondition);
     }
 
     const response = await fetch(
@@ -1100,9 +1033,7 @@ async function handleListCollaborators(
     );
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to list collaborators: ${response.status} ${response.statusText}`,
-      );
+      throw new Error(`Failed to list collaborators: ${response.status} ${response.statusText}`);
     }
 
     const collaborators = (await response.json()) as any[];
@@ -1126,10 +1057,7 @@ async function handleInviteCollaborator(
     // Validate username
     const trimmedUsername = username.trim();
     if (!trimmedUsername) {
-      throw new CaideError(
-        "Username cannot be empty.",
-        CaideErrorKind.External,
-      );
+      throw new CaideError("Username cannot be empty.", CaideErrorKind.External);
     }
     if (trimmedUsername.length > 39) {
       throw new CaideError(
@@ -1156,18 +1084,12 @@ async function handleInviteCollaborator(
     const settings = readSettings();
     const accessToken = settings.githubAccessToken?.value;
     if (!accessToken) {
-      throw new CaideError(
-        "Not authenticated with GitHub.",
-        CaideErrorKind.Auth,
-      );
+      throw new CaideError("Not authenticated with GitHub.", CaideErrorKind.Auth);
     }
 
     const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
     if (!app || !app.githubOrg || !app.githubRepo) {
-      throw new CaideError(
-        "App is not linked to a GitHub repo.",
-        CaideErrorKind.Precondition,
-      );
+      throw new CaideError("App is not linked to a GitHub repo.", CaideErrorKind.Precondition);
     }
 
     // GitHub API to add a collaborator (sends an invitation)
@@ -1188,8 +1110,7 @@ async function handleInviteCollaborator(
     if (!response.ok) {
       const data = (await response.json()) as { message?: string };
       throw new Error(
-        data.message ||
-          `Failed to invite collaborator: ${response.status} ${response.statusText}`,
+        data.message || `Failed to invite collaborator: ${response.status} ${response.statusText}`,
       );
     }
   } catch (err: any) {
@@ -1207,18 +1128,12 @@ async function handleRemoveCollaborator(
     const settings = readSettings();
     const accessToken = settings.githubAccessToken?.value;
     if (!accessToken) {
-      throw new CaideError(
-        "Not authenticated with GitHub.",
-        CaideErrorKind.Auth,
-      );
+      throw new CaideError("Not authenticated with GitHub.", CaideErrorKind.Auth);
     }
 
     const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
     if (!app || !app.githubOrg || !app.githubRepo) {
-      throw new CaideError(
-        "App is not linked to a GitHub repo.",
-        CaideErrorKind.Precondition,
-      );
+      throw new CaideError("App is not linked to a GitHub repo.", CaideErrorKind.Precondition);
     }
 
     const response = await fetch(
@@ -1235,8 +1150,7 @@ async function handleRemoveCollaborator(
     if (!response.ok) {
       const data = (await response.json()) as { message?: string };
       throw new Error(
-        data.message ||
-          `Failed to remove collaborator: ${response.status} ${response.statusText}`,
+        data.message || `Failed to remove collaborator: ${response.status} ${response.statusText}`,
       );
     }
   } catch (err: any) {
@@ -1288,13 +1202,7 @@ async function handleCloneRepoFromUrl(
   event: IpcMainInvokeEvent,
   params: CloneRepoParams,
 ): Promise<CloneRepoResult> {
-  const {
-    url,
-    installCommand,
-    startCommand,
-    appName,
-    optimizeForCaide = true,
-  } = params;
+  const { url, installCommand, startCommand, appName, optimizeForCaide = true } = params;
   try {
     const settings = readSettings();
     const accessToken = settings.githubAccessToken?.value;
@@ -1302,21 +1210,17 @@ async function handleCloneRepoFromUrl(
     const match = url.match(urlPattern);
     if (!match) {
       return {
-        error:
-          "Invalid GitHub URL. Expected format: https://github.com/owner/repo.git",
+        error: "Invalid GitHub URL. Expected format: https://github.com/owner/repo.git",
       };
     }
     const [, owner, repoName] = match;
     if (accessToken) {
-      const repoResponse = await fetch(
-        `${getGitHubApiBase()}/repos/${owner}/${repoName}`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            Accept: "application/vnd.github+json",
-          },
+      const repoResponse = await fetch(`${getGitHubApiBase()}/repos/${owner}/${repoName}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/vnd.github+json",
         },
-      );
+      });
       if (!repoResponse.ok) {
         return {
           error: "Repository not found or you do not have access to it.",
@@ -1359,8 +1263,7 @@ async function handleCloneRepoFromUrl(
     } catch (cloneErr) {
       logger.error("[GitHub Handler] Clone failed:", cloneErr);
       return {
-        error:
-          "Failed to clone repository. Please check the URL and try again.",
+        error: "Failed to clone repository. Please check the URL and try again.",
       };
     }
     const aiRulesPath = path.join(appPath, "AI_RULES.md");
@@ -1386,9 +1289,7 @@ async function handleCloneRepoFromUrl(
     if (optimizeForCaide && isComponentTaggerUpgradeNeeded(appPath)) {
       try {
         await applyComponentTagger(appPath, { installDependencies: false });
-        logger.log(
-          `Automatically applied component tagger upgrade for ${owner}/${repoName}`,
-        );
+        logger.log(`Automatically applied component tagger upgrade for ${owner}/${repoName}`);
       } catch (upgradeError) {
         // Auto-upgrade  Failures are logged but don't block import.
         // User will be notified via warning toast to manually upgrade if needed.
@@ -1441,12 +1342,9 @@ export function registerGithubHandlers() {
     return handleCreateRepo(event, params);
   });
 
-  createTypedHandler(
-    githubContracts.connectExistingRepo,
-    async (event, params) => {
-      return handleConnectToExistingRepo(event, params);
-    },
-  );
+  createTypedHandler(githubContracts.connectExistingRepo, async (event, params) => {
+    return handleConnectToExistingRepo(event, params);
+  });
 
   createTypedHandler(githubContracts.push, async (event, params) => {
     return handlePushToGithub(event, params);
@@ -1464,26 +1362,17 @@ export function registerGithubHandlers() {
     return handleContinueRebase(event, params);
   });
 
-  createTypedHandler(
-    githubContracts.listCollaborators,
-    async (event, params) => {
-      return handleListCollaborators(event, params);
-    },
-  );
+  createTypedHandler(githubContracts.listCollaborators, async (event, params) => {
+    return handleListCollaborators(event, params);
+  });
 
-  createTypedHandler(
-    githubContracts.inviteCollaborator,
-    async (event, params) => {
-      return handleInviteCollaborator(event, params);
-    },
-  );
+  createTypedHandler(githubContracts.inviteCollaborator, async (event, params) => {
+    return handleInviteCollaborator(event, params);
+  });
 
-  createTypedHandler(
-    githubContracts.removeCollaborator,
-    async (event, params) => {
-      return handleRemoveCollaborator(event, params);
-    },
-  );
+  createTypedHandler(githubContracts.removeCollaborator, async (event, params) => {
+    return handleRemoveCollaborator(event, params);
+  });
 
   createTypedHandler(githubContracts.getConflicts, async (event, params) => {
     return handleGetMergeConflicts(event, params);
@@ -1497,12 +1386,9 @@ export function registerGithubHandlers() {
     return handleDisconnectGithubRepo(event, params);
   });
 
-  createTypedHandler(
-    githubContracts.cloneRepoFromUrl,
-    async (event, params) => {
-      return handleCloneRepoFromUrl(event, params);
-    },
-  );
+  createTypedHandler(githubContracts.cloneRepoFromUrl, async (event, params) => {
+    return handleCloneRepoFromUrl(event, params);
+  });
 }
 
 export async function updateAppGithubRepo({

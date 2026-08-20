@@ -114,17 +114,33 @@ export function buildSafeProviderChildEnvironment(input: {
   readonly overrides?: NodeJS.ProcessEnv;
 }): NodeJS.ProcessEnv {
   const SAFE_KEYS = [
-    "PATH", "HOME", "USER", "TMPDIR", "TMP", "TEMP",
-    "LANG", "LC_ALL", "LC_CTYPE",
-    "SHELL", "TERM",
+    "PATH",
+    "HOME",
+    "USER",
+    "TMPDIR",
+    "TMP",
+    "TEMP",
+    "LANG",
+    "LC_ALL",
+    "LC_CTYPE",
+    "SHELL",
+    "TERM",
     "SSH_AUTH_SOCK",
-    "DISPLAY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR",
+    "DISPLAY",
+    "WAYLAND_DISPLAY",
+    "XDG_RUNTIME_DIR",
     // Node/Bun runtime
-    "NODE_ENV", "BUN_INSTALL",
+    "NODE_ENV",
+    "BUN_INSTALL",
     // Flutter SDK
-    "FLUTTER_SDK_DIR", "FLUTTER_SDK_BIN", "FLUTTER_ROOT",
-    "ANDROID_HOME", "ANDROID_SDK_ROOT", "JAVA_HOME",
-    "DART_SDK", "PUB_CACHE",
+    "FLUTTER_SDK_DIR",
+    "FLUTTER_SDK_BIN",
+    "FLUTTER_ROOT",
+    "ANDROID_HOME",
+    "ANDROID_SDK_ROOT",
+    "JAVA_HOME",
+    "DART_SDK",
+    "PUB_CACHE",
   ];
 
   const credentialGrants = PROVIDER_CREDENTIAL_GRANTS[input.provider];

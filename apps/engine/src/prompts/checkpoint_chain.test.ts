@@ -66,9 +66,7 @@ describe("buildCheckpointChain", () => {
   it("includes backend-production only when backend code was touched", () => {
     const passes = buildCheckpointChain({ ...config, hasBackendCode: true });
     expect(passes.map((p) => p.id)).toContain("backend-production");
-    expect(buildCheckpointChain(config).map((p) => p.id)).not.toContain(
-      "backend-production",
-    );
+    expect(buildCheckpointChain(config).map((p) => p.id)).not.toContain("backend-production");
   });
 
   it("skips onboarding-welcome for web apps", () => {
@@ -118,9 +116,7 @@ describe("buildCheckpointChain", () => {
       ...CORE,
     ]);
     for (const pass of passes) {
-      expect(pass.body).toMatch(
-        /Flutter|Dart|NavigationBar|widget tree|Material/i,
-      );
+      expect(pass.body).toMatch(/Flutter|Dart|NavigationBar|widget tree|Material/i);
     }
     const core = passes.find((p) => p.id === "ui-ux-core");
     expect(core?.body).toContain("run `flutter analyze`");

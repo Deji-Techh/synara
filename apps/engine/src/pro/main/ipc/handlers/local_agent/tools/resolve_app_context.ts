@@ -14,10 +14,7 @@ import type { AgentContext } from "./types";
  */
 import fs from "node:fs";
 
-export function resolveTargetAppPath(
-  ctx: AgentContext,
-  appName: string | undefined,
-): string {
+export function resolveTargetAppPath(ctx: AgentContext, appName: string | undefined): string {
   if (!appName) {
     return ctx.appPath;
   }
@@ -32,16 +29,13 @@ export function resolveTargetAppPath(
     appName.includes("/") ||
     appName.includes("\\")
   ) {
-    const resolvedPath = path.isAbsolute(appName)
-      ? appName
-      : path.resolve(ctx.appPath, appName);
+    const resolvedPath = path.isAbsolute(appName) ? appName : path.resolve(ctx.appPath, appName);
     if (fs.existsSync(resolvedPath)) {
       return resolvedPath;
     }
   }
   const available = [...ctx.referencedApps.keys()];
-  const availableStr =
-    available.length > 0 ? available.join(", ") : "(none available)";
+  const availableStr = available.length > 0 ? available.join(", ") : "(none available)";
   throw new CaideError(
     `Unknown app_name '${appName}'. Available referenced apps: ${availableStr}`,
     CaideErrorKind.NotFound,

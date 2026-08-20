@@ -330,11 +330,7 @@ export function useProviderModelCatalog(input: {
         customModelsByProvider.deepseek,
         modelHintByProvider?.deepseek,
       ),
-      groq: getAppModelOptions(
-        "groq",
-        customModelsByProvider.groq,
-        modelHintByProvider?.groq,
-      ),
+      groq: getAppModelOptions("groq", customModelsByProvider.groq, modelHintByProvider?.groq),
       mistral: getAppModelOptions(
         "mistral",
         customModelsByProvider.mistral,

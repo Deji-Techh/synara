@@ -10,10 +10,7 @@ export const estimateTokens = (text: string): number => {
 };
 
 export const estimateMessagesTokens = (messages: Message[]): number => {
-  return messages.reduce(
-    (acc, message) => acc + estimateTokens(message.content),
-    0,
-  );
+  return messages.reduce((acc, message) => acc + estimateTokens(message.content), 0);
 };
 
 const DEFAULT_CONTEXT_WINDOW = 128_000;
@@ -24,16 +21,12 @@ export async function getContextWindow() {
   return modelOption?.contextWindow || DEFAULT_CONTEXT_WINDOW;
 }
 
-export async function getMaxTokens(
-  model: LargeLanguageModel,
-): Promise<number | undefined> {
+export async function getMaxTokens(model: LargeLanguageModel): Promise<number | undefined> {
   const modelOption = await findLanguageModel(model);
   return modelOption?.maxOutputTokens ?? undefined;
 }
 
-export async function getTemperature(
-  model: LargeLanguageModel,
-): Promise<number | undefined> {
+export async function getTemperature(model: LargeLanguageModel): Promise<number | undefined> {
   const modelOption = await findLanguageModel(model);
   if (modelOption?.type === "custom") {
     return modelOption.temperature;
@@ -53,17 +46,11 @@ export async function getTemperature(
  * (e.g. OpenAI) only apply a 2x tier above ~272k tokens. We compact earlier
  * for Google so requests stay in the cheaper input tier.
  */
-export function getCompactionThreshold(
-  contextWindow: number,
-  provider: string,
-): number {
+export function getCompactionThreshold(contextWindow: number, provider: string): number {
   if (contextWindow > 250_000) {
     // For large context models (>250k tokens e.g. 1M / 2M context windows),
     // allow using up to 85% of context window or contextWindow - 40,000 headroom
-    return Math.max(
-      200_000,
-      Math.min(Math.floor(contextWindow * 0.85), contextWindow - 40_000),
-    );
+    return Math.max(200_000, Math.min(Math.floor(contextWindow * 0.85), contextWindow - 40_000));
   }
   const cap = provider === "google" ? 190_000 : 250_000;
   return Math.min(cap, Math.max(0, contextWindow - 25_000));

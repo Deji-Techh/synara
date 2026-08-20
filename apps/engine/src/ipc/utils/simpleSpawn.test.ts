@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CaideErrorKind } from "@/errors/caide_error";
-import {
-  BufferedProcessSpawnError,
-  DEFAULT_BUFFERED_PROCESS_TIMEOUT_MS,
-} from "./buffered_process";
+import { BufferedProcessSpawnError, DEFAULT_BUFFERED_PROCESS_TIMEOUT_MS } from "./buffered_process";
 import { simpleSpawn } from "./simpleSpawn";
 
 const { logger, runBufferedProcessMock } = vi.hoisted(() => ({
@@ -25,10 +22,7 @@ vi.mock("./socket_firewall", () => ({
 }));
 
 vi.mock("./buffered_process", async () => {
-  const actual =
-    await vi.importActual<typeof import("./buffered_process")>(
-      "./buffered_process",
-    );
+  const actual = await vi.importActual<typeof import("./buffered_process")>("./buffered_process");
   return {
     ...actual,
     runBufferedProcess: runBufferedProcessMock,
@@ -86,8 +80,7 @@ describe("simpleSpawn", () => {
 
     await expect(promise).rejects.toMatchObject({
       kind: CaideErrorKind.External,
-      message:
-        "build failed (exit code 2)\n\nSTDOUT:\nstdout tail\n\nSTDERR:\nstderr tail",
+      message: "build failed (exit code 2)\n\nSTDOUT:\nstdout tail\n\nSTDERR:\nstderr tail",
     });
   });
 
@@ -111,9 +104,7 @@ describe("simpleSpawn", () => {
       }),
     ).rejects.toMatchObject({
       kind: CaideErrorKind.External,
-      message: expect.stringContaining(
-        "install failed (timed out after 25 ms)",
-      ),
+      message: expect.stringContaining("install failed (timed out after 25 ms)"),
     });
 
     runBufferedProcessMock.mockResolvedValueOnce({
@@ -140,11 +131,7 @@ describe("simpleSpawn", () => {
 
   it("preserves captured output from spawn failures", async () => {
     runBufferedProcessMock.mockRejectedValue(
-      new BufferedProcessSpawnError(
-        "ENOENT",
-        "bounded stdout",
-        "bounded stderr",
-      ),
+      new BufferedProcessSpawnError("ENOENT", "bounded stdout", "bounded stderr"),
     );
 
     await expect(

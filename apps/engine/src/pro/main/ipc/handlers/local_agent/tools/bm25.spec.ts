@@ -1,15 +1,8 @@
 import { describe, expect, it } from "vitest";
-import {
-  tokenize,
-  buildToolDocument,
-  bm25Ranker,
-  type ToolRanker,
-} from "./bm25";
+import { tokenize, buildToolDocument, bm25Ranker, type ToolRanker } from "./bm25";
 import type { McpToolDef } from "./mcp_type_defs";
 
-function def(
-  overrides: Partial<McpToolDef> & { toolName: string },
-): McpToolDef {
+function def(overrides: Partial<McpToolDef> & { toolName: string }): McpToolDef {
   return {
     jsName: overrides.toolName,
     toolKey: `srv__${overrides.toolName}`,
@@ -32,9 +25,7 @@ describe("tokenize", () => {
   });
 
   it("splits letter/digit boundaries", () => {
-    expect(tokenize("listV2Repos")).toEqual(
-      expect.arrayContaining(["list", "v", "2", "repo"]),
-    );
+    expect(tokenize("listV2Repos")).toEqual(expect.arrayContaining(["list", "v", "2", "repo"]));
   });
 
   it("folds simple plurals but leaves short tokens intact", () => {

@@ -8,10 +8,13 @@ import { assert, it } from "@effect/vitest";
 import { normalizePersistedModelSelection } from "./modelSelectionCompatibility.ts";
 
 it("preserves canonical Pi model selections", () => {
-  assert.deepEqual(normalizePersistedModelSelection({ provider: "openai", model: "openai/gpt-5.5" }), {
-    provider: "openai",
-    model: "openai/gpt-5.5",
-  });
+  assert.deepEqual(
+    normalizePersistedModelSelection({ provider: "openai", model: "openai/gpt-5.5" }),
+    {
+      provider: "openai",
+      model: "openai/gpt-5.5",
+    },
+  );
 });
 
 it("migrates combined Antigravity model and effort labels", () => {

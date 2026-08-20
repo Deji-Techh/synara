@@ -137,9 +137,7 @@ export const ProviderSettingSchema = z.union([
  * Type derived from the ProviderSettingSchema
  */
 export type ProviderSetting = z.infer<typeof ProviderSettingSchema>;
-export type RegularProviderSetting = z.infer<
-  typeof RegularProviderSettingSchema
->;
+export type RegularProviderSetting = z.infer<typeof RegularProviderSettingSchema>;
 export type AzureProviderSetting = z.infer<typeof AzureProviderSettingSchema>;
 export type VertexProviderSetting = z.infer<typeof VertexProviderSettingSchema>;
 
@@ -154,11 +152,7 @@ export type RuntimeMode2 = z.infer<typeof RuntimeMode2Schema>;
  * preview proxy intact; emulator/simulator run the app on a connected mobile
  * device (useful for native-only behavior + device screenshots).
  */
-export const FlutterRunDeviceSchema = z.enum([
-  "web-server",
-  "emulator",
-  "simulator",
-]);
+export const FlutterRunDeviceSchema = z.enum(["web-server", "emulator", "simulator"]);
 export type FlutterRunDevice = z.infer<typeof FlutterRunDeviceSchema>;
 
 /**
@@ -210,15 +204,11 @@ export const SupabaseOrganizationCredentialsSchema = z.object({
   expiresIn: z.number(),
   tokenTimestamp: z.number(),
 });
-export type SupabaseOrganizationCredentials = z.infer<
-  typeof SupabaseOrganizationCredentialsSchema
->;
+export type SupabaseOrganizationCredentials = z.infer<typeof SupabaseOrganizationCredentialsSchema>;
 
 export const SupabaseSchema = z.object({
   // Map keyed by organizationSlug -> organization credentials
-  organizations: z
-    .record(z.string(), SupabaseOrganizationCredentialsSchema)
-    .optional(),
+  organizations: z.record(z.string(), SupabaseOrganizationCredentialsSchema).optional(),
 
   // Legacy fields - kept for backwards compat
   accessToken: SecretSchema.optional(),
@@ -290,16 +280,7 @@ export type ZoomLevel = z.infer<typeof ZoomLevelSchema>;
 export const ZOOM_LEVELS: readonly ZoomLevel[] = ZoomLevelSchema.options;
 export const DEFAULT_ZOOM_LEVEL: ZoomLevel = "100";
 
-export const LanguageSchema = z.enum([
-  "en",
-  "zh-CN",
-  "ja",
-  "ko",
-  "es",
-  "fr",
-  "de",
-  "pt-BR",
-]);
+export const LanguageSchema = z.enum(["en", "zh-CN", "ja", "ko", "es", "fr", "de", "pt-BR"]);
 export type Language = z.infer<typeof LanguageSchema>;
 
 export const DeviceModeSchema = z.enum(["desktop", "tablet", "mobile"]);
@@ -318,11 +299,7 @@ export const AppTargetSchema = z.enum(["mobile", "web"]);
 export type AppTarget = z.infer<typeof AppTargetSchema>;
 export const APP_TARGETS: readonly AppTarget[] = AppTargetSchema.options;
 
-export const SmartContextModeSchema = z.enum([
-  "balanced",
-  "conservative",
-  "deep",
-]);
+export const SmartContextModeSchema = z.enum(["balanced", "conservative", "deep"]);
 export type SmartContextMode = z.infer<typeof SmartContextModeSchema>;
 
 export const AgentToolConsentSchema = z.enum(["ask", "always", "never"]);
@@ -468,9 +445,7 @@ export type UserSettings = z.infer<typeof UserSettingsSchema>;
  * Migrates a stored chat mode to an active chat mode.
  * Converts deprecated "agent" mode to "build".
  */
-export function migrateStoredChatMode(
-  mode: StoredChatMode | undefined,
-): ChatMode | undefined {
+export function migrateStoredChatMode(mode: StoredChatMode | undefined): ChatMode | undefined {
   if (mode === "agent") {
     return "build";
   }
@@ -481,16 +456,13 @@ export function migrateStoredChatMode(
  * Migrates stored settings to active settings.
  * Applies necessary transformations for deprecated values.
  */
-export function migrateStoredSettings(
-  stored: StoredUserSettings,
-): UserSettings {
+export function migrateStoredSettings(stored: StoredUserSettings): UserSettings {
   return {
     ...stored,
     selectedChatMode: migrateStoredChatMode(stored.selectedChatMode),
     defaultChatMode: migrateStoredChatMode(stored.defaultChatMode),
     enableChatEventNotifications:
-      stored.enableChatEventNotifications ??
-      stored.enableChatCompletionNotifications,
+      stored.enableChatEventNotifications ?? stored.enableChatCompletionNotifications,
     enableAppBlueprint: stored.enableAppBlueprint ?? true,
   };
 }
@@ -512,8 +484,7 @@ export function shouldShowPnpmMinimumReleaseAgeWarning(
   settings?: PnpmMinimumReleaseAgeWarningSettings | null,
 ): boolean {
   return Boolean(
-    settings?.enablePnpmMinimumReleaseAgeWarning &&
-    !settings.hidePnpmMinimumReleaseAgeWarning,
+    settings?.enablePnpmMinimumReleaseAgeWarning && !settings.hidePnpmMinimumReleaseAgeWarning,
   );
 }
 
@@ -546,16 +517,12 @@ export function isSupabaseConnected(settings: UserSettings | null): boolean {
   }
   return Boolean(
     settings.supabase?.accessToken ||
-    (settings.supabase?.organizations &&
-      Object.keys(settings.supabase.organizations).length > 0),
+    (settings.supabase?.organizations && Object.keys(settings.supabase.organizations).length > 0),
   );
 }
 
 export function isTurboEditsV2Enabled(settings: UserSettings): boolean {
-  return Boolean(
-    settings.enableProLazyEditsMode === true &&
-    settings.proLazyEditsMode === "v2",
-  );
+  return Boolean(settings.enableProLazyEditsMode === true && settings.proLazyEditsMode === "v2");
 }
 
 // Define interfaces for the props

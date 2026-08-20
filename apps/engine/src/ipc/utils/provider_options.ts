@@ -3,10 +3,7 @@ import type { CodebaseFile } from "../../utils/codebase";
 import type { VersionedFiles } from "./versioned_codebase_context";
 import { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
-import {
-  getAnthropicProviderOptions,
-  getThinkingBudgetEffort,
-} from "./thinking_utils";
+import { getAnthropicProviderOptions, getThinkingBudgetEffort } from "./thinking_utils";
 
 export interface MentionedAppCodebase {
   appName: string;
@@ -95,8 +92,7 @@ export function getProviderOptions({
 
 // Header used to pass the request ID through AI SDK models that don't forward
 // providerOptions into the request body (e.g. OpenAIResponsesLanguageModel).
-export const CAIDE_INTERNAL_REQUEST_ID_HEADER =
-  "x-caide-internal-request-id" as const;
+export const CAIDE_INTERNAL_REQUEST_ID_HEADER = "x-caide-internal-request-id" as const;
 
 export interface GetAiHeadersParams {
   builtinProviderId: string | undefined;
@@ -106,8 +102,6 @@ export interface GetAiHeadersParams {
  * Returns extra AI request headers for the provider (e.g. beta flags).
  * Currently none; reserved for future provider-specific headers.
  */
-export function getAiHeaders(
-  _params: GetAiHeadersParams,
-): Record<string, string> | undefined {
+export function getAiHeaders(_params: GetAiHeadersParams): Record<string, string> | undefined {
   return undefined;
 }

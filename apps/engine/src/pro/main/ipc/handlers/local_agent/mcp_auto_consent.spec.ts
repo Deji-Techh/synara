@@ -13,10 +13,7 @@ vi.mock("@/ipc/utils/get_model_client", () => ({
   getModelClient: mocks.getModelClient,
 }));
 
-import {
-  buildMcpAutoApprove,
-  classifyMcpToolConsent,
-} from "./mcp_auto_consent";
+import { buildMcpAutoApprove, classifyMcpToolConsent } from "./mcp_auto_consent";
 
 function withText(text: string) {
   mocks.getModelClient.mockResolvedValue({ modelClient: { model: {} } });

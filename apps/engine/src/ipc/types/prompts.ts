@@ -10,8 +10,7 @@ const slugSchema = z
   .optional()
   .nullable()
   .refine(
-    (s) =>
-      s === undefined || s === null || s === "" || /^[a-zA-Z0-9-]+$/.test(s),
+    (s) => s === undefined || s === null || s === "" || /^[a-zA-Z0-9-]+$/.test(s),
     "Slug must be letters, numbers, and hyphens only",
   )
   .transform((s) => (s === "" ? undefined : s));
@@ -52,18 +51,14 @@ export const SetAppPromptsParamsDtoSchema = z.object({
   promptIds: z.array(z.number()),
 });
 
-export type SetAppPromptsParamsDto = z.infer<
-  typeof SetAppPromptsParamsDtoSchema
->;
+export type SetAppPromptsParamsDto = z.infer<typeof SetAppPromptsParamsDtoSchema>;
 
 export const SetPromptAppsParamsDtoSchema = z.object({
   promptId: z.number(),
   appIds: z.array(z.number()),
 });
 
-export type SetPromptAppsParamsDto = z.infer<
-  typeof SetPromptAppsParamsDtoSchema
->;
+export type SetPromptAppsParamsDto = z.infer<typeof SetPromptAppsParamsDtoSchema>;
 
 // =============================================================================
 // Prompt Contracts

@@ -5,10 +5,7 @@ import { saveTodos, deleteTodos } from "../todo_persistence";
 
 const todoSchema = z.object({
   id: z.string().describe("Unique identifier for the todo item"),
-  content: z
-    .string()
-    .optional()
-    .describe("The description/content of the todo item"),
+  content: z.string().optional().describe("The description/content of the todo item"),
   status: z
     .enum(["pending", "in_progress", "completed"])
     .optional()
@@ -96,9 +93,7 @@ Multiple complex features provided as list requiring organized task management.
 - Start working on todos by using tool calls in the same tool call batch as the todo write
 - Batch todo updates with other tool calls for better latency and lower costs for the user
 `;
-export const updateTodosTool: ToolDefinition<
-  z.infer<typeof updateTodosSchema>
-> = {
+export const updateTodosTool: ToolDefinition<z.infer<typeof updateTodosSchema>> = {
   name: "update_todos",
   description: DESCRIPTION,
   inputSchema: updateTodosSchema,
@@ -153,8 +148,7 @@ export const updateTodosTool: ToolDefinition<
     ctx.onUpdateTodos(ctx.todos);
 
     // Persist todos to disk so they survive across turns
-    const allCompleted =
-      ctx.todos.length > 0 && ctx.todos.every((t) => t.status === "completed");
+    const allCompleted = ctx.todos.length > 0 && ctx.todos.every((t) => t.status === "completed");
     if (allCompleted || ctx.todos.length === 0) {
       await deleteTodos(ctx.appPath, ctx.chatId);
     } else {

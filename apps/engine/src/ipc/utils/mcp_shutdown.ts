@@ -38,10 +38,7 @@ export function createMcpBeforeQuitHandler({
     if (cleanupFinished) return;
 
     event.preventDefault();
-    cleanupWait ??= settleWithinTimeout(
-      Promise.resolve().then(cleanup),
-      timeoutMs,
-    );
+    cleanupWait ??= settleWithinTimeout(Promise.resolve().then(cleanup), timeoutMs);
     void cleanupWait.then(() => {
       if (cleanupFinished) return;
       cleanupFinished = true;

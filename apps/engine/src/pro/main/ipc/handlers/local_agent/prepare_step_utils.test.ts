@@ -9,10 +9,7 @@ import {
   ensureToolResultOrdering,
   type InjectedMessage,
 } from "@/pro/main/ipc/handlers/local_agent/prepare_step_utils";
-import type {
-  UserMessageContentPart,
-  Todo,
-} from "@/pro/main/ipc/handlers/local_agent/tools/types";
+import type { UserMessageContentPart, Todo } from "@/pro/main/ipc/handlers/local_agent/tools/types";
 import { ImagePart, ModelMessage } from "ai";
 
 function textToolResult(value: string) {
@@ -39,9 +36,7 @@ describe("prepare_step_utils", () => {
       const result = transformContentPart(part);
 
       expect(result.type).toBe("image");
-      expect((result as { type: "image"; image: URL }).image).toBeInstanceOf(
-        URL,
-      );
+      expect((result as { type: "image"; image: URL }).image).toBeInstanceOf(URL);
       expect((result as { type: "image"; image: URL }).image.href).toBe(
         "https://example.com/image.png",
       );
@@ -93,11 +88,7 @@ describe("prepare_step_utils", () => {
       const allInjectedMessages: InjectedMessage[] = [];
       const currentMessageCount = 5;
 
-      processPendingMessages(
-        pendingUserMessages,
-        allInjectedMessages,
-        currentMessageCount,
-      );
+      processPendingMessages(pendingUserMessages, allInjectedMessages, currentMessageCount);
 
       expect(pendingUserMessages).toHaveLength(0);
       expect(allInjectedMessages).toHaveLength(1);
@@ -152,9 +143,7 @@ describe("prepare_step_utils", () => {
         type: "text",
         text: "Check this image:",
       });
-      expect(
-        (allInjectedMessages[0].message.content[1] as ImagePart).type,
-      ).toBe("image");
+      expect((allInjectedMessages[0].message.content[1] as ImagePart).type).toBe("image");
     });
 
     it("does nothing when no pending messages", () => {
@@ -175,9 +164,7 @@ describe("prepare_step_utils", () => {
           content: [{ type: "text", text: "Existing" }],
         },
       };
-      const pendingUserMessages: UserMessageContentPart[][] = [
-        [{ type: "text", text: "New" }],
-      ];
+      const pendingUserMessages: UserMessageContentPart[][] = [[{ type: "text", text: "New" }]];
       const allInjectedMessages: InjectedMessage[] = [existingInjected];
 
       processPendingMessages(pendingUserMessages, allInjectedMessages, 7);
@@ -296,9 +283,7 @@ describe("prepare_step_utils", () => {
       // After injections: [a, at-1, b, c, at-3, d]
       expect(result).toHaveLength(6);
       expect(
-        result.map((m) =>
-          "id" in m ? m.id : (m.content[0] as { text: string }).text,
-        ),
+        result.map((m) => ("id" in m ? m.id : (m.content[0] as { text: string }).text)),
       ).toEqual(["a", "at-1", "b", "c", "at-3", "d"]);
     });
 
@@ -379,20 +364,14 @@ describe("prepare_step_utils", () => {
       const pendingUserMessages: UserMessageContentPart[][] = [];
       const allInjectedMessages: InjectedMessage[] = [];
 
-      const result = prepareStepMessages(
-        options,
-        pendingUserMessages,
-        allInjectedMessages,
-      );
+      const result = prepareStepMessages(options, pendingUserMessages, allInjectedMessages);
 
       expect(result).toBeUndefined();
     });
 
     it("processes pending messages and returns modified options", () => {
       const options = {
-        messages: [
-          { role: "user", content: "Original" },
-        ] satisfies ModelMessage[],
+        messages: [{ role: "user", content: "Original" }] satisfies ModelMessage[],
         temperature: 0.7,
       };
       const pendingUserMessages: UserMessageContentPart[][] = [
@@ -400,11 +379,7 @@ describe("prepare_step_utils", () => {
       ];
       const allInjectedMessages: InjectedMessage[] = [];
 
-      const result = prepareStepMessages(
-        options,
-        pendingUserMessages,
-        allInjectedMessages,
-      );
+      const result = prepareStepMessages(options, pendingUserMessages, allInjectedMessages);
 
       expect(result).toBeDefined();
       expect(result!.messages).toHaveLength(2);
@@ -420,9 +395,7 @@ describe("prepare_step_utils", () => {
 
       // Step 1: Add first pending message
       pendingUserMessages.push([{ type: "text", text: "Screenshot 1" }]);
-      const step1Messages: ModelMessage[] = [
-        { role: "assistant", content: "Let me help" },
-      ];
+      const step1Messages: ModelMessage[] = [{ role: "assistant", content: "Let me help" }];
 
       let result = prepareStepMessages(
         { messages: step1Messages },
@@ -460,16 +433,10 @@ describe("prepare_step_utils", () => {
         model: "gpt-4",
         tools: ["search", "write"],
       };
-      const pendingUserMessages: UserMessageContentPart[][] = [
-        [{ type: "text", text: "test" }],
-      ];
+      const pendingUserMessages: UserMessageContentPart[][] = [[{ type: "text", text: "test" }]];
       const allInjectedMessages: InjectedMessage[] = [];
 
-      const result = prepareStepMessages(
-        options,
-        pendingUserMessages,
-        allInjectedMessages,
-      );
+      const result = prepareStepMessages(options, pendingUserMessages, allInjectedMessages);
 
       expect(result).toBeDefined();
       expect(result!.maxTokens).toBe(1000);
@@ -487,18 +454,12 @@ describe("prepare_step_utils", () => {
         },
       };
       const options = {
-        messages: [
-          { role: "assistant", content: "Response" },
-        ] satisfies ModelMessage[],
+        messages: [{ role: "assistant", content: "Response" }] satisfies ModelMessage[],
       };
       const pendingUserMessages: UserMessageContentPart[][] = [];
       const allInjectedMessages: InjectedMessage[] = [existingInjected];
 
-      const result = prepareStepMessages(
-        options,
-        pendingUserMessages,
-        allInjectedMessages,
-      );
+      const result = prepareStepMessages(options, pendingUserMessages, allInjectedMessages);
 
       expect(result).toBeDefined();
       expect(result!.messages).toHaveLength(2);
@@ -512,9 +473,7 @@ describe("prepare_step_utils", () => {
       const pendingUserMessages: UserMessageContentPart[][] = [];
 
       // Step 1: User sends initial prompt
-      let currentMessages: ModelMessage[] = [
-        { role: "user", content: "Build a todo app" },
-      ];
+      let currentMessages: ModelMessage[] = [{ role: "user", content: "Build a todo app" }];
       let result = prepareStepMessages(
         { messages: currentMessages },
         pendingUserMessages,
@@ -665,11 +624,7 @@ describe("prepare_step_utils", () => {
         },
       ];
 
-      const result = prepareStepMessages(
-        { messages },
-        pendingUserMessages,
-        allInjectedMessages,
-      );
+      const result = prepareStepMessages({ messages }, pendingUserMessages, allInjectedMessages);
 
       // Reasoning is preserved (thinking-mode providers echo it back), so no
       // modifications are needed.
@@ -691,11 +646,7 @@ describe("prepare_step_utils", () => {
         },
       ];
 
-      const result = prepareStepMessages(
-        { messages },
-        pendingUserMessages,
-        allInjectedMessages,
-      );
+      const result = prepareStepMessages({ messages }, pendingUserMessages, allInjectedMessages);
 
       // No filtering needed, so should return undefined (no modifications)
       expect(result).toBeUndefined();
@@ -721,11 +672,7 @@ describe("prepare_step_utils", () => {
         },
       ];
 
-      const result = prepareStepMessages(
-        { messages },
-        pendingUserMessages,
-        allInjectedMessages,
-      );
+      const result = prepareStepMessages({ messages }, pendingUserMessages, allInjectedMessages);
 
       // No filtering needed
       expect(result).toBeUndefined();
@@ -746,11 +693,7 @@ describe("prepare_step_utils", () => {
         },
       ];
 
-      const result = prepareStepMessages(
-        { messages },
-        pendingUserMessages,
-        allInjectedMessages,
-      );
+      const result = prepareStepMessages({ messages }, pendingUserMessages, allInjectedMessages);
 
       // Reasoning is preserved (thinking-mode providers echo it back), so no
       // modifications are needed.
@@ -777,11 +720,7 @@ describe("prepare_step_utils", () => {
         },
       ];
 
-      const result = prepareStepMessages(
-        { messages },
-        pendingUserMessages,
-        allInjectedMessages,
-      );
+      const result = prepareStepMessages({ messages }, pendingUserMessages, allInjectedMessages);
 
       // Should strip itemId
       expect(result).toBeDefined();
@@ -814,20 +753,14 @@ describe("prepare_step_utils", () => {
         },
       ];
 
-      const result = prepareStepMessages(
-        { messages },
-        pendingUserMessages,
-        allInjectedMessages,
-      );
+      const result = prepareStepMessages({ messages }, pendingUserMessages, allInjectedMessages);
 
       // Should strip itemId but preserve reasoningEncryptedContent
       expect(result).toBeDefined();
       const reasoningPart = (result!.messages[1].content as any[])[0];
       expect(reasoningPart.text).toBe("Thinking...");
       expect(reasoningPart.providerOptions.openai.itemId).toBeUndefined();
-      expect(
-        reasoningPart.providerOptions.openai.reasoningEncryptedContent,
-      ).toBe("encrypted-data");
+      expect(reasoningPart.providerOptions.openai.reasoningEncryptedContent).toBe("encrypted-data");
     });
   });
 
@@ -879,9 +812,7 @@ describe("prepare_step_utils", () => {
     });
 
     it("handles a single incomplete todo", () => {
-      const todos: Todo[] = [
-        { id: "1", content: "Last task", status: "pending" },
-      ];
+      const todos: Todo[] = [{ id: "1", content: "Last task", status: "pending" }];
 
       const message = buildTodoReminderMessage(todos);
 
@@ -909,11 +840,7 @@ describe("prepare_step_utils", () => {
         { role: "assistant", content: "I analyzed the screenshot." },
       ];
 
-      const result = prepareStepMessages(
-        { messages },
-        pendingUserMessages,
-        allInjectedMessages,
-      );
+      const result = prepareStepMessages({ messages }, pendingUserMessages, allInjectedMessages);
 
       expect(result).toBeDefined();
       // Should have: user message, injected screenshot, assistant message
@@ -1012,9 +939,7 @@ describe("prepare_step_utils", () => {
       expect(result![1].role).toBe("assistant");
       expect(result![2].role).toBe("tool");
       expect(result![3].role).toBe("user");
-      expect((result![3].content as { text: string }[])[0].text).toBe(
-        "Screenshot",
-      );
+      expect((result![3].content as { text: string }[])[0].text).toBe("Screenshot");
     });
 
     it("handles multiple tool calls in a single assistant message", () => {
@@ -1114,9 +1039,7 @@ describe("prepare_step_utils", () => {
         // BUG: screenshot injected here (between step1 tool_use and tool_result)
         {
           role: "user",
-          content: [
-            { type: "text", text: "Replicate the website from the screenshot" },
-          ],
+          content: [{ type: "text", text: "Replicate the website from the screenshot" }],
         },
         {
           role: "tool",
@@ -1186,19 +1109,10 @@ describe("prepare_step_utils", () => {
 
       expect(result).not.toBeNull();
       // Both user messages should be moved after the tool result
-      expect(result!.map((m) => m.role)).toEqual([
-        "assistant",
-        "tool",
-        "user",
-        "user",
-      ]);
+      expect(result!.map((m) => m.role)).toEqual(["assistant", "tool", "user", "user"]);
       // FIFO order must be preserved — Screenshot 1 before Screenshot 2
-      expect((result![2].content as { text: string }[])[0].text).toBe(
-        "Screenshot 1",
-      );
-      expect((result![3].content as { text: string }[])[0].text).toBe(
-        "Screenshot 2",
-      );
+      expect((result![2].content as { text: string }[])[0].text).toBe("Screenshot 1");
+      expect((result![3].content as { text: string }[])[0].text).toBe("Screenshot 2");
     });
 
     it("handles interleaved user messages across multiple tool results", () => {
@@ -1258,13 +1172,7 @@ describe("prepare_step_utils", () => {
 
       expect(result).not.toBeNull();
       // Both user messages must end up after all tool results
-      expect(result!.map((m) => m.role)).toEqual([
-        "assistant",
-        "tool",
-        "tool",
-        "user",
-        "user",
-      ]);
+      expect(result!.map((m) => m.role)).toEqual(["assistant", "tool", "tool", "user", "user"]);
       // Both injected messages are present after tool results
       const userTexts = result!
         .filter((m) => m.role === "user")
@@ -1397,10 +1305,7 @@ describe("prepare_step_utils", () => {
       // preCompactionBaseCount=1 (just user_msg), postCompactionBaseCount=2 (user + summary)
       const compactionIndexDelta = 2 - 1; // = 1
       for (const injection of allInjectedMessages) {
-        injection.insertAtIndex = Math.max(
-          0,
-          injection.insertAtIndex - compactionIndexDelta,
-        );
+        injection.insertAtIndex = Math.max(0, injection.insertAtIndex - compactionIndexDelta);
       }
       expect(allInjectedMessages[0].insertAtIndex).toBe(3);
 
@@ -1456,10 +1361,7 @@ describe("prepare_step_utils", () => {
       ];
 
       // Re-inject with adjusted index (3)
-      const result = injectMessagesAtPositions(
-        sdkMessages,
-        allInjectedMessages,
-      );
+      const result = injectMessagesAtPositions(sdkMessages, allInjectedMessages);
 
       // Screenshot at index 3 = after step0_tool, before step1_assistant — correct!
       expect(result.map((m) => m.role)).toEqual([
@@ -1534,10 +1436,7 @@ describe("prepare_step_utils", () => {
         },
       ];
 
-      const broken = injectMessagesAtPositions(
-        sdkMessages,
-        allInjectedMessages,
-      );
+      const broken = injectMessagesAtPositions(sdkMessages, allInjectedMessages);
 
       // BUG: screenshot lands between step1 assistant and step1 tool
       expect(broken.map((m) => m.role)).toEqual([

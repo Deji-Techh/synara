@@ -68,9 +68,7 @@ describe("TypeScript utility process exclusion", () => {
     await vi.waitFor(() => expect(children).toHaveLength(1));
     const firstExplorer = children[0];
     firstExplorer.emit("spawn");
-    await vi.waitFor(() =>
-      expect(firstExplorer.postMessage).toHaveBeenCalledOnce(),
-    );
+    await vi.waitFor(() => expect(firstExplorer.postMessage).toHaveBeenCalledOnce());
     const firstRequestId = firstExplorer.postMessage.mock.calls[0][0].requestId;
     firstExplorer.emit("message", {
       requestId: firstRequestId,
@@ -111,11 +109,8 @@ describe("TypeScript utility process exclusion", () => {
     await vi.waitFor(() => expect(children).toHaveLength(3));
     const secondExplorer = children[2];
     secondExplorer.emit("spawn");
-    await vi.waitFor(() =>
-      expect(secondExplorer.postMessage).toHaveBeenCalledOnce(),
-    );
-    const secondRequestId =
-      secondExplorer.postMessage.mock.calls[0][0].requestId;
+    await vi.waitFor(() => expect(secondExplorer.postMessage).toHaveBeenCalledOnce());
+    const secondRequestId = secondExplorer.postMessage.mock.calls[0][0].requestId;
     secondExplorer.emit("message", {
       requestId: secondRequestId,
       success: true,
@@ -145,9 +140,7 @@ describe("TypeScript utility process exclusion", () => {
     await vi.waitFor(() => expect(children).toHaveLength(1));
     const firstExplorer = children[0];
     firstExplorer.emit("spawn");
-    await vi.waitFor(() =>
-      expect(firstExplorer.postMessage).toHaveBeenCalledOnce(),
-    );
+    await vi.waitFor(() => expect(firstExplorer.postMessage).toHaveBeenCalledOnce());
 
     // Install the idle timer under fake timers, then let it begin shutdown
     // without emitting the process exit yet.
@@ -181,8 +174,7 @@ describe("TypeScript utility process exclusion", () => {
     secondExplorer.emit("spawn");
     await vi.advanceTimersByTimeAsync(0);
     expect(secondExplorer.postMessage).toHaveBeenCalledOnce();
-    const secondRequestId =
-      secondExplorer.postMessage.mock.calls[0][0].requestId;
+    const secondRequestId = secondExplorer.postMessage.mock.calls[0][0].requestId;
     secondExplorer.emit("message", {
       requestId: secondRequestId,
       success: true,

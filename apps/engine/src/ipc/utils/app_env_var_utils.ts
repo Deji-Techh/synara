@@ -4,11 +4,7 @@
  */
 
 import { getCaideAppPath } from "@/paths/paths";
-import {
-  REDACTED_ENV_VALUE,
-  type AppEnvVar,
-  type EnvVar,
-} from "@/ipc/types/misc";
+import { REDACTED_ENV_VALUE, type AppEnvVar, type EnvVar } from "@/ipc/types/misc";
 import type { AppFrameworkType } from "@/lib/framework_constants";
 import path from "path";
 import fs from "fs";
@@ -46,9 +42,7 @@ export function resolveRedactedEnvVarUpdates({
   existing: EnvVar[];
   incoming: EnvVar[];
 }): EnvVar[] {
-  const existingByKey = new Map(
-    existing.map((envVar) => [envVar.key, envVar.value]),
-  );
+  const existingByKey = new Map(existing.map((envVar) => [envVar.key, envVar.value]));
   return incoming.map((envVar) => {
     if (envVar.value !== REDACTED_ENV_VALUE) return envVar;
 
@@ -72,10 +66,7 @@ export function getEnvFilePath({ appPath }: { appPath: string }): string {
  * The random, exclusive temporary file prevents partial writes and avoids
  * following a malicious `.env.local` symlink created by generated app code.
  */
-export async function writeEnvFileSecurely(
-  destination: string,
-  contents: string,
-): Promise<void> {
+export async function writeEnvFileSecurely(destination: string, contents: string): Promise<void> {
   let existing: fs.Stats | undefined;
   try {
     existing = await fs.promises.lstat(destination);
@@ -153,9 +144,7 @@ export async function updateDbPushEnvVar({
     const envVars = await readEnvVarsOrEmpty({ appPath });
 
     // Update or add CAIDE_DISABLE_DB_PUSH
-    const existingVar = envVars.find(
-      (envVar) => envVar.key === "CAIDE_DISABLE_DB_PUSH",
-    );
+    const existingVar = envVars.find((envVar) => envVar.key === "CAIDE_DISABLE_DB_PUSH");
     if (existingVar) {
       existingVar.value = disabled ? "true" : "false";
     } else {
@@ -172,9 +161,7 @@ export async function updateDbPushEnvVar({
       changedPaths: [ENV_FILE_NAME],
     });
   } catch (error) {
-    logger.error(
-      `Failed to update DB push environment variable for app ${appPath}: ${error}`,
-    );
+    logger.error(`Failed to update DB push environment variable for app ${appPath}: ${error}`);
     throw error;
   }
 }
@@ -186,23 +173,14 @@ export async function readPostgresUrlFromEnvFile({
 }): Promise<string> {
   const contents = await readEnvFile({ appPath });
   const envVars = parseEnvFile(contents);
-  const postgresUrl = envVars.find(
-    (envVar) => envVar.key === "POSTGRES_URL",
-  )?.value;
+  const postgresUrl = envVars.find((envVar) => envVar.key === "POSTGRES_URL")?.value;
   if (!postgresUrl) {
-    throw new CaideError(
-      "POSTGRES_URL not found in .env.local",
-      CaideErrorKind.NotFound,
-    );
+    throw new CaideError("POSTGRES_URL not found in .env.local", CaideErrorKind.NotFound);
   }
   return postgresUrl;
 }
 
-export async function readEnvFile({
-  appPath,
-}: {
-  appPath: string;
-}): Promise<string> {
+export async function readEnvFile({ appPath }: { appPath: string }): Promise<string> {
   return fs.promises.readFile(getEnvFilePath({ appPath }), "utf8");
 }
 
@@ -221,11 +199,7 @@ export async function readEnvFileIfExists({
   }
 }
 
-export async function readEnvVarsOrEmpty({
-  appPath,
-}: {
-  appPath: string;
-}): Promise<EnvVar[]> {
+export async function readEnvVarsOrEmpty({ appPath }: { appPath: string }): Promise<EnvVar[]> {
   const content = await readEnvFileIfExists({ appPath });
   return content ? parseEnvFile(content) : [];
 }
@@ -288,10 +262,7 @@ export function parseEnvFile(content: string): EnvVar[] {
       envVars.push({
         key,
         value: cleanValue,
-        description:
-          currentDescription.length > 0
-            ? currentDescription.join(" ")
-            : undefined,
+        description: currentDescription.length > 0 ? currentDescription.join(" ") : undefined,
       });
       currentDescription = [];
     }
@@ -361,8 +332,7 @@ export async function updateNeonEnvVars({
     // Auth activation failed or is not available on this branch —
     // remove stale auth env vars so the old branch's values don't linger.
     envVars = envVars.filter(
-      (v) =>
-        v.key !== "NEON_AUTH_BASE_URL" && v.key !== "NEON_AUTH_COOKIE_SECRET",
+      (v) => v.key !== "NEON_AUTH_BASE_URL" && v.key !== "NEON_AUTH_COOKIE_SECRET",
     );
   }
 
@@ -375,19 +345,12 @@ export async function updateNeonEnvVars({
 }
 
 /** Keys that are unambiguously Neon-owned and always safe to remove. */
-const NEON_ONLY_ENV_VAR_KEYS = [
-  "NEON_AUTH_BASE_URL",
-  "NEON_AUTH_COOKIE_SECRET",
-];
+const NEON_ONLY_ENV_VAR_KEYS = ["NEON_AUTH_BASE_URL", "NEON_AUTH_COOKIE_SECRET"];
 
 /** Generic DB keys that should only be removed if their value looks Neon-owned. */
 const GENERIC_DB_ENV_VAR_KEYS = ["DATABASE_URL", "POSTGRES_URL"];
 
-export async function removeNeonEnvVars({
-  appPath,
-}: {
-  appPath: string;
-}): Promise<void> {
+export async function removeNeonEnvVars({ appPath }: { appPath: string }): Promise<void> {
   const existingContent = await readEnvFileIfExists({ appPath });
   if (!existingContent) {
     return;
@@ -397,10 +360,7 @@ export async function removeNeonEnvVars({
 
   const filtered = envVars.filter((envVar) => {
     if (NEON_ONLY_ENV_VAR_KEYS.includes(envVar.key)) return false;
-    if (
-      GENERIC_DB_ENV_VAR_KEYS.includes(envVar.key) &&
-      envVar.value.includes(".neon.tech")
-    ) {
+    if (GENERIC_DB_ENV_VAR_KEYS.includes(envVar.key) && envVar.value.includes(".neon.tech")) {
       return false;
     }
     return true;
@@ -420,9 +380,7 @@ export function serializeEnvFile(envVars: EnvVar[]): string {
     .map(({ key, value, description }) => {
       // Add quotes if value contains spaces or special characters
       const needsQuotes = /[\s#"'=&?]/.test(value);
-      const quotedValue = needsQuotes
-        ? `"${value.replace(/"/g, '\\"')}"`
-        : value;
+      const quotedValue = needsQuotes ? `"${value.replace(/"/g, '\\"')}"` : value;
 
       const line = `${key}=${quotedValue}`;
       if (description) {

@@ -99,4 +99,3 @@ isolation, pagination consistency, malformed/oversized input, CORS preflight,
 security headers, webhook replay, secret rotation, shutdown, dependency
 failure, backup restoration, export authorization, and an integration
 disconnect/reconnect path.
-

@@ -259,10 +259,7 @@ const LegacyModelSelectionEncoded = Schema.Struct({
   options: Schema.optional(Schema.Unknown),
 });
 
-export const ModelSelection = Schema.Union([
-  NewModelSelection,
-  LegacyModelSelectionEncoded,
-]);
+export const ModelSelection = Schema.Union([NewModelSelection, LegacyModelSelectionEncoded]);
 
 export type ModelSelection = typeof NewModelSelection.Type;
 type ModelSelectionEncoded = typeof NewModelSelection.Encoded;
@@ -2616,7 +2613,8 @@ export type OrchestrationGetProjectActivityInput = typeof OrchestrationGetProjec
 export const OrchestrationGetProjectActivityResult = Schema.Struct({
   items: Schema.Array(ProjectActivityItem),
 });
-export type OrchestrationGetProjectActivityResult = typeof OrchestrationGetProjectActivityResult.Type;
+export type OrchestrationGetProjectActivityResult =
+  typeof OrchestrationGetProjectActivityResult.Type;
 
 export const OrchestrationRpcSchemas = {
   getSnapshot: {

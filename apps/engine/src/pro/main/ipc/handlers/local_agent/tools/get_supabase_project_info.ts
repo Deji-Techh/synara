@@ -7,9 +7,7 @@ const getSupabaseProjectInfoSchema = z.object({
   includeDbFunctions: z
     .boolean()
     .optional()
-    .describe(
-      "When true, includes database functions in the response. Defaults to false.",
-    ),
+    .describe("When true, includes database functions in the response. Defaults to false."),
 });
 
 export const getSupabaseProjectInfoTool: ToolDefinition<
@@ -26,15 +24,10 @@ export const getSupabaseProjectInfoTool: ToolDefinition<
 
   execute: async (args, ctx: AgentContext) => {
     if (!ctx.supabaseProjectId) {
-      throw new CaideError(
-        "Supabase is not connected to this app",
-        CaideErrorKind.Precondition,
-      );
+      throw new CaideError("Supabase is not connected to this app", CaideErrorKind.Precondition);
     }
 
-    ctx.onXmlStream(
-      "<caide-supabase-project-info></caide-supabase-project-info>",
-    );
+    ctx.onXmlStream("<caide-supabase-project-info></caide-supabase-project-info>");
 
     const info = await getSupabaseProjectInfo({
       supabaseProjectId: ctx.supabaseProjectId,

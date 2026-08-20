@@ -60,8 +60,7 @@ export function maybeCaptureRetryReplayEvent(
   ) {
     if (
       retryReplayEvents.some(
-        (event) =>
-          event.type === "tool-call" && event.toolCallId === record.toolCallId,
+        (event) => event.type === "tool-call" && event.toolCallId === record.toolCallId,
       )
     ) {
       return;
@@ -71,10 +70,7 @@ export function maybeCaptureRetryReplayEvent(
       type: "tool-call",
       toolCallId: record.toolCallId,
       toolName: record.toolName,
-      input:
-        typeof record.input === "object" && record.input !== null
-          ? record.input
-          : {},
+      input: typeof record.input === "object" && record.input !== null ? record.input : {},
     });
     return;
   }
@@ -86,9 +82,7 @@ export function maybeCaptureRetryReplayEvent(
   ) {
     if (
       retryReplayEvents.some(
-        (event) =>
-          event.type === "tool-result" &&
-          event.toolCallId === record.toolCallId,
+        (event) => event.type === "tool-result" && event.toolCallId === record.toolCallId,
       )
     ) {
       return;
@@ -128,9 +122,7 @@ export function maybeCaptureRetryReplayText(
  * transient stream termination. Only includes completed tool exchanges
  * (tool-call + tool-result pairs).
  */
-export function buildRetryReplayMessages(
-  retryReplayEvents: RetryReplayEvent[],
-): ModelMessage[] {
+export function buildRetryReplayMessages(retryReplayEvents: RetryReplayEvent[]): ModelMessage[] {
   const replayMessages: ModelMessage[] = [];
   const pendingAssistantParts: Array<
     | { type: "text"; text: string }
@@ -155,9 +147,7 @@ export function buildRetryReplayMessages(
   }
 
   const completedToolExchangeIds = new Set(
-    [...toolCallsWithResult].filter((toolCallId) =>
-      toolResultsWithCall.has(toolCallId),
-    ),
+    [...toolCallsWithResult].filter((toolCallId) => toolResultsWithCall.has(toolCallId)),
   );
 
   const flushPendingAssistantMessage = () => {
@@ -202,10 +192,7 @@ export function buildRetryReplayMessages(
     // The Anthropic API requires every tool_use in an assistant message to
     // have its tool_result in the immediately following message.
     const lastReplayMsg = replayMessages[replayMessages.length - 1];
-    if (
-      lastReplayMsg?.role === "tool" &&
-      Array.isArray(lastReplayMsg.content)
-    ) {
+    if (lastReplayMsg?.role === "tool" && Array.isArray(lastReplayMsg.content)) {
       lastReplayMsg.content.push({
         type: "tool-result",
         toolCallId: event.toolCallId,

@@ -1,11 +1,6 @@
 import { z } from "zod";
 import log from "electron-log";
-import {
-  ToolDefinition,
-  AgentContext,
-  escapeXmlAttr,
-  escapeXmlContent,
-} from "./types";
+import { ToolDefinition, AgentContext, escapeXmlAttr, escapeXmlContent } from "./types";
 import { engineFetch } from "./engine_fetch";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
 
@@ -44,10 +39,7 @@ NextJS 14 app router middleware auth
  * Returns the remaining unparsed buffer.
  * Throws an error if an SSE error event is received.
  */
-function parseSSEEvents(
-  buffer: string,
-  onContent: (content: string) => void,
-): string {
+function parseSSEEvents(buffer: string, onContent: (content: string) => void): string {
   const lines = buffer.split("\n");
   // Keep the last potentially incomplete line
   const remaining = lines.pop() ?? "";
@@ -70,12 +62,8 @@ function parseSSEEvents(
 
       // Check for OpenAI-style SSE error: { error: { message: "...", type: "...", code: "..." } }
       if (json.error) {
-        const errorMessage =
-          json.error.message || json.error.type || "Unknown SSE error";
-        throw new CaideError(
-          `Web search SSE error: ${errorMessage}`,
-          CaideErrorKind.External,
-        );
+        const errorMessage = json.error.message || json.error.type || "Unknown SSE error";
+        throw new CaideError(`Web search SSE error: ${errorMessage}`, CaideErrorKind.External);
       }
 
       // OpenAI-style SSE format: { choices: [{ delta: { content: "..." } }] }
@@ -99,10 +87,7 @@ function parseSSEEvents(
 /**
  * Call the web search SSE endpoint and stream results
  */
-async function callWebSearchSSE(
-  query: string,
-  ctx: AgentContext,
-): Promise<string> {
+async function callWebSearchSSE(query: string, ctx: AgentContext): Promise<string> {
   ctx.onXmlStream(`<caide-web-search query="${escapeXmlAttr(query)}">`);
 
   const response = await engineFetch(ctx, "/tools/web-search", {
@@ -115,16 +100,11 @@ async function callWebSearchSSE(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(
-      `Web search failed: ${response.status} ${response.statusText} - ${errorText}`,
-    );
+    throw new Error(`Web search failed: ${response.status} ${response.statusText} - ${errorText}`);
   }
 
   if (!response.body) {
-    throw new CaideError(
-      "Web search response has no body",
-      CaideErrorKind.External,
-    );
+    throw new CaideError("Web search response has no body", CaideErrorKind.External);
   }
 
   const reader = response.body.getReader();
@@ -180,10 +160,7 @@ export const webSearchTool: ToolDefinition<z.infer<typeof webSearchSchema>> = {
     const result = await callWebSearchSSE(args.query, ctx);
 
     if (!result) {
-      throw new CaideError(
-        "Web search returned no results",
-        CaideErrorKind.External,
-      );
+      throw new CaideError("Web search returned no results", CaideErrorKind.External);
     }
 
     // Write final result to UI and DB with caide-web-search wrapper

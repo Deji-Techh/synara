@@ -25,8 +25,7 @@ type RemoteDesktopConfigCacheEntry = {
 };
 
 let remoteDesktopConfigCache: RemoteDesktopConfigCacheEntry | null = null;
-let remoteDesktopConfigFetchPromise: Promise<RemoteDesktopConfig | null> | null =
-  null;
+let remoteDesktopConfigFetchPromise: Promise<RemoteDesktopConfig | null> | null = null;
 
 function getRemoteDesktopConfigUrl() {
   if (process.env.CAIDE_DESKTOP_CONFIG_URL) {
@@ -42,9 +41,7 @@ async function fetchRemoteDesktopConfig(): Promise<RemoteDesktopConfig | null> {
   });
 
   if (!response.ok) {
-    throw new Error(
-      `Desktop config request failed with status ${response.status}`,
-    );
+    throw new Error(`Desktop config request failed with status ${response.status}`);
   }
 
   const json = await response.json();
@@ -52,10 +49,7 @@ async function fetchRemoteDesktopConfig(): Promise<RemoteDesktopConfig | null> {
 }
 
 export async function getRemoteDesktopConfig(): Promise<RemoteDesktopConfig | null> {
-  if (
-    remoteDesktopConfigCache &&
-    remoteDesktopConfigCache.expiresAt > Date.now()
-  ) {
+  if (remoteDesktopConfigCache && remoteDesktopConfigCache.expiresAt > Date.now()) {
     return remoteDesktopConfigCache.config;
   }
 

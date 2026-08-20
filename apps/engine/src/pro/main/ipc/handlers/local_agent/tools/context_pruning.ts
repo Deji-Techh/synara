@@ -5,12 +5,8 @@ import { getModelClient } from "@/ipc/utils/get_model_client";
 import { readSettings } from "@/main/settings";
 
 const summarizeContextSchema = z.object({
-  current_goal: z
-    .string()
-    .describe("A brief description of the current overarching goal."),
-  active_files: z
-    .array(z.string())
-    .describe("The list of files currently relevant to the goal."),
+  current_goal: z.string().describe("A brief description of the current overarching goal."),
+  active_files: z.array(z.string()).describe("The list of files currently relevant to the goal."),
   context_to_compress: z
     .string()
     .describe(
@@ -18,9 +14,7 @@ const summarizeContextSchema = z.object({
     ),
 });
 
-export const summarizeContextTool: ToolDefinition<
-  z.infer<typeof summarizeContextSchema>
-> = {
+export const summarizeContextTool: ToolDefinition<z.infer<typeof summarizeContextSchema>> = {
   name: "summarize_context",
   description: `Use this tool when your context window is getting too large or filled with completed/irrelevant tasks.
 It invokes a fast, inexpensive model to compress your provided context into a dense, token-efficient summary.
@@ -40,10 +34,7 @@ You can then rely on this summary and safely 'forget' the verbose history, preve
     const settings = readSettings();
     // Default to a fast model like Gemini Flash or Claude Haiku if configured, otherwise use the active model
     // In a real system, you'd map this to the cheapest available model. We'll use the configured one for safety.
-    const { modelClient } = await getModelClient(
-      settings.selectedModel,
-      settings,
-    );
+    const { modelClient } = await getModelClient(settings.selectedModel, settings);
     const model = modelClient.model;
 
     const systemPrompt = `You are a Context Compression Agent. 

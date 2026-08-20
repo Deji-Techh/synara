@@ -485,10 +485,7 @@ function readOpenCodeVariantEffort(
   return null;
 }
 
-function resolveOpenCodeDataDirectory(
-  homeDirectory: string,
-  dataDirectoryName = "openai",
-): string {
+function resolveOpenCodeDataDirectory(homeDirectory: string, dataDirectoryName = "openai"): string {
   if (process.platform === "win32") {
     const appDataDirectory =
       trimToNull(process.env.APPDATA) ?? join(homeDirectory, "AppData", "Roaming");

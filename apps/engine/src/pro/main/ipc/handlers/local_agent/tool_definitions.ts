@@ -32,30 +32,15 @@ import { generateImageTool } from "./tools/generate_image";
 import { updateTodosTool } from "./tools/update_todos";
 import { runTypeChecksTool } from "./tools/run_type_checks";
 import { runCommandTool } from "./tools/run_command";
-import {
-  gitStatusTool,
-  gitDiffTool,
-  gitLogTool,
-  gitCommitTool,
-} from "./tools/git_tools";
-import {
-  runTestsTool,
-  runLintTool,
-  captureEvidenceTool,
-} from "./tools/goal_verification";
+import { gitStatusTool, gitDiffTool, gitLogTool, gitCommitTool } from "./tools/git_tools";
+import { runTestsTool, runLintTool, captureEvidenceTool } from "./tools/goal_verification";
 import { captureScreenshotTool } from "./tools/capture_screenshot";
 import { grepTool } from "./tools/grep";
 import { codeSearchTool } from "./tools/code_search";
 import { exploreCodeTool } from "./tools/explore_code";
 import { lspSymbolLookupTool } from "./tools/lsp_symbol_lookup";
-import {
-  spawnBackgroundTaskTool,
-  checkTaskStatusTool,
-} from "./tools/task_manager";
-import {
-  spawnSubagentTool,
-  checkSubagentStatusTool,
-} from "./tools/team_manager";
+import { spawnBackgroundTaskTool, checkTaskStatusTool } from "./tools/task_manager";
+import { spawnSubagentTool, checkSubagentStatusTool } from "./tools/team_manager";
 import { summarizeContextTool } from "./tools/context_pruning";
 import { planningQuestionnaireTool } from "./tools/planning_questionnaire";
 import { writePlanTool } from "./tools/write_plan";
@@ -173,10 +158,7 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
 
 export type AgentToolName = (typeof TOOL_DEFINITIONS)[number]["name"];
 
-function getAgentToolConsentSettings(
-  toolName: AgentToolName,
-  consent: AgentToolConsent,
-) {
+function getAgentToolConsentSettings(toolName: AgentToolName, consent: AgentToolConsent) {
   const settings = readSettings();
   return {
     agentToolConsents: {
@@ -265,17 +247,11 @@ export function getAgentToolConsent(toolName: AgentToolName): AgentToolConsent {
   return getDefaultConsent(toolName);
 }
 
-export function setAgentToolConsent(
-  toolName: AgentToolName,
-  consent: AgentToolConsent,
-): void {
+export function setAgentToolConsent(toolName: AgentToolName, consent: AgentToolConsent): void {
   writeSettings(getAgentToolConsentSettings(toolName, consent));
 }
 
-export function getAllAgentToolConsents(): Record<
-  AgentToolName,
-  AgentToolConsent
-> {
+export function getAllAgentToolConsents(): Record<AgentToolName, AgentToolConsent> {
   const settings = readSettings();
   const stored = settings.agentToolConsents ?? {};
   const result: Record<string, AgentToolConsent> = {};
@@ -383,10 +359,7 @@ async function processArgPlaceholders<T extends Record<string, any>>(
     if (typeof value === "string") {
       let result = value;
       if (supabaseClientCode) {
-        result = result.replace(
-          /\$\$SUPABASE_CLIENT_CODE\$\$/g,
-          supabaseClientCode,
-        );
+        result = result.replace(/\$\$SUPABASE_CLIENT_CODE\$\$/g, supabaseClientCode);
       }
       if (neonClientCode !== undefined) {
         result = result.replace(/\$\$NEON_CLIENT_CODE\$\$/g, neonClientCode);
@@ -412,16 +385,11 @@ async function processArgPlaceholders<T extends Record<string, any>>(
 /**
  * Convert our ToolResult to AI SDK format
  */
-function convertToolResultForAiSdk(
-  result: ToolResult,
-): LanguageModelV3ToolResultOutput {
+function convertToolResultForAiSdk(result: ToolResult): LanguageModelV3ToolResultOutput {
   if (typeof result === "string") {
     return { type: "text", value: result };
   }
-  throw new CaideError(
-    `Unsupported tool result type: ${typeof result}`,
-    CaideErrorKind.Internal,
-  );
+  throw new CaideError(`Unsupported tool result type: ${typeof result}`, CaideErrorKind.Internal);
 }
 
 export interface BuildAgentToolSetOptions {
@@ -471,10 +439,7 @@ const PLAN_MODE_ONLY_TOOLS = new Set(["write_plan", "exit_plan"]);
  * Superset of PLAN_MODE_ONLY_TOOLS plus tools that participate in planning
  * but are also available in normal Agent mode.
  */
-const PLANNING_SPECIFIC_TOOLS = new Set([
-  ...PLAN_MODE_ONLY_TOOLS,
-  "planning_questionnaire",
-]);
+const PLANNING_SPECIFIC_TOOLS = new Set([...PLAN_MODE_ONLY_TOOLS, "planning_questionnaire"]);
 
 /**
  * Kept for compatibility. CAIDE has no subscription-only agent tools.
@@ -497,14 +462,9 @@ const APP_BLUEPRINT_TOOLS = new Set<string>(["write_app_blueprint"]);
  * inside the write_file host capability (see buildWriteFileCapability in
  * execute_sandbox_script.ts).
  */
-const CAPABILITY_GATED_BLUEPRINT_TOOLS = new Set<string>([
-  "execute_sandbox_script",
-]);
+const CAPABILITY_GATED_BLUEPRINT_TOOLS = new Set<string>(["execute_sandbox_script"]);
 
-function toolModifiesState(
-  tool: (typeof TOOL_DEFINITIONS)[number],
-  ctx: AgentContext,
-): boolean {
+function toolModifiesState(tool: (typeof TOOL_DEFINITIONS)[number], ctx: AgentContext): boolean {
   if (typeof tool.modifiesState === "function") {
     return tool.modifiesState(ctx);
   }
@@ -547,10 +507,7 @@ export function shouldIncludeTool(
     return false;
   }
   // Skip app blueprint tools when the feature is disabled.
-  if (
-    options.enableAppBlueprint === false &&
-    APP_BLUEPRINT_TOOLS.has(tool.name)
-  ) {
+  if (options.enableAppBlueprint === false && APP_BLUEPRINT_TOOLS.has(tool.name)) {
     return false;
   }
   // In read-only mode, skip tools that modify state.
@@ -561,8 +518,7 @@ export function shouldIncludeTool(
   if (
     tool.shouldDefer &&
     !options.includeDeferredTools &&
-    (!options.requestDeferredTools ||
-      !options.requestDeferredTools.includes(tool.name))
+    (!options.requestDeferredTools || !options.requestDeferredTools.includes(tool.name))
   ) {
     return false;
   }
@@ -578,10 +534,7 @@ export function shouldIncludeTool(
 /**
  * Build ToolSet for AI SDK from tool definitions
  */
-export function buildAgentToolSet(
-  ctx: AgentContext,
-  options: BuildAgentToolSetOptions = {},
-) {
+export function buildAgentToolSet(ctx: AgentContext, options: BuildAgentToolSetOptions = {}) {
   const toolSet: Record<string, any> = {};
 
   for (const tool of TOOL_DEFINITIONS) {

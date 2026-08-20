@@ -177,9 +177,7 @@ describe("parseMinidumpBuffer", () => {
       ip: 0x10010n,
       ipOffset: 248,
     });
-    expect(parseMinidumpBuffer(dump, "linux", "x64")!.crashReason).toBe(
-      "SIGABRT",
-    );
+    expect(parseMinidumpBuffer(dump, "linux", "x64")!.crashReason).toBe("SIGABRT");
   });
 
   it("decodes a macOS Mach exception code (not a POSIX signal)", () => {
@@ -191,9 +189,7 @@ describe("parseMinidumpBuffer", () => {
       ip: 0x10010n,
       ipOffset: 264,
     });
-    expect(parseMinidumpBuffer(dump, "darwin", "arm64")!.crashReason).toBe(
-      "EXC_BAD_ACCESS",
-    );
+    expect(parseMinidumpBuffer(dump, "darwin", "arm64")!.crashReason).toBe("EXC_BAD_ACCESS");
   });
 
   it("decodes a Windows NTSTATUS code", () => {

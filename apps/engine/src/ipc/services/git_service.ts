@@ -108,15 +108,10 @@ function delay(ms: number): Promise<void> {
  * one-off git operations should keep using `git_utils.ts` directly.
  */
 export class GitService {
-  private async runSerialized<T>(
-    repoPath: string,
-    operation: () => Promise<T>,
-  ): Promise<T> {
+  private async runSerialized<T>(repoPath: string, operation: () => Promise<T>): Promise<T> {
     const repositoryKey = pathModule.resolve(repoPath);
     const previous = repositoryOperationTails.get(repositoryKey);
-    const current = (previous ?? Promise.resolve())
-      .catch(() => undefined)
-      .then(operation);
+    const current = (previous ?? Promise.resolve()).catch(() => undefined).then(operation);
 
     repositoryOperationTails.set(repositoryKey, current);
 
@@ -129,10 +124,7 @@ export class GitService {
     }
   }
 
-  private async runIndexWrite<T>(
-    repoPath: string,
-    operation: () => Promise<T>,
-  ): Promise<T> {
+  private async runIndexWrite<T>(repoPath: string, operation: () => Promise<T>): Promise<T> {
     for (let attempt = 0; ; attempt += 1) {
       try {
         return await operation();
@@ -181,13 +173,7 @@ export class GitService {
    * Stages all changes and commits them. Returns the commit hash.
    * Throws if there is nothing to commit.
    */
-  async stageAllAndCommit({
-    path,
-    message,
-  }: {
-    path: string;
-    message: string;
-  }): Promise<string> {
+  async stageAllAndCommit({ path, message }: { path: string; message: string }): Promise<string> {
     return this.runSerialized(path, async () => {
       await this.runIndexWrite(path, () => gitAddAll({ path }));
       return this.runIndexWrite(path, () => gitCommit({ path, message }));

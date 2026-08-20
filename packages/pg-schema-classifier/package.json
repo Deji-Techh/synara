@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "description": "Conservative PostgreSQL SQL schema mutation classifier.",
+  "keywords": [],
+  "license": "MIT",
+  "author": "",
+  "type": "module",
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "types": "./src/index.ts",
@@ -18,9 +22,5 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "verify": "npm run typecheck && npm test"
   },
-  "keywords": [],
-  "author": "",
-  "license": "MIT",
-  "type": "module",
   "dependencies": {}
 }

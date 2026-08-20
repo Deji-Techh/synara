@@ -6,10 +6,7 @@ import { getPathEnvKey } from "@/ipc/utils/path_env";
 export const MANAGED_TOOLS_DIR = "managed-tools";
 const SANITIZED_PATH_CACHE_TTL_MS = 5_000;
 
-const sanitizedPathCache = new Map<
-  string,
-  { expiresAt: number; sanitizedPath: string }
->();
+const sanitizedPathCache = new Map<string, { expiresAt: number; sanitizedPath: string }>();
 
 export function clearSanitizedPathCache(): void {
   sanitizedPathCache.clear();
@@ -19,19 +16,14 @@ export function getManagedToolsDir(): string {
   return path.join(getUserDataPath(), MANAGED_TOOLS_DIR);
 }
 
-export function prependPathSegment(
-  env: NodeJS.ProcessEnv,
-  segment: string,
-): NodeJS.ProcessEnv {
+export function prependPathSegment(env: NodeJS.ProcessEnv, segment: string): NodeJS.ProcessEnv {
   const pathKey = getPathEnvKey(env);
   const currentPath = env[pathKey] ?? "";
   const matchesSegment = (value: string) =>
     process.platform === "win32"
       ? value.toLowerCase() === segment.toLowerCase()
       : value === segment;
-  const pathSegments = currentPath
-    .split(path.delimiter)
-    .filter((value) => value.length > 0);
+  const pathSegments = currentPath.split(path.delimiter).filter((value) => value.length > 0);
 
   if (pathSegments.length > 0 && matchesSegment(pathSegments[0])) {
     return env;
@@ -39,10 +31,9 @@ export function prependPathSegment(
 
   return {
     ...env,
-    [pathKey]: [
-      segment,
-      ...pathSegments.filter((value) => !matchesSegment(value)),
-    ].join(path.delimiter),
+    [pathKey]: [segment, ...pathSegments.filter((value) => !matchesSegment(value))].join(
+      path.delimiter,
+    ),
   };
 }
 
@@ -76,10 +67,7 @@ function normalizePathSegmentForExistenceCheck(
   return trimmed.replace(/^~(?=$|[/\\])/, process.env.HOME ?? "~");
 }
 
-function getEnvValueCaseInsensitive(
-  env: NodeJS.ProcessEnv,
-  key: string,
-): string {
+function getEnvValueCaseInsensitive(env: NodeJS.ProcessEnv, key: string): string {
   const envKey = Object.keys(env).find(
     (candidate) => candidate.toLowerCase() === key.toLowerCase(),
   );
@@ -105,14 +93,10 @@ function getSanitizedPathCacheKey({
           .join("\0")
       : `HOME=${process.env.HOME ?? ""}`;
 
-  return [process.platform, pathKey, currentPath, referencedEnvValues].join(
-    "\0",
-  );
+  return [process.platform, pathKey, currentPath, referencedEnvValues].join("\0");
 }
 
-export function sanitizePathEnv(
-  env: NodeJS.ProcessEnv = process.env,
-): NodeJS.ProcessEnv {
+export function sanitizePathEnv(env: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
   const pathKey = getPathEnvKey(env);
   const currentPath = env[pathKey];
   if (!currentPath) {

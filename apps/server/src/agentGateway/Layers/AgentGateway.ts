@@ -578,7 +578,6 @@ export const makeAgentGateway = Effect.gen(function* () {
       }).pipe(Effect.catch((error) => Effect.succeed(mcpToolResultError(errorText(error))))),
   };
 
-
   function readGoalArg(args: Record<string, unknown>, key: string): string | null {
     if (!(key in args)) {
       return null;
@@ -631,7 +630,15 @@ export const makeAgentGateway = Effect.gen(function* () {
         required: [],
         additionalProperties: false,
       },
-      annotations: { title: "Set a Caide thread goal", isUserFacing: true, readOnly: false, systemOnly: false, requirePermission: false, alwaysPromptUser: false, mcpRequiredCapabilities: [] },
+      annotations: {
+        title: "Set a Caide thread goal",
+        isUserFacing: true,
+        readOnly: false,
+        systemOnly: false,
+        requirePermission: false,
+        alwaysPromptUser: false,
+        mcpRequiredCapabilities: [],
+      },
     },
     handler: (args, context) =>
       Effect.gen(function* () {

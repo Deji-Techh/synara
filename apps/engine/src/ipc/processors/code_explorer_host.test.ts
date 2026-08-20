@@ -59,33 +59,23 @@ describe("code explorer host telemetry", () => {
     child.emit("spawn");
     await vi.waitFor(() => expect(child.postMessage).toHaveBeenCalledOnce());
 
-    child.emit(
-      "error",
-      "FatalError",
-      "CALL_AND_RETRY_LAST",
-      "sensitive diagnostic report",
-    );
+    child.emit("error", "FatalError", "CALL_AND_RETRY_LAST", "sensitive diagnostic report");
     child.emit("exit", 0);
 
-    await expect(request).rejects.toThrow(
-      "Code explorer host exited with code 0 before replying",
-    );
+    await expect(request).rejects.toThrow("Code explorer host exited with code 0 before replying");
     expect(child.kill).toHaveBeenCalledOnce();
     expect(sendTelemetryEventMock).toHaveBeenCalledOnce();
-    expect(sendTelemetryEventMock).toHaveBeenCalledWith(
-      "code_explorer:host_crash",
-      {
-        error: true,
-        generation: 1,
-        reason: "v8_fatal_error",
-        exit_code: 0,
-        pending_request_count: 1,
-        had_active_request: true,
-        crash_loop_guard_triggered: false,
-        fatal_error_type: "FatalError",
-        fatal_error_location: "CALL_AND_RETRY_LAST",
-      },
-    );
+    expect(sendTelemetryEventMock).toHaveBeenCalledWith("code_explorer:host_crash", {
+      error: true,
+      generation: 1,
+      reason: "v8_fatal_error",
+      exit_code: 0,
+      pending_request_count: 1,
+      had_active_request: true,
+      crash_loop_guard_triggered: false,
+      fatal_error_type: "FatalError",
+      fatal_error_location: "CALL_AND_RETRY_LAST",
+    });
     expect(JSON.stringify(sendTelemetryEventMock.mock.calls)).not.toContain(
       "sensitive diagnostic report",
     );

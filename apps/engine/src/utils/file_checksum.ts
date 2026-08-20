@@ -21,9 +21,6 @@ export async function calculateFileChecksum(filePath: string): Promise<string> {
     },
   });
 
-  await pipeline(
-    createReadStream(filePath, { highWaterMark: CHECKSUM_CHUNK_BYTES }),
-    hashSink,
-  );
+  await pipeline(createReadStream(filePath, { highWaterMark: CHECKSUM_CHUNK_BYTES }), hashSink);
   return hash.digest("hex");
 }

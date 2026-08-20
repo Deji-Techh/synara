@@ -51,12 +51,8 @@ describe("codeSearchTool", () => {
   let mockContext: AgentContext;
 
   beforeEach(async () => {
-    testDir = await fs.promises.mkdtemp(
-      path.join(os.tmpdir(), "code-search-test-"),
-    );
-    otherAppDir = await fs.promises.mkdtemp(
-      path.join(os.tmpdir(), "code-search-other-"),
-    );
+    testDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "code-search-test-"));
+    otherAppDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "code-search-other-"));
 
     await fs.promises.writeFile(
       path.join(testDir, "current.ts"),
@@ -144,9 +140,7 @@ describe("codeSearchTool", () => {
       mocks.readSettings.mockReturnValue({ enableCodeExplorer: false });
       mocks.isCodeExplorerReady.mockReturnValue(false);
 
-      expect(
-        codeSearchTool.isEnabled?.({ ...mockContext, isCaidePro: false }),
-      ).toBe(false);
+      expect(codeSearchTool.isEnabled?.({ ...mockContext, isCaidePro: false })).toBe(false);
     });
   });
 
@@ -167,10 +161,7 @@ describe("codeSearchTool", () => {
 
   describe("buildXml", () => {
     it("includes app_name attribute while streaming when provided", () => {
-      const xml = codeSearchTool.buildXml?.(
-        { query: "foo", app_name: "other-app" },
-        false,
-      );
+      const xml = codeSearchTool.buildXml?.({ query: "foo", app_name: "other-app" }, false);
       expect(xml).toContain('app_name="other-app"');
       expect(xml).toContain('query="foo"');
     });
@@ -181,10 +172,7 @@ describe("codeSearchTool", () => {
     });
 
     it("returns undefined when complete (execute handles final XML)", () => {
-      const xml = codeSearchTool.buildXml?.(
-        { query: "foo", app_name: "other-app" },
-        true,
-      );
+      const xml = codeSearchTool.buildXml?.({ query: "foo", app_name: "other-app" }, true);
       expect(xml).toBeUndefined();
     });
   });
@@ -194,18 +182,13 @@ describe("codeSearchTool", () => {
       mockContext.referencedApps.set("other-app", otherAppDir);
       mockEngineResponse(["other.ts"]);
 
-      await codeSearchTool.execute(
-        { query: "bar", app_name: "other-app" },
-        mockContext,
-      );
+      await codeSearchTool.execute({ query: "bar", app_name: "other-app" }, mockContext);
 
       expect(engineFetchMock).toHaveBeenCalledTimes(1);
       const [, , opts] = engineFetchMock.mock.calls[0];
       const body = JSON.parse(opts.body);
       // The referenced app's file should be the one searched — not the current app's file.
-      const searchedPaths = body.filesContext.map(
-        (f: { path: string }) => f.path,
-      );
+      const searchedPaths = body.filesContext.map((f: { path: string }) => f.path);
       expect(searchedPaths).toContain("other.ts");
       expect(searchedPaths).not.toContain("current.ts");
     });
@@ -213,10 +196,7 @@ describe("codeSearchTool", () => {
     it("throws a clear error when app_name is not in the allow-list", async () => {
       mockContext.referencedApps.set("other-app", otherAppDir);
       await expect(
-        codeSearchTool.execute(
-          { query: "bar", app_name: "does-not-exist" },
-          mockContext,
-        ),
+        codeSearchTool.execute({ query: "bar", app_name: "does-not-exist" }, mockContext),
       ).rejects.toThrow(/Unknown app_name 'does-not-exist'/);
       expect(engineFetchMock).not.toHaveBeenCalled();
     });
@@ -225,10 +205,7 @@ describe("codeSearchTool", () => {
       mockContext.referencedApps.set("other-app", otherAppDir);
       mockEngineResponse(["other.ts"]);
 
-      await codeSearchTool.execute(
-        { query: "bar", app_name: "other-app" },
-        mockContext,
-      );
+      await codeSearchTool.execute({ query: "bar", app_name: "other-app" }, mockContext);
 
       const xmlCall = (mockContext.onXmlComplete as any).mock.calls[0]?.[0];
       expect(xmlCall).toContain('app_name="other-app"');

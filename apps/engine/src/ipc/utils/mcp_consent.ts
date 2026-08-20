@@ -16,10 +16,7 @@ interface PendingMcpConsent {
 
 const pendingConsentResolvers = new Map<string, PendingMcpConsent>();
 
-export function waitForConsent(
-  requestId: string,
-  chatId: number,
-): Promise<ConsentDecision> {
+export function waitForConsent(requestId: string, chatId: number): Promise<ConsentDecision> {
   return new Promise((resolve) => {
     pendingConsentResolvers.set(requestId, { chatId, resolve });
   });
@@ -45,19 +42,11 @@ export function clearPendingMcpConsentsForChat(chatId: number): void {
   }
 }
 
-export async function getStoredConsent(
-  serverId: number,
-  toolName: string,
-): Promise<Consent> {
+export async function getStoredConsent(serverId: number, toolName: string): Promise<Consent> {
   const rows = await db
     .select()
     .from(mcpToolConsents)
-    .where(
-      and(
-        eq(mcpToolConsents.serverId, serverId),
-        eq(mcpToolConsents.toolName, toolName),
-      ),
-    );
+    .where(and(eq(mcpToolConsents.serverId, serverId), eq(mcpToolConsents.toolName, toolName)));
   if (rows.length === 0) return "ask";
   return (rows[0].consent as Consent) ?? "ask";
 }
@@ -70,22 +59,12 @@ export async function setStoredConsent(
   const rows = await db
     .select()
     .from(mcpToolConsents)
-    .where(
-      and(
-        eq(mcpToolConsents.serverId, serverId),
-        eq(mcpToolConsents.toolName, toolName),
-      ),
-    );
+    .where(and(eq(mcpToolConsents.serverId, serverId), eq(mcpToolConsents.toolName, toolName)));
   if (rows.length > 0) {
     await db
       .update(mcpToolConsents)
       .set({ consent })
-      .where(
-        and(
-          eq(mcpToolConsents.serverId, serverId),
-          eq(mcpToolConsents.toolName, toolName),
-        ),
-      );
+      .where(and(eq(mcpToolConsents.serverId, serverId), eq(mcpToolConsents.toolName, toolName)));
   } else {
     await db.insert(mcpToolConsents).values({ serverId, toolName, consent });
   }
@@ -131,9 +110,7 @@ export async function requireMcpToolConsent(
   const send = (channel: string, payload: Record<string, unknown>) =>
     safeSend(event.sender, channel, payload);
 
-  const finalize = async (
-    response: ConsentDecision,
-  ): Promise<McpConsentResult> => {
+  const finalize = async (response: ConsentDecision): Promise<McpConsentResult> => {
     if (response === "accept-always") {
       await setStoredConsent(params.serverId, params.toolName, "always");
       return { approved: true };
@@ -157,9 +134,10 @@ export async function requireMcpToolConsent(
     ...serializableParams,
     classifierPending: true,
   });
-  const humanPromise = waitForConsent(requestId, params.chatId).then(
-    (decision) => ({ source: "human" as const, decision }),
-  );
+  const humanPromise = waitForConsent(requestId, params.chatId).then((decision) => ({
+    source: "human" as const,
+    decision,
+  }));
   // Fail closed if the classifier rejects: fall back to asking the user so the
   // race always settles and the prompt never sticks on the spinner.
   const classifierPromise = autoApprove()

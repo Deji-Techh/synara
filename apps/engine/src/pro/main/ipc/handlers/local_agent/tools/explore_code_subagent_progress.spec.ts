@@ -59,12 +59,8 @@ describe("formatExploreProgressLog", () => {
     const log = formatExploreProgressLog(observations);
 
     expect(log).toContain("Exploring...");
-    expect(log).toContain(
-      '1. explore_code "create booking flow" → 1 candidate',
-    );
-    expect(log).toContain(
-      '2. grep "handleSubmit" in src/**/*.ts → 2 candidates',
-    );
+    expect(log).toContain('1. explore_code "create booking flow" → 1 candidate');
+    expect(log).toContain('2. grep "handleSubmit" in src/**/*.ts → 2 candidates');
     expect(log).toContain("3. read_file src/App.tsx:10-40 → 0 candidates");
   });
 

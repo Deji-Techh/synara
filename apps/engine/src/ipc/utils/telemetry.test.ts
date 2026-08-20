@@ -6,9 +6,7 @@ describe("shouldFilterTelemetryException", () => {
   it("filters the known Supabase auth noise message", () => {
     expect(
       shouldFilterTelemetryException(
-        new Error(
-          "Supabase access token not found. Please authenticate first.",
-        ),
+        new Error("Supabase access token not found. Please authenticate first."),
       ),
     ).toBe(true);
   });
@@ -45,32 +43,20 @@ describe("shouldFilterTelemetryException", () => {
 
   it("filters CaideError kinds that are non-actionable for telemetry", () => {
     expect(
-      shouldFilterTelemetryException(
-        new CaideError("bad input", CaideErrorKind.Validation),
-      ),
+      shouldFilterTelemetryException(new CaideError("bad input", CaideErrorKind.Validation)),
     ).toBe(true);
-    expect(
-      shouldFilterTelemetryException(
-        new CaideError("missing", CaideErrorKind.NotFound),
-      ),
-    ).toBe(true);
+    expect(shouldFilterTelemetryException(new CaideError("missing", CaideErrorKind.NotFound))).toBe(
+      true,
+    );
   });
 
   it("does not filter CaideError Internal, External, or Unknown", () => {
+    expect(shouldFilterTelemetryException(new CaideError("bug", CaideErrorKind.Internal))).toBe(
+      false,
+    );
     expect(
-      shouldFilterTelemetryException(
-        new CaideError("bug", CaideErrorKind.Internal),
-      ),
+      shouldFilterTelemetryException(new CaideError("upstream", CaideErrorKind.External)),
     ).toBe(false);
-    expect(
-      shouldFilterTelemetryException(
-        new CaideError("upstream", CaideErrorKind.External),
-      ),
-    ).toBe(false);
-    expect(
-      shouldFilterTelemetryException(
-        new CaideError("?", CaideErrorKind.Unknown),
-      ),
-    ).toBe(false);
+    expect(shouldFilterTelemetryException(new CaideError("?", CaideErrorKind.Unknown))).toBe(false);
   });
 });

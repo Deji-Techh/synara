@@ -17,12 +17,7 @@
 import { ipcMain, type WebContents } from "electron";
 import log from "electron-log";
 import { on } from "../utils/event_bus";
-import {
-  claimRun,
-  heartbeatRun,
-  listRunnableRuns,
-  setRunWaiting,
-} from "./goal_store";
+import { claimRun, heartbeatRun, listRunnableRuns, setRunWaiting } from "./goal_store";
 import { handleCompletedRun } from "./goal_scheduler";
 import { chatContracts, chatStreamContract } from "@/ipc/types/chat";
 import type { GoalRun, GoalRunRequested } from "@/ipc/types/goal";
@@ -53,15 +48,9 @@ function busSender(): WebContents {
   } as unknown as WebContents;
 }
 
-function trackConsentRequest(payload: {
-  requestId?: string;
-  chatId?: number;
-}): void {
+function trackConsentRequest(payload: { requestId?: string; chatId?: number }): void {
   if (payload.chatId === undefined) return;
-  pendingConsentCounts.set(
-    payload.chatId,
-    (pendingConsentCounts.get(payload.chatId) ?? 0) + 1,
-  );
+  pendingConsentCounts.set(payload.chatId, (pendingConsentCounts.get(payload.chatId) ?? 0) + 1);
   if (payload.requestId) {
     consentChatByRequestId.set(payload.requestId, payload.chatId);
   }
@@ -134,9 +123,7 @@ function driveStream(chatId: number): Promise<{
       settle({
         success: !cancelled && !streamError,
         pausedByStepLimit: responseEnd?.pausePromptQueue === true,
-        error:
-          streamError ??
-          (cancelled ? "Goal run was cancelled." : undefined),
+        error: streamError ?? (cancelled ? "Goal run was cancelled." : undefined),
       });
     });
 
@@ -171,10 +158,7 @@ async function cancelActiveStream(chatId: number): Promise<void> {
   const cancelHandler = ipcMain._handlers.get(chatContracts.cancelStream.channel);
   if (!cancelHandler) return;
   try {
-    await cancelHandler(
-      { sender: busSender(), processId: process.pid, frameId: 0 },
-      chatId,
-    );
+    await cancelHandler({ sender: busSender(), processId: process.pid, frameId: 0 }, chatId);
   } catch (error) {
     logger.warn(`cancel stream for chat ${chatId} failed:`, error);
   }

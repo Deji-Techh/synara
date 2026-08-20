@@ -57,10 +57,7 @@ async function resolveMentionedApps(
   return dedupedApps;
 }
 
-async function resolveMentionedAppsFromPrompt(
-  prompt: string,
-  excludeCurrentAppId?: number,
-) {
+async function resolveMentionedAppsFromPrompt(prompt: string, excludeCurrentAppId?: number) {
   if (!prompt.includes("@app:")) {
     return [];
   }
@@ -109,10 +106,7 @@ export async function extractMentionedAppsReferencesFromPrompt(
   prompt: string,
   excludeCurrentAppId?: number,
 ): Promise<MentionedAppReference[]> {
-  const dedupedApps = await resolveMentionedAppsFromPrompt(
-    prompt,
-    excludeCurrentAppId,
-  );
+  const dedupedApps = await resolveMentionedAppsFromPrompt(prompt, excludeCurrentAppId);
   return dedupedApps.map((app) => ({
     appName: app.name,
     appPath: getCaideAppPath(app.path),
@@ -123,10 +117,7 @@ export async function extractMentionedAppsCodebasesFromPrompt(
   prompt: string,
   excludeCurrentAppId?: number,
 ): Promise<MentionedAppCodebaseEntry[]> {
-  const dedupedApps = await resolveMentionedAppsFromPrompt(
-    prompt,
-    excludeCurrentAppId,
-  );
+  const dedupedApps = await resolveMentionedAppsFromPrompt(prompt, excludeCurrentAppId);
 
   return extractCodebasesForApps(dedupedApps);
 }

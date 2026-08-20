@@ -3,16 +3,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import { spawn } from "node:child_process";
-import {
-  buildTool,
-  type AgentContext,
-  escapeXmlAttr,
-  escapeXmlContent,
-} from "./types";
-import {
-  PersistedGoalStateSchema,
-  PersistedGoalEvidenceSchema,
-} from "@/shared/goal_state";
+import { buildTool, type AgentContext, escapeXmlAttr, escapeXmlContent } from "./types";
+import { PersistedGoalStateSchema, PersistedGoalEvidenceSchema } from "@/shared/goal_state";
 import { getCurrentCommitHash } from "@/ipc/utils/git_utils";
 import { getCaideAppPath } from "@/paths/paths";
 import { isFlutterApp } from "@/ipc/utils/flutter_utils";
@@ -82,16 +74,11 @@ async function detectTestCommand(appPath: string): Promise<string> {
     return "flutter test";
   }
   try {
-    const pkgJson = JSON.parse(
-      await fs.readFile(path.join(appPath, "package.json"), "utf8"),
-    );
+    const pkgJson = JSON.parse(await fs.readFile(path.join(appPath, "package.json"), "utf8"));
     const scripts: Record<string, string> = pkgJson.scripts ?? {};
 
     // Prefer explicit 'test' script if defined and non-trivial
-    if (
-      scripts.test &&
-      scripts.test !== 'echo "Error: no test specified" && exit 1'
-    ) {
+    if (scripts.test && scripts.test !== 'echo "Error: no test specified" && exit 1') {
       return "npm run test";
     }
     // Look for common test scripts
@@ -119,9 +106,7 @@ async function detectLintCommand(appPath: string): Promise<string> {
     return "flutter analyze";
   }
   try {
-    const pkgJson = JSON.parse(
-      await fs.readFile(path.join(appPath, "package.json"), "utf8"),
-    );
+    const pkgJson = JSON.parse(await fs.readFile(path.join(appPath, "package.json"), "utf8"));
     const scripts: Record<string, string> = pkgJson.scripts ?? {};
     const deps = { ...pkgJson.dependencies, ...pkgJson.devDependencies };
 
@@ -184,8 +169,7 @@ After running, use capture_evidence to record the result in the active Goal.`,
       : `Run test suite${args.test_pattern ? ` (pattern: ${args.test_pattern})` : ""}`,
 
   execute: async (args, ctx: AgentContext) => {
-    let command =
-      args.command_override ?? (await detectTestCommand(ctx.appPath));
+    let command = args.command_override ?? (await detectTestCommand(ctx.appPath));
     if (args.test_pattern) {
       command = `${command} ${args.test_pattern}`;
     }
@@ -204,9 +188,7 @@ After running, use capture_evidence to record the result in the active Goal.`,
     if (timedOut) {
       parts.push(`[TIMED OUT after ${args.timeout_seconds ?? 120}s]`);
     } else {
-      parts.push(
-        `Exit code: ${exitCode} — Tests ${exitCode === 0 ? "PASSED ✓" : "FAILED ✗"}`,
-      );
+      parts.push(`Exit code: ${exitCode} — Tests ${exitCode === 0 ? "PASSED ✓" : "FAILED ✗"}`);
     }
     if (stdout) parts.push(`OUTPUT:\n${truncateOutput(stdout)}`);
     if (stderr) parts.push(`STDERR:\n${truncateOutput(stderr)}`);
@@ -234,10 +216,7 @@ const runLintSchema = z.object({
     .optional()
     .default(60)
     .describe("Max seconds to wait (default 60)"),
-  command_override: z
-    .string()
-    .optional()
-    .describe("Override the auto-detected lint command"),
+  command_override: z.string().optional().describe("Override the auto-detected lint command"),
 });
 
 export const runLintTool = buildTool({
@@ -254,8 +233,7 @@ Use after making code changes to ensure code quality.`,
     args.command_override ? `$ ${args.command_override}` : "Run linter",
 
   execute: async (args, ctx: AgentContext) => {
-    const command =
-      args.command_override ?? (await detectLintCommand(ctx.appPath));
+    const command = args.command_override ?? (await detectLintCommand(ctx.appPath));
 
     ctx.onXmlStream(
       `<caide-status title="Running lint: ${escapeXmlAttr(command)}"></caide-status>`,
@@ -271,9 +249,7 @@ Use after making code changes to ensure code quality.`,
     if (timedOut) {
       parts.push(`[TIMED OUT after ${args.timeout_seconds ?? 60}s]`);
     } else {
-      parts.push(
-        `Exit code: ${exitCode} — Lint ${exitCode === 0 ? "PASSED ✓" : "FAILED ✗"}`,
-      );
+      parts.push(`Exit code: ${exitCode} — Lint ${exitCode === 0 ? "PASSED ✓" : "FAILED ✗"}`);
     }
     if (stdout) parts.push(`OUTPUT:\n${truncateOutput(stdout)}`);
     if (stderr) parts.push(`STDERR:\n${truncateOutput(stderr)}`);
@@ -294,10 +270,7 @@ Use after making code changes to ensure code quality.`,
 // ============================================================================
 
 const captureEvidenceSchema = z.object({
-  goalId: z
-    .string()
-    .min(1)
-    .describe("The ID of the active Goal to record evidence for"),
+  goalId: z.string().min(1).describe("The ID of the active Goal to record evidence for"),
   taskId: z
     .string()
     .nullable()
@@ -309,18 +282,14 @@ const captureEvidenceSchema = z.object({
   label: z
     .string()
     .min(1)
-    .describe(
-      "Human-readable description of the evidence, e.g. 'vitest: 47/47 tests passed'",
-    ),
+    .describe("Human-readable description of the evidence, e.g. 'vitest: 47/47 tests passed'"),
   reference: z
     .string()
     .min(1)
     .describe(
       "The command run or artifact path, e.g. 'npm run test' or '.caide/evidence/screenshot.png'",
     ),
-  passed: z
-    .boolean()
-    .describe("Whether this evidence indicates the check passed"),
+  passed: z.boolean().describe("Whether this evidence indicates the check passed"),
 });
 
 export const captureEvidenceTool = buildTool({
@@ -341,13 +310,7 @@ Always capture_evidence after run_tests, run_lint, or run_type_checks when worki
 
   execute: async (args, ctx: AgentContext) => {
     const appPath = getCaideAppPath(ctx.appPath);
-    const stateFile = path.join(
-      appPath,
-      ".caide",
-      "goals",
-      args.goalId,
-      "state.json",
-    );
+    const stateFile = path.join(appPath, ".caide", "goals", args.goalId, "state.json");
 
     let rawState: unknown;
     try {

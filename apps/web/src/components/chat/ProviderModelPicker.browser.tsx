@@ -300,10 +300,7 @@ describe("ProviderModelPicker", () => {
       await page.getByRole("button").click();
       await page.getByRole("menuitemradio", { name: "Claude Sonnet 4.6" }).click();
 
-      expect(mounted.onProviderModelChange).toHaveBeenCalledWith(
-        "anthropic",
-        "claude-sonnet-4-6",
-      );
+      expect(mounted.onProviderModelChange).toHaveBeenCalledWith("anthropic", "claude-sonnet-4-6");
     } finally {
       await mounted.cleanup();
     }

@@ -2,13 +2,17 @@ import { stripFrontmatter } from "./skill_frontmatter";
 import type { AppFrameworkType } from "@/lib/framework_constants";
 import { rawAsset } from "@/raw-assets";
 const onboardingWelcomeSkill = rawAsset("src/prompts/skills/onboarding-welcome/SKILL.md");
-const welcomeScreensAudit = rawAsset("src/prompts/skills/onboarding-welcome/references/top-welcome-screens.md");
+const welcomeScreensAudit = rawAsset(
+  "src/prompts/skills/onboarding-welcome/references/top-welcome-screens.md",
+);
 const motionInteractionSkill = rawAsset("src/prompts/skills/motion-interaction/SKILL.md");
 const productFlowSkill = rawAsset("src/prompts/skills/product-flow/SKILL.md");
 const backendProductionSkill = rawAsset("src/prompts/skills/backend-production/SKILL.md");
 const uiUxCoreAudit = rawAsset("src/prompts/skills/ui-ux-mastery/references/quality-rubric.md");
 const accessibilityAudit = rawAsset("src/prompts/skills/ui-ux-mastery/references/accessibility.md");
-const platformPatternsAudit = rawAsset("src/prompts/skills/ui-ux-mastery/references/platform-patterns.md");
+const platformPatternsAudit = rawAsset(
+  "src/prompts/skills/ui-ux-mastery/references/platform-patterns.md",
+);
 const antiSlopAudit = rawAsset("src/prompts/skills/ui-ux-mastery/references/anti-slop.md");
 
 /**
@@ -167,12 +171,8 @@ export const DEFAULT_CHAIN_PASSES = 9;
 export const FREE_MODEL_CHAIN_PASSES = 5;
 
 /** Deterministic ordered chain — never keyword-gated by the user's request. */
-export function buildCheckpointChain(
-  config: CheckpointChainConfig,
-): CheckpointPass[] {
-  const maxPasses = config.freeModelMode
-    ? FREE_MODEL_CHAIN_PASSES
-    : DEFAULT_CHAIN_PASSES;
+export function buildCheckpointChain(config: CheckpointChainConfig): CheckpointPass[] {
+  const maxPasses = config.freeModelMode ? FREE_MODEL_CHAIN_PASSES : DEFAULT_CHAIN_PASSES;
   const bodies: Record<CheckpointPassId, string> =
     config.frameworkType === "flutter" ? FLUTTER_PASS_BODIES : PASS_BODIES;
 
@@ -207,9 +207,7 @@ export function buildCheckpointChain(
 
   // Conditional skills lead, then the always-on core. Cap from the FRONT so
   // the core tail (anti-ai-slop last) is never trimmed.
-  const passIds = config.freeModelMode
-    ? corePassIds
-    : [...conditionalPassIds, ...corePassIds];
+  const passIds = config.freeModelMode ? corePassIds : [...conditionalPassIds, ...corePassIds];
   const trimmed = passIds.slice(Math.max(0, passIds.length - maxPasses));
   return trimmed.map((id) => ({ id, body: bodies[id] }));
 }

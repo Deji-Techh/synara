@@ -20,12 +20,8 @@ export const logger = log.scope("neon_utils");
 
 type AppRow = typeof apps.$inferSelect;
 
-export function combineWarnings(
-  ...warnings: Array<string | undefined>
-): string | undefined {
-  const filteredWarnings = warnings.filter((warning): warning is string =>
-    Boolean(warning),
-  );
+export function combineWarnings(...warnings: Array<string | undefined>): string | undefined {
+  const filteredWarnings = warnings.filter((warning): warning is string => Boolean(warning));
 
   return filteredWarnings.length > 0 ? filteredWarnings.join(" ") : undefined;
 }
@@ -51,22 +47,15 @@ export async function getAppWithNeonBranch(appId: number): Promise<{
   const app = await db.select().from(apps).where(eq(apps.id, appId)).limit(1);
 
   if (app.length === 0) {
-    throw new CaideError(
-      `App with ID ${appId} not found`,
-      CaideErrorKind.NotFound,
-    );
+    throw new CaideError(`App with ID ${appId} not found`, CaideErrorKind.NotFound);
   }
 
   const appData = app[0];
   if (!appData.neonProjectId) {
-    throw new CaideError(
-      `No Neon project found for app ${appId}`,
-      CaideErrorKind.Precondition,
-    );
+    throw new CaideError(`No Neon project found for app ${appId}`, CaideErrorKind.Precondition);
   }
 
-  const branchId =
-    appData.neonActiveBranchId ?? appData.neonDevelopmentBranchId;
+  const branchId = appData.neonActiveBranchId ?? appData.neonDevelopmentBranchId;
   if (!branchId) {
     throw new CaideError(
       `No active Neon branch found for app ${appId}`,
@@ -101,13 +90,9 @@ export async function ensureNeonAuth({
 
   // Enable Neon Auth on this branch
   try {
-    const createResponse = await neonClient.createNeonAuth(
-      projectId,
-      branchId,
-      {
-        auth_provider: NeonAuthSupportedAuthProvider.BetterAuth,
-      },
-    );
+    const createResponse = await neonClient.createNeonAuth(projectId, branchId, {
+      auth_provider: NeonAuthSupportedAuthProvider.BetterAuth,
+    });
     return createResponse.data.base_url;
   } catch (createError: any) {
     // 409 means the neon_auth schema already exists (inherited from parent branch).
@@ -118,8 +103,7 @@ export async function ensureNeonAuth({
         return retryResponse.data.base_url;
       } catch (retryError: any) {
         // Auth schema exists but isn't formally enabled — log warning and return undefined
-        const message =
-          retryError instanceof Error ? retryError.message : String(retryError);
+        const message = retryError instanceof Error ? retryError.message : String(retryError);
         logger.warn(
           `Neon Auth schema conflict (409) on branch ${branchId}, and retry fetch also failed: ${message}`,
         );
@@ -183,9 +167,7 @@ export async function syncActiveNeonAuthCookieSecretFromEnv({
   if (!isBranchActive(appData, branchType)) return undefined;
 
   const envVars = await readEnvVarsOrEmpty({ appPath: appData.path });
-  const secret = envVars.find(
-    (v) => v.key === "NEON_AUTH_COOKIE_SECRET",
-  )?.value;
+  const secret = envVars.find((v) => v.key === "NEON_AUTH_COOKIE_SECRET")?.value;
   if (!secret) return undefined;
 
   const column = getNeonAuthCookieSecretColumn(branchType);
@@ -202,8 +184,7 @@ export async function syncActiveNeonAuthCookieSecretFromEnv({
 function isBranchActive(appData: AppRow, branchType: NeonBranchType): boolean {
   // Legacy rows may not have neonActiveBranchId populated. In those cases the
   // development branch is still the effective active branch throughout Neon code.
-  const activeId =
-    appData.neonActiveBranchId ?? appData.neonDevelopmentBranchId;
+  const activeId = appData.neonActiveBranchId ?? appData.neonDevelopmentBranchId;
   if (!activeId) return false;
   if (branchType === "development") {
     return appData.neonDevelopmentBranchId === activeId;
@@ -253,16 +234,9 @@ export async function autoInjectNeonEnvVars({
   // a secret in a prior call within the request).
   let cookieSecret: string | undefined;
   if (neonAuthBaseUrl) {
-    const rows = await db
-      .select()
-      .from(apps)
-      .where(eq(apps.id, appId))
-      .limit(1);
+    const rows = await db.select().from(apps).where(eq(apps.id, appId)).limit(1);
     if (rows.length === 0) {
-      throw new CaideError(
-        `App with ID ${appId} not found`,
-        CaideErrorKind.NotFound,
-      );
+      throw new CaideError(`App with ID ${appId} not found`, CaideErrorKind.NotFound);
     }
     cookieSecret = await getOrCreateNeonAuthCookieSecret({
       appData: rows[0],
@@ -356,9 +330,7 @@ export async function getProductionBranchId(
  * treated as production.
  */
 export function getSelectedDeployBranchType(appData: AppRow): NeonBranchType {
-  return appData.selectedDatabaseBranchType === "development"
-    ? "development"
-    : "production";
+  return appData.selectedDatabaseBranchType === "development" ? "development" : "production";
 }
 
 export interface ResolvedNeonBranchEnvVars {
@@ -418,8 +390,7 @@ export async function resolveNeonBranchEnvVars({
     neonAuthBaseUrl = undefined;
   }
 
-  const isNextJs =
-    detectFrameworkType(getCaideAppPath(appData.path)) === "nextjs";
+  const isNextJs = detectFrameworkType(getCaideAppPath(appData.path)) === "nextjs";
 
   let neonAuthCookieSecret: string | undefined;
   if (neonAuthBaseUrl && isNextJs) {

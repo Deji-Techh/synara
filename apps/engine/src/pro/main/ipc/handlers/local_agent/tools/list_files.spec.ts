@@ -23,27 +23,14 @@ describe("listFilesTool", () => {
   let mockContext: AgentContext;
 
   beforeEach(async () => {
-    testDir = await fs.promises.mkdtemp(
-      path.join(os.tmpdir(), "list-files-test-"),
-    );
-    otherAppDir = await fs.promises.mkdtemp(
-      path.join(os.tmpdir(), "list-files-other-"),
-    );
+    testDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "list-files-test-"));
+    otherAppDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "list-files-other-"));
 
     await fs.promises.writeFile(path.join(testDir, "src.ts"), "source");
-    await fs.promises.writeFile(
-      path.join(testDir, "current-a.ts"),
-      "export const a = 1;",
-    );
-    await fs.promises.writeFile(
-      path.join(testDir, "current-b.ts"),
-      "export const b = 2;",
-    );
+    await fs.promises.writeFile(path.join(testDir, "current-a.ts"), "export const a = 1;");
+    await fs.promises.writeFile(path.join(testDir, "current-b.ts"), "export const b = 2;");
     await fs.promises.mkdir(path.join(testDir, "nested"));
-    await fs.promises.writeFile(
-      path.join(testDir, "nested", "deep.ts"),
-      "export const deep = 3;",
-    );
+    await fs.promises.writeFile(path.join(testDir, "nested", "deep.ts"), "export const deep = 3;");
     await fs.promises.mkdir(path.join(testDir, "node_modules", "pkg"), {
       recursive: true,
     });
@@ -52,20 +39,11 @@ describe("listFilesTool", () => {
       "dependency",
     );
     await fs.promises.mkdir(path.join(testDir, ".caide"), { recursive: true });
-    await fs.promises.writeFile(
-      path.join(testDir, ".caide", "snapshot.json"),
-      "{}",
-    );
+    await fs.promises.writeFile(path.join(testDir, ".caide", "snapshot.json"), "{}");
     await fs.promises.mkdir(path.join(testDir, ".git"), { recursive: true });
-    await fs.promises.writeFile(
-      path.join(testDir, ".git", "config"),
-      "should stay hidden",
-    );
+    await fs.promises.writeFile(path.join(testDir, ".git", "config"), "should stay hidden");
 
-    await fs.promises.writeFile(
-      path.join(otherAppDir, "other-a.ts"),
-      "export const otherA = 1;",
-    );
+    await fs.promises.writeFile(path.join(otherAppDir, "other-a.ts"), "export const otherA = 1;");
     await fs.promises.mkdir(path.join(otherAppDir, "other-nested"));
     await fs.promises.writeFile(
       path.join(otherAppDir, "other-nested", "inside.ts"),
@@ -74,10 +52,7 @@ describe("listFilesTool", () => {
 
     // Hidden .caide directory in the referenced app for include_ignored tests
     await fs.promises.mkdir(path.join(otherAppDir, ".caide"));
-    await fs.promises.writeFile(
-      path.join(otherAppDir, ".caide", "rules.md"),
-      "# rules",
-    );
+    await fs.promises.writeFile(path.join(otherAppDir, ".caide", "rules.md"), "# rules");
 
     mockContext = {
       event: {} as any,
@@ -113,9 +88,7 @@ describe("listFilesTool", () => {
   });
 
   it("accepts include_ignored in the schema", () => {
-    expect(() =>
-      listFilesTool.inputSchema.parse({ include_ignored: true }),
-    ).not.toThrow();
+    expect(() => listFilesTool.inputSchema.parse({ include_ignored: true })).not.toThrow();
   });
 
   it("includes ignored files when include_ignored is true", async () => {
@@ -156,10 +129,7 @@ describe("listFilesTool", () => {
 
   it("rejects recursive ignored listings without a directory", async () => {
     await expect(
-      listFilesTool.execute(
-        { recursive: true, include_ignored: true },
-        mockContext,
-      ),
+      listFilesTool.execute({ recursive: true, include_ignored: true }, mockContext),
     ).rejects.toMatchObject({
       kind: CaideErrorKind.Validation,
       message:
@@ -197,9 +167,7 @@ describe("listFilesTool", () => {
       mockContext,
     );
 
-    const listedPathCount = result
-      .split("\n")
-      .filter((line) => line.startsWith(" - ")).length;
+    const listedPathCount = result.split("\n").filter((line) => line.startsWith(" - ")).length;
 
     expect(listedPathCount).toBe(1000);
     expect(result).toContain("[TRUNCATED: Showing 1000 of ");
@@ -223,9 +191,7 @@ describe("listFilesTool", () => {
 
   describe("getConsentPreview", () => {
     it("omits app suffix when app_name is absent", () => {
-      expect(listFilesTool.getConsentPreview?.({ directory: "src" })).toBe(
-        "List src",
-      );
+      expect(listFilesTool.getConsentPreview?.({ directory: "src" })).toBe("List src");
       expect(listFilesTool.getConsentPreview?.({})).toBe("List all files");
     });
 
@@ -255,10 +221,7 @@ describe("listFilesTool", () => {
 
   describe("buildXml (streaming)", () => {
     it("includes app_name attribute when provided", () => {
-      const xml = listFilesTool.buildXml?.(
-        { directory: "src", app_name: "other-app" },
-        false,
-      );
+      const xml = listFilesTool.buildXml?.({ directory: "src", app_name: "other-app" }, false);
       expect(xml).toContain('app_name="other-app"');
       expect(xml).toContain('directory="src"');
     });
@@ -277,10 +240,7 @@ describe("listFilesTool", () => {
   describe("execute - app_name (referenced apps)", () => {
     it("lists files from the referenced app's path (non-recursive)", async () => {
       mockContext.referencedApps.set("other-app", otherAppDir);
-      const result = await listFilesTool.execute(
-        { app_name: "other-app" },
-        mockContext,
-      );
+      const result = await listFilesTool.execute({ app_name: "other-app" }, mockContext);
       expect(result).toContain("other-a.ts");
       expect(result).not.toContain("current-a.ts");
     });

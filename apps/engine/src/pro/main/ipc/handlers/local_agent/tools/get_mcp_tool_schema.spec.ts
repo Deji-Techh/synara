@@ -3,9 +3,7 @@ import { getMcpToolSchemaTool } from "./get_mcp_tool_schema";
 import type { McpToolDef } from "./mcp_type_defs";
 import type { AgentContext } from "./types";
 
-function def(
-  overrides: Partial<McpToolDef> & { toolName: string },
-): McpToolDef {
+function def(overrides: Partial<McpToolDef> & { toolName: string }): McpToolDef {
   return {
     jsName: `srv__${overrides.toolName}`,
     toolKey: `${overrides.serverName ?? "srv"}__${overrides.toolName}`,
@@ -61,19 +59,14 @@ describe("getMcpToolSchemaTool.isEnabled", () => {
         isMcpToolSearchAvailable: false,
       } as unknown as AgentContext),
     ).toBe(false);
-    expect(
-      getMcpToolSchemaTool.isEnabled?.({} as unknown as AgentContext),
-    ).toBe(false);
+    expect(getMcpToolSchemaTool.isEnabled?.({} as unknown as AgentContext)).toBe(false);
   });
 });
 
 describe("getMcpToolSchemaTool.execute", () => {
   it("returns description + full declaration for tools requested by jsName", async () => {
     const ctx = makeCtx(TOOLS);
-    const result = await getMcpToolSchemaTool.execute(
-      { tools: ["github__create_issue"] },
-      ctx,
-    );
+    const result = await getMcpToolSchemaTool.execute({ tools: ["github__create_issue"] }, ctx);
     expect(result).toContain("declare function github__create_issue");
     expect(result).toContain("Create a new issue in a repository"); // description included
     expect(result).toContain("title");
@@ -83,10 +76,7 @@ describe("getMcpToolSchemaTool.execute", () => {
 
   it("also resolves tools requested by raw toolName", async () => {
     const ctx = makeCtx(TOOLS);
-    const result = await getMcpToolSchemaTool.execute(
-      { tools: ["send_message"] },
-      ctx,
-    );
+    const result = await getMcpToolSchemaTool.execute({ tools: ["send_message"] }, ctx);
     expect(result).toContain("declare function slack__send_message");
   });
 
@@ -102,20 +92,14 @@ describe("getMcpToolSchemaTool.execute", () => {
 
   it("returns a helpful message when no requested tool matches", async () => {
     const ctx = makeCtx(TOOLS);
-    const result = await getMcpToolSchemaTool.execute(
-      { tools: ["does_not_exist"] },
-      ctx,
-    );
+    const result = await getMcpToolSchemaTool.execute({ tools: ["does_not_exist"] }, ctx);
     expect(result).toContain("No MCP tool matched");
     expect(result).not.toContain("declare function");
   });
 
   it("reports tools unavailable when the handler did not populate defs", async () => {
     const ctx = makeCtx(undefined);
-    const result = await getMcpToolSchemaTool.execute(
-      { tools: ["github__create_issue"] },
-      ctx,
-    );
+    const result = await getMcpToolSchemaTool.execute({ tools: ["github__create_issue"] }, ctx);
     expect(result).toContain("temporarily unavailable");
     expect(result).not.toContain("declare function");
   });

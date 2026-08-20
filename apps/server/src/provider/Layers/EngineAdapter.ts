@@ -32,15 +32,29 @@ import { CAIDE_ENGINE_DIR_ENV } from "@caide/shared/desktopIdentity";
 
 function safeFlutterEnvironment(overrides?: Record<string, string>): NodeJS.ProcessEnv {
   const ALLOWED_KEYS = [
-    "PATH", "HOME", "USER", "TMPDIR", "TMP", "TEMP",
-    "LANG", "LC_ALL", "LC_CTYPE",
-    "FLUTTER_SDK_DIR", "FLUTTER_SDK_BIN", "FLUTTER_ROOT",
-    "DART_SDK", "PUB_CACHE",
-    "ANDROID_HOME", "ANDROID_SDK_ROOT",
+    "PATH",
+    "HOME",
+    "USER",
+    "TMPDIR",
+    "TMP",
+    "TEMP",
+    "LANG",
+    "LC_ALL",
+    "LC_CTYPE",
+    "FLUTTER_SDK_DIR",
+    "FLUTTER_SDK_BIN",
+    "FLUTTER_ROOT",
+    "DART_SDK",
+    "PUB_CACHE",
+    "ANDROID_HOME",
+    "ANDROID_SDK_ROOT",
     "JAVA_HOME",
     "DEVELOPER_DIR",
-    "CHROME_EXECUTABLE", "PUPPETEER_EXECUTABLE_PATH",
-    "DISPLAY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR",
+    "CHROME_EXECUTABLE",
+    "PUPPETEER_EXECUTABLE_PATH",
+    "DISPLAY",
+    "WAYLAND_DISPLAY",
+    "XDG_RUNTIME_DIR",
     "SSH_AUTH_SOCK",
   ];
   const env: NodeJS.ProcessEnv = {};
@@ -98,8 +112,8 @@ function resolveEngineCommand(): { command: string; args: readonly string[] } {
     // Repo dev, TS source under vitest (apps/server/src/provider/Layers →
     // apps/engine).
     fileURLToPath(new URL("../../../../engine", import.meta.url)),
-  ].filter((candidate): candidate is string =>
-    typeof candidate === "string" && candidate.length > 0,
+  ].filter(
+    (candidate): candidate is string => typeof candidate === "string" && candidate.length > 0,
   );
 
   // Both layouts are accepted: the current packaged payload is FLAT
@@ -168,11 +182,7 @@ interface EngineChatMapping {
   readonly chatId: number;
 }
 
-type PendingRequestKind =
-  | "mcp-consent"
-  | "agent-tool-consent"
-  | "questionnaire"
-  | "env-vars";
+type PendingRequestKind = "mcp-consent" | "agent-tool-consent" | "questionnaire" | "env-vars";
 
 interface PendingEngineRequest {
   readonly kind: PendingRequestKind;
@@ -212,9 +222,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
     const sessions = yield* Ref.make<ReadonlyMap<ThreadId, EngineSessionContext>>(new Map());
     const sharedEngineRef = yield* Ref.make<SharedEngine | null>(null);
     const chatToThread = yield* Ref.make<ReadonlyMap<number, ThreadId>>(new Map());
-    const pendingRequests = yield* Ref.make<ReadonlyMap<string, PendingEngineRequest>>(
-      new Map(),
-    );
+    const pendingRequests = yield* Ref.make<ReadonlyMap<string, PendingEngineRequest>>(new Map());
     const settledChats = yield* Ref.make<ReadonlySet<number>>(new Set());
     const goalsEventQueue = yield* PubSub.unbounded<{
       type: "goal.updated" | "goal.run-requested" | "goal.control-requested";
@@ -280,8 +288,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         cause: cause instanceof Error ? cause : new Error(String(cause)),
       });
 
-    const publishEvent = (event: ProviderRuntimeEvent) =>
-      PubSub.publish(runtimeEventQueue, event);
+    const publishEvent = (event: ProviderRuntimeEvent) => PubSub.publish(runtimeEventQueue, event);
 
     const publishTextDelta = (
       threadId: ThreadId,
@@ -326,9 +333,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         Effect.flatMap((map) => {
           const threadId = map.get(chatId);
           if (!threadId) return Effect.succeed(null);
-          return Ref.get(sessions).pipe(
-            Effect.map((next) => next.get(threadId) ?? null),
-          );
+          return Ref.get(sessions).pipe(Effect.map((next) => next.get(threadId) ?? null));
         }),
       );
 
@@ -397,8 +402,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               yield* publishTextDelta(context.threadId, turnId, delta);
             }
           }
-          const alreadyLaunched =
-            emitted.get(`${messageId}:tools`) ?? 0;
+          const alreadyLaunched = emitted.get(`${messageId}:tools`) ?? 0;
           if (toolBlocks.length > alreadyLaunched) {
             emitted.set(`${messageId}:tools`, toolBlocks.length);
             for (const tool of toolBlocks.slice(alreadyLaunched)) {
@@ -622,7 +626,12 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               .map((todo) => {
                 if (typeof todo !== "object" || todo === null) return null;
                 const t = todo as Record<string, unknown>;
-                const status = t.status === "in_progress" ? "inProgress" : t.status === "completed" ? "completed" : "pending";
+                const status =
+                  t.status === "in_progress"
+                    ? "inProgress"
+                    : t.status === "completed"
+                      ? "completed"
+                      : "pending";
                 return {
                   task: String(t.content ?? t.task ?? "…"),
                   status: status as "pending" | "inProgress" | "completed",
@@ -643,8 +652,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           case "agent-tool:consent-request": {
             const requestId = String(payload.requestId ?? "");
             if (requestId === "") return;
-            const chatId =
-              typeof payload.chatId === "number" ? payload.chatId : undefined;
+            const chatId = typeof payload.chatId === "number" ? payload.chatId : undefined;
             const context = chatId !== undefined ? yield* sessionForChat(chatId) : null;
             if (context === null) return;
             yield* Ref.update(pendingRequests, (map) => {
@@ -679,8 +687,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           case "mcp:tool-consent-request": {
             const requestId = String(payload.requestId ?? "");
             if (requestId === "") return;
-            const chatId =
-              typeof payload.chatId === "number" ? payload.chatId : undefined;
+            const chatId = typeof payload.chatId === "number" ? payload.chatId : undefined;
             const context = chatId !== undefined ? yield* sessionForChat(chatId) : null;
             if (context === null) return;
             yield* Ref.update(pendingRequests, (map) => {
@@ -706,9 +713,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                       : toolName,
                   args: {
                     toolName,
-                    ...(typeof serverName === "string"
-                      ? { serverName }
-                      : {}),
+                    ...(typeof serverName === "string" ? { serverName } : {}),
                     ...(payload.args !== undefined ? { args: payload.args } : {}),
                   },
                 },
@@ -809,7 +814,10 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                     id: key,
                     header: "Environment variable",
                     question:
-                      key + (typeof v.description === "string" && v.description !== "" ? ` — ${v.description}` : ""),
+                      key +
+                      (typeof v.description === "string" && v.description !== ""
+                        ? ` — ${v.description}`
+                        : ""),
                     options: [],
                     multiSelect: false,
                   };
@@ -969,8 +977,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           ];
           yield* Effect.tryPromise({
             try: () => Promise.all(provisionPromises),
-            catch: (cause) =>
-              processError(threadId, "engine model provisioning failed", cause),
+            catch: (cause) => processError(threadId, "engine model provisioning failed", cause),
           });
         }
 
@@ -1021,17 +1028,18 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         }
         const appListResponse = yield* Effect.tryPromise({
           try: () => client.dyadInvoke<{ apps?: Array<Record<string, unknown>> }>("list-apps"),
-          catch: (cause) =>
-            processError(errorContext, "engine list-apps failed", cause),
+          catch: (cause) => processError(errorContext, "engine list-apps failed", cause),
         });
         const apps = Array.isArray(appListResponse?.apps) ? appListResponse.apps : [];
         const existing = apps.find((app) => {
           const appPathField = app.path;
-          return typeof appPathField === "string" &&
+          return (
+            typeof appPathField === "string" &&
             (appPathField === appPath ||
               // engine resolves relative names under its apps dir; compare
               // both raw path and resolved absolute forms.
-              path.resolve(appPathField) === path.resolve(appPath));
+              path.resolve(appPathField) === path.resolve(appPath))
+          );
         });
         if (existing !== undefined && typeof existing.id === "number") {
           return existing.id;
@@ -1042,8 +1050,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               path: appPath,
               appName: path.basename(appPath),
             }),
-          catch: (cause) =>
-            processError(errorContext, "engine import-app failed", cause),
+          catch: (cause) => processError(errorContext, "engine import-app failed", cause),
         });
         return typeof importResponse?.appId === "number" ? importResponse.appId : null;
       });
@@ -1069,31 +1076,27 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           if (appId !== null) {
             const chatsResponse = yield* Effect.tryPromise({
               try: () => client.dyadInvoke<Array<Record<string, unknown>>>("get-chats", appId),
-              catch: (cause) =>
-                processError(context.threadId, "engine get-chats failed", cause),
+              catch: (cause) => processError(context.threadId, "engine get-chats failed", cause),
             });
-            const firstChat = Array.isArray(chatsResponse) && chatsResponse.length > 0
-              ? chatsResponse[0]
-              : undefined;
+            const firstChat =
+              Array.isArray(chatsResponse) && chatsResponse.length > 0
+                ? chatsResponse[0]
+                : undefined;
             chatFromCreate =
-              firstChat !== undefined && typeof firstChat.id === "number"
-                ? firstChat.id
-                : null;
+              firstChat !== undefined && typeof firstChat.id === "number" ? firstChat.id : null;
           }
         }
         if (appId === null) {
           const name = `caide-workspace-${Date.now()}`;
           const createResponse = yield* Effect.tryPromise({
             try: () =>
-              client.dyadInvoke<{ app?: { id?: number }; chatId?: number }>(
-                "create-app",
-                { name, initialChatMode: "build" },
-              ),
-            catch: (cause) =>
-              processError(context.threadId, "engine create-app failed", cause),
+              client.dyadInvoke<{ app?: { id?: number }; chatId?: number }>("create-app", {
+                name,
+                initialChatMode: "build",
+              }),
+            catch: (cause) => processError(context.threadId, "engine create-app failed", cause),
           });
-          appId =
-            typeof createResponse?.app?.id === "number" ? createResponse.app.id : null;
+          appId = typeof createResponse?.app?.id === "number" ? createResponse.app.id : null;
           chatFromCreate =
             typeof createResponse?.chatId === "number" ? createResponse.chatId : null;
         }
@@ -1107,11 +1110,11 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         if (chatId === null) {
           const chatsResponse = yield* Effect.tryPromise({
             try: () => client.dyadInvoke<Array<Record<string, unknown>>>("get-chats", appId),
-            catch: (cause) =>
-              processError(context.threadId, "engine get-chats failed", cause),
+            catch: (cause) => processError(context.threadId, "engine get-chats failed", cause),
           });
           chatId =
-            Array.isArray(chatsResponse) && chatsResponse.length > 0 &&
+            Array.isArray(chatsResponse) &&
+            chatsResponse.length > 0 &&
             typeof chatsResponse[0]?.id === "number"
               ? chatsResponse[0].id
               : null;
@@ -1119,8 +1122,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         if (chatId === null) {
           const createChatResponse = yield* Effect.tryPromise({
             try: () => client.dyadInvoke<{ chatId: number }>("create-chat", appId, 120_000),
-            catch: (cause) =>
-              processError(context.threadId, "engine create-chat failed", cause),
+            catch: (cause) => processError(context.threadId, "engine create-chat failed", cause),
           });
           chatId = createChatResponse?.chatId ?? null;
         }
@@ -1166,8 +1168,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               },
               30 * 60_000,
             ),
-          catch: (cause) =>
-            processError(context.threadId, "engine chat:stream failed", cause),
+          catch: (cause) => processError(context.threadId, "engine chat:stream failed", cause),
         });
         void response;
       }).pipe(
@@ -1347,8 +1348,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         const { client } = yield* ensureSharedEngine(threadId);
         return yield* Effect.tryPromise({
           try: () => client.dyadInvoke<A>(channel, input, 30_000),
-          catch: (cause) =>
-            processError(threadId, `engine ${channel} failed`, cause),
+          catch: (cause) => processError(threadId, `engine ${channel} failed`, cause),
         });
       });
 
@@ -1364,9 +1364,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
     const goalsApi: EngineGoalsApi = {
       create: (input) =>
         goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:create", {
-          ...(input.appId !== undefined && input.appId !== null
-            ? { appId: input.appId }
-            : {}),
+          ...(input.appId !== undefined && input.appId !== null ? { appId: input.appId } : {}),
           ...(input.chatId !== undefined ? { chatId: input.chatId } : {}),
           ...(input.title !== undefined ? { title: input.title } : {}),
           objective: input.objective,
@@ -1378,15 +1376,12 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             ? { executionTarget: input.executionTarget }
             : {}),
         }),
-      get: (input) =>
-        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:get", goalIdOf(input)),
+      get: (input) => goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:get", goalIdOf(input)),
       getActive: (input) =>
         goalRequest(
           ThreadId.makeUnsafe(randomUUID()),
           "goal:get-active",
-          input.appId !== undefined && input.appId !== null
-            ? { appId: input.appId }
-            : {},
+          input.appId !== undefined && input.appId !== null ? { appId: input.appId } : {},
         ),
       list: (input) =>
         goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:list", {
@@ -1394,25 +1389,22 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           ...(input.statuses !== undefined ? { statuses: input.statuses } : {}),
         }),
       listActivity: (input) =>
-        goalRequest(
-          ThreadId.makeUnsafe(randomUUID()),
-          "goal:list-activity",
-          { ...goalIdOf(input), limit: input.limit ?? 200 },
-        ),
+        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:list-activity", {
+          ...goalIdOf(input),
+          limit: input.limit ?? 200,
+        }),
       pause: (input) =>
-        goalRequest(
-          ThreadId.makeUnsafe(randomUUID()),
-          "goal:pause",
-          { ...goalIdOf(input), ...(input.reason !== undefined ? { reason: input.reason } : {}) },
-        ),
+        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:pause", {
+          ...goalIdOf(input),
+          ...(input.reason !== undefined ? { reason: input.reason } : {}),
+        }),
       resume: (input) =>
         goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:resume", goalIdOf(input)),
       cancel: (input) =>
-        goalRequest(
-          ThreadId.makeUnsafe(randomUUID()),
-          "goal:cancel",
-          { ...goalIdOf(input), ...(input.reason !== undefined ? { reason: input.reason } : {}) },
-        ),
+        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:cancel", {
+          ...goalIdOf(input),
+          ...(input.reason !== undefined ? { reason: input.reason } : {}),
+        }),
       edit: (input) =>
         goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:edit", {
           ...goalIdOf(input),
@@ -1427,11 +1419,10 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             : {}),
         }),
       steer: (input) =>
-        goalRequest(
-          ThreadId.makeUnsafe(randomUUID()),
-          "goal:steer",
-          { ...goalIdOf(input), instruction: input.instruction },
-        ),
+        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:steer", {
+          ...goalIdOf(input),
+          instruction: input.instruction,
+        }),
       retry: (input) =>
         goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:retry", goalIdOf(input)),
       verify: (input) =>
@@ -1440,7 +1431,11 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       resolveAppId: ({ workspaceRoot }) =>
         Effect.gen(function* () {
           const { client } = yield* ensureSharedEngine(ThreadId.makeUnsafe(randomUUID()));
-          return yield* resolveAppIdByPath(client, workspaceRoot, ThreadId.makeUnsafe(randomUUID()));
+          return yield* resolveAppIdByPath(
+            client,
+            workspaceRoot,
+            ThreadId.makeUnsafe(randomUUID()),
+          );
         }),
     };
 
@@ -1481,9 +1476,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               type: "turn.started",
               turnId,
               payload: {
-                ...(input.modelSelection?.model
-                  ? { model: input.modelSelection.model }
-                  : {}),
+                ...(input.modelSelection?.model ? { model: input.modelSelection.model } : {}),
               },
             }),
           );
@@ -1567,8 +1560,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                   requestId: String(requestId),
                   decision: engineDecision,
                 }),
-              catch: (cause) =>
-                processError(threadId, "engine consent-response failed", cause),
+              catch: (cause) => processError(threadId, "engine consent-response failed", cause),
             }).pipe(Effect.ignore);
           } else {
             yield* Effect.tryPromise({
@@ -1632,8 +1624,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                   requestId: String(requestId),
                   envVars: serialized,
                 }),
-              catch: (cause) =>
-                processError(threadId, "engine env-var-response failed", cause),
+              catch: (cause) => processError(threadId, "engine env-var-response failed", cause),
             }).pipe(Effect.ignore);
           }
           yield* Ref.update(pendingRequests, (map) => {
@@ -1908,7 +1899,9 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 appDir,
                 target: input.target,
                 ...(input.channel !== undefined ? { channel: input.channel } : {}),
-                ...(input.signing !== undefined && input.signing !== null ? { signing: input.signing } : {}),
+                ...(input.signing !== undefined && input.signing !== null
+                  ? { signing: input.signing }
+                  : {}),
               }),
             catch: (cause) =>
               processError(input.threadId, "engine build/start request failed", cause),
@@ -2026,14 +2019,21 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           const context = yield* getSession(input.threadId);
           const response = yield* Effect.tryPromise({
             try: () => context.client.previewDevices(),
-            catch: (cause) => processError(input.threadId, "engine preview/devices request failed", cause),
+            catch: (cause) =>
+              processError(input.threadId, "engine preview/devices request failed", cause),
           });
           if (response.error) {
             return yield* Effect.fail(
-              processError(input.threadId, `engine preview/devices failed: ${response.error.code} ${response.error.message}`, new Error(response.error.message)),
+              processError(
+                input.threadId,
+                `engine preview/devices failed: ${response.error.code} ${response.error.message}`,
+                new Error(response.error.message),
+              ),
             );
           }
-          const parsed = response.result as unknown as { devices: Array<{ id: string; name: string; isEmulator: boolean; platform?: string }> };
+          const parsed = response.result as unknown as {
+            devices: Array<{ id: string; name: string; isEmulator: boolean; platform?: string }>;
+          };
           return { devices: Array.isArray(parsed?.devices) ? parsed.devices : [] };
         }),
 
@@ -2042,12 +2042,28 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           const context = yield* getSession(input.threadId);
           const response = yield* Effect.tryPromise({
             try: () => context.client.flutterToolchainStatus(),
-            catch: (cause) => processError(input.threadId, "engine flutter/toolchain/status request failed", cause),
+            catch: (cause) =>
+              processError(input.threadId, "engine flutter/toolchain/status request failed", cause),
           });
           if (response.error) {
-            return yield* Effect.fail(processError(input.threadId, `engine flutter/toolchain/status failed: ${response.error.code} ${response.error.message}`, new Error(response.error.message)));
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                `engine flutter/toolchain/status failed: ${response.error.code} ${response.error.message}`,
+                new Error(response.error.message),
+              ),
+            );
           }
-          return response.result as unknown as { supported: boolean; installed: boolean; version: string; root: string; sdkPath: string; flutterBin: string; estimatedDownloadBytes: number; unsupportedReason: string | null };
+          return response.result as unknown as {
+            supported: boolean;
+            installed: boolean;
+            version: string;
+            root: string;
+            sdkPath: string;
+            flutterBin: string;
+            estimatedDownloadBytes: number;
+            unsupportedReason: string | null;
+          };
         }),
 
       flutterToolchainInstall: (input) =>
@@ -2055,12 +2071,34 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           const context = yield* getSession(input.threadId);
           const response = yield* Effect.tryPromise({
             try: () => context.client.flutterToolchainInstall(),
-            catch: (cause) => processError(input.threadId, "engine flutter/toolchain/install request failed", cause),
+            catch: (cause) =>
+              processError(
+                input.threadId,
+                "engine flutter/toolchain/install request failed",
+                cause,
+              ),
           });
           if (response.error) {
-            return yield* Effect.fail(processError(input.threadId, `engine flutter/toolchain/install failed: ${response.error.code} ${response.error.message}`, new Error(response.error.message)));
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                `engine flutter/toolchain/install failed: ${response.error.code} ${response.error.message}`,
+                new Error(response.error.message),
+              ),
+            );
           }
-          const parsed = response.result as unknown as { status: { supported: boolean; installed: boolean; version: string; root: string; sdkPath: string; flutterBin: string; estimatedDownloadBytes: number; unsupportedReason: string | null } };
+          const parsed = response.result as unknown as {
+            status: {
+              supported: boolean;
+              installed: boolean;
+              version: string;
+              root: string;
+              sdkPath: string;
+              flutterBin: string;
+              estimatedDownloadBytes: number;
+              unsupportedReason: string | null;
+            };
+          };
           return { status: parsed.status };
         }),
 

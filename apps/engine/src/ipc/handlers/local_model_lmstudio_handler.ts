@@ -21,14 +21,9 @@ export interface LMStudioModel {
 }
 
 export async function fetchLMStudioModels(): Promise<{ models: LocalModel[] }> {
-  const modelsResponse: Response = await fetch(
-    `${getLmStudioBaseUrl()}/api/v0/models`,
-  );
+  const modelsResponse: Response = await fetch(`${getLmStudioBaseUrl()}/api/v0/models`);
   if (!modelsResponse.ok) {
-    throw new CaideError(
-      "Failed to fetch models from LM Studio",
-      CaideErrorKind.External,
-    );
+    throw new CaideError("Failed to fetch models from LM Studio", CaideErrorKind.External);
   }
   const modelsJson = (await modelsResponse.json()) as { data: LMStudioModel[] };
   const downloadedModels = modelsJson.data;

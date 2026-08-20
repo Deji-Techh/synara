@@ -31,5 +31,5 @@ export const CAIDE_FLUTTER_BUILDER_PERSONA = constructLocalAgentPrompt(
   {
     appTarget: "mobile",
     frameworkType: "flutter",
-  }
+  },
 );

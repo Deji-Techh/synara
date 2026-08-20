@@ -25,13 +25,9 @@ const fixedHeaders = workerData?.fixedHeaders || {};
     try {
       rememberedBaseUrl = new URL(fixed);
       rememberedOrigin = rememberedBaseUrl.origin;
-      parentPort?.postMessage(
-        `[proxy-worker] fixed upstream origin: ${rememberedOrigin}`,
-      );
+      parentPort?.postMessage(`[proxy-worker] fixed upstream origin: ${rememberedOrigin}`);
     } catch {
-      throw new Error(
-        `Invalid target origin "${fixed}". Must be absolute http/https URL.`,
-      );
+      throw new Error(`Invalid target origin "${fixed}". Must be absolute http/https URL.`);
     }
   }
 }
@@ -56,13 +52,9 @@ try {
     "html-to-image.js",
   );
   htmlToImageContent = fs.readFileSync(htmlToImagePath, "utf-8");
-  parentPort?.postMessage(
-    `[proxy-worker] html-to-image.js loaded from: ${htmlToImagePath}`,
-  );
+  parentPort?.postMessage(`[proxy-worker] html-to-image.js loaded from: ${htmlToImagePath}`);
 } catch (error) {
-  parentPort?.postMessage(
-    `[proxy-worker] Failed to read html-to-image.js: ${error.message}`,
-  );
+  parentPort?.postMessage(`[proxy-worker] Failed to read html-to-image.js: ${error.message}`);
 }
 
 try {
@@ -77,9 +69,7 @@ try {
   stacktraceJsContent = fs.readFileSync(stackTraceLibPath, "utf-8");
   parentPort?.postMessage("[proxy-worker] stacktrace.js loaded.");
 } catch (error) {
-  parentPort?.postMessage(
-    `[proxy-worker] Failed to read stacktrace.js: ${error.message}`,
-  );
+  parentPort?.postMessage(`[proxy-worker] Failed to read stacktrace.js: ${error.message}`);
 }
 
 try {
@@ -87,23 +77,13 @@ try {
   dyadShimContent = fs.readFileSync(dyadShimPath, "utf-8");
   parentPort?.postMessage("[proxy-worker] dyad-shim.js loaded.");
 } catch (error) {
-  parentPort?.postMessage(
-    `[proxy-worker] Failed to read dyad-shim.js: ${error.message}`,
-  );
+  parentPort?.postMessage(`[proxy-worker] Failed to read dyad-shim.js: ${error.message}`);
 }
 
 try {
-  const dyadComponentSelectorClientPath = path.join(
-    __dirname,
-    "dyad-component-selector-client.js",
-  );
-  dyadComponentSelectorClientContent = fs.readFileSync(
-    dyadComponentSelectorClientPath,
-    "utf-8",
-  );
-  parentPort?.postMessage(
-    "[proxy-worker] dyad-component-selector-client.js loaded.",
-  );
+  const dyadComponentSelectorClientPath = path.join(__dirname, "dyad-component-selector-client.js");
+  dyadComponentSelectorClientContent = fs.readFileSync(dyadComponentSelectorClientPath, "utf-8");
+  parentPort?.postMessage("[proxy-worker] dyad-component-selector-client.js loaded.");
 } catch (error) {
   parentPort?.postMessage(
     `[proxy-worker] Failed to read dyad-component-selector-client.js: ${error.message}`,
@@ -111,14 +91,8 @@ try {
 }
 
 try {
-  const dyadScreenshotClientPath = path.join(
-    __dirname,
-    "dyad-screenshot-client.js",
-  );
-  dyadScreenshotClientContent = fs.readFileSync(
-    dyadScreenshotClientPath,
-    "utf-8",
-  );
+  const dyadScreenshotClientPath = path.join(__dirname, "dyad-screenshot-client.js");
+  dyadScreenshotClientContent = fs.readFileSync(dyadScreenshotClientPath, "utf-8");
   parentPort?.postMessage("[proxy-worker] dyad-screenshot-client.js loaded.");
 } catch (error) {
   parentPort?.postMessage(
@@ -127,17 +101,9 @@ try {
 }
 
 try {
-  const dyadVisualEditorClientPath = path.join(
-    __dirname,
-    "dyad-visual-editor-client.js",
-  );
-  dyadVisualEditorClientContent = fs.readFileSync(
-    dyadVisualEditorClientPath,
-    "utf-8",
-  );
-  parentPort?.postMessage(
-    "[proxy-worker] dyad-visual-editor-client.js loaded.",
-  );
+  const dyadVisualEditorClientPath = path.join(__dirname, "dyad-visual-editor-client.js");
+  dyadVisualEditorClientContent = fs.readFileSync(dyadVisualEditorClientPath, "utf-8");
+  parentPort?.postMessage("[proxy-worker] dyad-visual-editor-client.js loaded.");
 } catch (error) {
   parentPort?.postMessage(
     `[proxy-worker] Failed to read dyad-visual-editor-client.js: ${error.message}`,
@@ -149,9 +115,7 @@ try {
   dyadLogsContent = fs.readFileSync(dyadLogsPath, "utf-8");
   parentPort?.postMessage("[proxy-worker] dyad_logs.js loaded.");
 } catch (error) {
-  parentPort?.postMessage(
-    `[proxy-worker] Failed to read dyad_logs.js: ${error.message}`,
-  );
+  parentPort?.postMessage(`[proxy-worker] Failed to read dyad_logs.js: ${error.message}`);
 }
 
 // Load Service Worker files
@@ -163,9 +127,7 @@ try {
   dyadSwContent = fs.readFileSync(dyadSwPath, "utf-8");
   parentPort?.postMessage("[proxy-worker] dyad-sw.js loaded.");
 } catch (error) {
-  parentPort?.postMessage(
-    `[proxy-worker] Failed to read dyad-sw.js: ${error.message}`,
-  );
+  parentPort?.postMessage(`[proxy-worker] Failed to read dyad-sw.js: ${error.message}`);
 }
 
 try {
@@ -173,9 +135,7 @@ try {
   dyadSwRegisterContent = fs.readFileSync(dyadSwRegisterPath, "utf-8");
   parentPort?.postMessage("[proxy-worker] dyad-sw-register.js loaded.");
 } catch (error) {
-  parentPort?.postMessage(
-    `[proxy-worker] Failed to read dyad-sw-register.js: ${error.message}`,
-  );
+  parentPort?.postMessage(`[proxy-worker] Failed to read dyad-sw-register.js: ${error.message}`);
 }
 
 /* ---------------------- helper: need to inject? ------------------------ */
@@ -190,8 +150,7 @@ function injectHTML(buf) {
   // These are strings that were used since the first version of the dyad shim.
   // If the dyad shim is used from legacy apps which came pre-baked with the shim
   // as a vite plugin, then do not inject the shim twice to avoid weird behaviors.
-  const legacyAppWithShim =
-    txt.includes("window-error") && txt.includes("unhandled-rejection");
+  const legacyAppWithShim = txt.includes("window-error") && txt.includes("unhandled-rejection");
 
   const scripts = [
     `<style data-caide-preview-viewport>
@@ -223,9 +182,7 @@ window.$RefreshSig$ = window.$RefreshSig$ || function () { return function (type
     if (dyadShimContent) {
       scripts.push(`<script>${dyadShimContent}</script>`);
     } else {
-      scripts.push(
-        '<script>console.warn("[proxy-worker] dyad shim was not injected.");</script>',
-      );
+      scripts.push('<script>console.warn("[proxy-worker] dyad shim was not injected.");</script>');
     }
   }
   if (dyadComponentSelectorClientContent) {
@@ -237,16 +194,12 @@ window.$RefreshSig$ = window.$RefreshSig$ || function () { return function (type
   }
   if (htmlToImageContent) {
     scripts.push(`<script>${htmlToImageContent}</script>`);
-    parentPort?.postMessage(
-      "[proxy-worker] html-to-image script injected into HTML.",
-    );
+    parentPort?.postMessage("[proxy-worker] html-to-image script injected into HTML.");
   } else {
     scripts.push(
       '<script>console.error("[proxy-worker] html-to-image was not injected - library not loaded.");</script>',
     );
-    parentPort?.postMessage(
-      "[proxy-worker] WARNING: html-to-image not injected!",
-    );
+    parentPort?.postMessage("[proxy-worker] WARNING: html-to-image not injected!");
   }
   if (dyadScreenshotClientContent) {
     scripts.push(`<script>${dyadScreenshotClientContent}</script>`);
@@ -265,9 +218,7 @@ window.$RefreshSig$ = window.$RefreshSig$ || function () { return function (type
   if (dyadLogsContent) {
     scripts.push(`<script>${dyadLogsContent}</script>`);
   } else {
-    scripts.push(
-      '<script>console.warn("[proxy-worker] dyad_logs.js was not injected.");</script>',
-    );
+    scripts.push('<script>console.warn("[proxy-worker] dyad_logs.js was not injected.");</script>');
   }
   if (dyadSwRegisterContent) {
     scripts.push(`<script>${dyadSwRegisterContent}</script>`);
@@ -283,38 +234,27 @@ window.$RefreshSig$ = window.$RefreshSig$ || function () { return function (type
     txt = txt.replace(headRegex, `$&\n${allScripts}`);
   } else {
     txt = allScripts + "\n" + txt;
-    parentPort?.postMessage(
-      "[proxy-worker] Warning: <head> tag not found – scripts prepended.",
-    );
+    parentPort?.postMessage("[proxy-worker] Warning: <head> tag not found – scripts prepended.");
   }
   return Buffer.from(txt, "utf8");
 }
 
 /* ---------------- helper: build upstream URL from request -------------- */
 function buildTargetURL(clientReq) {
-  if (!rememberedOrigin || !rememberedBaseUrl)
-    throw new Error("No upstream configured.");
+  if (!rememberedOrigin || !rememberedBaseUrl) throw new Error("No upstream configured.");
 
   const incomingUrl = new URL(clientReq.url, rememberedOrigin);
   const basePath = rememberedBaseUrl.pathname.replace(/\/$/, "");
   let incomingPath = incomingUrl.pathname;
 
-  if (
-    basePath &&
-    (incomingPath === basePath || incomingPath.startsWith(`${basePath}/`))
-  ) {
+  if (basePath && (incomingPath === basePath || incomingPath.startsWith(`${basePath}/`))) {
     incomingPath = incomingPath.slice(basePath.length) || "/";
   }
 
   const targetPath =
-    incomingPath === "/"
-      ? rememberedBaseUrl.pathname
-      : `${basePath}${incomingPath}`;
+    incomingPath === "/" ? rememberedBaseUrl.pathname : `${basePath}${incomingPath}`;
 
-  return new URL(
-    `${targetPath}${incomingUrl.search}`,
-    rememberedBaseUrl.origin,
-  );
+  return new URL(`${targetPath}${incomingUrl.search}`, rememberedBaseUrl.origin);
 }
 
 /* ----------------------------------------------------------------------- */
@@ -344,11 +284,7 @@ function rewriteCookieForIframe(cookieStr) {
   // Drop any existing SameSite / Secure / Partitioned attributes so ours win.
   const attrs = parts.slice(1).filter((p) => {
     const lower = p.toLowerCase();
-    return (
-      !lower.startsWith("samesite") &&
-      lower !== "secure" &&
-      lower !== "partitioned"
-    );
+    return !lower.startsWith("samesite") && lower !== "secure" && lower !== "partitioned";
   });
   attrs.push("Secure", "SameSite=None");
   return [nameValue, ...attrs].join("; ");
@@ -438,8 +374,7 @@ const server = http.createServer((clientReq, clientRes) => {
       ? contentTypeHeader[0]
       : contentTypeHeader || "";
     const isHtml =
-      typeof contentType === "string" &&
-      contentType.toLowerCase().includes("text/html");
+      typeof contentType === "string" && contentType.toLowerCase().includes("text/html");
     const inject = wantsInjection && isHtml;
 
     if (!inject) {
@@ -568,9 +503,7 @@ const MAX_PORT_ATTEMPTS = workerData?.maxPortAttempts || 50;
 function listenWithFallback(port, nextFallback, attemptsLeft) {
   function onError(err) {
     if (err && err.code === "EADDRINUSE" && attemptsLeft > 1) {
-      parentPort?.postMessage(
-        `[proxy-worker] port ${port} in use, trying ${nextFallback}`,
-      );
+      parentPort?.postMessage(`[proxy-worker] port ${port} in use, trying ${nextFallback}`);
       listenWithFallback(nextFallback, nextFallback + 1, attemptsLeft - 1);
       return;
     }
@@ -583,9 +516,7 @@ function listenWithFallback(port, nextFallback, attemptsLeft) {
   server.listen(port, LISTEN_HOST, () => {
     server.removeListener("error", onError);
     const boundPort = server.address()?.port ?? port;
-    parentPort?.postMessage(
-      `proxy-server-start url=http://${LISTEN_HOST}:${boundPort}`,
-    );
+    parentPort?.postMessage(`proxy-server-start url=http://${LISTEN_HOST}:${boundPort}`);
   });
 }
 

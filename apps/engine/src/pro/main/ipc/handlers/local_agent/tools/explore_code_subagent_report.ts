@@ -78,11 +78,7 @@ export const submitReportSchema = z.object({
           .min(2)
           .max(80)
           .describe("Exact observed identifier or path to search for."),
-        scope: z
-          .string()
-          .min(2)
-          .max(120)
-          .describe("Glob to search within, e.g. src/**/*.{ts,tsx}"),
+        scope: z.string().min(2).max(120).describe("Glob to search within, e.g. src/**/*.{ts,tsx}"),
       }),
     )
     .max(MAX_SEARCH_TARGETS)
@@ -133,10 +129,10 @@ export function resolveSelection({
   );
   const droppedReasons: string[] = [];
 
-  const primary = resolveCandidateIds(
-    selection.primaryCandidateIds,
-    candidateById,
-  ).slice(0, MAX_PRIMARY_FILES);
+  const primary = resolveCandidateIds(selection.primaryCandidateIds, candidateById).slice(
+    0,
+    MAX_PRIMARY_FILES,
+  );
 
   const flow = dedupeFlowByRange(
     (selection.flow ?? [])
@@ -182,10 +178,7 @@ export function resolveSelection({
     (selection.flow ?? []).length > 0 ||
     (selection.readTargets ?? []).length > 0;
   const resolvedAnything =
-    primary.length > 0 ||
-    flow.length > 0 ||
-    readTargets.length > 0 ||
-    searchTargets.length > 0;
+    primary.length > 0 || flow.length > 0 || readTargets.length > 0 || searchTargets.length > 0;
   // The model pointed at candidates, but every one was hallucinated. Fall back.
   if (referencedAnything && !resolvedAnything) {
     return null;
@@ -205,10 +198,7 @@ export function resolveSelection({
 // replaces the old multi-stage rewrite cascade: every invariant it enforced
 // (edit/debug needs ranges, answer needs flow, gap-search needs targets, skip
 // means empty) is true by construction here.
-export function deriveOutcome(
-  intent: ExploreIntent,
-  resolved: ResolvedSelection,
-): Outcome {
+export function deriveOutcome(intent: ExploreIntent, resolved: ResolvedSelection): Outcome {
   const hasFlow = resolved.flow.length > 0;
   const rangedTargets = effectiveReadTargets(resolved);
   const hasRanged = rangedTargets.length > 0;
@@ -266,9 +256,7 @@ export function getExplainSufficiencyGap(
   }
   const hasImplementationSite = resolved.flow.some(
     (link) =>
-      link.candidate.range &&
-      !link.candidate.traits.isTest &&
-      !link.candidate.traits.isSupport,
+      link.candidate.range && !link.candidate.traits.isTest && !link.candidate.traits.isSupport,
   );
   if (hasImplementationSite) {
     return null;
@@ -276,21 +264,15 @@ export function getExplainSufficiencyGap(
   return "This explain trace has no implementation-site evidence yet. Explore the call sites, handler, or returned/rendered output that produces the requested behavior, then call submit_report again.";
 }
 
-function confidenceFor(
-  resolved: ResolvedSelection,
-  hasFlow: boolean,
-): Confidence {
+function confidenceFor(resolved: ResolvedSelection, hasFlow: boolean): Confidence {
   if (!hasFlow) {
     return "medium";
   }
-  const blemished =
-    resolved.missingCoverage.length > 0 || resolved.droppedReasons.length > 0;
+  const blemished = resolved.missingCoverage.length > 0 || resolved.droppedReasons.length > 0;
   return blemished ? "medium" : "high";
 }
 
-function effectiveReadTargets(
-  resolved: ResolvedSelection,
-): ResolvedReadTarget[] {
+function effectiveReadTargets(resolved: ResolvedSelection): ResolvedReadTarget[] {
   if (resolved.readTargets.length > 0) {
     return resolved.readTargets;
   }
@@ -320,18 +302,13 @@ function resolveCandidateIds(
   return resolved;
 }
 
-function dedupeFlowByRange(
-  flow: ResolvedFlowLink[],
-  droppedReasons: string[],
-): ResolvedFlowLink[] {
+function dedupeFlowByRange(flow: ResolvedFlowLink[], droppedReasons: string[]): ResolvedFlowLink[] {
   const seen = new Set<string>();
   const kept: ResolvedFlowLink[] = [];
   for (const link of flow) {
     const key = `${link.candidate.path}:${formatRange(link.candidate.range)}`;
     if (seen.has(key)) {
-      droppedReasons.push(
-        `flow_duplicate_range:${requireCandidateId(link.candidate)}`,
-      );
+      droppedReasons.push(`flow_duplicate_range:${requireCandidateId(link.candidate)}`);
       continue;
     }
     seen.add(key);
@@ -340,10 +317,7 @@ function dedupeFlowByRange(
   return kept;
 }
 
-function renderSearchSuggestion(suggestion: {
-  identifier: string;
-  scope: string;
-}): string | null {
+function renderSearchSuggestion(suggestion: { identifier: string; scope: string }): string | null {
   const identifier = suggestion.identifier.trim();
   const scope = suggestion.scope.trim();
   if (!identifier || /\s/.test(scope)) {
@@ -397,10 +371,7 @@ export function buildReport({
   }
   lines.push("");
 
-  if (
-    outcome.action === "answer_from_report" &&
-    resolved.missingCoverage.length === 0
-  ) {
+  if (outcome.action === "answer_from_report" && resolved.missingCoverage.length === 0) {
     lines.push("Missing: none");
   } else {
     const missingText =
@@ -409,9 +380,7 @@ export function buildReport({
         : resolved.missingCoverage.length > 0
           ? resolved.missingCoverage.join("; ")
           : "none";
-    lines.push(
-      `Missing: ${truncateInline(missingText, MAX_REPORT_MISSING_CHARS)}`,
-    );
+    lines.push(`Missing: ${truncateInline(missingText, MAX_REPORT_MISSING_CHARS)}`);
   }
 
   const renderedReadTargets =
@@ -439,16 +408,10 @@ export function buildReport({
     readTargets: renderedReadTargets,
   });
 
-  if (
-    outcome.action === "targeted_gap_search" &&
-    resolved.searchTargets.length > 0
-  ) {
+  if (outcome.action === "targeted_gap_search" && resolved.searchTargets.length > 0) {
     const searchTargetRefs = buildSearchTargetRefs(renderedFlow);
     const searchTargets = resolved.searchTargets.map((target) =>
-      truncateInline(
-        renderSearchTarget(target, searchTargetRefs),
-        MAX_REPORT_SEARCH_TARGET_CHARS,
-      ),
+      truncateInline(renderSearchTarget(target, searchTargetRefs), MAX_REPORT_SEARCH_TARGET_CHARS),
     );
     for (const candidate of machinePathCandidates) {
       if (searchTargets.some((target) => target.includes(candidate.path))) {
@@ -503,8 +466,7 @@ export function buildDeterministicReport({
   const candidates = getRankedCandidates(observations, query);
   const primary = candidates.slice(0, MAX_PRIMARY_FILES);
   const readTargets = primary.filter((candidate) => candidate.range);
-  const action: ReportAction =
-    readTargets.length > 0 ? "read_targets" : "targeted_gap_search";
+  const action: ReportAction = readTargets.length > 0 ? "read_targets" : "targeted_gap_search";
   const machine: ReportMachine = {
     action,
     confidence: "low",
@@ -513,12 +475,9 @@ export function buildDeterministicReport({
       range: formatRange(clampRangeForReport(candidate.range)),
     })),
   };
-  const searchTargets =
-    action === "targeted_gap_search" ? getQueryTerms(query) : [];
+  const searchTargets = action === "targeted_gap_search" ? getQueryTerms(query) : [];
   const toolNames =
-    [...new Set(observations.map((observation) => observation.toolName))].join(
-      ", ",
-    ) || "none";
+    [...new Set(observations.map((observation) => observation.toolName))].join(", ") || "none";
   return clampReportLength(
     [
       "## explore_code report",
@@ -543,14 +502,11 @@ export function buildDeterministicReport({
         ? [
             "Read targets:",
             ...readTargets.map(
-              (candidate) =>
-                `flow ${primary.indexOf(candidate) + 1} - observed fallback target`,
+              (candidate) => `flow ${primary.indexOf(candidate) + 1} - observed fallback target`,
             ),
           ].join("\n")
         : "",
-      searchTargets.length > 0
-        ? ["Search targets:", ...searchTargets].join("\n")
-        : "",
+      searchTargets.length > 0 ? ["Search targets:", ...searchTargets].join("\n") : "",
       "",
       "```json",
       JSON.stringify(machine),
@@ -577,9 +533,7 @@ function getRenderedFlowLinks(flow: ResolvedFlowLink[]): RenderedFlowLink[] {
   return rendered;
 }
 
-function buildSearchTargetRefs(
-  renderedFlow: RenderedFlowLink[],
-): Map<string, string> {
+function buildSearchTargetRefs(renderedFlow: RenderedFlowLink[]): Map<string, string> {
   const refs = new Map<string, string>();
   renderedFlow.forEach((link, index) => {
     if (!refs.has(link.candidate.path)) {
@@ -589,10 +543,7 @@ function buildSearchTargetRefs(
   return refs;
 }
 
-function renderSearchTarget(
-  target: string,
-  pathRefs: Map<string, string>,
-): string {
+function renderSearchTarget(target: string, pathRefs: Map<string, string>): string {
   let rendered = target;
   for (const [filePath, ref] of pathRefs) {
     rendered = rendered.replace(new RegExp(escapeRegExp(filePath), "g"), ref);

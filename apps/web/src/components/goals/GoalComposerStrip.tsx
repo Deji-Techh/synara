@@ -26,9 +26,7 @@ function ActiveGoalStrip(props: { goal: Goal; onOpen: (() => void) | undefined }
   const paused = goal.status === "paused" || goal.status === "pausing";
   const isWorking = GOAL_WORKING_STATUSES.includes(goal.status);
   const pct =
-    goal.totalTaskCount > 0
-      ? Math.round((goal.verifiedTaskCount / goal.totalTaskCount) * 100)
-      : 0;
+    goal.totalTaskCount > 0 ? Math.round((goal.verifiedTaskCount / goal.totalTaskCount) * 100) : 0;
 
   const handlePauseToggle = () => {
     if (paused) {

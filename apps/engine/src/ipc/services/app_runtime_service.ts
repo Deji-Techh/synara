@@ -22,9 +22,7 @@ export function emitProxyServerStarted(_options?: unknown): void {
   // no-op: web preview proxies are not part of the Flutter Builder engine.
 }
 
-export async function ensureProxyForRunningApp(
-  _options?: unknown,
-): Promise<string | null> {
+export async function ensureProxyForRunningApp(_options?: unknown): Promise<string | null> {
   return null;
 }
 

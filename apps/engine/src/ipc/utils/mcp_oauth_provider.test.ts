@@ -160,9 +160,7 @@ describe("CaideOAuthClientProvider", () => {
       serverId: 92,
       preregisteredClientId: "id-only",
     });
-    expect(publicProvider.clientMetadata.token_endpoint_auth_method).toBe(
-      "none",
-    );
+    expect(publicProvider.clientMetadata.token_endpoint_auth_method).toBe("none");
 
     const confidentialProvider = new CaideOAuthClientProvider({
       serverId: 93,
@@ -203,9 +201,7 @@ describe("CaideOAuthClientProvider", () => {
 
   it("throws when codeVerifier is requested without a prior save", async () => {
     const p = new CaideOAuthClientProvider({ serverId: 4 });
-    await expect(p.codeVerifier()).rejects.toThrow(
-      /No PKCE code verifier in memory/,
-    );
+    await expect(p.codeVerifier()).rejects.toThrow(/No PKCE code verifier in memory/);
   });
 
   it("opens the system browser when redirectToAuthorization is called in an interactive provider", async () => {
@@ -213,12 +209,8 @@ describe("CaideOAuthClientProvider", () => {
       serverId: 1,
       allowInteractive: true,
     });
-    await p.redirectToAuthorization(
-      new URL("https://example.com/authorize?foo=bar"),
-    );
-    expect(shell.openExternal).toHaveBeenCalledWith(
-      "https://example.com/authorize?foo=bar",
-    );
+    await p.redirectToAuthorization(new URL("https://example.com/authorize?foo=bar"));
+    expect(shell.openExternal).toHaveBeenCalledWith("https://example.com/authorize?foo=bar");
   });
 
   it("refuses to open the browser when allowInteractive is not set", async () => {
@@ -453,9 +445,7 @@ describe("CaideOAuthClientProvider", () => {
     // non-empty `oauth_state` isn't proof of a connection -- it can
     // hold just a registered client ID with no tokens yet.
     function encryptedBlobFor(payload: object): string {
-      return Buffer.from(`enc:${JSON.stringify(payload)}`, "utf8").toString(
-        "base64",
-      );
+      return Buffer.from(`enc:${JSON.stringify(payload)}`, "utf8").toString("base64");
     }
 
     it("returns false for null input", () => {

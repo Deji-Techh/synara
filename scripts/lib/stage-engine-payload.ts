@@ -51,7 +51,8 @@ export const ENGINE_PAYLOAD_RELATIVE_DIR = "engine-payload";
  * engine's tsdown `noExternal` config).
  */
 export function resolveEnginePayloadDependencies(): Record<string, string> {
-  const catalog = (rootPackageJson.workspaces as { catalog?: Record<string, unknown> }).catalog ?? {};
+  const catalog =
+    (rootPackageJson.workspaces as { catalog?: Record<string, unknown> }).catalog ?? {};
   const deps = enginePackageJson.dependencies as Record<string, unknown> | undefined;
   if (!deps) {
     throw new Error("Could not resolve dependencies from apps/engine/package.json.");
@@ -132,7 +133,10 @@ export function stageEnginePayload(
     type: "module",
     dependencies: resolveEnginePayloadDependencies(),
   };
-  writeFileSync(join(payloadDir, "package.json"), `${JSON.stringify(payloadPackageJson, null, 2)}\n`);
+  writeFileSync(
+    join(payloadDir, "package.json"),
+    `${JSON.stringify(payloadPackageJson, null, 2)}\n`,
+  );
 
   const installResult = spawnSync(
     "bun",
@@ -152,10 +156,7 @@ export function stageEnginePayload(
   //   resources/engine/dist/index.mjs
   //   resources/engine/drizzle/
   mkdirSync(join(payloadDir, "dist"), { recursive: true });
-  copyFileSync(
-    join(engineDir, "dist", "index.mjs"),
-    join(payloadDir, "dist", "index.mjs"),
-  );
+  copyFileSync(join(engineDir, "dist", "index.mjs"), join(payloadDir, "dist", "index.mjs"));
   cpSync(join(engineDir, "drizzle"), join(payloadDir, "drizzle"), {
     recursive: true,
   });
@@ -170,13 +171,7 @@ export function stageEnginePayload(
     "better-sqlite3",
     "build/Release/better_sqlite3.node",
   );
-  copyRepoNativeBinding(
-    repoRoot,
-    payloadDir,
-    "node-pty",
-    "node-pty",
-    "build/Release/pty.node",
-  );
+  copyRepoNativeBinding(repoRoot, payloadDir, "node-pty", "node-pty", "build/Release/pty.node");
 
   return { payloadDir };
 }

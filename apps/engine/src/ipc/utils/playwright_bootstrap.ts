@@ -3,10 +3,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import log from "electron-log/node";
 import { spawnStreaming } from "./spawn_streaming";
-import {
-  PNPM_INSTALL_POLICY_ARGS,
-  getPackageManagerCommandEnv,
-} from "./socket_firewall";
+import { PNPM_INSTALL_POLICY_ARGS, getPackageManagerCommandEnv } from "./socket_firewall";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
 
 const logger = log.scope("playwright_bootstrap");
@@ -152,14 +149,10 @@ export function detectSystemBrowserChannel(): BrowserChannel | null {
   };
 
   if (platform === "darwin") {
-    if (
-      exists("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
-    ) {
+    if (exists("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")) {
       return "chrome";
     }
-    if (
-      exists("/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge")
-    ) {
+    if (exists("/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge")) {
       return "msedge";
     }
     return null;
@@ -167,15 +160,12 @@ export function detectSystemBrowserChannel(): BrowserChannel | null {
 
   if (platform === "win32") {
     const programFiles = process.env["PROGRAMFILES"] || "C:\\Program Files";
-    const programFilesX86 =
-      process.env["PROGRAMFILES(X86)"] || "C:\\Program Files (x86)";
+    const programFilesX86 = process.env["PROGRAMFILES(X86)"] || "C:\\Program Files (x86)";
     const localAppData = process.env["LOCALAPPDATA"] || "";
     const chromeCandidates = [
       path.join(programFiles, "Google/Chrome/Application/chrome.exe"),
       path.join(programFilesX86, "Google/Chrome/Application/chrome.exe"),
-      localAppData
-        ? path.join(localAppData, "Google/Chrome/Application/chrome.exe")
-        : "",
+      localAppData ? path.join(localAppData, "Google/Chrome/Application/chrome.exe") : "",
     ].filter(Boolean);
     if (chromeCandidates.some(exists)) return "chrome";
     const edgeCandidates = [
@@ -199,9 +189,7 @@ export function detectSystemBrowserChannel(): BrowserChannel | null {
 }
 
 export function isPlaywrightInstalled(appPath: string): boolean {
-  return fs.existsSync(
-    path.join(appPath, "node_modules", "@playwright", "test", "package.json"),
-  );
+  return fs.existsSync(path.join(appPath, "node_modules", "@playwright", "test", "package.json"));
 }
 
 /**
@@ -212,22 +200,13 @@ export function isPlaywrightInstalled(appPath: string): boolean {
  * dir — the marker is how we avoid re-running the (idempotent but slow) install
  * on every run.
  */
-const BROWSER_MARKER = path.join(
-  "node_modules",
-  ".caide-playwright-chromium-installed",
-);
+const BROWSER_MARKER = path.join("node_modules", ".caide-playwright-chromium-installed");
 
 function playwrightPackageVersion(appPath: string): string | null {
   try {
     const packageJson = JSON.parse(
       fs.readFileSync(
-        path.join(
-          appPath,
-          "node_modules",
-          "@playwright",
-          "test",
-          "package.json",
-        ),
+        path.join(appPath, "node_modules", "@playwright", "test", "package.json"),
         "utf8",
       ),
     ) as { version?: unknown };
@@ -289,10 +268,7 @@ function markBrowserInstalled(appPath: string): void {
       playwrightVersion: playwrightPackageVersion(appPath),
       executablePath: chromiumExecutablePath(appPath),
     };
-    fs.writeFileSync(
-      path.join(appPath, BROWSER_MARKER),
-      `${JSON.stringify(marker, null, 2)}\n`,
-    );
+    fs.writeFileSync(path.join(appPath, BROWSER_MARKER), `${JSON.stringify(marker, null, 2)}\n`);
   } catch (err) {
     logger.warn(`Failed to write browser marker: ${err}`);
   }
@@ -313,11 +289,7 @@ export function hasPlaywrightConfig(appPath: string): boolean {
 function readConfigText(appPath: string): string | null {
   const tsPath = tsConfigPath(appPath);
   const jsPath = path.join(appPath, "playwright.config.js");
-  const file = fs.existsSync(tsPath)
-    ? tsPath
-    : fs.existsSync(jsPath)
-      ? jsPath
-      : null;
+  const file = fs.existsSync(tsPath) ? tsPath : fs.existsSync(jsPath) ? jsPath : null;
   if (!file) return null;
   try {
     return fs.readFileSync(file, "utf8");
@@ -329,10 +301,7 @@ function readConfigText(appPath: string): string | null {
 /** True when the existing config drives a system browser via `channel`. */
 function configUsesChannel(appPath: string): boolean {
   const text = readConfigText(appPath);
-  return (
-    text != null &&
-    /(?:^|[,{ \t\r\n])(?:channel|["']channel["'])\s*:/.test(text)
-  );
+  return text != null && /(?:^|[,{ \t\r\n])(?:channel|["']channel["'])\s*:/.test(text);
 }
 
 /** Which browser channel an existing config drives, or null (bundled). */
@@ -342,11 +311,7 @@ function configChannel(appPath: string): BrowserChannel | null {
   const match = text.match(
     /(?:^|[,{ \t\r\n])(?:channel|["']channel["'])\s*:\s*["'](chrome|msedge)["']/,
   );
-  return match?.[1] === "msedge"
-    ? "msedge"
-    : match?.[1] === "chrome"
-      ? "chrome"
-      : null;
+  return match?.[1] === "msedge" ? "msedge" : match?.[1] === "chrome" ? "chrome" : null;
 }
 
 /** True when the existing config is one we generated (safe to regenerate). */
@@ -362,17 +327,10 @@ function isCaideGeneratedConfig(appPath: string): boolean {
  */
 export function needsConfigRegenerate(appPath: string): boolean {
   const text = readConfigText(appPath);
-  return (
-    text != null &&
-    isCaideGeneratedConfig(appPath) &&
-    !text.includes(CAIDE_CONFIG_VERSION)
-  );
+  return text != null && isCaideGeneratedConfig(appPath) && !text.includes(CAIDE_CONFIG_VERSION);
 }
 
-function writePlaywrightConfig(
-  appPath: string,
-  channel: BrowserChannel | null,
-): void {
+function writePlaywrightConfig(appPath: string, channel: BrowserChannel | null): void {
   fs.writeFileSync(tsConfigPath(appPath), buildPlaywrightConfig(channel));
   logger.info(
     `Wrote playwright.config.ts (${channel ? `channel: ${channel}` : "bundled chromium"})`,
@@ -463,10 +421,7 @@ export async function ensurePlaywrightBootstrap({
       timeoutMs: 5 * 60 * 1000,
     });
     if (installDep.aborted) {
-      throw new CaideError(
-        "Test setup cancelled.",
-        CaideErrorKind.Precondition,
-      );
+      throw new CaideError("Test setup cancelled.", CaideErrorKind.Precondition);
     }
     if (installDep.code !== 0) {
       throw new CaideError(
@@ -521,10 +476,7 @@ export async function ensurePlaywrightBootstrap({
       timeoutMs: 10 * 60 * 1000,
     });
     if (installBrowser.aborted) {
-      throw new CaideError(
-        "Test setup cancelled.",
-        CaideErrorKind.Precondition,
-      );
+      throw new CaideError("Test setup cancelled.", CaideErrorKind.Precondition);
     }
     if (installBrowser.code !== 0) {
       throw new CaideError(

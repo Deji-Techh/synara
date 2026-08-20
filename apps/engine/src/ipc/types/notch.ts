@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  defineContract,
-  defineEvent,
-  createClient,
-  createEventClient,
-} from "../contracts/core";
+import { defineContract, defineEvent, createClient, createEventClient } from "../contracts/core";
 
 export const StreamStatusSchema = z.enum(["streaming", "idle", "error"]);
 export type StreamStatus = z.infer<typeof StreamStatusSchema>;

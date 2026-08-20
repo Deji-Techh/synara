@@ -1,10 +1,7 @@
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import {
-  parseFrontmatter,
-  type SkillFrontmatter,
-} from "./skill_frontmatter";
+import { parseFrontmatter, type SkillFrontmatter } from "./skill_frontmatter";
 
 export interface SkillEntry {
   id: string;
@@ -18,10 +15,7 @@ export interface SkillEntry {
  * Scan a directory for SKILL.md files, returning parsed entries.
  * Expected structure: <dir>/<skill-name>/SKILL.md
  */
-export function loadSkillsFromDir(
-  dir: string,
-  source: SkillEntry["source"],
-): SkillEntry[] {
+export function loadSkillsFromDir(dir: string, source: SkillEntry["source"]): SkillEntry[] {
   try {
     if (!existsSync(dir)) return [];
     const entries = readdirSync(dir, { withFileTypes: true });
@@ -69,10 +63,7 @@ export interface LoadedSkills {
  * Project skills override user skills, which override bundled skills
  * when IDs conflict.
  */
-export function loadAllSkills(
-  bundledSkillIds: string[],
-  projectPath?: string,
-): LoadedSkills {
+export function loadAllSkills(bundledSkillIds: string[], projectPath?: string): LoadedSkills {
   const userSkills = projectPath
     ? loadSkillsFromDir(getProjectSkillsDir(projectPath), "project")
     : [];
@@ -107,10 +98,7 @@ export function loadAllSkills(
  * Check if a file path matches any skill's path glob patterns.
  * Returns matching skill IDs.
  */
-export function matchSkillsByPath(
-  filePath: string,
-  skills: SkillEntry[],
-): string[] {
+export function matchSkillsByPath(filePath: string, skills: SkillEntry[]): string[] {
   const matched: string[] = [];
   for (const skill of skills) {
     const paths = skill.frontmatter.paths;
@@ -136,10 +124,7 @@ function simpleGlobMatch(filePath: string, pattern: string): boolean {
 
   if (normalizedPattern.endsWith("/*")) {
     const prefix = normalizedPattern.slice(0, -2);
-    return (
-      normalizedPath.startsWith(prefix) &&
-      !normalizedPath.slice(prefix.length).includes("/")
-    );
+    return normalizedPath.startsWith(prefix) && !normalizedPath.slice(prefix.length).includes("/");
   }
 
   if (normalizedPattern.includes("*")) {

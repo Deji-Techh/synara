@@ -2,10 +2,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { generateText } from "ai";
 
 import type { UserSettings } from "../../lib/schemas";
-import {
-  getModelClient,
-  setModelClientFetchForTesting,
-} from "./get_model_client";
+import { getModelClient, setModelClientFetchForTesting } from "./get_model_client";
 import {
   OPENROUTER_APP_CATEGORIES,
   OPENROUTER_APP_REFERER,
@@ -250,11 +247,7 @@ describe("getModelClient", () => {
 
     expect(capturedHeaders?.get("Authorization")).toBe("Bearer openrouter-key");
     expect(capturedHeaders?.get("HTTP-Referer")).toBe(OPENROUTER_APP_REFERER);
-    expect(capturedHeaders?.get("X-OpenRouter-Title")).toBe(
-      OPENROUTER_APP_TITLE,
-    );
-    expect(capturedHeaders?.get("X-OpenRouter-Categories")).toBe(
-      OPENROUTER_APP_CATEGORIES,
-    );
+    expect(capturedHeaders?.get("X-OpenRouter-Title")).toBe(OPENROUTER_APP_TITLE);
+    expect(capturedHeaders?.get("X-OpenRouter-Categories")).toBe(OPENROUTER_APP_CATEGORIES);
   });
 });

@@ -341,10 +341,7 @@ const WebSocketRequestBody = Schema.Union([
   tagRequestBody(ORCHESTRATION_WS_METHODS.unsubscribeShell, OrchestrationUnsubscribeShellInput),
   tagRequestBody(ORCHESTRATION_WS_METHODS.subscribeThread, OrchestrationSubscribeThreadInput),
   tagRequestBody(ORCHESTRATION_WS_METHODS.unsubscribeThread, OrchestrationUnsubscribeThreadInput),
-  tagRequestBody(
-    ORCHESTRATION_WS_METHODS.getProjectActivity,
-    OrchestrationGetProjectActivityInput,
-  ),
+  tagRequestBody(ORCHESTRATION_WS_METHODS.getProjectActivity, OrchestrationGetProjectActivityInput),
 
   // Project Search
   tagRequestBody(WS_METHODS.projectsDiscoverScripts, ProjectDiscoverScriptsInput),

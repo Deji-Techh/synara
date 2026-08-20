@@ -3,9 +3,7 @@ export interface InvalidProviderApiKeyCharacter {
   codePoint: number;
 }
 
-export function normalizeProviderApiKeyInput(
-  value: string | null | undefined,
-): string {
+export function normalizeProviderApiKeyInput(value: string | null | undefined): string {
   return value?.trim() ?? "";
 }
 

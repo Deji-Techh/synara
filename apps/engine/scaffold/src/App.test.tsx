@@ -7,8 +7,6 @@ describe("generated application shell", () => {
   it("renders the default route", () => {
     render(<App />);
 
-    expect(
-      screen.getByRole("heading", { name: /build the first screen/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /build the first screen/i })).toBeInTheDocument();
   });
 });

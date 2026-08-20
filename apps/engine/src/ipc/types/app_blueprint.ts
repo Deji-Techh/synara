@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  defineEvent,
-  createEventClient,
-  defineContract,
-  createClient,
-} from "../contracts/core";
+import { defineEvent, createEventClient, defineContract, createClient } from "../contracts/core";
 
 // =============================================================================
 // App Blueprint Schemas
@@ -48,9 +43,7 @@ export const AppBlueprintUpdatePayloadSchema = z.object({
   data: AppBlueprintDataSchema,
 });
 
-export type AppBlueprintUpdatePayload = z.infer<
-  typeof AppBlueprintUpdatePayloadSchema
->;
+export type AppBlueprintUpdatePayload = z.infer<typeof AppBlueprintUpdatePayloadSchema>;
 
 export const AppBlueprintVisualsUpdatePayloadSchema = z.object({
   chatId: z.number(),
@@ -66,9 +59,7 @@ export const AppBlueprintApproveSchema = z.object({
   chatId: z.number(),
 });
 
-export type AppBlueprintApprovePayload = z.infer<
-  typeof AppBlueprintApproveSchema
->;
+export type AppBlueprintApprovePayload = z.infer<typeof AppBlueprintApproveSchema>;
 
 export const APP_BLUEPRINT_EDITABLE_FIELDS = [
   "appName",
@@ -78,13 +69,9 @@ export const APP_BLUEPRINT_EDITABLE_FIELDS = [
   "primaryColor",
 ] as const;
 
-export const AppBlueprintEditableFieldSchema = z.enum(
-  APP_BLUEPRINT_EDITABLE_FIELDS,
-);
+export const AppBlueprintEditableFieldSchema = z.enum(APP_BLUEPRINT_EDITABLE_FIELDS);
 
-export type AppBlueprintEditableField = z.infer<
-  typeof AppBlueprintEditableFieldSchema
->;
+export type AppBlueprintEditableField = z.infer<typeof AppBlueprintEditableFieldSchema>;
 
 export const AppBlueprintFieldEditSchema = z.object({
   chatId: z.number(),
@@ -92,22 +79,13 @@ export const AppBlueprintFieldEditSchema = z.object({
   value: z.string(),
 });
 
-export type AppBlueprintFieldEditPayload = z.infer<
-  typeof AppBlueprintFieldEditSchema
->;
+export type AppBlueprintFieldEditPayload = z.infer<typeof AppBlueprintFieldEditSchema>;
 
-export const APP_BLUEPRINT_VISUAL_EDITABLE_FIELDS = [
-  "prompt",
-  "description",
-] as const;
+export const APP_BLUEPRINT_VISUAL_EDITABLE_FIELDS = ["prompt", "description"] as const;
 
-export const AppBlueprintVisualEditableFieldSchema = z.enum(
-  APP_BLUEPRINT_VISUAL_EDITABLE_FIELDS,
-);
+export const AppBlueprintVisualEditableFieldSchema = z.enum(APP_BLUEPRINT_VISUAL_EDITABLE_FIELDS);
 
-export type AppBlueprintVisualEditableField = z.infer<
-  typeof AppBlueprintVisualEditableFieldSchema
->;
+export type AppBlueprintVisualEditableField = z.infer<typeof AppBlueprintVisualEditableFieldSchema>;
 
 export const AppBlueprintVisualEditSchema = z.object({
   chatId: z.number(),
@@ -116,9 +94,7 @@ export const AppBlueprintVisualEditSchema = z.object({
   value: z.string(),
 });
 
-export type AppBlueprintVisualEditPayload = z.infer<
-  typeof AppBlueprintVisualEditSchema
->;
+export type AppBlueprintVisualEditPayload = z.infer<typeof AppBlueprintVisualEditSchema>;
 
 export const AppBlueprintAddVisualSchema = z.object({
   chatId: z.number(),
@@ -127,34 +103,26 @@ export const AppBlueprintAddVisualSchema = z.object({
   prompt: z.string(),
 });
 
-export type AppBlueprintAddVisualPayload = z.infer<
-  typeof AppBlueprintAddVisualSchema
->;
+export type AppBlueprintAddVisualPayload = z.infer<typeof AppBlueprintAddVisualSchema>;
 
 export const AppBlueprintRemoveVisualSchema = z.object({
   chatId: z.number(),
   visualId: z.string(),
 });
 
-export type AppBlueprintRemoveVisualPayload = z.infer<
-  typeof AppBlueprintRemoveVisualSchema
->;
+export type AppBlueprintRemoveVisualPayload = z.infer<typeof AppBlueprintRemoveVisualSchema>;
 
 export const AppBlueprintApprovedSchema = z.object({
   chatId: z.number(),
 });
 
-export type AppBlueprintApprovedPayload = z.infer<
-  typeof AppBlueprintApprovedSchema
->;
+export type AppBlueprintApprovedPayload = z.infer<typeof AppBlueprintApprovedSchema>;
 
 export const AppBlueprintTimeoutSchema = z.object({
   chatId: z.number(),
 });
 
-export type AppBlueprintTimeoutPayload = z.infer<
-  typeof AppBlueprintTimeoutSchema
->;
+export type AppBlueprintTimeoutPayload = z.infer<typeof AppBlueprintTimeoutSchema>;
 
 // =============================================================================
 // App Blueprint Events (Main -> Renderer)

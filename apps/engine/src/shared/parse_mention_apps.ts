@@ -1,8 +1,5 @@
 export const APP_MENTION_NAME_PATTERN = "[a-zA-Z0-9_.-]+";
-export const MENTION_REGEX = new RegExp(
-  `@app:(${APP_MENTION_NAME_PATTERN})`,
-  "g",
-);
+export const MENTION_REGEX = new RegExp(`@app:(${APP_MENTION_NAME_PATTERN})`, "g");
 
 const APP_MENTION_PREFIX_REGEX = /@app:/g;
 const APP_MENTION_CANDIDATE_CHAR_REGEX = /[a-zA-Z0-9_.-]/;
@@ -44,19 +41,13 @@ export function parseAppMentions(prompt: string): string[] {
 
 function readMentionCandidate(prompt: string, startIndex: number): string {
   let endIndex = startIndex;
-  while (
-    endIndex < prompt.length &&
-    APP_MENTION_CANDIDATE_CHAR_REGEX.test(prompt[endIndex])
-  ) {
+  while (endIndex < prompt.length && APP_MENTION_CANDIDATE_CHAR_REGEX.test(prompt[endIndex])) {
     endIndex++;
   }
   return prompt.slice(startIndex, endIndex);
 }
 
-function hasVisibleAppMentionBoundary(
-  text: string,
-  nextIndex: number,
-): boolean {
+function hasVisibleAppMentionBoundary(text: string, nextIndex: number): boolean {
   const nextChar = text[nextIndex];
   if (nextChar === undefined) {
     return true;
@@ -92,10 +83,7 @@ function hasVisibleAppMentionBoundary(
  * longest known name. This handles names with dots without letting shorter app
  * names capture prefixes like `foo` from `foo.app.com`.
  */
-export function parseKnownAppMentions(
-  prompt: string,
-  appNames: string[],
-): string[] {
+export function parseKnownAppMentions(prompt: string, appNames: string[]): string[] {
   const sortedAppNames = [...new Set(appNames)]
     .filter((name) => name.length > 0)
     .sort((a, b) => b.length - a.length);
@@ -107,10 +95,7 @@ export function parseKnownAppMentions(
   let match: RegExpExecArray | null;
   APP_MENTION_PREFIX_REGEX.lastIndex = 0;
   while ((match = APP_MENTION_PREFIX_REGEX.exec(prompt)) !== null) {
-    const candidate = readMentionCandidate(
-      prompt,
-      match.index + match[0].length,
-    );
+    const candidate = readMentionCandidate(prompt, match.index + match[0].length);
     const candidateLower = candidate.toLowerCase();
 
     const appName = sortedAppNames.find((name) => {
@@ -133,10 +118,7 @@ export function parseKnownAppMentions(
   return mentions;
 }
 
-export function formatKnownAppMentionsForPrompt(
-  text: string,
-  appNames: string[],
-): string {
+export function formatKnownAppMentionsForPrompt(text: string, appNames: string[]): string {
   const sortedAppNames = [...new Set(appNames)]
     .filter((name) => name.length > 0)
     .sort((a, b) => b.length - a.length);

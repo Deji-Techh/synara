@@ -106,9 +106,7 @@ describe("executeSandboxScriptTool", () => {
 
     expect(isSandboxScriptExecutionEnabled(undefined)).toBe(false);
     expect(isSandboxScriptExecutionEnabled({})).toBe(false);
-    expect(executeSandboxScriptTool.isEnabled?.(createMockContext())).toBe(
-      false,
-    );
+    expect(executeSandboxScriptTool.isEnabled?.(createMockContext())).toBe(false);
   });
 
   it("is state-modifying only when the write_file host function is enabled", () => {
@@ -135,9 +133,7 @@ describe("executeSandboxScriptTool", () => {
       "}",
       "main();",
     ].join("\n");
-    vi.mocked(executeSandboxScriptInProcess).mockRejectedValue(
-      new Error("Unexpected token ?."),
-    );
+    vi.mocked(executeSandboxScriptInProcess).mockRejectedValue(new Error("Unexpected token ?."));
 
     let thrown: unknown;
     try {
@@ -154,9 +150,7 @@ describe("executeSandboxScriptTool", () => {
       "This script uses syntax or language features that the sandbox does not support.",
     );
     expect((thrown as Error).message).toContain(`Script:\n${script}`);
-    expect((thrown as Error).message).toContain(
-      "Original error:\nUnexpected token ?.",
-    );
+    expect((thrown as Error).message).toContain("Original error:\nUnexpected token ?.");
     expect(executeSandboxScriptInProcess).toHaveBeenCalledWith(
       expect.objectContaining({
         appPath: "/tmp/app",
@@ -216,8 +210,7 @@ describe("executeSandboxScriptTool", () => {
         ctx,
       );
 
-      const capabilities = vi.mocked(executeSandboxScriptInProcess).mock
-        .calls[0][0].capabilities;
+      const capabilities = vi.mocked(executeSandboxScriptInProcess).mock.calls[0][0].capabilities;
       const writeFile = capabilities?.write_file;
       expect(writeFile).toEqual(expect.any(Function));
 
@@ -268,13 +261,10 @@ describe("executeSandboxScriptTool", () => {
       createWritableSandboxContext(),
     );
 
-    const capabilities = vi.mocked(executeSandboxScriptInProcess).mock
-      .calls[0][0].capabilities;
+    const capabilities = vi.mocked(executeSandboxScriptInProcess).mock.calls[0][0].capabilities;
     const writeFile = capabilities?.write_file;
 
-    await expect(
-      writeFile?.("attachments:file.txt", "hello"),
-    ).rejects.toMatchObject({
+    await expect(writeFile?.("attachments:file.txt", "hello")).rejects.toMatchObject({
       kind: CaideErrorKind.Validation,
     });
     expect(assertAllowedGuestPath).not.toHaveBeenCalled();
@@ -292,8 +282,7 @@ describe("executeSandboxScriptTool", () => {
       createWritableSandboxContext(),
     );
 
-    const capabilities = vi.mocked(executeSandboxScriptInProcess).mock
-      .calls[0][0].capabilities;
+    const capabilities = vi.mocked(executeSandboxScriptInProcess).mock.calls[0][0].capabilities;
     const writeFile = capabilities?.write_file;
 
     await expect(writeFile?.("src/out.txt")).rejects.toMatchObject({
@@ -319,8 +308,7 @@ describe("executeSandboxScriptTool", () => {
       createWritableSandboxContext(),
     );
 
-    const capabilities = vi.mocked(executeSandboxScriptInProcess).mock
-      .calls[0][0].capabilities;
+    const capabilities = vi.mocked(executeSandboxScriptInProcess).mock.calls[0][0].capabilities;
     const writeFile = capabilities?.write_file;
 
     await expect(writeFile?.(".env", "SECRET=x")).rejects.toMatchObject({
@@ -348,8 +336,7 @@ describe("executeSandboxScriptTool", () => {
       createWritableSandboxContext(),
     );
 
-    const capabilities = vi.mocked(executeSandboxScriptInProcess).mock
-      .calls[0][0].capabilities;
+    const capabilities = vi.mocked(executeSandboxScriptInProcess).mock.calls[0][0].capabilities;
     expect(capabilities).not.toHaveProperty("write_file");
   });
 
@@ -368,8 +355,7 @@ describe("executeSandboxScriptTool", () => {
       createWritableSandboxContext(),
     );
 
-    const capabilities = vi.mocked(executeSandboxScriptInProcess).mock
-      .calls[0][0].capabilities;
+    const capabilities = vi.mocked(executeSandboxScriptInProcess).mock.calls[0][0].capabilities;
     const writeFile = capabilities?.write_file;
     vi.mocked(readSettings).mockReturnValue({
       enableSandboxScriptExecution: true,
@@ -398,8 +384,7 @@ describe("executeSandboxScriptTool", () => {
       ctx,
     );
 
-    const capabilities = vi.mocked(executeSandboxScriptInProcess).mock
-      .calls[0][0].capabilities;
+    const capabilities = vi.mocked(executeSandboxScriptInProcess).mock.calls[0][0].capabilities;
     const writeFile = capabilities?.write_file;
 
     await expect(writeFile?.("src/out.txt", "hello")).rejects.toMatchObject({
@@ -428,8 +413,7 @@ describe("executeSandboxScriptTool", () => {
         ctx,
       );
 
-      const capabilities = vi.mocked(executeSandboxScriptInProcess).mock
-        .calls[0][0].capabilities;
+      const capabilities = vi.mocked(executeSandboxScriptInProcess).mock.calls[0][0].capabilities;
       const writeFile = capabilities?.write_file;
 
       // No blueprint yet: the write host is blocked without prompting.
@@ -500,8 +484,7 @@ describe("executeSandboxScriptTool", () => {
       ctx,
     );
 
-    const capabilities = vi.mocked(executeSandboxScriptInProcess).mock
-      .calls[0][0].capabilities;
+    const capabilities = vi.mocked(executeSandboxScriptInProcess).mock.calls[0][0].capabilities;
     const writeFile = capabilities?.write_file;
     vi.mocked(assertSandboxWritePathAllowed).mockRejectedValue(
       new CaideError(
@@ -542,10 +525,7 @@ describe("executeSandboxScriptTool", () => {
       },
     ];
 
-    await executeSandboxScriptTool.execute(
-      { script: "1 + 1", execution_thread: "worker" },
-      ctx,
-    );
+    await executeSandboxScriptTool.execute({ script: "1 + 1", execution_thread: "worker" }, ctx);
 
     expect(runSandboxScript).toHaveBeenCalledTimes(1);
     expect(executeSandboxScriptInProcess).not.toHaveBeenCalled();
@@ -574,8 +554,7 @@ describe("executeSandboxScriptTool", () => {
       createMockContext(),
     );
 
-    const capabilities = vi.mocked(executeSandboxScriptInProcess).mock
-      .calls[0][0].capabilities;
+    const capabilities = vi.mocked(executeSandboxScriptInProcess).mock.calls[0][0].capabilities;
     expect(capabilities).not.toHaveProperty("write_file");
   });
 });
@@ -594,11 +573,7 @@ describe("buildExecuteSandboxScriptDescription (search mode)", () => {
 
   it("lists tool names grouped by server, without inlining signatures", async () => {
     const desc = await buildExecuteSandboxScriptDescription(
-      [
-        def("Sentry", "get_issue"),
-        def("Sentry", "list_issues"),
-        def("Linear", "create_issue"),
-      ],
+      [def("Sentry", "get_issue"), def("Sentry", "list_issues"), def("Linear", "create_issue")],
       { useSearch: true, includeWriteFile: false },
     );
 

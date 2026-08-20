@@ -54,9 +54,7 @@ function seedStdioServer(id: number): void {
   });
 }
 
-function createClient(
-  close: () => Promise<void> = vi.fn(async () => {}),
-): MCPClient {
+function createClient(close: () => Promise<void> = vi.fn(async () => {})): MCPClient {
   return { close } as MCPClient;
 }
 
@@ -209,9 +207,7 @@ describe("McpManager lifecycle", () => {
       const pendingClose = deferred<void>();
       const first = createClient(vi.fn(() => pendingClose.promise));
       const replacement = createClient();
-      mocks.createMCPClient
-        .mockResolvedValueOnce(first)
-        .mockResolvedValueOnce(replacement);
+      mocks.createMCPClient.mockResolvedValueOnce(first).mockResolvedValueOnce(replacement);
       const manager = new McpManager();
 
       await manager.getClient(8);
@@ -290,8 +286,7 @@ describe("McpManager bearer token injection", () => {
     await manager.getClient(60);
 
     expect(mocks.stdioOptions).toHaveLength(1);
-    const env = (mocks.stdioOptions[0] as { env?: Record<string, unknown> })
-      .env;
+    const env = (mocks.stdioOptions[0] as { env?: Record<string, unknown> }).env;
     expect(env).toEqual({
       TEST_MCP: "true",
       MCP_BEARER_TOKEN: "enc:secret-token",
@@ -330,8 +325,7 @@ describe("McpManager bearer token injection", () => {
 
     await manager.getClient(62);
 
-    const env = (mocks.stdioOptions[0] as { env?: Record<string, unknown> })
-      .env;
+    const env = (mocks.stdioOptions[0] as { env?: Record<string, unknown> }).env;
     expect(env).toEqual({ TEST_MCP: "true" });
   });
 });

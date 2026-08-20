@@ -17,12 +17,7 @@ import { CAIDE_MEDIA_DIR_NAME } from "@/ipc/utils/media_path_utils";
 import { readSettings } from "@/main/settings";
 import type { UserSettings } from "@/lib/schemas";
 import { writeFileTool } from "./write_file";
-import {
-  AgentContext,
-  escapeXmlAttr,
-  escapeXmlContent,
-  ToolDefinition,
-} from "./types";
+import { AgentContext, escapeXmlAttr, escapeXmlContent, ToolDefinition } from "./types";
 import {
   assertAppBlueprintApproved,
   getToolConsent,
@@ -75,18 +70,11 @@ function isAttachmentHostCallPath(path: string | undefined): boolean {
   if (!path) {
     return false;
   }
-  if (
-    path === "attachments" ||
-    path === "attachments:" ||
-    path.startsWith("attachments:")
-  ) {
+  if (path === "attachments" || path === "attachments:" || path.startsWith("attachments:")) {
     return true;
   }
   const normalized = path.replace(/\\/g, "/");
-  return (
-    normalized === CAIDE_MEDIA_DIR_NAME ||
-    normalized.startsWith(`${CAIDE_MEDIA_DIR_NAME}/`)
-  );
+  return normalized === CAIDE_MEDIA_DIR_NAME || normalized.startsWith(`${CAIDE_MEDIA_DIR_NAME}/`);
 }
 
 function buildScriptXml(params: {
@@ -241,10 +229,7 @@ ${typeDefsBlock}
 // registered this turn. A user can set it to `never` in tool permissions,
 // which filters it out while search mode stays on; in that case the wording
 // must not tell the model to call a tool that isn't available.
-function buildMcpSearchAddendum(
-  defs: McpToolDef[],
-  hasGetSchemaTool: boolean,
-): string {
+function buildMcpSearchAddendum(defs: McpToolDef[], hasGetSchemaTool: boolean): string {
   const inventory = buildMcpToolNameInventory(defs);
   const howToUse = hasGetSchemaTool
     ? `1. If you recognize the tool you need, call \`get_mcp_tool_schema\` with its name(s) to get its description and full TypeScript declaration.
@@ -305,115 +290,99 @@ export async function buildExecuteSandboxScriptDescription(
   // the handler passes false when tool permissions have filtered it out.
   if (options.useSearch) {
     return (
-      builtInHostFunctionsPreamble +
-      buildMcpSearchAddendum(defs, options.hasGetSchemaTool ?? true)
+      builtInHostFunctionsPreamble + buildMcpSearchAddendum(defs, options.hasGetSchemaTool ?? true)
     );
   }
-  return (
-    builtInHostFunctionsPreamble + buildMcpAddendum(buildMcpTypeDefsBlock(defs))
-  );
+  return builtInHostFunctionsPreamble + buildMcpAddendum(buildMcpTypeDefsBlock(defs));
 }
 
-export const executeSandboxScriptTool: ToolDefinition<ExecuteSandboxScriptArgs> =
-  {
-    name: "execute_sandbox_script",
-    description:
-      "Run a MustardScript program in a sandbox. Supports file inspection, file writes, and MCP tool calls.",
-    inputSchema: executeSandboxScriptSchema,
-    defaultConsent: "always",
-    modifiesState: (ctx) => ctx.sandboxWriteFileHostEnabled === true,
+export const executeSandboxScriptTool: ToolDefinition<ExecuteSandboxScriptArgs> = {
+  name: "execute_sandbox_script",
+  description:
+    "Run a MustardScript program in a sandbox. Supports file inspection, file writes, and MCP tool calls.",
+  inputSchema: executeSandboxScriptSchema,
+  defaultConsent: "always",
+  modifiesState: (ctx) => ctx.sandboxWriteFileHostEnabled === true,
 
-    isEnabled: () =>
-      isSandboxSupportedPlatform() &&
-      isSandboxScriptExecutionEnabled(readSettings()),
+  isEnabled: () => isSandboxSupportedPlatform() && isSandboxScriptExecutionEnabled(readSettings()),
 
-    getConsentPreview: (args) =>
-      args.description?.trim() || "Run a sandboxed script",
+  getConsentPreview: (args) => args.description?.trim() || "Run a sandboxed script",
 
-    execute: async (args: ExecuteSandboxScriptArgs, ctx: AgentContext) => {
-      const executionThread = args.execution_thread ?? "main";
-      const observeHostCall = ({ path }: { path?: string }) => {
-        if (isAttachmentHostCallPath(path)) {
-          ctx.onAttachmentAccess?.();
-        }
-      };
-      try {
-        const result =
-          executionThread === "worker"
-            ? // Worker thread builds its own capability map inside the worker;
-              // MCP host functions are intentionally not exposed on this path
-              // because the MCP client + consent flow live on the main thread.
-              // Splitting heavy compute (worker) from MCP follow-up (main) is
-              // documented in the tool prompt.
-              await runSandboxScript({
-                appPath: ctx.appPath,
-                script: args.script,
-                onHostCall: observeHostCall,
-              })
-            : await runInMainThread({ args, ctx, observeHostCall });
+  execute: async (args: ExecuteSandboxScriptArgs, ctx: AgentContext) => {
+    const executionThread = args.execution_thread ?? "main";
+    const observeHostCall = ({ path }: { path?: string }) => {
+      if (isAttachmentHostCallPath(path)) {
+        ctx.onAttachmentAccess?.();
+      }
+    };
+    try {
+      const result =
+        executionThread === "worker"
+          ? // Worker thread builds its own capability map inside the worker;
+            // MCP host functions are intentionally not exposed on this path
+            // because the MCP client + consent flow live on the main thread.
+            // Splitting heavy compute (worker) from MCP follow-up (main) is
+            // documented in the tool prompt.
+            await runSandboxScript({
+              appPath: ctx.appPath,
+              script: args.script,
+              onHostCall: observeHostCall,
+            })
+          : await runInMainThread({ args, ctx, observeHostCall });
 
-        ctx.onXmlComplete(
-          buildScriptXml({
-            args,
-            output: result.value,
-            truncated: result.truncated,
-            fullOutputPath: result.fullOutputPath,
-            executionMs: result.executionMs,
-          }),
-        );
+      ctx.onXmlComplete(
+        buildScriptXml({
+          args,
+          output: result.value,
+          truncated: result.truncated,
+          fullOutputPath: result.fullOutputPath,
+          executionMs: result.executionMs,
+        }),
+      );
 
-        sendTelemetryEvent("sandbox.script.completed", {
+      sendTelemetryEvent("sandbox.script.completed", {
+        chatId: ctx.chatId,
+        appId: ctx.appId,
+        executionMs: result.executionMs,
+        truncated: result.truncated,
+        executionThread,
+      });
+
+      if (result.truncated) {
+        sendTelemetryEvent("sandbox.script.truncated", {
           chatId: ctx.chatId,
           appId: ctx.appId,
-          executionMs: result.executionMs,
-          truncated: result.truncated,
+          fullOutputPath: result.fullOutputPath,
           executionThread,
         });
-
-        if (result.truncated) {
-          sendTelemetryEvent("sandbox.script.truncated", {
-            chatId: ctx.chatId,
-            appId: ctx.appId,
-            fullOutputPath: result.fullOutputPath,
-            executionThread,
-          });
-        }
-
-        return JSON.stringify(result);
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        sendTelemetryEvent(
-          errorMessage.includes("timed out")
-            ? "sandbox.script.timeout"
-            : "sandbox.script.failed",
-          {
-            chatId: ctx.chatId,
-            appId: ctx.appId,
-            error: errorMessage,
-            executionThread,
-          },
-        );
-        throw new CaideError(
-          buildSandboxFailureMessage({
-            script: args.script,
-            errorMessage,
-          }),
-          isCaideError(error) ? error.kind : CaideErrorKind.Validation,
-        );
       }
-    },
-  };
 
-function parseWriteFileHostArgs(
-  pathOrArgs: unknown,
-  content?: unknown,
-  description?: unknown,
-) {
+      return JSON.stringify(result);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      sendTelemetryEvent(
+        errorMessage.includes("timed out") ? "sandbox.script.timeout" : "sandbox.script.failed",
+        {
+          chatId: ctx.chatId,
+          appId: ctx.appId,
+          error: errorMessage,
+          executionThread,
+        },
+      );
+      throw new CaideError(
+        buildSandboxFailureMessage({
+          script: args.script,
+          errorMessage,
+        }),
+        isCaideError(error) ? error.kind : CaideErrorKind.Validation,
+      );
+    }
+  },
+};
+
+function parseWriteFileHostArgs(pathOrArgs: unknown, content?: unknown, description?: unknown) {
   const args =
-    pathOrArgs !== null &&
-    typeof pathOrArgs === "object" &&
-    !Array.isArray(pathOrArgs)
+    pathOrArgs !== null && typeof pathOrArgs === "object" && !Array.isArray(pathOrArgs)
       ? pathOrArgs
       : { path: pathOrArgs, content, description };
   let parsed: z.infer<typeof writeFileTool.inputSchema>;
@@ -439,11 +408,7 @@ function parseWriteFileHostArgs(
 }
 
 function buildWriteFileCapability(ctx: AgentContext) {
-  return async (
-    pathOrArgs: unknown,
-    content?: unknown,
-    description?: unknown,
-  ) => {
+  return async (pathOrArgs: unknown, content?: unknown, description?: unknown) => {
     const args = parseWriteFileHostArgs(pathOrArgs, content, description);
     if (!isWriteFileHostEnabled()) {
       throw new CaideError(
@@ -498,13 +463,8 @@ async function runInMainThread(params: {
   // The handler populates `ctx.mcpToolDefs` with the same defs used
   // to build the dynamic tool description, so the prompt and the
   // capability map can never disagree about which tools exist.
-  const defs: McpToolDef[] = params.ctx.mcpToolsEnabled
-    ? (params.ctx.mcpToolDefs ?? [])
-    : [];
-  const fileCaps = buildSandboxCapabilitiesWithObserver(
-    params.ctx.appPath,
-    params.observeHostCall,
-  );
+  const defs: McpToolDef[] = params.ctx.mcpToolsEnabled ? (params.ctx.mcpToolDefs ?? []) : [];
+  const fileCaps = buildSandboxCapabilitiesWithObserver(params.ctx.appPath, params.observeHostCall);
   const writeFileCaps: Record<string, (...args: unknown[]) => unknown> =
     params.ctx.sandboxWriteFileHostEnabled === true && isWriteFileHostEnabled()
       ? { write_file: buildWriteFileCapability(params.ctx) }

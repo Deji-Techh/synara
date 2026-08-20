@@ -35,9 +35,7 @@ async function findViteConfig(appPath: string): Promise<string> {
       if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     }
   }
-  throw new ViteConfigPatchError(
-    `No vite.config.{ts,mts,cts,js,mjs,cjs} found in ${appPath}.`,
-  );
+  throw new ViteConfigPatchError(`No vite.config.{ts,mts,cts,js,mjs,cjs} found in ${appPath}.`);
 }
 
 function findDefineConfigCallExpr(ast: any): any | null {
@@ -67,10 +65,7 @@ function getConfigObjectFromDefineConfig(callExpr: any): any | null {
     if (n.ObjectExpression.check(body)) return body;
     if (n.BlockStatement.check(body)) {
       for (const stmt of body.body) {
-        if (
-          n.ReturnStatement.check(stmt) &&
-          n.ObjectExpression.check(stmt.argument)
-        ) {
+        if (n.ReturnStatement.check(stmt) && n.ObjectExpression.check(stmt.argument)) {
           return stmt.argument;
         }
       }
@@ -133,9 +128,7 @@ function getNitroBindingState(ast: any): NitroBindingState {
   let conflict: { source: string } | null = null;
   for (const stmt of program.body) {
     if (n.ImportDeclaration.check(stmt)) {
-      const sourceValue = n.StringLiteral.check(stmt.source)
-        ? stmt.source.value
-        : "";
+      const sourceValue = n.StringLiteral.check(stmt.source) ? stmt.source.value : "";
       for (const spec of stmt.specifiers ?? []) {
         const localName = (spec as any).local?.name;
         if (localName !== NITRO_LOCAL_NAME) continue;
@@ -154,16 +147,11 @@ function getNitroBindingState(ast: any): NitroBindingState {
           conflict ??= { source: "local variable declaration" };
         }
       }
-    } else if (
-      n.FunctionDeclaration.check(stmt) &&
-      stmt.id?.name === NITRO_LOCAL_NAME
-    ) {
+    } else if (n.FunctionDeclaration.check(stmt) && stmt.id?.name === NITRO_LOCAL_NAME) {
       conflict ??= { source: "function declaration" };
     }
   }
-  return conflict
-    ? { kind: "conflict", source: conflict.source }
-    : { kind: "none" };
+  return conflict ? { kind: "conflict", source: conflict.source } : { kind: "none" };
 }
 
 function insertNitroImport(ast: any): void {
@@ -174,9 +162,7 @@ function insertNitroImport(ast: any): void {
 
   const program = ast.program;
   if (!program || !Array.isArray(program.body)) {
-    throw new ViteConfigPatchError(
-      "Could not find program body in vite config AST.",
-    );
+    throw new ViteConfigPatchError("Could not find program body in vite config AST.");
   }
   let lastImportIdx = -1;
   for (let i = 0; i < program.body.length; i++) {
@@ -185,9 +171,7 @@ function insertNitroImport(ast: any): void {
   program.body.splice(lastImportIdx + 1, 0, importDecl);
 }
 
-export async function addNitroToViteConfig(
-  appPath: string,
-): Promise<ViteConfigBackup> {
+export async function addNitroToViteConfig(appPath: string): Promise<ViteConfigBackup> {
   const filePath = await findViteConfig(appPath);
   const original = await fs.readFile(filePath, "utf8");
 
@@ -228,10 +212,7 @@ export async function addNitroToViteConfig(
     );
   }
 
-  if (
-    bindingState.kind === "fromNitroVite" &&
-    pluginsArrayContainsNitroCall(pluginsArr)
-  ) {
+  if (bindingState.kind === "fromNitroVite" && pluginsArrayContainsNitroCall(pluginsArr)) {
     return { filePath, backup: original, wasPatched: false };
   }
 
@@ -260,9 +241,7 @@ export async function addNitroToViteConfig(
   return { filePath, backup: original, wasPatched: true };
 }
 
-export async function restoreViteConfig(
-  backup: ViteConfigBackup,
-): Promise<void> {
+export async function restoreViteConfig(backup: ViteConfigBackup): Promise<void> {
   if (backup.backup === null) return;
   await fs.writeFile(backup.filePath, backup.backup, "utf8");
 }

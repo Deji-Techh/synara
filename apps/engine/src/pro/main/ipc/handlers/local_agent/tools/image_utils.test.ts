@@ -9,9 +9,7 @@ describe("image_utils", () => {
   describe("getImageDimensionsFromDataUrl", () => {
     it("returns null for invalid data URL format", () => {
       expect(getImageDimensionsFromDataUrl("not a data url")).toBeNull();
-      expect(
-        getImageDimensionsFromDataUrl("data:text/plain;base64,abc"),
-      ).toBeNull();
+      expect(getImageDimensionsFromDataUrl("data:text/plain;base64,abc")).toBeNull();
       expect(getImageDimensionsFromDataUrl("")).toBeNull();
     });
 
@@ -64,9 +62,7 @@ describe("image_utils", () => {
 
     it("returns null for truncated image data", () => {
       // PNG signature only, no IHDR
-      const truncated = Buffer.from([
-        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
-      ]);
+      const truncated = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
       const dataUrl = `data:image/png;base64,${truncated.toString("base64")}`;
       const result = getImageDimensionsFromDataUrl(dataUrl);
       expect(result).toBeNull();
@@ -77,9 +73,8 @@ describe("image_utils", () => {
         // Invalid signature
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         // IHDR chunk
-        0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x64,
-        0x00, 0x00, 0x00, 0x32, 0x08, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00,
+        0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00,
+        0x32, 0x08, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       ]);
       const dataUrl = `data:image/png;base64,${corrupted.toString("base64")}`;
       const result = getImageDimensionsFromDataUrl(dataUrl);

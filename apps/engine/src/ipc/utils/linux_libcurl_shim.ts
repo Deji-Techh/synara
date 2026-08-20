@@ -66,9 +66,7 @@ function computeShimDir(): string | undefined {
     if (!realLibcurl) {
       // No usable libcurl found. Can't fix it here; let the real loader error
       // surface so the user sees an actionable message.
-      logger.warn(
-        `${SONAME} missing and no libcurl.so.4 found; git over https may fail`,
-      );
+      logger.warn(`${SONAME} missing and no libcurl.so.4 found; git over https may fail`);
       return undefined;
     }
 
@@ -98,11 +96,7 @@ function computeShimDir(): string | undefined {
  */
 function listSystemLibs(): Map<string, string> {
   const archTag = ldconfigArchTag();
-  const ldconfigCandidates = [
-    "/usr/sbin/ldconfig",
-    "/sbin/ldconfig",
-    "ldconfig",
-  ];
+  const ldconfigCandidates = ["/usr/sbin/ldconfig", "/sbin/ldconfig", "ldconfig"];
 
   for (const bin of ldconfigCandidates) {
     try {
@@ -132,10 +126,7 @@ function listSystemLibs(): Map<string, string> {
  * Lines look like:
  *   libcurl.so.4 (libc6,x86-64) => /lib/x86_64-linux-gnu/libcurl.so.4
  */
-export function parseLdconfig(
-  output: string,
-  archTag: string | undefined,
-): Map<string, string> {
+export function parseLdconfig(output: string, archTag: string | undefined): Map<string, string> {
   const result = new Map<string, string>();
   const lineRe = /^\s*(\S+)\s+\(([^)]*)\)\s+=>\s+(\S+)\s*$/;
   for (const line of output.split("\n")) {

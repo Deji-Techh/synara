@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  classifyOAuthError,
-  looksLikeUnauthorized,
-} from "@/ipc/handlers/mcp_error_classifiers";
+import { classifyOAuthError, looksLikeUnauthorized } from "@/ipc/handlers/mcp_error_classifiers";
 
 // Positive cases below are real `@ai-sdk/mcp` error strings copied
 // out of `node_modules/@ai-sdk/mcp/dist/index.mjs`. Negative cases
@@ -90,10 +87,7 @@ describe("looksLikeUnauthorized", () => {
     ["literal 401", "HTTP 401 Unauthorized"],
     ["uppercase unauthorized", "UNAUTHORIZED"],
     ["mixed case", "Server returned: Unauthorized"],
-    [
-      "OAuth error code in body",
-      "Server response: { error: 'unauthorized_client' }",
-    ],
+    ["OAuth error code in body", "Server response: { error: 'unauthorized_client' }"],
   ])("matches %s", (_label, msg) => {
     expect(looksLikeUnauthorized(msg)).toBe(true);
   });

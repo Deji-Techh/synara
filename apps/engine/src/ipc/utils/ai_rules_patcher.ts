@@ -108,9 +108,7 @@ async function readIfExists(filePath: string): Promise<string | null> {
  * - If the Nitro markers already exist, the file is left unchanged.
  * - The original file contents are returned for rollback via `restoreAiRules`.
  */
-export async function appendNitroRules(
-  appPath: string,
-): Promise<AiRulesBackup> {
+export async function appendNitroRules(appPath: string): Promise<AiRulesBackup> {
   const filePath = aiRulesPath(appPath);
   const existing = await readIfExists(filePath);
 
@@ -119,11 +117,7 @@ export async function appendNitroRules(
   }
 
   const separator =
-    existing === null || existing.length === 0
-      ? ""
-      : existing.endsWith("\n")
-        ? "\n"
-        : "\n\n";
+    existing === null || existing.length === 0 ? "" : existing.endsWith("\n") ? "\n" : "\n\n";
   const next = (existing ?? "") + separator + NITRO_RULES_SECTION + "\n";
 
   await fs.writeFile(filePath, next, "utf8");
@@ -135,10 +129,7 @@ export async function appendNitroRules(
  * call. If the backup is null, the file is deleted (the patcher had created
  * it). Safe to call even if nothing changed.
  */
-export async function restoreAiRules(
-  appPath: string,
-  backup: string | null,
-): Promise<void> {
+export async function restoreAiRules(appPath: string, backup: string | null): Promise<void> {
   const filePath = aiRulesPath(appPath);
   if (backup === null) {
     await fs.rm(filePath, { force: true });

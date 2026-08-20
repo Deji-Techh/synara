@@ -63,8 +63,7 @@ export function registerCustomAppsFolderHandlers() {
       if (!isAbsolute(input)) throw new Error("Directory path is not absolute");
 
       // Make sure it exists
-      if (!isDirectoryAccessible(input))
-        throw new Error("Path is not a directory");
+      if (!isDirectoryAccessible(input)) throw new Error("Path is not a directory");
 
       newCaideAppsBaseDir = normalize(input);
       updatedSettingValue = newCaideAppsBaseDir;
@@ -84,9 +83,7 @@ export function registerCustomAppsFolderHandlers() {
         const allApps = tx.select().from(apps).all();
         for (const app of allApps) {
           if (isAbsolute(app.path)) {
-            logger.info(
-              `${app.name} already has an absolute path; skipping path update`,
-            );
+            logger.info(`${app.name} already has an absolute path; skipping path update`);
             continue;
           }
 

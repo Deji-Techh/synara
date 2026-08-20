@@ -46,8 +46,7 @@ export interface ExecuteAddDependencyResult {
 
 // Matches package names with optional version specifiers:
 // lodash, @scope/pkg, lodash@1.2.3, @scope/pkg@^1.0.0, pkg@latest, pkg@file:../local
-const NPM_PACKAGE_NAME_PATTERN =
-  /^(@[a-z0-9-_.]+\/)?[a-z0-9-_.]+(@[a-z0-9^~>=.<_\-*|,: /\\]+)?$/i;
+const NPM_PACKAGE_NAME_PATTERN = /^(@[a-z0-9-_.]+\/)?[a-z0-9-_.]+(@[a-z0-9^~>=.<_\-*|,: /\\]+)?$/i;
 
 // Shell metacharacters that should never appear in a package name
 const SHELL_METACHARACTER_PATTERN = /[;&|`$(){}!<>]/;
@@ -85,9 +84,7 @@ function getDisplayLines(value: string): string[] {
 }
 
 function getFilteredDisplayDetails(value: string): string | undefined {
-  const lines = getDisplayLines(value).filter(
-    (line) => !isDisplaySummaryNoise(line),
-  );
+  const lines = getDisplayLines(value).filter((line) => !isDisplaySummaryNoise(line));
 
   if (lines.length === 0) {
     return undefined;
@@ -125,13 +122,7 @@ export class ExecuteAddDependencyError extends Error {
   displayDetails: string;
   displaySummary: string;
 
-  constructor({
-    error,
-    warningMessages,
-  }: {
-    error: unknown;
-    warningMessages: string[];
-  }) {
+  constructor({ error, warningMessages }: { error: unknown; warningMessages: string[] }) {
     const message = error instanceof Error ? error.message : String(error);
     const commandDisplayDetails = getCommandExecutionDisplayDetails(error);
     const displayDetails = commandDisplayDetails
@@ -161,11 +152,7 @@ async function runAddDependencyCommand(
       env: getPackageManagerCommandEnv(),
       timeoutMs: ADD_DEPENDENCY_INSTALL_TIMEOUT_MS,
     };
-    const { stdout, stderr } = await runCommand(
-      command.command,
-      command.args,
-      options,
-    );
+    const { stdout, stderr } = await runCommand(command.command, command.args, options);
     return {
       succeeded: true,
       installResults: stdout + (stderr ? `\n${stderr}` : ""),
@@ -189,10 +176,7 @@ function formatDeniedBuildsNote(packageNames: string[]): string {
   return `\n\nNote: build scripts for ${packageList} were not run (Caide security policy).`;
 }
 
-async function rebuildPromotedPnpmBuilds(
-  appPath: string,
-  packageNames: string[],
-): Promise<void> {
+async function rebuildPromotedPnpmBuilds(appPath: string, packageNames: string[]): Promise<void> {
   if (packageNames.length === 0) {
     return;
   }
@@ -217,9 +201,7 @@ async function installFlutterPackages(
   appPath: string,
   dev: boolean,
 ): Promise<ExecuteAddDependencyResult> {
-  const invalidPackage = packages.find(
-    (pkg) => !PUB_PACKAGE_NAME_PATTERN.test(pkg),
-  );
+  const invalidPackage = packages.find((pkg) => !PUB_PACKAGE_NAME_PATTERN.test(pkg));
   if (invalidPackage) {
     throw new ExecuteAddDependencyError({
       error: new CaideError(
@@ -230,9 +212,7 @@ async function installFlutterPackages(
     });
   }
 
-  const dangerousPackage = packages.find((pkg) =>
-    SHELL_METACHARACTER_PATTERN.test(pkg),
-  );
+  const dangerousPackage = packages.find((pkg) => SHELL_METACHARACTER_PATTERN.test(pkg));
   if (dangerousPackage) {
     throw new ExecuteAddDependencyError({
       error: new CaideError(
@@ -276,9 +256,7 @@ export async function installPackages({
     return installFlutterPackages(packages, appPath, dev);
   }
 
-  const invalidPackage = packages.find(
-    (pkg) => !NPM_PACKAGE_NAME_PATTERN.test(pkg),
-  );
+  const invalidPackage = packages.find((pkg) => !NPM_PACKAGE_NAME_PATTERN.test(pkg));
   if (invalidPackage) {
     throw new ExecuteAddDependencyError({
       error: new CaideError(
@@ -289,9 +267,7 @@ export async function installPackages({
     });
   }
 
-  const dangerousPackage = packages.find((pkg) =>
-    SHELL_METACHARACTER_PATTERN.test(pkg),
-  );
+  const dangerousPackage = packages.find((pkg) => SHELL_METACHARACTER_PATTERN.test(pkg));
   if (dangerousPackage) {
     throw new ExecuteAddDependencyError({
       error: new CaideError(
@@ -338,13 +314,12 @@ export async function installPackages({
     packageManager === "pnpm"
       ? (await commitPnpmAllowBuildsConfigIfChanged(appPath)).promotedPackages
       : [];
-  const { succeeded, installResults, lastError } =
-    await runAddDependencyCommand(
-      buildAddDependencyCommand(packages, packageManager, useSocketFirewall, {
-        dev,
-      }),
-      appPath,
-    );
+  const { succeeded, installResults, lastError } = await runAddDependencyCommand(
+    buildAddDependencyCommand(packages, packageManager, useSocketFirewall, {
+      dev,
+    }),
+    appPath,
+  );
 
   if (!succeeded && lastError) {
     throw new ExecuteAddDependencyError({
@@ -368,9 +343,9 @@ export async function installPackages({
     });
     if (deniedBuilds.length > 0) {
       installResultsWithPolicyNotes += formatDeniedBuildsNote(
-        Array.from(
-          new Set(deniedBuilds.map((ignoredBuild) => ignoredBuild.packageName)),
-        ).sort((left, right) => left.localeCompare(right)),
+        Array.from(new Set(deniedBuilds.map((ignoredBuild) => ignoredBuild.packageName))).sort(
+          (left, right) => left.localeCompare(right),
+        ),
       );
     }
   }
@@ -406,10 +381,7 @@ export async function executeAddDependency({
   );
 
   // Save the updated message back to the database
-  await db
-    .update(messages)
-    .set({ content: updatedContent })
-    .where(eq(messages.id, message.id));
+  await db.update(messages).set({ content: updatedContent }).where(eq(messages.id, message.id));
 
   return {
     installResults,

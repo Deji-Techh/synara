@@ -26,9 +26,7 @@ export function getExtraProviderOptionsForEngine(
     return getAnthropicEngineThinkingOptions(settings);
   }
   if (GEMINI_PROVIDERS.includes(providerId)) {
-    const budgetTokens = getGeminiThinkingBudgetTokens(
-      settings?.thinkingBudget,
-    );
+    const budgetTokens = getGeminiThinkingBudgetTokens(settings?.thinkingBudget);
     return {
       thinking: {
         type: "enabled",
@@ -42,9 +40,7 @@ export function getExtraProviderOptionsForEngine(
   return {};
 }
 
-function getGeminiThinkingBudgetTokens(
-  thinkingBudget?: ThinkingBudget,
-): number {
+function getGeminiThinkingBudgetTokens(thinkingBudget?: ThinkingBudget): number {
   switch (thinkingBudget) {
     case "low":
       return 1_000;
@@ -58,9 +54,7 @@ function getGeminiThinkingBudgetTokens(
   }
 }
 
-export function getThinkingBudgetEffort(
-  thinkingBudget?: ThinkingBudget,
-): ReasoningEffort {
+export function getThinkingBudgetEffort(thinkingBudget?: ThinkingBudget): ReasoningEffort {
   switch (thinkingBudget) {
     case "low":
       return "low";
@@ -85,9 +79,7 @@ function getAnthropicEngineThinkingOptions(settings: UserSettings) {
 }
 
 // This is the regular AI-SDK Anthropic provider options.
-export function getAnthropicProviderOptions(
-  settings: UserSettings,
-): AnthropicProviderOptions {
+export function getAnthropicProviderOptions(settings: UserSettings): AnthropicProviderOptions {
   return {
     thinking: {
       type: "adaptive",

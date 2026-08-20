@@ -14,9 +14,13 @@ import {
 
 const logger = log.scope("opencode_go_models");
 const MODEL_LIST_TIMEOUT_MS = 8_000;
-const knownFreeModelIds = new Set<string>((OPENCODE_GO_FREE_MODEL_IDS as unknown as string[]) ?? []);
+const knownFreeModelIds = new Set<string>(
+  (OPENCODE_GO_FREE_MODEL_IDS as unknown as string[]) ?? [],
+);
 const knownFreeModelOrder = new Map<string, number>(
-  ((OPENCODE_GO_FREE_MODEL_IDS as unknown as string[]) ?? []).map((id, index) => [id, index] as const),
+  ((OPENCODE_GO_FREE_MODEL_IDS as unknown as string[]) ?? []).map(
+    (id, index) => [id, index] as const,
+  ),
 );
 
 type OpenCodeGoModelsResponse = {
@@ -44,9 +48,7 @@ export async function getOpenCodeGoFreeModels(
     });
 
     if (!response.ok) {
-      throw new Error(
-        `OpenCode Go model catalogue returned HTTP ${response.status}`,
-      );
+      throw new Error(`OpenCode Go model catalogue returned HTTP ${response.status}`);
     }
 
     const payload = (await response.json()) as OpenCodeGoModelsResponse;
@@ -67,10 +69,8 @@ export async function getOpenCodeGoFreeModels(
 
     return modelIds
       .sort((left, right) => {
-        const leftIndex =
-          knownFreeModelOrder.get(left) ?? Number.MAX_SAFE_INTEGER;
-        const rightIndex =
-          knownFreeModelOrder.get(right) ?? Number.MAX_SAFE_INTEGER;
+        const leftIndex = knownFreeModelOrder.get(left) ?? Number.MAX_SAFE_INTEGER;
+        const rightIndex = knownFreeModelOrder.get(right) ?? Number.MAX_SAFE_INTEGER;
         return leftIndex - rightIndex || left.localeCompare(right);
       })
       .map(toLanguageModel);
@@ -90,9 +90,7 @@ function getFallbackModels(): LanguageModel[] {
 }
 
 function toLanguageModel(modelId: string): LanguageModel {
-  const bundledModel = (MODEL_OPTIONS["opencode-go"] ?? []).find(
-    (model) => model.name === modelId,
-  );
+  const bundledModel = (MODEL_OPTIONS["opencode-go"] ?? []).find((model) => model.name === modelId);
   if (bundledModel) {
     return modelOptionToLanguageModel(bundledModel);
   }

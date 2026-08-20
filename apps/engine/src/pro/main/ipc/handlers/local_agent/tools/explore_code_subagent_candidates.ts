@@ -83,27 +83,18 @@ export function createCandidateRegistry(): CandidateRegistry {
 // Observation budgeting + annotation
 // ---------------------------------------------------------------------------
 
-export function totalObservationChars(
-  observations: SubagentObservation[],
-): number {
-  return observations.reduce(
-    (total, observation) => total + observation.result.length,
-    0,
-  );
+export function totalObservationChars(observations: SubagentObservation[]): number {
+  return observations.reduce((total, observation) => total + observation.result.length, 0);
 }
 
 export function formatObservationResult(
   result: unknown,
   observations: SubagentObservation[],
 ): string {
-  const text =
-    typeof result === "string" ? result : JSON.stringify(result, null, 2);
+  const text = typeof result === "string" ? result : JSON.stringify(result, null, 2);
   const usedBudget = totalObservationChars(observations);
   const remainingBudget = Math.max(0, MAX_TOTAL_OBSERVATION_CHARS - usedBudget);
-  const maxChars = Math.min(
-    MAX_OBSERVATION_CHARS,
-    remainingBudget > 0 ? remainingBudget : 0,
-  );
+  const maxChars = Math.min(MAX_OBSERVATION_CHARS, remainingBudget > 0 ? remainingBudget : 0);
   if (maxChars <= 0) {
     return OBSERVATION_BUDGET_EXHAUSTED_MESSAGE;
   }
@@ -124,10 +115,7 @@ export function formatObservationResult(
 // first thing dropped on a big grep/explore_code result — leaving the model
 // with no IDs to cite in submit_report and silently degrading it to the
 // deterministic fallback. Putting the IDs first guarantees they survive.
-export function annotateObservationResult(
-  result: string,
-  candidates: ExplorerCandidate[],
-): string {
+export function annotateObservationResult(result: string, candidates: ExplorerCandidate[]): string {
   if (candidates.length === 0) {
     return result;
   }
@@ -136,16 +124,12 @@ export function annotateObservationResult(
       const quoteHints = getObservedQuoteHints(candidate.observedText);
       const quoteText =
         quoteHints.length > 0
-          ? ` | exact source lines: ${quoteHints
-              .map((hint) => `"${hint}"`)
-              .join(" / ")}`
+          ? ` | exact source lines: ${quoteHints.map((hint) => `"${hint}"`).join(" / ")}`
           : "";
       return `${requireCandidateId(candidate)} ${formatCandidateRef(candidate)}${quoteText}`;
     })
     .slice(0, 40);
-  return `Observed candidate IDs:\n${ids
-    .map((entry) => `- [${entry}]`)
-    .join("\n")}\n\n${result}`;
+  return `Observed candidate IDs:\n${ids.map((entry) => `- [${entry}]`).join("\n")}\n\n${result}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -164,10 +148,7 @@ export function getQueryTerms(query: string): string[] {
   return [...new Set(getOrderedQueryTerms(query))];
 }
 
-function summarizeEvidence(
-  result: string,
-  queryTerms: string[],
-): string | undefined {
+function summarizeEvidence(result: string, queryTerms: string[]): string | undefined {
   const lines = result
     .split("\n")
     .map((line) => line.trim())
@@ -176,10 +157,7 @@ function summarizeEvidence(
       line,
       index,
       score:
-        queryTerms.reduce(
-          (score, term) => score + (line.toLowerCase().includes(term) ? 2 : 0),
-          0,
-        ) +
+        queryTerms.reduce((score, term) => score + (line.toLowerCase().includes(term) ? 2 : 0), 0) +
         (/\b(function|class|const|return|export|async)\b/.test(line) ? 1 : 0),
     }))
     .sort((left, right) => right.score - left.score || left.index - right.index)
@@ -212,33 +190,24 @@ export function getObservedQuoteHints(observedText?: string): string[] {
     .filter((line) => !line.startsWith("```"))
     .filter((line) => line.length <= 180)
     .filter((line) =>
-      /[{}();=]|\b(import|export|class|function|const|return|type|interface)\b/.test(
-        line,
-      ),
+      /[{}();=]|\b(import|export|class|function|const|return|type|interface)\b/.test(line),
     );
   const scoredLines = sourceLines
     .map((line, index) => ({
       line,
       index,
       score:
-        (/\b(export|function|class|const|type|interface)\b/.test(line)
-          ? 6
-          : 0) +
+        (/\b(export|function|class|const|type|interface)\b/.test(line) ? 6 : 0) +
         (/\b(return|await|import)\b/.test(line) ? 3 : 0) +
         (/[.=]\w+\(/.test(line) ? 2 : 0),
     }))
-    .sort(
-      (left, right) => right.score - left.score || left.index - right.index,
-    );
+    .sort((left, right) => right.score - left.score || left.index - right.index);
   return [...new Set(scoredLines.map((entry) => entry.line))].slice(0, 5);
 }
 
 // Pick the single best verbatim source line for a candidate, preferring one
 // whose text overlaps the supplied fact/role so the quote supports the claim.
-export function bestObservedQuote(
-  candidate: ExplorerCandidate,
-  context: string,
-): string | null {
+export function bestObservedQuote(candidate: ExplorerCandidate, context: string): string | null {
   const hints = getObservedQuoteHints(candidate.observedText);
   if (hints.length === 0) {
     return null;
@@ -251,12 +220,9 @@ export function bestObservedQuote(
     .map((line, index) => ({
       line,
       index,
-      overlap: contextTerms.filter((term) => line.toLowerCase().includes(term))
-        .length,
+      overlap: contextTerms.filter((term) => line.toLowerCase().includes(term)).length,
     }))
-    .sort(
-      (left, right) => right.overlap - left.overlap || left.index - right.index,
-    );
+    .sort((left, right) => right.overlap - left.overlap || left.index - right.index);
   return ranked[0].line;
 }
 
@@ -289,19 +255,13 @@ export function candidatesFromRawExploreCodeResult(
   );
 }
 
-export function candidatesFromGrepResult(
-  result: string,
-  args: unknown,
-): ExplorerCandidate[] {
+export function candidatesFromGrepResult(result: string, args: unknown): ExplorerCandidate[] {
   const queryTerms = getQueryTerms(
     typeof args === "object" && args && "query" in args
       ? String((args as { query?: unknown }).query ?? "")
       : "",
   );
-  const refsByPath = new Map<
-    string,
-    Array<{ lineNumber: number; lineText: string }>
-  >();
+  const refsByPath = new Map<string, Array<{ lineNumber: number; lineText: string }>>();
   for (const line of result.split("\n")) {
     const match = /^([^:\n]+):(\d+):/.exec(line);
     if (!match) {
@@ -326,9 +286,7 @@ export function candidatesFromGrepResult(
           .slice(0, 3)
           .map((item) => `line ${item.lineNumber}: ${truncate(item.lineText)}`)
           .join("; "),
-        observedText: cluster
-          .map((item) => `line ${item.lineNumber}: ${item.lineText}`)
-          .join("\n"),
+        observedText: cluster.map((item) => `line ${item.lineNumber}: ${item.lineText}`).join("\n"),
         queryTerms,
       }),
     ),
@@ -343,11 +301,7 @@ function clusterGrepMatches(
   for (const match of sorted) {
     const current = clusters.at(-1);
     const last = current?.at(-1);
-    if (
-      current &&
-      last &&
-      match.lineNumber - last.lineNumber <= GREP_CLUSTER_GAP_LINES
-    ) {
+    if (current && last && match.lineNumber - last.lineNumber <= GREP_CLUSTER_GAP_LINES) {
       current.push(match);
     } else {
       clusters.push([match]);
@@ -369,10 +323,7 @@ function grepClusterRange(
   };
 }
 
-export function candidatesFromReadFileResult(
-  result: string,
-  args: unknown,
-): ExplorerCandidate[] {
+export function candidatesFromReadFileResult(result: string, args: unknown): ExplorerCandidate[] {
   const readArgs = parseReadFileArgs(args);
   if (!readArgs) {
     return [];
@@ -399,11 +350,8 @@ function rangeFromReadFileResult(
   }
   const start = readArgs.startLine ?? 1;
   const lineCount =
-    result.length === 0
-      ? 0
-      : result.split("\n").length - (result.endsWith("\n") ? 1 : 0);
-  const inferredEnd =
-    readArgs.endLine ?? Math.max(start, start + lineCount - 1);
+    result.length === 0 ? 0 : result.split("\n").length - (result.endsWith("\n") ? 1 : 0);
+  const inferredEnd = readArgs.endLine ?? Math.max(start, start + lineCount - 1);
   return {
     start,
     end: inferredEnd,
@@ -434,10 +382,7 @@ function parseReadFileArgs(
   };
 }
 
-export function candidatesFromListFilesResult(
-  result: string,
-  args: unknown,
-): ExplorerCandidate[] {
+export function candidatesFromListFilesResult(result: string, args: unknown): ExplorerCandidate[] {
   const queryTerms = getQueryTerms(
     typeof args === "object" && args && "directory" in args
       ? String((args as { directory?: unknown }).directory ?? "")
@@ -531,29 +476,13 @@ function scoreCandidate({
     .join(" ")
     .toLowerCase();
   const evidenceHaystack = (evidence ?? "").toLowerCase();
-  const basenameMatches = queryTerms.filter((term) =>
-    basenameHaystack.includes(term),
-  ).length;
-  const symbolMatches = queryTerms.filter((term) =>
-    symbolHaystack.includes(term),
-  ).length;
-  const evidenceMatches = queryTerms.filter((term) =>
-    evidenceHaystack.includes(term),
-  ).length;
+  const basenameMatches = queryTerms.filter((term) => basenameHaystack.includes(term)).length;
+  const symbolMatches = queryTerms.filter((term) => symbolHaystack.includes(term)).length;
+  const evidenceMatches = queryTerms.filter((term) => evidenceHaystack.includes(term)).length;
   const sourceScore =
-    source === "compiler"
-      ? 60
-      : source === "read_file"
-        ? 45
-        : source === "grep"
-          ? 30
-          : 5;
+    source === "compiler" ? 60 : source === "read_file" ? 45 : source === "grep" ? 30 : 5;
   const supportPenalty =
-    traits.isTest || traits.isSupport || traits.isGenerated
-      ? -40
-      : traits.isDocsExample
-        ? -40
-        : 0;
+    traits.isTest || traits.isSupport || traits.isGenerated ? -40 : traits.isDocsExample ? -40 : 0;
   return (
     sourceScore +
     evidenceMatches * 10 +
@@ -574,9 +503,7 @@ export function getRankedCandidates(
 ): ExplorerCandidate[] {
   const queryTerms = getQueryTerms(query);
   const seen = new Map<string, ExplorerCandidate>();
-  for (const candidate of observations.flatMap(
-    (observation) => observation.candidates,
-  )) {
+  for (const candidate of observations.flatMap((observation) => observation.candidates)) {
     const rescored = {
       ...buildCandidate({ ...candidate, queryTerms }),
       id: candidate.id,
@@ -607,9 +534,7 @@ export function getRankedCandidates(
     .slice(0, MAX_INTERNAL_CANDIDATES)
     .map((candidate) => {
       if (!candidate.id) {
-        throw new Error(
-          `Ranked candidate missing stable id: ${candidate.path}`,
-        );
+        throw new Error(`Ranked candidate missing stable id: ${candidate.path}`);
       }
       return candidate;
     });
@@ -617,13 +542,9 @@ export function getRankedCandidates(
 
 // All distinct observed candidates (deduped by stable id), used to resolve the
 // IDs the model submits.
-export function getObservedCandidates(
-  observations: SubagentObservation[],
-): ExplorerCandidate[] {
+export function getObservedCandidates(observations: SubagentObservation[]): ExplorerCandidate[] {
   const candidateById = new Map<CandidateId, ExplorerCandidate>();
-  for (const candidate of observations.flatMap(
-    (observation) => observation.candidates,
-  )) {
+  for (const candidate of observations.flatMap((observation) => observation.candidates)) {
     const id = requireCandidateId(candidate);
     if (!candidateById.has(id)) {
       candidateById.set(id, candidate);
@@ -632,9 +553,7 @@ export function getObservedCandidates(
   return [...candidateById.values()];
 }
 
-function dedupeOverlappingRankedCandidates(
-  candidates: ExplorerCandidate[],
-): ExplorerCandidate[] {
+function dedupeOverlappingRankedCandidates(candidates: ExplorerCandidate[]): ExplorerCandidate[] {
   const kept: ExplorerCandidate[] = [];
   for (const candidate of candidates) {
     const overlapsKept = kept.some(
@@ -685,9 +604,7 @@ function rangesOverlap(left: CandidateRange, right: CandidateRange): boolean {
 }
 
 function rangeWidth(range: CandidateRange | null): number {
-  return range
-    ? Math.max(1, range.end - range.start + 1)
-    : Number.MAX_SAFE_INTEGER;
+  return range ? Math.max(1, range.end - range.start + 1) : Number.MAX_SAFE_INTEGER;
 }
 
 // ---------------------------------------------------------------------------
@@ -714,9 +631,7 @@ export function formatRange(range: CandidateRange | null): string {
   return range ? `${range.start}-${range.end}` : "unknown";
 }
 
-export function clampRangeForReport(
-  range: CandidateRange | null,
-): CandidateRange | null {
+export function clampRangeForReport(range: CandidateRange | null): CandidateRange | null {
   if (!range) {
     return null;
   }
@@ -728,9 +643,7 @@ export function clampRangeForReport(
   return { start, end: start + MAX_RANGE_LINES - 1 };
 }
 
-export function clampCandidateRange(
-  candidate: ExplorerCandidate,
-): ExplorerCandidate {
+export function clampCandidateRange(candidate: ExplorerCandidate): ExplorerCandidate {
   return { ...candidate, range: clampRangeForReport(candidate.range) };
 }
 

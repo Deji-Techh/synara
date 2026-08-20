@@ -14,9 +14,7 @@ describe("bounded text file reads", () => {
 
   beforeEach(async () => {
     rootPath = await fs.mkdtemp(path.join(os.tmpdir(), "bounded-read-root-"));
-    outsidePath = await fs.mkdtemp(
-      path.join(os.tmpdir(), "bounded-read-outside-"),
-    );
+    outsidePath = await fs.mkdtemp(path.join(os.tmpdir(), "bounded-read-outside-"));
   });
 
   afterEach(async () => {

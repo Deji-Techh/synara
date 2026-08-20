@@ -2,11 +2,7 @@ import { describe, expect, it } from "vitest";
 import { streamText } from "ai";
 import { MockLanguageModelV3, simulateReadableStream } from "ai/test";
 import type { LanguageModelV3StreamPart } from "@ai-sdk/provider";
-import {
-  StreamingPatchTracker,
-  computeStreamingPatch,
-  fastTextOutput,
-} from "./stream_text_utils";
+import { StreamingPatchTracker, computeStreamingPatch, fastTextOutput } from "./stream_text_utils";
 
 describe("fastTextOutput", () => {
   it("returns the text length (a number) as the partial output", async () => {
@@ -34,9 +30,9 @@ describe("fastTextOutput", () => {
     expect(output.name).toBe("text");
     await expect(output.responseFormat).resolves.toEqual({ type: "text" });
     // Completion still yields the full text, not the length.
-    await expect(
-      output.parseCompleteOutput({ text: "full response" }),
-    ).resolves.toBe("full response");
+    await expect(output.parseCompleteOutput({ text: "full response" })).resolves.toBe(
+      "full response",
+    );
   });
 
   // Guards the streaming mechanism the number partial depends on: the SDK's
@@ -111,9 +107,7 @@ describe("StreamingPatchTracker", () => {
     const prev = '<caide-status state="running">ok</caide-status>';
     tracker.update(prev);
     const rewritten = '<caide-status state="finished">ok</caide-status>';
-    expect(tracker.update(rewritten)).toEqual(
-      computeStreamingPatch(rewritten, prev),
-    );
+    expect(tracker.update(rewritten)).toEqual(computeStreamingPatch(rewritten, prev));
   });
 
   it("stays correct when appending after a rewrite", () => {
@@ -128,9 +122,7 @@ describe("StreamingPatchTracker", () => {
 
   it("matches computeStreamingPatch when the new target shrinks", () => {
     const tracker = new StreamingPatchTracker("Hello world");
-    expect(tracker.update("Hello")).toEqual(
-      computeStreamingPatch("Hello", "Hello world"),
-    );
+    expect(tracker.update("Hello")).toEqual(computeStreamingPatch("Hello", "Hello world"));
   });
 
   it("handles a cleanFullResponse-style < → ＜ rewrite in the prefix", () => {
@@ -138,9 +130,7 @@ describe("StreamingPatchTracker", () => {
     const prev = 'Hello <caide-status state="running">x</caide-status>';
     tracker.update(prev);
     const rewritten = 'Hello ＜caide-status state="running">x</caide-status>';
-    expect(tracker.update(rewritten)).toEqual(
-      computeStreamingPatch(rewritten, prev),
-    );
+    expect(tracker.update(rewritten)).toEqual(computeStreamingPatch(rewritten, prev));
   });
 
   it("resets the baseline after a fullMessages resync", () => {

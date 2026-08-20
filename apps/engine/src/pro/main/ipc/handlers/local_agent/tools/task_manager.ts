@@ -1,11 +1,7 @@
 import { z } from "zod";
 import { spawn } from "node:child_process";
 import crypto from "node:crypto";
-import {
-  AgentContext,
-  ToolDefinition,
-  escapeXmlAttr,
-} from "./types";
+import { AgentContext, ToolDefinition, escapeXmlAttr } from "./types";
 import { safeJoin } from "@/ipc/utils/path_utils";
 import { killProcessTree } from "@/ipc/utils/process_tree";
 import { getStandardShellEnv } from "@/ipc/utils/shell_utils";
@@ -49,22 +45,15 @@ const spawnTaskSchema = z.object({
   command: z
     .string()
     .min(1)
-    .describe(
-      "The shell command to run in the background (e.g., 'npm run test').",
-    ),
-  cwd: z
-    .string()
-    .optional()
-    .describe("Optional working directory relative to the app root."),
+    .describe("The shell command to run in the background (e.g., 'npm run test')."),
+  cwd: z.string().optional().describe("Optional working directory relative to the app root."),
 });
 
 const checkTaskSchema = z.object({
   task_id: z.string().min(1).describe("The ID of the task to check."),
 });
 
-export const spawnBackgroundTaskTool: ToolDefinition<
-  z.infer<typeof spawnTaskSchema>
-> = {
+export const spawnBackgroundTaskTool: ToolDefinition<z.infer<typeof spawnTaskSchema>> = {
   name: "spawn_background_task",
   description: `Start a long-running command (like a build, test suite, or dev server) in the background. 
 This tool returns immediately with a task ID, allowing you to continue planning or editing other files without waiting.
@@ -140,9 +129,7 @@ You can check the status of the task later using the check_task_status tool.`,
   },
 };
 
-export const checkTaskStatusTool: ToolDefinition<
-  z.infer<typeof checkTaskSchema>
-> = {
+export const checkTaskStatusTool: ToolDefinition<z.infer<typeof checkTaskSchema>> = {
   name: "check_task_status",
   description: `Check the status and output of a previously spawned background task.
 If the task is still running, it will return the latest trailing output. 
@@ -168,10 +155,7 @@ To prevent token bloat, the output is truncated to the last 1500 characters.`,
 
     const truncate = (str: string, len: number) => {
       if (str.length <= len) return str;
-      return (
-        `...[truncated ${str.length - len} chars]...\n` +
-        str.substring(str.length - len)
-      );
+      return `...[truncated ${str.length - len} chars]...\n` + str.substring(str.length - len);
     };
 
     const out = truncate(task.stdout, 1500);

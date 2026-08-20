@@ -67,9 +67,9 @@ vi.mock("@/ipc/utils/provider_options", () => ({
 }));
 
 vi.mock("@/ipc/utils/stream_text_utils", async () => {
-  const actual = await vi.importActual<
-    typeof import("@/ipc/utils/stream_text_utils")
-  >("@/ipc/utils/stream_text_utils");
+  const actual = await vi.importActual<typeof import("@/ipc/utils/stream_text_utils")>(
+    "@/ipc/utils/stream_text_utils",
+  );
   return {
     ...actual,
     cancelOrphanedBaseStream: mocks.cancelOrphanedBaseStream,
@@ -77,10 +77,7 @@ vi.mock("@/ipc/utils/stream_text_utils", async () => {
 });
 
 vi.mock("./explore_code_raw", async () => {
-  const actual =
-    await vi.importActual<typeof import("./explore_code_raw")>(
-      "./explore_code_raw",
-    );
+  const actual = await vi.importActual<typeof import("./explore_code_raw")>("./explore_code_raw");
   return {
     ...actual,
     runRawExploreCode: mocks.runRawExploreCode,
@@ -169,9 +166,7 @@ describe("runExploreCodeSubagent", () => {
       "src/widget/saveWidget.ts:1-4 (handler) - saveWidget handles the submitted value.",
     );
     // The quote is excerpted from observed source; the model never supplied it.
-    expect(report).toContain(
-      "> export async function saveWidget(input: WidgetInput) {",
-    );
+    expect(report).toContain("> export async function saveWidget(input: WidgetInput) {");
     expect(report).toContain('"path":"src/widget/saveWidget.ts"');
   });
 
@@ -184,9 +179,7 @@ describe("runExploreCodeSubagent", () => {
     const system: string = options.system;
     expect(system).toContain("code reconnaissance sub-agent");
     expect(system).toContain("observed candidate IDs");
-    expect(system).toContain(
-      "the system derives the recommended next action and confidence",
-    );
+    expect(system).toContain("the system derives the recommended next action and confidence");
     for (const noun of [
       "reservation",
       "busy times",
@@ -255,9 +248,9 @@ describe("runExploreCodeSubagent", () => {
         });
         const reasoningPart = step.messages[1].content[0];
         expect(reasoningPart.providerOptions.openai.itemId).toBeUndefined();
-        expect(
-          reasoningPart.providerOptions.openai.reasoningEncryptedContent,
-        ).toBe("encrypted-data");
+        expect(reasoningPart.providerOptions.openai.reasoningEncryptedContent).toBe(
+          "encrypted-data",
+        );
       }),
       textStream: createTextStream([]),
     }));
@@ -354,9 +347,7 @@ describe("runExploreCodeSubagent", () => {
 
     expect(report).toContain("Action: read_targets");
     expect(report).toContain("saveWidget handles the submitted value.");
-    expect(report).toContain(
-      "> export async function saveWidget(input: WidgetInput) {",
-    );
+    expect(report).toContain("> export async function saveWidget(input: WidgetInput) {");
   });
 
   it("falls back to a deterministic report when the model never calls submit_report", async () => {
@@ -407,9 +398,7 @@ describe("runExploreCodeSubagent", () => {
           primaryCandidateIds: ["c1"],
           flow: [],
           missingCoverage: ["where saveWidget is invoked"],
-          searchSuggestions: [
-            { identifier: "saveWidget", scope: "src/**/*.{ts,tsx}" },
-          ],
+          searchSuggestions: [{ identifier: "saveWidget", scope: "src/**/*.{ts,tsx}" }],
         });
       }),
       textStream: createTextStream([]),
@@ -434,9 +423,7 @@ describe("runExploreCodeSubagent", () => {
           primaryCandidateIds: ["c1"],
           flow: [],
           missingCoverage: ["where saveWidget is invoked"],
-          searchSuggestions: [
-            { identifier: "saveWidget", scope: "somewhere in the app" },
-          ],
+          searchSuggestions: [{ identifier: "saveWidget", scope: "somewhere in the app" }],
         });
       }),
       textStream: createTextStream([]),
@@ -452,9 +439,7 @@ describe("runExploreCodeSubagent", () => {
   });
 
   it("bounces an explain trace with no implementation-site evidence, but only once", async () => {
-    mocks.runRawExploreCode.mockResolvedValue(
-      buildSupportOnlyRawExploreResult(),
-    );
+    mocks.runRawExploreCode.mockResolvedValue(buildSupportOnlyRawExploreResult());
     mocks.streamText.mockImplementationOnce((options: any) => ({
       fullStream: createToolStream(async () => {
         await options.tools.explore_code.execute({ query: "widget save flow" });
@@ -493,9 +478,7 @@ describe("runExploreCodeSubagent", () => {
   });
 
   it("renders each flow path at most once outside the JSON block", async () => {
-    mocks.runRawExploreCode.mockResolvedValue(
-      buildSameFileMultiRangeRawExploreResult(),
-    );
+    mocks.runRawExploreCode.mockResolvedValue(buildSameFileMultiRangeRawExploreResult());
     mocks.streamText.mockImplementationOnce((options: any) => ({
       fullStream: createToolStream(async () => {
         await options.tools.explore_code.execute({ query: "widget save flow" });
@@ -524,8 +507,7 @@ describe("runExploreCodeSubagent", () => {
     });
 
     const beforeJson = report.split("```json")[0];
-    const occurrences =
-      beforeJson.match(/src\/widget\/saveWidget\.ts:1-4/g) ?? [];
+    const occurrences = beforeJson.match(/src\/widget\/saveWidget\.ts:1-4/g) ?? [];
     // The second range on the same file is rendered as "same file:...".
     expect(occurrences.length).toBe(1);
     expect(beforeJson).toContain("same file:20-23");
@@ -664,9 +646,7 @@ describe("runExploreCodeSubagent", () => {
   });
 
   it("locks nested compiler exploration to the parent tsconfig", async () => {
-    const appPath = await fs.mkdtemp(
-      path.join(os.tmpdir(), "explore-subagent-tsconfig-"),
-    );
+    const appPath = await fs.mkdtemp(path.join(os.tmpdir(), "explore-subagent-tsconfig-"));
     await fs.mkdir(path.join(appPath, "primary"), { recursive: true });
     await fs.mkdir(path.join(appPath, "nested"), { recursive: true });
     await fs.writeFile(path.join(appPath, "primary/tsconfig.json"), "{}");
@@ -821,15 +801,9 @@ describe("runExploreCodeSubagent", () => {
     ];
 
     for (const filePath of productionFiles) {
-      const source = await fs.readFile(
-        path.join(process.cwd(), filePath),
-        "utf8",
-      );
+      const source = await fs.readFile(path.join(process.cwd(), filePath), "utf8");
       for (const literal of forbidden) {
-        expect(
-          source.toLowerCase(),
-          `${filePath} contains ${literal}`,
-        ).not.toContain(literal);
+        expect(source.toLowerCase(), `${filePath} contains ${literal}`).not.toContain(literal);
       }
     }
   });
@@ -995,8 +969,7 @@ function buildLargeRawExploreResult() {
             endLine: 2000,
             lines: Array.from(
               { length: 2000 },
-              (_value, index) =>
-                `export const largeWidgetLine${index} = "${"x".repeat(80)}";`,
+              (_value, index) => `export const largeWidgetLine${index} = "${"x".repeat(80)}";`,
             ),
           },
         ],

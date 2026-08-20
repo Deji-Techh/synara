@@ -35,9 +35,7 @@ describe("exploreCodeTool", () => {
       reason: null,
       tsconfigPath: "tsconfig.json",
     });
-    mocks.runExploreCodeSubagent.mockResolvedValue(
-      buildReport("src/App.tsx", "1-10"),
-    );
+    mocks.runExploreCodeSubagent.mockResolvedValue(buildReport("src/App.tsx", "1-10"));
   });
 
   it("is available independently of hosted engine tools", () => {
@@ -47,27 +45,16 @@ describe("exploreCodeTool", () => {
   it("runs the sub-agent on every call (no report cache)", async () => {
     const appPath = await fs.mkdtemp(path.join(os.tmpdir(), "explore-"));
     await fs.mkdir(path.join(appPath, "src"), { recursive: true });
-    await fs.writeFile(
-      path.join(appPath, "src/App.tsx"),
-      "export const App = 1;\n",
-    );
+    await fs.writeFile(path.join(appPath, "src/App.tsx"), "export const App = 1;\n");
     const ctx = createMockContext(appPath);
 
     try {
-      await exploreCodeTool.execute(
-        { query: "App flow", intent: "locate" },
-        ctx,
-      );
+      await exploreCodeTool.execute({ query: "App flow", intent: "locate" }, ctx);
       // Same normalized query: with no cache, this still re-runs the sub-agent.
-      await exploreCodeTool.execute(
-        { query: " App   flow ", intent: "locate" },
-        ctx,
-      );
+      await exploreCodeTool.execute({ query: " App   flow ", intent: "locate" }, ctx);
 
       expect(mocks.runExploreCodeSubagent).toHaveBeenCalledTimes(2);
-      expect(ctx.onXmlComplete).not.toHaveBeenCalledWith(
-        expect.stringContaining('cached="true"'),
-      );
+      expect(ctx.onXmlComplete).not.toHaveBeenCalledWith(expect.stringContaining('cached="true"'));
     } finally {
       await fs.rm(appPath, { recursive: true, force: true });
     }
@@ -76,17 +63,13 @@ describe("exploreCodeTool", () => {
   it("preserves the caller-supplied intent without query-based promotion", async () => {
     const appPath = await fs.mkdtemp(path.join(os.tmpdir(), "explore-cache-"));
     await fs.mkdir(path.join(appPath, "src"), { recursive: true });
-    await fs.writeFile(
-      path.join(appPath, "src/App.tsx"),
-      "export const App = 1;\n",
-    );
+    await fs.writeFile(path.join(appPath, "src/App.tsx"), "export const App = 1;\n");
     const ctx = createMockContext(appPath);
 
     try {
       await exploreCodeTool.execute(
         {
-          query:
-            "Trace how booking availability is computed and surfaced to the page",
+          query: "Trace how booking availability is computed and surfaced to the page",
           intent: "locate",
         },
         ctx,
@@ -109,27 +92,16 @@ describe("exploreCodeTool", () => {
     const appPath = await fs.mkdtemp(path.join(os.tmpdir(), "explore-stream-"));
     const ctx = createMockContext(appPath);
     mocks.runExploreCodeSubagent.mockImplementation(
-      async ({
-        onProgress,
-      }: {
-        onProgress?: (progressText: string) => void;
-      }) => {
-        onProgress?.(
-          'Exploring...\n\n1. explore_code "App flow" → 2 candidates',
-        );
+      async ({ onProgress }: { onProgress?: (progressText: string) => void }) => {
+        onProgress?.('Exploring...\n\n1. explore_code "App flow" → 2 candidates');
         return buildReport("src/App.tsx", "1-10");
       },
     );
 
     try {
-      await exploreCodeTool.execute(
-        { query: "App flow", intent: "locate" },
-        ctx,
-      );
+      await exploreCodeTool.execute({ query: "App flow", intent: "locate" }, ctx);
 
-      expect(ctx.onXmlStream).toHaveBeenCalledWith(
-        expect.stringContaining("Exploring..."),
-      );
+      expect(ctx.onXmlStream).toHaveBeenCalledWith(expect.stringContaining("Exploring..."));
       expect(ctx.onXmlStream).toHaveBeenCalledWith(
         expect.stringContaining('1. explore_code "App flow" → 2 candidates'),
       );
@@ -179,10 +151,7 @@ describe("exploreCodeTool", () => {
     });
 
     it("returns undefined when complete (execute handles final XML)", () => {
-      const xml = exploreCodeTool.buildXml?.(
-        { query: "App flow", intent: "locate" },
-        true,
-      );
+      const xml = exploreCodeTool.buildXml?.({ query: "App flow", intent: "locate" }, true);
       expect(xml).toBeUndefined();
     });
 

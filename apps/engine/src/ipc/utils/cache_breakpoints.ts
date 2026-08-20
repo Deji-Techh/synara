@@ -3,9 +3,7 @@ import type { ToolSet } from "ai";
 
 const ANTHROPIC_CACHE_BREAKPOINT = { type: "ephemeral" } as const;
 
-export function isAnthropicProvider(
-  builtinProviderId: string | undefined,
-): boolean {
+export function isAnthropicProvider(builtinProviderId: string | undefined): boolean {
   return builtinProviderId === "anthropic";
 }
 

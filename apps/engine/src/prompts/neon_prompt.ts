@@ -29,14 +29,8 @@ export function getNeonAvailableSystemPrompt(
   if (frameworkType === "nextjs") {
     return (
       sharedPrompt +
-      getNextJsNeonPrompt(
-        emailVerification,
-        nextjsMajorVersion,
-        isLocalAgentMode,
-      ) +
-      (emailVerification
-        ? getEmailVerificationNote(isLocalAgentMode, frameworkType)
-        : "")
+      getNextJsNeonPrompt(emailVerification, nextjsMajorVersion, isLocalAgentMode) +
+      (emailVerification ? getEmailVerificationNote(isLocalAgentMode, frameworkType) : "")
     );
   }
 
@@ -44,9 +38,7 @@ export function getNeonAvailableSystemPrompt(
     return (
       sharedPrompt +
       getViteNitroNeonPrompt(isLocalAgentMode) +
-      (emailVerification
-        ? getEmailVerificationNote(isLocalAgentMode, frameworkType)
-        : "")
+      (emailVerification ? getEmailVerificationNote(isLocalAgentMode, frameworkType) : "")
     );
   }
 
@@ -63,15 +55,9 @@ function getSharedNeonPrompt(
   isLocalAgentMode: boolean,
   frameworkType: AppFrameworkType | null,
 ): string {
-  const addAuthenticationGuideBody = normalizeGuideNewlines(
-    addAuthenticationGuide,
-  );
-  const addEmailVerificationGuideBody = normalizeGuideNewlines(
-    addEmailVerificationGuide,
-  );
-  const addPasswordResetGuideBody = normalizeGuideNewlines(
-    addPasswordResetGuide,
-  );
+  const addAuthenticationGuideBody = normalizeGuideNewlines(addAuthenticationGuide);
+  const addEmailVerificationGuideBody = normalizeGuideNewlines(addEmailVerificationGuide);
+  const addPasswordResetGuideBody = normalizeGuideNewlines(addPasswordResetGuide);
 
   const authSection = isLocalAgentMode
     ? `## Auth (detailed guide available)

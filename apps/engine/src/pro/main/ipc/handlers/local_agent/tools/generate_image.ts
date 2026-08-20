@@ -3,12 +3,7 @@ import log from "electron-log";
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
-import {
-  ToolDefinition,
-  AgentContext,
-  escapeXmlAttr,
-  escapeXmlContent,
-} from "./types";
+import { ToolDefinition, AgentContext, escapeXmlAttr, escapeXmlContent } from "./types";
 import { engineFetch } from "./engine_fetch";
 import { CAIDE_MEDIA_DIR_NAME } from "@/ipc/utils/media_path_utils";
 import { ImageGenerationApiResponseSchema } from "@/ipc/types/image_generation";
@@ -69,10 +64,7 @@ async function callGenerateImage(
   const data = ImageGenerationApiResponseSchema.parse(await response.json());
 
   if (!data.data || data.data.length === 0) {
-    throw new CaideError(
-      "Image generation returned no results",
-      CaideErrorKind.External,
-    );
+    throw new CaideError("Image generation returned no results", CaideErrorKind.External);
   }
 
   return data.data[0];
@@ -105,18 +97,13 @@ async function saveGeneratedImage(
     const arrayBuffer = await response.arrayBuffer();
     await fs.writeFile(filePath, Buffer.from(arrayBuffer));
   } else {
-    throw new CaideError(
-      "Image generation returned no image data",
-      CaideErrorKind.External,
-    );
+    throw new CaideError("Image generation returned no image data", CaideErrorKind.External);
   }
 
   return relativePath;
 }
 
-export const generateImageTool: ToolDefinition<
-  z.infer<typeof generateImageSchema>
-> = {
+export const generateImageTool: ToolDefinition<z.infer<typeof generateImageSchema>> = {
   name: "generate_image",
   description: DESCRIPTION,
   inputSchema: generateImageSchema,
@@ -135,9 +122,7 @@ export const generateImageTool: ToolDefinition<
   execute: async (args, ctx: AgentContext) => {
     logger.log(`Executing image generation with prompt: ${args.prompt}`);
 
-    ctx.onXmlStream(
-      `<caide-image-generation prompt="${escapeXmlAttr(args.prompt)}">`,
-    );
+    ctx.onXmlStream(`<caide-image-generation prompt="${escapeXmlAttr(args.prompt)}">`);
 
     try {
       const imageData = await callGenerateImage(args.prompt, ctx);

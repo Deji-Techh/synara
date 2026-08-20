@@ -38,9 +38,7 @@ describe("getTemperature", () => {
       type: "cloud",
     });
 
-    await expect(
-      getTemperature({ provider: "provider", name: "cloud-model" }),
-    ).resolves.toBe(0);
+    await expect(getTemperature({ provider: "provider", name: "cloud-model" })).resolves.toBe(0);
   });
 });
 

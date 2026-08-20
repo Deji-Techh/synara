@@ -18,10 +18,7 @@ export interface ProviderCheckOptions {
  * Checks if a specific provider is set up with valid credentials.
  * Works with settings and optionally env vars.
  */
-export function isProviderSetup(
-  provider: string,
-  options: ProviderCheckOptions,
-): boolean {
+export function isProviderSetup(provider: string, options: ProviderCheckOptions): boolean {
   const { settings, envVars, providerData, isLoading } = options;
 
   if (isLoading) {
@@ -31,9 +28,7 @@ export function isProviderSetup(
   const providerSettings = settings?.providerSettings[provider];
 
   if (provider === "chatgpt") {
-    return (
-      providerData?.find((item) => item.id === provider)?.configured === true
-    );
+    return providerData?.find((item) => item.id === provider)?.configured === true;
   }
 
   // Vertex uses service account credentials instead of an API key
@@ -53,8 +48,7 @@ export function isProviderSetup(
   if (provider === "azure") {
     const azureSettings = providerSettings as AzureProviderSetting;
     const hasSavedSettings = Boolean(
-      (azureSettings?.apiKey?.value ?? "").trim() &&
-      (azureSettings?.resourceName ?? "").trim(),
+      (azureSettings?.apiKey?.value ?? "").trim() && (azureSettings?.resourceName ?? "").trim(),
     );
     if (hasSavedSettings) {
       return true;
@@ -105,7 +99,6 @@ export function isNonGoogleProviderSetup(
   ]);
 
   return [...configuredProviders].some(
-    (provider) =>
-      !excludedProviders.has(provider) && isProviderSetup(provider, options),
+    (provider) => !excludedProviders.has(provider) && isProviderSetup(provider, options),
   );
 }

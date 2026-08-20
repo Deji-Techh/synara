@@ -15,10 +15,7 @@ import { apps, chats } from "../../db/schema";
 const logger = log.scope("app_blueprint_handlers");
 
 // In-memory store for app blueprint data (keyed by chatId)
-const appBlueprintStore = new Map<
-  number,
-  AppBlueprintData & { approved: boolean }
->();
+const appBlueprintStore = new Map<number, AppBlueprintData & { approved: boolean }>();
 
 export function getAppBlueprintForChat(chatId: number) {
   return appBlueprintStore.get(chatId);
@@ -32,10 +29,7 @@ export function deleteAppBlueprintForChat(chatId: number) {
   appBlueprintStore.delete(chatId);
 }
 
-export function updateAppBlueprintVisuals(
-  chatId: number,
-  visuals: AppBlueprintVisual[],
-) {
+export function updateAppBlueprintVisuals(chatId: number, visuals: AppBlueprintVisual[]) {
   const plan = appBlueprintStore.get(chatId);
   if (plan) {
     plan.visuals = visuals;
@@ -46,9 +40,7 @@ export function registerAppBlueprintHandlers() {
   createTypedHandler(appBlueprintContracts.approve, async (event, params) => {
     const plan = appBlueprintStore.get(params.chatId);
     if (!plan) {
-      logger.warn(
-        `No app blueprint found for chat ${params.chatId} on approve`,
-      );
+      logger.warn(`No app blueprint found for chat ${params.chatId} on approve`);
       return;
     }
 
@@ -61,14 +53,9 @@ export function registerAppBlueprintHandlers() {
       columns: { appId: true },
     });
     if (chat) {
-      await db
-        .update(apps)
-        .set({ needsAppBlueprint: false })
-        .where(eq(apps.id, chat.appId));
+      await db.update(apps).set({ needsAppBlueprint: false }).where(eq(apps.id, chat.appId));
     } else {
-      logger.warn(
-        `Chat ${params.chatId} not found when clearing needsAppBlueprint`,
-      );
+      logger.warn(`Chat ${params.chatId} not found when clearing needsAppBlueprint`);
     }
 
     plan.approved = true;
@@ -135,9 +122,7 @@ export function registerAppBlueprintHandlers() {
 
     const visual = plan.visuals.find((v) => v.id === params.visualId);
     if (!visual) {
-      logger.warn(
-        `Visual ${params.visualId} not found in app blueprint for chat ${params.chatId}`,
-      );
+      logger.warn(`Visual ${params.visualId} not found in app blueprint for chat ${params.chatId}`);
       return;
     }
 
@@ -174,9 +159,7 @@ export function registerAppBlueprintHandlers() {
   createTypedHandler(appBlueprintContracts.removeVisual, async (_, params) => {
     const plan = appBlueprintStore.get(params.chatId);
     if (!plan) {
-      logger.warn(
-        `No app blueprint found for chat ${params.chatId} when removing visual`,
-      );
+      logger.warn(`No app blueprint found for chat ${params.chatId} when removing visual`);
       return;
     }
 

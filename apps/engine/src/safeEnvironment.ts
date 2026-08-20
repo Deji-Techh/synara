@@ -13,21 +13,35 @@ import path from "node:path";
 export function safeFlutterEnvironment(overrides?: Record<string, string>): NodeJS.ProcessEnv {
   const ALLOWED_KEYS = [
     // System essentials
-    "PATH", "HOME", "USER", "TMPDIR", "TMP", "TEMP",
-    "LANG", "LC_ALL", "LC_CTYPE",
+    "PATH",
+    "HOME",
+    "USER",
+    "TMPDIR",
+    "TMP",
+    "TEMP",
+    "LANG",
+    "LC_ALL",
+    "LC_CTYPE",
     // Flutter SDK
-    "FLUTTER_SDK_DIR", "FLUTTER_SDK_BIN", "FLUTTER_ROOT",
-    "DART_SDK", "PUB_CACHE",
+    "FLUTTER_SDK_DIR",
+    "FLUTTER_SDK_BIN",
+    "FLUTTER_ROOT",
+    "DART_SDK",
+    "PUB_CACHE",
     // Android SDK
-    "ANDROID_HOME", "ANDROID_SDK_ROOT",
+    "ANDROID_HOME",
+    "ANDROID_SDK_ROOT",
     // Java
     "JAVA_HOME",
     // Xcode/iOS
     "DEVELOPER_DIR",
     // Chrome for web preview
-    "CHROME_EXECUTABLE", "PUPPETEER_EXECUTABLE_PATH",
+    "CHROME_EXECUTABLE",
+    "PUPPETEER_EXECUTABLE_PATH",
     // Display (needed for some GUI operations)
-    "DISPLAY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR",
+    "DISPLAY",
+    "WAYLAND_DISPLAY",
+    "XDG_RUNTIME_DIR",
     // SSH (for git operations)
     "SSH_AUTH_SOCK",
   ];
@@ -43,7 +57,8 @@ export function safeFlutterEnvironment(overrides?: Record<string, string>): Node
   // Use lazy require to avoid bundling electron-dependent code into server
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const managed = require("./ipc/services/managed_flutter_toolchain_service") as typeof import("./ipc/services/managed_flutter_toolchain_service");
+    const managed =
+      require("./ipc/services/managed_flutter_toolchain_service") as typeof import("./ipc/services/managed_flutter_toolchain_service");
     const flutterBin = managed.getManagedFlutterBin();
     const sdkPath = managed.getManagedFlutterSdkPath();
     if (sdkPath && typeof sdkPath === "string") {

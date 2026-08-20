@@ -9,9 +9,7 @@ vi.mock("./mcp_type_defs", async (importOriginal) => {
   return { ...actual, collectMcpToolDefs: vi.fn(async () => []) };
 });
 
-function def(
-  overrides: Partial<McpToolDef> & { toolName: string },
-): McpToolDef {
+function def(overrides: Partial<McpToolDef> & { toolName: string }): McpToolDef {
   return {
     jsName: overrides.toolName,
     toolKey: `${overrides.serverName ?? "srv"}__${overrides.toolName}`,
@@ -70,19 +68,14 @@ describe("searchMcpToolsTool.isEnabled", () => {
         isMcpToolSearchAvailable: false,
       } as unknown as AgentContext),
     ).toBe(false);
-    expect(searchMcpToolsTool.isEnabled?.({} as unknown as AgentContext)).toBe(
-      false,
-    );
+    expect(searchMcpToolsTool.isEnabled?.({} as unknown as AgentContext)).toBe(false);
   });
 });
 
 describe("searchMcpToolsTool.execute", () => {
   it("returns TypeScript declarations for the best match", async () => {
     const ctx = makeCtx(TOOLS);
-    const result = await searchMcpToolsTool.execute(
-      { query: "create github issue" },
-      ctx,
-    );
+    const result = await searchMcpToolsTool.execute({ query: "create github issue" }, ctx);
     expect(result).toContain("declare function create_issue");
     expect(result).not.toContain("declare function send_message");
     expect(ctx.onXmlComplete).toHaveBeenCalledOnce();
@@ -90,10 +83,7 @@ describe("searchMcpToolsTool.execute", () => {
 
   it("filters to a single server when `server` is given", async () => {
     const ctx = makeCtx(TOOLS);
-    const result = await searchMcpToolsTool.execute(
-      { query: "list", server: "github" },
-      ctx,
-    );
+    const result = await searchMcpToolsTool.execute({ query: "list", server: "github" }, ctx);
     expect(result).toContain("declare function list_repositories");
     expect(result).not.toContain("send_message");
   });
@@ -111,19 +101,13 @@ describe("searchMcpToolsTool.execute", () => {
 
   it("returns a helpful message when nothing matches the query", async () => {
     const ctx = makeCtx(TOOLS);
-    const result = await searchMcpToolsTool.execute(
-      { query: "zzzznomatch" },
-      ctx,
-    );
+    const result = await searchMcpToolsTool.execute({ query: "zzzznomatch" }, ctx);
     expect(result).toContain('No MCP tools matched "zzzznomatch"');
   });
 
   it("reports tools unavailable when the handler did not populate defs", async () => {
     const ctx = makeCtx(undefined);
-    const result = await searchMcpToolsTool.execute(
-      { query: "create github issue" },
-      ctx,
-    );
+    const result = await searchMcpToolsTool.execute({ query: "create github issue" }, ctx);
     expect(result).toContain("temporarily unavailable");
     expect(result).not.toContain("declare function");
   });
@@ -138,10 +122,7 @@ describe("searchMcpToolsTool.execute", () => {
       }),
     );
     const ctx = makeCtx(many);
-    const result = await searchMcpToolsTool.execute(
-      { query: "search thing" },
-      ctx,
-    );
+    const result = await searchMcpToolsTool.execute({ query: "search thing" }, ctx);
     expect(result).toMatch(/more tool\(s\) matched/);
   });
 });

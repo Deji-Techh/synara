@@ -9,11 +9,7 @@ import {
   updateNeonEnvVars,
   writeEnvFileSecurely,
 } from "@/ipc/utils/app_env_var_utils";
-import {
-  EnvVarSchema,
-  REDACTED_ENV_VALUE,
-  SetAppEnvVarsParamsSchema,
-} from "@/ipc/types/misc";
+import { EnvVarSchema, REDACTED_ENV_VALUE, SetAppEnvVarsParamsSchema } from "@/ipc/types/misc";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("fs", () => ({
@@ -30,9 +26,7 @@ vi.mock("fs", () => ({
 }));
 
 vi.mock("@/paths/paths", () => ({
-  getCaideAppPath: vi.fn((appPath: string) =>
-    require("node:path").join("/mock/apps", appPath),
-  ),
+  getCaideAppPath: vi.fn((appPath: string) => require("node:path").join("/mock/apps", appPath)),
 }));
 
 function mockEnvPath(appPath = "my-app") {
@@ -108,10 +102,7 @@ describe("environment variable secret boundary", () => {
     for (const key of ["UNKNOWN_SECRET", "VITE_PUBLIC_URL"]) {
       expect(() =>
         resolveRedactedEnvVarUpdates({
-          existing:
-            key === "VITE_PUBLIC_URL"
-              ? [{ key, value: "https://example.com" }]
-              : [],
+          existing: key === "VITE_PUBLIC_URL" ? [{ key, value: "https://example.com" }] : [],
           incoming: [{ key, value: REDACTED_ENV_VALUE }],
         }),
       ).toThrow(`A masked value cannot be used for ${key}`);
@@ -129,9 +120,7 @@ describe("environment variable secret boundary", () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0]?.message).toBe(
-        "Duplicate environment variable: DATABASE_URL",
-      );
+      expect(result.error.issues[0]?.message).toBe("Duplicate environment variable: DATABASE_URL");
     }
   });
 });
@@ -580,9 +569,7 @@ SPECIAL_CHARS="p@ssw0rd!#$%"`);
   });
 
   it("should handle complex escaped quotes", () => {
-    const envVars = [
-      { key: "COMPLEX", value: "This is \"complex\" with 'mixed' quotes" },
-    ];
+    const envVars = [{ key: "COMPLEX", value: "This is \"complex\" with 'mixed' quotes" }];
 
     const result = serializeEnvFile(envVars);
     expect(result).toBe(`COMPLEX="This is \\"complex\\" with 'mixed' quotes"`);
@@ -704,16 +691,13 @@ describe("Neon env var helpers", () => {
 
   describe("updateNeonEnvVars", () => {
     it("writes the caller-supplied cookie secret when the env file does not exist", async () => {
-      vi.mocked(fs.promises.readFile).mockRejectedValueOnce(
-        createEnoentError(),
-      );
+      vi.mocked(fs.promises.readFile).mockRejectedValueOnce(createEnoentError());
 
       const cookieSecret = "d".repeat(64);
       await updateNeonEnvVars({
         appPath: "my-app",
         connectionUri: "postgresql://test:test@test-development.neon.tech/test",
-        neonAuthBaseUrl:
-          "https://test-development.neonauth.us-east-2.aws.neon.tech/neondb/auth",
+        neonAuthBaseUrl: "https://test-development.neonauth.us-east-2.aws.neon.tech/neondb/auth",
         frameworkType: "nextjs",
         cookieSecret,
       });
@@ -737,8 +721,7 @@ describe("Neon env var helpers", () => {
           },
           {
             key: "NEON_AUTH_BASE_URL",
-            value:
-              "https://test-development.neonauth.us-east-2.aws.neon.tech/neondb/auth",
+            value: "https://test-development.neonauth.us-east-2.aws.neon.tech/neondb/auth",
           },
           { key: "NEON_AUTH_COOKIE_SECRET", value: cookieSecret },
         ]),
@@ -756,8 +739,7 @@ NEON_AUTH_COOKIE_SECRET=${existingSecret}`);
       await updateNeonEnvVars({
         appPath: "my-app",
         connectionUri: "postgresql://test:test@test-development.neon.tech/test",
-        neonAuthBaseUrl:
-          "https://old.neonauth.us-east-2.aws.neon.tech/neondb/auth",
+        neonAuthBaseUrl: "https://old.neonauth.us-east-2.aws.neon.tech/neondb/auth",
         frameworkType: "nextjs",
         cookieSecret: existingSecret,
       });
@@ -793,22 +775,18 @@ NEON_AUTH_COOKIE_SECRET=${existingSecret}`);
       await updateNeonEnvVars({
         appPath: "my-app",
         connectionUri: "postgresql://test:test@test-preview.neon.tech/test",
-        neonAuthBaseUrl:
-          "https://test-preview.neonauth.us-east-2.aws.neon.tech/neondb/auth",
+        neonAuthBaseUrl: "https://test-preview.neonauth.us-east-2.aws.neon.tech/neondb/auth",
         frameworkType: "nextjs",
         cookieSecret: existingSecret,
       });
 
       const envVars = getWrittenEnvVars();
-      expect(
-        envVars.find((envVar) => envVar.key === "NEON_AUTH_BASE_URL")?.value,
-      ).toBe(
+      expect(envVars.find((envVar) => envVar.key === "NEON_AUTH_BASE_URL")?.value).toBe(
         "https://test-preview.neonauth.us-east-2.aws.neon.tech/neondb/auth",
       );
-      expect(
-        envVars.find((envVar) => envVar.key === "NEON_AUTH_COOKIE_SECRET")
-          ?.value,
-      ).toBe(existingSecret);
+      expect(envVars.find((envVar) => envVar.key === "NEON_AUTH_COOKIE_SECRET")?.value).toBe(
+        existingSecret,
+      );
     });
 
     it("strips the cookie secret when neonAuthBaseUrl is set but no cookieSecret is supplied", async () => {
@@ -822,64 +800,47 @@ NEON_AUTH_COOKIE_SECRET=${staleSecret}`);
       await updateNeonEnvVars({
         appPath: "my-app",
         connectionUri: "postgresql://test:test@test-development.neon.tech/test",
-        neonAuthBaseUrl:
-          "https://test-development.neonauth.us-east-2.aws.neon.tech/neondb/auth",
+        neonAuthBaseUrl: "https://test-development.neonauth.us-east-2.aws.neon.tech/neondb/auth",
         frameworkType: "nextjs",
         // cookieSecret intentionally omitted
       });
 
       const envVars = getWrittenEnvVars();
-      expect(
-        envVars.find((envVar) => envVar.key === "NEON_AUTH_COOKIE_SECRET"),
-      ).toBeUndefined();
-      expect(
-        envVars.find((envVar) => envVar.key === "NEON_AUTH_BASE_URL")?.value,
-      ).toBe(
+      expect(envVars.find((envVar) => envVar.key === "NEON_AUTH_COOKIE_SECRET")).toBeUndefined();
+      expect(envVars.find((envVar) => envVar.key === "NEON_AUTH_BASE_URL")?.value).toBe(
         "https://test-development.neonauth.us-east-2.aws.neon.tech/neondb/auth",
       );
     });
 
     it("does not write NEON_AUTH_COOKIE_SECRET for Vite apps", async () => {
-      vi.mocked(fs.promises.readFile).mockRejectedValueOnce(
-        createEnoentError(),
-      );
+      vi.mocked(fs.promises.readFile).mockRejectedValueOnce(createEnoentError());
 
       await updateNeonEnvVars({
         appPath: "my-app",
         connectionUri: "postgresql://test:test@test-development.neon.tech/test",
-        neonAuthBaseUrl:
-          "https://test-development.neonauth.us-east-2.aws.neon.tech/neondb/auth",
+        neonAuthBaseUrl: "https://test-development.neonauth.us-east-2.aws.neon.tech/neondb/auth",
         frameworkType: "vite",
       });
 
       const envVars = getWrittenEnvVars();
-      expect(
-        envVars.find((envVar) => envVar.key === "NEON_AUTH_BASE_URL")?.value,
-      ).toBe(
+      expect(envVars.find((envVar) => envVar.key === "NEON_AUTH_BASE_URL")?.value).toBe(
         "https://test-development.neonauth.us-east-2.aws.neon.tech/neondb/auth",
       );
-      expect(
-        envVars.find((envVar) => envVar.key === "NEON_AUTH_COOKIE_SECRET"),
-      ).toBeUndefined();
+      expect(envVars.find((envVar) => envVar.key === "NEON_AUTH_COOKIE_SECRET")).toBeUndefined();
     });
 
     it("does not write NEON_AUTH_COOKIE_SECRET for Vite + Nitro apps", async () => {
-      vi.mocked(fs.promises.readFile).mockRejectedValueOnce(
-        createEnoentError(),
-      );
+      vi.mocked(fs.promises.readFile).mockRejectedValueOnce(createEnoentError());
 
       await updateNeonEnvVars({
         appPath: "my-app",
         connectionUri: "postgresql://test:test@test-development.neon.tech/test",
-        neonAuthBaseUrl:
-          "https://test-development.neonauth.us-east-2.aws.neon.tech/neondb/auth",
+        neonAuthBaseUrl: "https://test-development.neonauth.us-east-2.aws.neon.tech/neondb/auth",
         frameworkType: "vite-nitro",
       });
 
       const envVars = getWrittenEnvVars();
-      expect(
-        envVars.find((envVar) => envVar.key === "NEON_AUTH_COOKIE_SECRET"),
-      ).toBeUndefined();
+      expect(envVars.find((envVar) => envVar.key === "NEON_AUTH_COOKIE_SECRET")).toBeUndefined();
     });
 
     it("does not rotate NEON_AUTH_COOKIE_SECRET on Vite apps even when auth URL changes", async () => {
@@ -893,16 +854,14 @@ NEON_AUTH_COOKIE_SECRET=${existingSecret}`);
       await updateNeonEnvVars({
         appPath: "my-app",
         connectionUri: "postgresql://test:test@test-preview.neon.tech/test",
-        neonAuthBaseUrl:
-          "https://test-preview.neonauth.us-east-2.aws.neon.tech/neondb/auth",
+        neonAuthBaseUrl: "https://test-preview.neonauth.us-east-2.aws.neon.tech/neondb/auth",
         frameworkType: "vite",
       });
 
       const envVars = getWrittenEnvVars();
-      expect(
-        envVars.find((envVar) => envVar.key === "NEON_AUTH_COOKIE_SECRET")
-          ?.value,
-      ).toBe(existingSecret);
+      expect(envVars.find((envVar) => envVar.key === "NEON_AUTH_COOKIE_SECRET")?.value).toBe(
+        existingSecret,
+      );
     });
 
     it("preserves existing Neon auth vars when auth activation fails transiently", async () => {
@@ -1000,9 +959,9 @@ describe("writeEnvFileSecurely", () => {
       isSymbolicLink: () => true,
     } as fs.Stats);
 
-    await expect(
-      writeEnvFileSecurely(mockEnvPath(), "API_KEY=secret"),
-    ).rejects.toMatchObject({ kind: "precondition" });
+    await expect(writeEnvFileSecurely(mockEnvPath(), "API_KEY=secret")).rejects.toMatchObject({
+      kind: "precondition",
+    });
     expect(fs.promises.writeFile).not.toHaveBeenCalled();
   });
 });

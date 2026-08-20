@@ -2,11 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import {
-  readProjectArchive,
-  sha256File,
-  writeProjectArchive,
-} from "../project_package_archive";
+import { readProjectArchive, sha256File, writeProjectArchive } from "../project_package_archive";
 
 const temporaryDirectories: string[] = [];
 
@@ -52,10 +48,7 @@ describe("project package archive", () => {
     });
     expect(manifest).toEqual({ format: "caide-project", formatVersion: 1 });
     await expect(
-      fs.readFile(
-        path.join(destination, "workspace", "src", "hello.txt"),
-        "utf8",
-      ),
+      fs.readFile(path.join(destination, "workspace", "src", "hello.txt"), "utf8"),
     ).resolves.toBe("hello CAIDE\n");
   });
 

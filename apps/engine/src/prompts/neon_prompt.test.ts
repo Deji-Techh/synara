@@ -6,10 +6,7 @@ const addPasswordResetGuide = rawAsset("src/prompts/guides/add-password-reset.md
 
 import { filterGuideByFramework } from "./guides/filter_guide_by_framework";
 import { getNeonAvailableSystemPrompt } from "./neon_prompt";
-import {
-  APP_FRAMEWORK_TYPES,
-  type AppFrameworkType,
-} from "@/lib/framework_constants";
+import { APP_FRAMEWORK_TYPES, type AppFrameworkType } from "@/lib/framework_constants";
 
 // Stand-in for the real Neon client code that the caller injects. Using a
 // constant placeholder keeps snapshots stable and focused on the prompt
@@ -19,9 +16,7 @@ const NEON_CLIENT_CODE = "// <neon-client-code>";
 describe("getNeonAvailableSystemPrompt", () => {
   describe("nextjs", () => {
     it("default options", () => {
-      expect(
-        getNeonAvailableSystemPrompt(NEON_CLIENT_CODE, "nextjs"),
-      ).toMatchSnapshot();
+      expect(getNeonAvailableSystemPrompt(NEON_CLIENT_CODE, "nextjs")).toMatchSnapshot();
     });
 
     it("with email verification on Next.js 16+", () => {
@@ -53,9 +48,7 @@ describe("getNeonAvailableSystemPrompt", () => {
 
   describe("vite-nitro", () => {
     it("default options", () => {
-      expect(
-        getNeonAvailableSystemPrompt(NEON_CLIENT_CODE, "vite-nitro"),
-      ).toMatchSnapshot();
+      expect(getNeonAvailableSystemPrompt(NEON_CLIENT_CODE, "vite-nitro")).toMatchSnapshot();
     });
 
     it("with email verification", () => {
@@ -76,15 +69,11 @@ describe("getNeonAvailableSystemPrompt", () => {
   });
 
   it("plain vite falls back to the generic framework path", () => {
-    expect(
-      getNeonAvailableSystemPrompt(NEON_CLIENT_CODE, "vite"),
-    ).toMatchSnapshot();
+    expect(getNeonAvailableSystemPrompt(NEON_CLIENT_CODE, "vite")).toMatchSnapshot();
   });
 
   it("unknown framework (null) uses the generic path and keeps both guide sections", () => {
-    expect(
-      getNeonAvailableSystemPrompt(NEON_CLIENT_CODE, null),
-    ).toMatchSnapshot();
+    expect(getNeonAvailableSystemPrompt(NEON_CLIENT_CODE, null)).toMatchSnapshot();
   });
 
   // Smoke test: each guide file ships both the <nextjs-only> and
@@ -97,10 +86,7 @@ describe("getNeonAvailableSystemPrompt", () => {
       "add-email-verification": addEmailVerificationGuide,
       "add-password-reset": addPasswordResetGuide,
     };
-    const frameworks: (AppFrameworkType | null)[] = [
-      ...APP_FRAMEWORK_TYPES,
-      null,
-    ];
+    const frameworks: (AppFrameworkType | null)[] = [...APP_FRAMEWORK_TYPES, null];
 
     for (const [name, body] of Object.entries(guides)) {
       for (const framework of frameworks) {

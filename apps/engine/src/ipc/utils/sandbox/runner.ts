@@ -205,20 +205,14 @@ function runSandboxScriptInWorker(params: {
       }
 
       if (message.type === "error") {
-        settle(
-          () => reject(deserializeSandboxWorkerError(message.error)),
-          true,
-        );
+        settle(() => reject(deserializeSandboxWorkerError(message.error)), true);
         return;
       }
 
       settle(
         () =>
           reject(
-            new CaideError(
-              "Sandbox worker sent an unknown message.",
-              CaideErrorKind.Internal,
-            ),
+            new CaideError("Sandbox worker sent an unknown message.", CaideErrorKind.Internal),
           ),
         true,
       );
@@ -252,13 +246,8 @@ export async function runSandboxScript(params: {
   persistFullOutput?: boolean;
   onHostCall?: SandboxHostCallObserver;
 }): Promise<SandboxRunResult> {
-  if (
-    Buffer.byteLength(params.script, "utf8") > SANDBOX_SCRIPT_SOURCE_LIMIT_BYTES
-  ) {
-    throw new CaideError(
-      "Sandbox script is too large.",
-      CaideErrorKind.Validation,
-    );
+  if (Buffer.byteLength(params.script, "utf8") > SANDBOX_SCRIPT_SOURCE_LIMIT_BYTES) {
+    throw new CaideError("Sandbox script is too large.", CaideErrorKind.Validation);
   }
 
   const timeoutMs = clampSandboxTimeoutMs(params.timeoutMs);

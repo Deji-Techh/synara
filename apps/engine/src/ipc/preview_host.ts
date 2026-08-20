@@ -51,10 +51,7 @@ import {
 } from "@/ipc/utils/flutter_utils";
 import { spawnStreaming } from "@/ipc/utils/spawn_streaming";
 import { runFlutterAppTestsCore } from "@/ipc/processors/flutter_tests";
-import type {
-  RunAppTestsResult,
-  TestResult as EngineTestResult,
-} from "@/ipc/types/tests";
+import type { RunAppTestsResult, TestResult as EngineTestResult } from "@/ipc/types/tests";
 import { emit } from "@/ipc/utils/event_bus";
 import { createHash } from "node:crypto";
 import {
@@ -102,7 +99,12 @@ interface BuildEntry {
   logs: string[];
   error: string | null;
   child: ChildProcess | null;
-  signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null;
+  signing?: {
+    keystorePath: string;
+    keyAlias: string;
+    storePassword: string;
+    keyPassword: string;
+  } | null;
 }
 
 type BuildChannel = NonNullable<NonNullable<(typeof BuildStartParamsSchema)["_output"]>["channel"]>;
@@ -142,10 +144,7 @@ export function extractPreviewUrl(chunk: string, port?: number): string | null {
 
 function assertFlutterApp(appDir: string): void {
   if (!fs.existsSync(appDir)) {
-    throw new CaideError(
-      `App directory not found: ${appDir}`,
-      CaideErrorKind.Precondition,
-    );
+    throw new CaideError(`App directory not found: ${appDir}`, CaideErrorKind.Precondition);
   }
   if (!isFlutterApp(appDir)) {
     throw new CaideError(
@@ -187,10 +186,7 @@ async function pickFreePort(preferred?: number): Promise<number> {
       server.once("error", () => {
         if (port === 0) {
           reject(
-            new CaideError(
-              "could not allocate a free port for preview",
-              CaideErrorKind.External,
-            ),
+            new CaideError("could not allocate a free port for preview", CaideErrorKind.External),
           );
         } else {
           resolve(tryListen(0));
@@ -199,9 +195,7 @@ async function pickFreePort(preferred?: number): Promise<number> {
       server.listen(port, "127.0.0.1", () => {
         const address = server.address();
         server.close(() => {
-          resolve(
-            typeof address === "object" && address !== null ? address.port : port,
-          );
+          resolve(typeof address === "object" && address !== null ? address.port : port);
         });
       });
     });
@@ -243,10 +237,7 @@ async function ensureFlutterAvailable(): Promise<string> {
  * message formatting) but retains SEVERITY, which the protocol requires and
  * the shared Problem type does not carry.
  */
-export function parseAnalyzeIssues(
-  output: string,
-  appPath: string,
-): AnalyzeIssue[] {
+export function parseAnalyzeIssues(output: string, appPath: string): AnalyzeIssue[] {
   const issues: AnalyzeIssue[] = [];
   for (const rawLine of output.split(/\r?\n/)) {
     const line = rawLine.trim();
@@ -254,22 +245,15 @@ export function parseAnalyzeIssues(
       continue;
     }
     // SEVERITY|errorType|code|file|line|col|length|message
-    const [severity, , code, file, lineNo, colNo, , ...rest] =
-      line.split("|");
+    const [severity, , code, file, lineNo, colNo, , ...rest] = line.split("|");
     const message = rest.join("|");
     if (!file || !lineNo || !colNo) {
       continue;
     }
     const parsedCode = Number.parseInt(code ?? "", 10);
-    const ruleName =
-      !Number.isNaN(parsedCode) || !code ? "" : `${code}: `;
+    const ruleName = !Number.isNaN(parsedCode) || !code ? "" : `${code}: `;
     issues.push({
-      severity:
-        severity === "ERROR"
-          ? "error"
-          : severity === "WARNING"
-            ? "warning"
-            : "info",
+      severity: severity === "ERROR" ? "error" : severity === "WARNING" ? "warning" : "info",
       path: path.isAbsolute(file) ? path.relative(appPath, file) : file,
       line: Number.parseInt(lineNo, 10),
       column: Number.parseInt(colNo, 10),
@@ -279,9 +263,7 @@ export function parseAnalyzeIssues(
   return issues;
 }
 
-async function runAnalyze(
-  appDir: string,
-): Promise<{ issues: AnalyzeIssue[]; output: string }> {
+async function runAnalyze(appDir: string): Promise<{ issues: AnalyzeIssue[]; output: string }> {
   assertFlutterApp(appDir);
   await runFlutterPubGet(appDir);
   const run = await spawnStreaming({
@@ -316,9 +298,11 @@ async function runAnalyze(
  * TestCaseResult knows its own status, so counts go per-test; files without
  * per-test detail fall back to the file-level status.
  */
-export function aggregateTestCounts(
-  results: EngineTestResult[],
-): { passed: number; failed: number; skipped: number } {
+export function aggregateTestCounts(results: EngineTestResult[]): {
+  passed: number;
+  failed: number;
+  skipped: number;
+} {
   let passed = 0;
   let failed = 0;
   let skipped = 0;
@@ -359,9 +343,7 @@ async function runTests(params: unknown): Promise<ProtocolTestResult> {
   });
   const counts = aggregateTestCounts(result.results);
   if (result.infraError) {
-    logger.warn(
-      `test/run: infra error for ${parsed.appDir}: ${result.infraError.message}`,
-    );
+    logger.warn(`test/run: infra error for ${parsed.appDir}: ${result.infraError.message}`);
     output += `\n\n[test infra] ${result.infraError.message}\n`;
   }
   return { ...counts, output };
@@ -415,11 +397,7 @@ function validateDevicePlatform(device: "web-server" | "emulator" | "simulator")
   }
 }
 
-function spawnFlutterRun(
-  appPath: string,
-  entry: PreviewEntry,
-  hostname: string,
-): Promise<string> {
+function spawnFlutterRun(appPath: string, entry: PreviewEntry, hostname: string): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     const device = entry.device ?? "web-server";
     validateDevicePlatform(device);
@@ -501,7 +479,9 @@ function spawnFlutterRun(
             setTimeout(() => {
               if (!settled) {
                 entry.running = true;
-                logger.info(`preview: native ${device} running for ${appPath} (${entry.deviceId ?? device})`);
+                logger.info(
+                  `preview: native ${device} running for ${appPath} (${entry.deviceId ?? device})`,
+                );
                 finish(() => resolve(nativeUrl));
               }
             }, 800);
@@ -525,20 +505,14 @@ function spawnFlutterRun(
       finish(() => {
         logger.error(`preview: flutter run spawn error for ${appPath}: ${error.message}`);
         reject(
-          new CaideError(
-            `flutter run could not start: ${error.message}`,
-            CaideErrorKind.External,
-          ),
+          new CaideError(`flutter run could not start: ${error.message}`, CaideErrorKind.External),
         );
       });
     });
     child.once("close", (code) => {
       const tail = entry.logs.slice(-20).join("\n");
       finish(() => {
-        appendLogLines(
-          entry.logs,
-          `\n[preview] flutter run exited (code ${code ?? "null"})`,
-        );
+        appendLogLines(entry.logs, `\n[preview] flutter run exited (code ${code ?? "null"})`);
         entry.running = false;
         entry.child = null;
         reject(
@@ -587,7 +561,8 @@ async function startPreview(params: unknown): Promise<PreviewStartResult> {
 
   const device = (parsed.device ?? "web-server") as PreviewEntry["device"];
   validateDevicePlatform(device);
-  const port = device === "web-server" ? (parsed.port ?? (await pickFreePort(DEFAULT_PREVIEW_PORT))) : 0;
+  const port =
+    device === "web-server" ? (parsed.port ?? (await pickFreePort(DEFAULT_PREVIEW_PORT))) : 0;
   const hostname = parsed.hostname ?? DEFAULT_PREVIEW_HOSTNAME;
   const entry: PreviewEntry = {
     appDir: parsed.appDir,
@@ -639,10 +614,20 @@ function previewState(params: unknown): PreviewStateResult {
   return { running: entry.running, url: entry.url, logs: [...entry.logs] };
 }
 
-async function listPreviewDevices(): Promise<{ devices: Array<{ id: string; name: string; isEmulator: boolean; platform?: "android" | "ios" | "web" }> }> {
-  const devices: Array<{ id: string; name: string; isEmulator: boolean; platform?: "android" | "ios" | "web" }> = [
-    { id: "web-server", name: "Web Preview", isEmulator: false, platform: "web" },
-  ];
+async function listPreviewDevices(): Promise<{
+  devices: Array<{
+    id: string;
+    name: string;
+    isEmulator: boolean;
+    platform?: "android" | "ios" | "web";
+  }>;
+}> {
+  const devices: Array<{
+    id: string;
+    name: string;
+    isEmulator: boolean;
+    platform?: "android" | "ios" | "web";
+  }> = [{ id: "web-server", name: "Web Preview", isEmulator: false, platform: "web" }];
 
   // Android emulator devices (linux/win32 only)
   if (process.platform === "linux" || process.platform === "win32") {
@@ -656,10 +641,18 @@ async function listPreviewDevices(): Promise<{ devices: Array<{ id: string; name
         timeoutMs: 5_000,
       }).catch(() => null);
       if (avdRun && avdRun.code === 0) {
-        const avds = avdRun.stdout.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+        const avds = avdRun.stdout
+          .split(/\r?\n/)
+          .map((s) => s.trim())
+          .filter(Boolean);
         for (const avd of avds) {
           if (!devices.some((d) => d.id === avd)) {
-            devices.push({ id: avd, name: `${avd} (Emulator AVD)`, isEmulator: true, platform: "android" });
+            devices.push({
+              id: avd,
+              name: `${avd} (Emulator AVD)`,
+              isEmulator: true,
+              platform: "android",
+            });
           }
         }
       }
@@ -682,14 +675,24 @@ async function listPreviewDevices(): Promise<{ devices: Array<{ id: string; name
           if (!id || id.startsWith("*")) continue;
           const isEmulator = id.startsWith("emulator-");
           if (!devices.some((d) => d.id === id)) {
-            devices.push({ id, name: `${id} (${isEmulator ? "Emulator" : "Device"})`, isEmulator, platform: "android" });
+            devices.push({
+              id,
+              name: `${id} (${isEmulator ? "Emulator" : "Device"})`,
+              isEmulator,
+              platform: "android",
+            });
           }
         }
       }
     } catch {}
     // Always include generic emulator entry so UI can show the option even when no AVD exists
     if (!devices.some((d) => d.id === "emulator")) {
-      devices.push({ id: "emulator", name: "Android Emulator", isEmulator: true, platform: "android" });
+      devices.push({
+        id: "emulator",
+        name: "Android Emulator",
+        isEmulator: true,
+        platform: "android",
+      });
     }
   }
 
@@ -710,11 +713,20 @@ async function listPreviewDevices(): Promise<{ devices: Array<{ id: string; name
           for (const runtime of Object.keys(devicesObj)) {
             const list = devicesObj[runtime];
             if (!Array.isArray(list)) continue;
-            for (const dev of list as Array<{ udid?: string; name?: string; isAvailable?: boolean }>) {
+            for (const dev of list as Array<{
+              udid?: string;
+              name?: string;
+              isAvailable?: boolean;
+            }>) {
               if (!dev.udid || !dev.name) continue;
               if (dev.isAvailable === false) continue;
               if (!devices.some((d) => d.id === dev.udid)) {
-                devices.push({ id: dev.udid!, name: `${dev.name} (Simulator)`, isEmulator: true, platform: "ios" });
+                devices.push({
+                  id: dev.udid!,
+                  name: `${dev.name} (Simulator)`,
+                  isEmulator: true,
+                  platform: "ios",
+                });
               }
             }
           }
@@ -769,29 +781,50 @@ async function previewScreenshot(params: unknown): Promise<PreviewScreenshotResu
   // Web preview has no native screenshot; return no image
   if (!targetDeviceId || targetDeviceId === "web-server") {
     // Check if caller is web-server preview → no native capture
-    const isWebOnly = [...activePreviews.values()].every((e) => !e.running || e.device === "web-server");
+    const isWebOnly = [...activePreviews.values()].every(
+      (e) => !e.running || e.device === "web-server",
+    );
     if (isWebOnly && !targetDeviceId) {
       return { success: false, outputPath: "", image: null };
     }
   }
 
-  const tmpDir = targetAppDir ? path.join(targetAppDir, ".caide", "evidence") : path.join(process.cwd(), ".caide", "evidence");
+  const tmpDir = targetAppDir
+    ? path.join(targetAppDir, ".caide", "evidence")
+    : path.join(process.cwd(), ".caide", "evidence");
   try {
     await fsp.mkdir(tmpDir, { recursive: true });
   } catch {}
-  const outputPath = parsed.outputPath && parsed.outputPath.length > 0 ? parsed.outputPath : path.join(tmpDir, `device_${Date.now()}.png`);
+  const outputPath =
+    parsed.outputPath && parsed.outputPath.length > 0
+      ? parsed.outputPath
+      : path.join(tmpDir, `device_${Date.now()}.png`);
 
   // Try Android via adb first (emulator)
-  const isEmulatorLike = targetDeviceId.startsWith("emulator") || targetDeviceId === "emulator" || targetDeviceId.includes("avd");
+  const isEmulatorLike =
+    targetDeviceId.startsWith("emulator") ||
+    targetDeviceId === "emulator" ||
+    targetDeviceId.includes("avd");
   const isSimulatorLike = targetDeviceId === "simulator" || /^[0-9A-F-]{36}$/i.test(targetDeviceId);
 
   // Attempt adb exec-out screencap
   try {
-    const adbArgs = targetDeviceId && targetDeviceId.startsWith("emulator-") ? ["-s", targetDeviceId, "exec-out", "screencap", "-p"] : ["exec-out", "screencap", "-p"];
+    const adbArgs =
+      targetDeviceId && targetDeviceId.startsWith("emulator-")
+        ? ["-s", targetDeviceId, "exec-out", "screencap", "-p"]
+        : ["exec-out", "screencap", "-p"];
     // Only try adb if we are on linux/win32 or target looks like android
-    if (isEmulatorLike || targetDeviceId.startsWith("emulator-") || process.platform === "linux" || process.platform === "win32") {
+    if (
+      isEmulatorLike ||
+      targetDeviceId.startsWith("emulator-") ||
+      process.platform === "linux" ||
+      process.platform === "win32"
+    ) {
       const result = await new Promise<{ code: number | null; stdout: Buffer }>((resolve) => {
-        const child = spawn("adb", adbArgs, { env: safeFlutterEnvironment(), stdio: ["ignore", "pipe", "pipe"] });
+        const child = spawn("adb", adbArgs, {
+          env: safeFlutterEnvironment(),
+          stdio: ["ignore", "pipe", "pipe"],
+        });
         const chunks: Buffer[] = [];
         child.stdout.on("data", (c: Buffer) => chunks.push(c));
         let stderr = "";
@@ -818,7 +851,8 @@ async function previewScreenshot(params: unknown): Promise<PreviewScreenshotResu
   // Try iOS simctl (darwin)
   if (process.platform === "darwin" || isSimulatorLike) {
     try {
-      const simDevice = targetDeviceId && /^[0-9A-F-]{36}$/i.test(targetDeviceId) ? targetDeviceId : "booted";
+      const simDevice =
+        targetDeviceId && /^[0-9A-F-]{36}$/i.test(targetDeviceId) ? targetDeviceId : "booted";
       const simResult = await spawnStreaming({
         command: "xcrun",
         args: ["simctl", "io", simDevice, "screenshot", "--type", "png", outputPath],
@@ -938,7 +972,10 @@ async function computeSha256(filePath: string): Promise<string | null> {
 
 async function maybeWriteSigningConfig(
   appDir: string,
-  signing: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null | undefined,
+  signing:
+    | { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string }
+    | null
+    | undefined,
   logs: string[],
 ): Promise<void> {
   if (!signing || !signing.keystorePath) return;
@@ -946,7 +983,10 @@ async function maybeWriteSigningConfig(
   if (!keystorePath) return;
   // Verify keystore exists
   if (!fs.existsSync(keystorePath)) {
-    appendLogLines(logs, `[signing] WARNING: keystore not found at ${keystorePath} — build will use debug signing`);
+    appendLogLines(
+      logs,
+      `[signing] WARNING: keystore not found at ${keystorePath} — build will use debug signing`,
+    );
     return;
   }
   const keyPropsPath = path.join(appDir, "android", "key.properties");
@@ -961,7 +1001,10 @@ async function maybeWriteSigningConfig(
     await fsp.writeFile(keyPropsPath, content, "utf8");
     appendLogLines(logs, `[signing] wrote android/key.properties for ${signing.keyAlias}`);
   } catch (error) {
-    appendLogLines(logs, `[signing] WARNING: could not write key.properties: ${error instanceof Error ? error.message : String(error)}`);
+    appendLogLines(
+      logs,
+      `[signing] WARNING: could not write key.properties: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -987,7 +1030,16 @@ async function runBuild(appDir: string, build: BuildEntry): Promise<void> {
 
   // Signing config for Android release builds (best-practice)
   try {
-    const signing = (build as unknown as { signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null }).signing;
+    const signing = (
+      build as unknown as {
+        signing?: {
+          keystorePath: string;
+          keyAlias: string;
+          storePassword: string;
+          keyPassword: string;
+        } | null;
+      }
+    ).signing;
     await maybeWriteSigningConfig(appDir, signing, build.logs);
   } catch {}
 
@@ -999,11 +1051,25 @@ async function runBuild(appDir: string, build: BuildEntry): Promise<void> {
     return;
   }
 
-  const args = ["build", build.target, ...channelArgs(build.channel), ...getDartDefineFromFileArgs(appDir)];
+  const args = [
+    "build",
+    build.target,
+    ...channelArgs(build.channel),
+    ...getDartDefineFromFileArgs(appDir),
+  ];
   appendLogLines(build.logs, `$ flutter ${args.join(" ")}`);
   let run;
   // Build env: include signing passwords if provided (Gradle can read key.properties, but also env)
-  const signing = (build as unknown as { signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null }).signing;
+  const signing = (
+    build as unknown as {
+      signing?: {
+        keystorePath: string;
+        keyAlias: string;
+        storePassword: string;
+        keyPassword: string;
+      } | null;
+    }
+  ).signing;
   const buildEnv: NodeJS.ProcessEnv = { CI: "1" };
   if (signing?.keystorePath) {
     buildEnv.ANDROID_KEYSTORE_PATH = signing.keystorePath;
@@ -1038,7 +1104,13 @@ async function runBuild(appDir: string, build: BuildEntry): Promise<void> {
       build.sha256 = await computeSha256(build.outputPath);
       try {
         if (build.sha256) {
-          await fsp.writeFile(`${build.outputPath}.sha256`, `${build.sha256}  ${path.basename(build.outputPath)}\n`, "utf8").catch(() => undefined);
+          await fsp
+            .writeFile(
+              `${build.outputPath}.sha256`,
+              `${build.sha256}  ${path.basename(build.outputPath)}\n`,
+              "utf8",
+            )
+            .catch(() => undefined);
         }
       } catch {}
     }
@@ -1071,7 +1143,17 @@ async function buildStart(params: unknown): Promise<{ buildId: string }> {
     logs: [],
     error: null,
     child: null,
-    signing: (parsed as { signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null }).signing ?? null,
+    signing:
+      (
+        parsed as {
+          signing?: {
+            keystorePath: string;
+            keyAlias: string;
+            storePassword: string;
+            keyPassword: string;
+          } | null;
+        }
+      ).signing ?? null,
   };
   activeBuilds.set(buildId, build);
   void runBuild(parsed.appDir, build);
@@ -1082,10 +1164,7 @@ async function buildState(params: unknown) {
   const parsed = BuildStateParamsSchema.parse(params);
   const build = activeBuilds.get(parsed.buildId);
   if (!build) {
-    throw new CaideError(
-      `unknown buildId: ${parsed.buildId}`,
-      CaideErrorKind.NotFound,
-    );
+    throw new CaideError(`unknown buildId: ${parsed.buildId}`, CaideErrorKind.NotFound);
   }
   return {
     buildId: build.buildId,
@@ -1113,7 +1192,9 @@ async function flutterToolchainStatus(): Promise<{
   return inspectManagedFlutterToolchain();
 }
 
-async function flutterToolchainInstall(): Promise<{ status: Awaited<ReturnType<typeof inspectManagedFlutterToolchain>> }> {
+async function flutterToolchainInstall(): Promise<{
+  status: Awaited<ReturnType<typeof inspectManagedFlutterToolchain>>;
+}> {
   const status = await installManagedFlutterToolchain({
     onProgress: (p) => emitFlutterProgress(p),
   });
@@ -1186,10 +1267,7 @@ export function createPreviewJsonRpcRouter(): PreviewJsonRpcRouter {
         case "flutter/toolchain/install":
           return flutterToolchainInstall();
         default:
-          throw new CaideError(
-            `unhandled preview method: ${method}`,
-            CaideErrorKind.Internal,
-          );
+          throw new CaideError(`unhandled preview method: ${method}`, CaideErrorKind.Internal);
       }
     },
     dispose(): void {

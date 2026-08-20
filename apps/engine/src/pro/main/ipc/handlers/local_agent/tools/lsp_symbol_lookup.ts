@@ -1,15 +1,6 @@
 import { z } from "zod";
-import {
-  AgentContext,
-  ToolDefinition,
-  escapeXmlAttr,
-  escapeXmlContent,
-} from "./types";
-import {
-  runRawExploreCode,
-  DEFAULT_MAX_FILES,
-  MAX_FILES,
-} from "./explore_code_raw";
+import { AgentContext, ToolDefinition, escapeXmlAttr, escapeXmlContent } from "./types";
+import { runRawExploreCode, DEFAULT_MAX_FILES, MAX_FILES } from "./explore_code_raw";
 import { getExploreCodeAvailability } from "./explore_code";
 import { resolveTargetAppPath } from "./resolve_app_context";
 import type { CodeExplorerResult } from "../../../../../../../shared/code_explorer_types";
@@ -24,9 +15,7 @@ const lspSymbolLookupSchema = z.object({
   app_name: z
     .string()
     .optional()
-    .describe(
-      "Optional. Name of the app to explore. Omit for the current app.",
-    ),
+    .describe("Optional. Name of the app to explore. Omit for the current app."),
   max_files: z
     .number()
     .int()
@@ -54,9 +43,7 @@ function formatLspResult(result: CodeExplorerResult): string {
   for (const file of result.files) {
     lines.push("", `### ${file.path}`);
     for (const symbol of file.symbols) {
-      lines.push(
-        `- \`${symbol.name}\` (${symbol.kind}) at line ${symbol.line}`,
-      );
+      lines.push(`- \`${symbol.name}\` (${symbol.kind}) at line ${symbol.line}`);
     }
     // We intentionally OMIT the raw source lines (windows) to save tokens,
     // which makes this tool extremely lightweight.
@@ -65,9 +52,7 @@ function formatLspResult(result: CodeExplorerResult): string {
   return lines.join("\n");
 }
 
-export const lspSymbolLookupTool: ToolDefinition<
-  z.infer<typeof lspSymbolLookupSchema>
-> = {
+export const lspSymbolLookupTool: ToolDefinition<z.infer<typeof lspSymbolLookupSchema>> = {
   name: "lsp_symbol_lookup",
   description: `A highly token-efficient tool to find the exact file paths and line numbers where a symbol (class, function, variable) is defined or referenced.
 This uses a TypeScript AST worker to find semantic matches, ignoring raw text noise.

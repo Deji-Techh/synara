@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  defineContract,
-  createClient,
-  defineEvent,
-  createEventClient,
-} from "../contracts/core";
+import { defineContract, createClient, defineEvent, createEventClient } from "../contracts/core";
 
 // =============================================================================
 // Capacitor Schemas
@@ -14,19 +9,9 @@ export const AppIdParamsSchema = z.object({
   appId: z.number(),
 });
 
-export const NativeHostPlatformSchema = z.enum([
-  "windows",
-  "macos",
-  "linux",
-  "other",
-]);
+export const NativeHostPlatformSchema = z.enum(["windows", "macos", "linux", "other"]);
 
-export const NativeToolStateSchema = z.enum([
-  "ready",
-  "missing",
-  "optional",
-  "unsupported",
-]);
+export const NativeToolStateSchema = z.enum(["ready", "missing", "optional", "unsupported"]);
 
 export const NativeToolStatusSchema = z.object({
   id: z.enum([
@@ -75,12 +60,7 @@ export const NativeAppInfoSchema = z.object({
   webDir: z.string().nullable(),
 });
 
-export const NativeArtifactKindSchema = z.enum([
-  "debug-apk",
-  "release-apk",
-  "release-aab",
-  "ipa",
-]);
+export const NativeArtifactKindSchema = z.enum(["debug-apk", "release-apk", "release-aab", "ipa"]);
 
 export const NativeArtifactSchema = z.object({
   path: z.string(),
@@ -115,11 +95,7 @@ export const AndroidSigningCredentialsSchema = z.object({
   keyPassword: z.string().min(1),
 });
 
-export const AndroidBuildTargetSchema = z.enum([
-  "debug-apk",
-  "release-apk",
-  "release-aab",
-]);
+export const AndroidBuildTargetSchema = z.enum(["debug-apk", "release-apk", "release-aab"]);
 
 export const BuildAndroidArtifactParamsSchema = AppIdParamsSchema.extend({
   target: AndroidBuildTargetSchema,
@@ -136,9 +112,7 @@ export const CreateAndroidKeystoreParamsSchema = AppIdParamsSchema.extend({
   organizationalUnit: z.string().max(120),
   city: z.string().max(120),
   state: z.string().max(120),
-  countryCode: z
-    .string()
-    .regex(/^[A-Za-z]{2}$/, "Use a two-letter country code"),
+  countryCode: z.string().regex(/^[A-Za-z]{2}$/, "Use a two-letter country code"),
   validityYears: z.number().int().min(25).max(100),
 });
 
@@ -147,34 +121,21 @@ export const NativeArtifactParamsSchema = AppIdParamsSchema.extend({
 });
 
 export type NativeToolStatus = z.infer<typeof NativeToolStatusSchema>;
-export type ManagedToolchainStatus = z.infer<
-  typeof ManagedToolchainStatusSchema
->;
+export type ManagedToolchainStatus = z.infer<typeof ManagedToolchainStatusSchema>;
 export type NativeAppInfo = z.infer<typeof NativeAppInfoSchema>;
 export type NativeArtifact = z.infer<typeof NativeArtifactSchema>;
 export type NativeArtifactKind = z.infer<typeof NativeArtifactKindSchema>;
 export type NativeReleaseStatus = z.infer<typeof NativeReleaseStatusSchema>;
-export type AndroidSigningCredentials = z.infer<
-  typeof AndroidSigningCredentialsSchema
->;
+export type AndroidSigningCredentials = z.infer<typeof AndroidSigningCredentialsSchema>;
 export type AndroidBuildTarget = z.infer<typeof AndroidBuildTargetSchema>;
-export type CreateAndroidKeystoreParams = z.infer<
-  typeof CreateAndroidKeystoreParamsSchema
->;
+export type CreateAndroidKeystoreParams = z.infer<typeof CreateAndroidKeystoreParamsSchema>;
 
 // =============================================================================
 // Capacitor Contracts
 // =============================================================================
 
 export const BuildProgressSchema = z.object({
-  phase: z.enum([
-    "web-build",
-    "capacitor-sync",
-    "gradle-compile",
-    "signing",
-    "packaging",
-    "done",
-  ]),
+  phase: z.enum(["web-build", "capacitor-sync", "gradle-compile", "signing", "packaging", "done"]),
   percent: z.number().min(0).max(100),
   message: z.string(),
 });
@@ -201,19 +162,15 @@ export const ManagedToolchainProgressSchema = z.object({
   message: z.string(),
 });
 
-export type ManagedToolchainProgress = z.infer<
-  typeof ManagedToolchainProgressSchema
->;
+export type ManagedToolchainProgress = z.infer<typeof ManagedToolchainProgressSchema>;
 
 export const BUILD_PROGRESS_CHANNEL = "capacitor-build-progress";
-export const MANAGED_TOOLCHAIN_PROGRESS_CHANNEL =
-  "capacitor-managed-toolchain-progress";
+export const MANAGED_TOOLCHAIN_PROGRESS_CHANNEL = "capacitor-managed-toolchain-progress";
 
 export const CancelBuildParamsSchema = AppIdParamsSchema;
-export const InstallManagedAndroidToolchainParamsSchema =
-  AppIdParamsSchema.extend({
-    acceptAndroidSdkLicense: z.literal(true),
-  });
+export const InstallManagedAndroidToolchainParamsSchema = AppIdParamsSchema.extend({
+  acceptAndroidSdkLicense: z.literal(true),
+});
 
 export const capacitorContracts = {
   isCapacitor: defineContract({

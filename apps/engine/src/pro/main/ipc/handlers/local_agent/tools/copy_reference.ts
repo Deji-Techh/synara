@@ -49,9 +49,7 @@ function formatSize(bytes: number): string {
 }
 
 const copyReferenceSchema = z.object({
-  path: z
-    .string()
-    .describe("Absolute path to the file or folder to copy into the project"),
+  path: z.string().describe("Absolute path to the file or folder to copy into the project"),
   destination: z
     .string()
     .optional()
@@ -61,14 +59,10 @@ const copyReferenceSchema = z.object({
   description: z
     .string()
     .optional()
-    .describe(
-      "Brief description of what this file contains and why it's needed",
-    ),
+    .describe("Brief description of what this file contains and why it's needed"),
 });
 
-export const copyReferenceTool: ToolDefinition<
-  z.infer<typeof copyReferenceSchema>
-> = {
+export const copyReferenceTool: ToolDefinition<z.infer<typeof copyReferenceSchema>> = {
   name: "copy_reference",
   description: `Copy a file or folder from outside the project into the current project. Use this when the user provides a reference file path and wants it included in their project. Sensitive system paths (/etc/, ~/.ssh/, etc.) are blocked. Shows a consent prompt with file size and details before copying.`,
   inputSchema: copyReferenceSchema,
@@ -97,10 +91,7 @@ export const copyReferenceTool: ToolDefinition<
     const absPath = path.resolve(args.path);
 
     if (!fs.existsSync(absPath)) {
-      throw new CaideError(
-        `File or folder not found: ${absPath}`,
-        CaideErrorKind.NotFound,
-      );
+      throw new CaideError(`File or folder not found: ${absPath}`, CaideErrorKind.NotFound);
     }
 
     if (isPathBlocked(absPath)) {

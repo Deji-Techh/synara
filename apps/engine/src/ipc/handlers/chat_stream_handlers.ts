@@ -1,10 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { app, ipcMain, IpcMainInvokeEvent } from "electron";
 import { createTypedHandler } from "./base";
-import {
-  StreamingPatchTracker,
-  fastTextOutput,
-} from "../utils/stream_text_utils";
+import { StreamingPatchTracker, fastTextOutput } from "../utils/stream_text_utils";
 import { chatContracts, ChatStreamParamsSchema } from "../types/chat";
 import {
   ModelMessage,
@@ -24,10 +21,7 @@ import { db } from "../../db";
 import { appPrompts, chats, messages } from "../../db/schema";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import type { SmartContextMode } from "../../lib/schemas";
-import {
-  constructSystemPrompt,
-  readAiRules,
-} from "../../prompts/system_prompt";
+import { constructSystemPrompt, readAiRules } from "../../prompts/system_prompt";
 import { detectFrameworkType } from "../utils/framework_utils";
 import { getThemePromptById } from "../utils/theme_utils";
 import {
@@ -38,35 +32,18 @@ import {
 import { buildNeonPromptForApp } from "../../neon_admin/neon_prompt_context";
 import { getCaideAppPath } from "../../paths/paths";
 import { buildCaideMediaUrl } from "../../lib/caideMediaUrl";
-import {
-  buildAppIdentityPrompt,
-  parseStoredAppIdentity,
-} from "../../shared/app_identity";
+import { buildAppIdentityPrompt, parseStoredAppIdentity } from "../../shared/app_identity";
 import type { ChatResponseEnd, ChatStreamParams } from "@/ipc/types";
 import { CaideError, CaideErrorKind, isCaideError } from "@/errors/caide_error";
-import {
-  CodebaseFile,
-  extractCodebase,
-  readFileWithCache,
-} from "../../utils/codebase";
-import {
-  dryRunSearchReplace,
-  processFullResponseActions,
-} from "../processors/response_processor";
+import { CodebaseFile, extractCodebase, readFileWithCache } from "../../utils/codebase";
+import { dryRunSearchReplace, processFullResponseActions } from "../processors/response_processor";
 import { getCaideExecuteSqlTags } from "../utils/caide_tag_parser";
 import { doesSqlDeleteData } from "@/lib/sqlSchemaMutation";
-import {
-  streamTestResponse,
-  getTestResponse,
-  noteAck,
-} from "./testing_chat_handlers";
+import { streamTestResponse, getTestResponse, noteAck } from "./testing_chat_handlers";
 import { getModelClient, ModelClient } from "../utils/get_model_client";
 import log from "electron-log";
 import { sendTelemetryEvent } from "../utils/telemetry";
-import {
-  getSupabaseContext,
-  getSupabaseClientCode,
-} from "../../supabase_admin/supabase_context";
+import { getSupabaseContext, getSupabaseClientCode } from "../../supabase_admin/supabase_context";
 import { SUMMARIZE_CHAT_SYSTEM_PROMPT } from "../../prompts/summarize_chat_system_prompt";
 import { SECURITY_REVIEW_SYSTEM_PROMPT } from "../../prompts/security_review_prompt";
 import fs from "node:fs";
@@ -77,25 +54,16 @@ import { getMaxTokens, getTemperature } from "../utils/token_utils";
 import { MAX_CHAT_TURNS_IN_CONTEXT } from "@/constants/settings_constants";
 import { validateChatContext } from "../utils/context_paths_utils";
 import { getProviderOptions, getAiHeaders } from "../utils/provider_options";
-import {
-  withSystemCacheBreakpoint,
-  withToolCacheBreakpoint,
-} from "../utils/cache_breakpoints";
+import { withSystemCacheBreakpoint, withToolCacheBreakpoint } from "../utils/cache_breakpoints";
 import { mcpServers } from "../../db/schema";
-import {
-  requireMcpToolConsent,
-  clearPendingMcpConsentsForChat,
-} from "../utils/mcp_consent";
+import { requireMcpToolConsent, clearPendingMcpConsentsForChat } from "../utils/mcp_consent";
 
 import { handleLocalAgentStream } from "../../pro/main/ipc/handlers/local_agent/local_agent_handler";
 
 import { safeSend } from "../utils/safe_sender";
 import { cancelOrphanedBaseStream } from "../utils/stream_text_utils";
 import { cleanFullResponse } from "../utils/cleanFullResponse";
-import {
-  generateProblemReport,
-  getTypeCheckPreconditionKind,
-} from "../processors/tsc";
+import { generateProblemReport, getTypeCheckPreconditionKind } from "../processors/tsc";
 import { createProblemFixPrompt } from "@/shared/problem_prompt";
 import { AsyncVirtualFileSystem } from "../../../shared/VirtualFilesystem";
 import { escapeXmlAttr, escapeXmlContent } from "../../../shared/xmlEscape";
@@ -121,10 +89,7 @@ import {
   type MentionedAppCodebaseEntry,
   type MentionedAppReference,
 } from "../utils/mention_apps";
-import {
-  parseMediaMentions,
-  stripResolvedMediaMentions,
-} from "@/shared/parse_media_mentions";
+import { parseMediaMentions, stripResolvedMediaMentions } from "@/shared/parse_media_mentions";
 import { prompts as promptsTable } from "../../db/schema";
 import { replacePromptReference } from "../utils/replacePromptReference";
 import { replaceSlashSkillReference } from "../utils/replaceSlashSkillReference";
@@ -212,9 +177,7 @@ async function processStreamChunks({
   fullResponse: string;
   abortController: AbortController;
   chatId: number;
-  processResponseChunkUpdate: (params: {
-    fullResponse: string;
-  }) => Promise<string>;
+  processResponseChunkUpdate: (params: { fullResponse: string }) => Promise<string>;
 }): Promise<{ fullResponse: string; incrementalResponse: string }> {
   let incrementalResponse = "";
   let inThinkingBlock = false;
@@ -223,9 +186,7 @@ async function processStreamChunks({
     let chunk = "";
     if (
       inThinkingBlock &&
-      !["reasoning-delta", "reasoning-end", "reasoning-start"].includes(
-        part.type,
-      )
+      !["reasoning-delta", "reasoning-end", "reasoning-start"].includes(part.type)
     ) {
       chunk = "</think>";
       inThinkingBlock = false;
@@ -251,8 +212,7 @@ async function processStreamChunks({
       // Emit an errored result so the merged card terminates in an error
       // state instead of staying on "Running".
       const { serverName, toolName } = parseMcpToolKey(part.toolName);
-      const message =
-        part.error instanceof Error ? part.error.message : String(part.error);
+      const message = part.error instanceof Error ? part.error.message : String(part.error);
       const content = escapeCaideTags(message);
       chunk = `<caide-mcp-tool-result server="${escapeXmlAttr(serverName)}" tool="${escapeXmlAttr(toolName)}" call-id="${escapeXmlAttr(part.toolCallId)}" is-error="true">\n${content}\n</caide-mcp-tool-result>\n`;
     }
@@ -290,12 +250,9 @@ export function registerChatStreamHandlers() {
     partialResponses.clear();
   });
 
-  createTypedHandler(
-    chatContracts.responseAck,
-    async (_event, { chatId, lastSeq }) => {
-      noteAck(chatId, lastSeq);
-    },
-  );
+  createTypedHandler(chatContracts.responseAck, async (_event, { chatId, lastSeq }) => {
+    noteAck(chatId, lastSeq);
+  });
 
   ipcMain.handle("chat:stream", async (event, req: ChatStreamParams) => {
     let attachmentPaths: string[] = [];
@@ -331,10 +288,7 @@ export function registerChatStreamHandlers() {
       });
 
       if (!chat) {
-        throw new CaideError(
-          `Chat not found: ${req.chatId}`,
-          CaideErrorKind.NotFound,
-        );
+        throw new CaideError(`Chat not found: ${req.chatId}`, CaideErrorKind.NotFound);
       }
 
       // Record the streaming chat in the crash sentinel so a later force-close
@@ -353,18 +307,13 @@ export function registerChatStreamHandlers() {
 
         // Find the most recent user message
         let lastUserMessageIndex = chatMessages.length - 1;
-        while (
-          lastUserMessageIndex >= 0 &&
-          chatMessages[lastUserMessageIndex].role !== "user"
-        ) {
+        while (lastUserMessageIndex >= 0 && chatMessages[lastUserMessageIndex].role !== "user") {
           lastUserMessageIndex--;
         }
 
         if (lastUserMessageIndex >= 0) {
           // Delete the user message
-          await db
-            .delete(messages)
-            .where(eq(messages.id, chatMessages[lastUserMessageIndex].id));
+          await db.delete(messages).where(eq(messages.id, chatMessages[lastUserMessageIndex].id));
 
           // If there's an assistant message after the user message, delete it too
           if (
@@ -373,9 +322,7 @@ export function registerChatStreamHandlers() {
           ) {
             await db
               .delete(messages)
-              .where(
-                eq(messages.id, chatMessages[lastUserMessageIndex + 1].id),
-              );
+              .where(eq(messages.id, chatMessages[lastUserMessageIndex + 1].id));
           }
         }
       }
@@ -415,16 +362,10 @@ export function registerChatStreamHandlers() {
           }
           const base64Data = attachment.data.slice(inspection.payloadStart);
           const fileBuffer = Buffer.from(base64Data, "base64");
-          const hash = crypto
-            .createHash("sha256")
-            .update(fileBuffer)
-            .digest("hex");
+          const hash = crypto.createHash("sha256").update(fileBuffer).digest("hex");
           const fileExtension = path.extname(attachment.name);
           const filename = `${hash}${fileExtension}`;
-          const logicalName = createUniqueAttachmentLogicalName(
-            attachment.name,
-            usedLogicalNames,
-          );
+          const logicalName = createUniqueAttachmentLogicalName(attachment.name, usedLogicalNames);
 
           // Save to .caide/media dir
           const persistentPath = path.join(mediaDir, filename);
@@ -531,21 +472,14 @@ export function registerChatStreamHandlers() {
       const mediaRefs = parseMediaMentions(userPrompt);
       if (mediaRefs.length > 0) {
         try {
-          const resolvedMedia = await resolveMediaMentions(
-            mediaRefs,
-            chat.app.path,
-            chat.app.name,
-          );
+          const resolvedMedia = await resolveMediaMentions(mediaRefs, chat.app.path, chat.app.name);
           const resolvedMediaRefs = resolvedMedia.map((media) =>
             encodeURIComponent(media.fileName),
           );
           let mediaDisplayInfo = "";
           for (const media of resolvedMedia) {
             attachmentPaths.push(media.filePath);
-            const logicalName = createUniqueAttachmentLogicalName(
-              media.fileName,
-              usedLogicalNames,
-            );
+            const logicalName = createUniqueAttachmentLogicalName(media.fileName, usedLogicalNames);
             const stat = await fs.promises.stat(media.filePath);
             pendingStoredAttachments.push({
               filePath: media.filePath,
@@ -565,10 +499,7 @@ export function registerChatStreamHandlers() {
           // Strip only resolved @media: tags from the prompt text.
           // This preserves adjacent user text when mentions are directly followed
           // by text without a whitespace separator.
-          userPrompt = stripResolvedMediaMentions(
-            userPrompt,
-            resolvedMediaRefs,
-          );
+          userPrompt = stripResolvedMediaMentions(userPrompt, resolvedMediaRefs);
           // Build display prompt with attachment tags for inline rendering.
           if (mediaDisplayInfo) {
             const strippedPrompt = stripResolvedMediaMentions(
@@ -582,11 +513,10 @@ export function registerChatStreamHandlers() {
         }
       }
 
-      const finalizedManifestEntries =
-        await appendAttachmentManifestEntriesWithLogicalNames(
-          appPath,
-          manifestEntries,
-        );
+      const finalizedManifestEntries = await appendAttachmentManifestEntriesWithLogicalNames(
+        appPath,
+        manifestEntries,
+      );
       storedAttachments = finalizedManifestEntries.map((entry, index) => ({
         ...entry,
         filePath: pendingStoredAttachments[index].filePath,
@@ -604,12 +534,7 @@ export function registerChatStreamHandlers() {
           const planSlug = implementPlanMatch[1];
           validatePlanId(planSlug);
           const appPath = getCaideAppPath(chat.app.path);
-          const planFilePath = path.join(
-            appPath,
-            ".caide",
-            "plans",
-            `${planSlug}.md`,
-          );
+          const planFilePath = path.join(appPath, ".caide", "plans", `${planSlug}.md`);
           const raw = await fs.promises.readFile(planFilePath, "utf-8");
           const { meta, content } = parsePlanFile(raw);
 
@@ -658,9 +583,7 @@ You may update the plan at \`${planPath}\` to mark your progress.`;
 
             componentSnippet = snippetLines.join("\n");
           } catch (err) {
-            logger.error(
-              `Error reading selected component file content: ${err}`,
-            );
+            logger.error(`Error reading selected component file content: ${err}`);
           }
 
           userPrompt += `\n${componentsToProcess.length > 1 ? `${componentsToProcess.indexOf(component) + 1}. ` : ""}Component: ${component.name} (file: ${component.relativePath})
@@ -673,12 +596,10 @@ ${componentSnippet}
         }
       }
 
-      const defaultAiUserPrompt =
-        userPrompt + (attachmentInfo ? attachmentInfo : "");
+      const defaultAiUserPrompt = userPrompt + (attachmentInfo ? attachmentInfo : "");
 
       const suppressUserMessage = req.suppressUserMessage === true;
-      const displayContent =
-        implementPlanDisplayPrompt ?? displayUserPrompt ?? defaultAiUserPrompt;
+      const displayContent = implementPlanDisplayPrompt ?? displayUserPrompt ?? defaultAiUserPrompt;
       let userMessageId: number | undefined;
       if (!suppressUserMessage) {
         const [inserted] = await db
@@ -717,11 +638,7 @@ ${componentSnippet}
         hasUploadedAttachments,
       });
       const localAgentAiUserPrompt =
-        userPrompt +
-        buildLocalAgentAttachmentInfo(
-          storedAttachments,
-          attachmentDeliveryConfig,
-        );
+        userPrompt + buildLocalAgentAttachmentInfo(storedAttachments, attachmentDeliveryConfig);
       safeSend(event.sender, "chat:response:chunk", {
         chatId: req.chatId,
         effectiveChatMode: selectedChatMode,
@@ -760,10 +677,7 @@ ${componentSnippet}
       });
 
       if (!updatedChat) {
-        throw new CaideError(
-          `Chat not found: ${req.chatId}`,
-          CaideErrorKind.NotFound,
-        );
+        throw new CaideError(`Chat not found: ${req.chatId}`, CaideErrorKind.NotFound);
       }
 
       // Send the messages right away so that the loading state is shown for the message.
@@ -789,8 +703,10 @@ ${componentSnippet}
         );
       } else {
         // Normal AI processing for non-test prompts
-        const { modelClient, isEngineEnabled, isSmartContextEnabled } =
-          await getModelClient(settings.selectedModel, settings);
+        const { modelClient, isEngineEnabled, isSmartContextEnabled } = await getModelClient(
+          settings.selectedModel,
+          settings,
+        );
 
         const appPath = getCaideAppPath(updatedChat.app.path);
         // When we don't have smart context enabled, we
@@ -799,9 +715,7 @@ ${componentSnippet}
         // If we have selected components and smart context is enabled,
         // we handle this specially below.
         const chatContext =
-          req.selectedComponents &&
-          req.selectedComponents.length > 0 &&
-          !isSmartContextEnabled
+          req.selectedComponents && req.selectedComponents.length > 0 && !isSmartContextEnabled
             ? {
                 contextPaths: req.selectedComponents.map((component) => ({
                   globPath: component.relativePath,
@@ -819,11 +733,7 @@ ${componentSnippet}
         // For smart context and selected components, we will mark the selected components' files as focused.
         // This means that we don't do the regular smart context handling, but we'll allow fetching
         // additional files through <caide-read> as needed.
-        if (
-          isSmartContextEnabled &&
-          req.selectedComponents &&
-          req.selectedComponents.length > 0
-        ) {
+        if (isSmartContextEnabled && req.selectedComponents && req.selectedComponents.length > 0) {
           const selectedPaths = new Set(
             req.selectedComponents.map((component) => component.relativePath),
           );
@@ -837,8 +747,7 @@ ${componentSnippet}
         const isLocalAgentMode = selectedChatMode === "local-agent";
         const isAskMode = selectedChatMode === "ask";
         const isPlanMode = selectedChatMode === "plan";
-        const willUseLocalAgentStream =
-          isLocalAgentBackedMode(selectedChatMode);
+        const willUseLocalAgentStream = isLocalAgentBackedMode(selectedChatMode);
 
         // Agent/ask/plan modes reach referenced apps via tool calls (`app_name`
         // on read-only tools), so we only need name/path pairs — skip the heavy
@@ -846,27 +755,25 @@ ${componentSnippet}
         let mentionedAppsCodebases: MentionedAppCodebaseEntry[] = [];
         let referencedAppsForAgent: MentionedAppReference[] = [];
         if (willUseLocalAgentStream) {
-          referencedAppsForAgent =
-            await extractMentionedAppsReferencesFromPrompt(
-              req.prompt,
-              updatedChat.app.id, // Exclude current app
-            );
-        } else {
-          mentionedAppsCodebases =
-            await extractMentionedAppsCodebasesFromPrompt(
-              req.prompt,
-              updatedChat.app.id, // Exclude current app
-            );
-          referencedAppsForAgent = mentionedAppsCodebases.map(
-            ({ appName, appPath }) => ({ appName, appPath }),
+          referencedAppsForAgent = await extractMentionedAppsReferencesFromPrompt(
+            req.prompt,
+            updatedChat.app.id, // Exclude current app
           );
+        } else {
+          mentionedAppsCodebases = await extractMentionedAppsCodebasesFromPrompt(
+            req.prompt,
+            updatedChat.app.id, // Exclude current app
+          );
+          referencedAppsForAgent = mentionedAppsCodebases.map(({ appName, appPath }) => ({
+            appName,
+            appPath,
+          }));
         }
         const useReferencedAppManifest =
           willUseLocalAgentStream && referencedAppsForAgent.length > 0;
-        const effectiveAiUserPrompt =
-          attachmentDeliveryConfig.useOnDiskAttachmentBlock
-            ? localAgentAiUserPrompt
-            : defaultAiUserPrompt;
+        const effectiveAiUserPrompt = attachmentDeliveryConfig.useOnDiskAttachmentBlock
+          ? localAgentAiUserPrompt
+          : defaultAiUserPrompt;
 
         const isDeepContextEnabled =
           isEngineEnabled &&
@@ -891,9 +798,7 @@ ${componentSnippet}
 
           otherAppsCodebaseInfo = mentionedAppsSection;
 
-          logger.log(
-            `Added ${mentionedAppsCodebases.length} mentioned app codebases`,
-          );
+          logger.log(`Added ${mentionedAppsCodebases.length} mentioned app codebases`);
         }
 
         logger.log(`Extracted codebase information from ${appPath}`);
@@ -971,16 +876,12 @@ ${componentSnippet}
           // Ensure the first message is a user message
           if (recentMessages.length > 0 && recentMessages[0].role !== "user") {
             // Find the first user message
-            const firstUserIndex = recentMessages.findIndex(
-              (msg) => msg.role === "user",
-            );
+            const firstUserIndex = recentMessages.findIndex((msg) => msg.role === "user");
             if (firstUserIndex > 0) {
               // Drop assistant messages before the first user message
               recentMessages = recentMessages.slice(firstUserIndex);
             } else if (firstUserIndex === -1) {
-              logger.warn(
-                "No user messages found in recent history, set recent messages to empty",
-              );
+              logger.warn("No user messages found in recent history, set recent messages to empty");
               recentMessages = [];
             }
           }
@@ -992,9 +893,7 @@ ${componentSnippet}
           );
         }
 
-        const aiRules = await readAiRules(
-          getCaideAppPath(updatedChat.app.path),
-        );
+        const aiRules = await readAiRules(getCaideAppPath(updatedChat.app.path));
 
         // Get theme prompt for the app (null themeId means "no theme")
         const themePrompt = await getThemePromptById(updatedChat.app.themeId);
@@ -1005,12 +904,9 @@ ${componentSnippet}
         const frameworkType = detectFrameworkType(appPath);
         // Gate on Pro to match the `explore_code` tool's `isEnabled`, so the
         // prompt never points the model at a tool that isn't in the toolset.
-        const codeExplorerAvailable =
-          !!settings.enableCodeExplorer && isCodeExplorerReady(appPath);
+        const codeExplorerAvailable = !!settings.enableCodeExplorer && isCodeExplorerReady(appPath);
 
-        const isWeb3App = fs.existsSync(
-          path.join(appPath, "src", "caide-web3"),
-        );
+        const isWeb3App = fs.existsSync(path.join(appPath, "src", "caide-web3"));
 
         // Per-project assigned skills: inject their contents into the system prompt
         let appSkillPack: string | undefined;
@@ -1045,8 +941,7 @@ ${componentSnippet}
           freeModelMode,
           frameworkType,
           hasSupabaseProject: !!updatedChat.app?.supabaseProjectId,
-          enableAppBlueprint:
-            settings.enableAppBlueprint && updatedChat.app.needsAppBlueprint,
+          enableAppBlueprint: settings.enableAppBlueprint && updatedChat.app.needsAppBlueprint,
           codeExplorerAvailable,
           testingEnabled: !!updatedChat.app?.testingEnabled,
           isWeb3App,
@@ -1057,10 +952,7 @@ ${componentSnippet}
           systemPrompt +=
             "\n\n" +
             buildAppIdentityPrompt(
-              parseStoredAppIdentity(
-                updatedChat.app.appIdentity,
-                updatedChat.app.name,
-              ),
+              parseStoredAppIdentity(updatedChat.app.appIdentity, updatedChat.app.name),
             );
         }
 
@@ -1072,15 +964,12 @@ ${componentSnippet}
         // handleLocalAgentStream injects a `<system-reminder>` into the
         // user's latest message so the system prompt stays static.
         if (otherAppsCodebaseInfo) {
-          const mentionedAppsList = mentionedAppsCodebases
-            .map(({ appName }) => appName)
-            .join(", ");
+          const mentionedAppsList = mentionedAppsCodebases.map(({ appName }) => appName).join(", ");
 
           systemPrompt += `\n\n# Referenced Apps\nThe user has mentioned the following apps in their prompt: ${mentionedAppsList}. Their codebases have been included in the context for your reference. When referring to these apps, you can understand their structure and code to provide better assistance, however you should NOT edit the files in these referenced apps. The referenced apps are NOT part of the current app and are READ-ONLY.`;
         }
 
-        const isSecurityReviewIntent =
-          req.prompt.startsWith("/security-review");
+        const isSecurityReviewIntent = req.prompt.startsWith("/security-review");
         if (isSecurityReviewIntent) {
           systemPrompt = SECURITY_REVIEW_SYSTEM_PROMPT;
           try {
@@ -1092,8 +981,7 @@ ${componentSnippet}
             securityRules = await fs.promises.readFile(rulesPath, "utf8");
 
             if (securityRules && securityRules.trim().length > 0) {
-              systemPrompt +=
-                "\n\n# Project-specific security rules:\n" + securityRules;
+              systemPrompt += "\n\n# Project-specific security rules:\n" + securityRules;
             }
           } catch (error) {
             // Best-effort: if reading rules fails, continue without them
@@ -1101,10 +989,7 @@ ${componentSnippet}
           }
         }
 
-        if (
-          updatedChat.app?.supabaseProjectId &&
-          isSupabaseConnected(settings)
-        ) {
+        if (updatedChat.app?.supabaseProjectId && isSupabaseConnected(settings)) {
           // Flutter apps consume Supabase through supabase_flutter (Dart), so
           // the connected-instructions prompt swaps the React/TS code for a
           // Dart Flow setup. The SQL/RLS/edge-function guidance is shared.
@@ -1114,8 +999,7 @@ ${componentSnippet}
               : getSupabaseAvailableSystemPrompt(
                   await getSupabaseClientCode({
                     projectId: updatedChat.app.supabaseProjectId,
-                    organizationSlug:
-                      updatedChat.app.supabaseOrganizationSlug ?? null,
+                    organizationSlug: updatedChat.app.supabaseOrganizationSlug ?? null,
                   }),
                 );
           systemPrompt +=
@@ -1127,8 +1011,7 @@ ${componentSnippet}
               ? ""
               : await getSupabaseContext({
                   supabaseProjectId: updatedChat.app.supabaseProjectId,
-                  organizationSlug:
-                    updatedChat.app.supabaseOrganizationSlug ?? null,
+                  organizationSlug: updatedChat.app.supabaseOrganizationSlug ?? null,
                 }));
         } else if (updatedChat.app?.neonProjectId) {
           // Neon is connected — inject Neon prompt instead of Supabase
@@ -1150,9 +1033,7 @@ ${componentSnippet}
         ) {
           systemPrompt += "\n\n" + SUPABASE_NOT_AVAILABLE_SYSTEM_PROMPT;
         }
-        const isSummarizeIntent = req.prompt.startsWith(
-          "Summarize from chat-id=",
-        );
+        const isSummarizeIntent = req.prompt.startsWith("Summarize from chat-id=");
         if (isSummarizeIntent) {
           systemPrompt = SUMMARIZE_CHAT_SYSTEM_PROMPT;
         }
@@ -1217,10 +1098,7 @@ This conversation includes one or more image attachments. When the user uploads 
 
         const limitedHistoryChatMessages = limitedMessageHistory.map((msg) => ({
           role: msg.role as "user" | "assistant" | "system",
-          content: sanitizeContentForHistory(
-            msg.content,
-            selectedChatMode === "ask",
-          ),
+          content: sanitizeContentForHistory(msg.content, selectedChatMode === "ask"),
           providerOptions: {
             "caide-engine": {
               sourceCommitHash: msg.sourceCommitHash,
@@ -1241,18 +1119,12 @@ This conversation includes one or more image attachments. When the user uploads 
           const lastUserMessage = chatMessages[lastUserIndex];
           if (lastUserMessage.role === "user") {
             if (attachmentPaths.length > 0) {
-              const textOnlyProviders = [
-                "deepseek",
-                "opencode-zen",
-                "ollama",
-                "lmstudio",
-              ];
+              const textOnlyProviders = ["deepseek", "opencode-zen", "ollama", "lmstudio"];
               if (
                 hasImageAttachments &&
                 textOnlyProviders.includes(settings.selectedModel.provider)
               ) {
-                const googleApiKey =
-                  settings.providerSettings?.google?.apiKey?.value;
+                const googleApiKey = settings.providerSettings?.google?.apiKey?.value;
                 if (!googleApiKey) {
                   throw new CaideError(
                     "To use images with this model, please add a Google (Gemini) API key in Settings.",
@@ -1266,9 +1138,7 @@ This conversation includes one or more image attachments. When the user uploads 
                 const visionModel = googleProvider("gemini-1.5-flash");
 
                 let appendedDescriptions = "";
-                const imagePaths = attachmentPaths.filter((p) =>
-                  getInlineImageMimeType(p),
-                );
+                const imagePaths = attachmentPaths.filter((p) => getInlineImageMimeType(p));
                 for (const imgPath of imagePaths) {
                   try {
                     const imageBuffer = await readFile(imgPath);
@@ -1311,10 +1181,8 @@ This conversation includes one or more image attachments. When the user uploads 
                 lastUserMessage,
                 attachmentPaths,
                 {
-                  includeImageAttachments:
-                    attachmentDeliveryConfig.includeImageParts,
-                  inlineTextAttachments:
-                    attachmentDeliveryConfig.inlineTextAttachments,
+                  includeImageAttachments: attachmentDeliveryConfig.includeImageParts,
+                  inlineTextAttachments: attachmentDeliveryConfig.inlineTextAttachments,
                 },
               );
             }
@@ -1335,10 +1203,7 @@ This conversation includes one or more image attachments. When the user uploads 
             }
           }
         } else {
-          logger.warn(
-            "Unexpected number of chat messages:",
-            chatMessages.length,
-          );
+          logger.warn("Unexpected number of chat messages:", chatMessages.length);
         }
 
         if (isSummarizeIntent) {
@@ -1375,10 +1240,7 @@ This conversation includes one or more image attachments. When the user uploads 
           caideDisableFiles?: boolean;
         }) => {
           if (isEngineEnabled) {
-            logger.log(
-              "sending AI request to engine with request id:",
-              caideRequestId,
-            );
+            logger.log("sending AI request to engine with request id:", caideRequestId);
           } else {
             logger.log("sending AI request");
           }
@@ -1390,9 +1252,7 @@ This conversation includes one or more image attachments. When the user uploads 
               appPath,
             });
           }
-          const smartContextMode: SmartContextMode = isDeepContextEnabled
-            ? "deep"
-            : "balanced";
+          const smartContextMode: SmartContextMode = isDeepContextEnabled ? "deep" : "balanced";
           const providerOptions = getProviderOptions({
             caideAppId: updatedChat.app.id,
             caideRequestId,
@@ -1419,14 +1279,8 @@ This conversation includes one or more image attachments. When the user uploads 
             // directly and never consume partialOutput.
             output: fastTextOutput(),
             providerOptions,
-            system: withSystemCacheBreakpoint(
-              systemPromptOverride,
-              modelClient.builtinProviderId,
-            ),
-            tools: withToolCacheBreakpoint(
-              tools,
-              modelClient.builtinProviderId,
-            ),
+            system: withSystemCacheBreakpoint(systemPromptOverride, modelClient.builtinProviderId),
+            tools: withToolCacheBreakpoint(tools, modelClient.builtinProviderId),
             messages: chatMessages.filter((m) =>
               typeof m.content === "string"
                 ? m.content.length > 0
@@ -1446,10 +1300,7 @@ This conversation includes one or more image attachments. When the user uploads 
                   .set({ maxTokensUsed: maxTokensUsed })
                   .where(eq(messages.id, placeholderAssistantMessage.id))
                   .catch((error) => {
-                    logger.error(
-                      "Failed to save total tokens for assistant message",
-                      error,
-                    );
+                    logger.error("Failed to save total tokens for assistant message", error);
                   });
 
                 logger.log(
@@ -1466,9 +1317,7 @@ This conversation includes one or more image attachments. When the user uploads 
                 errorMessage += "\n\nDetails: " + responseBody;
               }
               const message = errorMessage || JSON.stringify(error);
-              const requestIdPrefix = isEngineEnabled
-                ? `[Request ID: ${caideRequestId}] `
-                : "";
+              const requestIdPrefix = isEngineEnabled ? `[Request ID: ${caideRequestId}] ` : "";
               logger.error(
                 `AI stream text error for request: ${requestIdPrefix} errorMessage=${errorMessage} error=`,
                 error,
@@ -1508,11 +1357,7 @@ This conversation includes one or more image attachments. When the user uploads 
         // non-append change rather than assuming pure appends.
         const patchTracker = new StreamingPatchTracker();
 
-        const processResponseChunkUpdate = async ({
-          fullResponse,
-        }: {
-          fullResponse: string;
-        }) => {
+        const processResponseChunkUpdate = async ({ fullResponse }: { fullResponse: string }) => {
           // Store the current partial response
           partialResponses.set(req.chatId, fullResponse);
           // Save to DB (in case user is switching chats during the stream)
@@ -1556,33 +1401,25 @@ This conversation includes one or more image attachments. When the user uploads 
           // Return value indicates success/failure for quota tracking.
           // Ask mode doesn't consume quota, but we still capture it for
           // consistent error handling.
-          const streamSuccess = await handleLocalAgentStream(
-            event,
-            req,
-            abortController,
-            {
-              placeholderMessageId: placeholderAssistantMessage.id,
-              // Note: this is using the read-only system prompt rather than the
-              // regular system prompt which gets overrides for special intents
-              // like summarize chat, security review, etc.
-              //
-              // This is OK because those intents should always happen in a new chat
-              // and new chats will default to non-ask modes.
-              systemPrompt: readOnlySystemPrompt,
-              caideRequestId: caideRequestId ?? "[no-request-id]",
-              readOnly: true,
-              messageOverride: isSummarizeIntent ? chatMessages : undefined,
-              settingsOverride: settings,
-              freeModelMode,
-              referencedApps: referencedAppsForAgent,
-              currentTurnHasOnDiskAttachment:
-                hasScriptReadableAttachment(storedAttachments),
-            },
-          );
+          const streamSuccess = await handleLocalAgentStream(event, req, abortController, {
+            placeholderMessageId: placeholderAssistantMessage.id,
+            // Note: this is using the read-only system prompt rather than the
+            // regular system prompt which gets overrides for special intents
+            // like summarize chat, security review, etc.
+            //
+            // This is OK because those intents should always happen in a new chat
+            // and new chats will default to non-ask modes.
+            systemPrompt: readOnlySystemPrompt,
+            caideRequestId: caideRequestId ?? "[no-request-id]",
+            readOnly: true,
+            messageOverride: isSummarizeIntent ? chatMessages : undefined,
+            settingsOverride: settings,
+            freeModelMode,
+            referencedApps: referencedAppsForAgent,
+            currentTurnHasOnDiskAttachment: hasScriptReadableAttachment(storedAttachments),
+          });
           if (!streamSuccess) {
-            logger.warn(
-              "Ask mode local agent stream did not complete successfully",
-            );
+            logger.warn("Ask mode local agent stream did not complete successfully");
           }
           return req.chatId;
         }
@@ -1625,9 +1462,7 @@ This conversation includes one or more image attachments. When the user uploads 
           const localAgentMessageOverride = suppressUserMessage
             ? [
                 ...(limitedHistoryChatMessages.filter(
-                  (m) =>
-                    !(m.role === "assistant" && m.content === "") &&
-                    m.role !== "system",
+                  (m) => !(m.role === "assistant" && m.content === "") && m.role !== "system",
                 ) as { role: "user" | "assistant"; content: string }[]),
                 { role: "user" as const, content: displayContent },
               ]
@@ -1642,8 +1477,7 @@ This conversation includes one or more image attachments. When the user uploads 
             settingsOverride: settings,
             freeModelMode,
             referencedApps: referencedAppsForAgent,
-            currentTurnHasOnDiskAttachment:
-              hasScriptReadableAttachment(storedAttachments),
+            currentTurnHasOnDiskAttachment: hasScriptReadableAttachment(storedAttachments),
             suppressCompaction: suppressUserMessage,
           });
 
@@ -1653,10 +1487,7 @@ This conversation includes one or more image attachments. When the user uploads 
         // Use MCP agent code path if:
         // 1. The enableMcpServersForBuildMode experiment is on AND
         // 2. Mode is "build" AND there are enabled MCP servers
-        if (
-          settings.enableMcpServersForBuildMode &&
-          selectedChatMode === "build"
-        ) {
+        if (settings.enableMcpServersForBuildMode && selectedChatMode === "build") {
           const tools = await getMcpTools(event, req.chatId);
           const hasEnabledMcpServers = Object.keys(tools).length > 0;
 
@@ -1675,9 +1506,7 @@ This conversation includes one or more image attachments. When the user uploads 
                 },
               },
               systemPromptOverride: constructSystemPrompt({
-                aiRules: await readAiRules(
-                  getCaideAppPath(updatedChat.app.path),
-                ),
+                aiRules: await readAiRules(getCaideAppPath(updatedChat.app.path)),
                 chatMode: "build",
                 enableTurboEditsV2: false,
                 freeModelMode,
@@ -1780,18 +1609,17 @@ This conversation includes one or more image attachments. When the user uploads 
 ${formattedSearchReplaceIssues}`,
               } as const;
 
-              const { fullStream: fixSearchReplaceStream } =
-                await simpleStreamText({
-                  // Build messages: reuse chat history and original full response, then ask to fix search-replace issues.
-                  chatMessages: [
-                    ...chatMessages,
-                    { role: "assistant", content: originalFullResponse },
-                    ...previousAttempts,
-                    userPrompt,
-                  ],
-                  modelClient,
-                  files: files,
-                });
+              const { fullStream: fixSearchReplaceStream } = await simpleStreamText({
+                // Build messages: reuse chat history and original full response, then ask to fix search-replace issues.
+                chatMessages: [
+                  ...chatMessages,
+                  { role: "assistant", content: originalFullResponse },
+                  ...previousAttempts,
+                  userPrompt,
+                ],
+                modelClient,
+                files: files,
+              });
               previousAttempts.push(userPrompt);
               const result = await processStreamChunks({
                 fullStream: fixSearchReplaceStream,
@@ -1824,10 +1652,7 @@ ${formattedSearchReplaceIssues}`,
             }
           }
 
-          if (
-            !abortController.signal.aborted &&
-            hasUnclosedCaideWrite(fullResponse)
-          ) {
+          if (!abortController.signal.aborted && hasUnclosedCaideWrite(fullResponse)) {
             let continuationAttempts = 0;
             while (
               hasUnclosedCaideWrite(fullResponse) &&
@@ -1886,9 +1711,7 @@ ${formattedSearchReplaceIssues}`,
             const preChainDeletePaths = getCaideDeleteTags(fullResponse);
             const chainNeedsEditsBeforePass = 2;
             let chainEditsNow =
-              preChainWriteTags.length +
-              preChainRenameTags.length +
-              preChainDeletePaths.length;
+              preChainWriteTags.length + preChainRenameTags.length + preChainDeletePaths.length;
             if (chainEditsNow >= chainNeedsEditsBeforePass) {
               const chainTouchedPaths = [
                 ...preChainWriteTags.map((tag) => tag.path),
@@ -1897,9 +1720,7 @@ ${formattedSearchReplaceIssues}`,
               ];
               const checkpointChain = createChain({
                 isNewApp: updatedChat.app?.needsAppBlueprint ?? false,
-                hasOnboardingScreens: chainTouchedPaths.some(
-                  isOnboardingScreenPath,
-                ),
+                hasOnboardingScreens: chainTouchedPaths.some(isOnboardingScreenPath),
                 hasBackendCode: chainTouchedPaths.some(isBackendCodePath),
                 freeModelMode,
                 isWebApp: (settings.appTarget ?? "mobile") === "web",
@@ -1911,9 +1732,7 @@ ${formattedSearchReplaceIssues}`,
                 const { step, pass } = advanceChain(checkpointChain, madeEdits);
                 if (!pass) break;
                 chainEditsAtPassStart = chainEditsNow;
-                logger.info(
-                  `Starting checkpoint pass ${pass.id} (${step}) for chat ${req.chatId}`,
-                );
+                logger.info(`Starting checkpoint pass ${pass.id} (${step}) for chat ${req.chatId}`);
                 const { fullStream: passFullStream } = await simpleStreamText({
                   // Replay history, then append the pass prompt after the
                   // accumulated response so the pass sees current output.
@@ -1960,9 +1779,7 @@ ${formattedSearchReplaceIssues}`,
           const renameTags = getCaideRenameTags(fullResponse);
           const deletePaths = getCaideDeleteTags(fullResponse);
           const hasCodeModifications =
-            writeTags.length > 0 ||
-            renameTags.length > 0 ||
-            deletePaths.length > 0;
+            writeTags.length > 0 || renameTags.length > 0 || deletePaths.length > 0;
 
           if (
             !abortController.signal.aborted &&
@@ -1997,9 +1814,7 @@ ${problemReport.problems
   .join("\n")}
 </caide-problem-report>`;
 
-                logger.info(
-                  `Attempting to auto-fix problems, attempt #${autoFixAttempts + 1}`,
-                );
+                logger.info(`Attempting to auto-fix problems, attempt #${autoFixAttempts + 1}`);
                 autoFixAttempts++;
                 const problemFixPrompt = createProblemFixPrompt(problemReport);
 
@@ -2019,16 +1834,12 @@ ${problemReport.problems
                   writeTags,
                 });
 
-                const { formattedOutput: codebaseInfo, files } =
-                  await extractCodebase({
-                    appPath,
-                    chatContext,
-                    virtualFileSystem,
-                  });
-                const { modelClient } = await getModelClient(
-                  settings.selectedModel,
-                  settings,
-                );
+                const { formattedOutput: codebaseInfo, files } = await extractCodebase({
+                  appPath,
+                  chatContext,
+                  virtualFileSystem,
+                });
+                const { modelClient } = await getModelClient(settings.selectedModel, settings);
 
                 const { fullStream } = await simpleStreamText({
                   modelClient,
@@ -2113,10 +1924,7 @@ ${problemReport.problems
               );
               partialResponses.delete(req.chatId);
             } catch (error) {
-              logger.error(
-                `Error saving partial response for chat ${chatId}:`,
-                error,
-              );
+              logger.error(`Error saving partial response for chat ${chatId}:`, error);
             }
             return req.chatId;
           }
@@ -2137,19 +1945,14 @@ ${problemReport.problems
             .where(eq(messages.id, placeholderAssistantMessage.id));
           partialResponses.delete(req.chatId);
         } catch (error) {
-          logger.error(
-            `Error saving cancelled response for chat ${req.chatId}:`,
-            error,
-          );
+          logger.error(`Error saving cancelled response for chat ${req.chatId}:`, error);
         }
       }
 
       // Only save the response and process it if we weren't aborted
       if (!abortController.signal.aborted && fullResponse) {
         // Scrape from: <caide-chat-summary>Renaming profile file</caide-chat-title>
-        const chatTitle = fullResponse.match(
-          /<caide-chat-summary>(.*?)<\/caide-chat-summary>/,
-        );
+        const chatTitle = fullResponse.match(/<caide-chat-summary>(.*?)<\/caide-chat-summary>/);
         if (chatTitle) {
           await db
             .update(chats)
@@ -2164,13 +1967,10 @@ ${problemReport.problems
           .set({ content: fullResponse })
           .where(eq(messages.id, placeholderAssistantMessage.id));
         const latestSettings = readSettings();
-        const shouldAutoApply =
-          latestSettings.autoApproveChanges && selectedChatMode !== "ask";
+        const shouldAutoApply = latestSettings.autoApproveChanges && selectedChatMode !== "ask";
         const hasDestructiveSql =
           shouldAutoApply &&
-          getCaideExecuteSqlTags(fullResponse).some((query) =>
-            doesSqlDeleteData(query.content),
-          );
+          getCaideExecuteSqlTags(fullResponse).some((query) => doesSqlDeleteData(query.content));
         if (shouldAutoApply && !hasDestructiveSql) {
           const status = await processFullResponseActions(
             fullResponse,
@@ -2277,9 +2077,7 @@ export function formatMessagesForSummary(
 ) {
   if (messages.length <= 8) {
     // If we have 8 or fewer messages, include all of them
-    return messages
-      .map((m) => `<message role="${m.role}">${m.content}</message>`)
-      .join("\n");
+    return messages.map((m) => `<message role="${m.role}">${m.content}</message>`).join("\n");
   }
 
   // Take first 2 messages and last 6 messages
@@ -2296,9 +2094,7 @@ export function formatMessagesForSummary(
     ...lastMessages,
   ];
 
-  return combinedMessages
-    .map((m) => `<message role="${m.role}">${m.content}</message>`)
-    .join("\n");
+  return combinedMessages.map((m) => `<message role="${m.role}">${m.content}</message>`).join("\n");
 }
 
 // Helper function to replace text attachment placeholders with full content
@@ -2354,9 +2150,7 @@ async function prepareMessageWithAttachments(
   let textContent = message.content;
   // Get the original text content
   if (typeof textContent !== "string") {
-    logger.warn(
-      "Message content is not a string - shouldn't happen but using message as-is",
-    );
+    logger.warn("Message content is not a string - shouldn't happen but using message as-is");
     return message;
   }
 
@@ -2364,11 +2158,7 @@ async function prepareMessageWithAttachments(
     // Process text file attachments - replace placeholder tags with full content
     for (const filePath of attachmentPaths) {
       const fileName = path.basename(filePath);
-      textContent = await replaceTextAttachmentWithContent(
-        textContent,
-        filePath,
-        fileName,
-      );
+      textContent = await replaceTextAttachmentWithContent(textContent, filePath, fileName);
     }
   }
 
@@ -2461,8 +2251,7 @@ function sanitizeContentForHistory(
 }
 
 export function removeProblemReportTags(text: string): string {
-  const problemReportRegex =
-    /<caide-problem-report[^>]*>[\s\S]*?<\/caide-problem-report>/g;
+  const problemReportRegex = /<caide-problem-report[^>]*>[\s\S]*?<\/caide-problem-report>/g;
   return text.replace(problemReportRegex, "").trim();
 }
 
@@ -2518,10 +2307,7 @@ ${otherAppsCodebaseInfo}
 `;
 }
 
-async function getMcpTools(
-  event: IpcMainInvokeEvent,
-  chatId: number,
-): Promise<ToolSet> {
+async function getMcpTools(event: IpcMainInvokeEvent, chatId: number): Promise<ToolSet> {
   const mcpToolSet: ToolSet = {};
   try {
     const servers = await db
@@ -2536,10 +2322,7 @@ async function getMcpTools(
           const client = await mcpManager.getClient(s.id);
           return await client.tools();
         } catch (e) {
-          logger.warn(
-            `Failed to load tools for MCP server ${s.id} (${s.name})`,
-            e,
-          );
+          logger.warn(`Failed to load tools for MCP server ${s.id} (${s.name})`, e);
           return null;
         }
       })();

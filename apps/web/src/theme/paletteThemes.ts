@@ -102,7 +102,10 @@ function buildChromeTheme(seed: PaletteThemeSeed, variant: ThemeVariant): Chrome
 }
 
 export const PALETTE_THEMES: readonly PaletteThemeDescriptor[] = UI_THEMES.map((uiTheme) => {
-  const entry = (PALETTE_SEEDS as Record<string, (typeof PALETTE_SEEDS)[keyof typeof PALETTE_SEEDS]>)[uiTheme.id] ?? PALETTE_SEEDS.system;
+  const entry =
+    (PALETTE_SEEDS as Record<string, (typeof PALETTE_SEEDS)[keyof typeof PALETTE_SEEDS]>)[
+      uiTheme.id
+    ] ?? PALETTE_SEEDS.system;
   return {
     id: uiTheme.id,
     name: uiTheme.name,

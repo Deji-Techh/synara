@@ -18,28 +18,18 @@ import { db } from "@/db";
 import { chats, messages, mcpServers } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { mcpManager } from "@/ipc/utils/mcp_manager";
-import {
-  requireMcpToolConsent,
-  clearPendingMcpConsentsForChat,
-} from "@/ipc/utils/mcp_consent";
+import { requireMcpToolConsent, clearPendingMcpConsentsForChat } from "@/ipc/utils/mcp_consent";
 import { buildMcpAutoApprove } from "./mcp_auto_consent";
 import { parseMcpToolKey, sanitizeMcpName } from "@/ipc/utils/mcp_tool_utils";
 
-import {
-  hasCaideProKey,
-  isBasicAgentMode,
-  type UserSettings,
-} from "@/lib/schemas";
+import { hasCaideProKey, isBasicAgentMode, type UserSettings } from "@/lib/schemas";
 import type { SqlConsentMetadata } from "@/shared/sqlConsentMetadata";
 import { isFreeProModel } from "@/lib/freeProModel";
 import { readSettings } from "@/main/settings";
 import { getCaideAppPath } from "@/paths/paths";
 import { detectFrameworkType } from "@/ipc/utils/framework_utils";
 import { getModelClient } from "@/ipc/utils/get_model_client";
-import {
-  createMobileUiQualityPrompt,
-  scanMobileUiFiles,
-} from "@/ipc/utils/mobile_ui_quality";
+import { createMobileUiQualityPrompt, scanMobileUiFiles } from "@/ipc/utils/mobile_ui_quality";
 import { safeSend } from "@/ipc/utils/safe_sender";
 import {
   StreamingPatchTracker,
@@ -52,10 +42,7 @@ import {
   getAiHeaders,
   CAIDE_INTERNAL_REQUEST_ID_HEADER,
 } from "@/ipc/utils/provider_options";
-import {
-  withSystemCacheBreakpoint,
-  withToolCacheBreakpoint,
-} from "@/ipc/utils/cache_breakpoints";
+import { withSystemCacheBreakpoint, withToolCacheBreakpoint } from "@/ipc/utils/cache_breakpoints";
 import {
   advanceChain,
   buildPassPrompt,
@@ -72,14 +59,8 @@ import {
   requireAgentToolConsent,
   clearPendingConsentsForChat,
 } from "./tool_definitions";
-import {
-  questionnaireResolver,
-  integrationResolver,
-} from "./userInputResolvers";
-import {
-  deployAllFunctionsIfNeeded,
-  commitAllChanges,
-} from "./processors/file_operations";
+import { questionnaireResolver, integrationResolver } from "./userInputResolvers";
+import { deployAllFunctionsIfNeeded, commitAllChanges } from "./processors/file_operations";
 import { storeDbTimestampAtCurrentVersion } from "@/ipc/utils/neon_timestamp_utils";
 import { getAiMessagesJsonIfWithinLimit } from "@/ipc/utils/ai_messages_utils";
 import { deleteAppBlueprintForChat } from "@/ipc/handlers/app_blueprint_handlers";
@@ -145,10 +126,7 @@ import {
   maybeAppendRetryReplayForRetry,
 } from "./retry_replay_utils";
 import { setChatSummaryTool } from "./tools/set_chat_summary";
-import {
-  toRendererMessage,
-  type RendererMessageRow,
-} from "@/ipc/utils/renderer_chat_message";
+import { toRendererMessage, type RendererMessageRow } from "@/ipc/utils/renderer_chat_message";
 
 const logger = log.scope("local_agent_handler");
 const PLANNING_QUESTIONNAIRE_TOOL_NAME = "planning_questionnaire";
@@ -161,9 +139,7 @@ const DB_SAVE_INTERVAL_MS = 150;
 const STREAM_CONTINUE_MESSAGE =
   "[System] Your previous response stream was interrupted by a transient network error. Continue from exactly where you left off and do not repeat text that has already been sent.";
 
-const RETRYABLE_STREAM_ERROR_STATUS_CODES = new Set([
-  408, 429, 500, 502, 503, 504,
-]);
+const RETRYABLE_STREAM_ERROR_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504]);
 const RETRYABLE_STREAM_ERROR_PATTERNS = [
   "server_error",
   "internal server error",
@@ -193,10 +169,7 @@ interface ToolStreamingEntry {
 }
 const toolStreamingEntries = new Map<string, ToolStreamingEntry>();
 
-function getOrCreateStreamingEntry(
-  id: string,
-  toolName?: string,
-): ToolStreamingEntry | undefined {
+function getOrCreateStreamingEntry(id: string, toolName?: string): ToolStreamingEntry | undefined {
   let entry = toolStreamingEntries.get(id);
   if (!entry && toolName) {
     entry = {
@@ -232,12 +205,8 @@ function buildChatMessageHistory(
   // For mid-turn compaction, keep the summary immediately after the triggering
   // user message so subsequent turns reflect that compaction happened before
   // post-compaction tool-loop steps.
-  for (const summary of [...reorderedMessages].filter(
-    (message) => message.isCompactionSummary,
-  )) {
-    const summaryIndex = reorderedMessages.findIndex(
-      (m) => m.id === summary.id,
-    );
+  for (const summary of [...reorderedMessages].filter((message) => message.isCompactionSummary)) {
+    const summaryIndex = reorderedMessages.findIndex((m) => m.id === summary.id);
     if (summaryIndex < 0) {
       continue;
     }
@@ -249,24 +218,18 @@ function buildChatMessageHistory(
       continue;
     }
 
-    const triggeringUserIndex = reorderedMessages.findIndex(
-      (m) => m.id === triggeringUser.id,
-    );
+    const triggeringUserIndex = reorderedMessages.findIndex((m) => m.id === triggeringUser.id);
     if (triggeringUserIndex < 0) {
       continue;
     }
 
-    const isMidTurnSummary =
-      summary.createdAt.getTime() >= triggeringUser.createdAt.getTime();
+    const isMidTurnSummary = summary.createdAt.getTime() >= triggeringUser.createdAt.getTime();
     if (!isMidTurnSummary || summaryIndex === triggeringUserIndex + 1) {
       continue;
     }
 
     reorderedMessages.splice(summaryIndex, 1);
-    const targetIndex = Math.min(
-      triggeringUserIndex + 1,
-      reorderedMessages.length,
-    );
+    const targetIndex = Math.min(triggeringUserIndex + 1, reorderedMessages.length);
     reorderedMessages.splice(targetIndex, 0, summary);
   }
 
@@ -283,9 +246,7 @@ function buildChatMessageHistory(
   // which happens after compaction because the synthetic summary message has no
   // reasoning part.
   return ensureReasoningConsistency(
-    sanitizeToolCallMessages(
-      filtered.flatMap((msg) => parseAiMessagesJson(msg)),
-    ),
+    sanitizeToolCallMessages(filtered.flatMap((msg) => parseAiMessagesJson(msg))),
   );
 }
 
@@ -339,9 +300,7 @@ function injectReferencedAppsReminder(
   options: { codeExplorerAvailable: boolean },
 ): void {
   const list = referencedApps.map(({ appName }) => `\`${appName}\``).join(", ");
-  const searchTool = options.codeExplorerAvailable
-    ? "`explore_code`"
-    : "`code_search`";
+  const searchTool = options.codeExplorerAvailable ? "`explore_code`" : "`code_search`";
   const reminder = `\n\n<system-reminder>\nThe user has mentioned the following apps in their prompt: ${list}. These apps are separate from the current app and are READ-ONLY. To inspect them, pass the app name as the \`app_name\` parameter to read-only tools (\`read_file\`, \`list_files\`, \`grep\`, ${searchTool}); matching is case-insensitive. Write tools cannot target these apps. Omit \`app_name\` to operate on the current app.\n</system-reminder>`;
 
   for (let i = messageHistory.length - 1; i >= 0; i--) {
@@ -378,9 +337,7 @@ function getMidTurnCompactionSummaryIds(
       continue;
     }
 
-    if (
-      summary.createdAt.getTime() >= triggeringUserMessage.createdAt.getTime()
-    ) {
+    if (summary.createdAt.getTime() >= triggeringUserMessage.createdAt.getTime()) {
       hiddenIds.add(summary.id);
     }
   }
@@ -396,11 +353,7 @@ function getMessageText(message: ModelMessage): string {
     return "";
   }
   return message.content
-    .map((part) =>
-      part && typeof part === "object" && "text" in part
-        ? String(part.text)
-        : "",
-    )
+    .map((part) => (part && typeof part === "object" && "text" in part ? String(part.text) : ""))
     .join("\n");
 }
 
@@ -409,10 +362,7 @@ function isAttachmentAccessToolCall(toolName: string, input: unknown): boolean {
     return false;
   }
 
-  if (
-    toolName === "execute_sandbox_script" &&
-    typeof input.script === "string"
-  ) {
+  if (toolName === "execute_sandbox_script" && typeof input.script === "string") {
     return (
       /\b(?:read_file|file_stats)\s*\(\s*["']attachments:/.test(input.script) ||
       /\blist_files\s*\(\s*["']attachments:?["']\s*\)/.test(input.script)
@@ -484,8 +434,7 @@ export async function handleLocalAgentStream(
   },
 ): Promise<boolean> {
   const settings = settingsOverride ?? readSettings();
-  const maxToolCallSteps =
-    settings.maxToolCallSteps ?? DEFAULT_MAX_TOOL_CALL_STEPS;
+  const maxToolCallSteps = settings.maxToolCallSteps ?? DEFAULT_MAX_TOOL_CALL_STEPS;
   let fullResponse = "";
   let streamingPreview = ""; // Temporary preview for current tool, not persisted
   // Tracks what was last sent to the renderer for the placeholder
@@ -504,10 +453,7 @@ export async function handleLocalAgentStream(
   // Convenience wrapper that binds the stream-invariant context args so call
   // sites only pass the two things that vary: the current response content and
   // whether to send the full messages array.
-  const sendChunk = (
-    response: string,
-    { fullMessages = false }: { fullMessages?: boolean } = {},
-  ) =>
+  const sendChunk = (response: string, { fullMessages = false }: { fullMessages?: boolean } = {}) =>
     sendResponseChunk(
       event,
       req.chatId,
@@ -541,20 +487,13 @@ export async function handleLocalAgentStream(
     }
   };
 
-  const appendInlineCompactionToTurn = async (
-    summary?: string,
-    backupPath?: string,
-  ) => {
-    const summaryText =
-      summary && summary.trim().length > 0
-        ? summary
-        : "Conversation compacted.";
+  const appendInlineCompactionToTurn = async (summary?: string, backupPath?: string) => {
+    const summaryText = summary && summary.trim().length > 0 ? summary : "Conversation compacted.";
     const inlineCompaction = `<caide-compaction title="Conversation compacted" state="finished">\n${escapeXmlContent(summaryText)}\n</caide-compaction>`;
     const backupPathNote = backupPath
       ? `\nIf you need to retrieve earlier parts of the conversation history, you can read the backup file at: ${backupPath}\nNote: This file may be large. Read only the sections you need or use grep to search for specific content rather than reading the entire file.`
       : "";
-    const separator =
-      fullResponse.length > 0 && !fullResponse.endsWith("\n") ? "\n" : "";
+    const separator = fullResponse.length > 0 && !fullResponse.endsWith("\n") ? "\n" : "";
     fullResponse = `${fullResponse}${separator}${inlineCompaction}${backupPathNote}\n`;
     await updateResponseInDb(placeholderMessageId, fullResponse);
   };
@@ -574,10 +513,7 @@ export async function handleLocalAgentStream(
   const initialChat = await loadChat();
 
   if (!initialChat || !initialChat.app) {
-    throw new CaideError(
-      `Chat not found: ${req.chatId}`,
-      CaideErrorKind.NotFound,
-    );
+    throw new CaideError(`Chat not found: ${req.chatId}`, CaideErrorKind.NotFound);
   }
 
   let chat = initialChat;
@@ -601,9 +537,7 @@ export async function handleLocalAgentStream(
 
     logger.info(`Performing pending compaction for chat ${req.chatId}`);
     const existingCompactionSummaryIds = new Set(
-      chat.messages
-        .filter((message) => message.isCompactionSummary)
-        .map((message) => message.id),
+      chat.messages.filter((message) => message.isCompactionSummary).map((message) => message.id),
     );
     const compactionResult = await performCompaction(
       event,
@@ -625,15 +559,11 @@ export async function handleLocalAgentStream(
       {
         // Mid-turn compaction should not render as a separate message above the
         // current turn on subsequent streams, so keep its DB timestamp in turn order.
-        createdAtStrategy: options?.showOnTopOfCurrentResponse
-          ? "now"
-          : "before-latest-user",
+        createdAtStrategy: options?.showOnTopOfCurrentResponse ? "now" : "before-latest-user",
       },
     );
     if (!compactionResult.success) {
-      logger.warn(
-        `Compaction failed for chat ${req.chatId}: ${compactionResult.error}`,
-      );
+      logger.warn(`Compaction failed for chat ${req.chatId}: ${compactionResult.error}`);
       // Continue anyway - compaction failure shouldn't block the conversation
     }
 
@@ -648,17 +578,11 @@ export async function handleLocalAgentStream(
 
       if (options?.showOnTopOfCurrentResponse) {
         for (const message of chat.messages) {
-          if (
-            message.isCompactionSummary &&
-            !existingCompactionSummaryIds.has(message.id)
-          ) {
+          if (message.isCompactionSummary && !existingCompactionSummaryIds.has(message.id)) {
             hiddenMessageIdsForStreaming.add(message.id);
           }
         }
-        await appendInlineCompactionToTurn(
-          compactionResult.summary,
-          compactionResult.backupPath,
-        );
+        await appendInlineCompactionToTurn(compactionResult.summary, compactionResult.backupPath);
       }
     }
 
@@ -689,10 +613,7 @@ export async function handleLocalAgentStream(
 
   try {
     // Get model client
-    const { modelClient } = await getModelClient(
-      settings.selectedModel,
-      settings,
-    );
+    const { modelClient } = await getModelClient(settings.selectedModel, settings);
 
     // Load persisted todos from a previous turn (if any)
     persistedTodos = await loadTodos(appPath, chat.id);
@@ -716,8 +637,7 @@ export async function handleLocalAgentStream(
     const referencedAppsMap = new Map(
       referencedApps.map((ref) => [ref.appName.toLowerCase(), ref.appPath]),
     );
-    const effectiveFreeModelMode =
-      freeModelMode ?? isFreeProModel(settings.selectedModel);
+    const effectiveFreeModelMode = freeModelMode ?? isFreeProModel(settings.selectedModel);
     const ctx: AgentContext = {
       event,
       appId: chat.app.id,
@@ -727,8 +647,7 @@ export async function handleLocalAgentStream(
       supabaseProjectId: chat.app.supabaseProjectId,
       supabaseOrganizationSlug: chat.app.supabaseOrganizationSlug,
       neonProjectId: chat.app.neonProjectId,
-      neonActiveBranchId:
-        chat.app.neonActiveBranchId ?? chat.app.neonDevelopmentBranchId,
+      neonActiveBranchId: chat.app.neonActiveBranchId ?? chat.app.neonDevelopmentBranchId,
       frameworkType: detectFrameworkType(appPath),
       messageId: placeholderMessageId,
       isSharedModulesChanged: false,
@@ -799,24 +718,17 @@ export async function handleLocalAgentStream(
       planModeOnly,
       basicAgentMode: !readOnly && !planModeOnly && isBasicAgentMode(settings),
       freeModelMode: effectiveFreeModelMode,
-      enableAppBlueprint:
-        settings.enableAppBlueprint && chat.app.needsAppBlueprint,
+      enableAppBlueprint: settings.enableAppBlueprint && chat.app.needsAppBlueprint,
     };
     // Same inclusion predicate the tool-set builder uses for the write_file
     // tool, so the sandbox write host can never stay exposed in a turn where
     // the direct tool is filtered out.
-    ctx.sandboxWriteFileHostEnabled = shouldIncludeTool(
-      writeFileTool,
-      ctx,
-      buildOptions,
-    );
+    ctx.sandboxWriteFileHostEnabled = shouldIncludeTool(writeFileTool, ctx, buildOptions);
     ctx.enableAppBlueprint = buildOptions.enableAppBlueprint;
     // search_mcp_tools.isEnabled reads this during the build, so set it up front
     // from the same predicate the builder uses. Off in read-only and plan mode.
     const mcpInSandboxEnabled =
-      !readOnly &&
-      !planModeOnly &&
-      shouldIncludeTool(executeSandboxScriptTool, ctx, buildOptions);
+      !readOnly && !planModeOnly && shouldIncludeTool(executeSandboxScriptTool, ctx, buildOptions);
     ctx.mcpToolsEnabled = mcpInSandboxEnabled;
 
     // Collect MCP defs before building the tool set so the inline-vs-search
@@ -856,18 +768,18 @@ export async function handleLocalAgentStream(
     // only advertise it in the description when it actually registered.
     const hasGetSchemaTool = agentTools.get_mcp_tool_schema != undefined;
     const mcpToolsForRegistration: ToolSet =
-      !readOnly && !planModeOnly && !mcpInSandboxEnabled
-        ? await getMcpTools(event, ctx)
-        : {};
+      !readOnly && !planModeOnly && !mcpInSandboxEnabled ? await getMcpTools(event, ctx) : {};
     if (agentTools.execute_sandbox_script != undefined) {
       // Start with the file-inspection-only preamble so a failure in the MCP
       // build below still leaves usable docs.
-      agentTools.execute_sandbox_script.description =
-        await buildExecuteSandboxScriptDescription([], {
+      agentTools.execute_sandbox_script.description = await buildExecuteSandboxScriptDescription(
+        [],
+        {
           useSearch: useMcpToolSearch,
           hasGetSchemaTool,
           includeWriteFile: ctx.sandboxWriteFileHostEnabled,
-        });
+        },
+      );
       if (mcpInSandboxEnabled && mcpDefs.length > 0) {
         try {
           agentTools.execute_sandbox_script.description =
@@ -877,10 +789,7 @@ export async function handleLocalAgentStream(
               includeWriteFile: ctx.sandboxWriteFileHostEnabled,
             });
         } catch (e) {
-          logger.warn(
-            "Failed to build dynamic execute_sandbox_script description",
-            e,
-          );
+          logger.warn("Failed to build dynamic execute_sandbox_script description", e);
         }
       }
     }
@@ -892,9 +801,7 @@ export async function handleLocalAgentStream(
     // If a compaction summary exists, only include messages from that point onward
     // (pre-compaction messages are preserved in DB for the user but not sent to LLM)
     const messageHistory: ModelMessage[] = sanitizeToolCallMessages(
-      messageOverride
-        ? messageOverride
-        : buildChatMessageHistory(chat.messages),
+      messageOverride ? messageOverride : buildChatMessageHistory(chat.messages),
     );
     const latestUserMessage = [...messageHistory]
       .reverse()
@@ -902,9 +809,7 @@ export async function handleLocalAgentStream(
     const shouldWarnIfAttachmentUnread =
       currentTurnHasOnDiskAttachment ??
       (latestUserMessage != null &&
-        getMessageText(latestUserMessage).includes(
-          "Attachments available on disk",
-        ));
+        getMessageText(latestUserMessage).includes("Attachments available on disk"));
 
     // Inject the referenced-apps manifest into the user's latest message as a
     // `<system-reminder>` block (instead of appending it to the system prompt)
@@ -1021,10 +926,7 @@ export async function handleLocalAgentStream(
         const retryReplayEvents: RetryReplayEvent[] = [];
         activeRetryReplayEvents = retryReplayEvents;
         const attemptMessages = needsContinuationInstruction
-          ? [
-              ...currentMessageHistory,
-              buildTerminatedRetryContinuationInstruction(),
-            ]
+          ? [...currentMessageHistory, buildTerminatedRetryContinuationInstruction()]
           : currentMessageHistory;
         const attemptToolInputIds = new Set<string>();
         const cleanupAttemptToolStreamingEntries = () => {
@@ -1056,15 +958,9 @@ export async function handleLocalAgentStream(
             maxOutputTokens,
             temperature,
             maxRetries: 2,
-            system: withSystemCacheBreakpoint(
-              systemPrompt,
-              modelClient.builtinProviderId,
-            ),
+            system: withSystemCacheBreakpoint(systemPrompt, modelClient.builtinProviderId),
             messages: attemptMessages,
-            tools: withToolCacheBreakpoint(
-              allTools,
-              modelClient.builtinProviderId,
-            ),
+            tools: withToolCacheBreakpoint(allTools, modelClient.builtinProviderId),
             stopWhen: [
               stepCountIs(maxToolCallSteps),
               // Stop after the integration tool so the next stream is started
@@ -1079,10 +975,7 @@ export async function handleLocalAgentStream(
               hasToolCall(writeAppBlueprintTool.name),
               // In plan mode, also stop after writing a plan or exiting plan mode.
               ...(planModeOnly
-                ? [
-                    hasToolCall(writePlanTool.name),
-                    hasToolCall(exitPlanTool.name),
-                  ]
+                ? [hasToolCall(writePlanTool.name), hasToolCall(exitPlanTool.name)]
                 : []),
             ],
             abortSignal: abortController.signal,
@@ -1101,9 +994,7 @@ export async function handleLocalAgentStream(
                 settings.enableContextCompaction !== false
               ) {
                 compactBeforeNextStep = false;
-                const inFlightTailMessages = options.messages.slice(
-                  baseMessageHistoryCount,
-                );
+                const inFlightTailMessages = options.messages.slice(baseMessageHistoryCount);
                 const compacted = await maybePerformPendingCompaction({
                   showOnTopOfCurrentResponse: true,
                   force: true,
@@ -1119,39 +1010,26 @@ export async function handleLocalAgentStream(
                   // cause injectMessagesAtPositions to splice at wrong positions.
                   allInjectedMessages.length = 0;
                   const preCompactionBaseCount = baseMessageHistoryCount;
-                  const compactedMessageHistory = buildChatMessageHistory(
-                    chat.messages,
-                    {
-                      // Keep the structured in-flight assistant/tool messages from
-                      // the current stream instead of the placeholder DB content.
-                      excludeMessageIds: new Set([placeholderMessageId]),
-                    },
-                  );
+                  const compactedMessageHistory = buildChatMessageHistory(chat.messages, {
+                    // Keep the structured in-flight assistant/tool messages from
+                    // the current stream instead of the placeholder DB content.
+                    excludeMessageIds: new Set([placeholderMessageId]),
+                  });
                   // The referenced-apps reminder lives only in-memory on the
                   // latest user message and is not persisted, so rebuilding
                   // history from the DB drops it. Re-inject so post-compaction
                   // tool steps keep the explicit app_name allow-list.
                   if (referencedApps.length > 0) {
-                    injectReferencedAppsReminder(
-                      compactedMessageHistory,
-                      referencedApps,
-                      {
-                        codeExplorerAvailable:
-                          agentTools.explore_code != undefined,
-                      },
-                    );
+                    injectReferencedAppsReminder(compactedMessageHistory, referencedApps, {
+                      codeExplorerAvailable: agentTools.explore_code != undefined,
+                    });
                   }
-                  injectReferenceReminder(
-                    compactedMessageHistory,
-                    req.chatId,
-                    appPath,
-                  );
+                  injectReferenceReminder(compactedMessageHistory, req.chatId, appPath);
                   baseMessageHistoryCount = compactedMessageHistory.length;
                   // The compacted history includes the compaction summary, but the
                   // AI SDK's initialMessages does not. Track the delta so we can
                   // adjust injection indices after prepareStepMessages runs.
-                  compactionIndexDelta =
-                    baseMessageHistoryCount - preCompactionBaseCount;
+                  compactionIndexDelta = baseMessageHistoryCount - preCompactionBaseCount;
                   stepOptions = {
                     ...options,
                     // Preserve in-flight turn messages so same-turn tool loops can
@@ -1200,9 +1078,7 @@ export async function handleLocalAgentStream(
               // injections/cleanups to apply. If we already replaced the base
               // message history (e.g., after mid-turn compaction), we still need
               // to return the updated options.
-              let result =
-                preparedStep ??
-                (stepOptions === options ? undefined : stepOptions);
+              let result = preparedStep ?? (stepOptions === options ? undefined : stepOptions);
 
               // Defensive: ensure injected user messages don't break
               // tool_use/tool_result pairing. Catches edge cases where
@@ -1221,8 +1097,7 @@ export async function handleLocalAgentStream(
             },
             onStepFinish: async (step) => {
               if (!hasInjectedPlanningQuestionnaireReflection) {
-                const questionnaireError =
-                  getPlanningQuestionnaireErrorFromStep(step);
+                const questionnaireError = getPlanningQuestionnaireErrorFromStep(step);
                 if (questionnaireError) {
                   pendingUserMessages.push([
                     {
@@ -1277,27 +1152,20 @@ export async function handleLocalAgentStream(
                 "Cached input tokens:",
                 cachedInputTokens,
                 "Cache hit ratio:",
-                cachedInputTokens
-                  ? (cachedInputTokens ?? 0) / (inputTokens ?? 0)
-                  : 0,
+                cachedInputTokens ? (cachedInputTokens ?? 0) / (inputTokens ?? 0) : 0,
               );
               if (typeof totalTokens === "number") {
                 await db
                   .update(messages)
                   .set({ maxTokensUsed: totalTokens })
                   .where(eq(messages.id, placeholderMessageId))
-                  .catch((err) =>
-                    logger.error("Failed to save token count", err),
-                  );
+                  .catch((err) => logger.error("Failed to save token count", err));
               }
             },
             onError: (error: any) => {
               const normalizedError = unwrapStreamError(error);
               streamErrorFromCallback = normalizedError;
-              logger.error(
-                "Local agent stream error:",
-                getErrorMessage(normalizedError),
-              );
+              logger.error("Local agent stream error:", getErrorMessage(normalizedError));
             },
           });
 
@@ -1329,11 +1197,7 @@ export async function handleLocalAgentStream(
               // Handle thinking block transitions
               if (
                 inThinkingBlock &&
-                ![
-                  "reasoning-delta",
-                  "reasoning-end",
-                  "reasoning-start",
-                ].includes(part.type)
+                !["reasoning-delta", "reasoning-end", "reasoning-start"].includes(part.type)
               ) {
                 chunk = "</think>\n";
                 inThinkingBlock = false;
@@ -1343,10 +1207,7 @@ export async function handleLocalAgentStream(
                 case "text-delta":
                   passProducedChatText = true;
                   chunk += part.text;
-                  maybeCaptureRetryReplayText(
-                    activeRetryReplayEvents,
-                    part.text,
-                  );
+                  maybeCaptureRetryReplayText(activeRetryReplayEvents, part.text);
                   break;
 
                 case "reasoning-start":
@@ -1387,9 +1248,7 @@ export async function handleLocalAgentStream(
                       ? findToolDefinition(entry.toolName)
                       : undefined;
                     if (toolDef?.buildXml) {
-                      const argsPartial = parsePartialJson(
-                        entry.argsAccumulated,
-                      );
+                      const argsPartial = parsePartialJson(entry.argsAccumulated);
                       const xml = toolDef.buildXml(argsPartial, false);
                       if (xml) {
                         ctx.onXmlStream(xml);
@@ -1407,9 +1266,7 @@ export async function handleLocalAgentStream(
                       ? findToolDefinition(entry.toolName)
                       : undefined;
                     if (toolDef?.buildXml) {
-                      const argsPartial = parsePartialJson(
-                        entry.argsAccumulated,
-                      );
+                      const argsPartial = parsePartialJson(entry.argsAccumulated);
                       const xml = toolDef.buildXml(argsPartial, true);
                       if (xml) {
                         ctx.onXmlComplete(xml);
@@ -1445,9 +1302,7 @@ export async function handleLocalAgentStream(
             if (!abortController.signal.aborted) {
               streamErrorFromIteration = error;
             } else {
-              logger.log(
-                `Stream interrupted after abort for chat ${req.chatId}`,
-              );
+              logger.log(`Stream interrupted after abort for chat ${req.chatId}`);
             }
           }
 
@@ -1464,8 +1319,7 @@ export async function handleLocalAgentStream(
             break;
           }
 
-          const streamError =
-            streamErrorFromIteration ?? streamErrorFromCallback;
+          const streamError = streamErrorFromIteration ?? streamErrorFromCallback;
           if (streamError) {
             if (
               shouldRetryTransientStreamError({
@@ -1478,13 +1332,11 @@ export async function handleLocalAgentStream(
                 retryReplayEvents,
                 currentMessageHistoryRef: currentMessageHistory,
                 accumulatedAiMessagesRef: accumulatedAiMessages,
-                onCurrentMessageHistoryUpdate: (next) =>
-                  (currentMessageHistory = next),
+                onCurrentMessageHistoryUpdate: (next) => (currentMessageHistory = next),
               });
               terminatedRetryCount += 1;
               needsContinuationInstruction = true;
-              const retryDelayMs =
-                STREAM_RETRY_BASE_DELAY_MS * terminatedRetryCount;
+              const retryDelayMs = STREAM_RETRY_BASE_DELAY_MS * terminatedRetryCount;
               sendTelemetryEvent("local_agent:terminated_stream_retry", {
                 chatId: req.chatId,
                 caideRequestId,
@@ -1498,16 +1350,13 @@ export async function handleLocalAgentStream(
               await delay(retryDelayMs);
               continue;
             }
-            sendTelemetryEvent(
-              "local_agent:terminated_stream_retries_exhausted",
-              {
-                chatId: req.chatId,
-                caideRequestId,
-                retryCount: terminatedRetryCount,
-                error: String(streamError),
-                phase: "stream_iteration",
-              },
-            );
+            sendTelemetryEvent("local_agent:terminated_stream_retries_exhausted", {
+              chatId: req.chatId,
+              caideRequestId,
+              retryCount: terminatedRetryCount,
+              error: String(streamError),
+              phase: "stream_iteration",
+            });
             throw streamError;
           }
 
@@ -1527,13 +1376,11 @@ export async function handleLocalAgentStream(
                 retryReplayEvents,
                 currentMessageHistoryRef: currentMessageHistory,
                 accumulatedAiMessagesRef: accumulatedAiMessages,
-                onCurrentMessageHistoryUpdate: (next) =>
-                  (currentMessageHistory = next),
+                onCurrentMessageHistoryUpdate: (next) => (currentMessageHistory = next),
               });
               terminatedRetryCount += 1;
               needsContinuationInstruction = true;
-              const retryDelayMs =
-                STREAM_RETRY_BASE_DELAY_MS * terminatedRetryCount;
+              const retryDelayMs = STREAM_RETRY_BASE_DELAY_MS * terminatedRetryCount;
               sendTelemetryEvent("local_agent:terminated_stream_retry", {
                 chatId: req.chatId,
                 caideRequestId,
@@ -1548,16 +1395,13 @@ export async function handleLocalAgentStream(
               continue;
             }
             if (isTerminatedStreamError(err)) {
-              sendTelemetryEvent(
-                "local_agent:terminated_stream_retries_exhausted",
-                {
-                  chatId: req.chatId,
-                  caideRequestId,
-                  retryCount: terminatedRetryCount,
-                  error: String(err),
-                  phase: "response_finalization",
-                },
-              );
+              sendTelemetryEvent("local_agent:terminated_stream_retries_exhausted", {
+                chatId: req.chatId,
+                caideRequestId,
+                retryCount: terminatedRetryCount,
+                error: String(err),
+                phase: "response_finalization",
+              });
             }
             logger.warn("Failed to retrieve stream response messages:", err);
             steps = [];
@@ -1596,10 +1440,7 @@ export async function handleLocalAgentStream(
               })()
             : responseMessages;
         accumulatedAiMessages.push(...messagesToAccumulate);
-        currentMessageHistory = [
-          ...currentMessageHistory,
-          ...messagesToAccumulate,
-        ];
+        currentMessageHistory = [...currentMessageHistory, ...messagesToAccumulate];
       }
 
       // Check if the model ended with text only (no tool calls in the final step).
@@ -1624,10 +1465,7 @@ export async function handleLocalAgentStream(
         // and the Flutter-targeted checkpoint chain instead.
         ctx.frameworkType !== "flutter"
       ) {
-        const uiProblems = await scanMobileUiFiles(
-          appPath,
-          Object.keys(fileEditTracker),
-        );
+        const uiProblems = await scanMobileUiFiles(appPath, Object.keys(fileEditTracker));
         if (uiProblems.length > 0) {
           uiQualityFollowUpLoops += 1;
           currentMessageHistory = [
@@ -1654,9 +1492,7 @@ export async function handleLocalAgentStream(
       // pass is one focused LLM turn with a single skill body; zero-change
       // passes retry exactly once, then the chain moves on.
       const chainEditsNow = Object.keys(fileEditTracker).length;
-      const wrotePlanThisPass = steps.some((step) =>
-        stepHasToolCall(step, writePlanTool.name),
-      );
+      const wrotePlanThisPass = steps.some((step) => stepHasToolCall(step, writePlanTool.name));
       const planTextWritten = extractPlanTextFromSteps(steps);
       if (wrotePlanThisPass) {
         chainHasSeenPlan = true;
@@ -1672,17 +1508,13 @@ export async function handleLocalAgentStream(
           !planModeOnly &&
           passEndedWithText &&
           chainEditsNow >= chainNeedsEditsBeforePass) ||
-        (planModeOnly &&
-          !readOnly &&
-          chainHasSeenPlan &&
-          !chainExitPlanRequested);
+        (planModeOnly && !readOnly && chainHasSeenPlan && !chainExitPlanRequested);
       if (chainEligible) {
         if (checkpointChain === null) {
           checkpointChain = createChain({
             isNewApp: chat.app.needsAppBlueprint ?? false,
             hasOnboardingScreens: planModeOnly
-              ? latestPlanText !== null &&
-                isOnboardingScreenPath(latestPlanText)
+              ? latestPlanText !== null && isOnboardingScreenPath(latestPlanText)
               : Object.keys(fileEditTracker).some(isOnboardingScreenPath),
             hasBackendCode: planModeOnly
               ? latestPlanText !== null && isBackendCodePath(latestPlanText)
@@ -1695,9 +1527,7 @@ export async function handleLocalAgentStream(
         }
         // In plan mode the "edit" signal is a new write_plan call — the
         // model revises the plan in stead of editing files.
-        const madeEdits = planModeOnly
-          ? wrotePlanThisPass
-          : chainEditsNow > chainEditsAtPassStart;
+        const madeEdits = planModeOnly ? wrotePlanThisPass : chainEditsNow > chainEditsAtPassStart;
         const { step, pass } = advanceChain(checkpointChain, madeEdits);
         if (pass) {
           chainEditsAtPassStart = chainEditsNow;
@@ -1716,9 +1546,7 @@ export async function handleLocalAgentStream(
           currentMessageHistory = [...currentMessageHistory, passMessage];
           // Synthetic messages must not persist to aiMessagesJson (same rule
           // as the todo reminder).
-          logger.info(
-            `Starting checkpoint pass ${pass.id} (${step}) for chat ${req.chatId}`,
-          );
+          logger.info(`Starting checkpoint pass ${pass.id} (${step}) for chat ${req.chatId}`);
           continue;
         }
       }
@@ -1777,9 +1605,7 @@ export async function handleLocalAgentStream(
     // Check if we hit the step limit and append a notice to the response
     if (totalStepsExecuted >= maxToolCallSteps) {
       hitStepLimit = true;
-      logger.info(
-        `Chat ${req.chatId} hit step limit of ${maxToolCallSteps} steps`,
-      );
+      logger.info(`Chat ${req.chatId} hit step limit of ${maxToolCallSteps} steps`);
       const stepLimitXml = `<caide-step-limit steps="${totalStepsExecuted}" limit="${maxToolCallSteps}">Automatically paused after ${totalStepsExecuted} tool calls.</caide-step-limit>`;
       postTurnXmlParts.push(stepLimitXml);
       fullResponse += `\n\n${stepLimitXml}`;
@@ -1835,9 +1661,7 @@ export async function handleLocalAgentStream(
 
     // Save the AI SDK messages for multi-turn tool call preservation
     try {
-      const aiMessagesJson = getAiMessagesJsonIfWithinLimit(
-        accumulatedAiMessages,
-      );
+      const aiMessagesJson = getAiMessagesJsonIfWithinLimit(accumulatedAiMessages);
       if (aiMessagesJson) {
         await db
           .update(messages)
@@ -1865,10 +1689,7 @@ export async function handleLocalAgentStream(
         try {
           await storeDbTimestampAtCurrentVersion({ appId: ctx.appId });
         } catch (error) {
-          logger.error(
-            "Error storing Neon timestamp at current version:",
-            error,
-          );
+          logger.error("Error storing Neon timestamp at current version:", error);
         }
       }
     }
@@ -1895,8 +1716,7 @@ export async function handleLocalAgentStream(
       chatId: req.chatId,
       updatedFiles: !readOnly,
       chatSummary: ctx.chatSummary,
-      warningMessages:
-        warningMessages.length > 0 ? [...new Set(warningMessages)] : undefined,
+      warningMessages: warningMessages.length > 0 ? [...new Set(warningMessages)] : undefined,
       pausePromptQueue: hitStepLimit || undefined,
     } satisfies ChatResponseEnd);
 
@@ -1931,8 +1751,7 @@ export async function handleLocalAgentStream(
     safeSend(event.sender, "chat:response:error", {
       chatId: req.chatId,
       error: `Error: ${getErrorMessageWithDetails(error)}`,
-      warningMessages:
-        warningMessages.length > 0 ? [...new Set(warningMessages)] : undefined,
+      warningMessages: warningMessages.length > 0 ? [...new Set(warningMessages)] : undefined,
     });
     return false; // Error
   } finally {
@@ -2049,10 +1868,7 @@ function isTerminatedStreamError(error: unknown): boolean {
   if (message.includes("typeerror: terminated") || message === "terminated") {
     return true;
   }
-  const cause =
-    isRecord(normalized) && "cause" in normalized
-      ? normalized.cause
-      : undefined;
+  const cause = isRecord(normalized) && "cause" in normalized ? normalized.cause : undefined;
   if (cause) {
     return isTerminatedStreamError(cause);
   }
@@ -2068,8 +1884,7 @@ function isRetryableProviderStreamError(error: unknown): boolean {
   const statusCode =
     (typeof normalized.statusCode === "number" && normalized.statusCode) ||
     (typeof normalized.status === "number" && normalized.status) ||
-    (isRecord(normalized.response) &&
-    typeof normalized.response.status === "number"
+    (isRecord(normalized.response) && typeof normalized.response.status === "number"
       ? normalized.response.status
       : undefined);
 
@@ -2090,9 +1905,7 @@ function isRetryableProviderStreamError(error: unknown): boolean {
       .join(" ")
       .toLowerCase() || getErrorMessage(normalized).toLowerCase();
 
-  return RETRYABLE_STREAM_ERROR_PATTERNS.some((pattern) =>
-    errorString.includes(pattern),
-  );
+  return RETRYABLE_STREAM_ERROR_PATTERNS.some((pattern) => errorString.includes(pattern));
 }
 
 function shouldRetryTransientStreamError(params: {
@@ -2136,9 +1949,7 @@ function sendResponseChunk(
     const currentMessages = (chat.messages as RendererMessageRow[])
       .filter((message) => !hiddenMessageIds?.has(message.id))
       .map(toRendererMessage);
-    const placeholderMsg = currentMessages.find(
-      (m) => m.id === placeholderMessageId,
-    );
+    const placeholderMsg = currentMessages.find((m) => m.id === placeholderMessageId);
     if (placeholderMsg) {
       placeholderMsg.content = fullResponse;
     }
@@ -2184,9 +1995,7 @@ function sendResponseChunk(
   }
 }
 
-function getPlanningQuestionnaireErrorFromStep(step: {
-  content?: unknown;
-}): string | null {
+function getPlanningQuestionnaireErrorFromStep(step: { content?: unknown }): string | null {
   if (!Array.isArray(step.content)) {
     return null;
   }
@@ -2228,26 +2037,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function stepOnlyCalledTool(
-  step: { toolCalls: Array<unknown> },
-  toolName: string,
-): boolean {
+function stepOnlyCalledTool(step: { toolCalls: Array<unknown> }, toolName: string): boolean {
   return (
     step.toolCalls.length > 0 &&
-    step.toolCalls.every(
-      (toolCall) => isRecord(toolCall) && toolCall.toolName === toolName,
-    )
+    step.toolCalls.every((toolCall) => isRecord(toolCall) && toolCall.toolName === toolName)
   );
 }
 
 /** Whether any tool call in the step is for the given tool. */
-function stepHasToolCall(
-  step: { toolCalls: Array<unknown> },
-  toolName: string,
-): boolean {
-  return step.toolCalls.some(
-    (toolCall) => isRecord(toolCall) && toolCall.toolName === toolName,
-  );
+function stepHasToolCall(step: { toolCalls: Array<unknown> }, toolName: string): boolean {
+  return step.toolCalls.some((toolCall) => isRecord(toolCall) && toolCall.toolName === toolName);
 }
 
 /**
@@ -2313,10 +2112,7 @@ function shouldRunTodoFollowUpPass(params: {
  * `<caide-mcp-tool-call>` / `<caide-mcp-tool-result>` pair for the UI,
  * and surfaces tool errors as `<caide-output type="error">`.
  */
-async function getMcpTools(
-  event: IpcMainInvokeEvent,
-  ctx: AgentContext,
-): Promise<ToolSet> {
+async function getMcpTools(event: IpcMainInvokeEvent, ctx: AgentContext): Promise<ToolSet> {
   const mcpToolSet: ToolSet = {};
 
   try {
@@ -2333,10 +2129,7 @@ async function getMcpTools(
           const client = await mcpManager.getClient(s.id);
           return await client.tools();
         } catch (e) {
-          logger.warn(
-            `Failed to load tools for MCP server ${s.id} (${s.name})`,
-            e,
-          );
+          logger.warn(`Failed to load tools for MCP server ${s.id} (${s.name})`, e);
           return null;
         }
       })();
@@ -2372,16 +2165,15 @@ async function getMcpTools(
                 args,
               });
 
-              const { approved, autoApprovedReason } =
-                await requireMcpToolConsent(event, {
-                  serverId: s.id,
-                  serverName: s.name,
-                  toolName: name,
-                  toolDescription: mcpTool.description,
-                  inputPreview,
-                  chatId: ctx.chatId,
-                  autoApprove,
-                });
+              const { approved, autoApprovedReason } = await requireMcpToolConsent(event, {
+                serverId: s.id,
+                serverName: s.name,
+                toolName: name,
+                toolDescription: mcpTool.description,
+                inputPreview,
+                chatId: ctx.chatId,
+                autoApprove,
+              });
 
               if (!approved)
                 throw new CaideError(
@@ -2400,8 +2192,7 @@ async function getMcpTools(
               callEmitted = true;
 
               const res = await mcpTool.execute(args, execCtx);
-              const resultStr =
-                typeof res === "string" ? res : JSON.stringify(res);
+              const resultStr = typeof res === "string" ? res : JSON.stringify(res);
 
               ctx.onXmlComplete(
                 `<caide-mcp-tool-result server="${escapeXmlAttr(serverName)}" tool="${escapeXmlAttr(toolName)}" call-id="${escapeXmlAttr(callId)}">\n${escapeXmlContent(resultStr)}\n</caide-mcp-tool-result>`,
@@ -2409,10 +2200,8 @@ async function getMcpTools(
 
               return resultStr;
             } catch (error) {
-              const errorMessage =
-                error instanceof Error ? error.message : String(error);
-              const errorStack =
-                error instanceof Error && error.stack ? error.stack : "";
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              const errorStack = error instanceof Error && error.stack ? error.stack : "";
               // Terminate the merged card in an error state instead of leaving
               // it stuck on "Running" (only when its call card was emitted).
               if (callEmitted) {

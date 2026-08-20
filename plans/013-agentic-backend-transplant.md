@@ -7,15 +7,15 @@ Product: Caide Flutter Builder — Caide UI kept as-is; dyad×caide backend repl
 
 ## Decisions (user-confirmed)
 
-| # | Decision | Choice |
-|---|---|---|
-| 1 | Backend host | `apps/engine` child process (JSON-RPC stdio) runs the ENTIRE dyad backend; `apps/server` = thin supervisor |
-| 2 | Source | `backup/dyad-engine-transplant` (already has dyad backend + Flutter layer + free-tier removal); its UI is DISCARDED |
-| 3 | Scope | Flutter-only: strip supabase/neon integrations, web3 skills, collab/tunnels/public previews, notch, updater, deep links, capacitor (web-target) machinery, turbo-edits-v2 web build path |
-| 4 | Projects | dyad `create-app` model: projects are CREATED apps in fixed `~/caide-apps`, no folder picking |
-| 5 | Sidebar | Flatten to Projects + per-project chats only: drop SpaceSwitcher/Pinned/Studio/Home-chats sections |
-| 6 | Legacy | Existing folder-opened projects stay listed/usable as-is (non-destructive) |
-| 7 | Activity | New per-project Activity view (main pane, redesigned) replaces sidebar task-feed |
+| #   | Decision     | Choice                                                                                                                                                                                   |
+| --- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Backend host | `apps/engine` child process (JSON-RPC stdio) runs the ENTIRE dyad backend; `apps/server` = thin supervisor                                                                               |
+| 2   | Source       | `backup/dyad-engine-transplant` (already has dyad backend + Flutter layer + free-tier removal); its UI is DISCARDED                                                                      |
+| 3   | Scope        | Flutter-only: strip supabase/neon integrations, web3 skills, collab/tunnels/public previews, notch, updater, deep links, capacitor (web-target) machinery, turbo-edits-v2 web build path |
+| 4   | Projects     | dyad `create-app` model: projects are CREATED apps in fixed `~/caide-apps`, no folder picking                                                                                            |
+| 5   | Sidebar      | Flatten to Projects + per-project chats only: drop SpaceSwitcher/Pinned/Studio/Home-chats sections                                                                                       |
+| 6   | Legacy       | Existing folder-opened projects stay listed/usable as-is (non-destructive)                                                                                                               |
+| 7   | Activity     | New per-project Activity view (main pane, redesigned) replaces sidebar task-feed                                                                                                         |
 
 ## STRIP from Caide
 

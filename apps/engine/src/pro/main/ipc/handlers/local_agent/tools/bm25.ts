@@ -78,17 +78,13 @@ export function buildToolDocument(def: McpToolDef): string {
     def.description ?? "",
   ];
 
-  const schema = def.inputSchema as
-    | { properties?: Record<string, unknown> }
-    | undefined;
+  const schema = def.inputSchema as { properties?: Record<string, unknown> } | undefined;
   const properties = schema?.properties;
   if (properties && typeof properties === "object") {
     for (const [propName, propSchema] of Object.entries(properties)) {
       parts.push(propName);
       const desc =
-        propSchema &&
-        typeof propSchema === "object" &&
-        "description" in propSchema
+        propSchema && typeof propSchema === "object" && "description" in propSchema
           ? (propSchema as { description?: unknown }).description
           : undefined;
       if (typeof desc === "string") {

@@ -23,13 +23,7 @@ export const CAIDE_MOTION_CAPABILITIES: Readonly<
   },
   "motion-react": {
     packages: ["motion"],
-    useFor: [
-      "layout transitions",
-      "shared elements",
-      "gestures",
-      "springs",
-      "orchestration",
-    ],
+    useFor: ["layout transitions", "shared elements", "gestures", "springs", "orchestration"],
     avoidFor: ["linear illustration assets", "cinematic SVG timelines"],
   },
   dotlottie: {
@@ -39,11 +33,7 @@ export const CAIDE_MOTION_CAPABILITIES: Readonly<
   },
   rive: {
     packages: ["@rive-app/react-webgl2"],
-    useFor: [
-      "state-driven illustration",
-      "mascots",
-      "interactive branded feedback",
-    ],
+    useFor: ["state-driven illustration", "mascots", "interactive branded feedback"],
     avoidFor: ["large repeated lists", "ordinary route transitions"],
   },
   gsap: {
@@ -59,9 +49,5 @@ export const CAIDE_MOTION_CAPABILITIES: Readonly<
 };
 
 export function caideMotionPackages(engines: readonly CaideMotionEngine[]) {
-  return [
-    ...new Set(
-      engines.flatMap((engine) => CAIDE_MOTION_CAPABILITIES[engine].packages),
-    ),
-  ];
+  return [...new Set(engines.flatMap((engine) => CAIDE_MOTION_CAPABILITIES[engine].packages))];
 }

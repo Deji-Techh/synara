@@ -1,19 +1,29 @@
 import { rawAsset } from "@/raw-assets";
 const uiUxMasterySkill = rawAsset("src/prompts/skills/ui-ux-mastery/SKILL.md");
-const productArchetypes = rawAsset("src/prompts/skills/ui-ux-mastery/references/product-archetypes.md");
+const productArchetypes = rawAsset(
+  "src/prompts/skills/ui-ux-mastery/references/product-archetypes.md",
+);
 const designSystem = rawAsset("src/prompts/skills/ui-ux-mastery/references/design-system.md");
-const componentContracts = rawAsset("src/prompts/skills/ui-ux-mastery/references/component-contracts.md");
+const componentContracts = rawAsset(
+  "src/prompts/skills/ui-ux-mastery/references/component-contracts.md",
+);
 const accessibility = rawAsset("src/prompts/skills/ui-ux-mastery/references/accessibility.md");
 const antiSlop = rawAsset("src/prompts/skills/ui-ux-mastery/references/anti-slop.md");
 const designToCode = rawAsset("src/prompts/skills/ui-ux-mastery/references/design-to-code.md");
-const platformPatterns = rawAsset("src/prompts/skills/ui-ux-mastery/references/platform-patterns.md");
+const platformPatterns = rawAsset(
+  "src/prompts/skills/ui-ux-mastery/references/platform-patterns.md",
+);
 const qualityRubric = rawAsset("src/prompts/skills/ui-ux-mastery/references/quality-rubric.md");
 const motionDirection = rawAsset("src/prompts/skills/ui-ux-mastery/references/motion-direction.md");
 const screenSpec = rawAsset("src/prompts/skills/ui-ux-mastery/templates/screen-spec.md");
-const componentContract = rawAsset("src/prompts/skills/ui-ux-mastery/templates/component-contract.md");
+const componentContract = rawAsset(
+  "src/prompts/skills/ui-ux-mastery/templates/component-contract.md",
+);
 const designAudit = rawAsset("src/prompts/skills/ui-ux-mastery/templates/design-audit.md");
 const designSpec = rawAsset("src/prompts/skills/ui-ux-mastery/templates/design-spec.md");
-const motionStoryboard = rawAsset("src/prompts/skills/ui-ux-mastery/templates/motion-storyboard.md");
+const motionStoryboard = rawAsset(
+  "src/prompts/skills/ui-ux-mastery/templates/motion-storyboard.md",
+);
 const motionInteractionSkill = rawAsset("src/prompts/skills/motion-interaction/SKILL.md");
 const productFlowSkill = rawAsset("src/prompts/skills/product-flow/SKILL.md");
 const backendProductionSkill = rawAsset("src/prompts/skills/backend-production/SKILL.md");
@@ -22,14 +32,9 @@ const onboardingWelcomeSkill = rawAsset("src/prompts/skills/onboarding-welcome/S
 
 import { DESIGN_ENGINE_CONTRACT } from "./design_engine_contract";
 import { DESIGN_REFERENCE_INDEX_PROMPT } from "./design_reference_index";
-import {
-  stripFrontmatter,
-  parseFrontmatter,
-  type SkillFrontmatter,
-} from "./skill_frontmatter";
+import { stripFrontmatter, parseFrontmatter, type SkillFrontmatter } from "./skill_frontmatter";
 
-export const UIUX_SKILL_FRONTMATTER =
-  parseFrontmatter(uiUxMasterySkill).frontmatter;
+export const UIUX_SKILL_FRONTMATTER = parseFrontmatter(uiUxMasterySkill).frontmatter;
 export const COMPANION_SKILL_FRONTMATTERS: Record<string, SkillFrontmatter> = {
   "motion-interaction": parseFrontmatter(motionInteractionSkill).frontmatter,
   "product-flow": parseFrontmatter(productFlowSkill).frontmatter,

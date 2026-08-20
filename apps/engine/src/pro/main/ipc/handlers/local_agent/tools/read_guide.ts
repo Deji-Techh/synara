@@ -58,15 +58,11 @@ export function getGuideContent(
   }
   const hasFrameworkSections =
     content.includes("<nextjs-only>") || content.includes("<vite-nitro-only>");
-  return hasFrameworkSections
-    ? filterGuideByFramework(content, frameworkType)
-    : content;
+  return hasFrameworkSections ? filterGuideByFramework(content, frameworkType) : content;
 }
 
 const readGuideSchema = z.object({
-  guide: z
-    .string()
-    .describe(`Guide name. Available guides: ${GUIDE_NAMES.join(", ")}`),
+  guide: z.string().describe(`Guide name. Available guides: ${GUIDE_NAMES.join(", ")}`),
 });
 
 export const readGuideTool: ToolDefinition<z.infer<typeof readGuideSchema>> = {

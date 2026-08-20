@@ -36,10 +36,7 @@ When a test is failing and you're asked to fix it, do NOT guess at the cause fro
 - Never INSERT users directly into auth tables; that commonly produces a user that exists but cannot log in.`;
 import { buildPlatformPrompt } from "./platform_contracts";
 import { CAIDE_WEB_UI_SKILL_PACK } from "./web_ui_skill_pack";
-import {
-  CAIDE_MOBILE_UI_SKILL_PACK,
-  COMPANION_SKILL_FRONTMATTERS,
-} from "./mobile_ui_skill_pack";
+import { CAIDE_MOBILE_UI_SKILL_PACK, COMPANION_SKILL_FRONTMATTERS } from "./mobile_ui_skill_pack";
 import { WEB3_SKILL_FRONTMATTERS } from "./web3_skill_pack";
 import { DEFAULT_AI_RULES } from "./ai_rules";
 
@@ -512,10 +509,7 @@ export function constructLocalAgentPrompt(
   if (options?.readOnly) {
     basePrompt = LOCAL_AGENT_ASK_SYSTEM_PROMPT;
   } else if (options?.basicAgentMode || options?.freeModelMode) {
-    basePrompt = buildLocalAgentBasicSystemPrompt(
-      enableAppBlueprint,
-      testingEnabled,
-    );
+    basePrompt = buildLocalAgentBasicSystemPrompt(enableAppBlueprint, testingEnabled);
   } else {
     basePrompt = buildLocalAgentSystemPrompt({
       enableAppBlueprint,
@@ -538,8 +532,7 @@ export function constructLocalAgentPrompt(
   // (AI_RULES.md, which the model itself can edit) are inserted literally and
   // cannot splice the rest of the prompt via `$'`, `$&`, etc.
   const target: AppTarget = options?.appTarget ?? "mobile";
-  const uiSkillPack =
-    target === "web" ? CAIDE_WEB_UI_SKILL_PACK : CAIDE_MOBILE_UI_SKILL_PACK;
+  const uiSkillPack = target === "web" ? CAIDE_WEB_UI_SKILL_PACK : CAIDE_MOBILE_UI_SKILL_PACK;
   let prompt = basePrompt
     .replace("[[PLATFORM_UI_SKILL_PACK]]", () => uiSkillPack)
     .replace("[[PLATFORM_CONTRACT]]", () => buildPlatformPrompt(target))

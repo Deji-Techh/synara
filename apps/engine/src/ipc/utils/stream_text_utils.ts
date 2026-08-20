@@ -115,10 +115,7 @@ export class StreamingPatchTracker {
     // byte 0 and re-hash the agreed prefix from scratch.
     let lcp = 0;
     const maxLcp = Math.min(prev.length, fullResponse.length);
-    while (
-      lcp < maxLcp &&
-      prev.charCodeAt(lcp) === fullResponse.charCodeAt(lcp)
-    ) {
+    while (lcp < maxLcp && prev.charCodeAt(lcp) === fullResponse.charCodeAt(lcp)) {
       lcp++;
     }
     this.lastTarget = fullResponse;
