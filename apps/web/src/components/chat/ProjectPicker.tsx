@@ -25,6 +25,7 @@ import { useVoidSpace } from "~/voidSpaceStore";
 import { cn } from "~/lib/utils";
 import { ELEVATED_HOVER_SURFACE_CLASS_NAME } from "~/surfaceStyles";
 import { FolderClosed } from "../FolderClosed";
+import { CreateAppDialog } from "../CreateAppDialog";
 import { SpaceIcon } from "../SpaceIcon";
 import { PickerPanelShell } from "./PickerPanelShell";
 import { PickerTriggerButton } from "./PickerTriggerButton";
@@ -172,7 +173,6 @@ export const ProjectPicker = memo(function ProjectPicker({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const [isPicking, setIsPicking] = useState(false);
   const [isLoadingDirectories, setIsLoadingDirectories] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [directoryEntries, setDirectoryEntries] = useState<readonly ProjectDirectoryEntry[]>([]);
@@ -448,36 +448,13 @@ export const ProjectPicker = memo(function ProjectPicker({
     [isProjectSelectionMode, onSelectProject, onSelectWorkspaceRoot],
   );
 
-  const handleAddNewProject = useCallback(async () => {
-    if (isPicking) return;
-    const api = readNativeApi();
-    if (!api) {
-      setErrorMessage("App is still connecting. Try again in a moment.");
-      return;
-    }
+  const [isCreateAppOpen, setIsCreateAppOpen] = useState(false);
 
-    setIsPicking(true);
-    setErrorMessage(null);
-    try {
-      const pickedPath = await api.dialogs.pickFolder();
-      if (!pickedPath) {
-        setIsPicking(false);
-        return;
-      }
-      if (onCreateProjectFromPath) {
-        await onCreateProjectFromPath(pickedPath);
-      } else if (onSelectWorkspaceRoot) {
-        // Spelled out instead of `onSelectWorkspaceRoot?.(…)`: an optional call is a value block,
-        // which React Compiler cannot lower inside a `try`.
-        onSelectWorkspaceRoot(pickedPath);
-      }
-      setIsPicking(false);
-      setOpen(false);
-    } catch (error) {
-      setIsPicking(false);
-      setErrorMessage(error instanceof Error ? error.message : "Unable to open the folder picker.");
-    }
-  }, [isPicking, onCreateProjectFromPath, onSelectWorkspaceRoot]);
+  const handleAddNewProject = useCallback(async () => {
+    // New flow: apps are auto-created under ~/caide-apps with a name, not via folder picker.
+    // Open the CreateAppDialog instead of the native folder picker.
+    setIsCreateAppOpen(true);
+  }, []);
 
   const handleResetToHome = useCallback(() => {
     if (resetInFlightRef.current) {
@@ -512,11 +489,7 @@ export const ProjectPicker = memo(function ProjectPicker({
   const shouldShowResetToHome = showResetToHome || isProjectSelectionMode;
   const canResetFromTrigger =
     renderTrigger === undefined && selectedFolderOption !== null && onResetToHome !== undefined;
-  const addProjectLabel =
-    addActionLabel ?? (isProjectSelectionMode ? "New project" : "Add new project");
-  const loadingAddProjectLabel = isProjectSelectionMode
-    ? "Adding project..."
-    : "Opening folder picker...";
+  const addProjectLabel = addActionLabel ?? (isProjectSelectionMode ? "New project" : "New app");
 
   const renderActiveFolderOption = (folder: ActiveFolderOption, index: number) => {
     const selected = isProjectSelectionMode
@@ -635,17 +608,11 @@ export const ProjectPicker = memo(function ProjectPicker({
             <>
               <button
                 type="button"
-                className={cn(
-                  PICKER_FOOTER_ACTION_CLASS_NAME,
-                  "disabled:cursor-not-allowed disabled:opacity-60",
-                )}
+                className={PICKER_FOOTER_ACTION_CLASS_NAME}
                 onClick={() => void handleAddNewProject()}
-                disabled={isPicking}
               >
                 <PlusIcon className="size-3.5 shrink-0 text-muted-foreground/70" />
-                <span className="truncate">
-                  {isPicking ? loadingAddProjectLabel : addProjectLabel}
-                </span>
+                <span className="truncate">{addProjectLabel}</span>
               </button>
               {shouldShowResetToHome ? (
                 <button
@@ -722,6 +689,23 @@ export const ProjectPicker = memo(function ProjectPicker({
           </ComboboxList>
         </PickerPanelShell>
       </ComboboxPopup>
+      <CreateAppDialog
+        open={isCreateAppOpen}
+        onOpenChange={setIsCreateAppOpen}
+        onCreated={(appId, chatId) => {
+          // After creating the app, select it as the current project.
+          // The app's path is under ~/caide-apps/<slug>, but we treat the appId as the projectId.
+          // For now, close the picker and let the caller handle navigation via onSelectProject.
+          setIsCreateAppOpen(false);
+          setOpen(false);
+          // The CreateAppDialog already created the app and chat; trigger a refresh.
+          // If the caller provided onSelectProject, call it with the new app's projectId.
+          // The app's projectId is the same as appId in the new model.
+          if (onSelectProject) {
+            void onSelectProject(appId as unknown as ProjectId);
+          }
+        }}
+      />
     </Combobox>
   );
 });

@@ -57,7 +57,7 @@ describe("ServerSettingsService", () => {
 
     expect(result.updated.enableAssistantStreaming).toBe(true);
     expect(result.updated.enableProviderUpdateChecks).toBe(false);
-    expect(result.(updated.providers as any).codex?.binaryPath).toBe("/usr/local/bin/codex");
+    expect((result.updated.providers as any).codex?.binaryPath).toBe("/usr/local/bin/codex");
     expect(result.parsed).toMatchObject({
       revision: 1,
       migrationVersion: 2,
@@ -133,10 +133,12 @@ describe("ServerSettingsService", () => {
       }),
     );
 
-    expect(result.(internal.providers as any).kilo?.serverPasswordConfigured).toBe(true);
-    expect(result.(internal.providers as any).opencode?.serverPasswordConfigured).toBe(true);
-    expect(result.(view.providers as any).kilo).toMatchObject({ serverPasswordConfigured: true });
-    expect(result.(view.providers as any).opencode).toMatchObject({ serverPasswordConfigured: true });
+    expect((result.internal.providers as any).kilo?.serverPasswordConfigured).toBe(true);
+    expect((result.internal.providers as any).opencode?.serverPasswordConfigured).toBe(true);
+    expect((result.view.providers as any).kilo).toMatchObject({ serverPasswordConfigured: true });
+    expect((result.view.providers as any).opencode).toMatchObject({
+      serverPasswordConfigured: true,
+    });
     expect(JSON.stringify(result.internal)).not.toContain("kilo-secret");
     expect(JSON.stringify(result.internal)).not.toContain("opencode-secret");
     expect(JSON.stringify(result.view)).not.toContain("kilo-secret");

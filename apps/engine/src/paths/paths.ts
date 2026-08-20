@@ -22,7 +22,7 @@ export function getDefaultCaideAppsDirectory(): string {
     return path.join(electron!.app.getPath("userData"), "caide-apps");
   }
   const caideDir = path.join(os.homedir(), "caide-apps");
-  const legacyDir = path.join(os.homedir(), "caide-apps");
+  const legacyDir = path.join(os.homedir(), "dyad-apps");
   if (!fs.existsSync(caideDir) && fs.existsSync(legacyDir)) {
     return legacyDir;
   }
@@ -120,8 +120,7 @@ export function getTypeScriptCachePath(): string {
 export function getUserDataPath(): string {
   const electron = getElectron();
   const devUserDataDir =
-    process.env.CAIDE_DEV_USER_DATA_DIR?.trim() ||
-    process.env.CAIDE_DEV_USER_DATA_DIR?.trim();
+    process.env.CAIDE_DEV_USER_DATA_DIR?.trim() || process.env.DYAD_DEV_USER_DATA_DIR?.trim();
 
   if (process.env.NODE_ENV === "development" && devUserDataDir) {
     return path.resolve(devUserDataDir);
