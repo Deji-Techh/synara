@@ -216,7 +216,26 @@ export const OpenCodeGoModelSelection = Schema.Struct({
 });
 export type OpenCodeGoModelSelection = typeof OpenCodeGoModelSelection.Type;
 
-export const ModelSelection = Schema.Union([
+const LEGACY_MODEL_PROVIDER_MAP: Record<string, ProviderKind> = {
+  codex: "openai",
+  claudeAgent: "anthropic",
+  cursor: "openai",
+  antigravity: "google",
+  grok: "xai",
+  droid: "openai",
+  kilo: "openai",
+  opencode: "openai",
+  pi: "openai",
+  gemini: "google",
+};
+
+const LegacyModelSelection = Schema.Struct({
+  provider: Schema.String,
+  model: TrimmedNonEmptyString,
+  options: Schema.optional(Schema.Unknown),
+});
+
+const NewModelSelection = Schema.Union([
   EngineModelSelection,
   OpenAiModelSelection,
   AnthropicModelSelection,
@@ -233,7 +252,20 @@ export const ModelSelection = Schema.Union([
   OpenCodeZenModelSelection,
   OpenCodeGoModelSelection,
 ]);
-export type ModelSelection = typeof ModelSelection.Type;
+
+const LegacyModelSelectionEncoded = Schema.Struct({
+  provider: Schema.String,
+  model: TrimmedNonEmptyString,
+  options: Schema.optional(Schema.Unknown),
+});
+
+export const ModelSelection = Schema.Union([
+  NewModelSelection,
+  LegacyModelSelectionEncoded,
+]);
+
+export type ModelSelection = typeof NewModelSelection.Type;
+type ModelSelectionEncoded = typeof NewModelSelection.Encoded;
 
 export const EngineProviderStartOptions = Schema.Struct({
   binaryPath: Schema.optional(TrimmedNonEmptyString),
