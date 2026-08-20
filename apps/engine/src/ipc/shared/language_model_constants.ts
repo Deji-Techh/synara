@@ -28,7 +28,17 @@ export const NEMOTRON_3_SUPER_FREE = "nvidia/nemotron-3-super-120b-a12b:free";
 export const GPT_5_NANO = "gpt-5-nano";
 export const OPENCODE_ZEN_API_BASE_URL = "https://opencode.ai/zen/v1";
 export const OPENCODE_ZEN_MODELS_URL = `${OPENCODE_ZEN_API_BASE_URL}/models`;
+export const OPENCODE_GO_API_BASE_URL = "https://opencode.ai/go/v1";
+export const OPENCODE_GO_MODELS_URL = `${OPENCODE_GO_API_BASE_URL}/models`;
 export const OPENCODE_ZEN_FREE_MODEL_IDS = [
+  "deepseek-v4-flash-free",
+  "mimo-v2.5-free",
+  "laguna-s-2.1-free",
+  "north-mini-code-free",
+  "nemotron-3-ultra-free",
+  "big-pickle",
+] as const;
+export const OPENCODE_GO_FREE_MODEL_IDS = [
   "deepseek-v4-flash-free",
   "mimo-v2.5-free",
   "laguna-s-2.1-free",
@@ -119,6 +129,74 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       displayName: "Big Pickle",
       description:
         "Temporary free stealth model through OpenCode Zen; prompts may be used to improve the model",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+  ],
+  "opencode-go": [
+    {
+      name: "deepseek-v4-flash-free",
+      displayName: "DeepSeek V4 Flash Free",
+      description:
+        "Temporary free model through OpenCode Go; prompts may be used to improve the model",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "mimo-v2.5-free",
+      displayName: "MiMo V2.5 Free",
+      description:
+        "Temporary free model through OpenCode Go; prompts may be used to improve the model",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "laguna-s-2.1-free",
+      displayName: "Laguna S 2.1 Free",
+      description:
+        "Temporary free model through OpenCode Go; prompts may be used to improve the model",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "north-mini-code-free",
+      displayName: "North Mini Code Free",
+      description:
+        "Temporary free coding model through OpenCode Go; do not submit confidential code",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "nemotron-3-ultra-free",
+      displayName: "Nemotron 3 Ultra Free",
+      description:
+        "Temporary NVIDIA free endpoint through OpenCode Go; do not submit confidential code",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "big-pickle",
+      displayName: "Big Pickle",
+      description:
+        "Temporary free stealth model through OpenCode Go; prompts may be used to improve the model",
       maxOutputTokens: 32_000,
       contextWindow: 128_000,
       dollarSigns: 0,
@@ -659,6 +737,7 @@ export const FREE_OPENROUTER_MODEL_NAMES = MODEL_OPTIONS.openrouter.reduce<
 export const PROVIDER_TO_ENV_VAR: Record<string, string> = {
   deepseek: "DEEPSEEK_API_KEY",
   "opencode-zen": "OPENCODE_ZEN_API_KEY",
+  "opencode-go": "OPENCODE_GO_API_KEY",
   openai: "OPENAI_API_KEY",
   anthropic: "ANTHROPIC_API_KEY",
   google: "GEMINI_API_KEY",
@@ -694,6 +773,11 @@ export const CLOUD_PROVIDERS: Record<
     displayName: "OpenCode Zen",
     hasFreeTier: true,
     websiteUrl: "https://opencode.ai/zen",
+  },
+  "opencode-go": {
+    displayName: "OpenCode Go",
+    hasFreeTier: true,
+    websiteUrl: "https://opencode.ai/go",
   },
   openai: {
     displayName: "OpenAI",

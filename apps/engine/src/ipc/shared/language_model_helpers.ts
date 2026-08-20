@@ -14,6 +14,7 @@ import {
 } from "./language_model_constants";
 import { getBuiltinLanguageModelCatalog } from "./remote_language_model_catalog";
 import { getOpenCodeZenFreeModels } from "./opencode_zen_models";
+import { getOpenCodeGoFreeModels } from "./opencode_go_models";
 import { listChatGPTModels, readChatGPTTokens } from "@/main/chatgpt_auth";
 
 const logger = log.scope("language_model_helpers");
@@ -187,6 +188,8 @@ export async function getLanguageModels({
   if (provider.type === "cloud") {
     if (providerId === "opencode-zen") {
       hardcodedModels = await getOpenCodeZenFreeModels();
+    } else if (providerId === "opencode-go") {
+      hardcodedModels = await getOpenCodeGoFreeModels();
     } else {
       const builtinCatalog = await getBuiltinLanguageModelCatalog();
       logger.debug("Loading cloud models from builtin catalog", {

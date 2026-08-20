@@ -64,6 +64,7 @@ const providers = [
   "chatgpt",
   "deepseek",
   "opencode-zen",
+  "opencode-go",
   "openai",
   "anthropic",
   "google",

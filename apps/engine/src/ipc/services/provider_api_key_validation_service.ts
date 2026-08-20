@@ -19,6 +19,8 @@ import { getCaideEngineBaseUrl } from "@/ipc/utils/caide_engine_url";
 import { getTestFetchOption } from "@/ipc/utils/test_fetch_override";
 import { getOpenRouterAppAttributionHeaders } from "@/ipc/utils/openrouter_attribution";
 import {
+  OPENCODE_GO_API_BASE_URL,
+  OPENCODE_GO_FREE_MODEL_IDS,
   OPENCODE_ZEN_API_BASE_URL,
   OPENCODE_ZEN_FREE_MODEL_IDS,
 } from "@/ipc/shared/language_model_constants";
@@ -33,6 +35,7 @@ const PROVIDER_DISPLAY_NAMES: Record<ProviderApiKeyValidationProvider, string> =
   {
     deepseek: "DeepSeek",
     "opencode-zen": "OpenCode Zen",
+    "opencode-go": "OpenCode Go",
     google: "Google",
     openrouter: "OpenRouter",
     auto: "CAIDE Engine",
@@ -135,6 +138,15 @@ async function createValidationModel(
         ...getTestFetchOption(),
       });
       return zen(OPENCODE_ZEN_FREE_MODEL_IDS[0]);
+    }
+    case "opencode-go": {
+      const go = createOpenAICompatible({
+        name: "opencode-go",
+        apiKey,
+        baseURL: OPENCODE_GO_API_BASE_URL,
+        ...getTestFetchOption(),
+      });
+      return go(OPENCODE_GO_FREE_MODEL_IDS[0]);
     }
     case "google": {
       const google = createGoogle({

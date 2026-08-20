@@ -18,6 +18,7 @@ import { getEnvVar } from "./read_env";
 import log from "electron-log";
 import {
   FREE_OPENROUTER_MODEL_NAMES,
+  OPENCODE_GO_API_BASE_URL,
   OPENCODE_ZEN_API_BASE_URL,
 } from "../shared/language_model_constants";
 import { getLanguageModelProviders } from "../shared/language_model_helpers";
@@ -417,6 +418,21 @@ function getRegularModelClient(
       const provider = createOpenAICompatible({
         name: "opencode-zen",
         baseURL: OPENCODE_ZEN_API_BASE_URL,
+        apiKey,
+        ...getModelClientFetchOption(),
+      });
+      return {
+        modelClient: {
+          model: provider(model.name),
+          builtinProviderId: providerId,
+        },
+        backupModelClients: [],
+      };
+    }
+    case "opencode-go": {
+      const provider = createOpenAICompatible({
+        name: "opencode-go",
+        baseURL: OPENCODE_GO_API_BASE_URL,
         apiKey,
         ...getModelClientFetchOption(),
       });
