@@ -36,6 +36,34 @@ export function safeFlutterEnvironment(overrides?: Record<string, string>): Node
     }
   }
 
+  // Inject managed Flutter bin if installed (so child inherits without host PATH)
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const managed = require("./ipc/services/managed_flutter_toolchain_service") as typeof import("./ipc/services/managed_flutter_toolchain_service");
+    const flutterBin = managed.getManagedFlutterBin();
+    const sdkPath = managed.getManagedFlutterSdkPath();
+    if (managed.getManagedFlutterSdkPath() && typeof sdkPath === "string") {
+      try {
+        const fs = require("node:fs") as typeof import("node:fs");
+        const path = require("node:path") as typeof import("node:path");
+        if (fs.existsSync(flutterBin)) {
+          env.FLUTTER_ROOT = sdkPath;
+          const binDir = path.join(sdkPath, "bin");
+          const dartDir = path.join(sdkPath, "bin", "cache", "dart-sdk", "bin");
+          const sep = path.delimiter;
+          const basePath = env.PATH ?? process.env.PATH ?? "";
+          const additions = [binDir, dartDir].filter((p) => {
+            // Avoid duplicating
+            return !basePath.split(sep).includes(p);
+          });
+          if (additions.length > 0) {
+            env.PATH = [...additions, basePath].filter(Boolean).join(sep);
+          }
+        }
+      } catch {}
+    }
+  } catch {}
+
   return {
     ...env,
     // Force non-interactive mode

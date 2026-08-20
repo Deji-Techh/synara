@@ -89,7 +89,7 @@ export const ProviderListSkillsResult = Schema.Struct({
 export type ProviderListSkillsResult = typeof ProviderListSkillsResult.Type;
 
 // Unified cross-provider skills catalog (Caide portable skills). Descriptors use
-// `scope` to carry the origin label ("caide", "codex", "claude", "cursor", ...).
+// `scope` to carry the origin label ("caide", "openai", "claude", "openai", ...).
 export const ProviderSkillsCatalogInput = Schema.Struct({
   cwd: Schema.optional(TrimmedNonEmptyString),
 });

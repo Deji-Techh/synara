@@ -343,6 +343,7 @@ export function aggregateTestCounts(
 async function runTests(params: unknown): Promise<ProtocolTestResult> {
   const parsed = TestRunParamsSchema.parse(params);
   assertFlutterApp(parsed.appDir);
+  await ensureFlutterAvailable();
   let output = "";
   const result: RunAppTestsResult = await runFlutterAppTestsCore({
     appId: 0,
@@ -1125,10 +1126,13 @@ const PREVIEW_METHODS = [
   "preview/reload",
   "preview/state",
   "preview/screenshot",
+  "preview/devices",
   "analyze/run",
   "test/run",
   "build/start",
   "build/state",
+  "flutter/toolchain/status",
+  "flutter/toolchain/install",
 ] as const;
 
 const activePreviews = new Map<string, PreviewEntry>();
@@ -1162,7 +1166,9 @@ export function createPreviewJsonRpcRouter(): PreviewJsonRpcRouter {
         case "preview/state":
           return previewState(params);
         case "preview/screenshot":
-          return previewScreenshot();
+          return previewScreenshot(params);
+        case "preview/devices":
+          return listPreviewDevices();
         case "analyze/run": {
           const parsed = AnalyzeRunParamsSchema.parse(params);
           return runAnalyze(parsed.appDir);
@@ -1173,6 +1179,10 @@ export function createPreviewJsonRpcRouter(): PreviewJsonRpcRouter {
           return buildStart(params);
         case "build/state":
           return buildState(params);
+        case "flutter/toolchain/status":
+          return flutterToolchainStatus();
+        case "flutter/toolchain/install":
+          return flutterToolchainInstall();
         default:
           throw new CaideError(
             `unhandled preview method: ${method}`,

@@ -18,10 +18,24 @@ const logger = log.scope("createFromTemplate");
  * dump or an unpackaged checkout), so app creation is never blocked on a
  * committed template and never silently produces a React/web project.
  */
+async function ensureFlutterForCreate(): Promise<string> {
+  try {
+    const { ensureFlutterSdkAvailable } = await import("@/ipc/utils/flutter_utils");
+    return await ensureFlutterSdkAvailable((p) => {
+      try {
+        const { emit } = require("@/ipc/utils/event_bus") as typeof import("@/ipc/utils/event_bus");
+        emit("flutter:toolchain:progress", p);
+      } catch {}
+    });
+  } catch {
+    return getFlutterExecutable();
+  }
+}
+
 function createFlutterProjectViaToolchain(fullAppPath: string): Promise<void> {
   const appName = path.basename(fullAppPath).replace(/[^a-zA-Z0-9_]/g, "_").toLowerCase();
-  const flutter = getFlutterExecutable();
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
+    const flutter = await ensureFlutterForCreate();
     let settled = false;
     const settle = (fn: () => void) => {
       if (settled) return;
@@ -91,19 +105,30 @@ export async function createFromTemplate({
     const scaffoldDir = "scaffold-flutter";
     const sourceScaffoldPath = path.join(__dirname, "..", "..", scaffoldDir);
     const repoScaffoldPath = path.join(process.cwd(), scaffoldDir);
-    const hasScaffold =
-      fs.existsSync(sourceScaffoldPath) || fs.existsSync(repoScaffoldPath);
-    if (!hasScaffold) {
-      // No committed template (or a broken build-artifact dump): use the
-      // toolchain so the app is always a real Flutter project.
-      logger.info(`flutter: no scaffold-flutter asset, running flutter create for ${fullAppPath}`);
+    const candidatePath = fs.existsSync(sourceScaffoldPath) ? sourceScaffoldPath : repoScaffoldPath;
+    const hasScaffold = fs.existsSync(candidatePath);
+    const scaffoldLooksValid =
+      hasScaffold &&
+      fs.existsSync(path.join(candidatePath, "pubspec.yaml")) &&
+      fs.existsSync(path.join(candidatePath, "lib"));
+    if (!scaffoldLooksValid) {
+      // No committed template or a broken build-artifact dump (e.g. only
+      // android/ios/build debris): use the toolchain so the app is always a
+      // real Flutter project. Ensure managed SDK first.
+      logger.info(`flutter: scaffold invalid/missing at ${candidatePath}, running flutter create for ${fullAppPath}`);
+      try {
+        const { ensureFlutterSdkAvailable } = await import("@/ipc/utils/flutter_utils");
+        await ensureFlutterSdkAvailable((p) => {
+          try {
+            const { emit } = require("@/ipc/utils/event_bus") as typeof import("@/ipc/utils/event_bus");
+            emit("flutter:toolchain:progress", p);
+          } catch {}
+        });
+      } catch {}
       await createFlutterProjectViaToolchain(fullAppPath);
       return;
     }
-    await copyDirectoryRecursive(
-      fs.existsSync(sourceScaffoldPath) ? sourceScaffoldPath : repoScaffoldPath,
-      fullAppPath,
-    );
+    await copyDirectoryRecursive(candidatePath, fullAppPath);
     return;
   }
 

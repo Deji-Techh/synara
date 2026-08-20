@@ -255,7 +255,7 @@ async function handleRequest(request: JsonRpcRequest): Promise<JsonRpcResponse |
       return makeError(
         request,
         JSON_RPC_METHOD_NOT_FOUND,
-        `method not found: ${method} (implemented: initialize, engine/ping, engine/echo, engine/shutdown, dyad/invoke, preview/start, preview/stop, preview/reload, preview/state, preview/screenshot, analyze/run, test/run, build/start, build/state)`,
+        `method not found: ${method} (implemented: initialize, engine/ping, engine/echo, engine/shutdown, dyad/invoke, preview/start, preview/stop, preview/reload, preview/state, preview/screenshot, preview/devices, analyze/run, test/run, build/start, build/state, flutter/toolchain/status, flutter/toolchain/install)`,
       );
     }
   }

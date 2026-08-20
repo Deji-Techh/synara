@@ -14,6 +14,9 @@ export const PREVIEW_WS_METHODS = {
   buildStart: "preview.buildStart",
   buildState: "preview.buildState",
   screenshot: "preview.screenshot",
+  devices: "preview.devices",
+  flutterToolchainStatus: "preview.flutterToolchainStatus",
+  flutterToolchainInstall: "preview.flutterToolchainInstall",
 } as const;
 
 // ── Limits ───────────────────────────────────────────────────────────
@@ -33,6 +36,8 @@ export const PreviewStartInput = Schema.Struct({
   appDir: Schema.optional(TrimmedNonEmptyString.check(Schema.isMaxLength(PREVIEW_PATH_MAX_LENGTH))),
   port: Schema.optional(Schema.Int.check(Schema.isGreaterThan(0))),
   hostname: Schema.optional(TrimmedNonEmptyString.check(Schema.isMaxLength(256))),
+  device: Schema.optional(Schema.Literals(["web-server", "emulator", "simulator"] as const)),
+  deviceId: Schema.optional(TrimmedNonEmptyString.check(Schema.isMaxLength(PREVIEW_PATH_MAX_LENGTH))),
 });
 export type PreviewStartInput = typeof PreviewStartInput.Type;
 
@@ -152,6 +157,14 @@ export const PreviewBuildStartInput = Schema.Struct({
   threadId: ThreadId,
   target: PreviewBuildTarget,
   channel: Schema.optional(PreviewBuildChannel),
+  signing: Schema.optional(
+    Schema.Struct({
+      keystorePath: TrimmedNonEmptyString.check(Schema.isMaxLength(PREVIEW_PATH_MAX_LENGTH)),
+      keyAlias: TrimmedNonEmptyString.check(Schema.isMaxLength(128)),
+      storePassword: TrimmedNonEmptyString.check(Schema.isMaxLength(256)),
+      keyPassword: TrimmedNonEmptyString.check(Schema.isMaxLength(256)),
+    }),
+  ),
 });
 export type PreviewBuildStartInput = typeof PreviewBuildStartInput.Type;
 
@@ -174,9 +187,55 @@ export const PreviewBuildStateResult = Schema.Struct({
   status: PreviewBuildStatus,
   exitCode: Schema.optional(Schema.Int),
   outputPath: Schema.optional(Schema.String.check(Schema.isMaxLength(PREVIEW_PATH_MAX_LENGTH))),
+  sha256: Schema.optional(Schema.String.check(Schema.isMaxLength(128))),
   logs: Schema.Array(Schema.String.check(Schema.isMaxLength(PREVIEW_LOG_MAX_LENGTH))).check(
     Schema.isMaxLength(MAX_OUTPUT_LINES),
   ),
   error: Schema.optional(Schema.String.check(Schema.isMaxLength(16_384))),
 });
 export type PreviewBuildStateResult = typeof PreviewBuildStateResult.Type;
+
+export const PreviewDevicesInput = Schema.Struct({
+  threadId: ThreadId,
+});
+export type PreviewDevicesInput = typeof PreviewDevicesInput.Type;
+
+export const PreviewDevice = Schema.Struct({
+  id: Schema.String.check(Schema.isMaxLength(256)),
+  name: Schema.String.check(Schema.isMaxLength(512)),
+  isEmulator: Schema.Boolean,
+  platform: Schema.optional(Schema.Literals(["android", "ios", "web"] as const)),
+});
+export type PreviewDevice = typeof PreviewDevice.Type;
+
+export const PreviewDevicesResult = Schema.Struct({
+  devices: Schema.Array(PreviewDevice),
+});
+export type PreviewDevicesResult = typeof PreviewDevicesResult.Type;
+
+export const FlutterToolchainStatusInput = Schema.Struct({
+  threadId: ThreadId,
+});
+export type FlutterToolchainStatusInput = typeof FlutterToolchainStatusInput.Type;
+
+export const FlutterToolchainStatusResult = Schema.Struct({
+  supported: Schema.Boolean,
+  installed: Schema.Boolean,
+  version: Schema.String.check(Schema.isMaxLength(64)),
+  root: Schema.String.check(Schema.isMaxLength(PREVIEW_PATH_MAX_LENGTH)),
+  sdkPath: Schema.String.check(Schema.isMaxLength(PREVIEW_PATH_MAX_LENGTH)),
+  flutterBin: Schema.String.check(Schema.isMaxLength(PREVIEW_PATH_MAX_LENGTH)),
+  estimatedDownloadBytes: Schema.Number,
+  unsupportedReason: Schema.NullOr(Schema.String),
+});
+export type FlutterToolchainStatusResult = typeof FlutterToolchainStatusResult.Type;
+
+export const FlutterToolchainProgress = Schema.Struct({
+  phase: Schema.Literals(["preparing", "download-flutter", "extract-flutter", "verifying", "done"] as const),
+  percent: Schema.Number,
+  componentPercent: Schema.Number,
+  downloadedBytes: Schema.Number,
+  totalBytes: Schema.NullOr(Schema.Number),
+  message: Schema.String.check(Schema.isMaxLength(512)),
+});
+export type FlutterToolchainProgress = typeof FlutterToolchainProgress.Type;
