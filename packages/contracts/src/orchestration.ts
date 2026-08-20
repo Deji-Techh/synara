@@ -93,41 +93,22 @@ export type ApiProviderKind = (typeof API_PROVIDER_KINDS)[number];
 /** Backends that spawn a child process. Only the Flutter engine. */
 export type ProviderCliKind = Extract<ProviderKind, "engine">;
 
-const LEGACY_HANDOFF_PROVIDER_MAP: Record<string, ProviderKind> = {
-  codex: "openai",
-  claudeAgent: "anthropic",
-  cursor: "openai",
-  antigravity: "google",
-  grok: "xai",
-  droid: "openai",
-  kilo: "openai",
-  opencode: "openai",
-  pi: "openai",
-  gemini: "google",
-};
+const LEGACY_HANDOFF_PROVIDER_LITERALS = [
+  "codex",
+  "claudeAgent",
+  "cursor",
+  "antigravity",
+  "grok",
+  "droid",
+  "kilo",
+  "opencode",
+  "pi",
+  "gemini",
+] as const;
 
-export const ThreadHandoffSourceProvider = Schema.String.pipe(
-  Schema.transformOrFail(ProviderKind, {
-    decode: (input, _options, ast) =>
-      Effect.gen(function* () {
-        const mapped = (LEGACY_HANDOFF_PROVIDER_MAP as Record<string, string>)[input] ?? input;
-        return yield* Schema.decodeUnknown(ProviderKind)(mapped).pipe(
-          Effect.mapError(
-            (issue) =>
-              new Schema.SchemaError([
-                new SchemaIssue.CustomIssue({
-                  message: `Expected ProviderKind, got ${JSON.stringify(input)}`,
-                  ast,
-                  actual: input,
-                  issue,
-                }),
-              ]),
-          ),
-        );
-      }),
-    encode: (output) => Effect.succeed(output),
-    strict: true,
-  }),
+export const ThreadHandoffSourceProvider = Schema.Union(
+  ProviderKind,
+  Schema.Literals(LEGACY_HANDOFF_PROVIDER_LITERALS),
 );
 
 export const ProviderApprovalPolicy = Schema.Literals([
