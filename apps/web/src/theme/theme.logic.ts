@@ -211,7 +211,7 @@ export const CODE_THEME_OPTIONS: readonly CodeThemeOption[] = [
   { id: "absolutely", label: "Absolutely", variants: ["light", "dark"] },
   { id: "ayu", label: "Ayu", variants: ["dark"] },
   { id: "catppuccin", label: "Catppuccin", variants: ["light", "dark"] },
-  { id: "codex", label: "Codex", variants: ["light", "dark"] },
+  { id: "openai", label: "Codex", variants: ["light", "dark"] },
   { id: "caide", label: "Caide", variants: ["light", "dark"] },
   { id: "dracula", label: "Dracula", variants: ["dark"] },
   { id: "everforest", label: "Everforest", variants: ["light", "dark"] },
@@ -269,12 +269,12 @@ export const DEFAULT_CHROME_THEME_BY_VARIANT: Record<ThemeVariant, ChromeTheme> 
 
 export const DEFAULT_THEME_STATE: ThemeState = {
   chromeThemes: {
-    dark: getCodeThemeSeed("codex", "dark"),
-    light: getCodeThemeSeed("codex", "light"),
+    dark: getCodeThemeSeed("openai", "dark"),
+    light: getCodeThemeSeed("openai", "light"),
   },
   codeThemeIds: {
-    dark: "codex",
-    light: "codex",
+    dark: "openai",
+    light: "openai",
   },
   systemUiFont: true,
   mode: "system",

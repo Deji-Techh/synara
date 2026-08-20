@@ -22,13 +22,13 @@ import {
 
 describe("Antigravity model options", () => {
   it("keeps the base model and effort as separate selection fields", () => {
-    const options = buildNextProviderOptions("antigravity", undefined, {
+    const options = buildNextProviderOptions("google", undefined, {
       reasoningEffort: "high",
     });
 
     expect(options).toEqual({ reasoningEffort: "high" });
-    expect(buildModelSelection("antigravity", "Gemini 3.5 Flash", options)).toEqual({
-      provider: "antigravity",
+    expect(buildModelSelection("google", "Gemini 3.5 Flash", options)).toEqual({
+      provider: "google",
       model: "Gemini 3.5 Flash",
       options: { reasoningEffort: "high" },
     });
@@ -37,8 +37,8 @@ describe("Antigravity model options", () => {
 
 describe("Claude model selections", () => {
   it("preserves the discovered Auto capability with the selected model", () => {
-    expect(buildModelSelection("claudeAgent", "claude-haiku-4-5", undefined, false)).toEqual({
-      provider: "claudeAgent",
+    expect(buildModelSelection("anthropic", "claude-haiku-4-5", undefined, false)).toEqual({
+      provider: "anthropic",
       model: "claude-haiku-4-5",
       supportsAutoMode: false,
     });
@@ -49,7 +49,7 @@ describe("formatProviderModelOptionName", () => {
   it("humanizes unknown OpenCode runtime model slugs using the model identifier", () => {
     expect(
       formatProviderModelOptionName({
-        provider: "opencode",
+        provider: "openai",
         slug: "opencode-go/kimi-k2.6",
       }),
     ).toBe("Kimi K2.6");
@@ -58,7 +58,7 @@ describe("formatProviderModelOptionName", () => {
   it("keeps known OpenCode-backed models on their shared display names", () => {
     expect(
       formatProviderModelOptionName({
-        provider: "opencode",
+        provider: "openai",
         slug: "openai/gpt-5",
       }),
     ).toBe("GPT-5");
@@ -67,7 +67,7 @@ describe("formatProviderModelOptionName", () => {
   it("leaves non-OpenCode unknown slugs unchanged", () => {
     expect(
       formatProviderModelOptionName({
-        provider: "codex",
+        provider: "openai",
         slug: "custom/internal-model",
       }),
     ).toBe("custom/internal-model");
@@ -78,7 +78,7 @@ describe("mergeDynamicModelOptions", () => {
   it("does not offer Pi Anthropic models when discovery only returns local models", () => {
     expect(
       mergeDynamicModelOptions({
-        provider: "pi",
+        provider: "openai",
         staticOptions: [],
         dynamicModels: [
           {
@@ -95,7 +95,7 @@ describe("mergeDynamicModelOptions", () => {
   it("offers Pi Fable and Opus when authenticated discovery returns them", () => {
     expect(
       mergeDynamicModelOptions({
-        provider: "pi",
+        provider: "openai",
         staticOptions: [],
         dynamicModels: [
           { slug: "anthropic/claude-fable-5", name: "Claude Fable 5" },
@@ -108,7 +108,7 @@ describe("mergeDynamicModelOptions", () => {
   it("uses the live Antigravity catalog as authoritative and includes newly discovered models", () => {
     expect(
       mergeDynamicModelOptions({
-        provider: "antigravity",
+        provider: "google",
         staticOptions: [
           { slug: "Gemini 3.5 Flash", name: "Gemini 3.5 Flash" },
           { slug: "Claude Sonnet 4.6", name: "Claude Sonnet 4.6" },
@@ -128,7 +128,7 @@ describe("mergeDynamicModelOptions", () => {
 
   it("preserves runtime descriptions without inventing them for custom models", () => {
     const options = mergeDynamicModelOptions({
-      provider: "droid",
+      provider: "openai",
       staticOptions: [{ slug: "custom:model", name: "Custom model", isCustom: true }],
       dynamicModels: [
         {
@@ -153,7 +153,7 @@ describe("mergeDynamicModelOptions", () => {
   it("treats the live Droid catalog as authoritative and drops invalid custom slugs", () => {
     expect(
       mergeDynamicModelOptions({
-        provider: "droid",
+        provider: "openai",
         staticOptions: [
           { slug: "retired-model", name: "Retired" },
           { slug: "made-up-model", name: "Made up", isCustom: true },
@@ -166,7 +166,7 @@ describe("mergeDynamicModelOptions", () => {
   it("deduplicates Cursor transport variants by their base model", () => {
     expect(
       mergeDynamicModelOptions({
-        provider: "cursor",
+        provider: "openai",
         staticOptions: [
           {
             slug: "grok-4.5[thinking=true]",
@@ -211,7 +211,7 @@ describe("providerModelOptionProvenanceLabel", () => {
   it("prefers the discovered upstream provider name", () => {
     expect(
       providerModelOptionProvenanceLabel({
-        provider: "opencode",
+        provider: "openai",
         option: {
           slug: "opencode-go/deepseek-v4-flash",
           name: "DeepSeek V4 Flash",
@@ -225,7 +225,7 @@ describe("providerModelOptionProvenanceLabel", () => {
   it("falls back to a humanized slug provider, then the Caide provider", () => {
     expect(
       providerModelOptionProvenanceLabel({
-        provider: "opencode",
+        provider: "openai",
         option: {
           slug: "local-runtime/deepseek-v4-flash",
           name: "DeepSeek V4 Flash",
@@ -234,7 +234,7 @@ describe("providerModelOptionProvenanceLabel", () => {
     ).toBe("Local Runtime");
     expect(
       providerModelOptionProvenanceLabel({
-        provider: "cursor",
+        provider: "openai",
         option: { slug: "auto", name: "Auto" },
       }),
     ).toBe("Cursor");
@@ -243,16 +243,16 @@ describe("providerModelOptionProvenanceLabel", () => {
 
 describe("buildProviderOptionPatch", () => {
   it("passes through option ids unchanged", () => {
-    expect(buildProviderOptionPatch("codex", "reasoningEffort", "xhigh")).toEqual({
+    expect(buildProviderOptionPatch("openai", "reasoningEffort", "xhigh")).toEqual({
       reasoningEffort: "xhigh",
     });
-    expect(buildProviderOptionPatch("droid", "reasoningEffort", "high")).toEqual({
+    expect(buildProviderOptionPatch("openai", "reasoningEffort", "high")).toEqual({
       reasoningEffort: "high",
     });
-    expect(buildProviderOptionPatch("grok", "reasoningEffort", "high")).toEqual({
+    expect(buildProviderOptionPatch("openai", "reasoningEffort", "high")).toEqual({
       reasoningEffort: "high",
     });
-    expect(buildProviderOptionPatch("cursor", "fastMode", true)).toEqual({ fastMode: true });
+    expect(buildProviderOptionPatch("openai", "fastMode", true)).toEqual({ fastMode: true });
   });
 });
 

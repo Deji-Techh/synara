@@ -514,7 +514,7 @@ export function useComposerSlashCommands(input: {
 
   const handleReviewTargetSelection = useCallback(
     async (target: "changes" | "base-branch") => {
-      if (selectedProvider === "codex") {
+      if (selectedProvider === "openai") {
         await runCodexReviewStart(target);
       } else {
         const replacement = buildSlashReviewComposerPrompt(target === "base-branch" ? "base" : "");
@@ -557,14 +557,14 @@ export function useComposerSlashCommands(input: {
 
     try {
       const result = await api.provider.listCommands({
-        provider: "claudeAgent",
+        provider: "anthropic",
         cwd: providerCommandDiscoveryCwd,
         threadId,
         forceReload: true,
       });
       if (
         hasProviderNativeSlashCommand(
-          "claudeAgent",
+          "anthropic",
           result.commands.map((command) => command.name),
           "fast",
         )
@@ -776,7 +776,7 @@ export function useComposerSlashCommands(input: {
   const handleStandaloneSlashCommand = useCallback(
     async (trimmed: string): Promise<boolean> => {
       const fastSlashAction = parseFastSlashCommandAction(trimmed);
-      if (selectedProvider === "claudeAgent" && fastSlashAction !== null) {
+      if (selectedProvider === "anthropic" && fastSlashAction !== null) {
         if (await checkClaudeFastSlashCommandAvailability()) {
           return false;
         }
@@ -825,7 +825,7 @@ export function useComposerSlashCommands(input: {
         return true;
       }
       if (slashInvocation.command === "review") {
-        if (selectedProvider === "codex") {
+        if (selectedProvider === "openai") {
           const normalizedArgs = slashInvocation.args.trim().toLowerCase();
           if (normalizedArgs.length === 0) {
             editorActions.clearComposerSlashDraft();
@@ -1240,7 +1240,7 @@ export function useComposerSlashCommands(input: {
       }
 
       if (item.command === "review") {
-        if (selectedProvider === "codex") {
+        if (selectedProvider === "openai") {
           const applied = clearSlashCommandFromComposer();
           if (!wasPromptReplacementApplied(applied)) {
             return;

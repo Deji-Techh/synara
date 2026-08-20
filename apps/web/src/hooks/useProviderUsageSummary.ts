@@ -50,7 +50,7 @@ export function useProviderUsageSummary(input: {
   const localUsageSnapshotQuery = useQuery(
     serverProviderUsageSnapshotQueryOptions({
       provider,
-      homePath: provider === "codex" ? input.codexHomePath || null : null,
+      homePath: provider === "openai" ? input.codexHomePath || null : null,
       enabled: shouldFetchLocalProviderUsage,
     }),
   );

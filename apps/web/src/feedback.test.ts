@@ -8,7 +8,7 @@ import {
 } from "./feedback";
 
 const CONTEXT: FeedbackThreadContext = {
-  provider: "codex",
+  provider: "openai",
   model: "gpt-5.6-sol",
   projectKind: "project",
   environmentMode: "worktree",
@@ -136,7 +136,7 @@ describe("buildFeedbackSubmission", () => {
       category: "bug",
       details: "The composer stopped responding.",
       diagnostics: {
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5.6-sol",
         submittedAt: "2026-07-15T18:00:00.000Z",
         userAgent: "Caide test agent",

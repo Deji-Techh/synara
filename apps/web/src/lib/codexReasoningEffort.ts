@@ -34,5 +34,5 @@ export function classifyProviderReasoningEffortSupport(input: {
 export function classifyCodexReasoningEffortSupport(
   input: Omit<Parameters<typeof classifyProviderReasoningEffortSupport>[0], "provider">,
 ): CodexReasoningEffortSupport {
-  return classifyProviderReasoningEffortSupport({ ...input, provider: "codex" });
+  return classifyProviderReasoningEffortSupport({ ...input, provider: "openai" });
 }

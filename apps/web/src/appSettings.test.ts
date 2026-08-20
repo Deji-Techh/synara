@@ -52,8 +52,8 @@ describe("normalizeCustomModelSlugs", () => {
   });
 
   it("normalizes provider-specific aliases for claude", () => {
-    expect(normalizeCustomModelSlugs(["sonnet"], "claudeAgent")).toEqual([]);
-    expect(normalizeCustomModelSlugs(["claude/custom-sonnet"], "claudeAgent")).toEqual([
+    expect(normalizeCustomModelSlugs(["sonnet"], "anthropic")).toEqual([]);
+    expect(normalizeCustomModelSlugs(["claude/custom-sonnet"], "anthropic")).toEqual([
       "claude/custom-sonnet",
     ]);
   });
@@ -95,15 +95,15 @@ describe("resolveFollowUpDispatchMode", () => {
 
 describe("getAppModelOptions", () => {
   it("does not expose a hardcoded Antigravity model catalog", () => {
-    expect(getAppModelOptions("antigravity", [])).toEqual([]);
+    expect(getAppModelOptions("google", [])).toEqual([]);
   });
 
   it("does not expose Anthropic models in Pi before authenticated discovery", () => {
-    expect(getAppModelOptions("pi", [])).toEqual([]);
+    expect(getAppModelOptions("openai", [])).toEqual([]);
   });
 
   it("appends saved custom models after the built-in options", () => {
-    const options = getAppModelOptions("codex", ["custom/internal-model"]);
+    const options = getAppModelOptions("openai", ["custom/internal-model"]);
 
     expect(options.map((option) => option.slug)).toEqual([
       "gpt-5.5",
@@ -118,18 +118,18 @@ describe("getAppModelOptions", () => {
   });
 
   it("keeps the currently selected custom model available even if it is no longer saved", () => {
-    const options = getAppModelOptions("codex", [], "custom/selected-model");
+    const options = getAppModelOptions("openai", [], "custom/selected-model");
 
     expect(options.at(-1)).toEqual({
       slug: "custom/selected-model",
       name: "custom/selected-model",
-      provider: "codex",
+      provider: "openai",
       isCustom: true,
     });
   });
 
   it("keeps Cursor transport parameters out of selected-model hints", () => {
-    const options = getAppModelOptions("cursor", [], "grok-4.5[thinking=true]");
+    const options = getAppModelOptions("openai", [], "grok-4.5[thinking=true]");
 
     expect(
       options.filter((option) => option.slug.startsWith("grok-4.5")).map((option) => option.slug),
@@ -137,18 +137,18 @@ describe("getAppModelOptions", () => {
   });
 
   it("formats unknown GPT custom models with a readable label", () => {
-    const options = getAppModelOptions("codex", ["gpt-5.1-codex-max"]);
+    const options = getAppModelOptions("openai", ["gpt-5.1-codex-max"]);
 
     expect(options.at(-1)).toEqual({
       slug: "gpt-5.1-codex-max",
       name: "GPT-5.1 Codex Max",
-      provider: "codex",
+      provider: "openai",
       isCustom: true,
     });
   });
 
   it("keeps a saved custom provider model available as an exact slug option", () => {
-    const options = getAppModelOptions("claudeAgent", ["claude/custom-opus"], "claude/custom-opus");
+    const options = getAppModelOptions("anthropic", ["claude/custom-opus"], "claude/custom-opus");
 
     expect(options.some((option) => option.slug === "claude/custom-opus" && option.isCustom)).toBe(
       true,
@@ -163,7 +163,7 @@ describe("getGitTextGenerationModelOptions", () => {
       customKiloModels: [],
       customOpenCodeModels: ["openrouter/gpt-oss-120b"],
       textGenerationModel: "openai/gpt-5",
-      textGenerationProvider: "opencode",
+      textGenerationProvider: "openai",
     });
 
     expect(options.some((option) => option.slug === "gpt-5.4-mini")).toBe(true);
@@ -178,7 +178,7 @@ describe("getGitTextGenerationModelOptions", () => {
         customKiloModels: [],
         customOpenCodeModels: [],
         textGenerationModel: "openrouter/custom-model",
-        textGenerationProvider: "opencode",
+        textGenerationProvider: "openai",
       },
       {
         opencode: [{ slug: "openrouter/gpt-oss-120b", name: "GPT OSS 120B" }],
@@ -197,13 +197,13 @@ describe("getGitTextGenerationModelOptions", () => {
       customKiloModels: [],
       customOpenCodeModels: [],
       textGenerationModel: "openrouter/custom-model",
-      textGenerationProvider: "opencode",
+      textGenerationProvider: "openai",
     });
 
     expect(options.at(-1)).toEqual({
       slug: "openrouter/custom-model",
       name: "Custom Model",
-      provider: "opencode",
+      provider: "openai",
       isCustom: true,
     });
   });
@@ -214,13 +214,13 @@ describe("getGitTextGenerationModelOptions", () => {
       customKiloModels: [],
       customOpenCodeModels: [],
       textGenerationModel: "opencode-go/kimi-k2.6",
-      textGenerationProvider: "opencode",
+      textGenerationProvider: "openai",
     });
 
     expect(options.at(-1)).toEqual({
       slug: "opencode-go/kimi-k2.6",
       name: "Kimi K2.6",
-      provider: "opencode",
+      provider: "openai",
       isCustom: true,
     });
   });
@@ -233,7 +233,7 @@ describe("isGitTextGenerationSettingsDirty", () => {
     expect(isGitTextGenerationSettingsDirty(defaults, defaults)).toBe(false);
     expect(
       isGitTextGenerationSettingsDirty(
-        { ...defaults, textGenerationProvider: "opencode", textGenerationModel: "custom/model" },
+        { ...defaults, textGenerationProvider: "openai", textGenerationModel: "custom/model" },
         defaults,
       ),
     ).toBe(true);
@@ -266,7 +266,7 @@ describe("resolveAppModelSelection", () => {
   it("preserves saved custom model slugs instead of falling back to the default", () => {
     expect(
       resolveAppModelSelection(
-        "codex",
+        "openai",
         {
           codex: ["galapagos-alpha"],
           claudeAgent: [],
@@ -300,7 +300,7 @@ describe("resolveAppModelSelection", () => {
   it("falls back to the provider default when no model is selected", () => {
     expect(
       resolveAppModelSelection(
-        "codex",
+        "openai",
         {
           codex: [],
           claudeAgent: [],
@@ -334,7 +334,7 @@ describe("resolveAppModelSelection", () => {
   it("resolves display names through the shared resolver", () => {
     expect(
       resolveAppModelSelection(
-        "codex",
+        "openai",
         {
           codex: [],
           claudeAgent: [],
@@ -368,7 +368,7 @@ describe("resolveAppModelSelection", () => {
   it("resolves aliases through the shared resolver", () => {
     expect(
       resolveAppModelSelection(
-        "claudeAgent",
+        "anthropic",
         {
           codex: [],
           claudeAgent: [],
@@ -402,7 +402,7 @@ describe("resolveAppModelSelection", () => {
   it("resolves transient selected custom models included in app model options", () => {
     expect(
       resolveAppModelSelection(
-        "codex",
+        "openai",
         {
           codex: [],
           claudeAgent: [],
@@ -535,14 +535,14 @@ describe("normalizeStoredAppSettings", () => {
     const decodedSettings = Schema.decodeSync(Schema.fromJsonString(AppSettingsSchema))(
       JSON.stringify({
         claudeBinaryPath: "claude",
-        codexBinaryPath: "codex",
+        codexBinaryPath: "openai",
         cursorBinaryPath: "cursor-agent",
         antigravityBinaryPath: "agy",
-        grokBinaryPath: "grok",
-        droidBinaryPath: "droid",
-        kiloBinaryPath: "kilo",
-        openCodeBinaryPath: "opencode",
-        piBinaryPath: "pi",
+        grokBinaryPath: "openai",
+        droidBinaryPath: "openai",
+        kiloBinaryPath: "openai",
+        openCodeBinaryPath: "openai",
+        piBinaryPath: "openai",
       }),
     );
     const normalized = normalizeStoredAppSettings(decodedSettings);
@@ -558,13 +558,13 @@ describe("normalizeStoredAppSettings", () => {
       openCodeBinaryPath: "",
       piBinaryPath: "",
     });
-    expect(getCustomBinaryPathForProvider(normalized, "opencode")).toBe("");
+    expect(getCustomBinaryPathForProvider(normalized, "openai")).toBe("");
   });
 });
 
 describe("provider-specific custom models", () => {
   it("includes provider-specific custom slugs in non-codex model lists", () => {
-    const claudeOptions = getAppModelOptions("claudeAgent", ["claude/custom-opus"]);
+    const claudeOptions = getAppModelOptions("anthropic", ["claude/custom-opus"]);
 
     expect(claudeOptions.some((option) => option.slug === "claude/custom-opus")).toBe(true);
   });
@@ -636,20 +636,20 @@ describe("getProviderStartOptions", () => {
     expect(
       getProviderStartOptions({
         claudeBinaryPath: "claude",
-        codexBinaryPath: "codex",
+        codexBinaryPath: "openai",
         codexHomePath: "",
         cursorApiEndpoint: "",
         cursorBinaryPath: "cursor-agent",
         antigravityBinaryPath: "agy",
-        grokBinaryPath: "grok",
-        droidBinaryPath: "droid",
-        kiloBinaryPath: "kilo",
+        grokBinaryPath: "openai",
+        droidBinaryPath: "openai",
+        kiloBinaryPath: "openai",
         kiloServerUrl: "",
-        openCodeBinaryPath: "opencode",
+        openCodeBinaryPath: "openai",
         openCodeExperimentalWebSockets: false,
         openCodeServerUrl: "",
         piAgentDir: "",
-        piBinaryPath: "pi",
+        piBinaryPath: "openai",
       }),
     ).toBeUndefined();
   });
@@ -684,15 +684,15 @@ describe("provider-indexed custom model settings", () => {
 
   it("exports one provider config per provider", () => {
     expect(MODEL_PROVIDER_SETTINGS.map((config) => config.provider)).toEqual([
-      "codex",
-      "claudeAgent",
-      "cursor",
-      "antigravity",
-      "grok",
-      "droid",
-      "kilo",
-      "opencode",
-      "pi",
+      "openai",
+      "anthropic",
+      "openai",
+      "google",
+      "openai",
+      "openai",
+      "openai",
+      "openai",
+      "openai",
       "engine",
       "openai",
       "anthropic",
@@ -712,19 +712,19 @@ describe("provider-indexed custom model settings", () => {
 
   it("keeps Droid persistence compatible without advertising unsupported custom slugs", () => {
     expect(CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS.map((config) => config.provider)).not.toContain(
-      "droid",
+      "openai",
     );
   });
 
   it("reads custom models for each provider", () => {
-    expect(getCustomModelsForProvider(settings, "codex")).toEqual(["custom/codex-model"]);
-    expect(getCustomModelsForProvider(settings, "claudeAgent")).toEqual(["claude/custom-opus"]);
-    expect(getCustomModelsForProvider(settings, "cursor")).toEqual(["cursor/custom-model"]);
-    expect(getCustomModelsForProvider(settings, "grok")).toEqual(["grok/custom-fast"]);
-    expect(getCustomModelsForProvider(settings, "droid")).toEqual(["claude-opus-4-8-custom"]);
-    expect(getCustomModelsForProvider(settings, "kilo")).toEqual(["kilo/kilo-auto/free"]);
-    expect(getCustomModelsForProvider(settings, "opencode")).toEqual(["openrouter/gpt-oss-120b"]);
-    expect(getCustomModelsForProvider(settings, "pi")).toEqual(["anthropic/custom-pi"]);
+    expect(getCustomModelsForProvider(settings, "openai")).toEqual(["custom/codex-model"]);
+    expect(getCustomModelsForProvider(settings, "anthropic")).toEqual(["claude/custom-opus"]);
+    expect(getCustomModelsForProvider(settings, "openai")).toEqual(["cursor/custom-model"]);
+    expect(getCustomModelsForProvider(settings, "openai")).toEqual(["grok/custom-fast"]);
+    expect(getCustomModelsForProvider(settings, "openai")).toEqual(["claude-opus-4-8-custom"]);
+    expect(getCustomModelsForProvider(settings, "openai")).toEqual(["kilo/kilo-auto/free"]);
+    expect(getCustomModelsForProvider(settings, "openai")).toEqual(["openrouter/gpt-oss-120b"]);
+    expect(getCustomModelsForProvider(settings, "openai")).toEqual(["anthropic/custom-pi"]);
   });
 
   it("reads default custom models for each provider", () => {
@@ -754,71 +754,71 @@ describe("provider-indexed custom model settings", () => {
       customOpenCodeZenModels: [],
     } as const;
 
-    expect(getDefaultCustomModelsForProvider(defaults, "codex")).toEqual(["default/codex-model"]);
-    expect(getDefaultCustomModelsForProvider(defaults, "claudeAgent")).toEqual([
+    expect(getDefaultCustomModelsForProvider(defaults, "openai")).toEqual(["default/codex-model"]);
+    expect(getDefaultCustomModelsForProvider(defaults, "anthropic")).toEqual([
       "claude/default-opus",
     ]);
-    expect(getDefaultCustomModelsForProvider(defaults, "cursor")).toEqual(["cursor/default-model"]);
-    expect(getDefaultCustomModelsForProvider(defaults, "antigravity")).toEqual([
+    expect(getDefaultCustomModelsForProvider(defaults, "openai")).toEqual(["cursor/default-model"]);
+    expect(getDefaultCustomModelsForProvider(defaults, "google")).toEqual([
       "Gemini 3.5 Flash (Experimental)",
     ]);
-    expect(getDefaultCustomModelsForProvider(defaults, "grok")).toEqual(["grok/default-fast"]);
-    expect(getDefaultCustomModelsForProvider(defaults, "droid")).toEqual(["droid/default-model"]);
-    expect(getDefaultCustomModelsForProvider(defaults, "kilo")).toEqual(["kilo/default-auto"]);
-    expect(getDefaultCustomModelsForProvider(defaults, "opencode")).toEqual(["openai/gpt-5"]);
-    expect(getDefaultCustomModelsForProvider(defaults, "pi")).toEqual(["anthropic/default-pi"]);
+    expect(getDefaultCustomModelsForProvider(defaults, "openai")).toEqual(["grok/default-fast"]);
+    expect(getDefaultCustomModelsForProvider(defaults, "openai")).toEqual(["droid/default-model"]);
+    expect(getDefaultCustomModelsForProvider(defaults, "openai")).toEqual(["kilo/default-auto"]);
+    expect(getDefaultCustomModelsForProvider(defaults, "openai")).toEqual(["openai/gpt-5"]);
+    expect(getDefaultCustomModelsForProvider(defaults, "openai")).toEqual(["anthropic/default-pi"]);
   });
 
   it("patches custom models for codex", () => {
-    expect(patchCustomModels("codex", ["custom/codex-model"])).toEqual({
+    expect(patchCustomModels("openai", ["custom/codex-model"])).toEqual({
       customCodexModels: ["custom/codex-model"],
     });
   });
 
   it("patches custom models for claude", () => {
-    expect(patchCustomModels("claudeAgent", ["claude/custom-opus"])).toEqual({
+    expect(patchCustomModels("anthropic", ["claude/custom-opus"])).toEqual({
       customClaudeModels: ["claude/custom-opus"],
     });
   });
 
   it("patches custom models for Antigravity", () => {
-    expect(patchCustomModels("antigravity", ["Gemini 3.5 Flash (Experimental)"])).toEqual({
+    expect(patchCustomModels("google", ["Gemini 3.5 Flash (Experimental)"])).toEqual({
       customAntigravityModels: ["Gemini 3.5 Flash (Experimental)"],
     });
   });
 
   it("patches custom models for grok", () => {
-    expect(patchCustomModels("grok", ["grok/custom-fast"])).toEqual({
+    expect(patchCustomModels("openai", ["grok/custom-fast"])).toEqual({
       customGrokModels: ["grok/custom-fast"],
     });
   });
 
   it("patches custom models for droid", () => {
-    expect(patchCustomModels("droid", ["droid/custom-model"])).toEqual({
+    expect(patchCustomModels("openai", ["droid/custom-model"])).toEqual({
       customDroidModels: ["droid/custom-model"],
     });
   });
 
   it("patches custom models for cursor", () => {
-    expect(patchCustomModels("cursor", ["cursor/custom-model"])).toEqual({
+    expect(patchCustomModels("openai", ["cursor/custom-model"])).toEqual({
       customCursorModels: ["cursor/custom-model"],
     });
   });
 
   it("patches custom models for opencode", () => {
-    expect(patchCustomModels("opencode", ["openrouter/gpt-oss-120b"])).toEqual({
+    expect(patchCustomModels("openai", ["openrouter/gpt-oss-120b"])).toEqual({
       customOpenCodeModels: ["openrouter/gpt-oss-120b"],
     });
   });
 
   it("patches custom models for kilo", () => {
-    expect(patchCustomModels("kilo", ["kilo/kilo-auto/free"])).toEqual({
+    expect(patchCustomModels("openai", ["kilo/kilo-auto/free"])).toEqual({
       customKiloModels: ["kilo/kilo-auto/free"],
     });
   });
 
   it("patches custom models for pi", () => {
-    expect(patchCustomModels("pi", ["anthropic/custom-pi"])).toEqual({
+    expect(patchCustomModels("openai", ["anthropic/custom-pi"])).toEqual({
       customPiModels: ["anthropic/custom-pi"],
     });
   });
@@ -966,22 +966,22 @@ describe("AppSettingsSchema", () => {
     const decode = Schema.decodeSync(Schema.fromJsonString(AppSettingsSchema));
     const decoded = decode(
       JSON.stringify({
-        textGenerationProvider: "gemini",
-        defaultProvider: "gemini",
-        hiddenProviders: ["gemini"],
-        providerOrder: ["codex", "gemini"],
-        hiddenModels: [{ provider: "gemini", slug: "gemini-3.1-pro-preview" }],
+        textGenerationProvider: "google",
+        defaultProvider: "google",
+        hiddenProviders: ["google"],
+        providerOrder: ["openai", "google"],
+        hiddenModels: [{ provider: "google", slug: "gemini-3.1-pro-preview" }],
         geminiBinaryPath: "/custom/bin/gemini",
         customGeminiModels: ["gemini-custom-preview"],
       }),
     );
 
     expect(decoded).toMatchObject({
-      textGenerationProvider: "antigravity",
-      defaultProvider: "antigravity",
-      hiddenProviders: ["antigravity"],
-      providerOrder: ["codex", "antigravity"],
-      hiddenModels: [{ provider: "antigravity", slug: "gemini-3.1-pro-preview" }],
+      textGenerationProvider: "google",
+      defaultProvider: "google",
+      hiddenProviders: ["google"],
+      providerOrder: ["openai", "google"],
+      hiddenModels: [{ provider: "google", slug: "gemini-3.1-pro-preview" }],
     });
     expect(normalizeStoredAppSettings(decoded)).toMatchObject({
       antigravityBinaryPath: "/custom/bin/gemini",

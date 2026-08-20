@@ -44,7 +44,7 @@ function getProviderNativeSlashCommandAliases(
   command: string,
 ): readonly string[] {
   const normalizedCommand = normalizeComposerSlashCommandName(command);
-  if (provider !== "claudeAgent") {
+  if (provider !== "anthropic") {
     return [];
   }
   return CLAUDE_NATIVE_COMMAND_ALIASES[normalizedCommand] ?? [];
@@ -74,7 +74,7 @@ function expandProviderNativeSlashCommandNames(
  * command list but does not honor bare `/review` text turns (#218).
  */
 export function providerUsesAppOwnedReviewSlashCommand(provider: ProviderKind): boolean {
-  return provider === "codex" || provider === "opencode";
+  return provider === "openai" || provider === "openai";
 }
 
 function shouldKeepBuiltInSlashCommandDespiteNativeCollision(
@@ -613,7 +613,7 @@ export function getAvailableComposerSlashCommands(input: {
   );
 
   const availableCommands: ComposerSlashCommand[] =
-    input.provider !== "claudeAgent"
+    input.provider !== "anthropic"
       ? [
           "init",
           "spawn",

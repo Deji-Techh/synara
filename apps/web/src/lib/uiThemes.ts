@@ -1,6 +1,6 @@
 export const UI_THEME_IDS = [
   "system",
-  "codex",
+  "openai",
   "graphite",
   "carbon",
   "slate",
@@ -30,7 +30,7 @@ export const UI_THEMES: readonly UiThemeDescriptor[] = [
     dark: "system",
   },
   {
-    id: "codex",
+    id: "openai",
     name: "Codex",
     description: "Quiet near-black surfaces with crisp neutral controls.",
     swatches: ["#181818", "#242424", "#E7E7E7"],

@@ -38,15 +38,15 @@ const SHARED_SKILLS_SECTION = "shared";
 const PERSONAL_ORIGIN = "personal";
 export const ORIGIN_SECTION_ORDER = [
   "caide",
-  "codex",
+  "openai",
   "claude",
-  "cursor",
-  "antigravity",
-  "grok",
-  "droid",
-  "kilo",
-  "opencode",
-  "pi",
+  "openai",
+  "google",
+  "openai",
+  "openai",
+  "openai",
+  "openai",
+  "openai",
   "agents",
   "project",
 ] as const;
@@ -54,24 +54,24 @@ export function skillOriginInfo(scope: string | undefined): SkillOriginInfo {
   switch (scope) {
     case "caide":
       return { label: "Caide", provider: null };
-    case "codex":
-      return { label: PROVIDER_DISPLAY_NAMES.codex, provider: "codex" };
+    case "openai":
+      return { label: PROVIDER_DISPLAY_NAMES.codex, provider: "openai" };
     case "claude":
-      return { label: PROVIDER_DISPLAY_NAMES.claudeAgent, provider: "claudeAgent" };
-    case "cursor":
-      return { label: PROVIDER_DISPLAY_NAMES.cursor, provider: "cursor" };
-    case "antigravity":
-      return { label: PROVIDER_DISPLAY_NAMES.antigravity, provider: "antigravity" };
-    case "grok":
-      return { label: PROVIDER_DISPLAY_NAMES.grok, provider: "grok" };
-    case "droid":
-      return { label: PROVIDER_DISPLAY_NAMES.droid, provider: "droid" };
-    case "kilo":
-      return { label: PROVIDER_DISPLAY_NAMES.kilo, provider: "kilo" };
-    case "opencode":
-      return { label: PROVIDER_DISPLAY_NAMES.opencode, provider: "opencode" };
-    case "pi":
-      return { label: PROVIDER_DISPLAY_NAMES.pi, provider: "pi" };
+      return { label: PROVIDER_DISPLAY_NAMES.claudeAgent, provider: "anthropic" };
+    case "openai":
+      return { label: PROVIDER_DISPLAY_NAMES.cursor, provider: "openai" };
+    case "google":
+      return { label: PROVIDER_DISPLAY_NAMES.antigravity, provider: "google" };
+    case "openai":
+      return { label: PROVIDER_DISPLAY_NAMES.grok, provider: "openai" };
+    case "openai":
+      return { label: PROVIDER_DISPLAY_NAMES.droid, provider: "openai" };
+    case "openai":
+      return { label: PROVIDER_DISPLAY_NAMES.kilo, provider: "openai" };
+    case "openai":
+      return { label: PROVIDER_DISPLAY_NAMES.opencode, provider: "openai" };
+    case "openai":
+      return { label: PROVIDER_DISPLAY_NAMES.pi, provider: "openai" };
     case "agents":
       return { label: "Shared (.agents)", provider: null };
     case "project":

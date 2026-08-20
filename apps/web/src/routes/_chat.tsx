@@ -432,10 +432,10 @@ function ChatRouteGlobalShortcuts() {
       ) {
         const provider =
           command === "chat.newClaude"
-            ? "claudeAgent"
+            ? "anthropic"
             : command === "chat.newCodex"
-              ? "codex"
-              : "cursor";
+              ? "openai"
+              : "openai";
         const target = resolveNewThreadTarget({ currentProjectId, latestUsableProjectId });
         if (!target) return;
         event.preventDefault();

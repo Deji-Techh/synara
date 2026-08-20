@@ -9,13 +9,13 @@ import {
 
 describe("runtime mode provider support", () => {
   it("offers AI-reviewed auto mode to Codex and Claude Code", () => {
-    expect(providerSupportsAutoRuntimeMode("codex")).toBe(true);
-    expect(providerSupportsAutoRuntimeMode("claudeAgent")).toBe(true);
+    expect(providerSupportsAutoRuntimeMode("openai")).toBe(true);
+    expect(providerSupportsAutoRuntimeMode("anthropic")).toBe(true);
   });
 
   it("falls back to supervised mode for providers without auto review", () => {
-    expect(normalizeRuntimeModeForProvider("auto", "opencode")).toBe("approval-required");
-    expect(normalizeRuntimeModeForProvider("full-access", "opencode")).toBe("full-access");
+    expect(normalizeRuntimeModeForProvider("auto", "openai")).toBe("approval-required");
+    expect(normalizeRuntimeModeForProvider("full-access", "openai")).toBe("full-access");
   });
 
   it("describes Auto as approval review rather than unrestricted access", () => {
@@ -28,17 +28,17 @@ describe("runtime mode provider support", () => {
   it("uses Claude's explicit model and CLI capability signals", () => {
     expect(
       providerModelSupportsAutoRuntimeMode(
-        "claudeAgent",
+        "anthropic",
         { slug: "claude-test", name: "Claude Test", supportsAutoMode: false },
         null,
       ),
     ).toBe(false);
     expect(
       providerModelSupportsAutoRuntimeMode(
-        "claudeAgent",
+        "anthropic",
         { slug: "claude-test", name: "Claude Test", supportsAutoMode: true },
         {
-          provider: "claudeAgent",
+          provider: "anthropic",
           status: "ready",
           available: true,
           authStatus: "authenticated",
@@ -51,8 +51,8 @@ describe("runtime mode provider support", () => {
 
   it("hides Auto when the installed Codex CLI lacks native review support", () => {
     expect(
-      providerModelSupportsAutoRuntimeMode("codex", undefined, {
-        provider: "codex",
+      providerModelSupportsAutoRuntimeMode("openai", undefined, {
+        provider: "openai",
         status: "ready",
         available: true,
         authStatus: "authenticated",
@@ -63,13 +63,13 @@ describe("runtime mode provider support", () => {
   });
 
   it("hides Auto until exact CLI and Claude model capability are known", () => {
-    expect(providerModelSupportsAutoRuntimeMode("codex", undefined, null)).toBe(false);
+    expect(providerModelSupportsAutoRuntimeMode("openai", undefined, null)).toBe(false);
     expect(
       providerModelSupportsAutoRuntimeMode(
-        "claudeAgent",
+        "anthropic",
         { slug: "claude-test", name: "Claude Test" },
         {
-          provider: "claudeAgent",
+          provider: "anthropic",
           status: "ready",
           available: true,
           authStatus: "authenticated",

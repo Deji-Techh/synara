@@ -124,7 +124,7 @@ function getProviderStateFromCapabilities(
   let normalizedOptions: ProviderModelOptions[ProviderKind] | undefined;
 
   switch (provider) {
-    case "codex": {
+    case "openai": {
       const providerOptions = modelOptions?.codex;
       rawEffort = trimOrNull(providerOptions?.reasoningEffort);
       const defaultReasoningEffort = getDefaultEffort(caps);
@@ -147,13 +147,13 @@ function getProviderStateFromCapabilities(
       normalizedOptions = Object.keys(nextOptions).length > 0 ? nextOptions : undefined;
       break;
     }
-    case "claudeAgent": {
+    case "anthropic": {
       const providerOptions = modelOptions?.claudeAgent;
       rawEffort = trimOrNull(providerOptions?.effort);
       normalizedOptions = normalizeClaudeModelOptions(model, providerOptions);
       break;
     }
-    case "cursor": {
+    case "openai": {
       const providerOptions = modelOptions?.cursor;
       rawEffort = trimOrNull(providerOptions?.reasoningEffort);
       const defaultReasoningEffort = getDefaultEffort(caps);
@@ -183,13 +183,13 @@ function getProviderStateFromCapabilities(
       normalizedOptions = Object.keys(nextOptions).length > 0 ? nextOptions : undefined;
       break;
     }
-    case "antigravity": {
+    case "google": {
       const providerOptions = modelOptions?.antigravity;
       rawEffort = trimOrNull(providerOptions?.reasoningEffort);
       normalizedOptions = normalizeAntigravityModelOptions(model, providerOptions, caps);
       break;
     }
-    case "grok": {
+    case "openai": {
       const providerOptions = modelOptions?.grok;
       rawEffort = trimOrNull(providerOptions?.reasoningEffort);
       const defaultReasoningEffort = getDefaultEffort(caps);
@@ -200,7 +200,7 @@ function getProviderStateFromCapabilities(
       normalizedOptions = reasoningEffort ? { reasoningEffort } : undefined;
       break;
     }
-    case "droid": {
+    case "openai": {
       const providerOptions = modelOptions?.droid;
       rawEffort = trimOrNull(providerOptions?.reasoningEffort);
       // Droid's advertised "default" is the mutable current CLI preference.
@@ -210,9 +210,9 @@ function getProviderStateFromCapabilities(
       normalizedOptions = reasoningEffort ? { reasoningEffort } : undefined;
       break;
     }
-    case "kilo":
-    case "opencode": {
-      const providerOptions = provider === "kilo" ? modelOptions?.kilo : modelOptions?.opencode;
+    case "openai":
+    case "openai": {
+      const providerOptions = provider === "openai" ? modelOptions?.kilo : modelOptions?.opencode;
       rawEffort = trimOrNull(providerOptions?.variant);
       const variantOptions = caps.variantOptions ?? [];
       const reasoningVariant =
@@ -231,7 +231,7 @@ function getProviderStateFromCapabilities(
       normalizedOptions = normalizeOpenCodeModelOptions(providerOptions);
       break;
     }
-    case "pi": {
+    case "openai": {
       const providerOptions = modelOptions?.pi;
       rawEffort = trimOrNull(providerOptions?.thinkingLevel);
       normalizedOptions = normalizePiModelOptions(providerOptions);
@@ -270,11 +270,11 @@ function getProviderStateFromCapabilities(
     ? caps.promptInjectedEffortLevels.includes(draftEffort)
     : false;
   const promptEffort =
-    provider === "kilo" || provider === "opencode"
+    provider === "openai" || provider === "openai"
       ? resolveLabeledOptionValue(caps.variantOptions, draftEffort)
       : draftEffort &&
           !isPromptInjected &&
-          (provider === "codex"
+          (provider === "openai"
             ? classifyCodexReasoningEffortSupport({
                 model,
                 effort: draftEffort,
@@ -301,48 +301,48 @@ function getProviderStateFromCapabilities(
 const composerProviderRegistry: Record<ProviderKind, ProviderRegistryEntry> = {
   codex: {
     getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("codex", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("codex", input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("openai", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("openai", input),
   },
   claudeAgent: {
     getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("claudeAgent", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("claudeAgent", input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("anthropic", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("anthropic", input),
   },
   cursor: {
     getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("cursor", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("cursor", input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("openai", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("openai", input),
   },
   antigravity: {
     getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("antigravity", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("antigravity", input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("google", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("google", input),
   },
   grok: {
     getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("grok", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("grok", input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("openai", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("openai", input),
   },
   droid: {
     getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("droid", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("droid", input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("openai", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("openai", input),
   },
   kilo: {
     getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("kilo", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("kilo", input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("openai", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("openai", input),
   },
   opencode: {
     getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("opencode", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("opencode", input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("openai", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("openai", input),
   },
   pi: {
     getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("pi", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("pi", input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("openai", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("openai", input),
   },
   engine: {
     getState: (input) => getProviderStateFromCapabilities(input),
@@ -444,7 +444,7 @@ export function renderProviderTraitsMenuContent(input: {
       selection,
       input.includeFastMode === undefined ? undefined : { includeFastMode: input.includeFastMode },
     ) &&
-    ((input.provider !== "kilo" && input.provider !== "opencode") ||
+    ((input.provider !== "openai" && input.provider !== "openai") ||
       (input.runtimeAgents?.length ?? 0) === 0)
   ) {
     return null;
@@ -479,7 +479,7 @@ export function renderProviderTraitsPicker(input: {
       selection,
       input.includeFastMode === undefined ? undefined : { includeFastMode: input.includeFastMode },
     ) &&
-    ((input.provider !== "kilo" && input.provider !== "opencode") ||
+    ((input.provider !== "openai" && input.provider !== "openai") ||
       (input.runtimeAgents?.length ?? 0) === 0)
   ) {
     return null;

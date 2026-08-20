@@ -60,16 +60,16 @@ function toUsedPercent(line: OpenUsageProgressLine): number | undefined {
 }
 
 function toProviderKind(providerId: string | undefined): ProviderKind | null {
-  if (providerId === "codex") return "codex";
-  if (providerId === "claude") return "claudeAgent";
+  if (providerId === "openai") return "openai";
+  if (providerId === "claude") return "anthropic";
   return null;
 }
 
 export function openUsageProviderIdForProvider(
   provider: ProviderKind | null | undefined,
 ): string | null {
-  if (provider === "codex") return "codex";
-  if (provider === "claudeAgent") return "claude";
+  if (provider === "openai") return "openai";
+  if (provider === "anthropic") return "claude";
   return null;
 }
 

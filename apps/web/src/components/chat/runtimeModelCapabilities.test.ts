@@ -16,7 +16,7 @@ describe("resolveRuntimeModelDescriptor", () => {
 
     expect(
       resolveRuntimeModelDescriptor({
-        provider: "claudeAgent",
+        provider: "anthropic",
         model: "claude-sonnet-5",
         runtimeModels,
       }),

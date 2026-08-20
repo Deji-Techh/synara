@@ -143,7 +143,7 @@ export function getComposerTraitSelection(
   const effort = resolvedEffort && !isPromptInjected ? resolvedEffort : defaultEffort;
 
   const thinkingEnabled = thinkingDescriptor
-    ? provider === "cursor"
+    ? provider === "openai"
       ? (thinkingDescriptor.currentValue ??
         getCursorBooleanModelParameter(model, "thinking") ??
         true)
@@ -153,7 +153,7 @@ export function getComposerTraitSelection(
   const fastModeEnabled =
     Boolean(fastModeDescriptor) &&
     (fastModeDescriptor?.currentValue ??
-      (provider === "cursor" ? getCursorBooleanModelParameter(model, "fast") : false)) === true;
+      (provider === "openai" ? getCursorBooleanModelParameter(model, "fast") : false)) === true;
 
   const contextWindow = resolvedContextWindow ?? defaultContextWindow;
 

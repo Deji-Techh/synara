@@ -327,7 +327,7 @@ describe("MessagesTimeline", () => {
         activeTurnStartedAt={null}
         crossTaskOrigin={{
           sourceThreadId: ThreadId.makeUnsafe("source-thread"),
-          sourceProvider: "codex",
+          sourceProvider: "openai",
         }}
         timelineEntries={[
           {
@@ -390,7 +390,7 @@ describe("MessagesTimeline", () => {
         activeTurnStartedAt={null}
         crossTaskOrigin={{
           sourceThreadId: ThreadId.makeUnsafe("source-thread"),
-          sourceProvider: "codex",
+          sourceProvider: "openai",
         }}
         timelineEntries={[
           {
@@ -2994,7 +2994,7 @@ describe("MessagesTimeline", () => {
               {
                 threadId: "thread-terra",
                 title: "Explain the repository with Terra",
-                provider: "codex",
+                provider: "openai",
                 model: "gpt-5.6-terra",
                 environment: "local",
                 status: "task_dispatched",
@@ -3002,7 +3002,7 @@ describe("MessagesTimeline", () => {
               {
                 threadId: "thread-claude",
                 title: "Explain the repository with Claude",
-                provider: "claudeAgent",
+                provider: "anthropic",
                 model: "claude-sonnet-5",
                 environment: "worktree",
                 status: "task_dispatched",

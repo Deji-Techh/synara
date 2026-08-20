@@ -132,7 +132,7 @@ beforeEach(() => {
 describe("useProviderModelCatalog", () => {
   it("keeps aggregate identities stable when inputs and query data are unchanged", () => {
     const [first, second] = readCatalogRenders({
-      selectedProvider: "cursor",
+      selectedProvider: "openai",
       discoveryEnabled: true,
       modelHintByProvider: MODEL_HINTS,
     });
@@ -146,42 +146,42 @@ describe("useProviderModelCatalog", () => {
   });
 
   it("discovers core agents only when selected unless eager-core is requested", () => {
-    readCatalogRenders({ selectedProvider: "cursor", discoveryEnabled: false });
-    expect(readAgentQueryEnabled("claudeAgent")).toBe(false);
-    expect(readAgentQueryEnabled("codex")).toBe(false);
+    readCatalogRenders({ selectedProvider: "openai", discoveryEnabled: false });
+    expect(readAgentQueryEnabled("anthropic")).toBe(false);
+    expect(readAgentQueryEnabled("openai")).toBe(false);
 
     mocks.useQuery.mockClear();
     readCatalogRenders({
-      selectedProvider: "cursor",
+      selectedProvider: "openai",
       discoveryEnabled: false,
       agentDiscoveryPolicy: "eager-core",
     });
-    expect(readAgentQueryEnabled("claudeAgent")).toBe(true);
-    expect(readAgentQueryEnabled("codex")).toBe(true);
+    expect(readAgentQueryEnabled("anthropic")).toBe(true);
+    expect(readAgentQueryEnabled("openai")).toBe(true);
   });
 
   it("does not prefetch providers hidden from picker surfaces", () => {
     mocks.useAppSettings.mockReturnValue({
-      settings: { ...SETTINGS, hiddenProviders: ["cursor"] },
+      settings: { ...SETTINGS, hiddenProviders: ["openai"] },
       serverSettings: DEFAULT_SERVER_SETTINGS,
     });
 
-    readCatalogRenders({ selectedProvider: "codex", discoveryEnabled: true });
+    readCatalogRenders({ selectedProvider: "openai", discoveryEnabled: true });
 
-    expect(readModelQueryEnabled("codex")).toBe(true);
-    expect(readModelQueryEnabled("cursor")).toBe(false);
-    expect(readModelQueryEnabled("antigravity")).toBe(true);
+    expect(readModelQueryEnabled("openai")).toBe(true);
+    expect(readModelQueryEnabled("openai")).toBe(false);
+    expect(readModelQueryEnabled("google")).toBe(true);
   });
 
   it("keeps an enabled selected provider discoverable when it is hidden", () => {
     mocks.useAppSettings.mockReturnValue({
-      settings: { ...SETTINGS, hiddenProviders: ["cursor"] },
+      settings: { ...SETTINGS, hiddenProviders: ["openai"] },
       serverSettings: DEFAULT_SERVER_SETTINGS,
     });
 
-    readCatalogRenders({ selectedProvider: "cursor", discoveryEnabled: false });
+    readCatalogRenders({ selectedProvider: "openai", discoveryEnabled: false });
 
-    expect(readModelQueryEnabled("cursor")).toBe(true);
+    expect(readModelQueryEnabled("openai")).toBe(true);
   });
 
   it("does not discover a disabled provider even when it is selected", () => {
@@ -199,9 +199,9 @@ describe("useProviderModelCatalog", () => {
       },
     });
 
-    readCatalogRenders({ selectedProvider: "cursor", discoveryEnabled: true });
+    readCatalogRenders({ selectedProvider: "openai", discoveryEnabled: true });
 
-    expect(readModelQueryEnabled("cursor")).toBe(false);
+    expect(readModelQueryEnabled("openai")).toBe(false);
   });
 
   it("keeps discovering while the server settings are unavailable", () => {
@@ -210,10 +210,10 @@ describe("useProviderModelCatalog", () => {
     // closed here would blank every provider's model list, selected one included.
     mocks.useAppSettings.mockReturnValue({ settings: SETTINGS, serverSettings: undefined });
 
-    readCatalogRenders({ selectedProvider: "claudeAgent", discoveryEnabled: true });
+    readCatalogRenders({ selectedProvider: "anthropic", discoveryEnabled: true });
 
-    expect(readModelQueryEnabled("claudeAgent")).toBe(true);
-    expect(readModelQueryEnabled("codex")).toBe(true);
+    expect(readModelQueryEnabled("anthropic")).toBe(true);
+    expect(readModelQueryEnabled("openai")).toBe(true);
   });
 
   it("keeps discovering the selected provider when the settings omit it", () => {
@@ -225,27 +225,27 @@ describe("useProviderModelCatalog", () => {
       serverSettings: { ...DEFAULT_SERVER_SETTINGS, providers: providersWithoutCursor },
     });
 
-    readCatalogRenders({ selectedProvider: "cursor", discoveryEnabled: false });
+    readCatalogRenders({ selectedProvider: "openai", discoveryEnabled: false });
 
-    expect(readModelQueryEnabled("cursor")).toBe(true);
+    expect(readModelQueryEnabled("openai")).toBe(true);
   });
 
   it("restricts non-picker prefetch to the requested providers", () => {
     readCatalogRenders({
-      selectedProvider: "codex",
+      selectedProvider: "openai",
       discoveryEnabled: true,
-      prefetchProviders: ["codex", "kilo", "opencode"],
+      prefetchProviders: ["openai", "openai", "openai"],
     });
 
-    expect(readModelQueryEnabled("codex")).toBe(true);
-    expect(readModelQueryEnabled("kilo")).toBe(true);
-    expect(readModelQueryEnabled("opencode")).toBe(true);
-    expect(readModelQueryEnabled("cursor")).toBe(false);
-    expect(readModelQueryEnabled("antigravity")).toBe(false);
+    expect(readModelQueryEnabled("openai")).toBe(true);
+    expect(readModelQueryEnabled("openai")).toBe(true);
+    expect(readModelQueryEnabled("openai")).toBe(true);
+    expect(readModelQueryEnabled("openai")).toBe(false);
+    expect(readModelQueryEnabled("google")).toBe(false);
   });
 
   it("merges a settled runtime catalog with custom models without reporting loading", () => {
-    modelQueries.set("cursor", {
+    modelQueries.set("openai", {
       data: {
         models: [{ slug: "composer-2", name: "Composer 2" }],
         source: "cursor.cli",
@@ -257,7 +257,7 @@ describe("useProviderModelCatalog", () => {
     });
 
     const catalog = readCatalogRenders({
-      selectedProvider: "cursor",
+      selectedProvider: "openai",
       discoveryEnabled: true,
       modelHintByProvider: MODEL_HINTS,
     }).at(-1);

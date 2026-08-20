@@ -1227,7 +1227,7 @@ describe("deriveMessagesTimelineRows", () => {
             {
               threadId: "thread-1",
               title: "First",
-              provider: "codex",
+              provider: "openai",
               model: "gpt-5.6-terra",
               environment: "local",
               status: "task_dispatched",
@@ -1235,7 +1235,7 @@ describe("deriveMessagesTimelineRows", () => {
             {
               threadId: "thread-2",
               title: "Second",
-              provider: "claudeAgent",
+              provider: "anthropic",
               model: "claude-sonnet-5",
               environment: "local",
               status: "task_dispatched",

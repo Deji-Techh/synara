@@ -242,7 +242,7 @@ describe("terminalStateStore actions", () => {
     const store = useTerminalStateStore.getState();
     store.newTerminal(THREAD_ID, "terminal-2");
     store.setTerminalMetadata(THREAD_ID, "terminal-2", {
-      cliKind: "codex",
+      cliKind: "openai",
       label: "Codex CLI",
     });
 
@@ -254,7 +254,7 @@ describe("terminalStateStore actions", () => {
       default: "Terminal 1",
       "terminal-2": "Codex 1",
     });
-    expect(terminalState.terminalCliKindsById).toEqual({ "terminal-2": "codex" });
+    expect(terminalState.terminalCliKindsById).toEqual({ "terminal-2": "openai" });
 
     store.closeTerminal(THREAD_ID, "terminal-2");
 
@@ -270,7 +270,7 @@ describe("terminalStateStore actions", () => {
     const store = useTerminalStateStore.getState();
     store.newTerminal(THREAD_ID, "terminal-2");
     store.setTerminalMetadata(THREAD_ID, "terminal-2", {
-      cliKind: "antigravity",
+      cliKind: "google",
       label: "Antigravity CLI",
     });
 
@@ -280,7 +280,7 @@ describe("terminalStateStore actions", () => {
     );
     expect(terminalState.terminalLabelsById["terminal-2"]).toBe("Antigravity 1");
     expect(terminalState.terminalCliKindsById).toEqual({
-      "terminal-2": "antigravity",
+      "terminal-2": "google",
     });
   });
 
@@ -288,7 +288,7 @@ describe("terminalStateStore actions", () => {
     const store = useTerminalStateStore.getState();
     store.newTerminal(THREAD_ID, "terminal-2");
     store.setTerminalMetadata(THREAD_ID, "terminal-2", {
-      cliKind: "codex",
+      cliKind: "openai",
       label: "Codex CLI",
     });
     store.setTerminalMetadata(THREAD_ID, "terminal-2", {

@@ -23,7 +23,7 @@ vi.mock("~/lib/openUsageReactQuery", async (importOriginal) => {
 
 function snapshot(input: Partial<ServerProviderUsageSnapshot> = {}): ServerProviderUsageSnapshot {
   return {
-    provider: "claudeAgent",
+    provider: "anthropic",
     updatedAt: "2026-06-09T12:00:00.000Z",
     limits: [],
     usageLines: [],
@@ -66,7 +66,7 @@ function readProviderUsageSummary(input: {
 
   function Probe() {
     captured.current = useProviderUsageSummary({
-      provider: "claudeAgent",
+      provider: "anthropic",
       threads: [],
       threadRateLimits: input.threadRateLimits,
       providerSnapshot: input.providerSnapshot,
@@ -99,7 +99,7 @@ describe("useProviderUsageSummary", () => {
 
     readProviderUsageSummary({ queryClient, fetchOpenUsageData: false });
 
-    expect(openUsageProviderSnapshotQueryOptions).toHaveBeenCalledWith("claudeAgent", {
+    expect(openUsageProviderSnapshotQueryOptions).toHaveBeenCalledWith("anthropic", {
       enabled: false,
     });
     expect(
@@ -113,7 +113,7 @@ describe("useProviderUsageSummary", () => {
       snapshot({ status: "needs-auth", detail: "Sign in with claude to see usage." }),
     ]);
     queryClient.setQueryData(
-      serverQueryKeys.providerUsage("claudeAgent", null),
+      serverQueryKeys.providerUsage("anthropic", null),
       fallbackSnapshot(),
     );
 
@@ -127,7 +127,7 @@ describe("useProviderUsageSummary", () => {
     const queryClient = createQueryClient();
     queryClient.setQueryData(serverQueryKeys.allProviderUsage(), []);
     queryClient.setQueryData(
-      serverQueryKeys.providerUsage("claudeAgent", null),
+      serverQueryKeys.providerUsage("anthropic", null),
       fallbackSnapshot(),
     );
 
@@ -148,7 +148,7 @@ describe("useProviderUsageSummary", () => {
       queryClient,
       threadRateLimits: [
         {
-          provider: "claudeAgent",
+          provider: "anthropic",
           updatedAt: "2026-06-09T12:00:00.000Z",
           limits: [
             {
@@ -205,7 +205,7 @@ describe("useProviderUsageSummary", () => {
     const queryClient = createQueryClient();
     queryClient.setQueryData(serverQueryKeys.allProviderUsage(), []);
     queryClient.setQueryData(
-      serverQueryKeys.providerUsage("claudeAgent", null),
+      serverQueryKeys.providerUsage("anthropic", null),
       fallbackSnapshot(),
     );
 

@@ -76,7 +76,7 @@ function defaultEffortForGroup(
   if (efforts.length === 0) {
     return undefined;
   }
-  if (baseSlug.includes("gpt") || baseSlug.includes("codex")) {
+  if (baseSlug.includes("gpt") || baseSlug.includes("openai")) {
     return efforts.includes("medium") ? "medium" : efforts[0];
   }
   if (baseSlug.includes("claude")) {

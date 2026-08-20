@@ -90,19 +90,19 @@ describe("composer mention reference filtering", () => {
       filterPromptSkillReferences(
         "Use $check-code and /refactor-code",
         [checkCode, refactorCode],
-        "codex",
+        "openai",
       ),
     ).toEqual([checkCode, refactorCode]);
     expect(
-      filterPromptSkillReferences("Use $check-code", [checkCode, refactorCode], "codex"),
+      filterPromptSkillReferences("Use $check-code", [checkCode, refactorCode], "openai"),
     ).toEqual([checkCode]);
   });
 
   it("uses pi's explicit skill prefix when filtering pi skill references", () => {
     const skill = { name: "planner", path: "/skills/planner/SKILL.md" };
 
-    expect(filterPromptSkillReferences("Use /planner", [skill], "pi")).toEqual([]);
-    expect(filterPromptSkillReferences("Use /skill:planner", [skill], "pi")).toEqual([skill]);
+    expect(filterPromptSkillReferences("Use /planner", [skill], "openai")).toEqual([]);
+    expect(filterPromptSkillReferences("Use /skill:planner", [skill], "openai")).toEqual([skill]);
   });
 });
 

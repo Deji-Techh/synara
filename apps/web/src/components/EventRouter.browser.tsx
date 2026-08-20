@@ -110,7 +110,7 @@ function createSnapshot(overrides?: Partial<OrchestrationReadModel["threads"][nu
         title: "Project",
         workspaceRoot: "/repo/project",
         defaultModelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5",
         },
         scripts: [],
@@ -125,7 +125,7 @@ function createSnapshot(overrides?: Partial<OrchestrationReadModel["threads"][nu
         projectId: PROJECT_ID,
         title: "Root test thread",
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5",
         },
         interactionMode: "default",
@@ -156,7 +156,7 @@ function createSnapshot(overrides?: Partial<OrchestrationReadModel["threads"][nu
         session: {
           threadId: THREAD_ID,
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "full-access",
           activeTurnId: null,
           lastError: null,
@@ -648,7 +648,7 @@ describe("EventRouter scoped orchestration sync", () => {
           session: {
             threadId: THREAD_ID,
             status: "ready",
-            providerName: "codex",
+            providerName: "openai",
             runtimeMode: "full-access",
             activeTurnId: null,
             lastError: null,
@@ -747,7 +747,7 @@ describe("EventRouter scoped orchestration sync", () => {
         session: {
           threadId: THREAD_ID,
           status: "running",
-          providerName: "opencode",
+          providerName: "openai",
           runtimeMode: "full-access",
           activeTurnId: runningTurnId,
           lastError: null,
@@ -796,7 +796,7 @@ describe("EventRouter scoped orchestration sync", () => {
         session: {
           threadId: THREAD_ID,
           status: "ready",
-          providerName: "opencode",
+          providerName: "openai",
           runtimeMode: "full-access",
           activeTurnId: null,
           lastError: null,
@@ -860,7 +860,7 @@ describe("EventRouter scoped orchestration sync", () => {
         session: {
           threadId: THREAD_ID,
           status: "running",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "full-access",
           activeTurnId: turnId,
           lastError: null,
@@ -907,7 +907,7 @@ describe("EventRouter scoped orchestration sync", () => {
               session: {
                 threadId: THREAD_ID,
                 status: "ready",
-                providerName: "codex",
+                providerName: "openai",
                 runtimeMode: "full-access",
                 activeTurnId: null,
                 lastError: null,
@@ -935,7 +935,7 @@ describe("EventRouter scoped orchestration sync", () => {
           session: {
             threadId: THREAD_ID,
             status: "ready",
-            providerName: "codex",
+            providerName: "openai",
             runtimeMode: "full-access",
             activeTurnId: null,
             lastError: null,
@@ -984,7 +984,7 @@ describe("EventRouter scoped orchestration sync", () => {
         session: {
           threadId: THREAD_ID,
           status: "running",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "full-access",
           activeTurnId: turnId,
           lastError: null,
@@ -1073,7 +1073,7 @@ describe("EventRouter scoped orchestration sync", () => {
               session: {
                 threadId: THREAD_ID,
                 status: "ready",
-                providerName: "codex",
+                providerName: "openai",
                 runtimeMode: "full-access",
                 activeTurnId: null,
                 lastError: null,
@@ -1105,7 +1105,7 @@ describe("EventRouter scoped orchestration sync", () => {
           session: {
             threadId: THREAD_ID,
             status: "ready",
-            providerName: "codex",
+            providerName: "openai",
             runtimeMode: "full-access",
             activeTurnId: null,
             lastError: null,
@@ -1168,7 +1168,7 @@ describe("EventRouter scoped orchestration sync", () => {
         session: {
           threadId: THREAD_ID,
           status: "running",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "full-access",
           activeTurnId: turnId,
           lastError: null,
@@ -1207,7 +1207,7 @@ describe("EventRouter scoped orchestration sync", () => {
           session: {
             threadId: THREAD_ID,
             status: "ready",
-            providerName: "codex",
+            providerName: "openai",
             runtimeMode: "full-access",
             activeTurnId: null,
             lastError: null,

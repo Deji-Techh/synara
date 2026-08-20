@@ -10,16 +10,16 @@ import { ProviderIcon, PROVIDER_ICON_COMPONENT_BY_PROVIDER } from "./ProviderIco
 
 describe("ProviderIcon", () => {
   it("uses Antigravity branding", () => {
-    expect(PROVIDER_ICON_COMPONENT_BY_PROVIDER).not.toHaveProperty("gemini");
+    expect(PROVIDER_ICON_COMPONENT_BY_PROVIDER).not.toHaveProperty("google");
 
-    const markup = renderToStaticMarkup(<ProviderIcon provider="antigravity" />);
+    const markup = renderToStaticMarkup(<ProviderIcon provider="google" />);
     expect(markup).toContain('viewBox="0 0 16 15"');
     expect(markup).toContain("#FFE432");
   });
 
   it("uses the reversed Central icon for opencode in dark mode", () => {
     const markup = renderToStaticMarkup(
-      <ProviderIcon provider="opencode" className="size-4 text-muted-foreground" />,
+      <ProviderIcon provider="openai" className="size-4 text-muted-foreground" />,
     );
 
     expect(markup).toContain("dark:hidden");

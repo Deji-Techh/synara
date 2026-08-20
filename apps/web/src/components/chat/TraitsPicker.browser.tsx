@@ -36,7 +36,7 @@ function ClaudeTraitsPickerHarness(props: {
   const setPrompt = useComposerDraftStore((store) => store.setPrompt);
   const { modelOptions, selectedModel } = useEffectiveComposerModelState({
     threadId: CLAUDE_THREAD_ID,
-    selectedProvider: "claudeAgent",
+    selectedProvider: "anthropic",
     threadModelSelection: props.fallbackModelSelection,
     projectModelSelection: null,
     customModelsByProvider: {
@@ -71,7 +71,7 @@ function ClaudeTraitsPickerHarness(props: {
 
   return (
     <TraitsPicker
-      provider="claudeAgent"
+      provider="anthropic"
       threadId={CLAUDE_THREAD_ID}
       model={selectedModel ?? props.model}
       prompt={prompt}
@@ -116,14 +116,14 @@ async function mountClaudePicker(props?: {
         ? {}
         : {
             claudeAgent: {
-              provider: "claudeAgent",
+              provider: "anthropic",
               model,
               ...(claudeOptions && Object.keys(claudeOptions).length > 0
                 ? { options: claudeOptions }
                 : {}),
             },
           },
-      activeProvider: "claudeAgent",
+      activeProvider: "anthropic",
       runtimeMode: null,
       interactionMode: null,
       mode: null,
@@ -139,7 +139,7 @@ async function mountClaudePicker(props?: {
   const fallbackModelSelection =
     props?.fallbackModelOptions !== undefined
       ? ({
-          provider: "claudeAgent",
+          provider: "anthropic",
           model,
           options: props.fallbackModelOptions ?? undefined,
         } satisfies ModelSelection)
@@ -306,7 +306,7 @@ describe("TraitsPicker (Claude)", () => {
     expect(
       useComposerDraftStore.getState().stickyModelSelectionByProvider.claudeAgent,
     ).toMatchObject({
-      provider: "claudeAgent",
+      provider: "anthropic",
       options: {
         effort: "max",
       },
@@ -336,7 +336,7 @@ describe("TraitsPicker (Claude)", () => {
     // A 1M thread can grow far beyond the normal compaction point: keep the explicit
     // thread choice, but never leak it into sticky defaults for future threads.
     const sticky = useComposerDraftStore.getState().stickyModelSelectionByProvider.claudeAgent;
-    expect(sticky?.provider === "claudeAgent" ? sticky.options?.autoCompactWindow : undefined).toBe(
+    expect(sticky?.provider === "anthropic" ? sticky.options?.autoCompactWindow : undefined).toBe(
       undefined,
     );
   });
@@ -365,12 +365,12 @@ async function mountCodexPicker(props: { model?: string; options?: CodexModelOpt
       queuedTurns: [],
       modelSelectionByProvider: {
         codex: {
-          provider: "codex",
+          provider: "openai",
           model,
           ...(props.options ? { options: props.options } : {}),
         },
       },
-      activeProvider: "codex",
+      activeProvider: "openai",
       runtimeMode: null,
       interactionMode: null,
       mode: null,
@@ -388,7 +388,7 @@ async function mountCodexPicker(props: { model?: string; options?: CodexModelOpt
   document.body.append(host);
   const screen = await render(
     <TraitsPicker
-      provider="codex"
+      provider="openai"
       threadId={threadId}
       model={props.model ?? DEFAULT_MODEL_BY_PROVIDER.codex}
       prompt=""
@@ -490,7 +490,7 @@ describe("TraitsPicker (Codex)", () => {
     await page.getByRole("button", { name: "Fast mode" }).click();
 
     expect(useComposerDraftStore.getState().stickyModelSelectionByProvider.codex).toMatchObject({
-      provider: "codex",
+      provider: "openai",
       options: { fastMode: true },
     });
 
@@ -514,7 +514,7 @@ async function mountCursorPicker(props: {
   document.body.append(host);
   const screen = await render(
     <TraitsPicker
-      provider="cursor"
+      provider="openai"
       threadId={threadId}
       model={props.runtimeModel.slug}
       runtimeModel={props.runtimeModel}
@@ -635,7 +635,7 @@ const OPENCODE_RUNTIME_MODEL_WITH_REASONING: ProviderModelDescriptor = {
 const OPENCODE_RUNTIME_MODEL_WITHOUT_DEFAULT: ProviderModelDescriptor = {
   slug: "opencode/gpt-5-nano",
   name: "GPT-5 Nano",
-  upstreamProviderId: "opencode",
+  upstreamProviderId: "openai",
   upstreamProviderName: "OpenCode",
   supportedReasoningEfforts: [
     { value: "minimal" },
@@ -654,7 +654,7 @@ function OpenCodeTraitsPickerHarness(props: {
   const setPrompt = useComposerDraftStore((store) => store.setPrompt);
   const { modelOptions, selectedModel } = useEffectiveComposerModelState({
     threadId: OPENCODE_THREAD_ID,
-    selectedProvider: "opencode",
+    selectedProvider: "openai",
     threadModelSelection: props.fallbackModelSelection,
     projectModelSelection: null,
     customModelsByProvider: {
@@ -689,7 +689,7 @@ function OpenCodeTraitsPickerHarness(props: {
 
   return (
     <TraitsPicker
-      provider="opencode"
+      provider="openai"
       threadId={OPENCODE_THREAD_ID}
       model={selectedModel ?? props.model}
       runtimeModel={props.runtimeModel}
@@ -725,12 +725,12 @@ async function mountOpenCodePicker(props?: {
       browserAnnotations: [],
       modelSelectionByProvider: {
         opencode: {
-          provider: "opencode",
+          provider: "openai",
           model,
           ...(props?.options ? { options: props.options } : {}),
         },
       },
-      activeProvider: "opencode",
+      activeProvider: "openai",
       runtimeMode: null,
       interactionMode: null,
       mode: null,
@@ -745,7 +745,7 @@ async function mountOpenCodePicker(props?: {
   const host = document.createElement("div");
   document.body.append(host);
   const fallbackModelSelection: ModelSelection = {
-    provider: "opencode",
+    provider: "openai",
     model,
     ...(props?.fallbackModelOptions ? { options: props.fallbackModelOptions } : {}),
   };
@@ -836,7 +836,7 @@ describe("TraitsPicker (OpenCode)", () => {
     await page.getByRole("menuitemradio", { name: /^High$/u }).click();
 
     expect(useComposerDraftStore.getState().stickyModelSelectionByProvider.opencode).toMatchObject({
-      provider: "opencode",
+      provider: "openai",
       options: {
         variant: "high",
       },

@@ -7,7 +7,7 @@ describe("groupCommandItems", () => {
       {
         id: "agent:codex:mini",
         type: "agent",
-        provider: "codex",
+        provider: "openai",
         alias: "mini",
         color: "violet",
         label: "@mini",
@@ -57,7 +57,7 @@ describe("groupCommandItems", () => {
         id: "thread:thread-1",
         type: "thread",
         threadId: "thread-1",
-        provider: "codex",
+        provider: "openai",
         mention: { name: "Release prep", path: "thread://thread-1" },
         label: "Release prep",
         description: "Caide",
@@ -101,7 +101,7 @@ describe("groupCommandItems", () => {
       {
         id: "provider-command:codex:help",
         type: "provider-native-command",
-        provider: "codex",
+        provider: "openai",
         command: "help",
         label: "/help",
         description: "Show help",

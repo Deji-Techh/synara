@@ -9,7 +9,7 @@ export function createBrowserTestServerConfig(checkedAt: string): ServerConfig {
     issues: [],
     providers: [
       {
-        provider: "codex",
+        provider: "openai",
         status: "ready",
         available: true,
         authStatus: "authenticated",

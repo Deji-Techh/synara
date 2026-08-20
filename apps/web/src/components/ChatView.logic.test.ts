@@ -1276,7 +1276,7 @@ describe("shouldShowComposerModelBootstrapSkeleton", () => {
   it("shows a skeleton while a provider requires runtime-discovered models", () => {
     expect(
       shouldShowComposerModelBootstrapSkeleton({
-        selectedProvider: "cursor",
+        selectedProvider: "openai",
         selectedModel: "auto",
         persistedModelSelection: null,
         draftModelSelection: null,
@@ -1289,7 +1289,7 @@ describe("shouldShowComposerModelBootstrapSkeleton", () => {
   it("hides the skeleton for a provider requiring discovered models after loading completes", () => {
     expect(
       shouldShowComposerModelBootstrapSkeleton({
-        selectedProvider: "cursor",
+        selectedProvider: "openai",
         selectedModel: "auto",
         persistedModelSelection: null,
         draftModelSelection: null,
@@ -1302,10 +1302,10 @@ describe("shouldShowComposerModelBootstrapSkeleton", () => {
   it("shows a skeleton while provider discovery is still resolving a persisted thread model", () => {
     expect(
       shouldShowComposerModelBootstrapSkeleton({
-        selectedProvider: "opencode",
+        selectedProvider: "openai",
         selectedModel: "openai/gpt-5-codex",
         persistedModelSelection: {
-          provider: "opencode",
+          provider: "openai",
           model: "openai/gpt-5.4",
         },
         draftModelSelection: null,
@@ -1317,10 +1317,10 @@ describe("shouldShowComposerModelBootstrapSkeleton", () => {
   it("hides the skeleton once the persisted thread model is already selected", () => {
     expect(
       shouldShowComposerModelBootstrapSkeleton({
-        selectedProvider: "opencode",
+        selectedProvider: "openai",
         selectedModel: "openai/gpt-5.4",
         persistedModelSelection: {
-          provider: "opencode",
+          provider: "openai",
           model: "openai/gpt-5.4",
         },
         draftModelSelection: null,
@@ -1333,10 +1333,10 @@ describe("shouldShowComposerModelBootstrapSkeleton", () => {
   it("does not keep the Cursor bootstrap skeleton after discovery is no longer loading", () => {
     expect(
       shouldShowComposerModelBootstrapSkeleton({
-        selectedProvider: "cursor",
+        selectedProvider: "openai",
         selectedModel: "auto",
         persistedModelSelection: {
-          provider: "cursor",
+          provider: "openai",
           model: "auto",
         },
         draftModelSelection: null,
@@ -1349,14 +1349,14 @@ describe("shouldShowComposerModelBootstrapSkeleton", () => {
   it("prefers an explicit draft selection over persisted thread state", () => {
     expect(
       shouldShowComposerModelBootstrapSkeleton({
-        selectedProvider: "opencode",
+        selectedProvider: "openai",
         selectedModel: "opencode/minimax-m2.5-free",
         persistedModelSelection: {
-          provider: "opencode",
+          provider: "openai",
           model: "openai/gpt-5.4",
         },
         draftModelSelection: {
-          provider: "opencode",
+          provider: "openai",
           model: "opencode/minimax-m2.5-free",
         },
         providerModelsLoading: true,
@@ -1367,10 +1367,10 @@ describe("shouldShowComposerModelBootstrapSkeleton", () => {
   it("shows a skeleton when the provisional provider does not match the persisted thread provider", () => {
     expect(
       shouldShowComposerModelBootstrapSkeleton({
-        selectedProvider: "codex",
+        selectedProvider: "openai",
         selectedModel: "gpt-5.4",
         persistedModelSelection: {
-          provider: "opencode",
+          provider: "openai",
           model: "openai/gpt-5.4",
         },
         draftModelSelection: null,
@@ -2071,7 +2071,7 @@ describe("hasServerAcknowledgedLocalDispatch", () => {
           },
         ],
         session: {
-          provider: "codex",
+          provider: "openai",
           status: "ready",
           orchestrationStatus: "ready",
           createdAt: "2026-04-13T00:00:00.000Z",
@@ -2100,7 +2100,7 @@ describe("hasServerAcknowledgedLocalDispatch", () => {
         },
         messages: [],
         session: {
-          provider: "codex",
+          provider: "openai",
           status: "ready",
           orchestrationStatus: "ready",
           createdAt: "2026-04-13T00:00:00.000Z",
@@ -2121,7 +2121,7 @@ describe("hasServerAcknowledgedLocalDispatch", () => {
         latestTurn: null,
         messages: [],
         session: {
-          provider: "claudeAgent",
+          provider: "anthropic",
           status: "ready",
           orchestrationStatus: "ready",
           createdAt: "2026-04-13T00:00:00.000Z",
@@ -2150,7 +2150,7 @@ describe("hasServerAcknowledgedLocalDispatch", () => {
           },
         ],
         session: {
-          provider: "claudeAgent",
+          provider: "anthropic",
           status: "ready",
           orchestrationStatus: "ready",
           createdAt: "2026-04-13T00:00:00.000Z",
@@ -2207,7 +2207,7 @@ describe("hasLiveTurnTakenOver", () => {
           sourceProposedPlan: undefined,
         },
         session: {
-          provider: "codex",
+          provider: "openai",
           status: "ready",
           orchestrationStatus: "ready",
           createdAt: "2026-04-13T00:00:00.000Z",
@@ -2253,7 +2253,7 @@ describe("hasLiveTurnTakenOver", () => {
         phase: "ready",
         latestTurn: null,
         session: {
-          provider: "codex",
+          provider: "openai",
           status: "ready",
           orchestrationStatus: "ready",
           activeTurnId: "turn-1" as never,
@@ -2557,11 +2557,11 @@ describe("createRuntimeModePersistenceQueue", () => {
 
 describe("persistModelSelectionBeforeRuntimeMode", () => {
   const previousModel = {
-    provider: "droid",
+    provider: "openai",
     model: "claude-opus-4-8",
   } as const;
   const autoCapableModel = {
-    provider: "codex",
+    provider: "openai",
     model: "gpt-5.6-sol",
   } as const;
 

@@ -38,7 +38,7 @@ import {
 } from "./automationDraft";
 
 export const defaultModelSelection: ModelSelection = {
-  provider: "codex",
+  provider: "openai",
   model: "gpt-5-codex",
 };
 

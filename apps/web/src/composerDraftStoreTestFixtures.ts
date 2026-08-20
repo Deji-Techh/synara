@@ -111,11 +111,11 @@ export function makeQueuedTurn(id: string): QueuedComposerTurn {
     previewText: `queued ${id}`,
     text: `queued ${id}`,
     interactionMode: "plan",
-    selectedProvider: "codex",
+    selectedProvider: "openai",
     selectedModel: "gpt-5",
     selectedPromptEffort: null,
     modelSelection: {
-      provider: "codex",
+      provider: "openai",
       model: "gpt-5",
     },
     runtimeMode: "full-access",
@@ -141,11 +141,11 @@ export function makeQueuedChatTurn(
     pastedTexts: [],
     skills: [{ name: "check-code", path: "/skills/check-code" }],
     mentions: [{ name: "repo", path: "/mentions/repo" }],
-    selectedProvider: "codex",
+    selectedProvider: "openai",
     selectedModel: "gpt-5",
     selectedPromptEffort: null,
     modelSelection: {
-      provider: "codex",
+      provider: "openai",
       model: "gpt-5",
     },
     sourceProposedPlan: {

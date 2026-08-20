@@ -138,7 +138,7 @@ describe("recent view MRU logic", () => {
       id: terminalThreadId,
       projectId: project.id,
       title: "Dev server",
-      modelSelection: { provider: "codex", model: "gpt-5" },
+      modelSelection: { provider: "openai", model: "gpt-5" },
     } as SidebarThreadSummary;
 
     const entries = buildRecentViewDisplayEntries({
@@ -163,7 +163,7 @@ describe("recent view MRU logic", () => {
     expect(entries[0]).toMatchObject({
       icon: { kind: "terminal", iconKey: "terminal" },
       isTerminal: true,
-      provider: "codex",
+      provider: "openai",
       subtitle: "Caide · Terminal",
       terminalVisualIdentity: {
         cliKind: null,

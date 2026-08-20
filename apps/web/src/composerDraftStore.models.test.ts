@@ -17,17 +17,17 @@ describe("resolvePreferredComposerModelSelection", () => {
       resolvePreferredComposerModelSelection({
         draft: {
           modelSelectionByProvider: {
-            claudeAgent: modelSelection("claudeAgent", "claude-opus-4-6", {
+            claudeAgent: modelSelection("anthropic", "claude-opus-4-6", {
               effort: "max",
             }),
           },
-          activeProvider: "claudeAgent",
+          activeProvider: "anthropic",
         },
-        threadModelSelection: modelSelection("codex", "gpt-5"),
-        projectModelSelection: modelSelection("codex", "gpt-5.4"),
+        threadModelSelection: modelSelection("openai", "gpt-5"),
+        projectModelSelection: modelSelection("openai", "gpt-5.4"),
       }),
     ).toEqual(
-      modelSelection("claudeAgent", "claude-opus-4-6", {
+      modelSelection("anthropic", "claude-opus-4-6", {
         effort: "max",
       }),
     );
@@ -38,28 +38,28 @@ describe("resolvePreferredComposerModelSelection", () => {
       resolvePreferredComposerModelSelection({
         draft: {
           modelSelectionByProvider: {
-            grok: modelSelection("grok", "grok-build"),
+            grok: modelSelection("openai", "grok-build"),
           },
-          activeProvider: "grok",
+          activeProvider: "openai",
         },
-        threadModelSelection: modelSelection("codex", "gpt-5"),
-        projectModelSelection: modelSelection("codex", "gpt-5.4"),
+        threadModelSelection: modelSelection("openai", "gpt-5"),
+        projectModelSelection: modelSelection("openai", "gpt-5.4"),
       }),
-    ).toEqual(modelSelection("grok", "grok-build"));
+    ).toEqual(modelSelection("openai", "grok-build"));
   });
 
   it("uses only the active provider selection for terminal-first promotion", () => {
-    const cursorSelection = modelSelection("cursor", "cursor-auto", {
+    const cursorSelection = modelSelection("openai", "cursor-auto", {
       reasoningEffort: "high",
     });
     expect(
       resolvePreferredComposerModelSelection({
         draft: {
           modelSelectionByProvider: {
-            codex: modelSelection("codex", "gpt-5.6-sol", { reasoningEffort: "ultra" }),
+            codex: modelSelection("openai", "gpt-5.6-sol", { reasoningEffort: "ultra" }),
             cursor: cursorSelection,
           },
-          activeProvider: "cursor",
+          activeProvider: "openai",
         },
         threadModelSelection: null,
         projectModelSelection: null,
@@ -79,7 +79,7 @@ describe("composerDraftStore modelSelection", () => {
     const store = useComposerDraftStore.getState();
     store.setModelSelection(
       threadId,
-      modelSelection("codex", "gpt-5.3-codex", {
+      modelSelection("openai", "gpt-5.3-codex", {
         reasoningEffort: "xhigh",
         fastMode: true,
       }),
@@ -88,7 +88,7 @@ describe("composerDraftStore modelSelection", () => {
     expect(
       useComposerDraftStore.getState().draftsByThreadId[threadId]?.modelSelectionByProvider.codex,
     ).toEqual(
-      modelSelection("codex", "gpt-5.3-codex", {
+      modelSelection("openai", "gpt-5.3-codex", {
         reasoningEffort: "xhigh",
         fastMode: true,
       }),
@@ -99,7 +99,7 @@ describe("composerDraftStore modelSelection", () => {
     "retains runtime-discovered Codex %s effort in thread and sticky selections",
     (reasoningEffort) => {
       const store = useComposerDraftStore.getState();
-      const selection = modelSelection("codex", "gpt-5.6-sol", { reasoningEffort });
+      const selection = modelSelection("openai", "gpt-5.6-sol", { reasoningEffort });
 
       store.setModelSelection(threadId, selection);
       store.setStickyModelSelection(selection);
@@ -115,43 +115,43 @@ describe("composerDraftStore modelSelection", () => {
 
     store.setProviderModelOptions(
       threadId,
-      "codex",
+      "openai",
       { reasoningEffort: "   ", fastMode: true },
       { model: "gpt-5.6-sol" },
     );
 
     expect(
       useComposerDraftStore.getState().draftsByThreadId[threadId]?.modelSelectionByProvider.codex,
-    ).toEqual(modelSelection("codex", "gpt-5.6-sol", { fastMode: true }));
+    ).toEqual(modelSelection("openai", "gpt-5.6-sol", { fastMode: true }));
   });
 
   it("keeps default-only model selections on the draft", () => {
     const store = useComposerDraftStore.getState();
-    store.setModelSelection(threadId, modelSelection("codex", "gpt-5.4"));
+    store.setModelSelection(threadId, modelSelection("openai", "gpt-5.4"));
 
     expect(
       useComposerDraftStore.getState().draftsByThreadId[threadId]?.modelSelectionByProvider.codex,
-    ).toEqual(modelSelection("codex", "gpt-5.4"));
+    ).toEqual(modelSelection("openai", "gpt-5.4"));
   });
 
   it("stores Grok selections instead of dropping them during normalization", () => {
     const store = useComposerDraftStore.getState();
 
-    store.setModelSelection(threadId, modelSelection("grok", "grok-build"));
-    store.setStickyModelSelection(modelSelection("grok", "grok-build"));
+    store.setModelSelection(threadId, modelSelection("openai", "grok-build"));
+    store.setStickyModelSelection(modelSelection("openai", "grok-build"));
 
     const state = useComposerDraftStore.getState();
     expect(state.draftsByThreadId[threadId]?.modelSelectionByProvider.grok).toEqual(
-      modelSelection("grok", "grok-build"),
+      modelSelection("openai", "grok-build"),
     );
-    expect(state.draftsByThreadId[threadId]?.activeProvider).toBe("grok");
-    expect(state.stickyModelSelectionByProvider.grok).toEqual(modelSelection("grok", "grok-build"));
-    expect(state.stickyActiveProvider).toBe("grok");
+    expect(state.draftsByThreadId[threadId]?.activeProvider).toBe("openai");
+    expect(state.stickyModelSelectionByProvider.grok).toEqual(modelSelection("openai", "grok-build"));
+    expect(state.stickyActiveProvider).toBe("openai");
   });
 
   it("stores Antigravity base models and effort options separately", () => {
     const store = useComposerDraftStore.getState();
-    const selection = modelSelection("antigravity", "Gemini 3.5 Flash", {
+    const selection = modelSelection("google", "Gemini 3.5 Flash", {
       reasoningEffort: "high",
     });
 
@@ -162,9 +162,9 @@ describe("composerDraftStore modelSelection", () => {
     expect(state.draftsByThreadId[threadId]?.modelSelectionByProvider.antigravity).toEqual(
       selection,
     );
-    expect(state.draftsByThreadId[threadId]?.activeProvider).toBe("antigravity");
+    expect(state.draftsByThreadId[threadId]?.activeProvider).toBe("google");
     expect(state.stickyModelSelectionByProvider.antigravity).toEqual(selection);
-    expect(state.stickyActiveProvider).toBe("antigravity");
+    expect(state.stickyActiveProvider).toBe("google");
   });
 
   it("replaces only the targeted provider options on the current model selection", () => {
@@ -172,13 +172,13 @@ describe("composerDraftStore modelSelection", () => {
 
     store.setModelSelection(
       threadId,
-      modelSelection("claudeAgent", "claude-opus-4-6", {
+      modelSelection("anthropic", "claude-opus-4-6", {
         effort: "max",
         fastMode: true,
       }),
     );
     store.setStickyModelSelection(
-      modelSelection("claudeAgent", "claude-opus-4-6", {
+      modelSelection("anthropic", "claude-opus-4-6", {
         effort: "max",
         fastMode: true,
       }),
@@ -186,7 +186,7 @@ describe("composerDraftStore modelSelection", () => {
 
     store.setProviderModelOptions(
       threadId,
-      "claudeAgent",
+      "anthropic",
       {
         thinking: false,
       },
@@ -197,12 +197,12 @@ describe("composerDraftStore modelSelection", () => {
       useComposerDraftStore.getState().draftsByThreadId[threadId]?.modelSelectionByProvider
         .claudeAgent,
     ).toEqual(
-      modelSelection("claudeAgent", "claude-opus-4-6", {
+      modelSelection("anthropic", "claude-opus-4-6", {
         thinking: false,
       }),
     );
     expect(useComposerDraftStore.getState().stickyModelSelectionByProvider.claudeAgent).toEqual(
-      modelSelection("claudeAgent", "claude-opus-4-6", {
+      modelSelection("anthropic", "claude-opus-4-6", {
         thinking: false,
       }),
     );
@@ -213,12 +213,12 @@ describe("composerDraftStore modelSelection", () => {
 
     store.setModelSelection(
       threadId,
-      modelSelection("claudeAgent", "claude-opus-4-6", {
+      modelSelection("anthropic", "claude-opus-4-6", {
         effort: "max",
       }),
     );
 
-    store.setProviderModelOptions(threadId, "claudeAgent", {
+    store.setProviderModelOptions(threadId, "anthropic", {
       thinking: true,
     });
 
@@ -226,7 +226,7 @@ describe("composerDraftStore modelSelection", () => {
       useComposerDraftStore.getState().draftsByThreadId[threadId]?.modelSelectionByProvider
         .claudeAgent,
     ).toEqual(
-      modelSelection("claudeAgent", "claude-opus-4-6", {
+      modelSelection("anthropic", "claude-opus-4-6", {
         thinking: true,
       }),
     );
@@ -236,9 +236,9 @@ describe("composerDraftStore modelSelection", () => {
   it("keeps explicit off/default codex overrides on the selection", () => {
     const store = useComposerDraftStore.getState();
 
-    store.setModelSelection(threadId, modelSelection("codex", "gpt-5.4", { fastMode: true }));
+    store.setModelSelection(threadId, modelSelection("openai", "gpt-5.4", { fastMode: true }));
 
-    store.setProviderModelOptions(threadId, "codex", {
+    store.setProviderModelOptions(threadId, "openai", {
       reasoningEffort: "high",
       fastMode: false,
     });
@@ -246,7 +246,7 @@ describe("composerDraftStore modelSelection", () => {
     expect(
       useComposerDraftStore.getState().draftsByThreadId[threadId]?.modelSelectionByProvider.codex,
     ).toEqual(
-      modelSelection("codex", "gpt-5.4", {
+      modelSelection("openai", "gpt-5.4", {
         reasoningEffort: "high",
         fastMode: false,
       }),
@@ -260,25 +260,25 @@ describe("composerDraftStore modelSelection", () => {
     const store = useComposerDraftStore.getState();
 
     store.setStickyModelSelection(
-      modelSelection("claudeAgent", "claude-opus-4-6", { effort: "max" }),
+      modelSelection("anthropic", "claude-opus-4-6", { effort: "max" }),
     );
     store.setModelSelection(
       threadId,
-      modelSelection("claudeAgent", "claude-opus-4-6", { effort: "max" }),
+      modelSelection("anthropic", "claude-opus-4-6", { effort: "max" }),
     );
 
-    store.setProviderModelOptions(threadId, "claudeAgent", { thinking: false }, options);
+    store.setProviderModelOptions(threadId, "anthropic", { thinking: false }, options);
 
     expect(
       useComposerDraftStore.getState().draftsByThreadId[threadId]?.modelSelectionByProvider
         .claudeAgent,
     ).toEqual(
-      modelSelection("claudeAgent", "claude-opus-4-6", {
+      modelSelection("anthropic", "claude-opus-4-6", {
         thinking: false,
       }),
     );
     expect(useComposerDraftStore.getState().stickyModelSelectionByProvider.claudeAgent).toEqual(
-      modelSelection("claudeAgent", "claude-opus-4-6", { effort: "max" }),
+      modelSelection("anthropic", "claude-opus-4-6", { effort: "max" }),
     );
   });
 
@@ -313,24 +313,24 @@ describe("composerDraftStore modelSelection", () => {
       }),
     );
 
-    store.setModelSelection(threadId, modelSelection("claudeAgent", "claude-opus-4-6"));
+    store.setModelSelection(threadId, modelSelection("anthropic", "claude-opus-4-6"));
 
     const draft = useComposerDraftStore.getState().draftsByThreadId[threadId];
     expect(draft?.modelSelectionByProvider.claudeAgent).toEqual(
-      modelSelection("claudeAgent", "claude-opus-4-6", { effort: "max" }),
+      modelSelection("anthropic", "claude-opus-4-6", { effort: "max" }),
     );
     expect(draft?.modelSelectionByProvider.codex?.options).toEqual({ fastMode: true });
-    expect(draft?.activeProvider).toBe("claudeAgent");
+    expect(draft?.activeProvider).toBe("anthropic");
   });
 
   it("creates the first sticky snapshot from provider option changes", () => {
     const store = useComposerDraftStore.getState();
 
-    store.setModelSelection(threadId, modelSelection("codex", "gpt-5.4"));
+    store.setModelSelection(threadId, modelSelection("openai", "gpt-5.4"));
 
     store.setProviderModelOptions(
       threadId,
-      "codex",
+      "openai",
       {
         fastMode: true,
       },
@@ -338,7 +338,7 @@ describe("composerDraftStore modelSelection", () => {
     );
 
     expect(useComposerDraftStore.getState().stickyModelSelectionByProvider.codex).toEqual(
-      modelSelection("codex", "gpt-5.4", {
+      modelSelection("openai", "gpt-5.4", {
         fastMode: true,
       }),
     );
@@ -348,12 +348,12 @@ describe("composerDraftStore modelSelection", () => {
     const state = deriveEffectiveComposerModelState({
       draft: {
         modelSelectionByProvider: {
-          opencode: modelSelection("opencode", "openai/gpt-5"),
+          opencode: modelSelection("openai", "openai/gpt-5"),
         },
-        activeProvider: "opencode",
+        activeProvider: "openai",
       },
-      selectedProvider: "opencode",
-      threadModelSelection: modelSelection("opencode", "opencode/gpt-5-nano"),
+      selectedProvider: "openai",
+      threadModelSelection: modelSelection("openai", "opencode/gpt-5-nano"),
       projectModelSelection: null,
       customModelsByProvider: {
         codex: [],
@@ -392,10 +392,10 @@ describe("composerDraftStore modelSelection", () => {
     const state = deriveEffectiveComposerModelState({
       draft: {
         modelSelectionByProvider: {},
-        activeProvider: "opencode",
+        activeProvider: "openai",
       },
-      selectedProvider: "opencode",
-      threadModelSelection: modelSelection("opencode", "openai/gpt-5.4"),
+      selectedProvider: "openai",
+      threadModelSelection: modelSelection("openai", "openai/gpt-5.4"),
       projectModelSelection: null,
       customModelsByProvider: {
         codex: [],
@@ -437,11 +437,11 @@ describe("composerDraftStore modelSelection", () => {
     const state = deriveEffectiveComposerModelState({
       draft: {
         modelSelectionByProvider: {
-          opencode: modelSelection("opencode", "openai/gpt-5"),
+          opencode: modelSelection("openai", "openai/gpt-5"),
         },
-        activeProvider: "opencode",
+        activeProvider: "openai",
       },
-      selectedProvider: "opencode",
+      selectedProvider: "openai",
       threadModelSelection: null,
       projectModelSelection: null,
       customModelsByProvider: {
@@ -484,11 +484,11 @@ describe("composerDraftStore modelSelection", () => {
     const state = deriveEffectiveComposerModelState({
       draft: {
         modelSelectionByProvider: {
-          pi: modelSelection("pi", "openai/gpt-5.5"),
+          pi: modelSelection("openai", "openai/gpt-5.5"),
         },
-        activeProvider: "pi",
+        activeProvider: "openai",
       },
-      selectedProvider: "pi",
+      selectedProvider: "openai",
       threadModelSelection: null,
       projectModelSelection: null,
       customModelsByProvider: {
@@ -538,39 +538,39 @@ describe("composerDraftStore setModelSelection", () => {
   it("keeps explicit model overrides instead of coercing to null", () => {
     const store = useComposerDraftStore.getState();
 
-    store.setModelSelection(threadId, modelSelection("codex", "gpt-5.3-codex"));
+    store.setModelSelection(threadId, modelSelection("openai", "gpt-5.3-codex"));
 
     expect(
       useComposerDraftStore.getState().draftsByThreadId[threadId]?.modelSelectionByProvider.codex,
-    ).toEqual(modelSelection("codex", "gpt-5.3-codex"));
+    ).toEqual(modelSelection("openai", "gpt-5.3-codex"));
   });
 
   it("preserves newly discovered Droid effort strings in composer state", () => {
     const store = useComposerDraftStore.getState();
-    store.setModelSelection(threadId, modelSelection("droid", "future-droid-model"));
+    store.setModelSelection(threadId, modelSelection("openai", "future-droid-model"));
 
-    store.setProviderModelOptions(threadId, "droid", { reasoningEffort: "ultra" });
+    store.setProviderModelOptions(threadId, "openai", { reasoningEffort: "ultra" });
 
     expect(
       useComposerDraftStore.getState().draftsByThreadId[threadId]?.modelSelectionByProvider.droid,
-    ).toEqual(modelSelection("droid", "future-droid-model", { reasoningEffort: "ultra" }));
+    ).toEqual(modelSelection("openai", "future-droid-model", { reasoningEffort: "ultra" }));
   });
 
   it("drops a runtime Codex effort when switching models before terminal promotion", () => {
     const store = useComposerDraftStore.getState();
     store.setModelSelectionAndSticky(
       threadId,
-      modelSelection("codex", "gpt-5.6-sol", {
+      modelSelection("openai", "gpt-5.6-sol", {
         reasoningEffort: "ultra",
         fastMode: true,
       }),
     );
 
-    store.setModelSelectionAndSticky(threadId, modelSelection("codex", "gpt-5.4"));
+    store.setModelSelectionAndSticky(threadId, modelSelection("openai", "gpt-5.4"));
 
     const state = useComposerDraftStore.getState();
     const draft = state.draftsByThreadId[threadId];
-    const expectedSelection = modelSelection("codex", "gpt-5.4", { fastMode: true });
+    const expectedSelection = modelSelection("openai", "gpt-5.4", { fastMode: true });
     expect(draft?.modelSelectionByProvider.codex).toEqual(expectedSelection);
     expect(state.stickyModelSelectionByProvider.codex).toEqual(expectedSelection);
     expect(
@@ -584,13 +584,13 @@ describe("composerDraftStore setModelSelection", () => {
 
   it("retains a runtime Codex effort when reselecting the same model", () => {
     const store = useComposerDraftStore.getState();
-    const selection = modelSelection("codex", "gpt-5.6-sol", {
+    const selection = modelSelection("openai", "gpt-5.6-sol", {
       reasoningEffort: "max",
       fastMode: true,
     });
     store.setModelSelectionAndSticky(threadId, selection);
 
-    store.setModelSelectionAndSticky(threadId, modelSelection("codex", "gpt-5.6-sol"));
+    store.setModelSelectionAndSticky(threadId, modelSelection("openai", "gpt-5.6-sol"));
 
     const state = useComposerDraftStore.getState();
     expect(state.draftsByThreadId[threadId]?.modelSelectionByProvider.codex).toEqual(selection);
@@ -601,12 +601,12 @@ describe("composerDraftStore setModelSelection", () => {
     const store = useComposerDraftStore.getState();
     store.setModelSelectionAndSticky(
       threadId,
-      modelSelection("codex", "gpt-5.5", { reasoningEffort: "xhigh", fastMode: true }),
+      modelSelection("openai", "gpt-5.5", { reasoningEffort: "xhigh", fastMode: true }),
     );
 
-    store.setModelSelectionAndSticky(threadId, modelSelection("codex", "gpt-5.4"));
+    store.setModelSelectionAndSticky(threadId, modelSelection("openai", "gpt-5.4"));
 
-    const expectedSelection = modelSelection("codex", "gpt-5.4", {
+    const expectedSelection = modelSelection("openai", "gpt-5.4", {
       reasoningEffort: "xhigh",
       fastMode: true,
     });
@@ -619,16 +619,16 @@ describe("composerDraftStore setModelSelection", () => {
 
   it("restores Cursor state without transferring the active Codex effort", () => {
     const store = useComposerDraftStore.getState();
-    const cursorSelection = modelSelection("cursor", "cursor-auto", {
+    const cursorSelection = modelSelection("openai", "cursor-auto", {
       reasoningEffort: "high",
     });
     store.setModelSelectionAndSticky(threadId, cursorSelection);
     store.setModelSelectionAndSticky(
       threadId,
-      modelSelection("codex", "gpt-5.6-sol", { reasoningEffort: "ultra" }),
+      modelSelection("openai", "gpt-5.6-sol", { reasoningEffort: "ultra" }),
     );
 
-    store.setModelSelectionAndSticky(threadId, modelSelection("cursor", "cursor-auto"));
+    store.setModelSelectionAndSticky(threadId, modelSelection("openai", "cursor-auto"));
 
     const state = useComposerDraftStore.getState();
     expect(state.draftsByThreadId[threadId]?.modelSelectionByProvider.cursor).toEqual(
@@ -639,16 +639,16 @@ describe("composerDraftStore setModelSelection", () => {
 
   it("restores Codex state without transferring the active Cursor effort", () => {
     const store = useComposerDraftStore.getState();
-    const codexSelection = modelSelection("codex", "gpt-5.4", {
+    const codexSelection = modelSelection("openai", "gpt-5.4", {
       reasoningEffort: "xhigh",
     });
     store.setModelSelectionAndSticky(threadId, codexSelection);
     store.setModelSelectionAndSticky(
       threadId,
-      modelSelection("cursor", "cursor-auto", { reasoningEffort: "high" }),
+      modelSelection("openai", "cursor-auto", { reasoningEffort: "high" }),
     );
 
-    store.setModelSelectionAndSticky(threadId, modelSelection("codex", "gpt-5.4"));
+    store.setModelSelectionAndSticky(threadId, modelSelection("openai", "gpt-5.4"));
 
     const state = useComposerDraftStore.getState();
     expect(state.draftsByThreadId[threadId]?.modelSelectionByProvider.codex).toEqual(
@@ -661,17 +661,17 @@ describe("composerDraftStore setModelSelection", () => {
     const store = useComposerDraftStore.getState();
     store.setModelSelectionAndSticky(
       threadId,
-      modelSelection("codex", "gpt-5.6-sol", { reasoningEffort: "ultra" }),
+      modelSelection("openai", "gpt-5.6-sol", { reasoningEffort: "ultra" }),
     );
 
-    store.setModelSelectionAndSticky(threadId, modelSelection("claudeAgent", "claude-opus-4-6"));
+    store.setModelSelectionAndSticky(threadId, modelSelection("anthropic", "claude-opus-4-6"));
 
     const state = useComposerDraftStore.getState();
     expect(state.draftsByThreadId[threadId]?.modelSelectionByProvider.claudeAgent).toEqual(
-      modelSelection("claudeAgent", "claude-opus-4-6"),
+      modelSelection("anthropic", "claude-opus-4-6"),
     );
     expect(state.stickyModelSelectionByProvider.claudeAgent).toEqual(
-      modelSelection("claudeAgent", "claude-opus-4-6"),
+      modelSelection("anthropic", "claude-opus-4-6"),
     );
   });
 });
@@ -685,26 +685,26 @@ describe("composerDraftStore sticky composer settings", () => {
     const store = useComposerDraftStore.getState();
 
     store.setStickyModelSelection(
-      modelSelection("codex", "gpt-5.3-codex", {
+      modelSelection("openai", "gpt-5.3-codex", {
         reasoningEffort: "medium",
         fastMode: true,
       }),
     );
 
     expect(useComposerDraftStore.getState().stickyModelSelectionByProvider.codex).toEqual(
-      modelSelection("codex", "gpt-5.3-codex", {
+      modelSelection("openai", "gpt-5.3-codex", {
         reasoningEffort: "medium",
         fastMode: true,
       }),
     );
-    expect(useComposerDraftStore.getState().stickyActiveProvider).toBe("codex");
+    expect(useComposerDraftStore.getState().stickyActiveProvider).toBe("openai");
   });
 
   it("preserves Claude Auto support through sticky updates, options, and hydration", () => {
     const store = useComposerDraftStore.getState();
     const threadId = ThreadId.makeUnsafe("thread-claude-auto-capability");
     const selection: ModelSelection = {
-      provider: "claudeAgent",
+      provider: "anthropic",
       model: "claude-haiku-4-5",
       supportsAutoMode: false,
     };
@@ -712,7 +712,7 @@ describe("composerDraftStore sticky composer settings", () => {
     store.setModelSelectionAndSticky(threadId, selection);
     store.setProviderModelOptions(
       threadId,
-      "claudeAgent",
+      "anthropic",
       { effort: "high" },
       { persistSticky: true },
     );
@@ -742,7 +742,7 @@ describe("composerDraftStore sticky composer settings", () => {
         stickyModelSelectionByProvider: {
           claudeAgent: state.stickyModelSelectionByProvider.claudeAgent,
         },
-        stickyActiveProvider: "claudeAgent",
+        stickyActiveProvider: "anthropic",
       },
       useComposerDraftStore.getState(),
     ) as {
@@ -753,7 +753,7 @@ describe("composerDraftStore sticky composer settings", () => {
     const hydratedClaudeSelection =
       merged.draftsByThreadId[threadId]?.modelSelectionByProvider.claudeAgent;
     expect(
-      hydratedClaudeSelection?.provider === "claudeAgent"
+      hydratedClaudeSelection?.provider === "anthropic"
         ? hydratedClaudeSelection.supportsAutoMode
         : undefined,
     ).toBe(false);
@@ -766,13 +766,13 @@ describe("composerDraftStore sticky composer settings", () => {
     const store = useComposerDraftStore.getState();
     const threadId = ThreadId.makeUnsafe("thread-claude-auto-model-switch");
     store.setModelSelection(threadId, {
-      provider: "claudeAgent",
+      provider: "anthropic",
       model: "claude-haiku-4-5",
       supportsAutoMode: false,
     });
 
     store.setModelSelection(threadId, {
-      provider: "claudeAgent",
+      provider: "anthropic",
       model: "claude-sonnet-5",
     });
 
@@ -780,7 +780,7 @@ describe("composerDraftStore sticky composer settings", () => {
       useComposerDraftStore.getState().draftsByThreadId[threadId]?.modelSelectionByProvider
         .claudeAgent,
     ).toEqual({
-      provider: "claudeAgent",
+      provider: "anthropic",
       model: "claude-sonnet-5",
     });
   });
@@ -788,12 +788,12 @@ describe("composerDraftStore sticky composer settings", () => {
   it("normalizes empty sticky model options by dropping selection options", () => {
     const store = useComposerDraftStore.getState();
 
-    store.setStickyModelSelection(modelSelection("codex", "gpt-5.4"));
+    store.setStickyModelSelection(modelSelection("openai", "gpt-5.4"));
 
     expect(useComposerDraftStore.getState().stickyModelSelectionByProvider.codex).toEqual(
-      modelSelection("codex", "gpt-5.4"),
+      modelSelection("openai", "gpt-5.4"),
     );
-    expect(useComposerDraftStore.getState().stickyActiveProvider).toBe("codex");
+    expect(useComposerDraftStore.getState().stickyActiveProvider).toBe("openai");
   });
 
   it("preserves current sticky model fields during storage-version migration", () => {
@@ -808,12 +808,12 @@ describe("composerDraftStore sticky composer settings", () => {
         draftThreadsByThreadId: {},
         projectDraftThreadIdByProjectId: {},
         stickyModelSelectionByProvider: {
-          claudeAgent: modelSelection("claudeAgent", "claude-opus-4-6", {
+          claudeAgent: modelSelection("anthropic", "claude-opus-4-6", {
             effort: "max",
           }),
         },
-        stickyActiveProvider: "claudeAgent",
-        stickyProvider: "codex",
+        stickyActiveProvider: "anthropic",
+        stickyProvider: "openai",
         stickyModel: "gpt-5",
       },
       4,
@@ -823,36 +823,36 @@ describe("composerDraftStore sticky composer settings", () => {
     };
 
     expect(migratedState.stickyModelSelectionByProvider.claudeAgent).toEqual(
-      modelSelection("claudeAgent", "claude-opus-4-6", {
+      modelSelection("anthropic", "claude-opus-4-6", {
         effort: "max",
       }),
     );
-    expect(migratedState.stickyActiveProvider).toBe("claudeAgent");
+    expect(migratedState.stickyActiveProvider).toBe("anthropic");
   });
 
   it("applies sticky activeProvider to new drafts", () => {
     const store = useComposerDraftStore.getState();
     const threadId = ThreadId.makeUnsafe("thread-sticky-active-provider");
 
-    store.setStickyModelSelection(modelSelection("claudeAgent", "claude-opus-4-6"));
+    store.setStickyModelSelection(modelSelection("anthropic", "claude-opus-4-6"));
     store.applyStickyState(threadId);
 
     expect(useComposerDraftStore.getState().draftsByThreadId[threadId]).toMatchObject({
       modelSelectionByProvider: {
-        claudeAgent: modelSelection("claudeAgent", "claude-opus-4-6"),
+        claudeAgent: modelSelection("anthropic", "claude-opus-4-6"),
       },
-      activeProvider: "claudeAgent",
+      activeProvider: "anthropic",
     });
   });
 
   it("does not overwrite existing model-scoped options with another sticky model", () => {
     const store = useComposerDraftStore.getState();
     const threadId = ThreadId.makeUnsafe("thread-sticky-model-scope");
-    const currentSelection = modelSelection("codex", "gpt-5.4", {
+    const currentSelection = modelSelection("openai", "gpt-5.4", {
       reasoningEffort: "xhigh",
     });
     store.setStickyModelSelection(
-      modelSelection("codex", "gpt-5.6-sol", { reasoningEffort: "ultra" }),
+      modelSelection("openai", "gpt-5.6-sol", { reasoningEffort: "ultra" }),
     );
     store.setModelSelection(threadId, currentSelection);
 
@@ -866,11 +866,11 @@ describe("composerDraftStore sticky composer settings", () => {
   it("restores sticky options for the same provider and model", () => {
     const store = useComposerDraftStore.getState();
     const threadId = ThreadId.makeUnsafe("thread-sticky-same-model");
-    const stickySelection = modelSelection("codex", "gpt-5.4", {
+    const stickySelection = modelSelection("openai", "gpt-5.4", {
       reasoningEffort: "xhigh",
     });
     store.setStickyModelSelection(stickySelection);
-    store.setModelSelection(threadId, modelSelection("codex", "gpt-5.4"));
+    store.setModelSelection(threadId, modelSelection("openai", "gpt-5.4"));
 
     store.applyStickyState(threadId);
 
@@ -883,14 +883,14 @@ describe("composerDraftStore sticky composer settings", () => {
     const store = useComposerDraftStore.getState();
 
     store.setStickyModelSelection(
-      modelSelection("claudeAgent", "claude-opus-4-6", {
+      modelSelection("anthropic", "claude-opus-4-6", {
         effort: "max",
         contextWindow: "1m",
       }),
     );
 
     expect(useComposerDraftStore.getState().stickyModelSelectionByProvider.claudeAgent).toEqual(
-      modelSelection("claudeAgent", "claude-opus-4-6", { effort: "max" }),
+      modelSelection("anthropic", "claude-opus-4-6", { effort: "max" }),
     );
   });
 
@@ -898,11 +898,11 @@ describe("composerDraftStore sticky composer settings", () => {
     const store = useComposerDraftStore.getState();
 
     store.setStickyModelSelection(
-      modelSelection("claudeAgent", "claude-opus-4-6", { contextWindow: "1m" }),
+      modelSelection("anthropic", "claude-opus-4-6", { contextWindow: "1m" }),
     );
 
     expect(useComposerDraftStore.getState().stickyModelSelectionByProvider.claudeAgent).toEqual(
-      modelSelection("claudeAgent", "claude-opus-4-6"),
+      modelSelection("anthropic", "claude-opus-4-6"),
     );
   });
 
@@ -912,7 +912,7 @@ describe("composerDraftStore sticky composer settings", () => {
 
     store.setProviderModelOptions(
       threadId,
-      "claudeAgent",
+      "anthropic",
       { effort: "xhigh", autoCompactWindow: "1m" },
       { persistSticky: true, model: "claude-opus-4-7" },
     );
@@ -922,7 +922,7 @@ describe("composerDraftStore sticky composer settings", () => {
         .claudeAgent?.options,
     ).toEqual({ effort: "xhigh", autoCompactWindow: "1m" });
     expect(useComposerDraftStore.getState().stickyModelSelectionByProvider.claudeAgent).toEqual(
-      modelSelection("claudeAgent", "claude-opus-4-7", { effort: "xhigh" }),
+      modelSelection("anthropic", "claude-opus-4-7", { effort: "xhigh" }),
     );
   });
 
@@ -932,7 +932,7 @@ describe("composerDraftStore sticky composer settings", () => {
 
     store.setProviderModelOptions(
       threadId,
-      "claudeAgent",
+      "anthropic",
       { effort: "xhigh", contextWindow: "1m" },
       { persistSticky: true, model: "claude-opus-4-7" },
     );
@@ -947,7 +947,7 @@ describe("composerDraftStore sticky composer settings", () => {
     );
     // The sticky snapshot only carries options that are safe to inherit.
     expect(state.stickyModelSelectionByProvider.claudeAgent).toEqual(
-      modelSelection("claudeAgent", "claude-opus-4-7", { effort: "xhigh" }),
+      modelSelection("anthropic", "claude-opus-4-7", { effort: "xhigh" }),
     );
   });
 
@@ -963,12 +963,12 @@ describe("composerDraftStore sticky composer settings", () => {
         draftThreadsByThreadId: {},
         projectDraftThreadIdByProjectId: {},
         stickyModelSelectionByProvider: {
-          claudeAgent: modelSelection("claudeAgent", "claude-opus-4-6", {
+          claudeAgent: modelSelection("anthropic", "claude-opus-4-6", {
             effort: "max",
             contextWindow: "1m",
           }),
         },
-        stickyActiveProvider: "claudeAgent",
+        stickyActiveProvider: "anthropic",
       },
       useComposerDraftStore.getState(),
     ) as {
@@ -976,7 +976,7 @@ describe("composerDraftStore sticky composer settings", () => {
     };
 
     expect(merged.stickyModelSelectionByProvider.claudeAgent).toEqual(
-      modelSelection("claudeAgent", "claude-opus-4-6", { effort: "max" }),
+      modelSelection("anthropic", "claude-opus-4-6", { effort: "max" }),
     );
   });
 });
@@ -992,17 +992,17 @@ describe("composerDraftStore provider-scoped option updates", () => {
     const store = useComposerDraftStore.getState();
     store.setModelSelection(
       threadId,
-      modelSelection("codex", "gpt-5.3-codex", {
+      modelSelection("openai", "gpt-5.3-codex", {
         reasoningEffort: "medium",
       }),
     );
-    store.setProviderModelOptions(threadId, "claudeAgent", { effort: "max" });
+    store.setProviderModelOptions(threadId, "anthropic", { effort: "max" });
     const draft = useComposerDraftStore.getState().draftsByThreadId[threadId];
     expect(draft?.modelSelectionByProvider.codex).toEqual(
-      modelSelection("codex", "gpt-5.3-codex", { reasoningEffort: "medium" }),
+      modelSelection("openai", "gpt-5.3-codex", { reasoningEffort: "medium" }),
     );
     expect(draft?.modelSelectionByProvider.claudeAgent?.options).toEqual({ effort: "max" });
-    expect(draft?.activeProvider).toBe("codex");
+    expect(draft?.activeProvider).toBe("openai");
   });
 
   it("retains Claude xhigh effort in provider-scoped options", () => {
@@ -1010,14 +1010,14 @@ describe("composerDraftStore provider-scoped option updates", () => {
 
     store.setProviderModelOptions(
       threadId,
-      "claudeAgent",
+      "anthropic",
       { effort: "xhigh" },
       { model: "claude-opus-4-7" },
     );
 
     const draft = useComposerDraftStore.getState().draftsByThreadId[threadId];
     expect(draft?.modelSelectionByProvider.claudeAgent).toEqual(
-      modelSelection("claudeAgent", "claude-opus-4-7", {
+      modelSelection("anthropic", "claude-opus-4-7", {
         effort: "xhigh",
       }),
     );
@@ -1028,14 +1028,14 @@ describe("composerDraftStore provider-scoped option updates", () => {
 
     store.setProviderModelOptions(
       threadId,
-      "grok",
+      "openai",
       { reasoningEffort: "high" },
       { model: "grok-build" },
     );
 
     const draft = useComposerDraftStore.getState().draftsByThreadId[threadId];
     expect(draft?.modelSelectionByProvider.grok).toEqual(
-      modelSelection("grok", "grok-build", {
+      modelSelection("openai", "grok-build", {
         reasoningEffort: "high",
       }),
     );

@@ -309,7 +309,7 @@ function createSnapshotForTargetUser(options: {
         title: "Project",
         workspaceRoot: "/repo/project",
         defaultModelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5",
         },
         scripts: [],
@@ -324,7 +324,7 @@ function createSnapshotForTargetUser(options: {
         projectId: PROJECT_ID,
         title: THREAD_TITLE,
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5",
         },
         interactionMode: "default",
@@ -344,7 +344,7 @@ function createSnapshotForTargetUser(options: {
         session: {
           threadId: THREAD_ID,
           status: options.sessionStatus ?? "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "full-access",
           activeTurnId:
             options.sessionStatus === "running"
@@ -524,7 +524,7 @@ function addThreadToSnapshot(
         projectId: PROJECT_ID,
         title: "New thread",
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5",
         },
         interactionMode: "default",
@@ -544,7 +544,7 @@ function addThreadToSnapshot(
         session: {
           threadId,
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "full-access",
           activeTurnId: null,
           lastError: null,
@@ -616,7 +616,7 @@ function withOpenProjectPickerFixtures(snapshot: OrchestrationReadModel): Orches
         title: "Other Project",
         workspaceRoot: "/repo/other",
         defaultModelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5",
         },
         scripts: [],
@@ -639,7 +639,7 @@ function withHomeChatProject(snapshot: OrchestrationReadModel): OrchestrationRea
         title: "Home",
         workspaceRoot: "/Users/tester",
         defaultModelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5",
         },
         scripts: [],
@@ -672,7 +672,7 @@ function withStudioProject(snapshot: OrchestrationReadModel): OrchestrationReadM
         title: "Studio",
         workspaceRoot: "/Users/tester/Documents/Caide/Studio",
         defaultModelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5",
         },
         scripts: [],
@@ -1143,7 +1143,7 @@ function recordProjectCreateCommand(command: unknown): boolean {
             typeof command.defaultModelSelection === "object"
               ? (command.defaultModelSelection as OrchestrationReadModel["projects"][number]["defaultModelSelection"])
               : {
-                  provider: "codex" as const,
+                  provider: "openai" as const,
                   model: "gpt-5",
                 },
           scripts: [],
@@ -3866,7 +3866,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
       },
     });
     useComposerDraftStore.getState().setModelSelection(THREAD_ID, {
-      provider: "codex",
+      provider: "openai",
       model: "gpt-5.4",
       options: {
         reasoningEffort: "low",
@@ -3918,7 +3918,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
             associatedWorktreeBranch: "feature/draft-automation",
             associatedWorktreeRef: "feature/draft-automation",
             modelSelection: {
-              provider: "codex",
+              provider: "openai",
               model: "gpt-5.4",
               options: {
                 reasoningEffort: "low",
@@ -4409,7 +4409,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
         expect(
           useComposerDraftStore.getState().draftsByThreadId[THREAD_ID]?.modelSelectionByProvider
             .codex,
-        ).toMatchObject({ provider: "codex", model: "gpt-5.5" });
+        ).toMatchObject({ provider: "openai", model: "gpt-5.5" });
       });
       expect(document.querySelector('[data-slot="menu-popup"]')).toBeNull();
 
@@ -4418,7 +4418,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
         expect(
           useComposerDraftStore.getState().draftsByThreadId[THREAD_ID]?.modelSelectionByProvider
             .codex,
-        ).toMatchObject({ provider: "codex", model: "gpt-5.2" });
+        ).toMatchObject({ provider: "openai", model: "gpt-5.2" });
       });
     } finally {
       await mounted.cleanup();
@@ -4967,11 +4967,11 @@ describe("ChatView timeline estimator parity (full app)", () => {
         pastedTexts: [],
         skills: [],
         mentions: [],
-        selectedProvider: "codex",
+        selectedProvider: "openai",
         selectedModel: "gpt-5",
         selectedPromptEffort: null,
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5",
         },
         runtimeMode: "full-access",
@@ -4993,11 +4993,11 @@ describe("ChatView timeline estimator parity (full app)", () => {
         pastedTexts: [],
         skills: [],
         mentions: [],
-        selectedProvider: "codex",
+        selectedProvider: "openai",
         selectedModel: "gpt-5",
         selectedPromptEffort: null,
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5",
         },
         runtimeMode: "full-access",
@@ -5086,11 +5086,11 @@ describe("ChatView timeline estimator parity (full app)", () => {
         pastedTexts: [],
         skills: [],
         mentions: [],
-        selectedProvider: "codex",
+        selectedProvider: "openai",
         selectedModel: "gpt-5",
         selectedPromptEffort: null,
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5",
         },
         runtimeMode: "full-access",
@@ -5170,11 +5170,11 @@ describe("ChatView timeline estimator parity (full app)", () => {
         pastedTexts: [],
         skills: [],
         mentions: [],
-        selectedProvider: "codex",
+        selectedProvider: "openai",
         selectedModel: "gpt-5",
         selectedPromptEffort: null,
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5",
         },
         runtimeMode: "full-access",
@@ -6212,7 +6212,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
     useComposerDraftStore.setState({
       stickyModelSelectionByProvider: {
         codex: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5.3-codex",
           options: {
             reasoningEffort: "medium",
@@ -6220,7 +6220,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
           },
         },
       },
-      stickyActiveProvider: "codex",
+      stickyActiveProvider: "openai",
     });
 
     const mounted = await mountChatView({
@@ -6247,14 +6247,14 @@ describe("ChatView timeline estimator parity (full app)", () => {
       expect(useComposerDraftStore.getState().draftsByThreadId[newThreadId]).toMatchObject({
         modelSelectionByProvider: {
           codex: {
-            provider: "codex",
+            provider: "openai",
             model: "gpt-5.3-codex",
             options: {
               fastMode: true,
             },
           },
         },
-        activeProvider: "codex",
+        activeProvider: "openai",
       });
     } finally {
       await mounted.cleanup();
@@ -6677,7 +6677,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
     useComposerDraftStore.setState({
       stickyModelSelectionByProvider: {
         claudeAgent: {
-          provider: "claudeAgent",
+          provider: "anthropic",
           model: "claude-opus-4-6",
           options: {
             effort: "max",
@@ -6685,7 +6685,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
           },
         },
       },
-      stickyActiveProvider: "claudeAgent",
+      stickyActiveProvider: "anthropic",
     });
 
     const mounted = await mountChatView({
@@ -6712,7 +6712,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
       expect(useComposerDraftStore.getState().draftsByThreadId[newThreadId]).toMatchObject({
         modelSelectionByProvider: {
           claudeAgent: {
-            provider: "claudeAgent",
+            provider: "anthropic",
             model: "claude-opus-4-6",
             options: {
               effort: "max",
@@ -6720,7 +6720,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
             },
           },
         },
-        activeProvider: "claudeAgent",
+        activeProvider: "anthropic",
       });
     } finally {
       await mounted.cleanup();
@@ -6759,7 +6759,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
     useComposerDraftStore.setState({
       stickyModelSelectionByProvider: {
         codex: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5.3-codex",
           options: {
             reasoningEffort: "medium",
@@ -6767,7 +6767,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
           },
         },
       },
-      stickyActiveProvider: "codex",
+      stickyActiveProvider: "openai",
     });
 
     const mounted = await mountChatView({
@@ -6794,18 +6794,18 @@ describe("ChatView timeline estimator parity (full app)", () => {
       expect(useComposerDraftStore.getState().draftsByThreadId[threadId]).toMatchObject({
         modelSelectionByProvider: {
           codex: {
-            provider: "codex",
+            provider: "openai",
             model: "gpt-5.3-codex",
             options: {
               fastMode: true,
             },
           },
         },
-        activeProvider: "codex",
+        activeProvider: "openai",
       });
 
       useComposerDraftStore.getState().setModelSelection(threadId, {
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5.4",
         options: {
           reasoningEffort: "low",
@@ -6817,7 +6817,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
           expect(useComposerDraftStore.getState().draftsByThreadId[threadId]).toMatchObject({
             modelSelectionByProvider: {
               codex: {
-                provider: "codex",
+                provider: "openai",
                 model: "gpt-5.4",
                 options: {
                   reasoningEffort: "low",
@@ -6825,7 +6825,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
                 },
               },
             },
-            activeProvider: "codex",
+            activeProvider: "openai",
           });
         },
         { timeout: 8_000, interval: 16 },
@@ -6995,14 +6995,14 @@ describe("ChatView timeline estimator parity (full app)", () => {
           queuedTurns: [],
           modelSelectionByProvider: {
             claudeAgent: {
-              provider: "claudeAgent",
+              provider: "anthropic",
               model: "claude-opus-4-6",
               options: {
                 effort: "max",
               },
             },
           },
-          activeProvider: "claudeAgent",
+          activeProvider: "anthropic",
           runtimeMode: null,
           interactionMode: null,
           mode: null,
@@ -7089,7 +7089,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
             worktreePath: "/repo/project/.worktrees/terminal-title",
             runtimeMode: "approval-required",
             modelSelection: {
-              provider: "claudeAgent",
+              provider: "anthropic",
               model: "claude-opus-4-6",
               options: {
                 effort: "max",

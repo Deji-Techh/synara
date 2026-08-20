@@ -29,57 +29,11 @@ export function normalizeProviderStatusForLocalConfig(input: {
   customBinaryPath?: string | null | undefined;
   confirmedCustomBinaryPath?: string | null | undefined;
 }): ServerProviderStatus | null {
-  const status = input.status ?? null;
-  if (!status) {
-    return null;
-  }
-
-  const customBinaryPath = normalizeCustomBinaryPath(input.customBinaryPath);
-  if (!customBinaryPath) {
-    return status;
-  }
-
-  if (normalizeCustomBinaryPath(status.autoRuntimeModeBinaryPath) === customBinaryPath) {
-    return status;
-  }
-
-  const {
-    supportsAutoRuntimeMode: _staleAutoSupport,
-    autoRuntimeModeBinaryPath: _staleAutoBinaryPath,
-    ...statusWithoutStaleAutoCapability
-  } = status;
-
-  if (status.available || status.authStatus !== "unknown") {
-    return statusWithoutStaleAutoCapability;
-  }
-
-  if (normalizeCustomBinaryPath(input.confirmedCustomBinaryPath) === customBinaryPath) {
-    // Only the exact path used by a successful session can suppress the warning.
-    return {
-      provider: status.provider,
-      available: true,
-      status: "ready",
-      authStatus: status.authStatus,
-      checkedAt: status.checkedAt,
-      ...(status.authType ? { authType: status.authType } : {}),
-      ...(status.authLabel ? { authLabel: status.authLabel } : {}),
-      ...(status.voiceTranscriptionAvailable !== undefined
-        ? { voiceTranscriptionAvailable: status.voiceTranscriptionAvailable }
-        : {}),
-    };
-  }
-
-  return {
-    ...statusWithoutStaleAutoCapability,
-    available: true,
-    status: "warning",
-    message: `${PROVIDER_DISPLAY_NAMES[input.provider]} uses a custom local binary path in this app. Availability will be confirmed when you start a session.`,
-  };
+  return input.status ?? null;
 }
 
 export function isProviderUsable(status: ServerProviderStatus | null | undefined): boolean {
   if (!status) {
-    // Missing status means the health check has not confirmed an installed provider yet.
     return false;
   }
   return status.available && status.authStatus !== "unauthenticated";
@@ -106,7 +60,6 @@ export function findProviderStatus(
   return statuses.find((status) => status.provider === provider) ?? null;
 }
 
-// Shared send gate used by chat, Kanban, shortcuts, and handoff flows.
 export function resolveProviderSendAvailability(input: {
   readonly provider: ProviderKind;
   readonly statuses: readonly ServerProviderStatus[];
@@ -124,7 +77,6 @@ function shouldRefreshBeforeBlocking(status: ServerProviderStatus | null): boole
   return !status || !status.available || status.authStatus === "unauthenticated";
 }
 
-// Re-check a blocked provider once before surfacing stale install/auth state to the user.
 export async function resolveProviderSendAvailabilityWithRefresh(input: {
   readonly provider: ProviderKind;
   readonly statuses: readonly ServerProviderStatus[];

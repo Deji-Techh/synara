@@ -196,8 +196,8 @@ export function modelSelectionsEqual(left: ModelSelection, right: ModelSelection
     left.provider === right.provider &&
     left.model === right.model &&
     JSON.stringify(left.options ?? null) === JSON.stringify(right.options ?? null) &&
-    (left.provider !== "claudeAgent" ||
-      right.provider !== "claudeAgent" ||
+    (left.provider !== "anthropic" ||
+      right.provider !== "anthropic" ||
       left.supportsAutoMode === right.supportsAutoMode)
   );
 }

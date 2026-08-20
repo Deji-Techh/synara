@@ -30,7 +30,7 @@ describe("RateLimitsPanel helpers", () => {
       {
         activities: [
           makeActivity("activity-1", "account.rate-limits.updated", {
-            provider: "codex",
+            provider: "openai",
             rateLimitsByLimitId: {
               short: {
                 primary: {
@@ -76,7 +76,7 @@ describe("RateLimitsPanel helpers", () => {
   it("keeps the most constrained row when multiple providers report the same window", () => {
     const rows = deriveVisibleRateLimitRows([
       {
-        provider: "codex",
+        provider: "openai",
         updatedAt: "2099-04-08T18:00:00.000Z",
         limits: [
           {
@@ -88,7 +88,7 @@ describe("RateLimitsPanel helpers", () => {
         ],
       },
       {
-        provider: "claudeAgent",
+        provider: "anthropic",
         updatedAt: "2099-04-08T18:05:00.000Z",
         limits: [
           {
@@ -117,9 +117,9 @@ describe("RateLimitsPanel helpers", () => {
       {
         activities: [
           makeActivity("activity-1", "account.rate-limits.updated", {
-            provider: "codex",
+            provider: "openai",
             rateLimits: {
-              limitId: "codex",
+              limitId: "openai",
               primary: {
                 usedPercent: 12,
                 windowDurationMins: 300,
@@ -161,7 +161,7 @@ describe("RateLimitsPanel helpers", () => {
       {
         activities: [
           makeActivity("activity-1", "account.rate-limits.updated", {
-            provider: "codex",
+            provider: "openai",
             rateLimits: {
               rateLimits: {
                 primary: {
@@ -204,7 +204,7 @@ describe("RateLimitsPanel helpers", () => {
       {
         activities: [
           makeActivity("activity-1", "account.rate-limits.updated", {
-            provider: "claudeAgent",
+            provider: "anthropic",
             rate_limit_info: {
               status: "allowed_warning",
               rateLimitType: "five_hour",

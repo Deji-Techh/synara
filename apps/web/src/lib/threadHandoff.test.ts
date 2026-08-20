@@ -113,28 +113,28 @@ describe("threadHandoff", () => {
 
     expect(
       resolveAvailableHandoffTargetProviders({
-        sourceProvider: "codex",
+        sourceProvider: "openai",
         providerSettings,
         providerStatuses: [
-          readyStatus("codex"),
-          readyStatus("claudeAgent"),
-          readyStatus("cursor", { available: false, status: "error" }),
-          readyStatus("antigravity"),
-          readyStatus("grok", { authStatus: "unauthenticated" }),
-          readyStatus("kilo", { authStatus: "unknown" }),
+          readyStatus("openai"),
+          readyStatus("anthropic"),
+          readyStatus("openai", { available: false, status: "error" }),
+          readyStatus("google"),
+          readyStatus("openai", { authStatus: "unauthenticated" }),
+          readyStatus("openai", { authStatus: "unknown" }),
         ],
       }),
-    ).toEqual(["claudeAgent", "kilo"]);
+    ).toEqual(["anthropic", "openai"]);
   });
 
   it("does not expose targets before enabled-provider settings are available", () => {
     expect(
       resolveAvailableHandoffTargetProviders({
-        sourceProvider: "codex",
+        sourceProvider: "openai",
         providerSettings: undefined,
         providerStatuses: [
           {
-            provider: "claudeAgent",
+            provider: "anthropic",
             status: "ready",
             available: true,
             authStatus: "authenticated",
@@ -154,7 +154,7 @@ describe("threadHandoff", () => {
 
   it("prefers sticky model selection for the chosen handoff target", () => {
     const stickySelection = {
-      provider: "antigravity",
+      provider: "google",
       model: "Gemini 3.5 Flash",
     } satisfies ModelSelection;
 
@@ -162,13 +162,13 @@ describe("threadHandoff", () => {
       resolveThreadHandoffModelSelection({
         sourceThread: {
           modelSelection: {
-            provider: "claudeAgent",
+            provider: "anthropic",
             model: "claude-sonnet-4-6",
           },
         },
-        targetProvider: "antigravity",
+        targetProvider: "google",
         projectDefaultModelSelection: {
-          provider: "antigravity",
+          provider: "google",
           model: "Claude Sonnet 4.6",
         },
         stickyModelSelectionByProvider: {
@@ -183,16 +183,16 @@ describe("threadHandoff", () => {
       resolveThreadHandoffModelSelection({
         sourceThread: {
           modelSelection: {
-            provider: "antigravity",
+            provider: "google",
             model: "Gemini 3.5 Flash",
           },
         },
-        targetProvider: "codex",
+        targetProvider: "openai",
         projectDefaultModelSelection: null,
         stickyModelSelectionByProvider: {},
       }),
     ).toEqual({
-      provider: "codex",
+      provider: "openai",
       model: "gpt-5.5",
     });
   });

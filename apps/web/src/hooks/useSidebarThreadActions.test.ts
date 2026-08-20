@@ -207,7 +207,7 @@ function makeThread(id: ThreadId, overrides: Partial<SidebarThreadSummary> = {})
     id,
     projectId: PROJECT_ID,
     title: String(id),
-    modelSelection: { provider: "codex", model: "gpt-5.6" },
+    modelSelection: { provider: "openai", model: "gpt-5.6" },
     interactionMode: "default",
     branch: null,
     worktreePath: null,

@@ -40,7 +40,7 @@ const project = {
   cwd: "/repo",
 } as Project;
 
-const selectedModelSelection = { provider: "codex", model: "gpt-5.6" } as const;
+const selectedModelSelection = { provider: "openai", model: "gpt-5.6" } as const;
 
 function makeApi(input?: {
   dispatchCommand?: ReturnType<typeof vi.fn>;

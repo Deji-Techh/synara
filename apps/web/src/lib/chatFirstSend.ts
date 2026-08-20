@@ -103,7 +103,7 @@ export function resolveFirstSendTarget(input: {
         kind: "chat",
         createWorkspaceRootIfMissing: true,
         defaultModelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: DEFAULT_MODEL_BY_PROVIDER.codex,
         },
       },
@@ -129,7 +129,7 @@ export function resolveFirstSendTarget(input: {
       kind: "project",
       createWorkspaceRootIfMissing: false,
       defaultModelSelection: {
-        provider: "codex",
+        provider: "openai",
         model: DEFAULT_MODEL_BY_PROVIDER.codex,
       },
     },

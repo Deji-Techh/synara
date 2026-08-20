@@ -759,7 +759,7 @@ describe("composerDraftStore copyTransferableComposerState", () => {
     useComposerDraftStore.getState().setPrompt(sourceThreadId, "follow-up for the other provider");
     useComposerDraftStore.getState().setModelSelection(
       targetThreadId,
-      modelSelection("claudeAgent", "claude-sonnet-4-6", {
+      modelSelection("anthropic", "claude-sonnet-4-6", {
         effort: "high",
       }),
     );
@@ -770,14 +770,14 @@ describe("composerDraftStore copyTransferableComposerState", () => {
       prompt: "follow-up for the other provider",
       modelSelectionByProvider: {
         claudeAgent: {
-          provider: "claudeAgent",
+          provider: "anthropic",
           model: "claude-sonnet-4-6",
           options: {
             effort: "high",
           },
         },
       },
-      activeProvider: "claudeAgent",
+      activeProvider: "anthropic",
     });
   });
 

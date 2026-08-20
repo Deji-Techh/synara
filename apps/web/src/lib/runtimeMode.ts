@@ -21,7 +21,7 @@ export function providerModelSupportsAutoRuntimeMode(
   }
   return (
     providerStatus?.supportsAutoRuntimeMode === true &&
-    (provider !== "claudeAgent" || runtimeModel?.supportsAutoMode === true)
+    (provider !== "anthropic" || runtimeModel?.supportsAutoMode === true)
   );
 }
 

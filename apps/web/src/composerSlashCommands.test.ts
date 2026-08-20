@@ -287,7 +287,7 @@ describe("composerSlashCommands", () => {
 
   it("filters app slash commands when a provider exposes the same command natively", () => {
     const availableCommands = getAvailableComposerSlashCommands({
-      provider: "claudeAgent",
+      provider: "anthropic",
       supportsFastSlashCommand: true,
       canOfferCompactCommand: true,
       canOfferReviewCommand: true,
@@ -303,7 +303,7 @@ describe("composerSlashCommands", () => {
 
   it("keeps app-level /review available for codex even when native review exists", () => {
     const availableCommands = getAvailableComposerSlashCommands({
-      provider: "codex",
+      provider: "openai",
       supportsFastSlashCommand: true,
       canOfferCompactCommand: true,
       canOfferReviewCommand: true,
@@ -314,17 +314,17 @@ describe("composerSlashCommands", () => {
     });
 
     expect(availableCommands).toContain("review");
-    expect(shouldHideProviderNativeCommandFromComposerMenu("codex", "review")).toBe(true);
+    expect(shouldHideProviderNativeCommandFromComposerMenu("openai", "review")).toBe(true);
   });
 
   it("keeps app-level /review for opencode and does not treat review as text-native", () => {
-    expect(providerSupportsTextNativeReviewCommand("opencode", ["review"])).toBe(false);
-    expect(providerSupportsTextNativeReviewCommand("claudeAgent", ["review"])).toBe(true);
+    expect(providerSupportsTextNativeReviewCommand("openai", ["review"])).toBe(false);
+    expect(providerSupportsTextNativeReviewCommand("anthropic", ["review"])).toBe(true);
   });
 
   it("keeps app-level /automation available even if a provider exposes a native collision", () => {
     const availableCommands = getAvailableComposerSlashCommands({
-      provider: "claudeAgent",
+      provider: "anthropic",
       supportsFastSlashCommand: true,
       canOfferCompactCommand: true,
       canOfferReviewCommand: true,
@@ -335,12 +335,12 @@ describe("composerSlashCommands", () => {
     });
 
     expect(availableCommands).toContain("automation");
-    expect(shouldHideProviderNativeCommandFromComposerMenu("claudeAgent", "automation")).toBe(true);
+    expect(shouldHideProviderNativeCommandFromComposerMenu("anthropic", "automation")).toBe(true);
   });
 
   it("keeps Feedback Caide ahead of provider-native /feedback", () => {
     const availableCommands = getAvailableComposerSlashCommands({
-      provider: "claudeAgent",
+      provider: "anthropic",
       supportsFastSlashCommand: true,
       canOfferCompactCommand: true,
       canOfferReviewCommand: true,
@@ -351,13 +351,13 @@ describe("composerSlashCommands", () => {
     });
 
     expect(availableCommands).toContain("feedback");
-    expect(shouldHideProviderNativeCommandFromComposerMenu("claudeAgent", "feedback")).toBe(true);
+    expect(shouldHideProviderNativeCommandFromComposerMenu("anthropic", "feedback")).toBe(true);
   });
 
   it("only exposes Caide-owned app commands for claude", () => {
     expect(
       getAvailableComposerSlashCommands({
-        provider: "claudeAgent",
+        provider: "anthropic",
         supportsFastSlashCommand: true,
         canOfferCompactCommand: true,
         canOfferReviewCommand: true,
@@ -395,7 +395,7 @@ describe("composerSlashCommands", () => {
   it("offers the app-level /export command on every provider", () => {
     expect(
       getAvailableComposerSlashCommands({
-        provider: "codex",
+        provider: "openai",
         supportsFastSlashCommand: true,
         canOfferCompactCommand: true,
         canOfferReviewCommand: true,
@@ -409,7 +409,7 @@ describe("composerSlashCommands", () => {
   it("omits the app-level /export command when no server thread exists", () => {
     expect(
       getAvailableComposerSlashCommands({
-        provider: "codex",
+        provider: "openai",
         supportsFastSlashCommand: true,
         canOfferCompactCommand: true,
         canOfferReviewCommand: true,
@@ -422,7 +422,7 @@ describe("composerSlashCommands", () => {
 
   it("keeps app-level /export available even if a provider exposes a native collision", () => {
     const availableCommands = getAvailableComposerSlashCommands({
-      provider: "claudeAgent",
+      provider: "anthropic",
       supportsFastSlashCommand: true,
       canOfferCompactCommand: true,
       canOfferReviewCommand: true,
@@ -433,7 +433,7 @@ describe("composerSlashCommands", () => {
     });
 
     expect(availableCommands).toContain("export");
-    expect(shouldHideProviderNativeCommandFromComposerMenu("claudeAgent", "export")).toBe(true);
+    expect(shouldHideProviderNativeCommandFromComposerMenu("anthropic", "export")).toBe(true);
   });
 
   it("keeps native /export visible on surfaces without app-level /export", () => {
@@ -441,12 +441,12 @@ describe("composerSlashCommands", () => {
     const mainComposerAppCommands = new Set(["clear", "export", "model"]);
 
     expect(
-      shouldHideProviderNativeCommandFromComposerMenu("claudeAgent", "export", {
+      shouldHideProviderNativeCommandFromComposerMenu("anthropic", "export", {
         availableAppCommands: kanbanAppCommands,
       }),
     ).toBe(false);
     expect(
-      shouldHideProviderNativeCommandFromComposerMenu("claudeAgent", "export", {
+      shouldHideProviderNativeCommandFromComposerMenu("anthropic", "export", {
         availableAppCommands: mainComposerAppCommands,
       }),
     ).toBe(true);
@@ -455,7 +455,7 @@ describe("composerSlashCommands", () => {
   it("only offers /compact when Codex compaction is available", () => {
     expect(
       getAvailableComposerSlashCommands({
-        provider: "codex",
+        provider: "openai",
         supportsFastSlashCommand: true,
         canOfferCompactCommand: true,
         canOfferReviewCommand: true,
@@ -467,7 +467,7 @@ describe("composerSlashCommands", () => {
 
     expect(
       getAvailableComposerSlashCommands({
-        provider: "codex",
+        provider: "openai",
         supportsFastSlashCommand: true,
         canOfferCompactCommand: false,
         canOfferReviewCommand: true,
@@ -481,7 +481,7 @@ describe("composerSlashCommands", () => {
   it("exposes shared app slash commands for Antigravity", () => {
     expect(
       getAvailableComposerSlashCommands({
-        provider: "antigravity",
+        provider: "google",
         supportsFastSlashCommand: false,
         canOfferCompactCommand: false,
         canOfferReviewCommand: true,
@@ -525,7 +525,7 @@ describe("composerSlashCommands", () => {
   });
 
   it("treats claude aliases like /fork as provider-native collisions", () => {
-    expect(hasProviderNativeSlashCommand("claudeAgent", ["branch", "model"], "fork")).toBe(true);
-    expect(hasProviderNativeSlashCommand("claudeAgent", ["clear"], "reset")).toBe(true);
+    expect(hasProviderNativeSlashCommand("anthropic", ["branch", "model"], "fork")).toBe(true);
+    expect(hasProviderNativeSlashCommand("anthropic", ["clear"], "reset")).toBe(true);
   });
 });

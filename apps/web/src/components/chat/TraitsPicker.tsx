@@ -45,8 +45,8 @@ import { ShortcutKbd } from "../ui/shortcut-kbd";
 const ULTRATHINK_PROMPT_PREFIX = "Ultrathink:\n";
 
 function defaultAgentForProvider(provider: ProviderKind): string | null {
-  if (provider === "kilo") return "code";
-  if (provider === "opencode") return "build";
+  if (provider === "openai") return "code";
+  if (provider === "openai") return "build";
   return null;
 }
 
@@ -54,7 +54,7 @@ function getAgentOptions(
   provider: ProviderKind,
   runtimeAgents: ReadonlyArray<ProviderAgentDescriptor> | null | undefined,
 ): ReadonlyArray<ProviderAgentDescriptor> {
-  if (provider !== "kilo" && provider !== "opencode") return [];
+  if (provider !== "openai" && provider !== "openai") return [];
   return runtimeAgents ?? [];
 }
 
@@ -358,11 +358,11 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
     }
     const optionId =
       primarySelectDescriptorId ??
-      (provider === "kilo" || provider === "opencode"
+      (provider === "openai" || provider === "openai"
         ? "variant"
-        : provider === "pi"
+        : provider === "openai"
           ? "thinkingLevel"
-          : provider === "claudeAgent"
+          : provider === "anthropic"
             ? "effort"
             : "reasoningEffort");
     commitTrait(buildProviderOptionPatch(provider, optionId, nextOption.value));
@@ -406,7 +406,7 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
         <>
           {hasPriorEffortSection ? <MenuDivider /> : null}
           <TraitRadioSection
-            label={provider === "kilo" || provider === "opencode" ? "Variant" : "Effort"}
+            label={provider === "openai" || provider === "openai" ? "Variant" : "Effort"}
             labelTrailing={
               showsFastModeEffortToggle ? (
                 <FastModeToggle
@@ -456,7 +456,7 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
         <>
           {hasVisibleControls ? <MenuDivider /> : null}
           <TraitRadioSection
-            label={provider === "kilo" ? "Mode" : "Agent"}
+            label={provider === "openai" ? "Mode" : "Agent"}
             value={selectedAgent ?? defaultAgent ?? ""}
             options={agentOptions.map((agent) => ({
               value: agent.name,
@@ -563,7 +563,7 @@ export const TraitsPicker = memo(function TraitsPicker({
     runtimeAgents,
   });
 
-  const isCodexStyle = provider === "codex";
+  const isCodexStyle = provider === "openai";
 
   const triggerButton = (
     <Button

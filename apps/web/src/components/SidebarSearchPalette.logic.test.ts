@@ -87,7 +87,7 @@ const themes: SidebarSearchTheme[] = [
     label: "Codex",
     description: "Apply to the current dark theme slot.",
     keywords: ["appearance", "theme", "dark"],
-    codeThemeId: "codex",
+    codeThemeId: "openai",
     variant: "dark",
     isActive: true,
   },
@@ -111,7 +111,7 @@ const threads: SidebarSearchThread[] = [
     projectName: "Alpha Repo",
     projectRemoteName: "Alpha Repo",
     spaceName: "Work",
-    provider: "claudeAgent",
+    provider: "anthropic",
     createdAt: "2026-04-09T09:00:00.000Z",
     updatedAt: "2026-04-09T11:30:00.000Z",
     messages: [
@@ -127,7 +127,7 @@ const threads: SidebarSearchThread[] = [
     projectName: "Alpha Repo",
     projectRemoteName: "Alpha Repo",
     spaceName: "Work",
-    provider: "codex",
+    provider: "openai",
     createdAt: "2026-04-09T08:00:00.000Z",
     updatedAt: "2026-04-09T10:30:00.000Z",
     messages: [
@@ -146,7 +146,7 @@ const threads: SidebarSearchThread[] = [
     projectName: "Docs",
     projectRemoteName: "Beta Repo",
     spaceName: "Void",
-    provider: "claudeAgent",
+    provider: "anthropic",
     createdAt: "2026-04-09T07:00:00.000Z",
     updatedAt: "2026-04-09T09:00:00.000Z",
     messages: [

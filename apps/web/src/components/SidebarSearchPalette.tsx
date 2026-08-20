@@ -95,7 +95,7 @@ interface SidebarSearchPaletteProps {
 
 export type ImportProviderKind = Extract<
   ProviderKind,
-  "codex" | "claudeAgent" | "cursor" | "kilo" | "opencode"
+  "openai" | "anthropic" | "openai" | "openai" | "openai"
 >;
 
 function actionHandler(
@@ -353,7 +353,7 @@ export function SidebarSearchPalette(props: SidebarSearchPaletteProps) {
   const [query, setQuery] = useState("");
   const [highlightedItemValue, setHighlightedItemValue] = useState<string | null>(null);
   const [importProviderState, setImportProvider] = useState<ImportProviderKind>(
-    props.importProviders[0] ?? "codex",
+    props.importProviders[0] ?? "openai",
   );
   const [importId, setImportId] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
@@ -362,7 +362,7 @@ export function SidebarSearchPalette(props: SidebarSearchPaletteProps) {
   // the first available one, and the user's pick resurfaces if it comes back.
   const importProvider = props.importProviders.includes(importProviderState)
     ? importProviderState
-    : (props.importProviders[0] ?? "codex");
+    : (props.importProviders[0] ?? "openai");
   // Error keyed to the query it was produced for: editing the query derives
   // straight back to null with no state-clearing effect.
   const [addProjectErrorState, setAddProjectErrorState] = useState<{
@@ -386,7 +386,7 @@ export function SidebarSearchPalette(props: SidebarSearchPaletteProps) {
     const timeoutId = window.setTimeout(() => {
       setQuery("");
       setHighlightedItemValue(null);
-      setImportProvider(props.importProviders[0] ?? "codex");
+      setImportProvider(props.importProviders[0] ?? "openai");
       setImportId("");
       setImportError(null);
       setIsImporting(false);
@@ -470,15 +470,15 @@ export function SidebarSearchPalette(props: SidebarSearchPaletteProps) {
     matchedCurrentThemes.length > 0 ||
     matchedProjects.length > 0 ||
     matchedThreads.length > 0;
-  const importFieldLabel = importProvider === "codex" ? "Thread ID" : "Session ID";
+  const importFieldLabel = importProvider === "openai" ? "Thread ID" : "Session ID";
   const importPlaceholder =
-    importProvider === "claudeAgent"
+    importProvider === "anthropic"
       ? "Paste a Claude session id"
-      : importProvider === "cursor"
+      : importProvider === "openai"
         ? "Paste a Cursor session id"
-        : importProvider === "kilo"
+        : importProvider === "openai"
           ? "Paste a Kilo session id"
-          : importProvider === "opencode"
+          : importProvider === "openai"
             ? "Paste an OpenCode session id"
             : "Paste a Codex thread id";
 
@@ -634,13 +634,13 @@ export function SidebarSearchPalette(props: SidebarSearchPaletteProps) {
                       onClick={() => setImportProvider(provider)}
                     >
                       <ProviderIcon provider={provider} />
-                      {provider === "claudeAgent"
+                      {provider === "anthropic"
                         ? "Claude"
-                        : provider === "cursor"
+                        : provider === "openai"
                           ? "Cursor"
-                          : provider === "kilo"
+                          : provider === "openai"
                             ? "Kilo"
-                            : provider === "opencode"
+                            : provider === "openai"
                               ? "OpenCode"
                               : "Codex"}
                     </Button>
@@ -669,13 +669,13 @@ export function SidebarSearchPalette(props: SidebarSearchPaletteProps) {
                   }}
                 />
                 <p className="text-xs text-muted-foreground">
-                  {importProvider === "claudeAgent"
+                  {importProvider === "anthropic"
                     ? "Claude resumes a persisted session by session id."
-                    : importProvider === "cursor"
+                    : importProvider === "openai"
                       ? "Cursor resumes a persisted session by session id."
-                      : importProvider === "kilo"
+                      : importProvider === "openai"
                         ? "Kilo resumes a persisted session by session id."
-                        : importProvider === "opencode"
+                        : importProvider === "openai"
                           ? "OpenCode resumes a persisted session by session id."
                           : "Codex resumes a persisted thread by thread id."}
                 </p>
@@ -856,7 +856,7 @@ export function SidebarSearchPalette(props: SidebarSearchPaletteProps) {
                               if (action.id === "import-thread") {
                                 setImportError(null);
                                 setImportId("");
-                                setImportProvider(props.importProviders[0] ?? "codex");
+                                setImportProvider(props.importProviders[0] ?? "openai");
                                 props.onModeChange("import");
                                 return;
                               }

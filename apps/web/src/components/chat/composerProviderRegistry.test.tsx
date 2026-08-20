@@ -25,7 +25,7 @@ const OPENCODE_RUNTIME_MODEL_WITH_REASONING: ProviderModelDescriptor = {
 const OPENCODE_RUNTIME_MODEL_WITHOUT_DEFAULT: ProviderModelDescriptor = {
   slug: "opencode/gpt-5-nano",
   name: "GPT-5 Nano",
-  upstreamProviderId: "opencode",
+  upstreamProviderId: "openai",
   upstreamProviderName: "OpenCode",
   supportedReasoningEfforts: [
     { value: "minimal" },
@@ -109,7 +109,7 @@ const GROK_RUNTIME_4_5_WITH_REASONING: ProviderModelDescriptor = {
 describe("getComposerProviderState", () => {
   it("dispatches Antigravity effort separately from its base model", () => {
     const state = getComposerProviderState({
-      provider: "antigravity",
+      provider: "google",
       model: "Gemini 3.5 Flash",
       runtimeModel: ANTIGRAVITY_RUNTIME_GEMINI_WITH_REASONING,
       prompt: "",
@@ -117,13 +117,13 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "antigravity",
+      provider: "google",
       promptEffort: "high",
       modelOptionsForDispatch: { reasoningEffort: "high" },
     });
     expect(
       getComposerTraitSelection(
-        "antigravity",
+        "google",
         "Gemini 3.5 Flash",
         "",
         { reasoningEffort: "high" },
@@ -132,7 +132,7 @@ describe("getComposerProviderState", () => {
     ).toEqual(["low", "medium", "high"]);
     expect(
       renderProviderTraitsPicker({
-        provider: "antigravity",
+        provider: "google",
         threadId: ThreadId.makeUnsafe("thread-antigravity-effort"),
         model: "Gemini 3.5 Flash",
         runtimeModel: ANTIGRAVITY_RUNTIME_GEMINI_WITH_REASONING,
@@ -145,7 +145,7 @@ describe("getComposerProviderState", () => {
 
   it("hides Antigravity effort controls when the selected model has only one effort", () => {
     const selection = getComposerTraitSelection(
-      "antigravity",
+      "google",
       "Claude Sonnet 4.6",
       "",
       undefined,
@@ -155,7 +155,7 @@ describe("getComposerProviderState", () => {
     expect(selection.effortLevels).toEqual([]);
     expect(
       renderProviderTraitsPicker({
-        provider: "antigravity",
+        provider: "google",
         threadId: ThreadId.makeUnsafe("thread-antigravity-single-effort"),
         model: "Claude Sonnet 4.6",
         runtimeModel: ANTIGRAVITY_RUNTIME_CLAUDE_WITH_SINGLE_EFFORT,
@@ -168,14 +168,14 @@ describe("getComposerProviderState", () => {
 
   it("returns codex defaults when no codex draft options exist", () => {
     const state = getComposerProviderState({
-      provider: "codex",
+      provider: "openai",
       model: "gpt-5.4",
       prompt: "",
       modelOptions: undefined,
     });
 
     expect(state).toEqual({
-      provider: "codex",
+      provider: "openai",
       promptEffort: "high",
       modelOptionsForDispatch: undefined,
     });
@@ -183,7 +183,7 @@ describe("getComposerProviderState", () => {
 
   it("normalizes codex dispatch options while preserving the selected effort", () => {
     const state = getComposerProviderState({
-      provider: "codex",
+      provider: "openai",
       model: "gpt-5.4",
       prompt: "",
       modelOptions: {
@@ -195,7 +195,7 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "codex",
+      provider: "openai",
       promptEffort: "low",
       modelOptionsForDispatch: {
         reasoningEffort: "low",
@@ -206,7 +206,7 @@ describe("getComposerProviderState", () => {
 
   it("reads only Codex options when other provider effort state is present", () => {
     const state = getComposerProviderState({
-      provider: "codex",
+      provider: "openai",
       model: "gpt-5.4",
       prompt: "",
       modelOptions: {
@@ -221,7 +221,7 @@ describe("getComposerProviderState", () => {
 
   it("reads only Cursor options when Codex runtime effort state is present", () => {
     const state = getComposerProviderState({
-      provider: "cursor",
+      provider: "openai",
       model: "claude-opus-4-7",
       runtimeModel: CURSOR_RUNTIME_MODEL_300K,
       prompt: "",
@@ -237,7 +237,7 @@ describe("getComposerProviderState", () => {
 
   it("preserves a stored runtime Codex effort for dispatch before discovery resolves", () => {
     const state = getComposerProviderState({
-      provider: "codex",
+      provider: "openai",
       model: "gpt-5.6-sol",
       prompt: "",
       modelOptions: {
@@ -248,7 +248,7 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "codex",
+      provider: "openai",
       promptEffort: "ultra",
       modelOptionsForDispatch: {
         reasoningEffort: "ultra",
@@ -258,7 +258,7 @@ describe("getComposerProviderState", () => {
 
   it("rejects an unsupported effort for a known static Codex model before discovery", () => {
     const state = getComposerProviderState({
-      provider: "codex",
+      provider: "openai",
       model: "gpt-5.4",
       prompt: "",
       modelOptions: {
@@ -269,7 +269,7 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "codex",
+      provider: "openai",
       promptEffort: "high",
       modelOptionsForDispatch: undefined,
     });
@@ -290,7 +290,7 @@ describe("getComposerProviderState", () => {
     },
   ])("falls back to static Codex efforts when runtime metadata $shape", ({ runtimeModel }) => {
     const state = getComposerProviderState({
-      provider: "codex",
+      provider: "openai",
       model: "gpt-5.4",
       runtimeModel,
       prompt: "",
@@ -302,7 +302,7 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "codex",
+      provider: "openai",
       promptEffort: "xhigh",
       modelOptionsForDispatch: {
         reasoningEffort: "xhigh",
@@ -312,7 +312,7 @@ describe("getComposerProviderState", () => {
 
   it("drops a stored runtime Codex effort after discovery proves it unsupported", () => {
     const state = getComposerProviderState({
-      provider: "codex",
+      provider: "openai",
       model: "gpt-5.6-terra",
       runtimeModel: {
         slug: "gpt-5.6-terra",
@@ -335,7 +335,7 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "codex",
+      provider: "openai",
       promptEffort: "low",
       modelOptionsForDispatch: undefined,
     });
@@ -343,7 +343,7 @@ describe("getComposerProviderState", () => {
 
   it("preserves codex fast mode when it is the only active option", () => {
     const state = getComposerProviderState({
-      provider: "codex",
+      provider: "openai",
       model: "gpt-5.4",
       prompt: "",
       modelOptions: {
@@ -354,7 +354,7 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "codex",
+      provider: "openai",
       promptEffort: "high",
       modelOptionsForDispatch: {
         fastMode: true,
@@ -364,7 +364,7 @@ describe("getComposerProviderState", () => {
 
   it("preserves codex fast mode for runtime-discovered models that advertise support", () => {
     const state = getComposerProviderState({
-      provider: "codex",
+      provider: "openai",
       model: "gpt-5.6-preview",
       runtimeModel: {
         slug: "gpt-5.6-preview",
@@ -382,7 +382,7 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "codex",
+      provider: "openai",
       promptEffort: "medium",
       modelOptionsForDispatch: {
         fastMode: true,
@@ -392,7 +392,7 @@ describe("getComposerProviderState", () => {
 
   it("drops codex fast mode when runtime discovery does not advertise support", () => {
     const state = getComposerProviderState({
-      provider: "codex",
+      provider: "openai",
       model: "gpt-5.4-mini",
       runtimeModel: {
         slug: "gpt-5.4-mini",
@@ -409,7 +409,7 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "codex",
+      provider: "openai",
       promptEffort: "medium",
       modelOptionsForDispatch: undefined,
     });
@@ -417,7 +417,7 @@ describe("getComposerProviderState", () => {
 
   it("drops explicit codex default/off overrides from dispatch while keeping the selected effort label", () => {
     const state = getComposerProviderState({
-      provider: "codex",
+      provider: "openai",
       model: "gpt-5.4",
       prompt: "",
       modelOptions: {
@@ -429,7 +429,7 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "codex",
+      provider: "openai",
       promptEffort: "high",
       modelOptionsForDispatch: undefined,
     });
@@ -437,14 +437,14 @@ describe("getComposerProviderState", () => {
 
   it("returns Claude defaults for effort-capable models", () => {
     const state = getComposerProviderState({
-      provider: "claudeAgent",
+      provider: "anthropic",
       model: "claude-sonnet-4-6",
       prompt: "",
       modelOptions: undefined,
     });
 
     expect(state).toEqual({
-      provider: "claudeAgent",
+      provider: "anthropic",
       promptEffort: "high",
       modelOptionsForDispatch: undefined,
     });
@@ -452,7 +452,7 @@ describe("getComposerProviderState", () => {
 
   it("tracks Claude ultrathink from the prompt without changing dispatch effort", () => {
     const state = getComposerProviderState({
-      provider: "claudeAgent",
+      provider: "anthropic",
       model: "claude-sonnet-4-6",
       prompt: "Ultrathink:\nInvestigate this failure",
       modelOptions: {
@@ -463,7 +463,7 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "claudeAgent",
+      provider: "anthropic",
       promptEffort: "medium",
       modelOptionsForDispatch: {
         effort: "medium",
@@ -475,7 +475,7 @@ describe("getComposerProviderState", () => {
 
   it("treats descriptor prompt-injected choices like legacy prompt-controlled efforts", () => {
     const selection = getComposerTraitSelection(
-      "claudeAgent",
+      "anthropic",
       "claude-sonnet-4-6",
       "Ultrathink:\nInvestigate this",
       { effort: "ultrathink" },
@@ -504,7 +504,7 @@ describe("getComposerProviderState", () => {
 
   it("drops unsupported Claude effort options for models without effort controls", () => {
     const state = getComposerProviderState({
-      provider: "claudeAgent",
+      provider: "anthropic",
       model: "claude-haiku-4-5",
       prompt: "",
       modelOptions: {
@@ -516,7 +516,7 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "claudeAgent",
+      provider: "anthropic",
       promptEffort: null,
       modelOptionsForDispatch: {
         thinking: false,
@@ -526,7 +526,7 @@ describe("getComposerProviderState", () => {
 
   it("preserves Claude fast mode when it is the only active option", () => {
     const state = getComposerProviderState({
-      provider: "claudeAgent",
+      provider: "anthropic",
       model: "claude-opus-4-6",
       prompt: "",
       modelOptions: {
@@ -537,7 +537,7 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "claudeAgent",
+      provider: "anthropic",
       promptEffort: "high",
       modelOptionsForDispatch: {
         fastMode: true,
@@ -547,7 +547,7 @@ describe("getComposerProviderState", () => {
 
   it("drops explicit Claude default/off overrides from dispatch while keeping the selected effort label", () => {
     const state = getComposerProviderState({
-      provider: "claudeAgent",
+      provider: "anthropic",
       model: "claude-opus-4-6",
       prompt: "",
       modelOptions: {
@@ -559,7 +559,7 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "claudeAgent",
+      provider: "anthropic",
       promptEffort: "high",
       modelOptionsForDispatch: undefined,
     });
@@ -567,7 +567,7 @@ describe("getComposerProviderState", () => {
 
   it("normalizes Grok reasoning effort options for dispatch", () => {
     const state = getComposerProviderState({
-      provider: "grok",
+      provider: "openai",
       model: "grok-build",
       prompt: "",
       modelOptions: {
@@ -578,7 +578,7 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "grok",
+      provider: "openai",
       promptEffort: "high",
       modelOptionsForDispatch: {
         reasoningEffort: "high",
@@ -588,7 +588,7 @@ describe("getComposerProviderState", () => {
 
   it("drops explicit Grok default reasoning effort from dispatch", () => {
     const state = getComposerProviderState({
-      provider: "grok",
+      provider: "openai",
       model: "grok-build",
       prompt: "",
       modelOptions: {
@@ -599,7 +599,7 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "grok",
+      provider: "openai",
       promptEffort: "low",
       modelOptionsForDispatch: undefined,
     });
@@ -607,14 +607,14 @@ describe("getComposerProviderState", () => {
 
   it("exposes and dispatches efforts for dynamically discovered Grok models", () => {
     const selection = getComposerTraitSelection(
-      "grok",
+      "openai",
       "grok-4.5",
       "",
       { reasoningEffort: "high" },
       GROK_RUNTIME_4_5_WITH_REASONING,
     );
     const state = getComposerProviderState({
-      provider: "grok",
+      provider: "openai",
       model: "grok-4.5",
       runtimeModel: GROK_RUNTIME_4_5_WITH_REASONING,
       prompt: "",
@@ -630,14 +630,14 @@ describe("getComposerProviderState", () => {
     expect(selection.defaultEffort).toBe("low");
     expect(selection.effort).toBe("high");
     expect(state).toEqual({
-      provider: "grok",
+      provider: "openai",
       promptEffort: "high",
       modelOptionsForDispatch: { reasoningEffort: "high" },
     });
   });
 
   it("exposes Grok efforts before runtime model discovery resolves", () => {
-    const selection = getComposerTraitSelection("grok", "grok-4.5", "", undefined);
+    const selection = getComposerTraitSelection("openai", "grok-4.5", "", undefined);
 
     expect(selection.effortLevels.map((effort) => effort.value)).toEqual([
       "none",
@@ -652,21 +652,21 @@ describe("getComposerProviderState", () => {
   it("exposes and dispatches runtime-discovered Droid efforts for GPT-5.6", () => {
     const threadId = ThreadId.makeUnsafe("thread-droid-gpt-5-6-effort");
     const selection = getComposerTraitSelection(
-      "droid",
+      "openai",
       "gpt-5.6-sol",
       "",
       { reasoningEffort: "xhigh" },
       DROID_RUNTIME_GPT_5_6_WITH_REASONING,
     );
     const state = getComposerProviderState({
-      provider: "droid",
+      provider: "openai",
       model: "gpt-5.6-sol",
       runtimeModel: DROID_RUNTIME_GPT_5_6_WITH_REASONING,
       prompt: "",
       modelOptions: { droid: { reasoningEffort: "xhigh" } },
     });
     const picker = renderProviderTraitsPicker({
-      provider: "droid",
+      provider: "openai",
       threadId,
       model: "gpt-5.6-sol",
       runtimeModel: DROID_RUNTIME_GPT_5_6_WITH_REASONING,
@@ -686,7 +686,7 @@ describe("getComposerProviderState", () => {
     ]);
     expect(selection.effort).toBe("xhigh");
     expect(state).toEqual({
-      provider: "droid",
+      provider: "openai",
       promptEffort: "xhigh",
       modelOptionsForDispatch: { reasoningEffort: "xhigh" },
     });
@@ -696,7 +696,7 @@ describe("getComposerProviderState", () => {
   it("dispatches an explicitly selected Droid effort even when ACP reports it as current", () => {
     expect(
       getComposerProviderState({
-        provider: "droid",
+        provider: "openai",
         model: "gpt-5.6-sol",
         runtimeModel: DROID_RUNTIME_GPT_5_6_WITH_REASONING,
         prompt: "",
@@ -710,7 +710,7 @@ describe("getComposerProviderState", () => {
 
   it("drops stale Cursor context options once runtime metadata is authoritative", () => {
     const state = getComposerProviderState({
-      provider: "cursor",
+      provider: "openai",
       model: "claude-opus-4-7",
       runtimeModel: CURSOR_RUNTIME_MODEL_300K,
       prompt: "",
@@ -724,7 +724,7 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "cursor",
+      provider: "openai",
       promptEffort: "xhigh",
       modelOptionsForDispatch: {
         reasoningEffort: "xhigh",
@@ -734,14 +734,14 @@ describe("getComposerProviderState", () => {
 
   it("keeps Pi runtime thinking selections on the thinkingLevel field", () => {
     const selection = getComposerTraitSelection(
-      "pi",
+      "openai",
       "openai/gpt-5.5",
       "",
       { thinkingLevel: "xhigh" },
       PI_RUNTIME_MODEL_WITH_REASONING,
     );
     const state = getComposerProviderState({
-      provider: "pi",
+      provider: "openai",
       model: "openai/gpt-5.5",
       runtimeModel: PI_RUNTIME_MODEL_WITH_REASONING,
       prompt: "",
@@ -755,7 +755,7 @@ describe("getComposerProviderState", () => {
     expect(selection.primarySelectDescriptor?.id).toBe("thinkingLevel");
     expect(selection.effort).toBe("xhigh");
     expect(state).toEqual({
-      provider: "pi",
+      provider: "openai",
       promptEffort: "xhigh",
       modelOptionsForDispatch: {
         thinkingLevel: "xhigh",
@@ -777,14 +777,14 @@ describe("getComposerProviderState", () => {
       defaultReasoningEffort: "high",
     };
     const selection = getComposerTraitSelection(
-      "pi",
+      "openai",
       "moonshotai/kimi-k3",
       "",
       { thinkingLevel: "max" },
       runtimeModel,
     );
     const state = getComposerProviderState({
-      provider: "pi",
+      provider: "openai",
       model: "moonshotai/kimi-k3",
       runtimeModel,
       prompt: "",
@@ -801,7 +801,7 @@ describe("getComposerProviderState", () => {
       currentValue: "max",
     });
     expect(state).toEqual({
-      provider: "pi",
+      provider: "openai",
       promptEffort: "max",
       modelOptionsForDispatch: {
         thinkingLevel: "max",
@@ -813,7 +813,7 @@ describe("getComposerProviderState", () => {
     const threadId = ThreadId.makeUnsafe("thread-opencode-traits-hidden");
 
     const picker = renderProviderTraitsPicker({
-      provider: "opencode",
+      provider: "openai",
       threadId,
       model: "openrouter/gpt-oss-120b:free",
       modelOptions: undefined,
@@ -823,7 +823,7 @@ describe("getComposerProviderState", () => {
     });
 
     const menuContent = renderProviderTraitsMenuContent({
-      provider: "opencode",
+      provider: "openai",
       threadId,
       model: "openrouter/gpt-oss-120b:free",
       modelOptions: undefined,
@@ -837,7 +837,7 @@ describe("getComposerProviderState", () => {
 
   it("keeps OpenCode runtime thinking selections on the variant field", () => {
     const state = getComposerProviderState({
-      provider: "opencode",
+      provider: "openai",
       model: "openai/gpt-5.4",
       runtimeModel: OPENCODE_RUNTIME_MODEL_WITH_REASONING,
       prompt: "",
@@ -849,7 +849,7 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "opencode",
+      provider: "openai",
       promptEffort: "xhigh",
       modelOptionsForDispatch: {
         variant: "xhigh",
@@ -859,7 +859,7 @@ describe("getComposerProviderState", () => {
 
   it("uses the runtime default thinking level for OpenCode trigger state", () => {
     const state = getComposerProviderState({
-      provider: "opencode",
+      provider: "openai",
       model: "openai/gpt-5.4",
       runtimeModel: OPENCODE_RUNTIME_MODEL_WITH_REASONING,
       prompt: "",
@@ -867,7 +867,7 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "opencode",
+      provider: "openai",
       promptEffort: "medium",
       modelOptionsForDispatch: undefined,
     });
@@ -875,7 +875,7 @@ describe("getComposerProviderState", () => {
 
   it("falls back to the first OpenCode runtime variant when metadata omits a default", () => {
     const state = getComposerProviderState({
-      provider: "opencode",
+      provider: "openai",
       model: "opencode/gpt-5-nano",
       runtimeModel: OPENCODE_RUNTIME_MODEL_WITHOUT_DEFAULT,
       prompt: "",
@@ -883,7 +883,7 @@ describe("getComposerProviderState", () => {
     });
 
     expect(state).toEqual({
-      provider: "opencode",
+      provider: "openai",
       promptEffort: "minimal",
       modelOptionsForDispatch: undefined,
     });
@@ -893,7 +893,7 @@ describe("getComposerProviderState", () => {
     const threadId = ThreadId.makeUnsafe("thread-opencode-runtime-thinking");
 
     const picker = renderProviderTraitsPicker({
-      provider: "opencode",
+      provider: "openai",
       threadId,
       model: "opencode/gpt-5-nano",
       runtimeModel: OPENCODE_RUNTIME_MODEL_WITHOUT_DEFAULT,
@@ -904,7 +904,7 @@ describe("getComposerProviderState", () => {
     });
 
     const menuContent = renderProviderTraitsMenuContent({
-      provider: "opencode",
+      provider: "openai",
       threadId,
       model: "opencode/gpt-5-nano",
       runtimeModel: OPENCODE_RUNTIME_MODEL_WITHOUT_DEFAULT,

@@ -14,7 +14,7 @@ describe("ComposerModelEffortPicker", () => {
   it("keeps Grok effort visible in compact layouts before runtime discovery", async () => {
     const screen = await render(
       <ComposerModelEffortPicker
-        provider="grok"
+        provider="openai"
         model={GROK_4_5}
         lockedProvider={null}
         modelOptionsByProvider={{

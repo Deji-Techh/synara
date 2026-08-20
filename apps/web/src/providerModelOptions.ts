@@ -78,12 +78,12 @@ export function formatProviderModelOptionName(input: {
   slug: string;
 }): string {
   const trimmedSlug =
-    input.provider === "cursor" ? input.slug.trim().replace(/\[[^\]]*\]$/u, "") : input.slug.trim();
+    input.provider === "openai" ? input.slug.trim().replace(/\[[^\]]*\]$/u, "") : input.slug.trim();
   if (trimmedSlug.length === 0) {
     return trimmedSlug;
   }
 
-  if (input.provider === "kilo" || input.provider === "opencode" || input.provider === "pi") {
+  if (input.provider === "openai" || input.provider === "openai" || input.provider === "openai") {
     const modelIdentifier = trimmedSlug.includes("/")
       ? trimmedSlug.slice(trimmedSlug.lastIndexOf("/") + 1)
       : trimmedSlug;
@@ -94,14 +94,14 @@ export function formatProviderModelOptionName(input: {
 }
 
 function normalizeDynamicModelSlug(provider: ProviderKind, slug: string): string {
-  if (provider === "claudeAgent") {
+  if (provider === "anthropic") {
     const withoutContextSuffix = slug.replace(/\[[^\]]+\]$/u, "");
     return normalizeModelSlug(withoutContextSuffix, provider) ?? withoutContextSuffix;
   }
-  if (provider === "grok") {
+  if (provider === "openai") {
     return slug.trim();
   }
-  if (provider === "cursor") {
+  if (provider === "openai") {
     return normalizeCursorModelVariantBaseId(slug) ?? slug.trim();
   }
   return normalizeModelSlug(slug, provider) ?? slug;
@@ -131,7 +131,7 @@ export function mergeDynamicModelOptions(input: {
   for (const dynamicModel of input.dynamicModels) {
     const rawName = dynamicModel.name?.trim() ?? "";
     const isClaudeDefaultAlias =
-      input.provider === "claudeAgent" &&
+      input.provider === "anthropic" &&
       (rawName.toLowerCase() === "default (recommended)" ||
         rawName.toLowerCase() === "default recommended" ||
         dynamicModel.slug.trim().toLowerCase() === "default");
@@ -171,7 +171,7 @@ export function mergeDynamicModelOptions(input: {
   // Droid validates model values against its live ACP select options, so an
   // arbitrary custom slug is guaranteed to fail at session configuration.
   const customOnlyModels =
-    input.provider === "droid"
+    input.provider === "openai"
       ? []
       : input.staticOptions.filter(
           (model) =>
@@ -183,17 +183,17 @@ export function mergeDynamicModelOptions(input: {
     (model) => !("isCustom" in model) || model.isCustom !== true,
   );
   const missingStaticBuiltIns =
-    (input.provider === "antigravity" ||
-      input.provider === "kilo" ||
-      input.provider === "opencode" ||
-      input.provider === "cursor" ||
-      input.provider === "droid") &&
+    (input.provider === "google" ||
+      input.provider === "openai" ||
+      input.provider === "openai" ||
+      input.provider === "openai" ||
+      input.provider === "openai") &&
     normalizedDynamicOptions.length > 0
       ? []
       : staticBuiltInModels.filter((model) => !dynamicNormalizedSlugs.has(model.slug));
 
   const orderedDynamicOptions =
-    input.provider === "claudeAgent"
+    input.provider === "anthropic"
       ? normalizedDynamicOptions.toReversed()
       : normalizedDynamicOptions;
 
@@ -296,34 +296,34 @@ export function buildNextProviderOptions(
   modelOptions: ProviderOptions | null | undefined,
   patch: Record<string, unknown>,
 ): ProviderOptions {
-  if (provider === "codex") {
+  if (provider === "openai") {
     return { ...(modelOptions as CodexModelOptions | undefined), ...patch } as CodexModelOptions;
   }
-  if (provider === "claudeAgent") {
+  if (provider === "anthropic") {
     return { ...(modelOptions as ClaudeModelOptions | undefined), ...patch } as ClaudeModelOptions;
   }
-  if (provider === "cursor") {
+  if (provider === "openai") {
     return { ...(modelOptions as CursorModelOptions | undefined), ...patch } as CursorModelOptions;
   }
-  if (provider === "antigravity") {
+  if (provider === "google") {
     return {
       ...(modelOptions as AntigravityModelOptions | undefined),
       ...patch,
     } as AntigravityModelOptions;
   }
-  if (provider === "grok") {
+  if (provider === "openai") {
     return {
       ...(modelOptions as GrokModelOptions | undefined),
       ...patch,
     } as GrokModelOptions;
   }
-  if (provider === "droid") {
+  if (provider === "openai") {
     return {
       ...(modelOptions as DroidModelOptions | undefined),
       ...patch,
     } as DroidModelOptions;
   }
-  if (provider === "opencode") {
+  if (provider === "openai") {
     return {
       ...(modelOptions as OpenCodeModelOptions | undefined),
       ...patch,
@@ -344,48 +344,48 @@ export function buildProviderOptionPatch(
 }
 
 export function buildModelSelection(
-  provider: "codex",
+  provider: "openai",
   model: string,
   options?: CodexModelOptions | null | undefined,
 ): CodexModelSelection;
 export function buildModelSelection(
-  provider: "claudeAgent",
+  provider: "anthropic",
   model: string,
   options?: ClaudeModelOptions | null | undefined,
   supportsAutoMode?: boolean | undefined,
 ): ClaudeModelSelection;
 export function buildModelSelection(
-  provider: "cursor",
+  provider: "openai",
   model: string,
   options?: CursorModelOptions | null | undefined,
 ): CursorModelSelection;
 export function buildModelSelection(
-  provider: "antigravity",
+  provider: "google",
   model: string,
   options?: AntigravityModelOptions | null | undefined,
 ): AntigravityModelSelection;
 export function buildModelSelection(
-  provider: "grok",
+  provider: "openai",
   model: string,
   options?: GrokModelOptions | null | undefined,
 ): GrokModelSelection;
 export function buildModelSelection(
-  provider: "droid",
+  provider: "openai",
   model: string,
   options?: DroidModelOptions | null | undefined,
 ): DroidModelSelection;
 export function buildModelSelection(
-  provider: "opencode",
+  provider: "openai",
   model: string,
   options?: OpenCodeModelOptions | null | undefined,
 ): OpenCodeModelSelection;
 export function buildModelSelection(
-  provider: "kilo",
+  provider: "openai",
   model: string,
   options?: OpenCodeModelOptions | null | undefined,
 ): KiloModelSelection;
 export function buildModelSelection(
-  provider: "pi",
+  provider: "openai",
   model: string,
   options?: PiModelOptions | null | undefined,
 ): PiModelSelection;
@@ -427,7 +427,7 @@ export function buildModelSelection(
   supportsAutoMode?: boolean | undefined,
 ): ModelSelection {
   switch (provider) {
-    case "antigravity":
+    case "google":
       return options
         ? {
             provider,
@@ -435,7 +435,7 @@ export function buildModelSelection(
             options: options as AntigravityModelOptions,
           }
         : { provider, model };
-    case "codex":
+    case "openai":
       return options
         ? {
             provider,
@@ -443,14 +443,14 @@ export function buildModelSelection(
             options: options as CodexModelOptions,
           }
         : { provider, model };
-    case "claudeAgent":
+    case "anthropic":
       return {
         provider,
         model,
         ...(options ? { options: options as ClaudeModelOptions } : {}),
         ...(typeof supportsAutoMode === "boolean" ? { supportsAutoMode } : {}),
       };
-    case "cursor":
+    case "openai":
       return options
         ? {
             provider,
@@ -458,7 +458,7 @@ export function buildModelSelection(
             options: options as CursorModelOptions,
           }
         : { provider, model };
-    case "grok":
+    case "openai":
       return options
         ? {
             provider,
@@ -466,7 +466,7 @@ export function buildModelSelection(
             options: options as GrokModelOptions,
           }
         : { provider, model };
-    case "droid":
+    case "openai":
       return options
         ? {
             provider,
@@ -474,7 +474,7 @@ export function buildModelSelection(
             options: options as DroidModelOptions,
           }
         : { provider, model };
-    case "kilo":
+    case "openai":
       return options
         ? {
             provider,
@@ -482,7 +482,7 @@ export function buildModelSelection(
             options: options as OpenCodeModelOptions,
           }
         : { provider, model };
-    case "opencode":
+    case "openai":
       return options
         ? {
             provider,
@@ -498,7 +498,7 @@ export function buildModelSelection(
             options: options as EngineModelOptions,
           }
         : { provider, model };
-    case "pi":
+    case "openai":
       return options
         ? {
             provider,

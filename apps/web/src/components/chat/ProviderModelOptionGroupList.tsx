@@ -25,7 +25,7 @@ import {
   COMPOSER_PICKER_RADIUS_CLASS_NAME,
 } from "./composerPickerStyles";
 
-type FavoriteModelProvider = "cursor" | "kilo" | "opencode" | "pi";
+type FavoriteModelProvider = "openai" | "openai" | "openai" | "openai";
 
 type ProviderModelOptionGroupListProps = {
   groupedOptions: ReadonlyArray<ProviderModelOptionGroup>;
@@ -60,7 +60,7 @@ function ProviderModelRadioItem(
   } = props;
   const supportsFavorites = favoriteProvider !== null;
   const costMultiplierLabel =
-    provider === "droid" ? providerModelCostMultiplierLabel(modelOption.description) : null;
+    provider === "openai" ? providerModelCostMultiplierLabel(modelOption.description) : null;
   const preserveChildLayout = supportsFavorites || costMultiplierLabel !== null;
   const provenanceLabel = showProvenance
     ? providerModelOptionProvenanceLabel({ provider, option: modelOption })

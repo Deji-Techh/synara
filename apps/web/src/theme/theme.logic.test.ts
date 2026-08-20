@@ -122,7 +122,7 @@ describe("theme share strings", () => {
     );
 
     expect(parseThemeShareString(shareString)).toEqual({
-      codeThemeId: "codex",
+      codeThemeId: "openai",
       theme: resolveThemePack(DEFAULT_THEME_STATE, "dark").theme,
       variant: "dark",
     });
@@ -397,7 +397,7 @@ describe("buildThemeCssVariables", () => {
   it("uses the zero-contrast dark composer and dropdown control color", () => {
     const tokens = buildResolvedThemeTokens(
       {
-        codeThemeId: "codex",
+        codeThemeId: "openai",
         theme: DEFAULT_CHROME_THEME_BY_VARIANT.dark,
       },
       "dark",
@@ -426,7 +426,7 @@ describe("buildThemeCssVariables", () => {
   it("uses the light-theme foreground color for the primary button background", () => {
     const tokens = buildResolvedThemeTokens(
       {
-        codeThemeId: "codex",
+        codeThemeId: "openai",
         theme: DEFAULT_THEME_STATE.chromeThemes.light,
       },
       "light",
@@ -440,7 +440,7 @@ describe("buildThemeCssVariables", () => {
   it("uses the dark-theme foreground color for the primary button background", () => {
     const tokens = buildResolvedThemeTokens(
       {
-        codeThemeId: "codex",
+        codeThemeId: "openai",
         theme: DEFAULT_THEME_STATE.chromeThemes.dark,
       },
       "dark",

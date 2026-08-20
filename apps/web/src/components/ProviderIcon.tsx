@@ -7,73 +7,13 @@
 import { type ProviderKind } from "@caide/contracts";
 import type { ReactNode, SVGProps } from "react";
 
-import { CentralIcon } from "~/lib/central-icons";
 import { FlaskConicalIcon, GlobeIcon, HammerIcon, TerminalSquareIcon } from "~/lib/icons";
 import { cn } from "~/lib/utils";
-import {
-  AntigravityIcon,
-  ClaudeAI,
-  CursorIcon,
-  DroidIcon,
-  GrokIcon,
-  type Icon,
-  KiloIcon,
-  OpenAI,
-  OpenCodeIcon,
-  PiIcon,
-} from "./Icons";
+import { ClaudeAI, OpenAI, type Icon } from "./Icons";
 
 export type ProviderIconTone = "default" | "header";
 
-// The bundled SVG has a dark outer fill, so dark mode swaps to the reversed Central asset.
-// React's SVGProps has no `title`, so accept it via an explicit prop type and forward it
-// only to CentralIcon (an HTML span, which supports `title`); the light-mode SVG conveys
-// its accessible name through aria-label instead.
-const OpenCodeProviderIcon = ({
-  className,
-  style,
-  title,
-  role,
-  "aria-hidden": ariaHidden,
-  "aria-label": ariaLabel,
-  ...svgProps
-}: SVGProps<SVGSVGElement> & { title?: string }) => {
-  const centralIconLabel =
-    ariaHidden === true || ariaHidden === "true" || typeof ariaLabel !== "string"
-      ? undefined
-      : ariaLabel;
-
-  return (
-    <>
-      <OpenCodeIcon
-        {...svgProps}
-        aria-hidden={ariaHidden}
-        aria-label={ariaLabel}
-        role={role}
-        className={cn(className, "dark:hidden")}
-        style={style}
-      />
-      <CentralIcon
-        name="opencode"
-        label={centralIconLabel}
-        title={title}
-        className={cn(className, "hidden dark:inline-block dark:text-foreground/90")}
-        style={style}
-      />
-    </>
-  );
-};
-
 export const PROVIDER_ICON_COMPONENT_BY_PROVIDER: Record<ProviderKind, Icon> = {
-  codex: OpenAI,
-  claudeAgent: ClaudeAI,
-  cursor: CursorIcon,
-  antigravity: AntigravityIcon,
-  grok: GrokIcon,
-  droid: DroidIcon,
-  kilo: KiloIcon,
-  opencode: OpenCodeProviderIcon,
-  pi: PiIcon,
   engine: HammerIcon,
   openai: OpenAI,
   anthropic: ClaudeAI,
@@ -88,18 +28,13 @@ export const PROVIDER_ICON_COMPONENT_BY_PROVIDER: Record<ProviderKind, Icon> = {
   xai: GlobeIcon,
   fireworks: GlobeIcon,
   opencodeZen: GlobeIcon,
+  opencodeGo: GlobeIcon,
 };
 
 export function providerIconToneClassName(
-  provider: ProviderKind | null | undefined,
-  tone: ProviderIconTone = "default",
+  _provider: ProviderKind | null | undefined,
+  _tone: ProviderIconTone = "default",
 ): string {
-  if (provider === "kilo" || provider === "opencode") {
-    return "text-muted-foreground/70";
-  }
-  if (provider === "codex") {
-    return tone === "header" ? "text-muted-foreground/85" : "text-foreground";
-  }
   return "text-foreground";
 }
 

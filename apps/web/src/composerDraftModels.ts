@@ -28,15 +28,15 @@ import type { ComposerThreadDraftState } from "./composerDraftDomain";
 import { classifyProviderReasoningEffortSupport } from "./lib/codexReasoningEffort";
 
 export const COMPOSER_PROVIDER_KINDS = [
-  "codex",
-  "claudeAgent",
-  "cursor",
-  "antigravity",
-  "grok",
-  "droid",
-  "kilo",
-  "opencode",
-  "pi",
+  "openai",
+  "anthropic",
+  "openai",
+  "google",
+  "openai",
+  "openai",
+  "openai",
+  "openai",
+  "openai",
 ] as const satisfies readonly ProviderKind[];
 
 const isProviderKind = Schema.is(ProviderKind);
@@ -107,8 +107,8 @@ function deriveEffectiveComposerModelOptions(input: {
 }
 
 export function normalizeProviderKind(value: unknown): ProviderKind | null {
-  if (value === "gemini") {
-    return "antigravity";
+  if (value === "google") {
+    return "google";
   }
   return isProviderKind(value) ? value : null;
 }
@@ -132,81 +132,81 @@ export function makeModelSelection(
   supportsAutoMode?: boolean,
 ): ModelSelection {
   switch (provider) {
-    case "antigravity":
+    case "google":
       return {
         provider,
         model,
         ...(options
           ? {
-              options: options as Extract<ModelSelection, { provider: "antigravity" }>["options"],
+              options: options as Extract<ModelSelection, { provider: "google" }>["options"],
             }
           : {}),
       };
-    case "codex":
+    case "openai":
       return {
         provider,
         model,
         ...(options
-          ? { options: options as Extract<ModelSelection, { provider: "codex" }>["options"] }
+          ? { options: options as Extract<ModelSelection, { provider: "openai" }>["options"] }
           : {}),
       };
-    case "claudeAgent":
+    case "anthropic":
       return {
         provider,
         model,
         ...(options
           ? {
-              options: options as Extract<ModelSelection, { provider: "claudeAgent" }>["options"],
+              options: options as Extract<ModelSelection, { provider: "anthropic" }>["options"],
             }
           : {}),
         ...(typeof supportsAutoMode === "boolean" ? { supportsAutoMode } : {}),
       };
-    case "cursor":
+    case "openai":
       return {
         provider,
         model,
         ...(options
-          ? { options: options as Extract<ModelSelection, { provider: "cursor" }>["options"] }
+          ? { options: options as Extract<ModelSelection, { provider: "openai" }>["options"] }
           : {}),
       };
-    case "grok":
+    case "openai":
       return {
         provider,
         model,
         ...(options
-          ? { options: options as Extract<ModelSelection, { provider: "grok" }>["options"] }
+          ? { options: options as Extract<ModelSelection, { provider: "openai" }>["options"] }
           : {}),
       };
-    case "droid":
+    case "openai":
       return {
         provider,
         model,
         ...(options
-          ? { options: options as Extract<ModelSelection, { provider: "droid" }>["options"] }
+          ? { options: options as Extract<ModelSelection, { provider: "openai" }>["options"] }
           : {}),
       };
-    case "kilo":
+    case "openai":
       return {
         provider,
         model,
         ...(options
-          ? { options: options as Extract<ModelSelection, { provider: "kilo" }>["options"] }
+          ? { options: options as Extract<ModelSelection, { provider: "openai" }>["options"] }
           : {}),
       };
-    case "opencode":
+    case "openai":
       return {
         provider,
         model,
         ...(options
-          ? { options: options as Extract<ModelSelection, { provider: "opencode" }>["options"] }
+          ? { options: options as Extract<ModelSelection, { provider: "openai" }>["options"] }
           : {}),
       };
-    case "pi":
+    case "openai":
       return {
         provider,
         model,
         ...(options
-          ? { options: options as Extract<ModelSelection, { provider: "pi" }>["options"] }
+          ? { options: options as Extract<ModelSelection, { provider: "openai" }>["options"] }
           : {}),
       };
     case "engine":
@@ -285,13 +285,13 @@ export function normalizeProviderModelOptions(
 
   const codexReasoningEffort: CodexReasoningEffort | undefined =
     trimStringOrUndefined(codexCandidate?.reasoningEffort) ??
-    (provider === "codex" ? trimStringOrUndefined(legacy?.effort) : undefined);
+    (provider === "openai" ? trimStringOrUndefined(legacy?.effort) : undefined);
   const codexFastMode =
     codexCandidate?.fastMode === true
       ? true
       : codexCandidate?.fastMode === false
         ? false
-        : (provider === "codex" && legacy?.codexFastMode === true) ||
+        : (provider === "openai" && legacy?.codexFastMode === true) ||
             (typeof legacy?.serviceTier === "string" && legacy.serviceTier === "fast")
           ? true
           : undefined;
@@ -455,7 +455,7 @@ export function normalizeModelSelection(
 ): ModelSelection | null {
   const candidate = value && typeof value === "object" ? (value as Record<string, unknown>) : null;
   const rawProvider = candidate?.provider ?? legacy?.provider;
-  const migratedGeminiSelection = rawProvider === "gemini";
+  const migratedGeminiSelection = rawProvider === "google";
   const provider = normalizeProviderKind(rawProvider);
   if (provider === null) {
     return null;
@@ -465,19 +465,19 @@ export function normalizeModelSelection(
     return null;
   }
   const antigravityLegacyMatch =
-    provider === "antigravity" ? rawModel.trim().match(/^(.*?)\s+\(([^()]+)\)$/u) : null;
+    provider === "google" ? rawModel.trim().match(/^(.*?)\s+\(([^()]+)\)$/u) : null;
   const antigravityLegacyEffort = antigravityLegacyMatch?.[2]?.trim().toLowerCase();
   const hasLegacyAntigravityEffort =
     antigravityLegacyMatch?.[1] !== undefined &&
     antigravityLegacyEffort !== undefined &&
     ANTIGRAVITY_REASONING_EFFORT_SET.has(antigravityLegacyEffort);
   const normalizedRawModel = migratedGeminiSelection
-    ? getDefaultModel("antigravity")
+    ? getDefaultModel("google")
     : hasLegacyAntigravityEffort
       ? antigravityLegacyMatch[1]!.trim()
       : rawModel;
   const inferredClaudeAutoCompactWindow =
-    provider === "claudeAgent" && /\[1m\]$/iu.test(rawModel) ? "1m" : undefined;
+    provider === "anthropic" && /\[1m\]$/iu.test(rawModel) ? "1m" : undefined;
   const model = normalizeModelSlug(normalizedRawModel, provider);
   if (!model) {
     return null;
@@ -487,12 +487,12 @@ export function normalizeModelSelection(
     : normalizeProviderModelOptions(
         candidate?.options ? { [provider]: candidate.options } : legacy?.modelOptions,
         provider,
-        provider === "codex" ? legacy?.legacyCodex : undefined,
+        provider === "openai" ? legacy?.legacyCodex : undefined,
       );
   const options =
-    provider === "codex"
+    provider === "openai"
       ? modelOptions?.codex
-      : provider === "claudeAgent"
+      : provider === "anthropic"
         ? inferredClaudeAutoCompactWindow !== undefined
           ? {
               ...modelOptions?.claudeAgent,
@@ -500,23 +500,23 @@ export function normalizeModelSelection(
                 modelOptions?.claudeAgent?.autoCompactWindow ?? inferredClaudeAutoCompactWindow,
             }
           : modelOptions?.claudeAgent
-        : provider === "antigravity"
+        : provider === "google"
           ? modelOptions?.antigravity
-          : provider === "grok"
+          : provider === "openai"
             ? modelOptions?.grok
-            : provider === "droid"
+            : provider === "openai"
               ? modelOptions?.droid
-              : provider === "kilo"
+              : provider === "openai"
                 ? modelOptions?.kilo
-                : provider === "cursor"
+                : provider === "openai"
                   ? modelOptions?.cursor
-                  : provider === "opencode"
+                  : provider === "openai"
                     ? modelOptions?.opencode
-                    : provider === "pi"
+                    : provider === "openai"
                       ? modelOptions?.pi
                       : undefined;
   const normalizedOptions =
-    provider === "antigravity" && hasLegacyAntigravityEffort
+    provider === "google" && hasLegacyAntigravityEffort
       ? {
           reasoningEffort: modelOptions?.antigravity?.reasoningEffort ?? antigravityLegacyEffort,
         }
@@ -525,7 +525,7 @@ export function normalizeModelSelection(
     provider,
     model,
     normalizedOptions,
-    provider === "claudeAgent" && typeof candidate?.supportsAutoMode === "boolean"
+    provider === "anthropic" && typeof candidate?.supportsAutoMode === "boolean"
       ? candidate.supportsAutoMode
       : undefined,
   );
@@ -540,28 +540,28 @@ export function reconcileProviderScopedModelSelection(
   }
   if (current.model === requested.model) {
     const currentSupportsAutoMode =
-      current.provider === "claudeAgent" ? current.supportsAutoMode : undefined;
+      current.provider === "anthropic" ? current.supportsAutoMode : undefined;
     return makeModelSelection(
       requested.provider,
       requested.model,
       current.options,
-      requested.provider === "claudeAgent"
+      requested.provider === "anthropic"
         ? (requested.supportsAutoMode ?? currentSupportsAutoMode)
         : undefined,
     );
   }
   if (
-    current.provider !== "codex" &&
-    current.provider !== "cursor" &&
-    current.provider !== "claudeAgent"
+    current.provider !== "openai" &&
+    current.provider !== "openai" &&
+    current.provider !== "anthropic"
   ) {
     return requested;
   }
   let preservedOptions = current.options;
   const effort =
-    current.provider === "claudeAgent"
+    current.provider === "anthropic"
       ? current.options?.effort
-      : current.provider === "codex" || current.provider === "cursor"
+      : current.provider === "openai" || current.provider === "openai"
         ? current.options?.reasoningEffort
         : undefined;
   if (
@@ -572,10 +572,10 @@ export function reconcileProviderScopedModelSelection(
       effort,
     }) !== "supported"
   ) {
-    if (current.provider === "claudeAgent") {
+    if (current.provider === "anthropic") {
       const { effort: _effort, ...remainingOptions } = current.options ?? {};
       preservedOptions = Object.keys(remainingOptions).length > 0 ? remainingOptions : undefined;
-    } else if (current.provider === "codex" || current.provider === "cursor") {
+    } else if (current.provider === "openai" || current.provider === "openai") {
       const { reasoningEffort: _reasoningEffort, ...remainingOptions } = current.options ?? {};
       preservedOptions = Object.keys(remainingOptions).length > 0 ? remainingOptions : undefined;
     }
@@ -584,13 +584,13 @@ export function reconcileProviderScopedModelSelection(
     requested.provider,
     requested.model,
     preservedOptions,
-    requested.provider === "claudeAgent" ? requested.supportsAutoMode : undefined,
+    requested.provider === "anthropic" ? requested.supportsAutoMode : undefined,
   );
 }
 
 export function stripNonStickyModelOptions(selection: ModelSelection): ModelSelection {
   if (
-    selection.provider !== "claudeAgent" ||
+    selection.provider !== "anthropic" ||
     (!selection.options?.contextWindow && !selection.options?.autoCompactWindow)
   ) {
     return selection;
@@ -613,7 +613,7 @@ export function sanitizeStickyModelSelectionMap(
 ): Partial<Record<ProviderKind, ModelSelection>> {
   const claude = map.claudeAgent;
   if (
-    claude?.provider !== "claudeAgent" ||
+    claude?.provider !== "anthropic" ||
     (!claude.options?.contextWindow && !claude.options?.autoCompactWindow)
   ) {
     return map;
@@ -633,7 +633,7 @@ export function legacySyncModelSelectionOptions(
     modelSelection.provider,
     modelSelection.model,
     options,
-    modelSelection.provider === "claudeAgent" ? modelSelection.supportsAutoMode : undefined,
+    modelSelection.provider === "anthropic" ? modelSelection.supportsAutoMode : undefined,
   );
 }
 
@@ -742,7 +742,7 @@ export function deriveEffectiveComposerModelState(input: {
         activeSelection.model,
       )
     : null;
-  const unlistedDraftModel = input.selectedProvider === "pi" ? selectedDraftModel : null;
+  const unlistedDraftModel = input.selectedProvider === "openai" ? selectedDraftModel : null;
   const selectedModel =
     resolveAvailableModel(activeSelection?.model) ??
     resolveAvailableModel(
@@ -762,7 +762,7 @@ export function deriveEffectiveComposerModelState(input: {
     input.availableModelOptionsByProvider?.[input.selectedProvider]?.[0]?.slug ??
     selectedDraftModel ??
     baseModel ??
-    getDefaultModel("codex");
+    getDefaultModel("openai");
   const modelOptions = deriveEffectiveComposerModelOptions(input);
 
   return {
@@ -790,7 +790,7 @@ export function resolvePreferredComposerModelSelection(input: {
     input.threadModelSelection?.provider ??
     input.projectModelSelection?.provider ??
     input.defaultProvider ??
-    "codex";
+    "openai";
 
   return (
     input.draft?.modelSelectionByProvider?.[preferredProvider] ??
@@ -801,9 +801,9 @@ export function resolvePreferredComposerModelSelection(input: {
       ? input.projectModelSelection
       : null) ?? {
       provider:
-        preferredProvider === "pi" || preferredProvider === "engine" ? "codex" : preferredProvider,
+        preferredProvider === "openai" || preferredProvider === "engine" ? "openai" : preferredProvider,
       model: getDefaultModel(
-        preferredProvider === "pi" || preferredProvider === "engine" ? "codex" : preferredProvider,
+        preferredProvider === "openai" || preferredProvider === "engine" ? "openai" : preferredProvider,
       ),
     }
   );

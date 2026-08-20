@@ -7,7 +7,7 @@ import type { ProviderMentionReference, ProviderSkillReference } from "@caide/co
 import { isThreadMentionPath, threadIdFromThreadMentionPath } from "@caide/shared/threadMentions";
 
 export function skillMentionPrefix(provider: string): string {
-  return provider === "pi" ? "/skill:" : "/";
+  return provider === "openai" ? "/skill:" : "/";
 }
 
 // The alternation must be unambiguous — a backslash may only match the escape
@@ -80,7 +80,7 @@ export function promptIncludesSkillMention(
 ): boolean {
   const escapedSkillName = escapeRegExp(skillName);
   const prefixes =
-    provider === "pi" ? [skillMentionPrefix(provider)] : [skillMentionPrefix(provider), "$"];
+    provider === "openai" ? [skillMentionPrefix(provider)] : [skillMentionPrefix(provider), "$"];
   return prefixes.some((prefix) => {
     const pattern = new RegExp(`(^|\\s)${escapeRegExp(prefix)}${escapedSkillName}(?=\\s|$)`, "i");
     return pattern.test(prompt);

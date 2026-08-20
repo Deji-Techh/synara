@@ -18,7 +18,7 @@ import {
 } from "./serverReactQuery";
 
 const READY_CODEX_STATUS = {
-  provider: "codex",
+  provider: "openai",
   status: "ready",
   available: true,
   authStatus: "authenticated",
@@ -204,7 +204,7 @@ describe("serverAllProviderUsageQueryOptions", () => {
 describe("serverProviderUsageSnapshotQueryOptions", () => {
   it("can be disabled by privacy-safe active surfaces", () => {
     const options = serverProviderUsageSnapshotQueryOptions({
-      provider: "cursor",
+      provider: "openai",
       enabled: false,
     });
 

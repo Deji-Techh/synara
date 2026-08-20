@@ -17,7 +17,7 @@ const PROJECT_ID = ProjectId.makeUnsafe("project-bootstrap");
 const THREAD_ID = ThreadId.makeUnsafe("thread-bootstrap");
 
 function modelSelection(
-  provider: "codex" | "claudeAgent",
+  provider: "openai" | "anthropic",
   model: string,
   options?: ModelSelection["options"],
 ): ModelSelection {
@@ -61,9 +61,9 @@ function makeComposerDraftState(
     mentions: [],
     queuedTurns: [],
     modelSelectionByProvider: {
-      claudeAgent: modelSelection("claudeAgent", "claude-opus-4-6", { effort: "max" }),
+      claudeAgent: modelSelection("anthropic", "claude-opus-4-6", { effort: "max" }),
     },
-    activeProvider: "claudeAgent",
+    activeProvider: "anthropic",
     runtimeMode: null,
     interactionMode: null,
     mode: null,
@@ -154,7 +154,7 @@ describe("threadBootstrap", () => {
       createActiveThreadSnapshot(
         {
           projectId: PROJECT_ID,
-          modelSelection: modelSelection("codex", "gpt-5"),
+          modelSelection: modelSelection("openai", "gpt-5"),
           runtimeMode: "full-access",
           interactionMode: "default",
         },
@@ -162,7 +162,7 @@ describe("threadBootstrap", () => {
       ),
     ).toEqual({
       projectId: PROJECT_ID,
-      modelSelection: modelSelection("codex", "gpt-5"),
+      modelSelection: modelSelection("openai", "gpt-5"),
       runtimeMode: "full-access",
       interactionMode: "default",
       envMode: undefined,
@@ -286,18 +286,18 @@ describe("threadBootstrap", () => {
         activeDraftThread: null,
         activeThread: {
           projectId: PROJECT_ID,
-          modelSelection: modelSelection("codex", "gpt-5"),
+          modelSelection: modelSelection("openai", "gpt-5"),
           runtimeMode: "full-access",
           interactionMode: "default",
         },
         draftComposerState: makeComposerDraftState(),
         draftThread: makeDraftThread(),
         options: undefined,
-        projectDefaultModelSelection: modelSelection("codex", "gpt-5.4"),
+        projectDefaultModelSelection: modelSelection("openai", "gpt-5.4"),
         projectId: PROJECT_ID,
       }),
     ).toEqual({
-      modelSelection: modelSelection("claudeAgent", "claude-opus-4-6", {
+      modelSelection: modelSelection("anthropic", "claude-opus-4-6", {
         effort: "max",
       }),
       runtimeMode: "approval-required",
@@ -316,14 +316,14 @@ describe("threadBootstrap", () => {
         activeDraftThread: null,
         activeThread: {
           projectId: PROJECT_ID,
-          modelSelection: modelSelection("codex", "gpt-5"),
+          modelSelection: modelSelection("openai", "gpt-5"),
           runtimeMode: "full-access",
           interactionMode: "plan",
         },
         draftComposerState: makeComposerDraftState(),
         draftThread: null,
         options: undefined,
-        projectDefaultModelSelection: modelSelection("codex", "gpt-5.4"),
+        projectDefaultModelSelection: modelSelection("openai", "gpt-5.4"),
         projectId: PROJECT_ID,
       }).interactionMode,
     ).toBe("default");
@@ -335,14 +335,14 @@ describe("threadBootstrap", () => {
         activeDraftThread: null,
         activeThread: {
           projectId: PROJECT_ID,
-          modelSelection: modelSelection("codex", "gpt-5"),
+          modelSelection: modelSelection("openai", "gpt-5"),
           runtimeMode: "full-access",
           interactionMode: "default",
         },
         draftComposerState: makeComposerDraftState(),
         draftThread: makeDraftThread({ interactionMode: "plan" }),
         options: undefined,
-        projectDefaultModelSelection: modelSelection("codex", "gpt-5.4"),
+        projectDefaultModelSelection: modelSelection("openai", "gpt-5.4"),
         projectId: PROJECT_ID,
       }).interactionMode,
     ).toBe("plan");
@@ -354,7 +354,7 @@ describe("threadBootstrap", () => {
         activeDraftThread: null,
         activeThread: {
           projectId: PROJECT_ID,
-          modelSelection: modelSelection("codex", "gpt-5"),
+          modelSelection: modelSelection("openai", "gpt-5"),
           runtimeMode: "full-access",
           interactionMode: "default",
           envMode: "worktree",
@@ -364,7 +364,7 @@ describe("threadBootstrap", () => {
         options: {
           envMode: "local",
         },
-        projectDefaultModelSelection: modelSelection("codex", "gpt-5.4"),
+        projectDefaultModelSelection: modelSelection("openai", "gpt-5.4"),
         projectId: PROJECT_ID,
       }),
     ).toMatchObject({

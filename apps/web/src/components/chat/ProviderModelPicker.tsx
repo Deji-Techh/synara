@@ -110,7 +110,7 @@ function providerIconClassName(
   provider: ProviderKind | ProviderPickerKind,
   fallbackClassName: string,
 ): string {
-  return provider === "claudeAgent" || provider === "antigravity" || provider === "pi"
+  return provider === "anthropic" || provider === "google" || provider === "openai"
     ? "text-foreground"
     : fallbackClassName;
 }
@@ -140,7 +140,7 @@ function resolveSelectedModelLabel(input: {
   if (exact) {
     return exact.name;
   }
-  if (input.provider === "cursor") {
+  if (input.provider === "openai") {
     const baseModel = stripParameterizedModelSuffix(input.model);
     const baseMatch = input.options.find(
       (option) => stripParameterizedModelSuffix(option.slug) === baseModel,
@@ -259,11 +259,11 @@ export const ProviderModelMenuItems = function ProviderModelMenuItems(
   };
   const toggleFavoriteModel = (provider: FavoriteModelProvider, slug: string) => {
     const setFavoriteModelSlugs =
-      provider === "cursor"
+      provider === "openai"
         ? setCursorFavoriteModelSlugs
-        : provider === "kilo"
+        : provider === "openai"
           ? setKiloFavoriteModelSlugs
-          : provider === "pi"
+          : provider === "openai"
             ? setPiFavoriteModelSlugs
             : setOpenCodeFavoriteModelSlugs;
     setFavoriteModelSlugs((current) => toggleFavoriteModelSlug(current, slug));
@@ -285,10 +285,10 @@ export const ProviderModelMenuItems = function ProviderModelMenuItems(
 
     const providerOptions = props.modelOptionsByProvider[provider];
     const shouldShowSearch =
-      (provider === "kilo" ||
-        provider === "opencode" ||
-        provider === "cursor" ||
-        provider === "pi") &&
+      (provider === "openai" ||
+        provider === "openai" ||
+        provider === "openai" ||
+        provider === "openai") &&
       providerOptions.length >= SEARCHABLE_MODEL_PICKER_THRESHOLD;
     const normalizedModelSearchQuery = deferredModelSearchQuery.trim().toLowerCase();
     const filteredOptions =
@@ -327,7 +327,7 @@ export const ProviderModelMenuItems = function ProviderModelMenuItems(
         </MenuRadioGroup>
       ) : (
         <div className="px-2 py-2 text-muted-foreground text-sm">
-          {provider === "pi" && normalizedModelSearchQuery.length === 0
+          {provider === "openai" && normalizedModelSearchQuery.length === 0
             ? "No Pi models found"
             : "No matches"}
         </div>

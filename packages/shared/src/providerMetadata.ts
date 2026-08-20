@@ -23,80 +23,8 @@ export interface ProviderDescriptor {
 
 export const PROVIDER_DESCRIPTORS = [
   {
-    kind: "codex",
-    displayName: PROVIDER_DISPLAY_NAMES.codex,
-    available: true,
-    supportsNativeTurnSteering: true,
-    usage: {
-      signInCommand: "codex login",
-      learnMoreHref: "https://platform.openai.com/usage",
-    },
-  },
-  {
-    kind: "claudeAgent",
-    displayName: PROVIDER_DISPLAY_NAMES.claudeAgent,
-    available: true,
-    supportsNativeTurnSteering: true,
-    usage: {
-      signInCommand: "claude",
-      learnMoreHref: "https://docs.anthropic.com/en/docs/about-claude/models#rate-limits",
-    },
-  },
-  {
-    kind: "cursor",
-    displayName: PROVIDER_DISPLAY_NAMES.cursor,
-    available: true,
-    supportsNativeTurnSteering: false,
-    usage: {
-      signInCommand: "cursor-agent login",
-      learnMoreHref: "https://cursor.com/dashboard",
-    },
-  },
-  {
-    kind: "antigravity",
-    displayName: PROVIDER_DISPLAY_NAMES.antigravity,
-    available: true,
-    supportsNativeTurnSteering: false,
-    usage: null,
-  },
-  {
-    kind: "grok",
-    displayName: PROVIDER_DISPLAY_NAMES.grok,
-    available: true,
-    supportsNativeTurnSteering: false,
-    usage: null,
-  },
-  {
-    kind: "droid",
-    displayName: PROVIDER_DISPLAY_NAMES.droid,
-    available: true,
-    supportsNativeTurnSteering: false,
-    usage: null,
-  },
-  {
-    kind: "kilo",
-    displayName: PROVIDER_DISPLAY_NAMES.kilo,
-    available: true,
-    supportsNativeTurnSteering: false,
-    usage: null,
-  },
-  {
-    kind: "opencode",
-    displayName: PROVIDER_DISPLAY_NAMES.opencode,
-    available: true,
-    supportsNativeTurnSteering: false,
-    usage: null,
-  },
-  {
     kind: "engine",
     displayName: PROVIDER_DISPLAY_NAMES.engine,
-    available: true,
-    supportsNativeTurnSteering: true,
-    usage: null,
-  },
-  {
-    kind: "pi",
-    displayName: PROVIDER_DISPLAY_NAMES.pi,
     available: true,
     supportsNativeTurnSteering: true,
     usage: null,
@@ -188,6 +116,13 @@ export const PROVIDER_DESCRIPTORS = [
   {
     kind: "opencodeZen",
     displayName: PROVIDER_DISPLAY_NAMES.opencodeZen,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "opencodeGo",
+    displayName: PROVIDER_DISPLAY_NAMES.opencodeGo,
     available: true,
     supportsNativeTurnSteering: false,
     usage: null,

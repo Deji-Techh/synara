@@ -24,7 +24,7 @@ function makeProject(id: string, workspaceRoot = WORKSPACE_ROOT) {
     title: "caide",
     workspaceRoot,
     defaultModelSelection: {
-      provider: "codex" as const,
+      provider: "openai" as const,
       model: "gpt-5",
     },
     scripts: [],

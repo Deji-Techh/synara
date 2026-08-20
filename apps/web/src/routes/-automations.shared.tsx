@@ -869,7 +869,7 @@ export function AutomationModelPicker({
   });
   const providerStatus = findProviderStatus(providerStatuses, value.provider);
   const persistedRuntimeModel =
-    value.provider === "claudeAgent" && typeof value.supportsAutoMode === "boolean"
+    value.provider === "anthropic" && typeof value.supportsAutoMode === "boolean"
       ? {
           slug: value.model,
           name: value.model,
@@ -915,7 +915,7 @@ export function reconcileAutomationFormAutoModeSupport(
   supported: boolean,
 ): AutomationFormState {
   const modelSelection =
-    form.modelSelection.provider === "claudeAgent" &&
+    form.modelSelection.provider === "anthropic" &&
     form.modelSelection.supportsAutoMode !== supported
       ? { ...form.modelSelection, supportsAutoMode: supported }
       : form.modelSelection;
@@ -961,7 +961,7 @@ export function AutomationDialog({
   const projectThreads = threads.filter((thread) => thread.projectId === form.projectId);
   const selectedProject = projects.find((project) => project.id === form.projectId);
   const [selectedModelSupportsAuto, setSelectedModelSupportsAuto] = useState(() =>
-    form.modelSelection.provider === "claudeAgent"
+    form.modelSelection.provider === "anthropic"
       ? form.modelSelection.supportsAutoMode !== false
       : providerSupportsAutoRuntimeMode(form.modelSelection.provider),
   );

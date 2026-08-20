@@ -41,7 +41,7 @@ const baseStats = {
   },
   activeHours: { startHour: null, endHour: null, turnCount: 0, label: null },
   insights: {
-    topProvider: "codex",
+    topProvider: "openai",
     topProviderPercent: 66.7,
     topReasoning: null,
     topReasoningPercent: null,
@@ -49,8 +49,8 @@ const baseStats = {
     totalSkillsUsed: 0,
   },
   providerModels: [
-    { provider: "codex", model: "gpt-5-codex", turnCount: 2, percent: 66.7 },
-    { provider: "claudeAgent", model: "claude-sonnet-4-6", turnCount: 1, percent: 33.3 },
+    { provider: "openai", model: "gpt-5-codex", turnCount: 2, percent: 66.7 },
+    { provider: "anthropic", model: "claude-sonnet-4-6", turnCount: 1, percent: 33.3 },
   ],
   skills: [],
   mostUsedSkill: null,
@@ -70,13 +70,13 @@ const tokenStats = {
   lifetimeTotalTokens: 6000,
   peakDayTokens: 5000,
   peakDay: "2026-07-02",
-  providers: ["claudeAgent", "codex"],
+  providers: ["anthropic", "openai"],
   unavailableProviders: [],
-  topProvider: "claudeAgent",
+  topProvider: "anthropic",
   topProviderPercent: 83.3,
   models: [
-    { provider: "claudeAgent", model: "claude-sonnet-4-6", tokens: 5000, percent: 83.3 },
-    { provider: "codex", model: "gpt-5-codex", tokens: 1000, percent: 16.7 },
+    { provider: "anthropic", model: "claude-sonnet-4-6", tokens: 5000, percent: 83.3 },
+    { provider: "openai", model: "gpt-5-codex", tokens: 1000, percent: 16.7 },
   ],
   heatmapMetric: "tokens",
   heatmap: [tokenHeatmapCell],
@@ -85,7 +85,7 @@ const tokenStats = {
 describe("profile selectors", () => {
   it("prefers token telemetry once available", () => {
     expect(selectProfileTopProvider(baseStats, tokenStats)).toEqual({
-      provider: "claudeAgent",
+      provider: "anthropic",
       percent: 83.3,
       metric: "tokens",
     });
@@ -101,7 +101,7 @@ describe("profile selectors", () => {
 
   it("falls back to core profile stats while token telemetry is unavailable", () => {
     expect(selectProfileTopProvider(baseStats, null)).toEqual({
-      provider: "codex",
+      provider: "openai",
       percent: 66.7,
       metric: "turns",
     });

@@ -40,7 +40,7 @@ function makeThreadCreateCommand(threadId = "thread-promote") {
     projectId: ProjectId.makeUnsafe("project-promote"),
     title: "Promoted thread",
     modelSelection: {
-      provider: "codex",
+      provider: "openai",
       model: "gpt-5",
     },
     runtimeMode: "full-access",
@@ -113,7 +113,7 @@ describe("threadCreatePromotion", () => {
           projectId,
           title: "Promoted thread",
           modelSelection: {
-            provider: "codex",
+            provider: "openai",
             model: "gpt-5",
           },
           runtimeMode: "full-access",
@@ -183,7 +183,7 @@ describe("threadCreatePromotion", () => {
             projectId,
             title: "Promoted thread",
             modelSelection: {
-              provider: "codex",
+              provider: "openai",
               model: "gpt-5",
             },
             runtimeMode: "full-access",

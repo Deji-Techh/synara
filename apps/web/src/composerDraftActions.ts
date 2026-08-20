@@ -841,7 +841,7 @@ export const createComposerDraftStoreState =
               provider,
               model,
               opts,
-              current?.provider === "claudeAgent" ? current.supportsAutoMode : undefined,
+              current?.provider === "anthropic" ? current.supportsAutoMode : undefined,
             );
           } else if (current?.options) {
             // Remove options but keep the selection
@@ -849,7 +849,7 @@ export const createComposerDraftStoreState =
               provider,
               current.model,
               undefined,
-              current.provider === "claudeAgent" ? current.supportsAutoMode : undefined,
+              current.provider === "anthropic" ? current.supportsAutoMode : undefined,
             );
           }
         }
@@ -903,7 +903,7 @@ export const createComposerDraftStoreState =
             normalizedProvider,
             nextModel,
             providerOpts,
-            currentForProvider?.provider === "claudeAgent"
+            currentForProvider?.provider === "anthropic"
               ? currentForProvider.supportsAutoMode
               : undefined,
           );
@@ -912,7 +912,7 @@ export const createComposerDraftStoreState =
             normalizedProvider,
             currentForProvider.model,
             undefined,
-            currentForProvider.provider === "claudeAgent"
+            currentForProvider.provider === "anthropic"
               ? currentForProvider.supportsAutoMode
               : undefined,
           );
@@ -936,7 +936,7 @@ export const createComposerDraftStoreState =
                 normalizedProvider,
                 stickyBase.model,
                 providerOpts,
-                stickyBase.provider === "claudeAgent" ? stickyBase.supportsAutoMode : undefined,
+                stickyBase.provider === "anthropic" ? stickyBase.supportsAutoMode : undefined,
               ),
             );
           } else if (stickyBase.options) {
@@ -944,7 +944,7 @@ export const createComposerDraftStoreState =
               normalizedProvider,
               stickyBase.model,
               undefined,
-              stickyBase.provider === "claudeAgent" ? stickyBase.supportsAutoMode : undefined,
+              stickyBase.provider === "anthropic" ? stickyBase.supportsAutoMode : undefined,
             );
           }
           nextStickyActiveProvider = base.activeProvider ?? normalizedProvider;

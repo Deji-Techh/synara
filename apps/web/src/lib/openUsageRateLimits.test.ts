@@ -7,7 +7,7 @@ describe("openUsageRateLimits", () => {
   it("normalizes OpenUsage progress lines into shared provider rate limits", () => {
     expect(
       normalizeOpenUsageSnapshot({
-        providerId: "codex",
+        providerId: "openai",
         fetchedAt: "2099-04-08T18:00:00.000Z",
         lines: [
           {
@@ -29,7 +29,7 @@ describe("openUsageRateLimits", () => {
         ],
       }),
     ).toEqual({
-      provider: "codex",
+      provider: "openai",
       updatedAt: "2099-04-08T18:00:00.000Z",
       limits: [
         {
@@ -53,7 +53,7 @@ describe("openUsageRateLimits", () => {
       mergeProviderRateLimits(
         [
           {
-            provider: "codex",
+            provider: "openai",
             updatedAt: "2099-04-08T18:05:00.000Z",
             limits: [
               {
@@ -67,7 +67,7 @@ describe("openUsageRateLimits", () => {
         ],
         [
           {
-            provider: "codex",
+            provider: "openai",
             updatedAt: "2099-04-08T18:00:00.000Z",
             limits: [
               {
@@ -82,7 +82,7 @@ describe("openUsageRateLimits", () => {
       ),
     ).toEqual([
       {
-        provider: "codex",
+        provider: "openai",
         updatedAt: "2099-04-08T18:05:00.000Z",
         limits: [
           {
@@ -107,7 +107,7 @@ describe("openUsageRateLimits", () => {
       mergeProviderRateLimits(
         [
           {
-            provider: "codex",
+            provider: "openai",
             updatedAt: "2099-04-08T18:00:00.000Z",
             limits: [
               {
@@ -121,7 +121,7 @@ describe("openUsageRateLimits", () => {
         ],
         [
           {
-            provider: "codex",
+            provider: "openai",
             updatedAt: "2099-04-08T18:05:00.000Z",
             limits: [
               {
@@ -136,7 +136,7 @@ describe("openUsageRateLimits", () => {
       ),
     ).toEqual([
       {
-        provider: "codex",
+        provider: "openai",
         updatedAt: "2099-04-08T18:05:00.000Z",
         limits: [
           {
@@ -155,7 +155,7 @@ describe("openUsageRateLimits", () => {
       mergeProviderRateLimits(
         [
           {
-            provider: "codex",
+            provider: "openai",
             updatedAt: "2099-04-08T18:00:00.000Z",
             limits: [
               {
@@ -169,7 +169,7 @@ describe("openUsageRateLimits", () => {
         ],
         [
           {
-            provider: "codex",
+            provider: "openai",
             updatedAt: "2099-04-08T18:05:00.000Z",
             limits: [
               {
@@ -182,7 +182,7 @@ describe("openUsageRateLimits", () => {
       ),
     ).toEqual([
       {
-        provider: "codex",
+        provider: "openai",
         updatedAt: "2099-04-08T18:05:00.000Z",
         limits: [
           {
@@ -199,7 +199,7 @@ describe("openUsageRateLimits", () => {
   it("preserves OpenUsage text lines for daily token usage summaries", () => {
     expect(
       normalizeOpenUsageUsageLines({
-        providerId: "codex",
+        providerId: "openai",
         fetchedAt: "2099-04-08T18:00:00.000Z",
         lines: [
           {

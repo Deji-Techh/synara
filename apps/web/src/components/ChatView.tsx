@@ -929,23 +929,23 @@ function getProviderStartOptionsCustomBinaryPath(
   provider: ProviderKind,
 ): string | null {
   switch (provider) {
-    case "codex":
+    case "openai":
       return normalizeCustomBinaryPath(providerOptions?.codex?.binaryPath);
-    case "claudeAgent":
+    case "anthropic":
       return normalizeCustomBinaryPath(providerOptions?.claudeAgent?.binaryPath);
-    case "antigravity":
+    case "google":
       return normalizeCustomBinaryPath(providerOptions?.antigravity?.binaryPath);
-    case "grok":
+    case "openai":
       return normalizeCustomBinaryPath(providerOptions?.grok?.binaryPath);
-    case "droid":
+    case "openai":
       return normalizeCustomBinaryPath(providerOptions?.droid?.binaryPath);
-    case "kilo":
+    case "openai":
       return normalizeCustomBinaryPath(providerOptions?.kilo?.binaryPath);
-    case "opencode":
+    case "openai":
       return normalizeCustomBinaryPath(providerOptions?.opencode?.binaryPath);
-    case "cursor":
+    case "openai":
       return normalizeCustomBinaryPath(providerOptions?.cursor?.binaryPath);
-    case "pi":
+    case "openai":
       return normalizeCustomBinaryPath(providerOptions?.pi?.binaryPath);
     case "engine":
       return null;
@@ -1860,7 +1860,7 @@ export default function ChatView({
             threadId,
             draftThread,
             fallbackDraftProject?.defaultModelSelection ?? {
-              provider: "codex",
+              provider: "openai",
               model: DEFAULT_MODEL_BY_PROVIDER.codex,
             },
             localDraftError,
@@ -2282,15 +2282,15 @@ export default function ChatView({
       (projectModelSelection?.provider === provider ? projectModelSelection.model : null);
 
     return {
-      codex: resolveHint("codex"),
-      claudeAgent: resolveHint("claudeAgent"),
-      cursor: resolveHint("cursor"),
-      antigravity: resolveHint("antigravity"),
-      grok: resolveHint("grok"),
-      droid: resolveHint("droid"),
-      kilo: resolveHint("kilo"),
-      opencode: resolveHint("opencode"),
-      pi: resolveHint("pi"),
+      codex: resolveHint("openai"),
+      claudeAgent: resolveHint("anthropic"),
+      cursor: resolveHint("openai"),
+      antigravity: resolveHint("google"),
+      grok: resolveHint("openai"),
+      droid: resolveHint("openai"),
+      kilo: resolveHint("openai"),
+      opencode: resolveHint("openai"),
+      pi: resolveHint("openai"),
       engine: resolveHint("engine"),
       openai: resolveHint("openai"),
       anthropic: resolveHint("anthropic"),
@@ -2342,11 +2342,11 @@ export default function ChatView({
   const draftModelSelectionForSelectedProvider =
     composerDraft.modelSelectionByProvider[selectedProvider] ?? null;
   const persistedClaudeSupportsAutoMode =
-    selectedProvider === "claudeAgent"
-      ? draftModelSelectionForSelectedProvider?.provider === "claudeAgent" &&
+    selectedProvider === "anthropic"
+      ? draftModelSelectionForSelectedProvider?.provider === "anthropic" &&
         draftModelSelectionForSelectedProvider.model === selectedModel
         ? draftModelSelectionForSelectedProvider.supportsAutoMode
-        : activeThread?.modelSelection.provider === "claudeAgent" &&
+        : activeThread?.modelSelection.provider === "anthropic" &&
             activeThread.modelSelection.model === selectedModel
           ? activeThread.modelSelection.supportsAutoMode
           : undefined
@@ -2360,7 +2360,7 @@ export default function ChatView({
     if (discovered) {
       return discovered;
     }
-    return selectedProvider === "claudeAgent" &&
+    return selectedProvider === "anthropic" &&
       typeof persistedClaudeSupportsAutoMode === "boolean"
       ? {
           slug: selectedModel,
@@ -2383,7 +2383,7 @@ export default function ChatView({
   const selectedPromptEffort = composerProviderState.promptEffort;
   const selectedModelOptionsForDispatch = composerProviderState.modelOptionsForDispatch;
   const selectedModelSelection = useMemo<ModelSelection>(() => {
-    if (selectedProvider === "pi" && draftModelSelectionForSelectedProvider?.provider === "pi") {
+    if (selectedProvider === "openai" && draftModelSelectionForSelectedProvider?.provider === "openai") {
       return buildModelSelection(
         selectedProvider,
         draftModelSelectionForSelectedProvider.model,
@@ -2394,7 +2394,7 @@ export default function ChatView({
       selectedProvider,
       selectedModel,
       selectedModelOptionsForDispatch,
-      selectedProvider === "claudeAgent" ? selectedRuntimeModel?.supportsAutoMode : undefined,
+      selectedProvider === "anthropic" ? selectedRuntimeModel?.supportsAutoMode : undefined,
     );
   }, [
     draftModelSelectionForSelectedProvider,
@@ -2422,12 +2422,12 @@ export default function ChatView({
       : (activeThread?.modelSelection ?? activeProject?.defaultModelSelection ?? null);
   const providerModelsLoading = selectedProviderModelsLoading;
   const selectedProviderRequiresRuntimeModels =
-    selectedProvider === "cursor" ||
-    selectedProvider === "antigravity" ||
-    selectedProvider === "droid" ||
-    selectedProvider === "kilo" ||
-    selectedProvider === "opencode" ||
-    selectedProvider === "pi";
+    selectedProvider === "openai" ||
+    selectedProvider === "google" ||
+    selectedProvider === "openai" ||
+    selectedProvider === "openai" ||
+    selectedProvider === "openai" ||
+    selectedProvider === "openai";
   const showComposerModelBootstrapSkeleton = shouldShowComposerModelBootstrapSkeleton({
     selectedProvider,
     selectedModel,
@@ -3675,22 +3675,22 @@ export default function ChatView({
       cwd: composerSkillCwd,
       threadId,
       binaryPath:
-        (selectedProvider === "opencode"
+        (selectedProvider === "openai"
           ? providerOptionsForDispatch?.opencode?.binaryPath
-          : selectedProvider === "kilo"
+          : selectedProvider === "openai"
             ? providerOptionsForDispatch?.kilo?.binaryPath
             : null) ?? null,
       serverUrl:
-        (selectedProvider === "opencode"
+        (selectedProvider === "openai"
           ? providerOptionsForDispatch?.opencode?.serverUrl
-          : selectedProvider === "kilo"
+          : selectedProvider === "openai"
             ? providerOptionsForDispatch?.kilo?.serverUrl
             : null) ?? null,
       experimentalWebSockets:
-        selectedProvider === "opencode"
+        selectedProvider === "openai"
           ? providerOptionsForDispatch?.opencode?.experimentalWebSockets
           : undefined,
-      agentDir: selectedProvider === "pi" ? settings.piAgentDir || null : null,
+      agentDir: selectedProvider === "openai" ? settings.piAgentDir || null : null,
       enabled:
         (composerTriggerKind === "slash-command" || composerTriggerKind === "slash-model") &&
         supportsNativeSlashCommandDiscovery(providerComposerCapabilitiesQuery.data) &&
@@ -3698,15 +3698,15 @@ export default function ChatView({
     }),
   );
   const canDiscoverProviderSkills =
-    selectedProvider === "pi" || supportsSkillDiscovery(providerComposerCapabilitiesQuery.data);
+    selectedProvider === "openai" || supportsSkillDiscovery(providerComposerCapabilitiesQuery.data);
   const providerSkillsQuery = useQuery(
     providerSkillsQueryOptions({
       provider: selectedProvider,
       cwd: composerSkillCwd,
       threadId,
-      agentDir: selectedProvider === "pi" ? settings.piAgentDir || null : null,
+      agentDir: selectedProvider === "openai" ? settings.piAgentDir || null : null,
       enabled:
-        (isSkillTrigger || composerTriggerKind === "slash-command" || selectedProvider === "pi") &&
+        (isSkillTrigger || composerTriggerKind === "slash-command" || selectedProvider === "openai") &&
         canDiscoverProviderSkills &&
         composerSkillCwd !== null,
     }),
@@ -4044,7 +4044,7 @@ export default function ChatView({
       ? null
       : activeProviderStatus;
   const voiceProviderStatus = useMemo(
-    () => findProviderStatus(providerStatuses, "codex"),
+    () => findProviderStatus(providerStatuses, "openai"),
     [providerStatuses],
   );
   const refreshProviderStatuses = useRefreshProviderStatusesNow();
@@ -4598,7 +4598,7 @@ export default function ChatView({
       onTerminalMetadataChange: (
         terminalId: string,
         metadata: {
-          cliKind: "codex" | "claude" | "antigravity" | null;
+          cliKind: "openai" | "claude" | "google" | null;
           label: string;
         },
       ) => {
@@ -6271,7 +6271,7 @@ export default function ChatView({
         provider,
         resolvedModel,
         undefined,
-        provider === "claudeAgent" ? runtimeModel?.supportsAutoMode : undefined,
+        provider === "anthropic" ? runtimeModel?.supportsAutoMode : undefined,
       );
       const providerStatus = findProviderStatus(providerStatuses, provider);
       const nextRuntimeMode =
@@ -6287,7 +6287,7 @@ export default function ChatView({
         persistRuntimeMode: persistRuntimeModeChange,
         commit: () => {
           setComposerDraftModelSelectionAndSticky(activeThread.id, nextModelSelection);
-          if (provider === "cursor") {
+          if (provider === "openai") {
             setComposerDraftProviderModelOptions(activeThread.id, provider, undefined, {
               persistSticky: true,
               model: resolvedModel,
@@ -8399,7 +8399,7 @@ export default function ChatView({
           targetProjectDefaultModelSelectionForSend?.model ||
           DEFAULT_MODEL_BY_PROVIDER.codex,
         selectedModelSelectionForSend.options,
-        selectedModelSelectionForSend.provider === "claudeAgent"
+        selectedModelSelectionForSend.provider === "anthropic"
           ? selectedModelSelectionForSend.supportsAutoMode
           : undefined,
       );
@@ -9583,7 +9583,7 @@ export default function ChatView({
   const runtimeUsageContextWindow = useMemo(
     () =>
       activeContextWindow ??
-      (selectedProvider === "claudeAgent"
+      (selectedProvider === "anthropic"
         ? deriveSelectedContextWindowSnapshot(composerTraitSelection.contextWindow)
         : null),
     [activeContextWindow, composerTraitSelection.contextWindow, selectedProvider],
@@ -9593,7 +9593,7 @@ export default function ChatView({
       deriveContextWindowSelectionStatus({
         activeSnapshot: runtimeUsageContextWindow,
         selectedValue:
-          selectedProvider === "claudeAgent" ? composerTraitSelection.contextWindow : null,
+          selectedProvider === "anthropic" ? composerTraitSelection.contextWindow : null,
       }),
     [runtimeUsageContextWindow, composerTraitSelection.contextWindow, selectedProvider],
   );
@@ -10455,7 +10455,7 @@ export default function ChatView({
         return;
       }
       if (item.type === "provider-native-command") {
-        if (selectedProvider === "codex" && item.command.toLowerCase() === "review") {
+        if (selectedProvider === "openai" && item.command.toLowerCase() === "review") {
           setComposerCommandPicker("review-target");
           setComposerHighlightedItemId("review-target:changes");
           scheduleComposerFocus();

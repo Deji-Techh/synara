@@ -62,7 +62,7 @@ describe("CreateProjectDialog GitHub source", () => {
     expect(document.body.textContent).toContain("Private access");
     await page.getByLabelText("Repository").fill("openai/codex");
 
-    expect((page.getByLabelText("Folder name").element() as HTMLInputElement).value).toBe("codex");
+    expect((page.getByLabelText("Folder name").element() as HTMLInputElement).value).toBe("openai");
     expect(document.body.textContent).toContain("Final location: /Users/test/Developer/codex");
 
     await page.getByRole("button", { name: "Clone and add" }).click();
@@ -72,7 +72,7 @@ describe("CreateProjectDialog GitHub source", () => {
       source: "github",
       repository: "openai/codex",
       destinationParent: "/Users/test/Developer",
-      directoryName: "codex",
+      directoryName: "openai",
       spaceId: null,
     });
     expect(value.operationId).toEqual(expect.any(String));

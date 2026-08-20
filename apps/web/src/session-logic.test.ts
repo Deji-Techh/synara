@@ -853,26 +853,26 @@ describe("hasLiveTurnTailWork", () => {
 
 describe("PROVIDER_OPTIONS", () => {
   it("lists available providers", () => {
-    const claude = PROVIDER_OPTIONS.find((option) => option.value === "claudeAgent");
-    const cursor = PROVIDER_OPTIONS.find((option) => option.value === "cursor");
-    const grok = PROVIDER_OPTIONS.find((option) => option.value === "grok");
-    const droid = PROVIDER_OPTIONS.find((option) => option.value === "droid");
-    const kilo = PROVIDER_OPTIONS.find((option) => option.value === "kilo");
-    const opencode = PROVIDER_OPTIONS.find((option) => option.value === "opencode");
-    const pi = PROVIDER_OPTIONS.find((option) => option.value === "pi");
+    const claude = PROVIDER_OPTIONS.find((option) => option.value === "anthropic");
+    const cursor = PROVIDER_OPTIONS.find((option) => option.value === "openai");
+    const grok = PROVIDER_OPTIONS.find((option) => option.value === "openai");
+    const droid = PROVIDER_OPTIONS.find((option) => option.value === "openai");
+    const kilo = PROVIDER_OPTIONS.find((option) => option.value === "openai");
+    const opencode = PROVIDER_OPTIONS.find((option) => option.value === "openai");
+    const pi = PROVIDER_OPTIONS.find((option) => option.value === "openai");
     const engine = PROVIDER_OPTIONS.find((option) => option.value === "engine");
     const openai = PROVIDER_OPTIONS.find((option) => option.value === "openai");
     expect(PROVIDER_OPTIONS.map((option) => option.value)).toEqual([
-      "codex",
-      "claudeAgent",
-      "cursor",
-      "antigravity",
-      "grok",
-      "droid",
-      "kilo",
-      "opencode",
+      "openai",
+      "anthropic",
+      "openai",
+      "google",
+      "openai",
+      "openai",
+      "openai",
+      "openai",
       "engine",
-      "pi",
+      "openai",
       "openai",
       "anthropic",
       "google",
@@ -880,37 +880,37 @@ describe("PROVIDER_OPTIONS", () => {
       "ollama",
     ]);
     expect(claude).toEqual({
-      value: "claudeAgent",
+      value: "anthropic",
       label: "Claude",
       available: true,
     });
     expect(cursor).toEqual({
-      value: "cursor",
+      value: "openai",
       label: "Cursor",
       available: true,
     });
     expect(grok).toEqual({
-      value: "grok",
+      value: "openai",
       label: "Grok",
       available: true,
     });
     expect(droid).toEqual({
-      value: "droid",
+      value: "openai",
       label: "Droid",
       available: true,
     });
     expect(kilo).toEqual({
-      value: "kilo",
+      value: "openai",
       label: "Kilo",
       available: true,
     });
     expect(opencode).toEqual({
-      value: "opencode",
+      value: "openai",
       label: "OpenCode",
       available: true,
     });
     expect(pi).toEqual({
-      value: "pi",
+      value: "openai",
       label: "Pi",
       available: true,
     });

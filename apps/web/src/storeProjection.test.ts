@@ -196,7 +196,7 @@ describe("store projection", () => {
         projectId,
         title: "Stale project thread",
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5.3-codex",
         },
         runtimeMode: DEFAULT_RUNTIME_MODE,
@@ -402,7 +402,7 @@ describe("store projection", () => {
         projectId: ProjectId.makeUnsafe("project-1"),
         title: "Thread",
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5.3-codex",
         },
         runtimeMode: DEFAULT_RUNTIME_MODE,
@@ -508,7 +508,7 @@ describe("store projection", () => {
         projectId: ProjectId.makeUnsafe("project-1"),
         title: "Thread",
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5.3-codex",
         },
         runtimeMode: DEFAULT_RUNTIME_MODE,
@@ -655,7 +655,7 @@ describe("store projection", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "error",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "full-access",
           activeTurnId: null,
           lastError:
@@ -676,7 +676,7 @@ describe("store projection", () => {
     const readModel = makeReadModel(
       makeReadModelThread({
         modelSelection: {
-          provider: "claudeAgent",
+          provider: "anthropic",
           model: "claude-opus-4-6",
         },
       }),
@@ -692,13 +692,13 @@ describe("store projection", () => {
     const readModel = makeReadModel(
       makeReadModelThread({
         modelSelection: {
-          provider: "claudeAgent",
+          provider: "anthropic",
           model: "sonnet",
         },
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "claudeAgent",
+          providerName: "anthropic",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -717,13 +717,13 @@ describe("store projection", () => {
     const readModel = makeReadModel(
       makeReadModelThread({
         modelSelection: {
-          provider: "opencode",
+          provider: "openai",
           model: "openrouter/gpt-oss-120b:free",
         },
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "opencode",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -734,8 +734,8 @@ describe("store projection", () => {
 
     const next = syncServerReadModel(initialState, readModel);
 
-    expect(threadsOf(next)[0]?.modelSelection.provider).toBe("opencode");
-    expect(threadsOf(next)[0]?.session?.provider).toBe("opencode");
+    expect(threadsOf(next)[0]?.modelSelection.provider).toBe("openai");
+    expect(threadsOf(next)[0]?.session?.provider).toBe("openai");
   });
 
   it("preserves Pi as the active session provider", () => {
@@ -743,13 +743,13 @@ describe("store projection", () => {
     const readModel = makeReadModel(
       makeReadModelThread({
         modelSelection: {
-          provider: "pi",
+          provider: "openai",
           model: "anthropic/claude-sonnet-4-5",
         },
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "pi",
+          providerName: "openai",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -760,8 +760,8 @@ describe("store projection", () => {
 
     const next = syncServerReadModel(initialState, readModel);
 
-    expect(threadsOf(next)[0]?.modelSelection.provider).toBe("pi");
-    expect(threadsOf(next)[0]?.session?.provider).toBe("pi");
+    expect(threadsOf(next)[0]?.modelSelection.provider).toBe("openai");
+    expect(threadsOf(next)[0]?.session?.provider).toBe("openai");
   });
 
   it("preserves exact OpenCode thread model slugs from the read model", () => {
@@ -769,7 +769,7 @@ describe("store projection", () => {
     const readModel = makeReadModel(
       makeReadModelThread({
         modelSelection: {
-          provider: "opencode",
+          provider: "openai",
           model: "openai/gpt-5.4",
         },
       }),
@@ -787,7 +787,7 @@ describe("store projection", () => {
       projects: [
         makeReadModelProject({
           defaultModelSelection: {
-            provider: "opencode",
+            provider: "openai",
             model: "openai/gpt-5.4",
           },
         }),
@@ -821,11 +821,11 @@ describe("store projection", () => {
       makeThread({
         id: threadId,
         modelSelection: {
-          provider: "claudeAgent",
+          provider: "anthropic",
           model: "claude-opus-4-7",
         },
         session: {
-          provider: "claudeAgent",
+          provider: "anthropic",
           status: "running",
           orchestrationStatus: "running",
           activeTurnId: turnId,
@@ -867,7 +867,7 @@ describe("store projection", () => {
       makeReadModelThread({
         id: threadId,
         modelSelection: {
-          provider: "claudeAgent",
+          provider: "anthropic",
           model: "claude-opus-4-7",
         },
         latestTurn: {
@@ -895,7 +895,7 @@ describe("store projection", () => {
         session: {
           threadId,
           status: "running",
-          providerName: "claudeAgent",
+          providerName: "anthropic",
           runtimeMode: "full-access",
           activeTurnId: turnId,
           lastError: null,
@@ -973,11 +973,11 @@ describe("store projection", () => {
       makeThread({
         id: threadId,
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5-codex",
         },
         session: {
-          provider: "codex",
+          provider: "openai",
           status: "running",
           orchestrationStatus: "running",
           activeTurnId: turnId,
@@ -1020,7 +1020,7 @@ describe("store projection", () => {
       makeReadModelThread({
         id: threadId,
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5-codex",
         },
         latestTurn: {
@@ -1059,7 +1059,7 @@ describe("store projection", () => {
         session: {
           threadId,
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "full-access",
           activeTurnId: null,
           lastError: null,
@@ -1083,11 +1083,11 @@ describe("store projection", () => {
       makeThread({
         id: threadId,
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5-codex",
         },
         session: {
-          provider: "codex",
+          provider: "openai",
           status: "running",
           orchestrationStatus: "running",
           activeTurnId: staleTurnId,
@@ -1122,7 +1122,7 @@ describe("store projection", () => {
       makeReadModelThread({
         id: threadId,
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5-codex",
         },
         latestTurn: {
@@ -1138,7 +1138,7 @@ describe("store projection", () => {
         session: {
           threadId,
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "full-access",
           activeTurnId: null,
           lastError: null,
@@ -1166,11 +1166,11 @@ describe("store projection", () => {
       makeThread({
         id: threadId,
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5-codex",
         },
         session: {
-          provider: "codex",
+          provider: "openai",
           status: "running",
           orchestrationStatus: "running",
           activeTurnId: liveTurnId,
@@ -1204,7 +1204,7 @@ describe("store projection", () => {
       makeReadModelThread({
         id: threadId,
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5-codex",
         },
         latestTurn: {
@@ -1220,7 +1220,7 @@ describe("store projection", () => {
         session: {
           threadId,
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "full-access",
           activeTurnId: null,
           lastError: null,
@@ -1503,7 +1503,7 @@ describe("store projection", () => {
         projectId: ProjectId.makeUnsafe("project-1"),
         title: "Stale resurrected thread",
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5.3-codex",
         },
         runtimeMode: DEFAULT_RUNTIME_MODE,
@@ -1552,7 +1552,7 @@ describe("store projection", () => {
         projectId: ProjectId.makeUnsafe("project-1"),
         title: "Rehydrated shell removed thread",
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5.3-codex",
         },
         runtimeMode: DEFAULT_RUNTIME_MODE,
@@ -1584,7 +1584,7 @@ describe("store projection", () => {
       projects: [
         makeReadModelProject({
           defaultModelSelection: {
-            provider: "codex",
+            provider: "openai",
             model: "gpt-5-codex",
           },
           updatedAt: "2026-02-27T00:00:00.000Z",
@@ -1593,7 +1593,7 @@ describe("store projection", () => {
       threads: [
         makeReadModelThread({
           modelSelection: {
-            provider: "codex",
+            provider: "openai",
             model: "gpt-5-codex",
           },
           createdAt: "2026-02-13T00:00:00.000Z",
@@ -1694,7 +1694,7 @@ describe("deletion tombstone retirement", () => {
         id: deletedThreadId,
         projectId,
         title,
-        modelSelection: { provider: "codex", model: "gpt-5.3-codex" },
+        modelSelection: { provider: "openai", model: "gpt-5.3-codex" },
         runtimeMode: DEFAULT_RUNTIME_MODE,
         interactionMode: DEFAULT_INTERACTION_MODE,
         envMode: "local",
@@ -1901,7 +1901,7 @@ describe("deletion tombstone retirement", () => {
       id: deletedThreadId,
       projectId,
       title: "Base",
-      modelSelection: { provider: "codex", model: "gpt-5.3-codex" },
+      modelSelection: { provider: "openai", model: "gpt-5.3-codex" },
       runtimeMode: DEFAULT_RUNTIME_MODE,
       interactionMode: DEFAULT_INTERACTION_MODE,
       envMode: "local",
@@ -1990,7 +1990,7 @@ describe("deletion tombstone retirement", () => {
       makeThread({
         id: threadId,
         session: {
-          provider: "codex",
+          provider: "openai",
           status: "running",
           orchestrationStatus: "running",
           createdAt: "2026-02-27T00:00:00.000Z",
@@ -2008,7 +2008,7 @@ describe("deletion tombstone retirement", () => {
         projectId: ProjectId.makeUnsafe("project-1"),
         title: "Thread",
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5.3-codex",
         },
         runtimeMode: DEFAULT_RUNTIME_MODE,

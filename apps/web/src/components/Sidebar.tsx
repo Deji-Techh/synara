@@ -2643,7 +2643,7 @@ export default function Sidebar() {
       });
       // Droid discovery spins a disposable ACP session per model — only warm it
       // from explicit new-thread intent (hover/click), not idle project focus.
-      if (provider === "droid" && options?.includeDroid !== true) {
+      if (provider === "openai" && options?.includeDroid !== true) {
         return;
       }
       const cwd = resolveNewThreadModelPrefetchCwd({
@@ -2737,13 +2737,13 @@ export default function Sidebar() {
       const trimmedExternalId = externalId.trim();
       const suffix = trimmedExternalId.slice(-8);
       const title =
-        provider === "claudeAgent"
+        provider === "anthropic"
           ? `Imported Claude session${suffix ? ` ${suffix}` : ""}`
-          : provider === "cursor"
+          : provider === "openai"
             ? `Imported Cursor session${suffix ? ` ${suffix}` : ""}`
-            : provider === "kilo"
+            : provider === "openai"
               ? `Imported Kilo session${suffix ? ` ${suffix}` : ""}`
-              : provider === "opencode"
+              : provider === "openai"
                 ? `Imported OpenCode session${suffix ? ` ${suffix}` : ""}`
                 : `Imported Codex thread${suffix ? ` ${suffix}` : ""}`;
       let createdThread = false;
@@ -3373,8 +3373,8 @@ export default function Sidebar() {
                     projectId: requestedProjectId,
                     newProjectSpaceId: value.spaceId,
                     defaultModelSelection: {
-                      provider: "codex",
-                      model: getDefaultModel("codex"),
+                      provider: "openai",
+                      model: getDefaultModel("openai"),
                     },
                     createdAt: new Date().toISOString(),
                   },
@@ -5472,10 +5472,10 @@ export default function Sidebar() {
           "resume",
           "thread",
           "session",
-          "codex",
+          "openai",
           "claude",
-          "cursor",
-          "opencode",
+          "openai",
+          "openai",
         ],
         shortcutLabel: importThreadShortcutLabel,
       },
@@ -6781,14 +6781,14 @@ function SidebarSearchPaletteController(props: {
   const selectAllThreads = useMemo(() => createAllThreadsSelector(), []);
   const selectSidebarDisplayThreads = useMemo(() => createSidebarDisplayThreadsSelector(), []);
   const importProviderCapabilityQueries = useQueries({
-    queries: (["codex", "claudeAgent", "cursor", "kilo", "opencode"] as const).map((provider) =>
+    queries: (["openai", "anthropic", "openai", "openai", "openai"] as const).map((provider) =>
       providerComposerCapabilitiesQueryOptions(provider),
     ),
   });
   const threads = useStore(selectAllThreads);
   const sidebarDisplayThreads = useStore(selectSidebarDisplayThreads);
   const importProviders: ReadonlyArray<ImportProviderKind> = (
-    ["codex", "claudeAgent", "cursor", "kilo", "opencode"] as const
+    ["openai", "anthropic", "openai", "openai", "openai"] as const
   ).filter((provider, index) => supportsThreadImport(importProviderCapabilityQueries[index]?.data));
   const searchPaletteThreads = useMemo<SidebarSearchThread[]>(() => {
     const threadById = new Map(threads.map((thread) => [thread.id, thread] as const));

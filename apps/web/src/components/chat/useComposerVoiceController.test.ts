@@ -198,7 +198,7 @@ describe("useComposerVoiceController", () => {
       activeProject: PROJECT,
       activeThreadId: THREAD_A,
       threadId: THREAD_A,
-      selectedProvider: "codex",
+      selectedProvider: "openai",
       activeProviderStatus: null,
       pendingUserInputCount: 0,
       onTranscriptReady: vi.fn(),
@@ -232,7 +232,7 @@ describe("useComposerVoiceController", () => {
     await result.startComposerVoiceRecording();
 
     expect(nativeApi.prewarmVoice).toHaveBeenCalledWith({
-      provider: "codex",
+      provider: "openai",
       cwd: PROJECT.cwd,
       threadId: THREAD_A,
     });
@@ -250,7 +250,7 @@ describe("useComposerVoiceController", () => {
       if (staleCause === "thread") {
         render({ activeThreadId: THREAD_B, threadId: THREAD_B });
       } else if (staleCause === "provider") {
-        render({ selectedProvider: "claudeAgent" as ProviderKind });
+        render({ selectedProvider: "anthropic" as ProviderKind });
       } else {
         result.cancelComposerVoiceRecording();
       }
@@ -371,7 +371,7 @@ describe("useComposerVoiceController", () => {
     voiceAvailability.canStartVoiceNotes = false;
     render({
       activeProviderStatus: {
-        provider: "codex",
+        provider: "openai",
         status: "error",
         available: false,
         authStatus: "unauthenticated",

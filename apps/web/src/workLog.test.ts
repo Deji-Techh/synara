@@ -236,7 +236,7 @@ describe("deriveWorkLogEntries", () => {
             {
               threadId: "thread-terra",
               title: "Explain the repository with Terra",
-              provider: "codex",
+              provider: "openai",
               model: "gpt-5.6-terra",
               environment: "local",
               status: "task_dispatched",
@@ -244,7 +244,7 @@ describe("deriveWorkLogEntries", () => {
             {
               threadId: "thread-claude",
               title: "Explain the repository with Claude",
-              provider: "claudeAgent",
+              provider: "anthropic",
               model: "claude-sonnet-5",
               environment: "worktree",
               status: "task_dispatched",
@@ -263,7 +263,7 @@ describe("deriveWorkLogEntries", () => {
         {
           threadId: "thread-terra",
           title: "Explain the repository with Terra",
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5.6-terra",
           environment: "local",
           status: "task_dispatched",
@@ -271,7 +271,7 @@ describe("deriveWorkLogEntries", () => {
         {
           threadId: "thread-claude",
           title: "Explain the repository with Claude",
-          provider: "claudeAgent",
+          provider: "anthropic",
           model: "claude-sonnet-5",
           environment: "worktree",
           status: "task_dispatched",
@@ -403,7 +403,7 @@ describe("deriveWorkLogEntries", () => {
 
   it("hides repeated non-adjacent recovery rows for the same provider turn", () => {
     const recoveryPayload = {
-      provider: "codex",
+      provider: "openai",
       action: "settle-terminal-projection",
       projectedTurnId: "turn-stale",
       runtimeTurnId: null,
@@ -446,7 +446,7 @@ describe("deriveWorkLogEntries", () => {
         kind: "provider.runtime.reconciled",
         summary: "Recovered turn A",
         payload: {
-          provider: "codex",
+          provider: "openai",
           action: "settle-interrupted",
           projectedTurnId: "turn-a",
           runtimeTurnId: null,
@@ -458,7 +458,7 @@ describe("deriveWorkLogEntries", () => {
         kind: "provider.runtime.reconciled",
         summary: "Recovered turn B",
         payload: {
-          provider: "codex",
+          provider: "openai",
           action: "settle-interrupted",
           projectedTurnId: "turn-b",
           runtimeTurnId: null,
@@ -470,7 +470,7 @@ describe("deriveWorkLogEntries", () => {
         kind: "provider.runtime.reconciled",
         summary: "Errored turn B",
         payload: {
-          provider: "codex",
+          provider: "openai",
           action: "settle-error",
           projectedTurnId: "turn-b",
           runtimeTurnId: null,
@@ -482,7 +482,7 @@ describe("deriveWorkLogEntries", () => {
         kind: "provider.runtime.reconciled",
         summary: "Realigned turn B",
         payload: {
-          provider: "codex",
+          provider: "openai",
           action: "align-running-turn",
           projectedTurnId: "turn-b",
           runtimeTurnId: "turn-live-1",
@@ -494,7 +494,7 @@ describe("deriveWorkLogEntries", () => {
         kind: "provider.runtime.reconciled",
         summary: "Realigned turn B again",
         payload: {
-          provider: "codex",
+          provider: "openai",
           action: "align-running-turn",
           projectedTurnId: "turn-b",
           runtimeTurnId: "turn-live-2",
@@ -521,7 +521,7 @@ describe("deriveWorkLogEntries", () => {
         kind: "provider.runtime.reconciled",
         summary: "Recovered an unknown turn",
         payload: {
-          provider: "codex",
+          provider: "openai",
           action: "settle-interrupted",
         },
       }),
@@ -531,7 +531,7 @@ describe("deriveWorkLogEntries", () => {
         kind: "provider.runtime.reconciled",
         summary: "Recovered an unknown turn",
         payload: {
-          provider: "codex",
+          provider: "openai",
           action: "settle-interrupted",
         },
       }),
@@ -553,7 +553,7 @@ describe("deriveWorkLogEntries", () => {
         kind: "provider.runtime.reconciled",
         summary: "Realigned a delimited projected turn",
         payload: {
-          provider: "codex",
+          provider: "openai",
           action: "align-running-turn",
           projectedTurnId: "turn:a",
           runtimeTurnId: "turn-b",
@@ -565,7 +565,7 @@ describe("deriveWorkLogEntries", () => {
         kind: "provider.runtime.reconciled",
         summary: "Realigned a delimited runtime turn",
         payload: {
-          provider: "codex",
+          provider: "openai",
           action: "align-running-turn",
           projectedTurnId: "turn",
           runtimeTurnId: "a:turn-b",

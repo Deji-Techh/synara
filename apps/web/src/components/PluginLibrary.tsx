@@ -373,7 +373,7 @@ export function PluginLibrary() {
   const preferredProvider =
     activeThread?.modelSelection.provider ??
     activeProject?.defaultModelSelection?.provider ??
-    "codex";
+    "openai";
 
   const [selectedProvider, setSelectedProvider] = useState<ProviderKind>(preferredProvider);
   const [selectedTab, setSelectedTab] = useState<DiscoveryTab>("plugins");
@@ -384,17 +384,17 @@ export function PluginLibrary() {
   const providerThreadId = focusedThreadId;
 
   const serverConfigQuery = useQuery(serverConfigQueryOptions());
-  const codexCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("codex"));
-  const claudeCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("claudeAgent"));
-  const cursorCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("cursor"));
+  const codexCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("openai"));
+  const claudeCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("anthropic"));
+  const cursorCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("openai"));
   const antigravityCapabilitiesQuery = useQuery(
-    providerComposerCapabilitiesQueryOptions("antigravity"),
+    providerComposerCapabilitiesQueryOptions("google"),
   );
-  const grokCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("grok"));
-  const droidCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("droid"));
-  const kiloCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("kilo"));
-  const openCodeCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("opencode"));
-  const piCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("pi"));
+  const grokCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("openai"));
+  const droidCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("openai"));
+  const kiloCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("openai"));
+  const openCodeCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("openai"));
+  const piCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("openai"));
 
   const providerCapabilities: Record<ProviderKind, ProviderCapabilities> = {
     codex: {

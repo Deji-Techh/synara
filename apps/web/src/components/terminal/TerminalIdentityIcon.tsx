@@ -22,7 +22,7 @@ export default function TerminalIdentityIcon({ iconKey, className }: TerminalIde
       ? OpenAI
       : iconKey === "claude"
         ? ClaudeAI
-        : iconKey === "antigravity"
+        : iconKey === "google"
           ? AntigravityIcon
           : TerminalSquare;
 

@@ -46,7 +46,7 @@ type CustomModelValidationResult =
   | { readonly model: string; readonly error?: never }
   | { readonly model?: never; readonly error: string };
 
-const GIT_WRITING_DISCOVERY_PROVIDERS = ["codex", "kilo", "opencode"] as const;
+const GIT_WRITING_DISCOVERY_PROVIDERS = ["openai", "openai", "openai"] as const;
 
 export function validateCustomModelInput(input: {
   readonly provider: ProviderKind;
@@ -82,7 +82,7 @@ export function ModelsSettingsPanel({
 }: AppSettingsBinding & { readonly resetEpoch: number; readonly active: boolean }) {
   const serverConfigQuery = useQuery(serverConfigQueryOptions());
   const [selectedCustomModelProvider, setSelectedCustomModelProvider] =
-    useState<ProviderKind>("codex");
+    useState<ProviderKind>("openai");
   const [customModelInputByProvider, setCustomModelInputByProvider] = useState<
     Partial<Record<ProviderKind, string>>
   >({});
@@ -92,7 +92,7 @@ export function ModelsSettingsPanel({
   const [showAllCustomModels, setShowAllCustomModels] = useState(false);
 
   useSettingsRestoreSignal(resetEpoch, () => {
-    setSelectedCustomModelProvider("codex");
+    setSelectedCustomModelProvider("openai");
     setCustomModelInputByProvider({});
     setCustomModelErrorByProvider({});
     setShowAllCustomModels(false);
@@ -105,7 +105,7 @@ export function ModelsSettingsPanel({
     textGenerationModel,
     textGenerationProvider,
   } = settings;
-  const currentGitTextGenerationProvider = textGenerationProvider ?? "codex";
+  const currentGitTextGenerationProvider = textGenerationProvider ?? "openai";
   const currentGitTextGenerationModel = textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL;
   const gitWritingModelHintByProvider = useMemo<Partial<Record<ProviderKind, string | null>>>(
     () => ({ [currentGitTextGenerationProvider]: currentGitTextGenerationModel }),

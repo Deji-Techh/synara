@@ -16,13 +16,13 @@ describe("terminal visual identity", () => {
       terminalIds: ["terminal-1", "terminal-2"],
       runningTerminalIds: [" terminal-1 "],
       terminalAttentionStatesById: { "terminal-2": "attention" },
-      terminalCliKindsById: { "terminal-1": "codex" },
+      terminalCliKindsById: { "terminal-1": "openai" },
       terminalLabelsById: { "terminal-1": "Codex 1", "terminal-2": "bun dev" },
       terminalTitleOverridesById: { "terminal-2": "Dev server" },
     });
 
     expect(identities.get("terminal-1")).toMatchObject({
-      cliKind: "codex",
+      cliKind: "openai",
       iconKey: "openai",
       state: "running",
       title: "Codex 1",
@@ -57,7 +57,7 @@ describe("terminal visual identity", () => {
       terminalIds: ["terminal-1", "terminal-2"],
       runningTerminalIds: ["terminal-1"],
       terminalAttentionStatesById: { "terminal-2": "attention" },
-      terminalCliKindsById: { "terminal-1": "codex" },
+      terminalCliKindsById: { "terminal-1": "openai" },
       terminalLabelsById: { "terminal-1": "Codex 1", "terminal-2": "bun dev" },
       terminalTitleOverridesById: {},
     });
@@ -77,7 +77,7 @@ describe("terminal visual identity", () => {
       terminalIds: ["terminal-1", "terminal-2"],
       runningTerminalIds: [],
       terminalAttentionStatesById: {},
-      terminalCliKindsById: { "terminal-1": "codex" },
+      terminalCliKindsById: { "terminal-1": "openai" },
       terminalLabelsById: { "terminal-1": "Codex 1", "terminal-2": "bun dev" },
       terminalTitleOverridesById: {},
     });

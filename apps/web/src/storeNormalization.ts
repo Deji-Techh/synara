@@ -1808,19 +1808,19 @@ function toLegacySessionStatus(
 
 function toLegacyProvider(providerName: string | null): ProviderKind {
   if (
-    providerName === "codex" ||
-    providerName === "claudeAgent" ||
-    providerName === "cursor" ||
-    providerName === "antigravity" ||
-    providerName === "grok" ||
-    providerName === "droid" ||
-    providerName === "kilo" ||
-    providerName === "opencode" ||
-    providerName === "pi"
+    providerName === "openai" ||
+    providerName === "anthropic" ||
+    providerName === "openai" ||
+    providerName === "google" ||
+    providerName === "openai" ||
+    providerName === "openai" ||
+    providerName === "openai" ||
+    providerName === "openai" ||
+    providerName === "openai"
   ) {
     return providerName;
   }
-  return "codex";
+  return "openai";
 }
 
 function attachmentPreviewRoutePath(attachmentId: string): string {

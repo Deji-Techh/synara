@@ -116,7 +116,7 @@ function getWindowForTest(): Window & typeof globalThis & { desktopBridge?: unkn
 
 const defaultProviders: ReadonlyArray<ServerProviderStatus> = [
   {
-    provider: "codex",
+    provider: "openai",
     status: "ready",
     available: true,
     authStatus: "authenticated",
@@ -302,30 +302,30 @@ describe("wsNativeApi", () => {
         enableProviderUpdateChecks: true,
         defaultThreadEnvMode: "local",
         addProjectBaseDirectory: "",
-        textGenerationModelSelection: { provider: "codex", model: "gpt-5.4-mini" },
+        textGenerationModelSelection: { provider: "openai", model: "gpt-5.4-mini" },
         providers: {
-          codex: { enabled: true, binaryPath: "codex", homePath: "", customModels: [] },
+          codex: { enabled: true, binaryPath: "openai", homePath: "", customModels: [] },
           claudeAgent: { enabled: true, binaryPath: "claude", launchArgs: "", customModels: [] },
           cursor: { enabled: false, binaryPath: "agent", apiEndpoint: "", customModels: [] },
           antigravity: { enabled: true, binaryPath: "agy", customModels: [] },
-          grok: { enabled: true, binaryPath: "grok", customModels: [] },
-          droid: { enabled: true, binaryPath: "droid", customModels: [] },
+          grok: { enabled: true, binaryPath: "openai", customModels: [] },
+          droid: { enabled: true, binaryPath: "openai", customModels: [] },
           kilo: {
             enabled: true,
-            binaryPath: "kilo",
+            binaryPath: "openai",
             serverUrl: "",
             serverPasswordConfigured: false,
             customModels: [],
           },
           opencode: {
             enabled: true,
-            binaryPath: "opencode",
+            binaryPath: "openai",
             serverUrl: "",
             serverPasswordConfigured: false,
             experimentalWebSockets: false,
             customModels: [],
           },
-          pi: { enabled: true, binaryPath: "pi", agentDir: "", customModels: [] },
+          pi: { enabled: true, binaryPath: "openai", agentDir: "", customModels: [] },
           engine: {
             enabled: true,
             binaryPath: "caide-engine",
@@ -601,7 +601,7 @@ describe("wsNativeApi", () => {
       title: "Project",
       workspaceRoot: "/tmp/project",
       defaultModelSelection: {
-        provider: "codex",
+        provider: "openai",
         model: "gpt-5-codex",
       },
       createdAt: "2026-02-24T00:00:00.000Z",
@@ -887,11 +887,11 @@ describe("wsNativeApi", () => {
       operationId: "operation-1",
       repository: "openai/codex",
       destinationParent: "/projects",
-      directoryName: "codex",
+      directoryName: "openai",
       commandId: CommandId.makeUnsafe("command-1"),
       projectId: ProjectId.makeUnsafe("project-1"),
       newProjectSpaceId: null,
-      defaultModelSelection: { provider: "codex" as const, model: "gpt-5" },
+      defaultModelSelection: { provider: "openai" as const, model: "gpt-5" },
       createdAt: "2026-08-04T00:00:00.000Z",
     };
     const result = {
@@ -1163,7 +1163,7 @@ describe("wsNativeApi", () => {
     const { createWsNativeApi } = await import("./wsNativeApi");
     const api = createWsNativeApi();
     await api.server.transcribeVoice({
-      provider: "codex",
+      provider: "openai",
       cwd: "/repo",
       audioBase64: "UklGRgAAAAAAAAAAAAAAAAAAAAA=",
       mimeType: "audio/wav",
@@ -1186,10 +1186,10 @@ describe("wsNativeApi", () => {
     const { createWsNativeApi } = await import("./wsNativeApi");
     const api = createWsNativeApi();
 
-    await api.server.prewarmVoice?.({ provider: "codex", cwd: "/repo" });
+    await api.server.prewarmVoice?.({ provider: "openai", cwd: "/repo" });
 
     expect(requestMock).toHaveBeenCalledWith(WS_METHODS.serverPrewarmVoice, {
-      provider: "codex",
+      provider: "openai",
       cwd: "/repo",
     });
   });
@@ -1211,7 +1211,7 @@ describe("wsNativeApi", () => {
     const { createWsNativeApi } = await import("./wsNativeApi");
     const api = createWsNativeApi();
     const result = await api.server.transcribeVoice({
-      provider: "codex",
+      provider: "openai",
       cwd: "/repo",
       audioBase64: "AQID",
       mimeType: "audio/wav",
@@ -1245,7 +1245,7 @@ describe("wsNativeApi", () => {
     const { createWsNativeApi } = await import("./wsNativeApi");
     const api = createWsNativeApi();
     const input = {
-      provider: "codex" as const,
+      provider: "openai" as const,
       cwd: "/repo",
       audioBase64: "AQID",
       mimeType: "audio/wav",

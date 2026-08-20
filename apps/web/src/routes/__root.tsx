@@ -1925,19 +1925,19 @@ function EventRouter() {
         // Model and agent discovery can depend on auth, availability, and installed versions,
         // but not on every provider-status timestamp replay.
         void queryClient.invalidateQueries({
-          queryKey: ["provider-discovery", "models", "kilo"],
+          queryKey: ["provider-discovery", "models", "openai"],
         });
         void queryClient.invalidateQueries({
-          queryKey: ["provider-discovery", "models", "opencode"],
+          queryKey: ["provider-discovery", "models", "openai"],
         });
         void queryClient.invalidateQueries({
-          queryKey: ["provider-discovery", "models", "cursor"],
+          queryKey: ["provider-discovery", "models", "openai"],
         });
         void queryClient.invalidateQueries({
-          queryKey: providerDiscoveryQueryKeys.agentsForProvider("kilo"),
+          queryKey: providerDiscoveryQueryKeys.agentsForProvider("openai"),
         });
         void queryClient.invalidateQueries({
-          queryKey: providerDiscoveryQueryKeys.agentsForProvider("opencode"),
+          queryKey: providerDiscoveryQueryKeys.agentsForProvider("openai"),
         });
       }
     });

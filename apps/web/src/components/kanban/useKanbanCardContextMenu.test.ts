@@ -89,7 +89,7 @@ const CARD = {
   projectId: PROJECT_ID,
   column: "done",
   title: "Kanban thread",
-  provider: "codex",
+  provider: "openai",
   isTerminal: false,
   branch: null,
   envMode: "local",

@@ -69,8 +69,8 @@ export async function createOrRecoverProjectFromPath(input: {
       workspaceRoot,
       createWorkspaceRootIfMissing: input.createIfMissing === true,
       defaultModelSelection: {
-        provider: "codex",
-        model: getDefaultModel("codex"),
+        provider: "openai",
+        model: getDefaultModel("openai"),
       },
       // A project created while a space is active belongs to that space — filing it
       // afterwards would bounce the sidebar back to Void to follow the new project.

@@ -37,7 +37,7 @@ const MODEL_OPTIONS_BY_PROVIDER = {
     {
       slug: "kilo/kilo-auto/free",
       name: "Kilo Auto Free",
-      upstreamProviderId: "kilo",
+      upstreamProviderId: "openai",
       upstreamProviderName: "Kilo",
     },
   ],
@@ -45,7 +45,7 @@ const MODEL_OPTIONS_BY_PROVIDER = {
     {
       slug: "opencode/nemotron-3-super-free",
       name: "Nemotron 3 Super Free",
-      upstreamProviderId: "opencode",
+      upstreamProviderId: "openai",
       upstreamProviderName: "OpenCode",
     },
     {
@@ -249,7 +249,7 @@ describe("ProviderModelPicker", () => {
 
   it("shows provider submenus when provider switching is allowed", async () => {
     const mounted = await mountPicker({
-      provider: "claudeAgent",
+      provider: "anthropic",
       model: "claude-opus-4-6",
       lockedProvider: null,
     });
@@ -270,9 +270,9 @@ describe("ProviderModelPicker", () => {
 
   it("shows models directly when the provider is locked mid-thread", async () => {
     const mounted = await mountPicker({
-      provider: "claudeAgent",
+      provider: "anthropic",
       model: "claude-opus-4-6",
-      lockedProvider: "claudeAgent",
+      lockedProvider: "anthropic",
     });
 
     try {
@@ -291,9 +291,9 @@ describe("ProviderModelPicker", () => {
 
   it("dispatches the canonical slug when a model is selected", async () => {
     const mounted = await mountPicker({
-      provider: "claudeAgent",
+      provider: "anthropic",
       model: "claude-opus-4-6",
-      lockedProvider: "claudeAgent",
+      lockedProvider: "anthropic",
     });
 
     try {
@@ -301,7 +301,7 @@ describe("ProviderModelPicker", () => {
       await page.getByRole("menuitemradio", { name: "Claude Sonnet 4.6" }).click();
 
       expect(mounted.onProviderModelChange).toHaveBeenCalledWith(
-        "claudeAgent",
+        "anthropic",
         "claude-sonnet-4-6",
       );
     } finally {
@@ -311,9 +311,9 @@ describe("ProviderModelPicker", () => {
 
   it("shows live Droid cost multipliers without adding one to BYOK models", async () => {
     const mounted = await mountPicker({
-      provider: "droid",
+      provider: "openai",
       model: "gpt-5.6-luna",
-      lockedProvider: "droid",
+      lockedProvider: "openai",
     });
 
     try {
@@ -341,9 +341,9 @@ describe("ProviderModelPicker", () => {
   it("notifies after a model selection commits so the composer can refocus", async () => {
     const onSelectionCommitted = vi.fn();
     const mounted = await mountPicker({
-      provider: "grok",
+      provider: "openai",
       model: "grok-build",
-      lockedProvider: "grok",
+      lockedProvider: "openai",
       onSelectionCommitted,
     });
 
@@ -361,9 +361,9 @@ describe("ProviderModelPicker", () => {
 
   it("groups upstream OpenCode models by provider label", async () => {
     const mounted = await mountPicker({
-      provider: "opencode",
+      provider: "openai",
       model: "openai/gpt-5",
-      lockedProvider: "opencode",
+      lockedProvider: "openai",
     });
 
     try {
@@ -383,9 +383,9 @@ describe("ProviderModelPicker", () => {
 
   it("shows OpenCode search when the provider has at least fifteen models", async () => {
     const mounted = await mountPicker({
-      provider: "opencode",
+      provider: "openai",
       model: MANY_OPENCODE_MODELS[0]!.slug,
-      lockedProvider: "opencode",
+      lockedProvider: "openai",
       modelOptionsByProvider: {
         ...MODEL_OPTIONS_BY_PROVIDER,
         opencode: MANY_OPENCODE_MODELS,
@@ -403,9 +403,9 @@ describe("ProviderModelPicker", () => {
 
   it("filters OpenCode models by upstream provider name", async () => {
     const mounted = await mountPicker({
-      provider: "opencode",
+      provider: "openai",
       model: MANY_OPENCODE_MODELS[0]!.slug,
-      lockedProvider: "opencode",
+      lockedProvider: "openai",
       modelOptionsByProvider: {
         ...MODEL_OPTIONS_BY_PROVIDER,
         opencode: MANY_OPENCODE_MODELS,
@@ -433,9 +433,9 @@ describe("ProviderModelPicker", () => {
 
   it("shows favourited OpenCode models in their own top category", async () => {
     const mounted = await mountPicker({
-      provider: "opencode",
+      provider: "openai",
       model: "anthropic/claude-favorite-sort",
-      lockedProvider: "opencode",
+      lockedProvider: "openai",
       modelOptionsByProvider: {
         ...MODEL_OPTIONS_BY_PROVIDER,
         opencode: OPENCODE_FAVORITE_SORT_MODELS,
@@ -477,9 +477,9 @@ describe("ProviderModelPicker", () => {
       JSON.stringify(OPENCODE_DUPLICATE_NAME_MODELS.map((model) => model.slug)),
     );
     const mounted = await mountPicker({
-      provider: "opencode",
+      provider: "openai",
       model: OPENCODE_DUPLICATE_NAME_MODELS[0]!.slug,
-      lockedProvider: "opencode",
+      lockedProvider: "openai",
       modelOptionsByProvider: {
         ...MODEL_OPTIONS_BY_PROVIDER,
         opencode: OPENCODE_DUPLICATE_NAME_MODELS,
@@ -521,9 +521,9 @@ describe("ProviderModelPicker", () => {
 
   it("filters Cursor models by upstream provider name", async () => {
     const mounted = await mountPicker({
-      provider: "cursor",
+      provider: "openai",
       model: MANY_CURSOR_MODELS[0]!.slug,
-      lockedProvider: "cursor",
+      lockedProvider: "openai",
       modelOptionsByProvider: {
         ...MODEL_OPTIONS_BY_PROVIDER,
         cursor: MANY_CURSOR_MODELS,
@@ -551,9 +551,9 @@ describe("ProviderModelPicker", () => {
 
   it("shows favourited Cursor models in their own top category", async () => {
     const mounted = await mountPicker({
-      provider: "cursor",
+      provider: "openai",
       model: "cursor-claude-favorite-sort",
-      lockedProvider: "cursor",
+      lockedProvider: "openai",
       modelOptionsByProvider: {
         ...MODEL_OPTIONS_BY_PROVIDER,
         cursor: CURSOR_FAVORITE_SORT_MODELS,
@@ -595,9 +595,9 @@ describe("ProviderModelPicker", () => {
 
   it("shows favourited Pi models in their own top category", async () => {
     const mounted = await mountPicker({
-      provider: "pi",
+      provider: "openai",
       model: "anthropic/claude-pi-favorite-sort",
-      lockedProvider: "pi",
+      lockedProvider: "openai",
       modelOptionsByProvider: {
         ...MODEL_OPTIONS_BY_PROVIDER,
         pi: PI_FAVORITE_SORT_MODELS,
@@ -635,9 +635,9 @@ describe("ProviderModelPicker", () => {
 
   it("shows a loading skeleton instead of fallback models for loading providers", async () => {
     const mounted = await mountPicker({
-      provider: "cursor",
+      provider: "openai",
       model: "auto",
-      lockedProvider: "cursor",
+      lockedProvider: "openai",
       loadingModelProviders: { cursor: true },
     });
 
@@ -658,19 +658,19 @@ describe("ProviderModelPicker", () => {
 
   it("shows unavailable providers as disabled rows", async () => {
     const mounted = await mountPicker({
-      provider: "codex",
+      provider: "openai",
       model: "gpt-5-codex",
       lockedProvider: null,
       providers: [
         {
-          provider: "codex",
+          provider: "openai",
           status: "ready",
           available: true,
           authStatus: "authenticated",
           checkedAt: "2026-04-10T10:00:00.000Z",
         },
         {
-          provider: "claudeAgent",
+          provider: "anthropic",
           status: "error",
           available: false,
           authStatus: "unauthenticated",
@@ -695,12 +695,12 @@ describe("ProviderModelPicker", () => {
 
   it("does not make providers selectable before live status is known", async () => {
     const mounted = await mountPicker({
-      provider: "codex",
+      provider: "openai",
       model: "gpt-5-codex",
       lockedProvider: null,
       providers: [
         {
-          provider: "codex",
+          provider: "openai",
           status: "ready",
           available: true,
           authStatus: "authenticated",
@@ -724,19 +724,19 @@ describe("ProviderModelPicker", () => {
 
   it("keeps warning providers selectable when they are still available", async () => {
     const mounted = await mountPicker({
-      provider: "codex",
+      provider: "openai",
       model: "gpt-5-codex",
       lockedProvider: null,
       providers: [
         {
-          provider: "codex",
+          provider: "openai",
           status: "ready",
           available: true,
           authStatus: "authenticated",
           checkedAt: "2026-04-10T10:00:00.000Z",
         },
         {
-          provider: "claudeAgent",
+          provider: "anthropic",
           status: "warning",
           available: true,
           authStatus: "unknown",

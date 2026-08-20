@@ -103,14 +103,14 @@ export function useKanbanTaskSubmit(input: UseKanbanTaskSubmitInput) {
     const scratchState = useComposerDraftStore.getState().draftsByThreadId[scratchThreadId];
     const storedModelSelection = scratchState?.modelSelectionByProvider[selectedProvider];
     const storedModelSupportsAutoMode =
-      storedModelSelection?.provider === "claudeAgent"
+      storedModelSelection?.provider === "anthropic"
         ? storedModelSelection.supportsAutoMode
         : undefined;
     const modelSelection = buildModelSelection(
       selectedProvider,
       selectedModel,
       storedModelSelection?.options,
-      selectedProvider === "claudeAgent"
+      selectedProvider === "anthropic"
         ? (selectedModelSupportsAutoMode ?? storedModelSupportsAutoMode)
         : undefined,
     );

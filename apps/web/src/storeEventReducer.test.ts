@@ -113,7 +113,7 @@ describe("store event reducer", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "error",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "full-access",
           activeTurnId: null,
           lastError: "provider crashed",
@@ -150,7 +150,7 @@ describe("store event reducer", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "interrupted",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "full-access",
           activeTurnId: TurnId.makeUnsafe("turn-running"),
           lastError: null,
@@ -192,7 +192,7 @@ describe("store event reducer", () => {
           session: {
             threadId: ThreadId.makeUnsafe("thread-1"),
             status,
-            providerName: "codex",
+            providerName: "openai",
             runtimeMode: "full-access",
             activeTurnId: null,
             lastError: null,
@@ -229,7 +229,7 @@ describe("store event reducer", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "codex",
+          providerName: "openai",
           runtimeMode: "full-access",
           activeTurnId: null,
           lastError: null,
@@ -261,7 +261,7 @@ describe("store event reducer", () => {
             title: "Live Project",
             workspaceRoot: "/tmp/live-project",
             defaultModelSelection: {
-              provider: "codex",
+              provider: "openai",
               model: "gpt-5-codex",
             },
             scripts: [],
@@ -378,7 +378,7 @@ describe("store event reducer", () => {
     const initialState = makeState(
       makeThread({
         session: {
-          provider: "codex",
+          provider: "openai",
           status: "running",
           orchestrationStatus: "running",
           activeTurnId: TurnId.makeUnsafe("turn-running"),
@@ -625,7 +625,7 @@ describe("store event reducer", () => {
         associatedWorktreeBranch: "caide/tmp-working",
         associatedWorktreeRef: "caide/tmp-working",
         session: {
-          provider: "codex",
+          provider: "openai",
           status: "ready",
           orchestrationStatus: "ready",
           createdAt: "2026-02-27T00:00:00.000Z",
@@ -1971,7 +1971,7 @@ describe("store event reducer", () => {
         projectId: ProjectId.makeUnsafe("project-1"),
         title: "Stale archived thread",
         modelSelection: {
-          provider: "codex",
+          provider: "openai",
           model: "gpt-5.3-codex",
         },
         runtimeMode: DEFAULT_RUNTIME_MODE,
@@ -2044,7 +2044,7 @@ describe("store event reducer", () => {
           session: {
             threadId,
             status: "running",
-            providerName: "codex",
+            providerName: "openai",
             runtimeMode: "full-access",
             activeTurnId: turnId,
             lastError: null,

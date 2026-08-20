@@ -23,7 +23,7 @@ describe("buildSettingsSkillGroups", () => {
         name: "check-code",
         description: "Codex copy",
         path: "/Users/test/.codex/skills/check-code/SKILL.md",
-        scope: "codex",
+        scope: "openai",
       }),
       skill({
         name: "check-code",
@@ -34,22 +34,22 @@ describe("buildSettingsSkillGroups", () => {
       skill({
         name: "cursor-only",
         path: "/Users/test/.cursor/skills/cursor-only/SKILL.md",
-        scope: "cursor",
+        scope: "openai",
       }),
     ]);
 
     const shared = groups.find((group) => group.key === "check-code");
     expect(shared?.section).toBe("shared");
-    expect(shared?.providers).toEqual(["codex", "claudeAgent"]);
-    expect(shared?.sources.map((source) => source.origin)).toEqual(["codex", "claude"]);
+    expect(shared?.providers).toEqual(["openai", "anthropic"]);
+    expect(shared?.sources.map((source) => source.origin)).toEqual(["openai", "claude"]);
     expect(shared?.sources.map((source) => source.skill.path)).toEqual([
       "/Users/test/.codex/skills/check-code/SKILL.md",
       "/Users/test/.claude/skills/check-code/SKILL.md",
     ]);
 
     const cursorOnly = groups.find((group) => group.key === "cursor-only");
-    expect(cursorOnly?.section).toBe("cursor");
-    expect(cursorOnly?.providers).toEqual(["cursor"]);
+    expect(cursorOnly?.section).toBe("openai");
+    expect(cursorOnly?.providers).toEqual(["openai"]);
   });
 
   it("does not show provider icons for shared alias-only skills", () => {
@@ -73,7 +73,7 @@ describe("buildSettingsSkillSections", () => {
       skill({
         name: "logic-consolidator",
         path: "/Users/test/.codex/skills/logic-consolidator/SKILL.md",
-        scope: "codex",
+        scope: "openai",
       }),
       skill({
         name: "logic-consolidator",
@@ -83,7 +83,7 @@ describe("buildSettingsSkillSections", () => {
       skill({
         name: "cursor-only",
         path: "/Users/test/.cursor/skills/cursor-only/SKILL.md",
-        scope: "cursor",
+        scope: "openai",
       }),
     ]);
 

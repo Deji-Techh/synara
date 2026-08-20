@@ -210,21 +210,21 @@ export function resolvePromptEffortFromModelSelection(
   modelSelection: ModelSelection,
 ): string | null {
   switch (modelSelection.provider) {
-    case "antigravity":
+    case "google":
       return null;
-    case "codex":
+    case "openai":
       return modelSelection.options?.reasoningEffort ?? null;
-    case "claudeAgent":
+    case "anthropic":
       return modelSelection.options?.effort ?? null;
-    case "cursor":
+    case "openai":
       return modelSelection.options?.reasoningEffort ?? null;
-    case "grok":
-    case "droid":
+    case "openai":
+    case "openai":
       return modelSelection.options?.reasoningEffort ?? null;
-    case "pi":
+    case "openai":
       return modelSelection.options?.thinkingLevel ?? null;
-    case "kilo":
-    case "opencode":
+    case "openai":
+    case "openai":
       return null;
     case "engine":
       return null;

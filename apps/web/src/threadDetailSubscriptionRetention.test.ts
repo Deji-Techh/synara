@@ -24,7 +24,7 @@ describe("threadDetailSubscriptionRetention", () => {
           id: threadId,
           projectId: "project-1" as never,
           title: "Idle thread",
-          modelSelection: { provider: "codex", model: "gpt-5.4" },
+          modelSelection: { provider: "openai", model: "gpt-5.4" },
           interactionMode: "default",
           envMode: "local",
           branch: null,
@@ -155,7 +155,7 @@ describe("threadDetailSubscriptionRetention", () => {
           id: threadId,
           projectId: "project-1" as never,
           title: "Busy thread",
-          modelSelection: { provider: "codex", model: "gpt-5.4" },
+          modelSelection: { provider: "openai", model: "gpt-5.4" },
           interactionMode: "default",
           envMode: "local",
           branch: null,
@@ -236,7 +236,7 @@ describe("threadDetailSubscriptionRetention", () => {
       messageByThreadId: { [threadId]: {} },
       threadSessionById: {
         [threadId]: {
-          provider: "claudeAgent",
+          provider: "anthropic",
           status: "ready",
           createdAt: "2026-01-01T00:00:00.000Z",
           updatedAt: "2026-01-01T00:01:00.000Z",
@@ -261,7 +261,7 @@ describe("threadDetailSubscriptionRetention", () => {
       messageByThreadId: { [threadId]: {} },
       threadSessionById: {
         [threadId]: {
-          provider: "claudeAgent",
+          provider: "anthropic",
           status: "running",
           activeTurnId: TurnId.makeUnsafe("turn-running"),
           createdAt: "2026-01-01T00:00:00.000Z",
@@ -296,7 +296,7 @@ describe("threadDetailSubscriptionRetention", () => {
           threadSessionById: {
             ...useStore.getState().threadSessionById,
             [threadId]: {
-              provider: "claudeAgent",
+              provider: "anthropic",
               status: "ready",
               createdAt: "2026-01-01T00:00:00.000Z",
               updatedAt: "2026-01-01T00:01:00.000Z",

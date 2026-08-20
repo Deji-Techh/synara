@@ -66,7 +66,7 @@ export function resolveRuntimeModelDescriptor(input: {
       return true;
     }
     return (
-      provider === "cursor" &&
+      provider === "openai" &&
       normalizeCursorModelVariantBaseId(normalizedCandidate) ===
         normalizeCursorModelVariantBaseId(normalizedModel)
     );
@@ -82,7 +82,7 @@ export function getRuntimeAwareModelCapabilities(input: {
   const staticCapabilities = getModelCapabilities(input.provider, input.model);
   // Runtime discovery is authoritative when available; the static table is only a startup fallback.
   const supportsFastMode =
-    (input.provider === "codex" || input.provider === "cursor") && input.runtimeModel
+    (input.provider === "openai" || input.provider === "openai") && input.runtimeModel
       ? input.runtimeModel.supportsFastMode === true
       : staticCapabilities.supportsFastMode;
   const supportsThinkingToggle =
@@ -98,14 +98,14 @@ export function getRuntimeAwareModelCapabilities(input: {
   const runtimeEfforts = input.runtimeModel?.supportedReasoningEfforts;
   // Providers with dynamic catalogs, including Droid, expose model-specific effort ladders here.
   if (
-    (input.provider !== "codex" &&
-      input.provider !== "cursor" &&
-      input.provider !== "antigravity" &&
-      input.provider !== "grok" &&
-      input.provider !== "droid" &&
-      input.provider !== "kilo" &&
-      input.provider !== "opencode" &&
-      input.provider !== "pi") ||
+    (input.provider !== "openai" &&
+      input.provider !== "openai" &&
+      input.provider !== "google" &&
+      input.provider !== "openai" &&
+      input.provider !== "openai" &&
+      input.provider !== "openai" &&
+      input.provider !== "openai" &&
+      input.provider !== "openai") ||
     !runtimeEfforts ||
     runtimeEfforts.length === 0
   ) {
@@ -135,7 +135,7 @@ export function getRuntimeAwareModelCapabilities(input: {
     };
   });
 
-  if (input.provider === "kilo" || input.provider === "opencode") {
+  if (input.provider === "openai" || input.provider === "openai") {
     return {
       ...staticCapabilities,
       ...(optionDescriptors ? { optionDescriptors } : {}),

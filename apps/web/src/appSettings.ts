@@ -128,15 +128,15 @@ export type ProviderCustomModelConfig = {
 };
 
 const BUILT_IN_MODEL_SLUGS_BY_PROVIDER: Record<ProviderKind, ReadonlySet<string>> = {
-  codex: new Set(getModelOptions("codex").map((option) => option.slug)),
-  claudeAgent: new Set(getModelOptions("claudeAgent").map((option) => option.slug)),
-  cursor: new Set(getModelOptions("cursor").map((option) => option.slug)),
-  antigravity: new Set(getModelOptions("antigravity").map((option) => option.slug)),
-  grok: new Set(getModelOptions("grok").map((option) => option.slug)),
-  droid: new Set(getModelOptions("droid").map((option) => option.slug)),
-  kilo: new Set(getModelOptions("kilo").map((option) => option.slug)),
-  opencode: new Set(getModelOptions("opencode").map((option) => option.slug)),
-  pi: new Set(getModelOptions("pi").map((option) => option.slug)),
+  codex: new Set(getModelOptions("openai").map((option) => option.slug)),
+  claudeAgent: new Set(getModelOptions("anthropic").map((option) => option.slug)),
+  cursor: new Set(getModelOptions("openai").map((option) => option.slug)),
+  antigravity: new Set(getModelOptions("google").map((option) => option.slug)),
+  grok: new Set(getModelOptions("openai").map((option) => option.slug)),
+  droid: new Set(getModelOptions("openai").map((option) => option.slug)),
+  kilo: new Set(getModelOptions("openai").map((option) => option.slug)),
+  opencode: new Set(getModelOptions("openai").map((option) => option.slug)),
+  pi: new Set(getModelOptions("openai").map((option) => option.slug)),
   engine: new Set(getModelOptions("engine").map((option) => option.slug)),
   openai: new Set(getModelOptions("openai").map((option) => option.slug)),
   anthropic: new Set(getModelOptions("anthropic").map((option) => option.slug)),
@@ -167,16 +167,16 @@ const withDefaults =
     );
 
 const PersistedProviderKind = Schema.Literals([
-  "codex",
-  "claudeAgent",
-  "cursor",
-  "antigravity",
-  "gemini",
-  "grok",
-  "droid",
-  "kilo",
-  "opencode",
-  "pi",
+  "openai",
+  "anthropic",
+  "openai",
+  "google",
+  "google",
+  "openai",
+  "openai",
+  "openai",
+  "openai",
+  "openai",
   "engine",
   "openai",
   "anthropic",
@@ -195,7 +195,7 @@ const PersistedProviderKind = Schema.Literals([
   Schema.decodeTo(
     ProviderKind,
     SchemaTransformation.transform({
-      decode: (provider) => (provider === "gemini" ? "antigravity" : provider),
+      decode: (provider) => (provider === "google" ? "google" : provider),
       encode: (provider) => provider,
     }),
   ),
@@ -338,10 +338,10 @@ export const AppSettingsSchema = Schema.Struct({
   customXaiModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   customFireworksModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   customOpenCodeZenModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  textGenerationProvider: PersistedProviderKind.pipe(withDefaults(() => "codex" as const)),
+  textGenerationProvider: PersistedProviderKind.pipe(withDefaults(() => "openai" as const)),
   textGenerationModel: Schema.optional(TrimmedNonEmptyString),
   uiFontFamily: Schema.String.check(Schema.isMaxLength(256)).pipe(withDefaults(() => "")),
-  defaultProvider: PersistedProviderKind.pipe(withDefaults(() => "codex" as const)),
+  defaultProvider: PersistedProviderKind.pipe(withDefaults(() => "openai" as const)),
   // Local-only UI preference: providers explicitly hidden from the composer picker.
   // The active/locked provider for a thread is always shown regardless, so users
   // never get stuck on a thread whose provider they later chose to hide.
@@ -375,7 +375,7 @@ export function isGitTextGenerationSettingsDirty(
   defaults: AppSettings,
 ): boolean {
   return (
-    (settings.textGenerationProvider ?? "codex") !== (defaults.textGenerationProvider ?? "codex") ||
+    (settings.textGenerationProvider ?? "openai") !== (defaults.textGenerationProvider ?? "openai") ||
     (settings.textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL) !==
       (defaults.textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL)
   );
@@ -395,7 +395,7 @@ let serverSettingsMigrationInFlight = false;
 
 const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConfig> = {
   codex: {
-    provider: "codex",
+    provider: "openai",
     settingsKey: "customCodexModels",
     defaultSettingsKey: "customCodexModels",
     title: "Codex",
@@ -404,7 +404,7 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     example: "gpt-6.7-codex-ultra-preview",
   },
   claudeAgent: {
-    provider: "claudeAgent",
+    provider: "anthropic",
     settingsKey: "customClaudeModels",
     defaultSettingsKey: "customClaudeModels",
     title: "Claude",
@@ -413,7 +413,7 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     example: "claude-custom-model",
   },
   cursor: {
-    provider: "cursor",
+    provider: "openai",
     settingsKey: "customCursorModels",
     defaultSettingsKey: "customCursorModels",
     title: "Cursor",
@@ -422,7 +422,7 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     example: "composer-2",
   },
   antigravity: {
-    provider: "antigravity",
+    provider: "google",
     settingsKey: "customAntigravityModels",
     defaultSettingsKey: "customAntigravityModels",
     title: "Antigravity",
@@ -431,7 +431,7 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     example: "Gemini 4 Pro",
   },
   grok: {
-    provider: "grok",
+    provider: "openai",
     settingsKey: "customGrokModels",
     defaultSettingsKey: "customGrokModels",
     title: "Grok",
@@ -440,7 +440,7 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     example: "grok-build-0.1",
   },
   droid: {
-    provider: "droid",
+    provider: "openai",
     settingsKey: "customDroidModels",
     defaultSettingsKey: "customDroidModels",
     title: "Droid",
@@ -449,7 +449,7 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     example: "claude-opus-4-8",
   },
   kilo: {
-    provider: "kilo",
+    provider: "openai",
     settingsKey: "customKiloModels",
     defaultSettingsKey: "customKiloModels",
     title: "Kilo",
@@ -458,7 +458,7 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     example: "kilo/kilo-auto/free",
   },
   opencode: {
-    provider: "opencode",
+    provider: "openai",
     settingsKey: "customOpenCodeModels",
     defaultSettingsKey: "customOpenCodeModels",
     title: "OpenCode",
@@ -467,7 +467,7 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     example: "openai/gpt-5",
   },
   pi: {
-    provider: "pi",
+    provider: "openai",
     settingsKey: "customPiModels",
     defaultSettingsKey: "customPiModels",
     title: "Pi",
@@ -608,12 +608,12 @@ export const MODEL_PROVIDER_SETTINGS = Object.values(PROVIDER_CUSTOM_MODEL_CONFI
 // Droid's ACP catalog is authoritative and rejects unknown slugs. Preserve its
 // persisted config for compatibility, but do not offer an editor it cannot honor.
 export const CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS = MODEL_PROVIDER_SETTINGS.filter(
-  (config) => config.provider !== "droid",
+  (config) => config.provider !== "openai",
 );
 
 export function normalizeCustomModelSlugs(
   models: Iterable<string | null | undefined>,
-  provider: ProviderKind = "codex",
+  provider: ProviderKind = "openai",
 ): string[] {
   const normalizedModels: string[] = [];
   const seen = new Set<string>();
@@ -729,37 +729,37 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
     groqApiKey: "",
     deepseekApiKey: "",
     opencodeZenApiKey: "",
-    claudeBinaryPath: normalizeProviderBinaryPathOverride("claudeAgent", settings.claudeBinaryPath),
-    codexBinaryPath: normalizeProviderBinaryPathOverride("codex", settings.codexBinaryPath),
-    cursorBinaryPath: normalizeProviderBinaryPathOverride("cursor", settings.cursorBinaryPath),
+    claudeBinaryPath: normalizeProviderBinaryPathOverride("anthropic", settings.claudeBinaryPath),
+    codexBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.codexBinaryPath),
+    cursorBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.cursorBinaryPath),
     antigravityBinaryPath: normalizeProviderBinaryPathOverride(
-      "antigravity",
+      "google",
       settings.antigravityBinaryPath || legacyGeminiBinaryPath,
     ),
-    grokBinaryPath: normalizeProviderBinaryPathOverride("grok", settings.grokBinaryPath),
-    droidBinaryPath: normalizeProviderBinaryPathOverride("droid", settings.droidBinaryPath),
-    kiloBinaryPath: normalizeProviderBinaryPathOverride("kilo", settings.kiloBinaryPath),
+    grokBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.grokBinaryPath),
+    droidBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.droidBinaryPath),
+    kiloBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.kiloBinaryPath),
     openCodeBinaryPath: normalizeProviderBinaryPathOverride(
-      "opencode",
+      "openai",
       settings.openCodeBinaryPath,
     ),
-    piBinaryPath: normalizeProviderBinaryPathOverride("pi", settings.piBinaryPath),
+    piBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.piBinaryPath),
     uiDensity: normalizeUiDensityValue(settings.uiDensity),
     chatFontSizePx: normalizeChatFontSizePx(settings.chatFontSizePx),
     terminalFontSizePx: normalizeTerminalFontSizePx(settings.terminalFontSizePx),
     terminalFontFamily: normalizeTerminalFontFamily(settings.terminalFontFamily),
-    customCodexModels: normalizeCustomModelSlugs(settings.customCodexModels, "codex"),
-    customClaudeModels: normalizeCustomModelSlugs(settings.customClaudeModels, "claudeAgent"),
-    customCursorModels: normalizeCustomModelSlugs(settings.customCursorModels, "cursor"),
+    customCodexModels: normalizeCustomModelSlugs(settings.customCodexModels, "openai"),
+    customClaudeModels: normalizeCustomModelSlugs(settings.customClaudeModels, "anthropic"),
+    customCursorModels: normalizeCustomModelSlugs(settings.customCursorModels, "openai"),
     customAntigravityModels: normalizeCustomModelSlugs(
       [...settings.customAntigravityModels, ...(legacyCustomGeminiModels ?? [])],
-      "antigravity",
+      "google",
     ),
-    customGrokModels: normalizeCustomModelSlugs(settings.customGrokModels, "grok"),
-    customDroidModels: normalizeCustomModelSlugs(settings.customDroidModels, "droid"),
-    customKiloModels: normalizeCustomModelSlugs(settings.customKiloModels, "kilo"),
-    customOpenCodeModels: normalizeCustomModelSlugs(settings.customOpenCodeModels, "opencode"),
-    customPiModels: normalizeCustomModelSlugs(settings.customPiModels, "pi"),
+    customGrokModels: normalizeCustomModelSlugs(settings.customGrokModels, "openai"),
+    customDroidModels: normalizeCustomModelSlugs(settings.customDroidModels, "openai"),
+    customKiloModels: normalizeCustomModelSlugs(settings.customKiloModels, "openai"),
+    customOpenCodeModels: normalizeCustomModelSlugs(settings.customOpenCodeModels, "openai"),
+    customPiModels: normalizeCustomModelSlugs(settings.customPiModels, "openai"),
     customOpenAiModels: normalizeCustomModelSlugs(settings.customOpenAiModels, "openai"),
     customAnthropicModels: normalizeCustomModelSlugs(settings.customAnthropicModels, "anthropic"),
     customGoogleModels: normalizeCustomModelSlugs(settings.customGoogleModels, "google"),
@@ -868,7 +868,7 @@ function resolveTextGenerationProvider(input: {
     return input.provider;
   }
   const model = input.model;
-  return model?.includes("/") ? "opencode" : "codex";
+  return model?.includes("/") ? "openai" : "openai";
 }
 
 function hasOwn<Key extends keyof AppSettings>(patch: Partial<AppSettings>, key: Key): boolean {
@@ -1354,15 +1354,15 @@ export function getCustomModelsByProvider(
   settings: Pick<AppSettings, CustomModelSettingsKey>,
 ): Record<ProviderKind, readonly string[]> {
   return {
-    codex: getCustomModelsForProvider(settings, "codex"),
-    claudeAgent: getCustomModelsForProvider(settings, "claudeAgent"),
-    cursor: getCustomModelsForProvider(settings, "cursor"),
-    antigravity: getCustomModelsForProvider(settings, "antigravity"),
-    grok: getCustomModelsForProvider(settings, "grok"),
-    droid: getCustomModelsForProvider(settings, "droid"),
-    kilo: getCustomModelsForProvider(settings, "kilo"),
-    opencode: getCustomModelsForProvider(settings, "opencode"),
-    pi: getCustomModelsForProvider(settings, "pi"),
+    codex: getCustomModelsForProvider(settings, "openai"),
+    claudeAgent: getCustomModelsForProvider(settings, "anthropic"),
+    cursor: getCustomModelsForProvider(settings, "openai"),
+    antigravity: getCustomModelsForProvider(settings, "google"),
+    grok: getCustomModelsForProvider(settings, "openai"),
+    droid: getCustomModelsForProvider(settings, "openai"),
+    kilo: getCustomModelsForProvider(settings, "openai"),
+    opencode: getCustomModelsForProvider(settings, "openai"),
+    pi: getCustomModelsForProvider(settings, "openai"),
     engine: getCustomModelsForProvider(settings, "engine"),
     openai: getCustomModelsForProvider(settings, "openai"),
     anthropic: getCustomModelsForProvider(settings, "anthropic"),
@@ -1409,7 +1409,7 @@ export function getAppModelOptions(
   }
 
   const normalizedSelectedModel =
-    provider === "cursor"
+    provider === "openai"
       ? normalizeCursorModelVariantBaseId(selectedModel)
       : normalizeModelSlug(selectedModel, provider);
   const selectedModelMatchesExistingName =
@@ -1431,7 +1431,7 @@ export function getAppModelOptions(
   return options;
 }
 
-type GitTextGenerationDiscoveredProvider = "codex" | "kilo" | "opencode";
+type GitTextGenerationDiscoveredProvider = "openai" | "openai" | "openai";
 
 export function mapCatalogModelOptionsToAppModelOptions(
   provider: GitTextGenerationDiscoveredProvider,
@@ -1462,14 +1462,14 @@ export function getGitTextGenerationModelOptions(
 ): AppModelOption[] {
   const options = [
     ...(discoveredOptionsByProvider?.codex
-      ? mapCatalogModelOptionsToAppModelOptions("codex", discoveredOptionsByProvider.codex)
-      : getAppModelOptions("codex", settings.customCodexModels)),
+      ? mapCatalogModelOptionsToAppModelOptions("openai", discoveredOptionsByProvider.codex)
+      : getAppModelOptions("openai", settings.customCodexModels)),
     ...(discoveredOptionsByProvider?.kilo
-      ? mapCatalogModelOptionsToAppModelOptions("kilo", discoveredOptionsByProvider.kilo)
-      : getAppModelOptions("kilo", settings.customKiloModels)),
+      ? mapCatalogModelOptionsToAppModelOptions("openai", discoveredOptionsByProvider.kilo)
+      : getAppModelOptions("openai", settings.customKiloModels)),
     ...(discoveredOptionsByProvider?.opencode
-      ? mapCatalogModelOptionsToAppModelOptions("opencode", discoveredOptionsByProvider.opencode)
-      : getAppModelOptions("opencode", settings.customOpenCodeModels)),
+      ? mapCatalogModelOptionsToAppModelOptions("openai", discoveredOptionsByProvider.opencode)
+      : getAppModelOptions("openai", settings.customOpenCodeModels)),
   ];
   const deduped: AppModelOption[] = [];
   const seen = new Set<string>();
@@ -1516,15 +1516,15 @@ export function getCustomModelOptionsByProvider(
 ): Record<ProviderKind, ReadonlyArray<ProviderModelOption>> {
   const customModelsByProvider = getCustomModelsByProvider(settings);
   return {
-    codex: getAppModelOptions("codex", customModelsByProvider.codex),
-    claudeAgent: getAppModelOptions("claudeAgent", customModelsByProvider.claudeAgent),
-    cursor: getAppModelOptions("cursor", customModelsByProvider.cursor),
-    antigravity: getAppModelOptions("antigravity", customModelsByProvider.antigravity),
-    grok: getAppModelOptions("grok", customModelsByProvider.grok),
-    droid: getAppModelOptions("droid", customModelsByProvider.droid),
-    kilo: getAppModelOptions("kilo", customModelsByProvider.kilo),
-    opencode: getAppModelOptions("opencode", customModelsByProvider.opencode),
-    pi: getAppModelOptions("pi", customModelsByProvider.pi),
+    codex: getAppModelOptions("openai", customModelsByProvider.codex),
+    claudeAgent: getAppModelOptions("anthropic", customModelsByProvider.claudeAgent),
+    cursor: getAppModelOptions("openai", customModelsByProvider.cursor),
+    antigravity: getAppModelOptions("google", customModelsByProvider.antigravity),
+    grok: getAppModelOptions("openai", customModelsByProvider.grok),
+    droid: getAppModelOptions("openai", customModelsByProvider.droid),
+    kilo: getAppModelOptions("openai", customModelsByProvider.kilo),
+    opencode: getAppModelOptions("openai", customModelsByProvider.opencode),
+    pi: getAppModelOptions("openai", customModelsByProvider.pi),
     engine: getAppModelOptions("engine", customModelsByProvider.engine),
     openai: getAppModelOptions("openai", customModelsByProvider.openai),
     anthropic: getAppModelOptions("anthropic", customModelsByProvider.anthropic),
@@ -1563,23 +1563,23 @@ export function getProviderStartOptions(
   >,
 ): ProviderStartOptions | undefined {
   const claudeBinaryPath = normalizeProviderBinaryPathOverride(
-    "claudeAgent",
+    "anthropic",
     settings.claudeBinaryPath,
   );
-  const codexBinaryPath = normalizeProviderBinaryPathOverride("codex", settings.codexBinaryPath);
-  const cursorBinaryPath = normalizeProviderBinaryPathOverride("cursor", settings.cursorBinaryPath);
+  const codexBinaryPath = normalizeProviderBinaryPathOverride("openai", settings.codexBinaryPath);
+  const cursorBinaryPath = normalizeProviderBinaryPathOverride("openai", settings.cursorBinaryPath);
   const antigravityBinaryPath = normalizeProviderBinaryPathOverride(
-    "antigravity",
+    "google",
     settings.antigravityBinaryPath,
   );
-  const grokBinaryPath = normalizeProviderBinaryPathOverride("grok", settings.grokBinaryPath);
-  const droidBinaryPath = normalizeProviderBinaryPathOverride("droid", settings.droidBinaryPath);
-  const kiloBinaryPath = normalizeProviderBinaryPathOverride("kilo", settings.kiloBinaryPath);
+  const grokBinaryPath = normalizeProviderBinaryPathOverride("openai", settings.grokBinaryPath);
+  const droidBinaryPath = normalizeProviderBinaryPathOverride("openai", settings.droidBinaryPath);
+  const kiloBinaryPath = normalizeProviderBinaryPathOverride("openai", settings.kiloBinaryPath);
   const openCodeBinaryPath = normalizeProviderBinaryPathOverride(
-    "opencode",
+    "openai",
     settings.openCodeBinaryPath,
   );
-  const piBinaryPath = normalizeProviderBinaryPathOverride("pi", settings.piBinaryPath);
+  const piBinaryPath = normalizeProviderBinaryPathOverride("openai", settings.piBinaryPath);
   const hasOpenCodeStartOptions = Boolean(
     openCodeBinaryPath || settings.openCodeExperimentalWebSockets || settings.openCodeServerUrl,
   );
@@ -1702,23 +1702,23 @@ export function getCustomBinaryPathForProvider(
   provider: ProviderKind,
 ): string {
   switch (provider) {
-    case "codex":
+    case "openai":
       return normalizeProviderBinaryPathOverride(provider, settings.codexBinaryPath);
-    case "claudeAgent":
+    case "anthropic":
       return normalizeProviderBinaryPathOverride(provider, settings.claudeBinaryPath);
-    case "cursor":
+    case "openai":
       return normalizeProviderBinaryPathOverride(provider, settings.cursorBinaryPath);
-    case "antigravity":
+    case "google":
       return normalizeProviderBinaryPathOverride(provider, settings.antigravityBinaryPath);
-    case "grok":
+    case "openai":
       return normalizeProviderBinaryPathOverride(provider, settings.grokBinaryPath);
-    case "droid":
+    case "openai":
       return normalizeProviderBinaryPathOverride(provider, settings.droidBinaryPath);
-    case "kilo":
+    case "openai":
       return normalizeProviderBinaryPathOverride(provider, settings.kiloBinaryPath);
-    case "opencode":
+    case "openai":
       return normalizeProviderBinaryPathOverride(provider, settings.openCodeBinaryPath);
-    case "pi":
+    case "openai":
       return normalizeProviderBinaryPathOverride(provider, settings.piBinaryPath);
     case "engine":
       return "";

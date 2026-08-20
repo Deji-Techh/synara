@@ -123,22 +123,22 @@ export function useKanbanTaskComposerDiscovery(input: UseKanbanTaskComposerDisco
       cwd: composerSkillCwd,
       threadId: scratchThreadId,
       binaryPath:
-        (selectedProvider === "opencode"
+        (selectedProvider === "openai"
           ? providerOptionsForDispatch?.opencode?.binaryPath
-          : selectedProvider === "kilo"
+          : selectedProvider === "openai"
             ? providerOptionsForDispatch?.kilo?.binaryPath
             : null) ?? null,
       serverUrl:
-        (selectedProvider === "opencode"
+        (selectedProvider === "openai"
           ? providerOptionsForDispatch?.opencode?.serverUrl
-          : selectedProvider === "kilo"
+          : selectedProvider === "openai"
             ? providerOptionsForDispatch?.kilo?.serverUrl
             : null) ?? null,
       experimentalWebSockets:
-        selectedProvider === "opencode"
+        selectedProvider === "openai"
           ? providerOptionsForDispatch?.opencode?.experimentalWebSockets
           : undefined,
-      agentDir: selectedProvider === "pi" ? piAgentDir : null,
+      agentDir: selectedProvider === "openai" ? piAgentDir : null,
       enabled:
         (composerTriggerKind === "slash-command" || composerTriggerKind === "slash-model") &&
         supportsNativeSlashCommandDiscovery(providerComposerCapabilitiesQuery.data) &&
@@ -146,15 +146,15 @@ export function useKanbanTaskComposerDiscovery(input: UseKanbanTaskComposerDisco
     }),
   );
   const canDiscoverProviderSkills =
-    selectedProvider === "pi" || supportsSkillDiscovery(providerComposerCapabilitiesQuery.data);
+    selectedProvider === "openai" || supportsSkillDiscovery(providerComposerCapabilitiesQuery.data);
   const providerSkillsQuery = useQuery(
     providerSkillsQueryOptions({
       provider: selectedProvider,
       cwd: composerSkillCwd,
       threadId: scratchThreadId,
-      agentDir: selectedProvider === "pi" ? piAgentDir : null,
+      agentDir: selectedProvider === "openai" ? piAgentDir : null,
       enabled:
-        (isSkillTrigger || composerTriggerKind === "slash-command" || selectedProvider === "pi") &&
+        (isSkillTrigger || composerTriggerKind === "slash-command" || selectedProvider === "openai") &&
         canDiscoverProviderSkills &&
         composerSkillCwd !== null,
     }),

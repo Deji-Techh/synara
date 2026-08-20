@@ -422,7 +422,7 @@ describe("composerDraftStore terminal contexts", () => {
       {
         draftsByThreadId: {
           [threadId]: {
-            provider: "grok",
+            provider: "openai",
             model: "grok-build",
             modelOptions: {
               grok: {
@@ -438,7 +438,7 @@ describe("composerDraftStore terminal contexts", () => {
     );
 
     expect(mergedState.draftsByThreadId[threadId]?.modelSelectionByProvider.grok).toEqual(
-      modelSelection("grok", "grok-build"),
+      modelSelection("openai", "grok-build"),
     );
   });
 
@@ -455,7 +455,7 @@ describe("composerDraftStore terminal contexts", () => {
       {
         draftsByThreadId: {
           [threadId]: {
-            provider: "codex",
+            provider: "openai",
             model: "gpt-5.6-sol",
             effort: "  ultra  ",
           },
@@ -467,7 +467,7 @@ describe("composerDraftStore terminal contexts", () => {
     );
 
     expect(mergedState.draftsByThreadId[threadId]?.modelSelectionByProvider.codex).toEqual(
-      modelSelection("codex", "gpt-5.6-sol", { reasoningEffort: "ultra" }),
+      modelSelection("openai", "gpt-5.6-sol", { reasoningEffort: "ultra" }),
     );
   });
 
@@ -480,10 +480,10 @@ describe("composerDraftStore terminal contexts", () => {
         ) => ReturnType<typeof useComposerDraftStore.getState>;
       };
     };
-    const codexSelection = modelSelection("codex", "gpt-5.6-sol", {
+    const codexSelection = modelSelection("openai", "gpt-5.6-sol", {
       reasoningEffort: "ultra",
     });
-    const cursorSelection = modelSelection("cursor", "cursor-auto", {
+    const cursorSelection = modelSelection("openai", "cursor-auto", {
       reasoningEffort: "high",
     });
     const mergedState = persistApi.getOptions().merge(
@@ -494,7 +494,7 @@ describe("composerDraftStore terminal contexts", () => {
               codex: codexSelection,
               cursor: cursorSelection,
             },
-            activeProvider: "cursor",
+            activeProvider: "openai",
           },
         },
         draftThreadsByThreadId: {},
@@ -506,7 +506,7 @@ describe("composerDraftStore terminal contexts", () => {
     const draft = mergedState.draftsByThreadId[threadId];
     expect(draft?.modelSelectionByProvider.codex).toEqual(codexSelection);
     expect(draft?.modelSelectionByProvider.cursor).toEqual(cursorSelection);
-    expect(draft?.activeProvider).toBe("cursor");
+    expect(draft?.activeProvider).toBe("openai");
   });
 });
 

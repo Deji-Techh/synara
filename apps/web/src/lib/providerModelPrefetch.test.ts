@@ -24,7 +24,7 @@ function makeSettings(
   overrides: Partial<ProviderModelPrefetchSettings> = {},
 ): ProviderModelPrefetchSettings {
   return {
-    defaultProvider: "codex",
+    defaultProvider: "openai",
     cursorBinaryPath: "",
     cursorApiEndpoint: "",
     antigravityBinaryPath: "",
@@ -42,36 +42,36 @@ describe("resolveNewThreadModelPrefetchProvider", () => {
   it("prefers draft, then sticky, then project default, then app default", () => {
     expect(
       resolveNewThreadModelPrefetchProvider({
-        draftActiveProvider: "cursor",
-        stickyActiveProvider: "pi",
-        projectDefaultProvider: "opencode",
-        defaultProvider: "codex",
+        draftActiveProvider: "openai",
+        stickyActiveProvider: "openai",
+        projectDefaultProvider: "openai",
+        defaultProvider: "openai",
       }),
-    ).toBe("cursor");
+    ).toBe("openai");
 
     expect(
       resolveNewThreadModelPrefetchProvider({
         draftActiveProvider: null,
-        stickyActiveProvider: "pi",
-        projectDefaultProvider: "opencode",
-        defaultProvider: "codex",
+        stickyActiveProvider: "openai",
+        projectDefaultProvider: "openai",
+        defaultProvider: "openai",
       }),
-    ).toBe("pi");
+    ).toBe("openai");
 
     expect(
       resolveNewThreadModelPrefetchProvider({
         stickyActiveProvider: null,
-        projectDefaultProvider: "opencode",
-        defaultProvider: "codex",
+        projectDefaultProvider: "openai",
+        defaultProvider: "openai",
       }),
-    ).toBe("opencode");
+    ).toBe("openai");
 
     expect(
       resolveNewThreadModelPrefetchProvider({
         projectDefaultProvider: null,
-        defaultProvider: "claudeAgent",
+        defaultProvider: "anthropic",
       }),
-    ).toBe("claudeAgent");
+    ).toBe("anthropic");
   });
 });
 
@@ -114,39 +114,39 @@ describe("providerModelsPrefetchQueryOptions", () => {
     });
 
     const cursorOptions = providerModelsPrefetchQueryOptions({
-      provider: "cursor",
+      provider: "openai",
       settings,
     });
     expect(cursorOptions.queryKey).toEqual(
-      providerDiscoveryQueryKeys.models("cursor", "/bin/agent", "https://api.example", null, null),
+      providerDiscoveryQueryKeys.models("openai", "/bin/agent", "https://api.example", null, null),
     );
 
     const openCodeOptions = providerModelsPrefetchQueryOptions({
-      provider: "opencode",
+      provider: "openai",
       settings,
       cwd: "/tmp/project",
     });
     expect(openCodeOptions.queryKey).toEqual(
-      providerDiscoveryQueryKeys.models("opencode", "/bin/opencode", null, null, "/tmp/project"),
+      providerDiscoveryQueryKeys.models("openai", "/bin/opencode", null, null, "/tmp/project"),
     );
 
     const piOptions = providerModelsPrefetchQueryOptions({
-      provider: "pi",
+      provider: "openai",
       settings,
       cwd: "/tmp/project",
     });
     expect(piOptions.queryKey).toEqual(
-      providerDiscoveryQueryKeys.models("pi", "/bin/pi", null, "/tmp/pi-agent", "/tmp/project"),
+      providerDiscoveryQueryKeys.models("openai", "/bin/pi", null, "/tmp/pi-agent", "/tmp/project"),
     );
 
     const antigravityOptions = providerModelsPrefetchQueryOptions({
-      provider: "antigravity",
+      provider: "google",
       settings,
       cwd: "/tmp/project",
     });
     expect(antigravityOptions.queryKey).toEqual(
       providerDiscoveryQueryKeys.models(
-        "antigravity",
+        "google",
         "/bin/antigravity",
         null,
         null,
@@ -155,11 +155,11 @@ describe("providerModelsPrefetchQueryOptions", () => {
     );
 
     const codexOptions = providerModelsPrefetchQueryOptions({
-      provider: "codex",
+      provider: "openai",
       settings,
     });
     expect(codexOptions.queryKey).toEqual(
-      providerDiscoveryQueryKeys.models("codex", null, null, null, null),
+      providerDiscoveryQueryKeys.models("openai", null, null, null, null),
     );
   });
 
@@ -181,7 +181,7 @@ describe("prefetchProviderModelsForNewThread", () => {
     const prefetchQuery = vi.spyOn(queryClient, "prefetchQuery").mockResolvedValue(undefined);
 
     prefetchProviderModelsForNewThread(queryClient, {
-      provider: "kilo" satisfies ProviderKind,
+      provider: "openai" satisfies ProviderKind,
       settings: makeSettings({
         kiloBinaryPath: "/bin/kilo",
       }),
@@ -190,13 +190,13 @@ describe("prefetchProviderModelsForNewThread", () => {
 
     expect(prefetchQuery).toHaveBeenCalledTimes(3);
     expect(prefetchQuery.mock.calls[0]?.[0].queryKey).toEqual(
-      providerDiscoveryQueryKeys.models("kilo", "/bin/kilo", null, null, "/tmp/project"),
+      providerDiscoveryQueryKeys.models("openai", "/bin/kilo", null, null, "/tmp/project"),
     );
     expect(prefetchQuery.mock.calls[1]?.[0].queryKey).toEqual(
-      providerDiscoveryQueryKeys.agents("kilo", "/bin/kilo", "/tmp/project"),
+      providerDiscoveryQueryKeys.agents("openai", "/bin/kilo", "/tmp/project"),
     );
     expect(prefetchQuery.mock.calls[2]?.[0].queryKey).toEqual(
-      providerDiscoveryQueryKeys.composerCapabilities("kilo"),
+      providerDiscoveryQueryKeys.composerCapabilities("openai"),
     );
   });
 
@@ -205,16 +205,16 @@ describe("prefetchProviderModelsForNewThread", () => {
     const prefetchQuery = vi.spyOn(queryClient, "prefetchQuery").mockResolvedValue(undefined);
 
     prefetchProviderModelsForNewThread(queryClient, {
-      provider: "cursor",
+      provider: "openai",
       settings: makeSettings({ cursorBinaryPath: "/bin/agent" }),
     });
 
     expect(prefetchQuery).toHaveBeenCalledTimes(2);
     expect(prefetchQuery.mock.calls[0]?.[0].queryKey).toEqual(
-      providerDiscoveryQueryKeys.models("cursor", "/bin/agent", null, null, null),
+      providerDiscoveryQueryKeys.models("openai", "/bin/agent", null, null, null),
     );
     expect(prefetchQuery.mock.calls[1]?.[0].queryKey).toEqual(
-      providerDiscoveryQueryKeys.composerCapabilities("cursor"),
+      providerDiscoveryQueryKeys.composerCapabilities("openai"),
     );
   });
 });

@@ -487,7 +487,7 @@ function SidebarRail({
       if (resizeState.rail.hasPointerCapture(pointerId)) {
         resizeState.rail.releasePointerCapture(pointerId);
       }
-      document.body.style.removeProperty("cursor");
+      document.body.style.removeProperty("openai");
       document.body.style.removeProperty("user-select");
     },
     [resolvedResizable],
@@ -660,7 +660,7 @@ function SidebarRail({
       resizeState?.transitionTargets.forEach((element) => {
         element.style.removeProperty("transition-duration");
       });
-      document.body.style.removeProperty("cursor");
+      document.body.style.removeProperty("openai");
       document.body.style.removeProperty("user-select");
     };
   }, []);

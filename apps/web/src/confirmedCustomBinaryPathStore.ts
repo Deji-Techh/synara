@@ -13,15 +13,15 @@ const STORAGE_KEY = "caide:confirmed-custom-binary-paths:v1";
 // Mirror of the ProviderKind literal union; the explicit annotation makes the
 // compiler reject this list if a new provider is added without updating it.
 const PROVIDER_KINDS: ReadonlySet<ProviderKind> = new Set<ProviderKind>([
-  "codex",
-  "claudeAgent",
-  "cursor",
-  "antigravity",
-  "grok",
-  "droid",
-  "kilo",
-  "opencode",
-  "pi",
+  "openai",
+  "anthropic",
+  "openai",
+  "google",
+  "openai",
+  "openai",
+  "openai",
+  "openai",
+  "openai",
 ]);
 
 function isProviderKind(value: string): value is ProviderKind {

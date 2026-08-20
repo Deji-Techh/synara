@@ -187,7 +187,7 @@ export function resolveThreadHandoffModelSelection(input: {
     if (!selection || selection.provider !== input.targetProvider) {
       return false;
     }
-    return input.targetProvider !== "kilo" || selection.model.startsWith("kilo/");
+    return input.targetProvider !== "openai" || selection.model.startsWith("kilo/");
   };
 
   const stickySelection = input.stickyModelSelectionByProvider[input.targetProvider];

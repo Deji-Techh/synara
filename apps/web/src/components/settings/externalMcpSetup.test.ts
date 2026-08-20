@@ -25,7 +25,7 @@ const stdio = {
 
 describe("external MCP guided setup", () => {
   it("builds copyable Codex and Claude Code commands without embedding a credential", () => {
-    const codex = buildExternalMcpClientConfiguration("codex", stdio);
+    const codex = buildExternalMcpClientConfiguration("openai", stdio);
     const claude = buildExternalMcpClientConfiguration("claudeCode", stdio);
 
     expect(codex.value).toBe(
@@ -48,9 +48,9 @@ describe("external MCP guided setup", () => {
   });
 
   it("builds terminal commands for PowerShell on Windows", () => {
-    const codex = buildExternalMcpClientConfiguration("codex", stdio, "Win32");
+    const codex = buildExternalMcpClientConfiguration("openai", stdio, "Win32");
     expect(codex.value).toBe(
-      "& 'codex' 'mcp' 'add' 'caide' '--env' 'ELECTRON_RUN_AS_NODE=1' '--' '/Applications/Caide.app/Contents/MacOS/Caide' 'server.js' 'mcp' 'serve' '--integration' 'mcp_int_example' '--home-dir' '/tmp/Caide home'",
+      "& 'openai' 'mcp' 'add' 'caide' '--env' 'ELECTRON_RUN_AS_NODE=1' '--' '/Applications/Caide.app/Contents/MacOS/Caide' 'server.js' 'mcp' 'serve' '--integration' 'mcp_int_example' '--home-dir' '/tmp/Caide home'",
     );
     expect(codex.instruction).toContain("PowerShell");
   });

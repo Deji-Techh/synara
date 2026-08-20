@@ -369,7 +369,7 @@ export default function GitActionsControl({
   const providerOptions = useMemo(() => getProviderStartOptions(settings), [settings]);
   const gitTextGenerationModelSelection = useMemo(
     (): ModelSelection => ({
-      provider: settings.textGenerationProvider ?? "codex",
+      provider: settings.textGenerationProvider ?? "openai",
       model: settings.textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL,
     }),
     [settings.textGenerationModel, settings.textGenerationProvider],

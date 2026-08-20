@@ -211,7 +211,7 @@ export function useComposerVoiceController(
       const api = readNativeApi();
       void api?.server
         .prewarmVoice?.({
-          provider: "codex",
+          provider: "openai",
           cwd: activeProject.cwd,
           ...(activeThreadId ? { threadId: activeThreadId } : {}),
         })
@@ -272,7 +272,7 @@ export function useComposerVoiceController(
         }
         return api.server
           .transcribeVoice({
-            provider: "codex",
+            provider: "openai",
             cwd: activeProject.cwd,
             ...(activeThreadId ? { threadId: activeThreadId } : {}),
             ...payload,

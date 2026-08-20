@@ -41,7 +41,7 @@ function thread(input: { id: string; projectId: string }): SidebarThreadSummary 
     id: ThreadId.makeUnsafe(input.id),
     projectId: ProjectId.makeUnsafe(input.projectId),
     title: input.id,
-    modelSelection: { provider: "codex", model: "gpt-5" },
+    modelSelection: { provider: "openai", model: "gpt-5" },
     interactionMode: "default",
     branch: null,
     worktreePath: null,

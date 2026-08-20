@@ -9,7 +9,7 @@ import {
 } from "./providerAvailability";
 
 const BASE_STATUS: ServerProviderStatus = {
-  provider: "antigravity",
+  provider: "google",
   status: "error",
   available: false,
   authStatus: "unknown",
@@ -28,7 +28,7 @@ describe("normalizeProviderStatusForLocalConfig", () => {
   it("keeps Antigravity interactive when a custom binary path is configured locally", () => {
     expect(
       normalizeProviderStatusForLocalConfig({
-        provider: "antigravity",
+        provider: "google",
         status: BASE_STATUS,
         customBinaryPath: "/opt/homebrew/bin/agy",
       }),
@@ -44,17 +44,17 @@ describe("normalizeProviderStatusForLocalConfig", () => {
   it("applies the same custom-path fallback to Claude", () => {
     expect(
       normalizeProviderStatusForLocalConfig({
-        provider: "claudeAgent",
+        provider: "anthropic",
         status: {
           ...BASE_STATUS,
-          provider: "claudeAgent",
+          provider: "anthropic",
           message: "Claude Code CLI (`claude`) is not installed or not on PATH.",
         },
         customBinaryPath: "/opt/homebrew/bin/claude",
       }),
     ).toEqual({
       ...BASE_STATUS,
-      provider: "claudeAgent",
+      provider: "anthropic",
       available: true,
       status: "warning",
       message:
@@ -65,17 +65,17 @@ describe("normalizeProviderStatusForLocalConfig", () => {
   it("marks a custom-path provider ready after a successful session confirms it", () => {
     expect(
       normalizeProviderStatusForLocalConfig({
-        provider: "opencode",
+        provider: "openai",
         status: {
           ...BASE_STATUS,
-          provider: "opencode",
+          provider: "openai",
           message: "OpenCode CLI (`opencode`) is not installed or not on PATH.",
         },
         customBinaryPath: "/custom/bin/opencode",
         confirmedCustomBinaryPath: "/custom/bin/opencode",
       }),
     ).toEqual({
-      provider: "opencode",
+      provider: "openai",
       authStatus: "unknown",
       available: true,
       checkedAt: BASE_STATUS.checkedAt,
@@ -86,10 +86,10 @@ describe("normalizeProviderStatusForLocalConfig", () => {
   it("keeps warning when a different custom path was confirmed", () => {
     expect(
       normalizeProviderStatusForLocalConfig({
-        provider: "opencode",
+        provider: "openai",
         status: {
           ...BASE_STATUS,
-          provider: "opencode",
+          provider: "openai",
           message: "OpenCode CLI (`opencode`) is not installed or not on PATH.",
         },
         customBinaryPath: "/custom/bin/opencode-next",
@@ -97,7 +97,7 @@ describe("normalizeProviderStatusForLocalConfig", () => {
       }),
     ).toEqual({
       ...BASE_STATUS,
-      provider: "opencode",
+      provider: "openai",
       available: true,
       status: "warning",
       message:
@@ -108,7 +108,7 @@ describe("normalizeProviderStatusForLocalConfig", () => {
   it("preserves authenticated and unauthenticated statuses", () => {
     expect(
       normalizeProviderStatusForLocalConfig({
-        provider: "antigravity",
+        provider: "google",
         status: { ...BASE_STATUS, available: true, status: "ready", authStatus: "authenticated" },
         customBinaryPath: "/opt/homebrew/bin/agy",
       }),
@@ -116,7 +116,7 @@ describe("normalizeProviderStatusForLocalConfig", () => {
 
     expect(
       normalizeProviderStatusForLocalConfig({
-        provider: "antigravity",
+        provider: "google",
         status: { ...BASE_STATUS, authStatus: "unauthenticated" },
         customBinaryPath: "/opt/homebrew/bin/agy",
       }),
@@ -125,7 +125,7 @@ describe("normalizeProviderStatusForLocalConfig", () => {
 
   it("does not reuse Auto capability from a different Claude binary", () => {
     const status: ServerProviderStatus = {
-      provider: "claudeAgent",
+      provider: "anthropic",
       status: "ready",
       available: true,
       authStatus: "authenticated",
@@ -136,12 +136,12 @@ describe("normalizeProviderStatusForLocalConfig", () => {
 
     expect(
       normalizeProviderStatusForLocalConfig({
-        provider: "claudeAgent",
+        provider: "anthropic",
         status,
         customBinaryPath: "/custom/bin/claude",
       }),
     ).toEqual({
-      provider: "claudeAgent",
+      provider: "anthropic",
       status: "ready",
       available: true,
       authStatus: "authenticated",
@@ -151,7 +151,7 @@ describe("normalizeProviderStatusForLocalConfig", () => {
 
   it("preserves Auto capability probed from the selected Codex binary", () => {
     const status: ServerProviderStatus = {
-      provider: "codex",
+      provider: "openai",
       status: "ready",
       available: true,
       authStatus: "authenticated",
@@ -162,7 +162,7 @@ describe("normalizeProviderStatusForLocalConfig", () => {
 
     expect(
       normalizeProviderStatusForLocalConfig({
-        provider: "codex",
+        provider: "openai",
         status,
         customBinaryPath: "/custom/bin/codex",
       }),
@@ -190,7 +190,7 @@ describe("resolveProviderSendAvailabilityWithRefresh", () => {
 
     await expect(
       resolveProviderSendAvailabilityWithRefresh({
-        provider: "antigravity",
+        provider: "google",
         statuses: [READY_STATUS],
         refreshStatuses,
       }),
@@ -203,7 +203,7 @@ describe("resolveProviderSendAvailabilityWithRefresh", () => {
 
     await expect(
       resolveProviderSendAvailabilityWithRefresh({
-        provider: "antigravity",
+        provider: "google",
         statuses: [],
         refreshStatuses,
       }),
@@ -216,7 +216,7 @@ describe("resolveProviderSendAvailabilityWithRefresh", () => {
 
     await expect(
       resolveProviderSendAvailabilityWithRefresh({
-        provider: "antigravity",
+        provider: "google",
         statuses: [
           { ...BASE_STATUS, available: true, status: "error", authStatus: "unauthenticated" },
         ],
@@ -229,7 +229,7 @@ describe("resolveProviderSendAvailabilityWithRefresh", () => {
   it("keeps the original blocked reason when refresh fails", async () => {
     await expect(
       resolveProviderSendAvailabilityWithRefresh({
-        provider: "antigravity",
+        provider: "google",
         statuses: [{ ...BASE_STATUS, authStatus: "unauthenticated" }],
         refreshStatuses: vi.fn(async () => {
           throw new Error("refresh failed");

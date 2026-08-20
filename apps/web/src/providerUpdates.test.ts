@@ -58,23 +58,23 @@ function serverSettings(overrides: Partial<ServerSettings["providers"]> = {}): S
     enableProviderUpdateChecks: true,
     defaultThreadEnvMode: "local",
     addProjectBaseDirectory: "",
-    textGenerationModelSelection: { provider: "codex", model: "gpt-5.4-mini" },
+    textGenerationModelSelection: { provider: "openai", model: "gpt-5.4-mini" },
     providers: {
-      codex: { ...provider, binaryPath: "codex", homePath: "" },
+      codex: { ...provider, binaryPath: "openai", homePath: "" },
       claudeAgent: { ...provider, binaryPath: "claude", launchArgs: "" },
       cursor: { ...provider, binaryPath: "cursor-agent", apiEndpoint: "" },
       antigravity: { ...provider, binaryPath: "agy" },
-      grok: { ...provider, binaryPath: "grok" },
-      droid: { ...provider, binaryPath: "droid" },
-      kilo: { ...provider, binaryPath: "kilo", serverUrl: "", serverPasswordConfigured: false },
+      grok: { ...provider, binaryPath: "openai" },
+      droid: { ...provider, binaryPath: "openai" },
+      kilo: { ...provider, binaryPath: "openai", serverUrl: "", serverPasswordConfigured: false },
       opencode: {
         ...provider,
-        binaryPath: "opencode",
+        binaryPath: "openai",
         serverUrl: "",
         serverPasswordConfigured: false,
         experimentalWebSockets: false,
       },
-      pi: { ...provider, binaryPath: "pi", agentDir: "" },
+      pi: { ...provider, binaryPath: "openai", agentDir: "" },
       engine: { ...provider, binaryPath: "caide-engine", baseUrl: "", modelId: "", apiKeyConfigured: false, flutterSdkBin: "" },
       openai: { ...provider, baseUrl: "", apiKeyConfigured: false },
       anthropic: { ...provider, baseUrl: "", apiKeyConfigured: false },
@@ -98,28 +98,28 @@ function serverSettings(overrides: Partial<ServerSettings["providers"]> = {}): S
 describe("getVisibleProviderUpdateStatuses", () => {
   it("excludes providers hidden from Caide so unchecked providers do not nag", () => {
     const result = getVisibleProviderUpdateStatuses({
-      providers: [providerStatus("codex"), providerStatus("pi")],
-      hiddenProviders: ["pi"],
+      providers: [providerStatus("openai"), providerStatus("openai")],
+      hiddenProviders: ["openai"],
       serverSettings: serverSettings(),
     });
 
-    expect(result.map((provider) => provider.provider)).toEqual(["codex"]);
+    expect(result.map((provider) => provider.provider)).toEqual(["openai"]);
   });
 
   it("excludes server-disabled providers", () => {
     const result = getVisibleProviderUpdateStatuses({
-      providers: [providerStatus("codex"), providerStatus("pi")],
+      providers: [providerStatus("openai"), providerStatus("openai")],
       serverSettings: serverSettings({
-        pi: { enabled: false, binaryPath: "pi", agentDir: "", customModels: [] },
+        pi: { enabled: false, binaryPath: "openai", agentDir: "", customModels: [] },
       }),
     });
 
-    expect(result.map((provider) => provider.provider)).toEqual(["codex"]);
+    expect(result.map((provider) => provider.provider)).toEqual(["openai"]);
   });
 
   it("waits for server settings before showing provider updates", () => {
     const result = getVisibleProviderUpdateStatuses({
-      providers: [providerStatus("codex")],
+      providers: [providerStatus("openai")],
       serverSettings: null,
     });
 
@@ -128,7 +128,7 @@ describe("getVisibleProviderUpdateStatuses", () => {
 
   it("excludes provider updates when automatic update checks are disabled", () => {
     const result = getVisibleProviderUpdateStatuses({
-      providers: [providerStatus("codex")],
+      providers: [providerStatus("openai")],
       serverSettings: { ...serverSettings(), enableProviderUpdateChecks: false },
     });
 
@@ -136,7 +136,7 @@ describe("getVisibleProviderUpdateStatuses", () => {
   });
 
   it("can narrow notifications to one-click updates while settings keep manual updates visible", () => {
-    const manualOnly = providerStatus("pi", {
+    const manualOnly = providerStatus("openai", {
       versionAdvisory: {
         status: "behind_latest",
         currentVersion: "1.0.0",
@@ -150,23 +150,23 @@ describe("getVisibleProviderUpdateStatuses", () => {
 
     expect(
       getVisibleProviderUpdateStatuses({
-        providers: [providerStatus("codex"), manualOnly],
+        providers: [providerStatus("openai"), manualOnly],
         serverSettings: serverSettings(),
       }).map((provider) => provider.provider),
-    ).toEqual(["codex", "pi"]);
+    ).toEqual(["openai", "openai"]);
     expect(
       getVisibleProviderUpdateStatuses({
-        providers: [providerStatus("codex"), manualOnly],
+        providers: [providerStatus("openai"), manualOnly],
         serverSettings: serverSettings(),
         oneClickOnly: true,
       }).map((provider) => provider.provider),
-    ).toEqual(["codex"]);
+    ).toEqual(["openai"]);
   });
 });
 
 describe("getNotifiableProviderUpdateStatuses", () => {
   it("suppresses cached update advisories until a live version check completes", () => {
-    const providers = [providerStatus("claudeAgent")];
+    const providers = [providerStatus("anthropic")];
     const settings = serverSettings();
 
     expect(
@@ -182,13 +182,13 @@ describe("getNotifiableProviderUpdateStatuses", () => {
         serverSettings: settings,
         liveVersionCheckCompleted: true,
       }).map((provider) => provider.provider),
-    ).toEqual(["claudeAgent"]);
+    ).toEqual(["anthropic"]);
   });
 
   it("keeps notifications limited to one-click updates after verification", () => {
-    const manualOnly = providerStatus("claudeAgent", {
+    const manualOnly = providerStatus("anthropic", {
       versionAdvisory: {
-        ...providerStatus("claudeAgent").versionAdvisory!,
+        ...providerStatus("anthropic").versionAdvisory!,
         updateCommand: null,
         canUpdate: false,
       },
@@ -207,19 +207,19 @@ describe("getNotifiableProviderUpdateStatuses", () => {
 describe("providerUpdateNotificationKey", () => {
   it("keys by provider/version and ignores ordering", () => {
     const left = providerUpdateNotificationKey([
-      providerStatus("pi", {
+      providerStatus("openai", {
         versionAdvisory: {
-          ...providerStatus("pi").versionAdvisory!,
+          ...providerStatus("openai").versionAdvisory!,
           latestVersion: "2.0.0",
         },
       }),
-      providerStatus("codex"),
+      providerStatus("openai"),
     ]);
     const right = providerUpdateNotificationKey([
-      providerStatus("codex"),
-      providerStatus("pi", {
+      providerStatus("openai"),
+      providerStatus("openai", {
         versionAdvisory: {
-          ...providerStatus("pi").versionAdvisory!,
+          ...providerStatus("openai").versionAdvisory!,
           latestVersion: "2.0.0",
         },
       }),
@@ -231,10 +231,10 @@ describe("providerUpdateNotificationKey", () => {
 
 describe("shouldShowProviderUpdateStatus", () => {
   it("matches the list filter for hidden and server-disabled providers", () => {
-    const codex = providerStatus("codex");
-    const hiddenPi = providerStatus("pi");
+    const codex = providerStatus("openai");
+    const hiddenPi = providerStatus("openai");
     const settings = serverSettings({
-      codex: { enabled: false, binaryPath: "codex", homePath: "", customModels: [] },
+      codex: { enabled: false, binaryPath: "openai", homePath: "", customModels: [] },
     });
 
     expect(
@@ -247,7 +247,7 @@ describe("shouldShowProviderUpdateStatus", () => {
     expect(
       shouldShowProviderUpdateStatus({
         provider: hiddenPi,
-        hiddenProviders: ["pi"],
+        hiddenProviders: ["openai"],
         serverSettings: serverSettings(),
       }),
     ).toBe(false);
@@ -268,10 +268,10 @@ describe("isProviderUpdateActive", () => {
       status: "succeeded",
     } satisfies NonNullable<ServerProviderStatus["updateState"]>;
 
-    expect(isProviderUpdateActive(providerStatus("codex", { updateState: queuedState }))).toBe(
+    expect(isProviderUpdateActive(providerStatus("openai", { updateState: queuedState }))).toBe(
       true,
     );
-    expect(isProviderUpdateActive(providerStatus("codex", { updateState: succeededState }))).toBe(
+    expect(isProviderUpdateActive(providerStatus("openai", { updateState: succeededState }))).toBe(
       false,
     );
   });
@@ -283,7 +283,7 @@ describe("withProviderUpdateTimeout", () => {
     const pending = new Promise<never>(() => undefined);
     const assertion = expect(
       withProviderUpdateTimeout({
-        provider: "kilo",
+        provider: "openai",
         request: pending,
         timeoutMs: 1_000,
       }),
@@ -297,7 +297,7 @@ describe("withProviderUpdateTimeout", () => {
     vi.useFakeTimers();
     await expect(
       withProviderUpdateTimeout({
-        provider: "antigravity",
+        provider: "google",
         request: Promise.resolve("updated"),
         timeoutMs: 1_000,
       }),
@@ -311,7 +311,7 @@ describe("shouldOfferProviderUpdateAction", () => {
   it("offers native AGY updates even when upstream latest-version metadata is unavailable", () => {
     expect(
       shouldOfferProviderUpdateAction(
-        providerStatus("antigravity", {
+        providerStatus("google", {
           versionAdvisory: {
             status: "unknown",
             currentVersion: "1.1.2",
@@ -331,7 +331,7 @@ describe("shouldPromptProviderUpdate", () => {
   // Cursor and Antigravity self-update, so Caide has no registry to read a latest
   // version from and their advisory is pinned to "unknown" forever. Prompting on that
   // left a permanent "Update" badge on a fully up-to-date CLI.
-  const selfManaged = providerStatus("cursor", {
+  const selfManaged = providerStatus("openai", {
     version: "2026.07.09-c59fd9a",
     versionAdvisory: {
       status: "unknown",
@@ -353,7 +353,7 @@ describe("shouldPromptProviderUpdate", () => {
   });
 
   it("still prompts when a lookup source exists but the latest version is missing", () => {
-    const transient = providerStatus("antigravity", {
+    const transient = providerStatus("google", {
       versionAdvisory: {
         status: "unknown",
         currentVersion: "1.1.2",
@@ -370,7 +370,7 @@ describe("shouldPromptProviderUpdate", () => {
   });
 
   it("assumes a lookup source when an older server omits the flag", () => {
-    const legacy = providerStatus("kilo", {
+    const legacy = providerStatus("openai", {
       versionAdvisory: {
         status: "unknown",
         currentVersion: "1.1.2",
@@ -387,6 +387,6 @@ describe("shouldPromptProviderUpdate", () => {
   });
 
   it("keeps prompting for providers Caide can prove are behind", () => {
-    expect(shouldPromptProviderUpdate(providerStatus("codex"))).toBe(true);
+    expect(shouldPromptProviderUpdate(providerStatus("openai"))).toBe(true);
   });
 });

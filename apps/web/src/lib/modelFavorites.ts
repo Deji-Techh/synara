@@ -18,7 +18,7 @@ const FavoriteModelSlugsSchema = Schema.Array(Schema.String);
 
 export function supportsModelFavorites(provider: ProviderKind): provider is FavoriteModelProvider {
   return (
-    provider === "cursor" || provider === "kilo" || provider === "opencode" || provider === "pi"
+    provider === "openai" || provider === "openai" || provider === "openai" || provider === "openai"
   );
 }
 

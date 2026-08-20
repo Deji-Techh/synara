@@ -184,7 +184,7 @@ export function KanbanNewTaskDialog({
   // Voice transcription always rides on the Codex ChatGPT session, regardless of
   // which provider the task targets — gate the mic on the Codex status.
   const voiceProviderStatus = useMemo(
-    () => findProviderStatus(providerStatuses, "codex"),
+    () => findProviderStatus(providerStatuses, "openai"),
     [providerStatuses],
   );
   const selectedProviderStatus = useMemo(
@@ -213,7 +213,7 @@ export function KanbanNewTaskDialog({
   const selectedRuntimeModelForCapabilities = useMemo(
     () =>
       selectedRuntimeModel ??
-      (selectedProvider === "claudeAgent" && typeof selectedModelSupportsAutoMode === "boolean"
+      (selectedProvider === "anthropic" && typeof selectedModelSupportsAutoMode === "boolean"
         ? {
             slug: selectedModel ?? "default",
             name: selectedModel ?? "default",
