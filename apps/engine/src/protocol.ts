@@ -24,6 +24,8 @@ export const ENGINE_METHODS = {
   testRun: "test/run",
   buildStart: "build/start",
   buildState: "build/state",
+  flutterToolchainStatus: "flutter/toolchain/status",
+  flutterToolchainInstall: "flutter/toolchain/install",
   turnTextDelta: "turn/textDelta",
   turnToolCall: "turn/toolCall",
   turnStatus: "turn/status",
@@ -186,6 +188,8 @@ export const PreviewStartParamsSchema = z.object({
   appDir: z.string(),
   port: z.number().int().optional(),
   hostname: z.string().optional(),
+  device: z.enum(["web-server", "emulator", "simulator"]).optional(),
+  deviceId: z.string().optional(),
 });
 export type PreviewStartParams = z.infer<typeof PreviewStartParamsSchema>;
 
@@ -238,22 +242,58 @@ export const PreviewDevicesResultSchema = z.object({
       id: z.string(),
       name: z.string(),
       isEmulator: z.boolean(),
+      platform: z.enum(["android", "ios", "web"]).optional(),
     })
   ),
 });
 export type PreviewDevicesResult = z.infer<typeof PreviewDevicesResultSchema>;
 
 export const PreviewScreenshotParamsSchema = z.object({
-  deviceId: z.string(),
-  outputPath: z.string(),
+  deviceId: z.string().optional(),
+  outputPath: z.string().optional(),
+  appDir: z.string().optional(),
 });
 export type PreviewScreenshotParams = z.infer<typeof PreviewScreenshotParamsSchema>;
 
 export const PreviewScreenshotResultSchema = z.object({
   success: z.boolean(),
   outputPath: z.string(),
+  image: z.string().nullable().optional(),
 });
 export type PreviewScreenshotResult = z.infer<typeof PreviewScreenshotResultSchema>;
+
+export const FlutterToolchainProgressSchema = z.object({
+  phase: z.enum(["preparing", "download-flutter", "extract-flutter", "verifying", "done"]),
+  percent: z.number(),
+  componentPercent: z.number(),
+  downloadedBytes: z.number(),
+  totalBytes: z.number().nullable(),
+  message: z.string(),
+});
+export type FlutterToolchainProgress = z.infer<typeof FlutterToolchainProgressSchema>;
+
+export const FlutterToolchainStatusParamsSchema = z.object({});
+export type FlutterToolchainStatusParams = z.infer<typeof FlutterToolchainStatusParamsSchema>;
+
+export const FlutterToolchainStatusResultSchema = z.object({
+  supported: z.boolean(),
+  installed: z.boolean(),
+  version: z.string(),
+  root: z.string(),
+  sdkPath: z.string(),
+  flutterBin: z.string(),
+  estimatedDownloadBytes: z.number(),
+  unsupportedReason: z.string().nullable(),
+});
+export type FlutterToolchainStatusResult = z.infer<typeof FlutterToolchainStatusResultSchema>;
+
+export const FlutterToolchainInstallParamsSchema = z.object({});
+export type FlutterToolchainInstallParams = z.infer<typeof FlutterToolchainInstallParamsSchema>;
+
+export const FlutterToolchainInstallResultSchema = z.object({
+  status: FlutterToolchainStatusResultSchema,
+});
+export type FlutterToolchainInstallResult = z.infer<typeof FlutterToolchainInstallResultSchema>;
 
 // ── analyze ────────────────────────────────────────────────────────────
 
@@ -312,6 +352,15 @@ export const BuildStartParamsSchema = z.object({
   target: BuildTargetSchema,
   /** Defaults to release when the pane asks; debug/profile for fast checks. */
   channel: z.enum(["debug", "profile", "release"]).optional(),
+  signing: z
+    .object({
+      keystorePath: z.string(),
+      keyAlias: z.string(),
+      storePassword: z.string(),
+      keyPassword: z.string(),
+    })
+    .nullable()
+    .optional(),
 });
 export type BuildStartParams = z.infer<typeof BuildStartParamsSchema>;
 
@@ -335,6 +384,8 @@ export const BuildStateResultSchema = z.object({
   exitCode: z.number().int().nullable().optional(),
   /** Location of the produced artifact, when the build finished successfully. */
   outputPath: z.string().nullable().optional(),
+  /** SHA-256 of the artifact when succeeded (for download verification). */
+  sha256: z.string().nullable().optional(),
   /** Build output (newest last). */
   logs: z.array(z.string()),
   /** When the build failed to run at all (flutter missing, bad params). */

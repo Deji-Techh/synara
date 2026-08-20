@@ -6,6 +6,18 @@ import type { FlutterRunDevice } from "@/lib/schemas";
 
 const FLUTTER_BIN = "flutter";
 
+function getManagedFlutterCandidates(): string[] {
+  try {
+    // Lazy require to avoid circular deps during early boot; managed module
+    // uses electron-shim which is safe to import at runtime.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const managed = require("@/ipc/services/managed_flutter_toolchain_service") as typeof import("@/ipc/services/managed_flutter_toolchain_service");
+    const bin = managed.getManagedFlutterBin();
+    if (fs.existsSync(bin)) return [bin];
+  } catch {}
+  return [];
+}
+
 function findFlutterOnPath(): string | null {
   try {
     const resolved = execSync(
@@ -30,8 +42,10 @@ export function getFlutterExecutable(): string {
   const fromEnv = process.env.FLUTTER_ROOT
     ? path.join(process.env.FLUTTER_ROOT, "bin", FLUTTER_BIN)
     : null;
+  const managedCandidates = getManagedFlutterCandidates();
   const candidates = [
     fromEnv,
+    ...managedCandidates,
     findFlutterOnPath(),
     path.join(os.homedir(), "development", "flutter", "bin", FLUTTER_BIN),
     path.join(os.homedir(), "flutter", "bin", FLUTTER_BIN),
@@ -62,8 +76,21 @@ export function isFlutterApp(appPath: string): boolean {
   }
 }
 
+function managedRootCandidate(): string | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const managed = require("@/ipc/services/managed_flutter_toolchain_service") as typeof import("@/ipc/services/managed_flutter_toolchain_service");
+    const sdkPath = managed.getManagedFlutterSdkPath();
+    if (fs.existsSync(path.join(sdkPath, "bin", "flutter")) || fs.existsSync(path.join(sdkPath, "bin", "flutter.exe"))) {
+      return sdkPath;
+    }
+  } catch {}
+  return null;
+}
+
 function flutterRootCandidates(): string[] {
   const fromEnv = process.env.FLUTTER_ROOT ? [process.env.FLUTTER_ROOT] : [];
+  const managed = managedRootCandidate();
   const onPath = findFlutterOnPath();
   const pathRoot =
     onPath && onPath.endsWith(path.join("bin", "flutter"))
@@ -71,6 +98,7 @@ function flutterRootCandidates(): string[] {
       : null;
   const candidates = [
     ...fromEnv,
+    managed,
     pathRoot,
     path.join(os.homedir(), "development", "flutter"),
     path.join(os.homedir(), "flutter"),
@@ -84,6 +112,12 @@ function flutterRootCandidates(): string[] {
  * on PATH (or FLUTTER_ROOT), then falls back to well-known install locations.
  */
 export function getDartExecutable(): string {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const managed = require("@/ipc/services/managed_flutter_toolchain_service") as typeof import("@/ipc/services/managed_flutter_toolchain_service");
+    const dartBin = managed.getManagedDartBin();
+    if (fs.existsSync(dartBin)) return dartBin;
+  } catch {}
   for (const root of flutterRootCandidates()) {
     const candidate = path.join(
       root,
@@ -102,6 +136,34 @@ export function getDartExecutable(): string {
     }
   }
   return "dart";
+}
+
+export function hasFlutterBinary(): boolean {
+  const bin = getFlutterExecutable();
+  if (bin === "flutter" || bin === "flutter.exe") {
+    // Bare name → check PATH probe
+    const found = findFlutterOnPath();
+    return found !== null;
+  }
+  try {
+    return fs.existsSync(bin);
+  } catch {
+    return false;
+  }
+}
+
+export type FlutterProgressCallback = (p: import("@/ipc/services/managed_flutter_toolchain_service").FlutterToolchainProgress) => void;
+
+/**
+ * Ensure a runnable Flutter SDK is available.
+ * - Returns immediately if host or managed flutter exists.
+ * - Otherwise auto-installs the managed SDK (download indicator via onProgress).
+ */
+export async function ensureFlutterSdkAvailable(onProgress?: FlutterProgressCallback, signal?: AbortSignal): Promise<string> {
+  if (hasFlutterBinary()) return getFlutterExecutable();
+  // Dynamic import to avoid circular at top-level during early boot
+  const managed = await import("@/ipc/services/managed_flutter_toolchain_service");
+  return managed.ensureManagedFlutter({ onProgress, signal });
 }
 
 export function getFlutterRunCommand(

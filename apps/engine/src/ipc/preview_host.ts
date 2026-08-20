@@ -13,6 +13,7 @@
 //   ipc/processors/flutter_tests.ts, ipc/utils/flutter_utils.ts, electron-log
 
 import fs from "node:fs";
+import { promises as fsp } from "node:fs";
 import net from "node:net";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -42,6 +43,7 @@ import {
   type TestResult as ProtocolTestResult,
 } from "@/protocol.ts";
 import {
+  ensureFlutterSdkAvailable,
   getDartDefineFromFileArgs,
   getDartExecutable,
   getFlutterExecutable,
@@ -53,6 +55,8 @@ import type {
   RunAppTestsResult,
   TestResult as EngineTestResult,
 } from "@/ipc/types/tests";
+import { emit } from "@/ipc/utils/event_bus";
+import { createHash } from "node:crypto";
 
 const logger = log.scope("preview_host");
 
@@ -78,6 +82,8 @@ interface PreviewEntry {
   url: string;
   running: boolean;
   logs: string[];
+  device: "web-server" | "emulator" | "simulator";
+  deviceId: string | null;
 }
 
 interface BuildEntry {
@@ -88,9 +94,11 @@ interface BuildEntry {
   status: BuildStatus;
   exitCode: number | null;
   outputPath: string | null;
+  sha256: string | null;
   logs: string[];
   error: string | null;
   child: ChildProcess | null;
+  signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null;
 }
 
 type BuildChannel = NonNullable<NonNullable<(typeof BuildStartParamsSchema)["_output"]>["channel"]>;
@@ -149,6 +157,7 @@ function assertFlutterApp(appDir: string): void {
  * operation that needs analysis/build first resolves dependencies.
  */
 export async function runFlutterPubGet(appPath: string): Promise<void> {
+  await ensureFlutterAvailable();
   const run = await spawnStreaming({
     command: getFlutterExecutable(),
     args: ["pub", "get"],
@@ -193,6 +202,33 @@ async function pickFreePort(preferred?: number): Promise<number> {
       });
     });
   return tryListen(preferred ?? DEFAULT_PREVIEW_PORT);
+}
+
+function emitFlutterProgress(progress: {
+  phase: string;
+  percent: number;
+  componentPercent: number;
+  downloadedBytes: number;
+  totalBytes: number | null;
+  message: string;
+}): void {
+  try {
+    emit("flutter:toolchain:progress", progress);
+  } catch {}
+}
+
+async function ensureFlutterAvailable(): Promise<string> {
+  try {
+    const bin = await ensureFlutterSdkAvailable((p) => emitFlutterProgress(p));
+    return bin;
+  } catch (error) {
+    // Surface as CaideError so preview/build show actionable message
+    if (error instanceof CaideError) throw error;
+    throw new CaideError(
+      `Flutter SDK unavailable: ${error instanceof Error ? error.message : String(error)}`,
+      CaideErrorKind.External,
+    );
+  }
 }
 
 // ── analyze ──────────────────────────────────────────────────────────
@@ -359,23 +395,52 @@ async function stopPreviewEntry(entry: PreviewEntry): Promise<void> {
   }
 }
 
+function validateDevicePlatform(device: "web-server" | "emulator" | "simulator"): void {
+  if (device === "emulator" && process.platform !== "linux" && process.platform !== "win32") {
+    throw new CaideError(
+      "Android emulator preview is only available on Linux and Windows. Use web-server preview on this platform.",
+      CaideErrorKind.Precondition,
+    );
+  }
+  if (device === "simulator" && process.platform !== "darwin") {
+    throw new CaideError(
+      "iOS Simulator preview is only available on macOS. Use web-server preview on this platform.",
+      CaideErrorKind.Precondition,
+    );
+  }
+}
+
 function spawnFlutterRun(
   appPath: string,
   entry: PreviewEntry,
   hostname: string,
 ): Promise<string> {
   return new Promise<string>((resolve, reject) => {
+    const device = entry.device ?? "web-server";
+    validateDevicePlatform(device);
     const flutter = getFlutterExecutable();
-    const args = [
-      "run",
-      "-d",
-      "web-server",
-      "--web-port",
-      String(entry.port),
-      "--web-hostname",
-      hostname,
-    ];
-    args.push(...getDartDefineFromFileArgs(appPath));
+    let args: string[];
+    if (device === "web-server") {
+      args = [
+        "run",
+        "-d",
+        "web-server",
+        "--web-port",
+        String(entry.port),
+        "--web-hostname",
+        hostname,
+      ];
+      args.push(...getDartDefineFromFileArgs(appPath));
+    } else if (device === "emulator") {
+      const target = entry.deviceId && entry.deviceId.length > 0 ? entry.deviceId : "emulator";
+      args = ["run", "-d", target];
+      args.push(...getDartDefineFromFileArgs(appPath));
+    } else {
+      // simulator
+      const target = entry.deviceId && entry.deviceId.length > 0 ? entry.deviceId : "simulator";
+      args = ["run", "-d", target];
+      args.push(...getDartDefineFromFileArgs(appPath));
+    }
 
     let child: ChildProcess;
     try {
@@ -404,18 +469,49 @@ function spawnFlutterRun(
       fn();
     };
 
+    const isNative = device !== "web-server";
+    const nativeUrl = `native:${device}${entry.deviceId ? `:${entry.deviceId}` : ""}`;
+
     const onData = (chunk: Buffer) => {
       const text = chunk.toString();
-      const url = extractPreviewUrl(text, entry.port);
-      if (url) {
-        entry.url = url;
-        finish(() => {
-          entry.running = true;
-          logger.info(`preview: serving ${appPath} at ${url}`);
-          resolve(url);
-        });
-      }
       appendLogLines(entry.logs, text);
+      if (!isNative) {
+        const url = extractPreviewUrl(text, entry.port);
+        if (url) {
+          entry.url = url;
+          finish(() => {
+            entry.running = true;
+            logger.info(`preview: serving ${appPath} at ${url}`);
+            resolve(url);
+          });
+        }
+      } else {
+        // Native device: consider running once we see flutter launch output.
+        // Resolve on first data chunk if not yet settled (native run has no URL).
+        if (!entry.running && !settled && text.trim().length > 0) {
+          // Delay slightly to ensure child is stable, but resolve quickly for UX.
+          if (entry.logs.length >= 1) {
+            entry.url = nativeUrl;
+            // Resolve on next tick to allow more logs to accumulate.
+            setTimeout(() => {
+              if (!settled) {
+                entry.running = true;
+                logger.info(`preview: native ${device} running for ${appPath} (${entry.deviceId ?? device})`);
+                finish(() => resolve(nativeUrl));
+              }
+            }, 800);
+          }
+        }
+        // Also resolve if we detect explicit success markers
+        if (/Launching lib\/main\.dart|Flutter run key commands|Application running/i.test(text)) {
+          entry.url = nativeUrl;
+          finish(() => {
+            entry.running = true;
+            logger.info(`preview: native ${device} confirmed running for ${appPath}`);
+            resolve(nativeUrl);
+          });
+        }
+      }
     };
 
     child.stdout?.on("data", onData);
@@ -481,10 +577,12 @@ async function startPreview(params: unknown): Promise<PreviewStartResult> {
     activePreviews.delete(parsed.appDir);
   }
 
+  await ensureFlutterAvailable();
   await runFlutterPubGet(parsed.appDir);
 
-  const port =
-    parsed.port ?? (await pickFreePort(DEFAULT_PREVIEW_PORT));
+  const device = (parsed.device ?? "web-server") as PreviewEntry["device"];
+  validateDevicePlatform(device);
+  const port = device === "web-server" ? (parsed.port ?? (await pickFreePort(DEFAULT_PREVIEW_PORT))) : 0;
   const hostname = parsed.hostname ?? DEFAULT_PREVIEW_HOSTNAME;
   const entry: PreviewEntry = {
     appDir: parsed.appDir,
@@ -493,6 +591,8 @@ async function startPreview(params: unknown): Promise<PreviewStartResult> {
     url: "",
     running: false,
     logs: [],
+    device,
+    deviceId: parsed.deviceId ?? null,
   };
   activePreviews.set(parsed.appDir, entry);
   const url = await spawnFlutterRun(parsed.appDir, entry, hostname);
@@ -534,10 +634,217 @@ function previewState(params: unknown): PreviewStateResult {
   return { running: entry.running, url: entry.url, logs: [...entry.logs] };
 }
 
-function previewScreenshot(): PreviewScreenshotResult {
-  // The web-server preview has no device backend; screenshots come from the
-  // emulator/simulator path. Best-effort no-op keeps the adapter happy.
-  return { success: false, outputPath: "" };
+async function listPreviewDevices(): Promise<{ devices: Array<{ id: string; name: string; isEmulator: boolean; platform?: "android" | "ios" | "web" }> }> {
+  const devices: Array<{ id: string; name: string; isEmulator: boolean; platform?: "android" | "ios" | "web" }> = [
+    { id: "web-server", name: "Web Preview", isEmulator: false, platform: "web" },
+  ];
+
+  // Android emulator devices (linux/win32 only)
+  if (process.platform === "linux" || process.platform === "win32") {
+    try {
+      // Try to list AVDs via emulator -list-avds
+      const avdRun = await spawnStreaming({
+        command: "emulator",
+        args: ["-list-avds"],
+        cwd: process.cwd(),
+        env: safeFlutterEnvironment(),
+        timeoutMs: 5_000,
+      }).catch(() => null);
+      if (avdRun && avdRun.code === 0) {
+        const avds = avdRun.stdout.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+        for (const avd of avds) {
+          if (!devices.some((d) => d.id === avd)) {
+            devices.push({ id: avd, name: `${avd} (Emulator AVD)`, isEmulator: true, platform: "android" });
+          }
+        }
+      }
+    } catch {}
+    try {
+      const adbRun = await spawnStreaming({
+        command: "adb",
+        args: ["devices", "-l"],
+        cwd: process.cwd(),
+        env: safeFlutterEnvironment(),
+        timeoutMs: 5_000,
+      }).catch(() => null);
+      if (adbRun && adbRun.code === 0) {
+        const lines = adbRun.stdout.split(/\r?\n/).slice(1);
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          const parts = trimmed.split(/\s+/);
+          const id = parts[0];
+          if (!id || id.startsWith("*")) continue;
+          const isEmulator = id.startsWith("emulator-");
+          if (!devices.some((d) => d.id === id)) {
+            devices.push({ id, name: `${id} (${isEmulator ? "Emulator" : "Device"})`, isEmulator, platform: "android" });
+          }
+        }
+      }
+    } catch {}
+    // Always include generic emulator entry so UI can show the option even when no AVD exists
+    if (!devices.some((d) => d.id === "emulator")) {
+      devices.push({ id: "emulator", name: "Android Emulator", isEmulator: true, platform: "android" });
+    }
+  }
+
+  // iOS Simulator (darwin only)
+  if (process.platform === "darwin") {
+    try {
+      const simRun = await spawnStreaming({
+        command: "xcrun",
+        args: ["simctl", "list", "devices", "available", "--json"],
+        cwd: process.cwd(),
+        env: safeFlutterEnvironment(),
+        timeoutMs: 8_000,
+      }).catch(() => null);
+      if (simRun && simRun.code === 0) {
+        try {
+          const parsed = JSON.parse(simRun.stdout);
+          const devicesObj = parsed?.devices ?? {};
+          for (const runtime of Object.keys(devicesObj)) {
+            const list = devicesObj[runtime];
+            if (!Array.isArray(list)) continue;
+            for (const dev of list as Array<{ udid?: string; name?: string; isAvailable?: boolean }>) {
+              if (!dev.udid || !dev.name) continue;
+              if (dev.isAvailable === false) continue;
+              if (!devices.some((d) => d.id === dev.udid)) {
+                devices.push({ id: dev.udid!, name: `${dev.name} (Simulator)`, isEmulator: true, platform: "ios" });
+              }
+            }
+          }
+        } catch {}
+      }
+      // Fallback: at least offer generic simulator entry
+      if (!devices.some((d) => d.id === "simulator")) {
+        devices.push({ id: "simulator", name: "iOS Simulator", isEmulator: true, platform: "ios" });
+      }
+    } catch {}
+  }
+
+  return { devices };
+}
+
+async function previewScreenshot(params: unknown): Promise<PreviewScreenshotResult> {
+  const parsed = ((): { deviceId?: string; outputPath?: string; appDir?: string } => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const p = params as any;
+      return { deviceId: p?.deviceId, outputPath: p?.outputPath, appDir: p?.appDir };
+    } catch {
+      return {};
+    }
+  })();
+
+  // Try to determine device context from running previews
+  let targetDeviceId = parsed.deviceId?.trim() ?? "";
+  let targetAppDir = parsed.appDir?.trim() ?? "";
+
+  // If no explicit deviceId but we have a running native preview, use its device
+  if (!targetDeviceId) {
+    for (const entry of activePreviews.values()) {
+      if (entry.running && entry.device !== "web-server") {
+        targetDeviceId = entry.deviceId ?? entry.device;
+        targetAppDir = entry.appDir;
+        break;
+      }
+    }
+    // If still none, fallback to any running preview's appDir for screenshot context
+    if (!targetDeviceId && !targetAppDir) {
+      for (const entry of activePreviews.values()) {
+        if (entry.running) {
+          targetAppDir = entry.appDir;
+          targetDeviceId = entry.deviceId ?? entry.device;
+          break;
+        }
+      }
+    }
+  }
+
+  // Web preview has no native screenshot; return no image
+  if (!targetDeviceId || targetDeviceId === "web-server") {
+    // Check if caller is web-server preview → no native capture
+    const isWebOnly = [...activePreviews.values()].every((e) => !e.running || e.device === "web-server");
+    if (isWebOnly && !targetDeviceId) {
+      return { success: false, outputPath: "", image: null };
+    }
+  }
+
+  const tmpDir = targetAppDir ? path.join(targetAppDir, ".caide", "evidence") : path.join(process.cwd(), ".caide", "evidence");
+  try {
+    await fsp.mkdir(tmpDir, { recursive: true });
+  } catch {}
+  const outputPath = parsed.outputPath && parsed.outputPath.length > 0 ? parsed.outputPath : path.join(tmpDir, `device_${Date.now()}.png`);
+
+  // Try Android via adb first (emulator)
+  const isEmulatorLike = targetDeviceId.startsWith("emulator") || targetDeviceId === "emulator" || targetDeviceId.includes("avd");
+  const isSimulatorLike = targetDeviceId === "simulator" || /^[0-9A-F-]{36}$/i.test(targetDeviceId);
+
+  // Attempt adb exec-out screencap
+  try {
+    const adbArgs = targetDeviceId && targetDeviceId.startsWith("emulator-") ? ["-s", targetDeviceId, "exec-out", "screencap", "-p"] : ["exec-out", "screencap", "-p"];
+    // Only try adb if we are on linux/win32 or target looks like android
+    if (isEmulatorLike || targetDeviceId.startsWith("emulator-") || process.platform === "linux" || process.platform === "win32") {
+      const result = await new Promise<{ code: number | null; stdout: Buffer }>((resolve) => {
+        const child = spawn("adb", adbArgs, { env: safeFlutterEnvironment(), stdio: ["ignore", "pipe", "pipe"] });
+        const chunks: Buffer[] = [];
+        child.stdout.on("data", (c: Buffer) => chunks.push(c));
+        let stderr = "";
+        child.stderr.on("data", (c: Buffer) => (stderr += c.toString()));
+        child.on("close", (code) => resolve({ code, stdout: Buffer.concat(chunks) }));
+        child.on("error", () => resolve({ code: 1, stdout: Buffer.alloc(0) }));
+        setTimeout(() => {
+          try {
+            child.kill("SIGTERM");
+          } catch {}
+        }, 10_000);
+      });
+      if (result.code === 0 && result.stdout.length > 100) {
+        // Check PNG header
+        if (result.stdout[0] === 0x89 && result.stdout[1] === 0x50) {
+          await fsp.writeFile(outputPath, result.stdout).catch(() => undefined);
+          const image = result.stdout.toString("base64");
+          return { success: true, outputPath, image };
+        }
+      }
+    }
+  } catch {}
+
+  // Try iOS simctl (darwin)
+  if (process.platform === "darwin" || isSimulatorLike) {
+    try {
+      const simDevice = targetDeviceId && /^[0-9A-F-]{36}$/i.test(targetDeviceId) ? targetDeviceId : "booted";
+      const simResult = await spawnStreaming({
+        command: "xcrun",
+        args: ["simctl", "io", simDevice, "screenshot", "--type", "png", outputPath],
+        cwd: targetAppDir || process.cwd(),
+        env: safeFlutterEnvironment(),
+        timeoutMs: 10_000,
+      }).catch(() => null);
+      if (simResult && simResult.code === 0 && fs.existsSync(outputPath)) {
+        const data = await fsp.readFile(outputPath).catch(() => null);
+        if (data && data.length > 0) {
+          return { success: true, outputPath, image: data.toString("base64") };
+        }
+      }
+    } catch {}
+  }
+
+  // BrowserWindow fallback (web preview capture) — already shimmed to empty; keep as last resort
+  try {
+    const { BrowserWindow } = await import("@/electron-shim");
+    const win = BrowserWindow.getAllWindows()[0];
+    if (win) {
+      const image = await win.webContents.capturePage();
+      if (!image.isEmpty()) {
+        const png = image.toPNG();
+        await fsp.writeFile(outputPath, png).catch(() => undefined);
+        return { success: true, outputPath, image: png.toString("base64") };
+      }
+    }
+  } catch {}
+
+  return { success: false, outputPath: "", image: null };
 }
 
 // ── build lifecycle ──────────────────────────────────────────────────
@@ -560,6 +867,7 @@ function resolveBuildOutputPath(
   channel: BuildEntry["channel"],
 ): string | null {
   const flutterApkDir = path.join(appDir, "build", "app", "outputs", "flutter-apk");
+  const apkDir = path.join(appDir, "build", "app", "outputs", "apk");
   const bundleDir = path.join(appDir, "build", "app", "outputs", "bundle");
   const candidates: string[] = [];
   if (target === "apk") {
@@ -568,7 +876,22 @@ function resolveBuildOutputPath(
       path.join(flutterApkDir, "app-release.apk"),
       path.join(flutterApkDir, "app-debug.apk"),
       path.join(flutterApkDir, "app-profile.apk"),
+      // split per-abi
+      path.join(flutterApkDir, `app-${channel}-arm64-v8a.apk`),
+      path.join(flutterApkDir, `app-${channel}-armeabi-v7a.apk`),
+      path.join(flutterApkDir, `app-${channel}-x86_64.apk`),
+      // fallback to generic apk output dir
+      path.join(apkDir, channel, `app-${channel}.apk`),
+      path.join(apkDir, "release", "app-release.apk"),
     );
+    // Any apk in flutter-apk dir as fallback (newest)
+    try {
+      const apks = fs
+        .readdirSync(flutterApkDir)
+        .filter((f) => f.endsWith(".apk"))
+        .map((f) => path.join(flutterApkDir, f));
+      candidates.push(...apks);
+    } catch {}
   } else if (target === "appbundle") {
     candidates.push(
       path.join(bundleDir, "release", "app-release.aab"),
@@ -583,6 +906,14 @@ function resolveBuildOutputPath(
         .readdirSync(ipaDir)
         .filter((file) => file.toLowerCase().endsWith(".ipa"))
         .map((file) => path.join(ipaDir, file));
+      // Sort by mtime newest first when multiple
+      ipas.sort((a, b) => {
+        try {
+          return fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs;
+        } catch {
+          return 0;
+        }
+      });
       candidates.push(...ipas);
     } catch {
       // build/ios/ipa may not exist — fall through to candidates.
@@ -591,7 +922,54 @@ function resolveBuildOutputPath(
   return candidates.find((candidate) => fs.existsSync(candidate)) ?? null;
 }
 
+async function computeSha256(filePath: string): Promise<string | null> {
+  try {
+    const data = await fsp.readFile(filePath);
+    return createHash("sha256").update(data).digest("hex");
+  } catch {
+    return null;
+  }
+}
+
+async function maybeWriteSigningConfig(
+  appDir: string,
+  signing: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null | undefined,
+  logs: string[],
+): Promise<void> {
+  if (!signing || !signing.keystorePath) return;
+  const keystorePath = signing.keystorePath.trim();
+  if (!keystorePath) return;
+  // Verify keystore exists
+  if (!fs.existsSync(keystorePath)) {
+    appendLogLines(logs, `[signing] WARNING: keystore not found at ${keystorePath} — build will use debug signing`);
+    return;
+  }
+  const keyPropsPath = path.join(appDir, "android", "key.properties");
+  try {
+    await fsp.mkdir(path.dirname(keyPropsPath), { recursive: true });
+    const content = [
+      `storePassword=${signing.storePassword}`,
+      `keyPassword=${signing.keyPassword}`,
+      `keyAlias=${signing.keyAlias}`,
+      `storeFile=${keystorePath}`,
+    ].join("\n");
+    await fsp.writeFile(keyPropsPath, content, "utf8");
+    appendLogLines(logs, `[signing] wrote android/key.properties for ${signing.keyAlias}`);
+  } catch (error) {
+    appendLogLines(logs, `[signing] WARNING: could not write key.properties: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 async function runBuild(appDir: string, build: BuildEntry): Promise<void> {
+  appendLogLines(build.logs, "[build] ensuring Flutter SDK…");
+  try {
+    await ensureFlutterAvailable();
+  } catch (error) {
+    build.status = "failed";
+    build.error = error instanceof Error ? error.message : String(error);
+    appendLogLines(build.logs, `[build] flutter unavailable: ${build.error}`);
+    return;
+  }
   appendLogLines(build.logs, "[build] resolving dependencies (flutter pub get)…");
   try {
     await runFlutterPubGet(appDir);
@@ -602,15 +980,38 @@ async function runBuild(appDir: string, build: BuildEntry): Promise<void> {
     return;
   }
 
-  const args = ["build", build.target, ...channelArgs(build.channel)];
+  // Signing config for Android release builds (best-practice)
+  try {
+    const signing = (build as unknown as { signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null }).signing;
+    await maybeWriteSigningConfig(appDir, signing, build.logs);
+  } catch {}
+
+  // iOS builds only on macOS
+  if (build.target === "ipa" && process.platform !== "darwin") {
+    build.status = "failed";
+    build.error = "iOS IPA builds require macOS with Xcode installed.";
+    appendLogLines(build.logs, `[build] ${build.error}`);
+    return;
+  }
+
+  const args = ["build", build.target, ...channelArgs(build.channel), ...getDartDefineFromFileArgs(appDir)];
   appendLogLines(build.logs, `$ flutter ${args.join(" ")}`);
   let run;
+  // Build env: include signing passwords if provided (Gradle can read key.properties, but also env)
+  const signing = (build as unknown as { signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null }).signing;
+  const buildEnv: NodeJS.ProcessEnv = { CI: "1" };
+  if (signing?.keystorePath) {
+    buildEnv.ANDROID_KEYSTORE_PATH = signing.keystorePath;
+    buildEnv.ANDROID_KEY_ALIAS = signing.keyAlias;
+    buildEnv.ANDROID_STORE_PASSWORD = signing.storePassword;
+    buildEnv.ANDROID_KEY_PASSWORD = signing.keyPassword;
+  }
   try {
     run = await spawnStreaming({
       command: getFlutterExecutable(),
       args,
       cwd: appDir,
-      env: safeFlutterEnvironment({ CI: "1" }),
+      env: safeFlutterEnvironment(buildEnv),
       onOutput: (chunk) => appendLogLines(build.logs, chunk),
       onProcess: (child) => {
         build.child = child;
@@ -628,9 +1029,17 @@ async function runBuild(appDir: string, build: BuildEntry): Promise<void> {
     build.status = "succeeded";
     build.exitCode = 0;
     build.outputPath = resolveBuildOutputPath(appDir, build.target, build.channel) ?? null;
+    if (build.outputPath) {
+      build.sha256 = await computeSha256(build.outputPath);
+      try {
+        if (build.sha256) {
+          await fsp.writeFile(`${build.outputPath}.sha256`, `${build.sha256}  ${path.basename(build.outputPath)}\n`, "utf8").catch(() => undefined);
+        }
+      } catch {}
+    }
     appendLogLines(
       build.logs,
-      `[build] succeeded${build.outputPath ? `: ${build.outputPath}` : ""}`,
+      `[build] succeeded${build.outputPath ? `: ${build.outputPath}${build.sha256 ? ` (sha256:${build.sha256.slice(0, 12)}…)` : ""}` : ""}`,
     );
     return;
   }
@@ -653,9 +1062,11 @@ async function buildStart(params: unknown): Promise<{ buildId: string }> {
     status: "running",
     exitCode: null,
     outputPath: null,
+    sha256: null,
     logs: [],
     error: null,
     child: null,
+    signing: (parsed as { signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null }).signing ?? null,
   };
   activeBuilds.set(buildId, build);
   void runBuild(parsed.appDir, build);
@@ -676,9 +1087,34 @@ async function buildState(params: unknown) {
     status: build.status,
     exitCode: build.exitCode,
     outputPath: build.outputPath,
+    sha256: build.sha256 ?? null,
     logs: [...build.logs],
     error: build.error,
   };
+}
+
+// ── flutter toolchain ────────────────────────────────────────────────
+
+async function flutterToolchainStatus(): Promise<{
+  supported: boolean;
+  installed: boolean;
+  version: string;
+  root: string;
+  sdkPath: string;
+  flutterBin: string;
+  estimatedDownloadBytes: number;
+  unsupportedReason: string | null;
+}> {
+  const m = await import("@/ipc/services/managed_flutter_toolchain_service");
+  return m.inspectManagedFlutterToolchain();
+}
+
+async function flutterToolchainInstall(): Promise<{ status: Awaited<ReturnType<typeof import("@/ipc/services/managed_flutter_toolchain_service").inspectManagedFlutterToolchain>> }> {
+  const m = await import("@/ipc/services/managed_flutter_toolchain_service");
+  const status = await m.installManagedFlutterToolchain({
+    onProgress: (p) => emitFlutterProgress(p),
+  });
+  return { status };
 }
 
 // ── router ───────────────────────────────────────────────────────────
