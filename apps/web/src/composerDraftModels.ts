@@ -3,9 +3,16 @@
 // Exports: Model state helpers used by persistence, actions, and the public facade.
 
 import {
+  GROK_REASONING_EFFORT_OPTIONS,
   ProviderKind,
+  type ClaudeCodeEffort,
+  type CodexReasoningEffort,
+  type CursorModelOptions,
+  type DroidReasoningEffort,
+  type GrokReasoningEffort,
   type ModelSelection,
   type ModelSlug,
+  type PiThinkingLevel,
   type ProviderModelOptions,
 } from "@caide/contracts";
 import * as Schema from "effect/Schema";
@@ -191,13 +198,18 @@ export function normalizeProviderModelOptions(
   };
   // Collect candidate for the requested provider, checking both API and legacy keys
   const getCandidate = (apiProvider: string) => {
-    const direct = candidate?.[apiProvider] && typeof candidate[apiProvider] === "object"
-      ? (candidate[apiProvider] as Record<string, unknown>)
-      : null;
+    const direct =
+      candidate?.[apiProvider] && typeof candidate[apiProvider] === "object"
+        ? (candidate[apiProvider] as Record<string, unknown>)
+        : null;
     if (direct) return direct;
     // Check legacy keys that map to this API provider
     for (const [legacyKey, mapped] of Object.entries(legacyMap)) {
-      if (mapped === apiProvider && candidate?.[legacyKey] && typeof candidate[legacyKey] === "object") {
+      if (
+        mapped === apiProvider &&
+        candidate?.[legacyKey] &&
+        typeof candidate[legacyKey] === "object"
+      ) {
         return candidate[legacyKey] as Record<string, unknown>;
       }
     }
@@ -426,12 +438,15 @@ export function normalizeModelSelection(
         ? {
             ...((modelOptions as any)?.anthropic ?? (modelOptions as any)?.claudeAgent),
             autoCompactWindow:
-              ((modelOptions as any)?.anthropic ?? (modelOptions as any)?.claudeAgent)?.autoCompactWindow ?? inferredClaudeAutoCompactWindow,
+              ((modelOptions as any)?.anthropic ?? (modelOptions as any)?.claudeAgent)
+                ?.autoCompactWindow ?? inferredClaudeAutoCompactWindow,
           }
         : ((modelOptions as any)?.anthropic ?? (modelOptions as any)?.claudeAgent)
       : provider === "google"
         ? ((modelOptions as any)?.google ?? (modelOptions as any)?.antigravity)
-        : ((modelOptions as any)?.[provider] ?? (modelOptions as any)?.[provider === "deepseek" ? "openai" : provider] ?? undefined);
+        : ((modelOptions as any)?.[provider] ??
+          (modelOptions as any)?.[provider === "deepseek" ? "openai" : provider] ??
+          undefined);
   const normalizedOptions =
     provider === "google" && hasLegacyAntigravityEffort
       ? {
@@ -718,9 +733,13 @@ export function resolvePreferredComposerModelSelection(input: {
       ? input.projectModelSelection
       : null) ?? {
       provider:
-        preferredProvider === "openai" || preferredProvider === "engine" ? "openai" : preferredProvider,
+        preferredProvider === "openai" || preferredProvider === "engine"
+          ? "openai"
+          : preferredProvider,
       model: getDefaultModel(
-        preferredProvider === "openai" || preferredProvider === "engine" ? "openai" : preferredProvider,
+        preferredProvider === "openai" || preferredProvider === "engine"
+          ? "openai"
+          : preferredProvider,
       ),
     }
   );
