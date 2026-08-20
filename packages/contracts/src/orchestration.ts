@@ -93,23 +93,7 @@ export type ApiProviderKind = (typeof API_PROVIDER_KINDS)[number];
 /** Backends that spawn a child process. Only the Flutter engine. */
 export type ProviderCliKind = Extract<ProviderKind, "engine">;
 
-const LEGACY_HANDOFF_PROVIDER_LITERALS = [
-  "codex",
-  "claudeAgent",
-  "cursor",
-  "antigravity",
-  "grok",
-  "droid",
-  "kilo",
-  "opencode",
-  "pi",
-  "gemini",
-] as const;
-
-export const ThreadHandoffSourceProvider = Schema.Union(
-  ProviderKind,
-  Schema.Literals(LEGACY_HANDOFF_PROVIDER_LITERALS),
-);
+export const ThreadHandoffSourceProvider = Schema.String;
 
 export const ProviderApprovalPolicy = Schema.Literals([
   "untrusted",
