@@ -146,13 +146,17 @@ export function stageEnginePayload(
     );
   }
 
-  // Engine runtime: bundle + migrations.
-  mkdirSync(join(payloadDir, "apps", "engine", "dist"), { recursive: true });
+  // Engine runtime: bundle + migrations, placed FLAT at the payload root so
+  // the electron-builder extraResource (`to: "engine"`) lands them exactly
+  // where the server resolver + desktop CAIDE_ENGINE_DIR injection expect:
+  //   resources/engine/dist/index.mjs
+  //   resources/engine/drizzle/
+  mkdirSync(join(payloadDir, "dist"), { recursive: true });
   copyFileSync(
     join(engineDir, "dist", "index.mjs"),
-    join(payloadDir, "apps", "engine", "dist", "index.mjs"),
+    join(payloadDir, "dist", "index.mjs"),
   );
-  cpSync(join(engineDir, "drizzle"), join(payloadDir, "apps", "engine", "drizzle"), {
+  cpSync(join(engineDir, "drizzle"), join(payloadDir, "drizzle"), {
     recursive: true,
   });
 

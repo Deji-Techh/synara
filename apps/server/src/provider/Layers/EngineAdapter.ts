@@ -83,28 +83,54 @@ function resolveEngineCommand(): { command: string; args: readonly string[] } {
     typeof candidate === "string" && candidate.length > 0,
   );
 
+  // Both layouts are accepted: the current packaged payload is FLAT
+  // (resources/engine/dist/index.mjs) while legacy/staged payloads nest the
+  // bundle under apps/engine (resources/engine/apps/engine/dist/index.mjs).
+  const distVariants = (engineDir: string): string[] => [
+    path.join(engineDir, "dist", "index.mjs"),
+    path.join(engineDir, "apps", "engine", "dist", "index.mjs"),
+  ];
+
   for (const engineDir of candidates) {
-    const distEntry = path.join(engineDir, "dist", "index.mjs");
-    if (existsSync(distEntry)) {
-      return { command: "node", args: [distEntry] };
+    for (const distEntry of distVariants(engineDir)) {
+      if (existsSync(distEntry)) {
+        return { command: "node", args: [distEntry] };
+      }
     }
   }
 
-  // Fresh checkout: build once via the engine package's tsdown script. Use the
-  // repo layout candidate (source or bundled) so the build lands where the
-  // adapter will look next time.
-  const repoEngineDir = candidates.find(
-    (candidate) => existsSync(path.join(candidate, "package.json")),
+  // Fresh checkout: build once via the engine package's tsdown script — but
+  // ONLY for a writable repo checkout. A packaged desktop mount
+  // (`resources/engine` under an AppImage `.mount_*`/`.app`) is read-only and
+  // holds no tsdown build inputs; building there is futile (and slow), so
+  // surface the missing-bundle error directly instead.
+  const isPackagedMount = (candidate: string): boolean =>
+    candidate.includes(`${path.sep}resources${path.sep}engine`) ||
+    candidate.includes(`.mount_`) ||
+    candidate.endsWith(".app");
+  const buildCandidate = candidates.find(
+    (candidate) =>
+      !isPackagedMount(candidate) &&
+      existsSync(path.join(candidate, "package.json")) &&
+      distVariants(candidate).every((entry) => !existsSync(entry)),
   );
-  const engineDir = repoEngineDir ?? candidates[0];
-  const built = spawnSync("bun", ["run", "build"], { cwd: engineDir });
-  const distEntry = path.join(engineDir, "dist", "index.mjs");
-  if (built.status !== 0 || !existsSync(distEntry)) {
-    throw new Error(
-      `engine bundle missing at ${distEntry}; tried 'bun run build' (${built.status ?? built.signal})`,
-    );
+  if (buildCandidate) {
+    const built = spawnSync("bun", ["run", "build"], {
+      cwd: buildCandidate,
+      stdio: "ignore",
+    });
+    const rebuilt = distVariants(buildCandidate).find((entry) => existsSync(entry));
+    if (built.status === 0 && rebuilt) {
+      return { command: "node", args: [rebuilt] };
+    }
   }
-  return { command: "node", args: [distEntry] };
+
+  const firstCandidate = candidates[0] ?? "apps/engine";
+  throw new Error(
+    `engine bundle missing at ${path.join(firstCandidate, "dist", "index.mjs")}; ` +
+      `expected a packaged payload at CAIDE_ENGINE_DIR (${CAIDE_ENGINE_DIR_ENV}) or a built ` +
+      `apps/engine (bun run build in apps/engine)`,
+  );
 }
 
 export interface EngineAdapterLiveOptions {
