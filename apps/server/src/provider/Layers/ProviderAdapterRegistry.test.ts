@@ -4,16 +4,7 @@ import { assertFailure } from "@effect/vitest/utils";
 
 import { Effect, Layer, Stream } from "effect";
 
-import { ClaudeAdapter, ClaudeAdapterShape } from "../Services/ClaudeAdapter.ts";
-import { CodexAdapter, CodexAdapterShape } from "../Services/CodexAdapter.ts";
-import { CursorAdapter, CursorAdapterShape } from "../Services/CursorAdapter.ts";
-import { DroidAdapter, DroidAdapterShape } from "../Services/DroidAdapter.ts";
-import { GrokAdapter, GrokAdapterShape } from "../Services/GrokAdapter.ts";
-import { KiloAdapter, KiloAdapterShape } from "../Services/KiloAdapter.ts";
-import { OpenCodeAdapter, OpenCodeAdapterShape } from "../Services/OpenCodeAdapter.ts";
-import { PiAdapter, PiAdapterShape } from "../Services/PiAdapter.ts";
 import { EngineAdapter, EngineAdapterShape } from "../Services/EngineAdapter.ts";
-import { AntigravityAdapter, AntigravityAdapterShape } from "../Services/AntigravityAdapter.ts";
 import { OpenAiAdapter, OpenAiAdapterShape } from "../Services/OpenAiAdapter.ts";
 import { AnthropicAdapter, AnthropicAdapterShape } from "../Services/AnthropicAdapter.ts";
 import { GoogleAdapter, GoogleAdapterShape } from "../Services/GoogleAdapter.ts";
@@ -27,150 +18,11 @@ import { CohereAdapter, CohereAdapterShape } from "../Services/CohereAdapter.ts"
 import { XaiAdapter, XaiAdapterShape } from "../Services/XaiAdapter.ts";
 import { FireworksAdapter, FireworksAdapterShape } from "../Services/FireworksAdapter.ts";
 import { OpenCodeZenAdapter, OpenCodeZenAdapterShape } from "../Services/OpenCodeZenAdapter.ts";
+import { OpenCodeGoAdapter, OpenCodeGoAdapterShape } from "../Services/OpenCodeGoAdapter.ts";
 import { ProviderAdapterRegistry } from "../Services/ProviderAdapterRegistry.ts";
 import { ProviderAdapterRegistryLive } from "./ProviderAdapterRegistry.ts";
 import { ProviderUnsupportedError } from "../Errors.ts";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-
-const fakeCodexAdapter: CodexAdapterShape = {
-  provider: "openai",
-  capabilities: { sessionModelSwitch: "in-session" },
-  startSession: vi.fn(),
-  sendTurn: vi.fn(),
-  interruptTurn: vi.fn(),
-  respondToRequest: vi.fn(),
-  respondToUserInput: vi.fn(),
-  stopSession: vi.fn(),
-  listSessions: vi.fn(),
-  hasSession: vi.fn(),
-  readThread: vi.fn(),
-  rollbackThread: vi.fn(),
-  stopAll: vi.fn(),
-  streamEvents: Stream.empty,
-};
-
-const fakeClaudeAdapter: ClaudeAdapterShape = {
-  provider: "anthropic",
-  capabilities: { sessionModelSwitch: "in-session" },
-  startSession: vi.fn(),
-  sendTurn: vi.fn(),
-  steerTurn: vi.fn(),
-  interruptTurn: vi.fn(),
-  stopTask: vi.fn(),
-  backgroundTask: vi.fn(),
-  steerSubagent: vi.fn(),
-  respondToRequest: vi.fn(),
-  respondToUserInput: vi.fn(),
-  stopSession: vi.fn(),
-  listSessions: vi.fn(),
-  hasSession: vi.fn(),
-  readThread: vi.fn(),
-  rollbackThread: vi.fn(),
-  stopAll: vi.fn(),
-  streamEvents: Stream.empty,
-};
-
-const fakeCursorAdapter: CursorAdapterShape = {
-  provider: "openai",
-  capabilities: { sessionModelSwitch: "in-session" },
-  startSession: vi.fn(),
-  sendTurn: vi.fn(),
-  interruptTurn: vi.fn(),
-  respondToRequest: vi.fn(),
-  respondToUserInput: vi.fn(),
-  stopSession: vi.fn(),
-  listSessions: vi.fn(),
-  hasSession: vi.fn(),
-  readThread: vi.fn(),
-  rollbackThread: vi.fn(),
-  stopAll: vi.fn(),
-  streamEvents: Stream.empty,
-};
-
-const fakeGrokAdapter: GrokAdapterShape = {
-  provider: "openai",
-  capabilities: { sessionModelSwitch: "restart-session" },
-  startSession: vi.fn(),
-  sendTurn: vi.fn(),
-  interruptTurn: vi.fn(),
-  respondToRequest: vi.fn(),
-  respondToUserInput: vi.fn(),
-  stopSession: vi.fn(),
-  listSessions: vi.fn(),
-  hasSession: vi.fn(),
-  readThread: vi.fn(),
-  rollbackThread: vi.fn(),
-  stopAll: vi.fn(),
-  streamEvents: Stream.empty,
-};
-
-const fakeDroidAdapter: DroidAdapterShape = {
-  provider: "openai",
-  capabilities: { sessionModelSwitch: "restart-session" },
-  startSession: vi.fn(),
-  sendTurn: vi.fn(),
-  interruptTurn: vi.fn(),
-  respondToRequest: vi.fn(),
-  respondToUserInput: vi.fn(),
-  stopSession: vi.fn(),
-  listSessions: vi.fn(),
-  hasSession: vi.fn(),
-  readThread: vi.fn(),
-  rollbackThread: vi.fn(),
-  stopAll: vi.fn(),
-  streamEvents: Stream.empty,
-};
-
-const fakeOpenCodeAdapter: OpenCodeAdapterShape = {
-  provider: "openai",
-  capabilities: { sessionModelSwitch: "restart-session" },
-  startSession: vi.fn(),
-  sendTurn: vi.fn(),
-  interruptTurn: vi.fn(),
-  respondToRequest: vi.fn(),
-  respondToUserInput: vi.fn(),
-  stopSession: vi.fn(),
-  listSessions: vi.fn(),
-  hasSession: vi.fn(),
-  readThread: vi.fn(),
-  rollbackThread: vi.fn(),
-  stopAll: vi.fn(),
-  streamEvents: Stream.empty,
-};
-
-const fakeKiloAdapter: KiloAdapterShape = {
-  provider: "openai",
-  capabilities: { sessionModelSwitch: "restart-session" },
-  startSession: vi.fn(),
-  sendTurn: vi.fn(),
-  interruptTurn: vi.fn(),
-  respondToRequest: vi.fn(),
-  respondToUserInput: vi.fn(),
-  stopSession: vi.fn(),
-  listSessions: vi.fn(),
-  hasSession: vi.fn(),
-  readThread: vi.fn(),
-  rollbackThread: vi.fn(),
-  stopAll: vi.fn(),
-  streamEvents: Stream.empty,
-};
-
-const fakePiAdapter: PiAdapterShape = {
-  provider: "openai",
-  capabilities: { sessionModelSwitch: "restart-session" },
-  startSession: vi.fn(),
-  sendTurn: vi.fn(),
-  interruptTurn: vi.fn(),
-  respondToRequest: vi.fn(),
-  respondToUserInput: vi.fn(),
-  stopSession: vi.fn(),
-  listSessions: vi.fn(),
-  hasSession: vi.fn(),
-  readThread: vi.fn(),
-  rollbackThread: vi.fn(),
-  stopAll: vi.fn(),
-  streamEvents: Stream.empty,
-};
 
 const fakeEngineAdapter: EngineAdapterShape = {
   provider: "engine",
@@ -215,23 +67,6 @@ const fakeEngineAdapter: EngineAdapterShape = {
   streamGoalDomainEvents: Stream.empty,
 };
 
-const fakeAntigravityAdapter: AntigravityAdapterShape = {
-  provider: "google",
-  capabilities: { sessionModelSwitch: "restart-session" },
-  startSession: vi.fn(),
-  sendTurn: vi.fn(),
-  interruptTurn: vi.fn(),
-  respondToRequest: vi.fn(),
-  respondToUserInput: vi.fn(),
-  stopSession: vi.fn(),
-  listSessions: vi.fn(),
-  hasSession: vi.fn(),
-  readThread: vi.fn(),
-  rollbackThread: vi.fn(),
-  stopAll: vi.fn(),
-  streamEvents: Stream.empty,
-};
-
 const makeFakeApiAdapter = <P extends ApiProviderKind>(
   provider: P,
 ) => ({
@@ -264,21 +99,13 @@ const fakeCohereAdapter: CohereAdapterShape = makeFakeApiAdapter("cohere");
 const fakeXaiAdapter: XaiAdapterShape = makeFakeApiAdapter("xai");
 const fakeFireworksAdapter: FireworksAdapterShape = makeFakeApiAdapter("fireworks");
 const fakeOpenCodeZenAdapter: OpenCodeZenAdapterShape = makeFakeApiAdapter("opencodeZen");
+const fakeOpenCodeGoAdapter: OpenCodeGoAdapterShape = makeFakeApiAdapter("opencodeGo");
 
 const layer = it.layer(
   Layer.mergeAll(
     Layer.provide(
       ProviderAdapterRegistryLive,
       Layer.mergeAll(
-        Layer.succeed(CodexAdapter, fakeCodexAdapter),
-        Layer.succeed(ClaudeAdapter, fakeClaudeAdapter),
-        Layer.succeed(CursorAdapter, fakeCursorAdapter),
-        Layer.succeed(AntigravityAdapter, fakeAntigravityAdapter),
-        Layer.succeed(GrokAdapter, fakeGrokAdapter),
-        Layer.succeed(DroidAdapter, fakeDroidAdapter),
-        Layer.succeed(KiloAdapter, fakeKiloAdapter),
-        Layer.succeed(OpenCodeAdapter, fakeOpenCodeAdapter),
-        Layer.succeed(PiAdapter, fakePiAdapter),
         Layer.succeed(EngineAdapter, fakeEngineAdapter),
         Layer.succeed(OpenAiAdapter, fakeOpenAiAdapter),
         Layer.succeed(AnthropicAdapter, fakeAnthropicAdapter),
@@ -293,6 +120,7 @@ const layer = it.layer(
         Layer.succeed(XaiAdapter, fakeXaiAdapter),
         Layer.succeed(FireworksAdapter, fakeFireworksAdapter),
         Layer.succeed(OpenCodeZenAdapter, fakeOpenCodeZenAdapter),
+        Layer.succeed(OpenCodeGoAdapter, fakeOpenCodeGoAdapter),
       ),
     ),
     NodeServices.layer,
@@ -303,15 +131,6 @@ layer("ProviderAdapterRegistryLive", (it) => {
   it.effect("resolves a registered provider adapter", () =>
     Effect.gen(function* () {
       const registry = yield* ProviderAdapterRegistry;
-      const codex = yield* registry.getByProvider("openai");
-      const claude = yield* registry.getByProvider("anthropic");
-      const cursor = yield* registry.getByProvider("openai");
-      const antigravity = yield* registry.getByProvider("google");
-      const grok = yield* registry.getByProvider("openai");
-      const droid = yield* registry.getByProvider("openai");
-      const kilo = yield* registry.getByProvider("openai");
-      const opencode = yield* registry.getByProvider("openai");
-      const pi = yield* registry.getByProvider("openai");
       const engine = yield* registry.getByProvider("engine");
       const openai = yield* registry.getByProvider("openai");
       const anthropic = yield* registry.getByProvider("anthropic");
@@ -326,15 +145,7 @@ layer("ProviderAdapterRegistryLive", (it) => {
       const xai = yield* registry.getByProvider("xai");
       const fireworks = yield* registry.getByProvider("fireworks");
       const opencodeZen = yield* registry.getByProvider("opencodeZen");
-      assert.equal(codex, fakeCodexAdapter);
-      assert.equal(claude, fakeClaudeAdapter);
-      assert.equal(cursor, fakeCursorAdapter);
-      assert.equal(antigravity, fakeAntigravityAdapter);
-      assert.equal(grok, fakeGrokAdapter);
-      assert.equal(droid, fakeDroidAdapter);
-      assert.equal(kilo, fakeKiloAdapter);
-      assert.equal(opencode, fakeOpenCodeAdapter);
-      assert.equal(pi, fakePiAdapter);
+      const opencodeGo = yield* registry.getByProvider("opencodeGo");
       assert.equal(engine, fakeEngineAdapter);
       assert.equal(openai, fakeOpenAiAdapter);
       assert.equal(anthropic, fakeAnthropicAdapter);
@@ -349,18 +160,10 @@ layer("ProviderAdapterRegistryLive", (it) => {
       assert.equal(xai, fakeXaiAdapter);
       assert.equal(fireworks, fakeFireworksAdapter);
       assert.equal(opencodeZen, fakeOpenCodeZenAdapter);
+      assert.equal(opencodeGo, fakeOpenCodeGoAdapter);
 
       const providers = yield* registry.listProviders();
       assert.deepEqual(providers, [
-        "openai",
-        "anthropic",
-        "openai",
-        "google",
-        "openai",
-        "openai",
-        "openai",
-        "openai",
-        "openai",
         "engine",
         "openai",
         "anthropic",
@@ -375,6 +178,7 @@ layer("ProviderAdapterRegistryLive", (it) => {
         "xai",
         "fireworks",
         "opencodeZen",
+        "opencodeGo",
       ]);
     }),
   );

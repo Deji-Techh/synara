@@ -11,6 +11,7 @@ export const RELEASE_WORKSPACE_MANIFEST_PATHS = [
   "apps/engine/package.json",
   "packages/contracts/package.json",
   "packages/shared/package.json",
+  "packages/pg-schema-classifier/package.json",
   "scripts/package.json",
 ] as const;
 

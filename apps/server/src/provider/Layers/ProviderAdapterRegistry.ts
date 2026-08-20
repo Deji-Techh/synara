@@ -1,7 +1,7 @@
 /**
  * ProviderAdapterRegistryLive - In-memory provider adapter lookup layer.
  *
- * Binds provider kinds (codex/claudeAgent/...) to concrete adapter services.
+ * Binds provider kinds (engine + API providers) to concrete adapter services.
  * This layer only performs adapter lookup; it does not route session-scoped
  * calls or own provider lifecycle workflows.
  *
@@ -15,15 +15,6 @@ import {
   ProviderAdapterRegistry,
   type ProviderAdapterRegistryShape,
 } from "../Services/ProviderAdapterRegistry.ts";
-import { ClaudeAdapter } from "../Services/ClaudeAdapter.ts";
-import { CodexAdapter } from "../Services/CodexAdapter.ts";
-import { CursorAdapter } from "../Services/CursorAdapter.ts";
-import { DroidAdapter } from "../Services/DroidAdapter.ts";
-import { GrokAdapter } from "../Services/GrokAdapter.ts";
-import { KiloAdapter } from "../Services/KiloAdapter.ts";
-import { OpenCodeAdapter } from "../Services/OpenCodeAdapter.ts";
-import { PiAdapter } from "../Services/PiAdapter.ts";
-import { AntigravityAdapter } from "../Services/AntigravityAdapter.ts";
 import { EngineAdapter } from "../Services/EngineAdapter.ts";
 import { OpenAiAdapter } from "../Services/OpenAiAdapter.ts";
 import { AnthropicAdapter } from "../Services/AnthropicAdapter.ts";
@@ -38,6 +29,7 @@ import { CohereAdapter } from "../Services/CohereAdapter.ts";
 import { XaiAdapter } from "../Services/XaiAdapter.ts";
 import { FireworksAdapter } from "../Services/FireworksAdapter.ts";
 import { OpenCodeZenAdapter } from "../Services/OpenCodeZenAdapter.ts";
+import { OpenCodeGoAdapter } from "../Services/OpenCodeGoAdapter.ts";
 
 export interface ProviderAdapterRegistryLiveOptions {
   readonly adapters?: ReadonlyArray<ProviderAdapterShape<ProviderAdapterError>>;
@@ -49,15 +41,6 @@ const makeProviderAdapterRegistry = (options?: ProviderAdapterRegistryLiveOption
       options?.adapters !== undefined
         ? options.adapters
         : [
-            yield* CodexAdapter,
-            yield* ClaudeAdapter,
-            yield* CursorAdapter,
-            yield* AntigravityAdapter,
-            yield* GrokAdapter,
-            yield* DroidAdapter,
-            yield* KiloAdapter,
-            yield* OpenCodeAdapter,
-            yield* PiAdapter,
             yield* EngineAdapter,
             yield* OpenAiAdapter,
             yield* AnthropicAdapter,
@@ -72,6 +55,7 @@ const makeProviderAdapterRegistry = (options?: ProviderAdapterRegistryLiveOption
             yield* XaiAdapter,
             yield* FireworksAdapter,
             yield* OpenCodeZenAdapter,
+            yield* OpenCodeGoAdapter,
           ];
     const byProvider = new Map(adapters.map((adapter) => [adapter.provider, adapter]));
 

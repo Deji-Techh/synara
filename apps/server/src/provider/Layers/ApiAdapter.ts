@@ -42,6 +42,7 @@ import { CohereAdapter, type CohereAdapterShape } from "../Services/CohereAdapte
 import { XaiAdapter, type XaiAdapterShape } from "../Services/XaiAdapter.ts";
 import { FireworksAdapter, type FireworksAdapterShape } from "../Services/FireworksAdapter.ts";
 import { OpenCodeZenAdapter, type OpenCodeZenAdapterShape } from "../Services/OpenCodeZenAdapter.ts";
+import { OpenCodeGoAdapter, type OpenCodeGoAdapterShape } from "../Services/OpenCodeGoAdapter.ts";
 import { type ProviderAdapterShape } from "../Services/ProviderAdapter.ts";
 import { ProviderCredentials, resolveProviderApiKey } from "../../providerCredentials.ts";
 
@@ -67,6 +68,7 @@ const DEFAULT_BASE_URL_BY_PROVIDER: Record<ApiProviderKind, string> = {
   xai: "https://api.x.ai/v1",
   fireworks: "https://api.fireworks.ai/inference/v1",
   opencodeZen: "https://opencode.ai/zen/v1",
+  opencodeGo: "https://opencode.ai/go/v1",
 };
 
 async function streamOpenAiCompatible(
@@ -771,6 +773,15 @@ export const OpenCodeZenAdapterLive = Layer.effect(
   OpenCodeZenAdapter,
   makeApiAdapter("opencodeZen") as unknown as Effect.Effect<
     OpenCodeZenAdapterShape,
+    never,
+    ProviderCredentials
+  >,
+);
+
+export const OpenCodeGoAdapterLive = Layer.effect(
+  OpenCodeGoAdapter,
+  makeApiAdapter("opencodeGo") as unknown as Effect.Effect<
+    OpenCodeGoAdapterShape,
     never,
     ProviderCredentials
   >,
