@@ -3,16 +3,18 @@ import path from "node:path";
 import os from "node:os";
 import { execSync } from "node:child_process";
 import type { FlutterRunDevice } from "@/lib/schemas";
+import {
+  getManagedFlutterBin as getManagedFlutterBinStatic,
+  getManagedFlutterSdkPath as getManagedFlutterSdkPathStatic,
+  getManagedDartBin as getManagedDartBinStatic,
+  ensureManagedFlutter as ensureManagedFlutterStatic,
+} from "@/ipc/services/managed_flutter_toolchain_service";
 
 const FLUTTER_BIN = "flutter";
 
 function getManagedFlutterCandidates(): string[] {
   try {
-    // Lazy require to avoid circular deps during early boot; managed module
-    // uses electron-shim which is safe to import at runtime.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const managed = require("@/ipc/services/managed_flutter_toolchain_service") as typeof import("@/ipc/services/managed_flutter_toolchain_service");
-    const bin = managed.getManagedFlutterBin();
+    const bin = getManagedFlutterBinStatic();
     if (fs.existsSync(bin)) return [bin];
   } catch {}
   return [];
@@ -78,9 +80,7 @@ export function isFlutterApp(appPath: string): boolean {
 
 function managedRootCandidate(): string | null {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const managed = require("@/ipc/services/managed_flutter_toolchain_service") as typeof import("@/ipc/services/managed_flutter_toolchain_service");
-    const sdkPath = managed.getManagedFlutterSdkPath();
+    const sdkPath = getManagedFlutterSdkPathStatic();
     if (fs.existsSync(path.join(sdkPath, "bin", "flutter")) || fs.existsSync(path.join(sdkPath, "bin", "flutter.exe"))) {
       return sdkPath;
     }
@@ -113,9 +113,7 @@ function flutterRootCandidates(): string[] {
  */
 export function getDartExecutable(): string {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const managed = require("@/ipc/services/managed_flutter_toolchain_service") as typeof import("@/ipc/services/managed_flutter_toolchain_service");
-    const dartBin = managed.getManagedDartBin();
+    const dartBin = getManagedDartBinStatic();
     if (fs.existsSync(dartBin)) return dartBin;
   } catch {}
   for (const root of flutterRootCandidates()) {
@@ -161,9 +159,7 @@ export type FlutterProgressCallback = (p: import("@/ipc/services/managed_flutter
  */
 export async function ensureFlutterSdkAvailable(onProgress?: FlutterProgressCallback, signal?: AbortSignal): Promise<string> {
   if (hasFlutterBinary()) return getFlutterExecutable();
-  // Dynamic import to avoid circular at top-level during early boot
-  const managed = await import("@/ipc/services/managed_flutter_toolchain_service");
-  return managed.ensureManagedFlutter({ onProgress, signal });
+  return ensureManagedFlutterStatic({ onProgress, signal });
 }
 
 export function getFlutterRunCommand(

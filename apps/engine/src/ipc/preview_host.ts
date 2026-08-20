@@ -57,6 +57,10 @@ import type {
 } from "@/ipc/types/tests";
 import { emit } from "@/ipc/utils/event_bus";
 import { createHash } from "node:crypto";
+import {
+  inspectManagedFlutterToolchain,
+  installManagedFlutterToolchain,
+} from "@/ipc/services/managed_flutter_toolchain_service";
 
 const logger = log.scope("preview_host");
 
@@ -1106,13 +1110,11 @@ async function flutterToolchainStatus(): Promise<{
   estimatedDownloadBytes: number;
   unsupportedReason: string | null;
 }> {
-  const m = await import("@/ipc/services/managed_flutter_toolchain_service");
-  return m.inspectManagedFlutterToolchain();
+  return inspectManagedFlutterToolchain();
 }
 
-async function flutterToolchainInstall(): Promise<{ status: Awaited<ReturnType<typeof import("@/ipc/services/managed_flutter_toolchain_service").inspectManagedFlutterToolchain>> }> {
-  const m = await import("@/ipc/services/managed_flutter_toolchain_service");
-  const status = await m.installManagedFlutterToolchain({
+async function flutterToolchainInstall(): Promise<{ status: Awaited<ReturnType<typeof inspectManagedFlutterToolchain>> }> {
+  const status = await installManagedFlutterToolchain({
     onProgress: (p) => emitFlutterProgress(p),
   });
   return { status };

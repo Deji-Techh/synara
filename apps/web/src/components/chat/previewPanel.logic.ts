@@ -55,6 +55,7 @@ export interface PreviewBuildState {
   readonly channel: PreviewBuildChannel;
   readonly exitCode: number | null;
   readonly outputPath: string | null;
+  readonly sha256?: string | null;
   readonly error: string | null;
   readonly logs: readonly string[];
 }
@@ -302,6 +303,7 @@ export function mergeBuildState(
   snapshot: PreviewBuildStateResult,
 ): PreviewPanelState {
   const isTerminal = snapshot.status === "succeeded" || snapshot.status === "failed";
+  const sha256 = (snapshot as unknown as { sha256?: string | null }).sha256 ?? null;
   return {
     ...state,
     build: {
@@ -312,6 +314,7 @@ export function mergeBuildState(
       channel: state.build.channel,
       exitCode: snapshot.exitCode ?? null,
       outputPath: snapshot.outputPath ?? null,
+      sha256,
       error: snapshot.error ?? null,
       logs: snapshot.logs,
     },

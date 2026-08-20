@@ -699,11 +699,19 @@ function ReleasePanel(props: {
   onBuild: (options: {
     target: "apk" | "appbundle" | "ipa";
     channel: "debug" | "profile" | "release";
+    signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null;
   }) => void;
 }) {
   const [target, setTarget] = useState(props.build.target);
   const [channel, setChannel] = useState(props.build.channel);
+  const [showSigning, setShowSigning] = useState(false);
+  const [keystorePath, setKeystorePath] = useState("");
+  const [keyAlias, setKeyAlias] = useState("");
+  const [storePassword, setStorePassword] = useState("");
+  const [keyPassword, setKeyPassword] = useState("");
   const isRunning = props.build.running;
+  const needsSigning = (target === "apk" || target === "appbundle") && channel === "release";
+  const canBuild = !isRunning && (!needsSigning || !showSigning || (keystorePath.trim() && keyAlias.trim() && storePassword.trim() && keyPassword.trim()));
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-4">
@@ -746,14 +754,78 @@ function ReleasePanel(props: {
             </select>
           </label>
         </div>
+        {target === "ipa" && (
+          <p className="mt-2 text-[11px] text-amber-600 dark:text-amber-400">IPA builds require macOS with Xcode installed.</p>
+        )}
+        {needsSigning && (
+          <div className="mt-3 rounded-md border border-border bg-muted/30 p-2.5">
+            <button
+              type="button"
+              onClick={() => setShowSigning((v) => !v)}
+              className="flex w-full items-center justify-between text-xs font-medium"
+            >
+              <span>Signing (optional for store release)</span>
+              <ChevronDownIcon aria-hidden="true" className={cn("size-3.5 transition-transform", showSigning && "rotate-180")} />
+            </button>
+            {showSigning && (
+              <div className="mt-2 grid grid-cols-1 gap-2">
+                <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+                  Keystore path
+                  <input
+                    value={keystorePath}
+                    onChange={(e) => setKeystorePath(e.target.value)}
+                    placeholder="/path/to/release.jks"
+                    className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+                  Key alias
+                  <input
+                    value={keyAlias}
+                    onChange={(e) => setKeyAlias(e.target.value)}
+                    placeholder="upload"
+                    className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
+                  />
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+                    Store password
+                    <input
+                      type="password"
+                      value={storePassword}
+                      onChange={(e) => setStorePassword(e.target.value)}
+                      className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+                    Key password
+                    <input
+                      type="password"
+                      value={keyPassword}
+                      onChange={(e) => setKeyPassword(e.target.value)}
+                      className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
+                    />
+                  </label>
+                </div>
+                <p className="text-[11px] text-muted-foreground">If empty, Flutter uses debug signing. For store builds, provide your upload keystore.</p>
+              </div>
+            )}
+          </div>
+        )}
         <button
           type="button"
-          onClick={() => props.onBuild({ target, channel })}
-          disabled={isRunning}
+          onClick={() =>
+            props.onBuild({
+              target,
+              channel,
+              signing: showSigning && keystorePath.trim() ? { keystorePath: keystorePath.trim(), keyAlias: keyAlias.trim(), storePassword, keyPassword } : null,
+            })
+          }
+          disabled={!canBuild}
           className={cn(
             "mt-3 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
             "bg-foreground text-background hover:opacity-90",
-            isRunning && "cursor-wait opacity-60",
+            (!canBuild) && "cursor-not-allowed opacity-60",
           )}
         >
           {isRunning ? (
@@ -777,11 +849,16 @@ function ReleasePanel(props: {
         </div>
       )}
       {props.build.status === "succeeded" && (
-        <div className="inline-flex items-center gap-2 rounded-md bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-          <CheckIcon aria-hidden="true" className="size-4" />
-          Build succeeded
+        <div className="flex flex-col gap-1 rounded-md bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+          <span className="inline-flex items-center gap-2">
+            <CheckIcon aria-hidden="true" className="size-4" />
+            Build succeeded
+          </span>
           {props.build.outputPath !== null && (
             <span className="break-all text-muted-foreground"> {props.build.outputPath}</span>
+          )}
+          {(props.build as unknown as { sha256?: string | null }).sha256 && (
+            <span className="break-all font-mono text-[11px] text-muted-foreground">sha256: {(props.build as unknown as { sha256: string }).sha256}</span>
           )}
         </div>
       )}
@@ -872,16 +949,23 @@ export function PreviewPanel(props: {
 
   const handleStart = useCallback(() => {
     setPanelState((previous) => previewStartRequested(previous));
+    const flutterDevice = FRAME_KIND_TO_FLUTTER_DEVICE[frameKind];
     ensureNativeApi()
-      .preview.start({ threadId: props.threadId })
+      .preview.start({ threadId: props.threadId, device: flutterDevice } as unknown as { threadId: ThreadId })
       .then((result) => {
-        setPanelState((previous) => previewStarted(previous, result.url, []));
+        setPanelState((previous) => previewStarted(previous, (result as { url: string }).url, []));
       })
       .catch((error: unknown) => {
         const message = error instanceof Error ? error.message : "The preview failed to start.";
+        const lower = message.toLowerCase();
+        if (lower.includes("emulator") && lower.includes("linux") && flutterDevice === "emulator") {
+          toastManager.add({ type: "info", title: "Emulator unavailable", description: "Android emulator preview needs Linux/Windows. Falling back to web preview." });
+        } else if (lower.includes("simulator") && lower.includes("macos") && flutterDevice === "simulator") {
+          toastManager.add({ type: "info", title: "Simulator unavailable", description: "iOS Simulator preview needs macOS. Falling back to web preview." });
+        }
         setPanelState((previous) => previewStartFailed(previous, message));
       });
-  }, [props.threadId]);
+  }, [props.threadId, frameKind]);
 
   const handleStop = useCallback(() => {
     void ensureNativeApi().preview.stop({ threadId: props.threadId });
@@ -1020,14 +1104,16 @@ export function PreviewPanel(props: {
     (options: {
       target: "apk" | "appbundle" | "ipa";
       channel: "debug" | "profile" | "release";
+      signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null;
     }) => {
-      setPanelState((previous) => buildRequested(previous, options));
+      setPanelState((previous) => buildRequested(previous, { target: options.target, channel: options.channel }));
       ensureNativeApi()
         .preview.buildStart({
           threadId: props.threadId,
           target: options.target,
           channel: options.channel,
-        })
+          ...(options.signing ? { signing: options.signing } : {}),
+        } as unknown as { threadId: ThreadId; target: "apk" | "appbundle" | "ipa"; channel?: "debug" | "profile" | "release" })
         .then((result) => {
           setPanelState((previous) => buildAccepted(previous, result.buildId));
         })
@@ -1098,6 +1184,7 @@ export function PreviewPanel(props: {
         )}
         <StatusPill state={panelState} />
       </div>
+      <FlutterToolchainBanner threadId={props.threadId} />
 
       {/* Main Content Area */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-black/5 dark:bg-black/20">

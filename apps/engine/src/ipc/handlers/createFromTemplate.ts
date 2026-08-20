@@ -5,10 +5,11 @@ import { copyDirectoryRecursive } from "../utils/file_utils";
 import { gitClone, getCurrentCommitHash } from "../utils/git_utils";
 import { readSettings } from "@/main/settings";
 import { getTemplateOrThrow } from "../utils/template_utils";
-import { getFlutterExecutable } from "@/ipc/utils/flutter_utils";
+import { getFlutterExecutable, ensureFlutterSdkAvailable } from "@/ipc/utils/flutter_utils";
 import log from "electron-log";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
 import { spawn } from "node:child_process";
+import { emit } from "@/ipc/utils/event_bus";
 
 const logger = log.scope("createFromTemplate");
 
@@ -20,10 +21,8 @@ const logger = log.scope("createFromTemplate");
  */
 async function ensureFlutterForCreate(): Promise<string> {
   try {
-    const { ensureFlutterSdkAvailable } = await import("@/ipc/utils/flutter_utils");
     return await ensureFlutterSdkAvailable((p) => {
       try {
-        const { emit } = require("@/ipc/utils/event_bus") as typeof import("@/ipc/utils/event_bus");
         emit("flutter:toolchain:progress", p);
       } catch {}
     });
@@ -117,10 +116,8 @@ export async function createFromTemplate({
       // real Flutter project. Ensure managed SDK first.
       logger.info(`flutter: scaffold invalid/missing at ${candidatePath}, running flutter create for ${fullAppPath}`);
       try {
-        const { ensureFlutterSdkAvailable } = await import("@/ipc/utils/flutter_utils");
         await ensureFlutterSdkAvailable((p) => {
           try {
-            const { emit } = require("@/ipc/utils/event_bus") as typeof import("@/ipc/utils/event_bus");
             emit("flutter:toolchain:progress", p);
           } catch {}
         });

@@ -3,6 +3,14 @@
 // This prevents E2BIG errors by whitelisting only essential env vars instead of
 // inheriting the entire process.env (which can exceed Linux's 128KB execve limit).
 
+import fs from "node:fs";
+import path from "node:path";
+
+import {
+  getManagedFlutterBin,
+  getManagedFlutterSdkPath,
+} from "./ipc/services/managed_flutter_toolchain_service";
+
 /**
  * Build a minimal, safe environment for Flutter child processes.
  * Only whitelists essential variables to prevent E2BIG spawn errors.
@@ -38,29 +46,22 @@ export function safeFlutterEnvironment(overrides?: Record<string, string>): Node
 
   // Inject managed Flutter bin if installed (so child inherits without host PATH)
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const managed = require("./ipc/services/managed_flutter_toolchain_service") as typeof import("./ipc/services/managed_flutter_toolchain_service");
-    const flutterBin = managed.getManagedFlutterBin();
-    const sdkPath = managed.getManagedFlutterSdkPath();
-    if (managed.getManagedFlutterSdkPath() && typeof sdkPath === "string") {
-      try {
-        const fs = require("node:fs") as typeof import("node:fs");
-        const path = require("node:path") as typeof import("node:path");
-        if (fs.existsSync(flutterBin)) {
-          env.FLUTTER_ROOT = sdkPath;
-          const binDir = path.join(sdkPath, "bin");
-          const dartDir = path.join(sdkPath, "bin", "cache", "dart-sdk", "bin");
-          const sep = path.delimiter;
-          const basePath = env.PATH ?? process.env.PATH ?? "";
-          const additions = [binDir, dartDir].filter((p) => {
-            // Avoid duplicating
-            return !basePath.split(sep).includes(p);
-          });
-          if (additions.length > 0) {
-            env.PATH = [...additions, basePath].filter(Boolean).join(sep);
-          }
+    const flutterBin = getManagedFlutterBin();
+    const sdkPath = getManagedFlutterSdkPath();
+    if (sdkPath && typeof sdkPath === "string") {
+      if (fs.existsSync(flutterBin)) {
+        env.FLUTTER_ROOT = sdkPath;
+        const binDir = path.join(sdkPath, "bin");
+        const dartDir = path.join(sdkPath, "bin", "cache", "dart-sdk", "bin");
+        const sep = path.delimiter;
+        const basePath = env.PATH ?? process.env.PATH ?? "";
+        const additions = [binDir, dartDir].filter((p) => {
+          return !basePath.split(sep).includes(p);
+        });
+        if (additions.length > 0) {
+          env.PATH = [...additions, basePath].filter(Boolean).join(sep);
         }
-      } catch {}
+      }
     }
   } catch {}
 
