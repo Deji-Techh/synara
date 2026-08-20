@@ -22,6 +22,7 @@ import {
   XaiAdapterLive,
   FireworksAdapterLive,
   OpenCodeZenAdapterLive,
+  OpenCodeGoAdapterLive,
 } from "./Layers/ApiAdapter";
 import { ProviderDiscoveryServiceLive } from "./Layers/ProviderDiscoveryService";
 import { makeDurableProviderServiceLive } from "./Layers/ProviderService";
@@ -66,6 +67,7 @@ export function makeServerProviderLayer(
     const xaiAdapterLayer = XaiAdapterLive.pipe(Layer.provide(credentialsLayer));
     const fireworksAdapterLayer = FireworksAdapterLive.pipe(Layer.provide(credentialsLayer));
     const openCodeZenAdapterLayer = OpenCodeZenAdapterLive.pipe(Layer.provide(credentialsLayer));
+    const openCodeGoAdapterLayer = OpenCodeGoAdapterLive.pipe(Layer.provide(credentialsLayer));
     const apiAdaptersLayer = Layer.mergeAll(
       openAiAdapterLayer,
       anthropicAdapterLayer,
@@ -80,6 +82,7 @@ export function makeServerProviderLayer(
       xaiAdapterLayer,
       fireworksAdapterLayer,
       openCodeZenAdapterLayer,
+      openCodeGoAdapterLayer,
     );
     const adapterRegistryLayer = ProviderAdapterRegistryLive.pipe(
       Layer.provide(
