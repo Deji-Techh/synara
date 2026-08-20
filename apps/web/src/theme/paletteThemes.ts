@@ -46,6 +46,11 @@ const PALETTE_SEEDS: Record<
     darkSeed: { accent: "#339cff", ink: "#ffffff", surface: "#181818" },
     lightSeed: { accent: "#356df3", ink: "#1a1c1f", surface: "#fcfcfc" },
   },
+  openai: {
+    darkSeed: { accent: "#7a7f8a", ink: "#e7e7e7", surface: "#181818" },
+    lightSeed: { accent: "#6b7280", ink: "#1f1f1f", surface: "#f7f7f8" },
+  },
+  // Legacy alias for old DBs that still reference "codex" theme
   codex: {
     darkSeed: { accent: "#7a7f8a", ink: "#e7e7e7", surface: "#181818" },
     lightSeed: { accent: "#6b7280", ink: "#1f1f1f", surface: "#f7f7f8" },
@@ -97,7 +102,7 @@ function buildChromeTheme(seed: PaletteThemeSeed, variant: ThemeVariant): Chrome
 }
 
 export const PALETTE_THEMES: readonly PaletteThemeDescriptor[] = UI_THEMES.map((uiTheme) => {
-  const entry = PALETTE_SEEDS[uiTheme.id];
+  const entry = (PALETTE_SEEDS as Record<string, (typeof PALETTE_SEEDS)[keyof typeof PALETTE_SEEDS]>)[uiTheme.id] ?? PALETTE_SEEDS.system;
   return {
     id: uiTheme.id,
     name: uiTheme.name,
