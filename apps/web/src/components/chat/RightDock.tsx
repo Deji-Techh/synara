@@ -66,7 +66,8 @@ export const RIGHT_DOCK_DEFAULT_WIDTH = "max(28rem, calc(50vw - 8rem))";
 // half-shell split.
 const RIGHT_DOCK_PREFERRED_WIDTH: Partial<Record<RightDockPaneKind, number>> = {
   device: 40 * 16,
-  preview: 42 * 16,
+  // Synara iOS Simulator opens narrower than half-shell so the portrait phone can fill height without stranded space.
+  preview: 38 * 16,
 };
 
 interface RightDockProps {

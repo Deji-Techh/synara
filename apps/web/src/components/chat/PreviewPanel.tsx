@@ -325,7 +325,7 @@ function StatusPill({ state }: { state: PreviewPanelState }) {
         ? "bg-amber-500"
         : state.status === "failed"
           ? "bg-red-500"
-          : "bg-muted-foreground";
+          : "bg-zinc-600";
   const label =
     state.status === "starting"
       ? "Starting…"
@@ -336,7 +336,7 @@ function StatusPill({ state }: { state: PreviewPanelState }) {
           : "Idle";
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+      className="inline-flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900 px-2 py-0.5 text-xs font-medium text-zinc-400"
       title={state.status === "failed" && state.error ? state.error : label}
     >
       <span
@@ -405,17 +405,17 @@ function PreviewConsole(props: { isOpen: boolean; onToggle: () => void; logs: re
 
   const latestLine = logs.at(-1) ?? "No output yet.";
   return (
-    <div className="border-t border-border">
+    <div className="border-t border-zinc-900">
       <button
         type="button"
         onClick={props.onToggle}
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
+        className="flex w-full items-center gap-2 bg-zinc-950 px-3 py-1.5 text-left text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-900 hover:text-zinc-300"
         aria-expanded={isOpen}
       >
         <TerminalIcon aria-hidden="true" className="size-3.5" />
         <span>Console</span>
         {!isOpen && (
-          <span className="min-w-0 flex-1 truncate text-muted-foreground/70">{latestLine}</span>
+          <span className="min-w-0 flex-1 truncate text-zinc-600">{latestLine}</span>
         )}
         {isOpen ? (
           <ChevronDownIcon aria-hidden="true" className="size-3.5" />
@@ -426,7 +426,7 @@ function PreviewConsole(props: { isOpen: boolean; onToggle: () => void; logs: re
       {isOpen && (
         <div
           ref={listRef}
-          className="max-h-40 min-h-0 overflow-y-auto bg-muted/50 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground"
+          className="max-h-40 min-h-0 overflow-y-auto bg-zinc-950 px-3 py-2 font-mono text-[11px] leading-relaxed text-zinc-400"
         >
           {logs.length === 0 ? (
             <p>Waiting for `flutter run` output…</p>
@@ -1192,35 +1192,44 @@ export function PreviewPanel(props: {
   const showConsole = isStarting || isRunning || panelState.status === "failed";
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-background" data-testid="preview-pane">
-      {/* Top Header: Choose Simulator */}
-      <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-        <select
-          value={frameKind}
-          onChange={(event) => handleFrameKindChange(event.target.value as PreviewFrameKind)}
-          className="bg-transparent text-sm font-medium text-foreground outline-none appearance-none"
-        >
-          {FRAME_KIND_OPTIONS.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <ChevronDownIcon aria-hidden="true" className="size-4 text-muted-foreground -ml-1" />
+    <div className="flex h-full min-h-0 flex-col bg-black" data-testid="preview-pane">
+      {/* Top Header — iOS Simulator chrome (Synara DevicePanel header) */}
+      <div className="flex h-9 shrink-0 items-center gap-2 border-b border-zinc-900 bg-zinc-950 px-3">
+        <div className="relative flex items-center">
+          <select
+            value={frameKind}
+            onChange={(event) => handleFrameKindChange(event.target.value as PreviewFrameKind)}
+            className="appearance-none rounded-full border border-zinc-800 bg-zinc-900 py-1 pl-2.5 pr-6 text-xs font-medium text-zinc-200 outline-none transition-colors hover:border-zinc-700 hover:bg-zinc-800 focus-visible:ring-1 focus-visible:ring-zinc-700"
+          >
+            {FRAME_KIND_OPTIONS.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDownIcon
+            aria-hidden="true"
+            className="pointer-events-none absolute right-1.5 size-3.5 text-zinc-500"
+          />
+        </div>
         <div className="min-w-0 flex-1" />
         {isRunning && (
-          <div className="flex shrink-0 items-center gap-1 mr-2">
+          <div className="flex shrink-0 items-center gap-0.5">
             <button
               type="button"
               onClick={() => handleReload(true)}
-              className="p-1.5 text-muted-foreground hover:text-foreground"
+              title="Hot reload"
+              aria-label="Hot reload"
+              className="flex size-7 items-center justify-center rounded-md text-zinc-500 outline-none transition-colors hover:bg-zinc-900 hover:text-zinc-200 focus-visible:ring-1 focus-visible:ring-zinc-700"
             >
               <RefreshCwIcon className="size-3.5" />
             </button>
             <button
               type="button"
               onClick={handleStop}
-              className="p-1.5 text-red-500 hover:text-red-400"
+              title="Stop preview"
+              aria-label="Stop preview"
+              className="flex size-7 items-center justify-center rounded-md text-zinc-500 outline-none transition-colors hover:bg-red-500/10 hover:text-red-400 focus-visible:ring-1 focus-visible:ring-zinc-700"
             >
               <DeviceRecordStopIcon className="size-3.5" />
             </button>
@@ -1230,30 +1239,58 @@ export function PreviewPanel(props: {
       </div>
       <FlutterToolchainBanner threadId={props.threadId} />
 
-      {/* Main Content Area */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-black/5 dark:bg-black/20">
+      {/* Main Content Area — Synara: full-black stage, device+rail optically centered */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-black">
         {panelState.activeTab === "preview" && (
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {frameKind === "frameless" ? (
-              <div className="flex min-h-0 flex-1 flex-col items-center justify-center p-4">
+              <div className="flex min-h-0 flex-1 flex-col items-center justify-center bg-black p-4">
                 {panelState.status === "starting" ? (
-                  <PreviewStartingState />
+                  <div className="flex flex-col items-center gap-2 py-6">
+                    <LoaderIcon className="size-3 animate-spin text-white/45" />
+                    <p className="text-[11px] font-medium text-white/90">Starting Flutter preview…</p>
+                    <p className="text-[10px] text-white/45">Compiling Flutter bundle</p>
+                  </div>
                 ) : panelState.status === "failed" ? (
-                  <PreviewFailedState error={panelState.error} onRetry={handleStart} />
+                  <div className="flex flex-col items-center gap-3 px-[12%] py-6 text-center">
+                    <p className="max-w-[260px] break-words text-center text-[11px] leading-snug text-red-400">
+                      {panelState.error ?? "The preview failed to start."}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleStart}
+                      className="rounded-full bg-white px-4 py-1.5 text-[11px] font-medium text-black transition-opacity hover:opacity-90"
+                    >
+                      Retry
+                    </button>
+                  </div>
                 ) : isRunning && panelState.url !== null ? (
                   <iframe
                     key={panelState.reloadToken}
                     src={panelState.url}
                     title="Flutter preview"
                     sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
-                    className="h-full w-full border-0"
+                    className="h-full w-full border-0 bg-white"
                   />
                 ) : (
-                  <PreviewEmptyState onStart={handleStart} />
+                  <div className="flex flex-col items-center gap-3 px-[12%] py-6 text-center">
+                    <p className="text-balance text-[11px] leading-snug text-white/45">
+                      Preview is idle. Choose a device above and start the preview.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleStart}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-[11px] font-medium text-black transition-opacity hover:opacity-90"
+                    >
+                      <PlayIcon className="size-3" />
+                      Start preview
+                    </button>
+                  </div>
                 )}
               </div>
             ) : (
-              <div className="flex min-h-0 flex-1 flex-col items-center justify-center p-1 sm:p-2">
+              <div className="flex min-h-0 flex-1 flex-col items-center justify-center bg-black px-3 py-3">
+                <div aria-hidden className={DEVICE_RAIL_HEIGHT_CLASS} />
                 <DeviceScreen
                   className="min-h-0 w-full flex-1"
                   kind={statusFrameKind}
@@ -1261,25 +1298,22 @@ export function PreviewPanel(props: {
                 >
                   <div className="flex h-full w-full flex-col items-center justify-center bg-black text-center">
                     {panelState.status === "starting" ? (
-                      <div className="flex flex-col items-center gap-3 p-6">
-                        <LoaderIcon className="size-6 animate-spin text-muted-foreground" />
-                        <p className="text-sm font-medium text-foreground">
-                          Starting Flutter preview…
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Compiling Flutter bundle for Android
-                        </p>
+                      <div className="flex flex-col items-center gap-3 px-[12%] text-center">
+                        <p className="text-[11px] font-medium text-white/90">Starting Flutter preview…</p>
+                        <span className="flex items-center gap-1.5 text-[10px] text-white/45">
+                          <LoaderIcon className="size-3 animate-spin" />
+                          Compiling Flutter bundle
+                        </span>
                       </div>
                     ) : panelState.status === "failed" ? (
-                      <div className="flex flex-col items-center gap-3 p-6">
-                        <CircleAlertIcon className="size-6 text-red-500" />
-                        <p className="max-w-[240px] break-words text-sm text-red-400">
+                      <div className="flex flex-col items-center gap-3 px-[12%] text-center">
+                        <p className="max-w-[240px] break-words text-[11px] leading-snug text-red-400">
                           {panelState.error ?? "Failed to start"}
                         </p>
                         <button
                           type="button"
                           onClick={handleStart}
-                          className="mt-1 cursor-pointer rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-black transition-opacity hover:opacity-90"
+                          className="rounded-full bg-white px-4 py-1.5 text-[11px] font-medium text-black transition-opacity hover:opacity-90"
                         >
                           Retry
                         </button>
@@ -1290,23 +1324,19 @@ export function PreviewPanel(props: {
                         src={panelState.url}
                         title="Flutter preview"
                         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
-                        className="h-full w-full border-0 bg-background"
+                        className="h-full w-full border-0 bg-white"
                       />
                     ) : (
-                      <div className="flex flex-col items-center gap-3 p-6">
-                        <div className="flex size-12 items-center justify-center rounded-2xl bg-white/5 ring-1 ring-white/10">
-                          <PlayIcon className="size-5 text-white/80" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-white/90">Flutter App Preview</p>
-                          <p className="mt-1 text-xs text-white/50">Ready to run on Android</p>
-                        </div>
+                      <div className="flex flex-col items-center justify-center gap-1 px-[12%] text-center">
+                        <p className="text-balance text-[11px] leading-snug text-white/45">
+                          Choose a simulator or start previewing here.
+                        </p>
                         <button
                           type="button"
                           onClick={handleStart}
-                          className="mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-semibold text-black transition-transform active:scale-95 hover:bg-white/90"
+                          className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-[11px] font-medium text-black transition-opacity hover:opacity-90"
                         >
-                          <PlayIcon className="size-3.5 fill-black" />
+                          <PlayIcon className="size-3 fill-black" />
                           Start Preview
                         </button>
                       </div>
@@ -1361,9 +1391,9 @@ export function PreviewPanel(props: {
         )}
       </div>
 
-      {/* Bottom Nav Bar for Tabs */}
+      {/* Bottom Tab Bar — Synara pill rail (kept per user request) */}
       <div
-        className="flex shrink-0 items-center justify-center gap-6 border-t border-border px-4 py-3 bg-background"
+        className="flex shrink-0 items-center justify-center gap-1 border-t border-zinc-900 bg-zinc-950 px-2 py-1.5"
         role="tablist"
       >
         {PREVIEW_TABS.map((tab) => {
@@ -1377,12 +1407,14 @@ export function PreviewPanel(props: {
               aria-selected={isSelected}
               onClick={() => handleTabChange(tab.id)}
               className={cn(
-                "flex flex-col items-center gap-1 transition-colors",
-                isSelected ? "text-foreground" : "text-muted-foreground hover:text-foreground/80",
+                "flex flex-col items-center gap-0.5 rounded-md px-3 py-1 text-[10px] font-medium transition-colors outline-none focus-visible:ring-1 focus-visible:ring-zinc-700",
+                isSelected
+                  ? "bg-zinc-900 text-white"
+                  : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300",
               )}
             >
-              <TabIcon aria-hidden="true" className="size-4" />
-              <span className="text-[10px] font-medium">{tab.label}</span>
+              <TabIcon aria-hidden="true" className="size-3.5" />
+              <span className="leading-none">{tab.label}</span>
             </button>
           );
         })}
