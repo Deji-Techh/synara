@@ -156,9 +156,9 @@ const TerminalActivityEvent = Schema.Struct({
   hasRunningSubprocess: Schema.Boolean,
   cliKind: Schema.NullOr(
     Schema.Union([
-      Schema.Literal("codex"),
-      Schema.Literal("claude"),
-      Schema.Literal("antigravity"),
+      Schema.Literal("openai"),
+      Schema.Literal("anthropic"),
+      Schema.Literal("google"),
     ]),
   ),
   agentState: Schema.NullOr(

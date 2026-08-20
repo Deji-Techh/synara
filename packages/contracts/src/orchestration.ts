@@ -1,15 +1,5 @@
 import { Option, Schema, SchemaIssue, Struct } from "effect";
-import {
-  AntigravityModelOptions,
-  ApiModelOptions,
-  ClaudeModelOptions,
-  CodexModelOptions,
-  CursorModelOptions,
-  DroidModelOptions,
-  GrokModelOptions,
-  OpenCodeModelOptions,
-  PiModelOptions,
-} from "./model";
+import { ApiModelOptions, PiModelOptions } from "./model";
 import { ProviderMentionReference, ProviderSkillReference } from "./providerDiscovery";
 import { ProjectKind } from "./project";
 import {
@@ -58,15 +48,6 @@ export const ORCHESTRATION_WS_CHANNELS = {
 } as const;
 
 export const ProviderKind = Schema.Literals([
-  "codex",
-  "claudeAgent",
-  "cursor",
-  "antigravity",
-  "grok",
-  "droid",
-  "kilo",
-  "opencode",
-  "pi",
   "engine",
   "openai",
   "anthropic",
@@ -81,10 +62,16 @@ export const ProviderKind = Schema.Literals([
   "xai",
   "fireworks",
   "opencodeZen",
+  "opencodeGo",
 ]);
 export type ProviderKind = typeof ProviderKind.Type;
 
-/** API-key providers: they talk to HTTP endpoints, never a local CLI process. */
+/**
+ * API-key providers: they talk to HTTP endpoints, never a local CLI process.
+ * Every non-engine provider is API-key based; CLI/child-process providers were
+ * removed from the product (the Flutter Builder engine is the only process
+ * backend, and it now serves all of these via its own tools).
+ */
 export const API_PROVIDER_KINDS = [
   "openai",
   "anthropic",
@@ -99,11 +86,12 @@ export const API_PROVIDER_KINDS = [
   "xai",
   "fireworks",
   "opencodeZen",
+  "opencodeGo",
 ] as const;
 export type ApiProviderKind = (typeof API_PROVIDER_KINDS)[number];
 
-/** Provider kinds that run a local CLI/child process. */
-export type ProviderCliKind = Exclude<ProviderKind, ApiProviderKind>;
+/** Backends that spawn a child process. Only the Flutter engine. */
+export type ProviderCliKind = Extract<ProviderKind, "engine">;
 
 export const ProviderApprovalPolicy = Schema.Literals([
   "untrusted",
@@ -118,71 +106,7 @@ export const ProviderSandboxMode = Schema.Literals([
   "danger-full-access",
 ]);
 export type ProviderSandboxMode = typeof ProviderSandboxMode.Type;
-export const DEFAULT_PROVIDER_KIND: ProviderKind = "codex";
-
-export const CodexModelSelection = Schema.Struct({
-  provider: Schema.Literal("codex"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(CodexModelOptions),
-});
-export type CodexModelSelection = typeof CodexModelSelection.Type;
-
-export const ClaudeModelSelection = Schema.Struct({
-  provider: Schema.Literal("claudeAgent"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(ClaudeModelOptions),
-  supportsAutoMode: Schema.optional(Schema.Boolean),
-});
-export type ClaudeModelSelection = typeof ClaudeModelSelection.Type;
-
-export const CursorModelSelection = Schema.Struct({
-  provider: Schema.Literal("cursor"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(CursorModelOptions),
-});
-export type CursorModelSelection = typeof CursorModelSelection.Type;
-
-export const AntigravityModelSelection = Schema.Struct({
-  provider: Schema.Literal("antigravity"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(AntigravityModelOptions),
-});
-export type AntigravityModelSelection = typeof AntigravityModelSelection.Type;
-
-export const GrokModelSelection = Schema.Struct({
-  provider: Schema.Literal("grok"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(GrokModelOptions),
-});
-export type GrokModelSelection = typeof GrokModelSelection.Type;
-
-export const DroidModelSelection = Schema.Struct({
-  provider: Schema.Literal("droid"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(DroidModelOptions),
-});
-export type DroidModelSelection = typeof DroidModelSelection.Type;
-
-export const OpenCodeModelSelection = Schema.Struct({
-  provider: Schema.Literal("opencode"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(OpenCodeModelOptions),
-});
-export type OpenCodeModelSelection = typeof OpenCodeModelSelection.Type;
-
-export const KiloModelSelection = Schema.Struct({
-  provider: Schema.Literal("kilo"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(OpenCodeModelOptions),
-});
-export type KiloModelSelection = typeof KiloModelSelection.Type;
-
-export const PiModelSelection = Schema.Struct({
-  provider: Schema.Literal("pi"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(PiModelOptions),
-});
-export type PiModelSelection = typeof PiModelSelection.Type;
+export const DEFAULT_PROVIDER_KIND: ProviderKind = "openai";
 
 export const EngineModelSelection = Schema.Struct({
   provider: Schema.Literal("engine"),
@@ -283,16 +207,14 @@ export const OpenCodeZenModelSelection = Schema.Struct({
 });
 export type OpenCodeZenModelSelection = typeof OpenCodeZenModelSelection.Type;
 
+export const OpenCodeGoModelSelection = Schema.Struct({
+  provider: Schema.Literal("opencodeGo"),
+  model: TrimmedNonEmptyString,
+  options: Schema.optional(ApiModelOptions),
+});
+export type OpenCodeGoModelSelection = typeof OpenCodeGoModelSelection.Type;
+
 export const ModelSelection = Schema.Union([
-  CodexModelSelection,
-  ClaudeModelSelection,
-  CursorModelSelection,
-  AntigravityModelSelection,
-  GrokModelSelection,
-  DroidModelSelection,
-  KiloModelSelection,
-  OpenCodeModelSelection,
-  PiModelSelection,
   EngineModelSelection,
   OpenAiModelSelection,
   AnthropicModelSelection,
@@ -307,52 +229,9 @@ export const ModelSelection = Schema.Union([
   XaiModelSelection,
   FireworksModelSelection,
   OpenCodeZenModelSelection,
+  OpenCodeGoModelSelection,
 ]);
 export type ModelSelection = typeof ModelSelection.Type;
-
-export const CodexProviderStartOptions = Schema.Struct({
-  binaryPath: Schema.optional(TrimmedNonEmptyString),
-  homePath: Schema.optional(TrimmedNonEmptyString),
-});
-
-export const ClaudeProviderStartOptions = Schema.Struct({
-  binaryPath: Schema.optional(TrimmedNonEmptyString),
-  permissionMode: Schema.optional(TrimmedNonEmptyString),
-  maxThinkingTokens: Schema.optional(NonNegativeInt),
-});
-
-export const AntigravityProviderStartOptions = Schema.Struct({
-  binaryPath: Schema.optional(TrimmedNonEmptyString),
-});
-
-export const CursorProviderStartOptions = Schema.Struct({
-  binaryPath: Schema.optional(TrimmedNonEmptyString),
-  apiEndpoint: Schema.optional(TrimmedNonEmptyString),
-});
-
-export const GrokProviderStartOptions = Schema.Struct({
-  binaryPath: Schema.optional(TrimmedNonEmptyString),
-});
-
-export const DroidProviderStartOptions = Schema.Struct({
-  binaryPath: Schema.optional(TrimmedNonEmptyString),
-});
-
-export const OpenCodeProviderStartOptions = Schema.Struct({
-  binaryPath: Schema.optional(TrimmedNonEmptyString),
-  serverUrl: Schema.optional(TrimmedNonEmptyString),
-  experimentalWebSockets: Schema.optional(Schema.Boolean),
-});
-
-export const KiloProviderStartOptions = Schema.Struct({
-  binaryPath: Schema.optional(TrimmedNonEmptyString),
-  serverUrl: Schema.optional(TrimmedNonEmptyString),
-});
-
-export const PiProviderStartOptions = Schema.Struct({
-  binaryPath: Schema.optional(TrimmedNonEmptyString),
-  agentDir: Schema.optional(TrimmedNonEmptyString),
-});
 
 export const EngineProviderStartOptions = Schema.Struct({
   binaryPath: Schema.optional(TrimmedNonEmptyString),
@@ -365,15 +244,6 @@ export const ApiProviderStartOptions = Schema.Struct({
 });
 
 export const ProviderStartOptions = Schema.Struct({
-  codex: Schema.optional(CodexProviderStartOptions),
-  claudeAgent: Schema.optional(ClaudeProviderStartOptions),
-  cursor: Schema.optional(CursorProviderStartOptions),
-  antigravity: Schema.optional(AntigravityProviderStartOptions),
-  grok: Schema.optional(GrokProviderStartOptions),
-  droid: Schema.optional(DroidProviderStartOptions),
-  kilo: Schema.optional(KiloProviderStartOptions),
-  opencode: Schema.optional(OpenCodeProviderStartOptions),
-  pi: Schema.optional(PiProviderStartOptions),
   engine: Schema.optional(EngineProviderStartOptions),
   openai: Schema.optional(ApiProviderStartOptions),
   anthropic: Schema.optional(ApiProviderStartOptions),
@@ -388,6 +258,7 @@ export const ProviderStartOptions = Schema.Struct({
   xai: Schema.optional(ApiProviderStartOptions),
   fireworks: Schema.optional(ApiProviderStartOptions),
   opencodeZen: Schema.optional(ApiProviderStartOptions),
+  opencodeGo: Schema.optional(ApiProviderStartOptions),
 });
 export type ProviderStartOptions = typeof ProviderStartOptions.Type;
 

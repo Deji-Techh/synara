@@ -16,8 +16,8 @@ const decodeWait = Schema.decodeUnknownSync(CaideWaitForThreadsInput);
 const thread = {
   prompt: "Explain this repository",
   target: {
-    provider: "codex",
-    model: "gpt-5.6-terra",
+    provider: "openai",
+    model: "gpt-5.5",
     options: { reasoningEffort: "low" },
   },
 } as const;
@@ -62,9 +62,9 @@ describe("agent gateway contracts", () => {
           {
             prompt: "invalid",
             target: {
-              provider: "claudeAgent",
+              provider: "anthropic",
               model: "claude-sonnet-5",
-              options: { reasoningEffort: "low" },
+              options: { variant: "high" },
             },
           },
         ],
@@ -82,7 +82,7 @@ describe("agent gateway contracts", () => {
     assert.doesNotThrow(() =>
       Schema.decodeUnknownSync(CaideCapabilitiesResult)({
         targetConstruction: {
-          codex: {
+          openai: {
             modelValueSource: "providers[].models[].slug",
             primaryOptionKey: "reasoningEffort",
             alternativeOptionKeys: [],
@@ -106,7 +106,7 @@ describe("agent gateway contracts", () => {
               ],
             },
             exampleTarget: {
-              provider: "codex",
+              provider: "openai",
               model: "gpt-5.5",
               options: { reasoningEffort: "low" },
             },
@@ -114,7 +114,7 @@ describe("agent gateway contracts", () => {
         },
         providers: [
           {
-            provider: "codex",
+            provider: "openai",
             defaultModel: "gpt-5.5",
             models: [{ slug: "gpt-5.5", name: "GPT-5.5" }],
             enabled: true,
@@ -143,8 +143,8 @@ describe("agent gateway contracts", () => {
             projectId: "project-1",
             title: "Worker",
             target: thread.target,
-            provider: "codex",
-            model: "gpt-5.6-terra",
+            provider: "openai",
+            model: "gpt-5.5",
             runtimeMode: "approval-required",
             environment: "local",
             branch: null,

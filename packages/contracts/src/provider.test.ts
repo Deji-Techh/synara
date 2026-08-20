@@ -7,14 +7,14 @@ const decodeProviderSessionStartInput = Schema.decodeUnknownSync(ProviderSession
 const decodeProviderSendTurnInput = Schema.decodeUnknownSync(ProviderSendTurnInput);
 
 describe("ProviderSessionStartInput", () => {
-  it("accepts codex-compatible payloads", () => {
+  it("accepts openai-compatible payloads", () => {
     const parsed = decodeProviderSessionStartInput({
       threadId: "thread-1",
-      provider: "codex",
+      provider: "openai",
       cwd: "/tmp/workspace",
       modelSelection: {
-        provider: "codex",
-        model: "gpt-5.3-codex",
+        provider: "openai",
+        model: "gpt-5.5",
         options: {
           reasoningEffort: "high",
           fastMode: true,
@@ -22,79 +22,73 @@ describe("ProviderSessionStartInput", () => {
       },
       runtimeMode: "full-access",
       providerOptions: {
-        codex: {
-          binaryPath: "/usr/local/bin/codex",
-          homePath: "/tmp/.codex",
+        openai: {
+          baseUrl: "https://api.openai.com/v1",
         },
       },
     });
     expect(parsed.runtimeMode).toBe("full-access");
-    expect(parsed.modelSelection?.provider).toBe("codex");
-    expect(parsed.modelSelection?.model).toBe("gpt-5.3-codex");
-    if (parsed.modelSelection?.provider !== "codex") {
-      throw new Error("Expected codex modelSelection");
+    expect(parsed.modelSelection?.provider).toBe("openai");
+    expect(parsed.modelSelection?.model).toBe("gpt-5.5");
+    if (parsed.modelSelection?.provider !== "openai") {
+      throw new Error("Expected openai modelSelection");
     }
     expect(parsed.modelSelection.options?.reasoningEffort).toBe("high");
     expect(parsed.modelSelection.options?.fastMode).toBe(true);
-    expect(parsed.providerOptions?.codex?.binaryPath).toBe("/usr/local/bin/codex");
-    expect(parsed.providerOptions?.codex?.homePath).toBe("/tmp/.codex");
+    expect(parsed.providerOptions?.openai?.baseUrl).toBe("https://api.openai.com/v1");
   });
 
   it("rejects payloads without runtime mode", () => {
     expect(() =>
       decodeProviderSessionStartInput({
         threadId: "thread-1",
-        provider: "codex",
+        provider: "openai",
       }),
     ).toThrow();
   });
 
-  it("accepts claude runtime knobs", () => {
+  it("accepts anthropic runtime knobs", () => {
     const parsed = decodeProviderSessionStartInput({
       threadId: "thread-1",
-      provider: "claudeAgent",
+      provider: "anthropic",
       cwd: "/tmp/workspace",
       modelSelection: {
-        provider: "claudeAgent",
+        provider: "anthropic",
         model: "claude-sonnet-4-6",
         options: {
           thinking: true,
-          effort: "max",
+          reasoningEffort: "high",
           fastMode: true,
         },
       },
       providerOptions: {
-        claudeAgent: {
-          binaryPath: "/usr/local/bin/claude",
-          permissionMode: "plan",
-          maxThinkingTokens: 12_000,
+        anthropic: {
+          baseUrl: "https://api.anthropic.com",
         },
       },
       runtimeMode: "full-access",
     });
-    expect(parsed.provider).toBe("claudeAgent");
-    expect(parsed.modelSelection?.provider).toBe("claudeAgent");
+    expect(parsed.provider).toBe("anthropic");
+    expect(parsed.modelSelection?.provider).toBe("anthropic");
     expect(parsed.modelSelection?.model).toBe("claude-sonnet-4-6");
-    if (parsed.modelSelection?.provider !== "claudeAgent") {
-      throw new Error("Expected claude modelSelection");
+    if (parsed.modelSelection?.provider !== "anthropic") {
+      throw new Error("Expected anthropic modelSelection");
     }
     expect(parsed.modelSelection.options?.thinking).toBe(true);
-    expect(parsed.modelSelection.options?.effort).toBe("max");
+    expect(parsed.modelSelection.options?.reasoningEffort).toBe("high");
     expect(parsed.modelSelection.options?.fastMode).toBe(true);
-    expect(parsed.providerOptions?.claudeAgent?.binaryPath).toBe("/usr/local/bin/claude");
-    expect(parsed.providerOptions?.claudeAgent?.permissionMode).toBe("plan");
-    expect(parsed.providerOptions?.claudeAgent?.maxThinkingTokens).toBe(12_000);
+    expect(parsed.providerOptions?.anthropic?.baseUrl).toBe("https://api.anthropic.com");
     expect(parsed.runtimeMode).toBe("full-access");
   });
 });
 
 describe("ProviderSendTurnInput", () => {
-  it("accepts codex modelSelection", () => {
+  it("accepts openai modelSelection", () => {
     const parsed = decodeProviderSendTurnInput({
       threadId: "thread-1",
       modelSelection: {
-        provider: "codex",
-        model: "gpt-5.3-codex",
+        provider: "openai",
+        model: "gpt-5.5",
         options: {
           reasoningEffort: "xhigh",
           fastMode: true,
@@ -102,52 +96,53 @@ describe("ProviderSendTurnInput", () => {
       },
     });
 
-    expect(parsed.modelSelection?.provider).toBe("codex");
-    expect(parsed.modelSelection?.model).toBe("gpt-5.3-codex");
-    if (parsed.modelSelection?.provider !== "codex") {
-      throw new Error("Expected codex modelSelection");
+    expect(parsed.modelSelection?.provider).toBe("openai");
+    expect(parsed.modelSelection?.model).toBe("gpt-5.5");
+    if (parsed.modelSelection?.provider !== "openai") {
+      throw new Error("Expected openai modelSelection");
     }
     expect(parsed.modelSelection.options?.reasoningEffort).toBe("xhigh");
     expect(parsed.modelSelection.options?.fastMode).toBe(true);
   });
 
-  it("accepts claude modelSelection including ultrathink", () => {
+  it("accepts anthropic modelSelection including thinking", () => {
     const parsed = decodeProviderSendTurnInput({
       threadId: "thread-1",
       modelSelection: {
-        provider: "claudeAgent",
+        provider: "anthropic",
         model: "claude-sonnet-4-6",
         options: {
-          effort: "ultrathink",
+          reasoningEffort: "high",
+          thinking: true,
           fastMode: true,
         },
       },
     });
 
-    expect(parsed.modelSelection?.provider).toBe("claudeAgent");
-    if (parsed.modelSelection?.provider !== "claudeAgent") {
-      throw new Error("Expected claude modelSelection");
+    expect(parsed.modelSelection?.provider).toBe("anthropic");
+    if (parsed.modelSelection?.provider !== "anthropic") {
+      throw new Error("Expected anthropic modelSelection");
     }
-    expect(parsed.modelSelection.options?.effort).toBe("ultrathink");
+    expect(parsed.modelSelection.options?.thinking).toBe(true);
     expect(parsed.modelSelection.options?.fastMode).toBe(true);
   });
 
-  it("accepts claude modelSelection including xhigh for Opus 4.7", () => {
+  it("accepts anthropic modelSelection including xhigh", () => {
     const parsed = decodeProviderSendTurnInput({
       threadId: "thread-1",
       modelSelection: {
-        provider: "claudeAgent",
-        model: "claude-opus-4-7",
+        provider: "anthropic",
+        model: "claude-opus-4-6",
         options: {
-          effort: "xhigh",
+          reasoningEffort: "xhigh",
         },
       },
     });
 
-    expect(parsed.modelSelection?.provider).toBe("claudeAgent");
-    if (parsed.modelSelection?.provider !== "claudeAgent") {
-      throw new Error("Expected claude modelSelection");
+    expect(parsed.modelSelection?.provider).toBe("anthropic");
+    if (parsed.modelSelection?.provider !== "anthropic") {
+      throw new Error("Expected anthropic modelSelection");
     }
-    expect(parsed.modelSelection.options?.effort).toBe("xhigh");
+    expect(parsed.modelSelection.options?.reasoningEffort).toBe("xhigh");
   });
 });

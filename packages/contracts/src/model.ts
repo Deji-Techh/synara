@@ -159,15 +159,6 @@ export const ApiModelOptions = Schema.Struct({
 export type ApiModelOptions = typeof ApiModelOptions.Type;
 
 export const ProviderModelOptions = Schema.Struct({
-  codex: Schema.optional(CodexModelOptions),
-  claudeAgent: Schema.optional(ClaudeModelOptions),
-  cursor: Schema.optional(CursorModelOptions),
-  antigravity: Schema.optional(AntigravityModelOptions),
-  grok: Schema.optional(GrokModelOptions),
-  droid: Schema.optional(DroidModelOptions),
-  kilo: Schema.optional(OpenCodeModelOptions),
-  opencode: Schema.optional(OpenCodeModelOptions),
-  pi: Schema.optional(PiModelOptions),
   engine: Schema.optional(EngineModelOptions),
   openai: Schema.optional(ApiModelOptions),
   anthropic: Schema.optional(ApiModelOptions),
@@ -182,6 +173,7 @@ export const ProviderModelOptions = Schema.Struct({
   xai: Schema.optional(ApiModelOptions),
   fireworks: Schema.optional(ApiModelOptions),
   opencodeZen: Schema.optional(ApiModelOptions),
+  opencodeGo: Schema.optional(ApiModelOptions),
 });
 export type ProviderModelOptions = typeof ProviderModelOptions.Type;
 
@@ -536,523 +528,9 @@ const API_MODEL_CAPABILITIES: ModelCapabilities = {
  * should return its own model list over the WS API.
  */
 export const MODEL_OPTIONS_BY_PROVIDER = {
-  codex: [
-    {
-      slug: "gpt-5.5",
-      name: "GPT-5.5",
-      capabilities: CODEX_GPT_5_5_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.4",
-      name: "GPT-5.4",
-      capabilities: CODEX_GPT_5_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.4-mini",
-      name: "GPT-5.4 Mini",
-      capabilities: CODEX_GPT_5_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.3-codex",
-      name: "GPT-5.3 Codex",
-      capabilities: CODEX_GPT_5_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.3-codex-spark",
-      name: "GPT-5.3 Codex Spark",
-      capabilities: CODEX_GPT_5_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.2-codex",
-      name: "GPT-5.2 Codex",
-      capabilities: CODEX_GPT_5_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.2",
-      name: "GPT-5.2",
-      capabilities: CODEX_GPT_5_CAPABILITIES,
-    },
-  ],
-  claudeAgent: [
-    {
-      slug: "claude-fable-5",
-      name: "Claude Fable 5",
-      capabilities: CLAUDE_FABLE_CAPABILITIES,
-    },
-    {
-      slug: "claude-opus-5",
-      name: "Claude Opus 5",
-      capabilities: CLAUDE_OPUS_5_CAPABILITIES,
-    },
-    {
-      slug: "claude-opus-4-8",
-      name: "Claude Opus 4.8",
-      capabilities: CLAUDE_FLAGSHIP_CAPABILITIES,
-    },
-    {
-      slug: "claude-opus-4-7",
-      name: "Claude Opus 4.7",
-      capabilities: CLAUDE_FLAGSHIP_CAPABILITIES,
-    },
-    {
-      slug: "claude-opus-4-6",
-      name: "Claude Opus 4.6",
-      capabilities: CLAUDE_EXTENDED_THINKING_CAPABILITIES,
-    },
-    {
-      slug: "claude-opus-4-5",
-      name: "Claude Opus 4.5",
-      capabilities: {
-        reasoningEffortLevels: [
-          { value: "low", label: "Low" },
-          { value: "medium", label: "Medium" },
-          { value: "high", label: "High", isDefault: true },
-        ],
-        supportsFastMode: false,
-        supportsThinkingToggle: false,
-        promptInjectedEffortLevels: [],
-        contextWindowOptions: [],
-        contextWindowTokens: 200_000,
-      },
-    },
-    {
-      slug: "claude-sonnet-5",
-      name: "Claude Sonnet 5",
-      capabilities: CLAUDE_SONNET_5_CAPABILITIES,
-    },
-    {
-      slug: "claude-sonnet-4-6",
-      name: "Claude Sonnet 4.6",
-      capabilities: { ...CLAUDE_EXTENDED_THINKING_CAPABILITIES, supportsFastMode: false },
-    },
-    {
-      slug: "claude-haiku-4-5",
-      name: "Claude Haiku 4.5",
-      capabilities: {
-        reasoningEffortLevels: [],
-        supportsFastMode: false,
-        supportsThinkingToggle: true,
-        promptInjectedEffortLevels: [],
-        contextWindowOptions: [],
-        contextWindowTokens: 200_000,
-      },
-    },
-  ],
-  // Antigravity owns its model catalog. The web app populates this provider from
-  // `agy models` so CLI updates appear without a Caide release.
-  antigravity: [],
-  grok: [
-    {
-      slug: "grok-build-0.1",
-      name: "Grok Build 0.1",
-      capabilities: GROK_BUILD_CAPABILITIES,
-    },
-    {
-      slug: "grok-build",
-      name: "Grok 4.3",
-      capabilities: GROK_BUILD_CAPABILITIES,
-    },
-  ],
-  droid: [
-    {
-      // Factory routes to a model automatically at its lowest (1x) token rate.
-      // Reasoning effort follows the routed model's default, so no picker.
-      slug: "auto",
-      name: "Auto Model",
-      capabilities: droidCapabilities([]),
-    },
-    {
-      slug: "claude-fable-5",
-      name: "Claude Fable 5",
-      capabilities: DROID_CLAUDE_XHIGH_CAPABILITIES,
-    },
-    {
-      slug: "claude-opus-4-8",
-      name: "Claude Opus 4.8",
-      capabilities: DROID_CLAUDE_XHIGH_CAPABILITIES,
-    },
-    {
-      slug: "claude-opus-4-8-fast",
-      name: "Claude Opus 4.8 Fast",
-      capabilities: DROID_CLAUDE_XHIGH_CAPABILITIES,
-    },
-    {
-      slug: "claude-opus-4-7",
-      name: "Claude Opus 4.7",
-      capabilities: DROID_CLAUDE_MAX_CAPABILITIES,
-    },
-    {
-      slug: "claude-opus-4-7-fast",
-      name: "Claude Opus 4.7 Fast",
-      capabilities: DROID_CLAUDE_MAX_CAPABILITIES,
-    },
-    {
-      slug: "claude-opus-4-6",
-      name: "Claude Opus 4.6",
-      capabilities: DROID_CLAUDE_MAX_CAPABILITIES,
-    },
-    {
-      slug: "claude-sonnet-5",
-      name: "Claude Sonnet 5",
-      capabilities: DROID_CLAUDE_XHIGH_CAPABILITIES,
-    },
-    {
-      slug: "claude-sonnet-4-6",
-      name: "Claude Sonnet 4.6",
-      capabilities: DROID_CLAUDE_MAX_CAPABILITIES,
-    },
-    {
-      slug: "claude-opus-4-5-20251101",
-      name: "Claude Opus 4.5",
-      capabilities: DROID_CLAUDE_BASIC_CAPABILITIES,
-    },
-    {
-      slug: "claude-sonnet-4-5-20250929",
-      name: "Claude Sonnet 4.5",
-      capabilities: DROID_CLAUDE_BASIC_CAPABILITIES,
-    },
-    {
-      slug: "claude-haiku-4-5-20251001",
-      name: "Claude Haiku 4.5",
-      capabilities: DROID_CLAUDE_BASIC_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.6-sol",
-      name: "GPT-5.6 Sol",
-      capabilities: DROID_GPT_5_6_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.6-terra",
-      name: "GPT-5.6 Terra",
-      capabilities: DROID_GPT_5_6_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.6-luna",
-      name: "GPT-5.6 Luna",
-      capabilities: DROID_GPT_5_6_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.5",
-      name: "GPT-5.5",
-      capabilities: DROID_GPT_MEDIUM_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.5-fast",
-      name: "GPT-5.5 Fast",
-      capabilities: DROID_GPT_MEDIUM_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.5-pro",
-      name: "GPT-5.5 Pro",
-      capabilities: DROID_GPT_PRO_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.4",
-      name: "GPT-5.4",
-      capabilities: DROID_GPT_MEDIUM_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.4-fast",
-      name: "GPT-5.4 Fast",
-      capabilities: DROID_GPT_MEDIUM_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.4-mini",
-      name: "GPT-5.4 Mini",
-      capabilities: DROID_GPT_HIGH_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.3-codex",
-      name: "GPT-5.3 Codex",
-      capabilities: DROID_GPT_MEDIUM_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.3-codex-fast",
-      name: "GPT-5.3 Codex Fast",
-      capabilities: DROID_GPT_MEDIUM_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.2",
-      name: "GPT-5.2",
-      capabilities: DROID_GPT_5_2_CAPABILITIES,
-    },
-    {
-      slug: "gemini-3.1-pro-preview",
-      name: "Gemini 3.1 Pro",
-      capabilities: DROID_GEMINI_HIGH_CAPABILITIES,
-    },
-    {
-      slug: "gemini-3.5-flash",
-      name: "Gemini 3.5 Flash",
-      capabilities: DROID_GEMINI_MINIMAL_CAPABILITIES,
-    },
-    {
-      slug: "gemini-3-flash-preview",
-      name: "Gemini 3 Flash",
-      capabilities: DROID_GEMINI_MINIMAL_CAPABILITIES,
-    },
-    {
-      slug: "glm-5.2",
-      name: "GLM-5.2",
-      capabilities: DROID_CORE_HIGH_CAPABILITIES,
-    },
-    {
-      slug: "glm-5.2-fast",
-      name: "GLM-5.2 Fast",
-      capabilities: DROID_CORE_HIGH_CAPABILITIES,
-    },
-    {
-      slug: "glm-5.1",
-      name: "GLM-5.1",
-      capabilities: DROID_CORE_HIGH_CAPABILITIES,
-    },
-    {
-      slug: "nemotron-3-ultra",
-      name: "Nemotron 3 Ultra",
-      capabilities: DROID_CORE_HIGH_CAPABILITIES,
-    },
-    {
-      slug: "kimi-k2.7-code",
-      name: "Kimi K2.7 Code",
-      capabilities: DROID_CORE_HIGH_CAPABILITIES,
-    },
-    {
-      slug: "kimi-k2.6",
-      name: "Kimi K2.6",
-      capabilities: DROID_CORE_HIGH_CAPABILITIES,
-    },
-    {
-      slug: "deepseek-v4-pro",
-      name: "DeepSeek V4 Pro",
-      capabilities: DROID_CORE_DEEPSEEK_CAPABILITIES,
-    },
-    {
-      slug: "minimax-m3",
-      name: "MiniMax M3",
-      capabilities: DROID_CORE_HIGH_ONLY_CAPABILITIES,
-    },
-    {
-      slug: "minimax-m2.7",
-      name: "MiniMax M2.7",
-      capabilities: DROID_CORE_HIGH_ONLY_CAPABILITIES,
-    },
-  ],
-  opencode: [
-    {
-      slug: "openai/gpt-5",
-      name: "OpenAI GPT-5",
-      capabilities: {
-        reasoningEffortLevels: [],
-        supportsFastMode: false,
-        supportsThinkingToggle: false,
-        promptInjectedEffortLevels: [],
-        contextWindowOptions: [],
-      },
-    },
-  ],
-  kilo: [
-    {
-      slug: "kilo/kilo-auto/free",
-      name: "Kilo Auto Free",
-      capabilities: {
-        reasoningEffortLevels: [],
-        supportsFastMode: false,
-        supportsThinkingToggle: false,
-        promptInjectedEffortLevels: [],
-        contextWindowOptions: [],
-      },
-    },
-  ],
-  // Pi discovery owns the live catalog, including auth-gated Anthropic models.
-  pi: [],
-  // The Flutter Builder engine owns its own catalog; the adapter exposes it via
-  // runtime model discovery, so the static table starts empty.
+  // The Flutter Builder engine talks to the configured model directly; it has
+  // no static catalog of its own.
   engine: [],
-  cursor: [
-    {
-      // Cursor exposes auto as the `default` model id over ACP; the adapter maps it.
-      slug: "auto",
-      name: "Auto",
-      capabilities: cursorCapabilities(),
-    },
-    {
-      slug: "composer-2.5",
-      name: "Composer 2.5",
-      capabilities: cursorCapabilities({ fast: true }),
-    },
-    {
-      slug: "claude-opus-5",
-      name: "Claude Opus 5",
-      capabilities: CURSOR_CLAUDE_FULL_CAPABILITIES,
-    },
-    {
-      slug: "claude-opus-4-8",
-      name: "Claude Opus 4.8",
-      capabilities: CURSOR_CLAUDE_FULL_CAPABILITIES,
-    },
-    {
-      slug: "claude-opus-4-7",
-      name: "Claude Opus 4.7",
-      capabilities: CURSOR_CLAUDE_FULL_CAPABILITIES,
-    },
-    {
-      slug: "claude-opus-4-6",
-      name: "Claude Opus 4.6",
-      capabilities: cursorCapabilities({ efforts: ["high", "max"], thinking: true }),
-    },
-    {
-      slug: "claude-opus-4-5",
-      name: "Claude Opus 4.5",
-      capabilities: cursorCapabilities({ efforts: ["high"], thinking: true }),
-    },
-    {
-      slug: "claude-fable-5",
-      name: "Claude Fable 5",
-      capabilities: CURSOR_CLAUDE_NO_FAST_CAPABILITIES,
-    },
-    {
-      slug: "claude-sonnet-5",
-      name: "Claude Sonnet 5",
-      capabilities: CURSOR_CLAUDE_NO_FAST_CAPABILITIES,
-    },
-    {
-      slug: "claude-sonnet-4-6",
-      name: "Claude Sonnet 4.6",
-      capabilities: cursorCapabilities({ efforts: ["medium"], thinking: true }),
-    },
-    {
-      slug: "claude-sonnet-4-5",
-      name: "Claude Sonnet 4.5",
-      capabilities: cursorCapabilities({ thinking: true }),
-    },
-    {
-      slug: "claude-sonnet-4",
-      name: "Claude Sonnet 4",
-      capabilities: cursorCapabilities({ thinking: true }),
-    },
-    {
-      slug: "claude-haiku-4-5",
-      name: "Claude Haiku 4.5",
-      capabilities: cursorCapabilities(),
-    },
-    {
-      slug: "gpt-5.6-sol",
-      name: "GPT-5.6 Sol",
-      capabilities: CURSOR_GPT_5_6_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.6-terra",
-      name: "GPT-5.6 Terra",
-      capabilities: CURSOR_GPT_5_6_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.6-luna",
-      name: "GPT-5.6 Luna",
-      capabilities: CURSOR_GPT_5_6_CAPABILITIES,
-    },
-    {
-      slug: "gpt-5.5",
-      name: "GPT-5.5",
-      capabilities: cursorCapabilities({
-        efforts: ["none", "low", "medium", "high", "xhigh"],
-        defaultEffort: "medium",
-        fast: true,
-      }),
-    },
-    {
-      slug: "gpt-5.4",
-      name: "GPT-5.4",
-      capabilities: cursorCapabilities({
-        efforts: ["none", "low", "medium", "high", "xhigh"],
-        defaultEffort: "medium",
-        fast: true,
-      }),
-    },
-    {
-      slug: "gpt-5.4-mini",
-      name: "GPT-5.4 Mini",
-      capabilities: cursorCapabilities({
-        efforts: ["none", "low", "medium", "high", "xhigh"],
-        defaultEffort: "medium",
-      }),
-    },
-    {
-      slug: "gpt-5.4-nano",
-      name: "GPT-5.4 Nano",
-      capabilities: cursorCapabilities({
-        efforts: ["none", "low", "medium", "high", "xhigh"],
-        defaultEffort: "medium",
-      }),
-    },
-    {
-      slug: "gpt-5.3-codex",
-      name: "GPT-5.3 Codex",
-      capabilities: cursorCapabilities({
-        efforts: ["low", "medium", "high", "xhigh"],
-        fast: true,
-      }),
-    },
-    {
-      slug: "gpt-5.2",
-      name: "GPT-5.2",
-      capabilities: cursorCapabilities({
-        efforts: ["low", "medium", "high", "xhigh"],
-        fast: true,
-      }),
-    },
-    {
-      slug: "gpt-5.1",
-      name: "GPT-5.1",
-      capabilities: cursorCapabilities({ efforts: ["low", "medium", "high"] }),
-    },
-    {
-      slug: "gpt-5-mini",
-      name: "GPT-5 Mini",
-      capabilities: cursorCapabilities(),
-    },
-    {
-      slug: "grok-4.5",
-      name: "Grok 4.5",
-      capabilities: cursorCapabilities({ efforts: ["low", "medium", "high"], fast: true }),
-    },
-    {
-      slug: "gemini-3.1-pro",
-      name: "Gemini 3.1 Pro",
-      capabilities: cursorCapabilities(),
-    },
-    {
-      slug: "gemini-3.6-flash",
-      name: "Gemini 3.6 Flash",
-      capabilities: cursorCapabilities({
-        efforts: ["minimal", "low", "medium", "high"],
-      }),
-    },
-    {
-      slug: "gemini-3.5-flash",
-      name: "Gemini 3.5 Flash",
-      capabilities: cursorCapabilities(),
-    },
-    {
-      slug: "gemini-3-flash",
-      name: "Gemini 3 Flash",
-      capabilities: cursorCapabilities(),
-    },
-    {
-      slug: "gemini-2.5-flash",
-      name: "Gemini 2.5 Flash",
-      capabilities: cursorCapabilities(),
-    },
-    {
-      slug: "kimi-k2.7-code",
-      name: "Kimi K2.7 Code",
-      capabilities: cursorCapabilities(),
-    },
-    {
-      slug: "glm-5.2",
-      name: "GLM-5.2",
-      capabilities: cursorCapabilities({ efforts: ["high", "max"] }),
-    },
-  ],
   // API-key providers. Their catalogs are live-discovered over HTTP; the
   // static entries below keep the picker useful before the first model list.
   openai: [
@@ -1153,6 +631,18 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
       capabilities: API_MODEL_CAPABILITIES,
     },
   ],
+  opencodeGo: [
+    {
+      slug: "deepseek-v4-flash-free",
+      name: "DeepSeek V4 Flash Free",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "deepseek-v4-flash",
+      name: "DeepSeek V4 Flash",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
 } as const satisfies Record<ProviderKind, readonly ModelDefinition[]>;
 export type ModelOptionsByProvider = typeof MODEL_OPTIONS_BY_PROVIDER;
 
@@ -1162,14 +652,6 @@ export type ModelSlug = BuiltInModelSlug | (string & {});
 export type ProviderWithDefaultModel = Exclude<ProviderKind, "pi" | "engine">;
 
 export const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderWithDefaultModel, ModelSlug> = {
-  codex: "gpt-5.5",
-  claudeAgent: "claude-sonnet-5",
-  cursor: "auto",
-  antigravity: "Gemini 3.5 Flash",
-  grok: "grok-build",
-  droid: "claude-opus-4-8",
-  kilo: "kilo/kilo-auto/free",
-  opencode: "openai/gpt-5",
   openai: "gpt-5.5",
   anthropic: "claude-sonnet-5",
   google: "gemini-3-flash",
@@ -1183,141 +665,16 @@ export const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderWithDefaultModel, ModelSl
   xai: "grok-2",
   fireworks: "accounts/fireworks/models/llama-v3-70b-instruct",
   opencodeZen: "deepseek-v4-flash-free",
+  opencodeGo: "deepseek-v4-flash-free",
 };
 
 // Backward compatibility for existing Codex-only call sites.
-export const MODEL_OPTIONS = MODEL_OPTIONS_BY_PROVIDER.codex;
-export const DEFAULT_MODEL = DEFAULT_MODEL_BY_PROVIDER.codex;
+export const MODEL_OPTIONS = MODEL_OPTIONS_BY_PROVIDER.openai;
+export const DEFAULT_MODEL = DEFAULT_MODEL_BY_PROVIDER.openai;
 export const DEFAULT_GIT_TEXT_GENERATION_MODEL = "gpt-5.6-luna" as const;
 export const DEFAULT_GIT_TEXT_GENERATION_REASONING_EFFORT = "high" as const;
 
 export const MODEL_SLUG_ALIASES_BY_PROVIDER: Record<ProviderKind, Record<string, ModelSlug>> = {
-  codex: {
-    "5.5": "gpt-5.5",
-    "5.4": "gpt-5.4",
-    "5.3": "gpt-5.3-codex",
-    "gpt-5.3": "gpt-5.3-codex",
-    "5.3-spark": "gpt-5.3-codex-spark",
-    "gpt-5.3-spark": "gpt-5.3-codex-spark",
-  },
-  claudeAgent: {
-    fable: "claude-fable-5",
-    "fable-5": "claude-fable-5",
-    opus: "claude-opus-5",
-    "opus-5": "claude-opus-5",
-    "claude-opus-5": "claude-opus-5",
-    "opus-4.8": "claude-opus-4-8",
-    "claude-opus-4.8": "claude-opus-4-8",
-    "claude-opus-4-8-20260528": "claude-opus-4-8",
-    "opus-4.7": "claude-opus-4-7",
-    "claude-opus-4.7": "claude-opus-4-7",
-    "claude-opus-4-7-20260416": "claude-opus-4-7",
-    "opus-4.6": "claude-opus-4-6",
-    "claude-opus-4.6": "claude-opus-4-6",
-    "claude-opus-4-6-20251117": "claude-opus-4-6",
-    "opus-4.5": "claude-opus-4-5",
-    "claude-opus-4.5": "claude-opus-4-5",
-    "claude-opus-4-5-20250120": "claude-opus-4-5",
-    sonnet: "claude-sonnet-5",
-    "sonnet-5": "claude-sonnet-5",
-    "claude-sonnet-5": "claude-sonnet-5",
-    "sonnet-4.6": "claude-sonnet-4-6",
-    "claude-sonnet-4.6": "claude-sonnet-4-6",
-    "claude-sonnet-4-6-20251117": "claude-sonnet-4-6",
-    haiku: "claude-haiku-4-5",
-    "haiku-4.5": "claude-haiku-4-5",
-    "claude-haiku-4.5": "claude-haiku-4-5",
-    "claude-haiku-4-5-20251001": "claude-haiku-4-5",
-  },
-  // Retired Cursor slugs are remapped, not dropped: the agent answers -32602 for
-  // ids it no longer serves, so persisted selections must migrate to live ones.
-  cursor: {
-    auto: "auto",
-    default: "auto",
-    composer: "composer-2.5",
-    "composer-2.5": "composer-2.5",
-    "composer-2": "composer-2.5",
-    opus: "claude-opus-5",
-    "opus-5": "claude-opus-5",
-    "opus-4.8": "claude-opus-4-8",
-    "opus-4.7": "claude-opus-4-7",
-    "opus-4.6": "claude-opus-4-6",
-    "opus-4.6-thinking": "claude-opus-4-6",
-    sonnet: "claude-sonnet-5",
-    "sonnet-5": "claude-sonnet-5",
-    "sonnet-4.6": "claude-sonnet-4-6",
-    fable: "claude-fable-5",
-    "fable-5": "claude-fable-5",
-    sol: "gpt-5.6-sol",
-    "5.6": "gpt-5.6-sol",
-    "gpt-5.3": "gpt-5.3-codex",
-    "codex-5.3": "gpt-5.3-codex",
-    grok: "grok-4.5",
-    "grok-4.5": "grok-4.5",
-    "cursor-grok-4.5": "grok-4.5",
-    gemini: "gemini-3.1-pro",
-    "gemini-3": "gemini-3.1-pro",
-    "gemini-3-pro": "gemini-3.1-pro",
-    "gemini-3.1-pro-preview": "gemini-3.1-pro",
-    glm: "glm-5.2",
-    kimi: "kimi-k2.7-code",
-  },
-  antigravity: {},
-  droid: {
-    droid: "claude-opus-4-8",
-    factory: "claude-opus-4-8",
-    opus: "claude-opus-4-8",
-    "opus-4.8": "claude-opus-4-8",
-    "opus-fast": "claude-opus-4-8-fast",
-    "opus-4.8-fast": "claude-opus-4-8-fast",
-    "opus-4.7": "claude-opus-4-7",
-    "opus-4.7-fast": "claude-opus-4-7-fast",
-    "opus-4.6": "claude-opus-4-6",
-    sonnet: "claude-sonnet-5",
-    "sonnet-5": "claude-sonnet-5",
-    "sonnet-4.6": "claude-sonnet-4-6",
-    "sonnet-4.5": "claude-sonnet-4-5-20250929",
-    fable: "claude-fable-5",
-    haiku: "claude-haiku-4-5-20251001",
-    "5.5": "gpt-5.5",
-    "5.5-fast": "gpt-5.5-fast",
-    "5.5-pro": "gpt-5.5-pro",
-    "5.4": "gpt-5.4",
-    "5.4-fast": "gpt-5.4-fast",
-    "5.4-mini": "gpt-5.4-mini",
-    "5.3": "gpt-5.3-codex",
-    "5.3-fast": "gpt-5.3-codex-fast",
-    "gpt-5.3": "gpt-5.3-codex",
-    "gemini-3-pro": "gemini-3.1-pro-preview",
-    "gemini-3.1-pro": "gemini-3.1-pro-preview",
-    "gemini-3.5-flash": "gemini-3.5-flash",
-    "gemini-3-flash": "gemini-3-flash-preview",
-    glm: "glm-5.2",
-    "glm-5.2": "glm-5.2",
-    "glm-5.1": "glm-5.1",
-    nemotron: "nemotron-3-ultra",
-    kimi: "kimi-k2.7-code",
-    "kimi-code": "kimi-k2.7-code",
-    deepseek: "deepseek-v4-pro",
-    minimax: "minimax-m3",
-  },
-  grok: {
-    grok: "grok-build-0.1",
-    build: "grok-build-0.1",
-    "grok-build-0.1": "grok-build-0.1",
-    "grok-build": "grok-build",
-    "4.3": "grok-build",
-    "grok-4": "grok-build",
-    "grok-4.3": "grok-build",
-    "grok-latest": "grok-build",
-    "grok-code-fast": "grok-build-0.1",
-    "grok-code-fast-1": "grok-build-0.1",
-    "grok-code-fast-1-0825": "grok-build-0.1",
-    "code-fast": "grok-build-0.1",
-  },
-  kilo: {},
-  opencode: {},
-  pi: {},
   engine: {},
   openai: {},
   anthropic: {},
@@ -1332,6 +689,7 @@ export const MODEL_SLUG_ALIASES_BY_PROVIDER: Record<ProviderKind, Record<string,
   xai: {},
   fireworks: {},
   opencodeZen: {},
+  opencodeGo: {},
 };
 
 // ── Agent mention aliases ─────────────────────────────────────────────
@@ -1359,15 +717,6 @@ export const MODEL_CAPABILITIES_INDEX = Object.fromEntries(
 // ── Provider display names ────────────────────────────────────────────
 
 export const PROVIDER_DISPLAY_NAMES: Record<ProviderKind, string> = {
-  codex: "Codex",
-  claudeAgent: "Claude",
-  cursor: "Cursor",
-  antigravity: "Antigravity",
-  grok: "Grok",
-  droid: "Droid",
-  kilo: "Kilo",
-  opencode: "OpenCode",
-  pi: "Pi",
   engine: "Builder",
   openai: "OpenAI",
   anthropic: "Anthropic",
@@ -1382,4 +731,5 @@ export const PROVIDER_DISPLAY_NAMES: Record<ProviderKind, string> = {
   xai: "xAI",
   fireworks: "Fireworks",
   opencodeZen: "OpenCode Zen",
+  opencodeGo: "OpenCode Go",
 };

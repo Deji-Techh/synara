@@ -8,15 +8,6 @@ import { TrimmedNonEmptyString } from "./baseSchemas";
 import { ProviderOptionDescriptor } from "./model";
 
 const ProviderDiscoveryKind = Schema.Literals([
-  "codex",
-  "claudeAgent",
-  "cursor",
-  "antigravity",
-  "grok",
-  "droid",
-  "kilo",
-  "opencode",
-  "pi",
   "engine",
   "openai",
   "anthropic",
@@ -31,6 +22,7 @@ const ProviderDiscoveryKind = Schema.Literals([
   "xai",
   "fireworks",
   "opencodeZen",
+  "opencodeGo",
 ]);
 
 export const ProviderSkillInterface = Schema.Struct({

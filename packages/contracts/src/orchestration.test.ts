@@ -105,11 +105,10 @@ it.effect("preserves thread activity payloads through the RPC JSON codec", () =>
       threads: [
         {
           id: "thread-1",
-          codexThreadId: null,
           projectId: "project-1",
           title: "Thread 1",
           modelSelection: {
-            provider: "codex",
+            provider: "openai",
             model: "gpt-5.5",
           },
           interactionMode: "default",
@@ -179,13 +178,13 @@ it.effect("preserves thread activity payloads through the RPC JSON codec", () =>
 it.effect("preserves Pi model selections when decoding model selections", () =>
   Effect.gen(function* () {
     const parsed = yield* decodeModelSelection({
-      provider: "pi",
-      model: "openai/gpt-5.5",
+      provider: "openai",
+      model: "gpt-5.5",
     });
 
     assert.deepStrictEqual(parsed, {
-      provider: "pi",
-      model: "openai/gpt-5.5",
+      provider: "openai",
+      model: "gpt-5.5",
     });
   }),
 );
@@ -193,14 +192,14 @@ it.effect("preserves Pi model selections when decoding model selections", () =>
 it.effect("preserves Antigravity effort options separately from the model", () =>
   Effect.gen(function* () {
     const parsed = yield* decodeModelSelection({
-      provider: "antigravity",
-      model: "Gemini 3.5 Flash",
+      provider: "google",
+      model: "gemini-3-flash",
       options: { reasoningEffort: "high" },
     });
 
     assert.deepStrictEqual(parsed, {
-      provider: "antigravity",
-      model: "Gemini 3.5 Flash",
+      provider: "google",
+      model: "gemini-3-flash",
       options: { reasoningEffort: "high" },
     });
   }),
@@ -211,14 +210,14 @@ it.effect("preserves Pi model selections through the JSON codec", () =>
     const codec = Schema.fromJsonString(ModelSelection);
     const parsed = yield* Schema.decodeUnknownEffect(codec)(
       JSON.stringify({
-        provider: "pi",
-        model: "openai/gpt-5.5",
+        provider: "openai",
+        model: "gpt-5.5",
       }),
     );
 
     assert.deepStrictEqual(parsed, {
-      provider: "pi",
-      model: "openai/gpt-5.5",
+      provider: "openai",
+      model: "gpt-5.5",
     });
   }),
 );
@@ -226,26 +225,20 @@ it.effect("preserves Pi model selections through the JSON codec", () =>
 it.effect("drops legacy provider passwords from decoded provider options", () =>
   Effect.gen(function* () {
     const parsed = yield* decodeProviderStartOptions({
-      kilo: {
-        binaryPath: "/custom/bin/kilo",
-        serverUrl: "http://127.0.0.1:4095",
-        serverPassword: "legacy-kilo-secret",
+      openai: {
+        baseUrl: "https://api.openai.com/v1",
       },
-      opencode: {
-        binaryPath: "/custom/bin/opencode",
-        serverUrl: "http://127.0.0.1:4096",
-        serverPassword: "legacy-opencode-secret",
+      anthropic: {
+        baseUrl: "https://api.anthropic.com",
       },
     });
 
     assert.deepStrictEqual(parsed, {
-      kilo: {
-        binaryPath: "/custom/bin/kilo",
-        serverUrl: "http://127.0.0.1:4095",
+      openai: {
+        baseUrl: "https://api.openai.com/v1",
       },
-      opencode: {
-        binaryPath: "/custom/bin/opencode",
-        serverUrl: "http://127.0.0.1:4096",
+      anthropic: {
+        baseUrl: "https://api.anthropic.com",
       },
     });
     assert.doesNotMatch(JSON.stringify(parsed), /serverPassword|legacy-.*-secret/);
@@ -333,8 +326,8 @@ it.effect("trims branded ids and command string fields at decode boundaries", ()
       title: " Project Title ",
       workspaceRoot: " /tmp/workspace ",
       defaultModelSelection: {
-        provider: "codex",
-        model: " gpt-5.2 ",
+        provider: "openai",
+        model: " gpt-5.5 ",
       },
       createdAt: "2026-01-01T00:00:00.000Z",
     });
@@ -343,8 +336,8 @@ it.effect("trims branded ids and command string fields at decode boundaries", ()
     assert.strictEqual(parsed.title, "Project Title");
     assert.strictEqual(parsed.workspaceRoot, "/tmp/workspace");
     assert.deepStrictEqual(parsed.defaultModelSelection, {
-      provider: "codex",
-      model: "gpt-5.2",
+      provider: "openai",
+      model: "gpt-5.5",
     });
   }),
 );
@@ -356,14 +349,14 @@ it.effect("decodes historical project.created payloads with a default provider",
       title: "Project Title",
       workspaceRoot: "/tmp/workspace",
       defaultModelSelection: {
-        provider: "codex",
-        model: "gpt-5.4",
+        provider: "openai",
+        model: "gpt-5.5",
       },
       scripts: [],
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-01T00:00:00.000Z",
     });
-    assert.strictEqual(parsed.defaultModelSelection?.provider, "codex");
+    assert.strictEqual(parsed.defaultModelSelection?.provider, "openai");
     assert.strictEqual(parsed.isPinned, false);
   }),
 );
@@ -373,13 +366,13 @@ it.effect("decodes project.meta-updated payloads with explicit default provider"
     const parsed = yield* decodeProjectMetaUpdatedPayload({
       projectId: "project-1",
       defaultModelSelection: {
-        provider: "claudeAgent",
+        provider: "anthropic",
         model: "claude-opus-4-6",
       },
       isPinned: true,
       updatedAt: "2026-01-01T00:00:00.000Z",
     });
-    assert.strictEqual(parsed.defaultModelSelection?.provider, "claudeAgent");
+    assert.strictEqual(parsed.defaultModelSelection?.provider, "anthropic");
     assert.strictEqual(parsed.isPinned, true);
   }),
 );
@@ -472,13 +465,13 @@ it.effect("preserves explicit provider and runtime mode in thread.turn.start", (
         attachments: [],
       },
       modelSelection: {
-        provider: "codex",
-        model: "gpt-5.4",
+        provider: "openai",
+        model: "gpt-5.5",
       },
       runtimeMode: "full-access",
       createdAt: "2026-01-01T00:00:00.000Z",
     });
-    assert.strictEqual(parsed.modelSelection?.provider, "codex");
+    assert.strictEqual(parsed.modelSelection?.provider, "openai");
     assert.strictEqual(parsed.runtimeMode, "full-access");
     assert.strictEqual(parsed.interactionMode, DEFAULT_PROVIDER_INTERACTION_MODE);
   }),
@@ -491,8 +484,8 @@ it.effect("decodes thread.created runtime mode for historical events", () =>
       projectId: "project-1",
       title: "Thread title",
       modelSelection: {
-        provider: "codex",
-        model: "gpt-5.4",
+        provider: "openai",
+        model: "gpt-5.5",
       },
       interactionMode: "default",
       branch: null,
@@ -502,7 +495,7 @@ it.effect("decodes thread.created runtime mode for historical events", () =>
     });
 
     assert.strictEqual(parsed.runtimeMode, DEFAULT_RUNTIME_MODE);
-    assert.strictEqual(parsed.modelSelection.provider, "codex");
+    assert.strictEqual(parsed.modelSelection.provider, "openai");
   }),
 );
 
@@ -572,19 +565,12 @@ it.effect("decodes thread.meta-updated payloads with explicit provider", () =>
     const parsed = yield* decodeThreadMetaUpdatedPayload({
       threadId: "thread-1",
       modelSelection: {
-        provider: "claudeAgent",
+        provider: "anthropic",
         model: "claude-opus-4-6",
-        supportsAutoMode: false,
       },
       updatedAt: "2026-01-01T00:00:00.000Z",
     });
-    assert.strictEqual(parsed.modelSelection?.provider, "claudeAgent");
-    assert.strictEqual(
-      parsed.modelSelection?.provider === "claudeAgent"
-        ? parsed.modelSelection.supportsAutoMode
-        : undefined,
-      false,
-    );
+    assert.strictEqual(parsed.modelSelection?.provider, "anthropic");
   }),
 );
 
@@ -777,8 +763,8 @@ it.effect("accepts provider-scoped model options in thread.turn.start", () =>
         attachments: [],
       },
       modelSelection: {
-        provider: "codex",
-        model: "gpt-5.3-codex",
+        provider: "openai",
+        model: "gpt-5.5",
         options: {
           reasoningEffort: "high",
           fastMode: true,
@@ -786,7 +772,7 @@ it.effect("accepts provider-scoped model options in thread.turn.start", () =>
       },
       createdAt: "2026-01-01T00:00:00.000Z",
     });
-    assert.strictEqual(parsed.modelSelection?.provider, "codex");
+    assert.strictEqual(parsed.modelSelection?.provider, "openai");
     assert.strictEqual(parsed.modelSelection?.options?.reasoningEffort, "high");
     assert.strictEqual(parsed.modelSelection?.options?.fastMode, true);
   }),

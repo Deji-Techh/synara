@@ -105,15 +105,18 @@ describe("GitRunStackedActionInput", () => {
     expect(parsed.action).toBe("commit");
   });
 
-  it("accepts an optional codexHomePath for git text generation", () => {
+  it("accepts an optional textGenerationModelSelection for git text generation", () => {
     const parsed = decodeRunStackedActionInput({
       actionId: "action-2",
       cwd: "/repo",
       action: "commit_push",
-      codexHomePath: "/tmp/custom-codex-home",
+      textGenerationModelSelection: {
+        provider: "openai",
+        model: "gpt-5.5",
+      },
     });
 
-    expect(parsed.codexHomePath).toBe("/tmp/custom-codex-home");
+    expect(parsed.textGenerationModelSelection?.provider).toBe("openai");
   });
 
   it("accepts an optional textGenerationModelSelection for provider routing", () => {
@@ -122,25 +125,28 @@ describe("GitRunStackedActionInput", () => {
       cwd: "/repo",
       action: "commit",
       textGenerationModelSelection: {
-        provider: "opencode",
-        model: "openrouter/gpt-oss-120b",
+        provider: "openai",
+        model: "gpt-5.5",
       },
     });
 
-    expect(parsed.textGenerationModelSelection?.provider).toBe("opencode");
-    expect(parsed.textGenerationModelSelection?.model).toBe("openrouter/gpt-oss-120b");
+    expect(parsed.textGenerationModelSelection?.provider).toBe("openai");
+    expect(parsed.textGenerationModelSelection?.model).toBe("gpt-5.5");
   });
 });
 
 describe("GitSummarizeDiffInput", () => {
-  it("accepts an optional codexHomePath for diff summaries", () => {
+  it("accepts an optional textGenerationModelSelection for diff summaries", () => {
     const parsed = decodeSummarizeDiffInput({
       cwd: "/repo",
       scope: "staged",
-      codexHomePath: "/tmp/custom-codex-home",
+      textGenerationModelSelection: {
+        provider: "openai",
+        model: "gpt-5.5",
+      },
     });
 
-    expect(parsed.codexHomePath).toBe("/tmp/custom-codex-home");
+    expect(parsed.textGenerationModelSelection?.provider).toBe("openai");
     expect(parsed.scope).toBe("staged");
   });
 });
