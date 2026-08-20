@@ -29,10 +29,7 @@ import {
   RELEASE_WORKSPACE_MANIFEST_PATHS,
 } from "./lib/release-workspace-manifests.ts";
 import { resolveCatalogDependencies } from "./lib/resolve-catalog.ts";
-import {
-  ENGINE_PAYLOAD_RELATIVE_DIR,
-  stageEnginePayload,
-} from "./lib/stage-engine-payload.ts";
+import { stageEnginePayload } from "./lib/stage-engine-payload.ts";
 import { CAIDE_PRODUCTION_BUNDLE_ID } from "@caide/shared/desktopIdentity";
 
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
@@ -530,6 +527,18 @@ function resolveDesktopRuntimeDependencies(
   return resolveCatalogDependencies(runtimeDependencies, catalog, "apps/desktop");
 }
 
+/**
+ * electron-builder prunes node_modules out of `extraResources` while packing
+ * (the unpacked resources/engine keeps the engine's dist/drizzle/manifests but
+ * loses its dependency tree). After packaging, re-inject the payload's prod
+ * node_modules into every packaged app dir's resources/engine so the spawned
+ * engine can resolve better-sqlite3/node-pty (and everything else) at runtime.
+ *
+ * Packaged layout by platform (found by scanning for a `resources/engine` dir):
+ *   linux  → dist/<Product>-linux-<arch>/resources/engine
+ *   mac    → dist/<Product>.app/Contents/Resources/engine
+ *   win    → dist/win-unpacked/resources/engine
+ */
 function resolveGitHubPublishConfig():
   | {
       readonly provider: "github";
@@ -738,6 +747,7 @@ const createBuildConfig = Effect.fn("createBuildConfig")(function* (
   signed: boolean,
   mockUpdates: boolean,
   mockUpdateServerPort: string | undefined,
+  enginePayloadDir: string,
 ) {
   const buildConfig: Record<string, unknown> = {
     appId: CAIDE_PRODUCTION_BUNDLE_ID,
@@ -750,15 +760,24 @@ const createBuildConfig = Effect.fn("createBuildConfig")(function* (
     directories: {
       buildResources: "apps/desktop/resources",
     },
-    // The Flutter engine ships as an unpacked extraResource (plain `node`
-    // cannot read app.asar). The desktop main injects CAIDE_ENGINE_DIR at
-    // process.resourcesPath/engine, which is where `to: "engine"` lands.
+    // The engine payload ships as an unpacked extraResource (plain `node`
+    // cannot read app.asar). `from` is an ABSOLUTE path outside the app dir:
+    // electron-builder packs everything under the app dir into app.asar, which
+    // would swallow the engine's node_modules. The desktop main injects
+    // CAIDE_ENGINE_DIR at process.resourcesPath/engine, where `to: "engine"`
+    // lands.
     extraResources: [
       {
-        from: ENGINE_PAYLOAD_RELATIVE_DIR,
+        from: enginePayloadDir,
         to: "engine",
       },
     ],
+    // electron-builder strips node_modules out of the extraResource copy, so an
+    // afterPack hook (run after unpacking, before the distributable is built)
+    // restores the engine's co-located node_modules into resources/engine. The
+    // hook reads the payload location from CAIDE_ENGINE_PAYLOAD_DIR, set in the
+    // build environment below.
+    afterPack: "./scripts/lib/engine-afterpack-hook.cjs",
     forceCodeSigning: signed,
   };
   const publishConfig = resolveGitHubPublishConfig();
@@ -1036,13 +1055,13 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
   // The Flutter engine is a self-contained Node program (better-sqlite3,
   // node-pty native bindings) spawned by the server via plain `node`. It must
   // ship unpacked (asar is unreadable to node) with its prod deps co-located,
-  // so stage it as a payload and register it as the extraResource that lands
-  // at resources/engine (see createBuildConfig.extraResources + the desktop
-  // main's CAIDE_ENGINE_DIR injection).
+  // so stage it as a payload *outside* the app dir and register it as an
+  // extraResource via its absolute path (electron-builder treats anything under
+  // the app dir as packable -> would swallow node_modules into app.asar).
   yield* Effect.log("[desktop-artifact] Staging Flutter engine payload...");
   const enginePayload = yield* Effect.try({
     try: () =>
-      stageEnginePayload(repoRoot, stageAppDir, options.verbose),
+      stageEnginePayload(repoRoot, stageRoot, options.verbose),
     catch: (cause) =>
       new BuildScriptError({
         message: "Could not stage Flutter engine payload.",
@@ -1054,6 +1073,14 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
       message: "Engine payload staging produced no directory.",
     });
   }
+
+  // electron-builder resolves `afterPack` relative to its project dir (the
+  // staged app dir), so copy the hook into the stage tree before packaging.
+  yield* fs.makeDirectory(path.join(stageAppDir, "scripts/lib"), { recursive: true });
+  yield* fs.copyFile(
+    path.join(repoRoot, "scripts/lib/engine-afterpack-hook.cjs"),
+    path.join(stageAppDir, "scripts/lib/engine-afterpack-hook.cjs"),
+  );
 
   yield* assertPlatformBuildResources(options.platform, stageResourcesDir, options.verbose);
 
@@ -1067,6 +1094,7 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
     options.signed,
     options.mockUpdates,
     options.mockUpdateServerPort,
+    enginePayload.payloadDir,
   );
 
   const stagePackageJson: StagePackageJson = {
@@ -1109,6 +1137,8 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
     ELECTRON_CACHE: join(process.env.HOME ?? "/home/DejiTech", ".cache/electron"),
     electron_config_cache: join(process.env.HOME ?? "/home/DejiTech", ".cache/electron"),
     ELECTRON_BUILDER_CACHE: join(process.env.HOME ?? "/home/DejiTech", ".cache/electron-builder"),
+    // afterPack hook reads the staged engine payload from this absolute path.
+    CAIDE_ENGINE_PAYLOAD_DIR: enginePayload.payloadDir,
   };
   for (const [key, value] of Object.entries(buildEnv)) {
     if (value === "") {
@@ -1142,7 +1172,8 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
     ChildProcess.make({
       cwd: stageAppDir,
       env: buildEnv,
-      ...commandOutputOptions(options.verbose),
+      stdout: "inherit",
+      stderr: "inherit",
     })`${process.execPath} ${electronBuilderCliPath} ${platformConfig.cliFlag} --${options.arch} --publish never`,
   );
 

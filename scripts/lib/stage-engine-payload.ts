@@ -13,24 +13,68 @@
 //   <payloadDir>/                       (packed → resources/engine)
 //     apps/engine/dist/index.mjs        (engine bundle)
 //     apps/engine/drizzle/              (SQL migrations)
-//     node_modules/                     (engine prod deps, frozen install)
+//     node_modules/                     (engine prod deps only)
 //
-// The install mirrors the desktop stage's own frozen production install
-// (`--ignore-scripts --linker hoisted`), resolving native modules for the
-// target platform from the repository lockfile.
+// The payload installs ONLY the engine's real dependencies (its workspace
+// members like pg-schema-classifier are bundled into the engine dist, so no
+// workspace manifests are needed). The install is intentionally NOT frozen:
+// it is a disposable staging payload, and resolving engine deps alone (rather
+// than the whole monorepo) keeps it ~250 MB instead of ~1.4 GB. Versions are
+// resolved from the repository workspace catalog so they match the lockfile.
 
 import { spawnSync } from "node:child_process";
-import { cpSync, copyFileSync, existsSync, mkdirSync } from "node:fs";
+import {
+  copyFileSync,
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readdirSync as readSyncDir,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 
-import {
-  RELEASE_LOCKFILE_PATH,
-  RELEASE_PATCHES_PATH,
-  RELEASE_WORKSPACE_MANIFEST_PATHS,
-} from "./release-workspace-manifests";
+import rootPackageJson from "../../package.json" with { type: "json" };
+import enginePackageJson from "../../apps/engine/package.json" with { type: "json" };
 
 /** Where the payload lives, relative to the staged desktop app dir. */
-export const ENGINE_PAYLOAD_RELATIVE_DIR = "apps/engine-payload";
+// Stage the payload as a sibling of the app dir (NOT inside it): electron-
+// builder packs everything under the app dir into app.asar by default, which
+// would swallow the engine's node_modules instead of shipping them as an
+// unpacked extraResource.
+export const ENGINE_PAYLOAD_RELATIVE_DIR = "engine-payload";
+
+/**
+ * Resolve the engine's production dependencies to concrete version specs:
+ * `catalog:` specifiers are replaced with the concrete workspace catalog value
+ * and `workspace:*` members are dropped (they are bundled into the dist via the
+ * engine's tsdown `noExternal` config).
+ */
+export function resolveEnginePayloadDependencies(): Record<string, string> {
+  const catalog = (rootPackageJson.workspaces as { catalog?: Record<string, unknown> }).catalog ?? {};
+  const deps = enginePackageJson.dependencies as Record<string, unknown> | undefined;
+  if (!deps) {
+    throw new Error("Could not resolve dependencies from apps/engine/package.json.");
+  }
+  const resolved: Record<string, string> = {};
+  for (const [name, specRaw] of Object.entries(deps)) {
+    const spec = String(specRaw);
+    if (spec.startsWith("workspace:")) {
+      continue;
+    }
+    if (!spec.startsWith("catalog:")) {
+      resolved[name] = spec;
+      continue;
+    }
+    const key = spec.slice("catalog:".length).trim() || name;
+    const concrete = catalog[key];
+    if (typeof concrete !== "string" || concrete.length === 0) {
+      throw new Error(`Unable to resolve '${spec}' for engine dependency '${name}'.`);
+    }
+    resolved[name] = concrete;
+  }
+  return resolved;
+}
 
 /**
  * Build the engine bundle (`apps/engine/dist/index.mjs`) via the engine's own
@@ -53,26 +97,27 @@ export function buildEngineDist(engineDir: string, verbose: boolean): boolean {
  *
  * Steps (each fails the build rather than shipping a broken engine):
  *  1. Ensure the engine bundle exists (build it if missing).
- *  2. Copy the workspace manifests + lockfile + patches so the frozen install
- *     can resolve against the same graph as the repository.
- *  3. Write a payload package.json whose dependencies are the engine's resolved
- *     prod deps, then `bun install --frozen-lockfile --ignore-scripts --linker
- *     hoisted` (same flags as the desktop stage install) so native bindings
- *     land for the target.
- *  4. Copy `apps/engine/dist` + `apps/engine/drizzle` into the payload so the
- *     engine can boot + migrate from the unpacked location.
+ *  2. Write a payload package.json with the engine's resolved prod deps and
+ *     `bun install --omit=dev --ignore-scripts --linker hoisted`. Native
+ *     bindings (better-sqlite3, node-pty) are compiled in the repo for this
+ *     host and copied in (the desktop stage applies the identical trick for
+ *     node-pty; --ignore-scripts skips their download/compile scripts).
+ *  3. Copy `apps/engine/dist` + `apps/engine/drizzle` so the engine can boot +
+ *     migrate from the unpacked location.
  *
  * @param repoRoot repository root.
- * @param stageAppDir staged desktop app directory (payload is created inside).
+ * @param payloadParentDir directory the payload is created inside (outside the
+ *   packaged app dir so electron-builder ships it as an unpacked extraResource
+ *   rather than packing it into app.asar).
  * @param verbose stream install output when true.
  * @returns the payload directory (absolute) for an extraResource registration.
  */
 export function stageEnginePayload(
   repoRoot: string,
-  stageAppDir: string,
+  payloadParentDir: string,
   verbose: boolean,
 ): { payloadDir: string } {
-  const payloadDir = join(stageAppDir, ENGINE_PAYLOAD_RELATIVE_DIR);
+  const payloadDir = join(payloadParentDir, ENGINE_PAYLOAD_RELATIVE_DIR);
   mkdirSync(payloadDir, { recursive: true });
 
   const engineDir = join(repoRoot, "apps/engine");
@@ -80,37 +125,18 @@ export function stageEnginePayload(
     throw new Error(`Engine bundle missing at ${join(engineDir, "dist", "index.mjs")}.`);
   }
 
-  // Workspace manifests + lockfile + patches give `bun install` the exact same
-  // dependency graph/resolution as the repository. The root package.json and
-  // full workspace set must be present for `--frozen-lockfile` to resolve
-  // against the repository lockfile without drift (a trimmed graph trips
-  // "lockfile had changes"). The engine's own prod deps land hoisted in the
-  // payload's node_modules; the extra workspaces cost disk but guarantee
-  // byte-identical versions/native builds with the verified lockfile.
-  for (const relativePath of RELEASE_WORKSPACE_MANIFEST_PATHS) {
-    const destination = join(payloadDir, relativePath);
-    mkdirSync(payloadDir, { recursive: true });
-    mkdirSync(join(payloadDir, relativePath.split("/").slice(0, -1).join("/")), {
-      recursive: true,
-    });
-    copyFileSync(join(repoRoot, relativePath), destination);
-  }
-  copyFileSync(join(repoRoot, RELEASE_LOCKFILE_PATH), join(payloadDir, RELEASE_LOCKFILE_PATH));
-  cpSync(join(repoRoot, RELEASE_PATCHES_PATH), join(payloadDir, RELEASE_PATCHES_PATH), {
-    recursive: true,
-  });
-  // pg-schema-classifier is a workspace member referenced by the engine; its
-  // source copy must exist for lockfile resolution. The engine bundle already
-  // inlines it (tsdown noExternal), so only the manifest is required here.
-  mkdirSync(join(payloadDir, "packages", "pg-schema-classifier"), { recursive: true });
-  copyFileSync(
-    join(repoRoot, "packages", "pg-schema-classifier", "package.json"),
-    join(payloadDir, "packages", "pg-schema-classifier", "package.json"),
-  );
+  const payloadPackageJson = {
+    name: "caide-engine-payload",
+    private: true,
+    version: enginePackageJson.version,
+    type: "module",
+    dependencies: resolveEnginePayloadDependencies(),
+  };
+  writeFileSync(join(payloadDir, "package.json"), `${JSON.stringify(payloadPackageJson, null, 2)}\n`);
 
   const installResult = spawnSync(
     "bun",
-    ["install", "--frozen-lockfile", "--ignore-scripts", "--linker", "hoisted"],
+    ["install", "--omit=dev", "--ignore-scripts", "--linker", "hoisted"],
     { cwd: payloadDir, stdio: verbose ? "inherit" : "ignore" },
   );
   if (installResult.status !== 0) {
@@ -133,8 +159,6 @@ export function stageEnginePayload(
   // Native bindings. `bun install --ignore-scripts` skips better-sqlite3's and
   // node-pty's install scripts (they download/compile platform binaries), so
   // install the bindings that the repository already compiled for this host.
-  // The desktop stage applies the identical trick for node-pty; the engine also
-  // needs better-sqlite3 (its SQLite), so both are copied here.
   copyRepoNativeBinding(
     repoRoot,
     payloadDir,
@@ -197,10 +221,9 @@ function findCacheBinding(
   packageName: string,
   relativeBinding: string,
 ): string | null {
-  const { readdirSync, statSync } = requireSyncFs();
   let entries: string[];
   try {
-    entries = readdirSync(cacheDir, { withFileTypes: true }).map((e) => e.name);
+    entries = readSyncDir(cacheDir).map((e) => String(e));
   } catch {
     return null;
   }
@@ -215,17 +238,4 @@ function findCacheBinding(
     return null;
   }
   return statSync(bindingPath).isFile() ? bindingPath : null;
-}
-
-function requireSyncFs(): {
-  readdirSync: (dir: string, opts?: { withFileTypes?: boolean }) => Array<{ name: string }>;
-  statSync: (p: string) => { isFile: () => boolean };
-} {
-  // Imported lazily so the helper fails soft if node:fs is unavailable (it
-  // always is in Node, but avoids a hard import chain concern).
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require("node:fs") as unknown as {
-    readdirSync: (dir: string, opts?: { withFileTypes?: boolean }) => Array<{ name: string }>;
-    statSync: (p: string) => { isFile: () => boolean };
-  };
 }
