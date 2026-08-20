@@ -752,7 +752,7 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
     customClaudeModels: normalizeCustomModelSlugs(settings.customClaudeModels, "anthropic"),
     customCursorModels: normalizeCustomModelSlugs(settings.customCursorModels, "openai"),
     customAntigravityModels: normalizeCustomModelSlugs(
-      [...settings.customAntigravityModels, ...(legacyCustomGeminiModels ?? [])],
+      [...(settings.customAntigravityModels ?? []), ...(legacyCustomGeminiModels ?? [])],
       "google",
     ),
     customGrokModels: normalizeCustomModelSlugs(settings.customGrokModels, "openai"),

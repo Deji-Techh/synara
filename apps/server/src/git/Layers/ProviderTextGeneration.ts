@@ -1,51 +1,28 @@
 import { Effect, Layer } from "effect";
 
-import { parseOpenCodeModelSlug } from "../../provider/opencodeRuntime.ts";
-import {
-  CodexTextGeneration,
-  CursorTextGeneration,
-  KiloTextGeneration,
-  OpenCodeTextGeneration,
-  type TextGenerationShape,
+import { TextGeneration, type TextGenerationShape } from "../Services/TextGeneration.ts";
+
+const stubTextGeneration: TextGenerationShape = {
+  generateCommitMessage: () =>
+    Effect.succeed({ subject: "chore: update", body: "" }),
+  generatePrContent: () =>
+    Effect.succeed({ title: "chore: update", body: "" }),
+  generateDiffSummary: () => Effect.succeed({ summary: "" }),
+  generateBranchName: () => Effect.succeed({ branch: "chore/update" }),
+  generateThreadTitle: () => Effect.succeed({ title: "New thread" }),
+  generateThreadRecap: () => Effect.succeed({ recap: "" }),
+  generateAutomationIntent: () =>
+    Effect.succeed({
+      mode: "plan" as const,
+      title: "Automated task",
+      prompt: "",
+      schedule: null,
+    }),
+  evaluateAutomationCompletion: () =>
+    Effect.succeed({ completed: false, reason: "not implemented" }),
+};
+
+export const ProviderTextGenerationLive = Layer.succeed(
   TextGeneration,
-} from "../Services/TextGeneration.ts";
-
-const makeProviderTextGeneration = Effect.gen(function* () {
-  const codexTextGeneration = yield* CodexTextGeneration;
-  const cursorTextGeneration = yield* CursorTextGeneration;
-  const kiloTextGeneration = yield* KiloTextGeneration;
-  const openCodeTextGeneration = yield* OpenCodeTextGeneration;
-
-  const resolveImplementation = (input: {
-    readonly model?: string;
-    readonly modelSelection?: { provider: string };
-  }): TextGenerationShape => {
-    if (input.modelSelection?.provider === "openai") {
-      return cursorTextGeneration;
-    }
-    if (input.modelSelection?.provider === "openai") {
-      return kiloTextGeneration;
-    }
-    if (input.modelSelection?.provider === "openai") {
-      return openCodeTextGeneration;
-    }
-    return parseOpenCodeModelSlug(input.model) !== null
-      ? openCodeTextGeneration
-      : codexTextGeneration;
-  };
-
-  return {
-    generateCommitMessage: (input) => resolveImplementation(input).generateCommitMessage(input),
-    generatePrContent: (input) => resolveImplementation(input).generatePrContent(input),
-    generateDiffSummary: (input) => resolveImplementation(input).generateDiffSummary(input),
-    generateBranchName: (input) => resolveImplementation(input).generateBranchName(input),
-    generateThreadTitle: (input) => resolveImplementation(input).generateThreadTitle(input),
-    generateThreadRecap: (input) => resolveImplementation(input).generateThreadRecap(input),
-    generateAutomationIntent: (input) =>
-      resolveImplementation(input).generateAutomationIntent(input),
-    evaluateAutomationCompletion: (input) =>
-      resolveImplementation(input).evaluateAutomationCompletion(input),
-  } satisfies TextGenerationShape;
-});
-
-export const ProviderTextGenerationLive = Layer.effect(TextGeneration, makeProviderTextGeneration);
+  stubTextGeneration,
+);
