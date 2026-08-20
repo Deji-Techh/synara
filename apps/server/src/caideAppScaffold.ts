@@ -16,7 +16,6 @@ export const prepareCaideAppWorkspaceRoot = Effect.fnUntraced(function* (workspa
   const path = yield* Path.Path;
 
   const caideBase = getCaideAppsBaseDirectory();
-  // Only scaffold strict children of caide-apps, not the base itself
   const isCaideApp =
     (caideBase && isWorkspaceRootWithin(workspaceRoot, caideBase)) ||
     workspaceRoot.includes("/caide-apps/") ||
@@ -26,27 +25,19 @@ export const prepareCaideAppWorkspaceRoot = Effect.fnUntraced(function* (workspa
     return;
   }
 
-  // Ensure the directory exists (normalizeWorkspaceRoot already created it, but double-check)
-  const exists = yield* fileSystem
-    .exists(workspaceRoot)
-    .pipe(Effect.catch(() => Effect.succeed(false)));
+  const exists = yield* fileSystem.exists(workspaceRoot).pipe(Effect.catch(() => Effect.succeed(false)));
   if (!exists) {
-    yield* fileSystem
-      .makeDirectory(workspaceRoot, { recursive: true })
-      .pipe(Effect.catch(() => Effect.void));
+    yield* fileSystem.makeDirectory(workspaceRoot, { recursive: true }).pipe(Effect.catch(() => Effect.void));
   }
 
   const entries = yield* fileSystem
     .readDirectory(workspaceRoot)
     .pipe(Effect.catch(() => Effect.succeed([] as string[])));
-  const visible = entries.filter(
-    (name) => name !== ".git" && !name.startsWith(".") && name !== "node_modules",
-  );
+  const visible = entries.filter((name) => name !== ".git" && !name.startsWith(".") && name !== "node_modules");
   if (visible.length !== 0) {
     return;
   }
 
-  // Find scaffold source via Effect FileSystem
   const cwd = process.cwd();
   const candidates: string[] = [];
   for (const scaffold of SCAFFOLD_CANDIDATES) {
@@ -68,69 +59,82 @@ export const prepareCaideAppWorkspaceRoot = Effect.fnUntraced(function* (workspa
   }
 
   let scaffoldSource: string | null = null;
+  let scaffoldLooksValid = false;
   for (const candidate of candidates) {
-    const candidateExists = yield* fileSystem
-      .exists(candidate)
-      .pipe(Effect.catch(() => Effect.succeed(false)));
+    const candidateExists = yield* fileSystem.exists(candidate).pipe(Effect.catch(() => Effect.succeed(false)));
     if (!candidateExists) continue;
     const stat = yield* fileSystem.stat(candidate).pipe(Effect.catch(() => Effect.succeed(null)));
     // @ts-ignore
-    if (stat && (stat as unknown as { type: string }).type === "Directory") {
+    if (!stat || (stat as unknown as { type: string }).type !== "Directory") continue;
+    const pubspec = path.join(candidate, "pubspec.yaml");
+    const libDir = path.join(candidate, "lib");
+    const hasPubspec = yield* fileSystem.exists(pubspec).pipe(Effect.catch(() => Effect.succeed(false)));
+    const hasLib = yield* fileSystem.exists(libDir).pipe(Effect.catch(() => Effect.succeed(false)));
+    if (hasPubspec && hasLib) {
       scaffoldSource = candidate;
+      scaffoldLooksValid = true;
       break;
+    }
+    if (!scaffoldSource) {
+      scaffoldSource = candidate;
     }
   }
 
-  if (!scaffoldSource) {
-    yield* Effect.logWarning("caide-apps scaffold source not found, skipping template copy", {
-      workspaceRoot,
-    });
-    return;
-  }
+  yield* fileSystem.makeDirectory(workspaceRoot, { recursive: true }).pipe(Effect.catch(() => Effect.void));
 
-  yield* fileSystem
-    .makeDirectory(workspaceRoot, { recursive: true })
-    .pipe(Effect.catch(() => Effect.void));
-
-  yield* Effect.promise(async () => {
-    const fs = await import("node:fs/promises");
-    // @ts-ignore
-    if (typeof (fs as unknown as { cp?: unknown }).cp === "function") {
+  if (scaffoldLooksValid && scaffoldSource) {
+    yield* Effect.promise(async () => {
+      const fs = await import("node:fs/promises");
       // @ts-ignore
-      await (fs as unknown as { cp: (a: string, b: string, o: unknown) => Promise<void> }).cp(
-        scaffoldSource!,
-        workspaceRoot,
-        {
+      if (typeof (fs as unknown as { cp?: unknown }).cp === "function") {
+        // @ts-ignore
+        await (fs as unknown as { cp: (a: string, b: string, o: unknown) => Promise<void> }).cp(scaffoldSource!, workspaceRoot, {
           recursive: true,
           filter: (src: string) => {
             const base = src.split("/").pop() ?? src;
             return base !== "node_modules" && base !== ".git" && base !== ".dart_tool";
           },
-        },
-      );
-    } else {
-      const { cp } = await import("node:fs");
-      await new Promise<void>((resolve, reject) => {
-        cp(
-          scaffoldSource!,
-          workspaceRoot,
-          {
-            recursive: true,
-            filter: (src: string) => !src.includes("node_modules") && !src.includes(".git"),
-          },
-          (err) => (err ? reject(err) : resolve()),
-        );
-      });
-    }
-  }).pipe(
-    Effect.catch((cause) =>
-      Effect.logWarning("caide-apps scaffold copy failed", {
-        workspaceRoot,
-        scaffoldSource,
-        cause,
-      }),
-    ),
-  );
+        });
+      } else {
+        const { cp } = await import("node:fs");
+        await new Promise<void>((resolve, reject) => {
+          cp(scaffoldSource!, workspaceRoot, { recursive: true, filter: (src: string) => !src.includes("node_modules") && !src.includes(".git") }, (err) => (err ? reject(err) : resolve()));
+        });
+      }
+    }).pipe(
+      Effect.catch((cause) =>
+        Effect.logWarning("caide-apps scaffold copy failed", { workspaceRoot, scaffoldSource, cause }),
+      ),
+    );
+  } else {
+    const appName = path.basename(workspaceRoot).replace(/[^a-zA-Z0-9_]/g, "_").toLowerCase() || "caide_app";
+    yield* Effect.logInfo(`flutter: scaffold invalid/missing at ${scaffoldSource ?? "none"}, running flutter create for ${workspaceRoot}`);
+    yield* Effect.promise(async () => {
+      const { spawn } = await import("node:child_process");
+      const tryFlutter = (flutterCmd: string) =>
+        new Promise<boolean>((resolve) => {
+          const child = spawn(flutterCmd, ["create", "--org", "com.caide", "--project-name", appName, "."], {
+            cwd: workspaceRoot,
+            stdio: "ignore",
+            shell: false,
+            windowsHide: true,
+          });
+          child.on("error", () => resolve(false));
+          child.on("close", (code) => resolve(code === 0));
+        });
+      const candidatesCmd = [
+        "flutter",
+        "/home/DejiTech/development/flutter/bin/flutter",
+        "/home/DejiTech/.caide/flutter/bin/flutter",
+        "/opt/flutter/bin/flutter",
+      ];
+      for (const cmd of candidatesCmd) {
+        // eslint-disable-next-line no-await-in-loop
+        const ok = await tryFlutter(cmd);
+        if (ok) break;
+      }
+    }).pipe(Effect.catch(() => Effect.void));
+  }
 
   const gitDir = path.join(workspaceRoot, ".git");
   const hasGit = yield* fileSystem.exists(gitDir).pipe(Effect.catch(() => Effect.succeed(false)));
