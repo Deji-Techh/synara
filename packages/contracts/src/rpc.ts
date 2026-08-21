@@ -164,6 +164,7 @@ import {
   FlutterToolchainInstallResult,
   PREVIEW_WS_METHODS,
 } from "./preview";
+import { DATABASE_WS_METHODS, DatabaseInvokeInput, DatabaseInvokeResult } from "./database";
 import {
   ProviderGetComposerCapabilitiesInput,
   ProviderComposerCapabilities,
@@ -641,6 +642,14 @@ export const WsSubscribeDeviceEventsRpc = Rpc.make(DEVICE_WS_METHODS.subscribeEv
   success: DeviceEvent,
   error: WsRpcError,
   stream: true,
+});
+
+// ── Database integrations (Neon + Supabase) ──────────────────────────
+
+export const WsDatabaseInvokeRpc = Rpc.make(DATABASE_WS_METHODS.invoke, {
+  payload: DatabaseInvokeInput,
+  success: DatabaseInvokeResult,
+  error: WsRpcError,
 });
 
 // ── Preview pane ─────────────────────────────────────────────────────

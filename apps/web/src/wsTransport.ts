@@ -19,6 +19,8 @@ import {
   WS_PROTOCOL_MIN_REVISION,
   WsGoalsRpcGroup,
   WS_GOALS_SUBSCRIBE,
+  WsSubagentsRpcGroup,
+  WS_SUBAGENTS_SUBSCRIBE,
   DEVICE_WS_CHANNELS,
   DEVICE_WS_METHODS,
   WsBootstrapNegotiateResult,
@@ -28,6 +30,7 @@ import {
   WsCompatibilityError,
   WsFeatureRpcGroup,
   type AutomationStreamEvent,
+  type EngineSubagentEvent,
   type GitActionProgressEvent,
   type GitCreateDetachedWorktreeResult,
   type GitRunStackedActionResult,
@@ -179,7 +182,7 @@ function awaitWithAbort<A>(promise: Promise<A>, signal: AbortSignal | undefined)
 // can own goal CRUD without bloating the core WS group; the web client must
 // carry it explicitly or `goals:*` calls would hit "Unknown RPC method".
 const makeRpcClient = RpcClient.make(
-  WsFeatureRpcGroup.merge(WsDeviceRpcGroup).merge(WsGoalsRpcGroup),
+  WsFeatureRpcGroup.merge(WsDeviceRpcGroup).merge(WsGoalsRpcGroup).merge(WsSubagentsRpcGroup),
 );
 const makeBootstrapRpcClient = RpcClient.make(WsBootstrapRpcGroup);
 const REQUEST_TIMEOUT_MS = 60_000;
@@ -1357,6 +1360,14 @@ export class WsTransport {
             "goals.domain",
             client[WS_GOALS_SUBSCRIBE]({}),
             (event: GoalDomainEvent) => this.emit(WS_CHANNELS.goalDomainEvent, event),
+            restartChannel,
+          );
+        } else if (channel === WS_CHANNELS.subagentEvent) {
+          this.startStream(
+            client,
+            "subagents.events",
+            client[WS_SUBAGENTS_SUBSCRIBE]({}),
+            (event: EngineSubagentEvent) => this.emit(WS_CHANNELS.subagentEvent, event),
             restartChannel,
           );
         }

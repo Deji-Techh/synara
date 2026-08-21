@@ -56,10 +56,7 @@ export function registerSupabaseHandlers() {
         });
       } catch (error) {
         // If we can't fetch details, still include the org with just the ID
-        logger.error(
-          `Failed to fetch details for organization ${organizationSlug}:`,
-          error,
-        );
+        logger.error(`Failed to fetch details for organization ${organizationSlug}:`, error);
         results.push({ organizationSlug });
       }
     }
@@ -68,32 +65,29 @@ export function registerSupabaseHandlers() {
   });
 
   // Delete a Supabase organization connection
-  createTypedHandler(
-    supabaseContracts.deleteOrganization,
-    async (_, params) => {
-      const { organizationSlug } = params;
-      const settings = readSettings();
-      const organizations = { ...settings.supabase?.organizations };
+  createTypedHandler(supabaseContracts.deleteOrganization, async (_, params) => {
+    const { organizationSlug } = params;
+    const settings = readSettings();
+    const organizations = { ...settings.supabase?.organizations };
 
-      if (!organizations[organizationSlug]) {
-        throw new CaideError(
-          `Supabase organization ${organizationSlug} not found`,
-          CaideErrorKind.NotFound,
-        );
-      }
+    if (!organizations[organizationSlug]) {
+      throw new CaideError(
+        `Supabase organization ${organizationSlug} not found`,
+        CaideErrorKind.NotFound,
+      );
+    }
 
-      delete organizations[organizationSlug];
+    delete organizations[organizationSlug];
 
-      writeSettings({
-        supabase: {
-          ...settings.supabase,
-          organizations,
-        },
-      });
+    writeSettings({
+      supabase: {
+        ...settings.supabase,
+        organizations,
+      },
+    });
 
-      logger.info(`Deleted Supabase organization ${organizationSlug}`);
-    },
-  );
+    logger.info(`Deleted Supabase organization ${organizationSlug}`);
+  });
 
   // List all projects from all connected organizations
   createTypedHandler(supabaseContracts.listAllProjects, async () => {
@@ -111,8 +105,7 @@ export function registerSupabaseHandlers() {
     const projectsByOrganization = await Promise.all(
       Object.keys(organizations).map(async (organizationSlug) => {
         try {
-          const client =
-            await getSupabaseClientForOrganization(organizationSlug);
+          const client = await getSupabaseClientForOrganization(organizationSlug);
           const projects = await client.getProjects();
 
           return (projects ?? []).map((project) => ({
@@ -127,10 +120,7 @@ export function registerSupabaseHandlers() {
               (project as any).organization_slug || project.organization_id,
           }));
         } catch (error) {
-          logger.error(
-            `Failed to fetch projects for organization ${organizationSlug}:`,
-            error,
-          );
+          logger.error(`Failed to fetch projects for organization ${organizationSlug}:`, error);
           return [];
         }
       }),
@@ -166,13 +156,8 @@ export function registerSupabaseHandlers() {
 
     if (response.error) {
       const errorMsg =
-        typeof response.error === "string"
-          ? response.error
-          : JSON.stringify(response.error);
-      throw new CaideError(
-        `Failed to fetch logs: ${errorMsg}`,
-        CaideErrorKind.External,
-      );
+        typeof response.error === "string" ? response.error : JSON.stringify(response.error);
+      throw new CaideError(`Failed to fetch logs: ${errorMsg}`, CaideErrorKind.External);
     }
 
     const rawLogs = response.result || [];
@@ -185,11 +170,10 @@ export function registerSupabaseHandlers() {
       const functionName = extractFunctionName(eventMessage);
 
       return {
-        level: (level === "error"
-          ? "error"
-          : level === "warn"
-            ? "warn"
-            : "info") as "info" | "warn" | "error",
+        level: (level === "error" ? "error" : level === "warn" ? "warn" : "info") as
+          | "info"
+          | "warn"
+          | "error",
         type: "edge-function" as const,
         message: eventMessage,
         timestamp: logEntry.timestamp / 1000, // Convert from microseconds to milliseconds
@@ -232,11 +216,27 @@ export function registerSupabaseHandlers() {
     logger.info(`Removed Supabase project association for app ${app}`);
   });
 
-  createTypedHandler(
-    supabaseContracts.listSocialAuthProviders,
-    async (_, { appId }) => {
+  createTypedHandler(supabaseContracts.listSocialAuthProviders, async (_, { appId }) => {
+    const app = await db.query.apps.findFirst({
+      where: eq(apps.id, appId),
+    });
+    const projectId = app?.supabaseParentProjectId ?? app?.supabaseProjectId;
+    if (!app || !projectId || !app.supabaseOrganizationSlug) {
+      throw new CaideError(
+        "Connect a Supabase project before configuring social sign-in.",
+        CaideErrorKind.Validation,
+      );
+    }
+    return listSupabaseSocialAuthProviders({
+      projectId,
+      organizationSlug: app.supabaseOrganizationSlug,
+    });
+  });
+
+  createTypedHandler(supabaseContracts.updateSocialAuthProvider, async (_, input) =>
+    withLock(`supabase-auth-config-${input.appId}`, async () => {
       const app = await db.query.apps.findFirst({
-        where: eq(apps.id, appId),
+        where: eq(apps.id, input.appId),
       });
       const projectId = app?.supabaseParentProjectId ?? app?.supabaseProjectId;
       if (!app || !projectId || !app.supabaseOrganizationSlug) {
@@ -245,49 +245,24 @@ export function registerSupabaseHandlers() {
           CaideErrorKind.Validation,
         );
       }
-      return listSupabaseSocialAuthProviders({
+      const status = await updateSupabaseSocialAuthProvider({
         projectId,
         organizationSlug: app.supabaseOrganizationSlug,
+        provider: input.provider,
+        enabled: input.enabled,
+        clientId: input.clientId,
+        clientSecret: input.clientSecret,
       });
-    },
-  );
-
-  createTypedHandler(
-    supabaseContracts.updateSocialAuthProvider,
-    async (_, input) =>
-      withLock(`supabase-auth-config-${input.appId}`, async () => {
-        const app = await db.query.apps.findFirst({
-          where: eq(apps.id, input.appId),
-        });
-        const projectId =
-          app?.supabaseParentProjectId ?? app?.supabaseProjectId;
-        if (!app || !projectId || !app.supabaseOrganizationSlug) {
-          throw new CaideError(
-            "Connect a Supabase project before configuring social sign-in.",
-            CaideErrorKind.Validation,
-          );
-        }
-        const status = await updateSupabaseSocialAuthProvider({
-          projectId,
-          organizationSlug: app.supabaseOrganizationSlug,
-          provider: input.provider,
-          enabled: input.enabled,
-          clientId: input.clientId,
-          clientSecret: input.clientSecret,
-        });
-        logger.info(
-          `${status.enabled ? "Enabled" : "Disabled"} ${status.id} authentication for app ${input.appId}`,
-        );
-        return status;
-      }),
+      logger.info(
+        `${status.enabled ? "Enabled" : "Disabled"} ${status.id} authentication for app ${input.appId}`,
+      );
+      return status;
+    }),
   );
 
   testOnlyHandle(
     "supabase:fake-connect-and-set-project",
-    async (
-      event,
-      { appId, fakeProjectId }: { appId: number; fakeProjectId: string },
-    ) => {
+    async (event, { appId, fakeProjectId }: { appId: number; fakeProjectId: string }) => {
       const fakeOrgId = "fake-org-id";
 
       // Directly store fake credentials in the organizations map
@@ -325,18 +300,14 @@ export function registerSupabaseHandlers() {
           supabaseOrganizationSlug: fakeOrgId,
         })
         .where(eq(apps.id, appId));
-      logger.info(
-        `Set fake Supabase project ${fakeProjectId} for app ${appId} during testing.`,
-      );
+      logger.info(`Set fake Supabase project ${fakeProjectId} for app ${appId} during testing.`);
 
       // Simulate the deep link event
       safeSend(event.sender, "deep-link-received", {
         type: "supabase-oauth-return",
         url: "https://supabase-oauth.dyad.sh/api/connect-supabase/login",
       });
-      logger.info(
-        `Sent fake deep-link-received event for app ${appId} during testing.`,
-      );
+      logger.info(`Sent fake deep-link-received event for app ${appId} during testing.`);
     },
   );
 }

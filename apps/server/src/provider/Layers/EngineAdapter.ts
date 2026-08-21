@@ -89,7 +89,10 @@ import {
 import {
   EngineAdapter,
   type EngineAdapterShape,
+  type EngineActiveSubagent,
   type EngineGoalsApi,
+  type EngineSubagentEvent,
+  type EngineSubagentsApi,
 } from "../Services/EngineAdapter.ts";
 import { ServerSettingsService } from "../../serverSettings.ts";
 import { ServerSecretStore } from "../../auth/Services/ServerSecretStore.ts";
@@ -229,6 +232,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       type: "goal.updated" | "goal.run-requested" | "goal.control-requested";
       payload: unknown;
     }>();
+    const subagentsEventQueue = yield* PubSub.unbounded<EngineSubagentEvent>();
     const serverSettings = yield* ServerSettingsService;
     const secretStore = yield* ServerSecretStore;
 
@@ -855,6 +859,21 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             });
             return;
           }
+          case "subagent:updated": {
+            const p = (payload.payload ?? payload) as Record<string, unknown>;
+            const status = p.status;
+            if (status !== "running" && status !== "completed" && status !== "failed") return;
+            yield* PubSub.publish(subagentsEventQueue, {
+              ...(typeof p.appId === "number" ? { appId: p.appId } : {}),
+              ...(typeof p.chatId === "number" ? { chatId: p.chatId } : {}),
+              taskId: String(p.taskId ?? ""),
+              role: String(p.role ?? ""),
+              task: String(p.task ?? ""),
+              status,
+              startedAt: typeof p.startedAt === "number" ? p.startedAt : Date.now(),
+            });
+            return;
+          }
           default:
             return;
         }
@@ -1441,6 +1460,17 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             ThreadId.makeUnsafe(randomUUID()),
           );
         }),
+    };
+
+    // ── Subagents bridge ─────────────────────────────────────────────────
+    // Snapshot of engine-registered subagents (spawn_subagent tasks) plus the
+    // live `subagent:updated` lifecycle stream, so the web UI can show running
+    // indicators without polling the transcript.
+    const subagentsApi: EngineSubagentsApi = {
+      getActive: (input) =>
+        goalRequest(ThreadId.makeUnsafe(randomUUID()), "sidebar:getActiveSubagents", {
+          ...(input.appId !== undefined ? { appId: input.appId } : {}),
+        }) as Effect.Effect<Array<EngineActiveSubagent>, ProviderAdapterError>,
     };
 
     const adapter: EngineAdapterShape = {
@@ -2114,11 +2144,39 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           return { status: parsed.status };
         }),
 
+      // ── Database integrations (Neon + Supabase) ──────────────────────
+      // Relay allowlisted engine dyad-IPC channels. The WS layer enforces the
+      // channel namespace allowlist; the engine validates each payload.
+
+      databaseInvoke: ({ threadId, channel, payload }) =>
+        Effect.gen(function* () {
+          if (!/^(?:(?:neon|supabase):[a-z0-9:-]+|list-apps|get-app)$/.test(channel)) {
+            return yield* Effect.fail(
+              processError(
+                threadId,
+                `database channel not allowed: ${channel}`,
+                new Error(channel),
+              ),
+            );
+          }
+          const context = yield* getSession(threadId);
+          const value = yield* Effect.tryPromise({
+            try: () => context.client.dyadInvoke<unknown>(channel, payload),
+            catch: (cause) =>
+              processError(threadId, `engine database channel "${channel}" failed`, cause),
+          });
+          return { value };
+        }),
+
       // ── Goals ────────────────────────────────────────────────────────
 
       goals: goalsApi,
 
       streamGoalDomainEvents: Stream.fromPubSub(goalsEventQueue),
+
+      subagents: subagentsApi,
+
+      streamSubagentEvents: Stream.fromPubSub(subagentsEventQueue),
 
       createApp: ({ name }) =>
         Effect.gen(function* () {

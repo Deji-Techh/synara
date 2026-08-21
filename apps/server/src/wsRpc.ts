@@ -16,6 +16,8 @@ import {
   WS_GOALS_SUBSCRIBE,
   WS_NEGOTIATE_HTTP_PATH,
   WS_METHODS,
+  WS_SUBAGENTS_SUBSCRIBE,
+  SUBAGENTS_WS_METHODS,
   WsBootstrapRpcGroup,
   WsCompatibilityError,
   WsDeviceRpcGroup,
@@ -23,6 +25,7 @@ import {
   WsGoalsRpcGroup,
   WsPreviewRpcGroup,
   WsRpcError,
+  WsSubagentsRpcGroup,
   PullRequestsUnavailableError,
   type DeviceEvent,
   type GitActionProgressEvent,
@@ -113,6 +116,7 @@ import { discoverSkillsCatalog, caideSkillsDir } from "./provider/skillsCatalog"
 import { recoverUnregisteredGitHubCheckout } from "./project/githubProjectRegistration";
 import { ProviderAdapterRegistry } from "./provider/Services/ProviderAdapterRegistry";
 import { makeWsPreviewHandlers } from "./provider/wsPreviewHandlers";
+import { makeWsDatabaseHandlers } from "./provider/wsDatabaseHandlers";
 import { ProviderHealth } from "./provider/Services/ProviderHealth";
 import { ProviderService } from "./provider/Services/ProviderService";
 import { listProviderUsage } from "./providerUsage";
@@ -200,6 +204,7 @@ export const AdmittedWsFeatureRpcGroup = WsFeatureRpcGroup.merge(
   WsDeviceRpcGroup,
   WsPreviewRpcGroup,
   WsGoalsRpcGroup,
+  WsSubagentsRpcGroup,
 ).middleware(WsRequestAdmissionMiddleware);
 
 const wsRequestAdmissionMiddlewareLayer = Layer.effect(
@@ -1011,6 +1016,26 @@ const makeWsRpcHandlersLayer = () =>
             Stream.unwrap,
             Stream.map((event) => event as never),
           ),
+        subagents: {
+          getActive: (
+            input: Parameters<
+              import("./provider/Services/EngineAdapter.ts").EngineSubagentsApi["getActive"]
+            >[0],
+            label: string,
+          ) =>
+            rpcEffect(
+              engineAdapterEffect.pipe(
+                Effect.flatMap((adapter) => adapter.subagents.getActive(input)),
+              ),
+              label,
+            ),
+        },
+        streamSubagentEvents: () =>
+          engineAdapterEffect.pipe(
+            Effect.map((adapter) => adapter.streamSubagentEvents),
+            Stream.unwrap,
+            Stream.map((event) => event as never),
+          ),
       };
 
       // M4b: aggregate the per-project activity timeline from thread shells
@@ -1446,6 +1471,20 @@ const makeWsRpcHandlersLayer = () =>
             { key: "goals.domain-events" },
             bufferLiveUiStream(adapterHex.streamGoalDomainEvents("goals domain event stream"), {
               label: "goals.domain-events",
+            }),
+          ),
+
+        // ── Engine subagents ─────────────────────────────────────────────
+        // Snapshot of engine-registered subagents + live lifecycle stream so
+        // the web UI can show running indicators (composer strip, goals panel).
+        [SUBAGENTS_WS_METHODS.getActive]: (input) =>
+          adapterHex.subagents.getActive(input ?? {}, "list active engine subagents"),
+        [WS_SUBAGENTS_SUBSCRIBE]: (_, { clientId }) =>
+          streamAdmission.guard(
+            clientId,
+            { key: "subagents.events" },
+            bufferLiveUiStream(adapterHex.streamSubagentEvents(), {
+              label: "subagents.events",
             }),
           ),
 
@@ -2294,6 +2333,59 @@ const makeWsRpcHandlersLayer = () =>
                 .pipe(
                   Effect.catch((cause) =>
                     Effect.logWarning("preview.ensure_engine_session.project_lookup_failed", {
+                      threadId: String(threadId),
+                      cause: String(cause),
+                    }).pipe(Effect.as(Option.none())),
+                  ),
+                );
+              const cwd = resolveThreadWorkspaceCwd({
+                thread: threadShell.value,
+                projects: Option.isSome(projectShell) ? [projectShell.value] : [],
+              });
+              yield* providerAdapterRegistry.getByProvider("engine").pipe(
+                Effect.map(
+                  (adapter) =>
+                    adapter as import("./provider/Services/EngineAdapter.ts").EngineAdapterShape,
+                ),
+                Effect.flatMap((adapter) =>
+                  adapter.startPreviewSession({
+                    threadId,
+                    ...(cwd !== undefined ? { cwd } : {}),
+                  }),
+                ),
+                Effect.mapError((cause) => new WsRpcError({ message: cause.message })),
+              );
+            }),
+        }),
+        ...makeWsDatabaseHandlers(providerAdapterRegistry, {
+          ensureEngineSession: (threadId) =>
+            Effect.gen(function* () {
+              // Same lazy-session strategy as the preview pane: the Database
+              // pane works for threads whose chat runs on any provider.
+              const hasSession = yield* providerAdapterRegistry.getByProvider("engine").pipe(
+                Effect.map(
+                  (adapter) =>
+                    adapter as import("./provider/Services/EngineAdapter.ts").EngineAdapterShape,
+                ),
+                Effect.flatMap((adapter) => adapter.hasSession(threadId)),
+                Effect.mapError((cause) => new WsRpcError({ message: cause.message })),
+              );
+              if (hasSession) {
+                return;
+              }
+              const threadShell = yield* projectionReadModelQuery
+                .getThreadShellById(threadId)
+                .pipe(Effect.mapError((cause) => new WsRpcError({ message: cause.message })));
+              if (Option.isNone(threadShell)) {
+                return yield* new WsRpcError({
+                  message: `Cannot open the database pane: thread '${threadId}' has no workspace.`,
+                });
+              }
+              const projectShell = yield* projectionReadModelQuery
+                .getProjectShellById(threadShell.value.projectId)
+                .pipe(
+                  Effect.catch((cause) =>
+                    Effect.logWarning("database.ensure_engine_session.project_lookup_failed", {
                       threadId: String(threadId),
                       cause: String(cause),
                     }).pipe(Effect.as(Option.none())),

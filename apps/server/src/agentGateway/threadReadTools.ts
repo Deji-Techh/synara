@@ -176,7 +176,7 @@ export function makeThreadReadTools(input: ThreadReadToolsInput): ReadonlyArray<
     definition: {
       name: "caide_list_projects",
       description:
-        "List Caide projects (id, title, workspace root). System-managed containers (the Chats and Studio surfaces) are not projects and are excluded. Use before creating a thread in another project.",
+        "List Caide projects (id, title, workspace root). System-managed containers (the Chats surface) are not projects and are excluded. Use before creating a thread in another project.",
       inputSchema: { type: "object", properties: {}, additionalProperties: false },
       annotations: { title: "List Caide projects", ...READ_ONLY_TOOL_ANNOTATIONS },
     },

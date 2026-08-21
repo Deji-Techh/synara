@@ -20,6 +20,7 @@ import {
   IconBug,
   IconCamera,
   IconCheck,
+  IconDatabase,
   IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
@@ -126,6 +127,7 @@ export const BookIcon: LucideIcon = centralIconWrapper("book-simple");
 export const BugIcon = adaptIcon(IconBug);
 export const CameraIcon = adaptIcon(IconCamera);
 export const CheckIcon = adaptIcon(IconCheck);
+export const DatabaseIcon = adaptIcon(IconDatabase);
 export const ChevronDownIcon = adaptIcon(IconChevronDown);
 export const ChevronLeftIcon = adaptIcon(IconChevronLeft);
 export const ChevronRightIcon = adaptIcon(IconChevronRight);

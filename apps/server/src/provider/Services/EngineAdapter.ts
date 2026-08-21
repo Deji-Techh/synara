@@ -133,6 +133,19 @@ export interface EnginePreviewOps {
 }
 
 /**
+ * Database integration ops (Neon + Supabase). The adapter relays allowlisted
+ * engine dyad-IPC channels verbatim; the engine owns validation of each
+ * channel's payload.
+ */
+export interface EngineDatabaseOps {
+  databaseInvoke(input: {
+    threadId: ThreadId;
+    channel: string;
+    payload?: unknown;
+  }): Effect.Effect<{ value: unknown }, ProviderAdapterError>;
+}
+
+/**
  * Goals API proxied onto the shared engine process. The engine owns goal
  * state; the adapter relays CRUD verbatim (engine-shaped payloads) and
  * streams goal lifecycle events for orchestration + WS consumers.
@@ -214,11 +227,49 @@ export interface GoalDomainEvent {
   readonly payload: unknown;
 }
 
+/**
+ * Live engine-subagent lifecycle event relayed from the engine's
+ * `subagent:updated` notification. appId/chatId are engine-native rowids;
+ * scoping to Caide threads happens at the WS boundary.
+ */
+export interface EngineSubagentEvent {
+  readonly appId?: number | undefined;
+  readonly chatId?: number | undefined;
+  readonly taskId: string;
+  readonly role: string;
+  readonly task: string;
+  readonly status: "running" | "completed" | "failed";
+  readonly startedAt: number;
+}
+
+/**
+ * Snapshot of currently-registered engine subagents (running ones from the
+ * active map plus recently spawned tasks). Mirrors the engine's
+ * `sidebar:getActiveSubagents` contract.
+ */
+export interface EngineActiveSubagent {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly startedAt: number;
+  readonly status?: "running" | "completed" | "failed" | undefined;
+  readonly appId?: number | undefined;
+  readonly chatId?: number | undefined;
+}
+
+export interface EngineSubagentsApi {
+  getActive(input: {
+    appId?: number | undefined;
+  }): Effect.Effect<Array<EngineActiveSubagent>, ProviderAdapterError>;
+}
+
 export interface EngineAdapterShape
-  extends ProviderAdapterShape<ProviderAdapterError>, EnginePreviewOps {
+  extends ProviderAdapterShape<ProviderAdapterError>, EnginePreviewOps, EngineDatabaseOps {
   readonly provider: "engine";
   readonly goals: EngineGoalsApi;
   readonly streamGoalDomainEvents: Stream.Stream<GoalDomainEvent>;
+  readonly subagents: EngineSubagentsApi;
+  readonly streamSubagentEvents: Stream.Stream<EngineSubagentEvent>;
   createApp(input: { name: string }): Effect.Effect<EngineCreateAppResult, ProviderAdapterError>;
 }
 

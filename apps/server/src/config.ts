@@ -228,8 +228,9 @@ export class ServerConfig extends ServiceMap.Service<ServerConfig, ServerConfigS
 
         yield* Effect.sync(() => preparePrivateServerPaths(derivedPaths));
 
-        const { homeDir, chatWorkspaceRoot } =
-          yield* resolveCanonicalWorkspaceRoots({ homeDir: OS.homedir() });
+        const { homeDir, chatWorkspaceRoot } = yield* resolveCanonicalWorkspaceRoots({
+          homeDir: OS.homedir(),
+        });
 
         return {
           cwd,

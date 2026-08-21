@@ -187,6 +187,7 @@ import type {
   FlutterToolchainStatusResult,
   FlutterToolchainInstallInput,
 } from "./preview";
+import type { DatabaseInvokeInput, DatabaseInvokeResult } from "./database";
 import type {
   ServerConfig,
   ServerDiagnosticsResult,
@@ -276,6 +277,7 @@ import type { ProviderCompactThreadInput } from "./provider";
 import type { Goal, GoalActivityEvent, GoalExecutionTarget, GoalStatus } from "./goals";
 import type { GoalId } from "./goals";
 import type { GoalDomainEvent } from "./goals.rpc";
+import type { EngineActiveSubagent, EngineSubagentEvent } from "./subagents";
 import type {
   StatsGetProfileStatsInput,
   StatsGetProfileStatsResult,
@@ -810,6 +812,12 @@ export interface NativeApi {
     verifyGoal: (input: { goalId: GoalId }) => Promise<Goal>;
     onDomainEvent: (callback: (event: GoalDomainEvent) => void) => () => void;
   };
+  subagents: {
+    getActive: (input?: {
+      appId?: number | null;
+    }) => Promise<EngineActiveSubagent[]>;
+    onEvent: (callback: (event: EngineSubagentEvent) => void) => () => void;
+  };
   automation: {
     list: (input?: AutomationListInput) => Promise<AutomationListResult>;
     getMemory: (input: AutomationGetMemoryInput) => Promise<AutomationMemory | null>;
@@ -876,5 +884,14 @@ export interface NativeApi {
     flutterToolchainInstall: (input: FlutterToolchainInstallInput) => Promise<{
       status: FlutterToolchainStatusResult;
     }>;
+  };
+  /**
+   * Database integrations (Neon + Supabase). Backed by the engine provider
+   * adapter; the server relays allowlisted engine IPC channels so the
+   * Database pane can drive project linking, branches, and SQL without a
+   * per-operation WS method.
+   */
+  database: {
+    invoke: (input: DatabaseInvokeInput) => Promise<DatabaseInvokeResult>;
   };
 }

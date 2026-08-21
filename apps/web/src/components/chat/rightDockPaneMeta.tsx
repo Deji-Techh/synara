@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 
 import type { LucideIcon } from "~/lib/icons";
 import {
+  DatabaseIcon,
   DeviceMobileIcon,
   DiffIcon,
   EyeIcon,
@@ -52,6 +53,7 @@ export const RIGHT_DOCK_PANE_META: Record<RightDockPaneKind, RightDockPaneMeta> 
   pullRequest: { label: "Pull request", Icon: GitPullRequestIcon },
   preview: { label: "Preview", Icon: EyeIcon },
   goals: { label: "Goals", Icon: FlagIcon },
+  database: { label: "Database", Icon: DatabaseIcon },
 };
 
 // Neutral fallback for any pane kind we no longer recognize (e.g. stale
@@ -89,6 +91,7 @@ const RIGHT_DOCK_LAUNCHER_ORDER: readonly RightDockPaneKind[] = [
   "sidechat",
   "device",
   "preview",
+  "database",
   "git",
 ];
 

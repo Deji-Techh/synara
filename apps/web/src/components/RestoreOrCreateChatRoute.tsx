@@ -2,7 +2,7 @@
 // Purpose: Shared cold-start machinery for chat index routes — guards against briefly-empty
 //          bootstrap snapshots, then defers to a caller-supplied resolver to pick the thread
 //          route to restore, falling back to creating a fresh draft. Used by the home-chat index
-//          route and the Studio index route so both get identical empty-snapshot recovery.
+//          route so it gets identical empty-snapshot recovery.
 // Layer: Routing
 // Depends on: sidebar UI persistence plus caller-supplied restore/fresh-chat policy.
 

@@ -46,6 +46,7 @@ describe("sidebar getActiveSubagents handler", () => {
         name: string;
         description: string;
         startedAt: number;
+        status: string;
       }>;
       expect(result).toEqual([
         {
@@ -53,17 +54,61 @@ describe("sidebar getActiveSubagents handler", () => {
           name: "Subagent Task",
           description: "desc",
           startedAt: 123,
+          status: "running",
         },
         {
           id: "id-2",
           name: "Subagent Task",
           description: "desc2",
           startedAt: 456,
+          status: "running",
         },
       ]);
       for (const item of result) {
         expect(ActiveSubagentSchema.safeParse(item).success).toBe(true);
       }
+    } finally {
+      (globalThis as any).__caideActiveSubagents = globalStore;
+    }
+  });
+
+  it("filters scoped subagents by appId and keeps engine-wide ones", async () => {
+    registerSidebarHandlers();
+    const handler = getRegisteredHandlerForTesting("sidebar:getActiveSubagents");
+    const globalStore = (globalThis as any).__caideActiveSubagents;
+    (globalThis as any).__caideActiveSubagents = new Map([
+      [
+        "scoped-other",
+        {
+          id: "scoped-other",
+          name: "Other App Agent",
+          description: "d",
+          startedAt: 1,
+          status: "running",
+          appId: 42,
+          chatId: 7,
+        },
+      ],
+      [
+        "scoped-match",
+        {
+          id: "scoped-match",
+          name: "Matched Agent",
+          description: "d",
+          startedAt: 2,
+          status: "running",
+          appId: 1,
+          chatId: 8,
+        },
+      ],
+      [
+        "unscoped",
+        { id: "unscoped", name: "Explore", description: "d", startedAt: 3 },
+      ],
+    ]);
+    try {
+      const result = (await handler({} as any, { appId: 1 })) as Array<{ id: string }>;
+      expect(result.map((item) => item.id)).toEqual(["scoped-match", "unscoped"]);
     } finally {
       (globalThis as any).__caideActiveSubagents = globalStore;
     }

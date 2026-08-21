@@ -50,7 +50,11 @@ import {
   type DeviceEvent,
   GOALS_WS_METHODS,
   type GoalDomainEvent,
+  SUBAGENTS_WS_METHODS,
+  type EngineActiveSubagent,
+  type EngineSubagentEvent,
   PREVIEW_WS_METHODS,
+  DATABASE_WS_METHODS,
 } from "@caide/contracts";
 import { VOICE_TRANSCRIPTION_UPLOAD_ROUTE_PATH } from "@caide/shared/binaryTransfer";
 
@@ -161,6 +165,7 @@ const projectDevServerEventListeners = createListenerRegistry<ProjectDevServerEv
 const automationEventListeners = createListenerRegistry<AutomationStreamEvent>();
 const deviceEventListeners = createListenerRegistry<DeviceEvent>();
 const goalDomainEventListeners = createListenerRegistry<GoalDomainEvent>();
+const subagentEventListeners = createListenerRegistry<EngineSubagentEvent>();
 const orchestrationDomainEventListeners = createListenerRegistry<OrchestrationEvent>();
 const orchestrationShellEventListeners = createListenerRegistry<OrchestrationShellStreamItem>();
 const orchestrationThreadEventListeners = createListenerRegistry<OrchestrationThreadStreamItem>();
@@ -182,6 +187,7 @@ function clearWsNativeApiListeners(): void {
   automationEventListeners.clear();
   deviceEventListeners.clear();
   goalDomainEventListeners.clear();
+  subagentEventListeners.clear();
   orchestrationDomainEventListeners.clear();
   orchestrationShellEventListeners.clear();
   orchestrationThreadEventListeners.clear();
@@ -481,6 +487,9 @@ export function createWsNativeApi(): NativeApi {
   transport.subscribe(WS_CHANNELS.goalDomainEvent, (message) => {
     goalDomainEventListeners.emit(message.data);
   });
+  transport.subscribe(WS_CHANNELS.subagentEvent, (message) => {
+    subagentEventListeners.emit(message.data);
+  });
   transport.subscribe(ORCHESTRATION_WS_CHANNELS.shellEvent, (message) => {
     orchestrationShellEventListeners.emit(message.data);
   });
@@ -555,9 +564,6 @@ export function createWsNativeApi(): NativeApi {
     app: {
       createApp: (input) =>
         transport.request(WS_METHODS.appCreateApp, input, { timeoutMs: 240_000 }),
-    },
-    studio: {
-      listThreadOutputs: (input) => transport.request(WS_METHODS.studioListThreadOutputs, input),
     },
     shell: {
       openInEditor: (cwd, editor) =>
@@ -822,6 +828,11 @@ export function createWsNativeApi(): NativeApi {
       verifyGoal: (input) => transport.request(GOALS_WS_METHODS.verifyGoal, input),
       onDomainEvent: goalDomainEventListeners.subscribe,
     },
+    subagents: {
+      getActive: (input) =>
+        transport.request(SUBAGENTS_WS_METHODS.getActive, input ?? {}),
+      onEvent: subagentEventListeners.subscribe,
+    },
     automation: {
       list: (input) => transport.request(WS_METHODS.automationList, input),
       getMemory: (input) => transport.request(WS_METHODS.automationGetMemory, input),
@@ -879,6 +890,9 @@ export function createWsNativeApi(): NativeApi {
         transport.request(PREVIEW_WS_METHODS.flutterToolchainStatus, input),
       flutterToolchainInstall: (input) =>
         transport.request(PREVIEW_WS_METHODS.flutterToolchainInstall, input, { timeoutMs: null }),
+    },
+    database: {
+      invoke: (input) => transport.request(DATABASE_WS_METHODS.invoke, input, { timeoutMs: null }),
     },
     browser: {
       open: async (input) => {

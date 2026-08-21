@@ -18,7 +18,6 @@ import {
   ProjectId,
   ProjectKind,
   SpaceId,
-  STUDIO_OUTPUTS_ACTIVITY_KIND,
   ThreadId,
   ThreadEnvironmentMode,
   TurnId,
@@ -1783,9 +1782,8 @@ const makeProjectionSnapshotQuery = Effect.gen(function* () {
       `,
   });
 
-  // File-change tool payloads and captured per-turn Studio outputs remain available in
-  // non-Git workspaces, where checkpoint capture intentionally does not run. Studio output
-  // attribution requests this narrow slice.
+  // File-change tool payloads remain available in non-Git workspaces, where checkpoint
+  // capture intentionally does not run. Diff attribution requests this narrow slice.
   const listFileChangeActivityPayloadsByThread = SqlSchema.findAll({
     Request: ThreadIdLookupInput,
     Result: ProjectionFileChangeActivityPayloadDbRowSchema,
@@ -1794,10 +1792,8 @@ const makeProjectionSnapshotQuery = Effect.gen(function* () {
         SELECT payload_json AS "payload"
         FROM projection_thread_activities
         WHERE thread_id = ${threadId}
-          AND (
-            (kind = 'tool.completed' AND json_extract(payload_json, '$.itemType') = 'file_change')
-            OR kind = ${STUDIO_OUTPUTS_ACTIVITY_KIND}
-          )
+          AND kind = 'tool.completed'
+          AND json_extract(payload_json, '$.itemType') = 'file_change' 
         ORDER BY created_at DESC, activity_id DESC
         LIMIT ${MAX_THREAD_FILE_CHANGE_ACTIVITIES}
       `,
@@ -1815,13 +1811,8 @@ const makeProjectionSnapshotQuery = Effect.gen(function* () {
         FROM projection_thread_activities
         WHERE thread_id = ${threadId}
           AND turn_id = ${turnId}
-          AND (
-            (kind = 'tool.completed' AND json_extract(payload_json, '$.itemType') = 'image_generation')
-            OR (
-              kind = ${STUDIO_OUTPUTS_ACTIVITY_KIND}
-              AND json_type(payload_json, '$.data.generatedImage') = 'object'
-            )
-          )
+          AND kind = 'tool.completed'
+          AND json_extract(payload_json, '$.itemType') = 'image_generation' 
         -- Provider replay can project the same completion more than once. Collapse
         -- exact payload duplicates before applying the two-records-per-image cap.
         GROUP BY kind, payload_json

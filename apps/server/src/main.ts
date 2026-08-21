@@ -262,8 +262,9 @@ const ServerConfigLive = (input: CliInput) =>
         });
       }
 
-      const { homeDir, chatWorkspaceRoot } =
-        yield* resolveCanonicalWorkspaceRoots({ homeDir: userHomeDir });
+      const { homeDir, chatWorkspaceRoot } = yield* resolveCanonicalWorkspaceRoots({
+        homeDir: userHomeDir,
+      });
 
       const config: ServerConfigShape = {
         mode,

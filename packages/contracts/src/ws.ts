@@ -74,6 +74,7 @@ import {
 } from "./terminal";
 import { KeybindingRule } from "./keybindings";
 import { GoalDomainEvent } from "./goals.js";
+import { EngineSubagentEvent } from "./subagents.js";
 import {
   ProjectCreateLocalFilePreviewGrantInput,
   ProjectDevServerEvent,
@@ -305,6 +306,8 @@ export const WS_CHANNELS = {
   serverSettingsUpdated: "server.settingsUpdated",
   /** Live goal domain events streamed from the engine over `goals:subscribe`. */
   goalDomainEvent: "goals.domainEvent",
+  /** Live engine subagent lifecycle events streamed over `subagents:subscribe`. */
+  subagentEvent: "subagents.subagentEvent",
 } as const;
 
 // -- Tagged Union of all request body schemas ─────────────────────────
@@ -533,6 +536,7 @@ export interface WsPushPayloadByChannel {
   readonly [ORCHESTRATION_WS_CHANNELS.shellEvent]: OrchestrationShellStreamItem;
   readonly [ORCHESTRATION_WS_CHANNELS.threadEvent]: OrchestrationThreadStreamItem;
   readonly [WS_CHANNELS.goalDomainEvent]: GoalDomainEvent;
+  readonly [WS_CHANNELS.subagentEvent]: EngineSubagentEvent;
 }
 
 export type WsPushChannel = keyof WsPushPayloadByChannel;
@@ -604,6 +608,10 @@ export const WsPushGoalsDomainEvent = makeWsPushSchema(
   WS_CHANNELS.goalDomainEvent,
   GoalDomainEvent,
 );
+export const WsPushSubagentEvent = makeWsPushSchema(
+  WS_CHANNELS.subagentEvent,
+  EngineSubagentEvent,
+);
 
 export const WsPushChannelSchema = Schema.Literals([
   WS_CHANNELS.gitActionProgress,
@@ -622,6 +630,7 @@ export const WsPushChannelSchema = Schema.Literals([
   ORCHESTRATION_WS_CHANNELS.shellEvent,
   ORCHESTRATION_WS_CHANNELS.threadEvent,
   WS_CHANNELS.goalDomainEvent,
+  WS_CHANNELS.subagentEvent,
 ]);
 export type WsPushChannelSchema = typeof WsPushChannelSchema.Type;
 
@@ -642,6 +651,7 @@ export const WsPush = Schema.Union([
   WsPushOrchestrationShellEvent,
   WsPushOrchestrationThreadEvent,
   WsPushGoalsDomainEvent,
+  WsPushSubagentEvent,
 ]);
 export type WsPush = typeof WsPush.Type;
 
