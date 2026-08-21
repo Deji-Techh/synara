@@ -25,7 +25,7 @@ export const PROVIDER_DESCRIPTORS = [
   {
     kind: "engine",
     displayName: PROVIDER_DISPLAY_NAMES.engine,
-    available: true,
+    available: false,
     supportsNativeTurnSteering: true,
     usage: null,
   },
