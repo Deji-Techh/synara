@@ -870,7 +870,9 @@ export interface NativeApi {
     buildState: (input: PreviewBuildStateInput) => Promise<PreviewBuildStateResult>;
     screenshot: (input: PreviewScreenshotInput) => Promise<PreviewScreenshotResult>;
     devices: (input: PreviewDevicesInput) => Promise<PreviewDevicesResult>;
-    flutterToolchainStatus: (input: FlutterToolchainStatusInput) => Promise<FlutterToolchainStatusResult>;
+    flutterToolchainStatus: (
+      input: FlutterToolchainStatusInput,
+    ) => Promise<FlutterToolchainStatusResult>;
     flutterToolchainInstall: (input: FlutterToolchainInstallInput) => Promise<{
       status: FlutterToolchainStatusResult;
     }>;

@@ -195,9 +195,7 @@ export function mergeEnginePreviewState(
   const logs = snapshot.logs.length > 0 ? snapshot.logs : state.logs;
   // The engine reports the render kind explicitly; older engines (or a
   // mid-upgrade server) may omit it, so fall back to the pseudo-URL prefix.
-  const kind =
-    snapshot.kind ??
-    (snapshot.url.startsWith("native:") ? "native" : ("web" as const));
+  const kind = snapshot.kind ?? (snapshot.url.startsWith("native:") ? "native" : ("web" as const));
   return { ...state, status: "running", url: snapshot.url, kind, error: null, logs };
 }
 

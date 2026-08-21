@@ -30,6 +30,7 @@ describe("createInitialPreviewPanelState", () => {
     expect(state).toEqual({
       status: "idle",
       url: null,
+      kind: null,
       error: null,
       logs: [],
       deviceId: "mobile",
@@ -170,6 +171,42 @@ describe("mergeEnginePreviewState", () => {
       logs: [],
     });
     expect(merged.logs).toEqual(["Keep me"]);
+  });
+
+  it("carries the engine render kind and falls back to the native: prefix", () => {
+    const starting = previewStartRequested(createInitialPreviewPanelState());
+    const explicit = mergeEnginePreviewState(starting, {
+      running: true,
+      url: "native:emulator-5554",
+      logs: [],
+      kind: "native",
+    });
+    expect(explicit.kind).toBe("native");
+
+    const inferred = mergeEnginePreviewState(starting, {
+      running: true,
+      url: "native:simulator",
+      logs: [],
+    });
+    expect(inferred.kind).toBe("native");
+
+    const web = mergeEnginePreviewState(starting, {
+      running: true,
+      url: "http://127.0.0.1:54321",
+      logs: [],
+    });
+    expect(web.kind).toBe("web");
+  });
+
+  it("clears the render kind when the preview stops", () => {
+    const running = previewStarted(
+      createInitialPreviewPanelState(),
+      "http://127.0.0.1:54321",
+      [],
+      "web",
+    );
+    const merged = mergeEnginePreviewState(running, { running: false, url: "", logs: [] });
+    expect(merged.kind).toBeNull();
   });
 });
 

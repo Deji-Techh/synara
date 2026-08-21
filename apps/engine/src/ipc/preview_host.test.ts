@@ -162,12 +162,12 @@ describe("aggregateTestCounts", () => {
 });
 
 describe("appendLogLines / extractPreviewUrl", () => {
-  it("caps the rolling log buffer at 200 newest lines", () => {
+  it("caps the rolling log buffer at the 500 newest lines (contracts PREVIEW_MAX_LOGS)", () => {
     const logs: string[] = [];
-    appendLogLines(logs, Array.from({ length: 250 }, (_, i) => `line ${i}`).join("\n"));
-    expect(logs).toHaveLength(200);
+    appendLogLines(logs, Array.from({ length: 550 }, (_, i) => `line ${i}`).join("\n"));
+    expect(logs).toHaveLength(500);
     expect(logs[0]).toBe("line 50");
-    expect(logs[199]).toBe("line 249");
+    expect(logs[499]).toBe("line 549");
   });
 
   it("extracts a URL for the requested port and strips trailing punctuation", () => {

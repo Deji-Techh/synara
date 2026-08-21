@@ -25,7 +25,7 @@ import type {
   PreviewStopResult,
   PreviewTestResult,
   PreviewScreenshotResult,
-  type FlutterToolchainStatusResult,
+  FlutterToolchainStatusResult,
 } from "@caide/contracts";
 import type { ProviderSession, ThreadId } from "@caide/contracts";
 import type { ProviderAdapterError } from "../Errors.ts";
@@ -154,7 +154,8 @@ export interface EngineCreateAppResult {
   readonly appPath: string;
 }
 
-export interface EngineGoalsApi {  create(input: {
+export interface EngineGoalsApi {
+  create(input: {
     appId?: number | null | undefined;
     chatId?: number | undefined;
     title?: string | undefined;
@@ -218,9 +219,7 @@ export interface EngineAdapterShape
   readonly provider: "engine";
   readonly goals: EngineGoalsApi;
   readonly streamGoalDomainEvents: Stream.Stream<GoalDomainEvent>;
-  createApp(input: {
-    name: string;
-  }): Effect.Effect<EngineCreateAppResult, ProviderAdapterError>;
+  createApp(input: { name: string }): Effect.Effect<EngineCreateAppResult, ProviderAdapterError>;
 }
 
 export class EngineAdapter extends ServiceMap.Service<EngineAdapter, EngineAdapterShape>()(

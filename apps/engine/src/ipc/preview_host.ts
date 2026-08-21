@@ -475,9 +475,7 @@ function spawnFlutterRun(appPath: string, entry: PreviewEntry, hostname: string)
         // is actually installed and running on the device. Resolving on the
         // first output chunk would report "running" while Gradle is still
         // building, long before anything renders on screen.
-        if (
-          /Flutter run key commands|Application running|A Dart VM Service on/i.test(text)
-        ) {
+        if (/Flutter run key commands|Application running|A Dart VM Service on/i.test(text)) {
           entry.url = nativeUrl;
           finish(() => {
             entry.running = true;
