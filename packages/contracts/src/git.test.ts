@@ -111,12 +111,12 @@ describe("GitRunStackedActionInput", () => {
       cwd: "/repo",
       action: "commit_push",
       textGenerationModelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5.5",
       },
     });
 
-    expect(parsed.textGenerationModelSelection?.provider).toBe("openai");
+    expect(parsed.textGenerationModelSelection?.provider).toBe("groq");
   });
 
   it("accepts an optional textGenerationModelSelection for provider routing", () => {
@@ -125,12 +125,12 @@ describe("GitRunStackedActionInput", () => {
       cwd: "/repo",
       action: "commit",
       textGenerationModelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5.5",
       },
     });
 
-    expect(parsed.textGenerationModelSelection?.provider).toBe("openai");
+    expect(parsed.textGenerationModelSelection?.provider).toBe("groq");
     expect(parsed.textGenerationModelSelection?.model).toBe("gpt-5.5");
   });
 });
@@ -141,12 +141,12 @@ describe("GitSummarizeDiffInput", () => {
       cwd: "/repo",
       scope: "staged",
       textGenerationModelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5.5",
       },
     });
 
-    expect(parsed.textGenerationModelSelection?.provider).toBe("openai");
+    expect(parsed.textGenerationModelSelection?.provider).toBe("groq");
     expect(parsed.scope).toBe("staged");
   });
 });

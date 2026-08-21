@@ -313,9 +313,8 @@ vi.mock("../../utils/versioned_codebase_context", () => ({
 
 vi.mock("../../utils/ai_messages_utils", () => ({
   ensureReasoningConsistency: vi.fn((msgs: unknown) => msgs),
-  parseAiMessagesJson: vi.fn(
-    (message: { role?: string; content?: string }) =>
-      message?.content ? [{ role: message.role ?? "user", content: message.content }] : [],
+  parseAiMessagesJson: vi.fn((message: { role?: string; content?: string }) =>
+    message?.content ? [{ role: message.role ?? "user", content: message.content }] : [],
   ),
   getAiMessagesJsonIfWithinLimit: vi.fn(() => null),
 }));

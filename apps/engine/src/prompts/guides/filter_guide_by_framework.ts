@@ -75,7 +75,11 @@ export function filterGuideByFramework(
       .replace(FLUTTER_TAGS, "");
   }
   // Flutter-only guide on a web runtime: nothing applies.
-  if (hasFlutterSection && !HAS_NEXTJS_BLOCK.test(markdown) && !HAS_VITE_NITRO_BLOCK.test(markdown)) {
+  if (
+    hasFlutterSection &&
+    !HAS_NEXTJS_BLOCK.test(markdown) &&
+    !HAS_VITE_NITRO_BLOCK.test(markdown)
+  ) {
     return markdown.replace(FLUTTER_BLOCK, "").replace(FLUTTER_TAGS, "");
   }
   if (!HAS_NEXTJS_BLOCK.test(markdown)) {
@@ -96,8 +100,5 @@ export function filterGuideByFramework(
       .replace(FLUTTER_BLOCK, "")
       .replace(VITE_NITRO_TAGS, "");
   }
-  return markdown
-    .replace(NEXTJS_TAGS, "")
-    .replace(VITE_NITRO_TAGS, "")
-    .replace(FLUTTER_TAGS, "");
+  return markdown.replace(NEXTJS_TAGS, "").replace(VITE_NITRO_TAGS, "").replace(FLUTTER_TAGS, "");
 }

@@ -1100,7 +1100,7 @@ function ComposerModelLoadingControl(props: { widthClassName: string }) {
 
 interface PlanFollowUpSubmission {
   text: string;
-  interactionMode: "default" | "plan";
+  interactionMode: ProviderInteractionMode;
   dispatchMode: "queue" | "steer";
   queuedTurn?: QueuedComposerPlanFollowUp;
 }
@@ -8987,7 +8987,7 @@ export default function ChatView({
     queuedTurn,
   }: {
     text: string;
-    interactionMode: "default" | "plan";
+    interactionMode: ProviderInteractionMode;
     dispatchMode: "queue" | "steer";
     queuedTurn?: QueuedComposerPlanFollowUp;
   }): Promise<boolean> {
@@ -10408,6 +10408,9 @@ export default function ChatView({
     openReviewTargetPicker: () => {
       setComposerCommandPicker("review-target");
       setComposerHighlightedItemId("review-target:changes");
+    },
+    openModelPicker: () => {
+      handleModelPickerOpenChange(true);
     },
     setComposerDraftProviderModelOptions,
     editorActions: slashEditorActions,

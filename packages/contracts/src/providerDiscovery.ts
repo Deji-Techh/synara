@@ -7,23 +7,7 @@ import { Schema } from "effect";
 import { TrimmedNonEmptyString } from "./baseSchemas";
 import { ProviderOptionDescriptor } from "./model";
 
-const ProviderDiscoveryKind = Schema.Literals([
-  "engine",
-  "openai",
-  "anthropic",
-  "google",
-  "openrouter",
-  "ollama",
-  "deepseek",
-  "groq",
-  "mistral",
-  "together",
-  "cohere",
-  "xai",
-  "fireworks",
-  "opencodeZen",
-  "opencodeGo",
-]);
+const ProviderDiscoveryKind = Schema.Literals(["engine", "groq", "opencodeZen", "opencodeGo"]);
 
 export const ProviderSkillInterface = Schema.Struct({
   displayName: Schema.optional(TrimmedNonEmptyString),
@@ -89,7 +73,7 @@ export const ProviderListSkillsResult = Schema.Struct({
 export type ProviderListSkillsResult = typeof ProviderListSkillsResult.Type;
 
 // Unified cross-provider skills catalog (Caide portable skills). Descriptors use
-// `scope` to carry the origin label ("caide", "openai", "claude", "openai", ...).
+// `scope` to carry the origin label ("caide", "groq", "claude", "groq", ...).
 export const ProviderSkillsCatalogInput = Schema.Struct({
   cwd: Schema.optional(TrimmedNonEmptyString),
 });

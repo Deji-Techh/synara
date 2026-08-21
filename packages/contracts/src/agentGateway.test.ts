@@ -16,7 +16,7 @@ const decodeWait = Schema.decodeUnknownSync(CaideWaitForThreadsInput);
 const thread = {
   prompt: "Explain this repository",
   target: {
-    provider: "openai",
+    provider: "groq",
     model: "gpt-5.5",
     options: { reasoningEffort: "low" },
   },
@@ -65,14 +65,14 @@ describe("agent gateway contracts", () => {
         {
           prompt: "valid-legacy",
           target: {
-            provider: "anthropic",
+            provider: "opencodeZen",
             model: "claude-sonnet-5",
             options: { variant: "high" } as unknown as { reasoningEffort: string },
           },
         },
       ],
     });
-    assert.equal(cross.threads[0]?.target.provider, "anthropic");
+    assert.equal(cross.threads[0]?.target.provider, "opencodeZen");
   });
 
   it("bounds wait targets and timeout", () => {
@@ -109,7 +109,7 @@ describe("agent gateway contracts", () => {
               ],
             },
             exampleTarget: {
-              provider: "openai",
+              provider: "groq",
               model: "gpt-5.5",
               options: { reasoningEffort: "low" },
             },
@@ -117,7 +117,7 @@ describe("agent gateway contracts", () => {
         },
         providers: [
           {
-            provider: "openai",
+            provider: "groq",
             defaultModel: "gpt-5.5",
             models: [{ slug: "gpt-5.5", name: "GPT-5.5" }],
             enabled: true,
@@ -146,7 +146,7 @@ describe("agent gateway contracts", () => {
             projectId: "project-1",
             title: "Worker",
             target: thread.target,
-            provider: "openai",
+            provider: "groq",
             model: "gpt-5.5",
             runtimeMode: "approval-required",
             environment: "local",

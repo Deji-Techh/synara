@@ -262,7 +262,7 @@ const ServerConfigLive = (input: CliInput) =>
         });
       }
 
-      const { homeDir, chatWorkspaceRoot, studioWorkspaceRoot } =
+      const { homeDir, chatWorkspaceRoot } =
         yield* resolveCanonicalWorkspaceRoots({ homeDir: userHomeDir });
 
       const config: ServerConfigShape = {
@@ -271,7 +271,6 @@ const ServerConfigLive = (input: CliInput) =>
         cwd: cliConfig.cwd,
         homeDir,
         chatWorkspaceRoot,
-        studioWorkspaceRoot,
         host,
         baseDir,
         ...derivedPaths,

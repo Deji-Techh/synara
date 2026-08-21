@@ -37,7 +37,7 @@ completion contract, not a suggestion.
 ### Accessibility pass
 
 - Icon-only controls carry `semanticLabel` (or `Tooltip`); hit targets are
-  >= 48x48dp; contrast >= 4.5:1 for body text in light AND dark themes.
+  > = 48x48dp; contrast >= 4.5:1 for body text in light AND dark themes.
 - Layout survives `MediaQuery.textScalerOf(context)` at large scales without
   clipping; reduced motion (`disableAnimationsOf`) degrades meaningfully.
 - Primary flows are reachable by keyboard/switch access on desktop/web targets.
@@ -50,4 +50,4 @@ completion contract, not a suggestion.
   expected.
 - `pubspec.yaml` versions pinned to sane ranges; `flutter_lints` enabled;
   no abandoned packages added for a single convenience call.
-</flutter-only>
+  </flutter-only>

@@ -132,7 +132,8 @@ export function useProviderModelCatalog(input: {
   const groqModelDiscoveryPending =
     groqModelDiscoveryEnabled && isInitialModelDiscoveryPending(groqDynamicModelsQuery);
   const opencodeZenModelDiscoveryPending =
-    opencodeZenModelDiscoveryEnabled && isInitialModelDiscoveryPending(opencodeZenDynamicModelsQuery);
+    opencodeZenModelDiscoveryEnabled &&
+    isInitialModelDiscoveryPending(opencodeZenDynamicModelsQuery);
   const opencodeGoModelDiscoveryPending =
     opencodeGoModelDiscoveryEnabled && isInitialModelDiscoveryPending(opencodeGoDynamicModelsQuery);
 
@@ -190,11 +191,7 @@ export function useProviderModelCatalog(input: {
       opencodeZen: opencodeZenModelDiscoveryPending,
       opencodeGo: opencodeGoModelDiscoveryPending,
     }),
-    [
-      groqModelDiscoveryPending,
-      opencodeZenModelDiscoveryPending,
-      opencodeGoModelDiscoveryPending,
-    ],
+    [groqModelDiscoveryPending, opencodeZenModelDiscoveryPending, opencodeGoModelDiscoveryPending],
   );
 
   const runtimeModelsByProvider = useMemo<

@@ -53,4 +53,4 @@ desktop, and web — instead of stretching a phone column.
 - Widget tests can pump different sizes: `tester.view.physicalSize` /
   `devicePixelRatio` (or `setSize`) to assert the compact vs expanded
   composition actually switches.
-</flutter-only>
+  </flutter-only>

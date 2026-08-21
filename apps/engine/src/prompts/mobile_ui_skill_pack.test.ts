@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { constructLocalAgentPrompt } from "./local_agent_prompt";
 import { CAIDE_MOBILE_UI_SKILL_PACK } from "./mobile_ui_skill_pack";
-import { UI_LIBRARY, getUiReferenceContent } from "@/pro/main/ipc/handlers/local_agent/tools/read_ui_reference";
+import {
+  UI_LIBRARY,
+  getUiReferenceContent,
+} from "@/pro/main/ipc/handlers/local_agent/tools/read_ui_reference";
 import { getSystemPromptForChatMode } from "./system_prompt";
 
 const mandatoryMarkers = [
@@ -53,9 +56,7 @@ describe("CAIDE UI/UX mastery skill", () => {
       expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain(`- ${name} (${entry.kind}):`);
     }
     // The heavy documents themselves must stay out of the always-on prompt.
-    expect(CAIDE_MOBILE_UI_SKILL_PACK).not.toContain(
-      "# Product Archetype Decision Matrix",
-    );
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).not.toContain("# Product Archetype Decision Matrix");
     expect(CAIDE_MOBILE_UI_SKILL_PACK).not.toContain("# Screen Specification Template");
     expect(CAIDE_MOBILE_UI_SKILL_PACK.length).toBeLessThan(120_000);
   });

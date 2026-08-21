@@ -37,10 +37,7 @@ const companionSkills = [
 // always-on design prose. The pack ships only an index of what is available.
 const referenceLibraryBlock = Object.entries(UI_LIBRARY)
   .sort(([a], [b]) => a.localeCompare(b))
-  .map(
-    ([name, entry]) =>
-      `- ${name} (${entry.kind}): ${entry.description}`,
-  )
+  .map(([name, entry]) => `- ${name} (${entry.kind}): ${entry.description}`)
   .join("\n");
 
 export const CAIDE_MOBILE_UI_SKILL_PACK = `

@@ -155,7 +155,11 @@ const TerminalActivityEvent = Schema.Struct({
   type: Schema.Literal("activity"),
   hasRunningSubprocess: Schema.Boolean,
   cliKind: Schema.NullOr(
-    Schema.Union([Schema.Literal("openai"), Schema.Literal("anthropic"), Schema.Literal("google")]),
+    Schema.Union([
+      Schema.Literal("groq"),
+      Schema.Literal("opencodeZen"),
+      Schema.Literal("opencodeGo"),
+    ]),
   ),
   agentState: Schema.NullOr(
     Schema.Union([

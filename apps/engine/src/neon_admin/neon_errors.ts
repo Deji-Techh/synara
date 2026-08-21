@@ -45,9 +45,7 @@ export function getNeonErrorMessage(error: unknown): string {
 
   try {
     const serializedError = JSON.stringify(error);
-    return serializedError && serializedError !== "{}"
-      ? serializedError
-      : "Unknown Neon error";
+    return serializedError && serializedError !== "{}" ? serializedError : "Unknown Neon error";
   } catch {
     return String(error);
   }

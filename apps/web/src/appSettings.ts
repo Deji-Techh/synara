@@ -147,10 +147,7 @@ const withDefaults =
       Schema.withDecodingDefault(() => fallback()),
     );
 
-const PersistedProviderKind = Schema.Literals([
-  "groq",
-  "opencodeZen",
-]).pipe(
+const PersistedProviderKind = Schema.Literals(["groq", "opencodeZen"]).pipe(
   Schema.decodeTo(
     ProviderKind,
     SchemaTransformation.transform({
@@ -301,8 +298,7 @@ export function isGitTextGenerationSettingsDirty(
   defaults: AppSettings,
 ): boolean {
   return (
-    (settings.textGenerationProvider ?? "groq") !==
-      (defaults.textGenerationProvider ?? "groq") ||
+    (settings.textGenerationProvider ?? "groq") !== (defaults.textGenerationProvider ?? "groq") ||
     (settings.textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL) !==
       (defaults.textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL)
   );
@@ -588,15 +584,16 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
     customPiModels: normalizeCustomModelSlugs(settings.customPiModels, "groq"),
     customOpenAiModels: normalizeCustomModelSlugs(settings.customOpenAiModels, "groq"),
     customGoogleModels: normalizeCustomModelSlugs(settings.customGoogleModels, "opencodeGo"),
-    customOpenRouterModels: normalizeCustomModelSlugs(
-      settings.customOpenRouterModels,
-    ),
+    customOpenRouterModels: normalizeCustomModelSlugs(settings.customOpenRouterModels),
     customGroqModels: normalizeCustomModelSlugs(settings.customGroqModels, "groq"),
     customOpenCodeZenModels: normalizeCustomModelSlugs(
       settings.customOpenCodeZenModels,
       "opencodeZen",
     ),
-    customOpenCodeGoModels: normalizeCustomModelSlugs(settings.customOpenCodeGoModels, "opencodeGo"),
+    customOpenCodeGoModels: normalizeCustomModelSlugs(
+      settings.customOpenCodeGoModels,
+      "opencodeGo",
+    ),
     hiddenProviders: normalizeHiddenProviders(settings.hiddenProviders),
     providerOrder: normalizeProviderOrder(settings.providerOrder),
     hiddenModels: [],
@@ -720,7 +717,9 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
     providers.opencodeZen = {
       ...(hasOwn(patch, "opencodeZenApiKey") ? { apiKey: patch.opencodeZenApiKey ?? "" } : {}),
       ...(hasOwn(patch, "opencodeZenBaseUrl") ? { baseUrl: patch.opencodeZenBaseUrl ?? "" } : {}),
-      ...(hasOwn(patch, "customOpenCodeZenModels") ? { customModels: patch.customOpenCodeZenModels ?? [] } : {}),
+      ...(hasOwn(patch, "customOpenCodeZenModels")
+        ? { customModels: patch.customOpenCodeZenModels ?? [] }
+        : {}),
     };
   }
 
@@ -732,7 +731,9 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
     providers.opencodeGo = {
       ...(hasOwn(patch, "opencodeGoApiKey") ? { apiKey: patch.opencodeGoApiKey ?? "" } : {}),
       ...(hasOwn(patch, "opencodeGoBaseUrl") ? { baseUrl: patch.opencodeGoBaseUrl ?? "" } : {}),
-      ...(hasOwn(patch, "customOpenCodeGoModels") ? { customModels: patch.customOpenCodeGoModels ?? [] } : {}),
+      ...(hasOwn(patch, "customOpenCodeGoModels")
+        ? { customModels: patch.customOpenCodeGoModels ?? [] }
+        : {}),
     };
   }
 

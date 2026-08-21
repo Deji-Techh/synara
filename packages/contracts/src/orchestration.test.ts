@@ -108,7 +108,7 @@ it.effect("preserves thread activity payloads through the RPC JSON codec", () =>
           projectId: "project-1",
           title: "Thread 1",
           modelSelection: {
-            provider: "openai",
+            provider: "groq",
             model: "gpt-5.5",
           },
           interactionMode: "default",
@@ -178,12 +178,12 @@ it.effect("preserves thread activity payloads through the RPC JSON codec", () =>
 it.effect("preserves Pi model selections when decoding model selections", () =>
   Effect.gen(function* () {
     const parsed = yield* decodeModelSelection({
-      provider: "openai",
+      provider: "groq",
       model: "gpt-5.5",
     });
 
     assert.deepStrictEqual(parsed, {
-      provider: "openai",
+      provider: "groq",
       model: "gpt-5.5",
     });
   }),
@@ -192,13 +192,13 @@ it.effect("preserves Pi model selections when decoding model selections", () =>
 it.effect("preserves Antigravity effort options separately from the model", () =>
   Effect.gen(function* () {
     const parsed = yield* decodeModelSelection({
-      provider: "google",
+      provider: "opencodeGo",
       model: "gemini-3-flash",
       options: { reasoningEffort: "high" },
     });
 
     assert.deepStrictEqual(parsed, {
-      provider: "google",
+      provider: "opencodeGo",
       model: "gemini-3-flash",
       options: { reasoningEffort: "high" },
     });
@@ -210,13 +210,13 @@ it.effect("preserves Pi model selections through the JSON codec", () =>
     const codec = Schema.fromJsonString(ModelSelection);
     const parsed = yield* Schema.decodeUnknownEffect(codec)(
       JSON.stringify({
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5.5",
       }),
     );
 
     assert.deepStrictEqual(parsed, {
-      provider: "openai",
+      provider: "groq",
       model: "gpt-5.5",
     });
   }),
@@ -225,20 +225,20 @@ it.effect("preserves Pi model selections through the JSON codec", () =>
 it.effect("drops legacy provider passwords from decoded provider options", () =>
   Effect.gen(function* () {
     const parsed = yield* decodeProviderStartOptions({
-      openai: {
-        baseUrl: "https://api.openai.com/v1",
+      groq: {
+        baseUrl: "https://api.groq.com/v1",
       },
-      anthropic: {
-        baseUrl: "https://api.anthropic.com",
+      opencodeZen: {
+        baseUrl: "https://api.opencode.zen/v1",
       },
     });
 
     assert.deepStrictEqual(parsed, {
-      openai: {
-        baseUrl: "https://api.openai.com/v1",
+      groq: {
+        baseUrl: "https://api.groq.com/v1",
       },
-      anthropic: {
-        baseUrl: "https://api.anthropic.com",
+      opencodeZen: {
+        baseUrl: "https://api.opencode.zen/v1",
       },
     });
     assert.doesNotMatch(JSON.stringify(parsed), /serverPassword|legacy-.*-secret/);
@@ -326,7 +326,7 @@ it.effect("trims branded ids and command string fields at decode boundaries", ()
       title: " Project Title ",
       workspaceRoot: " /tmp/workspace ",
       defaultModelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: " gpt-5.5 ",
       },
       createdAt: "2026-01-01T00:00:00.000Z",
@@ -336,7 +336,7 @@ it.effect("trims branded ids and command string fields at decode boundaries", ()
     assert.strictEqual(parsed.title, "Project Title");
     assert.strictEqual(parsed.workspaceRoot, "/tmp/workspace");
     assert.deepStrictEqual(parsed.defaultModelSelection, {
-      provider: "openai",
+      provider: "groq",
       model: "gpt-5.5",
     });
   }),
@@ -349,14 +349,14 @@ it.effect("decodes historical project.created payloads with a default provider",
       title: "Project Title",
       workspaceRoot: "/tmp/workspace",
       defaultModelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5.5",
       },
       scripts: [],
       createdAt: "2026-01-01T00:00:00.000Z",
       updatedAt: "2026-01-01T00:00:00.000Z",
     });
-    assert.strictEqual(parsed.defaultModelSelection?.provider, "openai");
+    assert.strictEqual(parsed.defaultModelSelection?.provider, "groq");
     assert.strictEqual(parsed.isPinned, false);
   }),
 );
@@ -366,13 +366,13 @@ it.effect("decodes project.meta-updated payloads with explicit default provider"
     const parsed = yield* decodeProjectMetaUpdatedPayload({
       projectId: "project-1",
       defaultModelSelection: {
-        provider: "anthropic",
+        provider: "opencodeZen",
         model: "claude-opus-4-6",
       },
       isPinned: true,
       updatedAt: "2026-01-01T00:00:00.000Z",
     });
-    assert.strictEqual(parsed.defaultModelSelection?.provider, "anthropic");
+    assert.strictEqual(parsed.defaultModelSelection?.provider, "opencodeZen");
     assert.strictEqual(parsed.isPinned, true);
   }),
 );
@@ -465,13 +465,13 @@ it.effect("preserves explicit provider and runtime mode in thread.turn.start", (
         attachments: [],
       },
       modelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5.5",
       },
       runtimeMode: "full-access",
       createdAt: "2026-01-01T00:00:00.000Z",
     });
-    assert.strictEqual(parsed.modelSelection?.provider, "openai");
+    assert.strictEqual(parsed.modelSelection?.provider, "groq");
     assert.strictEqual(parsed.runtimeMode, "full-access");
     assert.strictEqual(parsed.interactionMode, DEFAULT_PROVIDER_INTERACTION_MODE);
   }),
@@ -484,7 +484,7 @@ it.effect("decodes thread.created runtime mode for historical events", () =>
       projectId: "project-1",
       title: "Thread title",
       modelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5.5",
       },
       interactionMode: "default",
@@ -495,7 +495,7 @@ it.effect("decodes thread.created runtime mode for historical events", () =>
     });
 
     assert.strictEqual(parsed.runtimeMode, DEFAULT_RUNTIME_MODE);
-    assert.strictEqual(parsed.modelSelection.provider, "openai");
+    assert.strictEqual(parsed.modelSelection.provider, "groq");
   }),
 );
 
@@ -565,12 +565,12 @@ it.effect("decodes thread.meta-updated payloads with explicit provider", () =>
     const parsed = yield* decodeThreadMetaUpdatedPayload({
       threadId: "thread-1",
       modelSelection: {
-        provider: "anthropic",
+        provider: "opencodeZen",
         model: "claude-opus-4-6",
       },
       updatedAt: "2026-01-01T00:00:00.000Z",
     });
-    assert.strictEqual(parsed.modelSelection?.provider, "anthropic");
+    assert.strictEqual(parsed.modelSelection?.provider, "opencodeZen");
   }),
 );
 
@@ -763,7 +763,7 @@ it.effect("accepts provider-scoped model options in thread.turn.start", () =>
         attachments: [],
       },
       modelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5.5",
         options: {
           reasoningEffort: "high",
@@ -772,8 +772,8 @@ it.effect("accepts provider-scoped model options in thread.turn.start", () =>
       },
       createdAt: "2026-01-01T00:00:00.000Z",
     });
-    assert.strictEqual(parsed.modelSelection?.provider, "openai");
-    if (parsed.modelSelection?.provider !== "openai") throw new Error("Expected openai");
+    assert.strictEqual(parsed.modelSelection?.provider, "groq");
+    if (parsed.modelSelection?.provider !== "groq") throw new Error("Expected openai");
     assert.strictEqual(
       (parsed.modelSelection.options as { reasoningEffort?: string })?.reasoningEffort,
       "high",

@@ -55,12 +55,9 @@ describe("deployAllSupabaseFunctions progress", () => {
   beforeEach(async () => {
     appPath = await fs.mkdtemp(path.join(os.tmpdir(), "dyad-supabase-"));
     for (const functionName of ["alpha", "beta"]) {
-      await fs.mkdir(
-        path.join(appPath, "supabase", "functions", functionName),
-        {
-          recursive: true,
-        },
-      );
+      await fs.mkdir(path.join(appPath, "supabase", "functions", functionName), {
+        recursive: true,
+      });
       await fs.writeFile(
         path.join(appPath, "supabase", "functions", functionName, "index.ts"),
         "Deno.serve(() => new Response('ok'));",
@@ -103,9 +100,7 @@ describe("deployAllSupabaseFunctions progress", () => {
       expect(bulkUpdateFunctions).toHaveBeenCalledOnce();
     });
 
-    expect(progressEvents.map((event) => event.phase)).not.toContain(
-      "finished",
-    );
+    expect(progressEvents.map((event) => event.phase)).not.toContain("finished");
 
     finishActivation();
     await expect(deployment).resolves.toEqual([]);
@@ -115,9 +110,7 @@ describe("deployAllSupabaseFunctions progress", () => {
 
   it("emits failed instead of finished when bulk activation fails", async () => {
     const progressEvents: SupabaseDeployProgress[] = [];
-    vi.mocked(bulkUpdateFunctions).mockRejectedValue(
-      new Error("activation down"),
-    );
+    vi.mocked(bulkUpdateFunctions).mockRejectedValue(new Error("activation down"));
 
     await expect(
       deployAllSupabaseFunctions({
@@ -129,9 +122,7 @@ describe("deployAllSupabaseFunctions progress", () => {
       }),
     ).resolves.toEqual(["Failed to bulk update functions: activation down"]);
 
-    expect(progressEvents.map((event) => event.phase)).not.toContain(
-      "finished",
-    );
+    expect(progressEvents.map((event) => event.phase)).not.toContain("finished");
     expect(progressEvents.at(-1)?.phase).toBe("failed");
   });
 
@@ -260,9 +251,7 @@ describe("deployAllSupabaseFunctions progress", () => {
   });
 
   it("does not prune during partial deploys when pruning is skipped", async () => {
-    vi.mocked(listSupabaseFunctions).mockResolvedValue([
-      { slug: "old-fn" },
-    ] as any);
+    vi.mocked(listSupabaseFunctions).mockResolvedValue([{ slug: "old-fn" }] as any);
 
     await expect(
       deploySupabaseFunctions({

@@ -16,10 +16,7 @@ const SCAFFOLD_CANDIDATES = [
   "scaffold",
 ];
 
-async function runFlutterCreate(
-  workspaceRoot: string,
-  appName: string,
-): Promise<boolean> {
+async function runFlutterCreate(workspaceRoot: string, appName: string): Promise<boolean> {
   try {
     const { spawn } = await import("node:child_process");
     const tryFlutter = (flutterCmd: string) =>

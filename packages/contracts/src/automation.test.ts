@@ -32,7 +32,7 @@ it.effect("defaults automation runtime mode to approval-required", () =>
       prompt: "Check for stale dependencies.",
       schedule: { type: "manual" },
       modelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5.5",
       },
     });
@@ -63,7 +63,7 @@ it.effect("decodes legacy automation definitions without completion policies", (
       enabled: true,
       nextRunAt: null,
       modelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5.5",
       },
       runtimeMode: "approval-required",
@@ -130,9 +130,9 @@ it.effect("accepts automation runs with immutable permission snapshots", () =>
       error: null,
       result: null,
       permissionSnapshot: {
-        provider: "openai",
+        provider: "groq",
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "gpt-5.5",
         },
         completionPolicyVersion: 7,
@@ -298,9 +298,9 @@ it.effect("accepts automation stream run updates", () =>
         error: null,
         result: null,
         permissionSnapshot: {
-          provider: "openai",
+          provider: "groq",
           modelSelection: {
-            provider: "openai",
+            provider: "groq",
             model: "gpt-5.5",
           },
           runtimeMode: "approval-required",

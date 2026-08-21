@@ -46,7 +46,18 @@ function makeIsolatedFixture(): { appsDir: string; userDataDir: string; fixtureP
   execFileSync("git", ["-C", fixturePath, "init"], { stdio: "ignore" });
   execFileSync(
     "git",
-    ["-C", fixturePath, "-c", "user.email=test@caide.dev", "-c", "user.name=caide-test", "commit", "--allow-empty", "-m", "init"],
+    [
+      "-C",
+      fixturePath,
+      "-c",
+      "user.email=test@caide.dev",
+      "-c",
+      "user.name=caide-test",
+      "commit",
+      "--allow-empty",
+      "-m",
+      "init",
+    ],
     {
       env: { ...process.env },
       stdio: "ignore",
@@ -68,7 +79,10 @@ function provideAdapter<T>(
           CAIDE_DEV_USER_DATA_DIR: userDataDir,
           ...(extraEnv ?? {}),
         },
-      }).pipe(Layer.provide(ServerSettingsService.layerTest()), Layer.provide(fakeSecretStoreLayer)),
+      }).pipe(
+        Layer.provide(ServerSettingsService.layerTest()),
+        Layer.provide(fakeSecretStoreLayer),
+      ),
     ),
   );
 }
@@ -108,11 +122,13 @@ describe("EngineAdapter", () => {
           // Collect everything up to and including this thread's terminal
           // event; a fixed take(N) is brittle because the exact notification
           // count per turn evolves with the engine protocol.
-          const eventsFiber = yield* adapter.streamEvents.pipe(
-            Stream.filter((e) => e.threadId === threadId),
-            Stream.takeUntil((e) => e.type === "turn.completed"),
-            Stream.runCollect,
-          ).pipe(Effect.forkChild);
+          const eventsFiber = yield* adapter.streamEvents
+            .pipe(
+              Stream.filter((e) => e.threadId === threadId),
+              Stream.takeUntil((e) => e.type === "turn.completed"),
+              Stream.runCollect,
+            )
+            .pipe(Effect.forkChild);
           yield* adapter.startSession({
             threadId,
             runtimeMode: "full-access",
@@ -157,16 +173,18 @@ describe("EngineAdapter", () => {
             });
             // Wait for THIS thread's terminal event so interleaved traffic
             // from other threads can never satisfy the expectation.
-            const terminal = yield* adapter.streamEvents.pipe(
-              Stream.filter(
-                (e) =>
-                  e.threadId === threadId &&
-                  (e.type === "turn.completed" || e.type === "runtime.error"),
-              ),
-              Stream.take(1),
-              Stream.runCollect,
-              Effect.timeout("90 seconds"),
-            ).pipe(Effect.forkChild);
+            const terminal = yield* adapter.streamEvents
+              .pipe(
+                Stream.filter(
+                  (e) =>
+                    e.threadId === threadId &&
+                    (e.type === "turn.completed" || e.type === "runtime.error"),
+                ),
+                Stream.take(1),
+                Stream.runCollect,
+                Effect.timeout("90 seconds"),
+              )
+              .pipe(Effect.forkChild);
             const turnResult = yield* adapter.sendTurn({
               threadId,
               input: "[caide-qa=write]",
@@ -176,9 +194,7 @@ describe("EngineAdapter", () => {
             const settled = yield* Fiber.join(terminal);
             const terminalEvent = Array.from(settled)[0];
             if (terminalEvent?.type !== "turn.completed") {
-              throw new Error(
-                `mode ${mode}: terminal event ${JSON.stringify(terminalEvent)}`,
-              );
+              throw new Error(`mode ${mode}: terminal event ${JSON.stringify(terminalEvent)}`);
             }
           }
         }),
@@ -250,9 +266,7 @@ describe("EngineAdapter", () => {
           expect(active?.id).toBe(created.id);
           expect(active?.appId).toBe(appId);
 
-          const listed = yield* adapter.goals.list(
-            ...(appId !== null ? [{ appId }] : []),
-          );
+          const listed = yield* adapter.goals.list(...(appId !== null ? [{ appId }] : []));
           expect(listed.some((g) => g.id === created.id)).toBe(true);
 
           const fetched = yield* adapter.goals.get({ goalId: created.id });

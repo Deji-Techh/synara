@@ -105,7 +105,7 @@ it.effect("accepts automation create requests", () =>
         prompt: "Check stale dependencies.",
         schedule: { type: "manual" },
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "gpt-5.5",
         },
       },

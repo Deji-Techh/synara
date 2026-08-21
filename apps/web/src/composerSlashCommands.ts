@@ -1,4 +1,4 @@
-import type { GitBranch, ProviderKind } from "@caide/contracts";
+import type { GitBranch, ProviderInteractionMode, ProviderKind } from "@caide/contracts";
 import {
   BUILT_IN_COMPOSER_SLASH_COMMANDS,
   isBuiltInComposerSlashCommandName,
@@ -387,7 +387,7 @@ export function canOfferForkSlashCommand(input: {
   terminalContextCount: number;
   selectedSkillCount: number;
   selectedMentionCount: number;
-  interactionMode: "default" | "plan";
+  interactionMode: ProviderInteractionMode;
 }): boolean {
   return (
     !hasMeaningfulComposerText(input.prompt) &&
@@ -405,7 +405,7 @@ export function canOfferSideSlashCommand(input: {
   terminalContextCount: number;
   selectedSkillCount: number;
   selectedMentionCount: number;
-  interactionMode: "default" | "plan";
+  interactionMode: ProviderInteractionMode;
   isSidechat: boolean;
 }): boolean {
   return (
@@ -454,13 +454,6 @@ export function buildSpawnPrompt(existingPrompt: string): string {
     "Spawn subagents in parallel to handle the current tasks concurrently. Delegate distinct subtasks across subagents and synthesize all findings and code changes.";
   const trimmedPrompt = existingPrompt.trim();
   return trimmedPrompt.length > 0 ? `${trimmedPrompt}\n\n${cannedPrompt}` : cannedPrompt;
-}
-
-export function buildGoalPrompt(existingPrompt: string): string {
-  const cannedPrompt =
-    "Keep working autonomously until the goal below is completely finished. Do not stop at a partial result: verify each part, then check the goal is fully satisfied before reporting completion.\n\nGoal: ";
-  const trimmedPrompt = existingPrompt.trim();
-  return trimmedPrompt.length > 0 ? `${cannedPrompt}${trimmedPrompt}` : cannedPrompt;
 }
 
 /**

@@ -21,7 +21,10 @@ const flutterProductionQuality = rawAsset("src/prompts/guides/flutter-production
 const flutterOfflineStorage = rawAsset("src/prompts/guides/flutter-offline-storage.md");
 const flutterAdaptiveLayout = rawAsset("src/prompts/guides/flutter-adaptive-layout.md");
 
-import { filterGuideByFramework, guideSupportsFramework } from "@/prompts/guides/filter_guide_by_framework";
+import {
+  filterGuideByFramework,
+  guideSupportsFramework,
+} from "@/prompts/guides/filter_guide_by_framework";
 
 /**
  * Registry of available guides. To add a new guide, import its .md file

@@ -126,7 +126,7 @@ export interface QueuedComposerPlanFollowUp {
   createdAt: string;
   previewText: string;
   text: string;
-  interactionMode: "default" | "plan";
+  interactionMode: ProviderInteractionMode;
   mode?: ChatMode | undefined;
   selectedProvider: ProviderKind;
   selectedModel: string | null;

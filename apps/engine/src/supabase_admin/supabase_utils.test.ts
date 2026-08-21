@@ -32,23 +32,17 @@ describe("isServerFunction", () => {
     });
 
     it("should return true for nested function files", () => {
-      expect(isServerFunction("supabase/functions/hello/lib/utils.ts")).toBe(
-        true,
-      );
+      expect(isServerFunction("supabase/functions/hello/lib/utils.ts")).toBe(true);
     });
 
     it("should return true for function with complex name", () => {
-      expect(isServerFunction("supabase/functions/send-email/index.ts")).toBe(
-        true,
-      );
+      expect(isServerFunction("supabase/functions/send-email/index.ts")).toBe(true);
     });
   });
 
   describe("returns false for non-function paths", () => {
     it("should return false for shared modules", () => {
-      expect(isServerFunction("supabase/functions/_shared/utils.ts")).toBe(
-        false,
-      );
+      expect(isServerFunction("supabase/functions/_shared/utils.ts")).toBe(false);
     });
 
     it("should return false for regular source files", () => {
@@ -68,15 +62,11 @@ describe("isServerFunction", () => {
 describe("isSharedServerModule", () => {
   describe("returns true for _shared paths", () => {
     it("should return true for files in _shared", () => {
-      expect(isSharedServerModule("supabase/functions/_shared/utils.ts")).toBe(
-        true,
-      );
+      expect(isSharedServerModule("supabase/functions/_shared/utils.ts")).toBe(true);
     });
 
     it("should return true for nested _shared files", () => {
-      expect(
-        isSharedServerModule("supabase/functions/_shared/lib/helpers.ts"),
-      ).toBe(true);
+      expect(isSharedServerModule("supabase/functions/_shared/lib/helpers.ts")).toBe(true);
     });
 
     it("should return true for _shared directory itself", () => {
@@ -86,15 +76,11 @@ describe("isSharedServerModule", () => {
 
   describe("returns false for non-_shared paths", () => {
     it("should return false for regular functions", () => {
-      expect(isSharedServerModule("supabase/functions/hello/index.ts")).toBe(
-        false,
-      );
+      expect(isSharedServerModule("supabase/functions/hello/index.ts")).toBe(false);
     });
 
     it("should return false for similar but different paths", () => {
-      expect(isSharedServerModule("supabase/functions/shared/utils.ts")).toBe(
-        false,
-      );
+      expect(isSharedServerModule("supabase/functions/shared/utils.ts")).toBe(false);
     });
 
     it("should return false for _shared in wrong location", () => {
@@ -106,55 +92,49 @@ describe("isSharedServerModule", () => {
 describe("extractFunctionNameFromPath", () => {
   describe("extracts function name correctly from nested paths", () => {
     it("should extract function name from index.ts path", () => {
-      expect(
-        extractFunctionNameFromPath("supabase/functions/hello/index.ts"),
-      ).toBe("hello");
+      expect(extractFunctionNameFromPath("supabase/functions/hello/index.ts")).toBe("hello");
     });
 
     it("should extract function name from deeply nested path", () => {
-      expect(
-        extractFunctionNameFromPath("supabase/functions/hello/lib/utils.ts"),
-      ).toBe("hello");
+      expect(extractFunctionNameFromPath("supabase/functions/hello/lib/utils.ts")).toBe("hello");
     });
 
     it("should extract function name from very deeply nested path", () => {
-      expect(
-        extractFunctionNameFromPath(
-          "supabase/functions/hello/src/helpers/format.ts",
-        ),
-      ).toBe("hello");
+      expect(extractFunctionNameFromPath("supabase/functions/hello/src/helpers/format.ts")).toBe(
+        "hello",
+      );
     });
 
     it("should extract function name with dashes", () => {
-      expect(
-        extractFunctionNameFromPath("supabase/functions/send-email/index.ts"),
-      ).toBe("send-email");
+      expect(extractFunctionNameFromPath("supabase/functions/send-email/index.ts")).toBe(
+        "send-email",
+      );
     });
 
     it("should extract function name with underscores", () => {
-      expect(
-        extractFunctionNameFromPath("supabase/functions/my_function/index.ts"),
-      ).toBe("my_function");
+      expect(extractFunctionNameFromPath("supabase/functions/my_function/index.ts")).toBe(
+        "my_function",
+      );
     });
   });
 
   describe("throws for invalid paths", () => {
     it("should throw for _shared paths", () => {
-      expect(() =>
-        extractFunctionNameFromPath("supabase/functions/_shared/utils.ts"),
-      ).toThrow(/Function names starting with "_" are reserved/);
+      expect(() => extractFunctionNameFromPath("supabase/functions/_shared/utils.ts")).toThrow(
+        /Function names starting with "_" are reserved/,
+      );
     });
 
     it("should throw for other _ prefixed directories", () => {
-      expect(() =>
-        extractFunctionNameFromPath("supabase/functions/_internal/utils.ts"),
-      ).toThrow(/Function names starting with "_" are reserved/);
+      expect(() => extractFunctionNameFromPath("supabase/functions/_internal/utils.ts")).toThrow(
+        /Function names starting with "_" are reserved/,
+      );
     });
 
     it("should throw for non-supabase paths", () => {
-      expect(() =>
-        extractFunctionNameFromPath("src/components/Button.tsx"),
-      ).toThrow(/Invalid Supabase function path/);
+      expect(() => extractFunctionNameFromPath("src/components/Button.tsx")).toThrow(
+        /Invalid Supabase function path/,
+      );
     });
 
     it("should throw for supabase root files", () => {
@@ -172,17 +152,13 @@ describe("extractFunctionNameFromPath", () => {
 
   describe("handles edge cases", () => {
     it("should handle backslashes (Windows paths)", () => {
-      expect(
-        extractFunctionNameFromPath(
-          "supabase\\functions\\hello\\lib\\utils.ts",
-        ),
-      ).toBe("hello");
+      expect(extractFunctionNameFromPath("supabase\\functions\\hello\\lib\\utils.ts")).toBe(
+        "hello",
+      );
     });
 
     it("should handle mixed slashes", () => {
-      expect(
-        extractFunctionNameFromPath("supabase/functions\\hello/lib\\utils.ts"),
-      ).toBe("hello");
+      expect(extractFunctionNameFromPath("supabase/functions\\hello/lib\\utils.ts")).toBe("hello");
     });
   });
 });
@@ -207,10 +183,7 @@ describe("getSupabaseFunctionsAffectedBySharedModules", () => {
   }
 
   async function writeFunction(functionName: string, content: string) {
-    await writeAppFile(
-      path.join("supabase", "functions", functionName, "index.ts"),
-      content,
-    );
+    await writeAppFile(path.join("supabase", "functions", functionName, "index.ts"), content);
   }
 
   beforeEach(async () => {
@@ -223,10 +196,7 @@ describe("getSupabaseFunctionsAffectedBySharedModules", () => {
   });
 
   it("returns only functions with direct shared imports", async () => {
-    await writeAppFile(
-      "supabase/functions/_shared/foo.ts",
-      "export const foo = 1;",
-    );
+    await writeAppFile("supabase/functions/_shared/foo.ts", "export const foo = 1;");
     await writeFunction("alpha", "import '../_shared/foo.ts';");
     await writeFunction("beta", "export const beta = 1;");
 
@@ -239,10 +209,7 @@ describe("getSupabaseFunctionsAffectedBySharedModules", () => {
   });
 
   it("ignores Node built-ins when finding affected functions", async () => {
-    await writeAppFile(
-      "supabase/functions/_shared/foo.ts",
-      "export const foo = 1;",
-    );
+    await writeAppFile("supabase/functions/_shared/foo.ts", "export const foo = 1;");
     await writeFunction(
       "alpha",
       "import { text } from 'node:stream/consumers'; import '../_shared/foo.ts';",
@@ -258,10 +225,7 @@ describe("getSupabaseFunctionsAffectedBySharedModules", () => {
   });
 
   it("follows transitive imports and re-exports", async () => {
-    await writeAppFile(
-      "supabase/functions/_shared/foo.ts",
-      "export const foo = 1;",
-    );
+    await writeAppFile("supabase/functions/_shared/foo.ts", "export const foo = 1;");
     await writeAppFile(
       "supabase/functions/alpha/lib/service.ts",
       "export * from '../../_shared/foo.ts';",
@@ -278,10 +242,7 @@ describe("getSupabaseFunctionsAffectedBySharedModules", () => {
   });
 
   it("returns an empty partial set for an unused shared module", async () => {
-    await writeAppFile(
-      "supabase/functions/_shared/unused.ts",
-      "export const unused = 1;",
-    );
+    await writeAppFile("supabase/functions/_shared/unused.ts", "export const unused = 1;");
     await writeFunction("alpha", "export const alpha = 1;");
 
     const impact = await getSupabaseFunctionsAffectedBySharedModules({
@@ -293,10 +254,7 @@ describe("getSupabaseFunctionsAffectedBySharedModules", () => {
   });
 
   it("supports literal dynamic imports and JS/JSX ESM files", async () => {
-    await writeAppFile(
-      "supabase/functions/_shared/foo.jsx",
-      "export const foo = <div />;",
-    );
+    await writeAppFile("supabase/functions/_shared/foo.jsx", "export const foo = <div />;");
     await writeAppFile(
       "supabase/functions/alpha/lib/view.js",
       "export { foo } from '../../_shared/foo.jsx';",
@@ -313,10 +271,7 @@ describe("getSupabaseFunctionsAffectedBySharedModules", () => {
   });
 
   it("resolves directory imports to index files", async () => {
-    await writeAppFile(
-      "supabase/functions/_shared/foo/index.ts",
-      "export const foo = 1;",
-    );
+    await writeAppFile("supabase/functions/_shared/foo/index.ts", "export const foo = 1;");
     await writeFunction("alpha", "import '../_shared/foo';");
 
     const impact = await getSupabaseFunctionsAffectedBySharedModules({
@@ -328,10 +283,7 @@ describe("getSupabaseFunctionsAffectedBySharedModules", () => {
   });
 
   it("handles cyclic imports without falling back", async () => {
-    await writeAppFile(
-      "supabase/functions/_shared/foo.ts",
-      "export const foo = 1;",
-    );
+    await writeAppFile("supabase/functions/_shared/foo.ts", "export const foo = 1;");
     await writeAppFile(
       "supabase/functions/alpha/a.ts",
       "import './b.ts'; import '../_shared/foo.ts';",
@@ -356,14 +308,8 @@ describe("getSupabaseFunctionsAffectedBySharedModules", () => {
     ["import outside functions", "import '../../../src/helper.ts';"],
     ["JS-to-TS extension mismatch", "import './foo.js';"],
   ])("falls back for %s", async (_name, indexContent) => {
-    await writeAppFile(
-      "supabase/functions/_shared/foo.ts",
-      "export const foo = 1;",
-    );
-    await writeAppFile(
-      "supabase/functions/alpha/foo.ts",
-      "export const x = 1;",
-    );
+    await writeAppFile("supabase/functions/_shared/foo.ts", "export const foo = 1;");
+    await writeAppFile("supabase/functions/alpha/foo.ts", "export const x = 1;");
     await writeFunction("alpha", indexContent);
 
     const impact = await getSupabaseFunctionsAffectedBySharedModules({
@@ -391,10 +337,7 @@ describe("getSupabaseFunctionsAffectedBySharedModules", () => {
       recursive: true,
       force: true,
     });
-    await writeAppFile(
-      "supabase/functions/_shared/foo.ts",
-      "export const foo = 1;",
-    );
+    await writeAppFile("supabase/functions/_shared/foo.ts", "export const foo = 1;");
     await writeFunction("alpha", "import '../_shared/foo.ts';");
 
     const impact = await getSupabaseFunctionsAffectedBySharedModules({
@@ -434,30 +377,21 @@ describe("toPosixPath", () => {
 describe("stripSupabaseFunctionsPrefix", () => {
   describe("strips prefix correctly", () => {
     it("should strip full prefix from index.ts", () => {
-      expect(
-        stripSupabaseFunctionsPrefix(
-          "supabase/functions/hello/index.ts",
-          "hello",
-        ),
-      ).toBe("index.ts");
+      expect(stripSupabaseFunctionsPrefix("supabase/functions/hello/index.ts", "hello")).toBe(
+        "index.ts",
+      );
     });
 
     it("should strip prefix from nested file", () => {
-      expect(
-        stripSupabaseFunctionsPrefix(
-          "supabase/functions/hello/lib/utils.ts",
-          "hello",
-        ),
-      ).toBe("lib/utils.ts");
+      expect(stripSupabaseFunctionsPrefix("supabase/functions/hello/lib/utils.ts", "hello")).toBe(
+        "lib/utils.ts",
+      );
     });
 
     it("should handle leading slash", () => {
-      expect(
-        stripSupabaseFunctionsPrefix(
-          "/supabase/functions/hello/index.ts",
-          "hello",
-        ),
-      ).toBe("index.ts");
+      expect(stripSupabaseFunctionsPrefix("/supabase/functions/hello/index.ts", "hello")).toBe(
+        "index.ts",
+      );
     });
   });
 
@@ -468,20 +402,14 @@ describe("stripSupabaseFunctionsPrefix", () => {
     });
 
     it("should handle paths without function name", () => {
-      const result = stripSupabaseFunctionsPrefix(
-        "supabase/functions/other/index.ts",
-        "hello",
-      );
+      const result = stripSupabaseFunctionsPrefix("supabase/functions/other/index.ts", "hello");
       // Should strip base prefix and return the rest
       expect(result).toBe("other/index.ts");
     });
 
     it("should handle empty relative path after prefix", () => {
       // When the path is exactly the function directory
-      const result = stripSupabaseFunctionsPrefix(
-        "supabase/functions/hello",
-        "hello",
-      );
+      const result = stripSupabaseFunctionsPrefix("supabase/functions/hello", "hello");
       expect(result).toBe("hello");
     });
   });
@@ -592,20 +520,16 @@ describe("mapSettledWithConcurrency", () => {
     let activeCount = 0;
     let maxActiveCount = 0;
 
-    const results = await mapSettledWithConcurrency(
-      [1, 2, 3, 4, 5],
-      2,
-      async (value) => {
-        activeCount++;
-        maxActiveCount = Math.max(maxActiveCount, activeCount);
-        await new Promise((resolve) => setTimeout(resolve, 0));
-        activeCount--;
-        if (value === 3) {
-          throw new Error("boom");
-        }
-        return value * 10;
-      },
-    );
+    const results = await mapSettledWithConcurrency([1, 2, 3, 4, 5], 2, async (value) => {
+      activeCount++;
+      maxActiveCount = Math.max(maxActiveCount, activeCount);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      activeCount--;
+      if (value === 3) {
+        throw new Error("boom");
+      }
+      return value * 10;
+    });
 
     expect(maxActiveCount).toBeLessThanOrEqual(2);
     expect(results).toEqual([
@@ -630,49 +554,35 @@ describe("enqueueSupabaseDeploy", () => {
     const startedIndexes: number[] = [];
     const releaseTasks: Array<() => void> = [];
 
-    const tasks = Array.from(
-      { length: SUPABASE_BUNDLE_ONLY_DEPLOY_CONCURRENCY + 4 },
-      (_, index) =>
-        enqueueSupabaseDeploy("project-1", true, async () => {
-          startedIndexes.push(index);
-          activeCount++;
-          maxActiveCount = Math.max(maxActiveCount, activeCount);
-          await new Promise<void>((resolve) => {
-            releaseTasks[index] = resolve;
-          });
-          activeCount--;
-          return index;
-        }),
+    const tasks = Array.from({ length: SUPABASE_BUNDLE_ONLY_DEPLOY_CONCURRENCY + 4 }, (_, index) =>
+      enqueueSupabaseDeploy("project-1", true, async () => {
+        startedIndexes.push(index);
+        activeCount++;
+        maxActiveCount = Math.max(maxActiveCount, activeCount);
+        await new Promise<void>((resolve) => {
+          releaseTasks[index] = resolve;
+        });
+        activeCount--;
+        return index;
+      }),
     );
 
-    expect(startedIndexes).toHaveLength(
-      SUPABASE_BUNDLE_ONLY_DEPLOY_CONCURRENCY,
-    );
+    expect(startedIndexes).toHaveLength(SUPABASE_BUNDLE_ONLY_DEPLOY_CONCURRENCY);
     expect(maxActiveCount).toBe(SUPABASE_BUNDLE_ONLY_DEPLOY_CONCURRENCY);
 
-    for (const releaseTask of releaseTasks.slice(
-      0,
-      SUPABASE_BUNDLE_ONLY_DEPLOY_CONCURRENCY,
-    )) {
+    for (const releaseTask of releaseTasks.slice(0, SUPABASE_BUNDLE_ONLY_DEPLOY_CONCURRENCY)) {
       releaseTask();
     }
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(startedIndexes).toHaveLength(
-      SUPABASE_BUNDLE_ONLY_DEPLOY_CONCURRENCY + 4,
-    );
+    expect(startedIndexes).toHaveLength(SUPABASE_BUNDLE_ONLY_DEPLOY_CONCURRENCY + 4);
 
-    for (const releaseTask of releaseTasks.slice(
-      SUPABASE_BUNDLE_ONLY_DEPLOY_CONCURRENCY,
-    )) {
+    for (const releaseTask of releaseTasks.slice(SUPABASE_BUNDLE_ONLY_DEPLOY_CONCURRENCY)) {
       releaseTask();
     }
 
     await expect(Promise.all(tasks)).resolves.toEqual(
-      Array.from(
-        { length: SUPABASE_BUNDLE_ONLY_DEPLOY_CONCURRENCY + 4 },
-        (_, index) => index,
-      ),
+      Array.from({ length: SUPABASE_BUNDLE_ONLY_DEPLOY_CONCURRENCY + 4 }, (_, index) => index),
     );
   });
 
@@ -682,16 +592,14 @@ describe("enqueueSupabaseDeploy", () => {
     const startedIndexes: number[] = [];
     const releaseTasks: Array<() => void> = [];
 
-    const tasks = Array.from(
-      { length: SUPABASE_ACTIVATING_DEPLOY_CONCURRENCY + 2 },
-      (_, index) =>
-        enqueueSupabaseDeploy("project-1", false, async () => {
-          startedIndexes.push(index);
-          await new Promise<void>((resolve) => {
-            releaseTasks[index] = resolve;
-          });
-          return index;
-        }),
+    const tasks = Array.from({ length: SUPABASE_ACTIVATING_DEPLOY_CONCURRENCY + 2 }, (_, index) =>
+      enqueueSupabaseDeploy("project-1", false, async () => {
+        startedIndexes.push(index);
+        await new Promise<void>((resolve) => {
+          releaseTasks[index] = resolve;
+        });
+        return index;
+      }),
     );
 
     expect(startedIndexes).toEqual([0]);
@@ -728,25 +636,17 @@ describe("enqueueSupabaseDeploy", () => {
           return taskName;
         }),
     );
-    const activatingTask = enqueueSupabaseDeploy(
-      "project-1",
-      false,
-      async () => {
-        startedTasks.push("activate");
-        await new Promise<void>((resolve) => {
-          releaseTasks.activate = resolve;
-        });
-        return "activate";
-      },
-    );
-    const extraBundleTask = enqueueSupabaseDeploy(
-      "project-1",
-      true,
-      async () => {
-        startedTasks.push("extra-bundle");
-        return "extra-bundle";
-      },
-    );
+    const activatingTask = enqueueSupabaseDeploy("project-1", false, async () => {
+      startedTasks.push("activate");
+      await new Promise<void>((resolve) => {
+        releaseTasks.activate = resolve;
+      });
+      return "activate";
+    });
+    const extraBundleTask = enqueueSupabaseDeploy("project-1", true, async () => {
+      startedTasks.push("extra-bundle");
+      return "extra-bundle";
+    });
 
     expect(startedTasks).toEqual(
       Array.from(
@@ -755,11 +655,7 @@ describe("enqueueSupabaseDeploy", () => {
       ),
     );
 
-    for (
-      let index = 0;
-      index < SUPABASE_BUNDLE_ONLY_DEPLOY_CONCURRENCY;
-      index++
-    ) {
+    for (let index = 0; index < SUPABASE_BUNDLE_ONLY_DEPLOY_CONCURRENCY; index++) {
       releaseTasks[`bundle-${index}`]();
     }
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -768,9 +664,7 @@ describe("enqueueSupabaseDeploy", () => {
     expect(startedTasks).not.toContain("extra-bundle");
 
     releaseTasks.activate();
-    await expect(
-      Promise.all([...bundleTasks, activatingTask, extraBundleTask]),
-    ).resolves.toEqual([
+    await expect(Promise.all([...bundleTasks, activatingTask, extraBundleTask])).resolves.toEqual([
       ...Array.from(
         { length: SUPABASE_BUNDLE_ONLY_DEPLOY_CONCURRENCY },
         (_, index) => `bundle-${index}`,
@@ -804,9 +698,6 @@ describe("enqueueSupabaseDeploy", () => {
     releaseTasks[0]();
     releaseTasks[1]();
 
-    await expect(Promise.all(tasks)).resolves.toEqual([
-      "project-1",
-      "project-2",
-    ]);
+    await expect(Promise.all(tasks)).resolves.toEqual(["project-1", "project-2"]);
   });
 });

@@ -1424,7 +1424,7 @@ const make = Effect.gen(function* () {
     readonly modelSelection?: ModelSelection;
     readonly providerOptions?: ProviderStartOptions;
     readonly runtimeMode?: RuntimeMode;
-    readonly interactionMode?: "default" | "plan";
+    readonly interactionMode?: ProviderInteractionMode;
     readonly mode?: ChatMode;
     readonly dispatchMode?: "queue" | "steer";
     readonly createdAt: string;

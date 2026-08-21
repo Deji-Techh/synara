@@ -6,8 +6,7 @@ import { rawAsset } from "@/raw-assets";
 const references: Record<string, { title: string; description: string }> = {
   "product-archetypes": {
     title: "Product Archetypes",
-    description:
-      "Decision matrix of product archetypes and the UX patterns each demands.",
+    description: "Decision matrix of product archetypes and the UX patterns each demands.",
   },
   "design-system": {
     title: "Design System",
@@ -31,23 +30,19 @@ const references: Record<string, { title: string; description: string }> = {
   },
   "design-to-code": {
     title: "Design to Code",
-    description:
-      "Translating design specs into production frontend code without losing intent.",
+    description: "Translating design specs into production frontend code without losing intent.",
   },
   "platform-patterns": {
     title: "Platform Patterns",
-    description:
-      "Platform-idiomatic navigation, gestures, and system integration patterns.",
+    description: "Platform-idiomatic navigation, gestures, and system integration patterns.",
   },
   "quality-rubric": {
     title: "Quality Rubric",
-    description:
-      "Scoring rubric to audit a UI against professional quality gates before delivery.",
+    description: "Scoring rubric to audit a UI against professional quality gates before delivery.",
   },
   "motion-direction": {
     title: "Motion Direction and Capability Routing",
-    description:
-      "Motion language, durations, easings, and when to use which animation capability.",
+    description: "Motion language, durations, easings, and when to use which animation capability.",
   },
 };
 
@@ -77,8 +72,7 @@ const templates: Record<string, { title: string; description: string }> = {
 const companionSkills: Record<string, { title: string; description: string }> = {
   "anti-ai-slop": {
     title: "Anti AI Slop",
-    description:
-      "Full companion skill: rules that keep generated apps from looking AI-generated.",
+    description: "Full companion skill: rules that keep generated apps from looking AI-generated.",
   },
 };
 
@@ -185,16 +179,10 @@ export function getUiReferenceContent(name: string): string {
 }
 
 const readUiReferenceSchema = z.object({
-  name: z
-    .string()
-    .describe(
-      `Document name. Available documents: ${UI_REFERENCE_NAMES.join(", ")}`,
-    ),
+  name: z.string().describe(`Document name. Available documents: ${UI_REFERENCE_NAMES.join(", ")}`),
 });
 
-export const readUiReferenceTool: ToolDefinition<
-  z.infer<typeof readUiReferenceSchema>
-> = {
+export const readUiReferenceTool: ToolDefinition<z.infer<typeof readUiReferenceSchema>> = {
   name: "read_ui_reference",
   description:
     "Read a detailed CAIDE design reference document, template, or skill on demand. " +

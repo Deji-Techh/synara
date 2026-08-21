@@ -1,9 +1,10 @@
 // FILE: src/ipc/engine_ipc_host.ts
 // Purpose: Engine-side IPC registration (the product subset of dyad's
-// ipc_host.ts). Registers only the handler groups the Caide engine exposes
-// over its JSON-RPC bridge. Stripped domains (supabase/neon/vercel/collab/
-// blockchain/portal/figma/share/chatgpt/capacitor/window/upload/... and their
-// renderer-only companions) are intentionally absent.
+// ipc_host.ts). Registers the handler groups the Caide engine exposes
+// over its JSON-RPC bridge, including the Neon and Supabase database
+// integrations. Other stripped domains (vercel/collab/blockchain/portal/
+// figma/share/chatgpt/capacitor/window/upload/... and their renderer-only
+// companions) remain intentionally absent.
 //
 // Registration must happen once before the engine accepts `dyad.invoke`
 // requests.
@@ -38,6 +39,8 @@ import { registerSidebarHandlers } from "./handlers/sidebar_handlers";
 import { registerAppCollectionHandlers } from "./handlers/app_collection_handlers";
 import { registerGoalHandlers } from "./handlers/goal_handlers";
 import { registerReferenceHandlers } from "./handlers/reference_handlers";
+import { registerNeonHandlers } from "./handlers/neon_handlers";
+import { registerSupabaseHandlers } from "./handlers/supabase_handlers";
 
 let registered = false;
 
@@ -83,5 +86,8 @@ export function registerEngineIpcHandlers(): void {
   // Agent surface: goals + references + the local agent tool registry
   registerGoalHandlers();
   registerReferenceHandlers();
+  // Database integrations — Neon + Supabase management, SQL, branches, auth
+  registerNeonHandlers();
+  registerSupabaseHandlers();
   registerAgentToolHandlers();
 }

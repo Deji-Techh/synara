@@ -2,10 +2,7 @@ import { getNeonAvailableSystemPrompt } from "../prompts/neon_prompt";
 import { getCachedEmailPasswordConfig } from "./neon_management_client";
 import { getNeonClientCode, getNeonContext } from "./neon_context";
 import { getCaideAppPath } from "../paths/paths";
-import {
-  detectFrameworkType,
-  detectNextJsMajorVersion,
-} from "../ipc/utils/framework_utils";
+import { detectFrameworkType, detectNextJsMajorVersion } from "../ipc/utils/framework_utils";
 import type { AppFrameworkType } from "@/lib/framework_constants";
 
 interface BuildNeonPromptAdditionsParams {
@@ -30,25 +27,18 @@ export async function buildNeonPromptAdditions({
   let emailVerificationEnabled = false;
   if (branchId) {
     try {
-      const emailConfig = await getCachedEmailPasswordConfig(
-        projectId,
-        branchId,
-      );
+      const emailConfig = await getCachedEmailPasswordConfig(projectId, branchId);
       emailVerificationEnabled = emailConfig.require_email_verification;
     } catch {
       // Best-effort: proceed without email verification guidance.
     }
   }
 
-  let neonPromptAddition = getNeonAvailableSystemPrompt(
-    neonClientCode,
-    frameworkType,
-    {
-      emailVerificationEnabled,
-      nextjsMajorVersion,
-      isLocalAgentMode,
-    },
-  );
+  let neonPromptAddition = getNeonAvailableSystemPrompt(neonClientCode, frameworkType, {
+    emailVerificationEnabled,
+    nextjsMajorVersion,
+    isLocalAgentMode,
+  });
 
   if (includeContext && branchId) {
     try {

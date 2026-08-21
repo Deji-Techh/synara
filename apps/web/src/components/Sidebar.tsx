@@ -387,17 +387,16 @@ import type {
   SidebarSearchThread,
 } from "./SidebarSearchPalette.logic";
 import { useFocusedChatContext } from "../focusedChatContext";
-import { waitForRecoverableProjectInReadModel } from "../lib/projectCreateRecovery";
+import {
+  waitForRecoverableProjectInReadModel,
+  waitForSnapshotMatch,
+} from "../lib/projectCreateRecovery";
 import {
   createOrRecoverProjectFromPath,
   PROJECT_CREATE_EXISTING_SYNC_ERROR,
 } from "../lib/projectCreation";
 import { useSpacesUiStore } from "../spacesUiStore";
-import {
-  CreateProjectDialog,
-  type CreateProjectSubmitOptions,
-  type CreateProjectSubmitValue,
-} from "./CreateProjectDialog";
+import { CreateAppDialog } from "./CreateAppDialog";
 import { SpaceEditorDialog } from "./SpaceEditorDialog";
 import { useSpacesController } from "./useSpacesController";
 import { SpaceEmptyState } from "./SpaceEmptyState";
@@ -1574,7 +1573,7 @@ export default function Sidebar() {
   const usageSettingsShortcutLabel = shortcutLabelForCommand(keybindings, "settings.usage");
   const { activeProjectId: focusedProjectId } = useFocusedChatContext();
   const latestProjectId = useLatestProjectStore((state) => state.latestProjectId);
-  const [createProjectDialogOpen, setCreateProjectDialogOpen] = useState(false);
+  const [createAppDialogOpen, setCreateAppDialogOpen] = useState(false);
   const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
   const openFeedbackDialog = useFeedbackDialogStore((state) => state.openDialog);
   const [searchPaletteMode, setSearchPaletteMode] = useState<SidebarSearchPaletteMode>("search");
@@ -2592,7 +2591,7 @@ export default function Sidebar() {
   );
 
   const handleStartAddProject = useCallback(() => {
-    setCreateProjectDialogOpen(true);
+    setCreateAppDialogOpen(true);
   }, []);
 
   const activeSpaceProjects = useMemo(
@@ -3320,123 +3319,6 @@ export default function Sidebar() {
     activateThreadFromSidebarIntent,
     onCloseProjectContextMenu: handleCloseProjectContextMenu,
   });
-  const handleCreateProjectSubmit = useCallback(
-    async (value: CreateProjectSubmitValue, options: CreateProjectSubmitOptions) => {
-      const previousSpaceId = activeSpaceId;
-      const existingProject =
-        value.source === "local"
-          ? findWorkspaceRootMatch(projects, value.workspaceRoot, (project) => project.cwd)
-          : null;
-      // Reopening an existing project must follow the Space where that project
-      // actually lives. New projects use the destination selected in the dialog.
-      const destinationSpaceId = existingProject
-        ? (existingProject.spaceId ?? null)
-        : value.spaceId;
-      const runCreateProject = async () => {
-        // M4a flatten: creating a project adopts the dyad "recent = createdAt"
-        // convention so newly created chats surface at the top of the sidebar.
-        updateSettings({ sidebarThreadSortOrder: "created_at" });
-        if (value.source === "github") {
-          const api = readNativeApi();
-          if (!api) throw new Error("The app server is unavailable.");
-          await runExclusiveProjectAddition(projectAdditionLockRef, async () => {
-            const openProvisionedProject = async (
-              projectId: ProjectId,
-              workspaceRoot: string | undefined,
-              waitForProject: typeof waitForProjectInSnapshot,
-            ) => {
-              const { project, snapshot } = await waitForProject(api, projectId, workspaceRoot);
-              if (snapshot) {
-                syncServerShellSnapshot(snapshot);
-              }
-              if (!project || !snapshot) return false;
-
-              handleSelectSpaceForIncomingProject(project.spaceId ?? null);
-              await openExistingProjectFromSnapshot(project.id, snapshot);
-              return true;
-            };
-            const requestedProjectId = newProjectId();
-            const requestedWorkspaceRoot = joinProjectPath(
-              expandProjectHomePath(value.destinationParent, homeDir),
-              value.directoryName,
-            );
-            const provision = await runProjectProvisionWithCancellationRecovery({
-              signal: options.signal,
-              provision: () =>
-                api.projects.provisionFromGitHub(
-                  {
-                    operationId: value.operationId,
-                    repository: value.repository,
-                    destinationParent: value.destinationParent,
-                    directoryName: value.directoryName,
-                    commandId: newCommandId(),
-                    projectId: requestedProjectId,
-                    newProjectSpaceId: value.spaceId,
-                    defaultModelSelection: {
-                      provider: "groq",
-                      model: getDefaultModel("groq"),
-                    },
-                    createdAt: new Date().toISOString(),
-                  },
-                  { signal: options.signal },
-                ),
-              // Cancellation can race the server's project.create commit. If that
-              // commit won, recover the durable project and report success instead
-              // of telling the user a registered project was cancelled.
-              recoverCommittedProject: () =>
-                openProvisionedProject(
-                  requestedProjectId,
-                  requestedWorkspaceRoot,
-                  waitForCancelledGitHubProjectInSnapshot,
-                ),
-            });
-            if (provision.status === "recovered") return;
-            if (
-              !(await openProvisionedProject(
-                provision.result.projectId,
-                undefined,
-                waitForProjectInSnapshot,
-              ))
-            ) {
-              throw new Error(
-                "The GitHub project was added, but it has not synced into the sidebar yet. Try again in a moment.",
-              );
-            }
-          });
-        } else {
-          handleSelectSpaceForIncomingProject(destinationSpaceId);
-          await addProjectFromPath(value.workspaceRoot, {
-            createIfMissing: value.createIfMissing,
-            spaceId: value.spaceId,
-          });
-        }
-      };
-
-      // Keep the compiler-sensitive try block free of value/throw statements.
-      // Land on the destination space before creating so the sidebar follows the
-      // new project's thread instead of bouncing back to the previous space.
-      try {
-        await runCreateProject();
-      } catch (error) {
-        // Project creation is one UI transaction: a failed command must not
-        // strand the sidebar in a Space unrelated to the current route.
-        handleSelectSpaceForIncomingProject(previousSpaceId);
-        throw error;
-      }
-    },
-    [
-      activeSpaceId,
-      addProjectFromPath,
-      handleSelectSpaceForIncomingProject,
-      homeDir,
-      openExistingProjectFromSnapshot,
-      projects,
-      syncServerShellSnapshot,
-      updateSettings,
-      waitForCancelledGitHubProjectInSnapshot,
-      waitForProjectInSnapshot,
-    ],
-  );
 
   // Tab index 0 is Void, then spaces in strip order — the same mapping the
   // space.jump.N dispatch below uses, surfaced in each tab's tooltip.
@@ -3876,7 +3758,7 @@ export default function Sidebar() {
   );
   const projectEmptyState = resolveProjectEmptyState({
     projectCount: standardProjects.length,
-    shouldShowProjectPathEntry: createProjectDialogOpen,
+    shouldShowProjectPathEntry: createAppDialogOpen,
     threadsHydrated,
   });
   const standardProjectSidebarDataById = useMemo<ReadonlyMap<ProjectId, SidebarDerivedProjectData>>(
@@ -5151,7 +5033,7 @@ export default function Sidebar() {
       if (command === "sidebar.addProject") {
         event.preventDefault();
         event.stopPropagation();
-        setCreateProjectDialogOpen(true);
+        setCreateAppDialogOpen(true);
         return;
       }
       if (command === "sidebar.importThread") {
@@ -6321,14 +6203,12 @@ export default function Sidebar() {
         </SidebarMenu>
       </SidebarFooter>
 
-      <CreateProjectDialog
-        open={createProjectDialogOpen}
-        githubProvisioningAvailable={githubProvisioningAvailable}
-        spaces={spaces}
-        activeSpaceId={activeSpaceId}
-        defaultCloneParent={homeDir ?? "~"}
-        onOpenChange={setCreateProjectDialogOpen}
-        onSubmit={handleCreateProjectSubmit}
+      <CreateAppDialog
+        open={createAppDialogOpen}
+        onOpenChange={setCreateAppDialogOpen}
+        onCreated={(result) => {
+          void handleAppCreated(result);
+        }}
       />
 
       <SpaceEditorDialog

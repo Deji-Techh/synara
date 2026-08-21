@@ -46,4 +46,4 @@ solves the actual problem; do not add a database before the product needs one.
   usually app-lifetime singletons — open once, close never (except tests).
 - In tests use in-memory instances (`NativeDatabase.memory()` for drift) rather
   than temp files.
-</flutter-only>
+  </flutter-only>

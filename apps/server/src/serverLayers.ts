@@ -12,7 +12,6 @@ import { CheckpointDiffQueryLive } from "./checkpointing/Layers/CheckpointDiffQu
 import { CheckpointStoreLive } from "./checkpointing/Layers/CheckpointStore";
 import { CheckpointReactorLive } from "./orchestration/Layers/CheckpointReactor";
 import { OrchestrationReactorLive } from "./orchestration/Layers/OrchestrationReactor";
-import { StudioOutputReactorLive } from "./orchestration/Layers/StudioOutputReactor";
 import { ThreadGitMetadataReactorLive } from "./orchestration/Layers/ThreadGitMetadataReactor";
 import { ProviderCommandReactorLive } from "./orchestration/Layers/ProviderCommandReactor";
 import { ProviderRuntimeIngestionLive } from "./orchestration/Layers/ProviderRuntimeIngestion";
@@ -100,9 +99,6 @@ export function makeServerRuntimeServicesLayer(
   const runtimeIngestionLayer = ProviderRuntimeIngestionLive.pipe(
     Layer.provideMerge(runtimeServicesLayer),
   );
-  const studioOutputReactorLayer = StudioOutputReactorLive.pipe(
-    Layer.provideMerge(runtimeServicesLayer),
-  );
   const threadGitMetadataReactorLayer = ThreadGitMetadataReactorLive.pipe(
     Layer.provideMerge(runtimeServicesLayer),
     Layer.provideMerge(GitLayerLive),
@@ -110,7 +106,6 @@ export function makeServerRuntimeServicesLayer(
   const providerCommandReactorLayer = ProviderCommandReactorLive.pipe(
     Layer.provideMerge(runtimeServicesLayer),
     Layer.provideMerge(OrchestrationEventDeliveryRepositoryLive),
-    Layer.provideMerge(studioOutputReactorLayer),
     Layer.provideMerge(GitCoreLive),
     Layer.provideMerge(TextGenerationLayerLive),
     Layer.provideMerge(ServerSettingsLive),
@@ -126,7 +121,6 @@ export function makeServerRuntimeServicesLayer(
     Layer.provideMerge(runtimeIngestionLayer),
     Layer.provideMerge(providerCommandReactorLayer),
     Layer.provideMerge(checkpointReactorLayer),
-    Layer.provideMerge(studioOutputReactorLayer),
     Layer.provideMerge(threadGitMetadataReactorLayer),
   );
   const threadDeletionReactorLayer = provideThreadDeletionReactorDeviceService(

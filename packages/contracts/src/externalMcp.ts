@@ -22,7 +22,7 @@ export const ExternalMcpCapability = Schema.Literals([
 export type ExternalMcpCapability = typeof ExternalMcpCapability.Type;
 
 export const ExternalMcpClientKind = Schema.Literals([
-  "openai",
+  "groq",
   "claudeCode",
   "claudeDesktop",
   "other",

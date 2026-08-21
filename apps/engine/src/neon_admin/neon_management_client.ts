@@ -65,17 +65,10 @@ export async function refreshNeonToken(): Promise<void> {
     );
 
     if (!response.ok) {
-      throw new CaideError(
-        `Token refresh failed: ${response.statusText}`,
-        CaideErrorKind.External,
-      );
+      throw new CaideError(`Token refresh failed: ${response.statusText}`, CaideErrorKind.External);
     }
 
-    const {
-      accessToken,
-      refreshToken: newRefreshToken,
-      expiresIn,
-    } = await response.json();
+    const { accessToken, refreshToken: newRefreshToken, expiresIn } = await response.json();
 
     // Update settings with new tokens
     writeSettings({
@@ -260,11 +253,7 @@ export async function getNeonClient(): Promise<Api<unknown>> {
           base_url: getMockAuthBaseUrl(branchId),
         },
       }),
-      createNeonAuth: async (
-        projectId: string,
-        branchId: string,
-        data: any,
-      ) => ({
+      createNeonAuth: async (projectId: string, branchId: string, data: any) => ({
         data: {
           auth_provider: data.auth_provider || "better_auth",
           auth_provider_project_id: "test-auth-project-id",
@@ -276,10 +265,7 @@ export async function getNeonClient(): Promise<Api<unknown>> {
           base_url: getMockAuthBaseUrl(branchId),
         },
       }),
-      listBranchNeonAuthTrustedDomains: async (
-        _projectId: string,
-        _branchId: string,
-      ) => ({
+      listBranchNeonAuthTrustedDomains: async (_projectId: string, _branchId: string) => ({
         data: {
           domains: [] as Array<{ domain: string; auth_provider: string }>,
         },
@@ -318,10 +304,7 @@ export async function getNeonClient(): Promise<Api<unknown>> {
           },
         },
       }),
-      getNeonAuthEmailAndPasswordConfig: async (
-        _projectId: string,
-        _branchId: string,
-      ) => ({
+      getNeonAuthEmailAndPasswordConfig: async (_projectId: string, _branchId: string) => ({
         data: {
           enabled: true,
           email_verification_method: "otp",
@@ -342,8 +325,7 @@ export async function getNeonClient(): Promise<Api<unknown>> {
           email_verification_method: "otp",
           require_email_verification: data.require_email_verification ?? false,
           auto_sign_in_after_verification: true,
-          send_verification_email_on_sign_up:
-            data.send_verification_email_on_sign_up ?? false,
+          send_verification_email_on_sign_up: data.send_verification_email_on_sign_up ?? false,
           send_verification_email_on_sign_in: false,
           disable_sign_up: false,
         },
@@ -372,10 +354,7 @@ export async function getNeonClient(): Promise<Api<unknown>> {
     const newAccessToken = updatedSettings.neon?.accessToken?.value;
 
     if (!newAccessToken) {
-      throw new CaideError(
-        "Failed to refresh Neon access token",
-        CaideErrorKind.Auth,
-      );
+      throw new CaideError("Failed to refresh Neon access token", CaideErrorKind.Auth);
     }
 
     return createApiClient({
@@ -401,24 +380,15 @@ export async function getNeonOrganizationId(): Promise<string> {
   try {
     const response = await neonClient.getCurrentUserOrganizations();
 
-    if (
-      !response.data?.organizations ||
-      response.data.organizations.length === 0
-    ) {
-      throw new CaideError(
-        "No organizations found for this Neon account",
-        CaideErrorKind.NotFound,
-      );
+    if (!response.data?.organizations || response.data.organizations.length === 0) {
+      throw new CaideError("No organizations found for this Neon account", CaideErrorKind.NotFound);
     }
 
     // Return the first organization ID
     return response.data.organizations[0].id;
   } catch (error) {
     logger.error("Error fetching Neon organizations:", error);
-    throw new CaideError(
-      "Failed to fetch Neon organizations",
-      CaideErrorKind.External,
-    );
+    throw new CaideError("Failed to fetch Neon organizations", CaideErrorKind.External);
   }
 }
 
@@ -445,15 +415,9 @@ type EmailPasswordConfig = typeof DEFAULT_EMAIL_PASSWORD_CONFIG;
 
 const EMAIL_PASSWORD_CONFIG_TTL_MS = 60_000;
 
-const emailPasswordConfigCache = new Map<
-  string,
-  { data: EmailPasswordConfig; expiry: number }
->();
+const emailPasswordConfigCache = new Map<string, { data: EmailPasswordConfig; expiry: number }>();
 
-export function invalidateEmailPasswordConfigCache(
-  projectId: string,
-  branchId: string,
-): void {
+export function invalidateEmailPasswordConfigCache(projectId: string, branchId: string): void {
   emailPasswordConfigCache.delete(`${projectId}:${branchId}`);
 }
 
@@ -469,10 +433,7 @@ export async function getCachedEmailPasswordConfig(
 
   const neonClient = await getNeonClient();
   try {
-    const response = await neonClient.getNeonAuthEmailAndPasswordConfig(
-      projectId,
-      branchId,
-    );
+    const response = await neonClient.getNeonAuthEmailAndPasswordConfig(projectId, branchId);
     const data = response.data as EmailPasswordConfig;
     emailPasswordConfigCache.set(key, {
       data,
@@ -487,10 +448,7 @@ export async function getCachedEmailPasswordConfig(
       });
       return DEFAULT_EMAIL_PASSWORD_CONFIG;
     }
-    logger.error(
-      "Failed to fetch Neon Auth email/password config:",
-      getNeonErrorMessage(error),
-    );
+    logger.error("Failed to fetch Neon Auth email/password config:", getNeonErrorMessage(error));
     throw error;
   }
 }

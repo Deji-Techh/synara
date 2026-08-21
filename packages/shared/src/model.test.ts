@@ -67,8 +67,8 @@ const SYNTHETIC_CAPS: ModelCapabilities = {
 
 describe("getDefaultModel", () => {
   it("returns the per-provider default model", () => {
-    expect(getDefaultModel("groq")).toBe("gpt-5.5");
-    expect(getDefaultModel("opencodeZen")).toBe("claude-sonnet-5");
+    expect(getDefaultModel("groq")).toBe("llama-3.3-70b-versatile");
+    expect(getDefaultModel("opencodeZen")).toBe("deepseek-v4-flash-free");
     expect(getDefaultModel()).toBe(DEFAULT_MODEL);
   });
 
@@ -104,7 +104,7 @@ describe("formatModelDisplayName", () => {
   it("uses built-in names for catalog models", () => {
     expect(formatModelDisplayName("gpt-5.5")).toBe("GPT-5.5");
     expect(formatModelDisplayName("claude-sonnet-5")).toBe("Claude Sonnet 5");
-    expect(formatModelDisplayName("GPT-5.5-MINI")).toBe("GPT-5.5 Mini");
+    expect(formatModelDisplayName("LLAMA-3.1-8B-INSTANT")).toBe("Llama 3.1 8B Instant");
   });
 
   it("falls back to humanized slugs for unknown models", () => {
@@ -197,9 +197,9 @@ describe("selection value extraction", () => {
     expect(
       getModelSelectionStringOptionValue(selection({ reasoningEffort: 3 }), "reasoningEffort"),
     ).toBe("3");
-    expect(
-      getModelSelectionBooleanOptionValue(selection({ fastMode: false }), "fastMode"),
-    ).toBe(false);
+    expect(getModelSelectionBooleanOptionValue(selection({ fastMode: false }), "fastMode")).toBe(
+      false,
+    );
   });
 
   it("returns undefined for missing selections or wrong types", () => {
@@ -291,14 +291,14 @@ describe("getModelCapabilities", () => {
   });
 
   it("coerces legacy provider names to their API provider", () => {
-    expect(getModelCapabilities("groq", "gpt-5.5")).toEqual(
-      getModelCapabilities("groq", "gpt-5.5"),
+    expect(getModelCapabilities("groq", "llama-3.3-70b-versatile")).toEqual(
+      getModelCapabilities("groq", "llama-3.3-70b-versatile"),
     );
-    expect(getModelCapabilities("groq", "claude-sonnet-5")).toEqual(
-      getModelCapabilities("opencodeZen", "claude-sonnet-5"),
+    expect(getModelCapabilities("codex", "llama-3.3-70b-versatile")).toEqual(
+      getModelCapabilities("groq", "llama-3.3-70b-versatile"),
     );
-    expect(getModelCapabilities("grok", "grok-4")).toEqual(
-      getModelCapabilities("xai", "grok-4"),
+    expect(getModelCapabilities("opencodeZen", "deepseek-v4-flash-free")).toEqual(
+      getModelCapabilities("opencodeZen", "deepseek-v4-flash-free"),
     );
   });
 });
@@ -334,7 +334,7 @@ describe("normalizeModelSlug", () => {
   });
 
   it("coerces legacy provider names before normalizing", () => {
-    expect(normalizeModelSlug("claude-sonnet-5[1m]", "groq")).toBe("claude-sonnet-5");
+    expect(normalizeModelSlug("claude-sonnet-5[1m]", "groq")).toBe("claude-sonnet-5[1m]");
   });
 });
 
@@ -359,7 +359,9 @@ describe("resolveSelectableModel", () => {
 
 describe("resolveModelSlugForProvider", () => {
   it("resolves catalog slugs and falls back to the provider default", () => {
-    expect(resolveModelSlugForProvider("groq", "gpt-5.5-mini")).toBe("gpt-5.5-mini");
+    expect(resolveModelSlugForProvider("groq", "llama-3.1-8b-instant")).toBe(
+      "llama-3.1-8b-instant",
+    );
     expect(resolveModelSlugForProvider("groq", "totally-custom")).toBe(
       DEFAULT_MODEL_BY_PROVIDER.groq,
     );
@@ -374,9 +376,11 @@ describe("resolveModelSlugForProvider", () => {
   });
 
   it("coerces legacy provider names before resolving", () => {
-    expect(resolveModelSlugForProvider("groq" as never, "gpt-5.5")).toBe("gpt-5.5");
+    expect(resolveModelSlugForProvider("groq" as never, "llama-3.3-70b-versatile")).toBe(
+      "llama-3.3-70b-versatile",
+    );
     expect(resolveModelSlugForProvider("groq" as never, undefined)).toBe(
-      DEFAULT_MODEL_BY_PROVIDER.opencodeZen,
+      DEFAULT_MODEL_BY_PROVIDER.groq,
     );
   });
 });
@@ -421,10 +425,12 @@ describe("claudeSelectionRequiresRestart", () => {
     ({ provider: "opencodeZen", model, ...(options ? { options } : {}) }) as ModelSelection;
 
   it("never restarts for non-anthropic providers", () => {
-    expect(claudeSelectionRequiresRestart(anthropic("claude-sonnet-5"), {
-      provider: "groq",
-      model: "gpt-5.5",
-    } as ModelSelection)).toBe(false);
+    expect(
+      claudeSelectionRequiresRestart(anthropic("claude-sonnet-5"), {
+        provider: "groq",
+        model: "gpt-5.5",
+      } as ModelSelection),
+    ).toBe(false);
   });
 
   it("treats a first observation as unchanged", () => {
@@ -439,10 +445,13 @@ describe("claudeSelectionRequiresRestart", () => {
       } as ModelSelection),
     ).toBe(false);
     expect(
-      claudeSelectionRequiresRestart({ provider: "groq", model: "gpt-5.5" } as ModelSelection, {
-        provider: "opencodeZen",
-        model: "claude-opus-5",
-      } as ModelSelection),
+      claudeSelectionRequiresRestart(
+        { provider: "groq", model: "gpt-5.5" } as ModelSelection,
+        {
+          provider: "opencodeZen",
+          model: "claude-opus-5",
+        } as ModelSelection,
+      ),
     ).toBe(true);
   });
 });

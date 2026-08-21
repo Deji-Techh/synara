@@ -90,9 +90,10 @@ export function useComposerSlashCommands(input: {
   syncServerShellSnapshot: (snapshot: OrchestrationShellSnapshot) => void;
   navigateToThread: (threadId: ThreadId, options?: { splitViewId?: SplitViewId }) => Promise<void>;
   handleClearConversation: () => Promise<void> | void;
-  handleInteractionModeChange: (mode: "default" | "plan") => Promise<void> | void;
+  handleInteractionModeChange: (mode: ProviderInteractionMode) => Promise<void> | void;
   openForkTargetPicker: () => void;
   openReviewTargetPicker: () => void;
+  openModelPicker: () => void;
   setComposerDraftProviderModelOptions: (
     threadId: ThreadId,
     provider: ProviderKind,
@@ -145,6 +146,7 @@ export function useComposerSlashCommands(input: {
     handleInteractionModeChange,
     openForkTargetPicker,
     openReviewTargetPicker,
+    openModelPicker,
     setComposerDraftProviderModelOptions,
     editorActions,
   } = input;
@@ -781,8 +783,13 @@ export function useComposerSlashCommands(input: {
         trimmed,
         availableBuiltInSlashCommands,
       );
-      if (!slashInvocation || slashInvocation.command === "model") {
+      if (!slashInvocation) {
         return false;
+      }
+      if (slashInvocation.command === "model") {
+        editorActions.clearComposerSlashDraft();
+        openModelPicker();
+        return true;
       }
       if (slashInvocation.command === "clear") {
         editorActions.clearComposerSlashDraft();
@@ -794,8 +801,12 @@ export function useComposerSlashCommands(input: {
         await compactProviderThread();
         return true;
       }
-      if (slashInvocation.command === "plan" || slashInvocation.command === "default") {
-        await handleInteractionModeChange(slashInvocation.command === "plan" ? "plan" : "default");
+      if (
+        slashInvocation.command === "plan" ||
+        slashInvocation.command === "default" ||
+        slashInvocation.command === "debug"
+      ) {
+        await handleInteractionModeChange(slashInvocation.command);
         editorActions.clearComposerSlashDraft();
         return true;
       }
@@ -1070,6 +1081,7 @@ export function useComposerSlashCommands(input: {
       handleInteractionModeChange,
       openForkTargetPicker,
       openFeedbackDialog,
+      openModelPicker,
       openReviewTargetPicker,
       selectedProvider,
       supportsTextNativeReviewCommand,
@@ -1090,21 +1102,12 @@ export function useComposerSlashCommands(input: {
       }
 
       if (item.command === "model") {
-        const replacement = "/model ";
-        const replacementRangeEnd = extendReplacementRangeForTrailingSpace(
-          snapshot.value,
-          trigger.rangeEnd,
-          replacement,
-        );
-        const applied = editorActions.applyPromptReplacement(
-          trigger.rangeStart,
-          replacementRangeEnd,
-          replacement,
-          { expectedText: snapshot.value.slice(trigger.rangeStart, replacementRangeEnd) },
-        );
-        if (wasPromptReplacementApplied(applied)) {
-          editorActions.setComposerHighlightedItemId(null);
+        const applied = clearSlashCommandFromComposer();
+        if (!wasPromptReplacementApplied(applied)) {
+          return;
         }
+        editorActions.setComposerHighlightedItemId(null);
+        openModelPicker();
         return;
       }
 
@@ -1153,8 +1156,8 @@ export function useComposerSlashCommands(input: {
         return;
       }
 
-      if (item.command === "plan" || item.command === "default") {
-        void handleInteractionModeChange(item.command === "plan" ? "plan" : "default");
+      if (item.command === "plan" || item.command === "default" || item.command === "debug") {
+        void handleInteractionModeChange(item.command);
         const applied = clearSlashCommandFromComposer();
         if (wasPromptReplacementApplied(applied)) {
           editorActions.setComposerHighlightedItemId(null);
@@ -1490,6 +1493,7 @@ export function useComposerSlashCommands(input: {
       handleInteractionModeChange,
       openForkTargetPicker,
       openFeedbackDialog,
+      openModelPicker,
       openReviewTargetPicker,
       selectedProvider,
       supportsTextNativeReviewCommand,

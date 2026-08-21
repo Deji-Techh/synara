@@ -753,7 +753,7 @@ export function buildCodexInitializeParams() {
 }
 
 function buildCodexCollaborationMode(input: {
-  readonly interactionMode?: "default" | "plan";
+  readonly interactionMode?: ProviderInteractionMode;
   readonly model?: string;
   readonly effort?: string;
   readonly systemPrompt?: string;
@@ -771,14 +771,17 @@ function buildCodexCollaborationMode(input: {
     return undefined;
   }
   const model = normalizeCodexModelSlug(input.model) ?? "gpt-5.3-codex";
+  // Debug mode has no native Codex collaboration mode; its evidence-first
+  // instructions are injected by the reactor prompt shim instead.
+  const codexMode = input.interactionMode === "plan" ? "plan" : "default";
   return {
-    mode: input.interactionMode,
+    mode: codexMode,
     settings: {
       model,
       reasoning_effort: input.effort ?? "medium",
       developer_instructions: [
         ...(input.systemPrompt ? [input.systemPrompt] : []),
-        input.interactionMode === "plan"
+        codexMode === "plan"
           ? CODEX_PLAN_MODE_DEVELOPER_INSTRUCTIONS
           : CODEX_DEFAULT_MODE_DEVELOPER_INSTRUCTIONS,
       ].join("\n\n"),

@@ -33,16 +33,11 @@ export async function getBranchRoleName({
 }): Promise<string> {
   try {
     const neonClient = await getNeonClient();
-    const rolesResponse = await neonClient.listProjectBranchRoles(
-      projectId,
-      branchId,
-    );
+    const rolesResponse = await neonClient.listProjectBranchRoles(projectId, branchId);
     const roles = rolesResponse.data.roles ?? [];
     // Prefer neondb_owner (the default admin role), then any non-protected role, then any role
     const userRole =
-      roles.find((r) => r.name === "neondb_owner") ??
-      roles.find((r) => !r.protected) ??
-      roles[0];
+      roles.find((r) => r.name === "neondb_owner") ?? roles.find((r) => !r.protected) ?? roles[0];
     if (!userRole?.name) {
       logger.warn(
         `No Neon branch roles found for ${projectId}/${branchId}, falling back to neondb_owner`,
@@ -57,10 +52,7 @@ export async function getBranchRoleName({
       );
       return "neondb_owner";
     }
-    logger.warn(
-      `Failed to fetch Neon branch roles for ${projectId}/${branchId}`,
-      error,
-    );
+    logger.warn(`Failed to fetch Neon branch roles for ${projectId}/${branchId}`, error);
     throw error;
   }
 }
@@ -78,10 +70,7 @@ export async function getBranchDatabaseName({
 }): Promise<string> {
   try {
     const neonClient = await getNeonClient();
-    const databasesResponse = await neonClient.listProjectBranchDatabases(
-      projectId,
-      branchId,
-    );
+    const databasesResponse = await neonClient.listProjectBranchDatabases(projectId, branchId);
     const databases = databasesResponse.data.databases ?? [];
     const database = databases[0];
     if (!database?.name) {
@@ -98,10 +87,7 @@ export async function getBranchDatabaseName({
       );
       return "neondb";
     }
-    logger.warn(
-      `Failed to fetch Neon branch databases for ${projectId}/${branchId}`,
-      error,
-    );
+    logger.warn(`Failed to fetch Neon branch databases for ${projectId}/${branchId}`, error);
     throw error;
   }
 }
@@ -364,9 +350,7 @@ ${projectId}
     const connectionUri = await getConnectionUri({ projectId, branchId });
     const sql = neon(connectionUri);
     const tableResult = await sql.query(TABLE_NAMES_QUERY, []);
-    const tableNames = tableResult.map(
-      (row) => (row as Record<string, string>).table_name,
-    );
+    const tableNames = tableResult.map((row) => (row as Record<string, string>).table_name);
 
     return `# Neon Project Info
 
@@ -419,12 +403,10 @@ export async function getNeonTableSchema({
     const connectionUri = await getConnectionUri({ projectId, branchId });
     const sql = neon(connectionUri);
 
-    const { query: schemaQuery, params: schemaParams } =
-      buildTableSchemaQuery(tableName);
+    const { query: schemaQuery, params: schemaParams } = buildTableSchemaQuery(tableName);
     const schemaResult = await sql.query(schemaQuery, schemaParams);
 
-    const { query: indexesQuery, params: indexesParams } =
-      buildIndexesQuery(tableName);
+    const { query: indexesQuery, params: indexesParams } = buildIndexesQuery(tableName);
     const indexesResult = await sql.query(indexesQuery, indexesParams);
 
     return JSON.stringify(
@@ -451,9 +433,7 @@ export async function getNeonTableSchema({
 /**
  * Generate framework-specific client code for connecting to Neon.
  */
-export function getNeonClientCode(
-  frameworkType: AppFrameworkType | null,
-): string {
+export function getNeonClientCode(frameworkType: AppFrameworkType | null): string {
   if (frameworkType === "nextjs") {
     return `// Neon Database Client (server-side only)
 // File: src/db/index.ts
