@@ -113,6 +113,11 @@ const DEFAULT_TIMEOUT_MS = 4_000;
 const CLAUDE_HEALTH_TIMEOUT_MS = 20_000;
 const OPENCODE_HEALTH_TIMEOUT_MS = 20_000;
 const CODEX_AUTH_STATUS_ARGS = ["-c", "mcp_servers={}", "login", "status"] as const;
+// Legacy CLI-probe provider ids. These kinds were removed from the product, but
+// their probe/cache plumbing still runs; every status these constants produce
+// must be dropped before a status list reaches the wire (the ServerConfig
+// schema rejects unknown kinds, which would fail the whole config response and
+// strand the picker on "Checking").
 const CODEX_PROVIDER = "openai" as const;
 const CLAUDE_AGENT_PROVIDER = "anthropic" as const;
 const CURSOR_PROVIDER = "openai" as const;
@@ -123,6 +128,17 @@ const KILO_PROVIDER = "openai" as const;
 const OPENCODE_PROVIDER = "openai" as const;
 const PI_PROVIDER = "openai" as const;
 const ENGINE_PROVIDER = "engine" as const;
+
+const SURVIVING_PROVIDER_KINDS: ReadonlySet<ProviderKind> = new Set<ProviderKind>([
+  ENGINE_PROVIDER,
+  ...API_PROVIDER_KINDS,
+]);
+
+const isSurvivingProviderStatus = (
+  status: ServerProviderStatus,
+): status is ServerProviderStatus & { provider: ProviderKind } =>
+  SURVIVING_PROVIDER_KINDS.has(status.provider);
+
 type ProviderStatuses = ReadonlyArray<ServerProviderStatus>;
 const DISABLED_PROVIDER_STATUS_MESSAGE = "Provider is disabled in Caide settings.";
 const MINIMUM_ANTIGRAVITY_CLI_VERSION = "1.0.12";
@@ -2117,6 +2133,12 @@ export function projectProviderStatusesForSettings(
   const projected: ServerProviderStatus[] = [];
 
   for (const provider of PROVIDERS) {
+    // The engine status is synthesized below; its legacy probe slot must not
+    // emit a raw entry (fresh installs have none, so the picker would strand
+    // on "Checking").
+    if (provider === ENGINE_PROVIDER) {
+      continue;
+    }
     const status = statusByProvider.get(provider);
     if (!isProviderEnabledForSettings(provider, settings)) {
       const disabledStatus = makeDisabledProviderStatus(provider, status?.checkedAt ?? checkedAt);
@@ -2153,7 +2175,28 @@ export function projectProviderStatusesForSettings(
     projected.push(makeApiProviderStatus(provider, settings, checkedAt));
   }
 
-  return orderProviderStatuses(projected);
+  // Same for the engine ("Builder") provider: no CLI probe exists, so it is
+  // selectable purely from settings.
+  if (isProviderEnabledForSettings(ENGINE_PROVIDER, settings)) {
+    projected.push({
+      provider: ENGINE_PROVIDER,
+      status: "ready" as const,
+      available: true,
+      authStatus: "unknown" as const,
+      checkedAt,
+    });
+  } else {
+    const disabledEngine = makeDisabledProviderStatus(ENGINE_PROVIDER, checkedAt);
+    projected.push({
+      ...disabledEngine,
+      versionAdvisory: makeSuppressedProviderVersionAdvisory(disabledEngine),
+    } satisfies ServerProviderStatus);
+  }
+
+  // Legacy probe entries (and stale disk caches) can carry removed provider
+  // kinds; the wire schema rejects unknown kinds, so drop them here — the one
+  // choke point shared by getStatuses, refreshes, and change pushes.
+  return orderProviderStatuses(projected.filter(isSurvivingProviderStatus));
 }
 
 // ── Layer ───────────────────────────────────────────────────────────
@@ -2200,7 +2243,9 @@ export function makeProviderHealthLive(options?: { readonly providerUpdateTimeou
           orderProviderStatuses(
             statuses.filter(
               (status): status is ServerProviderStatus =>
-                status !== undefined && !isDisabledProviderStatusOverlay(status),
+                status !== undefined &&
+                !isDisabledProviderStatusOverlay(status) &&
+                isSurvivingProviderStatus(status),
             ),
           ),
         ),
@@ -2493,7 +2538,11 @@ export function makeProviderHealthLive(options?: { readonly providerUpdateTimeou
           Effect.provideService(Path.Path, path),
           Effect.map((statuses) =>
             orderProviderStatuses(
-              statuses.flatMap((status) => (Option.isSome(status) ? [status.value] : [])),
+              statuses.flatMap((status) =>
+                Option.isSome(status) && isSurvivingProviderStatus(status.value)
+                  ? [status.value]
+                  : [],
+              ),
             ),
           ),
           Effect.flatMap(enrichStatuses),
