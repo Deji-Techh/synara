@@ -241,6 +241,7 @@ export function resolvePromptEffortFromModelSelection(
     case "xai":
     case "fireworks":
     case "opencodeZen":
+    case "opencodeGo":
       return modelSelection.options?.reasoningEffort ?? null;
   }
 }

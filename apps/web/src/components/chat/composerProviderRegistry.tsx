@@ -414,6 +414,13 @@ const composerProviderRegistry: Record<ProviderKind, ProviderRegistryEntry> = {
     renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("opencodeZen", input),
     renderTraitsPicker: (input) => renderTraitsPickerForProvider("opencodeZen", input),
   },
+  // Missing entries here crash the composer the moment a provider is selected:
+  // getComposerProviderState dereferences registry[provider].getState directly.
+  opencodeGo: {
+    getState: (input) => getProviderStateFromCapabilities(input),
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("opencodeGo", input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider("opencodeGo", input),
+  },
 };
 
 export function getComposerProviderState(input: ComposerProviderStateInput): ComposerProviderState {
