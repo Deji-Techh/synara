@@ -114,9 +114,7 @@ export function DatabasePanel(props: {
         apps.find((candidate) => basename(candidate.path) === basename(root));
       if (!match) {
         setApp(null);
-        setResolveError(
-          "No engine app matches this workspace yet. Start a chat to provision it.",
-        );
+        setResolveError("No engine app matches this workspace yet. Start a chat to provision it.");
         return;
       }
       setApp(match);
@@ -186,7 +184,10 @@ export function DatabasePanel(props: {
   const loadNeonProjects = () =>
     run(async () => {
       setShowNeonPicker(true);
-      const response = await invokeDatabase<{ projects?: NeonProject[] }>(props.threadId, "neon:list-projects");
+      const response = await invokeDatabase<{ projects?: NeonProject[] }>(
+        props.threadId,
+        "neon:list-projects",
+      );
       setNeonProjects(Array.isArray(response?.projects) ? response.projects : []);
     });
 
@@ -226,7 +227,7 @@ export function DatabasePanel(props: {
         const list =
           (Array.isArray(response as unknown as NeonBranch[])
             ? (response as unknown as NeonBranch[])
-            : response?.branches ?? response?.data?.branches) ?? [];
+            : (response?.branches ?? response?.data?.branches)) ?? [];
         setBranches(list);
       });
   }, [app?.neonProjectId, run]);
@@ -350,7 +351,12 @@ export function DatabasePanel(props: {
                         Link a Neon project to give the agent a managed Postgres database with
                         branching.
                       </p>
-                      <Button size="sm" variant="outline" disabled={busy} onClick={loadNeonProjects}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={busy}
+                        onClick={loadNeonProjects}
+                      >
                         <PlusIcon className="size-3" /> Link Neon project
                       </Button>
                     </>
@@ -360,7 +366,9 @@ export function DatabasePanel(props: {
                     <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto rounded-md border border-border p-1">
                       {(neonProjects ?? []).length === 0 && (
                         <li className="px-2 py-1 text-xs text-muted-foreground">
-                          {neonProjects === null ? "Loading projects..." : "No Neon projects found."}
+                          {neonProjects === null
+                            ? "Loading projects..."
+                            : "No Neon projects found."}
                         </li>
                       )}
                       {(neonProjects ?? []).map((project) => (

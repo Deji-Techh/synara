@@ -26,9 +26,7 @@ const ARTIFACT_DISPLAY_NAME_MAX_LENGTH = 200;
 /** Hard cap on a single listing; the dialog filters/sorts client-side. */
 export const ARTIFACTS_LIST_MAX_COUNT = 500;
 
-export const ArtifactId = TrimmedNonEmptyString.check(
-  Schema.isMaxLength(ARTIFACT_ID_MAX_LENGTH),
-);
+export const ArtifactId = TrimmedNonEmptyString.check(Schema.isMaxLength(ARTIFACT_ID_MAX_LENGTH));
 export type ArtifactId = typeof ArtifactId.Type;
 
 export const ArtifactKind = Schema.Literals(["apk", "aab", "ipa"]);
@@ -94,7 +92,15 @@ export const ArtifactsShareUrlInput = Schema.Struct({
 });
 export type ArtifactsShareUrlInput = typeof ArtifactsShareUrlInput.Type;
 
+/**
+ * Share material for one artifact. The server mints a long-TTL local-preview
+ * grant scoped to the artifact file; the client assembles the actual URL via
+ * its own origin-aware builder (`buildLocalImageUrl`) so desktop custom
+ * protocols keep working.
+ */
 export const ArtifactsShareUrlResult = Schema.Struct({
-  url: TrimmedNonEmptyString.check(Schema.isMaxLength(2048)),
+  filePath: TrimmedNonEmptyString.check(Schema.isMaxLength(1024)),
+  grant: TrimmedNonEmptyString.check(Schema.isMaxLength(128)),
+  expiresAt: IsoDateTime,
 });
 export type ArtifactsShareUrlResult = typeof ArtifactsShareUrlResult.Type;

@@ -291,13 +291,6 @@ export const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
 
   // ── Providers ─────────────────────────────────────────────────────────────────
   {
-    id: "providers:automatic-cli-update-checks",
-    section: "providers",
-    title: "Automatic CLI update checks",
-    keywords:
-      "Check Codex Claude and other provider CLIs for newer versions in the background. updates upgrade disable nags",
-  },
-  {
     id: "providers:visible-providers",
     section: "providers",
     title: "Visible providers",
@@ -305,16 +298,11 @@ export const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
       "Drag providers into your preferred picker order and hide the ones you don't use. visibility order",
   },
   {
-    id: "providers:provider-updates",
+    id: "providers:builder-engine",
     section: "providers",
-    title: "Provider updates",
-    keywords: "Update installed provider tools that Caide can safely update. upgrade cli",
-  },
-  {
-    id: "providers:installed-clis",
-    section: "providers",
-    title: "Installed CLIs",
-    keywords: "Review provider versions and update tools. binary overrides path install",
+    title: "Builder engine",
+    keywords:
+      "Configure the Builder engine API key, base URL, model ID, and pinned Flutter SDK path. endpoint flutter",
   },
 
   // ── Skills ────────────────────────────────────────────────────────────────────
@@ -325,7 +313,6 @@ export const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
     keywords: "Every skill found across providers, with toggles to control availability. agent",
     target: null,
   },
-
 
   // ── Advanced ──────────────────────────────────────────────────────────────────
   {

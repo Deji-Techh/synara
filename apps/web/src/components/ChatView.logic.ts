@@ -582,9 +582,7 @@ export function resolveEnvironmentPanelVisible(input: {
 }
 
 // Normal project toolbars stay stable while repository discovery is pending.
-export function resolveGitRepoUiState(input: {
-  queriedIsRepo: boolean | undefined;
-}): boolean {
+export function resolveGitRepoUiState(input: { queriedIsRepo: boolean | undefined }): boolean {
   return input.queriedIsRepo ?? true;
 }
 

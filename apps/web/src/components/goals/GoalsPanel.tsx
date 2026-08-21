@@ -360,11 +360,7 @@ function SubagentsTab(props: { runs: GoalRun[]; events: GoalActivityEvent[] }) {
   const engineSubagents = useEngineSubagentStore((state) => state.subagents);
   useEffect(() => ensureEngineSubagentSubscription(), []);
 
-  if (
-    runs.length === 0 &&
-    events.length === 0 &&
-    engineSubagents.length === 0
-  ) {
+  if (runs.length === 0 && events.length === 0 && engineSubagents.length === 0) {
     return (
       <PanelStateMessage>
         <div className="flex flex-col items-center gap-1.5">

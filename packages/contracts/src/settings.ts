@@ -122,6 +122,15 @@ export const ServerSettingsPatch = Schema.Struct({
   textGenerationModelSelection: Schema.optionalKey(ModelSelectionPatch),
   providers: Schema.optionalKey(
     Schema.Struct({
+      engine: Schema.optionalKey(
+        Schema.Struct({
+          ...ProviderSettingsBasePatch,
+          baseUrl: Schema.optionalKey(StringSetting),
+          modelId: Schema.optionalKey(StringSetting),
+          apiKey: Schema.optionalKey(StringSetting),
+          flutterSdkBin: Schema.optionalKey(StringSetting),
+        }),
+      ),
       groq: Schema.optionalKey(
         Schema.Struct({
           ...ProviderSettingsBasePatch,

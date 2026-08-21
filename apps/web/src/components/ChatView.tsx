@@ -11096,8 +11096,7 @@ export default function ChatView({
   };
   const showEmptyLandingProjectPicker =
     isCenteredEmptyLanding && isLocalDraftThread && activeProject?.kind === "project";
-  const showContainerChatWorkspacePicker =
-    isEmptyChatLanding && isHomeChatContainer;
+  const showContainerChatWorkspacePicker = isEmptyChatLanding && isHomeChatContainer;
   const emptyLandingProjectChip =
     !showContainerChatWorkspacePicker &&
     !showEmptyLandingProjectPicker &&

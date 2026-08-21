@@ -87,6 +87,7 @@ import {
   SpaceId,
   type ProviderKind,
   ThreadId,
+  type AppCreateResult,
   type ResolvedKeybindingsConfig,
   WS_GITHUB_PROJECT_PROVISIONING_CAPABILITY,
 } from "@caide/contracts";
@@ -1764,9 +1765,7 @@ export default function Sidebar() {
     : null;
   const ordinarySpaceProjects = useMemo(
     () =>
-      projects.filter((project) =>
-        isOrdinarySpaceProject(project, { homeDir, chatWorkspaceRoot }),
-      ),
+      projects.filter((project) => isOrdinarySpaceProject(project, { homeDir, chatWorkspaceRoot })),
     [chatWorkspaceRoot, homeDir, projects],
   );
 
@@ -2358,6 +2357,28 @@ export default function Sidebar() {
   const handleStartAddProject = useCallback(() => {
     setCreateAppDialogOpen(true);
   }, []);
+
+  // Dyad-parity app creation: the server RPC already created the engine app,
+  // its first chat, and the bound orchestration project + thread. Wait for
+  // the read model to surface them, then land in the new chat.
+  const handleAppCreated = useCallback(
+    async (result: AppCreateResult) => {
+      const api = readNativeApi();
+      if (!api) return;
+      const { snapshot } = await waitForSnapshotMatch({
+        loadSnapshot: () => api.orchestration.getShellSnapshot().catch(() => null),
+        findMatch: (candidate) =>
+          candidate.projects.find((project) => project.id === result.projectId) ?? null,
+        maxAttempts: ADD_PROJECT_SNAPSHOT_CATCH_UP_MAX_ATTEMPTS,
+        delayMs: ADD_PROJECT_SNAPSHOT_CATCH_UP_DELAY_MS,
+      });
+      if (snapshot) {
+        syncServerShellSnapshot(snapshot);
+      }
+      await navigate({ to: "/$threadId", params: { threadId: result.threadId } });
+    },
+    [navigate, syncServerShellSnapshot],
+  );
 
   const activeSpaceProjects = useMemo(
     () => ordinarySpaceProjects.filter((project) => (project.spaceId ?? null) === activeSpaceId),
@@ -5399,7 +5420,7 @@ export default function Sidebar() {
               {/* Primary sidebar actions stay limited to features we currently ship. */}
               <SidebarGroup className="px-1.5 pt-1 pb-1.5">
                 <SidebarMenu className="gap-0.5">
-                  {(
+                  {
                     <>
                       <SidebarPrimaryAction
                         icon={NewThreadIcon}
@@ -5439,7 +5460,7 @@ export default function Sidebar() {
                         }}
                       />
                     </>
-                  )}
+                  }
                 </SidebarMenu>
               </SidebarGroup>
 

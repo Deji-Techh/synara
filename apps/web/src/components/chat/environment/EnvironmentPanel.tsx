@@ -359,7 +359,6 @@ export function EnvironmentPanel({
         />
       ) : null}
 
-
       {settings.showEnvironmentEditor ? (
         <EnvironmentEditorSection
           keybindings={keybindings}

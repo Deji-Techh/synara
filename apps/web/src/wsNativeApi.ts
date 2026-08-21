@@ -830,8 +830,7 @@ export function createWsNativeApi(): NativeApi {
       onDomainEvent: goalDomainEventListeners.subscribe,
     },
     subagents: {
-      getActive: (input) =>
-        transport.request(SUBAGENTS_WS_METHODS.getActive, input ?? {}),
+      getActive: (input) => transport.request(SUBAGENTS_WS_METHODS.getActive, input ?? {}),
       onEvent: subagentEventListeners.subscribe,
     },
     automation: {

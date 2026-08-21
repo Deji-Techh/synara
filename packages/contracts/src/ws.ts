@@ -608,10 +608,7 @@ export const WsPushGoalsDomainEvent = makeWsPushSchema(
   WS_CHANNELS.goalDomainEvent,
   GoalDomainEvent,
 );
-export const WsPushSubagentEvent = makeWsPushSchema(
-  WS_CHANNELS.subagentEvent,
-  EngineSubagentEvent,
-);
+export const WsPushSubagentEvent = makeWsPushSchema(WS_CHANNELS.subagentEvent, EngineSubagentEvent);
 
 export const WsPushChannelSchema = Schema.Literals([
   WS_CHANNELS.gitActionProgress,

@@ -1105,10 +1105,7 @@ function recordProjectCreateCommand(command: unknown): boolean {
         ...fixture.snapshot.projects.filter((project) => project.id !== projectId),
         {
           id: projectId,
-          kind:
-            "kind" in command && command.kind === "chat"
-              ? command.kind
-              : "project",
+          kind: "kind" in command && command.kind === "chat" ? command.kind : "project",
           title: String(command.title),
           workspaceRoot: String(command.workspaceRoot),
           defaultModelSelection:

@@ -173,9 +173,7 @@ export const useGoalStore = create<GoalStoreState>()((set, get) => {
         }
         // Refresh runs for live goals so statuses stay current between events.
         void loadRuns(
-          goals
-            .filter((goal) => GOAL_LIVE_STATUSES.includes(goal.status))
-            .map((goal) => goal.id),
+          goals.filter((goal) => GOAL_LIVE_STATUSES.includes(goal.status)).map((goal) => goal.id),
         );
       } catch (error) {
         set({ loading: false, loaded: get().loaded });

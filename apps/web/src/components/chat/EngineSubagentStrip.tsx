@@ -9,10 +9,7 @@
 import { useEffect } from "react";
 import { pluralize } from "@caide/shared/text";
 
-import {
-  useEngineSubagentStore,
-  ensureEngineSubagentSubscription,
-} from "~/engineSubagentStore";
+import { useEngineSubagentStore, ensureEngineSubagentSubscription } from "~/engineSubagentStore";
 import { BotIcon, LoaderIcon } from "~/lib/icons";
 import {
   subagentStatusDotClassName,

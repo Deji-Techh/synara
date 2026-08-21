@@ -44,6 +44,9 @@ import { SettingResetButton, useSettingsRestoreSignal } from "./SettingControls"
 import { SettingsRow, SettingsSection } from "./SettingsPanelPrimitives";
 
 type ProviderInstallTextKey =
+  | "engineBaseUrl"
+  | "engineModelId"
+  | "engineFlutterSdkBin"
   | "openaiBaseUrl"
   | "anthropicBaseUrl"
   | "googleBaseUrl"
@@ -59,6 +62,7 @@ type ProviderInstallTextKey =
   | "opencodeZenBaseUrl"
   | "opencodeGoBaseUrl";
 type ProviderInstallPasswordKey =
+  | "engineApiKey"
   | "openaiApiKey"
   | "anthropicApiKey"
   | "googleApiKey"
@@ -74,6 +78,7 @@ type ProviderInstallPasswordKey =
   | "opencodeZenApiKey"
   | "opencodeGoApiKey";
 type ProviderInstallPasswordConfiguredKey =
+  | "engineApiKeyConfigured"
   | "openaiApiKeyConfigured"
   | "anthropicApiKeyConfigured"
   | "googleApiKeyConfigured"
@@ -118,6 +123,42 @@ const PROVIDER_VISIBILITY_OPTIONS: ReadonlyArray<{ provider: ProviderKind; title
   }));
 
 const PROVIDER_INSTALL_SETTINGS: readonly ProviderInstallSettings[] = [
+  {
+    provider: "engine",
+    docs: [],
+    fields: [
+      {
+        kind: "password",
+        settingsKey: "engineApiKey",
+        configuredKey: "engineApiKeyConfigured",
+        label: "Builder API key",
+        placeholder: "API Key",
+        description: "API key the Builder engine uses for its OpenAI-compatible endpoint.",
+      },
+      {
+        kind: "text",
+        settingsKey: "engineBaseUrl",
+        label: "Builder base URL",
+        placeholder: "https://api.openai.com/v1",
+        description: "OpenAI-compatible chat endpoint the Builder engine talks to.",
+      },
+      {
+        kind: "text",
+        settingsKey: "engineModelId",
+        label: "Builder model ID",
+        placeholder: "gpt-5.6-sol",
+        description: "Model slug requested from the endpoint for agent turns.",
+      },
+      {
+        kind: "text",
+        settingsKey: "engineFlutterSdkBin",
+        label: "Flutter SDK binary",
+        placeholder: "/opt/flutter/bin/flutter",
+        description:
+          "Optional absolute path to the flutter binary. Overrides FLUTTER_SDK_BIN/PATH resolution.",
+      },
+    ],
+  },
   {
     provider: "groq",
     docs: [{ label: "API Keys", href: "https://console.groq.com/keys" }],
@@ -306,6 +347,9 @@ function SortableProviderVisibilityRow(props: {
 }
 
 function ProviderDocsLinks({ docs }: { docs: ProviderInstallSettings["docs"] }) {
+  if (docs.length === 0) {
+    return null;
+  }
   return (
     <div className={cn(SETTINGS_OUTLINED_SURFACE_CLASS_NAME, "px-3 py-2.5")}>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

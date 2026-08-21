@@ -107,7 +107,7 @@ describe("selecting an empty Space", () => {
         availableSplitViewIds: new Set(),
         threadIds: [homeThread.id],
         sidebarThreadSummaryById: { [homeThread.id]: { projectId: homeThread.projectId } },
-          draftProjectIdByThreadId: new Map(),
+        draftProjectIdByThreadId: new Map(),
         rememberedSplitViewThreadIds: undefined,
         landingSpace: { spaceId: workSpaceId, projectById, workspacePaths: paths },
       }),
@@ -124,7 +124,7 @@ describe("selecting an empty Space", () => {
         availableSplitViewIds: new Set(["split-cross-space"]),
         threadIds: [voidThread.id],
         sidebarThreadSummaryById: { [voidThread.id]: { projectId: voidThread.projectId } },
-          draftProjectIdByThreadId: new Map(),
+        draftProjectIdByThreadId: new Map(),
         // Unscoped startup preserves the remembered split without applying a Space policy.
         rememberedSplitViewThreadIds: undefined,
         landingSpace: null,
@@ -146,7 +146,7 @@ describe("selecting an empty Space", () => {
           [workThread.id]: { projectId: workThread.projectId },
           [voidThread.id]: { projectId: voidThread.projectId },
         },
-          draftProjectIdByThreadId: new Map(),
+        draftProjectIdByThreadId: new Map(),
         rememberedSplitViewThreadIds: [workThread.id, voidThread.id],
         landingSpace: {
           spaceId: workSpaceId,
@@ -169,7 +169,7 @@ describe("selecting an empty Space", () => {
         sidebarThreadSummaryById: {
           [workThread.id]: { projectId: workThread.projectId },
         },
-          draftProjectIdByThreadId: new Map(),
+        draftProjectIdByThreadId: new Map(),
         rememberedSplitViewThreadIds: undefined,
         landingSpace: {
           spaceId: workSpaceId,
@@ -194,7 +194,7 @@ describe("selecting an empty Space", () => {
           [firstThread.id]: { projectId: firstThread.projectId },
           [secondThread.id]: { projectId: secondThread.projectId },
         },
-          draftProjectIdByThreadId: new Map(),
+        draftProjectIdByThreadId: new Map(),
         rememberedSplitViewThreadIds: [firstThread.id, secondThread.id],
         landingSpace: {
           spaceId: workSpaceId,

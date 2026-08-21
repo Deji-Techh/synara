@@ -39,10 +39,7 @@ function thread(input: {
 }
 
 describe("buildThreadMentionComposerItems", () => {
-  const projects = [
-    project("project", "project", "Caide"),
-    project("chats", "chat", "Home"),
-  ];
+  const projects = [project("project", "project", "Caide"), project("chats", "chat", "Home")];
 
   it("searches titles across project and chat sections and excludes the current thread", () => {
     const items = buildThreadMentionComposerItems({

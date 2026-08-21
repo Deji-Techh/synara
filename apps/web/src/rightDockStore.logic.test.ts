@@ -30,6 +30,7 @@ describe("RIGHT_DOCK_PANE_KINDS (single source of truth)", () => {
       "pullRequest",
       "preview",
       "goals",
+      "database",
     ]);
   });
 

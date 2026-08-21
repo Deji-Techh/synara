@@ -824,9 +824,7 @@ export interface NativeApi {
     onDomainEvent: (callback: (event: GoalDomainEvent) => void) => () => void;
   };
   subagents: {
-    getActive: (input?: {
-      appId?: number | null;
-    }) => Promise<EngineActiveSubagent[]>;
+    getActive: (input?: { appId?: number | null }) => Promise<EngineActiveSubagent[]>;
     onEvent: (callback: (event: EngineSubagentEvent) => void) => () => void;
   };
   automation: {

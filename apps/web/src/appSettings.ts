@@ -188,6 +188,11 @@ export const AppSettingsSchema = Schema.Struct({
   ),
   openCodeServerPasswordConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
   openCodeExperimentalWebSockets: Schema.Boolean.pipe(withDefaults(() => false)),
+  engineApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  engineApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
+  engineBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  engineModelId: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  engineFlutterSdkBin: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
   groqApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
   groqApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
   groqBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
@@ -630,6 +635,10 @@ function serverSettingsToAppSettings(settings: ServerSettingsView): Partial<AppS
     customOpenCodeModels: (settings.providers as any).opencode?.customModels,
     customPiModels: (settings.providers as any).pi?.customModels,
     customGroqModels: settings.providers.groq.customModels,
+    engineApiKeyConfigured: settings.providers.engine.apiKeyConfigured,
+    engineBaseUrl: settings.providers.engine.baseUrl,
+    engineModelId: settings.providers.engine.modelId,
+    engineFlutterSdkBin: settings.providers.engine.flutterSdkBin,
     customOpenCodeZenModels: settings.providers.opencodeZen.customModels,
     groqApiKeyConfigured: settings.providers.groq.apiKeyConfigured,
     groqBaseUrl: settings.providers.groq.baseUrl,
@@ -664,7 +673,10 @@ function touchesProviderDiscoverySettings(patch: Partial<AppSettings>): boolean 
     hasOwn(patch, "opencodeZenApiKey") ||
     hasOwn(patch, "opencodeZenBaseUrl") ||
     hasOwn(patch, "opencodeGoApiKey") ||
-    hasOwn(patch, "opencodeGoBaseUrl")
+    hasOwn(patch, "opencodeGoBaseUrl") ||
+    hasOwn(patch, "engineApiKey") ||
+    hasOwn(patch, "engineBaseUrl") ||
+    hasOwn(patch, "engineModelId")
   );
 }
 
@@ -691,6 +703,26 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
         model,
       }),
       model,
+    };
+  }
+
+  if (
+    hasOwn(patch, "engineApiKey") ||
+    hasOwn(patch, "engineBaseUrl") ||
+    hasOwn(patch, "engineModelId") ||
+    hasOwn(patch, "engineFlutterSdkBin") ||
+    hasOwn(patch, "customEngineModels")
+  ) {
+    providers.engine = {
+      ...(hasOwn(patch, "engineApiKey") ? { apiKey: patch.engineApiKey ?? "" } : {}),
+      ...(hasOwn(patch, "engineBaseUrl") ? { baseUrl: patch.engineBaseUrl ?? "" } : {}),
+      ...(hasOwn(patch, "engineModelId") ? { modelId: patch.engineModelId ?? "" } : {}),
+      ...(hasOwn(patch, "engineFlutterSdkBin")
+        ? { flutterSdkBin: patch.engineFlutterSdkBin ?? "" }
+        : {}),
+      ...(hasOwn(patch, "customEngineModels")
+        ? { customModels: patch.customEngineModels ?? [] }
+        : {}),
     };
   }
 
@@ -1293,6 +1325,9 @@ export function useAppSettings() {
           ? { openCodeServerPasswordConfigured: Boolean(patch.openCodeServerPassword?.trim()) }
           : {}),
 
+        ...(hasOwn(patch, "engineApiKey")
+          ? { engineApiKeyConfigured: Boolean(patch.engineApiKey?.trim()) }
+          : {}),
         ...(hasOwn(patch, "groqApiKey")
           ? { groqApiKeyConfigured: Boolean(patch.groqApiKey?.trim()) }
           : {}),
