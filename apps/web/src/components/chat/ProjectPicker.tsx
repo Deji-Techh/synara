@@ -14,12 +14,11 @@ import {
   useState,
   type ReactElement,
 } from "react";
-import { type ProjectDirectoryEntry, type ProjectId, type SpaceId } from "@caide/contracts";
+import { type ProjectId, type SpaceId } from "@caide/contracts";
 import { readNativeApi } from "../../nativeApi";
 import { useStore } from "../../store";
 import { createSidebarDisplayThreadsSelector } from "../../storeSelectors";
 import { PlusIcon, XIcon } from "~/lib/icons";
-import { getLocalFoldersGroupLabel } from "~/lib/localFoldersGroupLabel";
 import { groupItemsBySpace, spaceDisplayName } from "~/lib/spaceGrouping";
 import { useVoidSpace } from "~/voidSpaceStore";
 import { cn } from "~/lib/utils";
@@ -116,27 +115,6 @@ function basenameOfPath(value: string | null | undefined): string | null {
   return basename.length > 0 ? basename : null;
 }
 
-function directorySearchHaystack(entry: ProjectDirectoryEntry): string {
-  return [entry.name, entry.path].join(" ").toLowerCase();
-}
-
-function joinDirectoryPath(rootPath: string, relativePath: string): string {
-  if (!relativePath) return rootPath;
-  const separator = rootPath.includes("\\") ? "\\" : "/";
-  const normalizedRoot = rootPath.endsWith(separator) ? rootPath.slice(0, -1) : rootPath;
-  const normalizedRelative = relativePath.split(/[\\/]+/).join(separator);
-  return `${normalizedRoot}${separator}${normalizedRelative}`;
-}
-
-function getNavigatorPlatform(): string {
-  const navigatorLike = globalThis.navigator as
-    | (Navigator & { userAgentData?: { platform?: string } })
-    | undefined;
-  return [navigatorLike?.platform, navigatorLike?.userAgentData?.platform]
-    .filter(Boolean)
-    .join(" ");
-}
-
 export const ProjectPicker = memo(function ProjectPicker({
   align: alignProp,
   side: sideProp,
@@ -173,9 +151,7 @@ export const ProjectPicker = memo(function ProjectPicker({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const [isLoadingDirectories, setIsLoadingDirectories] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [directoryEntries, setDirectoryEntries] = useState<readonly ProjectDirectoryEntry[]>([]);
   const [resetTriggerFocused, setResetTriggerFocused] = useState(false);
   const resetInFlightRef = useRef(false);
   const isProjectSelectionMode = selectionMode === "project";
@@ -259,24 +235,6 @@ export const ProjectPicker = memo(function ProjectPicker({
     spaces,
     voidSpace,
   ]);
-  const activeFolderPathSet = useMemo(
-    () => new Set(activeFolderOptions.map((entry) => entry.cwd)),
-    [activeFolderOptions],
-  );
-  const localFolderOptions = useMemo(() => {
-    if (isProjectSelectionMode) return [];
-    return directoryEntries
-      .filter((entry) => !entry.name.startsWith("."))
-      .map((entry) => ({
-        absolutePath: homeDir ? joinDirectoryPath(homeDir, entry.path) : entry.path,
-        entry,
-      }))
-      .filter((entry) => !activeFolderPathSet.has(entry.absolutePath));
-  }, [activeFolderPathSet, directoryEntries, homeDir, isProjectSelectionMode]);
-  const localFoldersGroupLabel = useMemo(
-    () => getLocalFoldersGroupLabel(homeDir, getNavigatorPlatform()),
-    [homeDir],
-  );
 
   const normalizedQuery = deferredQuery.trim().toLowerCase();
   const matchingActiveFolderOptions = useMemo(() => {
@@ -304,26 +262,14 @@ export const ProjectPicker = memo(function ProjectPicker({
     () => filteredActiveFolderGroups.flatMap((group) => group.items),
     [filteredActiveFolderGroups],
   );
-  const filteredLocalFolderOptions = useMemo(() => {
-    if (normalizedQuery.length === 0) return localFolderOptions;
-    return localFolderOptions.filter(({ entry }) =>
-      directorySearchHaystack(entry).includes(normalizedQuery),
-    );
-  }, [localFolderOptions, normalizedQuery]);
 
   const selectableDirectoryPaths = useMemo(
-    () => [
-      ...activeFolderOptions.map((entry) => entry.cwd),
-      ...localFolderOptions.map((entry) => entry.absolutePath),
-    ],
-    [activeFolderOptions, localFolderOptions],
+    () => [...activeFolderOptions.map((entry) => entry.cwd)],
+    [activeFolderOptions],
   );
   const filteredDirectoryPaths = useMemo(
-    () => [
-      ...filteredActiveFolderOptions.map((entry) => entry.cwd),
-      ...filteredLocalFolderOptions.map((entry) => entry.absolutePath),
-    ],
-    [filteredActiveFolderOptions, filteredLocalFolderOptions],
+    () => [...filteredActiveFolderOptions.map((entry) => entry.cwd)],
+    [filteredActiveFolderOptions],
   );
   const selectedFolderOption = useMemo(() => {
     if (isProjectSelectionMode) {
@@ -331,21 +277,10 @@ export const ProjectPicker = memo(function ProjectPicker({
       return activeFolderOptions.find((entry) => entry.projectId === selectedProjectId) ?? null;
     }
     if (!selectedWorkspaceRoot) return null;
-    return (
-      activeFolderOptions.find((entry) => entry.cwd === selectedWorkspaceRoot) ??
-      localFolderOptions
-        .filter(({ absolutePath }) => absolutePath === selectedWorkspaceRoot)
-        .map(({ entry, absolutePath }) => ({
-          cwd: absolutePath,
-          primaryLabel: entry.name,
-          secondaryLabel: null,
-        }))[0] ??
-      null
-    );
+    return activeFolderOptions.find((entry) => entry.cwd === selectedWorkspaceRoot) ?? null;
   }, [
     activeFolderOptions,
     isProjectSelectionMode,
-    localFolderOptions,
     selectedProjectId,
     selectedWorkspaceRoot,
   ]);
@@ -372,59 +307,6 @@ export const ProjectPicker = memo(function ProjectPicker({
     }
   }, []);
 
-  useEffect(() => {
-    if (
-      isProjectSelectionMode ||
-      !open ||
-      !homeDir ||
-      directoryEntries.length > 0 ||
-      isLoadingDirectories
-    ) {
-      return;
-    }
-    // Timeout-0 keeps every state write asynchronous (no wasted pre-paint
-    // render), which also keeps this component eligible for React Compiler.
-    let cancelled = false;
-    const timeoutId = window.setTimeout(() => {
-      if (cancelled) return;
-      const api = readNativeApi();
-      if (!api) {
-        setErrorMessage("App is still connecting. Try again in a moment.");
-        return;
-      }
-
-      setIsLoadingDirectories(true);
-      setErrorMessage(null);
-      void api.projects
-        .listDirectories({ cwd: homeDir })
-        .then((result) => {
-          setDirectoryEntries(
-            result.entries.flatMap((entry) =>
-              entry.kind === "directory"
-                ? [
-                    {
-                      path: entry.path,
-                      name: entry.name,
-                      hasChildren: entry.hasChildren ?? false,
-                      ...(entry.parentPath ? { parentPath: entry.parentPath } : {}),
-                    } satisfies ProjectDirectoryEntry,
-                  ]
-                : [],
-            ),
-          );
-        })
-        .catch((error) => {
-          setErrorMessage(error instanceof Error ? error.message : "Unable to load folders.");
-        })
-        .finally(() => {
-          setIsLoadingDirectories(false);
-        });
-    }, 0);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timeoutId);
-    };
-  }, [directoryEntries.length, homeDir, isLoadingDirectories, isProjectSelectionMode, open]);
 
   const handleSelectActiveFolder = useCallback(
     (folder: ActiveFolderOption) => {
@@ -631,11 +513,7 @@ export const ProjectPicker = memo(function ProjectPicker({
           }
         >
           <ComboboxEmpty>
-            {isLoadingDirectories
-              ? "Loading folders…"
-              : activeFolderOptions.length === 0 && localFolderOptions.length === 0
-                ? "No folders found"
-                : "No matches"}
+            {activeFolderOptions.length === 0 ? "No folders found" : "No matches"}
           </ComboboxEmpty>
           <ComboboxList className="max-h-64">
             {filteredActiveFolderGroups.map((group, groupIndex) => {
@@ -657,35 +535,6 @@ export const ProjectPicker = memo(function ProjectPicker({
                 </Fragment>
               );
             })}
-            {filteredActiveFolderOptions.length > 0 && filteredLocalFolderOptions.length > 0 ? (
-              <ComboboxSeparator />
-            ) : null}
-            {filteredLocalFolderOptions.length > 0 ? (
-              <ComboboxGroup>
-                <ComboboxGroupLabel>{localFoldersGroupLabel}</ComboboxGroupLabel>
-                {filteredLocalFolderOptions.map(({ absolutePath, entry }, index) => (
-                  <ComboboxItem
-                    hideIndicator={absolutePath !== selectedWorkspaceRoot}
-                    key={absolutePath}
-                    index={filteredActiveFolderOptions.length + index}
-                    value={absolutePath}
-                    onClick={() => {
-                      onSelectWorkspaceRoot?.(absolutePath);
-                      setOpen(false);
-                    }}
-                    className={cn(
-                      absolutePath === selectedWorkspaceRoot &&
-                        "bg-[var(--color-background-elevated-secondary)] text-[var(--color-text-foreground)]",
-                    )}
-                  >
-                    <div className="flex min-w-0 items-center gap-2">
-                      <FolderClosed className="size-3.5 shrink-0 text-muted-foreground/70" />
-                      <span className="truncate">{entry.name}</span>
-                    </div>
-                  </ComboboxItem>
-                ))}
-              </ComboboxGroup>
-            ) : null}
           </ComboboxList>
         </PickerPanelShell>
       </ComboboxPopup>
