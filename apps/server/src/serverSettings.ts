@@ -11,6 +11,7 @@ import {
   DEFAULT_MODEL_BY_PROVIDER,
   DEFAULT_SERVER_SETTINGS,
   type ModelSelection,
+  type ProviderKind,
   type ProviderWithDefaultModel,
   ServerSettings,
   ServerSettingsError,
@@ -259,9 +260,13 @@ const makeServerSettings = Effect.gen(function* () {
   const emitChange = (settings: ServerSettings) =>
     PubSub.publish(changesPubSub, settings).pipe(Effect.asVoid);
 
+  // The engine joins the API providers for credential handling: its key lives in the
+  // same secret-store slot naming scheme and its settings carry apiKeyConfigured.
+  const CREDENTIAL_PROVIDER_KINDS: readonly ProviderKind[] = [...API_PROVIDER_KINDS, "engine"];
+
   const withCredentialState = (settings: ServerSettings) =>
     Effect.all(
-      API_PROVIDER_KINDS.map((provider) =>
+      CREDENTIAL_PROVIDER_KINDS.map((provider) =>
         providerCredentials
           .isApiKeyConfigured(provider)
           .pipe(Effect.map((isConfigured) => [provider, isConfigured] as const)),
@@ -412,7 +417,7 @@ const makeServerSettings = Effect.gen(function* () {
       Effect.gen(function* () {
         const disk = yield* loadSettingsFromDisk;
         const current = disk.settings;
-        for (const provider of API_PROVIDER_KINDS) {
+        for (const provider of CREDENTIAL_PROVIDER_KINDS) {
           const apiKey = patch.providers?.[provider]?.apiKey;
           if (apiKey !== undefined) {
             yield* providerCredentials.replaceApiKey(provider, apiKey).pipe(

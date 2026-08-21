@@ -2,22 +2,22 @@
 // Purpose: Owns server-only API key credentials used to connect to external providers.
 // Layer: Server provider security boundary
 
-import type { ApiProviderKind } from "@caide/contracts";
+import type { ProviderKind } from "@caide/contracts";
 import { Effect, Layer, ServiceMap } from "effect";
 
 import { ServerSecretStoreLive } from "./auth/Layers/ServerSecretStore";
 import { ServerSecretStore, type SecretStoreError } from "./auth/Services/ServerSecretStore";
 
-const apiKeySecretName = (provider: ApiProviderKind): string => `provider-${provider}-api-key`;
+const apiKeySecretName = (provider: ProviderKind): string => `provider-${provider}-api-key`;
 
 export interface ProviderCredentialsShape {
-  readonly getApiKey: (provider: ApiProviderKind) => Effect.Effect<string | null, SecretStoreError>;
+  readonly getApiKey: (provider: ProviderKind) => Effect.Effect<string | null, SecretStoreError>;
   readonly replaceApiKey: (
-    provider: ApiProviderKind,
+    provider: ProviderKind,
     apiKey: string | null,
   ) => Effect.Effect<void, SecretStoreError>;
   readonly isApiKeyConfigured: (
-    provider: ApiProviderKind,
+    provider: ProviderKind,
   ) => Effect.Effect<boolean, SecretStoreError>;
 }
 
@@ -26,7 +26,7 @@ export class ProviderCredentials extends ServiceMap.Service<
   ProviderCredentialsShape
 >()("caide/providerCredentials/ProviderCredentials") {}
 
-export const resolveProviderApiKey = (provider: ApiProviderKind) =>
+export const resolveProviderApiKey = (provider: ProviderKind) =>
   Effect.gen(function* () {
     const credentials = yield* ProviderCredentials;
     return (yield* credentials.getApiKey(provider)) ?? undefined;
@@ -34,7 +34,7 @@ export const resolveProviderApiKey = (provider: ApiProviderKind) =>
 
 export const makeProviderApiKeyResolver =
   (credentials: ProviderCredentialsShape) =>
-  (provider: ApiProviderKind): Effect.Effect<string | undefined> =>
+  (provider: ProviderKind): Effect.Effect<string | undefined> =>
     credentials.getApiKey(provider).pipe(
       Effect.map((key) => key ?? undefined),
       Effect.orDie,
