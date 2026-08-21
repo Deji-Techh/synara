@@ -16,18 +16,7 @@ import {
   type ProviderAdapterRegistryShape,
 } from "../Services/ProviderAdapterRegistry.ts";
 import { EngineAdapter } from "../Services/EngineAdapter.ts";
-import { OpenAiAdapter } from "../Services/OpenAiAdapter.ts";
-import { AnthropicAdapter } from "../Services/AnthropicAdapter.ts";
-import { GoogleAdapter } from "../Services/GoogleAdapter.ts";
-import { OpenRouterAdapter } from "../Services/OpenRouterAdapter.ts";
-import { OllamaAdapter } from "../Services/OllamaAdapter.ts";
-import { DeepseekAdapter } from "../Services/DeepseekAdapter.ts";
 import { GroqAdapter } from "../Services/GroqAdapter.ts";
-import { MistralAdapter } from "../Services/MistralAdapter.ts";
-import { TogetherAdapter } from "../Services/TogetherAdapter.ts";
-import { CohereAdapter } from "../Services/CohereAdapter.ts";
-import { XaiAdapter } from "../Services/XaiAdapter.ts";
-import { FireworksAdapter } from "../Services/FireworksAdapter.ts";
 import { OpenCodeZenAdapter } from "../Services/OpenCodeZenAdapter.ts";
 import { OpenCodeGoAdapter } from "../Services/OpenCodeGoAdapter.ts";
 
@@ -42,18 +31,7 @@ const makeProviderAdapterRegistry = (options?: ProviderAdapterRegistryLiveOption
         ? options.adapters
         : [
             yield* EngineAdapter,
-            yield* OpenAiAdapter,
-            yield* AnthropicAdapter,
-            yield* GoogleAdapter,
-            yield* OpenRouterAdapter,
-            yield* OllamaAdapter,
-            yield* DeepseekAdapter,
             yield* GroqAdapter,
-            yield* MistralAdapter,
-            yield* TogetherAdapter,
-            yield* CohereAdapter,
-            yield* XaiAdapter,
-            yield* FireworksAdapter,
             yield* OpenCodeZenAdapter,
             yield* OpenCodeGoAdapter,
           ];

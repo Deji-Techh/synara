@@ -10,18 +10,7 @@ import { makeEventNdjsonLogger } from "./Layers/EventNdjsonLogger";
 import { ProviderAdapterRegistryLive } from "./Layers/ProviderAdapterRegistry";
 import { EngineAdapterLive } from "./Layers/EngineAdapter";
 import {
-  OpenAiAdapterLive,
-  AnthropicAdapterLive,
-  GoogleAdapterLive,
-  OpenRouterAdapterLive,
-  OllamaAdapterLive,
-  DeepseekAdapterLive,
   GroqAdapterLive,
-  MistralAdapterLive,
-  TogetherAdapterLive,
-  CohereAdapterLive,
-  XaiAdapterLive,
-  FireworksAdapterLive,
   OpenCodeZenAdapterLive,
   OpenCodeGoAdapterLive,
 } from "./Layers/ApiAdapter";
@@ -55,33 +44,22 @@ export function makeServerProviderLayer(
     const agentGatewayCredentialsLayer =
       options.agentGatewayCredentialsLayer ?? AgentGatewayCredentialsWithSecretsLive;
     const credentialsLayer = Layer.succeed(ProviderCredentials, credentials);
-    const openAiAdapterLayer = OpenAiAdapterLive.pipe(Layer.provide(credentialsLayer));
-    const anthropicAdapterLayer = AnthropicAdapterLive.pipe(Layer.provide(credentialsLayer));
-    const googleAdapterLayer = GoogleAdapterLive.pipe(Layer.provide(credentialsLayer));
-    const openRouterAdapterLayer = OpenRouterAdapterLive.pipe(Layer.provide(credentialsLayer));
-    const ollamaAdapterLayer = OllamaAdapterLive.pipe(Layer.provide(credentialsLayer));
-    const deepseekAdapterLayer = DeepseekAdapterLive.pipe(Layer.provide(credentialsLayer));
-    const groqAdapterLayer = GroqAdapterLive.pipe(Layer.provide(credentialsLayer));
-    const mistralAdapterLayer = MistralAdapterLive.pipe(Layer.provide(credentialsLayer));
-    const togetherAdapterLayer = TogetherAdapterLive.pipe(Layer.provide(credentialsLayer));
-    const cohereAdapterLayer = CohereAdapterLive.pipe(Layer.provide(credentialsLayer));
-    const xaiAdapterLayer = XaiAdapterLive.pipe(Layer.provide(credentialsLayer));
-    const fireworksAdapterLayer = FireworksAdapterLive.pipe(Layer.provide(credentialsLayer));
-    const openCodeZenAdapterLayer = OpenCodeZenAdapterLive.pipe(Layer.provide(credentialsLayer));
-    const openCodeGoAdapterLayer = OpenCodeGoAdapterLive.pipe(Layer.provide(credentialsLayer));
+    // One shared settings instance backs baseUrl overrides for every API adapter.
+    const adapterSettingsLayer = ServerSettingsLive.pipe(Layer.provide(credentialsLayer));
+    const groqAdapterLayer = GroqAdapterLive.pipe(
+      Layer.provide(credentialsLayer),
+      Layer.provide(adapterSettingsLayer),
+    );
+    const openCodeZenAdapterLayer = OpenCodeZenAdapterLive.pipe(
+      Layer.provide(credentialsLayer),
+      Layer.provide(adapterSettingsLayer),
+    );
+    const openCodeGoAdapterLayer = OpenCodeGoAdapterLive.pipe(
+      Layer.provide(credentialsLayer),
+      Layer.provide(adapterSettingsLayer),
+    );
     const apiAdaptersLayer = Layer.mergeAll(
-      openAiAdapterLayer,
-      anthropicAdapterLayer,
-      googleAdapterLayer,
-      openRouterAdapterLayer,
-      ollamaAdapterLayer,
-      deepseekAdapterLayer,
       groqAdapterLayer,
-      mistralAdapterLayer,
-      togetherAdapterLayer,
-      cohereAdapterLayer,
-      xaiAdapterLayer,
-      fireworksAdapterLayer,
       openCodeZenAdapterLayer,
       openCodeGoAdapterLayer,
     );
