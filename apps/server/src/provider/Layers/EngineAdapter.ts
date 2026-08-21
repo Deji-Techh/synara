@@ -293,13 +293,21 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         ...event,
       }) as unknown as T;
 
-    const processError = (threadId: ThreadId, detail: string, cause: unknown) =>
-      new ProviderAdapterProcessError({
+    const processError = (threadId: ThreadId, detail: string, cause: unknown) => {
+      const causeError = cause instanceof Error ? cause : new Error(String(cause));
+      // The toast/UI surfaces `message` only — fold the underlying reason into
+      // the detail so "engine initialize request failed" style errors actually
+      // say why (timeout vs process death vs engine-side rejection).
+      const causeText = causeError.message.trim();
+      return new ProviderAdapterProcessError({
         provider: "engine",
         threadId,
-        detail,
-        cause: cause instanceof Error ? cause : new Error(String(cause)),
+        detail: causeText.length > 0 && !detail.includes(causeText)
+          ? `${detail}: ${causeText}`
+          : detail,
+        cause: causeError,
       });
+    };
 
     const publishEvent = (event: ProviderRuntimeEvent) => PubSub.publish(runtimeEventQueue, event);
 
@@ -972,13 +980,25 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           args: resolvedArgs,
           ...(cwd !== undefined ? { cwd } : {}),
           env: engineEnv,
+          onStderr: (line) => {
+            Effect.runFork(
+              Effect.logWarning(`engine stderr: ${line}`).pipe(
+                Effect.annotateLogs({ provider: "engine", threadId }),
+              ),
+            );
+          },
           onNotification: (method, params) => {
             Effect.runFork(handleEngineNotification(method, params));
           },
         });
         yield* Effect.tryPromise({
           try: () => client.waitForSpawn(),
-          catch: (cause) => processError(threadId, "engine process failed to spawn", cause),
+          catch: (cause) =>
+            processError(
+              threadId,
+              `engine process failed to spawn (command=${resolvedCommand} args=${resolvedArgs.join(" ")})`,
+              cause,
+            ),
         });
 
         const modelConfig = yield* engineModelConfig();
@@ -1006,7 +1026,16 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                   }
                 : {}),
             }),
-          catch: (cause) => processError(threadId, "engine initialize request failed", cause),
+          catch: (cause) => {
+            const health = client.describeHealth();
+            return processError(
+              threadId,
+              health.length > 0
+                ? `engine initialize request failed (${health})`
+                : "engine initialize request failed",
+              cause,
+            );
+          },
         });
         if (initializeResponse.error) {
           client.kill();

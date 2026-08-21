@@ -19,6 +19,9 @@ import {
 
 export class EngineSpawnError extends Error {}
 
+/** How many recent stderr lines describeHealth() keeps for crash reports. */
+const STDERR_TAIL_LIMIT = 20;
+
 export class EngineRequestError extends Error {
   constructor(
     readonly code: number,
@@ -49,6 +52,8 @@ export class EngineClient {
       timer: NodeJS.Timeout;
     }
   >();
+  private readonly stderrTail: string[] = [];
+  private exitInfo: { code: number | null; signal: string | null } | null = null;
   private nextId = 1;
   private closed = false;
 
@@ -63,12 +68,39 @@ export class EngineClient {
     this.child.stderr.on("data", (chunk: string) => {
       for (const line of chunk.split("\n")) {
         if (line.trim() !== "") {
+          this.stderrTail.push(line);
+          if (this.stderrTail.length > STDERR_TAIL_LIMIT) {
+            this.stderrTail.shift();
+          }
           this.options.onStderr?.(line);
         }
       }
     });
 
+    this.child.on("exit", (code, signal) => {
+      this.exitInfo = { code, signal };
+    });
+
     void this.pumpStdout();
+  }
+
+  /**
+   * Human-readable health snapshot for error reports: whether the process
+   * already exited (and how) plus the last stderr lines it emitted. Crash
+   * causes — native-module ABI mismatches, missing files, port conflicts —
+   * almost always show up on stderr before stdout goes quiet.
+   */
+  describeHealth(): string {
+    const parts: string[] = [];
+    if (this.exitInfo !== null) {
+      parts.push(
+        `process exited (code=${String(this.exitInfo.code)} signal=${String(this.exitInfo.signal)})`,
+      );
+    }
+    if (this.stderrTail.length > 0) {
+      parts.push(`stderr: ${this.stderrTail[this.stderrTail.length - 1]!.slice(0, 300)}`);
+    }
+    return parts.join("; ");
   }
 
   private async pumpStdout(): Promise<void> {
