@@ -234,6 +234,8 @@ export function useProviderModelCatalog(input: {
     [selectedDynamicAgents],
   );
 
+  const selectedProviderRuntimeModelDiscoveryPending =
+    loadingModelProviders[selectedProvider] ?? false;
   const selectedProviderModelsQuery =
     selectedProvider === "groq"
       ? groqDynamicModelsQuery

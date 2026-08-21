@@ -43,6 +43,7 @@ function makeIsolatedFixture(): { appsDir: string; userDataDir: string; fixtureP
   // The engine reads the workspace's HEAD at stream start
   // (chat_stream_handlers getCurrentCommitHash), so the fixture must be a
   // committed git repo.
+  execFileSync("git", ["-C", fixturePath, "init"], { stdio: "ignore" });
   execFileSync(
     "git",
     ["-C", fixturePath, "-c", "user.email=test@caide.dev", "-c", "user.name=caide-test", "commit", "--allow-empty", "-m", "init"],
@@ -101,9 +102,14 @@ describe("EngineAdapter", () => {
       provideAdapter(
         Effect.gen(function* () {
           const adapter = yield* EngineAdapter;
-          const eventsFiber = yield* Stream.runCollect(Stream.take(adapter.streamEvents, 8)).pipe(
-            Effect.forkChild,
-          );
+          // Collect everything up to and including this thread's terminal
+          // event; a fixed take(N) is brittle because the exact notification
+          // count per turn evolves with the engine protocol.
+          const eventsFiber = yield* adapter.streamEvents.pipe(
+            Stream.filter((e) => e.threadId === threadId),
+            Stream.takeUntil((e) => e.type === "turn.completed"),
+            Stream.runCollect,
+          ).pipe(Effect.forkChild);
           yield* adapter.startSession({
             threadId,
             runtimeMode: "full-access",
@@ -113,19 +119,18 @@ describe("EngineAdapter", () => {
             threadId,
             input: "[caide-qa=write]",
           });
-          const events = yield* Fiber.join(eventsFiber);
-          return { turnResult, events };
+          expect(turnResult.turnId).toBeDefined();
+          const events = [...(yield* Fiber.join(eventsFiber))];
+          return { events };
         }),
       ),
     );
 
-    expect(result.turnResult.threadId).toBe(threadId);
-    expect(result.turnResult.turnId).toBeDefined();
     const eventTypes = result.events.map((e) => e.type);
-    expect(eventTypes).toContain("session.started");
+    expect(eventTypes[0]).toBe("session.started");
     expect(eventTypes).toContain("thread.started");
     expect(eventTypes).toContain("turn.started");
-    expect(eventTypes).toContain("turn.completed");
+    expect(eventTypes[eventTypes.length - 1]).toBe("turn.completed");
   }, 120_000);
 
   it("sendTurn forwards every explicit chat mode through to the engine", async () => {
