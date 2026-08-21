@@ -9199,6 +9199,7 @@ export default function ChatView({
           assistantDeliveryMode,
           runtimeMode,
           interactionMode,
+          mode: chatMode,
           createdAt: messageCreatedAt,
         });
         return true;

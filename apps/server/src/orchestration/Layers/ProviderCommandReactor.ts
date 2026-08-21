@@ -3198,6 +3198,7 @@ const make = Effect.gen(function* () {
       ...(payload.assistantDeliveryMode !== undefined
         ? { assistantDeliveryMode: payload.assistantDeliveryMode }
         : {}),
+      ...(payload.mode !== undefined ? { mode: payload.mode } : {}),
       dispatchMode: "queue",
       runtimeMode: payload.runtimeMode,
       interactionMode: payload.interactionMode,

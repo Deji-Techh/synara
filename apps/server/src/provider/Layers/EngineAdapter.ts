@@ -1481,16 +1481,16 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             }),
           );
 
-          // The engine accepts each of build/ask/plan/local-agent. Prefer the
-          // web's explicit chat mode; fall back to a plan/build split from the
-          // legacy interaction-mode selector so ask/local-agent still work
-          // end-to-end (interactionMode alone can't distinguish them).
-          const requestedChatMode =
-            input.mode !== undefined
-              ? input.mode
-              : input.interactionMode === "plan"
-                ? "plan"
-                : "build";
+          // The engine accepts each of build/ask/plan/local-agent. The send
+          // input's `mode` is the single source of truth (contracts decode it
+          // with a "build" default). If it is still missing here the caller
+          // bypassed schema decoding — degrade visibly instead of guessing.
+          let requestedChatMode: "build" | "ask" | "plan" | "local-agent" = input.mode ?? "build";
+          if (input.mode === undefined) {
+            yield* Effect.logWarning(
+              `[engine] sendTurn thread=${input.threadId}: input.mode missing (caller skipped schema decode); degrading to "${requestedChatMode}"`,
+            );
+          }
 
           yield* publishEvent(
             makeEvent<ProviderRuntimeEvent>(input.threadId, {

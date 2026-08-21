@@ -5,6 +5,7 @@
 // round trip), event stream, stopSession.
 // Layer: Provider adapter integration test
 
+import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import os from "node:os";
@@ -39,6 +40,17 @@ function makeIsolatedFixture(): { appsDir: string; userDataDir: string; fixtureP
   const fixturePath = path.join(root, "fixture");
   mkdirSync(fixturePath, { recursive: true });
   writeFileSync(path.join(fixturePath, "pubspec.yaml"), "name: fixture_app\n", "utf8");
+  // The engine reads the workspace's HEAD at stream start
+  // (chat_stream_handlers getCurrentCommitHash), so the fixture must be a
+  // committed git repo.
+  execFileSync(
+    "git",
+    ["-C", fixturePath, "-c", "user.email=test@caide.dev", "-c", "user.name=caide-test", "commit", "--allow-empty", "-m", "init"],
+    {
+      env: { ...process.env },
+      stdio: "ignore",
+    },
+  );
   return { appsDir, userDataDir, fixturePath };
 }
 
@@ -115,6 +127,56 @@ describe("EngineAdapter", () => {
     expect(eventTypes).toContain("turn.started");
     expect(eventTypes).toContain("turn.completed");
   }, 120_000);
+
+  it("sendTurn forwards every explicit chat mode through to the engine", async () => {
+    // Each of build/ask/plan/local-agent must settle as a completed turn on
+    // its own thread. The engine-side dispatch behavior per mode (which
+    // execution path each mode takes) is covered by
+    // apps/engine/src/ipc/handlers/__tests__/chat_mode_dispatch.test.ts;
+    // here we prove the adapter neither drops nor rewrites `mode`.
+    const { fixturePath } = makeIsolatedFixture();
+
+    await Effect.runPromise(
+      provideAdapter(
+        Effect.gen(function* () {
+          const adapter = yield* EngineAdapter;
+          for (const mode of ["build", "ask", "plan", "local-agent"] as const) {
+            const threadId = ThreadId.makeUnsafe(randomUUID());
+            yield* adapter.startSession({
+              threadId,
+              runtimeMode: "full-access",
+              cwd: fixturePath,
+            });
+            // Wait for THIS thread's terminal event so interleaved traffic
+            // from other threads can never satisfy the expectation.
+            const terminal = yield* adapter.streamEvents.pipe(
+              Stream.filter(
+                (e) =>
+                  e.threadId === threadId &&
+                  (e.type === "turn.completed" || e.type === "runtime.error"),
+              ),
+              Stream.take(1),
+              Stream.runCollect,
+              Effect.timeout("90 seconds"),
+            ).pipe(Effect.forkChild);
+            const turnResult = yield* adapter.sendTurn({
+              threadId,
+              input: "[caide-qa=write]",
+              ...(mode !== "build" ? { mode } : {}),
+            });
+            expect(turnResult.turnId).toBeDefined();
+            const settled = yield* Fiber.join(terminal);
+            const terminalEvent = Array.from(settled)[0];
+            if (terminalEvent?.type !== "turn.completed") {
+              throw new Error(
+                `mode ${mode}: terminal event ${JSON.stringify(terminalEvent)}`,
+              );
+            }
+          }
+        }),
+      ),
+    );
+  }, 240_000);
 
   it("stopSession tears the engine process down", async () => {
     const threadId = ThreadId.makeUnsafe(randomUUID());

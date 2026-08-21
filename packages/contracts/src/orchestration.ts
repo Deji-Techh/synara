@@ -1390,6 +1390,8 @@ const ThreadMessageEditAndResendCommand = Schema.Struct({
   assistantDeliveryMode: Schema.optional(AssistantDeliveryMode),
   runtimeMode: RuntimeMode,
   interactionMode: ProviderInteractionMode,
+  /** Engine chat mode (build/ask/plan/local-agent); survives edit-resend. */
+  mode: Schema.optional(ChatMode),
   createdAt: IsoDateTime,
 });
 
@@ -1974,6 +1976,8 @@ export const ThreadMessageEditResendRequestedPayload = Schema.Struct({
   assistantDeliveryMode: Schema.optional(AssistantDeliveryMode),
   runtimeMode: RuntimeMode,
   interactionMode: ProviderInteractionMode,
+  /** Engine chat mode (build/ask/plan/local-agent); survives edit-resend. */
+  mode: Schema.optional(ChatMode),
   createdAt: IsoDateTime,
 });
 

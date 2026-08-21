@@ -2034,6 +2034,7 @@ export const decideOrchestrationCommand = Effect.fn("decideOrchestrationCommand"
           ...(command.assistantDeliveryMode !== undefined
             ? { assistantDeliveryMode: command.assistantDeliveryMode }
             : {}),
+          ...(command.mode !== undefined ? { mode: command.mode } : {}),
           runtimeMode: command.runtimeMode,
           interactionMode: command.interactionMode,
           createdAt: command.createdAt,
