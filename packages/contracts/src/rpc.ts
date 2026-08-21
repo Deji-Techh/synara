@@ -164,6 +164,17 @@ import {
   FlutterToolchainInstallResult,
   PREVIEW_WS_METHODS,
 } from "./preview";
+import {
+  ARTIFACTS_WS_METHODS,
+  ArtifactsDeleteInput,
+  ArtifactsDeleteResult,
+  ArtifactsListInput,
+  ArtifactsListResult,
+  ArtifactsRenameInput,
+  ArtifactsRenameResult,
+  ArtifactsShareUrlInput,
+  ArtifactsShareUrlResult,
+} from "./artifacts";
 import { DATABASE_WS_METHODS, DatabaseInvokeInput, DatabaseInvokeResult } from "./database";
 import {
   ProviderGetComposerCapabilitiesInput,
@@ -266,13 +277,9 @@ import {
   WsCompatibilityError,
 } from "./wsCompatibility";
 
-export class WsRpcError extends Schema.TaggedErrorClass<WsRpcError>()("WsRpcError", {
-  message: Schema.String,
-  cause: Schema.optional(Schema.Defect),
-  code: Schema.optional(Schema.String),
-  retryable: Schema.optional(Schema.Boolean),
-  retryAfterMs: Schema.optional(Schema.Number),
-}) {}
+import { WsRpcError } from "./wsRpcError";
+
+export { WsRpcError };
 
 export const WsBootstrapNegotiateRpc = Rpc.make(WS_BOOTSTRAP_METHOD, {
   payload: WsBootstrapNegotiateInput,
@@ -747,6 +754,41 @@ export const WsPreviewRpcGroup = RpcGroup.make(
   WsPreviewDevicesRpc,
   WsPreviewFlutterToolchainStatusRpc,
   WsPreviewFlutterToolchainInstallRpc,
+);
+
+// ── Build artifacts gallery ──────────────────────────────────────────
+// Global registry of every successful Flutter build (APK/AAB/IPA),
+// snapshotted engine-side and persisted in the server's state DB.
+
+export const WsArtifactsListRpc = Rpc.make(ARTIFACTS_WS_METHODS.list, {
+  payload: ArtifactsListInput,
+  success: ArtifactsListResult,
+  error: WsRpcError,
+});
+
+export const WsArtifactsRenameRpc = Rpc.make(ARTIFACTS_WS_METHODS.rename, {
+  payload: ArtifactsRenameInput,
+  success: ArtifactsRenameResult,
+  error: WsRpcError,
+});
+
+export const WsArtifactsDeleteRpc = Rpc.make(ARTIFACTS_WS_METHODS.delete, {
+  payload: ArtifactsDeleteInput,
+  success: ArtifactsDeleteResult,
+  error: WsRpcError,
+});
+
+export const WsArtifactsShareUrlRpc = Rpc.make(ARTIFACTS_WS_METHODS.shareUrl, {
+  payload: ArtifactsShareUrlInput,
+  success: ArtifactsShareUrlResult,
+  error: WsRpcError,
+});
+
+export const WsArtifactsRpcGroup = RpcGroup.make(
+  WsArtifactsListRpc,
+  WsArtifactsRenameRpc,
+  WsArtifactsDeleteRpc,
+  WsArtifactsShareUrlRpc,
 );
 
 export const WsDeviceRpcGroup = RpcGroup.make(
@@ -1472,6 +1514,10 @@ export const WsFeatureRpcGroup = RpcGroup.make(
   WsPreviewTestRpc,
   WsPreviewBuildStartRpc,
   WsPreviewBuildStateRpc,
+  WsArtifactsListRpc,
+  WsArtifactsRenameRpc,
+  WsArtifactsDeleteRpc,
+  WsArtifactsShareUrlRpc,
   WsDeviceListRpc,
   WsDeviceBootRpc,
   WsDeviceShutdownRpc,

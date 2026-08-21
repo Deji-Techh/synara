@@ -187,6 +187,16 @@ import type {
   FlutterToolchainStatusResult,
   FlutterToolchainInstallInput,
 } from "./preview";
+import type {
+  ArtifactsDeleteInput,
+  ArtifactsDeleteResult,
+  ArtifactsListInput,
+  ArtifactsListResult,
+  ArtifactsRenameInput,
+  ArtifactsRenameResult,
+  ArtifactsShareUrlInput,
+  ArtifactsShareUrlResult,
+} from "./artifacts";
 import type { DatabaseInvokeInput, DatabaseInvokeResult } from "./database";
 import type {
   ServerConfig,
@@ -885,6 +895,16 @@ export interface NativeApi {
     flutterToolchainInstall: (input: FlutterToolchainInstallInput) => Promise<{
       status: FlutterToolchainStatusResult;
     }>;
+  };
+  /**
+   * Global build-artifact gallery. Backed by the server's artifacts registry;
+   * rows are inserted when the engine reports a completed build.
+   */
+  artifacts: {
+    list: (input: ArtifactsListInput) => Promise<ArtifactsListResult>;
+    rename: (input: ArtifactsRenameInput) => Promise<ArtifactsRenameResult>;
+    delete: (input: ArtifactsDeleteInput) => Promise<ArtifactsDeleteResult>;
+    shareUrl: (input: ArtifactsShareUrlInput) => Promise<ArtifactsShareUrlResult>;
   };
   /**
    * Database integrations (Neon + Supabase). Backed by the engine provider
