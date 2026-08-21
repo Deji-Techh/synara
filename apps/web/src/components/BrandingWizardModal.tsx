@@ -20,12 +20,10 @@ import {
   DialogPanel,
   DialogPopup,
   DialogTitle,
-  dialogFieldLabelClassName,
 } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
-import { cn } from "~/lib/utils";
 import { CentralIcon } from "~/lib/central-icons";
 
 export type BrandingWizardValue = BrandingData;
@@ -34,6 +32,8 @@ export type BrandingWizardValue = BrandingData;
 const DEFAULT_PRIMARY = "#7c3aed";
 const DEFAULT_SECONDARY = "#3f3f46";
 const DEFAULT_ACCENT = "#f59e0b";
+
+const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 
 export function BrandingWizardModal(props: {
   open: boolean;
@@ -47,6 +47,7 @@ export function BrandingWizardModal(props: {
   const [secondaryColor, setSecondaryColor] = useState(DEFAULT_SECONDARY);
   const [accentColor, setAccentColor] = useState(DEFAULT_ACCENT);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoError, setLogoError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const fieldId = useId();
   const nameId = `${fieldId}-name`;
@@ -60,6 +61,7 @@ export function BrandingWizardModal(props: {
     setSecondaryColor(DEFAULT_SECONDARY);
     setAccentColor(DEFAULT_ACCENT);
     setLogoFile(null);
+    setLogoError(null);
   }, []);
 
   useEffect(() => {
@@ -98,12 +100,19 @@ export function BrandingWizardModal(props: {
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
-    if (file) setLogoFile(file);
+    setLogoError(null);
+    if (file && file.size > MAX_LOGO_BYTES) {
+      setLogoFile(null);
+      setLogoError("That image is over 2 MB. Pick a smaller file.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+    setLogoFile(file);
   };
 
   return (
     <Dialog open={props.open} onOpenChange={handleOpenChange}>
-      <DialogPopup className="max-w-[26rem]">
+      <DialogPopup className="max-w-[30rem]">
         {step === "initial" ? (
           <>
             <DialogHeader>
@@ -116,10 +125,10 @@ export function BrandingWizardModal(props: {
               </DialogDescription>
             </DialogHeader>
             <DialogPanel>
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-4">
                 <Button
                   variant="outline"
-                  className="flex h-16 flex-col items-center justify-center gap-1"
+                  className="flex h-[4.25rem] flex-col items-center justify-center gap-1 rounded-xl"
                   onClick={() => setStep("custom")}
                 >
                   <span className="font-medium">I have my own branding</span>
@@ -129,7 +138,7 @@ export function BrandingWizardModal(props: {
                 </Button>
                 <Button
                   variant="default"
-                  className="flex h-16 flex-col items-center justify-center gap-1"
+                  className="flex h-[4.25rem] flex-col items-center justify-center gap-1 rounded-xl"
                   onClick={handleGenerate}
                 >
                   <span className="flex items-center gap-2 font-medium">
@@ -153,7 +162,7 @@ export function BrandingWizardModal(props: {
                 Provide the details below to initialize your app&apos;s brand identity.
               </DialogDescription>
             </DialogHeader>
-            <DialogPanel className="space-y-4">
+            <DialogPanel className="space-y-5">
               <div className="grid gap-2">
                 <Label>App Logo</Label>
                 <div
@@ -204,6 +213,11 @@ export function BrandingWizardModal(props: {
                     </>
                   )}
                 </div>
+                {logoError ? (
+                  <p className="text-xs text-destructive" role="alert">
+                    {logoError}
+                  </p>
+                ) : null}
               </div>
 
               <div className="grid gap-2">
@@ -266,12 +280,16 @@ export function BrandingWizardModal(props: {
             <DialogFooter>
               <Button
                 variant="ghost"
-                className={cn("p-2", dialogFieldLabelClassName)}
+                className="h-8 px-3"
                 onClick={() => setStep("initial")}
               >
                 Back
               </Button>
-              <Button variant="prominent" onClick={handleCustomSubmit}>
+              <Button
+                variant="prominent"
+                onClick={handleCustomSubmit}
+                disabled={appName.trim().length === 0}
+              >
                 Create App
               </Button>
             </DialogFooter>

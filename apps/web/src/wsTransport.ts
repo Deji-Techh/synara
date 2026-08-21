@@ -750,6 +750,19 @@ export class WsTransport {
           cause: requestOptions.signal.reason ?? error,
         });
       }
+      if (error instanceof Error && /interrupted without error/i.test(error.message)) {
+        // Effect runPromise surfaces a bare interrupt-only FiberFailure when the
+        // client runtime is torn down mid-request (server restart, reconnect
+        // churn, or an older server that cannot answer the method). The raw
+        // message is meaningless to users; translate it to something actionable.
+        throw new WsTransportRequestInterruptedError({
+          message:
+            "The connection was reset while the server handled this request. Restart or update Caide, then try again.",
+          code: "WS_REQUEST_ABORTED",
+          method,
+          cause: error,
+        });
+      }
       throw error;
     } finally {
       abortScope.cleanup();

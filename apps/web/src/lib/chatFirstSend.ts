@@ -1,8 +1,15 @@
-import { DEFAULT_MODEL_BY_PROVIDER, type ModelSelection } from "@caide/contracts";
+import {
+  DEFAULT_MODEL_BY_PROVIDER,
+  type AppCreateResult,
+  type ModelSelection,
+  type NativeApi,
+  type OrchestrationShellSnapshot,
+} from "@caide/contracts";
 import { workspaceRootsEqual } from "@caide/shared/threadWorkspace";
 
 import type { Project } from "../types";
-import { buildChatWorkspaceFolderPath } from "./chatWorkspaceFolders";
+import { deriveAppNameFromPrompt } from "./appNaming";
+import { waitForSnapshotMatch } from "./projectCreateRecovery";
 
 export interface FirstSendProjectTarget {
   targetProjectId: Project["id"];
@@ -20,10 +27,16 @@ export interface FirstSendProjectCreation {
   defaultModelSelection: ModelSelection;
 }
 
+/** A brand-new Flutter app created under ~/caide-apps for this first send. */
+export interface FirstSendAppCreation {
+  name: string;
+}
+
 export type FirstSendTargetResolution =
   | { kind: "current"; target: FirstSendProjectTarget }
   | { kind: "existing-project"; target: FirstSendProjectTarget }
-  | { kind: "create-project"; creation: FirstSendProjectCreation };
+  | { kind: "create-project"; creation: FirstSendProjectCreation }
+  | { kind: "create-app"; creation: FirstSendAppCreation };
 
 function buildProjectTarget(project: Project): FirstSendProjectTarget {
   return {
@@ -41,7 +54,6 @@ function buildProjectTitleFromWorkspaceRoot(workspaceRoot: string): string {
 
 export function resolveFirstSendTarget(input: {
   activeProject: Project;
-  chatWorkspaceRoot: string | null;
   createdAt: Date;
   isFirstMessage: boolean;
   isHomeChatContainer: boolean;
@@ -52,8 +64,6 @@ export function resolveFirstSendTarget(input: {
 }): FirstSendTargetResolution {
   const {
     activeProject,
-    chatWorkspaceRoot,
-    createdAt,
     isFirstMessage,
     isHomeChatContainer,
     projects,
@@ -70,31 +80,13 @@ export function resolveFirstSendTarget(input: {
   }
 
   // Home-chat folder mentions intentionally escape the generic-chat workspace and become
-  // normal projects.
+  // normal projects. Plain prompts build a brand-new app: the product's first-class
+  // send from Home is "describe it, and Caide scaffolds the Flutter app for you".
   if (!selectedWorkspaceRoot) {
-    if (!chatWorkspaceRoot) {
-      return {
-        kind: "current",
-        target: buildProjectTarget(activeProject),
-      };
-    }
-
     return {
-      kind: "create-project",
+      kind: "create-app",
       creation: {
-        workspaceRoot: buildChatWorkspaceFolderPath({
-          chatWorkspaceRoot,
-          createdAt,
-          existingWorkspaceRoots: projects.map((project) => project.cwd),
-          titleSeed,
-        }),
-        title,
-        kind: "chat",
-        createWorkspaceRootIfMissing: true,
-        defaultModelSelection: {
-          provider: "groq",
-          model: DEFAULT_MODEL_BY_PROVIDER.groq,
-        },
+        name: deriveAppNameFromPrompt(titleSeed || title),
       },
     };
   }
@@ -123,4 +115,54 @@ export function resolveFirstSendTarget(input: {
       },
     },
   };
+}
+
+const CREATE_APP_RETRY_DELAY_MS = 400;
+
+/**
+ * Creates the Flutter app a plain first-send from Home targets, retrying with
+ * a numeric suffix when the derived name collides with an existing app folder.
+ * Resolves once the orchestration read model publishes the bound project so
+ * the in-flight send can promote its draft into it without a race.
+ */
+export async function createAppForFirstSend(input: {
+  readonly api: NativeApi;
+  readonly name: string;
+}): Promise<{
+  readonly projectId: Project["id"];
+  readonly appPath: string;
+  readonly snapshot: OrchestrationShellSnapshot | null;
+}> {
+  const { api } = input;
+  let created: AppCreateResult | null = null;
+  let lastError: unknown = null;
+
+  for (let attempt = 0; attempt < 4 && created === null; attempt += 1) {
+    const candidateName =
+      attempt === 0 ? input.name : `${input.name}-${attempt + 1}`.slice(0, 60);
+    try {
+      created = await api.app.createApp({ name: candidateName });
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes("already exists")) {
+        throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, CREATE_APP_RETRY_DELAY_MS));
+    }
+  }
+
+  if (created === null) {
+    throw lastError ?? new Error("The app could not be created.");
+  }
+
+  const { snapshot } = await waitForSnapshotMatch({
+    loadSnapshot: () => api.orchestration.getShellSnapshot().catch(() => null),
+    findMatch: (candidate) =>
+      candidate.projects.find((project) => project.id === created?.projectId) ?? null,
+    maxAttempts: 10,
+    delayMs: 200,
+  });
+
+  return { projectId: created.projectId, appPath: created.appPath, snapshot };
 }

@@ -20,54 +20,14 @@ import {
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { readNativeApi } from "../nativeApi";
-
-function toSlug(name: string): string {
-  return (
-    name
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 40) || `app-${Date.now().toString(36)}`
-  );
-}
-
-function generateCuteName(): string {
-  const adjectives = [
-    "wandering",
-    "bouncy",
-    "dapper",
-    "mushy",
-    "clumsy",
-    "nebulous",
-    "flawless",
-    "nappy",
-    "medical",
-    "previous",
-  ];
-  const nouns = [
-    "koala",
-    "fenris",
-    "overlord",
-    "squirrel",
-    "jigsaw",
-    "gods",
-    "cobra",
-    "vulcan",
-    "knight",
-    "cobra",
-  ];
-  const adj = adjectives[Math.floor(Math.random() * adjectives.length)]!;
-  const noun = nouns[Math.floor(Math.random() * nouns.length)]!;
-  return `${adj}-${noun}`.toLowerCase();
-}
+import { generateCuteAppName, toAppSlug } from "../lib/appNaming";
 
 export function CreateAppDialog(props: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated?: (result: AppCreateResult) => void;
 }) {
-  const [name, setName] = useState(generateCuteName());
+  const [name, setName] = useState(generateCuteAppName());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fieldId = useId();
@@ -75,7 +35,7 @@ export function CreateAppDialog(props: {
 
   useEffect(() => {
     if (props.open) {
-      setName(generateCuteName());
+      setName(generateCuteAppName());
       setError(null);
       setSubmitting(false);
     }
@@ -131,7 +91,7 @@ export function CreateAppDialog(props: {
               }}
             />
             <p className="text-xs text-muted-foreground">
-              Will be created as <code>~/caide-apps/{toSlug(name) || "app"}</code>
+              Will be created as <code>~/caide-apps/{toAppSlug(name)}</code>
             </p>
           </div>
           {error ? <p className="text-xs text-destructive">{error}</p> : null}
