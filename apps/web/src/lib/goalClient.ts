@@ -46,6 +46,10 @@ export const goalClient = {
     if (limit === undefined) return goalsApi().listActivity({ goalId });
     return goalsApi().listActivity({ goalId, limit });
   },
+  listRuns: (goalId: GoalId, limit?: number): Promise<GoalRun[]> => {
+    if (limit === undefined) return goalsApi().listRuns({ goalId });
+    return goalsApi().listRuns({ goalId, limit });
+  },
   createGoal: (input: {
     appId?: number | null;
     title?: string;

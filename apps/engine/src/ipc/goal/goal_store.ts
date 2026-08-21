@@ -797,6 +797,19 @@ function runFromRow(row: RunRow): GoalRun {
   };
 }
 
+/** All runs for a goal, newest first (drives the web runs timeline). */
+export function listRuns(goalId: string, limit = 50): GoalRun[] {
+  ensureGoalTables();
+  return (
+    sqlite()
+      .prepare(
+        `SELECT * FROM caide_goal_runs WHERE goal_id = ?
+         ORDER BY created_at DESC LIMIT ?`,
+      )
+      .all(goalId, limit) as RunRow[]
+  ).map(runFromRow);
+}
+
 export function createRun(goalId: string, kind: GoalRunKind, prompt: string): GoalRun | null {
   const goal = rowById(goalId);
   if (!goal.goal_chat_id)

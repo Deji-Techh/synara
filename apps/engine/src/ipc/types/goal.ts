@@ -213,6 +213,14 @@ export const goalContracts = {
     }),
     output: z.array(GoalActivityEventSchema),
   }),
+  listRuns: defineContract({
+    channel: "goal:list-runs",
+    input: z.object({
+      goalId: z.string().min(1),
+      limit: z.number().int().positive().max(1_000).default(50),
+    }),
+    output: z.array(GoalRunSchema),
+  }),
   pauseGoal: defineContract({
     channel: "goal:pause",
     input: GoalIdInputSchema.extend({

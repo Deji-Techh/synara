@@ -13,6 +13,7 @@ import {
   listActivity,
   listGoals,
   listRunnableRuns,
+  listRuns,
   pauseGoal,
   resumeGoal,
   setRunWaiting,
@@ -50,6 +51,10 @@ export function registerGoalHandlers(): void {
 
   createTypedHandler(goalContracts.listActivity, async (_event, input) =>
     listActivity(input.goalId, input.limit),
+  );
+
+  createTypedHandler(goalContracts.listRuns, async (_event, input) =>
+    listRuns(input.goalId, input.limit),
   );
 
   createTypedHandler(goalContracts.pauseGoal, async (_event, input) => {

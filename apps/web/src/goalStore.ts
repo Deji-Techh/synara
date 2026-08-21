@@ -112,6 +112,35 @@ export const useGoalStore = create<GoalStoreState>()((set, get) => {
     }
   };
 
+  /**
+   * Pull fresh runs for the known goals so run rows progress past "pending"
+   * even though claim/finish transitions emit no dedicated domain events.
+   */
+  const loadRuns = async (goalIds: readonly GoalId[]) => {
+    if (goalIds.length === 0) return;
+    const results = await Promise.allSettled(
+      goalIds.map(async (goalId) => {
+        const runs = await goalClient.listRuns(goalId, 50);
+        return [goalId, runs] as const;
+      }),
+    );
+    set((state) => {
+      const next: Record<string, GoalRun[]> = {};
+      for (const result of results) {
+        if (result.status === "fulfilled") {
+          const [goalId, runs] = result.value;
+          if (runs.length > 0) next[goalId] = runs;
+        }
+      }
+      // Keep prior entries for goals whose fetch failed or returned empty so
+      // a transient RPC error doesn't wipe visible history.
+      for (const [goalId, runs] of Object.entries(state.runsByGoalId)) {
+        if (!(goalId in next)) next[goalId] = runs;
+      }
+      return { runsByGoalId: next };
+    });
+  };
+
   const refresh = async () => {
     if (refreshInFlight) return refreshInFlight;
     refreshInFlight = (async () => {
@@ -142,6 +171,12 @@ export const useGoalStore = create<GoalStoreState>()((set, get) => {
         if (nextSelectedGoalId !== null && nextSelectedGoalId !== selectedGoalId) {
           void loadActivity(nextSelectedGoalId);
         }
+        // Refresh runs for live goals so statuses stay current between events.
+        void loadRuns(
+          goals
+            .filter((goal) => GOAL_LIVE_STATUSES.includes(goal.status))
+            .map((goal) => goal.id),
+        );
       } catch (error) {
         set({ loading: false, loaded: get().loaded });
         applyError(error);
@@ -156,6 +191,7 @@ export const useGoalStore = create<GoalStoreState>()((set, get) => {
     set({ selectedGoalId: goalId });
     if (goalId !== null) {
       void loadActivity(goalId);
+      void loadRuns([goalId]);
     }
   };
 
