@@ -128,28 +128,8 @@ export type ProviderCustomModelConfig = {
 };
 
 const BUILT_IN_MODEL_SLUGS_BY_PROVIDER: Record<ProviderKind, ReadonlySet<string>> = {
-  codex: new Set(getModelOptions("openai").map((option) => option.slug)),
-  claudeAgent: new Set(getModelOptions("anthropic").map((option) => option.slug)),
-  cursor: new Set(getModelOptions("openai").map((option) => option.slug)),
-  antigravity: new Set(getModelOptions("google").map((option) => option.slug)),
-  grok: new Set(getModelOptions("openai").map((option) => option.slug)),
-  droid: new Set(getModelOptions("openai").map((option) => option.slug)),
-  kilo: new Set(getModelOptions("openai").map((option) => option.slug)),
-  opencode: new Set(getModelOptions("openai").map((option) => option.slug)),
-  pi: new Set(getModelOptions("openai").map((option) => option.slug)),
   engine: new Set(getModelOptions("engine").map((option) => option.slug)),
-  openai: new Set(getModelOptions("openai").map((option) => option.slug)),
-  anthropic: new Set(getModelOptions("anthropic").map((option) => option.slug)),
-  google: new Set(getModelOptions("google").map((option) => option.slug)),
-  openrouter: new Set(getModelOptions("openrouter").map((option) => option.slug)),
-  ollama: new Set(getModelOptions("ollama").map((option) => option.slug)),
-  deepseek: new Set(getModelOptions("deepseek").map((option) => option.slug)),
   groq: new Set(getModelOptions("groq").map((option) => option.slug)),
-  mistral: new Set(getModelOptions("mistral").map((option) => option.slug)),
-  together: new Set(getModelOptions("together").map((option) => option.slug)),
-  cohere: new Set(getModelOptions("cohere").map((option) => option.slug)),
-  xai: new Set(getModelOptions("xai").map((option) => option.slug)),
-  fireworks: new Set(getModelOptions("fireworks").map((option) => option.slug)),
   opencodeZen: new Set(getModelOptions("opencodeZen").map((option) => option.slug)),
   opencodeGo: new Set(getModelOptions("opencodeGo").map((option) => option.slug)),
 };
@@ -168,35 +148,13 @@ const withDefaults =
     );
 
 const PersistedProviderKind = Schema.Literals([
-  "openai",
-  "anthropic",
-  "openai",
-  "google",
-  "google",
-  "openai",
-  "openai",
-  "openai",
-  "openai",
-  "openai",
-  "engine",
-  "openai",
-  "anthropic",
-  "google",
-  "openrouter",
-  "ollama",
-  "deepseek",
   "groq",
-  "mistral",
-  "together",
-  "cohere",
-  "xai",
-  "fireworks",
   "opencodeZen",
 ]).pipe(
   Schema.decodeTo(
     ProviderKind,
     SchemaTransformation.transform({
-      decode: (provider) => (provider === "google" ? "google" : provider),
+      decode: (provider) => (provider === "opencodeGo" ? "opencodeGo" : provider),
       encode: (provider) => provider,
     }),
   ),
@@ -233,49 +191,12 @@ export const AppSettingsSchema = Schema.Struct({
   ),
   openCodeServerPasswordConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
   openCodeExperimentalWebSockets: Schema.Boolean.pipe(withDefaults(() => false)),
-  openaiApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  openaiApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
-  openaiBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  anthropicApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  anthropicApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
-  anthropicBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  googleApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  googleApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
-  googleBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  openrouterApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  openrouterApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
-  openrouterBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  ollamaApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  ollamaApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
-  ollamaBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(
-    withDefaults(() => "http://127.0.0.1:11434/v1"),
-  ),
-  fireworksApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  fireworksApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
-  fireworksBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  xaiApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  xaiApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
-  xaiBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  cohereApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  cohereApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
-  cohereBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  togetherApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  togetherApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
-  togetherBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  mistralApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  mistralApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
-  mistralBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
   groqApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
   groqApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
   groqBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  deepseekApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  deepseekApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
-  deepseekBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
   opencodeZenApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
   opencodeZenApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
   opencodeZenBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  opencodeGoApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  opencodeGoApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
   opencodeGoBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
   defaultThreadEnvMode: EnvMode.pipe(withDefaults(() => "local" as const satisfies EnvMode)),
   confirmThreadDelete: Schema.Boolean.pipe(withDefaults(() => true)),
@@ -343,10 +264,10 @@ export const AppSettingsSchema = Schema.Struct({
   customFireworksModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   customOpenCodeZenModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   customOpenCodeGoModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  textGenerationProvider: PersistedProviderKind.pipe(withDefaults(() => "openai" as const)),
+  textGenerationProvider: PersistedProviderKind.pipe(withDefaults(() => "groq" as const)),
   textGenerationModel: Schema.optional(TrimmedNonEmptyString),
   uiFontFamily: Schema.String.check(Schema.isMaxLength(256)).pipe(withDefaults(() => "")),
-  defaultProvider: PersistedProviderKind.pipe(withDefaults(() => "openai" as const)),
+  defaultProvider: PersistedProviderKind.pipe(withDefaults(() => "groq" as const)),
   // Local-only UI preference: providers explicitly hidden from the composer picker.
   // The active/locked provider for a thread is always shown regardless, so users
   // never get stuck on a thread whose provider they later chose to hide.
@@ -380,8 +301,8 @@ export function isGitTextGenerationSettingsDirty(
   defaults: AppSettings,
 ): boolean {
   return (
-    (settings.textGenerationProvider ?? "openai") !==
-      (defaults.textGenerationProvider ?? "openai") ||
+    (settings.textGenerationProvider ?? "groq") !==
+      (defaults.textGenerationProvider ?? "groq") ||
     (settings.textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL) !==
       (defaults.textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL)
   );
@@ -401,7 +322,7 @@ let serverSettingsMigrationInFlight = false;
 
 const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConfig> = {
   codex: {
-    provider: "openai",
+    provider: "groq",
     settingsKey: "customCodexModels",
     defaultSettingsKey: "customCodexModels",
     title: "Codex",
@@ -410,7 +331,7 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     example: "gpt-6.7-codex-ultra-preview",
   },
   claudeAgent: {
-    provider: "anthropic",
+    provider: "opencodeZen",
     settingsKey: "customClaudeModels",
     defaultSettingsKey: "customClaudeModels",
     title: "Claude",
@@ -419,7 +340,7 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     example: "claude-custom-model",
   },
   cursor: {
-    provider: "openai",
+    provider: "groq",
     settingsKey: "customCursorModels",
     defaultSettingsKey: "customCursorModels",
     title: "Cursor",
@@ -428,7 +349,7 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     example: "composer-2",
   },
   antigravity: {
-    provider: "google",
+    provider: "opencodeGo",
     settingsKey: "customAntigravityModels",
     defaultSettingsKey: "customAntigravityModels",
     title: "Antigravity",
@@ -437,7 +358,7 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     example: "Gemini 4 Pro",
   },
   grok: {
-    provider: "openai",
+    provider: "groq",
     settingsKey: "customGrokModels",
     defaultSettingsKey: "customGrokModels",
     title: "Grok",
@@ -446,7 +367,7 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     example: "grok-build-0.1",
   },
   droid: {
-    provider: "openai",
+    provider: "groq",
     settingsKey: "customDroidModels",
     defaultSettingsKey: "customDroidModels",
     title: "Droid",
@@ -455,7 +376,7 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     example: "claude-opus-4-8",
   },
   kilo: {
-    provider: "openai",
+    provider: "groq",
     settingsKey: "customKiloModels",
     defaultSettingsKey: "customKiloModels",
     title: "Kilo",
@@ -464,22 +385,22 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     example: "kilo/kilo-auto/free",
   },
   opencode: {
-    provider: "openai",
+    provider: "groq",
     settingsKey: "customOpenCodeModels",
     defaultSettingsKey: "customOpenCodeModels",
     title: "OpenCode",
     description: "Save additional OpenCode model slugs for the picker and provider runtime.",
     placeholder: "provider/model",
-    example: "openai/gpt-5",
+    example: "groq/llama-3.3-70b-versatile",
   },
   pi: {
-    provider: "openai",
+    provider: "groq",
     settingsKey: "customPiModels",
     defaultSettingsKey: "customPiModels",
     title: "Pi",
     description: "Save additional Pi model slugs for the picker and provider runtime.",
     placeholder: "provider/model",
-    example: "anthropic/claude-sonnet-4-5",
+    example: "opencodeZen/deepseek-v4-flash-free",
   },
   engine: {
     provider: "engine",
@@ -491,7 +412,7 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     example: "gpt-5.6-sol",
   },
   openai: {
-    provider: "openai",
+    provider: "groq",
     settingsKey: "customOpenAiModels",
     defaultSettingsKey: "customOpenAiModels",
     title: "OpenAI",
@@ -500,7 +421,7 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     example: "gpt-6-mini",
   },
   anthropic: {
-    provider: "anthropic",
+    provider: "opencodeZen",
     settingsKey: "customAnthropicModels",
     defaultSettingsKey: "customAnthropicModels",
     title: "Anthropic",
@@ -509,7 +430,7 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     example: "claude-custom-model",
   },
   google: {
-    provider: "google",
+    provider: "opencodeGo",
     settingsKey: "customGoogleModels",
     defaultSettingsKey: "customGoogleModels",
     title: "Google",
@@ -623,12 +544,12 @@ export const MODEL_PROVIDER_SETTINGS = Object.values(PROVIDER_CUSTOM_MODEL_CONFI
 // Droid's ACP catalog is authoritative and rejects unknown slugs. Preserve its
 // persisted config for compatibility, but do not offer an editor it cannot honor.
 export const CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS = MODEL_PROVIDER_SETTINGS.filter(
-  (config) => config.provider !== "openai",
+  (config) => config.provider !== "groq",
 );
 
 export function normalizeCustomModelSlugs(
   models: Iterable<string | null | undefined> | null | undefined,
-  provider: ProviderKind = "openai",
+  provider: ProviderKind = "groq",
 ): string[] {
   const normalizedModels: string[] = [];
   const seen = new Set<string>();
@@ -745,37 +666,37 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
     deepseekApiKey: "",
     opencodeZenApiKey: "",
     opencodeGoApiKey: "",
-    claudeBinaryPath: normalizeProviderBinaryPathOverride("anthropic", settings.claudeBinaryPath),
-    codexBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.codexBinaryPath),
-    cursorBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.cursorBinaryPath),
+    claudeBinaryPath: normalizeProviderBinaryPathOverride("opencodeZen", settings.claudeBinaryPath),
+    codexBinaryPath: normalizeProviderBinaryPathOverride("groq", settings.codexBinaryPath),
+    cursorBinaryPath: normalizeProviderBinaryPathOverride("groq", settings.cursorBinaryPath),
     antigravityBinaryPath: normalizeProviderBinaryPathOverride(
-      "google",
+      "opencodeGo",
       settings.antigravityBinaryPath || legacyGeminiBinaryPath,
     ),
-    grokBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.grokBinaryPath),
-    droidBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.droidBinaryPath),
-    kiloBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.kiloBinaryPath),
-    openCodeBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.openCodeBinaryPath),
-    piBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.piBinaryPath),
+    grokBinaryPath: normalizeProviderBinaryPathOverride("groq", settings.grokBinaryPath),
+    droidBinaryPath: normalizeProviderBinaryPathOverride("groq", settings.droidBinaryPath),
+    kiloBinaryPath: normalizeProviderBinaryPathOverride("groq", settings.kiloBinaryPath),
+    openCodeBinaryPath: normalizeProviderBinaryPathOverride("groq", settings.openCodeBinaryPath),
+    piBinaryPath: normalizeProviderBinaryPathOverride("groq", settings.piBinaryPath),
     uiDensity: normalizeUiDensityValue(settings.uiDensity),
     chatFontSizePx: normalizeChatFontSizePx(settings.chatFontSizePx),
     terminalFontSizePx: normalizeTerminalFontSizePx(settings.terminalFontSizePx),
     terminalFontFamily: normalizeTerminalFontFamily(settings.terminalFontFamily),
-    customCodexModels: normalizeCustomModelSlugs(settings.customCodexModels, "openai"),
-    customClaudeModels: normalizeCustomModelSlugs(settings.customClaudeModels, "anthropic"),
-    customCursorModels: normalizeCustomModelSlugs(settings.customCursorModels, "openai"),
+    customCodexModels: normalizeCustomModelSlugs(settings.customCodexModels, "groq"),
+    customClaudeModels: normalizeCustomModelSlugs(settings.customClaudeModels, "opencodeZen"),
+    customCursorModels: normalizeCustomModelSlugs(settings.customCursorModels, "groq"),
     customAntigravityModels: normalizeCustomModelSlugs(
       [...(settings.customAntigravityModels ?? []), ...(legacyCustomGeminiModels ?? [])],
-      "google",
+      "opencodeGo",
     ),
-    customGrokModels: normalizeCustomModelSlugs(settings.customGrokModels, "openai"),
-    customDroidModels: normalizeCustomModelSlugs(settings.customDroidModels, "openai"),
-    customKiloModels: normalizeCustomModelSlugs(settings.customKiloModels, "openai"),
-    customOpenCodeModels: normalizeCustomModelSlugs(settings.customOpenCodeModels, "openai"),
-    customPiModels: normalizeCustomModelSlugs(settings.customPiModels, "openai"),
-    customOpenAiModels: normalizeCustomModelSlugs(settings.customOpenAiModels, "openai"),
-    customAnthropicModels: normalizeCustomModelSlugs(settings.customAnthropicModels, "anthropic"),
-    customGoogleModels: normalizeCustomModelSlugs(settings.customGoogleModels, "google"),
+    customGrokModels: normalizeCustomModelSlugs(settings.customGrokModels, "groq"),
+    customDroidModels: normalizeCustomModelSlugs(settings.customDroidModels, "groq"),
+    customKiloModels: normalizeCustomModelSlugs(settings.customKiloModels, "groq"),
+    customOpenCodeModels: normalizeCustomModelSlugs(settings.customOpenCodeModels, "groq"),
+    customPiModels: normalizeCustomModelSlugs(settings.customPiModels, "groq"),
+    customOpenAiModels: normalizeCustomModelSlugs(settings.customOpenAiModels, "groq"),
+    customAnthropicModels: normalizeCustomModelSlugs(settings.customAnthropicModels, "opencodeZen"),
+    customGoogleModels: normalizeCustomModelSlugs(settings.customGoogleModels, "opencodeGo"),
     customOpenRouterModels: normalizeCustomModelSlugs(
       settings.customOpenRouterModels,
       "openrouter",
@@ -885,7 +806,7 @@ function resolveTextGenerationProvider(input: {
     return input.provider;
   }
   const model = input.model;
-  return model?.includes("/") ? "openai" : "openai";
+  return model?.includes("/") ? "groq" : "groq";
 }
 
 function hasOwn<Key extends keyof AppSettings>(patch: Partial<AppSettings>, key: Key): boolean {
@@ -1382,19 +1303,19 @@ export function getCustomModelsByProvider(
   settings: Pick<AppSettings, CustomModelSettingsKey>,
 ): Record<ProviderKind, readonly string[]> {
   return {
-    codex: getCustomModelsForProvider(settings, "openai"),
-    claudeAgent: getCustomModelsForProvider(settings, "anthropic"),
-    cursor: getCustomModelsForProvider(settings, "openai"),
-    antigravity: getCustomModelsForProvider(settings, "google"),
-    grok: getCustomModelsForProvider(settings, "openai"),
-    droid: getCustomModelsForProvider(settings, "openai"),
-    kilo: getCustomModelsForProvider(settings, "openai"),
-    opencode: getCustomModelsForProvider(settings, "openai"),
-    pi: getCustomModelsForProvider(settings, "openai"),
+    codex: getCustomModelsForProvider(settings, "groq"),
+    claudeAgent: getCustomModelsForProvider(settings, "opencodeZen"),
+    cursor: getCustomModelsForProvider(settings, "groq"),
+    antigravity: getCustomModelsForProvider(settings, "opencodeGo"),
+    grok: getCustomModelsForProvider(settings, "groq"),
+    droid: getCustomModelsForProvider(settings, "groq"),
+    kilo: getCustomModelsForProvider(settings, "groq"),
+    opencode: getCustomModelsForProvider(settings, "groq"),
+    pi: getCustomModelsForProvider(settings, "groq"),
     engine: getCustomModelsForProvider(settings, "engine"),
-    openai: getCustomModelsForProvider(settings, "openai"),
-    anthropic: getCustomModelsForProvider(settings, "anthropic"),
-    google: getCustomModelsForProvider(settings, "google"),
+    openai: getCustomModelsForProvider(settings, "groq"),
+    anthropic: getCustomModelsForProvider(settings, "opencodeZen"),
+    google: getCustomModelsForProvider(settings, "opencodeGo"),
     openrouter: getCustomModelsForProvider(settings, "openrouter"),
     ollama: getCustomModelsForProvider(settings, "ollama"),
     deepseek: getCustomModelsForProvider(settings, "deepseek"),
@@ -1437,7 +1358,7 @@ export function getAppModelOptions(
   }
 
   const normalizedSelectedModel =
-    provider === "openai"
+    provider === "groq"
       ? normalizeCursorModelVariantBaseId(selectedModel)
       : normalizeModelSlug(selectedModel, provider);
   const selectedModelMatchesExistingName =
@@ -1459,7 +1380,7 @@ export function getAppModelOptions(
   return options;
 }
 
-type GitTextGenerationDiscoveredProvider = "openai" | "openai" | "openai";
+type GitTextGenerationDiscoveredProvider = "groq" | "groq" | "groq";
 
 export function mapCatalogModelOptionsToAppModelOptions(
   provider: GitTextGenerationDiscoveredProvider,
@@ -1490,14 +1411,14 @@ export function getGitTextGenerationModelOptions(
 ): AppModelOption[] {
   const options = [
     ...(discoveredOptionsByProvider?.codex
-      ? mapCatalogModelOptionsToAppModelOptions("openai", discoveredOptionsByProvider.codex)
-      : getAppModelOptions("openai", settings.customCodexModels)),
+      ? mapCatalogModelOptionsToAppModelOptions("groq", discoveredOptionsByProvider.codex)
+      : getAppModelOptions("groq", settings.customCodexModels)),
     ...(discoveredOptionsByProvider?.kilo
-      ? mapCatalogModelOptionsToAppModelOptions("openai", discoveredOptionsByProvider.kilo)
-      : getAppModelOptions("openai", settings.customKiloModels)),
+      ? mapCatalogModelOptionsToAppModelOptions("groq", discoveredOptionsByProvider.kilo)
+      : getAppModelOptions("groq", settings.customKiloModels)),
     ...(discoveredOptionsByProvider?.opencode
-      ? mapCatalogModelOptionsToAppModelOptions("openai", discoveredOptionsByProvider.opencode)
-      : getAppModelOptions("openai", settings.customOpenCodeModels)),
+      ? mapCatalogModelOptionsToAppModelOptions("groq", discoveredOptionsByProvider.opencode)
+      : getAppModelOptions("groq", settings.customOpenCodeModels)),
   ];
   const deduped: AppModelOption[] = [];
   const seen = new Set<string>();
@@ -1544,19 +1465,19 @@ export function getCustomModelOptionsByProvider(
 ): Record<ProviderKind, ReadonlyArray<ProviderModelOption>> {
   const customModelsByProvider = getCustomModelsByProvider(settings);
   return {
-    codex: getAppModelOptions("openai", customModelsByProvider.codex),
-    claudeAgent: getAppModelOptions("anthropic", customModelsByProvider.claudeAgent),
-    cursor: getAppModelOptions("openai", customModelsByProvider.cursor),
-    antigravity: getAppModelOptions("google", customModelsByProvider.antigravity),
-    grok: getAppModelOptions("openai", customModelsByProvider.grok),
-    droid: getAppModelOptions("openai", customModelsByProvider.droid),
-    kilo: getAppModelOptions("openai", customModelsByProvider.kilo),
-    opencode: getAppModelOptions("openai", customModelsByProvider.opencode),
-    pi: getAppModelOptions("openai", customModelsByProvider.pi),
+    codex: getAppModelOptions("groq", customModelsByProvider.codex),
+    claudeAgent: getAppModelOptions("opencodeZen", customModelsByProvider.claudeAgent),
+    cursor: getAppModelOptions("groq", customModelsByProvider.cursor),
+    antigravity: getAppModelOptions("opencodeGo", customModelsByProvider.antigravity),
+    grok: getAppModelOptions("groq", customModelsByProvider.grok),
+    droid: getAppModelOptions("groq", customModelsByProvider.droid),
+    kilo: getAppModelOptions("groq", customModelsByProvider.kilo),
+    opencode: getAppModelOptions("groq", customModelsByProvider.opencode),
+    pi: getAppModelOptions("groq", customModelsByProvider.pi),
     engine: getAppModelOptions("engine", customModelsByProvider.engine),
-    openai: getAppModelOptions("openai", customModelsByProvider.openai),
-    anthropic: getAppModelOptions("anthropic", customModelsByProvider.anthropic),
-    google: getAppModelOptions("google", customModelsByProvider.google),
+    openai: getAppModelOptions("groq", customModelsByProvider.openai),
+    anthropic: getAppModelOptions("opencodeZen", customModelsByProvider.anthropic),
+    google: getAppModelOptions("opencodeGo", customModelsByProvider.google),
     openrouter: getAppModelOptions("openrouter", customModelsByProvider.openrouter),
     ollama: getAppModelOptions("ollama", customModelsByProvider.ollama),
     deepseek: getAppModelOptions("deepseek", customModelsByProvider.deepseek),
@@ -1591,23 +1512,23 @@ export function getProviderStartOptions(
   >,
 ): ProviderStartOptions | undefined {
   const claudeBinaryPath = normalizeProviderBinaryPathOverride(
-    "anthropic",
+    "opencodeZen",
     settings.claudeBinaryPath,
   );
-  const codexBinaryPath = normalizeProviderBinaryPathOverride("openai", settings.codexBinaryPath);
-  const cursorBinaryPath = normalizeProviderBinaryPathOverride("openai", settings.cursorBinaryPath);
+  const codexBinaryPath = normalizeProviderBinaryPathOverride("groq", settings.codexBinaryPath);
+  const cursorBinaryPath = normalizeProviderBinaryPathOverride("groq", settings.cursorBinaryPath);
   const antigravityBinaryPath = normalizeProviderBinaryPathOverride(
-    "google",
+    "opencodeGo",
     settings.antigravityBinaryPath,
   );
-  const grokBinaryPath = normalizeProviderBinaryPathOverride("openai", settings.grokBinaryPath);
-  const droidBinaryPath = normalizeProviderBinaryPathOverride("openai", settings.droidBinaryPath);
-  const kiloBinaryPath = normalizeProviderBinaryPathOverride("openai", settings.kiloBinaryPath);
+  const grokBinaryPath = normalizeProviderBinaryPathOverride("groq", settings.grokBinaryPath);
+  const droidBinaryPath = normalizeProviderBinaryPathOverride("groq", settings.droidBinaryPath);
+  const kiloBinaryPath = normalizeProviderBinaryPathOverride("groq", settings.kiloBinaryPath);
   const openCodeBinaryPath = normalizeProviderBinaryPathOverride(
-    "openai",
+    "groq",
     settings.openCodeBinaryPath,
   );
-  const piBinaryPath = normalizeProviderBinaryPathOverride("openai", settings.piBinaryPath);
+  const piBinaryPath = normalizeProviderBinaryPathOverride("groq", settings.piBinaryPath);
   const hasOpenCodeStartOptions = Boolean(
     openCodeBinaryPath || settings.openCodeExperimentalWebSockets || settings.openCodeServerUrl,
   );
@@ -1730,29 +1651,29 @@ export function getCustomBinaryPathForProvider(
   provider: ProviderKind,
 ): string {
   switch (provider) {
-    case "openai":
+    case "groq":
       return normalizeProviderBinaryPathOverride(provider, settings.codexBinaryPath);
-    case "anthropic":
+    case "opencodeZen":
       return normalizeProviderBinaryPathOverride(provider, settings.claudeBinaryPath);
-    case "openai":
+    case "groq":
       return normalizeProviderBinaryPathOverride(provider, settings.cursorBinaryPath);
-    case "google":
+    case "opencodeGo":
       return normalizeProviderBinaryPathOverride(provider, settings.antigravityBinaryPath);
-    case "openai":
+    case "groq":
       return normalizeProviderBinaryPathOverride(provider, settings.grokBinaryPath);
-    case "openai":
+    case "groq":
       return normalizeProviderBinaryPathOverride(provider, settings.droidBinaryPath);
-    case "openai":
+    case "groq":
       return normalizeProviderBinaryPathOverride(provider, settings.kiloBinaryPath);
-    case "openai":
+    case "groq":
       return normalizeProviderBinaryPathOverride(provider, settings.openCodeBinaryPath);
-    case "openai":
+    case "groq":
       return normalizeProviderBinaryPathOverride(provider, settings.piBinaryPath);
     case "engine":
       return "";
-    case "openai":
-    case "anthropic":
-    case "google":
+    case "groq":
+    case "opencodeZen":
+    case "opencodeGo":
     case "openrouter":
     case "ollama":
     case "deepseek":
