@@ -130,6 +130,15 @@ const PROVIDER_INSTALL_SETTINGS: readonly ProviderInstallSettings[] = [
         placeholder: "API Key",
         description: "Your Groq API key.",
       },
+      {
+        kind: "text",
+        settingsKey: "groqBaseUrl",
+        label: "Groq base URL",
+        placeholder: "https://api.groq.com/openai/v1",
+        description: "Optional custom Groq endpoint override.",
+      },
+    ],
+  },
   {
     provider: "opencodeZen",
     docs: [
@@ -146,6 +155,15 @@ const PROVIDER_INSTALL_SETTINGS: readonly ProviderInstallSettings[] = [
         description:
           "Your OpenCode Zen API key. The API provider is separate from the OpenCode CLI provider.",
       },
+      {
+        kind: "text",
+        settingsKey: "opencodeZenBaseUrl",
+        label: "OpenCode Zen base URL",
+        placeholder: "https://opencode.ai/zen/v1",
+        description: "Optional custom OpenCode Zen endpoint override.",
+      },
+    ],
+  },
   {
     provider: "opencodeGo",
     docs: [
@@ -161,8 +179,16 @@ const PROVIDER_INSTALL_SETTINGS: readonly ProviderInstallSettings[] = [
         placeholder: "API Key",
         description: "Your OpenCode Go API key.",
       },
+      {
+        kind: "text",
+        settingsKey: "opencodeGoBaseUrl",
+        label: "OpenCode Go base URL",
+        placeholder: "https://opencode.ai/zen/v1",
+        description: "Optional custom OpenCode Go endpoint override.",
+      },
+    ],
+  },
 ];
-
 function isProviderInstallFieldDirty(
   field: ProviderInstallField,
   settings: AppSettings,

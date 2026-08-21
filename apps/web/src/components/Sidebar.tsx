@@ -2643,7 +2643,7 @@ export default function Sidebar() {
       });
       // Droid discovery spins a disposable ACP session per model — only warm it
       // from explicit new-thread intent (hover/click), not idle project focus.
-      if (provider === "openai" && options?.includeDroid !== true) {
+      if (provider === "groq" && options?.includeDroid !== true) {
         return;
       }
       const cwd = resolveNewThreadModelPrefetchCwd({
@@ -2739,11 +2739,11 @@ export default function Sidebar() {
       const title =
         provider === "anthropic"
           ? `Imported Claude session${suffix ? ` ${suffix}` : ""}`
-          : provider === "openai"
+          : provider === "groq"
             ? `Imported Cursor session${suffix ? ` ${suffix}` : ""}`
-            : provider === "openai"
+            : provider === "groq"
               ? `Imported Kilo session${suffix ? ` ${suffix}` : ""}`
-              : provider === "openai"
+              : provider === "groq"
                 ? `Imported OpenCode session${suffix ? ` ${suffix}` : ""}`
                 : `Imported Codex thread${suffix ? ` ${suffix}` : ""}`;
       let createdThread = false;
@@ -3373,8 +3373,8 @@ export default function Sidebar() {
                     projectId: requestedProjectId,
                     newProjectSpaceId: value.spaceId,
                     defaultModelSelection: {
-                      provider: "openai",
-                      model: getDefaultModel("openai"),
+                      provider: "groq",
+                      model: getDefaultModel("groq"),
                     },
                     createdAt: new Date().toISOString(),
                   },
@@ -5460,7 +5460,7 @@ export default function Sidebar() {
         id: "import-thread",
         label: "Import thread from...",
         description: "Attach a local thread to an existing provider session.",
-        keywords: ["import", "resume", "thread", "session", "openai", "claude", "openai", "openai"],
+        keywords: ["import", "resume", "thread", "session", "groq", "claude", "groq", "groq"],
         shortcutLabel: importThreadShortcutLabel,
       },
       {
@@ -6745,14 +6745,14 @@ function SidebarSearchPaletteController(props: {
   const selectAllThreads = useMemo(() => createAllThreadsSelector(), []);
   const selectSidebarDisplayThreads = useMemo(() => createSidebarDisplayThreadsSelector(), []);
   const importProviderCapabilityQueries = useQueries({
-    queries: (["openai", "anthropic", "openai", "openai", "openai"] as const).map((provider) =>
+    queries: (["groq", "anthropic", "groq", "groq", "groq"] as const).map((provider) =>
       providerComposerCapabilitiesQueryOptions(provider),
     ),
   });
   const threads = useStore(selectAllThreads);
   const sidebarDisplayThreads = useStore(selectSidebarDisplayThreads);
   const importProviders: ReadonlyArray<ImportProviderKind> = (
-    ["openai", "anthropic", "openai", "openai", "openai"] as const
+    ["groq", "anthropic", "groq", "groq", "groq"] as const
   ).filter((provider, index) => supportsThreadImport(importProviderCapabilityQueries[index]?.data));
   const searchPaletteThreads = useMemo<SidebarSearchThread[]>(() => {
     const threadById = new Map(threads.map((thread) => [thread.id, thread] as const));

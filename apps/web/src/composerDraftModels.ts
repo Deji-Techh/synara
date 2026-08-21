@@ -175,15 +175,15 @@ export function normalizeProviderModelOptions(
   const candidate = value && typeof value === "object" ? (value as Record<string, unknown>) : null;
   // Map legacy CLI provider keys to API providers
   const legacyMap: Record<string, string> = {
-    codex: "openai",
+    codex: "groq",
     claudeAgent: "anthropic",
-    cursor: "openai",
-    antigravity: "google",
-    grok: "xai",
-    droid: "openai",
-    opencode: "openai",
-    kilo: "openai",
-    pi: "openai",
+    cursor: "groq",
+    antigravity: "groq",
+    grok: "groq",
+    droid: "groq",
+    opencode: "groq",
+    kilo: "groq",
+    pi: "groq",
   };
   // Collect candidate for the requested provider, checking both API and legacy keys
   const getCandidate = (apiProvider: string) => {
@@ -204,10 +204,10 @@ export function normalizeProviderModelOptions(
     }
     return null;
   };
-  const codexCandidate = getCandidate("openai");
-  const claudeCandidate = getCandidate("anthropic");
-  const antigravityCandidate = getCandidate("google");
-  const grokCandidate = getCandidate("xai");
+  const codexCandidate = getCandidate("groq");
+  const claudeCandidate = getCandidate("opencodeZen");
+  const antigravityCandidate = getCandidate("opencodeGo");
+  const grokCandidate = getCandidate("groq");
   // For API-only, we only need openai, anthropic, google, xai, and generic API providers
   const droidCandidate = null;
   const openCodeCandidate = null;
@@ -217,13 +217,13 @@ export function normalizeProviderModelOptions(
 
   const codexReasoningEffort: CodexReasoningEffort | undefined =
     trimStringOrUndefined(codexCandidate?.reasoningEffort) ??
-    (provider === "openai" ? trimStringOrUndefined(legacy?.effort) : undefined);
+    (provider === "groq" ? trimStringOrUndefined(legacy?.effort) : undefined);
   const codexFastMode =
     codexCandidate?.fastMode === true
       ? true
       : codexCandidate?.fastMode === false
         ? false
-        : (provider === "openai" && legacy?.codexFastMode === true) ||
+        : (provider === "groq" && legacy?.codexFastMode === true) ||
             (typeof legacy?.serviceTier === "string" && legacy.serviceTier === "fast")
           ? true
           : undefined;
@@ -419,7 +419,7 @@ export function normalizeModelSelection(
     : normalizeProviderModelOptions(
         candidate?.options ? { [provider]: candidate.options } : legacy?.modelOptions,
         provider,
-        provider === "openai" ? legacy?.legacyCodex : undefined,
+        provider === "groq" ? legacy?.legacyCodex : undefined,
       );
   const options =
     provider === "anthropic"
@@ -472,8 +472,8 @@ export function reconcileProviderScopedModelSelection(
     );
   }
   if (
-    current.provider !== "openai" &&
-    current.provider !== "openai" &&
+    current.provider !== "groq" &&
+    current.provider !== "groq" &&
     current.provider !== "anthropic"
   ) {
     return requested;
@@ -482,7 +482,7 @@ export function reconcileProviderScopedModelSelection(
   const effort =
     current.provider === "anthropic"
       ? current.options?.effort
-      : current.provider === "openai" || current.provider === "openai"
+      : current.provider === "groq" || current.provider === "groq"
         ? current.options?.reasoningEffort
         : undefined;
   if (
@@ -496,7 +496,7 @@ export function reconcileProviderScopedModelSelection(
     if (current.provider === "anthropic") {
       const { effort: _effort, ...remainingOptions } = current.options ?? {};
       preservedOptions = Object.keys(remainingOptions).length > 0 ? remainingOptions : undefined;
-    } else if (current.provider === "openai" || current.provider === "openai") {
+    } else if (current.provider === "groq" || current.provider === "groq") {
       const { reasoningEffort: _reasoningEffort, ...remainingOptions } = current.options ?? {};
       preservedOptions = Object.keys(remainingOptions).length > 0 ? remainingOptions : undefined;
     }
@@ -682,7 +682,7 @@ export function deriveEffectiveComposerModelState(input: {
     unlistedDraftModel ??
     input.availableModelOptionsByProvider?.[input.selectedProvider]?.[0]?.slug ??
     baseModel ??
-    getDefaultModel("openai");
+    getDefaultModel("groq");
   const modelOptions = deriveEffectiveComposerModelOptions(input);
 
   return {
@@ -710,7 +710,7 @@ export function resolvePreferredComposerModelSelection(input: {
     input.threadModelSelection?.provider ??
     input.projectModelSelection?.provider ??
     input.defaultProvider ??
-    "openai";
+    "groq";
 
   return (
     input.draft?.modelSelectionByProvider?.[preferredProvider] ??
@@ -721,11 +721,11 @@ export function resolvePreferredComposerModelSelection(input: {
       ? input.projectModelSelection
       : null) ?? {
       provider:
-        preferredProvider === "openai" || preferredProvider === "engine"
+        preferredProvider === "groq" || preferredProvider === "engine"
           ? "openai"
           : preferredProvider,
       model: getDefaultModel(
-        preferredProvider === "openai" || preferredProvider === "engine"
+        preferredProvider === "groq" || preferredProvider === "engine"
           ? "openai"
           : preferredProvider,
       ),

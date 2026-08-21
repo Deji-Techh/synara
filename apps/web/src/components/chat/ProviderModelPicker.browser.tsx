@@ -71,8 +71,8 @@ const MODEL_OPTIONS_BY_PROVIDER = {
   ],
   engine: [],
   openai: [
-    { slug: "gpt-5.5", name: "GPT-5.5" },
-    { slug: "gpt-5.5-mini", name: "GPT-5.5 Mini" },
+    { slug: "llama-3.3-70b-versatile", name: "Llama 3.3 70B" },
+    { slug: "llama-3.1-8b-instant", name: "Llama 3.1 8B" },
   ],
   anthropic: [
     { slug: "claude-sonnet-5", name: "Claude Sonnet 5" },
@@ -83,7 +83,7 @@ const MODEL_OPTIONS_BY_PROVIDER = {
     { slug: "gemini-3-flash", name: "Gemini 3 Flash" },
   ],
   openrouter: [
-    { slug: "openai/gpt-5.5", name: "GPT-5.5" },
+    { slug: "groq/llama-3.3-70b-versatile", name: "Llama 3.3 70B" },
     { slug: "anthropic/claude-sonnet-5", name: "Claude Sonnet 5" },
   ],
   ollama: [
