@@ -39,77 +39,11 @@ const ApiProviderSettingsBase = {
   apiKeyConfigured: Schema.Boolean.pipe(Schema.withDecodingDefault(() => false)),
 };
 
-export const OpenAiServerProviderSettings = Schema.Struct({
-  ...ApiProviderSettingsBase,
-  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
-});
-export type OpenAiServerProviderSettings = typeof OpenAiServerProviderSettings.Type;
-
-export const AnthropicServerProviderSettings = Schema.Struct({
-  ...ApiProviderSettingsBase,
-  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
-});
-export type AnthropicServerProviderSettings = typeof AnthropicServerProviderSettings.Type;
-
-export const GoogleServerProviderSettings = Schema.Struct({
-  ...ApiProviderSettingsBase,
-  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
-});
-export type GoogleServerProviderSettings = typeof GoogleServerProviderSettings.Type;
-
-export const OpenRouterServerProviderSettings = Schema.Struct({
-  ...ApiProviderSettingsBase,
-  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
-});
-export type OpenRouterServerProviderSettings = typeof OpenRouterServerProviderSettings.Type;
-
-export const OllamaServerProviderSettings = Schema.Struct({
-  ...ApiProviderSettingsBase,
-  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
-});
-export type OllamaServerProviderSettings = typeof OllamaServerProviderSettings.Type;
-
-export const DeepseekServerProviderSettings = Schema.Struct({
-  ...ApiProviderSettingsBase,
-  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
-});
-export type DeepseekServerProviderSettings = typeof DeepseekServerProviderSettings.Type;
-
 export const GroqServerProviderSettings = Schema.Struct({
   ...ApiProviderSettingsBase,
   binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
 });
 export type GroqServerProviderSettings = typeof GroqServerProviderSettings.Type;
-
-export const MistralServerProviderSettings = Schema.Struct({
-  ...ApiProviderSettingsBase,
-  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
-});
-export type MistralServerProviderSettings = typeof MistralServerProviderSettings.Type;
-
-export const TogetherServerProviderSettings = Schema.Struct({
-  ...ApiProviderSettingsBase,
-  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
-});
-export type TogetherServerProviderSettings = typeof TogetherServerProviderSettings.Type;
-
-export const CohereServerProviderSettings = Schema.Struct({
-  ...ApiProviderSettingsBase,
-  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
-});
-export type CohereServerProviderSettings = typeof CohereServerProviderSettings.Type;
-
-export const XaiServerProviderSettings = Schema.Struct({
-  ...ApiProviderSettingsBase,
-  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
-});
-export type XaiServerProviderSettings = typeof XaiServerProviderSettings.Type;
-
-export const FireworksServerProviderSettings = Schema.Struct({
-  ...ApiProviderSettingsBase,
-  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
-});
-export type FireworksServerProviderSettings = typeof FireworksServerProviderSettings.Type;
 
 export const OpenCodeZenServerProviderSettings = Schema.Struct({
   ...ApiProviderSettingsBase,
@@ -143,24 +77,13 @@ export const ServerSettings = Schema.Struct({
   addProjectBaseDirectory: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
   textGenerationModelSelection: ModelSelection.pipe(
     Schema.withDecodingDefault(() => ({
-      provider: "openai" as const,
+      provider: "groq" as const,
       model: DEFAULT_GIT_TEXT_GENERATION_MODEL,
     })),
   ),
   providers: Schema.Struct({
     engine: EngineServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
-    openai: OpenAiServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
-    anthropic: AnthropicServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
-    google: GoogleServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
-    openrouter: OpenRouterServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
-    ollama: OllamaServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
-    deepseek: DeepseekServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
     groq: GroqServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
-    mistral: MistralServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
-    together: TogetherServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
-    cohere: CohereServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
-    xai: XaiServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
-    fireworks: FireworksServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
     opencodeZen: OpenCodeZenServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
     opencodeGo: OpenCodeGoServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
   }).pipe(Schema.withDecodingDefault(() => ({}))),
@@ -199,84 +122,7 @@ export const ServerSettingsPatch = Schema.Struct({
   textGenerationModelSelection: Schema.optionalKey(ModelSelectionPatch),
   providers: Schema.optionalKey(
     Schema.Struct({
-      openai: Schema.optionalKey(
-        Schema.Struct({
-          ...ProviderSettingsBasePatch,
-          baseUrl: Schema.optionalKey(StringSetting),
-          apiKey: Schema.optionalKey(StringSetting),
-        }),
-      ),
-      anthropic: Schema.optionalKey(
-        Schema.Struct({
-          ...ProviderSettingsBasePatch,
-          baseUrl: Schema.optionalKey(StringSetting),
-          apiKey: Schema.optionalKey(StringSetting),
-        }),
-      ),
-      google: Schema.optionalKey(
-        Schema.Struct({
-          ...ProviderSettingsBasePatch,
-          baseUrl: Schema.optionalKey(StringSetting),
-          apiKey: Schema.optionalKey(StringSetting),
-        }),
-      ),
-      openrouter: Schema.optionalKey(
-        Schema.Struct({
-          ...ProviderSettingsBasePatch,
-          baseUrl: Schema.optionalKey(StringSetting),
-          apiKey: Schema.optionalKey(StringSetting),
-        }),
-      ),
-      ollama: Schema.optionalKey(
-        Schema.Struct({
-          ...ProviderSettingsBasePatch,
-          baseUrl: Schema.optionalKey(StringSetting),
-          apiKey: Schema.optionalKey(StringSetting),
-        }),
-      ),
-      deepseek: Schema.optionalKey(
-        Schema.Struct({
-          ...ProviderSettingsBasePatch,
-          baseUrl: Schema.optionalKey(StringSetting),
-          apiKey: Schema.optionalKey(StringSetting),
-        }),
-      ),
       groq: Schema.optionalKey(
-        Schema.Struct({
-          ...ProviderSettingsBasePatch,
-          baseUrl: Schema.optionalKey(StringSetting),
-          apiKey: Schema.optionalKey(StringSetting),
-        }),
-      ),
-      mistral: Schema.optionalKey(
-        Schema.Struct({
-          ...ProviderSettingsBasePatch,
-          baseUrl: Schema.optionalKey(StringSetting),
-          apiKey: Schema.optionalKey(StringSetting),
-        }),
-      ),
-      together: Schema.optionalKey(
-        Schema.Struct({
-          ...ProviderSettingsBasePatch,
-          baseUrl: Schema.optionalKey(StringSetting),
-          apiKey: Schema.optionalKey(StringSetting),
-        }),
-      ),
-      cohere: Schema.optionalKey(
-        Schema.Struct({
-          ...ProviderSettingsBasePatch,
-          baseUrl: Schema.optionalKey(StringSetting),
-          apiKey: Schema.optionalKey(StringSetting),
-        }),
-      ),
-      xai: Schema.optionalKey(
-        Schema.Struct({
-          ...ProviderSettingsBasePatch,
-          baseUrl: Schema.optionalKey(StringSetting),
-          apiKey: Schema.optionalKey(StringSetting),
-        }),
-      ),
-      fireworks: Schema.optionalKey(
         Schema.Struct({
           ...ProviderSettingsBasePatch,
           baseUrl: Schema.optionalKey(StringSetting),

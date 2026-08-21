@@ -48,18 +48,7 @@ export function applyServerSettingsPatch(
 
 /** API-key providers whose launch options carry a chat-completions base URL. */
 const API_START_OPTION_PROVIDERS = [
-  "openai",
-  "anthropic",
-  "google",
-  "openrouter",
-  "ollama",
-  "deepseek",
   "groq",
-  "mistral",
-  "together",
-  "cohere",
-  "xai",
-  "fireworks",
   "opencodeZen",
   "opencodeGo",
 ] as const satisfies readonly (keyof ProviderStartOptions)[];

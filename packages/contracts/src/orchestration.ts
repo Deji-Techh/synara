@@ -47,47 +47,14 @@ export const ORCHESTRATION_WS_CHANNELS = {
   threadEvent: "orchestration.threadEvent",
 } as const;
 
-export const ProviderKind = Schema.Literals([
-  "engine",
-  "openai",
-  "anthropic",
-  "google",
-  "openrouter",
-  "ollama",
-  "deepseek",
-  "groq",
-  "mistral",
-  "together",
-  "cohere",
-  "xai",
-  "fireworks",
-  "opencodeZen",
-  "opencodeGo",
-]);
+export const ProviderKind = Schema.Literals(["engine", "groq", "opencodeZen", "opencodeGo"]);
 export type ProviderKind = typeof ProviderKind.Type;
 
 /**
  * API-key providers: they talk to HTTP endpoints, never a local CLI process.
- * Every non-engine provider is API-key based; CLI/child-process providers were
- * removed from the product (the Flutter Builder engine is the only process
- * backend, and it now serves all of these via its own tools).
+ * Only groq + OpenCode Zen/Go remain — everything else was stripped.
  */
-export const API_PROVIDER_KINDS = [
-  "openai",
-  "anthropic",
-  "google",
-  "openrouter",
-  "ollama",
-  "deepseek",
-  "groq",
-  "mistral",
-  "together",
-  "cohere",
-  "xai",
-  "fireworks",
-  "opencodeZen",
-  "opencodeGo",
-] as const;
+export const API_PROVIDER_KINDS = ["groq", "opencodeZen", "opencodeGo"] as const;
 export type ApiProviderKind = (typeof API_PROVIDER_KINDS)[number];
 
 /** Backends that spawn a child process. Only the Flutter engine. */
@@ -108,7 +75,7 @@ export const ProviderSandboxMode = Schema.Literals([
   "danger-full-access",
 ]);
 export type ProviderSandboxMode = typeof ProviderSandboxMode.Type;
-export const DEFAULT_PROVIDER_KIND: ProviderKind = "openai";
+export const DEFAULT_PROVIDER_KIND: ProviderKind = "groq";
 
 export const EngineModelSelection = Schema.Struct({
   provider: Schema.Literal("engine"),
@@ -117,90 +84,12 @@ export const EngineModelSelection = Schema.Struct({
 });
 export type EngineModelSelection = typeof EngineModelSelection.Type;
 
-const ApiModelSelection = Schema.Struct({
-  provider: Schema.Literal("openai"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(ApiModelOptions),
-});
-export const OpenAiModelSelection = ApiModelSelection;
-export type OpenAiModelSelection = typeof OpenAiModelSelection.Type;
-
-export const AnthropicModelSelection = Schema.Struct({
-  provider: Schema.Literal("anthropic"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(ApiModelOptions),
-});
-export type AnthropicModelSelection = typeof AnthropicModelSelection.Type;
-
-export const GoogleModelSelection = Schema.Struct({
-  provider: Schema.Literal("google"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(ApiModelOptions),
-});
-export type GoogleModelSelection = typeof GoogleModelSelection.Type;
-
-export const OpenRouterModelSelection = Schema.Struct({
-  provider: Schema.Literal("openrouter"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(ApiModelOptions),
-});
-export type OpenRouterModelSelection = typeof OpenRouterModelSelection.Type;
-
-export const OllamaModelSelection = Schema.Struct({
-  provider: Schema.Literal("ollama"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(ApiModelOptions),
-});
-export type OllamaModelSelection = typeof OllamaModelSelection.Type;
-
-export const DeepseekModelSelection = Schema.Struct({
-  provider: Schema.Literal("deepseek"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(ApiModelOptions),
-});
-export type DeepseekModelSelection = typeof DeepseekModelSelection.Type;
-
 export const GroqModelSelection = Schema.Struct({
   provider: Schema.Literal("groq"),
   model: TrimmedNonEmptyString,
   options: Schema.optional(ApiModelOptions),
 });
 export type GroqModelSelection = typeof GroqModelSelection.Type;
-
-export const MistralModelSelection = Schema.Struct({
-  provider: Schema.Literal("mistral"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(ApiModelOptions),
-});
-export type MistralModelSelection = typeof MistralModelSelection.Type;
-
-export const TogetherModelSelection = Schema.Struct({
-  provider: Schema.Literal("together"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(ApiModelOptions),
-});
-export type TogetherModelSelection = typeof TogetherModelSelection.Type;
-
-export const CohereModelSelection = Schema.Struct({
-  provider: Schema.Literal("cohere"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(ApiModelOptions),
-});
-export type CohereModelSelection = typeof CohereModelSelection.Type;
-
-export const XaiModelSelection = Schema.Struct({
-  provider: Schema.Literal("xai"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(ApiModelOptions),
-});
-export type XaiModelSelection = typeof XaiModelSelection.Type;
-
-export const FireworksModelSelection = Schema.Struct({
-  provider: Schema.Literal("fireworks"),
-  model: TrimmedNonEmptyString,
-  options: Schema.optional(ApiModelOptions),
-});
-export type FireworksModelSelection = typeof FireworksModelSelection.Type;
 
 export const OpenCodeZenModelSelection = Schema.Struct({
   provider: Schema.Literal("opencodeZen"),
@@ -216,17 +105,31 @@ export const OpenCodeGoModelSelection = Schema.Struct({
 });
 export type OpenCodeGoModelSelection = typeof OpenCodeGoModelSelection.Type;
 
+// All legacy providers now map to groq
 const LEGACY_MODEL_PROVIDER_MAP: Record<string, ProviderKind> = {
-  codex: "openai",
-  claudeAgent: "anthropic",
-  cursor: "openai",
-  antigravity: "google",
-  grok: "xai",
-  droid: "openai",
-  kilo: "openai",
-  opencode: "openai",
-  pi: "openai",
-  gemini: "google",
+  codex: "groq",
+  claudeAgent: "groq",
+  cursor: "groq",
+  antigravity: "groq",
+  grok: "groq",
+  droid: "groq",
+  kilo: "groq",
+  opencode: "groq",
+  pi: "groq",
+  gemini: "groq",
+  openai: "groq",
+  anthropic: "groq",
+  google: "groq",
+  openrouter: "groq",
+  ollama: "groq",
+  deepseek: "groq",
+  mistral: "groq",
+  together: "groq",
+  cohere: "groq",
+  xai: "groq",
+  fireworks: "groq",
+  opencodeZen: "opencodeZen",
+  opencodeGo: "opencodeGo",
 };
 
 const LegacyModelSelection = Schema.Struct({
@@ -237,18 +140,7 @@ const LegacyModelSelection = Schema.Struct({
 
 const NewModelSelection = Schema.Union([
   EngineModelSelection,
-  OpenAiModelSelection,
-  AnthropicModelSelection,
-  GoogleModelSelection,
-  OpenRouterModelSelection,
-  OllamaModelSelection,
-  DeepseekModelSelection,
   GroqModelSelection,
-  MistralModelSelection,
-  TogetherModelSelection,
-  CohereModelSelection,
-  XaiModelSelection,
-  FireworksModelSelection,
   OpenCodeZenModelSelection,
   OpenCodeGoModelSelection,
 ]);
@@ -276,18 +168,7 @@ export const ApiProviderStartOptions = Schema.Struct({
 
 export const ProviderStartOptions = Schema.Struct({
   engine: Schema.optional(EngineProviderStartOptions),
-  openai: Schema.optional(ApiProviderStartOptions),
-  anthropic: Schema.optional(ApiProviderStartOptions),
-  google: Schema.optional(ApiProviderStartOptions),
-  openrouter: Schema.optional(ApiProviderStartOptions),
-  ollama: Schema.optional(ApiProviderStartOptions),
-  deepseek: Schema.optional(ApiProviderStartOptions),
   groq: Schema.optional(ApiProviderStartOptions),
-  mistral: Schema.optional(ApiProviderStartOptions),
-  together: Schema.optional(ApiProviderStartOptions),
-  cohere: Schema.optional(ApiProviderStartOptions),
-  xai: Schema.optional(ApiProviderStartOptions),
-  fireworks: Schema.optional(ApiProviderStartOptions),
   opencodeZen: Schema.optional(ApiProviderStartOptions),
   opencodeGo: Schema.optional(ApiProviderStartOptions),
 });

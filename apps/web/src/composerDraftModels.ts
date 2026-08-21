@@ -29,18 +29,7 @@ import { classifyProviderReasoningEffortSupport } from "./lib/codexReasoningEffo
 
 export const COMPOSER_PROVIDER_KINDS = [
   "engine",
-  "openai",
-  "anthropic",
-  "google",
-  "openrouter",
-  "ollama",
-  "deepseek",
   "groq",
-  "mistral",
-  "together",
-  "cohere",
-  "xai",
-  "fireworks",
   "opencodeZen",
   "opencodeGo",
 ] as const satisfies readonly ProviderKind[];

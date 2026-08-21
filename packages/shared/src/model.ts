@@ -19,21 +19,31 @@ import {
   type ProviderWithDefaultModel,
 } from "@caide/contracts";
 
-// Legacy CLI providers removed from ProviderKind (013) — tests and persisted
-// data still reference them. Coerce to the API provider that now serves them.
+// Stripped to groq / opencodeZen / Go — all legacy maps to groq
 const LEGACY_PROVIDER_MAP: Record<string, ProviderKind> = {
-  codex: "openai",
-  claudeAgent: "anthropic",
-  claudeCode: "anthropic",
-  claude: "anthropic",
-  antigravity: "google",
-  gemini: "google",
-  grok: "xai",
-  droid: "openai",
-  pi: "openai",
-  cursor: "openai",
-  opencode: "openai",
-  kilo: "openai",
+  codex: "groq",
+  claudeAgent: "groq",
+  claudeCode: "groq",
+  claude: "groq",
+  antigravity: "groq",
+  gemini: "groq",
+  grok: "groq",
+  droid: "groq",
+  pi: "groq",
+  cursor: "groq",
+  opencode: "groq",
+  kilo: "groq",
+  openai: "groq",
+  anthropic: "groq",
+  google: "groq",
+  openrouter: "groq",
+  ollama: "groq",
+  deepseek: "groq",
+  mistral: "groq",
+  together: "groq",
+  cohere: "groq",
+  xai: "groq",
+  fireworks: "groq",
 };
 
 function coerceProviderKind(provider: string): ProviderKind {
@@ -42,46 +52,14 @@ function coerceProviderKind(provider: string): ProviderKind {
 
 const MODEL_SLUG_SET_BY_PROVIDER: Record<ProviderKind, ReadonlySet<ModelSlug>> = {
   engine: new Set<ModelSlug>(),
-  openai: new Set(
+  groq: new Set(
     (
       MODEL_OPTIONS_BY_PROVIDER as unknown as Record<
         string,
         readonly { slug: string }[] | undefined
       >
-    ).openai?.map((option) => option.slug) ?? [],
+    ).groq?.map((option) => option.slug) ?? [],
   ),
-  anthropic: new Set(
-    (
-      MODEL_OPTIONS_BY_PROVIDER as unknown as Record<
-        string,
-        readonly { slug: string }[] | undefined
-      >
-    ).anthropic?.map((option) => option.slug) ?? [],
-  ),
-  google: new Set(
-    (
-      MODEL_OPTIONS_BY_PROVIDER as unknown as Record<
-        string,
-        readonly { slug: string }[] | undefined
-      >
-    ).google?.map((option) => option.slug) ?? [],
-  ),
-  openrouter: new Set(
-    (
-      MODEL_OPTIONS_BY_PROVIDER as unknown as Record<
-        string,
-        readonly { slug: string }[] | undefined
-      >
-    ).openrouter?.map((option) => option.slug) ?? [],
-  ),
-  ollama: new Set<ModelSlug>(),
-  deepseek: new Set<ModelSlug>(),
-  groq: new Set<ModelSlug>(),
-  mistral: new Set<ModelSlug>(),
-  together: new Set<ModelSlug>(),
-  cohere: new Set<ModelSlug>(),
-  xai: new Set<ModelSlug>(),
-  fireworks: new Set<ModelSlug>(),
   opencodeZen: new Set(
     (
       MODEL_OPTIONS_BY_PROVIDER as unknown as Record<
@@ -121,7 +99,7 @@ export const EMPTY_MODEL_CAPABILITIES: ModelCapabilities = {
   promptInjectedEffortLevels: [],
   contextWindowOptions: [],
 };
-export function getModelOptions(provider: ProviderKind = "openai") {
+export function getModelOptions(provider: ProviderKind = "groq") {
   return MODEL_OPTIONS_BY_PROVIDER[provider];
 }
 
@@ -132,7 +110,7 @@ function hasDefaultModel(provider: ProviderKind): provider is ProviderWithDefaul
 export function getDefaultModel(provider: "engine"): null;
 export function getDefaultModel(provider?: ProviderWithDefaultModel): ModelSlug;
 export function getDefaultModel(provider: ProviderKind): ModelSlug | null;
-export function getDefaultModel(provider: ProviderKind = "openai"): ModelSlug | null {
+export function getDefaultModel(provider: ProviderKind = "groq"): ModelSlug | null {
   return hasDefaultModel(provider)
     ? DEFAULT_MODEL_BY_PROVIDER[provider as ProviderWithDefaultModel]
     : null;
@@ -481,21 +459,6 @@ export function getModelCapabilities(
     ]?.[slug];
     if (caps) return caps;
   }
-  if (((coerced as string) === "grok" || coerced === "xai") && slug) {
-    // Grok exposes reasoning effort as a provider-level CLI option, while its
-    // runtime model catalog contains only model ids. New models must inherit the
-    // provider ladder even before runtime discovery has returned their descriptor.
-    // Legacy "grok" maps to "xai".
-    const grokIndex =
-      (MODEL_CAPABILITIES_INDEX as Record<string, Record<string, ModelCapabilities>>).grok ??
-      (MODEL_CAPABILITIES_INDEX as Record<string, Record<string, ModelCapabilities>>).xai;
-    if (grokIndex && slug) {
-      return grokIndex["grok-build"] ?? EMPTY_MODEL_CAPABILITIES;
-    }
-  }
-  // Legacy shims: codex/droid -> openai, claudeAgent -> anthropic
-  // For the test harness the static MODEL_OPTIONS_BY_PROVIDER for those legacy
-  // names is empty, so fall back to the coerced provider's index.
   return EMPTY_MODEL_CAPABILITIES;
 }
 
@@ -505,7 +468,7 @@ export function isClaudeUltrathinkPrompt(text: string | null | undefined): boole
 
 export function normalizeModelSlug(
   model: string | null | undefined,
-  provider: ProviderKind | string = "openai",
+  provider: ProviderKind | string = "groq",
 ): ModelSlug | null {
   if (typeof model !== "string") {
     return null;
@@ -518,7 +481,7 @@ export function normalizeModelSlug(
 
   const coerced = coerceProviderKind(String(provider));
   const providerScopedModel =
-    coerced === "anthropic" ? trimmed.replace(/\[[^\]]+\]$/u, "") : trimmed;
+    coerced === "opencodeZen" ? trimmed.replace(/\[[^\]]+\]$/u, "") : trimmed;
   const aliases =
     (MODEL_SLUG_ALIASES_BY_PROVIDER as Record<string, Record<string, ModelSlug>>)[coerced] ?? {};
   const aliased = Object.prototype.hasOwnProperty.call(aliases, providerScopedModel)
@@ -562,7 +525,7 @@ export function resolveSelectableModel(
 
 export function resolveModelSlug(
   model: string | null | undefined,
-  provider: ProviderKind | string = "openai",
+  provider: ProviderKind | string = "groq",
 ): ModelSlug | null {
   const coerced = coerceProviderKind(String(provider)) as ProviderKind;
   const normalized = normalizeModelSlug(model, coerced);
@@ -598,7 +561,7 @@ export function normalizeClaudeModelOptions(
   model: string | null | undefined,
   modelOptions: ClaudeModelOptions | null | undefined,
 ): ClaudeModelOptions | undefined {
-  const caps = getModelCapabilities("anthropic", model);
+  const caps = getModelCapabilities("opencodeZen", model);
   const defaultReasoningEffort = getDefaultEffort(caps);
   const defaultAutoCompactWindow = getDefaultAutoCompactWindow(caps);
   const resolvedEffort = trimOrNull(modelOptions?.effort);
@@ -653,8 +616,8 @@ interface ClaudeSpawnProfile {
 // the flag-settings `effortLevel` key caps at xhigh). Every other effort level
 // plus fastMode/ultracode are Settings keys applied live via the SDK's
 // flag-settings control, and model/context window switch via `setModel`.
-function claudeSpawnProfile(selection: Extract<ModelSelection, { provider: "anthropic" }>) {
-  const caps = getModelCapabilities("anthropic", selection.model);
+function claudeSpawnProfile(selection: Extract<ModelSelection, { provider: "opencodeZen" }>) {
+  const caps = getModelCapabilities("opencodeZen", selection.model);
   const rawOptions = selection.options as { reasoningEffort?: string; effort?: string } | undefined;
   const requestedEffort = trimOrNull(rawOptions?.reasoningEffort ?? rawOptions?.effort ?? null);
   const effort = requestedEffort && hasEffortLevel(caps, requestedEffort) ? requestedEffort : null;
@@ -676,7 +639,7 @@ export function claudeSelectionRequiresRestart(
   previous: ModelSelection | undefined,
   next: ModelSelection,
 ): boolean {
-  if (next.provider !== "anthropic") {
+  if (next.provider !== "opencodeZen") {
     return false;
   }
   if (previous === undefined) {
@@ -684,7 +647,7 @@ export function claudeSelectionRequiresRestart(
     // same selection source, so treat it as unchanged rather than replaying.
     return false;
   }
-  if (previous.provider !== "anthropic") {
+  if (previous.provider !== "opencodeZen") {
     return true;
   }
   // Normalize against each model before deciding a model-only switch is live:

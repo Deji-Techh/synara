@@ -2,18 +2,7 @@ import type { ProviderKind, RuntimeMode } from "@caide/contracts";
 
 const AUTO_RUNTIME_MODE_PROVIDERS = new Set<ProviderKind>([
   "engine",
-  "openai",
-  "anthropic",
-  "google",
-  "openrouter",
-  "ollama",
-  "deepseek",
   "groq",
-  "mistral",
-  "together",
-  "cohere",
-  "xai",
-  "fireworks",
   "opencodeZen",
   "opencodeGo",
 ]);
@@ -49,17 +38,6 @@ export function autoRuntimeModeSelectionIssue(input: {
   }
   if (!providerSupportsAutoRuntimeMode(input.modelSelection.provider)) {
     return unsupportedAutoRuntimeModeMessage(input.modelSelection.provider);
-  }
-  if (
-    input.modelSelection.provider === "anthropic" &&
-    (input.modelSelection as any).supportsAutoMode !== true
-  ) {
-    // Fail closed on an unknown capability: the Anthropic adapter refuses to
-    // start Auto sessions without a confirmed flag, so persisting Auto here
-    // would only defer the failure to runtime.
-    return (input.modelSelection as any).supportsAutoMode === false
-      ? `Anthropic model "${input.modelSelection.model}" does not support Auto mode.`
-      : `Anthropic model "${input.modelSelection.model}" has not been verified to support Auto mode.`;
   }
   return null;
 }

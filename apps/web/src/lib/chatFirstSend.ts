@@ -103,8 +103,8 @@ export function resolveFirstSendTarget(input: {
         kind: "chat",
         createWorkspaceRootIfMissing: true,
         defaultModelSelection: {
-          provider: "openai",
-          model: DEFAULT_MODEL_BY_PROVIDER.codex,
+          provider: "groq",
+          model: DEFAULT_MODEL_BY_PROVIDER.groq,
         },
       },
     };
@@ -129,8 +129,8 @@ export function resolveFirstSendTarget(input: {
       kind: "project",
       createWorkspaceRootIfMissing: false,
       defaultModelSelection: {
-        provider: "openai",
-        model: DEFAULT_MODEL_BY_PROVIDER.codex,
+        provider: "groq",
+        model: DEFAULT_MODEL_BY_PROVIDER.groq,
       },
     },
   };

@@ -67,8 +67,8 @@ const SYNTHETIC_CAPS: ModelCapabilities = {
 
 describe("getDefaultModel", () => {
   it("returns the per-provider default model", () => {
-    expect(getDefaultModel("openai")).toBe("gpt-5.5");
-    expect(getDefaultModel("anthropic")).toBe("claude-sonnet-5");
+    expect(getDefaultModel("groq")).toBe("gpt-5.5");
+    expect(getDefaultModel("opencodeZen")).toBe("claude-sonnet-5");
     expect(getDefaultModel()).toBe(DEFAULT_MODEL);
   });
 
@@ -80,8 +80,8 @@ describe("getDefaultModel", () => {
 describe("getModelOptions", () => {
   it("defaults to the OpenAI catalog and serves per-provider catalogs", () => {
     expect(getModelOptions()).toBe(MODEL_OPTIONS);
-    expect(getModelOptions("openai")).toBe(MODEL_OPTIONS_BY_PROVIDER.openai);
-    expect(getModelOptions("anthropic")).toBe(MODEL_OPTIONS_BY_PROVIDER.anthropic);
+    expect(getModelOptions("groq")).toBe(MODEL_OPTIONS_BY_PROVIDER.groq);
+    expect(getModelOptions("opencodeZen")).toBe(MODEL_OPTIONS_BY_PROVIDER.opencodeZen);
   });
 });
 
@@ -190,7 +190,7 @@ describe("selection value extraction", () => {
 
   it("reads from selection records and stringifies finite numbers", () => {
     const selection = (options: unknown): ModelSelection =>
-      ({ provider: "openai", model: "gpt-5.5", options }) as ModelSelection;
+      ({ provider: "groq", model: "gpt-5.5", options }) as ModelSelection;
     expect(
       getModelSelectionStringOptionValue(selection({ reasoningEffort: "max" }), "reasoningEffort"),
     ).toBe("max");
@@ -206,7 +206,7 @@ describe("selection value extraction", () => {
     expect(getModelSelectionStringOptionValue(null, "reasoningEffort")).toBeUndefined();
     expect(
       getModelSelectionStringOptionValue(
-        { provider: "openai", model: "gpt-5.5", options: { fastMode: true } } as ModelSelection,
+        { provider: "groq", model: "gpt-5.5", options: { fastMode: true } } as ModelSelection,
         "reasoningEffort",
       ),
     ).toBeUndefined();
@@ -215,7 +215,7 @@ describe("selection value extraction", () => {
 
 describe("getProviderOptionDescriptors", () => {
   it("builds descriptors from capability ladders", () => {
-    const descriptors = getProviderOptionDescriptors({ provider: "openai", caps: SYNTHETIC_CAPS });
+    const descriptors = getProviderOptionDescriptors({ provider: "groq", caps: SYNTHETIC_CAPS });
     expect(descriptors.map((d) => d.id)).toEqual([
       "reasoningEffort",
       "contextWindow",
@@ -234,7 +234,7 @@ describe("getProviderOptionDescriptors", () => {
 
   it("applies selections over defaults and drops invalid ones", () => {
     const descriptors = getProviderOptionDescriptors({
-      provider: "openai",
+      provider: "groq",
       caps: SYNTHETIC_CAPS,
       selections: [
         { id: "reasoningEffort", value: "high" },
@@ -254,7 +254,7 @@ describe("getProviderOptionDescriptors", () => {
 
   it("round-trips through buildProviderOptionSelectionsFromDescriptors", () => {
     const descriptors = getProviderOptionDescriptors({
-      provider: "openai",
+      provider: "groq",
       caps: SYNTHETIC_CAPS,
       selections: [{ id: "reasoningEffort", value: "low" }],
     });
@@ -286,16 +286,16 @@ describe("getModelCapabilities", () => {
   });
 
   it("returns empty capabilities for unknown models and providers", () => {
-    expect(getModelCapabilities("openai", "brand-new-model").reasoningEffortLevels).toEqual([]);
+    expect(getModelCapabilities("groq", "brand-new-model").reasoningEffortLevels).toEqual([]);
     expect(getModelCapabilities("not-a-provider", "whatever").supportsFastMode).toBe(false);
   });
 
   it("coerces legacy provider names to their API provider", () => {
-    expect(getModelCapabilities("codex", "gpt-5.5")).toEqual(
-      getModelCapabilities("openai", "gpt-5.5"),
+    expect(getModelCapabilities("groq", "gpt-5.5")).toEqual(
+      getModelCapabilities("groq", "gpt-5.5"),
     );
-    expect(getModelCapabilities("claudeAgent", "claude-sonnet-5")).toEqual(
-      getModelCapabilities("anthropic", "claude-sonnet-5"),
+    expect(getModelCapabilities("groq", "claude-sonnet-5")).toEqual(
+      getModelCapabilities("opencodeZen", "claude-sonnet-5"),
     );
     expect(getModelCapabilities("grok", "grok-4")).toEqual(
       getModelCapabilities("xai", "grok-4"),
@@ -329,12 +329,12 @@ describe("normalizeModelSlug", () => {
   });
 
   it("strips anthropic bracket suffixes only for anthropic", () => {
-    expect(normalizeModelSlug("claude-sonnet-5[1m]", "anthropic")).toBe("claude-sonnet-5");
-    expect(normalizeModelSlug("claude-sonnet-5[1m]", "openai")).toBe("claude-sonnet-5[1m]");
+    expect(normalizeModelSlug("claude-sonnet-5[1m]", "opencodeZen")).toBe("claude-sonnet-5");
+    expect(normalizeModelSlug("claude-sonnet-5[1m]", "groq")).toBe("claude-sonnet-5[1m]");
   });
 
   it("coerces legacy provider names before normalizing", () => {
-    expect(normalizeModelSlug("claude-sonnet-5[1m]", "claudeAgent")).toBe("claude-sonnet-5");
+    expect(normalizeModelSlug("claude-sonnet-5[1m]", "groq")).toBe("claude-sonnet-5");
   });
 });
 
@@ -345,26 +345,26 @@ describe("resolveSelectableModel", () => {
   ];
 
   it("resolves exact slugs and case-insensitive names", () => {
-    expect(resolveSelectableModel("openai", "gpt-5.5-mini", options)).toBe("gpt-5.5-mini");
-    expect(resolveSelectableModel("openai", "gpt-5.5 mini", options)).toBe("gpt-5.5-mini");
+    expect(resolveSelectableModel("groq", "gpt-5.5-mini", options)).toBe("gpt-5.5-mini");
+    expect(resolveSelectableModel("groq", "gpt-5.5 mini", options)).toBe("gpt-5.5-mini");
   });
 
   it("returns null for empty values or misses", () => {
-    expect(resolveSelectableModel("openai", "", options)).toBeNull();
-    expect(resolveSelectableModel("openai", "  ", options)).toBeNull();
-    expect(resolveSelectableModel("openai", null, options)).toBeNull();
-    expect(resolveSelectableModel("openai", "gpt-4.1", options)).toBeNull();
+    expect(resolveSelectableModel("groq", "", options)).toBeNull();
+    expect(resolveSelectableModel("groq", "  ", options)).toBeNull();
+    expect(resolveSelectableModel("groq", null, options)).toBeNull();
+    expect(resolveSelectableModel("groq", "gpt-4.1", options)).toBeNull();
   });
 });
 
 describe("resolveModelSlugForProvider", () => {
   it("resolves catalog slugs and falls back to the provider default", () => {
-    expect(resolveModelSlugForProvider("openai", "gpt-5.5-mini")).toBe("gpt-5.5-mini");
-    expect(resolveModelSlugForProvider("openai", "totally-custom")).toBe(
-      DEFAULT_MODEL_BY_PROVIDER.openai,
+    expect(resolveModelSlugForProvider("groq", "gpt-5.5-mini")).toBe("gpt-5.5-mini");
+    expect(resolveModelSlugForProvider("groq", "totally-custom")).toBe(
+      DEFAULT_MODEL_BY_PROVIDER.groq,
     );
-    expect(resolveModelSlugForProvider("anthropic", null)).toBe(
-      DEFAULT_MODEL_BY_PROVIDER.anthropic,
+    expect(resolveModelSlugForProvider("opencodeZen", null)).toBe(
+      DEFAULT_MODEL_BY_PROVIDER.opencodeZen,
     );
   });
 
@@ -374,9 +374,9 @@ describe("resolveModelSlugForProvider", () => {
   });
 
   it("coerces legacy provider names before resolving", () => {
-    expect(resolveModelSlugForProvider("codex" as never, "gpt-5.5")).toBe("gpt-5.5");
-    expect(resolveModelSlugForProvider("claudeAgent" as never, undefined)).toBe(
-      DEFAULT_MODEL_BY_PROVIDER.anthropic,
+    expect(resolveModelSlugForProvider("groq" as never, "gpt-5.5")).toBe("gpt-5.5");
+    expect(resolveModelSlugForProvider("groq" as never, undefined)).toBe(
+      DEFAULT_MODEL_BY_PROVIDER.opencodeZen,
     );
   });
 });
@@ -418,11 +418,11 @@ describe("getEffectiveClaudeCodeEffort", () => {
 
 describe("claudeSelectionRequiresRestart", () => {
   const anthropic = (model: string, options?: Record<string, string>): ModelSelection =>
-    ({ provider: "anthropic", model, ...(options ? { options } : {}) }) as ModelSelection;
+    ({ provider: "opencodeZen", model, ...(options ? { options } : {}) }) as ModelSelection;
 
   it("never restarts for non-anthropic providers", () => {
     expect(claudeSelectionRequiresRestart(anthropic("claude-sonnet-5"), {
-      provider: "openai",
+      provider: "groq",
       model: "gpt-5.5",
     } as ModelSelection)).toBe(false);
   });
@@ -434,13 +434,13 @@ describe("claudeSelectionRequiresRestart", () => {
   it("flags provider switches as restarts", () => {
     expect(
       claudeSelectionRequiresRestart(anthropic("claude-sonnet-5"), {
-        provider: "anthropic",
+        provider: "opencodeZen",
         model: "claude-opus-5",
       } as ModelSelection),
     ).toBe(false);
     expect(
-      claudeSelectionRequiresRestart({ provider: "openai", model: "gpt-5.5" } as ModelSelection, {
-        provider: "anthropic",
+      claudeSelectionRequiresRestart({ provider: "groq", model: "gpt-5.5" } as ModelSelection, {
+        provider: "opencodeZen",
         model: "claude-opus-5",
       } as ModelSelection),
     ).toBe(true);

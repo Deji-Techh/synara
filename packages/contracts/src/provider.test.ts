@@ -7,14 +7,14 @@ const decodeProviderSessionStartInput = Schema.decodeUnknownSync(ProviderSession
 const decodeProviderSendTurnInput = Schema.decodeUnknownSync(ProviderSendTurnInput);
 
 describe("ProviderSessionStartInput", () => {
-  it("accepts openai-compatible payloads", () => {
+  it("accepts groq-compatible payloads", () => {
     const parsed = decodeProviderSessionStartInput({
       threadId: "thread-1",
-      provider: "openai",
+      provider: "groq",
       cwd: "/tmp/workspace",
       modelSelection: {
-        provider: "openai",
-        model: "gpt-5.5",
+        provider: "groq",
+        model: "llama-3.3-70b-versatile",
         options: {
           reasoningEffort: "high",
           fastMode: true,
@@ -22,41 +22,41 @@ describe("ProviderSessionStartInput", () => {
       },
       runtimeMode: "full-access",
       providerOptions: {
-        openai: {
-          baseUrl: "https://api.openai.com/v1",
+        groq: {
+          baseUrl: "https://api.groq.com/v1",
         },
       },
     });
     expect(parsed.runtimeMode).toBe("full-access");
-    expect(parsed.modelSelection?.provider).toBe("openai");
-    expect(parsed.modelSelection?.model).toBe("gpt-5.5");
-    if (parsed.modelSelection?.provider !== "openai") {
-      throw new Error("Expected openai modelSelection");
+    expect(parsed.modelSelection?.provider).toBe("groq");
+    expect(parsed.modelSelection?.model).toBe("llama-3.3-70b-versatile");
+    if (parsed.modelSelection?.provider !== "groq") {
+      throw new Error("Expected groq modelSelection");
     }
     expect((parsed.modelSelection.options as { reasoningEffort?: string })?.reasoningEffort).toBe(
       "high",
     );
     expect((parsed.modelSelection.options as { fastMode?: boolean })?.fastMode).toBe(true);
-    expect(parsed.providerOptions?.openai?.baseUrl).toBe("https://api.openai.com/v1");
+    expect(parsed.providerOptions?.groq?.baseUrl).toBe("https://api.groq.com/v1");
   });
 
   it("rejects payloads without runtime mode", () => {
     expect(() =>
       decodeProviderSessionStartInput({
         threadId: "thread-1",
-        provider: "openai",
+        provider: "groq",
       }),
     ).toThrow();
   });
 
-  it("accepts anthropic runtime knobs", () => {
+  it("accepts opencodeZen runtime knobs", () => {
     const parsed = decodeProviderSessionStartInput({
       threadId: "thread-1",
-      provider: "anthropic",
+      provider: "opencodeZen",
       cwd: "/tmp/workspace",
       modelSelection: {
-        provider: "anthropic",
-        model: "claude-sonnet-4-6",
+        provider: "opencodeZen",
+        model: "deepseek-v4-flash-free",
         options: {
           thinking: true,
           reasoningEffort: "high",
@@ -64,35 +64,35 @@ describe("ProviderSessionStartInput", () => {
         },
       },
       providerOptions: {
-        anthropic: {
-          baseUrl: "https://api.anthropic.com",
+        opencodeZen: {
+          baseUrl: "https://api.opencode.zen/v1",
         },
       },
       runtimeMode: "full-access",
     });
-    expect(parsed.provider).toBe("anthropic");
-    expect(parsed.modelSelection?.provider).toBe("anthropic");
-    expect(parsed.modelSelection?.model).toBe("claude-sonnet-4-6");
-    if (parsed.modelSelection?.provider !== "anthropic") {
-      throw new Error("Expected anthropic modelSelection");
+    expect(parsed.provider).toBe("opencodeZen");
+    expect(parsed.modelSelection?.provider).toBe("opencodeZen");
+    expect(parsed.modelSelection?.model).toBe("deepseek-v4-flash-free");
+    if (parsed.modelSelection?.provider !== "opencodeZen") {
+      throw new Error("Expected opencodeZen modelSelection");
     }
     expect((parsed.modelSelection.options as { thinking?: boolean })?.thinking).toBe(true);
     expect((parsed.modelSelection.options as { reasoningEffort?: string })?.reasoningEffort).toBe(
       "high",
     );
     expect((parsed.modelSelection.options as { fastMode?: boolean })?.fastMode).toBe(true);
-    expect(parsed.providerOptions?.anthropic?.baseUrl).toBe("https://api.anthropic.com");
+    expect(parsed.providerOptions?.opencodeZen?.baseUrl).toBe("https://api.opencode.zen/v1");
     expect(parsed.runtimeMode).toBe("full-access");
   });
 });
 
 describe("ProviderSendTurnInput", () => {
-  it("accepts openai modelSelection", () => {
+  it("accepts groq modelSelection", () => {
     const parsed = decodeProviderSendTurnInput({
       threadId: "thread-1",
       modelSelection: {
-        provider: "openai",
-        model: "gpt-5.5",
+        provider: "groq",
+        model: "llama-3.3-70b-versatile",
         options: {
           reasoningEffort: "xhigh",
           fastMode: true,
@@ -100,10 +100,10 @@ describe("ProviderSendTurnInput", () => {
       },
     });
 
-    expect(parsed.modelSelection?.provider).toBe("openai");
-    expect(parsed.modelSelection?.model).toBe("gpt-5.5");
-    if (parsed.modelSelection?.provider !== "openai") {
-      throw new Error("Expected openai modelSelection");
+    expect(parsed.modelSelection?.provider).toBe("groq");
+    expect(parsed.modelSelection?.model).toBe("llama-3.3-70b-versatile");
+    if (parsed.modelSelection?.provider !== "groq") {
+      throw new Error("Expected groq modelSelection");
     }
     expect((parsed.modelSelection.options as { reasoningEffort?: string })?.reasoningEffort).toBe(
       "xhigh",
@@ -111,12 +111,12 @@ describe("ProviderSendTurnInput", () => {
     expect((parsed.modelSelection.options as { fastMode?: boolean })?.fastMode).toBe(true);
   });
 
-  it("accepts anthropic modelSelection including thinking", () => {
+  it("accepts opencodeZen modelSelection including thinking", () => {
     const parsed = decodeProviderSendTurnInput({
       threadId: "thread-1",
       modelSelection: {
-        provider: "anthropic",
-        model: "claude-sonnet-4-6",
+        provider: "opencodeZen",
+        model: "deepseek-v4-flash-free",
         options: {
           reasoningEffort: "high",
           thinking: true,
@@ -125,29 +125,29 @@ describe("ProviderSendTurnInput", () => {
       },
     });
 
-    expect(parsed.modelSelection?.provider).toBe("anthropic");
-    if (parsed.modelSelection?.provider !== "anthropic") {
-      throw new Error("Expected anthropic modelSelection");
+    expect(parsed.modelSelection?.provider).toBe("opencodeZen");
+    if (parsed.modelSelection?.provider !== "opencodeZen") {
+      throw new Error("Expected opencodeZen modelSelection");
     }
     expect((parsed.modelSelection.options as { thinking?: boolean })?.thinking).toBe(true);
     expect((parsed.modelSelection.options as { fastMode?: boolean })?.fastMode).toBe(true);
   });
 
-  it("accepts anthropic modelSelection including xhigh", () => {
+  it("accepts opencodeGo modelSelection including xhigh", () => {
     const parsed = decodeProviderSendTurnInput({
       threadId: "thread-1",
       modelSelection: {
-        provider: "anthropic",
-        model: "claude-opus-4-6",
+        provider: "opencodeGo",
+        model: "deepseek-v4-flash-free",
         options: {
           reasoningEffort: "xhigh",
         },
       },
     });
 
-    expect(parsed.modelSelection?.provider).toBe("anthropic");
-    if (parsed.modelSelection?.provider !== "anthropic") {
-      throw new Error("Expected anthropic modelSelection");
+    expect(parsed.modelSelection?.provider).toBe("opencodeGo");
+    if (parsed.modelSelection?.provider !== "opencodeGo") {
+      throw new Error("Expected opencodeGo modelSelection");
     }
     expect((parsed.modelSelection.options as { reasoningEffort?: string })?.reasoningEffort).toBe(
       "xhigh",

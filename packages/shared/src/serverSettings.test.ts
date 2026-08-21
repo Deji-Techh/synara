@@ -63,7 +63,7 @@ describe.skip("providerStartOptionsFromServerSettings", () => {
     expect(() =>
       decodeProviderSessionStartInput({
         threadId: "thread-1",
-        provider: "openai" as unknown as import("@caide/contracts").ProviderKind,
+        provider: "groq" as unknown as import("@caide/contracts").ProviderKind,
         providerOptions:
           providerOptions as unknown as import("@caide/contracts").ProviderStartOptions,
         runtimeMode: "full-access",
