@@ -5,7 +5,7 @@
 
 import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Option, Schema, SchemaTransformation } from "effect";
+import { Option, Schema, SchemaGetter } from "effect";
 import {
   type AssistantDeliveryMode,
   DesktopAppIcon,
@@ -127,14 +127,17 @@ const withDefaults =
       Schema.withDecodingDefault(() => fallback()),
     );
 
-const PersistedProviderKind = Schema.Literals(["groq", "opencodeZen"]).pipe(
-  Schema.decodeTo(
-    ProviderKind,
-    SchemaTransformation.transform({
-      decode: (provider) => (provider === "opencodeGo" ? "opencodeGo" : provider),
-      encode: (provider) => provider,
-    }),
-  ),
+// Legacy localStorage payloads may carry removed provider kinds; fold anything
+// unknown onto the default provider instead of failing the whole settings decode.
+const PersistedProviderKind = Schema.String.pipe(
+  Schema.decodeTo(ProviderKind, {
+    decode: SchemaGetter.transform((provider: string): ProviderKind =>
+      provider === "groq" || provider === "opencodeZen" || provider === "opencodeGo"
+        ? provider
+        : "groq",
+    ),
+    encode: SchemaGetter.transform((provider: ProviderKind): string => provider),
+  }),
 );
 
 export const AppSettingsSchema = Schema.Struct({
@@ -156,6 +159,8 @@ export const AppSettingsSchema = Schema.Struct({
   opencodeZenApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
   opencodeZenApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
   opencodeZenBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  opencodeGoApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  opencodeGoApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
   opencodeGoBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
   defaultThreadEnvMode: EnvMode.pipe(withDefaults(() => "local" as const satisfies EnvMode)),
   confirmThreadDelete: Schema.Boolean.pipe(withDefaults(() => true)),
@@ -414,6 +419,16 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
 }
 
 function serverSettingsToAppSettings(settings: ServerSettingsView): Partial<AppSettings> {
+  // The persisted model-selection provider is a plain string (legacy payloads);
+  // fold unknown values onto the default instead of poisoning local state.
+  const textGenProvider = settings.textGenerationModelSelection.provider;
+  const resolvedTextGenProvider =
+    textGenProvider === "groq" ||
+    textGenProvider === "opencodeZen" ||
+    textGenProvider === "opencodeGo" ||
+    textGenProvider === "engine"
+      ? textGenProvider
+      : undefined;
   return {
     defaultThreadEnvMode: settings.defaultThreadEnvMode,
     enableAssistantStreaming: settings.enableAssistantStreaming,
@@ -431,7 +446,7 @@ function serverSettingsToAppSettings(settings: ServerSettingsView): Partial<AppS
     opencodeZenBaseUrl: settings.providers.opencodeZen.baseUrl,
     opencodeGoApiKeyConfigured: settings.providers.opencodeGo.apiKeyConfigured,
     opencodeGoBaseUrl: settings.providers.opencodeGo.baseUrl,
-    textGenerationProvider: settings.textGenerationModelSelection.provider,
+    ...(resolvedTextGenProvider ? { textGenerationProvider: resolvedTextGenProvider } : {}),
     textGenerationModel: settings.textGenerationModelSelection.model,
   };
 }
@@ -476,7 +491,9 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
   if (hasOwn(patch, "textGenerationModel") || hasOwn(patch, "textGenerationProvider")) {
     const model = patch.textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL;
     serverPatch.textGenerationModelSelection = {
-      provider: resolveTextGenerationProvider({ provider: patch.textGenerationProvider }),
+      provider: resolveTextGenerationProvider(
+        patch.textGenerationProvider === undefined ? {} : { provider: patch.textGenerationProvider },
+      ),
       model,
     };
   }
