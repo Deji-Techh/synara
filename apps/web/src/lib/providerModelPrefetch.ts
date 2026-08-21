@@ -12,24 +12,11 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { AppSettings } from "../appSettings";
 import { resolveProviderDiscoveryCwd } from "./providerDiscovery";
 import {
-  providerAgentsQueryOptions,
   providerComposerCapabilitiesQueryOptions,
   providerModelsQueryOptions,
 } from "./providerDiscoveryReactQuery";
 
-export type ProviderModelPrefetchSettings = Pick<
-  AppSettings,
-  | "defaultProvider"
-  | "cursorBinaryPath"
-  | "cursorApiEndpoint"
-  | "antigravityBinaryPath"
-  | "grokBinaryPath"
-  | "droidBinaryPath"
-  | "kiloBinaryPath"
-  | "openCodeBinaryPath"
-  | "piBinaryPath"
-  | "piAgentDir"
->;
+export type ProviderModelPrefetchSettings = Pick<AppSettings, "defaultProvider">;
 
 export function resolveNewThreadModelPrefetchProvider(input: {
   draftActiveProvider?: ProviderKind | null | undefined;
@@ -41,8 +28,7 @@ export function resolveNewThreadModelPrefetchProvider(input: {
     input.draftActiveProvider ??
     input.stickyActiveProvider ??
     input.projectDefaultProvider ??
-    input.defaultProvider ??
-    "openai"
+    input.defaultProvider ?? "groq"
   );
 }
 
@@ -67,80 +53,12 @@ export function providerModelsPrefetchQueryOptions(input: {
   settings: ProviderModelPrefetchSettings;
   cwd?: string | null;
 }) {
-  const { provider, settings } = input;
-  const cwd = input.cwd ?? null;
-
-  switch (provider) {
-    case "anthropic":
-      return providerModelsQueryOptions({ provider: "anthropic" });
-    case "openai":
-      return providerModelsQueryOptions({ provider: "openai" });
-    case "openai":
-      return providerModelsQueryOptions({
-        provider: "openai",
-        binaryPath: settings.cursorBinaryPath || null,
-        apiEndpoint: settings.cursorApiEndpoint || null,
-      });
-    case "google":
-      return providerModelsQueryOptions({
-        provider: "google",
-        binaryPath: settings.antigravityBinaryPath || null,
-        cwd,
-      });
-    case "openai":
-      return providerModelsQueryOptions({
-        provider: "openai",
-        binaryPath: settings.grokBinaryPath || null,
-      });
-    case "openai":
-      return providerModelsQueryOptions({
-        provider: "openai",
-        binaryPath: settings.droidBinaryPath || null,
-        cwd,
-      });
-    case "openai":
-      return providerModelsQueryOptions({
-        provider: "openai",
-        binaryPath: settings.kiloBinaryPath || null,
-        cwd,
-      });
-    case "openai":
-      return providerModelsQueryOptions({
-        provider: "openai",
-        binaryPath: settings.openCodeBinaryPath || null,
-        cwd,
-      });
-    case "openai":
-      return providerModelsQueryOptions({
-        provider: "openai",
-        binaryPath: settings.piBinaryPath || null,
-        agentDir: settings.piAgentDir || null,
-        cwd,
-      });
-    case "engine":
-      return providerModelsQueryOptions({ provider: "engine" });
-    case "openai":
-    case "anthropic":
-    case "google":
-    case "openrouter":
-    case "ollama":
-    case "deepseek":
-    case "groq":
-    case "mistral":
-    case "together":
-    case "cohere":
-    case "xai":
-    case "fireworks":
-    case "opencodeZen":
-      // API providers talk to HTTP endpoints with no CLI args; ChatView issues
-      // the same generic discovery query for all of them, so the prefetch cache
-      // key must match exactly.
-      return providerModelsQueryOptions({ provider });
-    default:
-      // Guard against future provider kinds being prefetched with undefined
-      // options, which would throw inside prefetchQuery.
-      return providerModelsQueryOptions({ provider });
-  }
+  // API providers and the engine talk to HTTP endpoints with no CLI args; ChatView
+  // issues the same generic discovery query for all of them, so the prefetch cache
+  // key must match exactly.
+  void input.settings;
+  void input.cwd;
+  return providerModelsQueryOptions({ provider: input.provider });
 }
 
 function providerAgentsPrefetchQueryOptions(input: {
@@ -148,29 +66,10 @@ function providerAgentsPrefetchQueryOptions(input: {
   settings: ProviderModelPrefetchSettings;
   cwd?: string | null;
 }) {
-  const { provider, settings } = input;
-  const cwd = input.cwd ?? null;
-
-  switch (provider) {
-    case "anthropic":
-      return providerAgentsQueryOptions({ provider: "anthropic" });
-    case "openai":
-      return providerAgentsQueryOptions({ provider: "openai" });
-    case "openai":
-      return providerAgentsQueryOptions({
-        provider: "openai",
-        binaryPath: settings.kiloBinaryPath || null,
-        cwd,
-      });
-    case "openai":
-      return providerAgentsQueryOptions({
-        provider: "openai",
-        binaryPath: settings.openCodeBinaryPath || null,
-        cwd,
-      });
-    default:
-      return null;
-  }
+  // No surviving provider surfaces an agent/mode list from a CLI; kept as a
+  // hook point for future providers.
+  void input;
+  return null;
 }
 
 export function prefetchProviderModelsForNewThread(
