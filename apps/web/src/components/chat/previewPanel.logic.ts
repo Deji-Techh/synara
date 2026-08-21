@@ -61,9 +61,14 @@ export interface PreviewBuildState {
 }
 
 export interface PreviewPanelState {
-  readonly status: PreviewPanelStatus;
+  status: PreviewPanelStatus;
   /** URL the engine serves the app at, when running. */
   readonly url: string | null;
+  /**
+   * How the running preview renders: "web" in an iframe, "native" via device
+   * screenshot polling inside the device frame. Null when not running.
+   */
+  readonly kind: "web" | "native" | null;
   /** Human-readable start failure (flutter missing, port in use, ...). */
   readonly error: string | null;
   /**
@@ -90,6 +95,7 @@ export function createInitialPreviewPanelState(
   return {
     status: "idle",
     url: null,
+    kind: null,
     error: null,
     logs: [],
     deviceId,
@@ -116,6 +122,7 @@ export function previewStartRequested(state: PreviewPanelState): PreviewPanelSta
     ...state,
     status: "starting",
     url: null,
+    kind: null,
     error: null,
     logs: [],
     reloadToken: state.reloadToken + 1,
@@ -126,8 +133,9 @@ export function previewStarted(
   state: PreviewPanelState,
   url: string,
   logs: readonly string[] = [],
+  kind: "web" | "native" | null = null,
 ): PreviewPanelState {
-  return { ...state, status: "running", url, error: null, logs };
+  return { ...state, status: "running", url, kind, error: null, logs };
 }
 
 export function previewStartFailed(state: PreviewPanelState, error: string): PreviewPanelState {
@@ -156,6 +164,7 @@ export interface EnginePreviewSnapshot {
   readonly running: boolean;
   readonly url: string;
   readonly logs: readonly string[];
+  readonly kind?: "web" | "native";
 }
 
 /**
@@ -179,12 +188,17 @@ export function mergeEnginePreviewState(
 ): PreviewPanelState {
   if (!snapshot.running) {
     if (state.status === "running" || state.status === "starting") {
-      return { ...state, status: "idle", url: null };
+      return { ...state, status: "idle", url: null, kind: null };
     }
     return state;
   }
   const logs = snapshot.logs.length > 0 ? snapshot.logs : state.logs;
-  return { ...state, status: "running", url: snapshot.url, error: null, logs };
+  // The engine reports the render kind explicitly; older engines (or a
+  // mid-upgrade server) may omit it, so fall back to the pseudo-URL prefix.
+  const kind =
+    snapshot.kind ??
+    (snapshot.url.startsWith("native:") ? "native" : ("web" as const));
+  return { ...state, status: "running", url: snapshot.url, kind, error: null, logs };
 }
 
 export function previewTabChanged(

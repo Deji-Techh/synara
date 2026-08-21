@@ -222,6 +222,7 @@ describe("preview RPC router (no live flutter)", () => {
     await expect(router.handle("preview/screenshot", {})).resolves.toEqual({
       success: false,
       outputPath: "",
+      image: null,
     });
   });
 

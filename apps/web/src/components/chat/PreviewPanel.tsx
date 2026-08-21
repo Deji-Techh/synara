@@ -78,6 +78,7 @@ import {
 } from "./previewPanel.logic";
 
 const PREVIEW_POLL_INTERVAL_MS = 2_000;
+const NATIVE_FRAME_POLL_INTERVAL_MS = 1_500;
 const BUILD_POLL_INTERVAL_MS = 2_000;
 const TOOLCHAIN_POLL_INTERVAL_MS = 10_000;
 const LOGS_RENDER_LIMIT = 80;
@@ -964,6 +965,86 @@ export function PreviewPanel(props: {
     return () => window.clearInterval(timer);
   }, [props.isVisible, pollOnce]);
 
+  // Native previews (Android emulator / iOS simulator) cannot render in a
+  // browser iframe. While one is running, poll device screenshots and paint
+  // the newest frame inside the device chassis; keep the last good frame so a
+  // slow or failed capture never blanks the pane.
+  const [nativeFrame, setNativeFrame] = useState<{
+    image: string;
+    capturedAt: number;
+  } | null>(null);
+  const nativeFrameBusy = useRef(false);
+
+  useEffect(() => {
+    if (
+      !props.isVisible ||
+      panelState.status !== "running" ||
+      panelState.kind !== "native" ||
+      panelState.url === null
+    ) {
+      setNativeFrame(null);
+      return;
+    }
+    let cancelled = false;
+    const capture = () => {
+      if (nativeFrameBusy.current) {
+        return;
+      }
+      nativeFrameBusy.current = true;
+      ensureNativeApi()
+        .preview.screenshot({ threadId: props.threadId })
+        .then((result) => {
+          const image = (result as { image?: string | null }).image;
+          if (!cancelled && typeof image === "string" && image.length > 0) {
+            setNativeFrame({ image, capturedAt: Date.now() });
+          }
+        })
+        .catch(() => {
+          // Transient capture failures keep the last good frame on screen.
+        })
+        .finally(() => {
+          nativeFrameBusy.current = false;
+        });
+    };
+    capture();
+    const timer = window.setInterval(capture, NATIVE_FRAME_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [
+    props.isVisible,
+    props.threadId,
+    panelState.status,
+    panelState.kind,
+    panelState.url,
+  ]);
+
+  // Native previews render via screenshots; web previews render in an iframe.
+  const isNativePreview =
+    panelState.kind === "native" ||
+    (panelState.kind === null &&
+      panelState.url !== null &&
+      panelState.url.startsWith("native:"));
+
+  const nativeScreen =
+    isNativePreview && panelState.status === "running" ? (
+      nativeFrame !== null ? (
+        <img
+          key={nativeFrame.capturedAt}
+          src={`data:image/png;base64,${nativeFrame.image}`}
+          alt="Flutter app running on the device"
+          draggable={false}
+          className="h-full w-full bg-white object-contain"
+        />
+      ) : (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-black text-center">
+          <LoaderIcon className="size-3 animate-spin text-white/60" />
+          <p className="text-[11px] text-white/45">Capturing device screen…</p>
+        </div>
+      )
+    ) : null;
+
   const handleStart = useCallback(() => {
     setPanelState((previous) => previewStartRequested(previous));
     const flutterDevice = FRAME_KIND_TO_FLUTTER_DEVICE[frameKind];
@@ -972,7 +1053,10 @@ export function PreviewPanel(props: {
         threadId: ThreadId;
       })
       .then((result) => {
-        setPanelState((previous) => previewStarted(previous, (result as { url: string }).url, []));
+        const started = result as { url: string; kind?: "web" | "native" };
+        setPanelState((previous) =>
+          previewStarted(previous, started.url, [], started.kind ?? null),
+        );
       })
       .catch((error: unknown) => {
         const message = error instanceof Error ? error.message : "The preview failed to start.";
@@ -1282,13 +1366,17 @@ export function PreviewPanel(props: {
                     </button>
                   </div>
                 ) : isRunning && panelState.url !== null ? (
-                  <iframe
-                    key={panelState.reloadToken}
-                    src={panelState.url}
-                    title="Flutter preview"
-                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
-                    className="h-full w-full border-0 bg-white"
-                  />
+                  isNativePreview ? (
+                    nativeScreen
+                  ) : (
+                    <iframe
+                      key={panelState.reloadToken}
+                      src={panelState.url}
+                      title="Flutter preview"
+                      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
+                      className="h-full w-full border-0 bg-white"
+                    />
+                  )
                 ) : (
                   <div className="flex flex-col items-center gap-3 px-[12%] py-6 text-center">
                     <p className="text-balance text-[11px] leading-snug text-white/45">
@@ -1344,13 +1432,17 @@ export function PreviewPanel(props: {
                         </button>
                       </div>
                     ) : isRunning && panelState.url !== null ? (
-                      <iframe
-                        key={panelState.reloadToken}
-                        src={panelState.url}
-                        title="Flutter preview"
-                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
-                        className="h-full w-full border-0 bg-white"
-                      />
+                      isNativePreview ? (
+                        nativeScreen
+                      ) : (
+                        <iframe
+                          key={panelState.reloadToken}
+                          src={panelState.url}
+                          title="Flutter preview"
+                          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
+                          className="h-full w-full border-0 bg-white"
+                        />
+                      )
                     ) : (
                       <div className="flex flex-col items-center justify-center gap-1 px-[12%] text-center">
                         <p className="text-balance text-[11px] leading-snug text-white/45">

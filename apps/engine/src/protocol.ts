@@ -195,6 +195,8 @@ export type PreviewStartParams = z.infer<typeof PreviewStartParamsSchema>;
 
 export const PreviewStartResultSchema = z.object({
   url: z.string(),
+  /** "web" URLs render in an iframe; "native" pseudo-URLs render via device screenshots. */
+  kind: z.enum(["web", "native"]).optional(),
 });
 export type PreviewStartResult = z.infer<typeof PreviewStartResultSchema>;
 
@@ -230,6 +232,8 @@ export const PreviewStateResultSchema = z.object({
   running: z.boolean(),
   url: z.string(),
   logs: z.array(z.string()),
+  /** "web" URLs render in an iframe; "native" pseudo-URLs render via device screenshots. */
+  kind: z.enum(["web", "native"]).optional(),
 });
 export type PreviewStateResult = z.infer<typeof PreviewStateResultSchema>;
 

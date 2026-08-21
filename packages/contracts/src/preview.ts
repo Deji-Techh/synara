@@ -46,6 +46,11 @@ export type PreviewStartInput = typeof PreviewStartInput.Type;
 export const PreviewStartResult = Schema.Struct({
   /** The URL flutter actually serves, e.g. http://127.0.0.1:54321 */
   url: TrimmedNonEmptyString.check(Schema.isMaxLength(8_192)),
+  /**
+   * "web" URLs render in an iframe; "native" pseudo-URLs (native:emulator…)
+   * render via device screenshot polling inside the device frame.
+   */
+  kind: Schema.optional(Schema.Literals(["web", "native"] as const)),
 });
 export type PreviewStartResult = typeof PreviewStartResult.Type;
 
@@ -88,6 +93,11 @@ export const PreviewState = Schema.Struct({
   logs: Schema.Array(Schema.String.check(Schema.isMaxLength(PREVIEW_LOG_MAX_LENGTH))).check(
     Schema.isMaxLength(PREVIEW_MAX_LOGS),
   ),
+  /**
+   * "web" URLs render in an iframe; "native" pseudo-URLs (native:emulator…)
+   * render via device screenshot polling inside the device frame.
+   */
+  kind: Schema.optional(Schema.Literals(["web", "native"] as const)),
 });
 export type PreviewState = typeof PreviewState.Type;
 

@@ -469,26 +469,13 @@ function spawnFlutterRun(appPath: string, entry: PreviewEntry, hostname: string)
           });
         }
       } else {
-        // Native device: consider running once we see flutter launch output.
-        // Resolve on first data chunk if not yet settled (native run has no URL).
-        if (!entry.running && !settled && text.trim().length > 0) {
-          // Delay slightly to ensure child is stable, but resolve quickly for UX.
-          if (entry.logs.length >= 1) {
-            entry.url = nativeUrl;
-            // Resolve on next tick to allow more logs to accumulate.
-            setTimeout(() => {
-              if (!settled) {
-                entry.running = true;
-                logger.info(
-                  `preview: native ${device} running for ${appPath} (${entry.deviceId ?? device})`,
-                );
-                finish(() => resolve(nativeUrl));
-              }
-            }, 800);
-          }
-        }
-        // Also resolve if we detect explicit success markers
-        if (/Launching lib\/main\.dart|Flutter run key commands|Application running/i.test(text)) {
+        // Native device: resolve only on markers flutter prints after the app
+        // is actually installed and running on the device. Resolving on the
+        // first output chunk would report "running" while Gradle is still
+        // building, long before anything renders on screen.
+        if (
+          /Flutter run key commands|Application running|A Dart VM Service on/i.test(text)
+        ) {
           entry.url = nativeUrl;
           finish(() => {
             entry.running = true;
@@ -549,7 +536,7 @@ async function startPreview(params: unknown): Promise<PreviewStartResult> {
   if (existing) {
     if (existing.running) {
       // Idempotent start: reuse the live preview.
-      return { url: existing.url };
+      return { url: existing.url, kind: existing.device === "web-server" ? "web" : "native" };
     }
     // Stale entry from a previous crash/exit — clear it before restarting.
     await stopPreviewEntry(existing);
@@ -576,7 +563,7 @@ async function startPreview(params: unknown): Promise<PreviewStartResult> {
   };
   activePreviews.set(parsed.appDir, entry);
   const url = await spawnFlutterRun(parsed.appDir, entry, hostname);
-  return { url };
+  return { url, kind: device === "web-server" ? "web" : "native" };
 }
 
 async function stopPreview(params: unknown): Promise<PreviewStopResult> {
@@ -611,7 +598,12 @@ function previewState(params: unknown): PreviewStateResult {
   if (!entry) {
     return { running: false, url: "", logs: [] };
   }
-  return { running: entry.running, url: entry.url, logs: [...entry.logs] };
+  return {
+    running: entry.running,
+    url: entry.url,
+    logs: [...entry.logs],
+    kind: entry.device === "web-server" ? "web" : "native",
+  };
 }
 
 async function listPreviewDevices(): Promise<{

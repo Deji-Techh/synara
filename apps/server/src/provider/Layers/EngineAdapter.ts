@@ -1715,7 +1715,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             );
           }
           context.previewAppDir = appDir;
-          return { url: result.data.url };
+          return { url: result.data.url, kind: result.data.kind };
         }),
 
       previewStop: (input) =>
@@ -1812,6 +1812,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             running: result.data.running,
             url: result.data.url,
             logs: result.data.logs,
+            kind: result.data.kind,
           };
         }),
 
