@@ -2,7 +2,7 @@
  * OpenCodeGoAdapter - Direct OpenCode Go API implementation of the generic provider adapter contract.
  *
  * OpenCode Go is OpenAI chat-completions compatible (
- * https://opencode.ai/go/v1 ). Mirrors OpenCodeZenAdapter.
+ * https://opencode.ai/zen/go/v1 ). Mirrors OpenCodeZenAdapter.
  *
  * @module OpenCodeGoAdapter
  */

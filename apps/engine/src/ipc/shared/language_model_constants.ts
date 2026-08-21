@@ -25,7 +25,7 @@ export const NEMOTRON_3_SUPER_FREE = "nvidia/nemotron-3-super-120b-a12b:free";
 export const GPT_5_NANO = "gpt-5-nano";
 export const OPENCODE_ZEN_API_BASE_URL = "https://opencode.ai/zen/v1";
 export const OPENCODE_ZEN_MODELS_URL = `${OPENCODE_ZEN_API_BASE_URL}/models`;
-export const OPENCODE_GO_API_BASE_URL = "https://opencode.ai/go/v1";
+export const OPENCODE_GO_API_BASE_URL = "https://opencode.ai/zen/go/v1";
 export const OPENCODE_GO_MODELS_URL = `${OPENCODE_GO_API_BASE_URL}/models`;
 export const OPENCODE_ZEN_FREE_MODEL_IDS = [
   "deepseek-v4-flash-free",

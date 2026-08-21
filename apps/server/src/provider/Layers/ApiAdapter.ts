@@ -52,7 +52,7 @@ interface ApiSessionContext {
 const DEFAULT_BASE_URL_BY_PROVIDER: Record<ApiProviderKind, string> = {
   groq: "https://api.groq.com/openai/v1",
   opencodeZen: "https://opencode.ai/zen/v1",
-  opencodeGo: "https://opencode.ai/go/v1",
+  opencodeGo: "https://opencode.ai/zen/go/v1",
 };
 
 async function streamOpenAiCompatible(
