@@ -46,7 +46,7 @@ type CustomModelValidationResult =
   | { readonly model: string; readonly error?: never }
   | { readonly model?: never; readonly error: string };
 
-const GIT_WRITING_DISCOVERY_PROVIDERS = ["openai", "openai", "openai"] as const;
+const GIT_WRITING_DISCOVERY_PROVIDERS = ["groq"] as const;
 
 export function validateCustomModelInput(input: {
   readonly provider: ProviderKind;
@@ -82,7 +82,7 @@ export function ModelsSettingsPanel({
 }: AppSettingsBinding & { readonly resetEpoch: number; readonly active: boolean }) {
   const serverConfigQuery = useQuery(serverConfigQueryOptions());
   const [selectedCustomModelProvider, setSelectedCustomModelProvider] =
-    useState<ProviderKind>("openai");
+    useState<ProviderKind>("groq");
   const [customModelInputByProvider, setCustomModelInputByProvider] = useState<
     Partial<Record<ProviderKind, string>>
   >({});
@@ -92,20 +92,14 @@ export function ModelsSettingsPanel({
   const [showAllCustomModels, setShowAllCustomModels] = useState(false);
 
   useSettingsRestoreSignal(resetEpoch, () => {
-    setSelectedCustomModelProvider("openai");
+    setSelectedCustomModelProvider("groq");
     setCustomModelInputByProvider({});
     setCustomModelErrorByProvider({});
     setShowAllCustomModels(false);
   });
 
-  const {
-    customCodexModels,
-    customKiloModels,
-    customOpenCodeModels,
-    textGenerationModel,
-    textGenerationProvider,
-  } = settings;
-  const currentGitTextGenerationProvider = textGenerationProvider ?? "openai";
+  const { customGroqModels, textGenerationModel, textGenerationProvider } = settings;
+  const currentGitTextGenerationProvider = textGenerationProvider ?? "groq";
   const currentGitTextGenerationModel = textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL;
   const gitWritingModelHintByProvider = useMemo<Partial<Record<ProviderKind, string | null>>>(
     () => ({ [currentGitTextGenerationProvider]: currentGitTextGenerationModel }),
@@ -127,25 +121,17 @@ export function ModelsSettingsPanel({
     () =>
       getGitTextGenerationModelOptions(
         {
-          customCodexModels,
-          customKiloModels,
-          customOpenCodeModels,
+          customGroqModels,
           textGenerationModel,
           textGenerationProvider,
         },
         {
-          codex: gitWritingCatalogOptionsByProvider.codex,
-          kilo: gitWritingCatalogOptionsByProvider.kilo,
-          opencode: gitWritingCatalogOptionsByProvider.opencode,
+          groq: gitWritingCatalogOptionsByProvider.groq,
         },
       ),
     [
-      customCodexModels,
-      customKiloModels,
-      customOpenCodeModels,
-      gitWritingCatalogOptionsByProvider.codex,
-      gitWritingCatalogOptionsByProvider.kilo,
-      gitWritingCatalogOptionsByProvider.opencode,
+      customGroqModels,
+      gitWritingCatalogOptionsByProvider.groq,
       textGenerationModel,
       textGenerationProvider,
     ],
@@ -162,7 +148,7 @@ export function ModelsSettingsPanel({
     CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS.find(
       (config) => config.provider === selectedCustomModelProvider,
     ) ??
-    CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS.find((config) => config.provider === "openai") ??
+    CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS.find((config) => config.provider === "groq") ??
     CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS[0]!;
   const selectedCustomModelInput = customModelInputByProvider[selectedCustomModelProvider] ?? "";
   const selectedCustomModelError = customModelErrorByProvider[selectedCustomModelProvider] ?? null;

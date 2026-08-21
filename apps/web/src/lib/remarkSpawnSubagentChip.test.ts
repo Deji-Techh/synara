@@ -49,7 +49,7 @@ describe("remarkSpawnSubagentChip", () => {
     expect(chips).toHaveLength(1);
     // At mdast level the hast attribute is camelCase ("dataRole"); remark-rehype
     // serializes it to the `data-role` DOM attribute the React component reads.
-    expect(chips[0].data?.hProperties?.dataRole).toBe("Database Expert");
+    expect(chips[0]?.data?.hProperties?.dataRole).toBe("Database Expert");
   });
 
   it("preserves surrounding text around the marker", () => {

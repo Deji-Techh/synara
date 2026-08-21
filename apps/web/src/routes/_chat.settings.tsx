@@ -254,15 +254,10 @@ function SettingsRouteView() {
       ? ["Terminal close confirmation"]
       : []),
     ...(isGitTextGenerationModelDirty ? ["Git writing model"] : []),
-    ...(settings.customCodexModels.length > 0 ||
-    settings.customClaudeModels.length > 0 ||
-    settings.customCursorModels.length > 0 ||
-    settings.customAntigravityModels.length > 0 ||
-    settings.customGrokModels.length > 0 ||
-    settings.customDroidModels.length > 0 ||
-    settings.customKiloModels.length > 0 ||
-    settings.customOpenCodeModels.length > 0 ||
-    settings.customPiModels.length > 0
+    ...(settings.customEngineModels.length > 0 ||
+    settings.customGroqModels.length > 0 ||
+    settings.customOpenCodeZenModels.length > 0 ||
+    settings.customOpenCodeGoModels.length > 0
       ? ["Custom models"]
       : []),
     ...(isInstallSettingsDirty ? ["Provider installs"] : []),
