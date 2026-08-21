@@ -2009,14 +2009,21 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               ),
             );
           }
-          // Engine returns both outputPath and optional image base64
+          // Engine returns both outputPath and optional image base64. A
+          // missing image must fail cleanly — returning the outputPath here
+          // would flow into a `data:image/png;base64,<path>` data URL and
+          // produce a corrupt download.
           const data = result.data as unknown as { outputPath: string; image?: string | null };
           if (typeof data.image === "string" && data.image.length > 0) {
             return { image: data.image };
           }
-          return {
-            image: data.outputPath,
-          };
+          return yield* Effect.fail(
+            processError(
+              input.threadId,
+              "engine preview/screenshot captured no image (no native device attached?)",
+              new Error("empty screenshot"),
+            ),
+          );
         }),
 
       previewDevices: (input) =>

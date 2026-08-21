@@ -824,6 +824,7 @@ export function SingleChatSurface(props: {
               isVisible={context.isVisible}
               onUpdatePane={(patch) => updatePane(props.threadId, pane.id, patch)}
               onClose={() => closePane(props.threadId, pane.id)}
+              workspaceRoot={workspaceRoot}
             />
           </Suspense>
         );

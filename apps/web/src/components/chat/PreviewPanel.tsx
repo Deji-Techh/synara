@@ -49,6 +49,7 @@ import {
 } from "../device/DeviceControlRail";
 
 import { cn } from "~/lib/utils";
+import { buildLocalImageUrl } from "~/lib/localImageUrls";
 import { PanelStateMessage } from "./PanelStateMessage";
 import { toastManager } from "../ui/toast";
 import {
@@ -684,6 +685,12 @@ function QualityGatePanel(props: {
   );
 }
 
+/** Basename of a build artifact path, for the download button label. */
+function artifactDownloadLabel(outputPath: string): string {
+  const slash = Math.max(outputPath.lastIndexOf("/"), outputPath.lastIndexOf("\\"));
+  return slash >= 0 ? outputPath.slice(slash + 1) : outputPath;
+}
+
 function ReleasePanel(props: {
   build: PreviewBuildState;
   onBuild: (options: {
@@ -696,6 +703,8 @@ function ReleasePanel(props: {
       keyPassword: string;
     } | null;
   }) => void;
+  /** Thread workspace root; artifact downloads resolve against it. */
+  workspaceRoot: string | null;
 }) {
   const [target, setTarget] = useState(props.build.target);
   const [channel, setChannel] = useState(props.build.channel);
@@ -877,6 +886,19 @@ function ReleasePanel(props: {
               sha256: {(props.build as unknown as { sha256: string }).sha256}
             </span>
           )}
+          {props.build.outputPath !== null && props.workspaceRoot !== null && (
+            <a
+              href={buildLocalImageUrl({
+                src: props.build.outputPath,
+                cwd: props.workspaceRoot,
+                download: true,
+              })}
+              className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-medium text-white transition-opacity hover:opacity-90"
+            >
+              <ArchiveIcon aria-hidden="true" className="size-3" />
+              Download {artifactDownloadLabel(props.build.outputPath)}
+            </a>
+          )}
         </div>
       )}
       {props.build.status === "failed" && (
@@ -911,6 +933,8 @@ export function PreviewPanel(props: {
   isVisible: boolean;
   onUpdatePane: (patch: { previewDeviceId: PreviewDeviceId }) => void;
   onClose?: (() => void) | undefined;
+  /** The thread's workspace root; scopes artifact downloads to the app workspace. */
+  workspaceRoot?: string | null | undefined;
 }) {
   const [panelState, setPanelState] = useState<PreviewPanelState>(() =>
     createInitialPreviewPanelState(props.pane.previewDeviceId ?? "mobile"),
@@ -1506,7 +1530,11 @@ export function PreviewPanel(props: {
         )}
         {panelState.activeTab === "release" && (
           <div className="flex-1 overflow-hidden">
-            <ReleasePanel build={panelState.build} onBuild={handleBuild} />
+            <ReleasePanel
+              build={panelState.build}
+              onBuild={handleBuild}
+              workspaceRoot={props.workspaceRoot ?? null}
+            />
           </div>
         )}
       </div>

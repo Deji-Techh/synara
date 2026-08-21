@@ -50,11 +50,29 @@ export function isSupportedLocalPdfPath(filePath: string): boolean {
   return lowerCaseExtensionOf(filePath) === SUPPORTED_LOCAL_PDF_EXTENSION;
 }
 
+// Build artifacts the preview route may serve for download (never rendered
+// inline: markdown image detection stays image-only). These are produced by
+// `flutter build apk|appbundle|ipa` inside the app workspace.
+export const SUPPORTED_LOCAL_ARTIFACT_EXTENSIONS = [".apk", ".aab", ".ipa"] as const;
+
+const SUPPORTED_LOCAL_ARTIFACT_EXTENSIONS_SET: ReadonlySet<string> = new Set(
+  SUPPORTED_LOCAL_ARTIFACT_EXTENSIONS,
+);
+
+export function isSupportedLocalArtifactPath(filePath: string): boolean {
+  const extension = lowerCaseExtensionOf(filePath);
+  return extension !== null && SUPPORTED_LOCAL_ARTIFACT_EXTENSIONS_SET.has(extension);
+}
+
 // Full allowlist for the /api/local-image serving route. Markdown image source
 // detection (below) intentionally stays image-only: a `.pdf` link in chat
 // markdown must never be inlined as an <img>.
 export function isSupportedLocalPreviewFilePath(filePath: string): boolean {
-  return isSupportedLocalImagePath(filePath) || isSupportedLocalPdfPath(filePath);
+  return (
+    isSupportedLocalImagePath(filePath) ||
+    isSupportedLocalPdfPath(filePath) ||
+    isSupportedLocalArtifactPath(filePath)
+  );
 }
 
 // Built from the canonical extensions list so the web regex never drifts from the
