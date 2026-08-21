@@ -411,60 +411,7 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     placeholder: "your-engine-model-slug",
     example: "gpt-5.6-sol",
   },
-  openai: {
-    provider: "groq",
-    settingsKey: "customOpenAiModels",
-    defaultSettingsKey: "customOpenAiModels",
-    title: "OpenAI",
-    description: "Save additional OpenAI model slugs for the picker.",
-    placeholder: "gpt-5.5",
-    example: "gpt-6-mini",
-  },
-  anthropic: {
-    provider: "opencodeZen",
-    settingsKey: "customAnthropicModels",
-    defaultSettingsKey: "customAnthropicModels",
-    title: "Anthropic",
-    description: "Save additional Anthropic model slugs for the picker.",
-    placeholder: "claude-sonnet-5",
-    example: "claude-custom-model",
-  },
-  google: {
-    provider: "opencodeGo",
-    settingsKey: "customGoogleModels",
-    defaultSettingsKey: "customGoogleModels",
-    title: "Google",
-    description: "Save additional Google model slugs for the picker.",
-    placeholder: "gemini-3-flash",
-    example: "gemini-3-ultra",
-  },
-  openrouter: {
-    provider: "openrouter",
-    settingsKey: "customOpenRouterModels",
-    defaultSettingsKey: "customOpenRouterModels",
-    title: "OpenRouter",
-    description: "Save additional OpenRouter model slugs for the picker.",
-    placeholder: "provider/model",
-    example: "anthropic/claude-sonnet-5",
-  },
-  ollama: {
-    provider: "ollama",
-    settingsKey: "customOllamaModels",
-    defaultSettingsKey: "customOllamaModels",
-    title: "Ollama",
-    description: "Save additional Ollama model names for the picker.",
-    placeholder: "model-name",
-    example: "llama3.3",
-  },
-  deepseek: {
-    provider: "deepseek",
-    settingsKey: "customDeepseekModels",
-    defaultSettingsKey: "customDeepseekModels",
-    title: "DeepSeek",
-    description: "Save additional DeepSeek model slugs for the picker.",
-    placeholder: "your-deepseek-model-slug",
-    example: "deepseek-v3",
-  },
+
   groq: {
     provider: "groq",
     settingsKey: "customGroqModels",
@@ -474,51 +421,7 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     placeholder: "your-groq-model-slug",
     example: "llama-3.3-70b-versatile",
   },
-  mistral: {
-    provider: "mistral",
-    settingsKey: "customMistralModels",
-    defaultSettingsKey: "customMistralModels",
-    title: "Mistral",
-    description: "Save additional Mistral model slugs for the picker.",
-    placeholder: "your-mistral-model-slug",
-    example: "mistral-large-latest",
-  },
-  together: {
-    provider: "together",
-    settingsKey: "customTogetherModels",
-    defaultSettingsKey: "customTogetherModels",
-    title: "Together",
-    description: "Save additional Together model slugs for the picker.",
-    placeholder: "provider/model",
-    example: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
-  },
-  cohere: {
-    provider: "cohere",
-    settingsKey: "customCohereModels",
-    defaultSettingsKey: "customCohereModels",
-    title: "Cohere",
-    description: "Save additional Cohere model slugs for the picker.",
-    placeholder: "your-cohere-model-slug",
-    example: "command-r-plus",
-  },
-  xai: {
-    provider: "xai",
-    settingsKey: "customXaiModels",
-    defaultSettingsKey: "customXaiModels",
-    title: "xAI",
-    description: "Save additional xAI model slugs for the picker.",
-    placeholder: "your-xai-model-slug",
-    example: "grok-3",
-  },
-  fireworks: {
-    provider: "fireworks",
-    settingsKey: "customFireworksModels",
-    defaultSettingsKey: "customFireworksModels",
-    title: "Fireworks",
-    description: "Save additional Fireworks model slugs for the picker.",
-    placeholder: "provider/model",
-    example: "accounts/fireworks/models/llama-v3-70b-instruct",
-  },
+
   opencodeZen: {
     provider: "opencodeZen",
     settingsKey: "customOpenCodeZenModels",
@@ -652,18 +555,7 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
     // reusable provider credentials in browser state or localStorage.
     kiloServerPassword: "",
     openCodeServerPassword: "",
-    openaiApiKey: "",
-    anthropicApiKey: "",
-    googleApiKey: "",
-    openrouterApiKey: "",
-    ollamaApiKey: "",
-    fireworksApiKey: "",
-    xaiApiKey: "",
-    cohereApiKey: "",
-    togetherApiKey: "",
-    mistralApiKey: "",
     groqApiKey: "",
-    deepseekApiKey: "",
     opencodeZenApiKey: "",
     opencodeGoApiKey: "",
     claudeBinaryPath: normalizeProviderBinaryPathOverride("opencodeZen", settings.claudeBinaryPath),
@@ -695,20 +587,11 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
     customOpenCodeModels: normalizeCustomModelSlugs(settings.customOpenCodeModels, "groq"),
     customPiModels: normalizeCustomModelSlugs(settings.customPiModels, "groq"),
     customOpenAiModels: normalizeCustomModelSlugs(settings.customOpenAiModels, "groq"),
-    customAnthropicModels: normalizeCustomModelSlugs(settings.customAnthropicModels, "opencodeZen"),
     customGoogleModels: normalizeCustomModelSlugs(settings.customGoogleModels, "opencodeGo"),
     customOpenRouterModels: normalizeCustomModelSlugs(
       settings.customOpenRouterModels,
-      "openrouter",
     ),
-    customOllamaModels: normalizeCustomModelSlugs(settings.customOllamaModels, "ollama"),
-    customDeepseekModels: normalizeCustomModelSlugs(settings.customDeepseekModels, "deepseek"),
     customGroqModels: normalizeCustomModelSlugs(settings.customGroqModels, "groq"),
-    customMistralModels: normalizeCustomModelSlugs(settings.customMistralModels, "mistral"),
-    customTogetherModels: normalizeCustomModelSlugs(settings.customTogetherModels, "together"),
-    customCohereModels: normalizeCustomModelSlugs(settings.customCohereModels, "cohere"),
-    customXaiModels: normalizeCustomModelSlugs(settings.customXaiModels, "xai"),
-    customFireworksModels: normalizeCustomModelSlugs(settings.customFireworksModels, "fireworks"),
     customOpenCodeZenModels: normalizeCustomModelSlugs(
       settings.customOpenCodeZenModels,
       "opencodeZen",
@@ -752,43 +635,10 @@ function serverSettingsToAppSettings(settings: ServerSettingsView): Partial<AppS
     customKiloModels: (settings.providers as any).kilo?.customModels,
     customOpenCodeModels: (settings.providers as any).opencode?.customModels,
     customPiModels: (settings.providers as any).pi?.customModels,
-    customOpenAiModels: settings.providers.openai.customModels,
-    customAnthropicModels: settings.providers.anthropic.customModels,
-    customGoogleModels: settings.providers.google.customModels,
-    customOpenRouterModels: settings.providers.openrouter.customModels,
-    customOllamaModels: settings.providers.ollama.customModels,
-    customDeepseekModels: settings.providers.deepseek.customModels,
     customGroqModels: settings.providers.groq.customModels,
-    customMistralModels: settings.providers.mistral.customModels,
-    customTogetherModels: settings.providers.together.customModels,
-    customCohereModels: settings.providers.cohere.customModels,
-    customXaiModels: settings.providers.xai.customModels,
-    customFireworksModels: settings.providers.fireworks.customModels,
     customOpenCodeZenModels: settings.providers.opencodeZen.customModels,
-    openaiApiKeyConfigured: settings.providers.openai.apiKeyConfigured,
-    openaiBaseUrl: settings.providers.openai.baseUrl,
-    anthropicApiKeyConfigured: settings.providers.anthropic.apiKeyConfigured,
-    anthropicBaseUrl: settings.providers.anthropic.baseUrl,
-    googleApiKeyConfigured: settings.providers.google.apiKeyConfigured,
-    googleBaseUrl: settings.providers.google.baseUrl,
-    openrouterApiKeyConfigured: settings.providers.openrouter.apiKeyConfigured,
-    openrouterBaseUrl: settings.providers.openrouter.baseUrl,
-    ollamaApiKeyConfigured: settings.providers.ollama.apiKeyConfigured,
-    ollamaBaseUrl: settings.providers.ollama.baseUrl,
-    fireworksApiKeyConfigured: settings.providers.fireworks.apiKeyConfigured,
-    fireworksBaseUrl: settings.providers.fireworks.baseUrl,
-    xaiApiKeyConfigured: settings.providers.xai.apiKeyConfigured,
-    xaiBaseUrl: settings.providers.xai.baseUrl,
-    cohereApiKeyConfigured: settings.providers.cohere.apiKeyConfigured,
-    cohereBaseUrl: settings.providers.cohere.baseUrl,
-    togetherApiKeyConfigured: settings.providers.together.apiKeyConfigured,
-    togetherBaseUrl: settings.providers.together.baseUrl,
-    mistralApiKeyConfigured: settings.providers.mistral.apiKeyConfigured,
-    mistralBaseUrl: settings.providers.mistral.baseUrl,
     groqApiKeyConfigured: settings.providers.groq.apiKeyConfigured,
     groqBaseUrl: settings.providers.groq.baseUrl,
-    deepseekApiKeyConfigured: settings.providers.deepseek.apiKeyConfigured,
-    deepseekBaseUrl: settings.providers.deepseek.baseUrl,
     opencodeZenApiKeyConfigured: settings.providers.opencodeZen.apiKeyConfigured,
     opencodeZenBaseUrl: settings.providers.opencodeZen.baseUrl,
     opencodeGoApiKeyConfigured: settings.providers.opencodeGo.apiKeyConfigured,
@@ -815,42 +665,15 @@ function hasOwn<Key extends keyof AppSettings>(patch: Partial<AppSettings>, key:
 
 function touchesProviderDiscoverySettings(patch: Partial<AppSettings>): boolean {
   return (
-    hasOwn(patch, "kiloBinaryPath") ||
-    hasOwn(patch, "kiloServerPassword") ||
-    hasOwn(patch, "kiloServerUrl") ||
-    hasOwn(patch, "openCodeBinaryPath") ||
-    hasOwn(patch, "openCodeExperimentalWebSockets") ||
-    hasOwn(patch, "openCodeServerPassword") ||
-    hasOwn(patch, "openCodeServerUrl") ||
-    hasOwn(patch, "piAgentDir") ||
-    hasOwn(patch, "openaiApiKey") ||
-    hasOwn(patch, "openaiBaseUrl") ||
-    hasOwn(patch, "anthropicApiKey") ||
-    hasOwn(patch, "anthropicBaseUrl") ||
-    hasOwn(patch, "googleApiKey") ||
-    hasOwn(patch, "googleBaseUrl") ||
-    hasOwn(patch, "openrouterApiKey") ||
-    hasOwn(patch, "openrouterBaseUrl") ||
-    hasOwn(patch, "ollamaApiKey") ||
-    hasOwn(patch, "ollamaBaseUrl") ||
-    hasOwn(patch, "deepseekApiKey") ||
-    hasOwn(patch, "deepseekBaseUrl") ||
+    hasOwn(patch, "groqApiKey") ||
+    hasOwn(patch, "groqBaseUrl") ||
     hasOwn(patch, "opencodeZenApiKey") ||
     hasOwn(patch, "opencodeZenBaseUrl") ||
     hasOwn(patch, "opencodeGoApiKey") ||
-    hasOwn(patch, "opencodeGoBaseUrl") ||
-    hasOwn(patch, "groqApiKey") ||
-    hasOwn(patch, "groqBaseUrl") ||
-    hasOwn(patch, "mistralApiKey") ||
-    hasOwn(patch, "mistralBaseUrl") ||
-    hasOwn(patch, "togetherApiKey") ||
-    hasOwn(patch, "togetherBaseUrl") ||
-    hasOwn(patch, "cohereApiKey") ||
-    hasOwn(patch, "cohereBaseUrl") ||
-    hasOwn(patch, "xaiApiKey") ||
-    hasOwn(patch, "xaiBaseUrl") ||
-    hasOwn(patch, "fireworksApiKey") ||
-    hasOwn(patch, "fireworksBaseUrl")
+    hasOwn(patch, "opencodeGoBaseUrl")
+  ) ||
+    hasOwn(patch, "opencodeGoApiKey") ||
+    hasOwn(patch, "opencodeGoBaseUrl")
   );
 }
 
@@ -881,224 +704,26 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
   }
 
   if (
-    hasOwn(patch, "codexBinaryPath") ||
-    hasOwn(patch, "codexHomePath") ||
-    hasOwn(patch, "customCodexModels")
+    hasOwn(patch, "groqApiKey") ||
+    hasOwn(patch, "groqBaseUrl") ||
+    hasOwn(patch, "customGroqModels")
   ) {
-    (providers as any).codex = {
-      ...(hasOwn(patch, "codexBinaryPath") ? { binaryPath: patch.codexBinaryPath ?? "" } : {}),
-      ...(hasOwn(patch, "codexHomePath") ? { homePath: patch.codexHomePath ?? "" } : {}),
-      ...(hasOwn(patch, "customCodexModels")
-        ? { customModels: patch.customCodexModels ?? [] }
-        : {}),
-    };
-  }
-  if (hasOwn(patch, "claudeBinaryPath") || hasOwn(patch, "customClaudeModels")) {
-    (providers as any).claudeAgent = {
-      ...(hasOwn(patch, "claudeBinaryPath") ? { binaryPath: patch.claudeBinaryPath ?? "" } : {}),
-      ...(hasOwn(patch, "customClaudeModels")
-        ? { customModels: patch.customClaudeModels ?? [] }
-        : {}),
-    };
-  }
-  if (
-    hasOwn(patch, "cursorApiEndpoint") ||
-    hasOwn(patch, "cursorBinaryPath") ||
-    hasOwn(patch, "customCursorModels")
-  ) {
-    (providers as any).cursor = {
-      ...(hasOwn(patch, "cursorApiEndpoint") ? { apiEndpoint: patch.cursorApiEndpoint ?? "" } : {}),
-      ...(hasOwn(patch, "cursorBinaryPath") ? { binaryPath: patch.cursorBinaryPath ?? "" } : {}),
-      ...(hasOwn(patch, "customCursorModels")
-        ? { customModels: patch.customCursorModels ?? [] }
-        : {}),
-    };
-  }
-  if (hasOwn(patch, "antigravityBinaryPath") || hasOwn(patch, "customAntigravityModels")) {
-    (providers as any).antigravity = {
-      ...(hasOwn(patch, "antigravityBinaryPath")
-        ? { binaryPath: patch.antigravityBinaryPath ?? "" }
-        : {}),
-      ...(hasOwn(patch, "customAntigravityModels")
-        ? { customModels: patch.customAntigravityModels ?? [] }
-        : {}),
-    };
-  }
-  if (hasOwn(patch, "grokBinaryPath") || hasOwn(patch, "customGrokModels")) {
-    (providers as any).grok = {
-      ...(hasOwn(patch, "grokBinaryPath") ? { binaryPath: patch.grokBinaryPath ?? "" } : {}),
-      ...(hasOwn(patch, "customGrokModels") ? { customModels: patch.customGrokModels ?? [] } : {}),
-    };
-  }
-  if (hasOwn(patch, "droidBinaryPath") || hasOwn(patch, "customDroidModels")) {
-    (providers as any).droid = {
-      ...(hasOwn(patch, "droidBinaryPath") ? { binaryPath: patch.droidBinaryPath ?? "" } : {}),
-      ...(hasOwn(patch, "customDroidModels")
-        ? { customModels: patch.customDroidModels ?? [] }
-        : {}),
-    };
-  }
-  if (
-    hasOwn(patch, "kiloBinaryPath") ||
-    hasOwn(patch, "kiloServerUrl") ||
-    hasOwn(patch, "kiloServerPassword") ||
-    hasOwn(patch, "customKiloModels")
-  ) {
-    (providers as any).kilo = {
-      ...(hasOwn(patch, "kiloBinaryPath") ? { binaryPath: patch.kiloBinaryPath ?? "" } : {}),
-      ...(hasOwn(patch, "kiloServerUrl") ? { serverUrl: patch.kiloServerUrl ?? "" } : {}),
-      ...(hasOwn(patch, "kiloServerPassword")
-        ? { serverPassword: patch.kiloServerPassword ?? "" }
-        : {}),
-      ...(hasOwn(patch, "customKiloModels") ? { customModels: patch.customKiloModels ?? [] } : {}),
-    };
-  }
-  if (
-    hasOwn(patch, "openCodeBinaryPath") ||
-    hasOwn(patch, "openCodeExperimentalWebSockets") ||
-    hasOwn(patch, "openCodeServerUrl") ||
-    hasOwn(patch, "openCodeServerPassword") ||
-    hasOwn(patch, "customOpenCodeModels")
-  ) {
-    (providers as any).opencode = {
-      ...(hasOwn(patch, "openCodeBinaryPath")
-        ? { binaryPath: patch.openCodeBinaryPath ?? "" }
-        : {}),
-      ...(hasOwn(patch, "openCodeExperimentalWebSockets")
-        ? { experimentalWebSockets: Boolean(patch.openCodeExperimentalWebSockets) }
-        : {}),
-      ...(hasOwn(patch, "openCodeServerUrl") ? { serverUrl: patch.openCodeServerUrl ?? "" } : {}),
-      ...(hasOwn(patch, "openCodeServerPassword")
-        ? { serverPassword: patch.openCodeServerPassword ?? "" }
-        : {}),
-      ...(hasOwn(patch, "customOpenCodeModels")
-        ? { customModels: patch.customOpenCodeModels ?? [] }
-        : {}),
-    };
-  }
-  if (
-    hasOwn(patch, "piAgentDir") ||
-    hasOwn(patch, "piBinaryPath") ||
-    hasOwn(patch, "customPiModels")
-  ) {
-    (providers as any).pi = {
-      ...(hasOwn(patch, "piAgentDir") ? { agentDir: patch.piAgentDir ?? "" } : {}),
-      ...(hasOwn(patch, "piBinaryPath") ? { binaryPath: patch.piBinaryPath ?? "" } : {}),
-      ...(hasOwn(patch, "customPiModels") ? { customModels: patch.customPiModels ?? [] } : {}),
-    };
-  }
-  if (
-    hasOwn(patch, "openaiApiKey") ||
-    hasOwn(patch, "openaiBaseUrl") ||
-    hasOwn(patch, "customOpenAiModels")
-  ) {
-    providers.openai = {
-      ...(hasOwn(patch, "openaiApiKey") ? { apiKey: patch.openaiApiKey ?? "" } : {}),
-      ...(hasOwn(patch, "openaiBaseUrl") ? { baseUrl: patch.openaiBaseUrl ?? "" } : {}),
-      ...(hasOwn(patch, "customOpenAiModels")
-        ? { customModels: patch.customOpenAiModels ?? [] }
-        : {}),
-    };
-  }
-  if (
-    hasOwn(patch, "anthropicApiKey") ||
-    hasOwn(patch, "anthropicBaseUrl") ||
-    hasOwn(patch, "customAnthropicModels")
-  ) {
-    providers.anthropic = {
-      ...(hasOwn(patch, "anthropicApiKey") ? { apiKey: patch.anthropicApiKey ?? "" } : {}),
-      ...(hasOwn(patch, "anthropicBaseUrl") ? { baseUrl: patch.anthropicBaseUrl ?? "" } : {}),
-      ...(hasOwn(patch, "customAnthropicModels")
-        ? { customModels: patch.customAnthropicModels ?? [] }
-        : {}),
-    };
-  }
-  if (
-    hasOwn(patch, "googleApiKey") ||
-    hasOwn(patch, "googleBaseUrl") ||
-    hasOwn(patch, "customGoogleModels")
-  ) {
-    providers.google = {
-      ...(hasOwn(patch, "googleApiKey") ? { apiKey: patch.googleApiKey ?? "" } : {}),
-      ...(hasOwn(patch, "googleBaseUrl") ? { baseUrl: patch.googleBaseUrl ?? "" } : {}),
-      ...(hasOwn(patch, "customGoogleModels")
-        ? { customModels: patch.customGoogleModels ?? [] }
-        : {}),
-    };
-  }
-  if (
-    hasOwn(patch, "openrouterApiKey") ||
-    hasOwn(patch, "openrouterBaseUrl") ||
-    hasOwn(patch, "customOpenRouterModels")
-  ) {
-    providers.openrouter = {
-      ...(hasOwn(patch, "openrouterApiKey") ? { apiKey: patch.openrouterApiKey ?? "" } : {}),
-      ...(hasOwn(patch, "openrouterBaseUrl") ? { baseUrl: patch.openrouterBaseUrl ?? "" } : {}),
-      ...(hasOwn(patch, "customOpenRouterModels")
-        ? { customModels: patch.customOpenRouterModels ?? [] }
-        : {}),
-    };
-  }
-  if (
-    hasOwn(patch, "ollamaApiKey") ||
-    hasOwn(patch, "ollamaBaseUrl") ||
-    hasOwn(patch, "customOllamaModels")
-  ) {
-    providers.ollama = {
-      ...(hasOwn(patch, "ollamaApiKey") ? { apiKey: patch.ollamaApiKey ?? "" } : {}),
-      ...(hasOwn(patch, "ollamaBaseUrl") ? { baseUrl: patch.ollamaBaseUrl ?? "" } : {}),
-      ...(hasOwn(patch, "customOllamaModels")
-        ? { customModels: patch.customOllamaModels ?? [] }
-        : {}),
-    };
-  }
-
-  if (hasOwn(patch, "groqApiKey") || hasOwn(patch, "groqBaseUrl")) {
     providers.groq = {
       ...(hasOwn(patch, "groqApiKey") ? { apiKey: patch.groqApiKey ?? "" } : {}),
       ...(hasOwn(patch, "groqBaseUrl") ? { baseUrl: patch.groqBaseUrl ?? "" } : {}),
+      ...(hasOwn(patch, "customGroqModels") ? { customModels: patch.customGroqModels ?? [] } : {}),
     };
   }
 
-  if (hasOwn(patch, "mistralApiKey") || hasOwn(patch, "mistralBaseUrl")) {
-    providers.mistral = {
-      ...(hasOwn(patch, "mistralApiKey") ? { apiKey: patch.mistralApiKey ?? "" } : {}),
-      ...(hasOwn(patch, "mistralBaseUrl") ? { baseUrl: patch.mistralBaseUrl ?? "" } : {}),
-    };
-  }
-
-  if (hasOwn(patch, "togetherApiKey") || hasOwn(patch, "togetherBaseUrl")) {
-    providers.together = {
-      ...(hasOwn(patch, "togetherApiKey") ? { apiKey: patch.togetherApiKey ?? "" } : {}),
-      ...(hasOwn(patch, "togetherBaseUrl") ? { baseUrl: patch.togetherBaseUrl ?? "" } : {}),
-    };
-  }
-
-  if (hasOwn(patch, "cohereApiKey") || hasOwn(patch, "cohereBaseUrl")) {
-    providers.cohere = {
-      ...(hasOwn(patch, "cohereApiKey") ? { apiKey: patch.cohereApiKey ?? "" } : {}),
-      ...(hasOwn(patch, "cohereBaseUrl") ? { baseUrl: patch.cohereBaseUrl ?? "" } : {}),
-    };
-  }
-
-  if (hasOwn(patch, "xaiApiKey") || hasOwn(patch, "xaiBaseUrl")) {
-    providers.xai = {
-      ...(hasOwn(patch, "xaiApiKey") ? { apiKey: patch.xaiApiKey ?? "" } : {}),
-      ...(hasOwn(patch, "xaiBaseUrl") ? { baseUrl: patch.xaiBaseUrl ?? "" } : {}),
-    };
-  }
-
-  if (hasOwn(patch, "fireworksApiKey") || hasOwn(patch, "fireworksBaseUrl")) {
-    providers.fireworks = {
-      ...(hasOwn(patch, "fireworksApiKey") ? { apiKey: patch.fireworksApiKey ?? "" } : {}),
-      ...(hasOwn(patch, "fireworksBaseUrl") ? { baseUrl: patch.fireworksBaseUrl ?? "" } : {}),
-    };
-  }
-
-  if (hasOwn(patch, "opencodeZenApiKey") || hasOwn(patch, "opencodeZenBaseUrl")) {
+  if (
+    hasOwn(patch, "opencodeZenApiKey") ||
+    hasOwn(patch, "opencodeZenBaseUrl") ||
+    hasOwn(patch, "customOpenCodeZenModels")
+  ) {
     providers.opencodeZen = {
       ...(hasOwn(patch, "opencodeZenApiKey") ? { apiKey: patch.opencodeZenApiKey ?? "" } : {}),
       ...(hasOwn(patch, "opencodeZenBaseUrl") ? { baseUrl: patch.opencodeZenBaseUrl ?? "" } : {}),
+      ...(hasOwn(patch, "customOpenCodeZenModels") ? { customModels: patch.customOpenCodeZenModels ?? [] } : {}),
     };
   }
 
@@ -1110,9 +735,7 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
     providers.opencodeGo = {
       ...(hasOwn(patch, "opencodeGoApiKey") ? { apiKey: patch.opencodeGoApiKey ?? "" } : {}),
       ...(hasOwn(patch, "opencodeGoBaseUrl") ? { baseUrl: patch.opencodeGoBaseUrl ?? "" } : {}),
-      ...(hasOwn(patch, "customOpenCodeGoModels")
-        ? { customModels: patch.customOpenCodeGoModels ?? [] }
-        : {}),
+      ...(hasOwn(patch, "customOpenCodeGoModels") ? { customModels: patch.customOpenCodeGoModels ?? [] } : {}),
     };
   }
 
@@ -1152,30 +775,9 @@ function buildInitialServerSettingsMigrationPatch(settings: AppSettings): Server
     "openCodeServerUrl",
     "piAgentDir",
     "piBinaryPath",
-    "openaiApiKey",
-    "openaiBaseUrl",
-    "anthropicApiKey",
-    "anthropicBaseUrl",
-    "googleApiKey",
-    "googleBaseUrl",
-    "openrouterApiKey",
-    "openrouterBaseUrl",
-    "ollamaApiKey",
-    "ollamaBaseUrl",
-    "fireworksApiKey",
-    "fireworksBaseUrl",
-    "xaiApiKey",
-    "xaiBaseUrl",
-    "cohereApiKey",
-    "cohereBaseUrl",
-    "togetherApiKey",
-    "togetherBaseUrl",
-    "mistralApiKey",
-    "mistralBaseUrl",
+
     "groqApiKey",
     "groqBaseUrl",
-    "deepseekApiKey",
-    "deepseekBaseUrl",
     "opencodeZenApiKey",
     "opencodeZenBaseUrl",
     "opencodeGoApiKey",
@@ -1196,41 +798,9 @@ function buildInitialServerSettingsMigrationPatch(settings: AppSettings): Server
   if (settings.openCodeServerPassword.trim()) {
     patch.openCodeServerPassword = settings.openCodeServerPassword;
   }
-  if (settings.openaiApiKey.trim()) {
-    patch.openaiApiKey = settings.openaiApiKey;
-  }
-  if (settings.anthropicApiKey.trim()) {
-    patch.anthropicApiKey = settings.anthropicApiKey;
-  }
-  if (settings.googleApiKey.trim()) {
-    patch.googleApiKey = settings.googleApiKey;
-  }
-  if (settings.openrouterApiKey.trim()) {
-    patch.openrouterApiKey = settings.openrouterApiKey;
-  }
-  if (settings.ollamaApiKey.trim()) {
-    patch.ollamaApiKey = settings.ollamaApiKey;
-  }
-  if (settings.fireworksApiKey.trim()) {
-    patch.fireworksApiKey = settings.fireworksApiKey;
-  }
-  if (settings.xaiApiKey.trim()) {
-    patch.xaiApiKey = settings.xaiApiKey;
-  }
-  if (settings.cohereApiKey.trim()) {
-    patch.cohereApiKey = settings.cohereApiKey;
-  }
-  if (settings.togetherApiKey.trim()) {
-    patch.togetherApiKey = settings.togetherApiKey;
-  }
-  if (settings.mistralApiKey.trim()) {
-    patch.mistralApiKey = settings.mistralApiKey;
-  }
+
   if (settings.groqApiKey.trim()) {
     patch.groqApiKey = settings.groqApiKey;
-  }
-  if (settings.deepseekApiKey.trim()) {
-    patch.deepseekApiKey = settings.deepseekApiKey;
   }
   if (settings.opencodeZenApiKey.trim()) {
     patch.opencodeZenApiKey = settings.opencodeZenApiKey;
@@ -1313,18 +883,7 @@ export function getCustomModelsByProvider(
     opencode: getCustomModelsForProvider(settings, "groq"),
     pi: getCustomModelsForProvider(settings, "groq"),
     engine: getCustomModelsForProvider(settings, "engine"),
-    openai: getCustomModelsForProvider(settings, "groq"),
-    anthropic: getCustomModelsForProvider(settings, "opencodeZen"),
-    google: getCustomModelsForProvider(settings, "opencodeGo"),
-    openrouter: getCustomModelsForProvider(settings, "openrouter"),
-    ollama: getCustomModelsForProvider(settings, "ollama"),
-    deepseek: getCustomModelsForProvider(settings, "deepseek"),
     groq: getCustomModelsForProvider(settings, "groq"),
-    mistral: getCustomModelsForProvider(settings, "mistral"),
-    together: getCustomModelsForProvider(settings, "together"),
-    cohere: getCustomModelsForProvider(settings, "cohere"),
-    xai: getCustomModelsForProvider(settings, "xai"),
-    fireworks: getCustomModelsForProvider(settings, "fireworks"),
     opencodeZen: getCustomModelsForProvider(settings, "opencodeZen"),
   };
 }
@@ -1475,18 +1034,7 @@ export function getCustomModelOptionsByProvider(
     opencode: getAppModelOptions("groq", customModelsByProvider.opencode),
     pi: getAppModelOptions("groq", customModelsByProvider.pi),
     engine: getAppModelOptions("engine", customModelsByProvider.engine),
-    openai: getAppModelOptions("groq", customModelsByProvider.openai),
-    anthropic: getAppModelOptions("opencodeZen", customModelsByProvider.anthropic),
-    google: getAppModelOptions("opencodeGo", customModelsByProvider.google),
-    openrouter: getAppModelOptions("openrouter", customModelsByProvider.openrouter),
-    ollama: getAppModelOptions("ollama", customModelsByProvider.ollama),
-    deepseek: getAppModelOptions("deepseek", customModelsByProvider.deepseek),
     groq: getAppModelOptions("groq", customModelsByProvider.groq),
-    mistral: getAppModelOptions("mistral", customModelsByProvider.mistral),
-    together: getAppModelOptions("together", customModelsByProvider.together),
-    cohere: getAppModelOptions("cohere", customModelsByProvider.cohere),
-    xai: getAppModelOptions("xai", customModelsByProvider.xai),
-    fireworks: getAppModelOptions("fireworks", customModelsByProvider.fireworks),
     opencodeZen: getAppModelOptions("opencodeZen", customModelsByProvider.opencodeZen),
   };
 }
@@ -1674,15 +1222,7 @@ export function getCustomBinaryPathForProvider(
     case "groq":
     case "opencodeZen":
     case "opencodeGo":
-    case "openrouter":
-    case "ollama":
-    case "deepseek":
     case "groq":
-    case "mistral":
-    case "together":
-    case "cohere":
-    case "xai":
-    case "fireworks":
     case "opencodeZen":
       return "";
   }
@@ -1757,41 +1297,9 @@ export function useAppSettings() {
         ...(hasOwn(patch, "openCodeServerPassword")
           ? { openCodeServerPasswordConfigured: Boolean(patch.openCodeServerPassword?.trim()) }
           : {}),
-        ...(hasOwn(patch, "openaiApiKey")
-          ? { openaiApiKeyConfigured: Boolean(patch.openaiApiKey?.trim()) }
-          : {}),
-        ...(hasOwn(patch, "anthropicApiKey")
-          ? { anthropicApiKeyConfigured: Boolean(patch.anthropicApiKey?.trim()) }
-          : {}),
-        ...(hasOwn(patch, "googleApiKey")
-          ? { googleApiKeyConfigured: Boolean(patch.googleApiKey?.trim()) }
-          : {}),
-        ...(hasOwn(patch, "openrouterApiKey")
-          ? { openrouterApiKeyConfigured: Boolean(patch.openrouterApiKey?.trim()) }
-          : {}),
-        ...(hasOwn(patch, "ollamaApiKey")
-          ? { ollamaApiKeyConfigured: Boolean(patch.ollamaApiKey?.trim()) }
-          : {}),
-        ...(hasOwn(patch, "deepseekApiKey")
-          ? { deepseekApiKeyConfigured: Boolean(patch.deepseekApiKey?.trim()) }
-          : {}),
+
         ...(hasOwn(patch, "groqApiKey")
           ? { groqApiKeyConfigured: Boolean(patch.groqApiKey?.trim()) }
-          : {}),
-        ...(hasOwn(patch, "mistralApiKey")
-          ? { mistralApiKeyConfigured: Boolean(patch.mistralApiKey?.trim()) }
-          : {}),
-        ...(hasOwn(patch, "togetherApiKey")
-          ? { togetherApiKeyConfigured: Boolean(patch.togetherApiKey?.trim()) }
-          : {}),
-        ...(hasOwn(patch, "cohereApiKey")
-          ? { cohereApiKeyConfigured: Boolean(patch.cohereApiKey?.trim()) }
-          : {}),
-        ...(hasOwn(patch, "xaiApiKey")
-          ? { xaiApiKeyConfigured: Boolean(patch.xaiApiKey?.trim()) }
-          : {}),
-        ...(hasOwn(patch, "fireworksApiKey")
-          ? { fireworksApiKeyConfigured: Boolean(patch.fireworksApiKey?.trim()) }
           : {}),
         ...(hasOwn(patch, "opencodeZenApiKey")
           ? { opencodeZenApiKeyConfigured: Boolean(patch.opencodeZenApiKey?.trim()) }
