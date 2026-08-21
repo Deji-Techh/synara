@@ -5,30 +5,15 @@
 
 import { MODEL_OPTIONS_BY_PROVIDER } from "@caide/contracts";
 
-type ModelProviderKind =
-  | "openai"
-  | "anthropic"
-  | "google"
-  | "openrouter"
-  | "ollama"
-  | "deepseek"
-  | "groq"
-  | "mistral"
-  | "together"
-  | "cohere"
-  | "xai"
-  | "fireworks"
-  | "opencodeZen"
-  | "opencodeGo"
-  | "engine";
+type ModelProviderKind = "groq" | "opencodeZen" | "opencodeGo" | "engine";
 
 const NON_DROID_MODEL_SLUGS = new Set(
   Object.entries(MODEL_OPTIONS_BY_PROVIDER).flatMap(([provider, models]) =>
-    provider === "openai" ? [] : models.map((model) => model.slug.toLowerCase()),
+    provider === "groq" ? [] : models.map((model) => model.slug.toLowerCase()),
   ),
 );
 const DROID_ONLY_MODEL_SLUGS = new Set(
-  ((MODEL_OPTIONS_BY_PROVIDER as Record<string, { slug: string }[] | undefined>).droid ?? [])
+  ((MODEL_OPTIONS_BY_PROVIDER as Record<string, { slug: string }[] | undefined>).groq ?? [])
     .map((model) => model.slug.toLowerCase())
     .filter((slug) => !NON_DROID_MODEL_SLUGS.has(slug)),
 );
@@ -55,16 +40,16 @@ function readTrimmedString(record: Record<string, unknown>, key: string): string
 function inferProviderFromLabel(label: string): ModelProviderKind | undefined {
   const lowerLabel = label.toLowerCase();
   if (/(^|[^a-z0-9])pi([^a-z0-9]|$)/u.test(lowerLabel)) {
-    return "openai";
+    return "groq";
   }
   if (lowerLabel.includes("opencode")) {
-    return "openai";
+    return "groq";
   }
   if (lowerLabel.includes("kilo")) {
-    return "openai";
+    return "groq";
   }
   if (lowerLabel.includes("cursor")) {
-    return "openai";
+    return "groq";
   }
   if (lowerLabel.includes("antigravity")) {
     return "google";
@@ -79,19 +64,19 @@ function inferProviderFromLabel(label: string): ModelProviderKind | undefined {
     return "xai";
   }
   if (lowerLabel.includes("droid") || lowerLabel.includes("factory")) {
-    return "openai";
+    return "groq";
   }
   if (lowerLabel.includes("codex") || lowerLabel.includes("openai")) {
-    return "openai";
+    return "groq";
   }
   return undefined;
 }
 
 function inferLegacyModelProvider(provider: unknown, model: string): ModelProviderKind {
   if (
-    provider === "openai" ||
-    provider === "anthropic" ||
-    provider === "google" ||
+    provider === "groq" ||
+    provider === "opencodeZen" ||
+    provider === "opencodeGo" ||
     provider === "openrouter" ||
     provider === "ollama" ||
     provider === "deepseek" ||
@@ -116,7 +101,7 @@ function inferLegacyModelProvider(provider: unknown, model: string): ModelProvid
     provider === "pi" ||
     provider === "droid"
   ) {
-    return "openai";
+    return "groq";
   }
   if (provider === "claudeAgent") {
     return "anthropic";
@@ -140,7 +125,7 @@ function inferLegacyModelProvider(provider: unknown, model: string): ModelProvid
   // Shared Claude/Gemini/OpenAI slugs remain ambiguous without an instance label;
   // only Factory-exclusive built-ins are safe to attribute to Droid (now openai).
   if (DROID_ONLY_MODEL_SLUGS.has(lowerModel)) {
-    return "openai";
+    return "groq";
   }
   if (lowerModel.includes("claude") || lowerModel.includes("anthropic")) {
     return "anthropic";
@@ -152,9 +137,9 @@ function inferLegacyModelProvider(provider: unknown, model: string): ModelProvid
     return "xai";
   }
   if (lowerModel.includes("openai") || lowerModel.includes("codex") || lowerModel.includes("gpt")) {
-    return "openai";
+    return "groq";
   }
-  return "openai";
+  return "groq";
 }
 
 function readLegacyProviderOptions(options: unknown, provider: ModelProviderKind): unknown {

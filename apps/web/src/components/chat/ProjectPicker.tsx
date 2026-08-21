@@ -278,12 +278,7 @@ export const ProjectPicker = memo(function ProjectPicker({
     }
     if (!selectedWorkspaceRoot) return null;
     return activeFolderOptions.find((entry) => entry.cwd === selectedWorkspaceRoot) ?? null;
-  }, [
-    activeFolderOptions,
-    isProjectSelectionMode,
-    selectedProjectId,
-    selectedWorkspaceRoot,
-  ]);
+  }, [activeFolderOptions, isProjectSelectionMode, selectedProjectId, selectedWorkspaceRoot]);
   const triggerLabel = selectedFolderOption ? (
     <span className="flex min-w-0 items-baseline gap-1.5">
       <span className="min-w-0 truncate text-[var(--color-text-foreground)]">
@@ -306,7 +301,6 @@ export const ProjectPicker = memo(function ProjectPicker({
       setErrorMessage(null);
     }
   }, []);
-
 
   const handleSelectActiveFolder = useCallback(
     (folder: ActiveFolderOption) => {
