@@ -129,6 +129,7 @@ import type {
   ProjectWriteFileResult,
 } from "./project";
 import type { FilesystemBrowseInput, FilesystemBrowseResult } from "./filesystem";
+import type { AppCreateInput, AppCreateResult } from "./caideApps";
 import type {
   DeviceAttachInput,
   DeviceBootInput,
@@ -594,6 +595,15 @@ export interface NativeApi {
   };
   filesystem: {
     browse: (input: FilesystemBrowseInput) => Promise<FilesystemBrowseResult>;
+  };
+  app: {
+    /**
+     * Dyad-style app creation: slugifies the name, creates the Flutter app
+     * under ~/caide-apps/<slug> (engine app row + first chat + git initial
+     * commit), binds an orchestration project + first thread to it, and
+     * returns every identity needed to land in the new chat.
+     */
+    createApp: (input: AppCreateInput) => Promise<AppCreateResult>;
   };
   studio: {
     listThreadOutputs: (

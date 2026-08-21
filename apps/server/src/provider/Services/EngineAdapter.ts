@@ -139,8 +139,20 @@ export interface EnginePreviewOps {
  * Caide-side identity (ProjectId/ThreadId) is translated by the layer that
  * owns the projection (wsRpc); the provider adapter stays engine-shaped.
  */
-export interface EngineGoalsApi {
-  create(input: {
+/**
+ * Dyad-style app creation on the shared engine process: the engine slugifies,
+ * scaffolds the Flutter template, git-inits, inserts the app row + first chat
+ * and backfills the initial commit hash. Returns engine-native identities;
+ * the caller binds Caide project/thread to `appPath`.
+ */
+export interface EngineCreateAppResult {
+  readonly appId: number;
+  readonly chatId: number;
+  /** Absolute workspace path (~/caide-apps/<slug>). */
+  readonly appPath: string;
+}
+
+export interface EngineGoalsApi {  create(input: {
     appId?: number | null | undefined;
     chatId?: number | undefined;
     title?: string | undefined;
@@ -204,6 +216,9 @@ export interface EngineAdapterShape
   readonly provider: "engine";
   readonly goals: EngineGoalsApi;
   readonly streamGoalDomainEvents: Stream.Stream<GoalDomainEvent>;
+  createApp(input: {
+    name: string;
+  }): Effect.Effect<EngineCreateAppResult, ProviderAdapterError>;
 }
 
 export class EngineAdapter extends ServiceMap.Service<EngineAdapter, EngineAdapterShape>()(

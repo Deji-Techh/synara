@@ -29,6 +29,7 @@ import {
 } from "@caide/contracts";
 import { EngineClient } from "@caide/engine/client";
 import { CAIDE_ENGINE_DIR_ENV } from "@caide/shared/desktopIdentity";
+import { getCaideAppPath } from "../../paths/caideApps";
 
 function safeFlutterEnvironment(overrides?: Record<string, string>): NodeJS.ProcessEnv {
   const ALLOWED_KEYS = [
@@ -1093,6 +1094,9 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               client.dyadInvoke<{ app?: { id?: number }; chatId?: number }>("create-app", {
                 name,
                 initialChatMode: "build",
+                // Flutter-only product: never let the engine fall back to the
+                // legacy web template.
+                templateId: "flutter",
               }),
             catch: (cause) => processError(context.threadId, "engine create-app failed", cause),
           });
@@ -2107,6 +2111,54 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       goals: goalsApi,
 
       streamGoalDomainEvents: Stream.fromPubSub(goalsEventQueue),
+
+      createApp: ({ name }) =>
+        Effect.gen(function* () {
+          const errorContext = ThreadId.makeUnsafe(randomUUID());
+          const { client } = yield* ensureSharedEngine(errorContext);
+          const response = yield* Effect.tryPromise({
+            try: () =>
+              client.dyadInvoke<{
+                app?: { id?: number; path?: string; resolvedPath?: string };
+                chatId?: number;
+              }>(
+                "create-app",
+                {
+                  name,
+                  initialChatMode: "build",
+                  // The engine contract defaults to the legacy web template;
+                  // this product builds Flutter apps only.
+                  templateId: "flutter",
+                },
+                // Flutter scaffold + git init can take a while on first run.
+                180_000,
+              ),
+            catch: (cause) => processError(errorContext, "engine create-app failed", cause),
+          });
+          const appId = typeof response?.app?.id === "number" ? response.app.id : null;
+          const chatId = typeof response?.chatId === "number" ? response.chatId : null;
+          if (appId === null || chatId === null) {
+            return yield* Effect.fail(
+              processError(errorContext, "engine create-app returned no app/chat identity", null),
+            );
+          }
+          // The engine returns the absolute workspace in resolvedPath; fall
+          // back to resolving the stored (relative) app path against its apps
+          // root convention.
+          const storedPath =
+            typeof response.app?.resolvedPath === "string" && response.app.resolvedPath.length > 0
+              ? response.app.resolvedPath
+              : typeof response.app?.path === "string"
+                ? response.app.path
+                : null;
+          if (storedPath === null) {
+            return yield* Effect.fail(
+              processError(errorContext, "engine create-app returned no app path", null),
+            );
+          }
+          const appPath = getCaideAppPath(storedPath);
+          return { appId, chatId, appPath };
+        }),
 
       listSessions: () =>
         Ref.get(sessions).pipe(

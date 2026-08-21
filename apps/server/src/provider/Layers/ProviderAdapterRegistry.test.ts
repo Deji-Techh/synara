@@ -49,6 +49,7 @@ const fakeEngineAdapter: EngineAdapterShape = {
   previewBuildStart: vi.fn(),
   previewBuildState: vi.fn(),
   previewScreenshot: vi.fn(),
+  createApp: vi.fn(),
   goals: {
     create: vi.fn(),
     get: vi.fn(),

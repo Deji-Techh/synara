@@ -7,7 +7,7 @@
 
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -55,17 +55,20 @@ function makeIsolatedFixture(): { appsDir: string; userDataDir: string; fixtureP
   return { appsDir, userDataDir, fixturePath };
 }
 
-function provideAdapter<T>(effect: Effect.Effect<T, unknown, EngineAdapter>) {
+function provideAdapter<T>(
+  effect: Effect.Effect<T, unknown, EngineAdapter>,
+  extraEnv?: Record<string, string>,
+) {
   const { appsDir, userDataDir } = makeIsolatedFixture();
   return effect.pipe(
     Effect.provide(
       EngineAdapterLiveWithOptions({
         appsDir,
-        env: { CAIDE_DEV_USER_DATA_DIR: userDataDir },
-      }).pipe(
-        Layer.provide(ServerSettingsService.layerTest()),
-        Layer.provide(fakeSecretStoreLayer),
-      ),
+        env: {
+          CAIDE_DEV_USER_DATA_DIR: userDataDir,
+          ...(extraEnv ?? {}),
+        },
+      }).pipe(Layer.provide(ServerSettingsService.layerTest()), Layer.provide(fakeSecretStoreLayer)),
     ),
   );
 }
@@ -247,7 +250,9 @@ describe("EngineAdapter", () => {
           expect(active?.id).toBe(created.id);
           expect(active?.appId).toBe(appId);
 
-          const listed = yield* adapter.goals.list({ appId });
+          const listed = yield* adapter.goals.list(
+            ...(appId !== null ? [{ appId }] : []),
+          );
           expect(listed.some((g) => g.id === created.id)).toBe(true);
 
           const fetched = yield* adapter.goals.get({ goalId: created.id });
@@ -265,13 +270,43 @@ describe("EngineAdapter", () => {
 
     // Engine-native identity flows through the whole bridge untouched.
     expect(result.active).not.toBeNull();
-    expect(result.activity[0].goalId).toBe(result.created.id);
+    expect(result.activity[0]?.goalId).toBe(result.created.id);
     // Live relays: engine emits goal:updated + goal:run-requested as it
     // schedules the run; the adapter republishes them for the WS layer.
     const eventTypes = result.events.map((e) => e.type);
     expect(eventTypes).toContain("goal.updated");
     expect(eventTypes).toContain("goal.run-requested");
   }, 120_000);
+
+  it("createApp scaffolds a Flutter app + first chat under the isolated apps dir", async () => {
+    const { appsDir, userDataDir } = makeIsolatedFixture();
+    // Server-side getCaideAppPath must resolve to the SAME apps root the
+    // engine uses, otherwise the returned appPath diverges from reality.
+    process.env.CAIDE_DEV_APPS_DIR = appsDir;
+    const slug = `wandering-koala-${Date.now().toString(36)}`;
+
+    try {
+      const created = await Effect.runPromise(
+        provideAdapter(
+          Effect.gen(function* () {
+            const adapter = yield* EngineAdapter;
+            return yield* adapter.createApp({ name: slug });
+          }),
+          { CAIDE_DEV_APPS_DIR: appsDir, CAIDE_DEV_USER_DATA_DIR: userDataDir },
+        ),
+      );
+
+      expect(created.appId).toBeGreaterThan(0);
+      expect(created.chatId).toBeGreaterThan(0);
+      expect(created.appPath).toBe(path.join(appsDir, slug));
+      // The engine scaffolded the workspace (flutter create fallback writes
+      // pubspec.yaml) and committed it.
+      expect(existsSync(path.join(created.appPath, "pubspec.yaml"))).toBe(true);
+      expect(existsSync(path.join(created.appPath, ".git"))).toBe(true);
+    } finally {
+      delete process.env.CAIDE_DEV_APPS_DIR;
+    }
+  }, 240_000);
 
   it("rejects sessions for an unknown thread", async () => {
     const threadId = ThreadId.makeUnsafe(randomUUID());

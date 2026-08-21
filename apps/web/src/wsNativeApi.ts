@@ -553,6 +553,10 @@ export function createWsNativeApi(): NativeApi {
     filesystem: {
       browse: (input) => transport.request(WS_METHODS.filesystemBrowse, input),
     },
+    app: {
+      createApp: (input) =>
+        transport.request(WS_METHODS.appCreateApp, input, { timeoutMs: 240_000 }),
+    },
     studio: {
       listThreadOutputs: (input) => transport.request(WS_METHODS.studioListThreadOutputs, input),
     },

@@ -1,4 +1,6 @@
 import { execFile } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
 
 import {
   CommandId,
@@ -6,6 +8,7 @@ import {
   DEVICE_WS_METHODS,
   GOALS_WS_METHODS,
   ORCHESTRATION_WS_METHODS,
+  ProjectId,
   ThreadId,
   WS_BOOTSTRAP_METHOD,
   WS_BOOTSTRAP_PATH,
@@ -76,6 +79,7 @@ import {
   STUDIO_WORKSPACE_SUBDIRECTORIES,
 } from "./studioWorkspaceScaffold";
 import { prepareCaideAppWorkspaceRoot } from "./caideAppScaffold";
+import { getCaideAppPath } from "./paths/caideApps";
 import { DevServerManager, findProjectDevServerForLocalServer } from "./devServerManager";
 import { DeviceService } from "./device/Services/DeviceService";
 import { makeWsDeviceHandlers } from "./device/wsDeviceHandlers";
@@ -1121,7 +1125,74 @@ const makeWsRpcHandlersLayer = () =>
           return { items: items.slice(0, limit) };
         });
 
+      // Dyad-style app creation: the engine owns slug/scaffold/git/chat
+      // mechanics; Caide binds an orchestration project + first thread to the
+      // resulting ~/caide-apps/<slug> workspace so the app's chats live in it.
+      const slugifyCaideAppName = (name: string): string =>
+        name
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "")
+          .slice(0, 40) || `app-${Date.now().toString(36)}`;
+
+      const createCaideApp = (input: { name: string }) =>
+        Effect.gen(function* () {
+          const trimmedName = input.name.trim();
+          const slug = slugifyCaideAppName(trimmedName);
+          const appPath = getCaideAppPath(slug);
+          if (existsSync(appPath)) {
+            return yield* Effect.fail(
+              new WsRpcError({ message: `App already exists at: ${appPath}` }),
+            );
+          }
+          const created = yield* engineAdapterEffect.pipe(
+            Effect.flatMap((adapter) => adapter.createApp({ name: slug })),
+            Effect.mapError((cause) => new WsRpcError({ message: cause.message })),
+          );
+
+          const projectId = ProjectId.makeUnsafe(randomUUID());
+          const threadId = ThreadId.makeUnsafe(randomUUID());
+          const createdAt = new Date().toISOString();
+
+          yield* dispatchOrchestrationCommand({
+            type: "project.create",
+            commandId: CommandId.makeUnsafe(`server:app-create:${randomUUID()}`),
+            projectId,
+            kind: "project",
+            title: trimmedName,
+            workspaceRoot: created.appPath,
+            createWorkspaceRootIfMissing: true,
+            defaultModelSelection: { provider: "engine", model: "default" },
+            createdAt,
+          } as OrchestrationCommand);
+
+          yield* dispatchOrchestrationCommand({
+            type: "thread.create",
+            commandId: CommandId.makeUnsafe(`server:app-create-thread:${randomUUID()}`),
+            threadId,
+            projectId,
+            title: trimmedName,
+            modelSelection: { provider: "engine", model: "default" },
+            runtimeMode: "full-access",
+            interactionMode: "default",
+            branch: null,
+            worktreePath: null,
+            createdAt,
+          } as OrchestrationCommand);
+
+          return {
+            projectId,
+            threadId,
+            appId: created.appId,
+            chatId: created.chatId,
+            appPath: created.appPath,
+          };
+        });
+
       return AdmittedWsFeatureRpcGroup.of({
+        [WS_METHODS.appCreateApp]: (input) =>
+          rpcEffect(createCaideApp(input), "Failed to create app"),
         [ORCHESTRATION_WS_METHODS.dispatchCommand]: (command) =>
           rpcEffect(
             Effect.gen(function* () {

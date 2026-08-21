@@ -64,6 +64,7 @@ import {
   ThreadDeviceState,
 } from "./device";
 import { FilesystemBrowseInput, FilesystemBrowseResult } from "./filesystem";
+import { AppCreateInput, AppCreateResult } from "./caideApps";
 import {
   GitHubProjectProvisionInput,
   GitHubProjectProvisionProgressEvent,
@@ -520,6 +521,12 @@ export const WsStudioListThreadOutputsRpc = Rpc.make(WS_METHODS.studioListThread
 export const WsFilesystemBrowseRpc = Rpc.make(WS_METHODS.filesystemBrowse, {
   payload: FilesystemBrowseInput,
   success: FilesystemBrowseResult,
+  error: WsRpcError,
+});
+
+export const WsAppCreateAppRpc = Rpc.make(WS_METHODS.appCreateApp, {
+  payload: AppCreateInput,
+  success: AppCreateResult,
   error: WsRpcError,
 });
 
@@ -1379,6 +1386,7 @@ export const WsFeatureRpcGroup = RpcGroup.make(
   WsProjectsProvisionFromGitHubRpc,
   WsStudioListThreadOutputsRpc,
   WsFilesystemBrowseRpc,
+  WsAppCreateAppRpc,
   WsShellOpenInEditorRpc,
   WsGitGithubRepositoryRpc,
   WsGitStatusRpc,

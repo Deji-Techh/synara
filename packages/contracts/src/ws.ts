@@ -184,6 +184,9 @@ export const WS_METHODS = {
   // Filesystem browse methods
   filesystemBrowse: "filesystem.browse",
 
+  // Caide apps (dyad-style creation under ~/caide-apps)
+  appCreateApp: "app.createApp",
+
   // Shell methods
   shellOpenInEditor: "shell.openInEditor",
 
