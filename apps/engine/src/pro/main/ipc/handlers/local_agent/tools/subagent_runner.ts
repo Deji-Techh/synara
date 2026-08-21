@@ -56,6 +56,9 @@ export async function runSubagentLoop(params: SubagentRunnerParams): Promise<Sub
     name: params.name ?? "Subagent Task",
     description: params.description ?? prompt.slice(0, 100),
     startedAt: Date.now(),
+    status: "running",
+    appId: ctx.appId,
+    chatId: ctx.chatId,
   });
 
   const settings = readSettings();

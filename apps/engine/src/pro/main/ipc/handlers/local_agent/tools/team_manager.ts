@@ -2,20 +2,60 @@ import { z } from "zod";
 import crypto from "node:crypto";
 import { AgentContext, ToolDefinition, escapeXmlAttr } from "./types";
 import { runSubagentLoop, SubagentRunResult } from "./subagent_runner";
+import { emit as emitEventBus } from "@/ipc/utils/event_bus";
 import log from "electron-log";
 import type { ToolSet } from "ai";
 
 const logger = log.scope("team_manager");
 
 const MAX_CONCURRENT_SUBAGENTS = 3;
+/** Settled (completed/failed) tasks are kept so the parent can poll
+ * `check_subagent_status`, but pruned after this long to bound memory. */
+const SETTLED_TASK_TTL_MS = 15 * 60_000;
 
-interface SubagentTask {
+function pruneSettledTasks(): void {
+  const now = Date.now();
+  for (const [id, task] of subagentTasks) {
+    if (
+      task.status !== "running" &&
+      task.settledAt !== null &&
+      now - task.settledAt > SETTLED_TASK_TTL_MS
+    ) {
+      subagentTasks.delete(id);
+    }
+  }
+}
+
+export interface SubagentTask {
   id: string;
   role: string;
   taskDescription: string;
   status: "running" | "completed" | "failed";
   result: SubagentRunResult | null;
   error: string | null;
+  /** When the task settled (completed/failed); null while running. */
+  settledAt: number | null;
+}
+
+/**
+ * Emitted over the engine event bus (`subagent:updated`) whenever a subagent
+ * starts or settles. The engine entry relays every bus event to the server as
+ * a `dyad/event` JSON-RPC notification, which is how the web UI gets live
+ * running-subagent indicators.
+ */
+function emitSubagentUpdated(
+  task: SubagentTask,
+  ctx: Pick<AgentContext, "appId" | "chatId">,
+): void {
+  emitEventBus("subagent:updated", {
+    appId: ctx.appId,
+    chatId: ctx.chatId,
+    taskId: task.id,
+    role: task.role,
+    task: task.taskDescription,
+    status: task.status,
+    startedAt: Date.now(),
+  });
 }
 
 const subagentTasks = new Map<string, SubagentTask>();
@@ -62,6 +102,8 @@ Use check_subagent_status to read its final report.`,
   },
 
   execute: async (args, ctx: AgentContext) => {
+    pruneSettledTasks();
+
     // Enforce max concurrent subagents limit
     const runningCount = Array.from(subagentTasks.values()).filter(
       (t) => t.status === "running",
@@ -79,9 +121,12 @@ Use check_subagent_status to read its final report.`,
       status: "running",
       result: null,
       error: null,
+      settledAt: null,
     };
 
     subagentTasks.set(taskId, task);
+
+    emitSubagentUpdated(task, ctx);
 
     if (!(globalThis as any).__caideActiveSubagents) {
       (globalThis as any).__caideActiveSubagents = new Map();
@@ -92,6 +137,9 @@ Use check_subagent_status to read its final report.`,
       name: args.role,
       description: args.task,
       startedAt: Date.now(),
+      status: "running",
+      appId: ctx.appId,
+      chatId: ctx.chatId,
     });
 
     // Build subagent prompt
@@ -125,10 +173,14 @@ Do not ask for user input, as you are running in the background. If you are stuc
 
         task.status = "completed";
         task.result = result;
+        task.settledAt = Date.now();
+        emitSubagentUpdated(task, ctx);
       } catch (err) {
         logger.error(`Subagent task ${taskId} failed:`, err);
         task.status = "failed";
         task.error = err instanceof Error ? err.message : String(err);
+        task.settledAt = Date.now();
+        emitSubagentUpdated(task, ctx);
       } finally {
         subagentMap.delete(taskId);
       }

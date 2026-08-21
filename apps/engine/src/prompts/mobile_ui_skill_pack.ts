@@ -1,29 +1,6 @@
 import { rawAsset } from "@/raw-assets";
+import { UI_LIBRARY } from "@/pro/main/ipc/handlers/local_agent/tools/read_ui_reference";
 const uiUxMasterySkill = rawAsset("src/prompts/skills/ui-ux-mastery/SKILL.md");
-const productArchetypes = rawAsset(
-  "src/prompts/skills/ui-ux-mastery/references/product-archetypes.md",
-);
-const designSystem = rawAsset("src/prompts/skills/ui-ux-mastery/references/design-system.md");
-const componentContracts = rawAsset(
-  "src/prompts/skills/ui-ux-mastery/references/component-contracts.md",
-);
-const accessibility = rawAsset("src/prompts/skills/ui-ux-mastery/references/accessibility.md");
-const antiSlop = rawAsset("src/prompts/skills/ui-ux-mastery/references/anti-slop.md");
-const designToCode = rawAsset("src/prompts/skills/ui-ux-mastery/references/design-to-code.md");
-const platformPatterns = rawAsset(
-  "src/prompts/skills/ui-ux-mastery/references/platform-patterns.md",
-);
-const qualityRubric = rawAsset("src/prompts/skills/ui-ux-mastery/references/quality-rubric.md");
-const motionDirection = rawAsset("src/prompts/skills/ui-ux-mastery/references/motion-direction.md");
-const screenSpec = rawAsset("src/prompts/skills/ui-ux-mastery/templates/screen-spec.md");
-const componentContract = rawAsset(
-  "src/prompts/skills/ui-ux-mastery/templates/component-contract.md",
-);
-const designAudit = rawAsset("src/prompts/skills/ui-ux-mastery/templates/design-audit.md");
-const designSpec = rawAsset("src/prompts/skills/ui-ux-mastery/templates/design-spec.md");
-const motionStoryboard = rawAsset(
-  "src/prompts/skills/ui-ux-mastery/templates/motion-storyboard.md",
-);
 const motionInteractionSkill = rawAsset("src/prompts/skills/motion-interaction/SKILL.md");
 const productFlowSkill = rawAsset("src/prompts/skills/product-flow/SKILL.md");
 const backendProductionSkill = rawAsset("src/prompts/skills/backend-production/SKILL.md");
@@ -48,7 +25,6 @@ const companionSkills = [
   { name: "Motion and Interaction", content: motionInteractionSkill },
   { name: "Product Flow", content: productFlowSkill },
   { name: "Backend Production", content: backendProductionSkill },
-  { name: "Anti AI Slop", content: antiAiSlopSkill },
 ]
   .map(
     (skill) =>
@@ -56,33 +32,16 @@ const companionSkills = [
   )
   .join("\n\n");
 
-const references = [
-  { name: "Product Archetypes", content: productArchetypes },
-  { name: "Design System", content: designSystem },
-  { name: "Component Contracts", content: componentContracts },
-  { name: "Accessibility", content: accessibility },
-  { name: "Anti-Slop and Distinctiveness", content: antiSlop },
-  { name: "Design to Code", content: designToCode },
-  { name: "Platform Patterns", content: platformPatterns },
-  { name: "Quality Rubric", content: qualityRubric },
-  { name: "Motion Direction and Capability Routing", content: motionDirection },
-];
-
-const templates = [
-  { name: "Screen Spec", content: screenSpec },
-  { name: "Component Contract", content: componentContract },
-  { name: "Design Audit", content: designAudit },
-  { name: "Persistent Design Spec", content: designSpec },
-  { name: "Persistent Motion Storyboard", content: motionStoryboard },
-];
-
-const referencesBlock = references
-  .map((r) => `<reference name="${r.name}">\n${r.content.trim()}\n</reference>`)
-  .join("\n\n");
-
-const templatesBlock = templates
-  .map((t) => `<template name="${t.name}">\n${t.content.trim()}\n</template>`)
-  .join("\n\n");
+// Deep reference documents are NOT inlined here. They are served on demand via
+// the `read_ui_reference` tool so every prompt does not carry ~110KB of
+// always-on design prose. The pack ships only an index of what is available.
+const referenceLibraryBlock = Object.entries(UI_LIBRARY)
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(
+    ([name, entry]) =>
+      `- ${name} (${entry.kind}): ${entry.description}`,
+  )
+  .join("\n");
 
 export const CAIDE_MOBILE_UI_SKILL_PACK = `
 <mandatory-ui-ux-skill>
@@ -107,15 +66,9 @@ ${skillBody}
 ${companionSkills}
 </mandatory-ui-ux-skill>
 
-<ui-ux-references>
-The following reference documents provide detailed guidance for specific UX domains. Consult them when relevant to the task.
+<ui-ux-reference-library>
+The following detailed CAIDE design documents exist but are NOT included in this prompt. Read them on demand with the read_ui_reference tool (name parameter) before substantial UI work or when auditing design quality:
 
-${referencesBlock}
-</ui-ux-references>
-
-<ui-ux-templates>
-The following templates can be used to structure design work for screens, components, and audits.
-
-${templatesBlock}
-</ui-ux-templates>
+${referenceLibraryBlock}
+</ui-ux-reference-library>
 `.trim();

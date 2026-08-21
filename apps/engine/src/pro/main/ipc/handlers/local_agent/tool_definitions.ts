@@ -46,6 +46,7 @@ import { planningQuestionnaireTool } from "./tools/planning_questionnaire";
 import { writePlanTool } from "./tools/write_plan";
 import { exitPlanTool } from "./tools/exit_plan";
 import { readGuideTool } from "./tools/read_guide";
+import { readUiReferenceTool } from "./tools/read_ui_reference";
 import { askEnvVarsTool } from "./tools/ask_env_vars";
 import { executeSandboxScriptTool } from "./tools/execute_sandbox_script";
 import { searchMcpToolsTool } from "./tools/search_mcp_tools";
@@ -135,6 +136,7 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   captureEvidenceTool,
   captureScreenshotTool,
   readGuideTool,
+  readUiReferenceTool,
   executeSandboxScriptTool,
   searchMcpToolsTool,
   getMcpToolSchemaTool,
