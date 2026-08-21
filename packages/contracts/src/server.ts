@@ -102,6 +102,12 @@ export const ServerConfig = Schema.Struct({
   issues: ServerConfigIssues,
   providers: ServerProviderStatuses,
   availableEditors: Schema.Array(EditorId),
+  /**
+   * Build identity injected at packaging time (git short SHA). Absent for dev
+   * runs; lets clients tell stale packaged binaries apart when a report says
+   * "still broken".
+   */
+  buildSha: Schema.optional(TrimmedNonEmptyString),
 });
 export type ServerConfig = typeof ServerConfig.Type;
 

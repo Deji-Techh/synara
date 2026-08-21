@@ -8004,6 +8004,10 @@ export default function ChatView({
         workingDirectory: null,
         branch: null,
       });
+      // Carry the composer's chat mode into the surviving draft. Without this
+      // the promoted thread resets to "build", visually discarding the user's
+      // agent-mode pick even though the dispatch carried it.
+      setComposerDraftChatMode(threadIdForSend, chatMode);
       nextThreadEnvMode = "local";
       nextThreadBranch = null;
       nextThreadWorktreePath = null;

@@ -7,7 +7,7 @@
 
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -387,5 +387,53 @@ describe("EngineAdapter", () => {
         ),
       ).rejects.toMatchObject({ _tag: "ProviderAdapterSessionNotFoundError" });
     }
+  });
+
+  it("bridges server-side zen/go API keys into the engine settings at initialize", async () => {
+    const { appsDir, userDataDir } = makeIsolatedFixture();
+    const secretValue = "sk-zen-bridge-test";
+    const secretStoreWithZenKey = Layer.succeed(ServerSecretStore, {
+      get: (name: string) =>
+        Effect.succeed(
+          name === "provider-opencodeZen-api-key" ? new TextEncoder().encode(secretValue) : null,
+        ),
+      set: () => Effect.void,
+      getOrCreateRandom: () => Effect.succeed(new Uint8Array()),
+      remove: () => Effect.void,
+    });
+    const threadId = ThreadId.makeUnsafe(randomUUID());
+
+    await Effect.runPromise(
+      Effect.gen(function* () {
+        const adapter = yield* EngineAdapter;
+        yield* adapter.startSession({ threadId, runtimeMode: "full-access" });
+      }).pipe(
+        Effect.provide(
+          EngineAdapterLiveWithOptions({
+            appsDir,
+            env: {
+              CAIDE_USER_DATA_DIR: userDataDir,
+              CAIDE_ENGINE_DATA_DIR: userDataDir,
+            },
+          }).pipe(
+            Layer.provide(ServerSettingsService.layerTest()),
+            Layer.provide(secretStoreWithZenKey),
+          ),
+        ),
+      ) as never,
+    );
+
+    const persisted = JSON.parse(
+      readFileSync(path.join(userDataDir, "user-settings.json"), "utf8"),
+    );
+    // The engine's safeStorage shim stores keys as reversible base64.
+    const storedZenKey = persisted.providerSettings?.["opencode-zen"]?.apiKey?.value;
+    expect(typeof storedZenKey).toBe("string");
+    expect(Buffer.from(String(storedZenKey), "base64").toString("utf8")).toBe(secretValue);
+    expect(persisted.providerSettings?.["opencode-zen"]?.apiKey.encryptionType).toBe(
+      "electron-safe-storage",
+    );
+    // Providers without stored keys are not fabricated.
+    expect(persisted.providerSettings?.["opencode-go"]).toBeUndefined();
   });
 });

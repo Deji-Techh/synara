@@ -11,7 +11,8 @@
  * @module EngineAdapterLive
  */
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync } from "node:fs";
+import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -245,6 +246,56 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
     /** buildId → threadId for attributing engine `build:completed` events. */
     const buildIdToThread = yield* Ref.make<ReadonlyMap<string, ThreadId>>(new Map());
 
+    /**
+     * Bridge server-side API credentials into the engine's own settings world.
+     *
+     * The engine resolves LLMs through its dyad pipeline using ITS settings DB
+     * (`providerSettings[providerId].apiKey`) — it cannot see Caide's server
+     * secret store. Without this bridge, agent-mode turns fail with
+     * "No API keys available for any model supported by the 'auto' provider"
+     * whenever the Builder custom-provider block is not configured, no matter
+     * what keys the user entered in Settings > Providers.
+     *
+     * Only providers the engine actually supports are bridged; groq has no
+     * engine-side provider and stays a direct-HTTP-only composer path.
+     */
+    const bridgeEngineProviderSettings = (): Effect.Effect<
+      Record<string, { apiKey: { value: string; encryptionType: "plaintext" } }>,
+      never
+    > =>
+      Effect.gen(function* () {
+        const decoder = new TextDecoder("utf-8");
+        const providerSettings: Record<
+          string,
+          { apiKey: { value: string; encryptionType: "plaintext" } }
+        > = {};
+        const bridgedKinds: ReadonlyArray<{
+          caideKind: "opencodeZen" | "opencodeGo";
+          engineId: string;
+        }> = [
+          { caideKind: "opencodeZen", engineId: "opencode-zen" },
+          { caideKind: "opencodeGo", engineId: "opencode-go" },
+        ];
+        for (const { caideKind, engineId } of bridgedKinds) {
+          const secret = yield* secretStore
+            .get(`provider-${caideKind}-api-key`)
+            .pipe(Effect.orElseSucceed(() => null));
+          if (!secret || secret.byteLength === 0) continue;
+          const apiKey = decoder.decode(secret);
+          if (apiKey.trim().length === 0) continue;
+          providerSettings[engineId] = {
+            apiKey: { value: apiKey, encryptionType: "plaintext" },
+          };
+        }
+        return providerSettings;
+      });
+
+    /** Caide composer kinds that map onto an engine builtin LLM provider. */
+    const ENGINE_PROVIDER_BY_CAIDE_KIND: ReadonlyMap<string, string> = new Map([
+      ["opencodeZen", "opencode-zen"],
+      ["opencodeGo", "opencode-go"],
+    ]);
+
     const engineModelConfig = (): Effect.Effect<
       | {
           baseUrl: string;
@@ -303,9 +354,8 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       return new ProviderAdapterProcessError({
         provider: "engine",
         threadId,
-        detail: causeText.length > 0 && !detail.includes(causeText)
-          ? `${detail}: ${causeText}`
-          : detail,
+        detail:
+          causeText.length > 0 && !detail.includes(causeText) ? `${detail}: ${causeText}` : detail,
         cause: causeError,
       });
     };
@@ -968,13 +1018,14 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         const engineEnv = safeFlutterEnvironment(
           flutterSdkBin !== "" ? { FLUTTER_SDK_BIN: flutterSdkBin } : undefined,
         );
-        if (options?.appsDir !== undefined) {
-          engineEnv["CAIDE_DEV_APPS_DIR"] = options.appsDir;
-        }
-        // The engine resolves its own data dir (SQLite, settings) relative to
-        // its CWD when spawned headless. In packaged desktop builds the CWD is
-        // the read-only AppImage mount (resources/engine), where even mkdir
-        // fails — so always point it at a writable per-instance directory.
+        // Pin the engine's data dir to a writable, profile-scoped location.
+        // Without this the engine's CWD-relative `./userData` fallback lands
+        // inside read-only packaged mounts (AppImage `.mount_*`), where its
+        // sqlite mkdir dies with ENOENT and every engine thread fails to
+        // start. Both envs must agree: paths.ts (db/sqlite) reads
+        // CAIDE_USER_DATA_DIR while the electron shim (settings storage)
+        // reads CAIDE_ENGINE_DATA_DIR. Optional service so test harnesses
+        // can mount the adapter without a full config graph.
         const serverConfigOption = yield* Effect.serviceOption(ServerConfig);
         if (Option.isSome(serverConfigOption)) {
           const engineUserDataDir = path.join(
@@ -983,11 +1034,15 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             "engine",
           );
           try {
-            mkdirSync(engineUserDataDir, { recursive: true });
+            fs.mkdirSync(engineUserDataDir, { recursive: true });
           } catch {
             // The engine surfaces its own error if this somehow fails.
           }
           engineEnv["CAIDE_USER_DATA_DIR"] = engineUserDataDir;
+          engineEnv["CAIDE_ENGINE_DATA_DIR"] = engineUserDataDir;
+        }
+        if (options?.appsDir !== undefined) {
+          engineEnv["CAIDE_DEV_APPS_DIR"] = options.appsDir;
         }
         if (options?.env !== undefined) {
           for (const [key, value] of Object.entries(options.env)) {
@@ -1021,29 +1076,35 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         });
 
         const modelConfig = yield* engineModelConfig();
+        const bridgedProviderSettings = yield* bridgeEngineProviderSettings();
+        // Merge order: Builder custom-provider settings win over the generic
+        // bridges for the same key; today their id namespaces never collide.
+        const initializeProviderSettings: Record<string, unknown> = {
+          ...bridgedProviderSettings,
+          ...(modelConfig
+            ? {
+                "caide-engine": {
+                  apiKey: { value: modelConfig.apiKey, encryptionType: "plaintext" },
+                },
+              }
+            : {}),
+        };
+        const initializeSettings: {
+          selectedModel?: { name: string; provider: string };
+          providerSettings: Record<string, unknown>;
+        } = { providerSettings: initializeProviderSettings };
+        if (modelConfig) {
+          initializeSettings.selectedModel = {
+            name: modelConfig.modelId,
+            provider: "caide-engine",
+          };
+        }
         const initializeResponse = yield* Effect.tryPromise({
           try: () =>
             client.initialize({
               clientName: "caide-server",
               protocolVersion: ENGINE_PROTOCOL_VERSION,
-              ...(modelConfig
-                ? {
-                    settings: {
-                      selectedModel: {
-                        name: modelConfig.modelId,
-                        provider: "caide-engine",
-                      },
-                      providerSettings: {
-                        "caide-engine": {
-                          apiKey: {
-                            value: modelConfig.apiKey,
-                            encryptionType: "plaintext",
-                          },
-                        },
-                      },
-                    },
-                  }
-                : {}),
+              settings: initializeSettings,
             }),
           catch: (cause) => {
             const health = client.describeHealth();
@@ -1644,6 +1705,49 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
 
           // The chat:stream call resolves only when the engine stream ends;
           // stream events arrive as notifications and settle the turn.
+          // Push the composer's picked model into the engine first: the
+          // engine's dyad pipeline resolves its LLM from its own
+          // `selectedModel` setting, so without this every agent turn would
+          // run on whatever model was last written instead of the user's
+          // pick. Best-effort — a settings hiccup must not kill the turn.
+          const selectedEngineModel =
+            input.modelSelection === undefined
+              ? null
+              : (() => {
+                  const engineProviderId = ENGINE_PROVIDER_BY_CAIDE_KIND.get(
+                    input.modelSelection.provider,
+                  );
+                  const modelId = input.modelSelection.model.trim();
+                  return engineProviderId !== undefined && modelId !== ""
+                    ? { name: modelId, provider: engineProviderId }
+                    : null;
+                })();
+          if (selectedEngineModel !== null) {
+            const shared = yield* ensureSharedEngine(input.threadId);
+            yield* Effect.tryPromise({
+              try: () =>
+                shared.client.dyadInvoke(
+                  "set-user-settings",
+                  { selectedModel: selectedEngineModel },
+                  10_000,
+                ),
+              catch: (cause) =>
+                processError(
+                  input.threadId,
+                  `engine set-user-settings (selectedModel) failed`,
+                  cause,
+                ),
+            }).pipe(
+              Effect.catch((error) =>
+                Effect.logWarning("engine selectedModel bridge failed; using engine default", {
+                  threadId: input.threadId,
+                  error: String(error),
+                }),
+              ),
+              Effect.asVoid,
+            );
+          }
+
           yield* forkChatStream(
             context,
             mapping.chatId,

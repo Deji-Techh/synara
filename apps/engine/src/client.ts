@@ -179,8 +179,8 @@ export class EngineClient {
     clientName: string;
     protocolVersion: number;
     settings?: {
-      selectedModel: { name: string; provider: string; customModelId?: number };
-      providerSettings: Record<string, unknown>;
+      selectedModel?: { name: string; provider: string; customModelId?: number };
+      providerSettings?: Record<string, unknown>;
     };
   }): Promise<JsonRpcResponse> {
     return this.request("initialize", params);

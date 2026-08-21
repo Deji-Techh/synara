@@ -716,6 +716,7 @@ const makeWsRpcHandlersLayer = () =>
           issues: keybindingsConfig.issues,
           providers: providerStatuses,
           availableEditors: resolveAvailableEditors(),
+          ...(process.env.CAIDE_BUILD_SHA ? { buildSha: process.env.CAIDE_BUILD_SHA } : {}),
         };
       });
 

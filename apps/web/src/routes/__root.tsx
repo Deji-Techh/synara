@@ -1930,6 +1930,16 @@ function EventRouter() {
         queryKey: serverSettingsQueryOptions().queryKey,
       });
     });
+    // Surface the running server's build identity once per connection so a
+    // stale packaged binary is immediately obvious when debugging reports.
+    void queryClient
+      .ensureQueryData(serverConfigQueryOptions())
+      .then((config) => {
+        if (config.buildSha) {
+          console.info(`[caide] server build ${config.buildSha}`);
+        }
+      })
+      .catch(() => undefined);
     subscribed = true;
     void ensureScopedSubscriptions();
     // The shell stream normally delivers the sidebar snapshot. If it fails before
