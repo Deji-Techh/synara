@@ -52,7 +52,6 @@ interface ProjectPickerProps {
   selectedWorkspaceRoot?: string | null;
   onSelectProject?: ((projectId: ProjectId) => void | Promise<void>) | undefined;
   onSelectWorkspaceRoot?: ((workspaceRoot: string) => void) | undefined;
-  onCreateProjectFromPath?: ((workspaceRoot: string) => void | Promise<void>) | undefined;
   onResetToHome?: (() => void | Promise<void>) | undefined;
   /** Class override for the trigger button (e.g. tighter height in the composer tray). */
   triggerClassName?: string;
@@ -124,7 +123,6 @@ export const ProjectPicker = memo(function ProjectPicker({
   selectedWorkspaceRoot: selectedWorkspaceRootProp,
   onSelectProject,
   onSelectWorkspaceRoot,
-  onCreateProjectFromPath,
   onResetToHome,
   triggerClassName,
   renderTrigger,
