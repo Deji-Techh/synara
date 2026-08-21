@@ -11,7 +11,7 @@
  * @module EngineAdapterLive
  */
 import { randomUUID } from "node:crypto";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -98,6 +98,7 @@ import {
   type EngineSubagentsApi,
 } from "../Services/EngineAdapter.ts";
 import { ServerSettingsService } from "../../serverSettings.ts";
+import { ServerConfig } from "../../config.ts";
 import { ServerSecretStore } from "../../auth/Services/ServerSecretStore.ts";
 
 /**
@@ -969,6 +970,24 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         );
         if (options?.appsDir !== undefined) {
           engineEnv["CAIDE_DEV_APPS_DIR"] = options.appsDir;
+        }
+        // The engine resolves its own data dir (SQLite, settings) relative to
+        // its CWD when spawned headless. In packaged desktop builds the CWD is
+        // the read-only AppImage mount (resources/engine), where even mkdir
+        // fails — so always point it at a writable per-instance directory.
+        const serverConfigOption = yield* Effect.serviceOption(ServerConfig);
+        if (Option.isSome(serverConfigOption)) {
+          const engineUserDataDir = path.join(
+            serverConfigOption.value.baseDir,
+            serverConfigOption.value.devUrl !== undefined ? "dev" : "userdata",
+            "engine",
+          );
+          try {
+            mkdirSync(engineUserDataDir, { recursive: true });
+          } catch {
+            // The engine surfaces its own error if this somehow fails.
+          }
+          engineEnv["CAIDE_USER_DATA_DIR"] = engineUserDataDir;
         }
         if (options?.env !== undefined) {
           for (const [key, value] of Object.entries(options.env)) {

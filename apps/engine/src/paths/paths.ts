@@ -115,9 +115,17 @@ export function getTypeScriptCachePath(): string {
 /**
  * Gets the user data path, handling both Electron and non-Electron environments
  * In Electron: returns the app's userData directory
+ * With CAIDE_USER_DATA_DIR set: returns that directory (embedders spawn this
+ * process headless and must point it at a writable location — the fallback
+ * below is CWD-relative and breaks inside read-only packaged mounts)
  * In non-Electron: returns "./userData" in the current directory
  */
 export function getUserDataPath(): string {
+  const explicitUserDataDir = process.env.CAIDE_USER_DATA_DIR?.trim();
+  if (explicitUserDataDir) {
+    return path.resolve(explicitUserDataDir);
+  }
+
   const electron = getElectron();
   const devUserDataDir =
     process.env.CAIDE_DEV_USER_DATA_DIR?.trim() || process.env.DYAD_DEV_USER_DATA_DIR?.trim();
