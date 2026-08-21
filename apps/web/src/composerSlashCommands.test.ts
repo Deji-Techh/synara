@@ -197,6 +197,17 @@ describe("composerSlashCommands", () => {
         interactionMode: "plan",
       }),
     ).toBe(false);
+
+    expect(
+      canOfferForkSlashCommand({
+        prompt: "",
+        imageCount: 0,
+        terminalContextCount: 0,
+        selectedSkillCount: 0,
+        selectedMentionCount: 0,
+        interactionMode: "debug",
+      }),
+    ).toBe(false);
   });
 
   it("only offers /side for a main-thread empty default composer", () => {
@@ -232,6 +243,18 @@ describe("composerSlashCommands", () => {
         selectedSkillCount: 0,
         selectedMentionCount: 0,
         interactionMode: "default",
+        isSidechat: false,
+      }),
+    ).toBe(false);
+
+    expect(
+      canOfferSideSlashCommand({
+        prompt: "",
+        imageCount: 0,
+        terminalContextCount: 0,
+        selectedSkillCount: 0,
+        selectedMentionCount: 0,
+        interactionMode: "debug",
         isSidechat: false,
       }),
     ).toBe(false);

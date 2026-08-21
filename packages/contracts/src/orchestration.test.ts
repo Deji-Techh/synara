@@ -414,6 +414,25 @@ it.effect("decodes thread.turn.start defaults for provider, runtime mode, and di
   }),
 );
 
+it.effect("decodes debug as a provider interaction mode", () =>
+  Effect.gen(function* () {
+    const parsed = yield* decodeThreadTurnStartCommand({
+      type: "thread.turn.start",
+      commandId: "cmd-turn-debug",
+      threadId: "thread-1",
+      interactionMode: "debug",
+      message: {
+        messageId: "msg-1",
+        role: "user",
+        text: "hello",
+        attachments: [],
+      },
+      createdAt: "2026-01-01T00:00:00.000Z",
+    });
+    assert.strictEqual(parsed.interactionMode, "debug");
+  }),
+);
+
 it.effect("bounds initial turn text while preserving attachment-only turns", () =>
   Effect.gen(function* () {
     const command = (text: string, attachments: ReadonlyArray<unknown> = []) => ({

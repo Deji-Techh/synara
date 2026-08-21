@@ -12,6 +12,7 @@ import {
   MessageId,
   type OrchestrationEvent,
   PROVIDER_SEND_TURN_MAX_INPUT_CHARS,
+  type ProviderInteractionMode,
   type ProviderMentionReference,
   type ProviderRuntimeEvent,
   ProviderKind,

@@ -1101,16 +1101,6 @@ export function useComposerSlashCommands(input: {
         return;
       }
 
-      if (item.command === "model") {
-        const applied = clearSlashCommandFromComposer();
-        if (!wasPromptReplacementApplied(applied)) {
-          return;
-        }
-        editorActions.setComposerHighlightedItemId(null);
-        openModelPicker();
-        return;
-      }
-
       if (item.command === "automation") {
         const replacement = "/automation ";
         const replacementRangeEnd = extendReplacementRangeForTrailingSpace(
@@ -1122,7 +1112,7 @@ export function useComposerSlashCommands(input: {
           trigger.rangeStart,
           replacementRangeEnd,
           replacement,
-          { expectedText: snapshot.value.slice(trigger.rangeStart, replacementRangeEnd) },
+          { expectedText: snapshot.value.slice(trigger.rangeStart, trigger.rangeEnd) },
         );
         if (wasPromptReplacementApplied(applied)) {
           editorActions.setComposerHighlightedItemId(null);
@@ -1135,6 +1125,16 @@ export function useComposerSlashCommands(input: {
         editorActions.applyPromptReplacement(trigger.rangeStart, trigger.rangeEnd, "", {
           expectedText: snapshot.value.slice(trigger.rangeStart, trigger.rangeEnd),
         });
+
+      if (item.command === "model") {
+        const applied = clearSlashCommandFromComposer();
+        if (!wasPromptReplacementApplied(applied)) {
+          return;
+        }
+        editorActions.setComposerHighlightedItemId(null);
+        openModelPicker();
+        return;
+      }
 
       if (item.command === "clear") {
         const applied = clearSlashCommandFromComposer();
