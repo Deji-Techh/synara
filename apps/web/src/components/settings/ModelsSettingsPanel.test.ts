@@ -7,16 +7,14 @@ import { validateCustomModelInput } from "./ModelsSettingsPanel";
 
 describe("validateCustomModelInput", () => {
   it("returns the same validation messages as the custom-model editor", () => {
-    expect(validateCustomModelInput({ provider: "groq", value: "   ", savedModels: [] })).toEqual(
-      {
-        error: "Enter a model slug.",
-      },
-    );
+    expect(validateCustomModelInput({ provider: "groq", value: "   ", savedModels: [] })).toEqual({
+      error: "Enter a model slug.",
+    });
 
     const builtIn = getModelOptions("groq")[0]!.slug;
-    expect(
-      validateCustomModelInput({ provider: "groq", value: builtIn, savedModels: [] }),
-    ).toEqual({ error: "That model is already built in." });
+    expect(validateCustomModelInput({ provider: "groq", value: builtIn, savedModels: [] })).toEqual(
+      { error: "That model is already built in." },
+    );
 
     expect(
       validateCustomModelInput({

@@ -28,7 +28,8 @@ export function resolveNewThreadModelPrefetchProvider(input: {
     input.draftActiveProvider ??
     input.stickyActiveProvider ??
     input.projectDefaultProvider ??
-    input.defaultProvider ?? "groq"
+    input.defaultProvider ??
+    "groq"
   );
 }
 

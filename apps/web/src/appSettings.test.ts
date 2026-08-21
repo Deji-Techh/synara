@@ -310,7 +310,6 @@ describe("normalizeStoredAppSettings", () => {
       customGroqModels: ["custom/internal-model"],
     });
   });
-
 });
 
 describe("provider-indexed custom model settings", () => {
@@ -351,9 +350,7 @@ describe("provider-indexed custom model settings", () => {
       customOpenCodeGoModels: [],
     } as const;
 
-    expect(getDefaultCustomModelsForProvider(defaults, "engine")).toEqual([
-      "default/engine-model",
-    ]);
+    expect(getDefaultCustomModelsForProvider(defaults, "engine")).toEqual(["default/engine-model"]);
     expect(getDefaultCustomModelsForProvider(defaults, "groq")).toEqual(["default/groq-model"]);
     expect(getDefaultCustomModelsForProvider(defaults, "opencodeZen")).toEqual([]);
   });

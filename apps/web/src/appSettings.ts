@@ -131,10 +131,11 @@ const withDefaults =
 // unknown onto the default provider instead of failing the whole settings decode.
 const PersistedProviderKind = Schema.String.pipe(
   Schema.decodeTo(ProviderKind, {
-    decode: SchemaGetter.transform((provider: string): ProviderKind =>
-      provider === "groq" || provider === "opencodeZen" || provider === "opencodeGo"
-        ? provider
-        : "groq",
+    decode: SchemaGetter.transform(
+      (provider: string): ProviderKind =>
+        provider === "groq" || provider === "opencodeZen" || provider === "opencodeGo"
+          ? provider
+          : "groq",
     ),
     encode: SchemaGetter.transform((provider: ProviderKind): string => provider),
   }),
@@ -492,7 +493,9 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
     const model = patch.textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL;
     serverPatch.textGenerationModelSelection = {
       provider: resolveTextGenerationProvider(
-        patch.textGenerationProvider === undefined ? {} : { provider: patch.textGenerationProvider },
+        patch.textGenerationProvider === undefined
+          ? {}
+          : { provider: patch.textGenerationProvider },
       ),
       model,
     };

@@ -27,9 +27,9 @@ describe("isProviderInstallSettingsDirty", () => {
   });
 
   it("uses configured flags instead of unreadable password values", () => {
-    expect(
-      isProviderInstallSettingsDirty({ ...defaults, engineApiKey: "secret" }, defaults),
-    ).toBe(false);
+    expect(isProviderInstallSettingsDirty({ ...defaults, engineApiKey: "secret" }, defaults)).toBe(
+      false,
+    );
     expect(
       isProviderInstallSettingsDirty({ ...defaults, engineApiKeyConfigured: true }, defaults),
     ).toBe(true);

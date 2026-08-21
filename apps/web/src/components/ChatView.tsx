@@ -3639,9 +3639,7 @@ export default function ChatView({
         composerSkillCwd !== null,
     }),
   );
-  const canDiscoverProviderSkills = supportsSkillDiscovery(
-    providerComposerCapabilitiesQuery.data,
-  );
+  const canDiscoverProviderSkills = supportsSkillDiscovery(providerComposerCapabilitiesQuery.data);
   const providerSkillsQuery = useQuery(
     providerSkillsQueryOptions({
       provider: selectedProvider,
