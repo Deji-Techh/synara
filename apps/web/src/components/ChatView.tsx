@@ -131,7 +131,7 @@ import { stripDiffSearchParams } from "../diffRouteSearch";
 import { resolveSubagentPresentationForThread } from "../lib/subagentPresentation";
 import { ensureHomeChatProject, isHomeChatContainerProject } from "../lib/chatProjects";
 import { isCaideAppProject } from "../lib/caideApps";
-import { resolveFirstSendTarget } from "../lib/chatFirstSend";
+import { createAppForFirstSend, resolveFirstSendTarget } from "../lib/chatFirstSend";
 import { readActiveSpaceId } from "../spacesUiStore";
 import {
   createOrRecoverProjectFromPath,
@@ -1584,6 +1584,7 @@ export default function ChatView({
   // re-triggered (with the branding block) once the user picks an option.
   const [isBrandingWizardOpen, setIsBrandingWizardOpen] = useState(false);
   const pendingBrandingPromptRef = useRef<{ threadId: ThreadId; prompt: string } | null>(null);
+  const pendingBrandingChoiceRef = useRef<BrandingWizardValue | null>(null);
   const brandingAmendmentRef = useRef<{ threadId: ThreadId; prompt: string } | null>(null);
   const skipBrandingWizardForNextSubmitRef = useRef(false);
   // Set by whichever mounted GitActionsControl instance (header quick-action or the
@@ -7865,7 +7866,6 @@ export default function ChatView({
     const activeSpaceIdForSend = readActiveSpaceId();
     const firstSendTarget = resolveFirstSendTarget({
       activeProject,
-      chatWorkspaceRoot,
       createdAt: firstSendCreatedAt,
       isFirstMessage,
       isHomeChatContainer,
@@ -7889,7 +7889,16 @@ export default function ChatView({
           targetProjectScripts: activeProject.kind === "project" ? activeProject.scripts : [],
           targetProjectDefaultModelSelection: activeProject.defaultModelSelection ?? null,
         }
-      : firstSendTarget.target;
+      : firstSendTarget.kind === "create-app"
+        ? // Overwritten by the create-app branch below before the send dispatches.
+          {
+            targetProjectId: activeProject.id,
+            targetProjectKind: activeProject.kind,
+            targetProjectCwd: activeProject.cwd,
+            targetProjectScripts: [],
+            targetProjectDefaultModelSelection: activeProject.defaultModelSelection ?? null,
+          }
+        : firstSendTarget.target;
     let nextRuntimeModeForSend = runtimeModeForSend;
     let nextThreadEnvMode = envModeForSend;
     let nextThreadBranch = activeThread.branch;
@@ -7900,7 +7909,32 @@ export default function ChatView({
     let nextAssociatedWorktreeRef = activeThread.associatedWorktreeRef ?? null;
 
     if (isFirstMessage && isContainerLandingProject && firstSendTarget.kind !== "current") {
-      if (firstSendTarget.kind === "create-project") {
+      if (firstSendTarget.kind === "create-app") {
+        // Dyad-style flow: a plain prompt on Home scaffolds a brand-new Flutter
+        // app under ~/caide-apps and this chat continues inside it. The branding
+        // wizard's custom name (if chosen moments earlier) wins over the
+        // prompt-derived slug.
+        const preferredName =
+          pendingBrandingChoiceRef.current?.mode === "custom" &&
+          pendingBrandingChoiceRef.current.name?.trim()
+            ? pendingBrandingChoiceRef.current.name.trim()
+            : null;
+        const created = await createAppForFirstSend({
+          api,
+          name: preferredName ?? firstSendTarget.creation.name,
+        });
+        if (created.snapshot) {
+          syncServerShellSnapshot(created.snapshot);
+        }
+        targetProjectIdForSend = created.projectId;
+        targetProjectKindForSend = "project";
+        targetProjectCwdForSend = created.appPath;
+        targetProjectScriptsForSend = [];
+        targetProjectDefaultModelSelectionForSend = {
+          provider: "engine",
+          model: "default",
+        } as const;
+      } else if (firstSendTarget.kind === "create-project") {
         const projectId = newProjectId();
         const createdAt = firstSendCreatedAt.toISOString();
         // Managed chat rows stay global; a folder mention creates an ordinary project and
@@ -9732,107 +9766,6 @@ export default function ChatView({
     [moveDraftThreadToProject, scheduleComposerFocus, threadId],
   );
 
-  const handleResetWorkspaceToHome = useCallback(() => {
-    // The inline reset action prevents pointer-down from stealing editor focus. Avoid refocusing
-    // an already-focused editor: focusAtEnd would move its cursor and schedule a redundant frame.
-    // Picker-menu resets still restore focus because the editor is no longer active in that path.
-    const restoreComposerFocus = !composerEditorRef.current?.isFocused();
-    if (isLocalDraftThread) {
-      if (!isHomeChatContainer) {
-        return (async () => {
-          if (!homeDir) {
-            throw new Error("Home folder is not available yet.");
-          }
-          const homeProjectId = await ensureHomeChatProject({ homeDir, chatWorkspaceRoot });
-          if (!homeProjectId) {
-            throw new Error("Unable to prepare a normal chat.");
-          }
-          const api = readNativeApi();
-          if (!api) {
-            throw new Error("App is still connecting. Try again in a moment.");
-          }
-          const hasHomeProjectInStore = useStore
-            .getState()
-            .projects.some((project) => project.id === homeProjectId);
-          if (!hasHomeProjectInStore) {
-            const { project, snapshot } = await waitForShellProjectById(api, homeProjectId);
-            if (!project || !snapshot) {
-              throw new Error(PROJECT_CREATE_SYNC_ERROR);
-            }
-            syncServerShellSnapshot(snapshot);
-          }
-          moveEmptyDraftToLocalProject(homeProjectId, { restoreComposerFocus });
-        })();
-      }
-      setDraftThreadContext(threadId, {
-        envMode: "local",
-        worktreePath: null,
-        workingDirectory: null,
-        branch: null,
-        lastKnownPr: null,
-      });
-      if (restoreComposerFocus) {
-        scheduleComposerFocus();
-      }
-      return;
-    }
-
-    if (activeThread) {
-      setStoreThreadWorkspace(activeThread.id, {
-        envMode: "local",
-        worktreePath: null,
-      });
-      const api = readNativeApi();
-      if (api && !hasNativeUserMessages && !activeThread.session) {
-        void api.orchestration.dispatchCommand({
-          type: "thread.meta.update",
-          commandId: newCommandId(),
-          threadId: activeThread.id,
-          envMode: "local",
-          worktreePath: null,
-        });
-      }
-    }
-    if (restoreComposerFocus) {
-      scheduleComposerFocus();
-    }
-  }, [
-    activeThread,
-    chatWorkspaceRoot,
-    hasNativeUserMessages,
-    homeDir,
-    isHomeChatContainer,
-    isLocalDraftThread,
-    moveEmptyDraftToLocalProject,
-    scheduleComposerFocus,
-    setDraftThreadContext,
-    setStoreThreadWorkspace,
-    syncServerShellSnapshot,
-    threadId,
-  ]);
-
-  const handleSelectWorkspaceRoot = useCallback(
-    (workspaceRoot: string) => {
-      if (isLocalDraftThread) {
-        setDraftThreadContext(threadId, {
-          envMode: "worktree",
-          worktreePath: workspaceRoot,
-        });
-        scheduleComposerFocus();
-        return;
-      }
-
-      if (activeThread) {
-        setStoreThreadWorkspace(activeThread.id, {
-          envMode: "worktree",
-          worktreePath: workspaceRoot,
-        });
-      }
-      scheduleComposerFocus();
-    },
-    [activeThread, isLocalDraftThread, scheduleComposerFocus, setStoreThreadWorkspace],
-  );
-
   const handleSelectProjectForEmptyDraft = useCallback(
     (projectId: ProjectId) => {
       if (!isLocalDraftThread) {
@@ -9855,52 +9788,6 @@ export default function ChatView({
       isLocalDraftThread,
       moveEmptyDraftToLocalProject,
       scheduleComposerFocus,
-    ],
-  );
-
-  const handleCreateProjectFromPickerPath = useCallback(
-    async (workspaceRoot: string) => {
-      if (!isLocalDraftThread) {
-        return;
-      }
-      const api = readNativeApi();
-      if (!api) {
-        throw new Error("App is still connecting. Try again in a moment.");
-      }
-
-      const existingProject = useStore
-        .getState()
-        .projects.find(
-          (project) =>
-            project.kind === "project" && workspaceRootsEqual(project.cwd, workspaceRoot),
-        );
-      if (existingProject) {
-        handleSelectProjectForEmptyDraft(existingProject.id);
-        return;
-      }
-
-      const creationResult = await createOrRecoverProjectFromPath({
-        api,
-        workspaceRoot,
-        createIfMissing: false,
-        loadSnapshot: () => api.orchestration.getShellSnapshot().catch(() => null),
-      });
-      if (creationResult.snapshot) {
-        syncServerShellSnapshot(creationResult.snapshot);
-      }
-      if (!creationResult.created && !creationResult.project) {
-        throw new Error(PROJECT_CREATE_EXISTING_SYNC_ERROR);
-      }
-      if (!creationResult.project) {
-        throw new Error(PROJECT_CREATE_SYNC_ERROR);
-      }
-      moveEmptyDraftToLocalProject(creationResult.project.id);
-    },
-    [
-      handleSelectProjectForEmptyDraft,
-      isLocalDraftThread,
-      moveEmptyDraftToLocalProject,
-      syncServerShellSnapshot,
     ],
   );
 
@@ -10093,6 +9980,7 @@ export default function ChatView({
   );
 
   const handleBrandingWizardSubmit = useCallback(async (value: BrandingWizardValue) => {
+    pendingBrandingChoiceRef.current = value;
     const { threadId: brandingThreadId, prompt: originalPrompt } =
       pendingBrandingPromptRef.current ?? {};
     pendingBrandingPromptRef.current = null;
@@ -11077,12 +10965,9 @@ export default function ChatView({
           align="start"
           side="top"
           triggerClassName="h-7 py-1"
-          showResetToHome={Boolean(resolvedThreadWorktreePath)}
-          selectedWorkspaceRoot={resolvedThreadWorktreePath}
-          onSelectWorkspaceRoot={handleSelectWorkspaceRoot}
-          onResetToHome={handleResetWorkspaceToHome}
+          selectionMode="project"
+          selectedProjectId={isHomeChatContainer ? null : (activeProject?.id ?? null)}
           onSelectProject={handleSelectProjectForEmptyDraft}
-          onCreateProjectFromPath={handleCreateProjectFromPickerPath}
         />
       ) : showEmptyLandingProjectPicker ? (
         <ProjectPicker
@@ -11091,11 +10976,7 @@ export default function ChatView({
           triggerClassName="h-7 py-1"
           selectionMode="project"
           selectedProjectId={activeProject.id}
-          selectedWorkspaceRoot={activeProject.cwd}
-          showResetToHome
           onSelectProject={handleSelectProjectForEmptyDraft}
-          onCreateProjectFromPath={handleCreateProjectFromPickerPath}
-          onResetToHome={handleResetWorkspaceToHome}
         />
       ) : (
         emptyLandingProjectChip
@@ -11984,40 +11865,7 @@ export default function ChatView({
                       data-testid="empty-landing-heading"
                       className="text-[26px] font-normal leading-[1.15] tracking-[-0.015em] text-foreground/95 sm:text-[30px]"
                     >
-                      {isEmptyChatLanding ? (
-                        "What should we work on?"
-                      ) : (
-                        <>
-                          What should we do in{" "}
-                          {showEmptyLandingProjectPicker ? (
-                            <ProjectPicker
-                              align="center"
-                              side="bottom"
-                              selectionMode="project"
-                              selectedProjectId={activeProject.id}
-                              selectedWorkspaceRoot={activeProject.cwd}
-                              showResetToHome
-                              onSelectProject={handleSelectProjectForEmptyDraft}
-                              onCreateProjectFromPath={handleCreateProjectFromPickerPath}
-                              onResetToHome={handleResetWorkspaceToHome}
-                              renderTrigger={
-                                <button
-                                  type="button"
-                                  data-testid="empty-landing-heading-project-trigger"
-                                  className="cursor-pointer rounded-sm text-inherit underline decoration-dotted decoration-[1.5px] underline-offset-[6px] transition-colors duration-150 ease-out hover:text-foreground/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 motion-reduce:transition-none"
-                                >
-                                  {activeProjectDisplayName ?? "this folder"}
-                                </button>
-                              }
-                            />
-                          ) : (
-                            <span className="text-inherit">
-                              {activeProjectDisplayName ?? "this folder"}
-                            </span>
-                          )}
-                          ?
-                        </>
-                      )}
+                      What should we build today?
                     </h2>
                   </div>
                   {composerSection}
