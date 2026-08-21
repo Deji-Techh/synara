@@ -62,8 +62,9 @@ import {
 
 const logger = log.scope("preview_host");
 
-/** Rolling line cap for preview/build log buffers (newest last). */
-const MAX_LOG_LINES = 200;
+/** Rolling line cap for preview/build log buffers (newest last). Matches the
+ * contracts PREVIEW_MAX_LOGS limit so no lines are dropped in transit. */
+const MAX_LOG_LINES = 500;
 /** How long `flutter run -d web-server` may take before it serves a URL. */
 const PREVIEW_START_TIMEOUT_MS = 120_000;
 /** Grace period between SIGTERM and SIGKILL when stopping a preview child. */
@@ -862,19 +863,8 @@ async function previewScreenshot(params: unknown): Promise<PreviewScreenshotResu
     } catch {}
   }
 
-  // BrowserWindow fallback (web preview capture) — already shimmed to empty; keep as last resort
-  try {
-    const { BrowserWindow } = await import("@/electron-shim");
-    const win = BrowserWindow.getAllWindows()[0];
-    if (win) {
-      const image = await win.webContents.capturePage();
-      if (!image.isEmpty()) {
-        const png = image.toPNG();
-        await fsp.writeFile(outputPath, png).catch(() => undefined);
-        return { success: true, outputPath, image: png.toString("base64") };
-      }
-    }
-  } catch {}
+  // No BrowserWindow fallback: the engine is a headless process and the
+  // electron shim can never produce a real window to capture.
 
   return { success: false, outputPath: "", image: null };
 }

@@ -38,7 +38,6 @@ export { promptContracts } from "./prompts";
 export { templateContracts } from "./templates";
 export { proposalContracts } from "./proposals";
 export { helpContracts, helpStreamContract } from "./help";
-export { capacitorContracts, capacitorEvents } from "./capacitor";
 export { securityContracts } from "./security";
 export { miscContracts, miscEvents } from "./misc";
 export { freeAgentQuotaContracts } from "./free_agent_quota";
@@ -61,7 +60,6 @@ export { promptClient } from "./prompts";
 export { templateClient } from "./templates";
 export { proposalClient } from "./proposals";
 export { helpClient, helpStreamClient } from "./help";
-export { capacitorClient, capacitorEventClient } from "./capacitor";
 export { securityClient } from "./security";
 export { miscClient, miscEventClient } from "./misc";
 export { freeAgentQuotaClient } from "./free_agent_quota";
@@ -308,7 +306,6 @@ import { promptClient } from "./prompts";
 import { templateClient } from "./templates";
 import { proposalClient } from "./proposals";
 import { helpClient, helpStreamClient } from "./help";
-import { capacitorClient, capacitorEventClient } from "./capacitor";
 import { securityClient } from "./security";
 import { miscClient, miscEventClient } from "./misc";
 import { freeAgentQuotaClient } from "./free_agent_quota";
@@ -361,7 +358,6 @@ export const ipc = {
   template: templateClient,
   proposal: proposalClient,
   help: helpClient,
-  capacitor: capacitorClient,
   security: securityClient,
   misc: miscClient,
   freeAgentQuota: freeAgentQuotaClient,
@@ -383,7 +379,6 @@ export const ipc = {
     misc: miscEventClient,
     appBlueprint: appBlueprintEventClient,
     tests: testsEventClient,
-    capacitor: capacitorEventClient,
     goal: goalEventClient,
   },
 };
