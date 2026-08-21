@@ -198,10 +198,10 @@ or tech demo:
   product name/icon is expected.
 
 ## Completion gate
-Before finishing any screen or build: \`flutter analyze\` must be clean, primary
-core flows must run, all five viewport classes and light/dark must be exercised,
-reduced motion and large text must not break layout, and the file narrows to
-"no issues". Re-read the design-engine contract and fix every violation.
+Before finishing any screen or build, satisfy every criterion of the
+design-engine contract above: clean \`flutter analyze\`, running primary core
+flows, all five viewport classes and light/dark exercised, reduced motion and
+large text intact, and all review-pass score thresholds met.
 `;
 
 /**
