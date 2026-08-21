@@ -66,6 +66,7 @@ function safeFlutterEnvironment(overrides?: Record<string, string>): NodeJS.Proc
 }
 import {
   AnalyzeRunResultSchema,
+  BuildCompletedPayloadSchema,
   BuildStartResultSchema,
   BuildStateResultSchema,
   ENGINE_PROTOCOL_VERSION,
@@ -78,7 +79,9 @@ import {
   TestResultSchema,
   PreviewScreenshotResultSchema,
 } from "@caide/engine/protocol";
-import { Effect, Fiber, Layer, PubSub, Ref, Stream } from "effect";
+import { Effect, Fiber, Layer, Option, PubSub, Ref, Stream } from "effect";
+
+import { ArtifactRegistry } from "../../persistence/Services/ArtifactRegistry.ts";
 
 import {
   ProviderAdapterProcessError,
@@ -235,6 +238,11 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
     const subagentsEventQueue = yield* PubSub.unbounded<EngineSubagentEvent>();
     const serverSettings = yield* ServerSettingsService;
     const secretStore = yield* ServerSecretStore;
+    // Optional: artifact registration is best-effort; tests and exotic hosts
+    // may mount the adapter without the persistence graph.
+    const artifactRegistry = Option.getOrUndefined(yield* Effect.serviceOption(ArtifactRegistry));
+    /** buildId → threadId for attributing engine `build:completed` events. */
+    const buildIdToThread = yield* Ref.make<ReadonlyMap<string, ThreadId>>(new Map());
 
     const engineModelConfig = (): Effect.Effect<
       | {
@@ -872,6 +880,50 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               status,
               startedAt: typeof p.startedAt === "number" ? p.startedAt : Date.now(),
             });
+            return;
+          }
+          case "build:completed": {
+            // The engine snapshotted a successful build into the app's stable
+            // artifact store; persist it in the global registry. Attribution
+            // uses the buildId→thread map captured at previewBuildStart; an
+            // unknown build (e.g. started before a server restart) is skipped.
+            if (artifactRegistry === undefined) return;
+            const parsed = BuildCompletedPayloadSchema.safeParse(payload);
+            if (!parsed.success) {
+              yield* Effect.logWarning("engine build:completed payload malformed");
+              return;
+            }
+            const threadId = (yield* Ref.get(buildIdToThread)).get(parsed.data.buildId);
+            if (threadId === undefined) {
+              yield* Effect.logWarning(
+                `engine build:completed for unknown buildId ${parsed.data.buildId}; skipping artifact registration`,
+              );
+              return;
+            }
+            yield* Ref.update(buildIdToThread, (map) => {
+              const next = new Map(map);
+              next.delete(parsed.data.buildId);
+              return next;
+            });
+            yield* artifactRegistry.insert({
+              threadId,
+              appDir: parsed.data.appDir,
+              filePath: parsed.data.filePath,
+              fileName: parsed.data.fileName,
+              kind: parsed.data.kind,
+              channel: parsed.data.channel,
+              target: parsed.data.target,
+              sizeBytes: parsed.data.sizeBytes,
+              sha256: parsed.data.sha256,
+              finishedAt: parsed.data.finishedAt,
+            }).pipe(
+              Effect.catch((error) =>
+                Effect.logWarning("artifact registry insert failed", {
+                  buildId: parsed.data.buildId,
+                  error: String(error),
+                }),
+              ),
+            );
             return;
           }
           default:
@@ -1966,6 +2018,11 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             );
           }
           context.previewAppDir = appDir;
+          yield* Ref.update(buildIdToThread, (map) => {
+            const next = new Map(map);
+            next.set(result.data.buildId, input.threadId);
+            return next;
+          });
           return { buildId: result.data.buildId };
         }),
 

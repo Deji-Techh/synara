@@ -2,6 +2,7 @@ import { Effect, Layer } from "effect";
 
 import { AgentGatewayCredentialsWithSecretsLive } from "../agentGateway/Layers/AgentGatewayCredentials";
 import { ServerConfig } from "../config";
+import { ArtifactRegistryLive } from "../persistence/Layers/ArtifactRegistry";
 import { ProviderCredentials, ProviderCredentialsLive } from "../providerCredentials";
 import { ServerSettingsLive } from "../serverSettings";
 import { ServerSecretStoreLive } from "../auth/Layers/ServerSecretStore";
@@ -89,6 +90,7 @@ export function makeServerProviderLayer(
         EngineAdapterLive.pipe(
           Layer.provide(ServerSettingsLive),
           Layer.provide(ServerSecretStoreLive),
+          Layer.provide(ArtifactRegistryLive),
         ),
       ),
       Layer.provide(apiAdaptersLayer),

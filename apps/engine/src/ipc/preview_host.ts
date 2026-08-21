@@ -951,6 +951,63 @@ async function computeSha256(filePath: string): Promise<string | null> {
   }
 }
 
+// ── artifact snapshots ───────────────────────────────────────────────
+
+/** Stable per-app store for build artifacts (survives rebuilds + flutter clean). */
+function artifactStoreDir(appDir: string): string {
+  return path.join(appDir, ".caide", "artifacts");
+}
+
+function artifactKindForTarget(target: BuildTarget): "apk" | "aab" | "ipa" {
+  if (target === "appbundle") return "aab";
+  if (target === "ipa") return "ipa";
+  return "apk";
+}
+
+/**
+ * Copy a successful build's binary into the stable artifact store and notify
+ * the supervisor (`build:completed`). Flutter overwrites `build/app/outputs/…`
+ * on every rebuild, so without this snapshot only the newest build survives.
+ * Best-effort: failures are logged but never fail the build itself.
+ */
+async function snapshotBuildArtifact(appDir: string, build: BuildEntry): Promise<void> {
+  if (!build.outputPath) return;
+  try {
+    const artifactId = randomUUID();
+    const fileName = path.basename(build.outputPath);
+    const destDir = path.join(artifactStoreDir(appDir), artifactId);
+    await fsp.mkdir(destDir, { recursive: true });
+    const destPath = path.join(destDir, fileName);
+    await fsp.copyFile(build.outputPath, destPath);
+    const sizeBytes = (await fsp.stat(destPath)).size;
+    const payload = {
+      buildId: build.buildId,
+      appDir,
+      artifactId,
+      filePath: destPath,
+      fileName,
+      kind: artifactKindForTarget(build.target),
+      channel: build.channel,
+      target: build.target,
+      sizeBytes,
+      sha256: build.sha256,
+      finishedAt: new Date().toISOString(),
+    };
+    await fsp.writeFile(
+      path.join(destDir, "artifact.json"),
+      JSON.stringify(payload, null, 2),
+      "utf8",
+    );
+    emit("build:completed", payload);
+    appendLogLines(build.logs, `[build] archived artifact ${fileName} (${artifactId})`);
+  } catch (error) {
+    appendLogLines(
+      build.logs,
+      `[build] WARNING: could not archive artifact: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
 async function maybeWriteSigningConfig(
   appDir: string,
   signing:
@@ -1099,6 +1156,7 @@ async function runBuild(appDir: string, build: BuildEntry): Promise<void> {
       build.logs,
       `[build] succeeded${build.outputPath ? `: ${build.outputPath}${build.sha256 ? ` (sha256:${build.sha256.slice(0, 12)}…)` : ""}` : ""}`,
     );
+    await snapshotBuildArtifact(appDir, build);
     return;
   }
   build.status = "failed";

@@ -200,6 +200,8 @@ export async function resolveAllowedLocalPreviewFile(input: {
 
 export async function createLocalPreviewGrant(input: {
   readonly requestedPath: string;
+  /** Override the default short preview TTL (artifact share links use hours). */
+  readonly ttlMs?: number;
 }): Promise<LocalPreviewGrantResult> {
   const requestedPath = input.requestedPath.trim();
   if (!requestedPath || requestedPath.includes("\0") || !path.isAbsolute(requestedPath)) {
@@ -215,7 +217,7 @@ export async function createLocalPreviewGrant(input: {
     throw new Error("Preview path is not a file.");
   }
 
-  const expiresAtMs = Date.now() + LOCAL_PREVIEW_GRANT_TTL_MS;
+  const expiresAtMs = Date.now() + (input.ttlMs ?? LOCAL_PREVIEW_GRANT_TTL_MS);
   const grant = crypto.randomUUID();
   localPreviewGrantByToken.set(grant, { realFilePath, expiresAtMs });
   pruneExpiredPreviewGrants();

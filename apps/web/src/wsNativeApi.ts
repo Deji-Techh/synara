@@ -54,6 +54,7 @@ import {
   type EngineActiveSubagent,
   type EngineSubagentEvent,
   PREVIEW_WS_METHODS,
+  ARTIFACTS_WS_METHODS,
   DATABASE_WS_METHODS,
 } from "@caide/contracts";
 import { VOICE_TRANSCRIPTION_UPLOAD_ROUTE_PATH } from "@caide/shared/binaryTransfer";
@@ -890,6 +891,12 @@ export function createWsNativeApi(): NativeApi {
         transport.request(PREVIEW_WS_METHODS.flutterToolchainStatus, input),
       flutterToolchainInstall: (input) =>
         transport.request(PREVIEW_WS_METHODS.flutterToolchainInstall, input, { timeoutMs: null }),
+    },
+    artifacts: {
+      list: (input) => transport.request(ARTIFACTS_WS_METHODS.list, input),
+      rename: (input) => transport.request(ARTIFACTS_WS_METHODS.rename, input),
+      delete: (input) => transport.request(ARTIFACTS_WS_METHODS.delete, input),
+      shareUrl: (input) => transport.request(ARTIFACTS_WS_METHODS.shareUrl, input),
     },
     database: {
       invoke: (input) => transport.request(DATABASE_WS_METHODS.invoke, input, { timeoutMs: null }),

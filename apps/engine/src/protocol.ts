@@ -399,6 +399,34 @@ export const BuildStateResultSchema = z.object({
 });
 export type BuildStateResult = z.infer<typeof BuildStateResultSchema>;
 
+// ── build artifacts ───────────────────────────────────────────────────
+
+export const ArtifactKindSchema = z.enum(["apk", "aab", "ipa"]);
+export type ArtifactKind = z.infer<typeof ArtifactKindSchema>;
+
+/**
+ * Emitted as a `build:completed` event-bus notification after a successful
+ * build has been snapshotted into the app's stable artifact store
+ * (`<appDir>/.caide/artifacts/<artifactId>/<fileName>`). The supervisor turns
+ * this into a persisted registry row; without the snapshot, successive builds
+ * would overwrite each other inside `build/app/outputs/`.
+ */
+export const BuildCompletedPayloadSchema = z.object({
+  buildId: z.string(),
+  appDir: z.string(),
+  artifactId: z.string(),
+  /** Absolute path of the snapshotted copy (stable across rebuilds). */
+  filePath: z.string(),
+  fileName: z.string(),
+  kind: ArtifactKindSchema,
+  channel: z.enum(["debug", "profile", "release"]).nullable(),
+  target: BuildTargetSchema,
+  sizeBytes: z.number().int().nonnegative(),
+  sha256: z.string().nullable(),
+  finishedAt: z.string(),
+});
+export type BuildCompletedPayload = z.infer<typeof BuildCompletedPayloadSchema>;
+
 export function isJsonRpcRequest(value: unknown): value is JsonRpcRequest {
   return JsonRpcRequestSchema.safeParse(value).success;
 }

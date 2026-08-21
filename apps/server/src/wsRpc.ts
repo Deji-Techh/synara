@@ -20,6 +20,7 @@ import {
   SUBAGENTS_WS_METHODS,
   WsBootstrapRpcGroup,
   WsCompatibilityError,
+  WsArtifactsRpcGroup,
   WsDeviceRpcGroup,
   WsFeatureRpcGroup,
   WsGoalsRpcGroup,
@@ -116,6 +117,8 @@ import { discoverSkillsCatalog, caideSkillsDir } from "./provider/skillsCatalog"
 import { recoverUnregisteredGitHubCheckout } from "./project/githubProjectRegistration";
 import { ProviderAdapterRegistry } from "./provider/Services/ProviderAdapterRegistry";
 import { makeWsPreviewHandlers } from "./provider/wsPreviewHandlers";
+import { makeWsArtifactsHandlers } from "./provider/wsArtifactsHandlers";
+import { ArtifactRegistry } from "./persistence/Services/ArtifactRegistry";
 import { makeWsDatabaseHandlers } from "./provider/wsDatabaseHandlers";
 import { ProviderHealth } from "./provider/Services/ProviderHealth";
 import { ProviderService } from "./provider/Services/ProviderService";
@@ -203,6 +206,7 @@ class WsRequestAdmissionMiddleware extends RpcMiddleware.Service<WsRequestAdmiss
 export const AdmittedWsFeatureRpcGroup = WsFeatureRpcGroup.merge(
   WsDeviceRpcGroup,
   WsPreviewRpcGroup,
+  WsArtifactsRpcGroup,
   WsGoalsRpcGroup,
   WsSubagentsRpcGroup,
 ).middleware(WsRequestAdmissionMiddleware);
@@ -378,6 +382,7 @@ const makeWsRpcHandlersLayer = () =>
   AdmittedWsFeatureRpcGroup.toLayer(
     Effect.gen(function* () {
       const checkpointDiffQuery = yield* CheckpointDiffQuery;
+      const artifactRegistry = yield* ArtifactRegistry;
       const automationService = yield* AutomationService;
       const config = yield* ServerConfig;
       const devServerManager = yield* DevServerManager;
@@ -946,9 +951,7 @@ const makeWsRpcHandlersLayer = () =>
             label: string,
           ) =>
             rpcEffect(
-              engineAdapterEffect.pipe(
-                Effect.flatMap((adapter) => adapter.goals.listRuns(input)),
-              ),
+              engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.listRuns(input))),
               label,
             ),
           pause: (
@@ -2314,6 +2317,8 @@ const makeWsRpcHandlersLayer = () =>
               Stream.mapError((cause) => toWsRpcError(cause, "Automation event stream failed")),
             ),
           ),
+
+        ...makeWsArtifactsHandlers(artifactRegistry),
 
         ...makeWsPreviewHandlers(providerAdapterRegistry, {
           ensureEngineSession: (threadId) =>

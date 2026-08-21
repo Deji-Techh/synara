@@ -38,6 +38,7 @@ export * from "./caideApps";
 export * from "./device";
 export * from "./database";
 export * from "./preview";
+export * from "./artifacts";
 export * from "./rpc";
 export * from "./goals";
 export * from "./goals.rpc";

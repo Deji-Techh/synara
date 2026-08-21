@@ -52,6 +52,8 @@ export const ArtifactRecord = Schema.Struct({
   kind: ArtifactKind,
   channel: Schema.NullOr(ArtifactChannel),
   target: TrimmedNonEmptyString.check(Schema.isMaxLength(64)),
+  /** Absolute snapshot path (stable per-build copy inside the app workspace). */
+  filePath: TrimmedNonEmptyString.check(Schema.isMaxLength(1024)),
   sizeBytes: NonNegativeInt,
   sha256: Schema.NullOr(TrimmedNonEmptyString),
   createdAt: IsoDateTime,
