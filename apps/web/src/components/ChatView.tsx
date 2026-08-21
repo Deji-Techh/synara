@@ -2261,6 +2261,7 @@ export default function ChatView({
       xai: resolveHint("xai"),
       fireworks: resolveHint("fireworks"),
       opencodeZen: resolveHint("opencodeZen"),
+      opencodeGo: resolveHint("opencodeGo"),
     };
   }, [
     activeProject?.defaultModelSelection,
@@ -7874,6 +7875,7 @@ export default function ChatView({
       selectedWorkspaceRoot: isHomeChatContainer ? (resolvedThreadWorktreePath ?? null) : null,
       title,
       titleSeed,
+      composerModelSelection: selectedModelSelectionForSend,
     });
     let {
       targetProjectId: targetProjectIdForSend,
@@ -7922,6 +7924,7 @@ export default function ChatView({
         const created = await createAppForFirstSend({
           api,
           name: preferredName ?? firstSendTarget.creation.name,
+          modelSelection: selectedModelSelectionForSend,
         });
         if (created.snapshot) {
           syncServerShellSnapshot(created.snapshot);
@@ -7930,10 +7933,9 @@ export default function ChatView({
         targetProjectKindForSend = "project";
         targetProjectCwdForSend = created.appPath;
         targetProjectScriptsForSend = [];
-        targetProjectDefaultModelSelectionForSend = {
-          provider: "engine",
-          model: "default",
-        } as const;
+        // The server seeded the app project/thread with the composer's pick;
+        // mirror it locally so the bound thread's picker state matches.
+        targetProjectDefaultModelSelectionForSend = selectedModelSelectionForSend;
       } else if (firstSendTarget.kind === "create-project") {
         const projectId = newProjectId();
         const createdAt = firstSendCreatedAt.toISOString();

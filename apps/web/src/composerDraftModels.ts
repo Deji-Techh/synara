@@ -682,7 +682,11 @@ export function deriveEffectiveComposerModelState(input: {
     unlistedDraftModel ??
     input.availableModelOptionsByProvider?.[input.selectedProvider]?.[0]?.slug ??
     baseModel ??
-    getDefaultModel("groq");
+    // Provider-scoped last resort. Never leak another provider's default here:
+    // engine-bound threads with no catalog previously resolved to Groq's Llama,
+    // which made freshly created apps look like the pick was "reverted".
+    getDefaultModel(input.selectedProvider) ??
+    "default";
   const modelOptions = deriveEffectiveComposerModelOptions(input);
 
   return {

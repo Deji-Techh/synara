@@ -61,6 +61,8 @@ export function resolveFirstSendTarget(input: {
   selectedWorkspaceRoot: string | null;
   title: string;
   titleSeed: string;
+  /** The composer's current provider/model pick, seeded into created projects. */
+  composerModelSelection?: ModelSelection | null;
 }): FirstSendTargetResolution {
   const {
     activeProject,
@@ -70,6 +72,7 @@ export function resolveFirstSendTarget(input: {
     selectedWorkspaceRoot,
     title,
     titleSeed,
+    composerModelSelection,
   } = input;
 
   if (!isFirstMessage || !isHomeChatContainer) {
@@ -109,10 +112,14 @@ export function resolveFirstSendTarget(input: {
       title: buildProjectTitleFromWorkspaceRoot(selectedWorkspaceRoot),
       kind: "project",
       createWorkspaceRootIfMissing: false,
-      defaultModelSelection: {
-        provider: "groq",
-        model: DEFAULT_MODEL_BY_PROVIDER.groq,
-      },
+      // Seed the project with what the user actually picked; the historical
+      // groq default only applies when the composer had no explicit selection.
+      defaultModelSelection:
+        composerModelSelection ??
+        ({
+          provider: "groq",
+          model: DEFAULT_MODEL_BY_PROVIDER.groq,
+        } satisfies ModelSelection),
     },
   };
 }
@@ -128,6 +135,8 @@ const CREATE_APP_RETRY_DELAY_MS = 400;
 export async function createAppForFirstSend(input: {
   readonly api: NativeApi;
   readonly name: string;
+  /** Composer model selection seeded into the created app project + thread. */
+  readonly modelSelection?: ModelSelection;
 }): Promise<{
   readonly projectId: Project["id"];
   readonly appPath: string;
@@ -141,7 +150,10 @@ export async function createAppForFirstSend(input: {
     const candidateName =
       attempt === 0 ? input.name : `${input.name}-${attempt + 1}`.slice(0, 60);
     try {
-      created = await api.app.createApp({ name: candidateName });
+      created = await api.app.createApp({
+        name: candidateName,
+        ...(input.modelSelection ? { modelSelection: input.modelSelection } : {}),
+      });
     } catch (error) {
       lastError = error;
       const message = error instanceof Error ? error.message : String(error);

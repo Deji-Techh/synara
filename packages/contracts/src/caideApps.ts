@@ -1,5 +1,6 @@
 import { Schema } from "effect";
 import { ProjectId, ThreadId, TrimmedNonEmptyString } from "./baseSchemas";
+import { ModelSelection } from "./orchestration";
 
 // FILE: caideApps.ts
 // Purpose: Contracts for the dyad-style app-creation flow — new apps are
@@ -11,6 +12,12 @@ const CAIDE_APP_NAME_MAX_LENGTH = 64;
 export const AppCreateInput = Schema.Struct({
   /** Human-facing app name; the server slugifies it into the folder name. */
   name: TrimmedNonEmptyString.check(Schema.isMaxLength(CAIDE_APP_NAME_MAX_LENGTH)),
+  /**
+   * Composer model selection to seed the created project and its first thread
+   * with. When omitted the server falls back to the engine default so plain
+   * Home sends keep their Builder-first behavior.
+   */
+  modelSelection: Schema.optional(ModelSelection),
 });
 export type AppCreateInput = typeof AppCreateInput.Type;
 

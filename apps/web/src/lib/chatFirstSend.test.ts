@@ -110,3 +110,40 @@ describe("resolveFirstSendTarget", () => {
     });
   });
 });
+
+describe("resolveFirstSendTarget composer model selection", () => {
+  const baseInput = {
+    activeProject: makeProject(),
+    createdAt: new Date(2026, 5, 11, 23, 30, 43),
+    isFirstMessage: true,
+    isHomeChatContainer: true,
+    projects: [makeProject()],
+    title: "Build it",
+    titleSeed: "Build it",
+  };
+
+  it("seeds a folder-mention project with the composer's picked model", () => {
+    const result = resolveFirstSendTarget({
+      ...baseInput,
+      selectedWorkspaceRoot: "/Users/tester/Developer/app",
+      composerModelSelection: { provider: "opencodeZen", model: "mimo-v2.5-free" },
+    });
+
+    expect(result.kind === "create-project" && result.creation.defaultModelSelection).toEqual({
+      provider: "opencodeZen",
+      model: "mimo-v2.5-free",
+    });
+  });
+
+  it("keeps the groq default only when the composer had no explicit pick", () => {
+    const result = resolveFirstSendTarget({
+      ...baseInput,
+      selectedWorkspaceRoot: "/Users/tester/Developer/app",
+    });
+
+    expect(result.kind === "create-project" && result.creation.defaultModelSelection).toEqual({
+      provider: "groq",
+      model: "llama-3.3-70b-versatile",
+    });
+  });
+});

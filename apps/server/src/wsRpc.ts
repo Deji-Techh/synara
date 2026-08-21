@@ -27,6 +27,7 @@ import {
   WsPreviewRpcGroup,
   WsRpcError,
   WsSubagentsRpcGroup,
+  type AppCreateInput,
   PullRequestsUnavailableError,
   type DeviceEvent,
   type GitActionProgressEvent,
@@ -1149,7 +1150,7 @@ const makeWsRpcHandlersLayer = () =>
           .replace(/^-+|-+$/g, "")
           .slice(0, 40) || `app-${Date.now().toString(36)}`;
 
-      const createCaideApp = (input: { name: string }) =>
+      const createCaideApp = (input: AppCreateInput) =>
         Effect.gen(function* () {
           const trimmedName = input.name.trim();
           const slug = slugifyCaideAppName(trimmedName);
@@ -1159,6 +1160,9 @@ const makeWsRpcHandlersLayer = () =>
               new WsRpcError({ message: `App already exists at: ${appPath}` }),
             );
           }
+          // Seed the app with the composer's picked provider/model so a Home
+          // first send does not silently fall back to the engine default.
+          const modelSelection = input.modelSelection ?? { provider: "engine", model: "default" };
           const created = yield* engineAdapterEffect.pipe(
             Effect.flatMap((adapter) => adapter.createApp({ name: slug })),
             Effect.mapError((cause) => new WsRpcError({ message: cause.message })),
@@ -1176,7 +1180,7 @@ const makeWsRpcHandlersLayer = () =>
             title: trimmedName,
             workspaceRoot: created.appPath,
             createWorkspaceRootIfMissing: true,
-            defaultModelSelection: { provider: "engine", model: "default" },
+            defaultModelSelection: modelSelection,
             createdAt,
           } as OrchestrationCommand);
 
@@ -1186,7 +1190,7 @@ const makeWsRpcHandlersLayer = () =>
             threadId,
             projectId,
             title: trimmedName,
-            modelSelection: { provider: "engine", model: "default" },
+            modelSelection,
             runtimeMode: "full-access",
             interactionMode: "default",
             branch: null,
