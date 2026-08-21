@@ -33,7 +33,9 @@ export type BackgroundTask = z.infer<typeof BackgroundTaskSchema>;
 export const sidebarContracts = {
   getActiveSubagents: defineContract({
     channel: "sidebar:getActiveSubagents",
-    input: z.object({ appId: z.number() }),
+    // appId is optional: scoped subagents are filtered to it when present,
+    // engine-wide subagents are always included.
+    input: z.object({ appId: z.number().optional() }),
     output: z.array(ActiveSubagentSchema),
   }),
   getArtifacts: defineContract({

@@ -68,7 +68,6 @@ export interface ArtifactRegistryShape {
   ) => Effect.Effect<ArtifactRecord | null, ArtifactRegistryError>;
 }
 
-export class ArtifactRegistry extends ServiceMap.Service<
-  ArtifactRegistry,
-  ArtifactRegistryShape
->()("caide/persistence/Services/ArtifactRegistry/ArtifactRegistry") {}
+export class ArtifactRegistry extends ServiceMap.Service<ArtifactRegistry, ArtifactRegistryShape>()(
+  "caide/persistence/Services/ArtifactRegistry/ArtifactRegistry",
+) {}

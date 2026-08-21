@@ -186,9 +186,7 @@ const makeArtifactRegistry = Effect.gen(function* () {
     `,
   });
 
-  const getRow = (
-    artifactId: string,
-  ): Effect.Effect<ArtifactDbRow | null, PersistenceSqlError> =>
+  const getRow = (artifactId: string): Effect.Effect<ArtifactDbRow | null, PersistenceSqlError> =>
     findRowById({ artifactId }).pipe(
       Effect.map((rows) => rows[0] ?? null),
       Effect.mapError(toPersistenceSqlError("ArtifactRegistry.get:query")),

@@ -1,8 +1,11 @@
-import { type AutomationDefinition, type AutomationRun } from "@caide/contracts";
+import {
+  type AutomationDefinition,
+  type AutomationRun,
+  type ProviderStartOptions,
+} from "@caide/contracts";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 
-import { getProviderStartOptions, useAppSettings } from "~/appSettings";
 import {
   CHAT_SURFACE_HEADER_DIVIDER_CLASS_NAME,
   CHAT_SURFACE_HEADER_HEIGHT_CLASS,
@@ -180,7 +183,6 @@ function rowSubtitle(
 
 function AutomationsRouteView() {
   const navigate = useNavigate();
-  const { settings } = useAppSettings();
   const desktopTopBarTrafficLightGutterClassName = useDesktopTopBarTrafficLightGutterClassName();
   const desktopTopBarWindowControlsGutterClassName =
     useDesktopTopBarWindowControlsGutterClassName();
@@ -213,7 +215,7 @@ function AutomationsRouteView() {
     deleteMutation,
     runsByAutomationId,
   } = useAutomations((threadId) => void navigate({ to: "/$threadId", params: { threadId } }));
-  const providerOptionsForDispatch = getProviderStartOptions(settings);
+  const providerOptionsForDispatch: ProviderStartOptions | undefined = undefined;
 
   const updateDialogForm = (nextForm: AutomationFormState) => {
     setForm(nextForm);

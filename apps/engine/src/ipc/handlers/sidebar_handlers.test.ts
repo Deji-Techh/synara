@@ -101,10 +101,7 @@ describe("sidebar getActiveSubagents handler", () => {
           chatId: 8,
         },
       ],
-      [
-        "unscoped",
-        { id: "unscoped", name: "Explore", description: "d", startedAt: 3 },
-      ],
+      ["unscoped", { id: "unscoped", name: "Explore", description: "d", startedAt: 3 }],
     ]);
     try {
       const result = (await handler({} as any, { appId: 1 })) as Array<{ id: string }>;

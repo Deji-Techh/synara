@@ -905,25 +905,27 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               next.delete(parsed.data.buildId);
               return next;
             });
-            yield* artifactRegistry.insert({
-              threadId,
-              appDir: parsed.data.appDir,
-              filePath: parsed.data.filePath,
-              fileName: parsed.data.fileName,
-              kind: parsed.data.kind,
-              channel: parsed.data.channel,
-              target: parsed.data.target,
-              sizeBytes: parsed.data.sizeBytes,
-              sha256: parsed.data.sha256,
-              finishedAt: parsed.data.finishedAt,
-            }).pipe(
-              Effect.catch((error) =>
-                Effect.logWarning("artifact registry insert failed", {
-                  buildId: parsed.data.buildId,
-                  error: String(error),
-                }),
-              ),
-            );
+            yield* artifactRegistry
+              .insert({
+                threadId,
+                appDir: parsed.data.appDir,
+                filePath: parsed.data.filePath,
+                fileName: parsed.data.fileName,
+                kind: parsed.data.kind,
+                channel: parsed.data.channel,
+                target: parsed.data.target,
+                sizeBytes: parsed.data.sizeBytes,
+                sha256: parsed.data.sha256,
+                finishedAt: parsed.data.finishedAt,
+              })
+              .pipe(
+                Effect.catch((error) =>
+                  Effect.logWarning("artifact registry insert failed", {
+                    buildId: parsed.data.buildId,
+                    error: String(error),
+                  }),
+                ),
+              );
             return;
           }
           default:

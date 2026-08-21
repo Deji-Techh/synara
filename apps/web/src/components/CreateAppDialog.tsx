@@ -5,6 +5,8 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 
+import type { AppCreateResult } from "@caide/contracts";
+
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -63,7 +65,7 @@ function generateCuteName(): string {
 export function CreateAppDialog(props: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreated?: (appId: string, chatId: number) => void;
+  onCreated?: (result: AppCreateResult) => void;
 }) {
   const [name, setName] = useState(generateCuteName());
   const [submitting, setSubmitting] = useState(false);
@@ -85,11 +87,6 @@ export function CreateAppDialog(props: {
       setError("Enter an app name.");
       return;
     }
-    const slug = toSlug(trimmed);
-    if (!slug) {
-      setError("App name must contain letters or numbers.");
-      return;
-    }
     const api = readNativeApi();
     if (!api) {
       setError("App server is unavailable.");
@@ -98,39 +95,11 @@ export function CreateAppDialog(props: {
     setSubmitting(true);
     setError(null);
     try {
-      // Prefer the engine's Flutter scaffold (app.createApp) if present,
-      // otherwise fall back to orchestration project.create under ~/caide-apps.
-      // The fallback expands "~" server-side and creates the dir when
-      // createWorkspaceRootIfMissing is true (dispatchCommandNormalization).
-      const appApi = (
-        api as unknown as {
-          app?: {
-            createApp: (p: {
-              name: string;
-            }) => Promise<{ app: { id: number; name: string }; chatId: number }>;
-          };
-        }
-      ).app;
-      if (appApi?.createApp) {
-        const result = await appApi.createApp({ name: slug });
-        props.onCreated?.(String(result.app.id), result.chatId);
-        props.onOpenChange(false);
-        return;
-      }
-      const workspaceRoot = `~/caide-apps/${slug}`;
-      const now = new Date().toISOString();
-      const projectId = `proj-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      await api.orchestration.dispatchCommand({
-        type: "project.create",
-        commandId: `cmd-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        projectId: projectId as unknown as never,
-        kind: "project",
-        title: trimmed,
-        workspaceRoot,
-        createWorkspaceRootIfMissing: true,
-        createdAt: now,
-      } as never);
-      props.onCreated?.(projectId, 0);
+      // The server RPC mirrors dyad's createApp end to end: engine app row +
+      // first chat + Flutter scaffold + git initial commit, then binds an
+      // orchestration project + first thread to ~/caide-apps/<slug>.
+      const result = await api.app.createApp({ name: trimmed });
+      props.onCreated?.(result);
       props.onOpenChange(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

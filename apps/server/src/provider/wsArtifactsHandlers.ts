@@ -64,9 +64,9 @@ export function makeWsArtifactsHandlers(
         Effect.mapError((cause) => mapError(cause, "Failed to rename artifact")),
       ),
     [ARTIFACTS_WS_METHODS.delete]: (input) =>
-      artifactRegistry.delete(input).pipe(
-        Effect.mapError((cause) => mapError(cause, "Failed to delete artifact")),
-      ),
+      artifactRegistry
+        .delete(input)
+        .pipe(Effect.mapError((cause) => mapError(cause, "Failed to delete artifact"))),
     [ARTIFACTS_WS_METHODS.shareUrl]: (input) =>
       artifactRegistry.get(input.artifactId).pipe(
         Effect.flatMap((artifact) => {

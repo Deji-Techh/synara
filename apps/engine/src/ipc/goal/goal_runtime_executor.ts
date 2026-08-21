@@ -97,9 +97,7 @@ async function autoApproveConsent(
       { sender: busSender(), processId: process.pid, frameId: 0 },
       { requestId, decision: "accept-once" },
     );
-    logger.info(
-      `auto-approved consent for goal-run chat ${payload.chatId} (request ${requestId})`,
-    );
+    logger.info(`auto-approved consent for goal-run chat ${payload.chatId} (request ${requestId})`);
     return true;
   } catch (error) {
     logger.warn(`auto-approve for request ${requestId} failed:`, error);

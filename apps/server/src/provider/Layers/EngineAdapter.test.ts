@@ -276,6 +276,10 @@ describe("EngineAdapter", () => {
           expect(activity.length).toBeGreaterThan(0);
           expect(activity.some((e) => e.goalId === created.id)).toBe(true);
 
+          // Runs timeline is listable per goal (drives web run freshness).
+          const runs = yield* adapter.goals.listRuns({ goalId: created.id });
+          expect(Array.isArray(runs)).toBe(true);
+
           const events = yield* Fiber.join(eventsFiber);
           return { created, active, activity, events };
         }),
@@ -291,6 +295,29 @@ describe("EngineAdapter", () => {
     expect(eventTypes).toContain("goal.updated");
     expect(eventTypes).toContain("goal.run-requested");
   }, 120_000);
+
+  it("subagents bridge: getActive snapshot proxies onto the shared engine", async () => {
+    const threadId = ThreadId.makeUnsafe(randomUUID());
+    const { fixturePath } = makeIsolatedFixture();
+
+    const result = await Effect.runPromise(
+      provideAdapter(
+        Effect.gen(function* () {
+          const adapter = yield* EngineAdapter;
+          yield* adapter.startSession({
+            threadId,
+            runtimeMode: "full-access",
+            cwd: fixturePath,
+          });
+          return yield* adapter.subagents.getActive({});
+        }),
+      ),
+    );
+    // No subagents have been spawned in a fresh engine; the snapshot must be
+    // an empty array, proving the engine channel is wired end-to-end.
+    expect(Array.isArray(result)).toBe(true);
+    expect(result).toHaveLength(0);
+  }, 60_000);
 
   it("createApp scaffolds a Flutter app + first chat under the isolated apps dir", async () => {
     const { appsDir, userDataDir } = makeIsolatedFixture();

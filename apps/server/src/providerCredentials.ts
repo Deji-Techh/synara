@@ -16,9 +16,7 @@ export interface ProviderCredentialsShape {
     provider: ProviderKind,
     apiKey: string | null,
   ) => Effect.Effect<void, SecretStoreError>;
-  readonly isApiKeyConfigured: (
-    provider: ProviderKind,
-  ) => Effect.Effect<boolean, SecretStoreError>;
+  readonly isApiKeyConfigured: (provider: ProviderKind) => Effect.Effect<boolean, SecretStoreError>;
 }
 
 export class ProviderCredentials extends ServiceMap.Service<

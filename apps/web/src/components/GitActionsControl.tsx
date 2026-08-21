@@ -53,7 +53,7 @@ import {
   type GitCreatePrDialogBrowserRequest,
   type GitCreatePrDialogSubmission,
 } from "./GitCreatePrDialog";
-import { getProviderStartOptions, useAppSettings } from "~/appSettings";
+import { useAppSettings } from "~/appSettings";
 import { formatClockDuration } from "~/session-logic";
 import { Button } from "~/components/ui/button";
 import {
@@ -366,10 +366,9 @@ export default function GitActionsControl({
   const isPanel = variant === "panel";
   const { settings } = useAppSettings();
   // Manual memoization kept: this file does not compile under React Compiler (see compile-report).
-  const providerOptions = useMemo(() => getProviderStartOptions(settings), [settings]);
   const gitTextGenerationModelSelection = useMemo(
     (): ModelSelection => ({
-      provider: settings.textGenerationProvider ?? "openai",
+      provider: settings.textGenerationProvider ?? "groq",
       model: settings.textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL,
     }),
     [settings.textGenerationModel, settings.textGenerationProvider],
@@ -457,10 +456,8 @@ export default function GitActionsControl({
     gitRunStackedActionMutationOptions({
       cwd: gitCwd,
       queryClient,
-      codexHomePath: settings.codexHomePath || null,
       model: settings.textGenerationModel ?? null,
       modelSelection: gitTextGenerationModelSelection,
-      ...(providerOptions ? { providerOptions } : {}),
     }),
   );
   const pullMutation = useMutation(gitPullMutationOptions({ cwd: gitCwd, queryClient }));

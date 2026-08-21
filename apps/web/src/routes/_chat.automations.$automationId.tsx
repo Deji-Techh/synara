@@ -19,7 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { getProviderStartOptions, useAppSettings } from "~/appSettings";
+import { useAppSettings } from "~/appSettings";
 import { AutomationProposalActions } from "~/components/automation/AutomationProposalActions";
 import {
   CHAT_SURFACE_HEADER_DIVIDER_CLASS_NAME,
@@ -227,7 +227,7 @@ function AutomationDetailView() {
   const streamedMemory =
     (data.memories ?? []).find((candidate) => candidate.automationId === automationId) ?? null;
   const memory = streamedMemory ?? memoryQuery.data ?? null;
-  const providerOptionsForDispatch = getProviderStartOptions(settings);
+  const providerOptionsForDispatch: ProviderStartOptions | undefined = undefined;
 
   if (!definition) {
     return (
