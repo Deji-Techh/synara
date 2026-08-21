@@ -239,6 +239,28 @@ export const FlutterToolchainStatusResult = Schema.Struct({
   flutterBin: Schema.String.check(Schema.isMaxLength(PREVIEW_PATH_MAX_LENGTH)),
   estimatedDownloadBytes: Schema.Number,
   unsupportedReason: Schema.NullOr(Schema.String),
+  /**
+   * Live install progress, present while (or right after) a managed-SDK
+   * install runs. Null/absent when no install is in flight.
+   */
+  installProgress: Schema.optional(
+    Schema.NullOr(
+      Schema.Struct({
+        phase: Schema.Literals([
+          "preparing",
+          "download-flutter",
+          "extract-flutter",
+          "verifying",
+          "done",
+        ] as const),
+        percent: Schema.Number,
+        componentPercent: Schema.Number,
+        downloadedBytes: Schema.Number,
+        totalBytes: Schema.NullOr(Schema.Number),
+        message: Schema.String.check(Schema.isMaxLength(PREVIEW_LOG_MAX_LENGTH)),
+      }),
+    ),
+  ),
 });
 export type FlutterToolchainStatusResult = typeof FlutterToolchainStatusResult.Type;
 

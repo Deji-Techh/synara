@@ -25,6 +25,7 @@ import type {
   PreviewStopResult,
   PreviewTestResult,
   PreviewScreenshotResult,
+  type FlutterToolchainStatusResult,
 } from "@caide/contracts";
 import type { ProviderSession, ThreadId } from "@caide/contracts";
 import type { ProviderAdapterError } from "../Errors.ts";
@@ -110,6 +111,7 @@ export interface EnginePreviewOps {
       flutterBin: string;
       estimatedDownloadBytes: number;
       unsupportedReason: string | null;
+      installProgress?: FlutterToolchainStatusResult["installProgress"];
     },
     ProviderAdapterError
   >;

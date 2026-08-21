@@ -81,6 +81,18 @@ type ProgressCallback = (progress: FlutterToolchainProgress) => void;
 
 let activeInstall: Promise<FlutterToolchainStatus> | null = null;
 
+/**
+ * Newest progress emission from the running (or just-finished) install, so
+ * status polls can report real progress without a push channel. Cleared when
+ * a new install starts.
+ */
+let lastInstallProgress: FlutterToolchainProgress | null = null;
+
+/** Latest install progress emission, or null when none is in flight. */
+export function getLastManagedFlutterInstallProgress(): FlutterToolchainProgress | null {
+  return lastInstallProgress;
+}
+
 function executableName(name: string): string {
   return process.platform === "win32" ? `${name}.exe` : name;
 }
@@ -146,6 +158,7 @@ function throwIfAborted(signal?: AbortSignal): void {
 }
 
 function emit(onProgress: ProgressCallback | undefined, progress: FlutterToolchainProgress): void {
+  lastInstallProgress = progress;
   onProgress?.(progress);
 }
 
@@ -434,6 +447,7 @@ export async function installManagedFlutterToolchain(params: {
   }
   if (activeInstall) return activeInstall;
 
+  lastInstallProgress = null;
   const installPromise = (async () => {
     const root = getManagedFlutterRoot();
     const stagingRoot = path.join(root, ".staging");

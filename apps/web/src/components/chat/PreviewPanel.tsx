@@ -162,6 +162,7 @@ function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean 
     message: string;
   } | null>(null);
   const [installing, setInstalling] = useState(false);
+  const installingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
@@ -178,8 +179,21 @@ function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean 
           version: string;
           estimatedDownloadBytes: number;
           unsupportedReason: string | null;
+          installProgress?: {
+            phase: string;
+            percent: number;
+            componentPercent: number;
+            downloadedBytes: number;
+            totalBytes: number | null;
+            message: string;
+          } | null;
         };
         setStatus(r);
+        // The engine reports real managed-SDK install progress through the
+        // status payload; drive the bar from it instead of the pinned seed.
+        if (installingRef.current && r.installProgress) {
+          setProgress(r.installProgress);
+        }
       })
       .catch(() => {});
   }, [props.threadId]);
@@ -206,6 +220,7 @@ function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean 
 
   const handleInstall = useCallback(() => {
     setInstalling(true);
+    installingRef.current = true;
     setError(null);
     setProgress({
       phase: "preparing",
@@ -223,6 +238,7 @@ function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean 
       .flutterToolchainInstall({ threadId: props.threadId })
       .then(() => {
         setInstalling(false);
+        installingRef.current = false;
         setProgress({
           phase: "done",
           percent: 100,
@@ -241,6 +257,7 @@ function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean 
       })
       .catch((e: unknown) => {
         setInstalling(false);
+        installingRef.current = false;
         const msg = e instanceof Error ? e.message : String(e);
         setError(msg);
         toastManager.add({

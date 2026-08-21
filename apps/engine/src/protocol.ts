@@ -288,6 +288,8 @@ export const FlutterToolchainStatusResultSchema = z.object({
   flutterBin: z.string(),
   estimatedDownloadBytes: z.number(),
   unsupportedReason: z.string().nullable(),
+  /** Live managed-SDK install progress; null/absent when no install is in flight. */
+  installProgress: FlutterToolchainProgressSchema.nullable().optional(),
 });
 export type FlutterToolchainStatusResult = z.infer<typeof FlutterToolchainStatusResultSchema>;
 

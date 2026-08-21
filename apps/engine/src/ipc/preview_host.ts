@@ -55,6 +55,7 @@ import type { RunAppTestsResult, TestResult as EngineTestResult } from "@/ipc/ty
 import { emit } from "@/ipc/utils/event_bus";
 import { createHash } from "node:crypto";
 import {
+  getLastManagedFlutterInstallProgress,
   inspectManagedFlutterToolchain,
   installManagedFlutterToolchain,
 } from "@/ipc/services/managed_flutter_toolchain_service";
@@ -1180,8 +1181,12 @@ async function flutterToolchainStatus(): Promise<{
   flutterBin: string;
   estimatedDownloadBytes: number;
   unsupportedReason: string | null;
+  installProgress?: ReturnType<typeof getLastManagedFlutterInstallProgress>;
 }> {
-  return inspectManagedFlutterToolchain();
+  return {
+    ...inspectManagedFlutterToolchain(),
+    installProgress: getLastManagedFlutterInstallProgress(),
+  };
 }
 
 async function flutterToolchainInstall(): Promise<{
