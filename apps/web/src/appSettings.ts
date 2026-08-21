@@ -151,6 +151,7 @@ const BUILT_IN_MODEL_SLUGS_BY_PROVIDER: Record<ProviderKind, ReadonlySet<string>
   xai: new Set(getModelOptions("xai").map((option) => option.slug)),
   fireworks: new Set(getModelOptions("fireworks").map((option) => option.slug)),
   opencodeZen: new Set(getModelOptions("opencodeZen").map((option) => option.slug)),
+  opencodeGo: new Set(getModelOptions("opencodeGo").map((option) => option.slug)),
 };
 
 const withDefaults =
@@ -273,6 +274,9 @@ export const AppSettingsSchema = Schema.Struct({
   opencodeZenApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
   opencodeZenApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
   opencodeZenBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  opencodeGoApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
+  opencodeGoApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
+  opencodeGoBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
   defaultThreadEnvMode: EnvMode.pipe(withDefaults(() => "local" as const satisfies EnvMode)),
   confirmThreadDelete: Schema.Boolean.pipe(withDefaults(() => true)),
   confirmThreadArchive: Schema.Boolean.pipe(withDefaults(() => false)),
@@ -338,6 +342,7 @@ export const AppSettingsSchema = Schema.Struct({
   customXaiModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   customFireworksModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   customOpenCodeZenModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
+  customOpenCodeGoModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   textGenerationProvider: PersistedProviderKind.pipe(withDefaults(() => "openai" as const)),
   textGenerationModel: Schema.optional(TrimmedNonEmptyString),
   uiFontFamily: Schema.String.check(Schema.isMaxLength(256)).pipe(withDefaults(() => "")),
@@ -602,6 +607,15 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     placeholder: "your-opencode-zen-model-slug",
     example: "deepseek-v4-flash-free",
   },
+  opencodeGo: {
+    provider: "opencodeGo",
+    settingsKey: "customOpenCodeGoModels",
+    defaultSettingsKey: "customOpenCodeGoModels",
+    title: "OpenCode Go",
+    description: "Save additional OpenCode Go model slugs for the picker.",
+    placeholder: "your-opencode-go-model-slug",
+    example: "deepseek-v4-flash-free",
+  },
 };
 
 export const MODEL_PROVIDER_SETTINGS = Object.values(PROVIDER_CUSTOM_MODEL_CONFIG);
@@ -730,6 +744,7 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
     groqApiKey: "",
     deepseekApiKey: "",
     opencodeZenApiKey: "",
+    opencodeGoApiKey: "",
     claudeBinaryPath: normalizeProviderBinaryPathOverride("anthropic", settings.claudeBinaryPath),
     codexBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.codexBinaryPath),
     cursorBinaryPath: normalizeProviderBinaryPathOverride("openai", settings.cursorBinaryPath),
@@ -777,6 +792,7 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
       settings.customOpenCodeZenModels,
       "opencodeZen",
     ),
+    customOpenCodeGoModels: normalizeCustomModelSlugs(settings.customOpenCodeGoModels, "opencodeGo"),
     hiddenProviders: normalizeHiddenProviders(settings.hiddenProviders),
     providerOrder: normalizeProviderOrder(settings.providerOrder),
     hiddenModels: [],
@@ -854,6 +870,8 @@ function serverSettingsToAppSettings(settings: ServerSettingsView): Partial<AppS
     deepseekBaseUrl: settings.providers.deepseek.baseUrl,
     opencodeZenApiKeyConfigured: settings.providers.opencodeZen.apiKeyConfigured,
     opencodeZenBaseUrl: settings.providers.opencodeZen.baseUrl,
+    opencodeGoApiKeyConfigured: settings.providers.opencodeGo.apiKeyConfigured,
+    opencodeGoBaseUrl: settings.providers.opencodeGo.baseUrl,
     textGenerationProvider: settings.textGenerationModelSelection.provider,
     textGenerationModel: settings.textGenerationModelSelection.model,
   };
@@ -897,7 +915,21 @@ function touchesProviderDiscoverySettings(patch: Partial<AppSettings>): boolean 
     hasOwn(patch, "deepseekApiKey") ||
     hasOwn(patch, "deepseekBaseUrl") ||
     hasOwn(patch, "opencodeZenApiKey") ||
-    hasOwn(patch, "opencodeZenBaseUrl")
+    hasOwn(patch, "opencodeZenBaseUrl") ||
+    hasOwn(patch, "opencodeGoApiKey") ||
+    hasOwn(patch, "opencodeGoBaseUrl") ||
+    hasOwn(patch, "groqApiKey") ||
+    hasOwn(patch, "groqBaseUrl") ||
+    hasOwn(patch, "mistralApiKey") ||
+    hasOwn(patch, "mistralBaseUrl") ||
+    hasOwn(patch, "togetherApiKey") ||
+    hasOwn(patch, "togetherBaseUrl") ||
+    hasOwn(patch, "cohereApiKey") ||
+    hasOwn(patch, "cohereBaseUrl") ||
+    hasOwn(patch, "xaiApiKey") ||
+    hasOwn(patch, "xaiBaseUrl") ||
+    hasOwn(patch, "fireworksApiKey") ||
+    hasOwn(patch, "fireworksBaseUrl")
   );
 }
 
@@ -1149,6 +1181,20 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
     };
   }
 
+  if (
+    hasOwn(patch, "opencodeGoApiKey") ||
+    hasOwn(patch, "opencodeGoBaseUrl") ||
+    hasOwn(patch, "customOpenCodeGoModels")
+  ) {
+    providers.opencodeGo = {
+      ...(hasOwn(patch, "opencodeGoApiKey") ? { apiKey: patch.opencodeGoApiKey ?? "" } : {}),
+      ...(hasOwn(patch, "opencodeGoBaseUrl") ? { baseUrl: patch.opencodeGoBaseUrl ?? "" } : {}),
+      ...(hasOwn(patch, "customOpenCodeGoModels")
+        ? { customModels: patch.customOpenCodeGoModels ?? [] }
+        : {}),
+    };
+  }
+
   if (Object.keys(providers).length > 0) {
     serverPatch.providers = providers;
   }
@@ -1211,6 +1257,8 @@ function buildInitialServerSettingsMigrationPatch(settings: AppSettings): Server
     "deepseekBaseUrl",
     "opencodeZenApiKey",
     "opencodeZenBaseUrl",
+    "opencodeGoApiKey",
+    "opencodeGoBaseUrl",
     "textGenerationModel",
     "textGenerationProvider",
   ] as const) {
@@ -1266,6 +1314,9 @@ function buildInitialServerSettingsMigrationPatch(settings: AppSettings): Server
   if (settings.opencodeZenApiKey.trim()) {
     patch.opencodeZenApiKey = settings.opencodeZenApiKey;
   }
+  if (settings.opencodeGoApiKey.trim()) {
+    patch.opencodeGoApiKey = settings.opencodeGoApiKey;
+  }
 
   for (const key of [
     "customCodexModels",
@@ -1290,6 +1341,7 @@ function buildInitialServerSettingsMigrationPatch(settings: AppSettings): Server
     "customXaiModels",
     "customFireworksModels",
     "customOpenCodeZenModels",
+    "customOpenCodeGoModels",
   ] as const) {
     if (normalizedSettings[key].length > 0) {
       patch[key] = normalizedSettings[key] as never;
@@ -1798,6 +1850,33 @@ export function useAppSettings() {
           : {}),
         ...(hasOwn(patch, "ollamaApiKey")
           ? { ollamaApiKeyConfigured: Boolean(patch.ollamaApiKey?.trim()) }
+          : {}),
+        ...(hasOwn(patch, "deepseekApiKey")
+          ? { deepseekApiKeyConfigured: Boolean(patch.deepseekApiKey?.trim()) }
+          : {}),
+        ...(hasOwn(patch, "groqApiKey")
+          ? { groqApiKeyConfigured: Boolean(patch.groqApiKey?.trim()) }
+          : {}),
+        ...(hasOwn(patch, "mistralApiKey")
+          ? { mistralApiKeyConfigured: Boolean(patch.mistralApiKey?.trim()) }
+          : {}),
+        ...(hasOwn(patch, "togetherApiKey")
+          ? { togetherApiKeyConfigured: Boolean(patch.togetherApiKey?.trim()) }
+          : {}),
+        ...(hasOwn(patch, "cohereApiKey")
+          ? { cohereApiKeyConfigured: Boolean(patch.cohereApiKey?.trim()) }
+          : {}),
+        ...(hasOwn(patch, "xaiApiKey")
+          ? { xaiApiKeyConfigured: Boolean(patch.xaiApiKey?.trim()) }
+          : {}),
+        ...(hasOwn(patch, "fireworksApiKey")
+          ? { fireworksApiKeyConfigured: Boolean(patch.fireworksApiKey?.trim()) }
+          : {}),
+        ...(hasOwn(patch, "opencodeZenApiKey")
+          ? { opencodeZenApiKeyConfigured: Boolean(patch.opencodeZenApiKey?.trim()) }
+          : {}),
+        ...(hasOwn(patch, "opencodeGoApiKey")
+          ? { opencodeGoApiKeyConfigured: Boolean(patch.opencodeGoApiKey?.trim()) }
           : {}),
       }),
     );

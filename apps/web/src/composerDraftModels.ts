@@ -674,7 +674,7 @@ export function deriveEffectiveComposerModelState(input: {
         activeSelection.model,
       )
     : null;
-  const unlistedDraftModel = input.selectedProvider === "openai" ? selectedDraftModel : null;
+  const unlistedDraftModel = selectedDraftModel;
   const selectedModel =
     resolveAvailableModel(activeSelection?.model) ??
     resolveAvailableModel(
@@ -692,7 +692,6 @@ export function deriveEffectiveComposerModelState(input: {
     persistedProjectModel ??
     unlistedDraftModel ??
     input.availableModelOptionsByProvider?.[input.selectedProvider]?.[0]?.slug ??
-    selectedDraftModel ??
     baseModel ??
     getDefaultModel("openai");
   const modelOptions = deriveEffectiveComposerModelOptions(input);
