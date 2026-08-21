@@ -7,20 +7,20 @@ import { validateCustomModelInput } from "./ModelsSettingsPanel";
 
 describe("validateCustomModelInput", () => {
   it("returns the same validation messages as the custom-model editor", () => {
-    expect(validateCustomModelInput({ provider: "openai", value: "   ", savedModels: [] })).toEqual(
+    expect(validateCustomModelInput({ provider: "groq", value: "   ", savedModels: [] })).toEqual(
       {
         error: "Enter a model slug.",
       },
     );
 
-    const builtIn = getModelOptions("openai")[0]!.slug;
+    const builtIn = getModelOptions("groq")[0]!.slug;
     expect(
-      validateCustomModelInput({ provider: "openai", value: builtIn, savedModels: [] }),
+      validateCustomModelInput({ provider: "groq", value: builtIn, savedModels: [] }),
     ).toEqual({ error: "That model is already built in." });
 
     expect(
       validateCustomModelInput({
-        provider: "openai",
+        provider: "groq",
         value: "x".repeat(MAX_CUSTOM_MODEL_LENGTH + 1),
         savedModels: [],
       }),
@@ -30,7 +30,7 @@ describe("validateCustomModelInput", () => {
 
     expect(
       validateCustomModelInput({
-        provider: "openai",
+        provider: "groq",
         value: " custom/model ",
         savedModels: ["custom/model"],
       }),
@@ -40,7 +40,7 @@ describe("validateCustomModelInput", () => {
   it("returns the normalized model when it can be saved", () => {
     expect(
       validateCustomModelInput({
-        provider: "openai",
+        provider: "groq",
         value: " custom/model ",
         savedModels: [],
       }),

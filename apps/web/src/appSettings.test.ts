@@ -16,7 +16,6 @@ import {
   DEFAULT_SIDEBAR_THREAD_SORT_ORDER,
   DEFAULT_TIMESTAMP_FORMAT,
   getAppModelOptions,
-  getCustomBinaryPathForProvider,
   getDefaultNativeFontSmoothing,
   getCustomModelOptionsByProvider,
   getCustomModelsByProvider,
@@ -24,7 +23,6 @@ import {
   getDefaultCustomModelsForProvider,
   getGitTextGenerationModelOptions,
   isGitTextGenerationSettingsDirty,
-  getProviderStartOptions,
   MODEL_PROVIDER_SETTINGS,
   normalizeChatFontSizePx,
   normalizeCustomModelSlugs,
@@ -42,8 +40,7 @@ describe("normalizeCustomModelSlugs", () => {
     expect(
       normalizeCustomModelSlugs([
         " custom/internal-model ",
-        "gpt-5.3-codex",
-        "5.3",
+        "llama-3.3-70b-versatile",
         "custom/internal-model",
         "",
         null,
@@ -51,9 +48,8 @@ describe("normalizeCustomModelSlugs", () => {
     ).toEqual(["custom/internal-model"]);
   });
 
-  it("normalizes provider-specific aliases for claude", () => {
-    expect(normalizeCustomModelSlugs(["sonnet"], "anthropic")).toEqual([]);
-    expect(normalizeCustomModelSlugs(["claude/custom-sonnet"], "anthropic")).toEqual([
+  it("keeps provider-scoped custom slugs", () => {
+    expect(normalizeCustomModelSlugs(["claude/custom-sonnet"], "opencodeZen")).toEqual([
       "claude/custom-sonnet",
     ]);
   });
@@ -94,135 +90,61 @@ describe("resolveFollowUpDispatchMode", () => {
 });
 
 describe("getAppModelOptions", () => {
-  it("does not expose a hardcoded Antigravity model catalog", () => {
-    expect(getAppModelOptions("google", [])).toEqual([]);
-  });
-
-  it("does not expose Anthropic models in Pi before authenticated discovery", () => {
-    expect(getAppModelOptions("openai", [])).toEqual([]);
-  });
-
   it("appends saved custom models after the built-in options", () => {
-    const options = getAppModelOptions("openai", ["custom/internal-model"]);
+    const options = getAppModelOptions("groq", ["custom/internal-model"]);
 
-    expect(options.map((option) => option.slug)).toEqual([
-      "gpt-5.5",
-      "gpt-5.4",
-      "gpt-5.4-mini",
-      "gpt-5.3-codex",
-      "gpt-5.3-codex-spark",
-      "gpt-5.2-codex",
-      "gpt-5.2",
-      "custom/internal-model",
-    ]);
+    expect(options.at(-1)).toMatchObject({
+      slug: "custom/internal-model",
+      provider: "groq",
+      isCustom: true,
+    });
+    expect(options.some((option) => option.isCustom === false)).toBe(true);
   });
 
   it("keeps the currently selected custom model available even if it is no longer saved", () => {
-    const options = getAppModelOptions("openai", [], "custom/selected-model");
+    const options = getAppModelOptions("groq", [], "custom/selected-model");
 
     expect(options.at(-1)).toEqual({
       slug: "custom/selected-model",
       name: "custom/selected-model",
-      provider: "openai",
-      isCustom: true,
-    });
-  });
-
-  it("keeps Cursor transport parameters out of selected-model hints", () => {
-    const options = getAppModelOptions("openai", [], "grok-4.5[thinking=true]");
-
-    expect(
-      options.filter((option) => option.slug.startsWith("grok-4.5")).map((option) => option.slug),
-    ).toEqual(["grok-4.5"]);
-  });
-
-  it("formats unknown GPT custom models with a readable label", () => {
-    const options = getAppModelOptions("openai", ["gpt-5.1-codex-max"]);
-
-    expect(options.at(-1)).toEqual({
-      slug: "gpt-5.1-codex-max",
-      name: "GPT-5.1 Codex Max",
-      provider: "openai",
+      provider: "groq",
       isCustom: true,
     });
   });
 
   it("keeps a saved custom provider model available as an exact slug option", () => {
-    const options = getAppModelOptions("anthropic", ["claude/custom-opus"], "claude/custom-opus");
+    const options = getAppModelOptions("opencodeZen", ["custom/opus"], "custom/opus");
 
-    expect(options.some((option) => option.slug === "claude/custom-opus" && option.isCustom)).toBe(
-      true,
-    );
+    expect(options.some((option) => option.slug === "custom/opus" && option.isCustom)).toBe(true);
   });
 });
 
 describe("getGitTextGenerationModelOptions", () => {
-  it("merges codex and OpenCode model options for git writing settings", () => {
+  it("merges saved groq models with the built-in catalog for git writing settings", () => {
     const options = getGitTextGenerationModelOptions({
-      customCodexModels: ["custom/codex-model"],
-      customKiloModels: [],
-      customOpenCodeModels: ["openrouter/gpt-oss-120b"],
-      textGenerationModel: "openai/gpt-5",
-      textGenerationProvider: "openai",
+      customGroqModels: ["custom/groq-model"],
+      textGenerationModel: undefined,
+      textGenerationProvider: "groq",
     });
 
-    expect(options.some((option) => option.slug === "gpt-5.4-mini")).toBe(true);
-    expect(options.some((option) => option.slug === "openai/gpt-5")).toBe(true);
-    expect(options.some((option) => option.slug === "openrouter/gpt-oss-120b")).toBe(true);
+    expect(options.some((option) => option.slug === "custom/groq-model")).toBe(true);
+    expect(options.some((option) => option.isCustom === false)).toBe(true);
   });
 
-  it("prefers runtime-discovered OpenCode and Kilo models for git writing settings", () => {
+  it("prefers runtime-discovered groq models for git writing settings", () => {
     const options = getGitTextGenerationModelOptions(
       {
-        customCodexModels: [],
-        customKiloModels: [],
-        customOpenCodeModels: [],
-        textGenerationModel: "openrouter/custom-model",
-        textGenerationProvider: "openai",
+        customGroqModels: [],
+        textGenerationModel: "custom/model",
+        textGenerationProvider: "groq",
       },
       {
-        opencode: [{ slug: "openrouter/gpt-oss-120b", name: "GPT OSS 120B" }],
-        kilo: [{ slug: "kilo/kilo-auto/free", name: "Kilo Auto Free" }],
+        groq: [{ slug: "discovered/model", name: "Discovered Model" }],
       },
     );
 
-    expect(options.some((option) => option.slug === "openrouter/gpt-oss-120b")).toBe(true);
-    expect(options.some((option) => option.slug === "kilo/kilo-auto/free")).toBe(true);
-    expect(options.some((option) => option.slug === "openrouter/custom-model")).toBe(true);
-  });
-
-  it("preserves a currently selected transient git writing model", () => {
-    const options = getGitTextGenerationModelOptions({
-      customCodexModels: [],
-      customKiloModels: [],
-      customOpenCodeModels: [],
-      textGenerationModel: "openrouter/custom-model",
-      textGenerationProvider: "openai",
-    });
-
-    expect(options.at(-1)).toEqual({
-      slug: "openrouter/custom-model",
-      name: "Custom Model",
-      provider: "openai",
-      isCustom: true,
-    });
-  });
-
-  it("humanizes transient OpenCode git-writing models instead of showing the raw slug", () => {
-    const options = getGitTextGenerationModelOptions({
-      customCodexModels: [],
-      customKiloModels: [],
-      customOpenCodeModels: [],
-      textGenerationModel: "opencode-go/kimi-k2.6",
-      textGenerationProvider: "openai",
-    });
-
-    expect(options.at(-1)).toEqual({
-      slug: "opencode-go/kimi-k2.6",
-      name: "Kimi K2.6",
-      provider: "openai",
-      isCustom: true,
-    });
+    expect(options.some((option) => option.slug === "discovered/model")).toBe(true);
+    expect(options.some((option) => option.slug === "custom/model")).toBe(true);
   });
 });
 
@@ -233,7 +155,7 @@ describe("isGitTextGenerationSettingsDirty", () => {
     expect(isGitTextGenerationSettingsDirty(defaults, defaults)).toBe(false);
     expect(
       isGitTextGenerationSettingsDirty(
-        { ...defaults, textGenerationProvider: "openai", textGenerationModel: "custom/model" },
+        { ...defaults, textGenerationProvider: "engine", textGenerationModel: "custom/model" },
         defaults,
       ),
     ).toBe(true);
@@ -263,174 +185,32 @@ describe("environment panel defaults", () => {
 });
 
 describe("resolveAppModelSelection", () => {
+  const emptyCustomModels = {
+    engine: [],
+    groq: [],
+    opencodeZen: [],
+    opencodeGo: [],
+  };
+
   it("preserves saved custom model slugs instead of falling back to the default", () => {
     expect(
       resolveAppModelSelection(
-        "openai",
-        {
-          codex: ["galapagos-alpha"],
-          claudeAgent: [],
-          cursor: [],
-          antigravity: [],
-          grok: [],
-          droid: [],
-          kilo: [],
-          opencode: [],
-          pi: [],
-          engine: [],
-          openai: [],
-          anthropic: [],
-          google: [],
-          openrouter: [],
-          ollama: [],
-          deepseek: [],
-          groq: [],
-          mistral: [],
-          together: [],
-          cohere: [],
-          xai: [],
-          fireworks: [],
-          opencodeZen: [],
-        },
+        "groq",
+        { ...emptyCustomModels, groq: ["galapagos-alpha"] },
         "galapagos-alpha",
       ),
     ).toBe("galapagos-alpha");
   });
 
   it("falls back to the provider default when no model is selected", () => {
-    expect(
-      resolveAppModelSelection(
-        "openai",
-        {
-          codex: [],
-          claudeAgent: [],
-          cursor: [],
-          antigravity: [],
-          grok: [],
-          droid: [],
-          kilo: [],
-          opencode: [],
-          pi: [],
-          engine: [],
-          openai: [],
-          anthropic: [],
-          google: [],
-          openrouter: [],
-          ollama: [],
-          deepseek: [],
-          groq: [],
-          mistral: [],
-          together: [],
-          cohere: [],
-          xai: [],
-          fireworks: [],
-          opencodeZen: [],
-        },
-        "",
-      ),
-    ).toBe("gpt-5.5");
-  });
-
-  it("resolves display names through the shared resolver", () => {
-    expect(
-      resolveAppModelSelection(
-        "openai",
-        {
-          codex: [],
-          claudeAgent: [],
-          cursor: [],
-          antigravity: [],
-          grok: [],
-          droid: [],
-          kilo: [],
-          opencode: [],
-          pi: [],
-          engine: [],
-          openai: [],
-          anthropic: [],
-          google: [],
-          openrouter: [],
-          ollama: [],
-          deepseek: [],
-          groq: [],
-          mistral: [],
-          together: [],
-          cohere: [],
-          xai: [],
-          fireworks: [],
-          opencodeZen: [],
-        },
-        "GPT-5.3 Codex",
-      ),
-    ).toBe("gpt-5.3-codex");
-  });
-
-  it("resolves aliases through the shared resolver", () => {
-    expect(
-      resolveAppModelSelection(
-        "anthropic",
-        {
-          codex: [],
-          claudeAgent: [],
-          cursor: [],
-          antigravity: [],
-          grok: [],
-          droid: [],
-          kilo: [],
-          opencode: [],
-          pi: [],
-          engine: [],
-          openai: [],
-          anthropic: [],
-          google: [],
-          openrouter: [],
-          ollama: [],
-          deepseek: [],
-          groq: [],
-          mistral: [],
-          together: [],
-          cohere: [],
-          xai: [],
-          fireworks: [],
-          opencodeZen: [],
-        },
-        "sonnet",
-      ),
-    ).toBe("claude-sonnet-5");
+    const fallback = resolveAppModelSelection("groq", emptyCustomModels, "");
+    expect(fallback).toBe(getAppModelOptions("groq", [])[0]?.slug ?? "");
   });
 
   it("resolves transient selected custom models included in app model options", () => {
-    expect(
-      resolveAppModelSelection(
-        "openai",
-        {
-          codex: [],
-          claudeAgent: [],
-          cursor: [],
-          antigravity: [],
-          grok: [],
-          droid: [],
-          kilo: [],
-          opencode: [],
-          pi: [],
-          engine: [],
-          openai: [],
-          anthropic: [],
-          google: [],
-          openrouter: [],
-          ollama: [],
-          deepseek: [],
-          groq: [],
-          mistral: [],
-          together: [],
-          cohere: [],
-          xai: [],
-          fireworks: [],
-          opencodeZen: [],
-        },
-        "custom/selected-model",
-      ),
-    ).toBe("custom/selected-model");
+    expect(resolveAppModelSelection("groq", emptyCustomModels, "custom/selected-model")).toBe(
+      "custom/selected-model",
+    );
   });
 });
 
@@ -519,7 +299,7 @@ describe("normalizeStoredAppSettings", () => {
         sidebarProjectSortOrder: "updated_at",
         chatFontSizePx: 99,
         terminalFontSizePx: 3,
-        customCodexModels: [" custom/internal-model ", "gpt-5.4", "custom/internal-model"],
+        customGroqModels: [" custom/internal-model ", "llama-3.3-70b-versatile"],
       }),
     );
 
@@ -527,442 +307,107 @@ describe("normalizeStoredAppSettings", () => {
       sidebarProjectSortOrder: "updated_at",
       chatFontSizePx: 18,
       terminalFontSizePx: 10,
-      customCodexModels: ["custom/internal-model"],
+      customGroqModels: ["custom/internal-model"],
     });
   });
 
-  it("drops default provider command names so they do not look like custom paths", () => {
-    const decodedSettings = Schema.decodeSync(Schema.fromJsonString(AppSettingsSchema))(
-      JSON.stringify({
-        claudeBinaryPath: "claude",
-        codexBinaryPath: "openai",
-        cursorBinaryPath: "cursor-agent",
-        antigravityBinaryPath: "agy",
-        grokBinaryPath: "openai",
-        droidBinaryPath: "openai",
-        kiloBinaryPath: "openai",
-        openCodeBinaryPath: "openai",
-        piBinaryPath: "openai",
-      }),
-    );
-    const normalized = normalizeStoredAppSettings(decodedSettings);
-
-    expect(normalized).toMatchObject({
-      claudeBinaryPath: "",
-      codexBinaryPath: "",
-      cursorBinaryPath: "",
-      antigravityBinaryPath: "",
-      grokBinaryPath: "",
-      droidBinaryPath: "",
-      kiloBinaryPath: "",
-      openCodeBinaryPath: "",
-      piBinaryPath: "",
-    });
-    expect(getCustomBinaryPathForProvider(normalized, "openai")).toBe("");
-  });
-});
-
-describe("provider-specific custom models", () => {
-  it("includes provider-specific custom slugs in non-codex model lists", () => {
-    const claudeOptions = getAppModelOptions("anthropic", ["claude/custom-opus"]);
-
-    expect(claudeOptions.some((option) => option.slug === "claude/custom-opus")).toBe(true);
-  });
-});
-
-describe("getProviderStartOptions", () => {
-  it("returns only populated provider overrides", () => {
-    expect(
-      getProviderStartOptions({
-        claudeBinaryPath: "/usr/local/bin/claude",
-        codexBinaryPath: "",
-        codexHomePath: "/Users/you/.codex",
-        cursorApiEndpoint: "http://localhost:3000",
-        cursorBinaryPath: "/usr/local/bin/agent",
-        antigravityBinaryPath: "/usr/local/bin/agy",
-        grokBinaryPath: "/usr/local/bin/grok",
-        droidBinaryPath: "",
-        kiloBinaryPath: "",
-        kiloServerUrl: "",
-        openCodeBinaryPath: "",
-        openCodeExperimentalWebSockets: false,
-        openCodeServerUrl: "",
-        piAgentDir: "",
-        piBinaryPath: "",
-      }),
-    ).toEqual({
-      claudeAgent: {
-        binaryPath: "/usr/local/bin/claude",
-      },
-      codex: {
-        homePath: "/Users/you/.codex",
-      },
-      cursor: {
-        apiEndpoint: "http://localhost:3000",
-        binaryPath: "/usr/local/bin/agent",
-      },
-      antigravity: {
-        binaryPath: "/usr/local/bin/agy",
-      },
-      grok: {
-        binaryPath: "/usr/local/bin/grok",
-      },
-    });
-  });
-
-  it("returns undefined when no provider overrides are configured", () => {
-    expect(
-      getProviderStartOptions({
-        claudeBinaryPath: "",
-        codexBinaryPath: "",
-        codexHomePath: "",
-        cursorApiEndpoint: "",
-        cursorBinaryPath: "",
-        antigravityBinaryPath: "",
-        grokBinaryPath: "",
-        droidBinaryPath: "",
-        kiloBinaryPath: "",
-        kiloServerUrl: "",
-        openCodeBinaryPath: "",
-        openCodeExperimentalWebSockets: false,
-        openCodeServerUrl: "",
-        piAgentDir: "",
-        piBinaryPath: "",
-      }),
-    ).toBeUndefined();
-  });
-
-  it("ignores default provider command names as custom binary overrides", () => {
-    expect(
-      getProviderStartOptions({
-        claudeBinaryPath: "claude",
-        codexBinaryPath: "openai",
-        codexHomePath: "",
-        cursorApiEndpoint: "",
-        cursorBinaryPath: "cursor-agent",
-        antigravityBinaryPath: "agy",
-        grokBinaryPath: "openai",
-        droidBinaryPath: "openai",
-        kiloBinaryPath: "openai",
-        kiloServerUrl: "",
-        openCodeBinaryPath: "openai",
-        openCodeExperimentalWebSockets: false,
-        openCodeServerUrl: "",
-        piAgentDir: "",
-        piBinaryPath: "openai",
-      }),
-    ).toBeUndefined();
-  });
 });
 
 describe("provider-indexed custom model settings", () => {
   const settings = {
-    customCodexModels: ["custom/codex-model"],
-    customClaudeModels: ["claude/custom-opus"],
-    customCursorModels: ["cursor/custom-model"],
-    customAntigravityModels: ["Gemini 3.5 Flash (Experimental)"],
-    customGrokModels: ["grok/custom-fast"],
-    customDroidModels: ["claude-opus-4-8-custom"],
-    customKiloModels: ["kilo/kilo-auto/free"],
-    customOpenCodeModels: ["openrouter/gpt-oss-120b"],
-    customPiModels: ["anthropic/custom-pi"],
-    customEngineModels: [],
-    customOpenAiModels: [],
-    customAnthropicModels: [],
-    customGoogleModels: [],
-    customOpenRouterModels: [],
-    customOllamaModels: [],
-    customDeepseekModels: [],
-    customGroqModels: [],
-    customMistralModels: [],
-    customTogetherModels: [],
-    customCohereModels: [],
-    customXaiModels: [],
-    customFireworksModels: [],
-    customOpenCodeZenModels: [],
+    customEngineModels: ["custom/engine-model"],
+    customGroqModels: ["custom/groq-model"],
+    customOpenCodeZenModels: ["custom/zen-model"],
+    customOpenCodeGoModels: ["custom/go-model"],
   } as const;
 
-  it("exports one provider config per provider", () => {
+  it("exports one provider config per surviving provider", () => {
     expect(MODEL_PROVIDER_SETTINGS.map((config) => config.provider)).toEqual([
-      "openai",
-      "anthropic",
-      "openai",
-      "google",
-      "openai",
-      "openai",
-      "openai",
-      "openai",
-      "openai",
       "engine",
-      "openai",
-      "anthropic",
-      "google",
-      "openrouter",
-      "ollama",
-      "deepseek",
       "groq",
-      "mistral",
-      "together",
-      "cohere",
-      "xai",
-      "fireworks",
       "opencodeZen",
+      "opencodeGo",
     ]);
   });
 
-  it("keeps Droid persistence compatible without advertising unsupported custom slugs", () => {
+  it("keeps the groq catalog authoritative without advertising custom slugs in editors", () => {
     expect(CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS.map((config) => config.provider)).not.toContain(
-      "openai",
+      "groq",
     );
   });
 
   it("reads custom models for each provider", () => {
-    expect(getCustomModelsForProvider(settings, "openai")).toEqual(["custom/codex-model"]);
-    expect(getCustomModelsForProvider(settings, "anthropic")).toEqual(["claude/custom-opus"]);
-    expect(getCustomModelsForProvider(settings, "openai")).toEqual(["cursor/custom-model"]);
-    expect(getCustomModelsForProvider(settings, "openai")).toEqual(["grok/custom-fast"]);
-    expect(getCustomModelsForProvider(settings, "openai")).toEqual(["claude-opus-4-8-custom"]);
-    expect(getCustomModelsForProvider(settings, "openai")).toEqual(["kilo/kilo-auto/free"]);
-    expect(getCustomModelsForProvider(settings, "openai")).toEqual(["openrouter/gpt-oss-120b"]);
-    expect(getCustomModelsForProvider(settings, "openai")).toEqual(["anthropic/custom-pi"]);
+    expect(getCustomModelsForProvider(settings, "engine")).toEqual(["custom/engine-model"]);
+    expect(getCustomModelsForProvider(settings, "groq")).toEqual(["custom/groq-model"]);
+    expect(getCustomModelsForProvider(settings, "opencodeZen")).toEqual(["custom/zen-model"]);
+    expect(getCustomModelsForProvider(settings, "opencodeGo")).toEqual(["custom/go-model"]);
   });
 
   it("reads default custom models for each provider", () => {
     const defaults = {
-      customCodexModels: ["default/codex-model"],
-      customClaudeModels: ["claude/default-opus"],
-      customCursorModels: ["cursor/default-model"],
-      customAntigravityModels: ["Gemini 3.5 Flash (Experimental)"],
-      customGrokModels: ["grok/default-fast"],
-      customDroidModels: ["droid/default-model"],
-      customKiloModels: ["kilo/default-auto"],
-      customOpenCodeModels: ["openai/gpt-5"],
-      customPiModels: ["anthropic/default-pi"],
-      customEngineModels: [],
-      customOpenAiModels: [],
-      customAnthropicModels: [],
-      customGoogleModels: [],
-      customOpenRouterModels: [],
-      customOllamaModels: [],
-      customDeepseekModels: [],
-      customGroqModels: [],
-      customMistralModels: [],
-      customTogetherModels: [],
-      customCohereModels: [],
-      customXaiModels: [],
-      customFireworksModels: [],
+      customEngineModels: ["default/engine-model"],
+      customGroqModels: ["default/groq-model"],
       customOpenCodeZenModels: [],
+      customOpenCodeGoModels: [],
     } as const;
 
-    expect(getDefaultCustomModelsForProvider(defaults, "openai")).toEqual(["default/codex-model"]);
-    expect(getDefaultCustomModelsForProvider(defaults, "anthropic")).toEqual([
-      "claude/default-opus",
+    expect(getDefaultCustomModelsForProvider(defaults, "engine")).toEqual([
+      "default/engine-model",
     ]);
-    expect(getDefaultCustomModelsForProvider(defaults, "openai")).toEqual(["cursor/default-model"]);
-    expect(getDefaultCustomModelsForProvider(defaults, "google")).toEqual([
-      "Gemini 3.5 Flash (Experimental)",
-    ]);
-    expect(getDefaultCustomModelsForProvider(defaults, "openai")).toEqual(["grok/default-fast"]);
-    expect(getDefaultCustomModelsForProvider(defaults, "openai")).toEqual(["droid/default-model"]);
-    expect(getDefaultCustomModelsForProvider(defaults, "openai")).toEqual(["kilo/default-auto"]);
-    expect(getDefaultCustomModelsForProvider(defaults, "openai")).toEqual(["openai/gpt-5"]);
-    expect(getDefaultCustomModelsForProvider(defaults, "openai")).toEqual(["anthropic/default-pi"]);
+    expect(getDefaultCustomModelsForProvider(defaults, "groq")).toEqual(["default/groq-model"]);
+    expect(getDefaultCustomModelsForProvider(defaults, "opencodeZen")).toEqual([]);
   });
 
-  it("patches custom models for codex", () => {
-    expect(patchCustomModels("openai", ["custom/codex-model"])).toEqual({
-      customCodexModels: ["custom/codex-model"],
+  it("patches custom models per provider", () => {
+    expect(patchCustomModels("engine", ["custom/engine-model"])).toEqual({
+      customEngineModels: ["custom/engine-model"],
     });
-  });
-
-  it("patches custom models for claude", () => {
-    expect(patchCustomModels("anthropic", ["claude/custom-opus"])).toEqual({
-      customClaudeModels: ["claude/custom-opus"],
+    expect(patchCustomModels("groq", ["custom/groq-model"])).toEqual({
+      customGroqModels: ["custom/groq-model"],
     });
-  });
-
-  it("patches custom models for Antigravity", () => {
-    expect(patchCustomModels("google", ["Gemini 3.5 Flash (Experimental)"])).toEqual({
-      customAntigravityModels: ["Gemini 3.5 Flash (Experimental)"],
+    expect(patchCustomModels("opencodeZen", ["custom/zen-model"])).toEqual({
+      customOpenCodeZenModels: ["custom/zen-model"],
     });
-  });
-
-  it("patches custom models for grok", () => {
-    expect(patchCustomModels("openai", ["grok/custom-fast"])).toEqual({
-      customGrokModels: ["grok/custom-fast"],
-    });
-  });
-
-  it("patches custom models for droid", () => {
-    expect(patchCustomModels("openai", ["droid/custom-model"])).toEqual({
-      customDroidModels: ["droid/custom-model"],
-    });
-  });
-
-  it("patches custom models for cursor", () => {
-    expect(patchCustomModels("openai", ["cursor/custom-model"])).toEqual({
-      customCursorModels: ["cursor/custom-model"],
-    });
-  });
-
-  it("patches custom models for opencode", () => {
-    expect(patchCustomModels("openai", ["openrouter/gpt-oss-120b"])).toEqual({
-      customOpenCodeModels: ["openrouter/gpt-oss-120b"],
-    });
-  });
-
-  it("patches custom models for kilo", () => {
-    expect(patchCustomModels("openai", ["kilo/kilo-auto/free"])).toEqual({
-      customKiloModels: ["kilo/kilo-auto/free"],
-    });
-  });
-
-  it("patches custom models for pi", () => {
-    expect(patchCustomModels("openai", ["anthropic/custom-pi"])).toEqual({
-      customPiModels: ["anthropic/custom-pi"],
+    expect(patchCustomModels("opencodeGo", ["custom/go-model"])).toEqual({
+      customOpenCodeGoModels: ["custom/go-model"],
     });
   });
 
   it("builds a complete provider-indexed custom model record", () => {
     expect(getCustomModelsByProvider(settings)).toEqual({
-      codex: ["custom/codex-model"],
-      claudeAgent: ["claude/custom-opus"],
-      cursor: ["cursor/custom-model"],
-      antigravity: ["Gemini 3.5 Flash (Experimental)"],
-      grok: ["grok/custom-fast"],
-      droid: ["claude-opus-4-8-custom"],
-      kilo: ["kilo/kilo-auto/free"],
-      opencode: ["openrouter/gpt-oss-120b"],
-      pi: ["anthropic/custom-pi"],
-      engine: [],
-      openai: [],
-      anthropic: [],
-      google: [],
-      openrouter: [],
-      ollama: [],
-      deepseek: [],
-      groq: [],
-      mistral: [],
-      together: [],
-      cohere: [],
-      xai: [],
-      fireworks: [],
-      opencodeZen: [],
+      engine: ["custom/engine-model"],
+      groq: ["custom/groq-model"],
+      opencodeZen: ["custom/zen-model"],
+      opencodeGo: ["custom/go-model"],
     });
-  });
-
-  it("builds provider-indexed model options including custom models", () => {
-    const modelOptionsByProvider = getCustomModelOptionsByProvider(settings);
-
-    expect(
-      modelOptionsByProvider.codex.some((option) => option.slug === "custom/codex-model"),
-    ).toBe(true);
-    expect(
-      modelOptionsByProvider.claudeAgent.some((option) => option.slug === "claude/custom-opus"),
-    ).toBe(true);
-    expect(
-      modelOptionsByProvider.cursor.some((option) => option.slug === "cursor/custom-model"),
-    ).toBe(true);
-    expect(
-      modelOptionsByProvider.antigravity.some(
-        (option) => option.slug === "Gemini 3.5 Flash (Experimental)",
-      ),
-    ).toBe(true);
-    expect(modelOptionsByProvider.grok.some((option) => option.slug === "grok/custom-fast")).toBe(
-      true,
-    );
-    expect(
-      modelOptionsByProvider.kilo.some((option) => option.slug === "kilo/kilo-auto/free"),
-    ).toBe(true);
-    expect(
-      modelOptionsByProvider.opencode.some((option) => option.slug === "openrouter/gpt-oss-120b"),
-    ).toBe(true);
-    expect(modelOptionsByProvider.pi.some((option) => option.slug === "anthropic/custom-pi")).toBe(
-      true,
-    );
   });
 
   it("normalizes and deduplicates custom model options per provider", () => {
     const modelOptionsByProvider = getCustomModelOptionsByProvider({
-      customCodexModels: ["  custom/codex-model ", "gpt-5.4", "custom/codex-model"],
-      customClaudeModels: [" sonnet ", "claude/custom-opus", "claude/custom-opus"],
-      customCursorModels: [" composer-2 ", "cursor/custom-model", "cursor/custom-model"],
-      customAntigravityModels: [
-        " Gemini 3.5 Flash ",
-        "Gemini 3.5 Flash (Experimental)",
-        "Gemini 3.5 Flash (Experimental)",
-      ],
-      customGrokModels: [" grok-build ", "grok/custom-fast", "grok/custom-fast"],
-      customDroidModels: [" opus ", "droid/custom-model", "droid/custom-model"],
-      customKiloModels: [" kilo/kilo-auto/free ", "kilo/kilo-auto/free"],
-      customOpenCodeModels: [
-        " openai/gpt-5 ",
-        "openrouter/gpt-oss-120b",
-        "openrouter/gpt-oss-120b",
-      ],
-      customPiModels: [
-        " anthropic/claude-sonnet-4-5 ",
-        "anthropic/custom-pi",
-        "anthropic/custom-pi",
-      ],
-      customEngineModels: [],
-      customOpenAiModels: [],
-      customAnthropicModels: [],
-      customGoogleModels: [],
-      customOpenRouterModels: [],
-      customOllamaModels: [],
-      customDeepseekModels: [],
-      customGroqModels: [],
-      customMistralModels: [],
-      customTogetherModels: [],
-      customCohereModels: [],
-      customXaiModels: [],
-      customFireworksModels: [],
-      customOpenCodeZenModels: [],
+      customEngineModels: [" custom/engine-model ", "custom/engine-model"],
+      customGroqModels: [" custom/groq-model ", "llama-3.3-70b-versatile", "custom/groq-model"],
+      customOpenCodeZenModels: [" custom/zen-model ", "custom/zen-model"],
+      customOpenCodeGoModels: [],
     });
 
     expect(
-      modelOptionsByProvider.codex.filter((option) => option.slug === "custom/codex-model"),
-    ).toHaveLength(1);
-    expect(modelOptionsByProvider.codex.some((option) => option.slug === "gpt-5.4")).toBe(true);
-    expect(
-      modelOptionsByProvider.claudeAgent.filter((option) => option.slug === "claude/custom-opus"),
+      modelOptionsByProvider.engine.filter((option) => option.slug === "custom/engine-model"),
     ).toHaveLength(1);
     expect(
-      modelOptionsByProvider.claudeAgent.some((option) => option.slug === "claude-sonnet-5"),
-    ).toBe(true);
+      modelOptionsByProvider.groq.filter((option) => option.slug === "custom/groq-model"),
+    ).toHaveLength(1);
+    // Built-in slugs are never duplicated as custom options.
     expect(
-      modelOptionsByProvider.droid.filter((option) => option.slug === "droid/custom-model"),
+      modelOptionsByProvider.groq.filter((option) => option.slug === "llama-3.3-70b-versatile"),
     ).toHaveLength(1);
     expect(
-      modelOptionsByProvider.cursor.filter((option) => option.slug === "cursor/custom-model"),
-    ).toHaveLength(1);
-    expect(
-      modelOptionsByProvider.antigravity.filter(
-        (option) => option.slug === "Gemini 3.5 Flash (Experimental)",
-      ),
-    ).toHaveLength(1);
-    expect(
-      modelOptionsByProvider.grok.filter((option) => option.slug === "grok/custom-fast"),
-    ).toHaveLength(1);
-    expect(modelOptionsByProvider.grok.some((option) => option.slug === "grok-build-0.1")).toBe(
-      true,
-    );
-    expect(modelOptionsByProvider.grok.some((option) => option.slug === "grok-build")).toBe(true);
-    expect(
-      modelOptionsByProvider.kilo.filter((option) => option.slug === "kilo/kilo-auto/free"),
-    ).toHaveLength(1);
-    expect(
-      modelOptionsByProvider.opencode.filter((option) => option.slug === "openrouter/gpt-oss-120b"),
-    ).toHaveLength(1);
-    expect(
-      modelOptionsByProvider.pi.filter((option) => option.slug === "anthropic/custom-pi"),
+      modelOptionsByProvider.opencodeZen.filter((option) => option.slug === "custom/zen-model"),
     ).toHaveLength(1);
   });
 });
 
 describe("AppSettingsSchema", () => {
-  it("migrates persisted Gemini provider settings to Antigravity", () => {
+  it("folds unknown legacy provider kinds onto the default provider", () => {
     const decode = Schema.decodeSync(Schema.fromJsonString(AppSettingsSchema));
     const decoded = decode(
       JSON.stringify({
@@ -970,23 +415,13 @@ describe("AppSettingsSchema", () => {
         defaultProvider: "google",
         hiddenProviders: ["google"],
         providerOrder: ["openai", "google"],
-        hiddenModels: [{ provider: "google", slug: "gemini-3.1-pro-preview" }],
         geminiBinaryPath: "/custom/bin/gemini",
         customGeminiModels: ["gemini-custom-preview"],
       }),
     );
 
-    expect(decoded).toMatchObject({
-      textGenerationProvider: "google",
-      defaultProvider: "google",
-      hiddenProviders: ["google"],
-      providerOrder: ["openai", "google"],
-      hiddenModels: [{ provider: "google", slug: "gemini-3.1-pro-preview" }],
-    });
-    expect(normalizeStoredAppSettings(decoded)).toMatchObject({
-      antigravityBinaryPath: "/custom/bin/gemini",
-      customAntigravityModels: ["gemini-custom-preview"],
-    });
+    expect(decoded.defaultProvider).toBe("groq");
+    expect(decoded.hiddenProviders).toEqual(["groq"]);
     expect(normalizeStoredAppSettings(decoded)).not.toHaveProperty("geminiBinaryPath");
     expect(normalizeStoredAppSettings(decoded)).not.toHaveProperty("customGeminiModels");
   });
@@ -1006,17 +441,13 @@ describe("AppSettingsSchema", () => {
     expect(
       decode(
         JSON.stringify({
-          codexBinaryPath: "/usr/local/bin/codex",
           confirmThreadDelete: false,
         }),
       ),
     ).toMatchObject({
-      claudeBinaryPath: "",
       uiDensity: "comfortable",
       chatFontSizePx: DEFAULT_CHAT_FONT_SIZE_PX,
-      codexBinaryPath: "/usr/local/bin/codex",
-      codexHomePath: "",
-      grokBinaryPath: "",
+      engineApiKeyConfigured: false,
       defaultThreadEnvMode: "local",
       confirmThreadDelete: false,
       confirmTerminalTabClose: true,
@@ -1026,14 +457,10 @@ describe("AppSettingsSchema", () => {
       sidebarProjectSortOrder: DEFAULT_SIDEBAR_PROJECT_SORT_ORDER,
       sidebarThreadSortOrder: DEFAULT_SIDEBAR_THREAD_SORT_ORDER,
       timestampFormat: DEFAULT_TIMESTAMP_FORMAT,
-      customCodexModels: [],
-      customClaudeModels: [],
-      customCursorModels: [],
-      customGrokModels: [],
-      customDroidModels: [],
-      customKiloModels: [],
-      customOpenCodeModels: [],
-      customPiModels: [],
+      customEngineModels: [],
+      customGroqModels: [],
+      customOpenCodeZenModels: [],
+      customOpenCodeGoModels: [],
     });
   });
 

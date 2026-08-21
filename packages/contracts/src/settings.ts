@@ -28,27 +28,23 @@ export const EngineServerProviderSettings = Schema.Struct({
 });
 export type EngineServerProviderSettings = typeof EngineServerProviderSettings.Type;
 
-// API-key providers authenticate over HTTP. The key itself never leaves the
-// secret store; the settings view only carries a boolean `apiKeyConfigured`
-// flag, mirroring the engine's configured-flag handling.
+// API-key providers authenticate over HTTP — no child process, hence no
+// binary path. The key itself never leaves the secret store; the settings view
+// only carries a boolean `apiKeyConfigured` flag, mirroring the engine's
+// configured-flag handling.
 const ApiProviderSettingsBase = {
-  ...ProviderSettingsBase,
+  enabled: Schema.Boolean.pipe(Schema.withDecodingDefault(() => true)),
+  customModels: CustomModels,
   // The chat-completions base URL. Ollama defaults to a local server; the rest
   // default to the vendor endpoint. Empty means "use the provider default".
   baseUrl: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
   apiKeyConfigured: Schema.Boolean.pipe(Schema.withDecodingDefault(() => false)),
 };
 
-export const GroqServerProviderSettings = Schema.Struct({
-  ...ApiProviderSettingsBase,
-  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
-});
+export const GroqServerProviderSettings = Schema.Struct(ApiProviderSettingsBase);
 export type GroqServerProviderSettings = typeof GroqServerProviderSettings.Type;
 
-export const OpenCodeZenServerProviderSettings = Schema.Struct({
-  ...ApiProviderSettingsBase,
-  binaryPath: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
-});
+export const OpenCodeZenServerProviderSettings = Schema.Struct(ApiProviderSettingsBase);
 export type OpenCodeZenServerProviderSettings = typeof OpenCodeZenServerProviderSettings.Type;
 
 export const OpenCodeGoServerProviderSettings = Schema.Struct({
@@ -74,7 +70,6 @@ export const ServerSettings = Schema.Struct({
   enableAssistantStreaming: Schema.Boolean.pipe(Schema.withDecodingDefault(() => true)),
   enableProviderUpdateChecks: Schema.Boolean.pipe(Schema.withDecodingDefault(() => true)),
   defaultThreadEnvMode: ThreadEnvironmentMode.pipe(Schema.withDecodingDefault(() => "local")),
-  addProjectBaseDirectory: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
   textGenerationModelSelection: ModelSelection.pipe(
     Schema.withDecodingDefault(() => ({
       provider: "groq" as const,
@@ -114,11 +109,15 @@ const ProviderSettingsBasePatch = {
   customModels: Schema.optionalKey(CustomModels),
 };
 
+const ApiProviderSettingsPatchBase = {
+  enabled: Schema.optionalKey(Schema.Boolean),
+  customModels: Schema.optionalKey(CustomModels),
+};
+
 export const ServerSettingsPatch = Schema.Struct({
   enableAssistantStreaming: Schema.optionalKey(Schema.Boolean),
   enableProviderUpdateChecks: Schema.optionalKey(Schema.Boolean),
   defaultThreadEnvMode: Schema.optionalKey(ThreadEnvironmentMode),
-  addProjectBaseDirectory: Schema.optionalKey(StringSetting),
   textGenerationModelSelection: Schema.optionalKey(ModelSelectionPatch),
   providers: Schema.optionalKey(
     Schema.Struct({
@@ -133,14 +132,14 @@ export const ServerSettingsPatch = Schema.Struct({
       ),
       groq: Schema.optionalKey(
         Schema.Struct({
-          ...ProviderSettingsBasePatch,
+          ...ApiProviderSettingsPatchBase,
           baseUrl: Schema.optionalKey(StringSetting),
           apiKey: Schema.optionalKey(StringSetting),
         }),
       ),
       opencodeZen: Schema.optionalKey(
         Schema.Struct({
-          ...ProviderSettingsBasePatch,
+          ...ApiProviderSettingsPatchBase,
           baseUrl: Schema.optionalKey(StringSetting),
           apiKey: Schema.optionalKey(StringSetting),
         }),

@@ -251,7 +251,7 @@ export function ExternalMcpSettingsPanel(props: { active: boolean }) {
         <SettingsSection title="Connect a coding agent">
           <SettingsRow
             title="Name"
-            description="How this connection appears in Caide. Works with Codex, Claude, and any other MCP-capable agent."
+            description="How this connection appears in Caide. Works with any MCP-capable agent."
             control={
               <Input
                 className="w-full sm:w-64"
@@ -433,7 +433,7 @@ export function ExternalMcpSettingsPanel(props: { active: boolean }) {
           />
           <SettingsRow
             title="1. Give your agent this prompt"
-            description="Copy the prompt and paste it into the agent you want to connect (Codex, Claude Code, or any MCP-capable app). The agent pairs this computer, registers Caide in its own configuration, and verifies the connection by itself."
+            description="Copy the prompt and paste it into the agent you want to connect (any MCP-capable app). The agent pairs this computer, registers Caide in its own configuration, and verifies the connection by itself."
             status={
               paired
                 ? "Paired. The prompt now covers only registration and verification."
@@ -456,7 +456,7 @@ export function ExternalMcpSettingsPanel(props: { active: boolean }) {
           </SettingsRow>
           <SettingsRow
             title="Set up by hand instead"
-            description="For apps without a terminal or chat, like Claude Desktop: run the pairing command in Terminal, then add the JSON below to the app's MCP configuration."
+            description="For apps without a terminal or chat: run the pairing command in Terminal, then add the JSON below to the app's MCP configuration."
             control={
               <Button
                 size="xs"
@@ -603,7 +603,7 @@ export function ExternalMcpSettingsPanel(props: { active: boolean }) {
         ) : (
           <SettingsListRow
             title="No connected agents"
-            description="Connect Codex, Claude, or another local MCP agent to create and follow Caide tasks."
+            description="Connect a local MCP agent to create and follow Caide tasks."
           />
         )}
       </SettingsSection>

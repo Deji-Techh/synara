@@ -12,21 +12,12 @@ const defaults = AppSettingsSchema.makeUnsafe({});
 describe("isProviderInstallSettingsDirty", () => {
   it("covers every provider install text and boolean field", () => {
     const dirtyPatches = [
-      { codexBinaryPath: "/opt/codex" },
-      { codexHomePath: "/tmp/codex-home" },
-      { claudeBinaryPath: "/opt/claude" },
-      { cursorBinaryPath: "/opt/cursor" },
-      { cursorApiEndpoint: "https://cursor.example" },
-      { antigravityBinaryPath: "/opt/agy" },
-      { grokBinaryPath: "/opt/grok" },
-      { droidBinaryPath: "/opt/droid" },
-      { kiloBinaryPath: "/opt/kilo" },
-      { kiloServerUrl: "http://127.0.0.1:5000" },
-      { openCodeBinaryPath: "/opt/opencode" },
-      { openCodeServerUrl: "http://127.0.0.1:5001" },
-      { openCodeExperimentalWebSockets: true },
-      { piBinaryPath: "/opt/pi" },
-      { piAgentDir: "/tmp/pi-agent" },
+      { engineBaseUrl: "https://engine.example" },
+      { engineModelId: "gpt-5.6-sol" },
+      { engineFlutterSdkBin: "/opt/flutter/bin/flutter" },
+      { groqBaseUrl: "https://groq.example" },
+      { opencodeZenBaseUrl: "https://zen.example" },
+      { opencodeGoBaseUrl: "https://go.example" },
     ] satisfies ReadonlyArray<Partial<AppSettings>>;
 
     expect(isProviderInstallSettingsDirty(defaults, defaults)).toBe(false);
@@ -37,16 +28,19 @@ describe("isProviderInstallSettingsDirty", () => {
 
   it("uses configured flags instead of unreadable password values", () => {
     expect(
-      isProviderInstallSettingsDirty({ ...defaults, kiloServerPassword: "secret" }, defaults),
+      isProviderInstallSettingsDirty({ ...defaults, engineApiKey: "secret" }, defaults),
     ).toBe(false);
     expect(
-      isProviderInstallSettingsDirty({ ...defaults, kiloServerPasswordConfigured: true }, defaults),
+      isProviderInstallSettingsDirty({ ...defaults, engineApiKeyConfigured: true }, defaults),
     ).toBe(true);
     expect(
-      isProviderInstallSettingsDirty(
-        { ...defaults, openCodeServerPasswordConfigured: true },
-        defaults,
-      ),
+      isProviderInstallSettingsDirty({ ...defaults, groqApiKeyConfigured: true }, defaults),
+    ).toBe(true);
+    expect(
+      isProviderInstallSettingsDirty({ ...defaults, opencodeZenApiKeyConfigured: true }, defaults),
+    ).toBe(true);
+    expect(
+      isProviderInstallSettingsDirty({ ...defaults, opencodeGoApiKeyConfigured: true }, defaults),
     ).toBe(true);
   });
 });
@@ -55,47 +49,26 @@ describe("createProviderInstallResetPatch", () => {
   it("resets every configured field and writes password values so configured flags clear", () => {
     const patch = createProviderInstallResetPatch({
       ...defaults,
-      kiloServerPassword: "",
-      openCodeServerPassword: "",
+      engineApiKey: "",
+      groqApiKey: "",
     });
 
     expect(Object.keys(patch).sort()).toEqual(
       [
-        "anthropicApiKey",
-        "anthropicBaseUrl",
-        "antigravityBinaryPath",
-        "claudeBinaryPath",
-        "codexBinaryPath",
-        "codexHomePath",
-        "cursorApiEndpoint",
-        "cursorBinaryPath",
-        "droidBinaryPath",
-        "googleApiKey",
-        "googleBaseUrl",
-        "grokBinaryPath",
-        "kiloBinaryPath",
-        "kiloServerPassword",
-        "kiloServerUrl",
-        "ollamaApiKey",
-        "ollamaBaseUrl",
-        "openCodeBinaryPath",
-        "openCodeExperimentalWebSockets",
-        "openCodeServerPassword",
-        "openCodeServerUrl",
-        "openaiApiKey",
-        "openaiBaseUrl",
-        "openrouterApiKey",
-        "openrouterBaseUrl",
-        "piAgentDir",
-        "piBinaryPath",
+        "engineApiKey",
+        "engineBaseUrl",
+        "engineFlutterSdkBin",
+        "engineModelId",
+        "groqApiKey",
+        "groqBaseUrl",
+        "opencodeZenApiKey",
+        "opencodeZenBaseUrl",
+        "opencodeGoApiKey",
+        "opencodeGoBaseUrl",
       ].sort(),
     );
-    expect(patch.kiloServerPassword).toBe("");
-    expect(patch.openCodeServerPassword).toBe("");
-    expect(patch.openaiApiKey).toBe("");
-    expect(patch.anthropicApiKey).toBe("");
-    expect(patch.googleApiKey).toBe("");
-    expect(patch.openrouterApiKey).toBe("");
-    expect(patch.ollamaApiKey).toBe("");
+    expect(patch.engineApiKey).toBe("");
+    expect(patch.groqApiKey).toBe("");
+    expect(patch.engineBaseUrl).toBe("");
   });
 });
