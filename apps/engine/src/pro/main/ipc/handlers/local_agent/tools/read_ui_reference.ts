@@ -89,29 +89,86 @@ export interface UiLibraryEntry {
   content: string;
 }
 
-export const UI_LIBRARY: Record<string, UiLibraryEntry> = {};
-
-for (const [name, meta] of Object.entries(references)) {
-  UI_LIBRARY[name] = {
-    ...meta,
+// Literal asset paths are required here: scripts/generate-raw-assets.ts
+// collects assets by scanning source for rawAsset calls with literal string
+// arguments, so dynamic template-literal keys would silently break the build.
+export const UI_LIBRARY: Record<string, UiLibraryEntry> = {
+  "product-archetypes": {
+    ...references["product-archetypes"],
     kind: "reference",
-    content: rawAsset(`src/prompts/skills/ui-ux-mastery/references/${name}.md`),
-  };
-}
-for (const [name, meta] of Object.entries(templates)) {
-  UI_LIBRARY[name] = {
-    ...meta,
+    content: rawAsset("src/prompts/skills/ui-ux-mastery/references/product-archetypes.md"),
+  },
+  "design-system": {
+    ...references["design-system"],
+    kind: "reference",
+    content: rawAsset("src/prompts/skills/ui-ux-mastery/references/design-system.md"),
+  },
+  "component-contracts": {
+    ...references["component-contracts"],
+    kind: "reference",
+    content: rawAsset("src/prompts/skills/ui-ux-mastery/references/component-contracts.md"),
+  },
+  accessibility: {
+    ...references["accessibility"],
+    kind: "reference",
+    content: rawAsset("src/prompts/skills/ui-ux-mastery/references/accessibility.md"),
+  },
+  "anti-slop": {
+    ...references["anti-slop"],
+    kind: "reference",
+    content: rawAsset("src/prompts/skills/ui-ux-mastery/references/anti-slop.md"),
+  },
+  "design-to-code": {
+    ...references["design-to-code"],
+    kind: "reference",
+    content: rawAsset("src/prompts/skills/ui-ux-mastery/references/design-to-code.md"),
+  },
+  "platform-patterns": {
+    ...references["platform-patterns"],
+    kind: "reference",
+    content: rawAsset("src/prompts/skills/ui-ux-mastery/references/platform-patterns.md"),
+  },
+  "quality-rubric": {
+    ...references["quality-rubric"],
+    kind: "reference",
+    content: rawAsset("src/prompts/skills/ui-ux-mastery/references/quality-rubric.md"),
+  },
+  "motion-direction": {
+    ...references["motion-direction"],
+    kind: "reference",
+    content: rawAsset("src/prompts/skills/ui-ux-mastery/references/motion-direction.md"),
+  },
+  "screen-spec": {
+    ...templates["screen-spec"],
     kind: "template",
-    content: rawAsset(`src/prompts/skills/ui-ux-mastery/templates/${name}.md`),
-  };
-}
-for (const [name, meta] of Object.entries(companionSkills)) {
-  UI_LIBRARY[name] = {
-    ...meta,
+    content: rawAsset("src/prompts/skills/ui-ux-mastery/templates/screen-spec.md"),
+  },
+  "component-contract": {
+    ...templates["component-contract"],
+    kind: "template",
+    content: rawAsset("src/prompts/skills/ui-ux-mastery/templates/component-contract.md"),
+  },
+  "design-audit": {
+    ...templates["design-audit"],
+    kind: "template",
+    content: rawAsset("src/prompts/skills/ui-ux-mastery/templates/design-audit.md"),
+  },
+  "design-spec": {
+    ...templates["design-spec"],
+    kind: "template",
+    content: rawAsset("src/prompts/skills/ui-ux-mastery/templates/design-spec.md"),
+  },
+  "motion-storyboard": {
+    ...templates["motion-storyboard"],
+    kind: "template",
+    content: rawAsset("src/prompts/skills/ui-ux-mastery/templates/motion-storyboard.md"),
+  },
+  "anti-ai-slop": {
+    ...companionSkills["anti-ai-slop"],
     kind: "companion-skill",
-    content: rawAsset(`src/prompts/skills/${name}/SKILL.md`),
-  };
-}
+    content: rawAsset("src/prompts/skills/anti-ai-slop/SKILL.md"),
+  },
+};
 
 export const UI_REFERENCE_NAMES = Object.keys(UI_LIBRARY).sort();
 

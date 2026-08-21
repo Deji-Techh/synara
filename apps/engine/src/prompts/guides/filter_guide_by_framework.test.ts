@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { filterGuideByFramework } from "./filter_guide_by_framework";
+import { filterGuideByFramework, guideSupportsFramework } from "./filter_guide_by_framework";
 
 const SAMPLE = `# Title
 
@@ -119,5 +119,52 @@ trailer`;
     for (const fw of ["nextjs", "vite-nitro", "vite", "other", null] as const) {
       expect(() => filterGuideByFramework(onlyNext, fw)).toThrow(/<vite-nitro-only>/);
     }
+  });
+});
+
+describe("flutter guide sections", () => {
+  const FLUTTER_GUIDE = `# Flutter Guide
+
+<flutter-only>
+
+## Flutter path
+
+flutter-only content
+</flutter-only>
+`;
+
+  it("keeps only the flutter section when frameworkType is flutter", () => {
+    const mixed = `intro
+
+<nextjs-only>
+next content
+</nextjs-only>
+
+<flutter-only>
+flutter content
+</flutter-only>
+
+trailer`;
+    const out = filterGuideByFramework(mixed, "flutter");
+
+    expect(out).toContain("flutter content");
+    expect(out).not.toContain("next content");
+    expect(out).not.toContain("<flutter-only>");
+    expect(out).toContain("trailer");
+  });
+
+  it("strips flutter sections for web frameworks", () => {
+    const out = filterGuideByFramework(FLUTTER_GUIDE, "nextjs");
+    expect(out).not.toContain("flutter-only content");
+  });
+
+  it("hides web guides from flutter and flutter guides from web", () => {
+    expect(guideSupportsFramework(SAMPLE, "flutter")).toBe(false);
+    expect(guideSupportsFramework(FLUTTER_GUIDE, "flutter")).toBe(true);
+    expect(guideSupportsFramework(FLUTTER_GUIDE, "nextjs")).toBe(false);
+    expect(guideSupportsFramework(FLUTTER_GUIDE, "vite")).toBe(false);
+    // Unknown frameworks see everything.
+    expect(guideSupportsFramework(SAMPLE, null)).toBe(true);
+    expect(guideSupportsFramework(FLUTTER_GUIDE, null)).toBe(true);
   });
 });

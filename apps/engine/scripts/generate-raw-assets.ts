@@ -12,7 +12,7 @@ const SRC = join(ENGINE_ROOT, "src");
 const OUT = join(SRC, "raw-assets", "index.ts");
 
 const entries = new Map<string, string>();
-const callExpr = /\brawAsset\(\s*["']([^"']+)["']\s*\)/g;
+const callExpr = /\brawAsset\(\s*["']([^"']+)["']\s*,?\s*\)/g;
 
 function walk(dir: string): string[] {
   const { readdirSync, statSync } = require("node:fs");

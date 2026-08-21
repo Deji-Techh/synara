@@ -6,6 +6,11 @@ export const ActiveSubagentSchema = z.object({
   name: z.string(),
   description: z.string(),
   startedAt: z.number(),
+  status: z.enum(["running", "completed", "failed"]).optional(),
+  /** App/chat scoping when known (spawn_subagent tasks); explore-style
+   * subagents omit these and are treated as engine-wide. */
+  appId: z.number().optional(),
+  chatId: z.number().optional(),
 });
 export type ActiveSubagent = z.infer<typeof ActiveSubagentSchema>;
 

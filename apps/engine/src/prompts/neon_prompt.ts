@@ -59,14 +59,24 @@ function getSharedNeonPrompt(
   const addEmailVerificationGuideBody = normalizeGuideNewlines(addEmailVerificationGuide);
   const addPasswordResetGuideBody = normalizeGuideNewlines(addPasswordResetGuide);
 
-  const authSection = isLocalAgentMode
-    ? `## Auth (detailed guide available)
+  const isFlutter = frameworkType === "flutter";
+  const authSection = isLocalAgentMode ? (isFlutter
+    ? `## Auth (Flutter)
+
+Auth on Flutter follows the Flutter + Neon integration shape below: login,
+sign-up, and token refresh run through your server layer — never inside the
+app. The \`add-authentication\`, \`add-email-verification\`, and
+\`add-password-reset\` guides cover the Next.js and Vite + Nitro SDK paths
+only; do NOT call \`read_guide\` for them in a Flutter app.`
+    : `## Auth (detailed guide available)
 
 When the task involves authentication, login, sign-up, user sessions, or auth UI, you MUST call the \`read_guide\` tool with guide="add-authentication" BEFORE writing any auth code. Do NOT implement auth without reading the guide first.
 ${emailVerificationEnabled ? `\n**IMPORTANT:** Email verification is enabled. After reading the auth guide and BEFORE writing any sign-up code, you MUST also call \`read_guide\` with guide="add-email-verification".` : ""}
 
-**IMPORTANT:** If the task involves password reset, forgot-password, or "reset my password" flows, you MUST call \`read_guide\` with guide="add-password-reset" BEFORE writing any password-reset code. Do NOT hand-roll a reset-token flow.`
-    : `## Auth
+**IMPORTANT:** If the task involves password reset, forgot-password, or "reset my password" flows, you MUST call \`read_guide\` with guide="add-password-reset" BEFORE writing any password-reset code. Do NOT hand-roll a reset-token flow.`)
+    : isFlutter
+      ? ""
+      : `## Auth
 
 ${filterGuideByFramework(addAuthenticationGuideBody, frameworkType)}
 ${emailVerificationEnabled ? `\n${filterGuideByFramework(addEmailVerificationGuideBody, frameworkType)}` : ""}

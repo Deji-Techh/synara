@@ -4,7 +4,7 @@ import { type ActiveSubagent } from "../types/sidebar";
 import { getAllSubagentTasks } from "@/pro/main/ipc/handlers/local_agent/tools/team_manager";
 
 export function registerSidebarHandlers() {
-  createTypedHandler(sidebarContracts.getActiveSubagents, async (_event, { appId: _appId }) => {
+  createTypedHandler(sidebarContracts.getActiveSubagents, async (_event, { appId }) => {
     const list: ActiveSubagent[] = [];
     const seenIds = new Set<string>();
 
@@ -12,11 +12,23 @@ export function registerSidebarHandlers() {
     if (subagentMap) {
       for (const subagent of subagentMap.values()) {
         seenIds.add(subagent.id);
+        // Subagents with a known app scope are filtered to the requested app;
+        // engine-wide subagents (no scope) are always included.
+        if (
+          typeof subagent.appId === "number" &&
+          typeof appId === "number" &&
+          subagent.appId !== appId
+        ) {
+          continue;
+        }
         list.push({
           id: subagent.id,
           name: subagent.name,
           description: subagent.description,
           startedAt: subagent.startedAt,
+          status: subagent.status ?? "running",
+          ...(typeof subagent.appId === "number" ? { appId: subagent.appId } : {}),
+          ...(typeof subagent.chatId === "number" ? { chatId: subagent.chatId } : {}),
         });
       }
     }
@@ -29,6 +41,7 @@ export function registerSidebarHandlers() {
           name: t.role,
           description: t.taskDescription,
           startedAt: Date.now(),
+          status: "running",
         });
       }
     }

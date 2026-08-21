@@ -17,8 +17,11 @@ const productionQuality = rawAsset("src/prompts/guides/production-quality.md");
 const productionAuthAuthorization = rawAsset("src/prompts/guides/production-auth-authorization.md");
 const productionPlatform = rawAsset("src/prompts/guides/production-platform.md");
 const provisionBackend = rawAsset("src/prompts/guides/provision-backend.md");
+const flutterProductionQuality = rawAsset("src/prompts/guides/flutter-production-quality.md");
+const flutterOfflineStorage = rawAsset("src/prompts/guides/flutter-offline-storage.md");
+const flutterAdaptiveLayout = rawAsset("src/prompts/guides/flutter-adaptive-layout.md");
 
-import { filterGuideByFramework } from "@/prompts/guides/filter_guide_by_framework";
+import { filterGuideByFramework, guideSupportsFramework } from "@/prompts/guides/filter_guide_by_framework";
 
 /**
  * Registry of available guides. To add a new guide, import its .md file
@@ -40,6 +43,9 @@ const GUIDES: Record<string, string> = {
   "production-auth-authorization": productionAuthAuthorization,
   "production-platform": productionPlatform,
   "provision-backend": provisionBackend,
+  "flutter-production-quality": flutterProductionQuality,
+  "flutter-offline-storage": flutterOfflineStorage,
+  "flutter-adaptive-layout": flutterAdaptiveLayout,
 };
 
 export const GUIDE_NAMES = Object.keys(GUIDES).sort();
@@ -49,16 +55,29 @@ export function getGuideContent(
   frameworkType: Parameters<typeof filterGuideByFramework>[1],
 ) {
   const content = GUIDES[guide];
-  if (!content) {
-    const available = GUIDE_NAMES.join(", ");
+  if (!content || !guideSupportsFramework(content, frameworkType)) {
+    const available = getAvailableGuides(frameworkType).join(", ");
     throw new CaideError(
       `Guide "${guide}" not found. Available guides: ${available}`,
       CaideErrorKind.NotFound,
     );
   }
   const hasFrameworkSections =
-    content.includes("<nextjs-only>") || content.includes("<vite-nitro-only>");
+    content.includes("<nextjs-only>") ||
+    content.includes("<vite-nitro-only>") ||
+    content.includes("<flutter-only>");
   return hasFrameworkSections ? filterGuideByFramework(content, frameworkType) : content;
+}
+
+/**
+ * Guide names applicable to the given framework. Web guides are hidden from
+ * Flutter builds and Flutter guides from web frameworks so the model is never
+ * handed steps for the wrong runtime.
+ */
+export function getAvailableGuides(
+  frameworkType: Parameters<typeof filterGuideByFramework>[1],
+): string[] {
+  return GUIDE_NAMES.filter((name) => guideSupportsFramework(GUIDES[name], frameworkType));
 }
 
 const readGuideSchema = z.object({
