@@ -63,7 +63,7 @@ export function BrandingWizardModal(props: {
   }, []);
 
   useEffect(() => {
-    // Seed on the closed -> open transition only, mirroring CreateProjectDialog.
+    // Seed on the closed -> open transition only, mirroring the project dialogs.
     if (props.open) {
       resetState();
     }
