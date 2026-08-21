@@ -326,14 +326,6 @@ export const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
     target: null,
   },
 
-  // ── Usage ─────────────────────────────────────────────────────────────────────
-  {
-    id: "usage:usage",
-    section: "usage",
-    title: "Usage and billing",
-    keywords: "Remaining quota and credits for each signed-in provider. limits credits",
-    target: null,
-  },
 
   // ── Advanced ──────────────────────────────────────────────────────────────────
   {

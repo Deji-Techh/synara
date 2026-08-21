@@ -614,7 +614,7 @@ it.layer(NodeServices.layer)("keybindings", (it) => {
       yield* writeKeybindingsConfig(keybindingsConfigPath, [
         { key: "mod+n", command: "chat.new", when: "!terminalFocus" },
         { key: "mod+shift+k", command: "chat.newTerminal", when: "!terminalFocus" },
-        { key: "mod+shift+u", command: "settings.usage", when: "!terminalFocus" },
+        { key: "mod+shift+u", command: "sidebar.activity", when: "!terminalFocus" },
       ]);
 
       yield* Effect.gen(function* () {
@@ -643,7 +643,7 @@ it.layer(NodeServices.layer)("keybindings", (it) => {
       // Non-creation commands keep their original guard untouched.
       assert.isTrue(
         persisted.some(
-          (entry) => entry.command === "settings.usage" && entry.when === "!terminalFocus",
+          (entry) => entry.command === "sidebar.activity" && entry.when === "!terminalFocus",
         ),
       );
     }).pipe(Effect.provide(makeKeybindingsLayer())),

@@ -15,7 +15,6 @@ export const SETTINGS_SECTION_IDS = [
   "models",
   "providers",
   "skills",
-  "usage",
   "integrations",
   "advanced",
 ] as const;
@@ -102,14 +101,6 @@ export const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
     description: "Capture, customize, and add shortcuts for every Caide command.",
     icon: "shortcut",
     eyebrow: "Key bindings",
-  },
-  {
-    id: "usage",
-    group: "personal",
-    label: "Usage & limits",
-    description: "See remaining quota and credits for every signed-in provider.",
-    icon: "gauge",
-    eyebrow: "Provider limits",
   },
   {
     id: "integrations",

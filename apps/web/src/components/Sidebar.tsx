@@ -1501,7 +1501,6 @@ export default function Sidebar() {
   const addProjectShortcutLabel =
     shortcutLabelForCommand(keybindings, "sidebar.addProject") ??
     (isMacPlatform(navigator.platform) ? "⇧⌘O" : "Ctrl+Shift+O");
-  const usageSettingsShortcutLabel = shortcutLabelForCommand(keybindings, "settings.usage");
   const { activeProjectId: focusedProjectId } = useFocusedChatContext();
   const latestProjectId = useLatestProjectStore((state) => state.latestProjectId);
   const [createAppDialogOpen, setCreateAppDialogOpen] = useState(false);
@@ -4704,15 +4703,6 @@ export default function Sidebar() {
         setSearchPaletteOpen((prev) => !prev || searchPaletteMode !== "import");
         return;
       }
-      if (command === "settings.usage") {
-        event.preventDefault();
-        event.stopPropagation();
-        void navigate({
-          to: "/settings",
-          search: { section: "usage" },
-        });
-        return;
-      }
       if (command === "space.previous" || command === "space.next") {
         if (!isProjectsSidebarSurface({ isOnSettings })) return;
         event.preventDefault();
@@ -5012,13 +5002,6 @@ export default function Sidebar() {
         description: "Open app settings.",
         keywords: ["preferences", "config"],
       },
-      {
-        id: "usage-settings",
-        label: "Usage settings",
-        description: "Open provider usage and remaining credits.",
-        keywords: ["usage", "limits", "credits", "quota", "providers"],
-        shortcutLabel: usageSettingsShortcutLabel,
-      },
       // Space jumps ride the palette so keyboard users can reach any space by name
       // without learning the previous/next-space chords.
       ...(spaces.length > 0
@@ -5070,7 +5053,6 @@ export default function Sidebar() {
       newThreadShortcutLabel,
       openSpaceCreator,
       spaces,
-      usageSettingsShortcutLabel,
       voidSpace,
     ],
   );
