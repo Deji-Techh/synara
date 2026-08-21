@@ -51,7 +51,6 @@ import {
   GOALS_WS_METHODS,
   type GoalDomainEvent,
   PREVIEW_WS_METHODS,
-  PREVIEW_SUPERVISOR_WS_METHODS,
 } from "@caide/contracts";
 import { VOICE_TRANSCRIPTION_UPLOAD_ROUTE_PATH } from "@caide/shared/binaryTransfer";
 
@@ -880,7 +879,6 @@ export function createWsNativeApi(): NativeApi {
         transport.request(PREVIEW_WS_METHODS.flutterToolchainStatus, input),
       flutterToolchainInstall: (input) =>
         transport.request(PREVIEW_WS_METHODS.flutterToolchainInstall, input, { timeoutMs: null }),
-      supervisorState: (input) => transport.request(PREVIEW_SUPERVISOR_WS_METHODS.getState, input),
     },
     browser: {
       open: async (input) => {

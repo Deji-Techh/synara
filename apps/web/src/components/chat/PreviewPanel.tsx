@@ -128,7 +128,7 @@ const DEVICE_ID_FRAME_KIND_FALLBACK: Record<PreviewDeviceId, PreviewFrameKind> =
 
 const FRAME_KIND_OPTIONS: readonly { id: PreviewFrameKind; label: string }[] = [
   { id: "androidPhone", label: "Android Phone" },
-  { id: "iPad", label: "Android Tablet" },
+  { id: "iPad", label: "iPad" },
   { id: "iPhone", label: "iPhone" },
   { id: "frameless", label: "Frameless" },
 ];
@@ -144,6 +144,29 @@ const BUILD_CHANNEL_OPTIONS: readonly { id: "debug" | "profile" | "release"; lab
   { id: "profile", label: "Profile" },
   { id: "release", label: "Release" },
 ];
+
+interface PreviewDeviceInfo {
+  id: string;
+  name: string;
+  isEmulator: boolean;
+  platform?: "android" | "ios" | "web";
+}
+
+/**
+ * Pick a concrete deviceId for a native run from the engine's device list
+ * (AVDs / adb / simctl). Falls back to the generic device name when nothing
+ * matches or the list is unavailable — the engine already handles both.
+ */
+function pickNativeDeviceId(
+  devices: PreviewDeviceInfo[] | null,
+  flutterDevice: "web-server" | "emulator" | "simulator",
+): string | undefined {
+  if (devices === null || flutterDevice === "web-server") {
+    return undefined;
+  }
+  const wanted = flutterDevice === "emulator" ? "android" : "ios";
+  return devices.find((device) => device.platform === wanted)?.id;
+}
 
 function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean }) {
   const [status, setStatus] = useState<{
@@ -166,13 +189,9 @@ function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean 
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
-    (
-      ensureNativeApi() as unknown as {
-        preview: { flutterToolchainStatus: (i: { threadId: ThreadId }) => Promise<never> };
-      }
-    ).preview
-      .flutterToolchainStatus({ threadId: props.threadId })
-      .then((res: unknown) => {
+    ensureNativeApi()
+      .preview.flutterToolchainStatus({ threadId: props.threadId })
+      .then((res) => {
         const r = res as {
           supported: boolean;
           installed: boolean;
@@ -230,11 +249,8 @@ function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean 
       totalBytes: status?.estimatedDownloadBytes ?? null,
       message: "Preparing Flutter SDK…",
     });
-    (
-      ensureNativeApi() as unknown as {
-        preview: { flutterToolchainInstall: (i: { threadId: ThreadId }) => Promise<unknown> };
-      }
-    ).preview
+    ensureNativeApi()
+      .preview
       .flutterToolchainInstall({ threadId: props.threadId })
       .then(() => {
         setInstalling(false);
@@ -1006,6 +1022,32 @@ export function PreviewPanel(props: {
     return () => window.clearInterval(timer);
   }, [props.isVisible, pollOnce]);
 
+  // Real device list from the engine (AVDs, adb, simctl) so native runs can
+  // target a concrete device. Listing is best-effort; when it fails the pane
+  // falls back to the engine's generic device names.
+  const [previewDevices, setPreviewDevices] = useState<PreviewDeviceInfo[] | null>(null);
+
+  useEffect(() => {
+    if (!props.isVisible) {
+      return;
+    }
+    let cancelled = false;
+    ensureNativeApi()
+      .preview.devices({ threadId: props.threadId })
+      .then((result) => {
+        const list = (result as { devices?: PreviewDeviceInfo[] }).devices;
+        if (!cancelled && Array.isArray(list)) {
+          setPreviewDevices(list);
+        }
+      })
+      .catch(() => {
+        // Keep whatever we had; the generic fallback still works.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [props.isVisible, props.threadId]);
+
   // Native previews (Android emulator / iOS simulator) cannot render in a
   // browser iframe. While one is running, poll device screenshots and paint
   // the newest frame inside the device chassis; keep the last good frame so a
@@ -1089,14 +1131,16 @@ export function PreviewPanel(props: {
   const handleStart = useCallback(() => {
     setPanelState((previous) => previewStartRequested(previous));
     const flutterDevice = FRAME_KIND_TO_FLUTTER_DEVICE[frameKind];
+    const deviceId = pickNativeDeviceId(previewDevices, flutterDevice);
     ensureNativeApi()
-      .preview.start({ threadId: props.threadId, device: flutterDevice } as unknown as {
-        threadId: ThreadId;
+      .preview.start({
+        threadId: props.threadId,
+        device: flutterDevice,
+        ...(deviceId !== undefined ? { deviceId } : {}),
       })
       .then((result) => {
-        const started = result as { url: string; kind?: "web" | "native" };
         setPanelState((previous) =>
-          previewStarted(previous, started.url, [], started.kind ?? null),
+          previewStarted(previous, result.url, [], result.kind ?? null),
         );
       })
       .catch((error: unknown) => {
@@ -1122,7 +1166,7 @@ export function PreviewPanel(props: {
         }
         setPanelState((previous) => previewStartFailed(previous, message));
       });
-  }, [props.threadId, frameKind]);
+  }, [props.threadId, frameKind, previewDevices]);
 
   const handleStop = useCallback(() => {
     void ensureNativeApi().preview.stop({ threadId: props.threadId });
@@ -1286,10 +1330,6 @@ export function PreviewPanel(props: {
           target: options.target,
           channel: options.channel,
           ...(options.signing ? { signing: options.signing } : {}),
-        } as unknown as {
-          threadId: ThreadId;
-          target: "apk" | "appbundle" | "ipa";
-          channel?: "debug" | "profile" | "release";
         })
         .then((result) => {
           setPanelState((previous) => buildAccepted(previous, result.buildId));

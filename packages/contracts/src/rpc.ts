@@ -69,7 +69,6 @@ import {
   GitHubProjectProvisionInput,
   GitHubProjectProvisionProgressEvent,
 } from "./githubProjectProvisioning";
-import { StudioListThreadOutputsInput, StudioListThreadOutputsResult } from "./studio";
 import {
   GitCheckoutInput,
   GitActionProgressEvent,
@@ -165,11 +164,6 @@ import {
   FlutterToolchainInstallResult,
   PREVIEW_WS_METHODS,
 } from "./preview";
-import {
-  PREVIEW_SUPERVISOR_WS_METHODS,
-  PreviewSupervisorGetStateInput,
-  PreviewSupervisorSnapshot,
-} from "./previewSupervisor";
 import {
   ProviderGetComposerCapabilitiesInput,
   ProviderComposerCapabilities,
@@ -512,12 +506,6 @@ export const WsProjectsProvisionFromGitHubRpc = Rpc.make(WS_METHODS.projectsProv
   stream: true,
 });
 
-export const WsStudioListThreadOutputsRpc = Rpc.make(WS_METHODS.studioListThreadOutputs, {
-  payload: StudioListThreadOutputsInput,
-  success: StudioListThreadOutputsResult,
-  error: WsRpcError,
-});
-
 export const WsFilesystemBrowseRpc = Rpc.make(WS_METHODS.filesystemBrowse, {
   payload: FilesystemBrowseInput,
   success: FilesystemBrowseResult,
@@ -737,12 +725,6 @@ export const WsPreviewFlutterToolchainInstallRpc = Rpc.make(
   },
 );
 
-export const WsPreviewSupervisorGetStateRpc = Rpc.make(PREVIEW_SUPERVISOR_WS_METHODS.getState, {
-  payload: PreviewSupervisorGetStateInput,
-  success: PreviewSupervisorSnapshot,
-  error: WsRpcError,
-});
-
 export const WsPreviewRpcGroup = RpcGroup.make(
   WsPreviewStartRpc,
   WsPreviewStopRpc,
@@ -756,7 +738,6 @@ export const WsPreviewRpcGroup = RpcGroup.make(
   WsPreviewDevicesRpc,
   WsPreviewFlutterToolchainStatusRpc,
   WsPreviewFlutterToolchainInstallRpc,
-  WsPreviewSupervisorGetStateRpc,
 );
 
 export const WsDeviceRpcGroup = RpcGroup.make(
@@ -1384,7 +1365,6 @@ export const WsFeatureRpcGroup = RpcGroup.make(
   WsProjectsListDevServersRpc,
   WsSubscribeProjectDevServerEventsRpc,
   WsProjectsProvisionFromGitHubRpc,
-  WsStudioListThreadOutputsRpc,
   WsFilesystemBrowseRpc,
   WsAppCreateAppRpc,
   WsShellOpenInEditorRpc,

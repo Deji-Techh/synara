@@ -181,12 +181,12 @@ import type {
   PreviewBuildStateResult,
   PreviewScreenshotInput,
   PreviewScreenshotResult,
+  PreviewDevicesInput,
+  PreviewDevicesResult,
+  FlutterToolchainStatusInput,
+  FlutterToolchainStatusResult,
+  FlutterToolchainInstallInput,
 } from "./preview";
-import type {
-  PreviewSupervisorGetStateInput,
-  PreviewSupervisorSnapshot,
-} from "./previewSupervisor";
-import type { StudioListThreadOutputsInput, StudioListThreadOutputsResult } from "./studio";
 import type {
   ServerConfig,
   ServerDiagnosticsResult,
@@ -605,11 +605,6 @@ export interface NativeApi {
      */
     createApp: (input: AppCreateInput) => Promise<AppCreateResult>;
   };
-  studio: {
-    listThreadOutputs: (
-      input: StudioListThreadOutputsInput,
-    ) => Promise<StudioListThreadOutputsResult>;
-  };
   shell: {
     openInEditor: (cwd: string, editor: EditorId) => Promise<void>;
     openExternal: (url: string) => Promise<void>;
@@ -874,7 +869,10 @@ export interface NativeApi {
     buildStart: (input: PreviewBuildStartInput) => Promise<PreviewBuildStartResult>;
     buildState: (input: PreviewBuildStateInput) => Promise<PreviewBuildStateResult>;
     screenshot: (input: PreviewScreenshotInput) => Promise<PreviewScreenshotResult>;
-    /** Server-side build/analyze/test supervisor snapshot for the thread's app. */
-    supervisorState: (input: PreviewSupervisorGetStateInput) => Promise<PreviewSupervisorSnapshot>;
+    devices: (input: PreviewDevicesInput) => Promise<PreviewDevicesResult>;
+    flutterToolchainStatus: (input: FlutterToolchainStatusInput) => Promise<FlutterToolchainStatusResult>;
+    flutterToolchainInstall: (input: FlutterToolchainInstallInput) => Promise<{
+      status: FlutterToolchainStatusResult;
+    }>;
   };
 }
