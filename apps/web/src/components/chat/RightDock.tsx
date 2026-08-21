@@ -202,6 +202,10 @@ export function RightDock(props: RightDockProps) {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const minWidth = props.minWidth;
   const activePaneKind = activePane?.kind ?? null;
+  // Preview locks to a fixed viewport so Android/iPhone share the same large
+  // middle-centered frame (user request: 60% larger, non-resizable). All other
+  // panes remain freely resizable.
+  const isPreviewLocked = activePaneKind === "preview";
   useEffect(() => {
     if (!props.state.open) {
       return;
@@ -269,10 +273,14 @@ export function RightDock(props: RightDockProps) {
         innerClassName={CHAT_BACKGROUND_CLASS_NAME}
         gapClassName={chromeMotionClass}
         transparentSurface
-        resizable={{
-          minWidth: props.minWidth,
-          shouldAcceptWidth: props.shouldAcceptWidth,
-        }}
+        resizable={
+          isPreviewLocked
+            ? undefined
+            : {
+                minWidth: props.minWidth,
+                shouldAcceptWidth: props.shouldAcceptWidth,
+              }
+        }
       >
         <div
           ref={contentRef}
@@ -371,7 +379,7 @@ export function RightDock(props: RightDockProps) {
             })}
           </div>
         </div>
-        <SidebarRail />
+        {isPreviewLocked ? null : <SidebarRail />}
       </Sidebar>
     </SidebarProvider>
   );

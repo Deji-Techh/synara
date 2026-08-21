@@ -77,8 +77,10 @@ import {
   type PreviewTestState,
 } from "./previewPanel.logic";
 
-const PREVIEW_POLL_INTERVAL_MS = 1_000;
-const BUILD_POLL_INTERVAL_MS = 1_500;
+const PREVIEW_POLL_INTERVAL_MS = 2_000;
+const BUILD_POLL_INTERVAL_MS = 2_000;
+const TOOLCHAIN_POLL_INTERVAL_MS = 10_000;
+const LOGS_RENDER_LIMIT = 80;
 
 const PREVIEW_TABS: readonly {
   id: PreviewPaneTab;
@@ -141,7 +143,7 @@ const BUILD_CHANNEL_OPTIONS: readonly { id: "debug" | "profile" | "release"; lab
   { id: "release", label: "Release" },
 ];
 
-function FlutterToolchainBanner(props: { threadId: ThreadId }) {
+function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean }) {
   const [status, setStatus] = useState<{
     supported: boolean;
     installed: boolean;
@@ -181,20 +183,24 @@ function FlutterToolchainBanner(props: { threadId: ThreadId }) {
   }, [props.threadId]);
 
   useEffect(() => {
+    if (!props.isVisible) return;
     refresh();
-    const id = window.setInterval(refresh, 5000);
+    // Pauses while hidden — keep-mounted hidden preview panes were spamming
+    // the WS with toolchain polls and keeping the engine awake, causing the
+    // CPU/RAM spike on every preview switch.
+    const id = window.setInterval(refresh, TOOLCHAIN_POLL_INTERVAL_MS);
     return () => window.clearInterval(id);
-  }, [refresh]);
+  }, [props.isVisible, refresh]);
 
   // Poll progress via status while installing (engine emits progress via logs, but status percent drives bar)
   useEffect(() => {
-    if (!installing) return;
+    if (!installing || !props.isVisible) return;
     const iv = window.setInterval(() => {
       // While installing, re-use status polling for fallback + try to read engine logs for progress percent
       refresh();
     }, 1000);
     return () => window.clearInterval(iv);
-  }, [installing, refresh]);
+  }, [installing, props.isVisible, refresh]);
 
   const handleInstall = useCallback(() => {
     setInstalling(true);
@@ -404,6 +410,9 @@ function PreviewConsole(props: { isOpen: boolean; onToggle: () => void; logs: re
   }, [logs, isOpen]);
 
   const latestLine = logs.at(-1) ?? "No output yet.";
+  // Rendering all 500 lines every poll caused DOM churn (500 <p> recreated
+  // every 2s) — the freeze the user reported when switching to preview.
+  const visibleLogs = logs.length > LOGS_RENDER_LIMIT ? logs.slice(-LOGS_RENDER_LIMIT) : logs;
   return (
     <div className="border-t border-zinc-900">
       <button
@@ -431,11 +440,18 @@ function PreviewConsole(props: { isOpen: boolean; onToggle: () => void; logs: re
           {logs.length === 0 ? (
             <p>Waiting for `flutter run` output…</p>
           ) : (
-            logs.map((line, index) => (
-              <p key={index} className="break-words whitespace-pre-wrap">
-                {line}
-              </p>
-            ))
+            <>
+              {logs.length > LOGS_RENDER_LIMIT && (
+                <p className="mb-1 text-[10px] text-zinc-600">
+                  Showing last {LOGS_RENDER_LIMIT} of {logs.length} lines…
+                </p>
+              )}
+              {visibleLogs.map((line, index) => (
+                <p key={index} className="break-words whitespace-pre-wrap">
+                  {line}
+                </p>
+              ))}
+            </>
           )}
         </div>
       )}
@@ -1193,13 +1209,13 @@ export function PreviewPanel(props: {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-black" data-testid="preview-pane">
-      {/* Top Header — iOS Simulator chrome (Synara DevicePanel header) */}
+      {/* Top Header — iOS Simulator chrome, full-width spread */}
       <div className="flex h-9 shrink-0 items-center gap-2 border-b border-zinc-900 bg-zinc-950 px-3">
-        <div className="relative flex items-center">
+        <div className="relative flex min-w-0 flex-1 items-center">
           <select
             value={frameKind}
             onChange={(event) => handleFrameKindChange(event.target.value as PreviewFrameKind)}
-            className="appearance-none rounded-full border border-zinc-800 bg-zinc-900 py-1 pl-2.5 pr-6 text-xs font-medium text-zinc-200 outline-none transition-colors hover:border-zinc-700 hover:bg-zinc-800 focus-visible:ring-1 focus-visible:ring-zinc-700"
+            className="w-full max-w-[220px] appearance-none rounded-full border border-zinc-800 bg-zinc-900 py-1 pl-2.5 pr-6 text-xs font-medium text-zinc-200 outline-none transition-colors hover:border-zinc-700 hover:bg-zinc-800 focus-visible:ring-1 focus-visible:ring-zinc-700"
           >
             {FRAME_KIND_OPTIONS.map((option) => (
               <option key={option.id} value={option.id}>
@@ -1209,35 +1225,36 @@ export function PreviewPanel(props: {
           </select>
           <ChevronDownIcon
             aria-hidden="true"
-            className="pointer-events-none absolute right-1.5 size-3.5 text-zinc-500"
+            className="pointer-events-none absolute right-[calc(100%-208px)] size-3.5 text-zinc-500 sm:right-1.5"
           />
         </div>
-        <div className="min-w-0 flex-1" />
-        {isRunning && (
-          <div className="flex shrink-0 items-center gap-0.5">
-            <button
-              type="button"
-              onClick={() => handleReload(true)}
-              title="Hot reload"
-              aria-label="Hot reload"
-              className="flex size-7 items-center justify-center rounded-md text-zinc-500 outline-none transition-colors hover:bg-zinc-900 hover:text-zinc-200 focus-visible:ring-1 focus-visible:ring-zinc-700"
-            >
-              <RefreshCwIcon className="size-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={handleStop}
-              title="Stop preview"
-              aria-label="Stop preview"
-              className="flex size-7 items-center justify-center rounded-md text-zinc-500 outline-none transition-colors hover:bg-red-500/10 hover:text-red-400 focus-visible:ring-1 focus-visible:ring-zinc-700"
-            >
-              <DeviceRecordStopIcon className="size-3.5" />
-            </button>
-          </div>
-        )}
-        <StatusPill state={panelState} />
+        <div className="flex shrink-0 items-center gap-1.5">
+          {isRunning && (
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => handleReload(true)}
+                title="Hot reload"
+                aria-label="Hot reload"
+                className="flex size-7 items-center justify-center rounded-md text-zinc-500 outline-none transition-colors hover:bg-zinc-900 hover:text-zinc-200 focus-visible:ring-1 focus-visible:ring-zinc-700"
+              >
+                <RefreshCwIcon className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={handleStop}
+                title="Stop preview"
+                aria-label="Stop preview"
+                className="flex size-7 items-center justify-center rounded-md text-zinc-500 outline-none transition-colors hover:bg-red-500/10 hover:text-red-400 focus-visible:ring-1 focus-visible:ring-zinc-700"
+              >
+                <DeviceRecordStopIcon className="size-3.5" />
+              </button>
+            </div>
+          )}
+          <StatusPill state={panelState} />
+        </div>
       </div>
-      <FlutterToolchainBanner threadId={props.threadId} />
+      <FlutterToolchainBanner threadId={props.threadId} isVisible={props.isVisible} />
 
       {/* Main Content Area — Synara: full-black stage, device+rail optically centered */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-black">
@@ -1291,11 +1308,19 @@ export function PreviewPanel(props: {
             ) : (
               <div className="flex min-h-0 flex-1 flex-col items-center justify-center bg-black px-3 py-3">
                 <div aria-hidden className={DEVICE_RAIL_HEIGHT_CLASS} />
-                <DeviceScreen
-                  className="min-h-0 w-full flex-1"
-                  kind={statusFrameKind}
-                  landscape={landscape}
-                >
+                {/* Unified larger middle-centered frame — Android renders at iPhone canvas so both share the same big viewport */}
+                <div className="flex w-full flex-1 items-center justify-center">
+                  <div
+                    className="flex h-full w-full items-center justify-center"
+                    style={{ transform: "scale(1.15)", transformOrigin: "center" }}
+                  >
+                    <DeviceScreen
+                      className="min-h-0 w-full flex-1"
+                      kind={statusFrameKind}
+                      pixelWidth={statusFrameKind === "androidPhone" ? 1206 : undefined}
+                      pixelHeight={statusFrameKind === "androidPhone" ? 2622 : undefined}
+                      landscape={landscape}
+                    >
                   <div className="flex h-full w-full flex-col items-center justify-center bg-black text-center">
                     {panelState.status === "starting" ? (
                       <div className="flex flex-col items-center gap-3 px-[12%] text-center">
@@ -1342,12 +1367,15 @@ export function PreviewPanel(props: {
                       </div>
                     )}
                   </div>
-                </DeviceScreen>
-                <div className="relative z-10">
+                    </DeviceScreen>
+                  </div>
+                </div>
+                <div className="relative z-10 flex w-full justify-center">
                   <DeviceControlRail
                     disabled={!isRunning}
                     recording={false}
                     landscape={landscape}
+                    spread
                     onAction={handleRailAction}
                   />
                 </div>
@@ -1391,9 +1419,9 @@ export function PreviewPanel(props: {
         )}
       </div>
 
-      {/* Bottom Tab Bar — Synara pill rail (kept per user request) */}
+      {/* Bottom Tab Bar — spread full width */}
       <div
-        className="flex shrink-0 items-center justify-center gap-1 border-t border-zinc-900 bg-zinc-950 px-2 py-1.5"
+        className="grid w-full shrink-0 grid-cols-5 gap-1 border-t border-zinc-900 bg-zinc-950 px-2 py-1.5"
         role="tablist"
       >
         {PREVIEW_TABS.map((tab) => {
@@ -1407,7 +1435,7 @@ export function PreviewPanel(props: {
               aria-selected={isSelected}
               onClick={() => handleTabChange(tab.id)}
               className={cn(
-                "flex flex-col items-center gap-0.5 rounded-md px-3 py-1 text-[10px] font-medium transition-colors outline-none focus-visible:ring-1 focus-visible:ring-zinc-700",
+                "flex w-full flex-col items-center justify-center gap-0.5 rounded-md py-1.5 text-[10px] font-medium transition-colors outline-none focus-visible:ring-1 focus-visible:ring-zinc-700",
                 isSelected
                   ? "bg-zinc-900 text-white"
                   : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300",

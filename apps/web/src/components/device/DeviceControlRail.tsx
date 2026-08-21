@@ -80,10 +80,17 @@ export function DeviceControlRail(props: {
   recording: boolean;
   /** Rotation is a view transform, so it stays available mid-capture. */
   landscape: boolean;
+  spread?: boolean;
   onAction: (action: DeviceRailAction) => void;
 }) {
   return (
-    <div className={cn("flex items-center justify-center gap-1", DEVICE_RAIL_HEIGHT_CLASS)}>
+    <div
+      className={cn(
+        "flex items-center gap-1",
+        props.spread ? "w-full justify-between px-2" : "justify-center",
+        DEVICE_RAIL_HEIGHT_CLASS,
+      )}
+    >
       {DEVICE_RAIL_GROUPS.map((group, groupIndex) => (
         <div key={group.id} className="flex items-center gap-0.5">
           {groupIndex > 0 ? (
