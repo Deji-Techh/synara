@@ -19,7 +19,16 @@ import {
 } from "../../artifactsGrid.logic";
 import { copyTextToClipboard } from "../../hooks/useCopyToClipboard";
 import { formatRelativeTime } from "../../lib/relativeTime";
-import { ArchiveIcon, ChevronDownIcon, CopyIcon, DownloadIcon, EllipsisIcon, PencilIcon, SearchIcon, Trash2 } from "../../lib/icons";
+import {
+  ArchiveIcon,
+  ChevronDownIcon,
+  CopyIcon,
+  DownloadIcon,
+  EllipsisIcon,
+  PencilIcon,
+  SearchIcon,
+  Trash2,
+} from "../../lib/icons";
 import { ensureNativeApi } from "~/nativeApi";
 import { buildLocalImageUrl } from "../../lib/localImageUrls";
 import {
@@ -205,8 +214,7 @@ export function ArtifactsDialog({
         <DialogHeader>
           <DialogTitle>Artifacts</DialogTitle>
           <DialogDescription>
-            Every APK, AAB, and IPA you have built. Share, rename, download, or delete saved
-            builds.
+            Every APK, AAB, and IPA you have built. Share, rename, download, or delete saved builds.
           </DialogDescription>
         </DialogHeader>
         <DialogPanel className="flex min-h-0 flex-col gap-3">
@@ -307,7 +315,12 @@ async function resolveArtifactDownloadUrl(
 ): Promise<{ url: string; fileName: string }> {
   const share = await ensureNativeApi().artifacts.shareUrl({ artifactId: artifact.id });
   return {
-    url: buildLocalImageUrl({ src: share.filePath, grant: share.grant, download: true }),
+    url: buildLocalImageUrl({
+      src: share.filePath,
+      cwd: undefined,
+      grant: share.grant,
+      download: true,
+    }),
     fileName: artifact.fileName,
   };
 }

@@ -70,9 +70,21 @@ describe("sortArtifacts", () => {
   });
 
   it("groups by kind and breaks ties newest-first", () => {
-    const apkOld = artifact({ displayName: "apk-old", kind: "apk", createdAt: "2026-01-01T00:00:00.000Z" });
-    const aabNew = artifact({ displayName: "aab-new", kind: "aab", createdAt: "2026-03-01T00:00:00.000Z" });
-    const apkNew = artifact({ displayName: "apk-new", kind: "apk", createdAt: "2026-02-01T00:00:00.000Z" });
+    const apkOld = artifact({
+      displayName: "apk-old",
+      kind: "apk",
+      createdAt: "2026-01-01T00:00:00.000Z",
+    });
+    const aabNew = artifact({
+      displayName: "aab-new",
+      kind: "aab",
+      createdAt: "2026-03-01T00:00:00.000Z",
+    });
+    const apkNew = artifact({
+      displayName: "apk-new",
+      kind: "apk",
+      createdAt: "2026-02-01T00:00:00.000Z",
+    });
     const sort: ArtifactSort = { by: "kind", direction: "asc" };
     expect(sortArtifacts([apkOld, aabNew, apkNew], sort).map((item) => item.displayName)).toEqual([
       "aab-new",

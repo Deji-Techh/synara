@@ -51,11 +51,15 @@ export function filterArtifacts(
 ): ArtifactRecord[] {
   const needle = query.trim().toLowerCase();
   if (!needle) return [...records];
-  return records.filter((record) =>
-    [record.displayName, record.fileName, record.projectName ?? null, record.kind]
-      .filter(Boolean)
-      .some((part) => part.toLowerCase().includes(needle)),
-  );
+  return records.filter((record) => {
+    const haystacks = [
+      record.displayName,
+      record.fileName,
+      record.projectName ?? "",
+      record.kind,
+    ].map((part) => part.toLowerCase());
+    return haystacks.some((part) => part.includes(needle));
+  });
 }
 
 /** Human-readable binary size: 0 B, 512 B, 1.5 MB, 42.0 MB, 1.2 GB. */
