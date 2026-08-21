@@ -115,7 +115,6 @@ import { useRightDockStore } from "../rightDockStore";
 import { resolveVisibleDockSidechatThreadIds } from "../rightDockStore.logic";
 import { arraysShallowEqual } from "../storeNormalization";
 import { providerModelDiscoveryInvalidationFingerprint } from "../lib/providerDiscoveryInvalidation";
-import { providerDiscoveryQueryKeys } from "../lib/providerDiscoveryReactQuery";
 import { useAppSettings } from "../appSettings";
 import {
   getNotifiableProviderUpdateStatuses,
@@ -1906,21 +1905,13 @@ function EventRouter() {
       void reconcileServerProviderStatuses(queryClient, payload.providers).catch(() => undefined);
       if (shouldInvalidateProviderDiscovery) {
         // Model and agent discovery can depend on auth, availability, and installed versions,
-        // but not on every provider-status timestamp replay.
+        // but not on every provider-status timestamp replay. Prefix invalidation matches
+        // every provider's query key regardless of its binaryPath/cwd variants.
         void queryClient.invalidateQueries({
-          queryKey: ["provider-discovery", "models", "openai"],
+          queryKey: ["provider-discovery", "models"],
         });
         void queryClient.invalidateQueries({
-          queryKey: ["provider-discovery", "models", "openai"],
-        });
-        void queryClient.invalidateQueries({
-          queryKey: ["provider-discovery", "models", "openai"],
-        });
-        void queryClient.invalidateQueries({
-          queryKey: providerDiscoveryQueryKeys.agentsForProvider("openai"),
-        });
-        void queryClient.invalidateQueries({
-          queryKey: providerDiscoveryQueryKeys.agentsForProvider("openai"),
+          queryKey: ["provider-discovery", "agents"],
         });
       }
     });
