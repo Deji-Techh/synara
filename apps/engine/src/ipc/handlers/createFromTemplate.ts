@@ -101,19 +101,22 @@ export async function createFromTemplate({
   if (templateId === "flutter") {
     const scaffoldDir = "scaffold-flutter";
     const sourceScaffoldPath = path.join(__dirname, "..", "..", scaffoldDir);
+    const engineScaffoldPath = path.join(process.cwd(), "apps", "engine", scaffoldDir);
     const repoScaffoldPath = path.join(process.cwd(), scaffoldDir);
-    const candidatePath = fs.existsSync(sourceScaffoldPath) ? sourceScaffoldPath : repoScaffoldPath;
-    const hasScaffold = fs.existsSync(candidatePath);
+    const candidatePath = [sourceScaffoldPath, engineScaffoldPath, repoScaffoldPath].find((p) =>
+      fs.existsSync(p),
+    );
+    const hasScaffold = candidatePath !== undefined;
     const scaffoldLooksValid =
       hasScaffold &&
-      fs.existsSync(path.join(candidatePath, "pubspec.yaml")) &&
-      fs.existsSync(path.join(candidatePath, "lib"));
+      fs.existsSync(path.join(candidatePath!, "pubspec.yaml")) &&
+      fs.existsSync(path.join(candidatePath!, "lib"));
     if (!scaffoldLooksValid) {
       // No committed template or a broken build-artifact dump (e.g. only
       // android/ios/build debris): use the toolchain so the app is always a
       // real Flutter project. Ensure managed SDK first.
       logger.info(
-        `flutter: scaffold invalid/missing at ${candidatePath}, running flutter create for ${fullAppPath}`,
+        `flutter: scaffold invalid/missing at ${candidatePath ?? "none"}, running flutter create for ${fullAppPath}`,
       );
       try {
         await ensureFlutterSdkAvailable((p) => {
@@ -125,7 +128,17 @@ export async function createFromTemplate({
       await createFlutterProjectViaToolchain(fullAppPath);
       return;
     }
-    await copyDirectoryRecursive(candidatePath, fullAppPath);
+    await copyDirectoryRecursive(candidatePath!, fullAppPath);
+    // Additive pass so platform dirs (android/, ios/, ...) exist for builds
+    // without clobbering the curated lib/, pubspec.yaml, or AI_RULES.md.
+    try {
+      await createFlutterProjectViaToolchain(fullAppPath);
+    } catch (error) {
+      logger.warn(
+        `flutter create after template copy failed for ${fullAppPath}; platform dirs may be missing`,
+        error,
+      );
+    }
     return;
   }
 

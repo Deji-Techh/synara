@@ -9,7 +9,52 @@ import { isWorkspaceRootWithin } from "@caide/shared/threadWorkspace";
 
 import { getCaideAppsBaseDirectory } from "./paths/caideApps";
 
-const SCAFFOLD_CANDIDATES = ["scaffold-flutter", "apps/engine/scaffold", "scaffold"];
+const SCAFFOLD_CANDIDATES = [
+  "scaffold-flutter",
+  "apps/engine/scaffold-flutter",
+  "apps/engine/scaffold",
+  "scaffold",
+];
+
+async function runFlutterCreate(
+  workspaceRoot: string,
+  appName: string,
+): Promise<boolean> {
+  try {
+    const { spawn } = await import("node:child_process");
+    const tryFlutter = (flutterCmd: string) =>
+      new Promise<boolean>((resolve) => {
+        // Additive: generates missing platform dirs without clobbering
+        // existing lib/, pubspec.yaml, or AI_RULES.md from the template.
+        const child = spawn(
+          flutterCmd,
+          ["create", "--org", "com.caide", "--project-name", appName, "."],
+          {
+            cwd: workspaceRoot,
+            stdio: "ignore",
+            shell: false,
+            windowsHide: true,
+          },
+        );
+        child.on("error", () => resolve(false));
+        child.on("close", (code) => resolve(code === 0));
+      });
+    const candidatesCmd = [
+      "flutter",
+      "/home/DejiTech/development/flutter/bin/flutter",
+      "/home/DejiTech/.caide/flutter/bin/flutter",
+      "/opt/flutter/bin/flutter",
+    ];
+    for (const cmd of candidatesCmd) {
+      // eslint-disable-next-line no-await-in-loop
+      const ok = await tryFlutter(cmd);
+      if (ok) return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
 
 export const prepareCaideAppWorkspaceRoot = Effect.fnUntraced(function* (workspaceRoot: string) {
   const fileSystem = yield* FileSystem.FileSystem;
@@ -134,6 +179,18 @@ export const prepareCaideAppWorkspaceRoot = Effect.fnUntraced(function* (workspa
         }),
       ),
     );
+
+    const appName =
+      path
+        .basename(workspaceRoot)
+        .replace(/[^a-zA-Z0-9_]/g, "_")
+        .toLowerCase() || "caide_app";
+    const created = yield* Effect.promise(() => runFlutterCreate(workspaceRoot, appName));
+    if (!created) {
+      yield* Effect.logWarning(
+        `flutter create failed after template copy for ${workspaceRoot}; platform dirs may be missing`,
+      );
+    }
   } else {
     const appName =
       path
@@ -143,35 +200,7 @@ export const prepareCaideAppWorkspaceRoot = Effect.fnUntraced(function* (workspa
     yield* Effect.logInfo(
       `flutter: scaffold invalid/missing at ${scaffoldSource ?? "none"}, running flutter create for ${workspaceRoot}`,
     );
-    yield* Effect.promise(async () => {
-      const { spawn } = await import("node:child_process");
-      const tryFlutter = (flutterCmd: string) =>
-        new Promise<boolean>((resolve) => {
-          const child = spawn(
-            flutterCmd,
-            ["create", "--org", "com.caide", "--project-name", appName, "."],
-            {
-              cwd: workspaceRoot,
-              stdio: "ignore",
-              shell: false,
-              windowsHide: true,
-            },
-          );
-          child.on("error", () => resolve(false));
-          child.on("close", (code) => resolve(code === 0));
-        });
-      const candidatesCmd = [
-        "flutter",
-        "/home/DejiTech/development/flutter/bin/flutter",
-        "/home/DejiTech/.caide/flutter/bin/flutter",
-        "/opt/flutter/bin/flutter",
-      ];
-      for (const cmd of candidatesCmd) {
-        // eslint-disable-next-line no-await-in-loop
-        const ok = await tryFlutter(cmd);
-        if (ok) break;
-      }
-    }).pipe(Effect.catch(() => Effect.void));
+    yield* Effect.promise(() => runFlutterCreate(workspaceRoot, appName));
   }
 
   const gitDir = path.join(workspaceRoot, ".git");
