@@ -671,9 +671,6 @@ function touchesProviderDiscoverySettings(patch: Partial<AppSettings>): boolean 
     hasOwn(patch, "opencodeZenBaseUrl") ||
     hasOwn(patch, "opencodeGoApiKey") ||
     hasOwn(patch, "opencodeGoBaseUrl")
-  ) ||
-    hasOwn(patch, "opencodeGoApiKey") ||
-    hasOwn(patch, "opencodeGoBaseUrl")
   );
 }
 
