@@ -15,6 +15,7 @@ import type {
   GoalActivityEvent,
   GoalExecutionTarget,
   GoalId,
+  GoalRun,
   GoalStatus,
   PreviewAnalyzeResult,
   PreviewBuildStartResult,
@@ -189,6 +190,10 @@ export interface EngineGoalsApi {
     goalId: GoalId;
     limit?: number | undefined;
   }): Effect.Effect<Array<GoalActivityEvent>, ProviderAdapterError>;
+  listRuns(input: {
+    goalId: GoalId;
+    limit?: number | undefined;
+  }): Effect.Effect<Array<GoalRun>, ProviderAdapterError>;
   pause(input: {
     goalId: GoalId;
     reason?: string | undefined;

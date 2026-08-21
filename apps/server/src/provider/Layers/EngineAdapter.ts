@@ -1416,6 +1416,11 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           ...goalIdOf(input),
           limit: input.limit ?? 200,
         }),
+      listRuns: (input) =>
+        goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:list-runs", {
+          ...goalIdOf(input),
+          limit: input.limit ?? 50,
+        }),
       pause: (input) =>
         goalRequest(ThreadId.makeUnsafe(randomUUID()), "goal:pause", {
           ...goalIdOf(input),

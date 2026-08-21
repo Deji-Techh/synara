@@ -274,7 +274,7 @@ import type {
   ProviderReadPluginResult,
 } from "./providerDiscovery";
 import type { ProviderCompactThreadInput } from "./provider";
-import type { Goal, GoalActivityEvent, GoalExecutionTarget, GoalStatus } from "./goals";
+import type { Goal, GoalActivityEvent, GoalExecutionTarget, GoalRun, GoalStatus } from "./goals";
 import type { GoalId } from "./goals";
 import type { GoalDomainEvent } from "./goals.rpc";
 import type { EngineActiveSubagent, EngineSubagentEvent } from "./subagents";
@@ -796,6 +796,7 @@ export interface NativeApi {
     getGoal: (input: { goalId: GoalId }) => Promise<Goal>;
     listGoals: (input?: { appId?: number; statuses?: GoalStatus[] }) => Promise<Goal[]>;
     listActivity: (input: { goalId: GoalId; limit?: number }) => Promise<GoalActivityEvent[]>;
+    listRuns: (input: { goalId: GoalId; limit?: number }) => Promise<GoalRun[]>;
     pauseGoal: (input: { goalId: GoalId; reason?: string }) => Promise<Goal>;
     resumeGoal: (input: { goalId: GoalId }) => Promise<Goal>;
     cancelGoal: (input: { goalId: GoalId; reason?: string }) => Promise<Goal>;

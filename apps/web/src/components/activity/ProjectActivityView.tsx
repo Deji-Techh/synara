@@ -1,9 +1,10 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
-import type { ProjectActivityItem, ProjectActivityKind, ProjectId } from "@caide/contracts";
+import type { GoalStatus, ProjectActivityItem, ProjectActivityKind, ProjectId } from "@caide/contracts";
 import { RefreshCwIcon } from "~/lib/icons";
 import { cn } from "~/lib/utils";
+import { GOAL_WORKING_STATUSES } from "../goals/goalStatus";
 import { readNativeApi } from "../../nativeApi";
 import { RouteInsetSurface } from "../RouteInsetSurface";
 import { Button } from "../ui/button";
@@ -132,6 +133,8 @@ export function ProjectActivityView({ projectId }: { projectId: ProjectId }) {
                           className={cn(
                             "size-1.5 shrink-0 rounded-full",
                             KIND_DOT_CLASS[item.kind],
+                            item.kind === "goal" && GOAL_WORKING_STATUSES.includes(item.status as GoalStatus) &&
+                              "animate-pulse",
                           )}
                         />
                         <span className="shrink-0 text-muted-foreground/58 tabular-nums">

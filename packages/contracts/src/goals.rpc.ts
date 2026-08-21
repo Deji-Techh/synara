@@ -2,7 +2,7 @@ import { Schema } from "effect";
 import * as Rpc from "effect/unstable/rpc/Rpc";
 import * as RpcGroup from "effect/unstable/rpc/RpcGroup";
 import { WsRpcError } from "./rpc";
-import { Goal, GoalId, GoalStatus, GoalActivityEvent, GoalExecutionTarget } from "./goals";
+import { Goal, GoalId, GoalStatus, GoalActivityEvent, GoalExecutionTarget, GoalRun } from "./goals";
 
 export const GOALS_WS_METHODS = {
   createGoal: "goals:create",
@@ -10,6 +10,7 @@ export const GOALS_WS_METHODS = {
   getActiveGoal: "goals:getActive",
   listGoals: "goals:list",
   listActivity: "goals:listActivity",
+  listRuns: "goals:listRuns",
   pauseGoal: "goals:pause",
   resumeGoal: "goals:resume",
   cancelGoal: "goals:cancel",
@@ -76,6 +77,15 @@ export const WsGoalsListActivityRpc = Rpc.make(GOALS_WS_METHODS.listActivity, {
     limit: Schema.optional(Schema.Number),
   }),
   success: Schema.Array(GoalActivityEvent),
+  error: WsRpcError,
+});
+
+export const WsGoalsListRunsRpc = Rpc.make(GOALS_WS_METHODS.listRuns, {
+  payload: Schema.Struct({
+    goalId: GoalId,
+    limit: Schema.optional(Schema.Number),
+  }),
+  success: Schema.Array(GoalRun),
   error: WsRpcError,
 });
 
@@ -148,6 +158,7 @@ export const WsGoalsRpcGroup = RpcGroup.make(
   WsGoalsGetActiveGoalRpc,
   WsGoalsListGoalsRpc,
   WsGoalsListActivityRpc,
+  WsGoalsListRunsRpc,
   WsGoalsPauseGoalRpc,
   WsGoalsResumeGoalRpc,
   WsGoalsCancelGoalRpc,

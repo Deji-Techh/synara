@@ -10,6 +10,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import type { ThreadId } from "@caide/contracts";
+
 import { cn } from "~/lib/utils";
 import {
   CheckCircle2Icon,
@@ -65,8 +67,12 @@ interface NeonBranch {
   name: string;
 }
 
-async function invokeDatabase<T>(channel: string, payload?: unknown): Promise<T> {
-  const result = await ensureNativeApi().database.invoke({ channel, payload });
+async function invokeDatabase<T>(
+  threadId: ThreadId,
+  channel: string,
+  payload?: unknown,
+): Promise<T> {
+  const result = await ensureNativeApi().database.invoke({ threadId, channel, payload });
   return result.value as T;
 }
 
@@ -77,7 +83,7 @@ function basename(p: string): string {
 }
 
 export function DatabasePanel(props: {
-  threadId: string;
+  threadId: ThreadId;
   workspaceRoot?: string | null;
   onClose: () => void;
 }) {
@@ -100,7 +106,7 @@ export function DatabasePanel(props: {
     setLoading(true);
     setResolveError(null);
     try {
-      const response = await invokeDatabase<{ apps?: EngineApp[] }>("list-apps");
+      const response = await invokeDatabase<{ apps?: EngineApp[] }>(props.threadId, "list-apps");
       const apps = Array.isArray(response?.apps) ? response.apps : [];
       const root = props.workspaceRoot ?? "";
       const match =
@@ -141,7 +147,7 @@ export function DatabasePanel(props: {
   const connectNeon = (projectId: string) =>
     run(async () => {
       if (!app) return;
-      await invokeDatabase("neon:set-app-project", { appId: app.id, projectId });
+      await invokeDatabase(props.threadId, "neon:set-app-project", { appId: app.id, projectId });
       await refreshApp();
       setShowNeonPicker(false);
       setNeonProjects(null);
@@ -150,14 +156,14 @@ export function DatabasePanel(props: {
   const disconnectNeon = () =>
     run(async () => {
       if (!app) return;
-      await invokeDatabase("neon:unset-app-project", { appId: app.id });
+      await invokeDatabase(props.threadId, "neon:unset-app-project", { appId: app.id });
       await refreshApp();
     });
 
   const connectSupabase = (project: SupabaseProject) =>
     run(async () => {
       if (!app) return;
-      await invokeDatabase("supabase:set-app-project", {
+      await invokeDatabase(props.threadId, "supabase:set-app-project", {
         appId: app.id,
         projectId: project.id,
         parentProjectId: project.id,
@@ -173,14 +179,14 @@ export function DatabasePanel(props: {
   const disconnectSupabase = () =>
     run(async () => {
       if (!app) return;
-      await invokeDatabase("supabase:unset-app-project", { appId: app.id });
+      await invokeDatabase(props.threadId, "supabase:unset-app-project", { appId: app.id });
       await refreshApp();
     });
 
   const loadNeonProjects = () =>
     run(async () => {
       setShowNeonPicker(true);
-      const response = await invokeDatabase<{ projects?: NeonProject[] }>("neon:list-projects");
+      const response = await invokeDatabase<{ projects?: NeonProject[] }>(props.threadId, "neon:list-projects");
       setNeonProjects(Array.isArray(response?.projects) ? response.projects : []);
     });
 
@@ -189,6 +195,7 @@ export function DatabasePanel(props: {
       setShowSupabasePicker(true);
       setSupabaseProjects(null);
       const orgs = await invokeDatabase<SupabaseOrganization[]>(
+        props.threadId,
         "supabase:list-organizations",
       );
       setSupabaseOrgs(Array.isArray(orgs) ? orgs : []);
@@ -197,7 +204,10 @@ export function DatabasePanel(props: {
   const loadSupabaseProjects = (orgSlug: string) =>
     run(async () => {
       setSelectedOrgSlug(orgSlug);
-      const all = await invokeDatabase<SupabaseProject[]>("supabase:list-all-projects");
+      const all = await invokeDatabase<SupabaseProject[]>(
+        props.threadId,
+        "supabase:list-all-projects",
+      );
       setSupabaseProjects(
         (Array.isArray(all) ? all : []).filter(
           (project) => !project.organization_slug || project.organization_slug === orgSlug,
@@ -212,7 +222,7 @@ export function DatabasePanel(props: {
         const response = await invokeDatabase<{
           branches?: NeonBranch[];
           data?: { branches?: NeonBranch[] };
-        }>("neon:get-project", { projectId: app.neonProjectId });
+        }>(props.threadId, "neon:get-project", { projectId: app.neonProjectId });
         const list =
           (Array.isArray(response as unknown as NeonBranch[])
             ? (response as unknown as NeonBranch[])
@@ -224,7 +234,7 @@ export function DatabasePanel(props: {
   const setNeonBranch = (branchId: string) =>
     run(async () => {
       if (!app) return;
-      await invokeDatabase("neon:set-active-branch", { appId: app.id, branchId });
+      await invokeDatabase(props.threadId, "neon:set-active-branch", { appId: app.id, branchId });
       await refreshApp();
     });
 
@@ -291,7 +301,7 @@ export function DatabasePanel(props: {
                           disabled={busy}
                           onClick={() => disconnectNeon()}
                         >
-                          <UnlinkIcon className="size-3" /> Disconnect
+                          <XIcon className="size-3" /> Disconnect
                         </Button>
                         <Button
                           size="sm"
@@ -397,7 +407,7 @@ export function DatabasePanel(props: {
                           disabled={busy}
                           onClick={() => disconnectSupabase()}
                         >
-                          <UnlinkIcon className="size-3" /> Disconnect
+                          <XIcon className="size-3" /> Disconnect
                         </Button>
                         <Button
                           size="sm"

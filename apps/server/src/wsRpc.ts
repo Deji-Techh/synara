@@ -939,6 +939,18 @@ const makeWsRpcHandlersLayer = () =>
               ),
               label,
             ),
+          listRuns: (
+            input: Parameters<
+              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["listRuns"]
+            >[0],
+            label: string,
+          ) =>
+            rpcEffect(
+              engineAdapterEffect.pipe(
+                Effect.flatMap((adapter) => adapter.goals.listRuns(input)),
+              ),
+              label,
+            ),
           pause: (
             input: Parameters<
               import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["pause"]
@@ -1455,6 +1467,8 @@ const makeWsRpcHandlersLayer = () =>
         [GOALS_WS_METHODS.listGoals]: (input) => adapterHex.goals.list(input, "list engine goals"),
         [GOALS_WS_METHODS.listActivity]: (input) =>
           adapterHex.goals.listActivity(input, "list engine goal activity"),
+        [GOALS_WS_METHODS.listRuns]: (input) =>
+          adapterHex.goals.listRuns(input, "list engine goal runs"),
         [GOALS_WS_METHODS.pauseGoal]: (input) => adapterHex.goals.pause(input, "pause engine goal"),
         [GOALS_WS_METHODS.resumeGoal]: (input) =>
           adapterHex.goals.resume(input, "resume engine goal"),

@@ -61,6 +61,7 @@ import {
   goalRunStatusLabel,
   goalRunStatusLabelClass,
   goalStatusDotClass,
+  goalStatusDotAnimationClass,
   goalStatusLabel,
   goalStatusLabelClass,
   goalTaskStatusTone,
@@ -71,12 +72,15 @@ import { subscribeGoalDomainEvents } from "~/lib/goalClient";
 
 const TASK_STATUS_ORDER: Record<string, number> = {
   blocked: 0,
-  "in-progress": 1,
-  pending: 2,
-  verified: 3,
-  skipped: 4,
-  cancelled: 5,
-  "awaiting-approval": 6,
+  running: 1,
+  verifying: 1,
+  repairing: 1,
+  "awaiting-approval": 2,
+  pending: 3,
+  ready: 3,
+  verified: 4,
+  skipped: 5,
+  cancelled: 6,
 };
 
 function GoalProgress(props: { goal: Goal }) {
@@ -174,10 +178,15 @@ function taskStatusIcon(status: string) {
   switch (status) {
     case "verified":
       return <CircleCheckIcon className="size-3.5 shrink-0 text-emerald-500" />;
-    case "in-progress":
+    // Actively-worked statuses spin; the engine never emits "in-progress".
+    case "running":
+    case "verifying":
+    case "repairing":
       return <LoaderCircleIcon className="size-3.5 shrink-0 animate-spin text-primary" />;
     case "blocked":
       return <CircleAlertIcon className="size-3.5 shrink-0 text-red-500" />;
+    case "awaiting-approval":
+      return <CircleAlertIcon className="size-3.5 shrink-0 animate-pulse text-amber-500" />;
     case "skipped":
       return <ArchiveIcon className="size-3.5 shrink-0 text-muted-foreground" />;
     case "cancelled":
@@ -247,9 +256,14 @@ function runDotClass(status: GoalRun["status"]) {
 
 function RunRow(props: { run: GoalRun }) {
   const { run } = props;
+  const isActive = run.status === "running" || run.status === "claimed";
   return (
     <div className="flex items-start gap-2.5 px-1 py-2">
-      <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", runDotClass(run.status))} />
+      {isActive ? (
+        <LoaderCircleIcon className="mt-0.5 size-3.5 shrink-0 animate-spin text-primary" />
+      ) : (
+        <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", runDotClass(run.status))} />
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="text-[12px] font-medium text-foreground">
@@ -488,12 +502,20 @@ function GoalList(props: {
             )}
           >
             <span
-              className={cn("mt-1.5 size-2 shrink-0 rounded-full", goalStatusDotClass(goal.status))}
+              className={cn(
+                "mt-1.5 size-2 shrink-0 rounded-full",
+                goalStatusDotClass(goal.status),
+                goalStatusDotAnimationClass(goal.status),
+              )}
             />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <p className="truncate text-[13px] font-medium text-foreground">{goal.title}</p>
-                {isLive ? <span className="size-1.5 shrink-0 rounded-full bg-primary" /> : null}
+                {GOAL_WORKING_STATUSES.includes(goal.status) ? (
+                  <LoaderCircleIcon className="size-3 shrink-0 animate-spin text-primary" />
+                ) : isLive ? (
+                  <span className="size-1.5 shrink-0 rounded-full bg-primary" />
+                ) : null}
               </div>
               <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
                 {goalStatusLabel(goal.status)}
@@ -549,12 +571,24 @@ function GoalDetail(props: {
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center gap-2 px-3 pt-2">
         <div className="flex items-center gap-2 text-[13px] font-medium text-foreground">
-          <span className={cn("size-2 shrink-0 rounded-full", goalStatusDotClass(goal.status))} />
+          <span
+            className={cn(
+              "size-2 shrink-0 rounded-full",
+              goalStatusDotClass(goal.status),
+              goalStatusDotAnimationClass(goal.status),
+            )}
+          />
           <span className="truncate">{goal.title}</span>
         </div>
         <Badge variant="outline" className={goalStatusLabelClass(goal.status)}>
           {goalStatusLabel(goal.status)}
         </Badge>
+        {isWorking ? (
+          <span className="inline-flex items-center gap-1 text-[11px] text-primary">
+            <LoaderCircleIcon className="size-3 animate-spin" />
+            working
+          </span>
+        ) : null}
         <div className="ml-auto flex items-center gap-0.5">
           {isLive ? (
             <>

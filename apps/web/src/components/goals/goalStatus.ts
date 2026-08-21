@@ -48,6 +48,15 @@ export function goalStatusDotClass(status: GoalStatus): string {
   return "bg-primary";
 }
 
+/**
+ * Pulse animation for dots in engine-working states ("the engine is actively
+ * doing work right now"). Combine with `goalStatusDotClass` at every dot call
+ * site so a working goal is unmistakably live, not just colored.
+ */
+export function goalStatusDotAnimationClass(status: GoalStatus): string | null {
+  return GOAL_WORKING_STATUSES.includes(status) ? "animate-pulse" : null;
+}
+
 export function goalRunKindLabel(kind: GoalRunKind): string {
   return kind; // plan / execute / repair / verify — labels match the engine.
 }

@@ -819,6 +819,7 @@ export function createWsNativeApi(): NativeApi {
       getGoal: (input) => transport.request(GOALS_WS_METHODS.getGoal, input),
       listGoals: (input) => transport.request(GOALS_WS_METHODS.listGoals, input),
       listActivity: (input) => transport.request(GOALS_WS_METHODS.listActivity, input),
+      listRuns: (input) => transport.request(GOALS_WS_METHODS.listRuns, input),
       pauseGoal: (input) => transport.request(GOALS_WS_METHODS.pauseGoal, input),
       resumeGoal: (input) => transport.request(GOALS_WS_METHODS.resumeGoal, input),
       cancelGoal: (input) => transport.request(GOALS_WS_METHODS.cancelGoal, input),
