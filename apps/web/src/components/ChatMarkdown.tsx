@@ -60,6 +60,12 @@ import {
   createComposerChipsRemarkPlugin,
   parseComposerChipSegment,
 } from "../lib/remarkComposerChips";
+import {
+  SPAWN_SUBAGENT_CHIP_TAG_NAME,
+  SPAWN_SUBAGENT_ROLE_ATTRIBUTE,
+  remarkSpawnSubagentChip,
+} from "../lib/remarkSpawnSubagentChip";
+import { BotIcon } from "~/lib/icons";
 import { IconButton } from "./ui/icon-button";
 
 const EXTERNAL_HTTP_HREF_PATTERN = /^https?:\/\//i;
@@ -156,6 +162,7 @@ type MarkdownRehypePlugins = NonNullable<
 const MARKDOWN_REMARK_PLUGINS: MarkdownRemarkPlugins = [
   remarkGfm,
   [remarkMath, { singleDollarTextMath: true }],
+  remarkSpawnSubagentChip,
 ];
 // User prompts are casual typing, not authored markdown: hard-break single
 // newlines and skip math entirely (the composer chip plugin is appended per
@@ -1249,6 +1256,22 @@ function ChatMarkdown({
             context.body.length > 0 ? `${context.header}\n${context.body}` : context.header;
           return <TerminalContextInlineChip label={context.header} tooltipText={tooltipText} />;
         },
+        // Engine spawn_subagent in-flight marker (assistant variant only).
+        [SPAWN_SUBAGENT_CHIP_TAG_NAME]: (props: {
+          className?: string | undefined;
+          [SPAWN_SUBAGENT_ROLE_ATTRIBUTE]?: string | undefined;
+        }) => (
+          <span
+            className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/50 px-1.5 py-px align-middle text-[11px] text-muted-foreground"
+            title="Spawning a background subagent"
+          >
+            <BotIcon className="size-3 shrink-0" />
+            <span className="max-w-48 truncate">
+              {props[SPAWN_SUBAGENT_ROLE_ATTRIBUTE] || "Subagent"}
+            </span>
+            <span className="text-primary">spawning…</span>
+          </span>
+        ),
       } as unknown as Components),
     }),
     [

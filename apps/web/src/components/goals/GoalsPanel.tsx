@@ -47,6 +47,11 @@ import { DockPaneHeader } from "../chat/DockPaneHeader";
 import { PanelStateMessage } from "../chat/PanelStateMessage";
 import { useGoalStore } from "~/goalStore";
 import {
+  ensureEngineSubagentSubscription,
+  useEngineSubagentStore,
+  type EngineSubagentRow,
+} from "~/engineSubagentStore";
+import {
   GOAL_LIVE_STATUSES,
   GOAL_TERMINAL_STATUSES,
   GOAL_WORKING_STATUSES,
@@ -290,14 +295,62 @@ function ActivityRow(props: { event: GoalActivityEvent }) {
   );
 }
 
+function LiveEngineSubagentRow(props: { subagent: EngineSubagentRow }) {
+  const { subagent } = props;
+  return (
+    <div className="flex items-start gap-2.5 px-1 py-2" data-status={subagent.status}>
+      {subagent.status === "running" ? (
+        <LoaderCircleIcon className="mt-0.5 size-3.5 shrink-0 animate-spin text-primary" />
+      ) : (
+        <BotIcon
+          className={cn(
+            "mt-0.5 size-3.5 shrink-0",
+            subagent.status === "failed" ? "text-red-500" : "text-emerald-500",
+          )}
+        />
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="text-[12px] font-medium text-foreground">{subagent.role}</span>
+          <Badge
+            variant="outline"
+            className={
+              subagent.status === "running"
+                ? "border-primary/40 text-primary"
+                : subagent.status === "failed"
+                  ? "border-red-500/40 text-red-500"
+                  : "border-emerald-500/40 text-emerald-500"
+            }
+          >
+            {subagent.status === "running"
+              ? "Running"
+              : subagent.status === "failed"
+                ? "Failed"
+                : "Completed"}
+          </Badge>
+        </div>
+        <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-muted-foreground">
+          {subagent.task}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function SubagentsTab(props: { runs: GoalRun[]; events: GoalActivityEvent[] }) {
   const { runs, events } = props;
   const activityEvents = useMemo(
     () => [...events].sort((a, b) => b.createdAt - a.createdAt),
     [events],
   );
+  const engineSubagents = useEngineSubagentStore((state) => state.subagents);
+  useEffect(() => ensureEngineSubagentSubscription(), []);
 
-  if (runs.length === 0 && events.length === 0) {
+  if (
+    runs.length === 0 &&
+    events.length === 0 &&
+    engineSubagents.length === 0
+  ) {
     return (
       <PanelStateMessage>
         <div className="flex flex-col items-center gap-1.5">
@@ -313,6 +366,18 @@ function SubagentsTab(props: { runs: GoalRun[]; events: GoalActivityEvent[] }) {
 
   return (
     <div className="px-1">
+      {engineSubagents.length > 0 ? (
+        <div>
+          <p className="sticky top-0 z-10 bg-background px-0 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Running now
+          </p>
+          <div className="divide-y divide-border/60">
+            {engineSubagents.map((subagent) => (
+              <LiveEngineSubagentRow key={subagent.taskId} subagent={subagent} />
+            ))}
+          </div>
+        </div>
+      ) : null}
       {runs.length > 0 ? (
         <div>
           <p className="sticky top-0 z-10 bg-background px-0 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">

@@ -141,6 +141,11 @@ const LazyGoalsPanel = lazy(() =>
     default: module.GoalsPanel,
   })),
 );
+const LazyDatabasePanel = lazy(() =>
+  import("./DatabasePanel").then((module) => ({
+    default: module.DatabasePanel,
+  })),
+);
 
 const DIFF_INLINE_DEFAULT_WIDTH = "max(28rem, calc(50vw - 8rem))";
 const SINGLE_PANEL_MIN_WIDTH = 26 * 16;
@@ -832,6 +837,16 @@ export function SingleChatSurface(props: {
         return (
           <Suspense fallback={<PanelStateMessage>Loading goals...</PanelStateMessage>}>
             <LazyGoalsPanel onClose={() => closePane(props.threadId, pane.id)} />
+          </Suspense>
+        );
+      case "database":
+        return (
+          <Suspense fallback={<PanelStateMessage>Loading database...</PanelStateMessage>}>
+            <LazyDatabasePanel
+              threadId={props.threadId}
+              workspaceRoot={workspaceRoot}
+              onClose={() => closePane(props.threadId, pane.id)}
+            />
           </Suspense>
         );
       case "pullRequest":

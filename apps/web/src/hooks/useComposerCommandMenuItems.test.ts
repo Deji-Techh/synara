@@ -42,10 +42,9 @@ describe("buildThreadMentionComposerItems", () => {
   const projects = [
     project("project", "project", "Caide"),
     project("chats", "chat", "Home"),
-    project("studio", "studio", "Studio workspace"),
   ];
 
-  it("searches titles across project, chat, and studio sections and excludes the current thread", () => {
+  it("searches titles across project and chat sections and excludes the current thread", () => {
     const items = buildThreadMentionComposerItems({
       projects,
       currentThreadId: "current",
@@ -54,12 +53,6 @@ describe("buildThreadMentionComposerItems", () => {
         thread({ id: "current", projectId: "project", title: "Release current" }),
         thread({ id: "project-thread", projectId: "project", title: "Release Caide" }),
         thread({ id: "chat-thread", projectId: "chats", title: "Release notes" }),
-        thread({
-          id: "studio-thread",
-          projectId: "studio",
-          title: "Release artwork",
-          provider: "anthropic",
-        }),
         thread({ id: "unrelated", projectId: "project", title: "Bug triage" }),
       ],
     });
@@ -67,16 +60,10 @@ describe("buildThreadMentionComposerItems", () => {
     expect(items.map((item) => item.id).toSorted()).toEqual([
       "thread:chat-thread",
       "thread:project-thread",
-      "thread:studio-thread",
     ]);
     expect(Object.fromEntries(items.map((item) => [item.id, item.description]))).toEqual({
       "thread:chat-thread": "Chats",
       "thread:project-thread": "Caide",
-      "thread:studio-thread": "Studio",
-    });
-    expect(items.find((item) => item.id === "thread:studio-thread")).toMatchObject({
-      provider: "anthropic",
-      mention: { name: "Release artwork", path: "thread://studio-thread" },
     });
   });
 

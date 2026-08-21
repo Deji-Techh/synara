@@ -30,7 +30,6 @@ function makeServerConfig(providers: readonly ServerProviderStatus[]): ServerCon
     cwd: "G:\\caide",
     homeDir: "C:\\Users\\tester",
     chatWorkspaceRoot: "C:\\Users\\tester\\Documents\\Caide",
-    studioWorkspaceRoot: "C:\\Users\\tester\\Documents\\Caide\\Studio",
     worktreesDir: "C:\\CaideDev\\worktrees",
     keybindingsConfigPath: "C:\\CaideDev\\keybindings.json",
     keybindings: [],

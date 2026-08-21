@@ -512,6 +512,7 @@ import { useChatTerminalController } from "./chat/useChatTerminalController";
 import { useChatAutomationSetup } from "./chat/useChatAutomationSetup";
 import { ComposerActiveTaskListCard } from "./chat/ComposerActiveTaskListCard";
 import { ComposerSubagentStrip } from "./chat/ComposerSubagentStrip";
+import { EngineSubagentStrip } from "./chat/EngineSubagentStrip";
 import {
   collectForegroundRunningSubagentStripItems,
   collectRunningSubagentStripItems,
@@ -1480,6 +1481,7 @@ export default function ChatView({
   const [planSidebarOpen, setPlanSidebarOpen] = useState(false);
   const [activeTaskListCompact, setActiveTaskListCompact] = useState(false);
   const [subagentStripCompact, setSubagentStripCompact] = useState(false);
+  const [engineSubagentStripCompact, setEngineSubagentStripCompact] = useState(false);
   const [workflowRunCardCompact, setWorkflowRunCardCompact] = useState(false);
   const [isComposerFooterCompact, setIsComposerFooterCompact] = useState(false);
   // Width-aware visibility for the footer picker cluster (context meter,
@@ -11345,6 +11347,16 @@ export default function ChatView({
                   }
                 />
               ) : null}
+              <EngineSubagentStrip
+                compact={engineSubagentStripCompact}
+                onCompactChange={setEngineSubagentStripCompact}
+                attachedToPrevious={
+                  showComposerLiveChangesHeader ||
+                  showComposerActiveTaskListCard ||
+                  showComposerWorkflowRunCard ||
+                  showComposerSubagentStrip
+                }
+              />
               <ComposerQueuedHeader
                 queuedTurns={queuedComposerTurns}
                 onSteer={onSteerQueuedComposerTurn}

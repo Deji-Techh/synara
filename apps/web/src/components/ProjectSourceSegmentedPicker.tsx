@@ -25,7 +25,7 @@ const PROJECT_SOURCES: ReadonlyArray<{
 ];
 
 /**
- * The compact raised-thumb picker previously used for the Caide/Studio switch,
+ * The compact raised-thumb picker previously used for the surface switch,
  * adapted to choose how a project is added.
  */
 export function ProjectSourceSegmentedPicker(props: {

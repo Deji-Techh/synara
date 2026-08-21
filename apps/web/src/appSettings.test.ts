@@ -1025,7 +1025,6 @@ describe("AppSettingsSchema", () => {
       followUpBehavior: DEFAULT_FOLLOW_UP_BEHAVIOR,
       sidebarProjectSortOrder: DEFAULT_SIDEBAR_PROJECT_SORT_ORDER,
       sidebarThreadSortOrder: DEFAULT_SIDEBAR_THREAD_SORT_ORDER,
-      showStudioSection: true,
       timestampFormat: DEFAULT_TIMESTAMP_FORMAT,
       customCodexModels: [],
       customClaudeModels: [],
