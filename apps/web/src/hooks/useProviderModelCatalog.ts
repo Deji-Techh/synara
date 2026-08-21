@@ -14,7 +14,6 @@ import { useMemo } from "react";
 
 import { getAppModelOptions, getCustomModelsByProvider, useAppSettings } from "../appSettings";
 import { resolveRuntimeModelDescriptor } from "../components/chat/runtimeModelCapabilities";
-import { collapseCursorModelVariants } from "../cursorModelVariants";
 import {
   isInitialModelDiscoveryPending,
   providerAgentsQueryOptions,
@@ -105,302 +104,68 @@ export function useProviderModelCatalog(input: {
     return prefetchProviderSet?.has(provider) ?? !hiddenProviderSet.has(provider);
   };
 
-  const claudeModelDiscoveryEnabled = shouldDiscoverProvider("anthropic");
-  const codexModelDiscoveryEnabled = shouldDiscoverProvider("openai");
-  const cursorModelDiscoveryEnabled = shouldDiscoverProvider("openai");
-  const antigravityModelDiscoveryEnabled = shouldDiscoverProvider("google");
-  const grokModelDiscoveryEnabled = shouldDiscoverProvider("openai");
-  const droidModelDiscoveryEnabled = shouldDiscoverProvider("openai", false);
-  const kiloModelDiscoveryEnabled = shouldDiscoverProvider("openai");
-  const openCodeModelDiscoveryEnabled = shouldDiscoverProvider("openai");
-  const piModelDiscoveryEnabled = shouldDiscoverProvider("openai");
+  const groqModelDiscoveryEnabled = shouldDiscoverProvider("groq");
+  const opencodeZenModelDiscoveryEnabled = shouldDiscoverProvider("opencodeZen");
+  const opencodeGoModelDiscoveryEnabled = shouldDiscoverProvider("opencodeGo");
 
-  const claudeDynamicModelsQuery = useQuery(
+  const groqDynamicModelsQuery = useQuery(
     providerModelsQueryOptions({
-      provider: "anthropic",
-      binaryPath: settings.claudeBinaryPath || null,
-      enabled: claudeModelDiscoveryEnabled,
+      provider: "groq",
+      enabled: groqModelDiscoveryEnabled,
     }),
   );
-  const codexDynamicModelsQuery = useQuery(
+  const opencodeZenDynamicModelsQuery = useQuery(
     providerModelsQueryOptions({
-      provider: "openai",
-      enabled: codexModelDiscoveryEnabled,
+      provider: "opencodeZen",
+      enabled: opencodeZenModelDiscoveryEnabled,
     }),
   );
-  const cursorDynamicModelsQuery = useQuery(
+  const opencodeGoDynamicModelsQuery = useQuery(
     providerModelsQueryOptions({
-      provider: "openai",
-      binaryPath: settings.cursorBinaryPath || null,
-      apiEndpoint: settings.cursorApiEndpoint || null,
-      enabled: cursorModelDiscoveryEnabled,
-    }),
-  );
-  const antigravityModelsQuery = useQuery(
-    providerModelsQueryOptions({
-      provider: "google",
-      binaryPath: settings.antigravityBinaryPath || null,
-      cwd: discoveryCwd,
-      enabled: antigravityModelDiscoveryEnabled,
-    }),
-  );
-  const grokDynamicModelsQuery = useQuery(
-    providerModelsQueryOptions({
-      provider: "openai",
-      binaryPath: settings.grokBinaryPath || null,
-      enabled: grokModelDiscoveryEnabled,
-    }),
-  );
-  const droidDynamicModelsQuery = useQuery(
-    providerModelsQueryOptions({
-      provider: "openai",
-      binaryPath: settings.droidBinaryPath || null,
-      cwd: discoveryCwd,
-      // Droid probes every model through a disposable ACP session. Keep it
-      // provider-scoped instead of warming it from unrelated picker/settings UI.
-      enabled: droidModelDiscoveryEnabled,
-    }),
-  );
-  const openCodeDynamicModelsQuery = useQuery(
-    providerModelsQueryOptions({
-      provider: "openai",
-      binaryPath: settings.openCodeBinaryPath || null,
-      cwd: discoveryCwd,
-      enabled: openCodeModelDiscoveryEnabled,
-    }),
-  );
-  const kiloDynamicModelsQuery = useQuery(
-    providerModelsQueryOptions({
-      provider: "openai",
-      binaryPath: settings.kiloBinaryPath || null,
-      cwd: discoveryCwd,
-      enabled: kiloModelDiscoveryEnabled,
-    }),
-  );
-  const piDynamicModelsQuery = useQuery(
-    providerModelsQueryOptions({
-      provider: "openai",
-      binaryPath: settings.piBinaryPath || null,
-      agentDir: settings.piAgentDir || null,
-      cwd: discoveryCwd,
-      enabled: piModelDiscoveryEnabled,
+      provider: "opencodeGo",
+      enabled: opencodeGoModelDiscoveryEnabled,
     }),
   );
 
   // Agent/mode discovery (kilo/opencode "Mode"/"Agent" picker, claude/codex subagents).
-  const claudeDynamicAgentsQuery = useQuery(
-    providerAgentsQueryOptions({
-      provider: "anthropic",
-      enabled: shouldDiscoverProvider("anthropic", agentDiscoveryPolicy === "eager-core"),
-    }),
-  );
-  const codexDynamicAgentsQuery = useQuery(
-    providerAgentsQueryOptions({
-      provider: "openai",
-      enabled: shouldDiscoverProvider("openai", agentDiscoveryPolicy === "eager-core"),
-    }),
-  );
-  const openCodeDynamicAgentsQuery = useQuery(
-    providerAgentsQueryOptions({
-      provider: "openai",
-      binaryPath: settings.openCodeBinaryPath || null,
-      cwd: discoveryCwd,
-      enabled: openCodeModelDiscoveryEnabled,
-    }),
-  );
-  const kiloDynamicAgentsQuery = useQuery(
-    providerAgentsQueryOptions({
-      provider: "openai",
-      binaryPath: settings.kiloBinaryPath || null,
-      cwd: discoveryCwd,
-      enabled: kiloModelDiscoveryEnabled,
-    }),
-  );
 
-  const cursorRuntimeModels = useMemo(
-    () => collapseCursorModelVariants(cursorDynamicModelsQuery.data?.models ?? []),
-    [cursorDynamicModelsQuery.data?.models],
-  );
-
-  const hasResolvedCursorModelDiscovery =
-    (cursorDynamicModelsQuery.data?.source === "cursor.cli" ||
-      cursorDynamicModelsQuery.data?.source === "cursor.acp") &&
-    (cursorDynamicModelsQuery.data.models.length ?? 0) > 0;
-  const cursorModelDiscoveryPending =
-    cursorModelDiscoveryEnabled &&
-    !hasResolvedCursorModelDiscovery &&
-    isInitialModelDiscoveryPending(cursorDynamicModelsQuery);
-  const hasResolvedDroidModelDiscovery =
-    droidDynamicModelsQuery.data?.source === "droid-acp" &&
-    (droidDynamicModelsQuery.data.models.length ?? 0) > 0;
-  const droidModelDiscoveryPending =
-    droidModelDiscoveryEnabled &&
-    !hasResolvedDroidModelDiscovery &&
-    isInitialModelDiscoveryPending(droidDynamicModelsQuery);
-  const hasResolvedKiloModelDiscovery =
-    (kiloDynamicModelsQuery.data?.source === "kilo-cli" ||
-      kiloDynamicModelsQuery.data?.source === "openai") &&
-    (kiloDynamicModelsQuery.data.models.length ?? 0) > 0;
-  const kiloModelDiscoveryPending =
-    kiloModelDiscoveryEnabled &&
-    !hasResolvedKiloModelDiscovery &&
-    isInitialModelDiscoveryPending(kiloDynamicModelsQuery);
-  const hasResolvedOpenCodeModelDiscovery =
-    (openCodeDynamicModelsQuery.data?.source === "opencode-cli" ||
-      openCodeDynamicModelsQuery.data?.source === "openai") &&
-    (openCodeDynamicModelsQuery.data.models.length ?? 0) > 0;
-  const openCodeModelDiscoveryPending =
-    openCodeModelDiscoveryEnabled &&
-    !hasResolvedOpenCodeModelDiscovery &&
-    isInitialModelDiscoveryPending(openCodeDynamicModelsQuery);
-  const hasResolvedPiModelDiscovery =
-    piDynamicModelsQuery.data?.source?.startsWith("pi.sdk") === true &&
-    (piDynamicModelsQuery.data.models.length ?? 0) > 0;
-  const piModelDiscoveryPending =
-    piModelDiscoveryEnabled &&
-    !hasResolvedPiModelDiscovery &&
-    isInitialModelDiscoveryPending(piDynamicModelsQuery);
-  const antigravityModelDiscoveryPending =
-    antigravityModelDiscoveryEnabled &&
-    !(
-      antigravityModelsQuery.data?.source === "antigravity.cli" &&
-      (antigravityModelsQuery.data.models.length ?? 0) > 0
-    ) &&
-    isInitialModelDiscoveryPending(antigravityModelsQuery);
+  const groqModelDiscoveryPending =
+    groqModelDiscoveryEnabled && isInitialModelDiscoveryPending(groqDynamicModelsQuery);
+  const opencodeZenModelDiscoveryPending =
+    opencodeZenModelDiscoveryEnabled && isInitialModelDiscoveryPending(opencodeZenDynamicModelsQuery);
+  const opencodeGoModelDiscoveryPending =
+    opencodeGoModelDiscoveryEnabled && isInitialModelDiscoveryPending(opencodeGoDynamicModelsQuery);
 
   const modelOptionsByProvider = useMemo(() => {
     const staticOptions: Record<ProviderKind, ReturnType<typeof getAppModelOptions>> = {
-      codex: getAppModelOptions("openai", customModelsByProvider.codex, modelHintByProvider?.codex),
-      claudeAgent: getAppModelOptions(
-        "anthropic",
-        customModelsByProvider.claudeAgent,
-        modelHintByProvider?.claudeAgent,
-      ),
-      cursor: getAppModelOptions(
-        "openai",
-        customModelsByProvider.cursor,
-        modelHintByProvider?.cursor,
-      ),
-      antigravity: getAppModelOptions(
-        "google",
-        customModelsByProvider.antigravity,
-        modelHintByProvider?.antigravity,
-      ),
-      grok: getAppModelOptions("openai", customModelsByProvider.grok, modelHintByProvider?.grok),
-      droid: getAppModelOptions("openai", customModelsByProvider.droid, modelHintByProvider?.droid),
-      kilo: getAppModelOptions("openai", customModelsByProvider.kilo, modelHintByProvider?.kilo),
-      opencode: getAppModelOptions(
-        "openai",
-        customModelsByProvider.opencode,
-        modelHintByProvider?.opencode,
-      ),
-      pi: getAppModelOptions("openai", customModelsByProvider.pi, modelHintByProvider?.pi),
-      engine: getAppModelOptions(
-        "engine",
-        customModelsByProvider.engine,
-        modelHintByProvider?.engine,
-      ),
-      openai: getAppModelOptions(
-        "openai",
-        customModelsByProvider.openai,
-        modelHintByProvider?.openai,
-      ),
-      anthropic: getAppModelOptions(
-        "anthropic",
-        customModelsByProvider.anthropic,
-        modelHintByProvider?.anthropic,
-      ),
-      google: getAppModelOptions(
-        "google",
-        customModelsByProvider.google,
-        modelHintByProvider?.google,
-      ),
-      openrouter: getAppModelOptions(
-        "openrouter",
-        customModelsByProvider.openrouter,
-        modelHintByProvider?.openrouter,
-      ),
-      ollama: getAppModelOptions(
-        "ollama",
-        customModelsByProvider.ollama,
-        modelHintByProvider?.ollama,
-      ),
-      deepseek: getAppModelOptions(
-        "deepseek",
-        customModelsByProvider.deepseek,
-        modelHintByProvider?.deepseek,
-      ),
       groq: getAppModelOptions("groq", customModelsByProvider.groq, modelHintByProvider?.groq),
-      mistral: getAppModelOptions(
-        "mistral",
-        customModelsByProvider.mistral,
-        modelHintByProvider?.mistral,
-      ),
-      together: getAppModelOptions(
-        "together",
-        customModelsByProvider.together,
-        modelHintByProvider?.together,
-      ),
-      cohere: getAppModelOptions(
-        "cohere",
-        customModelsByProvider.cohere,
-        modelHintByProvider?.cohere,
-      ),
-      xai: getAppModelOptions("xai", customModelsByProvider.xai, modelHintByProvider?.xai),
-      fireworks: getAppModelOptions(
-        "fireworks",
-        customModelsByProvider.fireworks,
-        modelHintByProvider?.fireworks,
-      ),
       opencodeZen: getAppModelOptions(
         "opencodeZen",
         customModelsByProvider.opencodeZen,
         modelHintByProvider?.opencodeZen,
+      ),
+      opencodeGo: getAppModelOptions(
+        "opencodeGo",
+        customModelsByProvider.opencodeGo,
+        modelHintByProvider?.opencodeGo,
+      ),
+      engine: getAppModelOptions(
+        "engine",
+        customModelsByProvider.engine,
+        modelHintByProvider?.engine,
       ),
     };
     const result: Record<
       ProviderKind,
       ReadonlyArray<ProviderModelOption & { isCustom?: boolean }>
     > = { ...staticOptions };
-    const dynamicSources: Record<ProviderKind, typeof claudeDynamicModelsQuery.data> = {
-      claudeAgent: claudeDynamicModelsQuery.data,
-      codex: codexDynamicModelsQuery.data,
-      cursor:
-        cursorDynamicModelsQuery.data === undefined
-          ? undefined
-          : { ...cursorDynamicModelsQuery.data, models: cursorRuntimeModels },
-      antigravity: antigravityModelsQuery.data,
-      grok: grokDynamicModelsQuery.data,
-      droid: droidDynamicModelsQuery.data,
-      kilo: kiloDynamicModelsQuery.data,
-      opencode: openCodeDynamicModelsQuery.data,
-      pi: piDynamicModelsQuery.data,
+    const dynamicSources: Record<ProviderKind, typeof groqDynamicModelsQuery.data> = {
+      groq: groqDynamicModelsQuery.data,
+      opencodeZen: opencodeZenDynamicModelsQuery.data,
+      opencodeGo: opencodeGoDynamicModelsQuery.data,
       engine: undefined,
-      openai: undefined,
-      anthropic: undefined,
-      google: undefined,
-      openrouter: undefined,
-      ollama: undefined,
-      deepseek: undefined,
-      groq: undefined,
-      mistral: undefined,
-      together: undefined,
-      cohere: undefined,
-      xai: undefined,
-      fireworks: undefined,
-      opencodeZen: undefined,
     };
-    for (const provider of [
-      "anthropic",
-      "openai",
-      "openai",
-      "google",
-      "openai",
-      "openai",
-      "openai",
-      "openai",
-      "openai",
-    ] as const) {
+    for (const provider of ["groq", "opencodeZen", "opencodeGo"] as const) {
       const dynamicModels = dynamicSources[provider]?.models;
       if (dynamicModels && dynamicModels.length > 0) {
         result[provider] = mergeDynamicModelOptions({
@@ -412,36 +177,23 @@ export function useProviderModelCatalog(input: {
     }
     return result;
   }, [
-    antigravityModelsQuery.data,
-    claudeDynamicModelsQuery.data,
-    codexDynamicModelsQuery.data,
-    cursorDynamicModelsQuery.data,
-    cursorRuntimeModels,
     customModelsByProvider,
-    droidDynamicModelsQuery.data,
-    grokDynamicModelsQuery.data,
-    kiloDynamicModelsQuery.data,
+    groqDynamicModelsQuery.data,
     modelHintByProvider,
-    openCodeDynamicModelsQuery.data,
-    piDynamicModelsQuery.data,
+    opencodeGoDynamicModelsQuery.data,
+    opencodeZenDynamicModelsQuery.data,
   ]);
 
   const loadingModelProviders = useMemo<Partial<Record<ProviderKind, boolean>>>(
     () => ({
-      antigravity: antigravityModelDiscoveryPending,
-      cursor: cursorModelDiscoveryPending,
-      droid: droidModelDiscoveryPending,
-      kilo: kiloModelDiscoveryPending,
-      opencode: openCodeModelDiscoveryPending,
-      pi: piModelDiscoveryPending,
+      groq: groqModelDiscoveryPending,
+      opencodeZen: opencodeZenModelDiscoveryPending,
+      opencodeGo: opencodeGoModelDiscoveryPending,
     }),
     [
-      antigravityModelDiscoveryPending,
-      cursorModelDiscoveryPending,
-      droidModelDiscoveryPending,
-      kiloModelDiscoveryPending,
-      openCodeModelDiscoveryPending,
-      piModelDiscoveryPending,
+      groqModelDiscoveryPending,
+      opencodeZenModelDiscoveryPending,
+      opencodeGoModelDiscoveryPending,
     ],
   );
 
@@ -449,40 +201,15 @@ export function useProviderModelCatalog(input: {
     Record<ProviderKind, ReadonlyArray<ProviderModelDescriptor>>
   >(
     () => ({
-      claudeAgent: claudeDynamicModelsQuery.data?.models ?? [],
-      codex: codexDynamicModelsQuery.data?.models ?? [],
-      cursor: cursorRuntimeModels,
-      antigravity: antigravityModelsQuery.data?.models ?? [],
-      grok: grokDynamicModelsQuery.data?.models ?? [],
-      droid: droidDynamicModelsQuery.data?.models ?? [],
-      kilo: kiloDynamicModelsQuery.data?.models ?? [],
-      opencode: openCodeDynamicModelsQuery.data?.models ?? [],
-      pi: piDynamicModelsQuery.data?.models ?? [],
+      groq: groqDynamicModelsQuery.data?.models ?? [],
+      opencodeZen: opencodeZenDynamicModelsQuery.data?.models ?? [],
+      opencodeGo: opencodeGoDynamicModelsQuery.data?.models ?? [],
       engine: [],
-      openai: [],
-      anthropic: [],
-      google: [],
-      openrouter: [],
-      ollama: [],
-      deepseek: [],
-      groq: [],
-      mistral: [],
-      together: [],
-      cohere: [],
-      xai: [],
-      fireworks: [],
-      opencodeZen: [],
     }),
     [
-      antigravityModelsQuery.data?.models,
-      claudeDynamicModelsQuery.data?.models,
-      codexDynamicModelsQuery.data?.models,
-      cursorRuntimeModels,
-      droidDynamicModelsQuery.data?.models,
-      grokDynamicModelsQuery.data?.models,
-      kiloDynamicModelsQuery.data?.models,
-      openCodeDynamicModelsQuery.data?.models,
-      piDynamicModelsQuery.data?.models,
+      groqDynamicModelsQuery.data?.models,
+      opencodeZenDynamicModelsQuery.data?.models,
+      opencodeGoDynamicModelsQuery.data?.models,
     ],
   );
 
@@ -496,14 +223,7 @@ export function useProviderModelCatalog(input: {
     [modelHintByProvider, runtimeModelsByProvider, selectedProvider],
   );
 
-  const selectedDynamicAgents =
-    selectedProvider === "anthropic"
-      ? (claudeDynamicAgentsQuery.data?.agents ?? EMPTY_PROVIDER_AGENTS)
-      : selectedProvider === "openai"
-        ? (kiloDynamicAgentsQuery.data?.agents ?? EMPTY_PROVIDER_AGENTS)
-        : selectedProvider === "openai"
-          ? (openCodeDynamicAgentsQuery.data?.agents ?? EMPTY_PROVIDER_AGENTS)
-          : (codexDynamicAgentsQuery.data?.agents ?? EMPTY_PROVIDER_AGENTS);
+  const selectedDynamicAgents = EMPTY_PROVIDER_AGENTS;
   const selectedRuntimeAgents = useMemo<ReadonlyArray<ProviderAgentDescriptor>>(
     () =>
       selectedDynamicAgents.map((agent) =>
@@ -514,26 +234,12 @@ export function useProviderModelCatalog(input: {
     [selectedDynamicAgents],
   );
 
-  const selectedProviderRuntimeModelDiscoveryPending =
-    loadingModelProviders[selectedProvider] ?? false;
   const selectedProviderModelsQuery =
-    selectedProvider === "anthropic"
-      ? claudeDynamicModelsQuery
-      : selectedProvider === "openai"
-        ? codexDynamicModelsQuery
-        : selectedProvider === "openai"
-          ? cursorDynamicModelsQuery
-          : selectedProvider === "google"
-            ? antigravityModelsQuery
-            : selectedProvider === "openai"
-              ? grokDynamicModelsQuery
-              : selectedProvider === "openai"
-                ? droidDynamicModelsQuery
-                : selectedProvider === "openai"
-                  ? kiloDynamicModelsQuery
-                  : selectedProvider === "openai"
-                    ? openCodeDynamicModelsQuery
-                    : piDynamicModelsQuery;
+    selectedProvider === "groq"
+      ? groqDynamicModelsQuery
+      : selectedProvider === "opencodeZen"
+        ? opencodeZenDynamicModelsQuery
+        : opencodeGoDynamicModelsQuery;
   const selectedProviderModelsLoading =
     selectedProviderRuntimeModelDiscoveryPending ||
     (loadingModelProviders[selectedProvider] === undefined &&
