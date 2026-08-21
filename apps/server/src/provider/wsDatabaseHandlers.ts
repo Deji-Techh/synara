@@ -47,10 +47,13 @@ export const makeWsDatabaseHandlers = (
     Effect.gen(function* () {
       const adapter = yield* resolveEngineAdapter(providerAdapterRegistry);
       yield* ensureEngineSession(input.threadId);
-      return yield* adapter.databaseInvoke({
-        threadId: input.threadId,
-        channel: input.channel,
-        payload: input.payload,
-      });
+      const { value } = yield* adapter
+        .databaseInvoke({
+          threadId: input.threadId,
+          channel: input.channel,
+          payload: input.payload,
+        })
+        .pipe(Effect.mapError((cause) => new WsRpcError({ message: cause.message })));
+      return { value };
     }),
 });

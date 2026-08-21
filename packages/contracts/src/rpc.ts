@@ -1538,6 +1538,9 @@ export const WsFeatureRpcGroup = RpcGroup.make(
   WsDeviceStopRecordingRpc,
   WsDeviceScrollToElementRpc,
   WsSubscribeDeviceEventsRpc,
+  // Served on the feature socket via makeWsDatabaseHandlers; it must stay a
+  // member here or RpcGroup.toHandlers dies at startup with an unknown tag.
+  WsDatabaseInvokeRpc,
 );
 
 /** @deprecated Use WsFeatureRpcGroup. Bootstrap is intentionally a separate endpoint/group. */
