@@ -692,17 +692,14 @@ export const ProjectPicker = memo(function ProjectPicker({
       <CreateAppDialog
         open={isCreateAppOpen}
         onOpenChange={setIsCreateAppOpen}
-        onCreated={(appId, chatId) => {
-          // After creating the app, select it as the current project.
-          // The app's path is under ~/caide-apps/<slug>, but we treat the appId as the projectId.
-          // For now, close the picker and let the caller handle navigation via onSelectProject.
+        onCreated={(result) => {
+          // The server RPC bound an orchestration project + first thread to
+          // ~/caide-apps/<slug>; the Sidebar handler navigates into the new
+          // chat. Here we just close the picker and select the project.
           setIsCreateAppOpen(false);
           setOpen(false);
-          // The CreateAppDialog already created the app and chat; trigger a refresh.
-          // If the caller provided onSelectProject, call it with the new app's projectId.
-          // The app's projectId is the same as appId in the new model.
           if (onSelectProject) {
-            void onSelectProject(appId as unknown as ProjectId);
+            void onSelectProject(result.projectId);
           }
         }}
       />

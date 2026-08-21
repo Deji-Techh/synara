@@ -15,6 +15,7 @@
 // first poll. Release builds poll `preview.buildState` while running.
 
 import { type ThreadId } from "@caide/contracts";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ensureNativeApi } from "~/nativeApi";
@@ -929,6 +930,9 @@ function ReleasePanel(props: {
               Download {artifactDownloadLabel(props.build.outputPath)}
             </a>
           )}
+          <span className="text-[11px] font-normal text-emerald-600/80 dark:text-emerald-400/80">
+            Saved to Artifacts — open it from the Caide menu.
+          </span>
         </div>
       )}
       {props.build.status === "failed" && (
@@ -1354,6 +1358,19 @@ export function PreviewPanel(props: {
     const timer = window.setInterval(pollBuildOnce, BUILD_POLL_INTERVAL_MS);
     return () => window.clearInterval(timer);
   }, [props.isVisible, pollBuildOnce]);
+
+  // A succeeded build means the engine snapshotted it into the global
+  // artifacts registry; refresh the gallery cache so the Caide-menu dialog
+  // shows it without a manual reopen.
+  const queryClient = useQueryClient();
+  const buildStatus = panelState.build.status;
+  const previousBuildStatusRef = useRef(buildStatus);
+  useEffect(() => {
+    if (buildStatus === "succeeded" && previousBuildStatusRef.current !== "succeeded") {
+      void queryClient.invalidateQueries({ queryKey: ["artifacts"] });
+    }
+    previousBuildStatusRef.current = buildStatus;
+  }, [buildStatus, queryClient]);
 
   const isStarting = panelState.status === "starting";
   const isRunning = panelState.status === "running";

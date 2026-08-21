@@ -1528,7 +1528,10 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
     const subagentsApi: EngineSubagentsApi = {
       getActive: (input) =>
         goalRequest(ThreadId.makeUnsafe(randomUUID()), "sidebar:getActiveSubagents", {
-          ...(input.appId !== undefined ? { appId: input.appId } : {}),
+          // The engine contract takes an optional number; null means "no filter".
+          ...(input.appId !== undefined && input.appId !== null
+            ? { appId: input.appId }
+            : {}),
         }) as Effect.Effect<Array<EngineActiveSubagent>, ProviderAdapterError>,
     };
 

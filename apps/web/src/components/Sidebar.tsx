@@ -204,6 +204,7 @@ import { RenameDialog } from "./RenameDialog";
 import { RenameThreadDialog } from "./RenameThreadDialog";
 import ReleaseHistoryDialog from "./ReleaseHistoryDialog";
 import { ProjectsHistoryDialog } from "./history/ProjectsHistoryDialog";
+import { ArtifactsDialog } from "./artifacts/ArtifactsDialog";
 import { WHATS_NEW_ENTRIES } from "../whatsNew/entries";
 import { sortEntriesByVersionDesc } from "../whatsNew/logic";
 import {
@@ -1225,7 +1226,13 @@ const SIDEBAR_SURFACE_PICKER_TITLE = "Caide";
  * name that opens a menu of surfaces, each with a one-line description and a
  * check on the active entry.
  */
-export function SidebarSurfacePicker({ onOpenHistory }: { onOpenHistory?: () => void }) {
+export function SidebarSurfacePicker({
+  onOpenArtifacts,
+  onOpenHistory,
+}: {
+  onOpenArtifacts?: () => void;
+  onOpenHistory?: () => void;
+}) {
   return (
     <Menu>
       <MenuTrigger
@@ -1252,6 +1259,19 @@ export function SidebarSurfacePicker({ onOpenHistory }: { onOpenHistory?: () => 
         side="bottom"
         className="sidebar-surface-picker-menu min-w-64"
       >
+        {onOpenArtifacts ? (
+          <MenuItem closeOnClick onClick={onOpenArtifacts} className="items-center rounded-[10px]">
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="flex items-center gap-1.5 text-[13px] font-medium leading-none text-foreground">
+                <ArchiveIcon className="size-3.5" />
+                Artifacts
+              </span>
+              <span className="text-[11px] leading-snug text-muted-foreground">
+                Every APK, AAB, and IPA you have built
+              </span>
+            </span>
+          </MenuItem>
+        ) : null}
         {onOpenHistory ? (
           <MenuItem closeOnClick onClick={onOpenHistory} className="items-center rounded-[10px]">
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -1512,6 +1532,7 @@ export default function Sidebar() {
   const [renameDialogThreadId, setRenameDialogThreadId] = useState<ThreadId | null>(null);
   const [renameProjectDialogId, setRenameProjectDialogId] = useState<ProjectId | null>(null);
   const [projectHistoryOpen, setProjectHistoryOpen] = useState(false);
+  const [artifactsOpen, setArtifactsOpen] = useState(false);
   const [projectContextMenuState, setProjectContextMenuState] =
     useState<ProjectContextMenuState | null>(null);
   // "Show more" paging state: extra pages of THREAD_PREVIEW_PAGE_SIZE rows per project cwd.
@@ -5391,7 +5412,10 @@ export default function Sidebar() {
         ) : (
           <>
             <div className="flex items-center gap-1 pt-0 pb-1 pr-2.5 pl-1.5">
-              <SidebarSurfacePicker onOpenHistory={() => setProjectHistoryOpen(true)} />
+              <SidebarSurfacePicker
+                onOpenArtifacts={() => setArtifactsOpen(true)}
+                onOpenHistory={() => setProjectHistoryOpen(true)}
+              />
               <div className="ml-auto flex items-center gap-1.5">
                 <SidebarIconButton
                   icon={SearchIcon}
@@ -6164,6 +6188,8 @@ export default function Sidebar() {
           void deleteProjectThreads(project.id);
         }}
       />
+
+      <ArtifactsDialog open={artifactsOpen} onOpenChange={setArtifactsOpen} />
 
       {searchPaletteOpen ? (
         <SidebarSearchPaletteController

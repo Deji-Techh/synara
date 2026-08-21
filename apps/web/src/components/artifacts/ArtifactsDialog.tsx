@@ -19,7 +19,7 @@ import {
 } from "../../artifactsGrid.logic";
 import { copyTextToClipboard } from "../../hooks/useCopyToClipboard";
 import { formatRelativeTime } from "../../lib/relativeTime";
-import { ArchiveIcon, ChevronDownIcon, DownloadIcon, EllipsisIcon, PencilIcon, SearchIcon, ShareIcon, Trash2 } from "../../lib/icons";
+import { ArchiveIcon, ChevronDownIcon, CopyIcon, DownloadIcon, EllipsisIcon, PencilIcon, SearchIcon, Trash2 } from "../../lib/icons";
 import { ensureNativeApi } from "~/nativeApi";
 import { buildLocalImageUrl } from "../../lib/localImageUrls";
 import {
@@ -371,7 +371,7 @@ function ArtifactCard({
         </MenuTrigger>
         <ComposerPickerMenuPopup align="end">
           <MenuItem onClick={onShare}>
-            <ShareIcon />
+            <CopyIcon />
             Share download link
           </MenuItem>
           <MenuItem onClick={onDownload}>

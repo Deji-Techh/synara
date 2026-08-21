@@ -10,7 +10,6 @@ import {
   type AssistantDeliveryMode,
   DesktopAppIcon,
   DEFAULT_GIT_TEXT_GENERATION_MODEL,
-  DEFAULT_SERVER_SETTINGS,
   DEFAULT_SERVER_SETTINGS_VIEW,
   TrimmedNonEmptyString,
   ProviderKind,
@@ -94,29 +93,10 @@ export function getDefaultNativeFontSmoothing(platform = globalThis.navigator?.p
 }
 
 type CustomModelSettingsKey =
-  | "customCodexModels"
-  | "customClaudeModels"
-  | "customCursorModels"
-  | "customAntigravityModels"
-  | "customGrokModels"
-  | "customDroidModels"
-  | "customKiloModels"
-  | "customOpenCodeModels"
-  | "customPiModels"
   | "customEngineModels"
-  | "customOpenAiModels"
-  | "customAnthropicModels"
-  | "customGoogleModels"
-  | "customOpenRouterModels"
-  | "customOllamaModels"
-  | "customDeepseekModels"
   | "customGroqModels"
-  | "customMistralModels"
-  | "customTogetherModels"
-  | "customCohereModels"
-  | "customXaiModels"
-  | "customFireworksModels"
-  | "customOpenCodeZenModels";
+  | "customOpenCodeZenModels"
+  | "customOpenCodeGoModels";
 export type ProviderCustomModelConfig = {
   provider: ProviderKind;
   settingsKey: CustomModelSettingsKey;
@@ -158,7 +138,6 @@ const PersistedProviderKind = Schema.Literals(["groq", "opencodeZen"]).pipe(
 );
 
 export const AppSettingsSchema = Schema.Struct({
-  claudeBinaryPath: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
   uiDensity: UiDensity.pipe(withDefaults(() => DEFAULT_UI_DENSITY)),
   chatFontSizePx: Schema.Number.pipe(withDefaults(() => DEFAULT_CHAT_FONT_SIZE_PX)),
   chatCodeFontFamily: Schema.String.check(Schema.isMaxLength(256)).pipe(withDefaults(() => "")),
@@ -166,28 +145,6 @@ export const AppSettingsSchema = Schema.Struct({
   terminalFontFamily: Schema.String.check(Schema.isMaxLength(256)).pipe(
     withDefaults(() => DEFAULT_TERMINAL_FONT_FAMILY),
   ),
-  codexBinaryPath: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  codexHomePath: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  cursorBinaryPath: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  cursorApiEndpoint: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  antigravityBinaryPath: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  // Deprecated Gemini keys remain decodable until normalization rewrites local storage.
-  geminiBinaryPath: Schema.optionalKey(Schema.String.check(Schema.isMaxLength(4096))),
-  grokBinaryPath: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  droidBinaryPath: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  kiloBinaryPath: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  kiloServerUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  kiloServerPassword: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  kiloServerPasswordConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
-  openCodeBinaryPath: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  piBinaryPath: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  piAgentDir: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  openCodeServerUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
-  openCodeServerPassword: Schema.String.check(Schema.isMaxLength(4096)).pipe(
-    withDefaults(() => ""),
-  ),
-  openCodeServerPasswordConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
-  openCodeExperimentalWebSockets: Schema.Boolean.pipe(withDefaults(() => false)),
   engineApiKey: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
   engineApiKeyConfigured: Schema.Boolean.pipe(withDefaults(() => false)),
   engineBaseUrl: Schema.String.check(Schema.isMaxLength(4096)).pipe(withDefaults(() => "")),
@@ -238,29 +195,8 @@ export const AppSettingsSchema = Schema.Struct({
     withDefaults(() => DEFAULT_SIDEBAR_THREAD_SORT_ORDER),
   ),
   timestampFormat: TimestampFormat.pipe(withDefaults(() => DEFAULT_TIMESTAMP_FORMAT)),
-  customCodexModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  customClaudeModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  customCursorModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  customAntigravityModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  customGeminiModels: Schema.optionalKey(Schema.Array(Schema.String)),
-  customGrokModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  customDroidModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  customKiloModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  customOpenCodeModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  customPiModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   customEngineModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  customOpenAiModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  customAnthropicModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  customGoogleModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  customOpenRouterModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  customOllamaModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  customDeepseekModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   customGroqModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  customMistralModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  customTogetherModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  customCohereModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  customXaiModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
-  customFireworksModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   customOpenCodeZenModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   customOpenCodeGoModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   textGenerationProvider: PersistedProviderKind.pipe(withDefaults(() => "groq" as const)),
@@ -319,87 +255,6 @@ const DEFAULT_APP_SETTINGS = AppSettingsSchema.makeUnsafe({});
 let serverSettingsMigrationInFlight = false;
 
 const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConfig> = {
-  codex: {
-    provider: "groq",
-    settingsKey: "customCodexModels",
-    defaultSettingsKey: "customCodexModels",
-    title: "Codex",
-    description: "Save additional Codex model slugs for the picker and `/model` command.",
-    placeholder: "your-codex-model-slug",
-    example: "gpt-6.7-codex-ultra-preview",
-  },
-  claudeAgent: {
-    provider: "opencodeZen",
-    settingsKey: "customClaudeModels",
-    defaultSettingsKey: "customClaudeModels",
-    title: "Claude",
-    description: "Save additional Claude model slugs for the picker and `/model` command.",
-    placeholder: "your-claude-model-slug",
-    example: "claude-custom-model",
-  },
-  cursor: {
-    provider: "groq",
-    settingsKey: "customCursorModels",
-    defaultSettingsKey: "customCursorModels",
-    title: "Cursor",
-    description: "Save additional Cursor model slugs for the picker and provider runtime.",
-    placeholder: "cursor-model-slug",
-    example: "composer-2",
-  },
-  antigravity: {
-    provider: "opencodeGo",
-    settingsKey: "customAntigravityModels",
-    defaultSettingsKey: "customAntigravityModels",
-    title: "Antigravity",
-    description: "Save additional Antigravity CLI base model names for the picker.",
-    placeholder: "Model Name",
-    example: "Gemini 4 Pro",
-  },
-  grok: {
-    provider: "groq",
-    settingsKey: "customGrokModels",
-    defaultSettingsKey: "customGrokModels",
-    title: "Grok",
-    description: "Save additional Grok model slugs for the picker and `/model` command.",
-    placeholder: "your-grok-model-slug",
-    example: "grok-build-0.1",
-  },
-  droid: {
-    provider: "groq",
-    settingsKey: "customDroidModels",
-    defaultSettingsKey: "customDroidModels",
-    title: "Droid",
-    description: "Save additional Droid model slugs for the picker and `/model` command.",
-    placeholder: "your-droid-model-slug",
-    example: "claude-opus-4-8",
-  },
-  kilo: {
-    provider: "groq",
-    settingsKey: "customKiloModels",
-    defaultSettingsKey: "customKiloModels",
-    title: "Kilo",
-    description: "Save additional Kilo model slugs for the picker and provider runtime.",
-    placeholder: "provider/model",
-    example: "kilo/kilo-auto/free",
-  },
-  opencode: {
-    provider: "groq",
-    settingsKey: "customOpenCodeModels",
-    defaultSettingsKey: "customOpenCodeModels",
-    title: "OpenCode",
-    description: "Save additional OpenCode model slugs for the picker and provider runtime.",
-    placeholder: "provider/model",
-    example: "groq/llama-3.3-70b-versatile",
-  },
-  pi: {
-    provider: "groq",
-    settingsKey: "customPiModels",
-    defaultSettingsKey: "customPiModels",
-    title: "Pi",
-    description: "Save additional Pi model slugs for the picker and provider runtime.",
-    placeholder: "provider/model",
-    example: "opencodeZen/deepseek-v4-flash-free",
-  },
   engine: {
     provider: "engine",
     settingsKey: "customEngineModels",
@@ -530,63 +385,19 @@ export function resolveTerminalFontFamilyStack(value: string | null | undefined)
   return hasGenericFallback ? family : `${family}, monospace`;
 }
 
-function normalizeProviderBinaryPathOverride(
-  provider: ProviderKind,
-  value: string | null | undefined,
-): string {
-  const trimmed = value?.trim() ?? "";
-  if (!trimmed || trimmed === (DEFAULT_SERVER_SETTINGS.providers as any)[provider]?.binaryPath) {
-    return "";
-  }
-  return trimmed;
-}
-
 function normalizeAppSettings(settings: AppSettings): AppSettings {
-  const {
-    geminiBinaryPath: legacyGeminiBinaryPath,
-    customGeminiModels: legacyCustomGeminiModels,
-    ...currentSettings
-  } = settings;
   return {
-    ...currentSettings,
+    ...settings,
     // Password & API key fields are accepted only as write-only update patches. Never retain
     // reusable provider credentials in browser state or localStorage.
-    kiloServerPassword: "",
-    openCodeServerPassword: "",
     groqApiKey: "",
     opencodeZenApiKey: "",
     opencodeGoApiKey: "",
-    claudeBinaryPath: normalizeProviderBinaryPathOverride("opencodeZen", settings.claudeBinaryPath),
-    codexBinaryPath: normalizeProviderBinaryPathOverride("groq", settings.codexBinaryPath),
-    cursorBinaryPath: normalizeProviderBinaryPathOverride("groq", settings.cursorBinaryPath),
-    antigravityBinaryPath: normalizeProviderBinaryPathOverride(
-      "opencodeGo",
-      settings.antigravityBinaryPath || legacyGeminiBinaryPath,
-    ),
-    grokBinaryPath: normalizeProviderBinaryPathOverride("groq", settings.grokBinaryPath),
-    droidBinaryPath: normalizeProviderBinaryPathOverride("groq", settings.droidBinaryPath),
-    kiloBinaryPath: normalizeProviderBinaryPathOverride("groq", settings.kiloBinaryPath),
-    openCodeBinaryPath: normalizeProviderBinaryPathOverride("groq", settings.openCodeBinaryPath),
-    piBinaryPath: normalizeProviderBinaryPathOverride("groq", settings.piBinaryPath),
     uiDensity: normalizeUiDensityValue(settings.uiDensity),
     chatFontSizePx: normalizeChatFontSizePx(settings.chatFontSizePx),
     terminalFontSizePx: normalizeTerminalFontSizePx(settings.terminalFontSizePx),
     terminalFontFamily: normalizeTerminalFontFamily(settings.terminalFontFamily),
-    customCodexModels: normalizeCustomModelSlugs(settings.customCodexModels, "groq"),
-    customClaudeModels: normalizeCustomModelSlugs(settings.customClaudeModels, "opencodeZen"),
-    customCursorModels: normalizeCustomModelSlugs(settings.customCursorModels, "groq"),
-    customAntigravityModels: normalizeCustomModelSlugs(
-      [...(settings.customAntigravityModels ?? []), ...(legacyCustomGeminiModels ?? [])],
-      "opencodeGo",
-    ),
-    customGrokModels: normalizeCustomModelSlugs(settings.customGrokModels, "groq"),
-    customDroidModels: normalizeCustomModelSlugs(settings.customDroidModels, "groq"),
-    customKiloModels: normalizeCustomModelSlugs(settings.customKiloModels, "groq"),
-    customOpenCodeModels: normalizeCustomModelSlugs(settings.customOpenCodeModels, "groq"),
-    customPiModels: normalizeCustomModelSlugs(settings.customPiModels, "groq"),
-    customOpenAiModels: normalizeCustomModelSlugs(settings.customOpenAiModels, "groq"),
-    customGoogleModels: normalizeCustomModelSlugs(settings.customGoogleModels, "opencodeGo"),
-    customOpenRouterModels: normalizeCustomModelSlugs(settings.customOpenRouterModels),
+    customEngineModels: normalizeCustomModelSlugs(settings.customEngineModels, "engine"),
     customGroqModels: normalizeCustomModelSlugs(settings.customGroqModels, "groq"),
     customOpenCodeZenModels: normalizeCustomModelSlugs(
       settings.customOpenCodeZenModels,
@@ -604,36 +415,10 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
 
 function serverSettingsToAppSettings(settings: ServerSettingsView): Partial<AppSettings> {
   return {
-    claudeBinaryPath: (settings.providers as any).claudeAgent?.binaryPath,
-    codexBinaryPath: (settings.providers as any).codex?.binaryPath,
-    codexHomePath: (settings.providers as any).codex?.homePath,
-    cursorApiEndpoint: (settings.providers as any).cursor?.apiEndpoint,
-    cursorBinaryPath: (settings.providers as any).cursor?.binaryPath,
     defaultThreadEnvMode: settings.defaultThreadEnvMode,
     enableAssistantStreaming: settings.enableAssistantStreaming,
     enableProviderUpdateChecks: settings.enableProviderUpdateChecks,
-    antigravityBinaryPath: (settings.providers as any).antigravity?.binaryPath,
-    grokBinaryPath: (settings.providers as any).grok?.binaryPath,
-    droidBinaryPath: (settings.providers as any).droid?.binaryPath,
-    kiloBinaryPath: (settings.providers as any).kilo?.binaryPath,
-    kiloServerPasswordConfigured: (settings.providers as any).kilo?.serverPasswordConfigured,
-    kiloServerUrl: (settings.providers as any).kilo?.serverUrl,
-    openCodeBinaryPath: (settings.providers as any).opencode?.binaryPath,
-    openCodeExperimentalWebSockets: (settings.providers as any).opencode?.experimentalWebSockets,
-    openCodeServerPasswordConfigured: (settings.providers as any).opencode
-      ?.serverPasswordConfigured,
-    openCodeServerUrl: (settings.providers as any).opencode?.serverUrl,
-    piAgentDir: (settings.providers as any).pi?.agentDir,
-    piBinaryPath: (settings.providers as any).pi?.binaryPath,
-    customCodexModels: (settings.providers as any).codex?.customModels,
-    customClaudeModels: (settings.providers as any).claudeAgent?.customModels,
-    customCursorModels: (settings.providers as any).cursor?.customModels,
-    customAntigravityModels: (settings.providers as any).antigravity?.customModels,
-    customGrokModels: (settings.providers as any).grok?.customModels,
-    customDroidModels: (settings.providers as any).droid?.customModels,
-    customKiloModels: (settings.providers as any).kilo?.customModels,
-    customOpenCodeModels: (settings.providers as any).opencode?.customModels,
-    customPiModels: (settings.providers as any).pi?.customModels,
+    customEngineModels: settings.providers.engine.customModels,
     customGroqModels: settings.providers.groq.customModels,
     engineApiKeyConfigured: settings.providers.engine.apiKeyConfigured,
     engineBaseUrl: settings.providers.engine.baseUrl,
@@ -653,13 +438,8 @@ function serverSettingsToAppSettings(settings: ServerSettingsView): Partial<AppS
 
 function resolveTextGenerationProvider(input: {
   readonly provider?: ProviderKind | null;
-  readonly model?: string | null;
 }): ProviderKind {
-  if (input.provider) {
-    return input.provider;
-  }
-  const model = input.model;
-  return model?.includes("/") ? "groq" : "groq";
+  return input.provider ?? "groq";
 }
 
 function hasOwn<Key extends keyof AppSettings>(patch: Partial<AppSettings>, key: Key): boolean {
@@ -696,12 +476,7 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
   if (hasOwn(patch, "textGenerationModel") || hasOwn(patch, "textGenerationProvider")) {
     const model = patch.textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL;
     serverPatch.textGenerationModelSelection = {
-      provider: resolveTextGenerationProvider({
-        ...(patch.textGenerationProvider !== undefined
-          ? { provider: patch.textGenerationProvider }
-          : {}),
-        model,
-      }),
+      provider: resolveTextGenerationProvider({ provider: patch.textGenerationProvider }),
       model,
     };
   }
@@ -782,26 +557,9 @@ function buildInitialServerSettingsMigrationPatch(settings: AppSettings): Server
   const defaults = DEFAULT_APP_SETTINGS;
 
   for (const key of [
-    "claudeBinaryPath",
-    "codexBinaryPath",
-    "codexHomePath",
-    "cursorApiEndpoint",
-    "cursorBinaryPath",
     "defaultThreadEnvMode",
     "enableAssistantStreaming",
     "enableProviderUpdateChecks",
-    "antigravityBinaryPath",
-    "grokBinaryPath",
-    "droidBinaryPath",
-    "kiloBinaryPath",
-    "kiloServerPassword",
-    "kiloServerUrl",
-    "openCodeBinaryPath",
-    "openCodeExperimentalWebSockets",
-    "openCodeServerPassword",
-    "openCodeServerUrl",
-    "piAgentDir",
-    "piBinaryPath",
 
     "groqApiKey",
     "groqBaseUrl",
@@ -817,15 +575,8 @@ function buildInitialServerSettingsMigrationPatch(settings: AppSettings): Server
     }
   }
 
-  // Migrate legacy browser-stored passwords once before normalizeAppSettings
+  // Migrate legacy browser-stored API keys once before normalizeAppSettings
   // scrubs them from local state. All subsequent reads use redacted server views.
-  if (settings.kiloServerPassword.trim()) {
-    patch.kiloServerPassword = settings.kiloServerPassword;
-  }
-  if (settings.openCodeServerPassword.trim()) {
-    patch.openCodeServerPassword = settings.openCodeServerPassword;
-  }
-
   if (settings.groqApiKey.trim()) {
     patch.groqApiKey = settings.groqApiKey;
   }
@@ -837,27 +588,8 @@ function buildInitialServerSettingsMigrationPatch(settings: AppSettings): Server
   }
 
   for (const key of [
-    "customCodexModels",
-    "customClaudeModels",
-    "customCursorModels",
-    "customAntigravityModels",
-    "customGrokModels",
-    "customDroidModels",
-    "customKiloModels",
-    "customOpenCodeModels",
-    "customPiModels",
-    "customOpenAiModels",
-    "customAnthropicModels",
-    "customGoogleModels",
-    "customOpenRouterModels",
-    "customOllamaModels",
-    "customDeepseekModels",
+    "customEngineModels",
     "customGroqModels",
-    "customMistralModels",
-    "customTogetherModels",
-    "customCohereModels",
-    "customXaiModels",
-    "customFireworksModels",
     "customOpenCodeZenModels",
     "customOpenCodeGoModels",
   ] as const) {
@@ -900,18 +632,10 @@ export function getCustomModelsByProvider(
   settings: Pick<AppSettings, CustomModelSettingsKey>,
 ): Record<ProviderKind, readonly string[]> {
   return {
-    codex: getCustomModelsForProvider(settings, "groq"),
-    claudeAgent: getCustomModelsForProvider(settings, "opencodeZen"),
-    cursor: getCustomModelsForProvider(settings, "groq"),
-    antigravity: getCustomModelsForProvider(settings, "opencodeGo"),
-    grok: getCustomModelsForProvider(settings, "groq"),
-    droid: getCustomModelsForProvider(settings, "groq"),
-    kilo: getCustomModelsForProvider(settings, "groq"),
-    opencode: getCustomModelsForProvider(settings, "groq"),
-    pi: getCustomModelsForProvider(settings, "groq"),
     engine: getCustomModelsForProvider(settings, "engine"),
     groq: getCustomModelsForProvider(settings, "groq"),
     opencodeZen: getCustomModelsForProvider(settings, "opencodeZen"),
+    opencodeGo: getCustomModelsForProvider(settings, "opencodeGo"),
   };
 }
 
@@ -966,7 +690,7 @@ export function getAppModelOptions(
   return options;
 }
 
-type GitTextGenerationDiscoveredProvider = "groq" | "groq" | "groq";
+type GitTextGenerationDiscoveredProvider = "groq";
 
 export function mapCatalogModelOptionsToAppModelOptions(
   provider: GitTextGenerationDiscoveredProvider,
@@ -982,11 +706,7 @@ export function mapCatalogModelOptionsToAppModelOptions(
 export function getGitTextGenerationModelOptions(
   settings: Pick<
     AppSettings,
-    | "customCodexModels"
-    | "customKiloModels"
-    | "customOpenCodeModels"
-    | "textGenerationModel"
-    | "textGenerationProvider"
+    "customGroqModels" | "textGenerationModel" | "textGenerationProvider"
   >,
   discoveredOptionsByProvider?: Partial<
     Record<
@@ -996,15 +716,9 @@ export function getGitTextGenerationModelOptions(
   >,
 ): AppModelOption[] {
   const options = [
-    ...(discoveredOptionsByProvider?.codex
-      ? mapCatalogModelOptionsToAppModelOptions("groq", discoveredOptionsByProvider.codex)
-      : getAppModelOptions("groq", settings.customCodexModels)),
-    ...(discoveredOptionsByProvider?.kilo
-      ? mapCatalogModelOptionsToAppModelOptions("groq", discoveredOptionsByProvider.kilo)
-      : getAppModelOptions("groq", settings.customKiloModels)),
-    ...(discoveredOptionsByProvider?.opencode
-      ? mapCatalogModelOptionsToAppModelOptions("groq", discoveredOptionsByProvider.opencode)
-      : getAppModelOptions("groq", settings.customOpenCodeModels)),
+    ...(discoveredOptionsByProvider?.groq
+      ? mapCatalogModelOptionsToAppModelOptions("groq", discoveredOptionsByProvider.groq)
+      : getAppModelOptions("groq", settings.customGroqModels)),
   ];
   const deduped: AppModelOption[] = [];
   const seen = new Set<string>();
@@ -1019,9 +733,7 @@ export function getGitTextGenerationModelOptions(
   }
 
   const selectedModel = settings.textGenerationModel?.trim();
-  const selectedProvider =
-    settings.textGenerationProvider ??
-    resolveTextGenerationProvider(selectedModel !== undefined ? { model: selectedModel } : {});
+  const selectedProvider = settings.textGenerationProvider ?? "groq";
   if (selectedModel && !seen.has(`${selectedProvider}:${selectedModel}`)) {
     deduped.push({
       provider: selectedProvider,
@@ -1051,135 +763,11 @@ export function getCustomModelOptionsByProvider(
 ): Record<ProviderKind, ReadonlyArray<ProviderModelOption>> {
   const customModelsByProvider = getCustomModelsByProvider(settings);
   return {
-    codex: getAppModelOptions("groq", customModelsByProvider.codex),
-    claudeAgent: getAppModelOptions("opencodeZen", customModelsByProvider.claudeAgent),
-    cursor: getAppModelOptions("groq", customModelsByProvider.cursor),
-    antigravity: getAppModelOptions("opencodeGo", customModelsByProvider.antigravity),
-    grok: getAppModelOptions("groq", customModelsByProvider.grok),
-    droid: getAppModelOptions("groq", customModelsByProvider.droid),
-    kilo: getAppModelOptions("groq", customModelsByProvider.kilo),
-    opencode: getAppModelOptions("groq", customModelsByProvider.opencode),
-    pi: getAppModelOptions("groq", customModelsByProvider.pi),
     engine: getAppModelOptions("engine", customModelsByProvider.engine),
     groq: getAppModelOptions("groq", customModelsByProvider.groq),
     opencodeZen: getAppModelOptions("opencodeZen", customModelsByProvider.opencodeZen),
+    opencodeGo: getAppModelOptions("opencodeGo", customModelsByProvider.opencodeGo),
   };
-}
-
-export function getProviderStartOptions(
-  settings: Pick<
-    AppSettings,
-    | "claudeBinaryPath"
-    | "codexBinaryPath"
-    | "codexHomePath"
-    | "cursorApiEndpoint"
-    | "cursorBinaryPath"
-    | "antigravityBinaryPath"
-    | "grokBinaryPath"
-    | "droidBinaryPath"
-    | "kiloBinaryPath"
-    | "kiloServerUrl"
-    | "openCodeBinaryPath"
-    | "openCodeExperimentalWebSockets"
-    | "openCodeServerUrl"
-    | "piAgentDir"
-    | "piBinaryPath"
-  >,
-): ProviderStartOptions | undefined {
-  const claudeBinaryPath = normalizeProviderBinaryPathOverride(
-    "opencodeZen",
-    settings.claudeBinaryPath,
-  );
-  const codexBinaryPath = normalizeProviderBinaryPathOverride("groq", settings.codexBinaryPath);
-  const cursorBinaryPath = normalizeProviderBinaryPathOverride("groq", settings.cursorBinaryPath);
-  const antigravityBinaryPath = normalizeProviderBinaryPathOverride(
-    "opencodeGo",
-    settings.antigravityBinaryPath,
-  );
-  const grokBinaryPath = normalizeProviderBinaryPathOverride("groq", settings.grokBinaryPath);
-  const droidBinaryPath = normalizeProviderBinaryPathOverride("groq", settings.droidBinaryPath);
-  const kiloBinaryPath = normalizeProviderBinaryPathOverride("groq", settings.kiloBinaryPath);
-  const openCodeBinaryPath = normalizeProviderBinaryPathOverride(
-    "groq",
-    settings.openCodeBinaryPath,
-  );
-  const piBinaryPath = normalizeProviderBinaryPathOverride("groq", settings.piBinaryPath);
-  const hasOpenCodeStartOptions = Boolean(
-    openCodeBinaryPath || settings.openCodeExperimentalWebSockets || settings.openCodeServerUrl,
-  );
-  const providerOptions: ProviderStartOptions = {
-    ...(codexBinaryPath || settings.codexHomePath
-      ? {
-          codex: {
-            ...(codexBinaryPath ? { binaryPath: codexBinaryPath } : {}),
-            ...(settings.codexHomePath ? { homePath: settings.codexHomePath } : {}),
-          },
-        }
-      : {}),
-    ...(claudeBinaryPath
-      ? {
-          claudeAgent: {
-            binaryPath: claudeBinaryPath,
-          },
-        }
-      : {}),
-    ...(cursorBinaryPath || settings.cursorApiEndpoint
-      ? {
-          cursor: {
-            ...(cursorBinaryPath ? { binaryPath: cursorBinaryPath } : {}),
-            ...(settings.cursorApiEndpoint ? { apiEndpoint: settings.cursorApiEndpoint } : {}),
-          },
-        }
-      : {}),
-    ...(antigravityBinaryPath
-      ? {
-          antigravity: {
-            binaryPath: antigravityBinaryPath,
-          },
-        }
-      : {}),
-    ...(grokBinaryPath
-      ? {
-          grok: {
-            binaryPath: grokBinaryPath,
-          },
-        }
-      : {}),
-    ...(droidBinaryPath
-      ? {
-          droid: {
-            binaryPath: droidBinaryPath,
-          },
-        }
-      : {}),
-    ...(kiloBinaryPath || settings.kiloServerUrl
-      ? {
-          kilo: {
-            ...(kiloBinaryPath ? { binaryPath: kiloBinaryPath } : {}),
-            ...(settings.kiloServerUrl ? { serverUrl: settings.kiloServerUrl } : {}),
-          },
-        }
-      : {}),
-    ...(hasOpenCodeStartOptions
-      ? {
-          opencode: {
-            ...(openCodeBinaryPath ? { binaryPath: openCodeBinaryPath } : {}),
-            ...(settings.openCodeExperimentalWebSockets ? { experimentalWebSockets: true } : {}),
-            ...(settings.openCodeServerUrl ? { serverUrl: settings.openCodeServerUrl } : {}),
-          },
-        }
-      : {}),
-    ...(piBinaryPath || settings.piAgentDir
-      ? {
-          pi: {
-            ...(piBinaryPath ? { binaryPath: piBinaryPath } : {}),
-            ...(settings.piAgentDir ? { agentDir: settings.piAgentDir } : {}),
-          },
-        }
-      : {}),
-  };
-
-  return Object.keys(providerOptions).length > 0 ? providerOptions : undefined;
 }
 
 /**
@@ -1208,51 +796,6 @@ export function resolveFollowUpDispatchMode(input: {
     return input.behavior;
   }
   return input.behavior === "queue" ? "steer" : "queue";
-}
-
-export function getCustomBinaryPathForProvider(
-  settings: Pick<
-    AppSettings,
-    | "claudeBinaryPath"
-    | "codexBinaryPath"
-    | "cursorBinaryPath"
-    | "antigravityBinaryPath"
-    | "grokBinaryPath"
-    | "droidBinaryPath"
-    | "kiloBinaryPath"
-    | "openCodeBinaryPath"
-    | "piBinaryPath"
-  >,
-  provider: ProviderKind,
-): string {
-  switch (provider) {
-    case "groq":
-      return normalizeProviderBinaryPathOverride(provider, settings.codexBinaryPath);
-    case "opencodeZen":
-      return normalizeProviderBinaryPathOverride(provider, settings.claudeBinaryPath);
-    case "groq":
-      return normalizeProviderBinaryPathOverride(provider, settings.cursorBinaryPath);
-    case "opencodeGo":
-      return normalizeProviderBinaryPathOverride(provider, settings.antigravityBinaryPath);
-    case "groq":
-      return normalizeProviderBinaryPathOverride(provider, settings.grokBinaryPath);
-    case "groq":
-      return normalizeProviderBinaryPathOverride(provider, settings.droidBinaryPath);
-    case "groq":
-      return normalizeProviderBinaryPathOverride(provider, settings.kiloBinaryPath);
-    case "groq":
-      return normalizeProviderBinaryPathOverride(provider, settings.openCodeBinaryPath);
-    case "groq":
-      return normalizeProviderBinaryPathOverride(provider, settings.piBinaryPath);
-    case "engine":
-      return "";
-    case "groq":
-    case "opencodeZen":
-    case "opencodeGo":
-    case "groq":
-    case "opencodeZen":
-      return "";
-  }
 }
 
 export function useAppSettings() {
@@ -1318,13 +861,6 @@ export function useAppSettings() {
       normalizeAppSettings({
         ...prev,
         ...patch,
-        ...(hasOwn(patch, "kiloServerPassword")
-          ? { kiloServerPasswordConfigured: Boolean(patch.kiloServerPassword?.trim()) }
-          : {}),
-        ...(hasOwn(patch, "openCodeServerPassword")
-          ? { openCodeServerPasswordConfigured: Boolean(patch.openCodeServerPassword?.trim()) }
-          : {}),
-
         ...(hasOwn(patch, "engineApiKey")
           ? { engineApiKeyConfigured: Boolean(patch.engineApiKey?.trim()) }
           : {}),

@@ -12,16 +12,13 @@ import type {
   ProjectId,
   ProviderInteractionMode,
   ProviderKind,
+  ProviderStartOptions,
   RuntimeMode,
 } from "@caide/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  getProviderStartOptions,
-  resolveAssistantDeliveryMode,
-  useAppSettings,
-} from "~/appSettings";
+import { resolveAssistantDeliveryMode, useAppSettings } from "~/appSettings";
 import { RuntimeUsageControls } from "~/components/BranchToolbar";
 import {
   ComposerPromptEditor,
@@ -119,7 +116,7 @@ export function KanbanNewTaskDialog({
   const { settings } = useAppSettings();
   const { resolvedTheme } = useTheme();
   const assistantDeliveryMode = resolveAssistantDeliveryMode(settings);
-  const providerOptionsForDispatch = useMemo(() => getProviderStartOptions(settings), [settings]);
+  const providerOptionsForDispatch: ProviderStartOptions | undefined = undefined;
   const projects = useStore((state) => state.projects);
   const serverConfigQuery = useQuery(serverConfigQueryOptions());
   const providerStatuses = useProviderStatusesForLocalConfig();

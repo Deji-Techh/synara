@@ -264,7 +264,7 @@ export interface EngineActiveSubagent {
 
 export interface EngineSubagentsApi {
   getActive(input: {
-    appId?: number | undefined;
+    appId?: number | null | undefined;
   }): Effect.Effect<Array<EngineActiveSubagent>, ProviderAdapterError>;
 }
 

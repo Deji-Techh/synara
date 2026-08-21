@@ -4,6 +4,8 @@
 // Layer: UI component (owns the board DndContext)
 // Exports: KanbanProjectBoardView
 
+import type { ProviderStartOptions } from "@caide/contracts";
+
 import {
   DndContext,
   DragOverlay,
@@ -18,11 +20,7 @@ import {
 } from "@dnd-kit/core";
 import { useRef, useState } from "react";
 
-import {
-  getProviderStartOptions,
-  resolveAssistantDeliveryMode,
-  useAppSettings,
-} from "~/appSettings";
+import { resolveAssistantDeliveryMode, useAppSettings } from "~/appSettings";
 import { toastManager } from "~/components/ui/toast";
 import { useProviderStatusesForLocalConfig } from "~/hooks/useProviderStatusesForLocalConfig";
 import { useRefreshProviderStatusesNow } from "~/hooks/useProviderStatusRefresh";
@@ -72,7 +70,7 @@ export function KanbanProjectBoardView({
 }) {
   const { settings } = useAppSettings();
   const assistantDeliveryMode = resolveAssistantDeliveryMode(settings);
-  const providerOptionsForDispatch = getProviderStartOptions(settings);
+  const providerOptionsForDispatch: ProviderStartOptions | undefined = undefined;
   const providerStatuses = useProviderStatusesForLocalConfig();
   const refreshProviderStatuses = useRefreshProviderStatusesNow();
   const setDraftOrder = useKanbanUiStore((state) => state.setDraftOrder);

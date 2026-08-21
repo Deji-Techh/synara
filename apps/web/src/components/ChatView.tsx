@@ -352,8 +352,6 @@ import { readNativeApi } from "~/nativeApi";
 import { promoteThreadCreate } from "~/lib/threadCreatePromotion";
 import { readFavoriteModelSlugs } from "~/lib/modelFavorites";
 import {
-  getCustomBinaryPathForProvider,
-  getProviderStartOptions,
   resolveAppModelSelection,
   resolveAssistantDeliveryMode,
   resolveFollowUpDispatchMode,
@@ -926,45 +924,10 @@ function getConfirmedCustomBinarySessionKey(
 }
 
 function getProviderStartOptionsCustomBinaryPath(
-  providerOptions: ProviderStartOptions | undefined,
-  provider: ProviderKind,
+  _providerOptions: ProviderStartOptions | undefined,
+  _provider: ProviderKind,
 ): string | null {
-  switch (provider) {
-    case "openai":
-      return normalizeCustomBinaryPath(providerOptions?.codex?.binaryPath);
-    case "anthropic":
-      return normalizeCustomBinaryPath(providerOptions?.claudeAgent?.binaryPath);
-    case "google":
-      return normalizeCustomBinaryPath(providerOptions?.antigravity?.binaryPath);
-    case "openai":
-      return normalizeCustomBinaryPath(providerOptions?.grok?.binaryPath);
-    case "openai":
-      return normalizeCustomBinaryPath(providerOptions?.droid?.binaryPath);
-    case "openai":
-      return normalizeCustomBinaryPath(providerOptions?.kilo?.binaryPath);
-    case "openai":
-      return normalizeCustomBinaryPath(providerOptions?.opencode?.binaryPath);
-    case "openai":
-      return normalizeCustomBinaryPath(providerOptions?.cursor?.binaryPath);
-    case "openai":
-      return normalizeCustomBinaryPath(providerOptions?.pi?.binaryPath);
-    case "engine":
-      return null;
-    case "openai":
-    case "anthropic":
-    case "google":
-    case "openrouter":
-    case "ollama":
-    case "deepseek":
-    case "groq":
-    case "mistral":
-    case "together":
-    case "cohere":
-    case "xai":
-    case "fireworks":
-    case "opencodeZen":
-      return null;
-  }
+  return null;
 }
 
 function getProviderHealthBannerDismissalKey(status: ServerProviderStatus | null): string | null {
@@ -2397,7 +2360,9 @@ export default function ChatView({
     selectedProvider,
     selectedRuntimeModel,
   ]);
-  const providerOptionsForDispatch = useMemo(() => getProviderStartOptions(settings), [settings]);
+  // Provider start overrides are resolved server-side from durable settings; clients
+  // no longer send binary-path or endpoint overrides with dispatches.
+  const providerOptionsForDispatch: ProviderStartOptions | undefined = undefined;
   const selectedModelForPicker =
     selectedModelSelection.provider === selectedProvider
       ? selectedModelSelection.model
@@ -3665,37 +3630,23 @@ export default function ChatView({
       provider: selectedProvider,
       cwd: composerSkillCwd,
       threadId,
-      binaryPath:
-        (selectedProvider === "openai"
-          ? providerOptionsForDispatch?.opencode?.binaryPath
-          : selectedProvider === "openai"
-            ? providerOptionsForDispatch?.kilo?.binaryPath
-            : null) ?? null,
-      serverUrl:
-        (selectedProvider === "openai"
-          ? providerOptionsForDispatch?.opencode?.serverUrl
-          : selectedProvider === "openai"
-            ? providerOptionsForDispatch?.kilo?.serverUrl
-            : null) ?? null,
-      experimentalWebSockets:
-        selectedProvider === "openai"
-          ? providerOptionsForDispatch?.opencode?.experimentalWebSockets
-          : undefined,
-      agentDir: selectedProvider === "openai" ? settings.piAgentDir || null : null,
+      binaryPath: null,
+      serverUrl: null,
+      agentDir: null,
       enabled:
         (composerTriggerKind === "slash-command" || composerTriggerKind === "slash-model") &&
         supportsNativeSlashCommandDiscovery(providerComposerCapabilitiesQuery.data) &&
         composerSkillCwd !== null,
     }),
   );
-  const canDiscoverProviderSkills =
-    selectedProvider === "openai" || supportsSkillDiscovery(providerComposerCapabilitiesQuery.data);
+  const canDiscoverProviderSkills = supportsSkillDiscovery(
+    providerComposerCapabilitiesQuery.data,
+  );
   const providerSkillsQuery = useQuery(
     providerSkillsQueryOptions({
       provider: selectedProvider,
       cwd: composerSkillCwd,
       threadId,
-      agentDir: selectedProvider === "openai" ? settings.piAgentDir || null : null,
       enabled:
         (isSkillTrigger ||
           composerTriggerKind === "slash-command" ||
@@ -3992,16 +3943,14 @@ export default function ChatView({
     () =>
       (serverConfigQuery.data?.providers ?? EMPTY_PROVIDER_STATUSES)
         .map((status) => {
-          const customBinaryPath = getCustomBinaryPathForProvider(settings, status.provider);
           return normalizeProviderStatusForLocalConfig({
             provider: status.provider,
             status,
-            customBinaryPath,
             confirmedCustomBinaryPath: confirmedCustomBinaryPathsByProvider[status.provider],
           });
         })
         .flatMap((status) => (status ? [status] : [])),
-    [confirmedCustomBinaryPathsByProvider, serverConfigQuery.data?.providers, settings],
+    [confirmedCustomBinaryPathsByProvider, serverConfigQuery.data?.providers],
   );
   const handoffBadgeLabel = useMemo(
     () => (activeThread ? resolveThreadHandoffBadgeLabel(activeThread) : null),
