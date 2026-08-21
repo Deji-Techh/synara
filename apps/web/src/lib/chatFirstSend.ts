@@ -147,8 +147,7 @@ export async function createAppForFirstSend(input: {
   let lastError: unknown = null;
 
   for (let attempt = 0; attempt < 4 && created === null; attempt += 1) {
-    const candidateName =
-      attempt === 0 ? input.name : `${input.name}-${attempt + 1}`.slice(0, 60);
+    const candidateName = attempt === 0 ? input.name : `${input.name}-${attempt + 1}`.slice(0, 60);
     try {
       created = await api.app.createApp({
         name: candidateName,
