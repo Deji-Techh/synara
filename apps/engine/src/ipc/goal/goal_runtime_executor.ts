@@ -7,7 +7,8 @@
 //  1. Poll `caide_goal_runs` for runnable runs (+ subscribe to run-requested)
 //  2. Claim the run lease, heartbeat every RUNNER_HEARTBEAT_MS
 //  3. Execute the run prompt as a local-agent `chat:stream` on the run's chat
-//  4. Mark the run waiting while a tool/MCP consent for that chat is pending
+//  4. Auto-approve tool/MCP consents raised by the run's chat (autonomous
+//     execution); only unresolvable consents flip the goal to awaiting-user
 //  5. Complete the run via handleCompletedRun (retry/repair scheduling lives
 //     there), cancelling the active stream on goal control-requested events
 //
@@ -32,6 +33,9 @@ const STREAM_SETTLE_TIMEOUT_MS = 30 * 60_000;
 let started = false;
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 const executingRunIds = new Set<string>();
+/** Chats with an in-flight goal run; consent requests for these are
+ * auto-approved so autonomous runs never stall on an unreachable approval UI. */
+const activeGoalRunChats = new Set<number>();
 const waitingByRunId = new Map<string, boolean>();
 const pendingConsentCounts = new Map<number, number>();
 const consentChatByRequestId = new Map<string, number>();
@@ -70,6 +74,37 @@ function clearConsentRequest(requestId: string): void {
 
 function hasPendingConsent(chatId: number): boolean {
   return (pendingConsentCounts.get(chatId) ?? 0) > 0;
+}
+
+/**
+ * Auto-approve a tool/MCP consent request raised by an active goal-run chat.
+ * Goal runs are autonomous by design: the approval UI cannot reach a goal chat
+ * (it is not thread-provisioned), so blocking would strand the goal in
+ * `awaiting-user` forever. Decisions are `accept-once` so per-tool consent
+ * settings the user configured elsewhere are never widened.
+ */
+async function autoApproveConsent(
+  responseChannel: string,
+  payload: { requestId?: string; chatId?: number },
+): Promise<boolean> {
+  if (payload.chatId === undefined || !activeGoalRunChats.has(payload.chatId)) return false;
+  const requestId = payload.requestId;
+  if (!requestId) return false;
+  const handler = ipcMain._handlers.get(responseChannel);
+  if (!handler) return false;
+  try {
+    await handler(
+      { sender: busSender(), processId: process.pid, frameId: 0 },
+      { requestId, decision: "accept-once" },
+    );
+    logger.info(
+      `auto-approved consent for goal-run chat ${payload.chatId} (request ${requestId})`,
+    );
+    return true;
+  } catch (error) {
+    logger.warn(`auto-approve for request ${requestId} failed:`, error);
+    return false;
+  }
 }
 
 // Drives a `chat:stream` to settlement for the run's chat, resolving from the
@@ -172,6 +207,7 @@ async function executeRunNow(offeredRun: GoalRun): Promise<void> {
     const run = claimRun(offeredRun.id, RUNNER_ID);
     if (!run) return;
 
+    activeGoalRunChats.add(run.chatId);
     void syncRunWaiting(run);
     heartbeat = setInterval(() => {
       try {
@@ -223,6 +259,7 @@ async function executeRunNow(offeredRun: GoalRun): Promise<void> {
     }
   } finally {
     if (heartbeat) clearInterval(heartbeat);
+    activeGoalRunChats.delete(offeredRun.chatId);
     pendingConsentCounts.delete(offeredRun.chatId);
     waitingByRunId.delete(offeredRun.id);
     executingRunIds.delete(offeredRun.id);
@@ -268,10 +305,16 @@ export function startGoalRuntime(): void {
   });
 
   on("mcp:tool-consent-request", (payload) => {
-    trackConsentRequest(payload as { requestId?: string; chatId?: number });
+    const p = payload as { requestId?: string; chatId?: number };
+    void autoApproveConsent("mcp:tool-consent-response", p).then((approved) => {
+      if (!approved) trackConsentRequest(p);
+    });
   });
   on("agent-tool:consent-request", (payload) => {
-    trackConsentRequest(payload as { requestId?: string; chatId?: number });
+    const p = payload as { requestId?: string; chatId?: number };
+    void autoApproveConsent("agent-tool:consent-response", p).then((approved) => {
+      if (!approved) trackConsentRequest(p);
+    });
   });
   on("mcp:tool-consent-resolved", (payload) => {
     clearConsentRequest((payload as { requestId?: string }).requestId ?? "");

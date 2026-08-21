@@ -1,6 +1,6 @@
 // FILE: goalStatus.ts
 // Purpose: Pure display helpers for engine goal/run/activity states. These are
-//          shared by the dock GoalsPanel and the GoalComposerStrip so labels,
+//          shared by the dock GoalsPanel so labels,
 //          tones and formatting stay identical everywhere.
 // Layer: Web UI helpers (no React, no WS)
 // Exports: status labels, tone/dot class names, run kind labels, subagent
