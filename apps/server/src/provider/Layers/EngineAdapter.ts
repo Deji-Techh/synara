@@ -294,6 +294,8 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
     const ENGINE_PROVIDER_BY_CAIDE_KIND: ReadonlyMap<string, string> = new Map([
       ["opencodeZen", "opencode-zen"],
       ["opencodeGo", "opencode-go"],
+      ["groq", "groq"],
+      ["engine", "caide-engine"],
     ]);
 
     const engineModelConfig = (): Effect.Effect<
@@ -1714,13 +1716,11 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             input.modelSelection === undefined
               ? null
               : (() => {
-                  const engineProviderId = ENGINE_PROVIDER_BY_CAIDE_KIND.get(
-                    input.modelSelection.provider,
-                  );
+                  const engineProviderId =
+                    ENGINE_PROVIDER_BY_CAIDE_KIND.get(input.modelSelection.provider) ??
+                    input.modelSelection.provider;
                   const modelId = input.modelSelection.model.trim();
-                  return engineProviderId !== undefined && modelId !== ""
-                    ? { name: modelId, provider: engineProviderId }
-                    : null;
+                  return modelId !== "" ? { name: modelId, provider: engineProviderId } : null;
                 })();
           if (selectedEngineModel !== null) {
             const shared = yield* ensureSharedEngine(input.threadId);
@@ -2291,9 +2291,27 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             );
           }
           const parsed = response.result as unknown as {
-            devices: Array<{ id: string; name: string; isEmulator: boolean; platform?: string }>;
+            devices: Array<{
+              id: string;
+              name: string;
+              isEmulator: boolean;
+              platform?: "android" | "web" | "ios";
+            }>;
           };
-          return { devices: Array.isArray(parsed?.devices) ? parsed.devices : [] };
+          return {
+            devices: Array.isArray(parsed?.devices)
+              ? parsed.devices.map((device) => ({
+                  id: device.id,
+                  name: device.name,
+                  isEmulator: Boolean(device.isEmulator),
+                  ...(device.platform === "android" ||
+                  device.platform === "web" ||
+                  device.platform === "ios"
+                    ? { platform: device.platform }
+                    : {}),
+                }))
+              : [],
+          };
         }),
 
       flutterToolchainStatus: (input) =>
@@ -2358,7 +2376,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               unsupportedReason: string | null;
             };
           };
-          return { status: parsed.status };
+          return parsed.status;
         }),
 
       // ── Database integrations (Neon + Supabase) ──────────────────────

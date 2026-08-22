@@ -1,10 +1,5 @@
 import {
-  CLAUDE_CODE_EFFORT_OPTIONS,
-  CODEX_REASONING_EFFORT_OPTIONS,
   DEFAULT_MODEL_BY_PROVIDER,
-  DROID_REASONING_EFFORT_OPTIONS,
-  GROK_REASONING_EFFORT_OPTIONS,
-  PI_THINKING_LEVEL_OPTIONS,
   type ModelSelection,
   type ProviderKind,
   type ProviderListModelsResult,
@@ -146,96 +141,6 @@ function providerOptionRule(
 }
 
 const PROVIDER_TARGET_OPTION_RULES = {
-  codex: defineProviderOptionConfig<"openai">({
-    primaryOptionKey: "reasoningEffort",
-    options: {
-      reasoningEffort: providerOptionRule("string", CODEX_REASONING_EFFORT_OPTIONS),
-      fastMode: providerOptionRule("boolean", [], "model-discovery", {
-        advertised: false,
-        validation: { kind: "boolean-capability", capability: "supportsFastMode" },
-      }),
-    },
-  }),
-  cursor: defineProviderOptionConfig<"openai">({
-    primaryOptionKey: "reasoningEffort",
-    options: {
-      reasoningEffort: providerOptionRule("string", CODEX_REASONING_EFFORT_OPTIONS),
-      fastMode: providerOptionRule("boolean", [], "model-discovery", {
-        advertised: false,
-        validation: { kind: "boolean-capability", capability: "supportsFastMode" },
-      }),
-      thinking: providerOptionRule("boolean", [], "model-discovery", {
-        advertised: false,
-        validation: { kind: "boolean-capability", capability: "supportsThinkingToggle" },
-      }),
-      contextWindow: providerOptionRule("string", [], "model-discovery", {
-        advertised: false,
-        validation: { kind: "context-window" },
-      }),
-    },
-  }),
-  grok: defineProviderOptionConfig<"openai">({
-    primaryOptionKey: "reasoningEffort",
-    options: {
-      reasoningEffort: providerOptionRule("string", GROK_REASONING_EFFORT_OPTIONS),
-    },
-  }),
-  droid: defineProviderOptionConfig<"openai">({
-    primaryOptionKey: "reasoningEffort",
-    options: {
-      reasoningEffort: providerOptionRule("string", DROID_REASONING_EFFORT_OPTIONS),
-    },
-  }),
-  claudeAgent: defineProviderOptionConfig<"anthropic">({
-    primaryOptionKey: "effort",
-    options: {
-      effort: providerOptionRule("string", CLAUDE_CODE_EFFORT_OPTIONS),
-      fastMode: providerOptionRule("boolean", [], "model-discovery", {
-        advertised: false,
-        validation: { kind: "boolean-capability", capability: "supportsFastMode" },
-      }),
-      thinking: providerOptionRule("boolean", [], "model-discovery", {
-        advertised: false,
-        validation: { kind: "boolean-capability", capability: "supportsThinkingToggle" },
-      }),
-      autoCompactWindow: providerOptionRule("string", [], "model-discovery", {
-        advertised: false,
-        validation: { kind: "context-window" },
-      }),
-      contextWindow: providerOptionRule("string", [], "model-discovery", {
-        advertised: false,
-        validation: { kind: "context-window" },
-      }),
-    },
-  }),
-  pi: defineProviderOptionConfig<"openai">({
-    primaryOptionKey: "thinkingLevel",
-    options: { thinkingLevel: providerOptionRule("string", PI_THINKING_LEVEL_OPTIONS) },
-  }),
-  antigravity: defineProviderOptionConfig<"google">({
-    primaryOptionKey: "reasoningEffort",
-    options: { reasoningEffort: providerOptionRule("string", [], "model-discovery") },
-  }),
-  kilo: defineProviderOptionConfig<"openai">({
-    primaryOptionKey: "variant",
-    options: {
-      variant: providerOptionRule("string", [], "model-discovery"),
-      agent: providerOptionRule("string", [], "model-discovery", {
-        validation: { kind: "non-empty-string" },
-        allowsCustomValue: true,
-      }),
-    },
-  }),
-  opencode: defineProviderOptionConfig<"openai">({
-    primaryOptionKey: "variant",
-    options: {
-      variant: providerOptionRule("string", [], "model-discovery"),
-      agent: providerOptionRule("string", [], "model-discovery", {
-        validation: { kind: "non-empty-string" },
-        allowsCustomValue: true,
-      }),
-    },
-  }),
   engine: defineProviderOptionConfig<"engine">({
     primaryOptionKey: "thinkingLevel",
     options: { thinkingLevel: providerOptionRule("string", [], "model-discovery") },
@@ -422,7 +327,21 @@ const PROVIDER_TARGET_OPTION_RULES = {
       }),
     },
   }),
-} as const satisfies Record<ProviderKind, ProviderTargetOptionConfig>;
+  opencodeGo: defineProviderOptionConfig<"opencodeGo">({
+    primaryOptionKey: "reasoningEffort",
+    options: {
+      reasoningEffort: providerOptionRule("string", [], "model-discovery"),
+      fastMode: providerOptionRule("boolean", [], "model-discovery", {
+        advertised: false,
+        validation: { kind: "boolean-capability", capability: "supportsFastMode" },
+      }),
+      thinking: providerOptionRule("boolean", [], "model-discovery", {
+        advertised: false,
+        validation: { kind: "boolean-capability", capability: "supportsThinkingToggle" },
+      }),
+    },
+  }),
+};
 
 function providerDefaultModel(provider: ProviderKind): string | null {
   return provider === "openai" || provider === "engine"
@@ -486,7 +405,9 @@ export function loadAgentGatewayProviderCatalog(input: {
 function providerTargetOptionRules(
   provider: ProviderKind,
 ): ReadonlyArray<AgentGatewayTargetOptionRule> {
-  return Object.entries(PROVIDER_TARGET_OPTION_RULES[provider].options)
+  const config = PROVIDER_TARGET_OPTION_RULES[provider];
+  if (!config) return [];
+  return Object.entries(config.options)
     .filter(([, option]) => option.advertised)
     .map(([key, { valueType, allowedValues, allowedValuesSource, allowsCustomValue }]) => ({
       key,
@@ -498,7 +419,7 @@ function providerTargetOptionRules(
 }
 
 function providerPrimaryOptionKey(provider: ProviderKind): string {
-  return PROVIDER_TARGET_OPTION_RULES[provider].primaryOptionKey;
+  return PROVIDER_TARGET_OPTION_RULES[provider]?.primaryOptionKey ?? "reasoningEffort";
 }
 
 function convertDiscoveredOptionValue(
@@ -652,7 +573,7 @@ function providerOptionRuleSpec(
   provider: ProviderKind,
   optionId: string,
 ): ResolvedProviderTargetOptionRuleSpec | undefined {
-  const rule = PROVIDER_TARGET_OPTION_RULES[provider].options[optionId];
+  const rule = PROVIDER_TARGET_OPTION_RULES[provider]?.options[optionId];
   return rule ? { key: optionId, ...rule } : undefined;
 }
 

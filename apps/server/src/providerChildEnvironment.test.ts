@@ -7,7 +7,7 @@ import { buildProviderChildEnvironment } from "./providerChildEnvironment";
 describe("buildProviderChildEnvironment", () => {
   it("strips Caide control-plane and inherited native capabilities", () => {
     const env = buildProviderChildEnvironment({
-      provider: "google",
+      provider: "antigravity",
       baseEnv: {
         PATH: "/usr/bin",
         HOME: "/home/test",
@@ -30,7 +30,7 @@ describe("buildProviderChildEnvironment", () => {
 
   it("admits only explicitly granted capability keys", () => {
     const env = buildProviderChildEnvironment({
-      provider: "openai",
+      provider: "codex",
       baseEnv: {
         CAIDE_AUTH_TOKEN: "control-plane-secret",
         CAIDE_BROWSER_USE_PIPE_PATH: "/tmp/browser.sock",
@@ -48,7 +48,7 @@ describe("buildProviderChildEnvironment", () => {
 
   it("does not let overlays bypass the capability policy", () => {
     const env = buildProviderChildEnvironment({
-      provider: "openai",
+      provider: "codex",
       baseEnv: { PATH: "/usr/bin" },
       overrides: {
         OPENCODE_EXPERIMENTAL_WEBSOCKETS: "true",
@@ -64,11 +64,11 @@ describe("buildProviderChildEnvironment", () => {
   });
 
   it.each([
-    ["anthropic", "ANTHROPIC_API_KEY", "GEMINI_API_KEY"],
-    ["openai", "CURSOR_API_KEY", "FACTORY_API_KEY"],
-    ["openai", "FACTORY_API_KEY", "XAI_API_KEY"],
-    ["google", "GEMINI_API_KEY", "ANTHROPIC_API_KEY"],
-    ["openai", "XAI_API_KEY", "GOOGLE_API_KEY"],
+    ["claude", "ANTHROPIC_API_KEY", "GEMINI_API_KEY"],
+    ["cursor", "CURSOR_API_KEY", "FACTORY_API_KEY"],
+    ["droid", "FACTORY_API_KEY", "XAI_API_KEY"],
+    ["antigravity", "GEMINI_API_KEY", "ANTHROPIC_API_KEY"],
+    ["grok", "XAI_API_KEY", "GOOGLE_API_KEY"],
   ] as const)(
     "grants %s only its declared provider credential group",
     (provider, grantedKey, unrelatedKey) => {
@@ -86,7 +86,7 @@ describe("buildProviderChildEnvironment", () => {
     },
   );
 
-  it.each(["openai", "openai", "openai", "openai"] as const)(
+  it.each(["codex", "engine", "opencode", "pi"] as const)(
     "preserves upstream credential discovery for multi-provider %s",
     (provider) => {
       const env = buildProviderChildEnvironment({
@@ -104,7 +104,7 @@ describe("buildProviderChildEnvironment", () => {
 
   it("keeps stripped authority absent in descendants", () => {
     const env = buildProviderChildEnvironment({
-      provider: "openai",
+      provider: "codex",
       baseEnv: {
         XAI_API_KEY: "grok-secret",
         ANTHROPIC_API_KEY: "unrelated-secret",

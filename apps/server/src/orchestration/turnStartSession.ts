@@ -1,15 +1,28 @@
 import type { ModelSelection, OrchestrationSession, RuntimeMode, ThreadId } from "@caide/contracts";
+import { coerceProviderKind } from "@caide/shared/model";
 
 export function deriveTurnStartModelSelection(input: {
   readonly currentModelSelection: ModelSelection;
-  readonly requestedModelSelection: ModelSelection | undefined;
+  readonly requestedModelSelection:
+    | ModelSelection
+    | { readonly provider: string; readonly model: string; readonly options?: unknown }
+    | undefined;
   readonly canAdoptRequestedProvider: boolean;
 }): ModelSelection {
-  const requestedModelSelection = input.requestedModelSelection;
-  return requestedModelSelection !== undefined &&
-    (requestedModelSelection.provider === input.currentModelSelection.provider ||
-      input.canAdoptRequestedProvider)
-    ? requestedModelSelection
+  const requested = input.requestedModelSelection;
+  if (!requested) {
+    return input.currentModelSelection;
+  }
+  const provider = coerceProviderKind(requested.provider);
+  const normalizedRequested: ModelSelection = {
+    provider,
+    model: requested.model,
+    ...(requested.options !== undefined ? { options: requested.options } : {}),
+  } as ModelSelection;
+
+  return normalizedRequested.provider === input.currentModelSelection.provider ||
+    input.canAdoptRequestedProvider
+    ? normalizedRequested
     : input.currentModelSelection;
 }
 

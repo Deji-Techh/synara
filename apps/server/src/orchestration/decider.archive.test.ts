@@ -29,9 +29,8 @@ function makeThread(input: {
     projectId: ProjectId.makeUnsafe("project-archive"),
     title: `Thread ${input.id}`,
     modelSelection: {
-      provider: "anthropic",
-      model: "claude-opus-4-6",
-      supportsAutoMode: true,
+      provider: "groq",
+      model: "llama-3.3-70b-versatile",
     },
     interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
     runtimeMode: "auto",

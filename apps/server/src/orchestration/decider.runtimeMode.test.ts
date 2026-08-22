@@ -17,7 +17,6 @@ const THREAD_ID = ThreadId.makeUnsafe("thread-auto-claude");
 const PROJECT_ID = ProjectId.makeUnsafe("project-auto-claude");
 
 function makeReadModel(
-  supportsAutoMode: boolean,
   threadOverrides?: { creationSource?: "provider_native" },
 ): OrchestrationReadModel {
   return {
@@ -29,11 +28,10 @@ function makeReadModel(
       {
         id: THREAD_ID,
         projectId: PROJECT_ID,
-        title: "Claude Auto",
+        title: "Groq Auto",
         modelSelection: {
-          provider: "anthropic",
-          model: "claude-opus-4-6",
-          supportsAutoMode,
+          provider: "groq",
+          model: "llama-3.3-70b-versatile",
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
         runtimeMode: "auto",
@@ -85,110 +83,39 @@ async function makeProjectOnlyReadModel(): Promise<OrchestrationReadModel> {
 }
 
 describe("decider Auto model compatibility", () => {
-  it("rejects changing an Auto thread to a Claude model reported as unsupported", async () => {
-    await expect(
-      Effect.runPromise(
-        decideOrchestrationCommand({
-          command: {
-            type: "thread.meta.update",
-            commandId: CommandId.makeUnsafe("cmd-unsupported-claude-model"),
-            threadId: THREAD_ID,
-            modelSelection: {
-              provider: "anthropic",
-              model: "claude-haiku-4-5",
-              supportsAutoMode: false,
-            },
-          },
-          readModel: makeReadModel(true),
-        }),
-      ),
-    ).rejects.toThrow('Claude model "claude-haiku-4-5" does not support Auto mode.');
-  });
-
-  it("rejects enabling Auto when the current Claude model is reported as unsupported", async () => {
-    await expect(
-      Effect.runPromise(
-        decideOrchestrationCommand({
-          command: {
-            type: "thread.runtime-mode.set",
-            commandId: CommandId.makeUnsafe("cmd-enable-auto-unsupported-model"),
-            threadId: THREAD_ID,
-            runtimeMode: "auto",
-            createdAt: NOW,
-          },
-          readModel: makeReadModel(false),
-        }),
-      ),
-    ).rejects.toThrow('Claude model "claude-opus-4-6" does not support Auto mode.');
-  });
-
-  it("allows a Claude model reported as Auto-compatible", async () => {
+  it("allows a model selection with a supported provider in Auto mode", async () => {
     const event = await Effect.runPromise(
       decideOrchestrationCommand({
         command: {
           type: "thread.meta.update",
-          commandId: CommandId.makeUnsafe("cmd-supported-claude-model"),
+          commandId: CommandId.makeUnsafe("cmd-supported-groq-model"),
           threadId: THREAD_ID,
           modelSelection: {
-            provider: "anthropic",
-            model: "claude-fable-5",
-            supportsAutoMode: true,
+            provider: "groq",
+            model: "llama-3.3-70b-versatile",
           },
         },
-        readModel: makeReadModel(true),
+        readModel: makeReadModel(),
       }),
     );
 
     expect("type" in event ? event.type : event[0]?.type).toBe("thread.meta-updated");
   });
 
-  it("rejects a user-created Auto thread whose Claude model has no verified flag", async () => {
-    const readModel = await makeProjectOnlyReadModel();
-
-    await expect(
-      Effect.runPromise(
-        decideOrchestrationCommand({
-          command: {
-            type: "thread.create",
-            commandId: CommandId.makeUnsafe("cmd-user-auto-unverified"),
-            threadId: ThreadId.makeUnsafe("thread-user-auto"),
-            projectId: PROJECT_ID,
-            title: "User Auto thread",
-            modelSelection: {
-              provider: "anthropic",
-              model: "claude-fable-5",
-            },
-            interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
-            runtimeMode: "auto",
-            envMode: "local",
-            branch: null,
-            worktreePath: null,
-            createBranchFlowCompleted: false,
-            createdAt: NOW,
-          },
-          readModel,
-        }),
-      ),
-    ).rejects.toThrow('Claude model "claude-fable-5" has not been verified to support Auto mode.');
-  });
-
-  it("allows a provider-native subagent thread in Auto without a verified flag", async () => {
-    // Provider-native threads mirror subagents the provider already runs;
-    // rejecting them would durably poison the runtime journal replaying the
-    // provider event (see ProviderRuntimeIngestion), not stop any session.
+  it("allows a user-created Auto thread with a supported provider", async () => {
     const readModel = await makeProjectOnlyReadModel();
 
     const result = await Effect.runPromise(
       decideOrchestrationCommand({
         command: {
           type: "thread.create",
-          commandId: CommandId.makeUnsafe("cmd-subagent-auto-unverified"),
-          threadId: ThreadId.makeUnsafe("subagent:thread-auto-claude:child"),
+          commandId: CommandId.makeUnsafe("cmd-user-auto-groq"),
+          threadId: ThreadId.makeUnsafe("thread-user-auto"),
           projectId: PROJECT_ID,
-          title: "Subagent",
+          title: "User Auto thread",
           modelSelection: {
-            provider: "anthropic",
-            model: "claude-fable-5",
+            provider: "groq",
+            model: "llama-3.3-70b-versatile",
           },
           interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
           runtimeMode: "auto",
@@ -196,9 +123,6 @@ describe("decider Auto model compatibility", () => {
           branch: null,
           worktreePath: null,
           createBranchFlowCompleted: false,
-          parentThreadId: THREAD_ID,
-          creationSource: "provider_native",
-          sourceThreadId: THREAD_ID,
           createdAt: NOW,
         },
         readModel,
@@ -209,7 +133,7 @@ describe("decider Auto model compatibility", () => {
     expect(event?.type).toBe("thread.created");
   });
 
-  it("allows model updates on provider-native threads without a verified flag", async () => {
+  it("allows model updates on provider-native threads", async () => {
     const event = await Effect.runPromise(
       decideOrchestrationCommand({
         command: {
@@ -217,11 +141,11 @@ describe("decider Auto model compatibility", () => {
           commandId: CommandId.makeUnsafe("cmd-subagent-model-update"),
           threadId: THREAD_ID,
           modelSelection: {
-            provider: "anthropic",
-            model: "claude-fable-5",
+            provider: "groq",
+            model: "llama-3.3-70b-versatile",
           },
         },
-        readModel: makeReadModel(true, { creationSource: "provider_native" }),
+        readModel: makeReadModel({ creationSource: "provider_native" }),
       }),
     );
 

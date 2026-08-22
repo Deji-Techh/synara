@@ -18,7 +18,7 @@ import {
   WS_METHODS,
 } from "@caide/contracts";
 
-import { AdmittedWsFeatureRpcGroup } from "./wsRpc";
+import { hasAdmittedWsFeatureRequest } from "./wsRpc";
 
 // Every method table whose constants appear as handler keys (directly in
 // wsRpc.ts or spread in from provider/ws*Handlers.ts). A new handler source
@@ -39,7 +39,7 @@ describe("AdmittedWsFeatureRpcGroup handler coverage", () => {
     const failures: string[] = [];
     for (const [tableName, table] of HANDLER_METHOD_TABLES) {
       for (const [key, method] of Object.entries(table)) {
-        if (!AdmittedWsFeatureRpcGroup.requests.has(method)) {
+        if (!hasAdmittedWsFeatureRequest(method)) {
           failures.push(`${tableName}.${key} ("${method}")`);
         }
       }

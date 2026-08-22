@@ -4024,7 +4024,7 @@ function readCodexProviderOptions(input: CodexAppServerStartSessionInput): {
   readonly binaryPath?: string;
   readonly homePath?: string;
 } {
-  const options = input.providerOptions?.codex;
+  const options = (input.providerOptions as { codex?: { binaryPath?: string; homePath?: string } } | undefined)?.codex;
   if (!options) {
     return {};
   }

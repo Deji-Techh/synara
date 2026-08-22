@@ -34,6 +34,7 @@ import {
   type GitHubProjectProvisionProgressEvent,
   type GitWorktreeSetupProgressEvent,
   type GoalActivityEvent,
+  type ModelSelection,
   type OrchestrationCommand,
   type OrchestrationEvent,
   type OrchestrationGetProjectActivityInput,
@@ -204,13 +205,16 @@ class WsRequestAdmissionMiddleware extends RpcMiddleware.Service<WsRequestAdmiss
 // engine-specific (mirrors the provider adapter's ops) and served here too.
 // NOTE: every handler key spread below must resolve to a request in this group;
 // toHandlers builds the map by Object.entries(handler) and dies on unknown tags.
-export const AdmittedWsFeatureRpcGroup = WsFeatureRpcGroup.merge(
+const AdmittedWsFeatureRpcGroup = WsFeatureRpcGroup.merge(
   WsDeviceRpcGroup,
   WsPreviewRpcGroup,
   WsArtifactsRpcGroup,
   WsGoalsRpcGroup,
   WsSubagentsRpcGroup,
 ).middleware(WsRequestAdmissionMiddleware);
+
+export const hasAdmittedWsFeatureRequest = (method: string): boolean =>
+  AdmittedWsFeatureRpcGroup.requests.has(method);
 
 const wsRequestAdmissionMiddlewareLayer = Layer.effect(
   WsRequestAdmissionMiddleware,
@@ -617,6 +621,19 @@ const makeWsRpcHandlersLayer = () =>
       const prepareChatWorkspaceRoot = (workspaceRoot: string) =>
         prepareWorkspaceSubdirectories(workspaceRoot, CHAT_WORKSPACE_SUBDIRECTORIES);
 
+      const prepareCaideAppWorkspaceRootHandler = (workspaceRoot: string) =>
+        prepareCaideAppWorkspaceRoot(workspaceRoot).pipe(
+          Effect.provideService(FileSystem.FileSystem, fileSystem),
+          Effect.provideService(Path.Path, path),
+          Effect.mapError(
+            (cause) =>
+              new WsRpcError({
+                message: `Failed to scaffold caide-app: ${workspaceRoot}`,
+                cause,
+              }),
+          ),
+        );
+
       const normalizeDispatchCommand = makeDispatchCommandNormalizer<WsRpcError>({
         attachmentsDir: config.attachmentsDir,
         chatWorkspaceRoot: config.chatWorkspaceRoot,
@@ -624,7 +641,7 @@ const makeWsRpcHandlersLayer = () =>
         path,
         canonicalizeProjectWorkspaceRoot,
         prepareChatWorkspaceRoot,
-        prepareCaideAppWorkspaceRoot,
+        prepareCaideAppWorkspaceRoot: prepareCaideAppWorkspaceRootHandler,
       });
 
       const importThread = makeImportThreadHandler({
@@ -2102,7 +2119,7 @@ const makeWsRpcHandlersLayer = () =>
                 ...(input.previousRecap ? { previousRecap: input.previousRecap } : {}),
                 ...(input.currentState ? { currentState: input.currentState } : {}),
                 model: input.textGenerationModel ?? modelSelection.model,
-                modelSelection,
+                modelSelection: modelSelection as ModelSelection,
                 ...(input.providerOptions ? { providerOptions: input.providerOptions } : {}),
               });
             }),
@@ -2120,7 +2137,7 @@ const makeWsRpcHandlersLayer = () =>
                 ...(input.defaultMode ? { defaultMode: input.defaultMode } : {}),
                 nowIso: input.nowIso,
                 model: input.textGenerationModel ?? modelSelection.model,
-                modelSelection,
+                modelSelection: modelSelection as ModelSelection,
                 ...(input.providerOptions ? { providerOptions: input.providerOptions } : {}),
               });
             }),

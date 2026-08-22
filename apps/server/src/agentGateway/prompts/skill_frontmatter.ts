@@ -27,7 +27,7 @@ const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---\n*/;
 
 export function parseFrontmatter(raw: string): ParsedSkill {
   const match = raw.match(FRONTMATTER_RE);
-  if (!match) {
+  if (!match || !match[1]) {
     return { frontmatter: {}, body: raw.trim(), raw };
   }
   const yamlBlock = match[1];
@@ -53,7 +53,7 @@ function parseYamlSimple(yaml: string): Record<string, unknown> {
   const lines = yaml.split("\n");
   for (const line of lines) {
     const listMatch = line.match(/^\s*-\s+(.+)$/);
-    if (listMatch) {
+    if (listMatch && listMatch[1]) {
       currentArray.push(listMatch[1].trim());
       if (currentKey) {
         result[currentKey] = [...currentArray];
@@ -70,10 +70,10 @@ function parseYamlSimple(yaml: string): Record<string, unknown> {
       currentKey = null;
     }
     const kvMatch = line.match(/^(\w[\w_-]*?):\s*(.*)$/);
-    if (kvMatch) {
+    if (kvMatch && kvMatch[1]) {
       currentKey = kvMatch[1];
       currentArray = [];
-      const value = kvMatch[2].trim();
+      const value = (kvMatch[2] ?? "").trim();
       if (value.startsWith("[") && value.endsWith("]")) {
         result[currentKey] = value
           .slice(1, -1)

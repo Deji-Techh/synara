@@ -262,7 +262,7 @@ export function buildCursorAgentHeadlessEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): NodeJS.ProcessEnv {
   return buildProviderChildEnvironment({
-    provider: "openai",
+    provider: "cursor",
     baseEnv: env,
     overrides: CURSOR_AGENT_HEADLESS_PROBE_ENV,
   });

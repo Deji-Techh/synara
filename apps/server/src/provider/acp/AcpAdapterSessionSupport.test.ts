@@ -139,7 +139,7 @@ describe("ACP adapter session support", () => {
       activePromptFiber: { id: "fiber" } as { id: string } | undefined,
       activeInteractionMode: "plan" as "plan" | "default" | undefined,
       session: {
-        provider: "openai",
+        provider: "groq",
         status: "running",
         runtimeMode: "full-access",
         threadId: ThreadId.makeUnsafe("thread-1"),

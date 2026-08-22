@@ -3,9 +3,9 @@
 // Layer: Persistence compatibility helper
 // Exports: normalizeLegacyModelSelection, normalizePersistedModelSelection
 
-import { MODEL_OPTIONS_BY_PROVIDER } from "@caide/contracts";
+import { type ProviderKind, MODEL_OPTIONS_BY_PROVIDER } from "@caide/contracts";
 
-type ModelProviderKind = "groq" | "opencodeZen" | "opencodeGo" | "engine";
+type ModelProviderKind = ProviderKind;
 
 const NON_DROID_MODEL_SLUGS = new Set(
   Object.entries(MODEL_OPTIONS_BY_PROVIDER).flatMap(([provider, models]) =>
@@ -13,7 +13,7 @@ const NON_DROID_MODEL_SLUGS = new Set(
   ),
 );
 const DROID_ONLY_MODEL_SLUGS = new Set(
-  ((MODEL_OPTIONS_BY_PROVIDER as Record<string, { slug: string }[] | undefined>).groq ?? [])
+  ((MODEL_OPTIONS_BY_PROVIDER as Record<string, readonly { slug: string }[] | undefined>).groq ?? [])
     .map((model) => model.slug.toLowerCase())
     .filter((slug) => !NON_DROID_MODEL_SLUGS.has(slug)),
 );
@@ -39,107 +39,51 @@ function readTrimmedString(record: Record<string, unknown>, key: string): string
 // Imported instance ids may be runtime names rather than Caide provider literals.
 function inferProviderFromLabel(label: string): ModelProviderKind | undefined {
   const lowerLabel = label.toLowerCase();
-  if (/(^|[^a-z0-9])pi([^a-z0-9]|$)/u.test(lowerLabel)) {
-    return "groq";
-  }
-  if (lowerLabel.includes("opencode")) {
-    return "groq";
-  }
-  if (lowerLabel.includes("kilo")) {
-    return "groq";
-  }
-  if (lowerLabel.includes("cursor")) {
-    return "groq";
-  }
-  if (lowerLabel.includes("antigravity")) {
-    return "google";
-  }
-  if (lowerLabel.includes("claude") || lowerLabel.includes("anthropic")) {
-    return "anthropic";
-  }
-  if (lowerLabel.includes("gemini") || lowerLabel.includes("google")) {
-    return "google";
-  }
-  if (lowerLabel.includes("grok") || lowerLabel.includes("xai") || lowerLabel.includes("x.ai")) {
-    return "xai";
-  }
-  if (lowerLabel.includes("droid") || lowerLabel.includes("factory")) {
-    return "groq";
-  }
-  if (lowerLabel.includes("codex") || lowerLabel.includes("openai")) {
-    return "groq";
-  }
+  if (lowerLabel.includes("engine")) return "engine";
+  if (lowerLabel.includes("opencode") && lowerLabel.includes("go")) return "opencodeGo";
+  if (lowerLabel.includes("opencode")) return "opencodeZen";
+  if (lowerLabel.includes("openai") || lowerLabel.includes("codex") || lowerLabel.includes("droid")) return "openai";
+  if (lowerLabel.includes("anthropic") || lowerLabel.includes("claude")) return "anthropic";
+  if (lowerLabel.includes("google") || lowerLabel.includes("gemini")) return "google";
+  if (lowerLabel.includes("deepseek")) return "deepseek";
+  if (lowerLabel.includes("mistral")) return "mistral";
+  if (lowerLabel.includes("ollama")) return "ollama";
+  if (lowerLabel.includes("openrouter")) return "openrouter";
+  if (lowerLabel.includes("together")) return "together";
+  if (lowerLabel.includes("cohere")) return "cohere";
+  if (lowerLabel.includes("xai") || lowerLabel.includes("grok")) return "xai";
+  if (lowerLabel.includes("fireworks")) return "fireworks";
+  if (lowerLabel.includes("groq")) return "groq";
   return undefined;
 }
 
 function inferLegacyModelProvider(provider: unknown, model: string): ModelProviderKind {
-  if (
-    provider === "groq" ||
-    provider === "opencodeZen" ||
-    provider === "opencodeGo" ||
-    provider === "openrouter" ||
-    provider === "ollama" ||
-    provider === "deepseek" ||
-    provider === "groq" ||
-    provider === "mistral" ||
-    provider === "together" ||
-    provider === "cohere" ||
-    provider === "xai" ||
-    provider === "fireworks" ||
-    provider === "opencodeZen" ||
-    provider === "opencodeGo" ||
-    provider === "engine"
-  ) {
-    return provider;
-  }
-  // Legacy CLI providers → API mapping
-  if (
-    provider === "codex" ||
-    provider === "cursor" ||
-    provider === "kilo" ||
-    provider === "opencode" ||
-    provider === "pi" ||
-    provider === "droid"
-  ) {
-    return "groq";
-  }
-  if (provider === "claudeAgent") {
-    return "anthropic";
-  }
-  if (provider === "antigravity") {
-    return "google";
-  }
-  if (provider === "grok") {
-    return "xai";
-  }
-  if (provider === "gemini") {
-    return "google";
-  }
   if (typeof provider === "string") {
+    if (
+      provider === "engine" ||
+      provider === "openai" ||
+      provider === "anthropic" ||
+      provider === "google" ||
+      provider === "openrouter" ||
+      provider === "ollama" ||
+      provider === "deepseek" ||
+      provider === "groq" ||
+      provider === "mistral" ||
+      provider === "together" ||
+      provider === "cohere" ||
+      provider === "xai" ||
+      provider === "fireworks" ||
+      provider === "opencodeZen" ||
+      provider === "opencodeGo"
+    ) {
+      return provider as ModelProviderKind;
+    }
     const providerFromLabel = inferProviderFromLabel(provider);
     if (providerFromLabel !== undefined) {
       return providerFromLabel;
     }
   }
-  const lowerModel = model.toLowerCase();
-  // Shared Claude/Gemini/OpenAI slugs remain ambiguous without an instance label;
-  // only Factory-exclusive built-ins are safe to attribute to Droid (now openai).
-  if (DROID_ONLY_MODEL_SLUGS.has(lowerModel)) {
-    return "groq";
-  }
-  if (lowerModel.includes("claude") || lowerModel.includes("anthropic")) {
-    return "anthropic";
-  }
-  if (lowerModel.includes("gemini") || lowerModel.includes("google")) {
-    return "google";
-  }
-  if (lowerModel.includes("grok") || lowerModel.includes("xai")) {
-    return "xai";
-  }
-  if (lowerModel.includes("openai") || lowerModel.includes("codex") || lowerModel.includes("gpt")) {
-    return "groq";
-  }
-  return "groq";
+  return "openai";
 }
 
 function readLegacyProviderOptions(options: unknown, provider: ModelProviderKind): unknown {
@@ -203,7 +147,7 @@ export function normalizeLegacyModelSelection(input: {
     ? undefined
     : normalizeModelOptions(readLegacyProviderOptions(input.options, provider));
   const antigravityModel =
-    provider === "google"
+    (provider as string) === "google"
       ? splitLegacyAntigravityModelLabel(
           migratedGeminiSelection ? migrateLegacyGeminiModel(input.model) : input.model,
         )

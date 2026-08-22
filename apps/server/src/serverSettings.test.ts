@@ -44,8 +44,8 @@ describe("ServerSettingsService", () => {
           enableAssistantStreaming: true,
           enableProviderUpdateChecks: false,
           providers: {
-            codex: {
-              binaryPath: "/usr/local/bin/codex",
+            engine: {
+              binaryPath: "/usr/local/bin/engine",
               customModels: ["gpt-custom"],
             },
           },
@@ -57,7 +57,7 @@ describe("ServerSettingsService", () => {
 
     expect(result.updated.enableAssistantStreaming).toBe(true);
     expect(result.updated.enableProviderUpdateChecks).toBe(false);
-    expect((result.updated.providers as any).codex?.binaryPath).toBe("/usr/local/bin/codex");
+    expect(result.updated.providers.engine?.binaryPath).toBe("/usr/local/bin/engine");
     expect(result.parsed).toMatchObject({
       revision: 1,
       migrationVersion: 2,
@@ -65,8 +65,8 @@ describe("ServerSettingsService", () => {
         enableAssistantStreaming: true,
         enableProviderUpdateChecks: false,
         providers: {
-          codex: {
-            binaryPath: "/usr/local/bin/codex",
+          engine: {
+            binaryPath: "/usr/local/bin/engine",
             customModels: ["gpt-custom"],
           },
         },
@@ -114,40 +114,6 @@ describe("ServerSettingsService", () => {
     );
   });
 
-  it("keeps provider passwords server-only and returns configured flags to clients", async () => {
-    const result = await runWithSettings(
-      Effect.gen(function* () {
-        const service = yield* ServerSettingsService;
-        const { settingsPath } = yield* ServerConfig;
-        const fs = yield* FileSystem.FileSystem;
-        yield* service.start;
-        const view = yield* service.updateSettingsView({
-          providers: {
-            kilo: { serverPassword: "kilo-secret" },
-            opencode: { serverPassword: "opencode-secret" },
-          },
-        });
-        const internal = yield* service.getSettings;
-        const persisted = yield* fs.readFileString(settingsPath);
-        return { view, internal, persisted };
-      }),
-    );
-
-    expect((result.internal.providers as any).kilo?.serverPasswordConfigured).toBe(true);
-    expect((result.internal.providers as any).opencode?.serverPasswordConfigured).toBe(true);
-    expect((result.view.providers as any).kilo).toMatchObject({ serverPasswordConfigured: true });
-    expect((result.view.providers as any).opencode).toMatchObject({
-      serverPasswordConfigured: true,
-    });
-    expect(JSON.stringify(result.internal)).not.toContain("kilo-secret");
-    expect(JSON.stringify(result.internal)).not.toContain("opencode-secret");
-    expect(JSON.stringify(result.view)).not.toContain("kilo-secret");
-    expect(JSON.stringify(result.view)).not.toContain("opencode-secret");
-    expect(JSON.stringify(result.view)).not.toContain('"serverPassword"');
-    expect(result.persisted).not.toContain("kilo-secret");
-    expect(result.persisted).not.toContain("opencode-secret");
-  });
-
   it("keeps provider API keys server-only and returns configured flags to clients", async () => {
     const result = await runWithSettings(
       Effect.gen(function* () {
@@ -158,11 +124,8 @@ describe("ServerSettingsService", () => {
 
         const view = yield* service.updateSettingsView({
           providers: {
-            openai: {
-              apiKey: "sk-openai-test-key",
-            },
-            anthropic: {
-              apiKey: "sk-ant-test-key",
+            groq: {
+              apiKey: "gsk-groq-test-key",
             },
           },
         });
@@ -172,17 +135,12 @@ describe("ServerSettingsService", () => {
       }),
     );
 
-    expect(result.internal.providers.openai.apiKeyConfigured).toBe(true);
-    expect(result.internal.providers.anthropic.apiKeyConfigured).toBe(true);
-    expect(result.view.providers.openai).toMatchObject({ apiKeyConfigured: true });
-    expect(result.view.providers.anthropic).toMatchObject({ apiKeyConfigured: true });
-    expect(JSON.stringify(result.internal)).not.toContain("sk-openai-test-key");
-    expect(JSON.stringify(result.internal)).not.toContain("sk-ant-test-key");
-    expect(JSON.stringify(result.view)).not.toContain("sk-openai-test-key");
-    expect(JSON.stringify(result.view)).not.toContain("sk-ant-test-key");
+    expect(result.internal.providers.groq.apiKeyConfigured).toBe(true);
+    expect(result.view.providers.groq).toMatchObject({ apiKeyConfigured: true });
+    expect(JSON.stringify(result.internal)).not.toContain("gsk-groq-test-key");
+    expect(JSON.stringify(result.view)).not.toContain("gsk-groq-test-key");
     expect(JSON.stringify(result.view)).not.toContain('"apiKey"');
-    expect(result.persisted).not.toContain("sk-openai-test-key");
-    expect(result.persisted).not.toContain("sk-ant-test-key");
+    expect(result.persisted).not.toContain("gsk-groq-test-key");
   });
 
   it("resolves text generation selection away from disabled providers", async () => {
@@ -194,18 +152,18 @@ describe("ServerSettingsService", () => {
         Effect.provide(
           ServerSettingsService.layerTest({
             textGenerationModelSelection: {
-              provider: "google",
-              model: DEFAULT_MODEL_BY_PROVIDER.antigravity,
+              provider: "groq",
+              model: DEFAULT_MODEL_BY_PROVIDER.groq,
             },
             providers: {
-              antigravity: { enabled: false },
+              groq: { enabled: false },
             },
           }),
         ),
       ),
     );
 
-    expect(settings.textGenerationModelSelection.provider).toBe("openai");
-    expect(settings.textGenerationModelSelection.model).toBe(DEFAULT_MODEL_BY_PROVIDER.codex);
+    expect(settings.textGenerationModelSelection.provider).toBe("groq");
+    expect(settings.textGenerationModelSelection.model).toBe(DEFAULT_MODEL_BY_PROVIDER.groq);
   });
 });

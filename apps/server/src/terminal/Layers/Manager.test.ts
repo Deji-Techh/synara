@@ -768,7 +768,7 @@ describe("TerminalManager", () => {
   it("does not brand generic terminals from provider descendants", async () => {
     const { manager } = makeManager(5, {
       subprocessChecker: async () => ({
-        cliKind: "openai",
+        cliKind: "codex",
         hasNonProviderSubprocess: true,
         hasProviderDescendant: true,
         hasRunningSubprocess: true,
@@ -792,7 +792,7 @@ describe("TerminalManager", () => {
       1_200,
     );
 
-    expect(events.some((event) => event.type === "activity" && event.cliKind === "openai")).toBe(
+    expect(events.some((event) => event.type === "activity" && (event.cliKind as any) === "codex")).toBe(
       false,
     );
     manager.dispose();
@@ -813,7 +813,7 @@ describe("TerminalManager", () => {
     process.emitData("Claude Code v1.2.3 is available in this dev-server log\n");
     await waitFor(() => events.some((event) => event.type === "output"));
 
-    expect(events.some((event) => event.type === "activity" && event.cliKind === "anthropic")).toBe(
+    expect(events.some((event) => event.type === "activity" && (event.cliKind as any) === "claude")).toBe(
       false,
     );
     manager.dispose();
@@ -828,7 +828,7 @@ describe("TerminalManager", () => {
 
     await manager.open(openInput());
     await manager.write({ threadId: "thread-1", data: "codex\r" });
-    expect(events.some((event) => event.type === "activity" && event.cliKind === "openai")).toBe(
+    expect(events.some((event) => event.type === "activity" && (event.cliKind as any) === "codex")).toBe(
       true,
     );
 
@@ -864,12 +864,12 @@ describe("TerminalManager", () => {
 
     await manager.open(openInput());
     await manager.write({ threadId: "thread-1", data: "codex\r" });
-    expect(events.some((event) => event.type === "activity" && event.cliKind === "openai")).toBe(
+    expect(events.some((event) => event.type === "activity" && (event.cliKind as any) === "codex")).toBe(
       true,
     );
 
     subprocessActivity = {
-      cliKind: "openai",
+      cliKind: "codex",
       hasNonProviderSubprocess: false,
       hasProviderDescendant: true,
       hasRunningSubprocess: true,

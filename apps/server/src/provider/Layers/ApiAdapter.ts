@@ -50,7 +50,18 @@ interface ApiSessionContext {
 }
 
 const DEFAULT_BASE_URL_BY_PROVIDER: Record<ApiProviderKind, string> = {
+  openai: "https://api.openai.com/v1",
+  anthropic: "https://api.anthropic.com/v1",
+  google: "https://generativelanguage.googleapis.com/v1beta",
+  openrouter: "https://openrouter.ai/api/v1",
+  ollama: "http://127.0.0.1:11434/v1",
+  deepseek: "https://api.deepseek.com/v1",
   groq: "https://api.groq.com/openai/v1",
+  mistral: "https://api.mistral.ai/v1",
+  together: "https://api.together.xyz/v1",
+  cohere: "https://api.cohere.com/compatibility/v1",
+  xai: "https://api.x.ai/v1",
+  fireworks: "https://api.fireworks.ai/inference/v1",
   opencodeZen: "https://opencode.ai/zen/v1",
   opencodeGo: "https://opencode.ai/zen/go/v1",
 };
@@ -225,7 +236,8 @@ export const makeApiAdapter = (provider: ApiProviderKind) =>
               }),
             );
           }
-          const defaultModel = DEFAULT_MODEL_BY_PROVIDER[provider] ?? "default";
+          const defaultModel =
+            input.modelSelection?.model ?? DEFAULT_MODEL_BY_PROVIDER[provider] ?? "default";
           const now = new Date().toISOString();
           const session: ProviderSession = {
             provider,
@@ -270,6 +282,7 @@ export const makeApiAdapter = (provider: ApiProviderKind) =>
           const context = yield* getSession(input.threadId);
           const turnId = TurnId.makeUnsafe(randomUUID());
           const model = input.modelSelection?.model ?? context.currentModel;
+          (context as { currentModel: string }).currentModel = model;
           const abortController = new AbortController();
           context.abortController = abortController;
 
@@ -301,7 +314,10 @@ export const makeApiAdapter = (provider: ApiProviderKind) =>
               makeEvent<ProviderRuntimeEvent>(input.threadId, {
                 type: "content.delta",
                 turnId,
-                payload: { delta: warningMessage },
+                payload: {
+                  streamKind: "assistant_text",
+                  delta: warningMessage,
+                },
               }),
             );
           } else {
@@ -312,7 +328,10 @@ export const makeApiAdapter = (provider: ApiProviderKind) =>
                 makeEvent<ProviderRuntimeEvent>(input.threadId, {
                   type: "content.delta",
                   turnId,
-                  payload: { delta: deltaText },
+                  payload: {
+                    streamKind: "assistant_text",
+                    delta: deltaText,
+                  },
                 }),
               ).pipe(Effect.runSync);
             };
@@ -337,7 +356,7 @@ export const makeApiAdapter = (provider: ApiProviderKind) =>
                   makeEvent<ProviderRuntimeEvent>(input.threadId, {
                     type: "turn.aborted",
                     turnId,
-                    payload: { state: "interrupted" },
+                    payload: { reason: "interrupted" },
                   }),
                 );
               } else {
@@ -346,7 +365,10 @@ export const makeApiAdapter = (provider: ApiProviderKind) =>
                   makeEvent<ProviderRuntimeEvent>(input.threadId, {
                     type: "content.delta",
                     turnId,
-                    payload: { delta: `\n\n[API Error]: ${errorMessage}` },
+                    payload: {
+                      streamKind: "assistant_text",
+                      delta: `\n\n[API Error]: ${errorMessage}`,
+                    },
                   }),
                 );
               }
@@ -386,7 +408,7 @@ export const makeApiAdapter = (provider: ApiProviderKind) =>
             runtimeEventQueue,
             makeEvent<ProviderRuntimeEvent>(threadId, {
               type: "turn.aborted",
-              payload: { state: "interrupted" },
+              payload: { reason: "interrupted" },
             }),
           );
         }),
@@ -416,7 +438,7 @@ export const makeApiAdapter = (provider: ApiProviderKind) =>
             runtimeEventQueue,
             makeEvent<ProviderRuntimeEvent>(threadId, {
               type: "thread.state.changed",
-              payload: { status: "closed" },
+              payload: { state: "closed" },
             }),
           );
           yield* PubSub.publish(

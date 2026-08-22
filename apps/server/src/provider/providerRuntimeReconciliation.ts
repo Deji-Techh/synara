@@ -11,6 +11,7 @@ import {
   TurnId,
   type OrchestrationSession,
   type OrchestrationThreadShell,
+  type ProviderKind,
   type ProviderSession,
   type ThreadId,
 } from "@caide/contracts";
@@ -221,7 +222,8 @@ export function planProviderRuntimeReconciliation(input: {
     // start) - which is precisely the thread most likely to be stuck with
     // nothing left that could ever settle it - so fall back to the thread's own
     // provider instead of dropping the candidate.
-    const provider = binding?.provider ?? thread.modelSelection.provider;
+    const provider: ProviderKind = (binding?.provider ??
+      thread.modelSelection.provider) as ProviderKind;
     const detail = pumpDetail(provider, healthByProvider);
     const abandoned =
       lifecycleAgeMs >= maxTurnAgeMs && threadActivityAgeMs(thread, input.nowMs) >= maxTurnAgeMs;

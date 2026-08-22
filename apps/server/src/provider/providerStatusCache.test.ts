@@ -14,8 +14,8 @@ import {
   writeProviderStatusCache,
 } from "./providerStatusCache";
 
-const readyCodexStatus = {
-  provider: "openai" as const,
+const readyEngineStatus = {
+  provider: "engine" as const,
   status: "ready" as const,
   available: true,
   authStatus: "authenticated" as const,
@@ -32,12 +32,12 @@ describe("providerStatusCache", () => {
         });
         const cachePath = resolveProviderStatusCachePath({
           stateDir: tempDir,
-          provider: readyCodexStatus.provider,
+          provider: readyEngineStatus.provider,
         });
 
         yield* writeProviderStatusCache({
           filePath: cachePath,
-          provider: readyCodexStatus,
+          provider: readyEngineStatus,
         });
 
         return {
@@ -47,7 +47,7 @@ describe("providerStatusCache", () => {
       }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
     );
 
-    expect(result.cached).toEqual(readyCodexStatus);
+    expect(result.cached).toEqual(readyEngineStatus);
     if (process.platform !== "win32") expect(result.mode).toBe(0o600);
   });
 
@@ -61,7 +61,7 @@ describe("providerStatusCache", () => {
         });
         const cachePath = resolveProviderStatusCachePath({
           stateDir: tempDir,
-          provider: readyCodexStatus.provider,
+          provider: readyEngineStatus.provider,
         });
 
         yield* fileSystem.makeDirectory(path.dirname(cachePath), { recursive: true });
@@ -78,64 +78,50 @@ describe("providerStatusCache", () => {
     expect(
       orderProviderStatuses([
         {
-          provider: "google",
+          provider: "opencodeGo",
           status: "ready",
           available: true,
           authStatus: "authenticated",
           checkedAt: "2026-04-15T10:02:00.000Z",
         },
         {
-          provider: "anthropic",
+          provider: "groq",
           status: "warning",
           available: true,
           authStatus: "unknown",
           checkedAt: "2026-04-15T10:01:00.000Z",
         },
         {
-          provider: "openai",
+          provider: "opencodeZen",
           status: "ready",
           available: true,
           authStatus: "unknown",
           checkedAt: "2026-04-15T10:03:00.000Z",
         },
-        {
-          provider: "openai",
-          status: "ready",
-          available: true,
-          authStatus: "unknown",
-          checkedAt: "2026-04-15T10:04:00.000Z",
-        },
-        readyCodexStatus,
+        readyEngineStatus,
       ]),
     ).toEqual([
-      readyCodexStatus,
+      readyEngineStatus,
       {
-        provider: "anthropic",
+        provider: "groq",
         status: "warning",
         available: true,
         authStatus: "unknown",
         checkedAt: "2026-04-15T10:01:00.000Z",
       },
       {
-        provider: "openai",
+        provider: "opencodeZen",
         status: "ready",
         available: true,
         authStatus: "unknown",
         checkedAt: "2026-04-15T10:03:00.000Z",
       },
       {
-        provider: "google",
+        provider: "opencodeGo",
         status: "ready",
         available: true,
         authStatus: "authenticated",
         checkedAt: "2026-04-15T10:02:00.000Z",
-      },
-      {
-        provider: "openai",
-        status: "ready",
-        available: true,
-        authStatus: "unknown",
-        checkedAt: "2026-04-15T10:04:00.000Z",
       },
     ]);
   });

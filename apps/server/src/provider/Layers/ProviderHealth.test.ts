@@ -160,34 +160,15 @@ const allProvidersDisabledSettings = {
   },
 } as const;
 
-const allProvidersDisabledServerSettings = {
+const allProvidersDisabledServerSettings: typeof DEFAULT_SERVER_SETTINGS = {
   ...DEFAULT_SERVER_SETTINGS,
-  providers: {
-    codex: { ...(DEFAULT_SERVER_SETTINGS.providers as any).codex, enabled: false },
-    claudeAgent: { ...(DEFAULT_SERVER_SETTINGS.providers as any).claudeAgent, enabled: false },
-    cursor: { ...(DEFAULT_SERVER_SETTINGS.providers as any).cursor, enabled: false },
-    antigravity: { ...(DEFAULT_SERVER_SETTINGS.providers as any).antigravity, enabled: false },
-    grok: { ...(DEFAULT_SERVER_SETTINGS.providers as any).grok, enabled: false },
-    droid: { ...(DEFAULT_SERVER_SETTINGS.providers as any).droid, enabled: false },
-    kilo: { ...(DEFAULT_SERVER_SETTINGS.providers as any).kilo, enabled: false },
-    opencode: { ...(DEFAULT_SERVER_SETTINGS.providers as any).opencode, enabled: false },
-    pi: { ...(DEFAULT_SERVER_SETTINGS.providers as any).pi, enabled: false },
-    engine: { ...DEFAULT_SERVER_SETTINGS.providers.engine, enabled: false },
-    openai: { ...DEFAULT_SERVER_SETTINGS.providers.openai, enabled: false },
-    anthropic: { ...DEFAULT_SERVER_SETTINGS.providers.anthropic, enabled: false },
-    google: { ...DEFAULT_SERVER_SETTINGS.providers.google, enabled: false },
-    openrouter: { ...DEFAULT_SERVER_SETTINGS.providers.openrouter, enabled: false },
-    ollama: { ...DEFAULT_SERVER_SETTINGS.providers.ollama, enabled: false },
-    deepseek: { ...DEFAULT_SERVER_SETTINGS.providers.deepseek, enabled: false },
-    groq: { ...DEFAULT_SERVER_SETTINGS.providers.groq, enabled: false },
-    mistral: { ...DEFAULT_SERVER_SETTINGS.providers.mistral, enabled: false },
-    together: { ...DEFAULT_SERVER_SETTINGS.providers.together, enabled: false },
-    cohere: { ...DEFAULT_SERVER_SETTINGS.providers.cohere, enabled: false },
-    xai: { ...DEFAULT_SERVER_SETTINGS.providers.xai, enabled: false },
-    fireworks: { ...DEFAULT_SERVER_SETTINGS.providers.fireworks, enabled: false },
-    opencodeZen: { ...DEFAULT_SERVER_SETTINGS.providers.opencodeZen, enabled: false },
-  },
-} satisfies typeof DEFAULT_SERVER_SETTINGS;
+  providers: Object.fromEntries(
+    Object.entries(DEFAULT_SERVER_SETTINGS.providers).map(([provider, settings]) => [
+      provider,
+      { ...settings, enabled: false },
+    ]),
+  ) as typeof DEFAULT_SERVER_SETTINGS.providers,
+};
 
 const disabledProviderHealthLayer = ProviderHealthLive.pipe(
   Layer.provideMerge(ServerSettingsService.layerTest(allProvidersDisabledServerSettings)),
@@ -197,7 +178,7 @@ const disabledProviderHealthLayer = ProviderHealthLive.pipe(
 );
 
 const cachedReadyCodexStatus = {
-  provider: "openai" as const,
+  provider: "groq" as const,
   status: "ready" as const,
   available: true,
   authStatus: "authenticated" as const,
@@ -359,10 +340,10 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         yield* writeProviderStatusCache({
           filePath: resolveProviderStatusCachePath({
             stateDir: path.join(baseDir, "userdata"),
-            provider: "openai",
+            provider: "groq",
           }),
           provider: {
-            provider: "openai",
+            provider: "groq",
             status: "ready",
             available: true,
             authStatus: "authenticated",
@@ -375,11 +356,9 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
           ...allProvidersDisabledServerSettings,
           providers: {
             ...allProvidersDisabledServerSettings.providers,
-            kilo: {
-              ...(DEFAULT_SERVER_SETTINGS.providers as any).kilo,
+            groq: {
+              ...(DEFAULT_SERVER_SETTINGS.providers as any).groq,
               enabled: true,
-              binaryPath:
-                "/Users/test/.nvm/versions/node/v24.13.0/lib/node_modules/@kilocode/cli/bin/kilo",
             },
           },
         } satisfies typeof DEFAULT_SERVER_SETTINGS;
@@ -399,9 +378,9 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
 
         const result = yield* Effect.gen(function* () {
           const providerHealth = yield* ProviderHealth;
-          return yield* TestClock.withLive(providerHealth.updateProvider({ provider: "openai" }));
+          return yield* TestClock.withLive(providerHealth.updateProvider({ provider: "engine" }));
         }).pipe(Effect.provide(layer));
-        const kilo = result.providers.find((provider) => provider.provider === "openai");
+        const kilo = result.providers.find((provider) => provider.provider === "engine");
 
         assert.strictEqual(killed, true);
         assert.strictEqual(kilo?.updateState?.status, "failed");
@@ -415,8 +394,8 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
 
   describe("disabled provider handling", () => {
     it("builds an inert status for disabled providers", () => {
-      assert.deepStrictEqual(makeDisabledProviderStatus("openai", "2026-06-16T12:00:00.000Z"), {
-        provider: "openai",
+      assert.deepStrictEqual(makeDisabledProviderStatus("groq", "2026-06-16T12:00:00.000Z"), {
+        provider: "groq",
         status: "warning",
         available: false,
         authStatus: "unknown",
@@ -431,9 +410,9 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         allProvidersDisabledServerSettings,
         "2026-06-16T12:05:00.000Z",
       );
-      const codex = statuses.find((status) => status.provider === "openai");
+      const codex = statuses.find((status) => status.provider === "groq");
 
-      assert.strictEqual(statuses.length, 23);
+      assert.strictEqual(statuses.length, 4);
       assert.strictEqual(codex?.available, false);
       assert.strictEqual(codex?.message, "Provider is disabled in Caide settings.");
     });
@@ -458,7 +437,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         { ...DEFAULT_SERVER_SETTINGS, enableProviderUpdateChecks: false },
         "2026-06-16T12:05:00.000Z",
       );
-      const codex = statuses.find((status) => status.provider === "openai");
+      const codex = statuses.find((status) => status.provider === "groq");
 
       assert.strictEqual(codex?.available, true);
       assert.strictEqual(codex?.version, "0.129.0");
@@ -477,7 +456,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         });
         const cachePath = resolveProviderStatusCachePath({
           stateDir: path.join(baseDir, "userdata"),
-          provider: "openai",
+          provider: "groq",
         });
         yield* writeProviderStatusCache({
           filePath: cachePath,
@@ -492,7 +471,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
           const providerHealth = yield* ProviderHealth;
           return yield* providerHealth.getStatuses;
         }).pipe(Effect.provide(layer));
-        const codex = statuses.find((status) => status.provider === "openai");
+        const codex = statuses.find((status) => status.provider === "groq");
         const cachedCodex = yield* readProviderStatusCache(cachePath);
 
         assert.strictEqual(codex?.available, false);
@@ -510,7 +489,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         });
         const cachePath = resolveProviderStatusCachePath({
           stateDir: path.join(baseDir, "userdata"),
-          provider: "openai",
+          provider: "groq",
         });
         yield* writeProviderStatusCache({
           filePath: cachePath,
@@ -540,24 +519,24 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
           const providerHealth = yield* ProviderHealth;
           const serverSettings = yield* ServerSettingsService;
           const disabledStatuses = yield* providerHealth.getStatuses;
-          const disabledCodex = disabledStatuses.find((status) => status.provider === "openai");
+          const disabledGroq = disabledStatuses.find((status) => status.provider === "groq");
 
-          assert.strictEqual(disabledCodex?.available, false);
-          assert.strictEqual(disabledCodex?.message, "Provider is disabled in Caide settings.");
+          assert.strictEqual(disabledGroq?.available, false);
+          assert.strictEqual(disabledGroq?.message, "Provider is disabled in Caide settings.");
 
           yield* serverSettings.updateSettings({
             providers: {
-              codex: {
+              groq: {
                 enabled: true,
               },
             },
           });
 
           const currentStatuses = yield* providerHealth.getStatuses;
-          const currentCodex = currentStatuses.find((status) => status.provider === "openai");
-          assert.strictEqual(currentCodex?.available, true);
-          assert.strictEqual(currentCodex?.authStatus, "authenticated");
-          assert.notStrictEqual(currentCodex?.message, "Provider is disabled in Caide settings.");
+          const currentGroq = currentStatuses.find((status) => status.provider === "groq");
+          assert.strictEqual(currentGroq?.available, true);
+          assert.strictEqual(currentGroq?.authStatus, "authenticated");
+          assert.notStrictEqual(currentGroq?.message, "Provider is disabled in Caide settings.");
           assert.strictEqual(spawnCount, 0);
         }).pipe(Effect.provide(layer));
       }),
@@ -568,7 +547,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         const providerHealth = yield* ProviderHealth;
         const statuses = yield* providerHealth.refresh;
 
-        assert.strictEqual(statuses.length, 23);
+        assert.strictEqual(statuses.length, 4);
         for (const status of statuses) {
           assert.strictEqual(status.available, false);
           assert.strictEqual(status.message, "Provider is disabled in Caide settings.");
@@ -582,10 +561,10 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it.effect("rejects one-click updates for disabled providers", () =>
       Effect.gen(function* () {
         const providerHealth = yield* ProviderHealth;
-        const error = yield* Effect.flip(providerHealth.updateProvider({ provider: "openai" }));
+        const error = yield* Effect.flip(providerHealth.updateProvider({ provider: "engine" }));
 
         assert.ok(error instanceof ServerProviderUpdateError);
-        assert.strictEqual(error.provider, "openai");
+        assert.strictEqual(error.provider, "engine");
         assert.strictEqual(error.reason, "Provider is disabled in Caide settings.");
       }).pipe(Effect.provide(disabledProviderHealthLayer)),
     );
@@ -621,10 +600,8 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         const apiKinds = statuses.filter(
           (status) => status.available === false && status.authStatus === "unauthenticated",
         );
-        const ollamaStatus = statuses.find((status) => status.provider === "ollama");
-        assert.strictEqual(statuses.length, 13);
-        assert.strictEqual(apiKinds.length, 12);
-        assert.strictEqual(ollamaStatus?.available, true);
+        assert.strictEqual(statuses.length, 3);
+        assert.strictEqual(apiKinds.length, 3);
         for (const status of apiKinds) {
           assert.strictEqual(status.authStatus, "unauthenticated");
         }
@@ -635,7 +612,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
 
   describe("stabilizeProviderStatusesAgainstTransientTimeouts", () => {
     const previousReadyOpenCode = {
-      provider: "openai",
+      provider: "groq",
       status: "ready",
       available: true,
       authStatus: "unknown",
@@ -650,7 +627,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         [previousReadyOpenCode],
         [
           {
-            provider: "openai",
+            provider: "groq",
             status: "error",
             available: false,
             authStatus: "unknown",
@@ -687,7 +664,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         [previousWithUpdate],
         [
           {
-            provider: "openai",
+            provider: "groq",
             status: "error",
             available: false,
             authStatus: "unknown",
@@ -713,7 +690,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
 
     it("does not hide non-timeout provider failures", () => {
       const unavailableStatus = {
-        provider: "openai",
+        provider: "groq",
         status: "error",
         available: false,
         authStatus: "unknown",
@@ -732,7 +709,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
 
     it("keeps an already usable provider ready after a transient auth timeout warning", () => {
       const previousReadyClaude = {
-        provider: "anthropic",
+        provider: "groq",
         status: "ready",
         available: true,
         authStatus: "authenticated",
@@ -744,7 +721,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         [previousReadyClaude],
         [
           {
-            provider: "anthropic",
+            provider: "groq",
             status: "warning",
             available: true,
             authStatus: "unknown",
@@ -766,7 +743,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
 
     it("does not keep a stale Claude auth error after a transient auth timeout", () => {
       const previousUnauthenticatedClaude = {
-        provider: "anthropic",
+        provider: "groq",
         status: "error",
         available: true,
         authStatus: "unauthenticated",
@@ -775,7 +752,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
         message: "Claude is not authenticated. Run `claude auth login` and try again.",
       } satisfies ServerProviderStatus;
       const authTimeoutWarning = {
-        provider: "anthropic",
+        provider: "groq",
         status: "warning",
         available: true,
         authStatus: "unknown",
@@ -796,7 +773,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
 
   describe("providerStatusesEqual", () => {
     const readyCursor = {
-      provider: "openai",
+      provider: "groq",
       status: "ready",
       available: true,
       authStatus: "unknown",
@@ -856,7 +833,7 @@ it.layer(NodeServices.layer)("ProviderHealth", (it) => {
     it("detects Auto capability and probe-binary changes", () => {
       const readyCodex = {
         ...readyCursor,
-        provider: "openai",
+        provider: "groq",
         supportsAutoRuntimeMode: true,
         autoRuntimeModeBinaryPath: "openai",
       } satisfies ServerProviderStatus;

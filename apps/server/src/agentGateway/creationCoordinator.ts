@@ -54,10 +54,8 @@ import { GatewayToolError, gatewayToolErrorResult } from "./toolRuntime.ts";
 const CREATION_REPLAY_WAIT_MS = 60_000;
 
 function interactionModeForGatewayTarget(target: ModelSelection): ProviderInteractionMode {
-  if (
-    (target.provider === "openai" || target.provider === "openai") &&
-    target.options?.agent === "plan"
-  ) {
+  const options = target.options as { agent?: string } | undefined;
+  if (options?.agent === "plan") {
     return "plan";
   }
   return "default";

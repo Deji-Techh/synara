@@ -26,7 +26,7 @@ const layer = it.layer(
 const runtimeEvent = (eventId: string, delta: string): ProviderRuntimeEvent => ({
   type: "content.delta",
   eventId: EventId.makeUnsafe(eventId),
-  provider: "openai",
+  provider: "groq",
   createdAt: "2026-07-14T00:00:00.000Z",
   threadId: ThreadId.makeUnsafe("thread-runtime-journal"),
   turnId: TurnId.makeUnsafe("turn-runtime-journal"),
@@ -136,7 +136,7 @@ layer("ProviderRuntimeEventRepository", (it) => {
       const terminal = yield* repository.append({
         type: "turn.completed",
         eventId: EventId.makeUnsafe("runtime-event-terminal"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-07-14T00:00:03.000Z",
         threadId: ThreadId.makeUnsafe("thread-runtime-journal"),
         turnId: TurnId.makeUnsafe("turn-runtime-journal"),
@@ -259,7 +259,7 @@ layer("ProviderRuntimeEventRepository", (it) => {
       const repository = yield* ProviderRuntimeEventRepository;
       const common = {
         eventId: EventId.makeUnsafe("native-task-complete"),
-        provider: "openai" as const,
+        provider: "groq" as const,
         createdAt: "2026-07-14T00:02:00.000Z",
         threadId: ThreadId.makeUnsafe("thread-derived-runtime-journal"),
         turnId: TurnId.makeUnsafe("turn-derived-runtime-journal"),
@@ -300,7 +300,7 @@ retentionLayer("ProviderRuntimeEventRepository retention", (it) => {
   const deltaEvent = (turn: string, index: number): ProviderRuntimeEvent => ({
     type: "content.delta",
     eventId: EventId.makeUnsafe(`retention-${turn}-${index}`),
-    provider: "openai",
+    provider: "groq",
     createdAt: "2026-07-14T01:00:00.000Z",
     threadId,
     turnId: TurnId.makeUnsafe(`turn-retention-${turn}`),
@@ -309,7 +309,7 @@ retentionLayer("ProviderRuntimeEventRepository retention", (it) => {
   const terminalEvent = (turn: string): ProviderRuntimeEvent => ({
     type: "turn.completed",
     eventId: EventId.makeUnsafe(`retention-${turn}-terminal`),
-    provider: "openai",
+    provider: "groq",
     createdAt: "2026-07-14T01:00:01.000Z",
     threadId,
     turnId: TurnId.makeUnsafe(`turn-retention-${turn}`),

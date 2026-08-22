@@ -26,23 +26,21 @@ function decodeProviderKind(
     return Effect.succeed(providerName);
   }
   const legacyMap: Record<string, ProviderKind> = {
-    codex: "openai",
-    claudeAgent: "anthropic",
-    cursor: "openai",
-    antigravity: "google",
-    grok: "xai",
-    droid: "openai",
-    kilo: "openai",
-    opencode: "openai",
-    pi: "openai",
+    codex: "groq",
+    claudeAgent: "engine",
+    cursor: "groq",
+    antigravity: "groq",
+    grok: "groq",
+    droid: "groq",
+    kilo: "groq",
+    opencode: "opencodeZen",
+    pi: "groq",
   };
   const mapped = (legacyMap as Record<string, string>)[providerName];
   if (mapped && Schema.is(ProviderKind)(mapped)) {
     return Effect.succeed(mapped as ProviderKind);
   }
-  // For unknown legacy providers, treat as openai and let listBindings skip via catch, but getBinding should not fail closed
-  // Instead, return openai as fallback so the session can be cleaned up
-  return Effect.succeed("openai" as ProviderKind);
+  return Effect.succeed("groq" as ProviderKind);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -101,7 +101,7 @@ export function buildCursorAcpSpawnInput(
     cwd,
     // Keep ACP startup browserless without forcing CI/noninteractive flags onto user turns.
     env: buildProviderChildEnvironment({
-      provider: "openai",
+      provider: "cursor",
       overrides: CURSOR_AGENT_BROWSERLESS_ENV,
     }),
   };

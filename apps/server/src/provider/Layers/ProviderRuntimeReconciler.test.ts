@@ -59,9 +59,9 @@ function staleShellSnapshot(): OrchestrationShellSnapshot {
         session: {
           threadId: THREAD_ID,
           status: "ready",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "full-access",
-          activeTurnId: null,
+          activeTurnId: TURN_ID,
           lastError: null,
           updatedAt,
         },
@@ -73,7 +73,7 @@ function staleShellSnapshot(): OrchestrationShellSnapshot {
 
 function readyProviderSession(): ProviderSession {
   return {
-    provider: "openai",
+    provider: "groq",
     status: "ready",
     runtimeMode: "full-access",
     threadId: THREAD_ID,
@@ -111,7 +111,7 @@ describe("ProviderRuntimeReconcilerLive", () => {
         Effect.succeed([
           {
             threadId: THREAD_ID,
-            provider: "openai" as const,
+            provider: "groq" as const,
             status: bindingStatus,
             runtimePayload: { activeTurnId: null },
           },
@@ -122,7 +122,7 @@ describe("ProviderRuntimeReconcilerLive", () => {
       getRuntimeEventPumpHealth: () =>
         Effect.succeed([
           {
-            provider: "openai" as const,
+            provider: "groq" as const,
             status: "recovering" as const,
             consecutiveFailures: 1,
             updatedAt: "2026-07-23T20:00:00.000Z",

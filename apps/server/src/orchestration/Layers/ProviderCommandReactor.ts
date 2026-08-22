@@ -75,10 +75,7 @@ import {
   ProviderAdapterValidationError,
   ProviderServiceError,
 } from "../../provider/Errors.ts";
-import {
-  buildInlineSkillInstructions,
-  inlinePersonaSystemInstruction,
-} from "../../provider/skillPromptInjection.ts";
+import { buildInlineSkillInstructions } from "../../provider/skillPromptInjection.ts";
 import {
   PROVIDER_DEBUG_MODE_PROMPT_PREFIX,
   withProviderDebugModePrompt,
@@ -367,10 +364,13 @@ function availableProviderContextChars(input: {
   readonly tag: ProviderContextTag;
   readonly messageText: string;
   readonly wrapLatestUserMessage: boolean;
+  readonly reservedChars?: number;
 }): number {
   return Math.max(
     0,
-    PROVIDER_SEND_TURN_MAX_INPUT_CHARS - wrapProviderContext({ ...input, contextText: "" }).length,
+    PROVIDER_SEND_TURN_MAX_INPUT_CHARS -
+      wrapProviderContext({ ...input, contextText: "" }).length -
+      (input.reservedChars ?? 0),
   );
 }
 
@@ -1182,17 +1182,8 @@ const make = Effect.gen(function* () {
       : undefined;
     const requestedModelSelection = options?.modelSelection;
     const threadProvider: ProviderKind = currentProvider ?? thread.modelSelection.provider;
-    if (
-      requestedModelSelection !== undefined &&
-      requestedModelSelection.provider !== threadProvider
-    ) {
-      return yield* new ProviderAdapterValidationError({
-        provider: threadProvider,
-        operation: "thread.turn.start",
-        issue: `Thread '${threadId}' is bound to provider '${threadProvider}' and cannot switch to '${requestedModelSelection.provider}'.`,
-      });
-    }
-    const preferredProvider: ProviderKind = currentProvider ?? threadProvider;
+    const preferredProvider: ProviderKind =
+      requestedModelSelection?.provider ?? currentProvider ?? threadProvider;
     const desiredModelSelection = requestedModelSelection ?? thread.modelSelection;
     const settingsSnapshot = yield* serverSettings.getSnapshot;
     if (!settingsSnapshot.settings.providers[preferredProvider].enabled) {
@@ -1287,12 +1278,12 @@ const make = Effect.gen(function* () {
       // session was actually spawned from so spawn-fixed changes still restart.
       const shouldRestartForModelSelectionChange =
         requestedModelSelection !== undefined &&
-        (currentProvider === "anthropic"
+        ((currentProvider as string) === "anthropic"
           ? claudeSelectionRequiresRestart(
               previousModelSelection ?? thread.modelSelection,
               requestedModelSelection,
             )
-          : (currentProvider === "openai" || currentProvider === "openai") &&
+          : ((currentProvider as string) === "openai" || (currentProvider as string) === "openai") &&
             !Equal.equals(previousModelSelection, requestedModelSelection));
 
       if (
@@ -1328,7 +1319,7 @@ const make = Effect.gen(function* () {
       const restartedSession = yield* startProviderSession(resumeCursor);
       if (
         shouldRegisterContextBootstrap &&
-        currentProvider === "openai" &&
+        (currentProvider as string) === "openai" &&
         !providerChanged &&
         resumeCursor === undefined
       ) {
@@ -1358,7 +1349,7 @@ const make = Effect.gen(function* () {
       if (forked) {
         if (
           shouldRegisterContextBootstrap &&
-          preferredProvider === "openai" &&
+          (preferredProvider as string) === "openai" &&
           thread.sidechatSourceThreadId
         ) {
           // Droid's ACP fork preserves the native session but does not guarantee
@@ -3782,7 +3773,7 @@ const make = Effect.gen(function* () {
             consumerName: PROVIDER_COMMAND_REACTOR_CONSUMER,
             eventSequence: blocker.value.eventSequence,
             threadId: blocker.value.threadId,
-            expectedState: blocker.value.state,
+            expectedState: blocker.value.state as "uncertain" | "dead",
             outcome: "abandon",
             reconciledBy: "system:provider-command-reactor",
             note: "Launch/transport failure proves the provider never executed this command; cleared on explicit retry.",

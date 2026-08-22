@@ -121,7 +121,7 @@ function asRuntimePayloadRecord(value: unknown): Record<string, unknown> {
 }
 
 function makeFakeCodexAdapter(
-  provider: ProviderKind = "openai",
+  provider: ProviderKind = "groq",
   options?: { readonly conversationRollback?: "native" | "restart-session" },
 ) {
   const sessions = new Map<ThreadId, ProviderSession>();
@@ -389,31 +389,28 @@ function makeProviderServiceLayer(
     readonly includePi?: boolean;
   },
 ) {
-  const codex = makeFakeCodexAdapter();
-  const claude = makeFakeCodexAdapter("anthropic");
-  const antigravity = makeFakeCodexAdapter("google");
-  const droid = makeFakeCodexAdapter("openai", { conversationRollback: "restart-session" });
-  const pi = makeFakeCodexAdapter("openai");
+  const codex = makeFakeCodexAdapter("groq");
+  const claude = makeFakeCodexAdapter("engine");
+  const antigravity = makeFakeCodexAdapter("opencodeZen");
+  const droid = makeFakeCodexAdapter("opencodeGo", { conversationRollback: "restart-session" });
+  const pi = makeFakeCodexAdapter("groq");
   const registry: typeof ProviderAdapterRegistry.Service = {
     getByProvider: (provider) =>
-      provider === "openai"
+      provider === "groq"
         ? Effect.succeed(codex.adapter)
-        : provider === "anthropic"
+        : provider === "engine"
           ? Effect.succeed(claude.adapter)
-          : provider === "google"
+          : provider === "opencodeZen"
             ? Effect.succeed(antigravity.adapter)
-            : provider === "openai" && providers?.includeRestartRollbackDroid === true
+            : provider === "opencodeGo" && providers?.includeRestartRollbackDroid === true
               ? Effect.succeed(droid.adapter)
-              : provider === "openai" && providers?.includePi === true
-                ? Effect.succeed(pi.adapter)
-                : Effect.fail(new ProviderUnsupportedError({ provider })),
+              : Effect.fail(new ProviderUnsupportedError({ provider })),
     listProviders: () =>
       Effect.succeed([
-        "openai",
-        "anthropic",
-        "google",
-        ...(providers?.includeRestartRollbackDroid === true ? (["openai"] as const) : []),
-        ...(providers?.includePi === true ? (["openai"] as const) : []),
+        "groq",
+        "engine",
+        "opencodeZen",
+        ...(providers?.includeRestartRollbackDroid === true ? (["opencodeGo"] as const) : []),
       ] as const),
   };
 
@@ -474,10 +471,10 @@ it.effect("ProviderServiceLive keeps persisted resumable sessions on startup", (
     const codex = makeFakeCodexAdapter();
     const registry: typeof ProviderAdapterRegistry.Service = {
       getByProvider: (provider) =>
-        provider === "openai"
+        provider === "groq"
           ? Effect.succeed(codex.adapter)
           : Effect.fail(new ProviderUnsupportedError({ provider })),
-      listProviders: () => Effect.succeed(["openai"]),
+      listProviders: () => Effect.succeed(["groq"]),
     };
 
     const persistenceLayer = makeSqlitePersistenceLive(dbPath);
@@ -489,7 +486,7 @@ it.effect("ProviderServiceLive keeps persisted resumable sessions on startup", (
     yield* Effect.gen(function* () {
       const directory = yield* ProviderSessionDirectory;
       yield* directory.upsert({
-        provider: "openai",
+        provider: "groq",
         threadId: ThreadId.makeUnsafe("thread-stale"),
       });
     }).pipe(Effect.provide(directoryLayer));
@@ -507,7 +504,7 @@ it.effect("ProviderServiceLive keeps persisted resumable sessions on startup", (
       const directory = yield* ProviderSessionDirectory;
       return yield* directory.getProvider(asThreadId("thread-stale"));
     }).pipe(Effect.provide(directoryLayer));
-    assert.equal(persistedProvider, "openai");
+    assert.equal(persistedProvider, "groq");
 
     const runtime = yield* Effect.gen(function* () {
       const repository = yield* ProviderSessionRuntimeRepository;
@@ -551,7 +548,7 @@ it.effect(
       codex.stopAll.mockImplementation(() =>
         Effect.fail(
           new ProviderAdapterSessionNotFoundError({
-            provider: "openai",
+            provider: "groq",
             threadId,
           }),
         ),
@@ -559,10 +556,10 @@ it.effect(
 
       const registry: typeof ProviderAdapterRegistry.Service = {
         getByProvider: (provider) =>
-          provider === "openai"
+          provider === "groq"
             ? Effect.succeed(codex.adapter)
             : Effect.fail(new ProviderUnsupportedError({ provider })),
-        listProviders: () => Effect.succeed(["openai"]),
+        listProviders: () => Effect.succeed(["groq"]),
       };
 
       const providerLayer = makeProviderServiceLive().pipe(
@@ -573,7 +570,7 @@ it.effect(
       yield* Effect.gen(function* () {
         const provider = yield* ProviderService;
         yield* provider.startSession(threadId, {
-          provider: "openai",
+          provider: "groq",
           cwd: "/tmp/project",
           runtimeMode: "full-access",
           threadId,
@@ -618,10 +615,10 @@ it.effect(
       const firstCodex = makeFakeCodexAdapter();
       const firstRegistry: typeof ProviderAdapterRegistry.Service = {
         getByProvider: (provider) =>
-          provider === "openai"
+          provider === "groq"
             ? Effect.succeed(firstCodex.adapter)
             : Effect.fail(new ProviderUnsupportedError({ provider })),
-        listProviders: () => Effect.succeed(["openai"]),
+        listProviders: () => Effect.succeed(["groq"]),
       };
 
       const firstDirectoryLayer = ProviderSessionDirectoryLive.pipe(
@@ -642,7 +639,7 @@ it.effect(
         const provider = yield* ProviderService;
         const threadId = asThreadId("thread-1");
         const session = yield* provider.startSession(threadId, {
-          provider: "openai",
+          provider: "groq",
           cwd: "/tmp/project",
           runtimeMode: "full-access",
           threadId,
@@ -669,10 +666,10 @@ it.effect(
       const secondCodex = makeFakeCodexAdapter();
       const secondRegistry: typeof ProviderAdapterRegistry.Service = {
         getByProvider: (provider) =>
-          provider === "openai"
+          provider === "groq"
             ? Effect.succeed(secondCodex.adapter)
             : Effect.fail(new ProviderUnsupportedError({ provider })),
-        listProviders: () => Effect.succeed(["openai"]),
+        listProviders: () => Effect.succeed(["groq"]),
       };
       const secondDirectoryLayer = ProviderSessionDirectoryLive.pipe(
         Layer.provide(runtimeRepositoryLayer),
@@ -703,7 +700,7 @@ it.effect(
           resumeCursor?: unknown;
           threadId?: string;
         };
-        assert.equal(startPayload.provider, "openai");
+        assert.equal(startPayload.provider, "groq");
         assert.equal(startPayload.cwd, "/tmp/project");
         assert.deepEqual(startPayload.resumeCursor, updatedResumeCursor);
         assert.equal(startPayload.threadId, startedSession.threadId);
@@ -726,7 +723,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const targetThreadId = asThreadId("thread-native-fork-target");
 
       yield* provider.startSession(sourceThreadId, {
-        provider: "openai",
+        provider: "groq",
         threadId: sourceThreadId,
         cwd: "/tmp/native-fork-source",
         runtimeMode: "full-access",
@@ -773,7 +770,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const threadId = asThreadId("thread-external-fork");
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         resumeCursor: { threadId: "persisted-thread" },
         runtimeMode: "full-access",
@@ -782,7 +779,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
 
       const forkSourceResumeCursor = { threadId: "external-thread" };
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         forkSourceResumeCursor,
         resumeCursor: { threadId: "explicit-thread" },
@@ -804,7 +801,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const threadId = asThreadId("thread-explicit-stop-inactive");
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         cwd: "/tmp/project",
         runtimeMode: "full-access",
@@ -825,7 +822,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const directory = yield* ProviderSessionDirectory;
       const threadId = asThreadId("thread-lifecycle-generation");
       const startInput: ProviderSessionStartInput = {
-        provider: "openai",
+        provider: "groq",
         threadId,
         cwd: "/tmp/project",
         runtimeMode: "full-access",
@@ -884,7 +881,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       routing.codex.emit({
         type: "session.exited",
         eventId: asEventId("runtime-old-generation-exited"),
-        provider: "openai",
+        provider: "groq",
         threadId,
         createdAt: "2026-07-14T14:00:00.000Z",
         lifecycleGeneration: String(firstGeneration),
@@ -930,7 +927,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const directory = yield* ProviderSessionDirectory;
       const threadId = asThreadId("thread-overlapping-provider-starts");
       const codexInput: ProviderSessionStartInput = {
-        provider: "openai",
+        provider: "groq",
         threadId,
         cwd: "/tmp/provider-starts",
         runtimeMode: "full-access",
@@ -963,7 +960,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       );
       const crossProviderFiber = yield* provider
         .startSession(threadId, {
-          provider: "anthropic",
+          provider: "groq",
           threadId,
           cwd: "/tmp/provider-starts",
           runtimeMode: "full-access",
@@ -981,7 +978,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
         routing.codex.listSessions(),
         routing.claude.listSessions(),
       ]);
-      assert.equal(binding?.provider, "anthropic");
+      assert.equal(binding?.provider, "groq");
       assert.equal(
         codexSessions.some((session) => session.threadId === threadId),
         false,
@@ -998,21 +995,21 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const directory = yield* ProviderSessionDirectory;
       const threadId = asThreadId("thread-failed-provider-replacement");
       const initial = yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         cwd: "/tmp/failed-provider-replacement",
         runtimeMode: "full-access",
       });
       const originalBinding = Option.getOrUndefined(yield* directory.getBinding(threadId));
       const replacementFailure = new ProviderAdapterSessionNotFoundError({
-        provider: "anthropic",
+        provider: "groq",
         threadId,
       });
       routing.claude.startSession.mockImplementationOnce(() => Effect.fail(replacementFailure));
 
       const replacement = yield* Effect.result(
         provider.startSession(threadId, {
-          provider: "anthropic",
+          provider: "groq",
           threadId,
           cwd: "/tmp/failed-provider-replacement",
           runtimeMode: "full-access",
@@ -1028,7 +1025,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const restoreCall = routing.codex.startSession.mock.calls.findLast(
         ([input]) => input.threadId === threadId,
       )?.[0];
-      assert.equal(restoredBinding?.provider, "openai");
+      assert.equal(restoredBinding?.provider, "groq");
       assert.equal(restoredBinding?.status, "running");
       assert.equal(restoredBinding?.lifecycleGeneration, originalBinding?.lifecycleGeneration);
       assert.equal(codexSessions.filter((session) => session.threadId === threadId).length, 1);
@@ -1049,7 +1046,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const directory = yield* ProviderSessionDirectory;
       const threadId = asThreadId("thread-recovery-start-race");
       const initial = yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         cwd: "/tmp/recovery-start-race",
         runtimeMode: "full-access",
@@ -1081,7 +1078,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       );
       const competingStartFiber = yield* provider
         .startSession(threadId, {
-          provider: "anthropic",
+          provider: "groq",
           threadId,
           cwd: "/tmp/recovery-start-race",
           runtimeMode: "full-access",
@@ -1102,7 +1099,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const recoveryCall = routing.codex.startSession.mock.calls.findLast(
         ([input]) => input.threadId === threadId,
       )?.[0];
-      assert.equal(binding?.provider, "anthropic");
+      assert.equal(binding?.provider, "groq");
       assert.equal(
         codexSessions.some((session) => session.threadId === threadId),
         false,
@@ -1121,7 +1118,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const threadId = asThreadId("thread-claude-interaction-generation");
 
       yield* provider.startSession(threadId, {
-        provider: "anthropic",
+        provider: "groq",
         threadId,
         cwd: "/tmp/project",
         runtimeMode: "approval-required",
@@ -1195,7 +1192,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const threadId = asThreadId("thread-antigravity-interaction-generation");
 
       yield* provider.startSession(threadId, {
-        provider: "google",
+        provider: "groq",
         threadId,
         cwd: "/tmp/project",
         runtimeMode: "approval-required",
@@ -1249,12 +1246,12 @@ routing.layer("ProviderServiceLive routing", (it) => {
       routing.codex.respondToUserInput.mockClear();
 
       const session = yield* provider.startSession(asThreadId("thread-1"), {
-        provider: "openai",
+        provider: "groq",
         threadId: asThreadId("thread-1"),
         cwd: "/tmp/project",
         runtimeMode: "full-access",
       });
-      assert.equal(session.provider, "openai");
+      assert.equal(session.provider, "groq");
       const binding = Option.getOrUndefined(yield* directory.getBinding(session.threadId));
       const lifecycleGeneration = binding?.lifecycleGeneration;
       assert.equal(typeof lifecycleGeneration, "string");
@@ -1355,7 +1352,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const threadId = asThreadId("thread-exact-interrupt");
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         cwd: "/tmp/project",
         runtimeMode: "full-access",
@@ -1380,7 +1377,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const threadId = asThreadId("thread-child-interrupt-credential-rotation");
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         cwd: "/tmp/project",
         runtimeMode: "full-access",
@@ -1450,7 +1447,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
         const turnA = asTurnId(`turn-${threadId}`);
 
         yield* provider.startSession(threadId, {
-          provider: "openai",
+          provider: "groq",
           threadId,
           cwd: "/tmp/project",
           runtimeMode: "full-access",
@@ -1463,7 +1460,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
         routing.codex.emit({
           type: "task.started",
           eventId: asEventId("terminal-rotation-background-started"),
-          provider: "openai",
+          provider: "groq",
           createdAt: "2026-07-23T12:00:00.000Z",
           threadId,
           lifecycleGeneration,
@@ -1480,7 +1477,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
         routing.codex.emit({
           type: "turn.completed",
           eventId: asEventId("terminal-rotation-turn-a-completed"),
-          provider: "openai",
+          provider: "groq",
           createdAt: "2026-07-23T12:00:01.000Z",
           threadId,
           turnId: turnA,
@@ -1523,7 +1520,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
         routing.codex.emit({
           type: "task.updated",
           eventId: asEventId("terminal-rotation-background-completed"),
-          provider: "openai",
+          provider: "groq",
           createdAt: "2026-07-23T12:00:02.000Z",
           threadId,
           lifecycleGeneration,
@@ -1553,7 +1550,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const turnA = asTurnId(`turn-${threadId}`);
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         cwd: "/tmp/project",
         runtimeMode: "full-access",
@@ -1569,7 +1566,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       routing.codex.emit({
         type: "turn.completed",
         eventId: asEventId("proactive-terminal-rotation-turn-a-completed"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-07-23T13:00:01.000Z",
         threadId,
         turnId: turnA,
@@ -1631,7 +1628,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
         );
 
         yield* provider.startSession(threadId, {
-          provider: "openai",
+          provider: "groq",
           threadId,
           cwd: "/tmp/project",
           runtimeMode: "full-access",
@@ -1681,14 +1678,14 @@ routing.layer("ProviderServiceLive routing", (it) => {
       routing.codex.interruptTurn.mockImplementationOnce(() =>
         Effect.fail(
           new ProviderAdapterSessionNotFoundError({
-            provider: "openai",
+            provider: "groq",
             threadId,
           }),
         ),
       );
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         cwd: "/tmp/project",
         runtimeMode: "full-access",
@@ -1746,7 +1743,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       );
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         cwd: "/tmp/project",
         runtimeMode: "full-access",
@@ -1787,7 +1784,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       );
 
       const startInput = {
-        provider: "openai" as const,
+        provider: "groq" as const,
         threadId,
         cwd: "/tmp/project",
         runtimeMode: "full-access" as const,
@@ -1827,7 +1824,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       );
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         cwd: "/tmp/project",
         runtimeMode: "full-access",
@@ -1856,14 +1853,14 @@ routing.layer("ProviderServiceLive routing", (it) => {
       routing.codex.stopSession.mockImplementationOnce(() =>
         Effect.fail(
           new ProviderAdapterSessionNotFoundError({
-            provider: "openai",
+            provider: "groq",
             threadId,
           }),
         ),
       );
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         cwd: "/tmp/project",
         runtimeMode: "full-access",
@@ -1895,7 +1892,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       // An explicit session replacement is the recovery authority after a
       // failed teardown and clears the fail-closed fence.
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         cwd: "/tmp/project",
         runtimeMode: "full-access",
@@ -1915,7 +1912,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
         routing.codex.respondToRequest.mockClear();
         routing.codex.respondToUserInput.mockClear();
         yield* routing.codex.adapter.startSession({
-          provider: "openai",
+          provider: "groq",
           threadId,
           runtimeMode: "approval-required",
         });
@@ -1956,7 +1953,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const provider = yield* ProviderService;
 
       const initial = yield* provider.startSession(asThreadId("thread-1"), {
-        provider: "openai",
+        provider: "groq",
         threadId: asThreadId("thread-1"),
         cwd: "/tmp/project",
         runtimeMode: "full-access",
@@ -1980,7 +1977,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
           resumeCursor?: unknown;
           threadId?: string;
         };
-        assert.equal(startPayload.provider, "openai");
+        assert.equal(startPayload.provider, "groq");
         assert.equal(startPayload.cwd, "/tmp/project");
         assert.deepEqual(startPayload.resumeCursor, initial.resumeCursor);
         assert.equal(startPayload.threadId, initial.threadId);
@@ -1996,19 +1993,19 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const provider = yield* ProviderService;
 
       const session = yield* provider.startSession(asThreadId("thread-claude"), {
-        provider: "anthropic",
+        provider: "groq",
         threadId: asThreadId("thread-claude"),
         cwd: "/tmp/project-claude",
         runtimeMode: "full-access",
       });
 
-      assert.equal(session.provider, "anthropic");
+      assert.equal(session.provider, "groq");
       assert.equal(routing.claude.startSession.mock.calls.length, 1);
       const startInput = routing.claude.startSession.mock.calls[0]?.[0];
       assert.equal(typeof startInput === "object" && startInput !== null, true);
       if (startInput && typeof startInput === "object") {
         const startPayload = startInput as { provider?: string; cwd?: string };
-        assert.equal(startPayload.provider, "anthropic");
+        assert.equal(startPayload.provider, "groq");
         assert.equal(startPayload.cwd, "/tmp/project-claude");
       }
     }),
@@ -2019,7 +2016,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const provider = yield* ProviderService;
 
       const initial = yield* provider.startSession(asThreadId("thread-1"), {
-        provider: "openai",
+        provider: "groq",
         threadId: asThreadId("thread-1"),
         cwd: "/tmp/project-send-turn",
         runtimeMode: "full-access",
@@ -2045,7 +2042,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
           resumeCursor?: unknown;
           threadId?: string;
         };
-        assert.equal(startPayload.provider, "openai");
+        assert.equal(startPayload.provider, "groq");
         assert.equal(startPayload.cwd, "/tmp/project-send-turn");
         assert.deepEqual(startPayload.resumeCursor, initial.resumeCursor);
         assert.equal(startPayload.threadId, initial.threadId);
@@ -2059,14 +2056,14 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const provider = yield* ProviderService;
 
       const initial = yield* provider.startSession(asThreadId("thread-claude-send-turn"), {
-        provider: "anthropic",
+        provider: "groq",
         threadId: asThreadId("thread-claude-send-turn"),
         cwd: "/tmp/project-claude-send-turn",
         modelSelection: {
-          provider: "anthropic",
+          provider: "groq",
           model: "claude-opus-4-6",
           options: {
-            effort: "max",
+            reasoningEffort: "high",
           },
         },
         runtimeMode: "full-access",
@@ -2093,10 +2090,10 @@ routing.layer("ProviderServiceLive routing", (it) => {
           resumeCursor?: unknown;
           threadId?: string;
         };
-        assert.equal(startPayload.provider, "anthropic");
+        assert.equal(startPayload.provider, "groq");
         assert.equal(startPayload.cwd, "/tmp/project-claude-send-turn");
         assert.deepEqual(startPayload.modelSelection, {
-          provider: "anthropic",
+          provider: "groq",
           model: "claude-opus-4-6",
           options: {
             effort: "max",
@@ -2114,12 +2111,12 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const provider = yield* ProviderService;
 
       yield* provider.startSession(asThreadId("thread-1"), {
-        provider: "openai",
+        provider: "groq",
         threadId: asThreadId("thread-1"),
         runtimeMode: "full-access",
       });
       yield* provider.startSession(asThreadId("thread-2"), {
-        provider: "openai",
+        provider: "groq",
         threadId: asThreadId("thread-2"),
         runtimeMode: "full-access",
       });
@@ -2138,7 +2135,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const runtimeRepository = yield* ProviderSessionRuntimeRepository;
 
       const session = yield* provider.startSession(asThreadId("thread-1"), {
-        provider: "openai",
+        provider: "groq",
         threadId: asThreadId("thread-1"),
         runtimeMode: "full-access",
       });
@@ -2181,7 +2178,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const runtimeRepository = yield* ProviderSessionRuntimeRepository;
 
       const session = yield* provider.startSession(asThreadId("thread-runtime-complete"), {
-        provider: "openai",
+        provider: "groq",
         threadId: asThreadId("thread-runtime-complete"),
         runtimeMode: "full-access",
       });
@@ -2190,7 +2187,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
         input: "hello",
         attachments: [],
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "opencode/minimax-m2.5-free",
         },
       });
@@ -2199,7 +2196,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       routing.codex.emit({
         type: "turn.completed",
         eventId: asEventId("runtime-complete-event"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:00.000Z",
         threadId: session.threadId,
         turnId: turn.turnId,
@@ -2224,7 +2221,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
           assert.equal(runtimePayload.activeTurnId, null);
           assert.equal(runtimePayload.lastRuntimeEvent, "turn.completed");
           assert.deepEqual(runtimePayload.modelSelection, {
-            provider: "openai",
+            provider: "groq",
             model: "opencode/minimax-m2.5-free",
           });
         }
@@ -2241,16 +2238,16 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const newerTurnId = asTurnId("turn-overlapping-newer");
       const olderResumeCursor = { cursor: "older-resume" };
       const newerResumeCursor = { cursor: "newer-resume" };
-      const olderModelSelection = { provider: "openai" as const, model: "gpt-5.1-codex-mini" };
+      const olderModelSelection = { provider: "groq" as const, model: "gpt-5.1-codex-mini" };
       const newerModelSelection = {
-        provider: "openai" as const,
+        provider: "groq" as const,
         model: "opencode/minimax-m2.5-free",
       };
       let olderDispatchStarted = false;
       let releaseOlderDispatch: ((result: ProviderTurnStartResult) => void) | undefined;
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -2292,7 +2289,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       routing.codex.emit({
         type: "turn.completed",
         eventId: asEventId("runtime-overlapping-older-completed"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:00.000Z",
         threadId,
         turnId: olderTurnId,
@@ -2327,7 +2324,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       let releaseOlder: ((result: ProviderTurnStartResult) => void) | undefined;
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -2370,16 +2367,16 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const threadId = asThreadId("thread-promote-older-success");
       const olderTurnId = asTurnId("turn-promoted-older");
       const olderCursor = { cursor: "promoted-older" };
-      const olderModelSelection = { provider: "openai" as const, model: "gpt-5-codex" };
+      const olderModelSelection = { provider: "groq" as const, model: "gpt-5-codex" };
       const newerFailure = new ProviderAdapterSessionNotFoundError({
-        provider: "openai",
+        provider: "groq",
         threadId,
       });
       let releaseOlder: ((result: ProviderTurnStartResult) => void) | undefined;
       let failNewer: (() => void) | undefined;
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -2449,7 +2446,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       });
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -2475,7 +2472,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       routing.codex.emit({
         type: "turn.completed",
         eventId: asEventId("runtime-unscoped-after-persistence-failure"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:00.000Z",
         threadId,
         payload: { state: "completed" },
@@ -2498,7 +2495,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const turnId = asTurnId("turn-parent-live");
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -2518,7 +2515,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       routing.codex.emit({
         type: "turn.completed",
         eventId: asEventId("runtime-subagent-turn-completed"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:05:00.000Z",
         threadId,
         turnId: asTurnId("turn-subagent-child"),
@@ -2528,7 +2525,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       routing.codex.emit({
         type: "session.state.changed",
         eventId: asEventId("runtime-subagent-session-ready"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:05:00.100Z",
         threadId,
         payload: { state: "ready", reason: "task:killed" },
@@ -2551,12 +2548,12 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const turnId = asTurnId("turn-steer-persistence");
       const resumeCursor = { cursor: "steer-resume" };
       const modelSelection = {
-        provider: "openai" as const,
+        provider: "groq" as const,
         model: "opencode/minimax-m2.5-free",
       };
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -2590,16 +2587,16 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const reviewTurnId = asTurnId("turn-newer-review");
       const staleSteerCursor = { cursor: "stale-steer-resume" };
       const reviewCursor = { cursor: "newer-review-resume" };
-      const initialModelSelection = { provider: "openai" as const, model: "gpt-5-codex" };
+      const initialModelSelection = { provider: "groq" as const, model: "gpt-5-codex" };
       const staleSteerModelSelection = {
-        provider: "openai" as const,
+        provider: "groq" as const,
         model: "opencode/minimax-m2.5-free",
       };
       let steerStarted = false;
       let releaseSteer: ((result: ProviderTurnStartResult) => void) | undefined;
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
         modelSelection: initialModelSelection,
@@ -2659,7 +2656,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const runtimeRepository = yield* ProviderSessionRuntimeRepository;
 
       const session = yield* provider.startSession(asThreadId("thread-runtime-resume-refresh"), {
-        provider: "anthropic",
+        provider: "groq",
         threadId: asThreadId("thread-runtime-resume-refresh"),
         runtimeMode: "full-access",
       });
@@ -2679,7 +2676,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       routing.claude.emit({
         type: "model.rerouted",
         eventId: asEventId("runtime-model-rerouted-refresh"),
-        provider: "anthropic",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:00.000Z",
         threadId: session.threadId,
         payload: {
@@ -2706,7 +2703,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const runtimeRepository = yield* ProviderSessionRuntimeRepository;
 
       const session = yield* provider.startSession(asThreadId("thread-task-resume-refresh"), {
-        provider: "anthropic",
+        provider: "groq",
         threadId: asThreadId("thread-task-resume-refresh"),
         runtimeMode: "full-access",
       });
@@ -2736,7 +2733,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       routing.claude.emit({
         type: "turn.tasks.updated",
         eventId: asEventId("runtime-task-resume-refresh"),
-        provider: "anthropic",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:30.000Z",
         threadId: session.threadId,
         turnId: turn.turnId,
@@ -2777,7 +2774,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const runtimeRepository = yield* ProviderSessionRuntimeRepository;
 
       const session = yield* provider.startSession(asThreadId("thread-runtime-error"), {
-        provider: "openai",
+        provider: "groq",
         threadId: asThreadId("thread-runtime-error"),
         runtimeMode: "full-access",
       });
@@ -2790,7 +2787,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       routing.codex.emit({
         type: "runtime.error",
         eventId: asEventId("runtime-error-event"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:05:00.000Z",
         threadId: session.threadId,
         turnId: turn.turnId,
@@ -2826,7 +2823,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const runtimeRepository = yield* ProviderSessionRuntimeRepository;
 
       const session = yield* provider.startSession(asThreadId("thread-runtime-state-error"), {
-        provider: "openai",
+        provider: "groq",
         threadId: asThreadId("thread-runtime-state-error"),
         runtimeMode: "full-access",
       });
@@ -2834,7 +2831,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       routing.codex.emit({
         type: "thread.state.changed",
         eventId: asEventId("runtime-thread-state-error"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:05:00.000Z",
         threadId: session.threadId,
         payload: { state: "error" },
@@ -2866,7 +2863,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const runtimeRepository = yield* ProviderSessionRuntimeRepository;
 
       const session = yield* provider.startSession(asThreadId("thread-runtime-compact-boundary"), {
-        provider: "openai",
+        provider: "groq",
         threadId: asThreadId("thread-runtime-compact-boundary"),
         runtimeMode: "full-access",
       });
@@ -2879,7 +2876,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       routing.codex.emit({
         type: "thread.state.changed",
         eventId: asEventId("runtime-thread-compact-boundary"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:05:00.000Z",
         threadId: session.threadId,
         payload: { state: "compacted" },
@@ -2914,13 +2911,13 @@ routing.layer("ProviderServiceLive routing", (it) => {
         Layer.provide(persistenceLayer),
       );
 
-      const firstClaude = makeFakeCodexAdapter("anthropic");
+      const firstClaude = makeFakeCodexAdapter("groq");
       const firstRegistry: typeof ProviderAdapterRegistry.Service = {
         getByProvider: (provider) =>
-          provider === "anthropic"
+          provider === "groq"
             ? Effect.succeed(firstClaude.adapter)
             : Effect.fail(new ProviderUnsupportedError({ provider })),
-        listProviders: () => Effect.succeed(["anthropic"]),
+        listProviders: () => Effect.succeed(["groq"]),
       };
       const firstDirectoryLayer = ProviderSessionDirectoryLive.pipe(
         Layer.provide(runtimeRepositoryLayer),
@@ -2933,7 +2930,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const initial = yield* Effect.gen(function* () {
         const provider = yield* ProviderService;
         return yield* provider.startSession(asThreadId("thread-claude-start"), {
-          provider: "anthropic",
+          provider: "groq",
           threadId: asThreadId("thread-claude-start"),
           cwd: "/tmp/project-claude-start",
           runtimeMode: "full-access",
@@ -2945,13 +2942,13 @@ routing.layer("ProviderServiceLive routing", (it) => {
         yield* provider.listSessions();
       }).pipe(Effect.provide(firstProviderLayer));
 
-      const secondClaude = makeFakeCodexAdapter("anthropic");
+      const secondClaude = makeFakeCodexAdapter("groq");
       const secondRegistry: typeof ProviderAdapterRegistry.Service = {
         getByProvider: (provider) =>
-          provider === "anthropic"
+          provider === "groq"
             ? Effect.succeed(secondClaude.adapter)
             : Effect.fail(new ProviderUnsupportedError({ provider })),
-        listProviders: () => Effect.succeed(["anthropic"]),
+        listProviders: () => Effect.succeed(["groq"]),
       };
       const secondDirectoryLayer = ProviderSessionDirectoryLive.pipe(
         Layer.provide(runtimeRepositoryLayer),
@@ -2966,7 +2963,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       yield* Effect.gen(function* () {
         const provider = yield* ProviderService;
         yield* provider.startSession(initial.threadId, {
-          provider: "anthropic",
+          provider: "groq",
           threadId: initial.threadId,
           cwd: "/tmp/project-claude-start",
           runtimeMode: "full-access",
@@ -2983,7 +2980,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
           resumeCursor?: unknown;
           threadId?: string;
         };
-        assert.equal(startPayload.provider, "anthropic");
+        assert.equal(startPayload.provider, "groq");
         assert.equal(startPayload.cwd, "/tmp/project-claude-start");
         assert.deepEqual(startPayload.resumeCursor, initial.resumeCursor);
         assert.equal(startPayload.threadId, initial.threadId);
@@ -3002,19 +2999,18 @@ routing.layer("ProviderServiceLive routing", (it) => {
         Layer.provide(persistenceLayer),
       );
       const providerOptions = {
-        codex: {
-          homePath: "/tmp/custom-codex-home",
-          binaryPath: "/usr/local/bin/codex",
+        groq: {
+          baseUrl: "https://api.groq.com/openai/v1",
         },
       };
 
-      const firstCodex = makeFakeCodexAdapter("openai");
+      const firstCodex = makeFakeCodexAdapter("groq");
       const firstRegistry: typeof ProviderAdapterRegistry.Service = {
         getByProvider: (provider) =>
-          provider === "openai"
+          provider === "groq"
             ? Effect.succeed(firstCodex.adapter)
             : Effect.fail(new ProviderUnsupportedError({ provider })),
-        listProviders: () => Effect.succeed(["openai"]),
+        listProviders: () => Effect.succeed(["groq"]),
       };
       const firstDirectoryLayer = ProviderSessionDirectoryLive.pipe(
         Layer.provide(runtimeRepositoryLayer),
@@ -3027,7 +3023,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const initial = yield* Effect.gen(function* () {
         const provider = yield* ProviderService;
         const session = yield* provider.startSession(asThreadId("thread-clear-resume"), {
-          provider: "openai",
+          provider: "groq",
           threadId: asThreadId("thread-clear-resume"),
           cwd: "/tmp/project-clear-resume",
           providerOptions,
@@ -3040,13 +3036,13 @@ routing.layer("ProviderServiceLive routing", (it) => {
         return session;
       }).pipe(Effect.provide(firstProviderLayer));
 
-      const secondCodex = makeFakeCodexAdapter("openai");
+      const secondCodex = makeFakeCodexAdapter("groq");
       const secondRegistry: typeof ProviderAdapterRegistry.Service = {
         getByProvider: (provider) =>
-          provider === "openai"
+          provider === "groq"
             ? Effect.succeed(secondCodex.adapter)
             : Effect.fail(new ProviderUnsupportedError({ provider })),
-        listProviders: () => Effect.succeed(["openai"]),
+        listProviders: () => Effect.succeed(["groq"]),
       };
       const secondDirectoryLayer = ProviderSessionDirectoryLive.pipe(
         Layer.provide(runtimeRepositoryLayer),
@@ -3059,7 +3055,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       yield* Effect.gen(function* () {
         const provider = yield* ProviderService;
         yield* provider.startSession(initial.threadId, {
-          provider: "openai",
+          provider: "groq",
           threadId: initial.threadId,
           cwd: "/tmp/project-clear-resume",
           runtimeMode: "full-access",
@@ -3093,19 +3089,18 @@ routing.layer("ProviderServiceLive routing", (it) => {
         Layer.provide(persistenceLayer),
       );
       const providerOptions = {
-        claudeAgent: {
-          binaryPath: "/usr/local/bin/claude",
-          permissionMode: "acceptEdits",
+        groq: {
+          baseUrl: "https://api.groq.com/openai/v1",
         },
       };
 
-      const firstClaude = makeFakeCodexAdapter("anthropic");
+      const firstClaude = makeFakeCodexAdapter("groq");
       const firstRegistry: typeof ProviderAdapterRegistry.Service = {
         getByProvider: (provider) =>
-          provider === "anthropic"
+          provider === "groq"
             ? Effect.succeed(firstClaude.adapter)
             : Effect.fail(new ProviderUnsupportedError({ provider })),
-        listProviders: () => Effect.succeed(["anthropic"]),
+        listProviders: () => Effect.succeed(["groq"]),
       };
       const firstDirectoryLayer = ProviderSessionDirectoryLive.pipe(
         Layer.provide(runtimeRepositoryLayer),
@@ -3118,7 +3113,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       const initial = yield* Effect.gen(function* () {
         const provider = yield* ProviderService;
         const session = yield* provider.startSession(asThreadId("thread-stop-runtime"), {
-          provider: "anthropic",
+          provider: "groq",
           threadId: asThreadId("thread-stop-runtime"),
           cwd: "/tmp/project-stop-runtime",
           providerOptions,
@@ -3133,13 +3128,13 @@ routing.layer("ProviderServiceLive routing", (it) => {
 
       assert.equal(firstClaude.stopSession.mock.calls.length, 1);
 
-      const secondClaude = makeFakeCodexAdapter("anthropic");
+      const secondClaude = makeFakeCodexAdapter("groq");
       const secondRegistry: typeof ProviderAdapterRegistry.Service = {
         getByProvider: (provider) =>
-          provider === "anthropic"
+          provider === "groq"
             ? Effect.succeed(secondClaude.adapter)
             : Effect.fail(new ProviderUnsupportedError({ provider })),
-        listProviders: () => Effect.succeed(["anthropic"]),
+        listProviders: () => Effect.succeed(["groq"]),
       };
       const secondDirectoryLayer = ProviderSessionDirectoryLive.pipe(
         Layer.provide(runtimeRepositoryLayer),
@@ -3152,7 +3147,7 @@ routing.layer("ProviderServiceLive routing", (it) => {
       yield* Effect.gen(function* () {
         const provider = yield* ProviderService;
         yield* provider.startSession(initial.threadId, {
-          provider: "anthropic",
+          provider: "groq",
           threadId: initial.threadId,
           cwd: "/tmp/project-stop-runtime",
           runtimeMode: "full-access",
@@ -3187,7 +3182,7 @@ rotationRetry.layer("ProviderServiceLive credential rotation event durability", 
       rotationRetryPersistAttempts.clear();
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -3200,7 +3195,7 @@ rotationRetry.layer("ProviderServiceLive credential rotation event durability", 
       rotationRetry.codex.emit({
         type: "task.started",
         eventId: asEventId("terminal-rotation-retry-task-started"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-07-24T10:00:00.000Z",
         threadId,
         lifecycleGeneration,
@@ -3218,7 +3213,7 @@ rotationRetry.layer("ProviderServiceLive credential rotation event durability", 
       rotationRetry.codex.emit({
         type: "turn.completed",
         eventId: asEventId("terminal-rotation-retry-turn-completed"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-07-24T10:00:01.000Z",
         threadId,
         turnId,
@@ -3268,7 +3263,7 @@ rotationRetry.layer("ProviderServiceLive credential rotation event durability", 
       rotationRetry.codex.emit({
         type: "task.updated",
         eventId: settlementEventId,
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-07-24T10:00:02.000Z",
         threadId,
         lifecycleGeneration,
@@ -3283,7 +3278,7 @@ rotationRetry.layer("ProviderServiceLive credential rotation event durability", 
                 .pipe(
                   Effect.map(
                     (health) =>
-                      health.find((entry) => entry.provider === "openai")?.status === "recovering",
+                      health.find((entry) => entry.provider === "groq")?.status === "recovering",
                   ),
                 )
             : Effect.succeed(false),
@@ -3333,7 +3328,7 @@ restartRollbackRouting.layer("ProviderServiceLive restart-based rollback", (it) 
       const threadId = asThreadId("thread-droid-interaction-generation");
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         cwd: "/tmp/project",
         runtimeMode: "approval-required",
@@ -3387,7 +3382,7 @@ restartRollbackRouting.layer("ProviderServiceLive restart-based rollback", (it) 
       const directory = yield* ProviderSessionDirectory;
       const threadId = asThreadId("thread-droid-restart-rollback");
       const session = yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         cwd: "/tmp/project",
         runtimeMode: "full-access",
@@ -3415,7 +3410,7 @@ piInteractionRouting.layer("ProviderServiceLive Pi interaction generation", (it)
       const threadId = asThreadId("thread-pi-interaction-generation");
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         cwd: "/tmp/project",
         runtimeMode: "approval-required",
@@ -3472,7 +3467,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       const newerTurnId = asTurnId("turn-idle-stale-newer");
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -3491,7 +3486,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "turn.aborted",
         eventId: asEventId("runtime-idle-stale-older-aborted"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:00.000Z",
         threadId,
         turnId: olderTurnId,
@@ -3508,7 +3503,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "turn.completed",
         eventId: asEventId("runtime-idle-newer-completed"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:01.000Z",
         threadId,
         turnId: newerTurnId,
@@ -3547,7 +3542,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       const secondTurnId = asTurnId("turn-ambiguous-second");
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -3566,7 +3561,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "turn.aborted",
         eventId: asEventId("runtime-ambiguous-terminal"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:00.000Z",
         threadId,
         payload: { state: "interrupted" },
@@ -3589,7 +3584,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
         const runtimeRepository = yield* ProviderSessionRuntimeRepository;
 
         const session = yield* provider.startSession(asThreadId("thread-idle-persisted-cursor"), {
-          provider: "openai",
+          provider: "groq",
           threadId: asThreadId("thread-idle-persisted-cursor"),
           runtimeMode: "full-access",
         });
@@ -3607,7 +3602,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
         idleCleanup.codex.emit({
           type: "turn.completed",
           eventId: asEventId("runtime-idle-persisted-cursor-complete"),
-          provider: "openai",
+          provider: "groq",
           createdAt: "2026-02-27T00:04:00.000Z",
           threadId: session.threadId,
           payload: { state: "completed" },
@@ -3642,7 +3637,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
 
       idleCleanup.codex.stopSession.mockClear();
       const session = yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -3651,7 +3646,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "turn.completed",
         eventId: asEventId("runtime-idle-before-new-turn"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:00.000Z",
         threadId,
         payload: { state: "completed" },
@@ -3697,7 +3692,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
 
       idleCleanup.codex.stopSession.mockClear();
       const session = yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -3706,7 +3701,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "turn.completed",
         eventId: asEventId("runtime-idle-before-runtime-turn-start"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:00.000Z",
         threadId,
         payload: { state: "completed" },
@@ -3736,7 +3731,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "turn.started",
         eventId: asEventId("runtime-turn-start-clears-idle"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:01.000Z",
         threadId: session.threadId,
         turnId: asTurnId("turn-runtime-clears-idle"),
@@ -3755,7 +3750,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
 
       idleCleanup.claude.stopSession.mockClear();
       const session = yield* provider.startSession(threadId, {
-        provider: "anthropic",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -3763,7 +3758,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.claude.emit({
         type: "task.started",
         eventId: asEventId("runtime-background-task-started"),
-        provider: "anthropic",
+        provider: "groq",
         createdAt: "2026-07-16T20:00:00.000Z",
         threadId,
         payload: { taskId: "background-task-1" },
@@ -3771,7 +3766,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.claude.emit({
         type: "turn.completed",
         eventId: asEventId("runtime-background-parent-completed"),
-        provider: "anthropic",
+        provider: "groq",
         createdAt: "2026-07-16T20:00:01.000Z",
         threadId,
         payload: { state: "completed" },
@@ -3783,7 +3778,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.claude.emit({
         type: "task.updated",
         eventId: asEventId("runtime-background-task-completed"),
-        provider: "anthropic",
+        provider: "groq",
         createdAt: "2026-07-16T20:00:02.000Z",
         threadId,
         payload: { taskId: "background-task-1", status: "completed" },
@@ -3808,7 +3803,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
 
       idleCleanup.codex.stopSession.mockClear();
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -3838,7 +3833,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "turn.completed",
         eventId: asEventId("runtime-idle-superseded-complete"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-07-21T09:00:00.000Z",
         threadId,
         lifecycleGeneration,
@@ -3852,7 +3847,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "task.started",
         eventId: asEventId("runtime-idle-superseded-task"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-07-21T09:00:01.000Z",
         threadId,
         payload: { taskId: "task-superseding-idle-stop" },
@@ -3876,7 +3871,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "turn.started",
         eventId: asEventId("runtime-idle-superseded-turn-started"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-07-21T09:00:02.000Z",
         threadId,
         turnId,
@@ -3911,7 +3906,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
 
       idleCleanup.claude.stopSession.mockClear();
       const session = yield* provider.startSession(threadId, {
-        provider: "anthropic",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -3919,7 +3914,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.claude.emit({
         type: "task.started",
         eventId: asEventId("runtime-clear-resume-live-task-started"),
-        provider: "anthropic",
+        provider: "groq",
         createdAt: "2026-07-17T12:00:00.000Z",
         threadId,
         payload: { taskId: "background-task-clear-resume" },
@@ -3965,7 +3960,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       const secondTurnId = asTurnId("turn-conflicting-start-second");
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -3973,7 +3968,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "turn.started",
         eventId: asEventId("runtime-conflicting-start-first"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:01.000Z",
         threadId,
         turnId: firstTurnId,
@@ -3996,7 +3991,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "turn.started",
         eventId: asEventId("runtime-conflicting-start-second"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:02.000Z",
         threadId,
         turnId: secondTurnId,
@@ -4022,7 +4017,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
 
       idleCleanup.codex.stopSession.mockClear();
       const session = yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -4044,7 +4039,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "turn.completed",
         eventId: asEventId("runtime-idle-fired-before-new-turn"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:00.000Z",
         threadId,
         payload: { state: "completed" },
@@ -4110,7 +4105,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
 
       idleCleanup.codex.stopSession.mockClear();
       const session = yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -4119,7 +4114,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "turn.completed",
         eventId: asEventId("runtime-idle-before-interrupted-dispatch"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:00.000Z",
         threadId,
         payload: { state: "completed" },
@@ -4172,7 +4167,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       const threadId = asThreadId("thread-idle-rollback-success");
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -4181,7 +4176,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "turn.completed",
         eventId: asEventId("runtime-idle-before-rollback"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:00.000Z",
         threadId,
         payload: { state: "completed" },
@@ -4234,7 +4229,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       let releaseListSessions: ReleaseListSessions | undefined;
 
       const session = yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -4255,7 +4250,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "turn.completed",
         eventId: asEventId("runtime-idle-before-explicit-stop"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:00.000Z",
         threadId,
         payload: { state: "completed" },
@@ -4301,7 +4296,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       let releaseListSessions: ReleaseListSessions | undefined;
 
       const session = yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -4323,7 +4318,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "turn.completed",
         eventId: asEventId("runtime-idle-before-runtime-stop"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:00.000Z",
         threadId,
         payload: { state: "completed" },
@@ -4371,7 +4366,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       const threadId = asThreadId("thread-idle-compact-success");
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -4380,7 +4375,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "turn.completed",
         eventId: asEventId("runtime-idle-before-compact-success"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:00.000Z",
         threadId,
         payload: { state: "completed" },
@@ -4435,7 +4430,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       const threadId = asThreadId("thread-idle-closed-state");
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -4444,7 +4439,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "thread.state.changed",
         eventId: asEventId("runtime-idle-closed-state"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:00.000Z",
         threadId,
         payload: { state: "closed" },
@@ -4466,7 +4461,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       const threadId = asThreadId("thread-idle-compact-running");
 
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -4480,7 +4475,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "thread.state.changed",
         eventId: asEventId("runtime-idle-compact-completed"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:00.000Z",
         threadId,
         payload: { state: "compacted" },
@@ -4502,13 +4497,13 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       const runtimeRepository = yield* ProviderSessionRuntimeRepository;
       const threadId = asThreadId("thread-idle-failed-dispatch");
       const dispatchFailure = new ProviderAdapterSessionNotFoundError({
-        provider: "openai",
+        provider: "groq",
         threadId,
       });
 
       idleCleanup.codex.stopSession.mockClear();
       const session = yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -4517,7 +4512,7 @@ idleCleanup.layer("ProviderServiceLive idle cleanup", (it) => {
       idleCleanup.codex.emit({
         type: "turn.completed",
         eventId: asEventId("runtime-idle-before-failed-dispatch"),
-        provider: "openai",
+        provider: "groq",
         createdAt: "2026-02-27T00:04:00.000Z",
         threadId,
         payload: { state: "completed" },
@@ -4571,7 +4566,7 @@ fanout.layer("ProviderServiceLive fanout", (it) => {
     Effect.gen(function* () {
       const provider = yield* ProviderService;
       const session = yield* provider.startSession(asThreadId("thread-1"), {
-        provider: "openai",
+        provider: "groq",
         threadId: asThreadId("thread-1"),
         runtimeMode: "full-access",
       });
@@ -4585,7 +4580,7 @@ fanout.layer("ProviderServiceLive fanout", (it) => {
       const completedEvent: LegacyProviderRuntimeEvent = {
         type: "turn.completed",
         eventId: asEventId("evt-1"),
-        provider: "openai",
+        provider: "groq",
         createdAt: new Date().toISOString(),
         threadId: session.threadId,
         turnId: asTurnId("turn-1"),
@@ -4609,7 +4604,7 @@ fanout.layer("ProviderServiceLive fanout", (it) => {
     Effect.gen(function* () {
       const provider = yield* ProviderService;
       const session = yield* provider.startSession(asThreadId("thread-seq"), {
-        provider: "openai",
+        provider: "groq",
         threadId: asThreadId("thread-seq"),
         runtimeMode: "full-access",
       });
@@ -4624,7 +4619,7 @@ fanout.layer("ProviderServiceLive fanout", (it) => {
       fanout.codex.emit({
         type: "tool.started",
         eventId: asEventId("evt-seq-1"),
-        provider: "openai",
+        provider: "groq",
         createdAt: new Date().toISOString(),
         threadId: session.threadId,
         turnId: asTurnId("turn-1"),
@@ -4634,7 +4629,7 @@ fanout.layer("ProviderServiceLive fanout", (it) => {
       fanout.codex.emit({
         type: "tool.completed",
         eventId: asEventId("evt-seq-2"),
-        provider: "openai",
+        provider: "groq",
         createdAt: new Date().toISOString(),
         threadId: session.threadId,
         turnId: asTurnId("turn-1"),
@@ -4644,7 +4639,7 @@ fanout.layer("ProviderServiceLive fanout", (it) => {
       fanout.codex.emit({
         type: "turn.completed",
         eventId: asEventId("evt-seq-3"),
-        provider: "openai",
+        provider: "groq",
         createdAt: new Date().toISOString(),
         threadId: session.threadId,
         turnId: asTurnId("turn-1"),
@@ -4664,7 +4659,7 @@ fanout.layer("ProviderServiceLive fanout", (it) => {
     Effect.gen(function* () {
       const provider = yield* ProviderService;
       const session = yield* provider.startSession(asThreadId("thread-1"), {
-        provider: "openai",
+        provider: "groq",
         threadId: asThreadId("thread-1"),
         runtimeMode: "full-access",
       });
@@ -4689,7 +4684,7 @@ fanout.layer("ProviderServiceLive fanout", (it) => {
         {
           type: "tool.completed",
           eventId: asEventId("evt-ordered-1"),
-          provider: "openai",
+          provider: "groq",
           createdAt: new Date().toISOString(),
           threadId: session.threadId,
           turnId: asTurnId("turn-1"),
@@ -4700,7 +4695,7 @@ fanout.layer("ProviderServiceLive fanout", (it) => {
         {
           type: "message.delta",
           eventId: asEventId("evt-ordered-2"),
-          provider: "openai",
+          provider: "groq",
           createdAt: new Date().toISOString(),
           threadId: session.threadId,
           turnId: asTurnId("turn-1"),
@@ -4709,7 +4704,7 @@ fanout.layer("ProviderServiceLive fanout", (it) => {
         {
           type: "turn.completed",
           eventId: asEventId("evt-ordered-3"),
-          provider: "openai",
+          provider: "groq",
           createdAt: new Date().toISOString(),
           threadId: session.threadId,
           turnId: asTurnId("turn-1"),
@@ -4737,7 +4732,7 @@ fanout.layer("ProviderServiceLive fanout", (it) => {
       const directory = yield* ProviderSessionDirectory;
       const threadId = asThreadId("thread-ready");
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -4747,7 +4742,7 @@ fanout.layer("ProviderServiceLive fanout", (it) => {
       fanout.codex.emit({
         type: "session.state.changed",
         eventId: asEventId("evt-ready"),
-        provider: "openai",
+        provider: "groq",
         createdAt: new Date().toISOString(),
         threadId,
         payload: {
@@ -4777,7 +4772,7 @@ persistedFanout.layer("ProviderServiceLive durable fanout", (it) => {
       const provider = yield* ProviderService;
       const threadId = asThreadId("thread-persisted-fanout");
       const session = yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -4799,7 +4794,7 @@ persistedFanout.layer("ProviderServiceLive durable fanout", (it) => {
       const completedEvent: LegacyProviderRuntimeEvent = {
         type: "turn.completed",
         eventId: asEventId("evt-persisted-fanout"),
-        provider: "openai",
+        provider: "groq",
         createdAt: new Date().toISOString(),
         threadId: session.threadId,
         turnId: asTurnId("turn-persisted-fanout"),
@@ -4856,7 +4851,7 @@ validation.layer("ProviderServiceLive validation", (it) => {
       const provider = yield* ProviderService;
 
       yield* provider.startSession(asThreadId("thread-task-stop-unsupported"), {
-        provider: "openai",
+        provider: "groq",
         threadId: asThreadId("thread-task-stop-unsupported"),
         cwd: "/tmp/project",
         runtimeMode: "full-access",
@@ -4887,7 +4882,7 @@ validation.layer("ProviderServiceLive validation", (it) => {
       const provider = yield* ProviderService;
 
       yield* provider.startSession(asThreadId("thread-task-bg-unsupported"), {
-        provider: "openai",
+        provider: "groq",
         threadId: asThreadId("thread-task-bg-unsupported"),
         cwd: "/tmp/project",
         runtimeMode: "full-access",
@@ -4922,7 +4917,7 @@ validation.layer("ProviderServiceLive validation", (it) => {
         Effect.sync(() => {
           const now = new Date().toISOString();
           return {
-            provider: "openai",
+            provider: "groq",
             status: "ready",
             threadId: input.threadId,
             runtimeMode: input.runtimeMode,
@@ -4934,7 +4929,7 @@ validation.layer("ProviderServiceLive validation", (it) => {
       );
 
       const session = yield* provider.startSession(asThreadId("thread-missing"), {
-        provider: "openai",
+        provider: "groq",
         threadId: asThreadId("thread-missing"),
         cwd: "/tmp/project",
         runtimeMode: "full-access",
@@ -4963,7 +4958,7 @@ it.effect("ProviderServiceLive backpressures slow subscribers and completes fano
       const provider = yield* Effect.service(ProviderService).pipe(Effect.provide(services));
       const threadId = asThreadId("thread-bounded-fanout");
       yield* provider.startSession(threadId, {
-        provider: "openai",
+        provider: "groq",
         threadId,
         runtimeMode: "full-access",
       });
@@ -4989,7 +4984,7 @@ it.effect("ProviderServiceLive backpressures slow subscribers and completes fano
         boundedFanout.codex.emit({
           type: "message.delta",
           eventId: asEventId(`evt-bounded-${index}`),
-          provider: "openai",
+          provider: "groq",
           createdAt: new Date().toISOString(),
           threadId,
           turnId: asTurnId("turn-bounded"),
@@ -5040,7 +5035,7 @@ liveFallback.layer("ProviderServiceLive live-fallback settled turns", (it) => {
           liveFallback.codex.emit({
             type: "turn.completed",
             eventId: asEventId("evt-live-fallback-settled"),
-            provider: "openai",
+            provider: "groq",
             createdAt: new Date().toISOString(),
             threadId: input.threadId,
             turnId,
@@ -5076,7 +5071,7 @@ liveFallback.layer("ProviderServiceLive live-fallback settled turns", (it) => {
           liveFallback.codex.emit({
             type: "turn.completed",
             eventId: asEventId(`evt-many-settled-${sequence}`),
-            provider: "openai",
+            provider: "groq",
             createdAt: new Date().toISOString(),
             threadId: input.threadId,
             turnId,

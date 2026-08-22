@@ -9,13 +9,13 @@ import { describe, expect, it } from "vitest";
 
 import { PREVIEW_WS_METHODS } from "@caide/contracts";
 
-import { AdmittedWsFeatureRpcGroup } from "./wsRpc";
+import { hasAdmittedWsFeatureRequest } from "./wsRpc";
 
 describe("AdmittedWsFeatureRpcGroup preview routing", () => {
   it("routes every preview method through the admitted feature group", () => {
     for (const method of Object.values(PREVIEW_WS_METHODS)) {
       expect(
-        AdmittedWsFeatureRpcGroup.requests.has(method),
+        hasAdmittedWsFeatureRequest(method),
         `${method} must be in the admitted feature group`,
       ).toBe(true);
     }

@@ -44,6 +44,8 @@ import {
   type PreviewDevicesResult,
   type FlutterToolchainStatusInput,
   type FlutterToolchainStatusResult,
+  type FlutterToolchainInstallInput,
+  type FlutterToolchainInstallResult,
 } from "@caide/contracts";
 import { Effect } from "effect";
 
@@ -112,8 +114,8 @@ export interface WsPreviewHandlers {
     input: FlutterToolchainStatusInput,
   ) => Effect.Effect<FlutterToolchainStatusResult, WsRpcError>;
   readonly [PREVIEW_WS_METHODS.flutterToolchainInstall]: (
-    input: FlutterToolchainStatusInput,
-  ) => Effect.Effect<{ status: FlutterToolchainStatusResult }, WsRpcError>;
+    input: FlutterToolchainInstallInput,
+  ) => Effect.Effect<FlutterToolchainInstallResult, WsRpcError>;
 }
 
 /**

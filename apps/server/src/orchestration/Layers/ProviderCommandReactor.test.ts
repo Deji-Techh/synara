@@ -86,10 +86,6 @@ import {
 } from "../Services/OrchestrationEngine.ts";
 import { OrchestrationCommandInvariantError, type OrchestrationDispatchError } from "../Errors.ts";
 import { ProviderCommandReactor } from "../Services/ProviderCommandReactor.ts";
-import {
-  StudioOutputReactor,
-  type StudioOutputReactorShape,
-} from "../Services/StudioOutputReactor.ts";
 import { attachmentRelativePath } from "../../attachmentStore.ts";
 import { resolveProviderAttachmentPath } from "../../provider/providerAttachmentPaths.ts";
 import { ServerSettingsService } from "../../serverSettings.ts";
@@ -112,7 +108,7 @@ describe("legacy provider blocker recovery", () => {
     const outcome = classifyProviderAttemptOutcome(
       Exit.fail(
         new ProviderAdapterProcessError({
-          provider: "anthropic",
+          provider: "groq",
           threadId: ThreadId.makeUnsafe("thread-exit-unproven"),
           detail: "Provider process tree did not prove exit (rootExited=false).",
         }),
@@ -202,7 +198,6 @@ describe("ProviderCommandReactor", () => {
     readonly sessionModelSwitch?: "unsupported" | "in-session" | "restart-session";
     readonly conversationRollback?: "native" | "restart-session";
     readonly checkpointStore?: Partial<CheckpointStoreShape>;
-    readonly studioOutputReactor?: Partial<StudioOutputReactorShape>;
     readonly forkThreadResult?: ProviderForkThreadResult | null;
     readonly startReactor?: boolean;
     readonly interruptTurn?: ProviderServiceShape["interruptTurn"];
@@ -222,7 +217,7 @@ describe("ProviderCommandReactor", () => {
       Effect.succeed(runtimeSessions),
     );
     const modelSelection = input?.threadModelSelection ?? {
-      provider: "openai",
+      provider: "groq",
       model: "gpt-5-codex",
     };
     const startSession = vi.fn((_: unknown, input: unknown) => {
@@ -444,19 +439,6 @@ describe("ProviderCommandReactor", () => {
         }),
       ),
     );
-    const captureStudioOutputBaseline = vi.fn<
-      StudioOutputReactorShape["captureBaselineBeforeTurn"]
-    >(input?.studioOutputReactor?.captureBaselineBeforeTurn ?? (() => Effect.void));
-    const cancelPendingStudioOutputBaseline = vi.fn<
-      StudioOutputReactorShape["cancelPendingTurnBaseline"]
-    >(input?.studioOutputReactor?.cancelPendingTurnBaseline ?? (() => Effect.void));
-    const studioOutputReactor: StudioOutputReactorShape = {
-      captureBaselineBeforeTurn: captureStudioOutputBaseline,
-      cancelPendingTurnBaseline: cancelPendingStudioOutputBaseline,
-      start: input?.studioOutputReactor?.start ?? Effect.void,
-      drain: input?.studioOutputReactor?.drain ?? Effect.void,
-    };
-
     const unsupported = () => Effect.die(new Error("Unsupported provider call in test")) as never;
     const service: ProviderServiceShape = {
       startSession: startSession as ProviderServiceShape["startSession"],
@@ -507,7 +489,6 @@ describe("ProviderCommandReactor", () => {
       Layer.provideMerge(OrchestrationProjectionSnapshotQueryLive),
       Layer.provideMerge(TurnCheckpointCoordinatorLive),
       Layer.provideMerge(Layer.succeed(ProviderService, service)),
-      Layer.provideMerge(Layer.succeed(StudioOutputReactor, studioOutputReactor)),
       Layer.provideMerge(Layer.succeed(CheckpointStore, checkpointStore)),
       Layer.provideMerge(
         Layer.succeed(GitCore, {
@@ -645,8 +626,6 @@ describe("ProviderCommandReactor", () => {
       publishBranch,
       generateBranchName,
       generateThreadTitle,
-      captureStudioOutputBaseline,
-      cancelPendingStudioOutputBaseline,
       stateDir,
       stageAttachment: async (
         attachment: {
@@ -1273,7 +1252,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-durable-expired"),
           lastError: null,
@@ -1335,7 +1314,7 @@ describe("ProviderCommandReactor", () => {
   // the stop button can never leave a thread blocked (see the exemption below).
   it("REL-01B gate: quarantines one thread and resumes it after explicit safe retry", async () => {
     const failure = new ProviderAdapterRequestError({
-      provider: "openai",
+      provider: "groq",
       method: "turn/interrupt",
       detail: "connection closed after request write",
     });
@@ -1364,7 +1343,7 @@ describe("ProviderCommandReactor", () => {
         projectId: asProjectId("project-1"),
         title: "Unrelated thread",
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "gpt-5-codex",
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -1382,7 +1361,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-durable-uncertain"),
           lastError: null,
@@ -1399,7 +1378,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-2"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-durable-unrelated"),
           lastError: null,
@@ -1543,7 +1522,7 @@ describe("ProviderCommandReactor", () => {
       interruptTurn: () =>
         Effect.fail(
           new ProviderAdapterRequestError({
-            provider: "openai",
+            provider: "groq",
             method: "turn/interrupt",
             detail: "connection closed after request write",
           }),
@@ -1566,7 +1545,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId,
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: turnId,
           lastError: null,
@@ -1607,7 +1586,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId,
           status: "ready",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -1687,7 +1666,7 @@ describe("ProviderCommandReactor", () => {
         return interruptAttempts === 1
           ? Effect.fail(
               new ProviderAdapterRequestError({
-                provider: "openai",
+                provider: "groq",
                 method: "turn/interrupt",
                 detail: "connection closed after request write",
               }),
@@ -1712,7 +1691,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId,
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: turnId,
           lastError: null,
@@ -1796,7 +1775,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId,
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: turnId,
           lastError: null,
@@ -2118,7 +2097,7 @@ describe("ProviderCommandReactor", () => {
         projectId: asProjectId("project-1"),
         title: "Sidechat: Thread",
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "gpt-5-codex",
         },
         runtimeMode: "approval-required",
@@ -2217,7 +2196,7 @@ describe("ProviderCommandReactor", () => {
         projectId: asProjectId("project-1"),
         title: "Native Droid sidechat",
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "claude-sonnet-4-6",
         },
         runtimeMode: "approval-required",
@@ -2345,7 +2324,7 @@ describe("ProviderCommandReactor", () => {
         projectId: asProjectId("project-1"),
         title: "Review sidechat",
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "gpt-5-codex",
         },
         runtimeMode: "approval-required",
@@ -2439,7 +2418,7 @@ describe("ProviderCommandReactor", () => {
         projectId: asProjectId("project-1"),
         title: "Restarted Droid sidechat",
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "claude-sonnet-4-6",
         },
         runtimeMode: "approval-required",
@@ -2499,7 +2478,7 @@ describe("ProviderCommandReactor", () => {
         },
         reviewTarget: { type: "uncommittedChanges" },
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "claude-opus-4-6",
         },
         runtimeMode: "approval-required",
@@ -2548,7 +2527,7 @@ describe("ProviderCommandReactor", () => {
         projectId: asProjectId("project-1"),
         title: "Droid fork",
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "claude-sonnet-4-6",
         },
         runtimeMode: "approval-required",
@@ -2642,7 +2621,7 @@ describe("ProviderCommandReactor", () => {
         projectId: asProjectId("project-1"),
         title: "Empty Droid fork",
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "claude-sonnet-4-6",
         },
         runtimeMode: "approval-required",
@@ -2706,7 +2685,7 @@ describe("ProviderCommandReactor", () => {
     harness.sendTurn.mockImplementationOnce(() =>
       Effect.fail(
         new ProviderAdapterValidationError({
-          provider: "openai",
+          provider: "groq",
           operation: "session/prompt",
           issue: "simulated Droid prompt preflight failure",
         }),
@@ -2721,7 +2700,7 @@ describe("ProviderCommandReactor", () => {
         projectId: asProjectId("project-1"),
         title: "Retry Droid fork",
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "claude-sonnet-4-6",
         },
         runtimeMode: "approval-required",
@@ -2798,7 +2777,7 @@ describe("ProviderCommandReactor", () => {
     const followUpTurnId = asTurnId("turn-droid-bootstrap-follow-up");
     const harness = await createHarness({
       threadModelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "claude-sonnet-4-6",
       },
     });
@@ -2818,7 +2797,7 @@ describe("ProviderCommandReactor", () => {
         projectId: asProjectId("project-1"),
         title: "Droid async bootstrap failure",
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "claude-sonnet-4-6",
         },
         runtimeMode: "approval-required",
@@ -2862,7 +2841,7 @@ describe("ProviderCommandReactor", () => {
     await harness.emitRuntimeEvent({
       type: "turn.completed",
       eventId: asEventId("evt-droid-async-bootstrap-failed"),
-      provider: "openai",
+      provider: "groq",
       threadId,
       createdAt: new Date().toISOString(),
       turnId: firstTurnId,
@@ -2900,7 +2879,7 @@ describe("ProviderCommandReactor", () => {
     await harness.emitRuntimeEvent({
       type: "turn.completed",
       eventId: asEventId("evt-droid-async-bootstrap-retry-completed"),
-      provider: "openai",
+      provider: "groq",
       threadId,
       createdAt: new Date().toISOString(),
       turnId: retryTurnId,
@@ -2978,7 +2957,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-active-edit"),
           lastError: null,
@@ -3059,7 +3038,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-active-edit-resend"),
           lastError: null,
@@ -3168,7 +3147,7 @@ describe("ProviderCommandReactor", () => {
 
   it("restarts Droid edits and bootstraps only the retained transcript", async () => {
     const harness = await createHarness({
-      threadModelSelection: { provider: "openai", model: "claude-opus-4-8" },
+      threadModelSelection: { provider: "groq", model: "claude-opus-4-8" },
       conversationRollback: "restart-session",
     });
     const now = new Date().toISOString();
@@ -3222,7 +3201,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-droid-active-edit"),
           lastError: null,
@@ -3276,7 +3255,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-running-edit-queued"),
           lastError: null,
@@ -3329,7 +3308,7 @@ describe("ProviderCommandReactor", () => {
     await harness.emitRuntimeEvent({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-edited-queue"),
-      provider: "openai",
+      provider: "groq",
       threadId: ThreadId.makeUnsafe("thread-1"),
       createdAt: new Date().toISOString(),
       turnId: asTurnId("turn-running-edit-queued"),
@@ -3468,7 +3447,7 @@ describe("ProviderCommandReactor", () => {
     harness.rollbackConversation.mockImplementationOnce(() =>
       Effect.fail(
         new ProviderAdapterRequestError({
-          provider: "openai",
+          provider: "groq",
           method: "thread/rollback",
           detail: "rollback failed",
         }),
@@ -3550,7 +3529,7 @@ describe("ProviderCommandReactor", () => {
     harness.sendTurn.mockImplementationOnce(() =>
       Effect.fail(
         new ProviderAdapterRequestError({
-          provider: "openai",
+          provider: "groq",
           method: "turn/start",
           detail: "turn start failed",
         }),
@@ -3619,7 +3598,7 @@ describe("ProviderCommandReactor", () => {
     harness.rollbackConversation.mockImplementationOnce(() =>
       Effect.fail(
         new ProviderAdapterRequestError({
-          provider: "openai",
+          provider: "groq",
           method: "thread/rollback",
           detail: "thread/resume failed: no rollout found for thread id 019db5ad",
         }),
@@ -3672,7 +3651,7 @@ describe("ProviderCommandReactor", () => {
     expect(harness.startSession.mock.calls[0]?.[1]).toMatchObject({
       cwd: "/tmp/provider-project",
       modelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5-codex",
       },
       runtimeMode: "approval-required",
@@ -3697,7 +3676,7 @@ describe("ProviderCommandReactor", () => {
         threadId: ThreadId.makeUnsafe("subagent:thread-1:tool-steer-1"),
         projectId: asProjectId("project-1"),
         title: "Subagent",
-        modelSelection: { provider: "anthropic", model: "claude-sonnet-4-5" },
+        modelSelection: { provider: "groq", model: "claude-sonnet-4-5" },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
         runtimeMode: "approval-required",
         parentThreadId: ThreadId.makeUnsafe("thread-1"),
@@ -4067,45 +4046,6 @@ describe("ProviderCommandReactor", () => {
     expect(captureCheckpoint.mock.calls[0]?.[0].checkpointRef).toContain("/message-start/");
   });
 
-  it("waits for the Studio output baseline before sending the provider turn", async () => {
-    let releaseCapture: (() => void) | undefined;
-    const captureGate = new Promise<void>((resolve) => {
-      releaseCapture = resolve;
-    });
-    const captureBaselineBeforeTurn = vi.fn<StudioOutputReactorShape["captureBaselineBeforeTurn"]>(
-      () => Effect.promise(() => captureGate),
-    );
-    const harness = await createHarness({
-      studioOutputReactor: { captureBaselineBeforeTurn },
-    });
-    const now = new Date().toISOString();
-
-    await Effect.runPromise(
-      harness.engine.dispatch({
-        type: "thread.turn.start",
-        commandId: CommandId.makeUnsafe("cmd-turn-start-slow-studio-baseline"),
-        threadId: ThreadId.makeUnsafe("thread-1"),
-        message: {
-          messageId: asMessageId("user-message-slow-studio-baseline"),
-          role: "user",
-          text: "create an output immediately",
-          attachments: [],
-        },
-        interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
-        runtimeMode: "approval-required",
-        createdAt: now,
-      }),
-    );
-
-    await waitFor(() => captureBaselineBeforeTurn.mock.calls.length === 1);
-    await new Promise((resolve) => setTimeout(resolve, 25));
-    expect(harness.sendTurn).not.toHaveBeenCalled();
-
-    releaseCapture?.();
-    await waitFor(() => harness.sendTurn.mock.calls.length === 1);
-    expect(captureBaselineBeforeTurn).toHaveBeenCalledWith(ThreadId.makeUnsafe("thread-1"));
-  });
-
   it("publishes a starting session status before the provider session is ready", async () => {
     const harness = await createHarness();
     const now = new Date().toISOString();
@@ -4155,13 +4095,13 @@ describe("ProviderCommandReactor", () => {
 
   it("clears stale Claude resume state and retries the turn with transcript context", async () => {
     const harness = await createHarness({
-      threadModelSelection: { provider: "anthropic", model: "claude-opus-4-8" },
+      threadModelSelection: { provider: "groq", model: "claude-opus-4-8" },
     });
     const now = new Date().toISOString();
     const staleResumeFailure = () =>
       Effect.fail(
         new ProviderAdapterRequestError({
-          provider: "anthropic",
+          provider: "groq",
           method: "turn/setModel",
           detail:
             "Claude Code returned an error result: No conversation found with session ID: b469168a-2625-4447-927f-d86d94bb7237",
@@ -4209,7 +4149,7 @@ describe("ProviderCommandReactor", () => {
           text: "nice but bring it on the left.",
           attachments: [],
         },
-        modelSelection: { provider: "anthropic", model: "claude-opus-4-8" },
+        modelSelection: { provider: "groq", model: "claude-opus-4-8" },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
         runtimeMode: "approval-required",
         createdAt: now,
@@ -4243,13 +4183,13 @@ describe("ProviderCommandReactor", () => {
 
   it("retries a stale Claude resume natively before paying the transcript bootstrap", async () => {
     const harness = await createHarness({
-      threadModelSelection: { provider: "anthropic", model: "claude-opus-4-8" },
+      threadModelSelection: { provider: "groq", model: "claude-opus-4-8" },
     });
     const now = new Date().toISOString();
     harness.sendTurn.mockImplementationOnce(() =>
       Effect.fail(
         new ProviderAdapterRequestError({
-          provider: "anthropic",
+          provider: "groq",
           method: "turn/setModel",
           detail:
             "Claude Code returned an error result: No conversation found with session ID: b469168a-2625-4447-927f-d86d94bb7237",
@@ -4268,7 +4208,7 @@ describe("ProviderCommandReactor", () => {
           text: "keep going.",
           attachments: [],
         },
-        modelSelection: { provider: "anthropic", model: "claude-opus-4-8" },
+        modelSelection: { provider: "groq", model: "claude-opus-4-8" },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
         runtimeMode: "approval-required",
         createdAt: now,
@@ -4291,14 +4231,14 @@ describe("ProviderCommandReactor", () => {
 
   it("skips the native resume retry when background tasks keep the runtime alive", async () => {
     const harness = await createHarness({
-      threadModelSelection: { provider: "anthropic", model: "claude-opus-4-8" },
+      threadModelSelection: { provider: "groq", model: "claude-opus-4-8" },
     });
     const now = new Date().toISOString();
     harness.hasLiveRuntimeTasks.mockImplementation(() => Effect.succeed(true));
     harness.sendTurn.mockImplementationOnce(() =>
       Effect.fail(
         new ProviderAdapterRequestError({
-          provider: "anthropic",
+          provider: "groq",
           method: "turn/setModel",
           detail:
             "Claude Code returned an error result: No conversation found with session ID: b469168a-2625-4447-927f-d86d94bb7237",
@@ -4317,7 +4257,7 @@ describe("ProviderCommandReactor", () => {
           text: "keep going.",
           attachments: [],
         },
-        modelSelection: { provider: "anthropic", model: "claude-opus-4-8" },
+        modelSelection: { provider: "groq", model: "claude-opus-4-8" },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
         runtimeMode: "approval-required",
         createdAt: now,
@@ -4341,7 +4281,7 @@ describe("ProviderCommandReactor", () => {
     harness.sendTurn.mockImplementationOnce(() =>
       Effect.fail(
         new ProviderAdapterRequestError({
-          provider: "openai",
+          provider: "groq",
           method: "turn/start",
           detail: "turn start failed",
         }),
@@ -4374,9 +4314,6 @@ describe("ProviderCommandReactor", () => {
     expect(
       thread?.activities.some((activity) => activity.kind === "provider.turn.start.failed"),
     ).toBe(true);
-    expect(harness.cancelPendingStudioOutputBaseline).toHaveBeenCalledWith(
-      ThreadId.makeUnsafe("thread-1"),
-    );
     await waitFor(async () => {
       const delivery = await Effect.runPromise(
         harness.deliveryRepository.firstBlockingDeliveryForThread({
@@ -4478,7 +4415,7 @@ describe("ProviderCommandReactor", () => {
         title: "Home",
         workspaceRoot: "/Users/tester",
         defaultModelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "gpt-5-codex",
         },
         createdAt: now,
@@ -4493,7 +4430,7 @@ describe("ProviderCommandReactor", () => {
         projectId: asProjectId("project-home"),
         title: "Home thread",
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "gpt-5-codex",
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -4524,7 +4461,7 @@ describe("ProviderCommandReactor", () => {
     await waitFor(() => harness.startSession.mock.calls.length === 1);
     expect(harness.startSession.mock.calls[0]?.[1]).toMatchObject({
       modelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5-codex",
       },
       runtimeMode: "approval-required",
@@ -4621,7 +4558,7 @@ describe("ProviderCommandReactor", () => {
     expect(harness.generateThreadTitle.mock.calls[0]?.[0]).toMatchObject({
       message: "Summarize provider startup failures without Codex",
       modelSelection: {
-        provider: "openai",
+        provider: "groq",
       },
     });
     await waitFor(
@@ -4722,7 +4659,7 @@ describe("ProviderCommandReactor", () => {
 
     expect(harness.generateBranchName.mock.calls[0]?.[0]).toMatchObject({
       modelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: DEFAULT_GIT_TEXT_GENERATION_MODEL,
       },
     });
@@ -4888,7 +4825,7 @@ describe("ProviderCommandReactor", () => {
     await waitFor(() => harness.renameBranch.mock.calls.length === 1);
     expect(harness.generateBranchName.mock.calls[0]?.[0]).toMatchObject({
       modelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: DEFAULT_GIT_TEXT_GENERATION_MODEL,
       },
     });
@@ -4905,11 +4842,11 @@ describe("ProviderCommandReactor", () => {
   it("keeps the temporary worktree branch when no Git-writing generator is available", async () => {
     const harness = await createHarness({
       threadModelSelection: {
-        provider: "google",
+        provider: "groq",
         model: "Gemini 3.5 Flash",
       },
       gitWritingModelSelection: {
-        provider: "anthropic",
+        provider: "groq",
         model: "claude-opus-4-8",
       },
     });
@@ -4941,7 +4878,7 @@ describe("ProviderCommandReactor", () => {
           attachments: [],
         },
         modelSelection: {
-          provider: "google",
+          provider: "groq",
           model: "Gemini 3.5 Flash",
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -4966,11 +4903,10 @@ describe("ProviderCommandReactor", () => {
   it("renames generic OpenCode first-turn thread titles using text generation", async () => {
     const harness = await createHarness({
       threadModelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "openai/gpt-5",
         options: {
-          agent: "plan",
-          variant: "balanced",
+          reasoningEffort: "high",
         },
       },
     });
@@ -5002,17 +4938,15 @@ describe("ProviderCommandReactor", () => {
           attachments: [],
         },
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "openai/gpt-5",
           options: {
-            agent: "plan",
-            variant: "balanced",
+            reasoningEffort: "high",
           },
         },
         providerOptions: {
-          opencode: {
-            binaryPath: "/custom/bin/opencode",
-            serverUrl: "http://127.0.0.1:4096",
+          engine: {
+            binaryPath: "/custom/bin/engine",
           },
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -5025,17 +4959,15 @@ describe("ProviderCommandReactor", () => {
     expect(harness.generateThreadTitle.mock.calls[0]?.[0]).toMatchObject({
       message: "Plan the release workflow and deployment checklist",
       modelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "openai/gpt-5",
         options: {
-          agent: "plan",
-          variant: "balanced",
+          reasoningEffort: "high",
         },
       },
       providerOptions: {
-        opencode: {
-          binaryPath: "/custom/bin/opencode",
-          serverUrl: "http://127.0.0.1:4096",
+        engine: {
+          binaryPath: "/custom/bin/engine",
         },
       },
     });
@@ -5059,7 +4991,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-running"),
           lastError: null,
@@ -5096,7 +5028,7 @@ describe("ProviderCommandReactor", () => {
     await harness.emitRuntimeEvent({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-queue"),
-      provider: "openai",
+      provider: "groq",
       threadId: ThreadId.makeUnsafe("thread-1"),
       createdAt: new Date().toISOString(),
       turnId: asTurnId("turn-running"),
@@ -5139,7 +5071,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: input.liveTurnId,
           lastError: null,
@@ -5188,7 +5120,7 @@ describe("ProviderCommandReactor", () => {
     await harness.emitRuntimeEvent({
       type: "turn.completed",
       eventId: asEventId(input.eventId),
-      provider: "openai",
+      provider: "groq",
       threadId: ThreadId.makeUnsafe("thread-1"),
       createdAt: new Date().toISOString(),
       turnId: input.turnId,
@@ -5447,7 +5379,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-running-before-promotion"),
           lastError: null,
@@ -5495,7 +5427,7 @@ describe("ProviderCommandReactor", () => {
     await harness.emitRuntimeEvent({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-promote-first"),
-      provider: "openai",
+      provider: "groq",
       threadId: ThreadId.makeUnsafe("thread-1"),
       createdAt: new Date().toISOString(),
       turnId: asTurnId("turn-running-before-promotion"),
@@ -5529,7 +5461,7 @@ describe("ProviderCommandReactor", () => {
     await harness.emitRuntimeEvent({
       type: "turn.aborted",
       eventId: asEventId("evt-late-turn-aborted-after-promotion-started"),
-      provider: "openai",
+      provider: "groq",
       threadId: ThreadId.makeUnsafe("thread-1"),
       createdAt: new Date().toISOString(),
       turnId: asTurnId("turn-running-before-promotion"),
@@ -5546,7 +5478,7 @@ describe("ProviderCommandReactor", () => {
     await harness.emitRuntimeEvent({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-promoted-first"),
-      provider: "openai",
+      provider: "groq",
       threadId: ThreadId.makeUnsafe("thread-1"),
       createdAt: new Date().toISOString(),
       turnId: asTurnId("turn-promoted-1"),
@@ -5580,7 +5512,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-running-before-idless-abort"),
           lastError: null,
@@ -5618,7 +5550,7 @@ describe("ProviderCommandReactor", () => {
     await harness.emitRuntimeEvent({
       type: "turn.completed",
       eventId: asEventId("evt-complete-before-idless-abort"),
-      provider: "openai",
+      provider: "groq",
       threadId: ThreadId.makeUnsafe("thread-1"),
       createdAt: now,
       turnId: asTurnId("turn-running-before-idless-abort"),
@@ -5631,7 +5563,7 @@ describe("ProviderCommandReactor", () => {
     await harness.emitRuntimeEvent({
       type: "turn.aborted",
       eventId: asEventId("evt-idless-abort-promoted-turn"),
-      provider: "openai",
+      provider: "groq",
       threadId: ThreadId.makeUnsafe("thread-1"),
       createdAt: now,
       payload: { reason: "interrupted" },
@@ -5657,7 +5589,7 @@ describe("ProviderCommandReactor", () => {
         projectId: asProjectId("project-1"),
         parentThreadId: ThreadId.makeUnsafe("thread-1"),
         title: "Child",
-        modelSelection: { provider: "openai", model: "gpt-5-codex" },
+        modelSelection: { provider: "groq", model: "gpt-5-codex" },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
         runtimeMode: "approval-required",
         branch: null,
@@ -5700,7 +5632,7 @@ describe("ProviderCommandReactor", () => {
     await harness.emitRuntimeEvent({
       type: "turn.completed",
       eventId: asEventId("evt-parent-turn-completed"),
-      provider: "openai",
+      provider: "groq",
       threadId: ThreadId.makeUnsafe("thread-1"),
       createdAt: new Date().toISOString(),
       turnId: asTurnId("turn-parent-running"),
@@ -5729,7 +5661,7 @@ describe("ProviderCommandReactor", () => {
         projectId: asProjectId("project-1"),
         parentThreadId: ThreadId.makeUnsafe("thread-1"),
         title: "Queued child",
-        modelSelection: { provider: "openai", model: "gpt-5-codex" },
+        modelSelection: { provider: "groq", model: "gpt-5-codex" },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
         runtimeMode: "approval-required",
         branch: null,
@@ -5751,7 +5683,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-parent-before-stop"),
           lastError: null,
@@ -5795,7 +5727,7 @@ describe("ProviderCommandReactor", () => {
     await harness.emitRuntimeEvent({
       type: "turn.completed",
       eventId: asEventId("evt-parent-terminal-after-explicit-stop"),
-      provider: "openai",
+      provider: "groq",
       threadId: ThreadId.makeUnsafe("thread-1"),
       createdAt: new Date().toISOString(),
       turnId: asTurnId("turn-parent-before-stop"),
@@ -5820,7 +5752,7 @@ describe("ProviderCommandReactor", () => {
           projectId: asProjectId("project-1"),
           parentThreadId: ThreadId.makeUnsafe("thread-1"),
           title: childId,
-          modelSelection: { provider: "openai", model: "gpt-5-codex" },
+          modelSelection: { provider: "groq", model: "gpt-5-codex" },
           interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
           runtimeMode: "approval-required",
           branch: null,
@@ -5839,7 +5771,7 @@ describe("ProviderCommandReactor", () => {
     harness.sendTurn.mockImplementationOnce(() =>
       Effect.fail(
         new ProviderAdapterRequestError({
-          provider: "openai",
+          provider: "groq",
           method: "turn/start",
           detail: "child start failed",
         }),
@@ -5875,7 +5807,7 @@ describe("ProviderCommandReactor", () => {
     await harness.emitRuntimeEvent({
       type: "turn.completed",
       eventId: asEventId("evt-parent-turn-completed-sibling-drain"),
-      provider: "openai",
+      provider: "groq",
       threadId: ThreadId.makeUnsafe("thread-1"),
       createdAt: new Date().toISOString(),
       turnId: asTurnId("turn-parent-running-siblings"),
@@ -5904,7 +5836,7 @@ describe("ProviderCommandReactor", () => {
         projectId: asProjectId("project-1"),
         parentThreadId: ThreadId.makeUnsafe("thread-1"),
         title: "Queued child",
-        modelSelection: { provider: "openai", model: "gpt-5-codex" },
+        modelSelection: { provider: "groq", model: "gpt-5-codex" },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
         runtimeMode: "approval-required",
         branch: null,
@@ -5926,7 +5858,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-before-direct-failure"),
           lastError: null,
@@ -5966,7 +5898,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -5978,7 +5910,7 @@ describe("ProviderCommandReactor", () => {
     harness.sendTurn.mockImplementationOnce(() =>
       Effect.fail(
         new ProviderAdapterRequestError({
-          provider: "openai",
+          provider: "groq",
           method: "turn/start",
           detail: "direct parent start failed",
         }),
@@ -6028,7 +5960,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-already-settled"),
           lastError: null,
@@ -6103,7 +6035,7 @@ describe("ProviderCommandReactor", () => {
     await harness.emitRuntimeEvent({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-race"),
-      provider: "openai",
+      provider: "groq",
       threadId: ThreadId.makeUnsafe("thread-1"),
       createdAt: new Date().toISOString(),
       turnId: asTurnId("turn-live-race"),
@@ -6137,7 +6069,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-running"),
           lastError: null,
@@ -6195,7 +6127,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-settled"),
           lastError: null,
@@ -6239,7 +6171,7 @@ describe("ProviderCommandReactor", () => {
   it("steers a running claude turn natively without interrupting it", async () => {
     const harness = await createHarness({
       threadModelSelection: {
-        provider: "anthropic",
+        provider: "groq",
         model: "claude-opus-4-6",
       },
     });
@@ -6258,7 +6190,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "anthropic",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-running"),
           lastError: null,
@@ -6303,7 +6235,7 @@ describe("ProviderCommandReactor", () => {
   it("falls back to interrupt plus priority queue for steering without native support", async () => {
     const harness = await createHarness({
       threadModelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "composer-1",
       },
     });
@@ -6322,7 +6254,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-running"),
           lastError: null,
@@ -6363,7 +6295,7 @@ describe("ProviderCommandReactor", () => {
     await harness.emitRuntimeEvent({
       type: "turn.completed",
       eventId: asEventId("evt-turn-completed-steer-cursor"),
-      provider: "openai",
+      provider: "groq",
       threadId: ThreadId.makeUnsafe("thread-1"),
       createdAt: new Date().toISOString(),
       turnId: asTurnId("turn-running"),
@@ -6396,7 +6328,7 @@ describe("ProviderCommandReactor", () => {
           attachments: [],
         },
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "gpt-5.3-codex",
           options: {
             reasoningEffort: "high",
@@ -6413,7 +6345,7 @@ describe("ProviderCommandReactor", () => {
     await waitFor(() => harness.sendTurn.mock.calls.length === 1);
     expect(harness.startSession.mock.calls[0]?.[1]).toMatchObject({
       modelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5.3-codex",
         options: {
           reasoningEffort: "high",
@@ -6424,7 +6356,7 @@ describe("ProviderCommandReactor", () => {
     expect(harness.sendTurn.mock.calls[0]?.[0]).toMatchObject({
       threadId: ThreadId.makeUnsafe("thread-1"),
       modelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5.3-codex",
         options: {
           reasoningEffort: "high",
@@ -6436,7 +6368,7 @@ describe("ProviderCommandReactor", () => {
 
   it("forwards claude effort options through session start and turn send", async () => {
     const harness = await createHarness({
-      threadModelSelection: { provider: "anthropic", model: "claude-sonnet-4-6" },
+      threadModelSelection: { provider: "groq", model: "claude-sonnet-4-6" },
     });
     const now = new Date().toISOString();
 
@@ -6455,7 +6387,7 @@ describe("ProviderCommandReactor", () => {
           provider: "anthropic",
           model: "claude-sonnet-4-6",
           options: {
-            effort: "max",
+            reasoningEffort: "high",
           },
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -6471,7 +6403,7 @@ describe("ProviderCommandReactor", () => {
         provider: "anthropic",
         model: "claude-sonnet-4-6",
         options: {
-          effort: "max",
+          reasoningEffort: "high",
         },
       },
     });
@@ -6481,7 +6413,7 @@ describe("ProviderCommandReactor", () => {
         provider: "anthropic",
         model: "claude-sonnet-4-6",
         options: {
-          effort: "max",
+          reasoningEffort: "high",
         },
       },
     });
@@ -6489,7 +6421,7 @@ describe("ProviderCommandReactor", () => {
 
   it("forwards codex effort options through session start and turn send", async () => {
     const harness = await createHarness({
-      threadModelSelection: { provider: "openai", model: "gpt-5-codex" },
+      threadModelSelection: { provider: "groq", model: "gpt-5-codex" },
     });
     const now = new Date().toISOString();
 
@@ -6505,7 +6437,7 @@ describe("ProviderCommandReactor", () => {
           attachments: [],
         },
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "gpt-5-codex",
           options: {
             reasoningEffort: "high",
@@ -6521,7 +6453,7 @@ describe("ProviderCommandReactor", () => {
     await waitFor(() => harness.sendTurn.mock.calls.length === 1);
     expect(harness.startSession.mock.calls[0]?.[1]).toMatchObject({
       modelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5-codex",
         options: {
           reasoningEffort: "high",
@@ -6531,7 +6463,7 @@ describe("ProviderCommandReactor", () => {
     expect(harness.sendTurn.mock.calls[0]?.[0]).toMatchObject({
       threadId: ThreadId.makeUnsafe("thread-1"),
       modelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5-codex",
         options: {
           reasoningEffort: "high",
@@ -6542,7 +6474,7 @@ describe("ProviderCommandReactor", () => {
 
   it("restarts an idle Claude session only for spawn-fixed model selection changes", async () => {
     const harness = await createHarness({
-      threadModelSelection: { provider: "anthropic", model: "claude-opus-4-7" },
+      threadModelSelection: { provider: "groq", model: "claude-opus-4-7" },
     });
     const now = new Date().toISOString();
 
@@ -6587,7 +6519,7 @@ describe("ProviderCommandReactor", () => {
           options: {
             contextWindow: "1m",
           },
-        },
+        } as unknown as ModelSelection,
       }),
     );
 
@@ -6603,7 +6535,7 @@ describe("ProviderCommandReactor", () => {
           options: {
             effort: "max",
           },
-        },
+        } as unknown as ModelSelection,
       }),
     );
 
@@ -6666,7 +6598,7 @@ describe("ProviderCommandReactor", () => {
           provider: "anthropic",
           model: "claude-opus-4-7",
           options: { effort: "max" },
-        },
+        } as unknown as ModelSelection,
       }),
     );
 
@@ -6735,7 +6667,7 @@ describe("ProviderCommandReactor", () => {
           provider: "anthropic",
           model: "claude-opus-4-7",
           options: { effort: "max" },
-        },
+        } as unknown as ModelSelection,
       }),
     );
     await harness.drain();
@@ -6771,7 +6703,7 @@ describe("ProviderCommandReactor", () => {
           provider: "anthropic",
           model: "claude-opus-4-7",
           options: { effort: "max", contextWindow: "1m" },
-        },
+        } as unknown as ModelSelection,
       }),
     );
 
@@ -6788,7 +6720,7 @@ describe("ProviderCommandReactor", () => {
   it("seeds imported Droid selection before handling idle metadata updates", async () => {
     const harness = await createHarness({
       threadModelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "claude-sonnet-4-6",
         options: { reasoningEffort: "medium" },
       },
@@ -6804,7 +6736,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -6821,7 +6753,7 @@ describe("ProviderCommandReactor", () => {
         commandId: CommandId.makeUnsafe("cmd-thread-meta-update-droid-same-effort"),
         threadId: ThreadId.makeUnsafe("thread-1"),
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "claude-sonnet-4-6",
           options: { reasoningEffort: "medium" },
         },
@@ -6836,7 +6768,7 @@ describe("ProviderCommandReactor", () => {
         commandId: CommandId.makeUnsafe("cmd-thread-meta-update-droid-effort"),
         threadId: ThreadId.makeUnsafe("thread-1"),
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "claude-sonnet-4-6",
           options: { reasoningEffort: "high" },
         },
@@ -6847,7 +6779,7 @@ describe("ProviderCommandReactor", () => {
     expect(harness.startSession.mock.calls[0]?.[1]).toMatchObject({
       resumeCursor: { opaque: "resume-synthetic" },
       modelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "claude-sonnet-4-6",
         options: { reasoningEffort: "high" },
       },
@@ -6856,7 +6788,7 @@ describe("ProviderCommandReactor", () => {
 
   it("forwards claude fast mode options through session start and turn send", async () => {
     const harness = await createHarness({
-      threadModelSelection: { provider: "anthropic", model: "claude-opus-4-6" },
+      threadModelSelection: { provider: "groq", model: "claude-opus-4-6" },
     });
     const now = new Date().toISOString();
 
@@ -6872,7 +6804,7 @@ describe("ProviderCommandReactor", () => {
           attachments: [],
         },
         modelSelection: {
-          provider: "anthropic",
+          provider: "groq",
           model: "claude-opus-4-6",
           options: {
             fastMode: true,
@@ -6888,7 +6820,7 @@ describe("ProviderCommandReactor", () => {
     await waitFor(() => harness.sendTurn.mock.calls.length === 1);
     expect(harness.startSession.mock.calls[0]?.[1]).toMatchObject({
       modelSelection: {
-        provider: "anthropic",
+        provider: "groq",
         model: "claude-opus-4-6",
         options: {
           fastMode: true,
@@ -6898,7 +6830,7 @@ describe("ProviderCommandReactor", () => {
     expect(harness.sendTurn.mock.calls[0]?.[0]).toMatchObject({
       threadId: ThreadId.makeUnsafe("thread-1"),
       modelSelection: {
-        provider: "anthropic",
+        provider: "groq",
         model: "claude-opus-4-6",
         options: {
           fastMode: true,
@@ -6947,7 +6879,7 @@ describe("ProviderCommandReactor", () => {
 
   it("adopts the requested provider on a first turn before binding a session", async () => {
     const harness = await createHarness({
-      threadModelSelection: { provider: "openai", model: "gpt-5-codex" },
+      threadModelSelection: { provider: "groq", model: "gpt-5-codex" },
     });
     const now = new Date().toISOString();
 
@@ -6963,7 +6895,7 @@ describe("ProviderCommandReactor", () => {
           attachments: [],
         },
         modelSelection: {
-          provider: "anthropic",
+          provider: "groq",
           model: "claude-opus-4-6",
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -6976,13 +6908,13 @@ describe("ProviderCommandReactor", () => {
 
     expect(harness.startSession.mock.calls[0]?.[1]).toMatchObject({
       modelSelection: {
-        provider: "anthropic",
+        provider: "groq",
         model: "claude-opus-4-6",
       },
     });
     expect(harness.sendTurn.mock.calls[0]?.[0]).toMatchObject({
       modelSelection: {
-        provider: "anthropic",
+        provider: "groq",
         model: "claude-opus-4-6",
       },
     });
@@ -6990,10 +6922,10 @@ describe("ProviderCommandReactor", () => {
     const readModel = await Effect.runPromise(harness.engine.getReadModel());
     const thread = readModel.threads.find((entry) => entry.id === ThreadId.makeUnsafe("thread-1"));
     expect(thread?.modelSelection).toEqual({
-      provider: "anthropic",
+      provider: "groq",
       model: "claude-opus-4-6",
     });
-    expect(thread?.session?.providerName).toBe("anthropic");
+    expect(thread?.session?.providerName).toBe("groq");
     expect(
       thread?.activities.find((activity) => activity.kind === "provider.turn.start.failed"),
     ).toBeUndefined();
@@ -7044,7 +6976,7 @@ describe("ProviderCommandReactor", () => {
     expect(harness.sendTurn.mock.calls[1]?.[0]).toMatchObject({
       threadId: ThreadId.makeUnsafe("thread-1"),
       modelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5-codex",
       },
     });
@@ -7098,7 +7030,7 @@ describe("ProviderCommandReactor", () => {
 
   it("restarts claude sessions when claude effort changes", async () => {
     const harness = await createHarness({
-      threadModelSelection: { provider: "anthropic", model: "claude-sonnet-4-6" },
+      threadModelSelection: { provider: "groq", model: "claude-sonnet-4-6" },
     });
     const now = new Date().toISOString();
 
@@ -7117,7 +7049,7 @@ describe("ProviderCommandReactor", () => {
           provider: "anthropic",
           model: "claude-sonnet-4-6",
           options: {
-            effort: "medium",
+            reasoningEffort: "medium",
           },
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -7144,7 +7076,7 @@ describe("ProviderCommandReactor", () => {
           provider: "anthropic",
           model: "claude-sonnet-4-6",
           options: {
-            effort: "max",
+            reasoningEffort: "high",
           },
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -7161,7 +7093,7 @@ describe("ProviderCommandReactor", () => {
         provider: "anthropic",
         model: "claude-sonnet-4-6",
         options: {
-          effort: "max",
+          reasoningEffort: "high",
         },
       },
     });
@@ -7257,7 +7189,7 @@ describe("ProviderCommandReactor", () => {
 
   it("does not inject derived model options when restarting claude on runtime mode changes", async () => {
     const harness = await createHarness({
-      threadModelSelection: { provider: "anthropic", model: "claude-opus-4-6" },
+      threadModelSelection: { provider: "groq", model: "claude-opus-4-6" },
     });
     const now = new Date().toISOString();
 
@@ -7269,7 +7201,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "anthropic",
+          providerName: "groq",
           runtimeMode: "full-access",
           activeTurnId: null,
           lastError: null,
@@ -7293,7 +7225,7 @@ describe("ProviderCommandReactor", () => {
 
     expect(harness.startSession.mock.calls[0]?.[1]).toMatchObject({
       modelSelection: {
-        provider: "anthropic",
+        provider: "groq",
         model: "claude-opus-4-6",
       },
       runtimeMode: "approval-required",
@@ -7336,7 +7268,7 @@ describe("ProviderCommandReactor", () => {
           attachments: [],
         },
         modelSelection: {
-          provider: "anthropic",
+          provider: "groq",
           model: "claude-opus-4-6",
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -7359,7 +7291,7 @@ describe("ProviderCommandReactor", () => {
 
     const thread = await readHarnessThread(harness);
     expect(thread?.session?.threadId).toBe("thread-1");
-    expect(thread?.session?.providerName).toBe("openai");
+    expect(thread?.session?.providerName).toBe("groq");
     expect(thread?.session?.runtimeMode).toBe("approval-required");
     expect(
       thread?.activities.find((activity) => activity.kind === "provider.turn.start.failed"),
@@ -7502,7 +7434,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -7535,7 +7467,7 @@ describe("ProviderCommandReactor", () => {
     expect(harness.startSession.mock.calls[0]?.[1]).toMatchObject({
       threadId: ThreadId.makeUnsafe("thread-1"),
       modelSelection: {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5-codex",
       },
       runtimeMode: "approval-required",
@@ -7557,7 +7489,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-1"),
           lastError: null,
@@ -7596,7 +7528,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-parent"),
           lastError: null,
@@ -7614,7 +7546,7 @@ describe("ProviderCommandReactor", () => {
         projectId: asProjectId("project-1"),
         title: "Halley [explorer]",
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "gpt-5-codex",
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -7634,7 +7566,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("subagent:thread-1:child-provider-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-child"),
           lastError: null,
@@ -7673,7 +7605,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -7691,7 +7623,7 @@ describe("ProviderCommandReactor", () => {
         projectId: asProjectId("project-1"),
         title: "Halley [explorer]",
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "gpt-5-codex",
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -7731,7 +7663,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-parent"),
           lastError: null,
@@ -7749,7 +7681,7 @@ describe("ProviderCommandReactor", () => {
         projectId: asProjectId("project-1"),
         title: "Agent",
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "gpt-5-codex",
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -7768,7 +7700,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("subagent:thread-1:child-provider-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-child"),
           lastError: null,
@@ -7814,7 +7746,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-synthetic-steer-parent"),
           lastError: null,
@@ -7830,7 +7762,7 @@ describe("ProviderCommandReactor", () => {
         threadId: ThreadId.makeUnsafe("subagent:thread-1:child-provider-steer"),
         projectId: asProjectId("project-1"),
         title: "Synthetic child",
-        modelSelection: { provider: "openai", model: "gpt-5-codex" },
+        modelSelection: { provider: "groq", model: "gpt-5-codex" },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
         runtimeMode: "approval-required",
         branch: null,
@@ -7880,7 +7812,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -7972,7 +7904,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -8108,7 +8040,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "stopped",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -8186,7 +8118,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "stopped",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -8266,7 +8198,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -8327,7 +8259,7 @@ describe("ProviderCommandReactor", () => {
     harness.respondToRequest.mockImplementation(() =>
       Effect.fail(
         new ProviderAdapterRequestError({
-          provider: "openai",
+          provider: "groq",
           method: "session/request_permission",
           detail: "Unknown pending permission request: approval-request-1",
         }),
@@ -8342,7 +8274,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -8450,7 +8382,7 @@ describe("ProviderCommandReactor", () => {
     harness.respondToRequest.mockImplementation(() =>
       Effect.fail(
         new ProviderAdapterRequestError({
-          provider: "openai",
+          provider: "groq",
           method: "permission.reply.acknowledge",
           detail: "OpenCode still reports permission approval-request-ack as pending.",
         }),
@@ -8465,7 +8397,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -8546,7 +8478,7 @@ describe("ProviderCommandReactor", () => {
     harness.respondToUserInput.mockImplementation(() =>
       Effect.fail(
         new ProviderAdapterRequestError({
-          provider: "anthropic",
+          provider: "groq",
           method: "item/tool/respondToUserInput",
           detail: "Unknown pending user-input request: user-input-request-1",
         }),
@@ -8561,7 +8493,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "anthropic",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -8695,7 +8627,7 @@ describe("ProviderCommandReactor", () => {
     harness.respondToUserInput.mockImplementation(() =>
       Effect.fail(
         new ProviderAdapterRequestError({
-          provider: "anthropic",
+          provider: "groq",
           method: "item/tool/respondToUserInput",
           detail:
             "API Error: 400 input_length and max_tokens exceed context limit; prompt is too long.",
@@ -8711,7 +8643,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "anthropic",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -8787,7 +8719,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "stopped",
-          providerName: "anthropic",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -8806,7 +8738,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "anthropic",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -8853,7 +8785,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "running",
-          providerName: "anthropic",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -8933,7 +8865,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -8980,7 +8912,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -9031,7 +8963,7 @@ describe("ProviderCommandReactor", () => {
         projectId: asProjectId("project-1"),
         title: "Stopped Droid sidechat",
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "claude-sonnet-4-6",
         },
         runtimeMode: "approval-required",
@@ -9128,7 +9060,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("thread-1"),
           status: "ready",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: null,
           lastError: null,
@@ -9146,7 +9078,7 @@ describe("ProviderCommandReactor", () => {
         projectId: asProjectId("project-1"),
         title: "Agent",
         modelSelection: {
-          provider: "openai",
+          provider: "groq",
           model: "gpt-5-codex",
         },
         interactionMode: DEFAULT_PROVIDER_INTERACTION_MODE,
@@ -9166,7 +9098,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId: ThreadId.makeUnsafe("subagent:thread-1:child-provider-1"),
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-child-stop"),
           lastError: null,
@@ -9226,7 +9158,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId,
           status: "running",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "approval-required",
           activeTurnId: asTurnId("turn-mode-active"),
           lastError: null,
@@ -9264,7 +9196,7 @@ describe("ProviderCommandReactor", () => {
         session: {
           threadId,
           status: "ready",
-          providerName: "openai",
+          providerName: "groq",
           runtimeMode: "full-access",
           activeTurnId: null,
           lastError: null,

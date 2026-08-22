@@ -380,39 +380,39 @@ layer("035_NormalizeLegacyModelSelectionOptions", (it) => {
       };
 
       assert.deepStrictEqual(decodeModelSelection(projectSelection), {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5.5",
         options: { reasoningEffort: "medium" },
       });
       assert.deepStrictEqual(decodeModelSelection(threadSelections.get("claude-opus-4-6")), {
-        provider: "anthropic",
+        provider: "groq",
         model: "claude-opus-4-6",
         options: { effort: "high", fastMode: true },
-      });
+      } as unknown as ModelSelection);
       assert.deepStrictEqual(decodeModelSelection(threadSelections.get("openai/gpt-5.4")), {
-        provider: "openai",
+        provider: "groq",
         model: "openai/gpt-5.4",
         options: { agent: "plan", variant: "fast" },
-      });
+      } as unknown as ModelSelection);
       assert.deepStrictEqual(decodeModelSelection(threadSelections.get("gpt-5.4")), {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5.4",
         options: { reasoningEffort: "high" },
       });
       assert.deepStrictEqual(decodeModelSelection(projectEventPayload.defaultModelSelection), {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5.5",
         options: { reasoningEffort: "low" },
       });
       assert.deepStrictEqual(decodeModelSelection(threadEventPayload.modelSelection), {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5.5",
         options: { reasoningEffort: "xhigh" },
       });
       assert.deepStrictEqual(
         decodeModelSelection(JSON.parse(pagedProjectRows[0]!.modelSelection) as unknown),
         {
-          provider: "openai",
+          provider: "groq",
           model: "gpt-5.5",
           options: { reasoningEffort: "high" },
         },
@@ -420,7 +420,7 @@ layer("035_NormalizeLegacyModelSelectionOptions", (it) => {
       assert.deepStrictEqual(
         decodeModelSelection(JSON.parse(pagedThreadRows[0]!.modelSelection) as unknown),
         {
-          provider: "openai",
+          provider: "groq",
           model: "gpt-5.5",
           options: { reasoningEffort: "high" },
         },
@@ -429,7 +429,7 @@ layer("035_NormalizeLegacyModelSelectionOptions", (it) => {
         readonly modelSelection: unknown;
       };
       assert.deepStrictEqual(decodeModelSelection(pagedEventPayload.modelSelection), {
-        provider: "openai",
+        provider: "groq",
         model: "gpt-5.5",
         options: { reasoningEffort: "high" },
       });

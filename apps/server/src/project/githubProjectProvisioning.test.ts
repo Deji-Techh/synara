@@ -20,7 +20,7 @@ function makeInput(destinationParent: string): GitHubProjectProvisionInput {
     commandId: CommandId.makeUnsafe("command-1"),
     projectId: ProjectId.makeUnsafe("project-1"),
     newProjectSpaceId: null,
-    defaultModelSelection: { provider: "openai", model: "gpt-5" },
+    defaultModelSelection: { provider: "groq", model: "llama-3.3-70b-versatile" },
     createdAt: "2026-08-04T00:00:00.000Z",
   };
 }

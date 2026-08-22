@@ -11,13 +11,21 @@ const stubTextGeneration: TextGenerationShape = {
   generateThreadRecap: () => Effect.succeed({ recap: "" }),
   generateAutomationIntent: () =>
     Effect.succeed({
-      mode: "plan" as const,
-      title: "Automated task",
-      prompt: "",
+      isAutomation: false,
+      confidence: 0,
+      language: null,
+      name: "Automated task",
+      taskPrompt: "",
       schedule: null,
+      mode: "dedicated" as const,
+      maxIterations: null,
+      completionPolicy: { type: "none" as const },
+      missingFields: [],
+      needsConfirmation: false,
+      reason: "not implemented",
     }),
   evaluateAutomationCompletion: () =>
-    Effect.succeed({ completed: false, reason: "not implemented" }),
+    Effect.succeed({ stopMatched: false, confidence: 0, reason: "not implemented" }),
 };
 
 export const ProviderTextGenerationLive = Layer.succeed(TextGeneration, stubTextGeneration);

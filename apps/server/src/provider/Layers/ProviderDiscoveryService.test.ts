@@ -22,7 +22,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   deriveServerPaths,
   resolveDefaultChatWorkspaceRoot,
-  resolveDefaultStudioWorkspaceRoot,
   ServerConfig,
   type ServerConfigShape,
 } from "../../config.ts";
@@ -60,7 +59,6 @@ const makeConfigLayer = () =>
         cwd,
         homeDir,
         chatWorkspaceRoot: resolveDefaultChatWorkspaceRoot({ homeDir }),
-        studioWorkspaceRoot: resolveDefaultStudioWorkspaceRoot({ homeDir }),
         baseDir,
         ...derived,
         staticDir: undefined,
@@ -110,7 +108,7 @@ const runListModels = (input: {
     makeConfigLayer(),
     ServerSettingsService.layerTest({
       providers: {
-        cursor: {
+        engine: {
           enabled: input.enabled,
         },
       },
@@ -120,7 +118,7 @@ const runListModels = (input: {
   const testLayer = ProviderDiscoveryServiceLive.pipe(Layer.provideMerge(baseLayer));
   const program = Effect.gen(function* () {
     const discovery = yield* ProviderDiscoveryService;
-    return yield* discovery.listModels({ provider: "openai" });
+    return yield* discovery.listModels({ provider: "engine" });
   }).pipe(Effect.provide(testLayer));
   return Effect.runPromise(
     program as unknown as Effect.Effect<ProviderListModelsResult, never, never>,
@@ -144,7 +142,7 @@ describe("ProviderDiscoveryService.listSkills", () => {
   it("serves the unified catalog for providers without native skill discovery", async () => {
     await writeSkill(path.join(baseDir, "skills", "portable"), "portable");
 
-    const result = await runListSkills({ adapter: {}, provider: "google" });
+    const result = await runListSkills({ adapter: {}, provider: "groq" });
 
     expect(result.skills.map((skill) => skill.name)).toEqual(["portable"]);
   });
@@ -164,7 +162,7 @@ describe("ProviderDiscoveryService.listSkills", () => {
         listSkills: () =>
           Effect.succeed({ skills: [nativeShared], source: "codex-app-server", cached: false }),
       },
-      provider: "openai",
+      provider: "groq",
     });
 
     const shared = result.skills.find((skill) => skill.name === "shared");
@@ -179,7 +177,7 @@ describe("ProviderDiscoveryService.listSkills", () => {
     const result = await runListSkills({
       adapter: {},
       disabled: ["Muted"],
-      provider: "openai",
+      provider: "groq",
     });
 
     expect(result.skills.map((skill) => skill.name)).toEqual(["portable"]);
@@ -193,13 +191,13 @@ describe("ProviderDiscoveryService.listSkills", () => {
         listSkills: () =>
           Effect.fail(
             new ProviderAdapterRequestError({
-              provider: "openai",
+              provider: "groq",
               method: "skills/list",
               detail: "codex binary missing",
             }),
           ),
       },
-      provider: "openai",
+      provider: "groq",
     });
 
     expect(result.skills.map((skill) => skill.name)).toEqual(["portable"]);
@@ -217,7 +215,7 @@ describe("ProviderDiscoveryService.getComposerCapabilities", () => {
 
     const program = Effect.gen(function* () {
       const discovery = yield* ProviderDiscoveryService;
-      return yield* discovery.getComposerCapabilities({ provider: "openai" });
+      return yield* discovery.getComposerCapabilities({ provider: "groq" });
     }).pipe(Effect.provide(testLayer));
     const capabilities = await Effect.runPromise(
       program as unknown as Effect.Effect<ProviderComposerCapabilities, never, never>,

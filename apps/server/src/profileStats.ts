@@ -25,15 +25,21 @@ import { ServerConfig } from "./config";
 const HEATMAP_WINDOW_DAYS = 274; // ~9 months, GitHub-style contribution grid.
 const SKILL_RESULT_LIMIT = 12;
 const PROVIDER_KINDS = new Set<ProviderKind>([
+  "engine",
   "openai",
   "anthropic",
-  "openai",
   "google",
-  "openai",
-  "openai",
-  "openai",
-  "openai",
-  "openai",
+  "openrouter",
+  "ollama",
+  "deepseek",
+  "groq",
+  "mistral",
+  "together",
+  "cohere",
+  "xai",
+  "fireworks",
+  "opencodeZen",
+  "opencodeGo",
 ]);
 
 type HeatmapCell = ProfileStats["activity"]["heatmap"][number];

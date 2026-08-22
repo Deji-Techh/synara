@@ -351,14 +351,14 @@ export interface SkillsCatalogRootInput extends SkillsCatalogDiscoveryInput {
 
 const HOME_ORIGIN_ORDER = [
   "caide",
-  "openai",
-  "anthropic",
-  "openai",
-  "openai",
+  "codex",
+  "claude",
+  "cursor",
+  "grok",
   "factory",
-  "openai",
-  "openai",
-  "openai",
+  "kilo",
+  "opencode",
+  "pi",
   "engine",
   "agents",
 ] as const;
@@ -445,7 +445,7 @@ const SKILL_ORIGIN_ROOTS = {
     projectRootNames: [".kilo"],
   },
   opencode: {
-    homeRoots: (input) => [nodePath.join(input.homeDir, ".config", "openai", "skills")],
+    homeRoots: (input) => [nodePath.join(input.homeDir, ".config", "opencode", "skills")],
     projectRootNames: [".opencode"],
   },
   pi: {
@@ -462,24 +462,12 @@ const SKILL_ORIGIN_ROOTS = {
   },
 } as const satisfies Record<SkillsHomeOrigin, SkillOriginRootSpec>;
 
-const PROVIDER_SKILL_ORIGIN_PREFERENCES = {
+const PROVIDER_SKILL_ORIGIN_PREFERENCES: Partial<Record<ProviderKind, readonly SkillsHomeOrigin[]>> = {
   engine: ["engine", "agents"],
-  // API-key providers have no native skill home; they share the portable agents dir.
-  openai: ["agents"],
-  anthropic: ["agents"],
-  google: ["agents"],
-  openrouter: ["agents"],
-  ollama: ["agents"],
-  deepseek: ["agents"],
   groq: ["agents"],
-  mistral: ["agents"],
-  together: ["agents"],
-  cohere: ["agents"],
-  xai: ["agents"],
-  fireworks: ["agents"],
-  opencodeZen: ["agents"],
-  opencodeGo: ["agents"],
-} as const satisfies Partial<Record<ProviderKind, readonly SkillsHomeOrigin[]>>;
+  opencodeZen: ["opencode", "agents"],
+  opencodeGo: ["opencode", "agents"],
+};
 
 function homeRootsForOrigin(
   origin: SkillsHomeOrigin,
@@ -532,7 +520,7 @@ function rootsForOrderedOrigins(
     homeRootsForOrigin(origin, input).map((path) => ({
       path,
       scope: origin,
-      ...(origin === "openai" ? { includeMarkdownFiles: true } : {}),
+      ...(origin === "codex" ? { includeMarkdownFiles: true } : {}),
     })),
   );
   const homeRootPaths = new Set(homeRoots.map((root) => nodePath.resolve(root.path)));
@@ -559,7 +547,7 @@ function rootsForOrderedOrigins(
           projectRoots.push({
             path: rootPath,
             scope: "project",
-            ...(origin === "openai" ? { includeMarkdownFiles: true } : {}),
+            ...(origin === "codex" ? { includeMarkdownFiles: true } : {}),
           });
         }
       }

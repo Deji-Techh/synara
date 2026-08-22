@@ -13,6 +13,7 @@ import {
   type AutomationRun,
   type GitCreateDetachedWorktreeInput,
   type GitRemoveWorktreeInput,
+  type ModelSelection,
   type OrchestrationCommand,
   type OrchestrationProjectShell,
   type OrchestrationThreadShell,
@@ -538,7 +539,7 @@ layer("AutomationService", (it) => {
         provider: "anthropic" as const,
         model: "claude-haiku-4-5",
         supportsAutoMode: false,
-      };
+      } as unknown as ModelSelection;
 
       const createError = yield* service
         .create({
@@ -554,7 +555,7 @@ layer("AutomationService", (it) => {
         modelSelection: {
           ...unsupportedModelSelection,
           supportsAutoMode: true,
-        },
+        } as unknown as ModelSelection,
         runtimeMode: "auto",
       });
       const updateError = yield* service

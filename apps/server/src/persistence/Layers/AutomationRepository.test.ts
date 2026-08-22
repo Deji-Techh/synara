@@ -26,8 +26,8 @@ const createInput = {
   prompt: "Check stale dependencies.",
   schedule: { type: "manual" },
   modelSelection: {
-    provider: "openai",
-    model: "gpt-5-codex",
+    provider: "groq",
+    model: "llama-3.3-70b-versatile",
   },
 } satisfies AutomationCreateInput;
 
@@ -37,10 +37,10 @@ const createInputForProject = (projectId: string) => ({
 });
 
 const permissionSnapshot = {
-  provider: "openai",
+  provider: "groq",
   modelSelection: {
-    provider: "openai",
-    model: "gpt-5-codex",
+    provider: "groq",
+    model: "llama-3.3-70b-versatile",
   },
   runtimeMode: "approval-required",
   interactionMode: "default",

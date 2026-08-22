@@ -15,7 +15,6 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   resolveCanonicalWorkspaceRoots,
   resolveDefaultChatWorkspaceRoot,
-  resolveDefaultStudioWorkspaceRoot,
   resolveStaticDir,
 } from "./config";
 
@@ -102,31 +101,6 @@ describe("resolveDefaultChatWorkspaceRoot", () => {
   });
 });
 
-describe("resolveDefaultStudioWorkspaceRoot", () => {
-  it("places the Studio workspace under Documents/Caide/Studio on macOS and Linux", () => {
-    expect(
-      resolveDefaultStudioWorkspaceRoot({
-        homeDir: "/Users/tester",
-        platform: "darwin",
-      }),
-    ).toBe("/Users/tester/Documents/Caide/Studio");
-    expect(
-      resolveDefaultStudioWorkspaceRoot({
-        homeDir: "/home/tester",
-        platform: "linux",
-      }),
-    ).toBe("/home/tester/Documents/Caide/Studio");
-  });
-
-  it("uses Windows separators when deriving the Studio workspace on Windows", () => {
-    expect(
-      resolveDefaultStudioWorkspaceRoot({
-        homeDir: "C:\\Users\\tester",
-        platform: "win32",
-      }),
-    ).toBe("C:\\Users\\tester\\Documents\\Caide\\Studio");
-  });
-});
 
 describe("resolveCanonicalWorkspaceRoots", () => {
   it("canonicalizes a symlinked home directory to match project row realpaths", async () => {
@@ -143,13 +117,10 @@ describe("resolveCanonicalWorkspaceRoots", () => {
 
     const expectedHomeDir = fs.realpathSync(realHome);
     expect(result.homeDir).toBe(expectedHomeDir);
-    // chatWorkspaceRoot/studioWorkspaceRoot don't exist yet under the resolved
-    // home, so they must be re-derived from the canonicalized (symlink-free)
+    // chatWorkspaceRoot doesn't exist yet under the resolved
+    // home, so it must be re-derived from the canonicalized (symlink-free)
     // home rather than the raw, symlinked input.
     expect(result.chatWorkspaceRoot).toBe(path.join(expectedHomeDir, "Documents", "Caide"));
-    expect(result.studioWorkspaceRoot).toBe(
-      path.join(expectedHomeDir, "Documents", "Caide", "Studio"),
-    );
   });
 
   it("canonicalizes the nearest existing ancestor when the workspace root itself does not exist yet", async () => {
@@ -172,13 +143,11 @@ describe("resolveCanonicalWorkspaceRoots", () => {
     const expectedDocuments = fs.realpathSync(realDocuments);
     expect(result.homeDir).toBe(fs.realpathSync(homeDir));
     expect(result.chatWorkspaceRoot).toBe(path.join(expectedDocuments, "Caide"));
-    expect(result.studioWorkspaceRoot).toBe(path.join(expectedDocuments, "Caide", "Studio"));
     expect(fs.existsSync(result.chatWorkspaceRoot)).toBe(false);
-    expect(fs.existsSync(result.studioWorkspaceRoot)).toBe(false);
 
     // Once the lazily-created directory shows up on disk, realpath must agree
     // with the previously-reported (pre-creation) canonicalized root.
-    fs.mkdirSync(result.studioWorkspaceRoot, { recursive: true });
-    expect(fs.realpathSync(result.studioWorkspaceRoot)).toBe(result.studioWorkspaceRoot);
+    fs.mkdirSync(result.chatWorkspaceRoot, { recursive: true });
+    expect(fs.realpathSync(result.chatWorkspaceRoot)).toBe(result.chatWorkspaceRoot);
   });
 });

@@ -8,7 +8,7 @@ import { randomUUID } from "node:crypto";
 
 import { ThreadId } from "@caide/contracts";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Stream } from "effect";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ServerConfig } from "../../config.ts";
@@ -159,5 +159,42 @@ describe("ApiAdapters", () => {
     } finally {
       warnSpy.mockRestore();
     }
+  });
+
+  it("sendTurn emits valid content.delta events with streamKind and honors custom model selection", async () => {
+    const threadId = ThreadId.makeUnsafe(randomUUID());
+    const deps = makeLayers({ prefix: "caide-sendturn-stream-" });
+    const layer = withAdapter(GroqAdapterLive, deps);
+
+    const events = await Effect.runPromise(
+      Effect.gen(function* () {
+        const adapter = yield* GroqAdapter;
+        yield* adapter.startSession({
+          threadId,
+          runtimeMode: "full-access",
+          modelSelection: { provider: "groq", model: "custom-model-test" },
+        });
+
+        const collectedEvents: any[] = [];
+        const streamFiber = yield* Stream.runForEach(adapter.streamEvents, (event) =>
+          Effect.sync(() => {
+            collectedEvents.push(event);
+          }),
+        ).pipe(Effect.forkChild);
+
+        yield* adapter.sendTurn({
+          threadId,
+          input: "hello",
+          modelSelection: { provider: "groq", model: "custom-model-test" },
+        });
+
+        return collectedEvents;
+      }).pipe(Effect.provide(layer)),
+    );
+
+    const deltaEvent = events.find((e) => e.type === "content.delta");
+    expect(deltaEvent).toBeDefined();
+    expect(deltaEvent.payload.streamKind).toBe("assistant_text");
+    expect(typeof deltaEvent.payload.delta).toBe("string");
   });
 });

@@ -16,10 +16,10 @@ function escapeXmlText(value: string): string {
  * persisted but is withheld from provider prompts until resumed.
  */
 export function activeThreadGoal(thread: {
-  readonly goal?: string | undefined;
+  readonly goal?: string | null | undefined;
   readonly goalPausedAt?: string | null | undefined;
 }): string | undefined {
-  return thread.goalPausedAt == null ? thread.goal : undefined;
+  return thread.goalPausedAt == null ? (thread.goal ?? undefined) : undefined;
 }
 
 function buildProviderGoalPrompt(goal: string | undefined): string | null {

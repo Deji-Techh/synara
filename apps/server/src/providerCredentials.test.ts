@@ -3,27 +3,24 @@ import { describe, expect, it } from "vitest";
 
 import {
   ProviderCredentials,
-  resolveProviderServerPassword,
+  resolveProviderApiKey,
   type ProviderCredentialsShape,
 } from "./providerCredentials";
 
-describe("resolveProviderServerPassword", () => {
+describe("resolveProviderApiKey", () => {
   it("reads ProviderCredentials from the Effect service context", async () => {
     const credentials: ProviderCredentialsShape = {
-      getServerPassword: () => Effect.succeed("secret"),
-      replaceServerPassword: () => Effect.void,
-      isServerPasswordConfigured: () => Effect.succeed(true),
       getApiKey: () => Effect.succeed("secret"),
       replaceApiKey: () => Effect.void,
       isApiKeyConfigured: () => Effect.succeed(true),
     };
 
-    const password = await Effect.runPromise(
-      resolveProviderServerPassword("openai").pipe(
+    const apiKey = await Effect.runPromise(
+      resolveProviderApiKey("groq").pipe(
         Effect.provide(Layer.succeed(ProviderCredentials, credentials)),
       ),
     );
 
-    expect(password).toBe("secret");
+    expect(apiKey).toBe("secret");
   });
 });

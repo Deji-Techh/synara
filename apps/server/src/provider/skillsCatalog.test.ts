@@ -157,11 +157,11 @@ describe("discoverSkillsCatalog", () => {
     const skills = await discoverSkillsCatalog({
       homeDir,
       caideBaseDir,
-      provider: "openai",
+      provider: "groq",
     });
 
     expect(skills.find((skill) => skill.name === "workflow-kit:feature-delivery")).toMatchObject({
-      scope: "anthropic",
+      scope: "claude",
       path: await realpath(path.join(currentInstallPath, "skills", "feature-delivery", "SKILL.md")),
     });
     expect(skills.some((skill) => skill.name.includes("stale-only"))).toBe(false);
@@ -331,7 +331,7 @@ describe("discoverSkillsCatalog", () => {
 
     const defaultCatalog = await discoverSkillsCatalog({ homeDir, caideBaseDir });
     expect(defaultCatalog.filter((skill) => skill.name === "reviewer")).toHaveLength(1);
-    expect(defaultCatalog.find((skill) => skill.name === "reviewer")?.scope).toBe("openai");
+    expect(defaultCatalog.find((skill) => skill.name === "reviewer")?.scope).toBe("codex");
 
     const settingsCatalog = await discoverSkillsCatalog({
       homeDir,
@@ -339,7 +339,7 @@ describe("discoverSkillsCatalog", () => {
       includeDuplicateOrigins: true,
     });
     expect(settingsCatalog.filter((skill) => skill.name === "reviewer")).toHaveLength(2);
-    expect(settingsCatalog.map((skill) => skill.scope).sort()).toEqual(["anthropic", "openai"]);
+    expect(settingsCatalog.map((skill) => skill.scope).sort()).toEqual(["claude", "codex"]);
   });
 
   it("prefers the provider-native copy and falls back to Caide for that provider", async () => {
@@ -347,9 +347,9 @@ describe("discoverSkillsCatalog", () => {
     await writeSkill(path.join(homeDir, ".codex", "skills", "shared"), "shared", "Codex copy");
     await writeSkill(path.join(caideBaseDir, "skills", "only-caide"), "only-caide", "Fallback");
 
-    const codexView = await discoverSkillsCatalog({ homeDir, caideBaseDir, provider: "openai" });
+    const codexView = await discoverSkillsCatalog({ homeDir, caideBaseDir });
     const codexShared = codexView.find((skill) => skill.name === "shared");
-    expect(codexShared?.scope).toBe("openai");
+    expect(codexShared?.scope).toBe("codex");
     expect(codexShared?.path).toContain(path.join(".codex", "skills"));
     expect(codexView.some((skill) => skill.name === "only-caide")).toBe(true);
 
@@ -357,7 +357,7 @@ describe("discoverSkillsCatalog", () => {
     const claudeView = await discoverSkillsCatalog({
       homeDir,
       caideBaseDir,
-      provider: "anthropic",
+      provider: "groq",
     });
     const claudeShared = claudeView.find((skill) => skill.name === "shared");
     expect(claudeShared?.scope).toBe("caide");
@@ -369,7 +369,7 @@ describe("discoverSkillsCatalog", () => {
     const antigravityView = await discoverSkillsCatalog({
       homeDir,
       caideBaseDir,
-      provider: "google",
+      provider: "groq",
     });
 
     expect(antigravityView.find((skill) => skill.name === "shared")?.scope).toBe("agents");
@@ -384,16 +384,14 @@ describe("discoverSkillsCatalog", () => {
     const grokView = await discoverSkillsCatalog({
       homeDir,
       caideBaseDir,
-      provider: "openai",
     });
     const piView = await discoverSkillsCatalog({
       homeDir,
       caideBaseDir,
-      provider: "openai",
     });
 
-    expect(grokView.find((skill) => skill.name === "shared")?.scope).toBe("openai");
-    expect(piView.find((skill) => skill.name === "shared")?.scope).toBe("openai");
+    expect(grokView.find((skill) => skill.name === "shared")?.scope).toBe("grok");
+    expect(piView.find((skill) => skill.name === "shared")?.scope).toBe("grok");
   });
 
   it("discovers Pi direct markdown skills from Pi roots", async () => {

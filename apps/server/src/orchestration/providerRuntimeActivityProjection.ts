@@ -478,7 +478,6 @@ export function projectProviderRuntimeActivities(
   // transcript rows. Waiting for the authoritative completion also avoids
   // per-token activity writes and transcript height churn.
   if (
-    (event.provider === "openai" || event.provider === "google") &&
     event.type === "item.completed" &&
     event.payload.itemType === "reasoning" &&
     event.itemId !== undefined &&
@@ -620,7 +619,7 @@ export function projectProviderRuntimeActivities(
           kind: "runtime.warning",
           summary: isBackgroundMove
             ? "Moved to background"
-            : event.provider === "openai" &&
+            : (event.provider as string) === "openai" &&
                 (nativeType === "session.next.retried" || nativeType === "session.status")
               ? "OpenAI retrying"
               : "Runtime warning",

@@ -713,7 +713,7 @@ export async function buildCodexProcessEnv(
       : baseEnv;
   const platform = input.platform ?? process.platform;
   const effectiveEnv = buildProviderChildEnvironment({
-    provider: "openai",
+    provider: "codex",
     baseEnv: configuredEnv,
   });
 

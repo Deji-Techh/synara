@@ -219,7 +219,7 @@ function buildWrapperScript(input: {
   const commandName = managedTerminalCommandNameForCliKind(cliKind);
   const title = defaultTerminalTitleForCliKind(cliKind);
   const commandBody =
-    cliKind === "anthropic"
+    cliKind === "claude"
       ? `exec ${shellQuote(targetPath)} --settings ${shellQuote(claudeSettingsPath)} "$@"`
       : buildCodexWrapperScript({ codexHomeDir, notifyHookPath, targetPath });
   return [

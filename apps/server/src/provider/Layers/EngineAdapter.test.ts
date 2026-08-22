@@ -266,7 +266,7 @@ describe("EngineAdapter", () => {
           expect(active?.id).toBe(created.id);
           expect(active?.appId).toBe(appId);
 
-          const listed = yield* adapter.goals.list(...(appId !== null ? [{ appId }] : []));
+          const listed = yield* adapter.goals.list(appId !== null ? { appId } : {});
           expect(listed.some((g) => g.id === created.id)).toBe(true);
 
           const fetched = yield* adapter.goals.get({ goalId: created.id });

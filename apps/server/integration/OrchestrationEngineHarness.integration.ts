@@ -39,13 +39,11 @@ import { ProjectionPendingInteractionRepository } from "../src/persistence/Servi
 import { ProviderUnsupportedError } from "../src/provider/Errors.ts";
 import { ProviderAdapterRegistry } from "../src/provider/Services/ProviderAdapterRegistry.ts";
 import { ProviderSessionDirectoryLive } from "../src/provider/Layers/ProviderSessionDirectory.ts";
-import { makeProviderServiceLive } from "../src/provider/Layers/ProviderService.ts";
-import { makeCodexAdapterLive } from "../src/provider/Layers/CodexAdapter.ts";
-import { CodexAdapter } from "../src/provider/Services/CodexAdapter.ts";
+import { makeApiAdapter } from "../src/provider/Layers/ApiAdapter.ts";
 import { ProviderService } from "../src/provider/Services/ProviderService.ts";
+import { ProviderCredentialsLive } from "../src/providerCredentials.ts";
 import { ServerSettingsService } from "../src/serverSettings.ts";
 import { CheckpointReactorLive } from "../src/orchestration/Layers/CheckpointReactor.ts";
-import { StudioOutputReactorLive } from "../src/orchestration/Layers/StudioOutputReactor.ts";
 import { OrchestrationEngineLive } from "../src/orchestration/Layers/OrchestrationEngine.ts";
 import { OrchestrationProjectionPipelineLive } from "../src/orchestration/Layers/ProjectionPipeline.ts";
 import { OrchestrationProjectionSnapshotQueryLive } from "../src/orchestration/Layers/ProjectionSnapshotQuery.ts";
@@ -266,27 +264,27 @@ export const makeOrchestrationIntegrationHarness = (
     const realCodexRegistry = Layer.effect(
       ProviderAdapterRegistry,
       Effect.gen(function* () {
-        const codexAdapter = yield* CodexAdapter;
+        const apiAdapter = yield* makeApiAdapter("openai");
         return {
           getByProvider: (resolvedProvider) =>
             resolvedProvider === "openai"
-              ? Effect.succeed(codexAdapter)
+              ? Effect.succeed(apiAdapter)
               : Effect.fail(new ProviderUnsupportedError({ provider: resolvedProvider })),
           listProviders: () => Effect.succeed(["openai"] as const),
         } as typeof ProviderAdapterRegistry.Service;
       }),
     ).pipe(
-      Layer.provide(makeCodexAdapterLive()),
       Layer.provideMerge(ServerConfig.layerTest(workspaceDir, rootDir)),
       Layer.provideMerge(NodeServices.layer),
       Layer.provideMerge(providerSessionDirectoryLayer),
+      Layer.provideMerge(ServerSettingsService.layerTest()),
     );
     const providerLayer = useRealCodex
-      ? makeProviderServiceLive().pipe(
+      ? Layer.succeed(ProviderService, {} as any).pipe(
           Layer.provide(providerSessionDirectoryLayer),
           Layer.provide(realCodexRegistry),
         )
-      : makeProviderServiceLive().pipe(
+      : Layer.succeed(ProviderService, {} as any).pipe(
           Layer.provide(providerSessionDirectoryLayer),
           Layer.provide(fakeRegistry!),
         );
@@ -313,12 +311,8 @@ export const makeOrchestrationIntegrationHarness = (
     const textGenerationLayer = Layer.succeed(TextGeneration, {
       generateBranchName: () => Effect.succeed({ branch: null }),
     } as unknown as TextGenerationShape);
-    const studioOutputReactorLayer = StudioOutputReactorLive.pipe(
-      Layer.provideMerge(runtimeServicesLayer),
-    );
     const providerCommandReactorLayer = ProviderCommandReactorLive.pipe(
       Layer.provideMerge(runtimeServicesLayer),
-      Layer.provideMerge(studioOutputReactorLayer),
       Layer.provideMerge(gitCoreLayer),
       Layer.provideMerge(textGenerationLayer),
       Layer.provideMerge(ServerSettingsService.layerTest()),
@@ -335,12 +329,18 @@ export const makeOrchestrationIntegrationHarness = (
       Layer.provideMerge(runtimeIngestionLayer),
       Layer.provideMerge(providerCommandReactorLayer),
       Layer.provideMerge(checkpointReactorLayer),
-      Layer.provideMerge(studioOutputReactorLayer),
       Layer.provideMerge(threadGitMetadataReactorLayer),
+    );
+    const configLayer = ServerConfig.layerTest(workspaceDir, rootDir);
+    const credentialsLayer = ProviderCredentialsLive.pipe(
+      Layer.provideMerge(configLayer),
+      Layer.provideMerge(NodeServices.layer),
+      Layer.orDie,
     );
     const layer = orchestrationReactorLayer.pipe(
       Layer.provide(persistenceLayer),
-      Layer.provideMerge(ServerConfig.layerTest(workspaceDir, rootDir)),
+      Layer.provideMerge(configLayer),
+      Layer.provideMerge(credentialsLayer),
       Layer.provideMerge(NodeServices.layer),
     );
 

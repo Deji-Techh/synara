@@ -10,7 +10,7 @@ function makeSession(status: OrchestrationSession["status"]): OrchestrationSessi
   return {
     threadId: THREAD_ID,
     status,
-    providerName: "openai",
+    providerName: "groq",
     runtimeMode: "approval-required",
     activeTurnId: null,
     lastError: status === "error" ? "runtime exploded" : null,
@@ -22,7 +22,7 @@ function derive(currentSession: OrchestrationSession | null) {
   return deriveTurnStartSession({
     threadId: THREAD_ID,
     currentSession,
-    providerName: "openai",
+    providerName: "groq",
     requestedRuntimeMode: "full-access",
     requestedAt: REQUESTED_AT,
   });
@@ -32,28 +32,28 @@ describe("deriveTurnStartSession", () => {
   it("keeps an established provider when a later turn requests another provider", () => {
     expect(
       deriveTurnStartModelSelection({
-        currentModelSelection: { provider: "openai", model: "gpt-5-codex" },
-        requestedModelSelection: { provider: "openai", model: "openai/gpt-5" },
+        currentModelSelection: { provider: "groq", model: "gpt-5-codex" },
+        requestedModelSelection: { provider: "groq", model: "openai/gpt-5" },
         canAdoptRequestedProvider: false,
       }),
-    ).toEqual({ provider: "openai", model: "gpt-5-codex" });
+    ).toEqual({ provider: "groq", model: "gpt-5-codex" });
   });
 
   it("allows an empty thread to adopt its first requested provider", () => {
     expect(
       deriveTurnStartModelSelection({
-        currentModelSelection: { provider: "openai", model: "gpt-5-codex" },
-        requestedModelSelection: { provider: "openai", model: "openai/gpt-5" },
+        currentModelSelection: { provider: "groq", model: "gpt-5-codex" },
+        requestedModelSelection: { provider: "groq", model: "openai/gpt-5" },
         canAdoptRequestedProvider: true,
       }),
-    ).toEqual({ provider: "openai", model: "openai/gpt-5" });
+    ).toEqual({ provider: "groq", model: "openai/gpt-5" });
   });
 
   it("creates a starting session when no session exists", () => {
     expect(derive(null)).toEqual({
       threadId: THREAD_ID,
       status: "starting",
-      providerName: "openai",
+      providerName: "groq",
       runtimeMode: "full-access",
       activeTurnId: null,
       lastError: null,
@@ -64,7 +64,7 @@ describe("deriveTurnStartSession", () => {
   it("preserves established provider settings when restarting an idle session", () => {
     expect(derive(makeSession("ready"))).toMatchObject({
       status: "starting",
-      providerName: "openai",
+      providerName: "groq",
       runtimeMode: "approval-required",
       activeTurnId: null,
       lastError: null,

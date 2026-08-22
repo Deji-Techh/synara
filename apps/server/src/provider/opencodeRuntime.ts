@@ -827,7 +827,7 @@ export function buildOpenCodeServerProcessEnv(input: {
 }): NodeJS.ProcessEnv {
   return buildProviderChildEnvironment({
     provider:
-      input.cliSpec?.dataDirectoryName === KILO_CLI_SPEC.dataDirectoryName ? "openai" : "openai",
+      input.cliSpec?.dataDirectoryName === KILO_CLI_SPEC.dataDirectoryName ? "kilo" : "opencode",
     baseEnv: input.baseEnv ?? process.env,
     overrides: input.experimentalWebSockets ? { OPENCODE_EXPERIMENTAL_WEBSOCKETS: "true" } : {},
   });

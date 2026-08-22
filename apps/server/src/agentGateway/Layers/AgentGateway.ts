@@ -632,12 +632,7 @@ export const makeAgentGateway = Effect.gen(function* () {
       },
       annotations: {
         title: "Set a Caide thread goal",
-        isUserFacing: true,
-        readOnly: false,
-        systemOnly: false,
-        requirePermission: false,
-        alwaysPromptUser: false,
-        mcpRequiredCapabilities: [],
+        ...WRITE_TOOL_ANNOTATIONS,
       },
     },
     handler: (args, context) =>
@@ -664,12 +659,11 @@ export const makeAgentGateway = Effect.gen(function* () {
 
         yield* orchestrationEngine
           .dispatch({
-            type: "thread.goal.set",
+            type: "thread.meta.update",
             commandId: CommandId.makeUnsafe(`agent:${randomUUID()}:goal`),
             threadId: target.id,
             goal: achieved ? null : blocked ? target.goal : goal,
-            achievedAt: achieved ? new Date().toISOString() : undefined,
-            blockedAt: blocked ? new Date().toISOString() : undefined,
+            goalPausedAt: blocked ? new Date().toISOString() : null,
           })
           .pipe(Effect.mapError((error) => new ToolInputError(errorText(error))));
 

@@ -77,7 +77,7 @@ function resolve(input: {
     repository: repositoryWith(input.blob),
     threadId: THREAD_ID,
     messageId: MESSAGE_ID,
-    provider: "openai",
+    provider: "groq",
     operation: "thread.turn.start",
   });
 }
@@ -209,7 +209,7 @@ describe("provider attachment paths", () => {
         repository,
         threadId: THREAD_ID,
         messageId: MESSAGE_ID,
-        provider: "openai",
+        provider: "groq",
         operation: "thread.turn.start",
       }),
     );
@@ -218,7 +218,7 @@ describe("provider attachment paths", () => {
       loadProviderPromptImageBlocks({
         attachments,
         attachmentsDir,
-        provider: "openai",
+        provider: "groq",
         method: "turn/start",
         readFile: (filePath) =>
           Effect.tryPromise(async () => {

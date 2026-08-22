@@ -15,6 +15,7 @@ import {
   ProviderForkThreadInput,
   ModelSelection,
   NonNegativeInt,
+  ProviderKind,
   ThreadId,
   ProviderInterruptTurnInput,
   ProviderStopTaskInput,
@@ -250,9 +251,9 @@ function toRuntimePayloadFromSession(
 
 function readPersistedModelSelection(
   runtimePayload: ProviderRuntimeBinding["runtimePayload"],
-): ModelSelection | undefined {
+): typeof ModelSelection.Type | undefined {
   const raw = runtimePayloadRecord(runtimePayload).modelSelection;
-  return Schema.is(ModelSelection)(raw) ? raw : undefined;
+  return Schema.is(ModelSelection)(raw) ? (raw as typeof ModelSelection.Type) : undefined;
 }
 
 function readPersistedProviderOptions(
@@ -1524,7 +1525,7 @@ const makeProviderService = (options?: ProviderServiceLiveOptions) =>
         const input = {
           ...parsed,
           threadId,
-          provider: parsed.provider ?? "openai",
+          provider: (parsed.provider ?? "engine") as ProviderKind,
         };
         yield* validateAutoRuntimeMode(
           "ProviderService.startSession",
@@ -1545,14 +1546,14 @@ const makeProviderService = (options?: ProviderServiceLiveOptions) =>
               input.forkSourceResumeCursor !== undefined
                 ? undefined
                 : (input.resumeCursor ??
-                  (persistedBinding?.provider === input.provider
+                  (persistedBinding && persistedBinding.provider === input.provider
                     ? persistedBinding.resumeCursor
                     : undefined));
             const adapterStartInput = { ...input };
             delete adapterStartInput.resumeCursor;
             const effectiveProviderOptions =
               input.providerOptions ??
-              (persistedBinding?.provider === input.provider
+              (persistedBinding && persistedBinding.provider === input.provider
                 ? readPersistedProviderOptions(persistedBinding.runtimePayload)
                 : undefined);
             const adapter = yield* registry.getByProvider(input.provider);

@@ -421,14 +421,14 @@ layer("OrchestrationEventStore", (it) => {
           ? projectCreated.payload.defaultModelSelection
           : null,
         {
-          provider: "openai",
+          provider: "groq",
           model: "imported-project-model",
         },
       );
       assert.deepStrictEqual(
         threadCreated?.type === "thread.created" ? threadCreated.payload.modelSelection : null,
         {
-          provider: "openai",
+          provider: "groq",
           model: "gpt-5.5",
           options: {
             reasoningEffort: "medium",
@@ -440,7 +440,7 @@ layer("OrchestrationEventStore", (it) => {
           ? turnStartRequested.payload.modelSelection
           : null,
         {
-          provider: "openai",
+          provider: "groq",
           model: "gpt-5.5",
           options: {
             reasoningEffort: "medium",

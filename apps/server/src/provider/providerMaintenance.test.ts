@@ -14,21 +14,21 @@ import {
 } from "./providerMaintenance";
 
 const CODEX_DEFINITION = {
-  provider: "openai",
-  binaryName: "openai",
+  provider: "groq",
+  binaryName: "codex",
   npmPackageName: "@openai/codex",
-  homebrew: { name: "openai", kind: "cask" },
+  homebrew: { name: "codex", kind: "cask" },
   nativeUpdate: null,
 } as const satisfies PackageManagedProviderMaintenanceDefinition;
 
 const OPENCODE_DEFINITION = {
-  provider: "openai",
-  binaryName: "openai",
+  provider: "opencodeZen",
+  binaryName: "opencode",
   npmPackageName: "opencode-ai",
   homebrew: { name: "anomalyco/tap/opencode", kind: "formula" },
   latestVersionSource: { kind: "npm", name: "opencode-ai" },
   nativeUpdate: {
-    executable: "openai",
+    executable: "opencode",
     args: (installSource) =>
       installSource === "unknown" || installSource === "native"
         ? ["upgrade"]
@@ -40,7 +40,7 @@ const OPENCODE_DEFINITION = {
 } as const satisfies PackageManagedProviderMaintenanceDefinition;
 
 const CLAUDE_DEFINITION = {
-  provider: "anthropic",
+  provider: "groq",
   binaryName: "anthropic",
   npmPackageName: "@anthropic-ai/claude-code",
   homebrew: {
@@ -339,7 +339,7 @@ describe("providerMaintenance", () => {
 
   it("marks older semver versions as behind latest", () => {
     const advisory = createProviderVersionAdvisory({
-      provider: "openai",
+      provider: "groq",
       currentVersion: "0.129.0",
       latestVersion: "0.130.0",
     });
@@ -354,10 +354,10 @@ describe("providerMaintenance", () => {
     // `cursor-agent update` exists, but no registry publishes its version, so the
     // advisory can never reach "current" — callers must not read that as "outdated".
     const advisory = createProviderVersionAdvisory({
-      provider: "openai",
+      provider: "groq",
       currentVersion: "2026.07.09-c59fd9a",
       maintenanceCapabilities: makeProviderMaintenanceCapabilities({
-        provider: "openai",
+        provider: "groq",
         packageName: null,
         updateExecutable: "cursor-agent",
         updateArgs: ["update"],

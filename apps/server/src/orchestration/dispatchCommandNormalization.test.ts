@@ -153,17 +153,16 @@ describe("makeDispatchCommandNormalizer", () => {
     expect(preparedRoots).toEqual([]);
   });
 
-  it("prepares the Studio workspace root itself", async () => {
+  it("prepares caide-apps workspace root when createWorkspaceRootIfMissing is true", async () => {
     const preparedRoots: string[] = [];
     const normalizer = makeDispatchCommandNormalizer<Error>({
       attachmentsDir: "/tmp/attachments",
       chatWorkspaceRoot: "/Users/tester/Documents/Caide",
-      studioWorkspaceRoot: "/Users/tester/Documents/Caide/Studio",
       fileSystem: {} as FileSystem.FileSystem,
       path: {} as Path.Path,
-      canonicalizeProjectWorkspaceRoot: (workspaceRoot) => Effect.succeed(workspaceRoot),
+      canonicalizeProjectWorkspaceRoot: (workspaceRoot: string) => Effect.succeed(workspaceRoot),
       prepareChatWorkspaceRoot: () => Effect.void,
-      prepareStudioWorkspaceRoot: (workspaceRoot) =>
+      prepareCaideAppWorkspaceRoot: (workspaceRoot: string) =>
         Effect.sync(() => {
           preparedRoots.push(workspaceRoot);
         }),
@@ -172,51 +171,16 @@ describe("makeDispatchCommandNormalizer", () => {
     const result = await Effect.runPromise(
       normalizer({
         command: projectCreateCommand({
-          kind: "studio",
-          title: "Studio",
-          workspaceRoot: "/Users/tester/Documents/Caide/Studio",
+          kind: "project",
+          title: "Caide App",
+          workspaceRoot: "/Users/tester/caide-apps/my-app",
+          createWorkspaceRootIfMissing: true,
         }),
       }),
     );
     await runPrepareWorkspaceRoot(result);
 
-    expect(preparedRoots).toEqual(["/Users/tester/Documents/Caide/Studio"]);
-  });
-
-  it("prepares nested Studio workspace roots but not ordinary projects under Studio", async () => {
-    const preparedRoots: string[] = [];
-    const normalizer = makeDispatchCommandNormalizer<Error>({
-      attachmentsDir: "/tmp/attachments",
-      studioWorkspaceRoot: "/Users/tester/Documents/Caide/Studio",
-      fileSystem: {} as FileSystem.FileSystem,
-      path: {} as Path.Path,
-      canonicalizeProjectWorkspaceRoot: (workspaceRoot) => Effect.succeed(workspaceRoot),
-      prepareStudioWorkspaceRoot: (workspaceRoot) =>
-        Effect.sync(() => {
-          preparedRoots.push(workspaceRoot);
-        }),
-    });
-
-    const first = await Effect.runPromise(
-      normalizer({
-        command: projectCreateCommand({
-          kind: "studio",
-          workspaceRoot: "/Users/tester/Documents/Caide/Studio/Outbox",
-        }),
-      }),
-    );
-    await runPrepareWorkspaceRoot(first);
-    const second = await Effect.runPromise(
-      normalizer({
-        command: projectCreateCommand({
-          kind: "project",
-          workspaceRoot: "/Users/tester/Documents/Caide/Studio/SomeProject",
-        }),
-      }),
-    );
-    await runPrepareWorkspaceRoot(second);
-
-    expect(preparedRoots).toEqual(["/Users/tester/Documents/Caide/Studio/Outbox"]);
+    expect(preparedRoots).toEqual(["/Users/tester/caide-apps/my-app"]);
   });
 
   it("defers binary attachment authority to the transactional managed ledger", async () => {

@@ -27,6 +27,7 @@ import type {
   PreviewTestResult,
   PreviewScreenshotResult,
   FlutterToolchainStatusResult,
+  FlutterToolchainInstallResult,
 } from "@caide/contracts";
 import type { ProviderSession, ThreadId } from "@caide/contracts";
 import type { ProviderAdapterError } from "../Errors.ts";
@@ -117,18 +118,7 @@ export interface EnginePreviewOps {
     ProviderAdapterError
   >;
   flutterToolchainInstall(input: { threadId: ThreadId }): Effect.Effect<
-    {
-      status: {
-        supported: boolean;
-        installed: boolean;
-        version: string;
-        root: string;
-        sdkPath: string;
-        flutterBin: string;
-        estimatedDownloadBytes: number;
-        unsupportedReason: string | null;
-      };
-    },
+    FlutterToolchainInstallResult,
     ProviderAdapterError
   >;
 }

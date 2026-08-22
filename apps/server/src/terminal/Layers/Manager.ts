@@ -2326,7 +2326,7 @@ export class TerminalManagerRuntime extends EventEmitter<TerminalManagerEvents> 
       terminalId: session.terminalId,
       createdAt: new Date().toISOString(),
       hasRunningSubprocess: session.hasRunningSubprocess,
-      cliKind: session.detectedCliKind,
+      cliKind: session.detectedCliKind as any,
       agentState: deriveActivityAgentState(session),
     });
   }

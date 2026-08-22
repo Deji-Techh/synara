@@ -23,12 +23,12 @@ const TURN_ID = TurnId.makeUnsafe("turn-activity-projection");
 
 function runtimeEvent(input: Record<string, unknown> & { eventId: string }): ProviderRuntimeEvent {
   return {
-    provider: "openai",
+    provider: "groq",
     createdAt: CREATED_AT,
     threadId: THREAD_ID,
     ...input,
     eventId: EventId.makeUnsafe(input.eventId),
-  } as ProviderRuntimeEvent;
+  } as unknown as ProviderRuntimeEvent;
 }
 
 /**

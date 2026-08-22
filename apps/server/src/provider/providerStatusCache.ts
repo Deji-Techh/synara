@@ -11,16 +11,10 @@ import { Cause, Effect, FileSystem, Schema } from "effect";
 import { writeFileStringAtomically } from "../atomicWrite";
 
 const PROVIDER_STATUS_CACHE_IDS = [
-  "openai",
-  "anthropic",
-  "openai",
-  "google",
-  "openai",
-  "openai",
-  "openai",
-  "openai",
-  "openai",
   "engine",
+  "groq",
+  "opencodeZen",
+  "opencodeGo",
 ] as const satisfies ReadonlyArray<ServerProviderStatus["provider"]>;
 
 const decodeProviderStatusCache = Schema.decodeUnknownEffect(

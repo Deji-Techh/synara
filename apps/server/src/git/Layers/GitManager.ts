@@ -1450,7 +1450,6 @@ export const makeGitManager = Effect.gen(function* () {
       ...buildGitTextGenerationCallInput({
         textGenerationModel: input.textGenerationModel,
         textGenerationModelSelection: input.textGenerationModelSelection,
-        codexHomePath: input.codexHomePath,
         providerOptions: input.providerOptions,
       }),
     });

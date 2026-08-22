@@ -123,7 +123,7 @@ export function buildDroidAcpSpawnInput(
     command: resolveDroidCliBinaryPath(droidSettings?.binaryPath),
     args,
     cwd,
-    env: buildProviderChildEnvironment({ provider: "openai" }),
+    env: buildProviderChildEnvironment({ provider: "droid" }),
   };
 }
 

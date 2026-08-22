@@ -39,7 +39,7 @@ it.layer(NodeServices.layer)("resolveEditorLaunch", (it) => {
   it.effect("returns commands for command-based editors", () =>
     Effect.gen(function* () {
       const antigravityLaunch = yield* resolveEditorLaunch(
-        { cwd: "/tmp/workspace", editor: "google" },
+        { cwd: "/tmp/workspace", editor: "antigravity" },
         "linux",
         { PATH: "" },
       );
@@ -49,12 +49,12 @@ it.layer(NodeServices.layer)("resolveEditorLaunch", (it) => {
       });
 
       const cursorLaunch = yield* resolveEditorLaunch(
-        { cwd: "/tmp/workspace", editor: "openai" },
+        { cwd: "/tmp/workspace", editor: "cursor" },
         "linux",
         { PATH: "" },
       );
       assert.deepEqual(cursorLaunch, {
-        command: "openai",
+        command: "cursor",
         args: ["/tmp/workspace"],
       });
 
@@ -123,22 +123,22 @@ it.layer(NodeServices.layer)("resolveEditorLaunch", (it) => {
   it.effect("uses --goto when editor supports line/column suffixes", () =>
     Effect.gen(function* () {
       const lineOnly = yield* resolveEditorLaunch(
-        { cwd: "/tmp/workspace/AGENTS.md:48", editor: "openai" },
+        { cwd: "/tmp/workspace/AGENTS.md:48", editor: "cursor" },
         "linux",
         { PATH: "" },
       );
       assert.deepEqual(lineOnly, {
-        command: "openai",
+        command: "cursor",
         args: ["--goto", "/tmp/workspace/AGENTS.md:48"],
       });
 
       const lineAndColumn = yield* resolveEditorLaunch(
-        { cwd: "/tmp/workspace/src/open.ts:71:5", editor: "openai" },
+        { cwd: "/tmp/workspace/src/open.ts:71:5", editor: "cursor" },
         "linux",
         { PATH: "" },
       );
       assert.deepEqual(lineAndColumn, {
-        command: "openai",
+        command: "cursor",
         args: ["--goto", "/tmp/workspace/src/open.ts:71:5"],
       });
 
@@ -536,7 +536,7 @@ it.layer(NodeServices.layer)("resolveAvailableEditors", (it) => {
         PATH: dir,
         PATHEXT: ".COM;.EXE;.BAT;.CMD",
       });
-      assert.deepEqual(editors, ["openai", "vscode-insiders", "zed", "file-manager"]);
+      assert.deepEqual(editors, ["cursor", "vscode-insiders", "zed", "file-manager"]);
     }),
   );
 

@@ -4,16 +4,16 @@
 
 export type ProviderChildKind =
   | "acp"
-  | "google"
-  | "anthropic"
-  | "openai"
-  | "openai"
-  | "openai"
+  | "antigravity"
+  | "claude"
+  | "codex"
+  | "cursor"
+  | "droid"
   | "engine"
-  | "openai"
-  | "openai"
-  | "openai"
-  | "openai";
+  | "grok"
+  | "kilo"
+  | "opencode"
+  | "pi";
 
 const PROVIDER_CREDENTIAL_KEYS = new Set([
   "ANTHROPIC_API_KEY",
@@ -78,7 +78,10 @@ export function buildProviderChildEnvironment(input: {
   };
   const allowedCaideKeys = new Set(input.inheritedCaideKeys ?? []);
   const allowedNativeCapabilities = new Set(input.inheritedNativeCapabilityKeys ?? []);
-  const credentialGrants = PROVIDER_CREDENTIAL_GRANTS[input.provider];
+  const credentialGrants =
+    input.provider in PROVIDER_CREDENTIAL_GRANTS
+      ? PROVIDER_CREDENTIAL_GRANTS[input.provider as keyof typeof PROVIDER_CREDENTIAL_GRANTS]
+      : "all";
   const childEnv: NodeJS.ProcessEnv = {};
 
   for (const [key, value] of Object.entries(baseEnv)) {

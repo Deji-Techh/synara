@@ -1598,7 +1598,7 @@ describe("startSession", () => {
             codex: {
               binaryPath: process.execPath,
             },
-          },
+          } as any,
         }),
       ).rejects.toThrow(formatMissingCodexWorkingDirectoryError(missingCwd));
       expect(events).toEqual([
@@ -4458,7 +4458,7 @@ describe.skipIf(!process.env.CODEX_BINARY_PATH)("startSession live Codex resume"
             ...(process.env.CODEX_BINARY_PATH ? { binaryPath: process.env.CODEX_BINARY_PATH } : {}),
             ...(process.env.CODEX_HOME_PATH ? { homePath: process.env.CODEX_HOME_PATH } : {}),
           },
-        },
+        } as any,
       });
 
       const firstTurn = await manager.sendTurn({
@@ -4493,7 +4493,7 @@ describe.skipIf(!process.env.CODEX_BINARY_PATH)("startSession live Codex resume"
             ...(process.env.CODEX_BINARY_PATH ? { binaryPath: process.env.CODEX_BINARY_PATH } : {}),
             ...(process.env.CODEX_HOME_PATH ? { homePath: process.env.CODEX_HOME_PATH } : {}),
           },
-        },
+        } as any,
       });
 
       expect(resumedSession.threadId).toBe(originalThreadId);

@@ -89,8 +89,8 @@ projectionRepositoriesLayer("Projection repositories", (it) => {
         title: "Null options project",
         workspaceRoot: "/tmp/project-null-options",
         defaultModelSelection: {
-          provider: "openai",
-          model: "gpt-5.4",
+          provider: "groq",
+          model: "llama-3.3-70b-versatile",
         },
         scripts: [],
         isPinned: false,
@@ -115,8 +115,8 @@ projectionRepositoriesLayer("Projection repositories", (it) => {
       assert.strictEqual(
         row.defaultModelSelection,
         JSON.stringify({
-          provider: "openai",
-          model: "gpt-5.4",
+          provider: "groq",
+          model: "llama-3.3-70b-versatile",
         }),
       );
 
@@ -124,8 +124,8 @@ projectionRepositoriesLayer("Projection repositories", (it) => {
         projectId: ProjectId.makeUnsafe("project-null-options"),
       });
       assert.deepStrictEqual(Option.getOrNull(persisted)?.defaultModelSelection, {
-        provider: "openai",
-        model: "gpt-5.4",
+        provider: "groq",
+        model: "llama-3.3-70b-versatile",
       });
     }),
   );
@@ -140,8 +140,8 @@ projectionRepositoriesLayer("Projection repositories", (it) => {
         projectId: ProjectId.makeUnsafe("project-null-options"),
         title: "Null options thread",
         modelSelection: {
-          provider: "anthropic",
-          model: "claude-opus-4-6",
+          provider: "groq",
+          model: "llama-3.3-70b-versatile",
         },
         runtimeMode: "full-access",
         interactionMode: "default",
@@ -182,8 +182,8 @@ projectionRepositoriesLayer("Projection repositories", (it) => {
       assert.strictEqual(
         row.modelSelection,
         JSON.stringify({
-          provider: "anthropic",
-          model: "claude-opus-4-6",
+          provider: "groq",
+          model: "llama-3.3-70b-versatile",
         }),
       );
 
@@ -191,8 +191,8 @@ projectionRepositoriesLayer("Projection repositories", (it) => {
         threadId: ThreadId.makeUnsafe("thread-null-options"),
       });
       assert.deepStrictEqual(Option.getOrNull(persisted)?.modelSelection, {
-        provider: "anthropic",
-        model: "claude-opus-4-6",
+        provider: "groq",
+        model: "llama-3.3-70b-versatile",
       });
     }),
   );
@@ -230,7 +230,7 @@ projectionRepositoriesLayer("Projection repositories", (it) => {
         threadId: ThreadId.makeUnsafe(threadId),
         projectId: ProjectId.makeUnsafe("project-wait-snapshot"),
         title: threadId,
-        modelSelection: { provider: "openai" as const, model: "gpt-5.5" },
+        modelSelection: { provider: "groq" as const, model: "llama-3.3-70b-versatile" },
         runtimeMode: "approval-required" as const,
         interactionMode: "default" as const,
         envMode: "local" as const,

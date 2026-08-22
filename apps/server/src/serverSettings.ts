@@ -68,7 +68,7 @@ function migrateSettings(settings: ServerSettings, migrationVersion: number): Se
   const selection = settings.textGenerationModelSelection;
   if (
     migrationVersion >= 2 ||
-    selection.provider !== "openai" ||
+    selection.provider !== "groq" ||
     selection.model !== PREVIOUS_GIT_TEXT_GENERATION_MODEL
   ) {
     return settings;
@@ -152,11 +152,14 @@ const PROVIDER_ORDER: readonly ProviderWithDefaultModel[] = [...API_PROVIDER_KIN
 
 function resolveTextGenerationProvider(settings: ServerSettings): ServerSettings {
   const selection = settings.textGenerationModelSelection;
-  if (settings.providers[selection.provider].enabled) {
+  const currentProvider = (settings.providers as Record<string, { enabled?: boolean }>)[selection.provider];
+  if (currentProvider?.enabled) {
     return settings;
   }
 
-  const fallback = PROVIDER_ORDER.find((provider) => settings.providers[provider].enabled);
+  const fallback = PROVIDER_ORDER.find(
+    (provider) => (settings.providers as Record<string, { enabled?: boolean }>)[provider]?.enabled,
+  );
   if (!fallback) {
     return settings;
   }

@@ -118,15 +118,15 @@ const CODEX_AUTH_STATUS_ARGS = ["-c", "mcp_servers={}", "login", "status"] as co
 // must be dropped before a status list reaches the wire (the ServerConfig
 // schema rejects unknown kinds, which would fail the whole config response and
 // strand the picker on "Checking").
-const CODEX_PROVIDER = "openai" as const;
-const CLAUDE_AGENT_PROVIDER = "anthropic" as const;
-const CURSOR_PROVIDER = "openai" as const;
-const ANTIGRAVITY_PROVIDER = "google" as const;
-const GROK_PROVIDER = "openai" as const;
-const DROID_PROVIDER = "openai" as const;
-const KILO_PROVIDER = "openai" as const;
-const OPENCODE_PROVIDER = "openai" as const;
-const PI_PROVIDER = "openai" as const;
+const CODEX_PROVIDER = "groq" as const;
+const CLAUDE_AGENT_PROVIDER = "groq" as const;
+const CURSOR_PROVIDER = "groq" as const;
+const ANTIGRAVITY_PROVIDER = "groq" as const;
+const GROK_PROVIDER = "groq" as const;
+const DROID_PROVIDER = "groq" as const;
+const KILO_PROVIDER = "groq" as const;
+const OPENCODE_PROVIDER = "groq" as const;
+const PI_PROVIDER = "groq" as const;
 const ENGINE_PROVIDER = "engine" as const;
 
 const SURVIVING_PROVIDER_KINDS: ReadonlySet<ProviderKind> = new Set<ProviderKind>([
@@ -143,27 +143,16 @@ type ProviderStatuses = ReadonlyArray<ServerProviderStatus>;
 const DISABLED_PROVIDER_STATUS_MESSAGE = "Provider is disabled in Caide settings.";
 const MINIMUM_ANTIGRAVITY_CLI_VERSION = "1.0.12";
 
-const PROVIDERS = [
-  CODEX_PROVIDER,
-  CLAUDE_AGENT_PROVIDER,
-  CURSOR_PROVIDER,
-  ANTIGRAVITY_PROVIDER,
-  GROK_PROVIDER,
-  DROID_PROVIDER,
-  KILO_PROVIDER,
-  OPENCODE_PROVIDER,
-  PI_PROVIDER,
+const PROVIDERS: ReadonlyArray<ProviderKind> = [
   ENGINE_PROVIDER,
-] as const satisfies ReadonlyArray<ProviderKind>;
-
-const providerChildKind = (provider: ProviderCliKind): ProviderChildKind =>
-  provider === CLAUDE_AGENT_PROVIDER ? "anthropic" : provider;
+  ...API_PROVIDER_KINDS,
+];
 
 const isProviderCliKind = (provider: ProviderKind): provider is ProviderCliKind =>
-  !(API_PROVIDER_KINDS as readonly ProviderKind[]).includes(provider);
+  provider === ENGINE_PROVIDER;
 
-const providerCommandEnv = (provider: ProviderCliKind): NodeJS.ProcessEnv =>
-  buildProviderChildEnvironment({ provider: providerChildKind(provider) });
+const providerCommandEnv = (provider: ProviderChildKind): NodeJS.ProcessEnv =>
+  buildProviderChildEnvironment({ provider });
 
 const UPDATE_OUTPUT_MAX_BYTES = 10_000;
 export const PROVIDER_UPDATE_TIMEOUT_MS = 2 * 60_000;
@@ -211,17 +200,17 @@ function isKiloNativeCommandPath(commandPath: string): boolean {
 }
 
 export const PACKAGE_MANAGED_PROVIDER_UPDATES: Partial<
-  Record<ProviderKind, PackageManagedProviderMaintenanceDefinition>
+  Record<string, PackageManagedProviderMaintenanceDefinition>
 > = {
   codex: {
-    provider: CODEX_PROVIDER,
-    binaryName: "openai",
+    provider: "groq",
+    binaryName: "codex",
     npmPackageName: "@openai/codex",
-    homebrew: { name: "openai", kind: "cask" },
+    homebrew: { name: "codex", kind: "cask" },
     nativeUpdate: null,
   },
   claudeAgent: {
-    provider: CLAUDE_AGENT_PROVIDER,
+    provider: "groq",
     binaryName: "anthropic",
     npmPackageName: "@anthropic-ai/claude-code",
     homebrew: {
@@ -239,61 +228,39 @@ export const PACKAGE_MANAGED_PROVIDER_UPDATES: Partial<
       executable: "anthropic",
       args: () => ["update"],
       lockKey: "claude-native",
-      strategy: "matching-path",
-      // Native Claude owns stable/latest channel selection. npm's latest tag cannot
-      // tell whether the installed CLI is current for the user's configured channel.
-      latestVersionSource: null,
+      strategy: "always",
       isCommandPath: isClaudeNativeCommandPath,
     },
   },
-  antigravity: {
-    provider: ANTIGRAVITY_PROVIDER,
-    binaryName: "agy",
-    // Antigravity is distributed as a native binary and owns its update channel.
-    npmPackageName: null,
-    homebrew: null,
-    latestVersionSource: null,
-    nativeUpdate: {
-      executable: "agy",
-      args: () => ["update"],
-      lockKey: "antigravity-native",
-      strategy: "always",
-    },
-  },
-  droid: {
-    provider: DROID_PROVIDER,
+  grok: {
+    provider: "groq",
     binaryName: "openai",
-    npmPackageName: "@factory/cli",
+    npmPackageName: "@xai-org/grok-cli",
     homebrew: null,
-    nativeUpdate: {
-      executable: "openai",
-      args: () => ["update"],
-      lockKey: "droid-native",
-      strategy: "always",
-    },
+    nativeUpdate: null,
   },
   kilo: {
-    provider: KILO_PROVIDER,
+    provider: "groq",
     binaryName: "openai",
-    npmPackageName: "@kilocode/cli",
+    npmPackageName: "@kilo-ai/kilo",
     homebrew: null,
     nativeUpdate: {
       executable: "openai",
       args: () => ["upgrade"],
       lockKey: "kilo-native",
-      strategy: "matching-path",
+      strategy: "always",
       isCommandPath: isKiloNativeCommandPath,
     },
   },
   opencode: {
-    provider: OPENCODE_PROVIDER,
-    binaryName: "openai",
+    provider: "opencodeZen",
+    binaryName: "opencode",
     npmPackageName: "opencode-ai",
     homebrew: { name: "anomalyco/tap/opencode", kind: "formula" },
     latestVersionSource: { kind: "npm", name: "opencode-ai" },
     nativeUpdate: {
-      executable: "openai",
-      args: (installSource) =>
+      executable: "opencode",
+      args: (installSource: string) =>
         installSource === "unknown" || installSource === "native"
           ? ["upgrade"]
           : ["upgrade", "--method", installSource],
@@ -304,7 +271,7 @@ export const PACKAGE_MANAGED_PROVIDER_UPDATES: Partial<
     },
   },
   pi: {
-    provider: PI_PROVIDER,
+    provider: "groq",
     binaryName: "openai",
     npmPackageName: "@earendil-works/pi-coding-agent",
     homebrew: null,
@@ -724,7 +691,7 @@ const runProviderCommand = (
 const runCodexCommand = (
   args: ReadonlyArray<string>,
   executable = "openai",
-  env: NodeJS.ProcessEnv = providerCommandEnv(CODEX_PROVIDER),
+  env: NodeJS.ProcessEnv = providerCommandEnv("codex"),
 ) =>
   runProviderCommand(executable, args, env).pipe(
     Effect.flatMap((result) =>
@@ -748,7 +715,7 @@ const runClaudeCommand = (
   );
 
 const runGrokCommand = (args: ReadonlyArray<string>, executable = "openai") =>
-  runProviderCommand(executable, args, providerCommandEnv(GROK_PROVIDER)).pipe(
+  runProviderCommand(executable, args, providerCommandEnv("grok")).pipe(
     Effect.flatMap((result) =>
       isWindowsShellCommandMissingResult({ code: result.code, stderr: result.stderr })
         ? Effect.fail(new Error(`spawn ${executable} ENOENT`))
@@ -757,7 +724,7 @@ const runGrokCommand = (args: ReadonlyArray<string>, executable = "openai") =>
   );
 
 const runOpenCodeCommand = (args: ReadonlyArray<string>, executable = "openai") =>
-  runProviderCommand(executable, args, providerCommandEnv(OPENCODE_PROVIDER)).pipe(
+  runProviderCommand(executable, args, providerCommandEnv("opencode")).pipe(
     Effect.flatMap((result) =>
       isWindowsShellCommandMissingResult({ code: result.code, stderr: result.stderr })
         ? Effect.fail(new Error(`spawn ${executable} ENOENT`))
@@ -766,7 +733,7 @@ const runOpenCodeCommand = (args: ReadonlyArray<string>, executable = "openai") 
   );
 
 const runKiloCommand = (args: ReadonlyArray<string>, executable = "openai") =>
-  runProviderCommand(executable, args, providerCommandEnv(KILO_PROVIDER)).pipe(
+  runProviderCommand(executable, args, providerCommandEnv("kilo")).pipe(
     Effect.flatMap((result) =>
       isWindowsShellCommandMissingResult({ code: result.code, stderr: result.stderr })
         ? Effect.fail(new Error(`spawn ${executable} ENOENT`))
@@ -861,7 +828,7 @@ function cursorModelsOutputHasNoModels(output: string): boolean {
 }
 
 const runPiCommand = (args: ReadonlyArray<string>, executable = "openai") =>
-  runProviderCommand(executable, args, providerCommandEnv(PI_PROVIDER)).pipe(
+  runProviderCommand(executable, args, providerCommandEnv("pi")).pipe(
     Effect.flatMap((result) =>
       isWindowsShellCommandMissingResult({ code: result.code, stderr: result.stderr })
         ? Effect.fail(new Error(`spawn ${executable} ENOENT`))
@@ -870,7 +837,7 @@ const runPiCommand = (args: ReadonlyArray<string>, executable = "openai") =>
   );
 
 const runAntigravityCommand = (args: ReadonlyArray<string>, executable = "agy") =>
-  runProviderCommand(executable, args, providerCommandEnv(ANTIGRAVITY_PROVIDER)).pipe(
+  runProviderCommand(executable, args, providerCommandEnv("antigravity")).pipe(
     Effect.flatMap((result) =>
       isWindowsShellCommandMissingResult({ code: result.code, stderr: result.stderr })
         ? Effect.fail(new Error(`spawn ${executable} ENOENT`))
@@ -1355,7 +1322,7 @@ export const checkGrokProviderStatus = makeCheckGrokProviderStatus();
 // ── Droid health check ─────────────────────────────────────────────
 
 const runDroidCommand = (args: ReadonlyArray<string>, executable = "openai") =>
-  runProviderCommand(executable, args, providerCommandEnv(DROID_PROVIDER));
+  runProviderCommand(executable, args, providerCommandEnv("droid"));
 
 export const makeCheckDroidProviderStatus = (
   binaryPath?: string,
@@ -2034,11 +2001,12 @@ export function stabilizeProviderStatusesAgainstTransientTimeouts(
 }
 
 export function isProviderEnabledForSettings(
-  provider: ProviderKind,
+  provider: ProviderKind | ProviderChildKind,
   settings: ServerSettings,
 ): boolean {
   return (
-    settings.providers[provider]?.enabled !== false && settings.providers[provider] !== undefined
+    (settings.providers as any)[provider]?.enabled !== false &&
+    (settings.providers as any)[provider] !== undefined
   );
 }
 
@@ -2103,14 +2071,12 @@ function makeApiProviderStatus(
   settings: ServerSettings,
   checkedAt: string,
 ): ServerProviderStatus {
-  const isOllama = provider === "ollama";
-  // Ollama runs a local server, so it works without an API key.
-  if (settings.providers[provider]?.apiKeyConfigured === true || isOllama) {
+  if (settings.providers[provider]?.apiKeyConfigured === true) {
     return {
       provider,
       status: "ready" as const,
       available: true,
-      authStatus: isOllama ? ("unknown" as const) : ("authenticated" as const),
+      authStatus: "authenticated" as const,
       checkedAt,
     };
   }
@@ -2279,26 +2245,10 @@ export function makeProviderHealthLive(options?: { readonly providerUpdateTimeou
 
       const getProviderBinaryPath = (provider: ProviderKind, settings: ServerSettings) => {
         switch (provider) {
-          case "openai":
-            return (settings.providers as any).codex?.binaryPath;
-          case "anthropic":
-            return (settings.providers as any).claudeAgent?.binaryPath;
-          case "openai":
-            return (settings.providers as any).cursor?.binaryPath;
-          case "google":
-            return (settings.providers as any).antigravity?.binaryPath;
-          case "openai":
-            return (settings.providers as any).grok?.binaryPath;
-          case "openai":
-            return (settings.providers as any).droid?.binaryPath;
-          case "openai":
-            return (settings.providers as any).kilo?.binaryPath;
-          case "openai":
-            return (settings.providers as any).opencode?.binaryPath;
-          case "openai":
-            return (settings.providers as any).pi?.binaryPath;
           case "engine":
             return settings.providers.engine.binaryPath;
+          default:
+            return undefined;
         }
       };
 
@@ -2325,7 +2275,7 @@ export function makeProviderHealthLive(options?: { readonly providerUpdateTimeou
               updateLockKey: null,
             });
           }
-          if (provider === "openai") {
+          if ((provider as string) === "cursor") {
             const command = buildCursorAgentCommand(getProviderBinaryPath(provider, settings), [
               "update",
             ]);
@@ -2455,7 +2405,7 @@ export function makeProviderHealthLive(options?: { readonly providerUpdateTimeou
 
       const checkProviderWhenEnabled = <R>(
         settings: ServerSettings,
-        provider: ProviderKind,
+        provider: ProviderKind | ProviderChildKind,
         check: Effect.Effect<ServerProviderStatus, never, R>,
       ): Effect.Effect<Option.Option<ServerProviderStatus>, never, R> =>
         isProviderEnabledForSettings(provider, settings)

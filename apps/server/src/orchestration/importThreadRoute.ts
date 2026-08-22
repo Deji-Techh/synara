@@ -41,24 +41,11 @@ function importMessagesError(message: string): ImportThreadError {
 
 function providerResumeCursorForImport(provider: ProviderKind, externalId: string): unknown {
   switch (provider) {
-    case "anthropic":
-      return { resume: externalId };
     case "engine":
       return { schemaVersion: 1, sessionId: externalId };
-    case "openai":
-    case "google":
-    case "openrouter":
-    case "ollama":
-    case "deepseek":
     case "groq":
-    case "mistral":
-    case "together":
-    case "cohere":
-    case "xai":
-    case "fireworks":
     case "opencodeZen":
     case "opencodeGo":
-      return { threadId: externalId };
     default:
       return { threadId: externalId };
   }
@@ -201,62 +188,6 @@ export function makeImportThreadHandler(options: ImportThreadHandlerOptions) {
     }
   });
 
-  const importOpenAiThreadHistory = Effect.fn(function* (input: {
-    readonly importedAt: string;
-    readonly threadId: ThreadId;
-  }) {
-    const adapter = yield* options.providerAdapterRegistry.getByProvider("openai");
-    const snapshot = yield* adapter
-      .readThread(input.threadId)
-      .pipe(
-        Effect.mapError((cause) =>
-          importMessagesError(
-            cause instanceof Error && cause.message.length > 0
-              ? cause.message
-              : "Failed to read OpenAI thread history.",
-          ),
-        ),
-      );
-
-    yield* dispatchImportedMessages({
-      threadId: input.threadId,
-      messages: mapCodexSnapshotMessages({
-        threadId: input.threadId,
-        turns: snapshot.turns,
-        importedAt: input.importedAt,
-      }),
-      createdAt: input.importedAt,
-    });
-  });
-
-  const importAnthropicThreadHistory = Effect.fn(function* (input: {
-    readonly importedAt: string;
-    readonly threadId: ThreadId;
-  }) {
-    const adapter = yield* options.providerAdapterRegistry.getByProvider("anthropic");
-    const snapshot = yield* adapter
-      .readThread(input.threadId)
-      .pipe(
-        Effect.mapError((cause) =>
-          importMessagesError(
-            cause instanceof Error && cause.message.length > 0
-              ? cause.message
-              : "Failed to read Anthropic session history.",
-          ),
-        ),
-      );
-
-    yield* dispatchImportedMessages({
-      threadId: input.threadId,
-      messages: mapCodexSnapshotMessages({
-        threadId: input.threadId,
-        turns: snapshot.turns,
-        importedAt: input.importedAt,
-      }),
-      createdAt: input.importedAt,
-    });
-  });
-
   const importEngineThreadHistory = Effect.fn(function* (input: {
     readonly importedAt: string;
     readonly threadId: ThreadId;
@@ -380,11 +311,7 @@ export function makeImportThreadHandler(options: ImportThreadHandlerOptions) {
     const externalId = body.externalId.trim();
 
     const importedProviderContext =
-      (thread.modelSelection.provider === "openai" ||
-        thread.modelSelection.provider === "anthropic" ||
-        thread.modelSelection.provider === "engine" ||
-        thread.modelSelection.provider === "google") &&
-      project
+      thread.modelSelection.provider === "engine" && project
         ? yield* resolveImportedProviderThreadContext({
             provider: thread.modelSelection.provider,
             externalId,
@@ -402,13 +329,6 @@ export function makeImportThreadHandler(options: ImportThreadHandlerOptions) {
       });
     }
 
-    if (thread.modelSelection.provider === "anthropic") {
-      yield* ensureAnthropicThreadImportable({
-        cwd,
-        externalId,
-      });
-    }
-
     const importResumeCursor = providerResumeCursorForImport(
       thread.modelSelection.provider,
       externalId,
@@ -420,31 +340,17 @@ export function makeImportThreadHandler(options: ImportThreadHandlerOptions) {
         ? { cwd: importedProviderContext?.runtimeCwd ?? cwd }
         : {}),
       modelSelection: thread.modelSelection,
-      ...(thread.modelSelection.provider === "openai"
-        ? { forkSourceResumeCursor: importResumeCursor }
-        : { resumeCursor: importResumeCursor }),
+      resumeCursor: importResumeCursor,
       runtimeMode: thread.runtimeMode,
     });
 
     yield* Effect.gen(function* () {
-      if (thread.modelSelection.provider === "openai") {
-        yield* importOpenAiThreadHistory({
-          threadId: thread.id,
-          importedAt: session.updatedAt,
-        });
-      } else if (thread.modelSelection.provider === "anthropic") {
-        yield* importAnthropicThreadHistory({
-          threadId: thread.id,
-          importedAt: session.updatedAt,
-        });
-      } else if (thread.modelSelection.provider === "engine") {
+      if (thread.modelSelection.provider === "engine") {
         yield* importEngineThreadHistory({
           threadId: thread.id,
           importedAt: session.updatedAt,
         });
       } else if (
-        thread.modelSelection.provider === "google" ||
-        thread.modelSelection.provider === "openrouter" ||
         thread.modelSelection.provider === "opencodeZen" ||
         thread.modelSelection.provider === "opencodeGo"
       ) {

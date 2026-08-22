@@ -208,7 +208,7 @@ describe("agent gateway target resolver", () => {
         provider: "openai" as const,
         model: "openai/gpt-5",
         options: { variant: "high" },
-      };
+      } as unknown as ModelSelection;
       assert.deepEqual(
         yield* resolveAgentGatewayTarget({ target: accepted, discovery: optionDiscovery }),
         accepted,
@@ -217,7 +217,7 @@ describe("agent gateway target resolver", () => {
         provider: "openai" as const,
         model: "openai/gpt-5",
         options: { agent: "build" },
-      };
+      } as unknown as ModelSelection;
       assert.deepEqual(
         yield* resolveAgentGatewayTarget({ target: explicitAgent, discovery: optionDiscovery }),
         explicitAgent,
@@ -226,7 +226,7 @@ describe("agent gateway target resolver", () => {
         provider: "openai" as const,
         model: "openai/gpt-5",
         options: { agent: "plan" },
-      };
+      } as unknown as ModelSelection;
       assert.deepEqual(
         yield* resolveAgentGatewayTarget({ target: kiloAgent, discovery: optionDiscovery }),
         kiloAgent,
@@ -481,14 +481,14 @@ describe("agent gateway target resolver", () => {
         provider: "openai" as const,
         model: descriptor.slug,
         options: { agent: "build" },
-      };
+      } as unknown as ModelSelection;
       assert.deepEqual(
         yield* resolveAgentGatewayTarget({ target: accepted, discovery: restrictedDiscovery }),
         accepted,
       );
 
       const rejected = yield* resolveAgentGatewayTarget({
-        target: { ...accepted, options: { agent: "invented" } },
+        target: { ...accepted, options: { agent: "invented" } } as unknown as ModelSelection,
         discovery: restrictedDiscovery,
       }).pipe(
         Effect.map(() => ({ code: "unexpected-success" })),
@@ -511,7 +511,7 @@ describe("agent gateway target resolver", () => {
         unrestrictedGuidance.providerOptions.find((option) => option.key === "agent"),
         { allowedValues: [], allowsCustomValue: true },
       );
-      const custom = { ...accepted, options: { agent: "custom-agent" } };
+      const custom = { ...accepted, options: { agent: "custom-agent" } } as unknown as ModelSelection;
       assert.deepEqual(
         yield* resolveAgentGatewayTarget({ target: custom, discovery: unrestrictedDiscovery }),
         custom,

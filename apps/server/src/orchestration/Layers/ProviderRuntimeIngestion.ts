@@ -303,13 +303,13 @@ function reasoningSummaryBufferKey(
   event: ProviderRuntimeEvent,
   threadId = event.threadId,
 ): string | null {
-  if ((event.provider !== "openai" && event.provider !== "google") || !event.itemId) {
+  if (!event.itemId) {
     return null;
   }
   if (
     event.type === "content.delta" &&
     (event.payload.streamKind === "reasoning_summary_text" ||
-      (event.provider === "google" && event.payload.streamKind === "reasoning_text"))
+      event.payload.streamKind === "reasoning_text")
   ) {
     return [threadId, event.turnId ?? "no-turn", event.itemId].join(":");
   }
@@ -343,7 +343,6 @@ function withBufferedReasoningSummary(
 ): ProviderRuntimeEvent {
   if (
     event.type !== "item.completed" ||
-    (event.provider !== "openai" && event.provider !== "google") ||
     event.payload.itemType !== "reasoning" ||
     readableReasoningDetail(event.payload.detail)
   ) {
@@ -2094,7 +2093,7 @@ const make = Effect.gen(function* () {
         reasoningSummaryKey &&
         event.type === "content.delta" &&
         (event.payload.streamKind === "reasoning_summary_text" ||
-          (event.provider === "google" && event.payload.streamKind === "reasoning_text")) &&
+          event.payload.streamKind === "reasoning_text") &&
         event.payload.delta.length > 0
       ) {
         yield* appendBufferedReasoningSummary(reasoningSummaryKey, event);

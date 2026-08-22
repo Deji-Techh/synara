@@ -27,7 +27,7 @@ function threadShell(overrides: Partial<OrchestrationThreadShell> = {}): Orchest
     id: THREAD_ID,
     projectId: ProjectId.makeUnsafe("project-reconcile"),
     title: "Runtime reconciliation",
-    modelSelection: { provider: "openai", model: "gpt-5.6" },
+    modelSelection: { provider: "groq", model: "llama-3.3-70b-versatile" },
     runtimeMode: "full-access",
     interactionMode: "default",
     branch: null,
@@ -64,7 +64,7 @@ function threadShell(overrides: Partial<OrchestrationThreadShell> = {}): Orchest
     session: {
       threadId: THREAD_ID,
       status: "running",
-      providerName: "openai",
+      providerName: "groq",
       runtimeMode: "full-access",
       activeTurnId: OLD_TURN_ID,
       lastError: null,
@@ -76,7 +76,7 @@ function threadShell(overrides: Partial<OrchestrationThreadShell> = {}): Orchest
 
 function binding(
   activeTurnId: string | null = OLD_TURN_ID,
-  provider: ProviderRuntimeBinding["provider"] = "openai",
+  provider: ProviderRuntimeBinding["provider"] = "groq",
 ): ProviderRuntimeBinding {
   return {
     threadId: THREAD_ID,
@@ -94,7 +94,7 @@ function liveSession(input: {
   readonly lastError?: string;
 }): ProviderSession {
   return {
-    provider: input.provider ?? "openai",
+    provider: input.provider ?? "groq",
     status: input.status,
     runtimeMode: "full-access",
     threadId: THREAD_ID,
@@ -131,18 +131,18 @@ describe("planProviderRuntimeReconciliation", () => {
       planProviderRuntimeReconciliation({
         threads: [
           threadShell({
-            modelSelection: { provider: "anthropic", model: "claude-opus-4-8" },
+            modelSelection: { provider: "groq", model: "llama-3.3-70b-versatile" },
             session: {
               ...threadShell().session!,
-              providerName: "anthropic",
+              providerName: "groq",
             },
           }),
         ],
-        bindings: [binding(null, "anthropic")],
-        liveSessions: [liveSession({ provider: "anthropic", status: "ready" })],
+        bindings: [binding(null, "groq")],
+        liveSessions: [liveSession({ provider: "groq", status: "ready" })],
         pumpHealth: [
           {
-            provider: "anthropic",
+            provider: "groq",
             status: "healthy",
             consecutiveFailures: 0,
             updatedAt: "2026-07-23T20:00:29.000Z",
@@ -154,7 +154,8 @@ describe("planProviderRuntimeReconciliation", () => {
     ).toEqual([
       expect.objectContaining({
         action: "settle-interrupted",
-        provider: "anthropic",
+        threadId: THREAD_ID,
+        provider: "groq",
         projectedTurnId: OLD_TURN_ID,
         runtimeTurnId: null,
       }),
@@ -671,7 +672,7 @@ describe("planProviderRuntimeReconciliation", () => {
       liveSessions: [],
       pumpHealth: [
         {
-          provider: "openai",
+          provider: "groq",
           status: "recovering",
           consecutiveFailures: 2,
           updatedAt: "2026-07-23T20:00:29.000Z",
@@ -747,7 +748,7 @@ describe("planProviderRuntimeReconciliation", () => {
       liveSessions: [],
       pumpHealth: [
         {
-          provider: "openai",
+          provider: "groq",
           status: "recovering",
           consecutiveFailures: 2,
           updatedAt: "2026-07-23T20:00:29.000Z",

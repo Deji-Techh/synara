@@ -22,35 +22,22 @@ const cursorSkillPath = "/Users/me/.cursor/skills/reviewer/SKILL.md";
 const piSkillPath = "/Users/me/.pi/agent/skills/reviewer/SKILL.md";
 
 describe("shouldInlineSkillForProvider", () => {
-  it("skips codex-native and caide roots for codex but inlines foreign provider roots", () => {
-    // Codex loads .codex roots natively and ~/.caide/skills via the extra
-    // skill root registered at session start.
-    expect(shouldInlineSkillForProvider("openai", caideSkillPath)).toBe(false);
-    expect(shouldInlineSkillForProvider("openai", codexSkillPath)).toBe(false);
-    expect(shouldInlineSkillForProvider("openai", claudeSkillPath)).toBe(true);
-    expect(shouldInlineSkillForProvider("openai", cursorSkillPath)).toBe(true);
+  const engineSkillPath = "/Users/me/.engine/skills/reviewer/SKILL.md";
+  const opencodeSkillPath = "/Users/me/.opencode/skills/reviewer/SKILL.md";
+
+  it("skips engine-native skills for engine provider", () => {
+    expect(shouldInlineSkillForProvider("engine", engineSkillPath)).toBe(false);
+    expect(shouldInlineSkillForProvider("engine", caideSkillPath)).toBe(true);
   });
 
-  it("inlines only Caide-owned paths for cursor", () => {
-    expect(shouldInlineSkillForProvider("openai", caideSkillPath)).toBe(true);
-    expect(shouldInlineSkillForProvider("openai", cursorSkillPath)).toBe(false);
-    expect(shouldInlineSkillForProvider("openai", codexSkillPath)).toBe(false);
-  });
-
-  it("inlines everything except .claude paths for claudeAgent", () => {
-    expect(shouldInlineSkillForProvider("anthropic", claudeSkillPath)).toBe(false);
-    expect(shouldInlineSkillForProvider("anthropic", caideSkillPath)).toBe(true);
-    expect(shouldInlineSkillForProvider("anthropic", codexSkillPath)).toBe(true);
-  });
-
-  it("inlines cross-provider paths for pi but not pi-native skills", () => {
-    expect(shouldInlineSkillForProvider("openai", caideSkillPath)).toBe(true);
-    expect(shouldInlineSkillForProvider("openai", claudeSkillPath)).toBe(true);
-    expect(shouldInlineSkillForProvider("openai", piSkillPath)).toBe(false);
+  it("skips opencode-native skills for opencode providers", () => {
+    expect(shouldInlineSkillForProvider("opencodeZen", opencodeSkillPath)).toBe(false);
+    expect(shouldInlineSkillForProvider("opencodeZen", caideSkillPath)).toBe(true);
+    expect(shouldInlineSkillForProvider("opencodeGo", opencodeSkillPath)).toBe(false);
   });
 
   it("always inlines for providers without native skill support", () => {
-    for (const provider of ["google", "openai", "openai", "openai"] as const) {
+    for (const provider of ["groq"] as const) {
       expect(shouldInlineSkillForProvider(provider, caideSkillPath)).toBe(true);
       expect(shouldInlineSkillForProvider(provider, claudeSkillPath)).toBe(true);
     }
@@ -67,7 +54,7 @@ describe("buildInlineSkillInstructions", () => {
       await writeFile(skillPath, "# Reviewer\n\nAlways review carefully.");
 
       const text = await buildInlineSkillInstructions({
-        provider: "google",
+        provider: "groq",
         skills: [
           { name: "reviewer", path: skillPath },
           { name: "missing", path: path.join(root, ".caide", "skills", "missing", "SKILL.md") },
@@ -92,7 +79,7 @@ describe("buildInlineSkillInstructions", () => {
       await writeFile(skillPath, "content".repeat(100));
 
       const text = await buildInlineSkillInstructions({
-        provider: "google",
+        provider: "groq",
         skills: [{ name: "reviewer", path: skillPath }],
         maxChars: 50,
       });
@@ -103,10 +90,10 @@ describe("buildInlineSkillInstructions", () => {
     }
   });
 
-  it("does not inline caide-rooted skills for codex (covered by the extra skill root)", async () => {
+  it("does not inline engine-native skills for engine", async () => {
     const text = await buildInlineSkillInstructions({
-      provider: "openai",
-      skills: [{ name: "reviewer", path: caideSkillPath }],
+      provider: "engine",
+      skills: [{ name: "reviewer", path: "/Users/me/.engine/skills/reviewer/SKILL.md" }],
       maxChars: 10_000,
     });
     expect(text).toBe("");
