@@ -1011,7 +1011,11 @@ export const createComposerDraftStoreState =
               );
             }
           }
-          nextStickyActiveProvider = base.activeProvider ?? normalizedProvider;
+          // When the user explicitly picks a model, stickyActiveProvider must
+          // follow that provider, not the draft's previous activeProvider.
+          // Otherwise fresh threads keep the old stale provider (e.g. opencodeGo)
+          // and appear to "default back" to it, hitting 503 when that endpoint is down.
+          nextStickyActiveProvider = normalizedProvider;
         }
 
         if (
