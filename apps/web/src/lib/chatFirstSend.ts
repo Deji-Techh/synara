@@ -75,7 +75,13 @@ export function resolveFirstSendTarget(input: {
     composerModelSelection,
   } = input;
 
-  if (!isFirstMessage || !isHomeChatContainer) {
+  if (!isFirstMessage) {
+    return {
+      kind: "current",
+      target: buildProjectTarget(activeProject),
+    };
+  }
+  if (!isHomeChatContainer && selectedWorkspaceRoot) {
     return {
       kind: "current",
       target: buildProjectTarget(activeProject),

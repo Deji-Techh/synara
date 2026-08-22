@@ -2207,6 +2207,7 @@ export default function ChatView({
 
   const sessionProvider = activeThread?.session?.provider ?? null;
   const selectedProviderByThreadId = composerDraft.activeProvider ?? null;
+  const stickyActiveProvider = useComposerDraftStore((state) => state.stickyActiveProvider);
   const threadProvider =
     activeThread?.modelSelection.provider ?? activeProject?.defaultModelSelection?.provider ?? null;
   const hasThreadStarted = Boolean(
@@ -2216,10 +2217,14 @@ export default function ChatView({
       activeThread.session !== null),
   );
   const lockedProvider: ProviderKind | null = hasThreadStarted
-    ? (sessionProvider ?? threadProvider ?? selectedProviderByThreadId ?? null)
+    ? (threadProvider ?? sessionProvider ?? null)
     : null;
   const selectedProvider: ProviderKind =
-    lockedProvider ?? selectedProviderByThreadId ?? threadProvider ?? settings.defaultProvider;
+    lockedProvider ??
+    selectedProviderByThreadId ??
+    (isLocalDraftThread
+      ? settings.defaultProvider
+      : (stickyActiveProvider ?? threadProvider ?? settings.defaultProvider));
   const previousSelectedProviderRef = useRef<{
     threadId: ThreadId;
     provider: ProviderKind;
