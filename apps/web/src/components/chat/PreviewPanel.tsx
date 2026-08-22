@@ -366,7 +366,7 @@ function StatusPill({ state }: { state: PreviewPanelState }) {
         ? "bg-amber-500"
         : state.status === "failed"
           ? "bg-red-500"
-          : "bg-zinc-600";
+          : "bg-muted-foreground";
   const label =
     state.status === "starting"
       ? "Starting…"
@@ -377,7 +377,7 @@ function StatusPill({ state }: { state: PreviewPanelState }) {
           : "Idle";
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900 px-2 py-0.5 text-xs font-medium text-zinc-400"
+      className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
       title={state.status === "failed" && state.error ? state.error : label}
     >
       <span
@@ -449,16 +449,16 @@ function PreviewConsole(props: { isOpen: boolean; onToggle: () => void; logs: re
   // every 2s) — the freeze the user reported when switching to preview.
   const visibleLogs = logs.length > LOGS_RENDER_LIMIT ? logs.slice(-LOGS_RENDER_LIMIT) : logs;
   return (
-    <div className="border-t border-zinc-900">
+    <div className="shrink-0 border-t border-border">
       <button
         type="button"
         onClick={props.onToggle}
-        className="flex w-full items-center gap-2 bg-zinc-950 px-3 py-1.5 text-left text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-900 hover:text-zinc-300"
+        className="flex w-full items-center gap-2 bg-card px-3 py-1.5 text-left text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         aria-expanded={isOpen}
       >
         <TerminalIcon aria-hidden="true" className="size-3.5" />
         <span>Console</span>
-        {!isOpen && <span className="min-w-0 flex-1 truncate text-zinc-600">{latestLine}</span>}
+        {!isOpen && <span className="min-w-0 flex-1 truncate text-muted-foreground/60">{latestLine}</span>}
         {isOpen ? (
           <ChevronDownIcon aria-hidden="true" className="size-3.5" />
         ) : (
@@ -468,14 +468,14 @@ function PreviewConsole(props: { isOpen: boolean; onToggle: () => void; logs: re
       {isOpen && (
         <div
           ref={listRef}
-          className="max-h-40 min-h-0 overflow-y-auto bg-zinc-950 px-3 py-2 font-mono text-[11px] leading-relaxed text-zinc-400"
+          className="max-h-40 min-h-0 overflow-y-auto bg-muted/40 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground"
         >
           {logs.length === 0 ? (
             <p>Waiting for `flutter run` output…</p>
           ) : (
             <>
               {logs.length > LOGS_RENDER_LIMIT && (
-                <p className="mb-1 text-[10px] text-zinc-600">
+                <p className="mb-1 text-[10px] text-muted-foreground/60">
                   Showing last {LOGS_RENDER_LIMIT} of {logs.length} lines…
                 </p>
               )}
@@ -1377,14 +1377,14 @@ export function PreviewPanel(props: {
   const showConsole = isStarting || isRunning || panelState.status === "failed";
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-black" data-testid="preview-pane">
+    <div className="flex h-full min-h-0 flex-col bg-background" data-testid="preview-pane">
       {/* Top Header — iOS Simulator chrome, full-width spread */}
-      <div className="flex h-9 shrink-0 items-center gap-2 border-b border-zinc-900 bg-zinc-950 px-3">
+      <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border bg-card px-3">
         <div className="relative flex min-w-0 flex-1 items-center">
           <select
             value={frameKind}
             onChange={(event) => handleFrameKindChange(event.target.value as PreviewFrameKind)}
-            className="w-full max-w-[220px] appearance-none rounded-full border border-zinc-800 bg-zinc-900 py-1 pl-2.5 pr-6 text-xs font-medium text-zinc-200 outline-none transition-colors hover:border-zinc-700 hover:bg-zinc-800 focus-visible:ring-1 focus-visible:ring-zinc-700"
+            className="w-full max-w-[220px] appearance-none rounded-full border border-border bg-muted py-1 pl-2.5 pr-6 text-xs font-medium text-foreground outline-none transition-colors hover:border-border hover:bg-muted/80 focus-visible:ring-1 focus-visible:ring-ring"
           >
             {FRAME_KIND_OPTIONS.map((option) => (
               <option key={option.id} value={option.id}>
@@ -1394,7 +1394,7 @@ export function PreviewPanel(props: {
           </select>
           <ChevronDownIcon
             aria-hidden="true"
-            className="pointer-events-none absolute right-[calc(100%-208px)] size-3.5 text-zinc-500 sm:right-1.5"
+            className="pointer-events-none absolute right-[calc(100%-208px)] size-3.5 text-muted-foreground sm:right-1.5"
           />
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
@@ -1405,7 +1405,7 @@ export function PreviewPanel(props: {
                 onClick={() => handleReload(true)}
                 title="Hot reload"
                 aria-label="Hot reload"
-                className="flex size-7 items-center justify-center rounded-md text-zinc-500 outline-none transition-colors hover:bg-zinc-900 hover:text-zinc-200 focus-visible:ring-1 focus-visible:ring-zinc-700"
+                className="flex size-7 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <RefreshCwIcon className="size-3.5" />
               </button>
@@ -1414,7 +1414,7 @@ export function PreviewPanel(props: {
                 onClick={handleStop}
                 title="Stop preview"
                 aria-label="Stop preview"
-                className="flex size-7 items-center justify-center rounded-md text-zinc-500 outline-none transition-colors hover:bg-red-500/10 hover:text-red-400 focus-visible:ring-1 focus-visible:ring-zinc-700"
+                className="flex size-7 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <DeviceRecordStopIcon className="size-3.5" />
               </button>
@@ -1425,29 +1425,29 @@ export function PreviewPanel(props: {
       </div>
       <FlutterToolchainBanner threadId={props.threadId} isVisible={props.isVisible} />
 
-      {/* Main Content Area — Synara: full-black stage, device+rail optically centered */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-black">
+      {/* Main Content Area — themed stage, device+rail optically centered */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
         {panelState.activeTab === "preview" && (
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {frameKind === "frameless" ? (
-              <div className="flex min-h-0 flex-1 flex-col items-center justify-center bg-black p-4">
+              <div className="flex min-h-0 flex-1 flex-col items-center justify-center bg-background p-4">
                 {panelState.status === "starting" ? (
                   <div className="flex flex-col items-center gap-2 py-6">
-                    <LoaderIcon className="size-3 animate-spin text-white/45" />
-                    <p className="text-[11px] font-medium text-white/90">
+                    <LoaderIcon className="size-3 animate-spin text-muted-foreground" />
+                    <p className="text-[11px] font-medium text-foreground">
                       Starting Flutter preview…
                     </p>
-                    <p className="text-[10px] text-white/45">Compiling Flutter bundle</p>
+                    <p className="text-[10px] text-muted-foreground">Compiling Flutter bundle</p>
                   </div>
                 ) : panelState.status === "failed" ? (
                   <div className="flex flex-col items-center gap-3 px-[12%] py-6 text-center">
-                    <p className="max-w-[260px] break-words text-center text-[11px] leading-snug text-red-400">
+                    <p className="max-w-[260px] break-words text-center text-[11px] leading-snug text-destructive">
                       {panelState.error ?? "The preview failed to start."}
                     </p>
                     <button
                       type="button"
                       onClick={handleStart}
-                      className="rounded-full bg-white px-4 py-1.5 text-[11px] font-medium text-black transition-opacity hover:opacity-90"
+                      className="rounded-full bg-foreground px-4 py-1.5 text-[11px] font-medium text-background transition-opacity hover:opacity-90"
                     >
                       Retry
                     </button>
@@ -1466,13 +1466,13 @@ export function PreviewPanel(props: {
                   )
                 ) : (
                   <div className="flex flex-col items-center gap-3 px-[12%] py-6 text-center">
-                    <p className="text-balance text-[11px] leading-snug text-white/45">
+                    <p className="text-balance text-[11px] leading-snug text-muted-foreground">
                       Preview is idle. Choose a device above and start the preview.
                     </p>
                     <button
                       type="button"
                       onClick={handleStart}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-[11px] font-medium text-black transition-opacity hover:opacity-90"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-1.5 text-[11px] font-medium text-background transition-opacity hover:opacity-90"
                     >
                       <PlayIcon className="size-3" />
                       Start preview
@@ -1481,16 +1481,10 @@ export function PreviewPanel(props: {
                 )}
               </div>
             ) : (
-              <div className="flex min-h-0 flex-1 flex-col items-center justify-center bg-black px-3 py-3">
+              <div className="flex min-h-0 flex-1 min-w-0 flex-col items-center justify-center overflow-hidden bg-muted/30 px-3 py-3">
                 <div aria-hidden className={DEVICE_RAIL_HEIGHT_CLASS} />
-                {/* Unified larger middle-centered frame — Android renders at iPhone canvas so both share the same big viewport */}
-                <div className="flex w-full flex-1 items-center justify-center">
-                  <div
-                    className="flex h-full w-full items-center justify-center"
-                    style={{ transform: "scale(1.15)", transformOrigin: "center" }}
-                  >
-                    <DeviceScreen
-                      className="min-h-0 w-full flex-1"
+                <DeviceScreen
+                  className="min-h-0 w-full flex-1 min-w-0 overflow-hidden"
                       kind={statusFrameKind}
                       pixelWidth={statusFrameKind === "androidPhone" ? 1206 : undefined}
                       pixelHeight={statusFrameKind === "androidPhone" ? 2622 : undefined}
@@ -1549,9 +1543,7 @@ export function PreviewPanel(props: {
                         )}
                       </div>
                     </DeviceScreen>
-                  </div>
-                </div>
-                <div className="relative z-10 flex w-full justify-center">
+                <div className="relative z-10 flex w-full shrink-0 justify-center">
                   <DeviceControlRail
                     disabled={!isRunning}
                     recording={false}
@@ -1606,7 +1598,7 @@ export function PreviewPanel(props: {
 
       {/* Bottom Tab Bar — spread full width */}
       <div
-        className="grid w-full shrink-0 grid-cols-5 gap-1 border-t border-zinc-900 bg-zinc-950 px-2 py-1.5"
+        className="grid w-full shrink-0 grid-cols-5 gap-1 border-t border-border bg-card px-2 py-1.5"
         role="tablist"
       >
         {PREVIEW_TABS.map((tab) => {
@@ -1620,10 +1612,10 @@ export function PreviewPanel(props: {
               aria-selected={isSelected}
               onClick={() => handleTabChange(tab.id)}
               className={cn(
-                "flex w-full flex-col items-center justify-center gap-0.5 rounded-md py-1.5 text-[10px] font-medium transition-colors outline-none focus-visible:ring-1 focus-visible:ring-zinc-700",
+                "flex w-full flex-col items-center justify-center gap-0.5 rounded-md py-1.5 text-[10px] font-medium transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring",
                 isSelected
-                  ? "bg-zinc-900 text-white"
-                  : "text-zinc-500 hover:bg-zinc-900/60 hover:text-zinc-300",
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
               )}
             >
               <TabIcon aria-hidden="true" className="size-3.5" />
