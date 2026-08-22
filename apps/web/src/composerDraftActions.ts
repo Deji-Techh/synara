@@ -979,27 +979,37 @@ export const createComposerDraftStoreState =
         let nextStickyActiveProvider = state.stickyActiveProvider;
         if (options?.persistSticky === true) {
           nextStickyMap = { ...state.stickyModelSelectionByProvider };
+          const explicitModel = normalizeModelSlug(options?.model, normalizedProvider);
           const stickyBase =
             nextStickyMap[normalizedProvider] ??
             base.modelSelectionByProvider[normalizedProvider] ??
             (fallbackModel ? makeModelSelection(normalizedProvider, fallbackModel) : null);
-          if (!stickyBase) {
+          const effectiveModel = explicitModel ?? stickyBase?.model ?? fallbackModel ?? null;
+          if (!effectiveModel) {
             return state;
           }
           if (providerOpts) {
             nextStickyMap[normalizedProvider] = stripNonStickyModelOptions(
               makeModelSelection(
                 normalizedProvider,
-                stickyBase.model,
+                effectiveModel,
                 providerOpts,
               ),
             );
-          } else if (stickyBase.options) {
-            nextStickyMap[normalizedProvider] = buildModelSelection(
-              normalizedProvider,
-              stickyBase.model,
-              undefined,
-            );
+          } else {
+            // Plain model pick: persist the new model even when sticky had no options.
+            const existingSticky = nextStickyMap[normalizedProvider];
+            const shouldUpdateSticky =
+              !existingSticky ||
+              existingSticky.model !== effectiveModel ||
+              existingSticky.options !== undefined;
+            if (shouldUpdateSticky) {
+              nextStickyMap[normalizedProvider] = buildModelSelection(
+                normalizedProvider,
+                effectiveModel,
+                undefined,
+              );
+            }
           }
           nextStickyActiveProvider = base.activeProvider ?? normalizedProvider;
         }

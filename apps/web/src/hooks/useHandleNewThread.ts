@@ -63,6 +63,15 @@ export function useHandleNewThread() {
       if (!options?.provider) {
         return;
       }
+      // Don't clobber an explicit pick (e.g. sticky state just applied, or
+      // an existing draft the user already customized) with the provider default.
+      const existingSelection =
+        useComposerDraftStore.getState().draftsByThreadId[threadId]?.modelSelectionByProvider[
+          options.provider
+        ] ?? null;
+      if (existingSelection) {
+        return;
+      }
       const defaultModel = getDefaultModel(options.provider);
       if (!defaultModel) {
         return;

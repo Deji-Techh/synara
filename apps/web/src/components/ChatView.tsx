@@ -2320,10 +2320,7 @@ export default function ChatView({
   const selectedPromptEffort = composerProviderState.promptEffort;
   const selectedModelOptionsForDispatch = composerProviderState.modelOptionsForDispatch;
   const selectedModelSelection = useMemo<ModelSelection>(() => {
-    if (
-      selectedProvider === "openai" &&
-      draftModelSelectionForSelectedProvider?.provider === "openai"
-    ) {
+    if (draftModelSelectionForSelectedProvider?.provider === selectedProvider) {
       return buildModelSelection(
         selectedProvider,
         draftModelSelectionForSelectedProvider.model,
@@ -6162,7 +6159,8 @@ export default function ChatView({
 
   const onProviderModelSelect = useCallback(
     async (provider: ProviderKind, model: ModelSlug) => {
-      if (!activeThread) return;
+      const targetThreadId = activeThread?.id ?? threadId;
+      if (!targetThreadId) return;
       if (lockedProvider !== null && provider !== lockedProvider) {
         scheduleComposerFocus();
         return;
@@ -6195,13 +6193,11 @@ export default function ChatView({
         nextRuntimeMode,
         persistRuntimeMode: persistRuntimeModeChange,
         commit: () => {
-          setComposerDraftModelSelectionAndSticky(activeThread.id, nextModelSelection);
-          if (provider === "openai") {
-            setComposerDraftProviderModelOptions(activeThread.id, provider, undefined, {
-              persistSticky: true,
-              model: resolvedModel,
-            });
-          }
+          setComposerDraftModelSelectionAndSticky(targetThreadId, nextModelSelection);
+          setComposerDraftProviderModelOptions(targetThreadId, provider, undefined, {
+            persistSticky: true,
+            model: resolvedModel,
+          });
         },
       });
       if (!didCommitSelection) {
@@ -6212,6 +6208,7 @@ export default function ChatView({
     },
     [
       activeThread,
+      threadId,
       customModelsByProvider,
       lockedProvider,
       modelOptionsByProvider,
