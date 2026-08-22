@@ -14,19 +14,10 @@ describe("ComposerModelEffortPicker", () => {
   it("keeps Grok effort visible in compact layouts before runtime discovery", async () => {
     const screen = await render(
       <ComposerModelEffortPicker
-        provider="openai"
+        provider="xai"
         model={GROK_4_5}
         lockedProvider={null}
         modelOptionsByProvider={{
-          claudeAgent: [],
-          codex: [],
-          cursor: [],
-          antigravity: [],
-          grok: [{ slug: GROK_4_5, name: "Grok 4.5" }],
-          droid: [],
-          kilo: [],
-          opencode: [],
-          pi: [],
           engine: [],
           openai: [],
           anthropic: [],
@@ -38,9 +29,10 @@ describe("ComposerModelEffortPicker", () => {
           mistral: [],
           together: [],
           cohere: [],
-          xai: [],
+          xai: [{ slug: GROK_4_5, name: "Grok 4.5" }],
           fireworks: [],
           opencodeZen: [],
+          opencodeGo: [],
         }}
         hideStatusLabel
         onProviderModelChange={vi.fn()}

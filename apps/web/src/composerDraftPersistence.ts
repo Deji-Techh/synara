@@ -317,6 +317,7 @@ const PersistedComposerDraftStoreState = Schema.Struct({
     Schema.Record(ProviderKind, Schema.optionalKey(ModelSelection)),
   ),
   stickyActiveProvider: Schema.optionalKey(Schema.NullOr(ProviderKind)),
+  stickyChatMode: Schema.optionalKey(Schema.NullOr(ChatMode)),
 });
 
 export type PersistedComposerDraftStoreState = typeof PersistedComposerDraftStoreState.Type;
@@ -327,6 +328,7 @@ const EMPTY_PERSISTED_DRAFT_STORE_STATE = Object.freeze<PersistedComposerDraftSt
   projectDraftThreadIdByProjectId: {},
   stickyModelSelectionByProvider: {},
   stickyActiveProvider: null,
+  stickyChatMode: null,
 });
 
 function normalizePersistedPromptHistorySavedDraft(
@@ -896,6 +898,13 @@ function normalizePersistedDraftsByThreadId(
       draftCandidate.interactionMode === "plan" || draftCandidate.interactionMode === "default"
         ? draftCandidate.interactionMode
         : null;
+    const mode =
+      draftCandidate.mode === "build" ||
+      draftCandidate.mode === "ask" ||
+      draftCandidate.mode === "local-agent" ||
+      draftCandidate.mode === "plan"
+        ? draftCandidate.mode
+        : null;
     const prompt = ensureInlineTerminalContextPlaceholders(
       promptCandidate,
       terminalContexts.length,
@@ -970,7 +979,8 @@ function normalizePersistedDraftsByThreadId(
       restoredSourceProposedPlan === null &&
       !hasModelData &&
       !runtimeMode &&
-      !interactionMode
+      !interactionMode &&
+      !mode
     ) {
       continue;
     }
@@ -990,6 +1000,7 @@ function normalizePersistedDraftsByThreadId(
       ...(hasModelData ? { modelSelectionByProvider, activeProvider } : {}),
       ...(runtimeMode ? { runtimeMode } : {}),
       ...(interactionMode ? { interactionMode } : {}),
+      ...(mode ? { mode } : {}),
     };
   }
 
@@ -1277,6 +1288,7 @@ export function partializeComposerDraftStoreState(
     projectDraftThreadIdByProjectId: state.projectDraftThreadIdByProjectId,
     stickyModelSelectionByProvider: state.stickyModelSelectionByProvider,
     stickyActiveProvider: state.stickyActiveProvider,
+    stickyChatMode: state.stickyChatMode,
   };
 }
 
@@ -1332,12 +1344,21 @@ export function normalizeCurrentPersistedComposerDraftStoreState(
     stickyActiveProvider = normalizeProviderKind(normalizedPersistedState.stickyProvider);
   }
 
+  const stickyChatMode =
+    normalizedPersistedState.stickyChatMode === "build" ||
+    normalizedPersistedState.stickyChatMode === "ask" ||
+    normalizedPersistedState.stickyChatMode === "local-agent" ||
+    normalizedPersistedState.stickyChatMode === "plan"
+      ? normalizedPersistedState.stickyChatMode
+      : null;
+
   return {
     draftsByThreadId: normalizePersistedDraftsByThreadId(normalizedPersistedState.draftsByThreadId),
     draftThreadsByThreadId,
     projectDraftThreadIdByProjectId,
     stickyModelSelectionByProvider: sanitizeStickyModelSelectionMap(stickyModelSelectionByProvider),
     stickyActiveProvider,
+    stickyChatMode,
   };
 }
 

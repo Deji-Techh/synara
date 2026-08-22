@@ -7,6 +7,8 @@ import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Option, Schema, SchemaGetter } from "effect";
 import {
+  API_PROVIDER_KINDS,
+  type ApiProviderKind,
   type AssistantDeliveryMode,
   DesktopAppIcon,
   DEFAULT_GIT_TEXT_GENERATION_MODEL,
@@ -109,7 +111,18 @@ export type ProviderCustomModelConfig = {
 
 const BUILT_IN_MODEL_SLUGS_BY_PROVIDER: Record<ProviderKind, ReadonlySet<string>> = {
   engine: new Set(getModelOptions("engine").map((option) => option.slug)),
+  openai: new Set(getModelOptions("openai").map((option) => option.slug)),
+  anthropic: new Set(getModelOptions("anthropic").map((option) => option.slug)),
+  google: new Set(getModelOptions("google").map((option) => option.slug)),
+  openrouter: new Set(getModelOptions("openrouter").map((option) => option.slug)),
+  ollama: new Set(getModelOptions("ollama").map((option) => option.slug)),
+  deepseek: new Set(getModelOptions("deepseek").map((option) => option.slug)),
   groq: new Set(getModelOptions("groq").map((option) => option.slug)),
+  mistral: new Set(getModelOptions("mistral").map((option) => option.slug)),
+  together: new Set(getModelOptions("together").map((option) => option.slug)),
+  cohere: new Set(getModelOptions("cohere").map((option) => option.slug)),
+  xai: new Set(getModelOptions("xai").map((option) => option.slug)),
+  fireworks: new Set(getModelOptions("fireworks").map((option) => option.slug)),
   opencodeZen: new Set(getModelOptions("opencodeZen").map((option) => option.slug)),
   opencodeGo: new Set(getModelOptions("opencodeGo").map((option) => option.slug)),
 };
@@ -133,8 +146,8 @@ const PersistedProviderKind = Schema.String.pipe(
   Schema.decodeTo(ProviderKind, {
     decode: SchemaGetter.transform(
       (provider: string): ProviderKind =>
-        provider === "groq" || provider === "opencodeZen" || provider === "opencodeGo"
-          ? provider
+        API_PROVIDER_KINDS.includes(provider as ApiProviderKind) || provider === "engine"
+          ? (provider as ProviderKind)
           : "groq",
     ),
     encode: SchemaGetter.transform((provider: ProviderKind): string => provider),
@@ -270,7 +283,60 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     placeholder: "your-engine-model-slug",
     example: "gpt-5.6-sol",
   },
-
+  openai: {
+    provider: "openai",
+    settingsKey: "customGroqModels",
+    defaultSettingsKey: "customGroqModels",
+    title: "OpenAI",
+    description: "Save additional OpenAI model slugs for the picker.",
+    placeholder: "your-openai-model-slug",
+    example: "gpt-5.5",
+  },
+  anthropic: {
+    provider: "anthropic",
+    settingsKey: "customGroqModels",
+    defaultSettingsKey: "customGroqModels",
+    title: "Anthropic",
+    description: "Save additional Anthropic model slugs for the picker.",
+    placeholder: "your-anthropic-model-slug",
+    example: "claude-sonnet-5",
+  },
+  google: {
+    provider: "google",
+    settingsKey: "customGroqModels",
+    defaultSettingsKey: "customGroqModels",
+    title: "Google",
+    description: "Save additional Google model slugs for the picker.",
+    placeholder: "your-google-model-slug",
+    example: "gemini-3-pro",
+  },
+  openrouter: {
+    provider: "openrouter",
+    settingsKey: "customGroqModels",
+    defaultSettingsKey: "customGroqModels",
+    title: "OpenRouter",
+    description: "Save additional OpenRouter model slugs for the picker.",
+    placeholder: "your-openrouter-model-slug",
+    example: "anthropic/claude-sonnet-5",
+  },
+  ollama: {
+    provider: "ollama",
+    settingsKey: "customGroqModels",
+    defaultSettingsKey: "customGroqModels",
+    title: "Ollama",
+    description: "Save additional Ollama model slugs for the picker.",
+    placeholder: "your-ollama-model-slug",
+    example: "llama3.3",
+  },
+  deepseek: {
+    provider: "deepseek",
+    settingsKey: "customGroqModels",
+    defaultSettingsKey: "customGroqModels",
+    title: "DeepSeek",
+    description: "Save additional DeepSeek model slugs for the picker.",
+    placeholder: "your-deepseek-model-slug",
+    example: "deepseek-chat",
+  },
   groq: {
     provider: "groq",
     settingsKey: "customGroqModels",
@@ -280,7 +346,51 @@ const PROVIDER_CUSTOM_MODEL_CONFIG: Record<ProviderKind, ProviderCustomModelConf
     placeholder: "your-groq-model-slug",
     example: "llama-3.3-70b-versatile",
   },
-
+  mistral: {
+    provider: "mistral",
+    settingsKey: "customGroqModels",
+    defaultSettingsKey: "customGroqModels",
+    title: "Mistral",
+    description: "Save additional Mistral model slugs for the picker.",
+    placeholder: "your-mistral-model-slug",
+    example: "mistral-large-latest",
+  },
+  together: {
+    provider: "together",
+    settingsKey: "customGroqModels",
+    defaultSettingsKey: "customGroqModels",
+    title: "Together",
+    description: "Save additional Together model slugs for the picker.",
+    placeholder: "your-together-model-slug",
+    example: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+  },
+  cohere: {
+    provider: "cohere",
+    settingsKey: "customGroqModels",
+    defaultSettingsKey: "customGroqModels",
+    title: "Cohere",
+    description: "Save additional Cohere model slugs for the picker.",
+    placeholder: "your-cohere-model-slug",
+    example: "command-r-plus",
+  },
+  xai: {
+    provider: "xai",
+    settingsKey: "customGroqModels",
+    defaultSettingsKey: "customGroqModels",
+    title: "xAI",
+    description: "Save additional xAI model slugs for the picker.",
+    placeholder: "your-xai-model-slug",
+    example: "grok-2-latest",
+  },
+  fireworks: {
+    provider: "fireworks",
+    settingsKey: "customGroqModels",
+    defaultSettingsKey: "customGroqModels",
+    title: "Fireworks",
+    description: "Save additional Fireworks model slugs for the picker.",
+    placeholder: "your-fireworks-model-slug",
+    example: "accounts/fireworks/models/deepseek-v3",
+  },
   opencodeZen: {
     provider: "opencodeZen",
     settingsKey: "customOpenCodeZenModels",
@@ -653,7 +763,18 @@ export function getCustomModelsByProvider(
 ): Record<ProviderKind, readonly string[]> {
   return {
     engine: getCustomModelsForProvider(settings, "engine"),
+    openai: getCustomModelsForProvider(settings, "openai"),
+    anthropic: getCustomModelsForProvider(settings, "anthropic"),
+    google: getCustomModelsForProvider(settings, "google"),
+    openrouter: getCustomModelsForProvider(settings, "openrouter"),
+    ollama: getCustomModelsForProvider(settings, "ollama"),
+    deepseek: getCustomModelsForProvider(settings, "deepseek"),
     groq: getCustomModelsForProvider(settings, "groq"),
+    mistral: getCustomModelsForProvider(settings, "mistral"),
+    together: getCustomModelsForProvider(settings, "together"),
+    cohere: getCustomModelsForProvider(settings, "cohere"),
+    xai: getCustomModelsForProvider(settings, "xai"),
+    fireworks: getCustomModelsForProvider(settings, "fireworks"),
     opencodeZen: getCustomModelsForProvider(settings, "opencodeZen"),
     opencodeGo: getCustomModelsForProvider(settings, "opencodeGo"),
   };
@@ -784,7 +905,18 @@ export function getCustomModelOptionsByProvider(
   const customModelsByProvider = getCustomModelsByProvider(settings);
   return {
     engine: getAppModelOptions("engine", customModelsByProvider.engine),
+    openai: getAppModelOptions("openai", customModelsByProvider.openai),
+    anthropic: getAppModelOptions("anthropic", customModelsByProvider.anthropic),
+    google: getAppModelOptions("google", customModelsByProvider.google),
+    openrouter: getAppModelOptions("openrouter", customModelsByProvider.openrouter),
+    ollama: getAppModelOptions("ollama", customModelsByProvider.ollama),
+    deepseek: getAppModelOptions("deepseek", customModelsByProvider.deepseek),
     groq: getAppModelOptions("groq", customModelsByProvider.groq),
+    mistral: getAppModelOptions("mistral", customModelsByProvider.mistral),
+    together: getAppModelOptions("together", customModelsByProvider.together),
+    cohere: getAppModelOptions("cohere", customModelsByProvider.cohere),
+    xai: getAppModelOptions("xai", customModelsByProvider.xai),
+    fireworks: getAppModelOptions("fireworks", customModelsByProvider.fireworks),
     opencodeZen: getAppModelOptions("opencodeZen", customModelsByProvider.opencodeZen),
     opencodeGo: getAppModelOptions("opencodeGo", customModelsByProvider.opencodeGo),
   };

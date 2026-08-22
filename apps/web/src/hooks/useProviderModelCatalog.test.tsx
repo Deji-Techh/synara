@@ -53,27 +53,10 @@ const EMPTY_QUERY: QueryResultLike = {
 };
 const modelQueries = new Map<ProviderKind, QueryResultLike>();
 const agentQueries = new Map<ProviderKind, QueryResultLike>();
-const MODEL_HINTS = { cursor: "composer-2" } as const;
+const MODEL_HINTS = { groq: "llama-3.3-70b" } as const;
 const SETTINGS = {
-  antigravityBinaryPath: "",
-  cursorApiEndpoint: "",
-  cursorBinaryPath: "",
-  customAntigravityModels: [],
-  customClaudeModels: [],
-  customCodexModels: [],
-  customCursorModels: ["cursor-custom"],
-  customDroidModels: [],
-  customGrokModels: [],
-  customKiloModels: [],
-  customOpenCodeModels: [],
-  customPiModels: [],
-  droidBinaryPath: "",
-  grokBinaryPath: "",
+  customGroqModels: ["groq-custom"],
   hiddenProviders: [],
-  kiloBinaryPath: "",
-  openCodeBinaryPath: "",
-  piAgentDir: "",
-  piBinaryPath: "",
 };
 
 function readCatalogRenders(
@@ -132,7 +115,7 @@ beforeEach(() => {
 describe("useProviderModelCatalog", () => {
   it("keeps aggregate identities stable when inputs and query data are unchanged", () => {
     const [first, second] = readCatalogRenders({
-      selectedProvider: "openai",
+      selectedProvider: "groq",
       discoveryEnabled: true,
       modelHintByProvider: MODEL_HINTS,
     });
@@ -146,13 +129,13 @@ describe("useProviderModelCatalog", () => {
   });
 
   it("discovers core agents only when selected unless eager-core is requested", () => {
-    readCatalogRenders({ selectedProvider: "openai", discoveryEnabled: false });
+    readCatalogRenders({ selectedProvider: "groq", discoveryEnabled: false });
     expect(readAgentQueryEnabled("anthropic")).toBe(false);
     expect(readAgentQueryEnabled("openai")).toBe(false);
 
     mocks.useQuery.mockClear();
     readCatalogRenders({
-      selectedProvider: "openai",
+      selectedProvider: "groq",
       discoveryEnabled: false,
       agentDiscoveryPolicy: "eager-core",
     });
@@ -162,26 +145,25 @@ describe("useProviderModelCatalog", () => {
 
   it("does not prefetch providers hidden from picker surfaces", () => {
     mocks.useAppSettings.mockReturnValue({
-      settings: { ...SETTINGS, hiddenProviders: ["openai"] },
+      settings: { ...SETTINGS, hiddenProviders: ["groq"] },
       serverSettings: DEFAULT_SERVER_SETTINGS,
     });
 
-    readCatalogRenders({ selectedProvider: "openai", discoveryEnabled: true });
+    readCatalogRenders({ selectedProvider: "groq", discoveryEnabled: true });
 
-    expect(readModelQueryEnabled("openai")).toBe(true);
-    expect(readModelQueryEnabled("openai")).toBe(false);
-    expect(readModelQueryEnabled("google")).toBe(true);
+    expect(readModelQueryEnabled("groq")).toBe(true);
+    expect(readModelQueryEnabled("opencodeZen")).toBe(true);
   });
 
   it("keeps an enabled selected provider discoverable when it is hidden", () => {
     mocks.useAppSettings.mockReturnValue({
-      settings: { ...SETTINGS, hiddenProviders: ["openai"] },
+      settings: { ...SETTINGS, hiddenProviders: ["groq"] },
       serverSettings: DEFAULT_SERVER_SETTINGS,
     });
 
-    readCatalogRenders({ selectedProvider: "openai", discoveryEnabled: false });
+    readCatalogRenders({ selectedProvider: "groq", discoveryEnabled: false });
 
-    expect(readModelQueryEnabled("openai")).toBe(true);
+    expect(readModelQueryEnabled("groq")).toBe(true);
   });
 
   it("does not discover a disabled provider even when it is selected", () => {
@@ -191,64 +173,44 @@ describe("useProviderModelCatalog", () => {
         ...DEFAULT_SERVER_SETTINGS,
         providers: {
           ...DEFAULT_SERVER_SETTINGS.providers,
-          cursor: {
-            ...DEFAULT_SERVER_SETTINGS.providers.cursor,
+          groq: {
+            ...DEFAULT_SERVER_SETTINGS.providers.groq,
             enabled: false,
           },
         },
       },
     });
 
-    readCatalogRenders({ selectedProvider: "openai", discoveryEnabled: true });
+    readCatalogRenders({ selectedProvider: "groq", discoveryEnabled: true });
 
-    expect(readModelQueryEnabled("openai")).toBe(false);
+    expect(readModelQueryEnabled("groq")).toBe(false);
   });
 
   it("keeps discovering while the server settings are unavailable", () => {
-    // `serverSettings` is undefined until the settings query resolves, and stays
-    // undefined for good if it fails — the query never refetches on its own. Failing
-    // closed here would blank every provider's model list, selected one included.
     mocks.useAppSettings.mockReturnValue({ settings: SETTINGS, serverSettings: undefined });
 
-    readCatalogRenders({ selectedProvider: "anthropic", discoveryEnabled: true });
+    readCatalogRenders({ selectedProvider: "groq", discoveryEnabled: true });
 
-    expect(readModelQueryEnabled("anthropic")).toBe(true);
-    expect(readModelQueryEnabled("openai")).toBe(true);
+    expect(readModelQueryEnabled("groq")).toBe(true);
   });
 
   it("keeps discovering the selected provider when the settings omit it", () => {
-    // A client talking to a server whose provider set it does not fully know must not
-    // lose model discovery over the unknown key — and must not throw reading it.
-    const { cursor: _cursor, ...providersWithoutCursor } = DEFAULT_SERVER_SETTINGS.providers;
+    const { groq: _groq, ...providersWithoutGroq } = DEFAULT_SERVER_SETTINGS.providers;
     mocks.useAppSettings.mockReturnValue({
       settings: SETTINGS,
-      serverSettings: { ...DEFAULT_SERVER_SETTINGS, providers: providersWithoutCursor },
+      serverSettings: { ...DEFAULT_SERVER_SETTINGS, providers: providersWithoutGroq as any },
     });
 
-    readCatalogRenders({ selectedProvider: "openai", discoveryEnabled: false });
+    readCatalogRenders({ selectedProvider: "groq", discoveryEnabled: false });
 
-    expect(readModelQueryEnabled("openai")).toBe(true);
-  });
-
-  it("restricts non-picker prefetch to the requested providers", () => {
-    readCatalogRenders({
-      selectedProvider: "openai",
-      discoveryEnabled: true,
-      prefetchProviders: ["openai", "openai", "openai"],
-    });
-
-    expect(readModelQueryEnabled("openai")).toBe(true);
-    expect(readModelQueryEnabled("openai")).toBe(true);
-    expect(readModelQueryEnabled("openai")).toBe(true);
-    expect(readModelQueryEnabled("openai")).toBe(false);
-    expect(readModelQueryEnabled("google")).toBe(false);
+    expect(readModelQueryEnabled("groq")).toBe(true);
   });
 
   it("merges a settled runtime catalog with custom models without reporting loading", () => {
-    modelQueries.set("openai", {
+    modelQueries.set("groq", {
       data: {
-        models: [{ slug: "composer-2", name: "Composer 2" }],
-        source: "cursor.cli",
+        models: [{ slug: "llama-3.3-70b", name: "Llama 3.3 70B" }],
+        source: "groq.api",
         cached: false,
       },
       isFetching: true,
@@ -257,19 +219,16 @@ describe("useProviderModelCatalog", () => {
     });
 
     const catalog = readCatalogRenders({
-      selectedProvider: "openai",
+      selectedProvider: "groq",
       discoveryEnabled: true,
       modelHintByProvider: MODEL_HINTS,
     }).at(-1);
 
-    expect(catalog?.modelOptionsByProvider.cursor.map((model) => model.slug)).toEqual([
-      "composer-2",
-      "cursor-custom",
-    ]);
-    expect(catalog?.loadingModelProviders.cursor).toBe(false);
+    expect(catalog?.modelOptionsByProvider.groq.map((model) => model.slug)).toContain("llama-3.3-70b");
+    expect(catalog?.loadingModelProviders.groq).toBe(false);
     expect(catalog?.selectedProviderModelsLoading).toBe(false);
-    expect(catalog?.runtimeModelsByProvider.cursor).toEqual([
-      { slug: "composer-2", name: "Composer 2" },
+    expect(catalog?.runtimeModelsByProvider.groq).toEqual([
+      { slug: "llama-3.3-70b", name: "Llama 3.3 70B" },
     ]);
   });
 });

@@ -145,7 +145,9 @@ export const DroidModelOptions = Schema.Struct({
 });
 export type DroidModelOptions = typeof DroidModelOptions.Type;
 
-export const EngineModelOptions = Schema.Struct({});
+export const EngineModelOptions = Schema.Struct({
+  thinkingLevel: Schema.optional(Schema.Literals(PI_THINKING_LEVEL_OPTIONS)),
+});
 export type EngineModelOptions = typeof EngineModelOptions.Type;
 
 // Generic options for API-key providers speaking the OpenAI-compatible chat
@@ -529,6 +531,66 @@ const API_MODEL_CAPABILITIES: ModelCapabilities = {
  */
 export const MODEL_OPTIONS_BY_PROVIDER = {
   engine: [],
+  openai: [
+    {
+      slug: "gpt-5.5",
+      name: "GPT-5.5",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "gpt-5.5-mini",
+      name: "GPT-5.5 Mini",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
+  anthropic: [
+    {
+      slug: "claude-opus-5",
+      name: "Claude Opus 5",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "claude-sonnet-5",
+      name: "Claude Sonnet 5",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "claude-haiku-4-5",
+      name: "Claude Haiku 4.5",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
+  google: [
+    {
+      slug: "gemini-3-pro",
+      name: "Gemini 3 Pro",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "gemini-3-flash",
+      name: "Gemini 3 Flash",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
+  openrouter: [
+    {
+      slug: "openai/gpt-5.5",
+      name: "GPT-5.5 (OpenRouter)",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "anthropic/claude-sonnet-5",
+      name: "Claude Sonnet 5 (OpenRouter)",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "deepseek/deepseek-chat",
+      name: "DeepSeek Chat (OpenRouter)",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
+  ollama: [],
+  deepseek: [],
   groq: [
     {
       slug: "llama-3.3-70b-versatile",
@@ -541,6 +603,11 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
       capabilities: API_MODEL_CAPABILITIES,
     },
   ],
+  mistral: [],
+  together: [],
+  cohere: [],
+  xai: [],
+  fireworks: [],
   opencodeZen: [
     {
       slug: "deepseek-v4-flash-free",
@@ -594,20 +661,42 @@ export type ModelSlug = BuiltInModelSlug | (string & {});
 export type ProviderWithDefaultModel = Exclude<ProviderKind, "engine">;
 
 export const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderWithDefaultModel, ModelSlug> = {
+  openai: "gpt-5.5",
+  anthropic: "claude-sonnet-5",
+  google: "gemini-3-flash",
+  openrouter: "openai/gpt-5.5",
+  ollama: "llama3.3",
+  deepseek: "deepseek-chat",
   groq: "llama-3.3-70b-versatile",
+  mistral: "mistral-large-latest",
+  together: "meta-llama/Llama-3-70b-chat-hf",
+  cohere: "command-r-plus",
+  xai: "grok-2",
+  fireworks: "accounts/fireworks/models/llama-v3-70b-instruct",
   opencodeZen: "deepseek-v4-flash-free",
   opencodeGo: "deepseek-v4-flash-free",
 };
 
 // Backward compatibility for existing Codex-only call sites.
-export const MODEL_OPTIONS = MODEL_OPTIONS_BY_PROVIDER.groq;
-export const DEFAULT_MODEL = DEFAULT_MODEL_BY_PROVIDER.groq;
+export const MODEL_OPTIONS = MODEL_OPTIONS_BY_PROVIDER.openai;
+export const DEFAULT_MODEL = DEFAULT_MODEL_BY_PROVIDER.openai;
 export const DEFAULT_GIT_TEXT_GENERATION_MODEL = "gpt-5.6-luna" as const;
 export const DEFAULT_GIT_TEXT_GENERATION_REASONING_EFFORT = "high" as const;
 
 export const MODEL_SLUG_ALIASES_BY_PROVIDER: Record<ProviderKind, Record<string, ModelSlug>> = {
   engine: {},
+  openai: {},
+  anthropic: {},
+  google: {},
+  openrouter: {},
+  ollama: {},
+  deepseek: {},
   groq: {},
+  mistral: {},
+  together: {},
+  cohere: {},
+  xai: {},
+  fireworks: {},
   opencodeZen: {},
   opencodeGo: {},
 };
@@ -638,7 +727,18 @@ export const MODEL_CAPABILITIES_INDEX = Object.fromEntries(
 
 export const PROVIDER_DISPLAY_NAMES: Record<ProviderKind, string> = {
   engine: "Builder",
+  openai: "OpenAI",
+  anthropic: "Anthropic",
+  google: "Google",
+  openrouter: "OpenRouter",
+  ollama: "Ollama",
+  deepseek: "DeepSeek",
   groq: "Groq",
+  mistral: "Mistral",
+  together: "Together",
+  cohere: "Cohere",
+  xai: "xAI",
+  fireworks: "Fireworks",
   opencodeZen: "OpenCode Zen",
   opencodeGo: "OpenCode Go",
 };

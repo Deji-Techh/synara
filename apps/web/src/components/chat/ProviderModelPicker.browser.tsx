@@ -8,74 +8,15 @@ import type { ProviderModelOption } from "../../providerModelOptions";
 import { FAVORITE_MODEL_STORAGE_KEYS } from "../../lib/modelFavorites";
 
 const MODEL_OPTIONS_BY_PROVIDER = {
-  claudeAgent: [
-    { slug: "claude-opus-4-6", name: "Claude Opus 4.6" },
-    { slug: "claude-sonnet-4-6", name: "Claude Sonnet 4.6" },
-    { slug: "claude-haiku-4-5", name: "Claude Haiku 4.5" },
+  engine: [
+    { slug: "engine-standard", name: "Engine Standard" },
   ],
-  codex: [
-    { slug: "gpt-5-codex", name: "GPT-5 Codex" },
-    { slug: "gpt-5.3-codex", name: "GPT-5.3 Codex" },
-  ],
-  cursor: [
-    { slug: "auto", name: "Auto" },
-    { slug: "composer-2", name: "Composer 2" },
-  ],
-  grok: [
-    { slug: "grok-build-0.1", name: "Grok Build 0.1" },
-    { slug: "grok-build", name: "Grok 4.3" },
-  ],
-  droid: [
-    {
-      slug: "gpt-5.6-luna",
-      name: "GPT-5.6 Luna",
-      description: "0.4x Factory token rate",
-    },
-    { slug: "custom:GPT-5.6-Luna-0", name: "Custom GPT-5.6 Luna" },
-  ],
-  kilo: [
-    {
-      slug: "kilo/kilo-auto/free",
-      name: "Kilo Auto Free",
-      upstreamProviderId: "openai",
-      upstreamProviderName: "Kilo",
-    },
-  ],
-  opencode: [
-    {
-      slug: "opencode/nemotron-3-super-free",
-      name: "Nemotron 3 Super Free",
-      upstreamProviderId: "openai",
-      upstreamProviderName: "OpenCode",
-    },
-    {
-      slug: "openai/gpt-5",
-      name: "GPT-5",
-      upstreamProviderId: "openai",
-      upstreamProviderName: "OpenAI",
-    },
-  ],
-  pi: [
-    {
-      slug: "anthropic/claude-sonnet-4-5",
-      name: "Claude Sonnet 4.5",
-      upstreamProviderId: "anthropic",
-      upstreamProviderName: "Anthropic",
-    },
-  ],
-  antigravity: [
-    {
-      slug: "Gemini 3.5 Flash",
-      name: "Gemini 3.5 Flash",
-    },
-  ],
-  engine: [],
   openai: [
-    { slug: "llama-3.3-70b-versatile", name: "Llama 3.3 70B" },
-    { slug: "llama-3.1-8b-instant", name: "Llama 3.1 8B" },
+    { slug: "gpt-5.4", name: "GPT-5.4" },
+    { slug: "gpt-5.4-mini", name: "GPT-5.4 Mini" },
   ],
   anthropic: [
-    { slug: "claude-sonnet-5", name: "Claude Sonnet 5" },
+    { slug: "claude-sonnet-4-6", name: "Claude Sonnet 4.6" },
     { slug: "claude-haiku-4-5", name: "Claude Haiku 4.5" },
   ],
   google: [
@@ -124,6 +65,9 @@ const MODEL_OPTIONS_BY_PROVIDER = {
     { slug: "north-mini-code-free", name: "North Mini Code Free" },
     { slug: "nemotron-3-ultra-free", name: "Nemotron 3 Ultra Free" },
     { slug: "big-pickle", name: "Big Pickle" },
+  ],
+  opencodeGo: [
+    { slug: "opencode/nemotron-3-super-free", name: "Nemotron 3 Super Free" },
   ],
 } as const satisfies Record<ProviderKind, ReadonlyArray<ProviderModelOption & { slug: ModelSlug }>>;
 
@@ -385,7 +329,7 @@ describe("ProviderModelPicker", () => {
       lockedProvider: "openai",
       modelOptionsByProvider: {
         ...MODEL_OPTIONS_BY_PROVIDER,
-        opencode: MANY_OPENCODE_MODELS,
+        opencodeGo: MANY_OPENCODE_MODELS,
       },
     });
 
@@ -405,7 +349,7 @@ describe("ProviderModelPicker", () => {
       lockedProvider: "openai",
       modelOptionsByProvider: {
         ...MODEL_OPTIONS_BY_PROVIDER,
-        opencode: MANY_OPENCODE_MODELS,
+        opencodeGo: MANY_OPENCODE_MODELS,
       },
     });
 
@@ -435,7 +379,7 @@ describe("ProviderModelPicker", () => {
       lockedProvider: "openai",
       modelOptionsByProvider: {
         ...MODEL_OPTIONS_BY_PROVIDER,
-        opencode: OPENCODE_FAVORITE_SORT_MODELS,
+        opencodeGo: OPENCODE_FAVORITE_SORT_MODELS,
       },
     });
 
@@ -470,7 +414,7 @@ describe("ProviderModelPicker", () => {
 
   it("distinguishes same-name favourite models by their upstream provider", async () => {
     localStorage.setItem(
-      FAVORITE_MODEL_STORAGE_KEYS.opencode,
+      FAVORITE_MODEL_STORAGE_KEYS.opencodeGo,
       JSON.stringify(OPENCODE_DUPLICATE_NAME_MODELS.map((model) => model.slug)),
     );
     const mounted = await mountPicker({
@@ -479,7 +423,7 @@ describe("ProviderModelPicker", () => {
       lockedProvider: "openai",
       modelOptionsByProvider: {
         ...MODEL_OPTIONS_BY_PROVIDER,
-        opencode: OPENCODE_DUPLICATE_NAME_MODELS,
+        opencodeGo: OPENCODE_DUPLICATE_NAME_MODELS,
       },
     });
 
@@ -523,7 +467,7 @@ describe("ProviderModelPicker", () => {
       lockedProvider: "openai",
       modelOptionsByProvider: {
         ...MODEL_OPTIONS_BY_PROVIDER,
-        cursor: MANY_CURSOR_MODELS,
+        openrouter: MANY_CURSOR_MODELS,
       },
     });
 
@@ -553,7 +497,7 @@ describe("ProviderModelPicker", () => {
       lockedProvider: "openai",
       modelOptionsByProvider: {
         ...MODEL_OPTIONS_BY_PROVIDER,
-        cursor: CURSOR_FAVORITE_SORT_MODELS,
+        openrouter: CURSOR_FAVORITE_SORT_MODELS,
       },
     });
 
@@ -597,7 +541,7 @@ describe("ProviderModelPicker", () => {
       lockedProvider: "openai",
       modelOptionsByProvider: {
         ...MODEL_OPTIONS_BY_PROVIDER,
-        pi: PI_FAVORITE_SORT_MODELS,
+        engine: PI_FAVORITE_SORT_MODELS,
       },
     });
 
@@ -635,7 +579,7 @@ describe("ProviderModelPicker", () => {
       provider: "openai",
       model: "auto",
       lockedProvider: "openai",
-      loadingModelProviders: { cursor: true },
+      loadingModelProviders: { openrouter: true },
     });
 
     try {

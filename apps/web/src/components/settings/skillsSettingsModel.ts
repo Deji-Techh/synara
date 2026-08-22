@@ -38,40 +38,45 @@ const SHARED_SKILLS_SECTION = "shared";
 const PERSONAL_ORIGIN = "personal";
 export const ORIGIN_SECTION_ORDER = [
   "caide",
+  "engine",
   "openai",
-  "claude",
-  "openai",
+  "anthropic",
   "google",
-  "openai",
-  "openai",
-  "openai",
-  "openai",
-  "openai",
+  "openrouter",
+  "ollama",
+  "deepseek",
+  "groq",
+  "mistral",
+  "together",
+  "cohere",
+  "xai",
+  "fireworks",
+  "opencodeZen",
+  "opencodeGo",
   "agents",
   "project",
 ] as const;
+
 export function skillOriginInfo(scope: string | undefined): SkillOriginInfo {
   switch (scope) {
     case "caide":
       return { label: "Caide", provider: null };
+    case "engine":
     case "openai":
-      return { label: PROVIDER_DISPLAY_NAMES.codex, provider: "openai" };
-    case "claude":
-      return { label: PROVIDER_DISPLAY_NAMES.claudeAgent, provider: "anthropic" };
-    case "openai":
-      return { label: PROVIDER_DISPLAY_NAMES.cursor, provider: "openai" };
+    case "anthropic":
     case "google":
-      return { label: PROVIDER_DISPLAY_NAMES.antigravity, provider: "google" };
-    case "openai":
-      return { label: PROVIDER_DISPLAY_NAMES.grok, provider: "openai" };
-    case "openai":
-      return { label: PROVIDER_DISPLAY_NAMES.droid, provider: "openai" };
-    case "openai":
-      return { label: PROVIDER_DISPLAY_NAMES.kilo, provider: "openai" };
-    case "openai":
-      return { label: PROVIDER_DISPLAY_NAMES.opencode, provider: "openai" };
-    case "openai":
-      return { label: PROVIDER_DISPLAY_NAMES.pi, provider: "openai" };
+    case "openrouter":
+    case "ollama":
+    case "deepseek":
+    case "groq":
+    case "mistral":
+    case "together":
+    case "cohere":
+    case "xai":
+    case "fireworks":
+    case "opencodeZen":
+    case "opencodeGo":
+      return { label: PROVIDER_DISPLAY_NAMES[scope], provider: scope };
     case "agents":
       return { label: "Shared (.agents)", provider: null };
     case "project":

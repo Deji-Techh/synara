@@ -73,14 +73,18 @@ export function flushStorageBeforePageHide(
     document: typeof document !== "undefined" ? document : undefined,
   },
 ): void {
-  env.window?.addEventListener("beforeunload", flush);
-  env.window?.addEventListener("pagehide", flush);
+  if (typeof env.window?.addEventListener === "function") {
+    env.window.addEventListener("beforeunload", flush);
+    env.window.addEventListener("pagehide", flush);
+  }
   const doc = env.document;
-  doc?.addEventListener("visibilitychange", () => {
-    if (doc.visibilityState === "hidden") {
-      flush();
-    }
-  });
+  if (typeof doc?.addEventListener === "function") {
+    doc.addEventListener("visibilitychange", () => {
+      if (doc.visibilityState === "hidden") {
+        flush();
+      }
+    });
+  }
 }
 
 export function createDeferredPersistStorage<State, Persisted = State>(options: {

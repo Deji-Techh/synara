@@ -82,10 +82,8 @@ type PluginBrandArtwork = {
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
-const PROVIDER_ICON: Record<ProviderKind, React.FC<React.SVGProps<SVGSVGElement>>> = {
-  ...PROVIDER_ICON_COMPONENT_BY_PROVIDER,
-  codex: HammerIcon,
-};
+const PROVIDER_ICON: Record<ProviderKind, React.FC<React.SVGProps<SVGSVGElement>>> =
+  PROVIDER_ICON_COMPONENT_BY_PROVIDER;
 const KNOWN_PLUGIN_BRANDS: Record<string, PluginBrandArtwork> = {
   canva: { icon: SiCanva, color: "#00C4CC" },
   figma: { icon: SiFigma, color: "#F24E1E" },
@@ -384,109 +382,23 @@ export function PluginLibrary() {
   const providerThreadId = focusedThreadId;
 
   const serverConfigQuery = useQuery(serverConfigQueryOptions());
-  const codexCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("openai"));
-  const claudeCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("anthropic"));
-  const cursorCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("openai"));
-  const antigravityCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("google"));
-  const grokCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("openai"));
-  const droidCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("openai"));
-  const kiloCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("openai"));
-  const openCodeCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("openai"));
-  const piCapabilitiesQuery = useQuery(providerComposerCapabilitiesQueryOptions("openai"));
 
   const providerCapabilities: Record<ProviderKind, ProviderCapabilities> = {
-    codex: {
-      plugins: supportsPluginDiscovery(codexCapabilitiesQuery.data),
-      skills: supportsSkillDiscovery(codexCapabilitiesQuery.data),
-    },
-    claudeAgent: {
-      plugins: supportsPluginDiscovery(claudeCapabilitiesQuery.data),
-      skills: supportsSkillDiscovery(claudeCapabilitiesQuery.data),
-    },
-    cursor: {
-      plugins: supportsPluginDiscovery(cursorCapabilitiesQuery.data),
-      skills: supportsSkillDiscovery(cursorCapabilitiesQuery.data),
-    },
-    antigravity: {
-      plugins: supportsPluginDiscovery(antigravityCapabilitiesQuery.data),
-      skills: supportsSkillDiscovery(antigravityCapabilitiesQuery.data),
-    },
-    grok: {
-      plugins: supportsPluginDiscovery(grokCapabilitiesQuery.data),
-      skills: supportsSkillDiscovery(grokCapabilitiesQuery.data),
-    },
-    droid: {
-      plugins: supportsPluginDiscovery(droidCapabilitiesQuery.data),
-      skills: supportsSkillDiscovery(droidCapabilitiesQuery.data),
-    },
-    kilo: {
-      plugins: supportsPluginDiscovery(kiloCapabilitiesQuery.data),
-      skills: supportsSkillDiscovery(kiloCapabilitiesQuery.data),
-    },
-    opencode: {
-      plugins: supportsPluginDiscovery(openCodeCapabilitiesQuery.data),
-      skills: supportsSkillDiscovery(openCodeCapabilitiesQuery.data),
-    },
-    pi: {
-      plugins: supportsPluginDiscovery(piCapabilitiesQuery.data),
-      skills: supportsSkillDiscovery(piCapabilitiesQuery.data),
-    },
-    engine: {
-      plugins: false,
-      skills: false,
-    },
-    openai: {
-      plugins: false,
-      skills: false,
-    },
-    anthropic: {
-      plugins: false,
-      skills: false,
-    },
-    google: {
-      plugins: false,
-      skills: false,
-    },
-    openrouter: {
-      plugins: false,
-      skills: false,
-    },
-    ollama: {
-      plugins: false,
-      skills: false,
-    },
-    deepseek: {
-      plugins: false,
-      skills: false,
-    },
-    groq: {
-      plugins: false,
-      skills: false,
-    },
-    mistral: {
-      plugins: false,
-      skills: false,
-    },
-    together: {
-      plugins: false,
-      skills: false,
-    },
-    cohere: {
-      plugins: false,
-      skills: false,
-    },
-    xai: {
-      plugins: false,
-      skills: false,
-    },
-    fireworks: {
-      plugins: false,
-      skills: false,
-    },
-    opencodeZen: {
-      plugins: false,
-      skills: false,
-    },
+    engine: { plugins: false, skills: false },
+    openai: { plugins: false, skills: false },
+    anthropic: { plugins: false, skills: false },
+    google: { plugins: false, skills: false },
+    openrouter: { plugins: false, skills: false },
+    ollama: { plugins: false, skills: false },
+    deepseek: { plugins: false, skills: false },
+    groq: { plugins: false, skills: false },
+    mistral: { plugins: false, skills: false },
+    together: { plugins: false, skills: false },
+    cohere: { plugins: false, skills: false },
+    xai: { plugins: false, skills: false },
+    fireworks: { plugins: false, skills: false },
+    opencodeZen: { plugins: false, skills: false },
+    opencodeGo: { plugins: false, skills: false },
   };
 
   // Auto-fallback: when the current tab/provider combo is unsupported, render

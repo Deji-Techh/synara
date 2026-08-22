@@ -58,7 +58,7 @@ export function buildExternalMcpClientConfiguration(
   stdio: ExternalMcpStdioConfiguration,
   platform = "",
 ): ExternalMcpClientConfiguration {
-  if (client === "openai") {
+  if (client === "codex") {
     const environment = Object.entries(stdio.env ?? {}).flatMap(([key, value]) => [
       "--env",
       `${key}=${value}`,
@@ -66,7 +66,7 @@ export function buildExternalMcpClientConfiguration(
     return {
       format: "command",
       value: shellCommand(
-        ["openai", "mcp", "add", "caide", ...environment, "--", stdio.command, ...stdio.args],
+        ["codex", "mcp", "add", "caide", ...environment, "--", stdio.command, ...stdio.args],
         platform,
       ),
       copyLabel: "Copy Codex command",
@@ -138,7 +138,7 @@ export function buildExternalMcpSetupPrompt(input: {
   readonly platform?: string;
 }): string {
   const platform = input.platform ?? "";
-  const codex = buildExternalMcpClientConfiguration("openai", input.stdio, platform);
+  const codex = buildExternalMcpClientConfiguration("codex", input.stdio, platform);
   const claude = buildExternalMcpClientConfiguration("claudeCode", input.stdio, platform);
   const sections: string[] = [
     "Connect this coding agent to Caide via MCP. Complete every step yourself, in order, and report what happened.",

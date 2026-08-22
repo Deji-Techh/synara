@@ -23,7 +23,13 @@ export interface TestFixture {
   serverConfig: ServerConfig;
 }
 
-export function setupHybridChatHarness(fixture: TestFixture) {
+export interface HybridChatHarness {
+  server: ReturnType<typeof setupServer>;
+  wsRequests: Array<Record<string, unknown>>;
+  mount: (initialEntry?: string) => ReturnType<typeof render> & { router: ReturnType<typeof getRouter> };
+}
+
+export function setupHybridChatHarness(fixture: TestFixture): HybridChatHarness {
   const wsRequests: Array<Record<string, unknown>> = [];
   const wsLink = ws.link(/ws(s)?:\/\/.*/);
 
@@ -63,7 +69,7 @@ export function setupHybridChatHarness(fixture: TestFixture) {
           });
           return;
         }
-        if (method === ORCHESTRATION_WS_METHODS.subscribeThreadDetail) {
+        if (method === ORCHESTRATION_WS_METHODS.subscribeThread) {
           const threadId = requestBody.threadId as string;
           const thread = fixture.snapshot.threads.find((t) => t.id === threadId);
           if (thread) {

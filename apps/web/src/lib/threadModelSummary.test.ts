@@ -40,7 +40,7 @@ describe("resolveThreadModelSummary", () => {
     const summary = resolveThreadModelSummary({
       provider: "anthropic",
       model: "claude-sonnet-5",
-      options: { effort: "high" },
+      options: { reasoningEffort: "high" },
     });
 
     expect(summary?.provider).toBe("anthropic");

@@ -568,16 +568,32 @@ describe("composerDraftStore runtime and interaction settings", () => {
     expect(useComposerDraftStore.getState().draftsByThreadId[threadId]).toBeUndefined();
   });
 
-  it("removes empty settings-only drafts when overrides are cleared", () => {
+  it("updates stickyChatMode when setChatMode is called and applies it with applyStickyState", () => {
     const store = useComposerDraftStore.getState();
 
-    store.setRuntimeMode(threadId, "approval-required");
-    store.setInteractionMode(threadId, "plan");
-    store.setChatMode(threadId, "ask");
-    store.setRuntimeMode(threadId, null);
-    store.setInteractionMode(threadId, null);
-    store.setChatMode(threadId, null);
+    store.setChatMode(threadId, "local-agent");
+    expect(useComposerDraftStore.getState().stickyChatMode).toBe("local-agent");
 
-    expect(useComposerDraftStore.getState().draftsByThreadId[threadId]).toBeUndefined();
+    // Apply sticky state to a new thread
+    const newThreadId = ThreadId.makeUnsafe("thread-new-sticky");
+    store.applyStickyState(newThreadId);
+
+    expect(useComposerDraftStore.getState().draftsByThreadId[newThreadId]?.mode).toBe("local-agent");
+  });
+
+  it("preserves mode and model selection during draft promotion finalization", () => {
+    const store = useComposerDraftStore.getState();
+    const projectId = ProjectId.makeUnsafe("project-test-sticky");
+    const draftThreadId = ThreadId.makeUnsafe("thread-draft-to-promote");
+    const serverThreadId = ThreadId.makeUnsafe("thread-server-promoted");
+
+    store.registerDraftThread(draftThreadId, { projectId });
+    store.setChatMode(draftThreadId, "plan");
+    store.markDraftThreadPromoting(draftThreadId, serverThreadId);
+
+    store.finalizePromotedDraftThread(draftThreadId);
+
+    expect(useComposerDraftStore.getState().draftsByThreadId[draftThreadId]).toBeUndefined();
+    expect(useComposerDraftStore.getState().draftsByThreadId[serverThreadId]?.mode).toBe("plan");
   });
 });

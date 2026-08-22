@@ -15,7 +15,6 @@ import {
   normalizeModelSlug,
   trimOrNull,
 } from "@caide/shared/model";
-import { normalizeCursorModelVariantBaseId } from "../../cursorModelVariants";
 
 function runtimeEffortLabel(value: string): string {
   switch (value) {
@@ -62,14 +61,7 @@ export function resolveRuntimeModelDescriptor(input: {
     const normalizedCandidate = normalizeModelSlug(candidate.slug, provider) ?? candidate.slug;
     const normalizedResolvedModel =
       normalizeModelSlug(candidate.resolvedModel, provider) ?? candidate.resolvedModel;
-    if (normalizedCandidate === normalizedModel || normalizedResolvedModel === normalizedModel) {
-      return true;
-    }
-    return (
-      provider === "openai" &&
-      normalizeCursorModelVariantBaseId(normalizedCandidate) ===
-        normalizeCursorModelVariantBaseId(normalizedModel)
-    );
+    return normalizedCandidate === normalizedModel || normalizedResolvedModel === normalizedModel;
   });
 }
 
@@ -82,7 +74,7 @@ export function getRuntimeAwareModelCapabilities(input: {
   const staticCapabilities = getModelCapabilities(input.provider, input.model);
   // Runtime discovery is authoritative when available; the static table is only a startup fallback.
   const supportsFastMode =
-    (input.provider === "openai" || input.provider === "openai") && input.runtimeModel
+    input.runtimeModel?.supportsFastMode !== undefined
       ? input.runtimeModel.supportsFastMode === true
       : staticCapabilities.supportsFastMode;
   const supportsThinkingToggle =
@@ -96,19 +88,8 @@ export function getRuntimeAwareModelCapabilities(input: {
   const optionDescriptors =
     input.runtimeModel?.optionDescriptors ?? staticCapabilities.optionDescriptors;
   const runtimeEfforts = input.runtimeModel?.supportedReasoningEfforts;
-  // Providers with dynamic catalogs, including Droid, expose model-specific effort ladders here.
-  if (
-    (input.provider !== "openai" &&
-      input.provider !== "openai" &&
-      input.provider !== "google" &&
-      input.provider !== "openai" &&
-      input.provider !== "openai" &&
-      input.provider !== "openai" &&
-      input.provider !== "openai" &&
-      input.provider !== "openai") ||
-    !runtimeEfforts ||
-    runtimeEfforts.length === 0
-  ) {
+
+  if (!runtimeEfforts || runtimeEfforts.length === 0) {
     return {
       ...staticCapabilities,
       ...(optionDescriptors ? { optionDescriptors } : {}),
@@ -134,16 +115,6 @@ export function getRuntimeAwareModelCapabilities(input: {
       ...(effort.value === runtimeDefaultEffort ? { isDefault: true as const } : {}),
     };
   });
-
-  if (input.provider === "openai" || input.provider === "openai") {
-    return {
-      ...staticCapabilities,
-      ...(optionDescriptors ? { optionDescriptors } : {}),
-      variantOptions: runtimeOptions,
-      supportsThinkingToggle,
-      contextWindowOptions,
-    };
-  }
 
   return {
     ...staticCapabilities,

@@ -19,64 +19,31 @@ import {
   type ProviderWithDefaultModel,
 } from "@caide/contracts";
 
-// Stripped to groq / opencodeZen / Go — all legacy maps to groq
 const LEGACY_PROVIDER_MAP: Record<string, ProviderKind> = {
-  codex: "groq",
-  claudeAgent: "groq",
-  claudeCode: "groq",
-  claude: "groq",
-  antigravity: "groq",
-  gemini: "groq",
-  grok: "groq",
-  droid: "groq",
-  pi: "groq",
-  cursor: "groq",
-  opencode: "groq",
-  kilo: "groq",
-  openai: "groq",
-  anthropic: "groq",
-  google: "groq",
-  openrouter: "groq",
-  ollama: "groq",
-  deepseek: "groq",
-  mistral: "groq",
-  together: "groq",
-  cohere: "groq",
-  xai: "groq",
-  fireworks: "groq",
+  codex: "openai",
+  claudeAgent: "anthropic",
+  claudeCode: "anthropic",
+  claude: "anthropic",
+  antigravity: "google",
+  gemini: "google",
+  grok: "xai",
+  droid: "openai",
+  pi: "openai",
+  cursor: "openai",
+  opencode: "openai",
+  kilo: "openai",
 };
 
-function coerceProviderKind(provider: string): ProviderKind {
+export function coerceProviderKind(provider: string): ProviderKind {
   return (LEGACY_PROVIDER_MAP[provider] ?? provider) as ProviderKind;
 }
 
-const MODEL_SLUG_SET_BY_PROVIDER: Record<ProviderKind, ReadonlySet<ModelSlug>> = {
-  engine: new Set<ModelSlug>(),
-  groq: new Set(
-    (
-      MODEL_OPTIONS_BY_PROVIDER as unknown as Record<
-        string,
-        readonly { slug: string }[] | undefined
-      >
-    ).groq?.map((option) => option.slug) ?? [],
-  ),
-  opencodeZen: new Set(
-    (
-      MODEL_OPTIONS_BY_PROVIDER as unknown as Record<
-        string,
-        readonly { slug: string }[] | undefined
-      >
-    ).opencodeZen?.map((option) => option.slug) ?? [],
-  ),
-  opencodeGo: new Set(
-    (
-      MODEL_OPTIONS_BY_PROVIDER as unknown as Record<
-        string,
-        readonly { slug: string }[] | undefined
-      >
-    ).opencodeGo?.map((option) => option.slug) ?? [],
-  ),
-};
+const MODEL_SLUG_SET_BY_PROVIDER: Record<ProviderKind, ReadonlySet<ModelSlug>> = Object.fromEntries(
+  Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([provider, models]) => [
+    provider,
+    new Set(models.map((option) => option.slug)),
+  ]),
+) as unknown as Record<ProviderKind, ReadonlySet<ModelSlug>>;
 
 export interface SelectableModelOption {
   slug: string;
@@ -99,8 +66,8 @@ export const EMPTY_MODEL_CAPABILITIES: ModelCapabilities = {
   promptInjectedEffortLevels: [],
   contextWindowOptions: [],
 };
-export function getModelOptions(provider: ProviderKind = "groq") {
-  return MODEL_OPTIONS_BY_PROVIDER[provider];
+export function getModelOptions(provider: ProviderKind = "openai") {
+  return MODEL_OPTIONS_BY_PROVIDER[provider] ?? [];
 }
 
 function hasDefaultModel(provider: ProviderKind): provider is ProviderWithDefaultModel {
@@ -110,9 +77,9 @@ function hasDefaultModel(provider: ProviderKind): provider is ProviderWithDefaul
 export function getDefaultModel(provider: "engine"): null;
 export function getDefaultModel(provider?: ProviderWithDefaultModel): ModelSlug;
 export function getDefaultModel(provider: ProviderKind): ModelSlug | null;
-export function getDefaultModel(provider: ProviderKind = "groq"): ModelSlug | null {
+export function getDefaultModel(provider: ProviderKind = "openai"): ModelSlug | null {
   return hasDefaultModel(provider)
-    ? DEFAULT_MODEL_BY_PROVIDER[provider as ProviderWithDefaultModel]
+    ? DEFAULT_MODEL_BY_PROVIDER[provider as ProviderWithDefaultModel] ?? null
     : null;
 }
 
@@ -529,18 +496,11 @@ export function resolveModelSlug(
 ): ModelSlug | null {
   const coerced = coerceProviderKind(String(provider)) as ProviderKind;
   const normalized = normalizeModelSlug(model, coerced);
-  if (coerced === "engine") {
-    return normalized;
-  }
   if (!normalized) {
     return (DEFAULT_MODEL_BY_PROVIDER as Record<string, ModelSlug>)[coerced] ?? null;
   }
 
-  return (MODEL_SLUG_SET_BY_PROVIDER as Record<string, ReadonlySet<ModelSlug>>)[coerced]?.has(
-    normalized,
-  )
-    ? normalized
-    : ((DEFAULT_MODEL_BY_PROVIDER as Record<string, ModelSlug>)[coerced] ?? null);
+  return normalized;
 }
 
 export function resolveModelSlugForProvider(

@@ -33,7 +33,18 @@ export const AGENT_MENTION_ALIASES_BY_PROVIDER: Record<
   Record<string, AgentAliasDefinition>
 > = {
   engine: {},
+  openai: {},
+  anthropic: {},
+  google: {},
+  openrouter: {},
+  ollama: {},
+  deepseek: {},
   groq: {},
+  mistral: {},
+  together: {},
+  cohere: {},
+  xai: {},
+  fireworks: {},
   opencodeZen: {},
   opencodeGo: {},
 };
@@ -46,7 +57,18 @@ export const AGENT_MENTION_ALIASES = Object.fromEntries(
 
 const AGENT_MENTION_AUTOCOMPLETE_ALIASES_BY_PROVIDER: Record<ProviderKind, readonly string[]> = {
   engine: [],
+  openai: [],
+  anthropic: [],
+  google: [],
+  openrouter: [],
+  ollama: [],
+  deepseek: [],
   groq: [],
+  mistral: [],
+  together: [],
+  cohere: [],
+  xai: [],
+  fireworks: [],
   opencodeZen: [],
   opencodeGo: [],
 };

@@ -18,6 +18,7 @@ import {
 import * as Schema from "effect/Schema";
 
 import {
+  coerceProviderKind,
   getDefaultModel,
   normalizeModelSlug,
   resolveModelSlugForProvider,
@@ -29,14 +30,23 @@ import { classifyProviderReasoningEffortSupport } from "./lib/codexReasoningEffo
 
 export const COMPOSER_PROVIDER_KINDS = [
   "engine",
+  "openai",
+  "anthropic",
+  "google",
+  "openrouter",
+  "ollama",
+  "deepseek",
   "groq",
+  "mistral",
+  "together",
+  "cohere",
+  "xai",
+  "fireworks",
   "opencodeZen",
   "opencodeGo",
 ] as const satisfies readonly ProviderKind[];
 
 const isProviderKind = Schema.is(ProviderKind);
-
-const GROK_REASONING_EFFORT_SET = new Set<string>(GROK_REASONING_EFFORT_OPTIONS);
 
 export const LegacyCodexFields = Schema.Struct({
   effort: Schema.optionalKey(Schema.String),
@@ -45,8 +55,6 @@ export const LegacyCodexFields = Schema.Struct({
 });
 
 export type LegacyCodexFields = typeof LegacyCodexFields.Type;
-
-const ANTIGRAVITY_REASONING_EFFORT_SET = new Set(["low", "medium", "high", "thinking"]);
 
 export interface EffectiveComposerModelState {
   selectedModel: ModelSlug;
@@ -60,7 +68,7 @@ function mergeProviderModelOptionsFromSelections(
   for (const selection of selections) {
     if (!selection) continue;
     if (selection.options) {
-      result[selection.provider] = selection.options;
+      result[selection.provider] = selection.options as any;
     } else {
       delete result[selection.provider];
     }
@@ -93,7 +101,7 @@ function deriveEffectiveComposerModelOptions(input: {
   >) {
     if (!selection) continue;
     if (selection.options) {
-      result[provider] = selection.options;
+      result[provider] = selection.options as any;
     } else {
       delete result[provider];
     }
@@ -102,10 +110,11 @@ function deriveEffectiveComposerModelOptions(input: {
 }
 
 export function normalizeProviderKind(value: unknown): ProviderKind | null {
-  if (value === "google") {
-    return "google";
+  if (typeof value !== "string") {
+    return null;
   }
-  return isProviderKind(value) ? value : null;
+  const coerced = coerceProviderKind(value);
+  return isProviderKind(coerced) ? coerced : null;
 }
 
 function trimStringOrUndefined(value: unknown): string | undefined {
@@ -116,264 +125,55 @@ function trimStringOrUndefined(value: unknown): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
-function isGrokReasoningEffort(value: unknown): value is GrokReasoningEffort {
-  return typeof value === "string" && GROK_REASONING_EFFORT_SET.has(value);
-}
-
 export function makeModelSelection(
   provider: ProviderKind,
   model: string,
   options?: ProviderModelOptions[ProviderKind],
-  supportsAutoMode?: boolean,
+  _supportsAutoMode?: boolean,
 ): ModelSelection {
-  if (provider === "anthropic") {
-    return {
-      provider,
-      model,
-      ...(options
-        ? {
-            options: options as Extract<ModelSelection, { provider: "anthropic" }>["options"],
-          }
-        : {}),
-      ...(typeof supportsAutoMode === "boolean" ? { supportsAutoMode } : {}),
-    };
-  }
-  if (provider === "google") {
-    return {
-      provider,
-      model,
-      ...(options
-        ? {
-            options: options as Extract<ModelSelection, { provider: "google" }>["options"],
-          }
-        : {}),
-    };
-  }
-  if (provider === "engine") {
-    return {
-      provider,
-      model,
-      ...(options
-        ? { options: options as Extract<ModelSelection, { provider: "engine" }>["options"] }
-        : {}),
-    };
-  }
   return {
     provider,
     model,
-    ...(options
-      ? { options: options as Extract<ModelSelection, { provider: typeof provider }>["options"] }
-      : {}),
-  };
+    ...(options ? { options: options as any } : {}),
+  } as ModelSelection;
 }
 
 export function normalizeProviderModelOptions(
   value: unknown,
-  provider?: ProviderKind | null,
-  legacy?: LegacyCodexFields,
+  _provider?: ProviderKind,
+  _legacy?: LegacyCodexFields,
 ): ProviderModelOptions | null {
   const candidate = value && typeof value === "object" ? (value as Record<string, unknown>) : null;
-  // Map legacy CLI provider keys to API providers
-  const legacyMap: Record<string, string> = {
-    codex: "groq",
-    claudeAgent: "anthropic",
-    cursor: "groq",
-    antigravity: "groq",
-    grok: "groq",
-    droid: "groq",
-    opencode: "groq",
-    kilo: "groq",
-    pi: "groq",
-  };
-  // Collect candidate for the requested provider, checking both API and legacy keys
-  const getCandidate = (apiProvider: string) => {
-    const direct =
-      candidate?.[apiProvider] && typeof candidate[apiProvider] === "object"
-        ? (candidate[apiProvider] as Record<string, unknown>)
-        : null;
-    if (direct) return direct;
-    // Check legacy keys that map to this API provider
-    for (const [legacyKey, mapped] of Object.entries(legacyMap)) {
-      if (
-        mapped === apiProvider &&
-        candidate?.[legacyKey] &&
-        typeof candidate[legacyKey] === "object"
-      ) {
-        return candidate[legacyKey] as Record<string, unknown>;
-      }
-    }
-    return null;
-  };
-  const codexCandidate = getCandidate("groq");
-  const claudeCandidate = getCandidate("opencodeZen");
-  const antigravityCandidate = getCandidate("opencodeGo");
-  const grokCandidate = getCandidate("groq");
-  // For API-only, we only need openai, anthropic, google, xai, and generic API providers
-  const droidCandidate = null;
-  const openCodeCandidate = null;
-  const kiloCandidate = null;
-  const piCandidate = null;
-  const cursorCandidate = null;
-
-  const codexReasoningEffort: CodexReasoningEffort | undefined =
-    trimStringOrUndefined(codexCandidate?.reasoningEffort) ??
-    (provider === "groq" ? trimStringOrUndefined(legacy?.effort) : undefined);
-  const codexFastMode =
-    codexCandidate?.fastMode === true
-      ? true
-      : codexCandidate?.fastMode === false
-        ? false
-        : (provider === "groq" && legacy?.codexFastMode === true) ||
-            (typeof legacy?.serviceTier === "string" && legacy.serviceTier === "fast")
-          ? true
-          : undefined;
-  const codex =
-    codexReasoningEffort !== undefined || codexFastMode !== undefined
-      ? {
-          ...(codexReasoningEffort !== undefined ? { reasoningEffort: codexReasoningEffort } : {}),
-          ...(codexFastMode !== undefined ? { fastMode: codexFastMode } : {}),
-        }
-      : undefined;
-
-  const claudeThinking =
-    claudeCandidate?.thinking === true
-      ? true
-      : claudeCandidate?.thinking === false
-        ? false
-        : undefined;
-  const claudeEffort: ClaudeCodeEffort | undefined =
-    claudeCandidate?.effort === "low" ||
-    claudeCandidate?.effort === "medium" ||
-    claudeCandidate?.effort === "high" ||
-    claudeCandidate?.effort === "xhigh" ||
-    claudeCandidate?.effort === "max" ||
-    claudeCandidate?.effort === "ultrathink" ||
-    claudeCandidate?.effort === "ultracode"
-      ? claudeCandidate.effort
-      : undefined;
-  const claudeFastMode =
-    claudeCandidate?.fastMode === true
-      ? true
-      : claudeCandidate?.fastMode === false
-        ? false
-        : undefined;
-  const claudeAutoCompactWindow =
-    trimStringOrUndefined(claudeCandidate?.autoCompactWindow) ??
-    trimStringOrUndefined(claudeCandidate?.contextWindow);
-  const claude =
-    claudeThinking !== undefined ||
-    claudeEffort !== undefined ||
-    claudeFastMode !== undefined ||
-    claudeAutoCompactWindow !== undefined
-      ? {
-          ...(claudeThinking !== undefined ? { thinking: claudeThinking } : {}),
-          ...(claudeEffort !== undefined ? { effort: claudeEffort } : {}),
-          ...(claudeFastMode !== undefined ? { fastMode: claudeFastMode } : {}),
-          ...(claudeAutoCompactWindow !== undefined
-            ? { autoCompactWindow: claudeAutoCompactWindow }
-            : {}),
-        }
-      : undefined;
-
-  const cursorReasoningEffort = trimStringOrUndefined(cursorCandidate?.reasoningEffort);
-  const cursorFastMode =
-    cursorCandidate?.fastMode === true
-      ? true
-      : cursorCandidate?.fastMode === false
-        ? false
-        : undefined;
-  const cursorThinking =
-    cursorCandidate?.thinking === true
-      ? true
-      : cursorCandidate?.thinking === false
-        ? false
-        : undefined;
-  const cursorContextWindow = trimStringOrUndefined(cursorCandidate?.contextWindow);
-  const cursor: CursorModelOptions | undefined =
-    cursorReasoningEffort !== undefined ||
-    cursorFastMode !== undefined ||
-    cursorThinking !== undefined ||
-    cursorContextWindow !== undefined
-      ? {
-          ...(cursorReasoningEffort !== undefined
-            ? { reasoningEffort: cursorReasoningEffort }
-            : {}),
-          ...(cursorFastMode !== undefined ? { fastMode: cursorFastMode } : {}),
-          ...(cursorThinking !== undefined ? { thinking: cursorThinking } : {}),
-          ...(cursorContextWindow !== undefined ? { contextWindow: cursorContextWindow } : {}),
-        }
-      : undefined;
-
-  const antigravityReasoningEffort = trimStringOrUndefined(antigravityCandidate?.reasoningEffort);
-  const antigravity =
-    antigravityReasoningEffort !== undefined
-      ? { reasoningEffort: antigravityReasoningEffort }
-      : undefined;
-  const grokReasoningEffort: GrokReasoningEffort | undefined = isGrokReasoningEffort(
-    grokCandidate?.reasoningEffort,
-  )
-    ? grokCandidate.reasoningEffort
-    : undefined;
-  const grok =
-    grokReasoningEffort !== undefined ? { reasoningEffort: grokReasoningEffort } : undefined;
-  const droidReasoningEffort: DroidReasoningEffort | undefined = trimStringOrUndefined(
-    droidCandidate?.reasoningEffort,
-  );
-  const droid =
-    droidReasoningEffort !== undefined ? { reasoningEffort: droidReasoningEffort } : undefined;
-  const openCodeVariant = trimStringOrUndefined(openCodeCandidate?.variant);
-  const openCodeAgent = trimStringOrUndefined(openCodeCandidate?.agent);
-  const opencode =
-    openCodeVariant !== undefined || openCodeAgent !== undefined
-      ? {
-          ...(openCodeVariant !== undefined ? { variant: openCodeVariant } : {}),
-          ...(openCodeAgent !== undefined ? { agent: openCodeAgent } : {}),
-        }
-      : undefined;
-  const kiloVariant = trimStringOrUndefined(kiloCandidate?.variant);
-  const kiloAgent = trimStringOrUndefined(kiloCandidate?.agent);
-  const kilo =
-    kiloVariant !== undefined || kiloAgent !== undefined
-      ? {
-          ...(kiloVariant !== undefined ? { variant: kiloVariant } : {}),
-          ...(kiloAgent !== undefined ? { agent: kiloAgent } : {}),
-        }
-      : undefined;
-  const piThinkingLevel: PiThinkingLevel | undefined =
-    piCandidate?.thinkingLevel === "off" ||
-    piCandidate?.thinkingLevel === "minimal" ||
-    piCandidate?.thinkingLevel === "low" ||
-    piCandidate?.thinkingLevel === "medium" ||
-    piCandidate?.thinkingLevel === "high" ||
-    piCandidate?.thinkingLevel === "xhigh" ||
-    piCandidate?.thinkingLevel === "max"
-      ? piCandidate.thinkingLevel
-      : undefined;
-  const pi = piThinkingLevel !== undefined ? { thinkingLevel: piThinkingLevel } : undefined;
-  if (
-    !codex &&
-    !claude &&
-    !cursor &&
-    !antigravity &&
-    !grok &&
-    !droid &&
-    !kilo &&
-    !opencode &&
-    !pi
-  ) {
+  if (!candidate) {
     return null;
   }
-  return {
-    ...(codex ? { codex } : {}),
-    ...(claude ? { claudeAgent: claude } : {}),
-    ...(cursor ? { cursor } : {}),
-    ...(antigravity ? { antigravity } : {}),
-    ...(grok ? { grok } : {}),
-    ...(droid ? { droid } : {}),
-    ...(kilo ? { kilo } : {}),
-    ...(opencode ? { opencode } : {}),
-    ...(pi ? { pi } : {}),
-  };
+  const result: Partial<Record<ProviderKind, any>> = {};
+
+  for (const provider of COMPOSER_PROVIDER_KINDS) {
+    const raw = candidate[provider];
+    if (!raw || typeof raw !== "object") continue;
+    const obj = raw as Record<string, unknown>;
+
+    if (provider === "engine") {
+      const thinkingLevel = trimStringOrUndefined(obj.thinkingLevel);
+      if (thinkingLevel) {
+        result.engine = { thinkingLevel };
+      }
+    } else {
+      const reasoningEffort = trimStringOrUndefined(obj.reasoningEffort);
+      const fastMode = obj.fastMode === true ? true : obj.fastMode === false ? false : undefined;
+      const thinking = obj.thinking === true ? true : obj.thinking === false ? false : undefined;
+      if (reasoningEffort !== undefined || fastMode !== undefined || thinking !== undefined) {
+        result[provider] = {
+          ...(reasoningEffort !== undefined ? { reasoningEffort } : {}),
+          ...(fastMode !== undefined ? { fastMode } : {}),
+          ...(thinking !== undefined ? { thinking } : {}),
+        };
+      }
+    }
+  }
+
+  return Object.keys(result).length > 0 ? (result as ProviderModelOptions) : null;
 }
 
 export function normalizeModelSelection(
@@ -387,7 +187,6 @@ export function normalizeModelSelection(
 ): ModelSelection | null {
   const candidate = value && typeof value === "object" ? (value as Record<string, unknown>) : null;
   const rawProvider = candidate?.provider ?? legacy?.provider;
-  const migratedGeminiSelection = rawProvider === "google";
   const provider = normalizeProviderKind(rawProvider);
   if (provider === null) {
     return null;
@@ -396,60 +195,16 @@ export function normalizeModelSelection(
   if (typeof rawModel !== "string") {
     return null;
   }
-  const antigravityLegacyMatch =
-    provider === "google" ? rawModel.trim().match(/^(.*?)\s+\(([^()]+)\)$/u) : null;
-  const antigravityLegacyEffort = antigravityLegacyMatch?.[2]?.trim().toLowerCase();
-  const hasLegacyAntigravityEffort =
-    antigravityLegacyMatch?.[1] !== undefined &&
-    antigravityLegacyEffort !== undefined &&
-    ANTIGRAVITY_REASONING_EFFORT_SET.has(antigravityLegacyEffort);
-  const normalizedRawModel = migratedGeminiSelection
-    ? getDefaultModel("google")
-    : hasLegacyAntigravityEffort
-      ? antigravityLegacyMatch[1]!.trim()
-      : rawModel;
-  const inferredClaudeAutoCompactWindow =
-    provider === "anthropic" && /\[1m\]$/iu.test(rawModel) ? "1m" : undefined;
-  const model = normalizeModelSlug(normalizedRawModel, provider);
+  const model = normalizeModelSlug(rawModel, provider);
   if (!model) {
     return null;
   }
-  const modelOptions = migratedGeminiSelection
-    ? null
-    : normalizeProviderModelOptions(
-        candidate?.options ? { [provider]: candidate.options } : legacy?.modelOptions,
-        provider,
-        provider === "groq" ? legacy?.legacyCodex : undefined,
-      );
-  const options =
-    provider === "anthropic"
-      ? inferredClaudeAutoCompactWindow !== undefined
-        ? {
-            ...((modelOptions as any)?.anthropic ?? (modelOptions as any)?.claudeAgent),
-            autoCompactWindow:
-              ((modelOptions as any)?.anthropic ?? (modelOptions as any)?.claudeAgent)
-                ?.autoCompactWindow ?? inferredClaudeAutoCompactWindow,
-          }
-        : ((modelOptions as any)?.anthropic ?? (modelOptions as any)?.claudeAgent)
-      : provider === "google"
-        ? ((modelOptions as any)?.google ?? (modelOptions as any)?.antigravity)
-        : ((modelOptions as any)?.[provider] ??
-          (modelOptions as any)?.[provider === "deepseek" ? "openai" : provider] ??
-          undefined);
-  const normalizedOptions =
-    provider === "google" && hasLegacyAntigravityEffort
-      ? {
-          reasoningEffort: modelOptions?.antigravity?.reasoningEffort ?? antigravityLegacyEffort,
-        }
-      : options;
-  return makeModelSelection(
+  const modelOptions = normalizeProviderModelOptions(
+    candidate?.options ? { [provider]: candidate.options } : legacy?.modelOptions,
     provider,
-    model,
-    normalizedOptions,
-    provider === "anthropic" && typeof candidate?.supportsAutoMode === "boolean"
-      ? candidate.supportsAutoMode
-      : undefined,
   );
+  const options = (modelOptions as any)?.[provider];
+  return makeModelSelection(provider, model, options);
 }
 
 export function reconcileProviderScopedModelSelection(
@@ -460,86 +215,23 @@ export function reconcileProviderScopedModelSelection(
     return requested;
   }
   if (current.model === requested.model) {
-    const currentSupportsAutoMode =
-      current.provider === "anthropic" ? current.supportsAutoMode : undefined;
     return makeModelSelection(
       requested.provider,
       requested.model,
       current.options,
-      requested.provider === "anthropic"
-        ? (requested.supportsAutoMode ?? currentSupportsAutoMode)
-        : undefined,
     );
   }
-  if (
-    current.provider !== "groq" &&
-    current.provider !== "groq" &&
-    current.provider !== "anthropic"
-  ) {
-    return requested;
-  }
-  let preservedOptions = current.options;
-  const effort =
-    current.provider === "anthropic"
-      ? current.options?.effort
-      : current.provider === "groq" || current.provider === "groq"
-        ? current.options?.reasoningEffort
-        : undefined;
-  if (
-    effort !== undefined &&
-    classifyProviderReasoningEffortSupport({
-      provider: requested.provider,
-      model: requested.model,
-      effort,
-    }) !== "supported"
-  ) {
-    if (current.provider === "anthropic") {
-      const { effort: _effort, ...remainingOptions } = current.options ?? {};
-      preservedOptions = Object.keys(remainingOptions).length > 0 ? remainingOptions : undefined;
-    } else if (current.provider === "groq" || current.provider === "groq") {
-      const { reasoningEffort: _reasoningEffort, ...remainingOptions } = current.options ?? {};
-      preservedOptions = Object.keys(remainingOptions).length > 0 ? remainingOptions : undefined;
-    }
-  }
-  return makeModelSelection(
-    requested.provider,
-    requested.model,
-    preservedOptions,
-    requested.provider === "anthropic" ? requested.supportsAutoMode : undefined,
-  );
+  return requested;
 }
 
 export function stripNonStickyModelOptions(selection: ModelSelection): ModelSelection {
-  if (
-    selection.provider !== "anthropic" ||
-    (!selection.options?.contextWindow && !selection.options?.autoCompactWindow)
-  ) {
-    return selection;
-  }
-  const {
-    contextWindow: _contextWindow,
-    autoCompactWindow: _autoCompactWindow,
-    ...rest
-  } = selection.options;
-  return makeModelSelection(
-    selection.provider,
-    selection.model,
-    Object.keys(rest).length > 0 ? rest : undefined,
-    selection.supportsAutoMode,
-  );
+  return selection;
 }
 
 export function sanitizeStickyModelSelectionMap(
   map: Partial<Record<ProviderKind, ModelSelection>>,
 ): Partial<Record<ProviderKind, ModelSelection>> {
-  const claude = map.claudeAgent;
-  if (
-    claude?.provider !== "anthropic" ||
-    (!claude.options?.contextWindow && !claude.options?.autoCompactWindow)
-  ) {
-    return map;
-  }
-  return { ...map, claudeAgent: stripNonStickyModelOptions(claude) };
+  return map;
 }
 
 export function legacySyncModelSelectionOptions(
@@ -554,7 +246,6 @@ export function legacySyncModelSelectionOptions(
     modelSelection.provider,
     modelSelection.model,
     options,
-    modelSelection.provider === "anthropic" ? modelSelection.supportsAutoMode : undefined,
   );
 }
 
@@ -724,15 +415,8 @@ export function resolvePreferredComposerModelSelection(input: {
     (input.projectModelSelection?.provider === preferredProvider
       ? input.projectModelSelection
       : null) ?? {
-      provider:
-        preferredProvider === "groq" || preferredProvider === "engine"
-          ? "openai"
-          : preferredProvider,
-      model: getDefaultModel(
-        preferredProvider === "groq" || preferredProvider === "engine"
-          ? "openai"
-          : preferredProvider,
-      ),
+      provider: preferredProvider,
+      model: getDefaultModel(preferredProvider) ?? "default",
     }
   );
 }

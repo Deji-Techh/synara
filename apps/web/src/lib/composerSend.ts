@@ -209,41 +209,10 @@ export function formatOutgoingComposerPrompt(params: {
 export function resolvePromptEffortFromModelSelection(
   modelSelection: ModelSelection,
 ): string | null {
-  switch (modelSelection.provider) {
-    case "google":
-      return null;
-    case "openai":
-      return modelSelection.options?.reasoningEffort ?? null;
-    case "anthropic":
-      return modelSelection.options?.effort ?? null;
-    case "openai":
-      return modelSelection.options?.reasoningEffort ?? null;
-    case "openai":
-    case "openai":
-      return modelSelection.options?.reasoningEffort ?? null;
-    case "openai":
-      return modelSelection.options?.thinkingLevel ?? null;
-    case "openai":
-    case "openai":
-      return null;
-    case "engine":
-      return null;
-    case "openai":
-    case "anthropic":
-    case "google":
-    case "openrouter":
-    case "ollama":
-    case "deepseek":
-    case "groq":
-    case "mistral":
-    case "together":
-    case "cohere":
-    case "xai":
-    case "fireworks":
-    case "opencodeZen":
-    case "opencodeGo":
-      return modelSelection.options?.reasoningEffort ?? null;
+  if (modelSelection.provider === "engine") {
+    return modelSelection.options?.thinkingLevel ?? null;
   }
+  return modelSelection.options?.reasoningEffort ?? null;
 }
 
 export interface StagedComposerAttachments {

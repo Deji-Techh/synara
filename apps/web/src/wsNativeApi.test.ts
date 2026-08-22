@@ -22,6 +22,7 @@ import {
   WS_METHODS,
   type WsPush,
   type ServerProviderStatus,
+  DEFAULT_SERVER_SETTINGS_VIEW,
 } from "@caide/contracts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -297,139 +298,8 @@ describe("wsNativeApi", () => {
     onServerSettingsUpdated(listener);
 
     const payload = {
-      settings: {
-        enableAssistantStreaming: true,
-        enableProviderUpdateChecks: true,
-        defaultThreadEnvMode: "local",
-        addProjectBaseDirectory: "",
-        textGenerationModelSelection: { provider: "openai", model: "gpt-5.4-mini" },
-        providers: {
-          codex: { enabled: true, binaryPath: "openai", homePath: "", customModels: [] },
-          claudeAgent: { enabled: true, binaryPath: "claude", launchArgs: "", customModels: [] },
-          cursor: { enabled: false, binaryPath: "agent", apiEndpoint: "", customModels: [] },
-          antigravity: { enabled: true, binaryPath: "agy", customModels: [] },
-          grok: { enabled: true, binaryPath: "openai", customModels: [] },
-          droid: { enabled: true, binaryPath: "openai", customModels: [] },
-          kilo: {
-            enabled: true,
-            binaryPath: "openai",
-            serverUrl: "",
-            serverPasswordConfigured: false,
-            customModels: [],
-          },
-          opencode: {
-            enabled: true,
-            binaryPath: "openai",
-            serverUrl: "",
-            serverPasswordConfigured: false,
-            experimentalWebSockets: false,
-            customModels: [],
-          },
-          pi: { enabled: true, binaryPath: "openai", agentDir: "", customModels: [] },
-          engine: {
-            enabled: true,
-            binaryPath: "caide-engine",
-            customModels: [],
-            baseUrl: "",
-            modelId: "",
-            apiKeyConfigured: false,
-            flutterSdkBin: "",
-          },
-          openai: {
-            enabled: true,
-            binaryPath: "",
-            baseUrl: "",
-            apiKeyConfigured: false,
-            customModels: [],
-          },
-          anthropic: {
-            enabled: true,
-            binaryPath: "",
-            baseUrl: "",
-            apiKeyConfigured: false,
-            customModels: [],
-          },
-          google: {
-            enabled: true,
-            binaryPath: "",
-            baseUrl: "",
-            apiKeyConfigured: false,
-            customModels: [],
-          },
-          openrouter: {
-            enabled: true,
-            binaryPath: "",
-            baseUrl: "",
-            apiKeyConfigured: false,
-            customModels: [],
-          },
-          ollama: {
-            enabled: true,
-            binaryPath: "",
-            baseUrl: "",
-            apiKeyConfigured: false,
-            customModels: [],
-          },
-          deepseek: {
-            enabled: true,
-            binaryPath: "",
-            baseUrl: "",
-            apiKeyConfigured: false,
-            customModels: [],
-          },
-          groq: {
-            enabled: true,
-            binaryPath: "",
-            baseUrl: "",
-            apiKeyConfigured: false,
-            customModels: [],
-          },
-          mistral: {
-            enabled: true,
-            binaryPath: "",
-            baseUrl: "",
-            apiKeyConfigured: false,
-            customModels: [],
-          },
-          together: {
-            enabled: true,
-            binaryPath: "",
-            baseUrl: "",
-            apiKeyConfigured: false,
-            customModels: [],
-          },
-          cohere: {
-            enabled: true,
-            binaryPath: "",
-            baseUrl: "",
-            apiKeyConfigured: false,
-            customModels: [],
-          },
-          xai: {
-            enabled: true,
-            binaryPath: "",
-            baseUrl: "",
-            apiKeyConfigured: false,
-            customModels: [],
-          },
-          fireworks: {
-            enabled: true,
-            binaryPath: "",
-            baseUrl: "",
-            apiKeyConfigured: false,
-            customModels: [],
-          },
-          opencodeZen: {
-            enabled: true,
-            binaryPath: "",
-            baseUrl: "",
-            apiKeyConfigured: false,
-            customModels: [],
-          },
-        },
-        skills: { disabled: [] },
-      },
-    } as const;
+      settings: DEFAULT_SERVER_SETTINGS_VIEW,
+    };
     emitPush(WS_CHANNELS.serverSettingsUpdated, payload);
 
     expect(listener).toHaveBeenCalledTimes(1);

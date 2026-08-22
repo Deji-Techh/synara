@@ -760,7 +760,7 @@ describe("composerDraftStore copyTransferableComposerState", () => {
     useComposerDraftStore.getState().setModelSelection(
       targetThreadId,
       modelSelection("anthropic", "claude-sonnet-4-6", {
-        effort: "high",
+        reasoningEffort: "high",
       }),
     );
 
@@ -769,11 +769,11 @@ describe("composerDraftStore copyTransferableComposerState", () => {
     expect(useComposerDraftStore.getState().draftsByThreadId[targetThreadId]).toMatchObject({
       prompt: "follow-up for the other provider",
       modelSelectionByProvider: {
-        claudeAgent: {
+        anthropic: {
           provider: "anthropic",
           model: "claude-sonnet-4-6",
           options: {
-            effort: "high",
+            reasoningEffort: "high",
           },
         },
       },

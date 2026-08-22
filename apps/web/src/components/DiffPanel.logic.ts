@@ -61,7 +61,7 @@ export function resolveDiffPanelThread(input: {
     input.draftThread,
     input.fallbackModelSelection ?? {
       provider: "openai",
-      model: DEFAULT_MODEL_BY_PROVIDER.codex,
+      model: DEFAULT_MODEL_BY_PROVIDER.groq,
     },
     null,
   );

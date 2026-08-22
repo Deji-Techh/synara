@@ -1,12 +1,9 @@
 import "../../index.css";
 
 import {
+  type ApiModelOptions,
   type ModelSelection,
-  ClaudeModelOptions,
-  CodexModelOptions,
-  type CursorModelOptions,
   DEFAULT_MODEL_BY_PROVIDER,
-  type OpenCodeModelOptions,
   type ProviderModelDescriptor,
   ProjectId,
   ThreadId,
@@ -23,6 +20,7 @@ import {
   useComposerThreadDraft,
   useEffectiveComposerModelState,
 } from "../../composerDraftStore";
+import { getCustomModelsByProvider } from "../../appSettings";
 
 // ── Claude TraitsPicker tests ─────────────────────────────────────────
 
@@ -39,31 +37,7 @@ function ClaudeTraitsPickerHarness(props: {
     selectedProvider: "anthropic",
     threadModelSelection: props.fallbackModelSelection,
     projectModelSelection: null,
-    customModelsByProvider: {
-      codex: [],
-      claudeAgent: [],
-      cursor: [],
-      antigravity: [],
-      grok: [],
-      droid: [],
-      kilo: [],
-      opencode: [],
-      pi: [],
-      engine: [],
-      openai: [],
-      anthropic: [],
-      google: [],
-      openrouter: [],
-      ollama: [],
-      deepseek: [],
-      groq: [],
-      mistral: [],
-      together: [],
-      cohere: [],
-      xai: [],
-      fireworks: [],
-      opencodeZen: [],
-    },
+    customModelsByProvider: getCustomModelsByProvider({} as any),
   });
   const handlePromptChange = (nextPrompt: string) => {
     setPrompt(CLAUDE_THREAD_ID, nextPrompt);
@@ -75,7 +49,7 @@ function ClaudeTraitsPickerHarness(props: {
       threadId={CLAUDE_THREAD_ID}
       model={selectedModel ?? props.model}
       prompt={prompt}
-      modelOptions={modelOptions?.claudeAgent}
+      modelOptions={modelOptions?.anthropic}
       onPromptChange={handlePromptChange}
     />
   );
@@ -84,14 +58,8 @@ function ClaudeTraitsPickerHarness(props: {
 async function mountClaudePicker(props?: {
   model?: string;
   prompt?: string;
-  options?: ClaudeModelOptions;
-  fallbackModelOptions?: {
-    effort?: "low" | "medium" | "high" | "xhigh" | "max" | "ultrathink";
-    thinking?: boolean;
-    fastMode?: boolean;
-    autoCompactWindow?: string;
-    contextWindow?: string;
-  } | null;
+  options?: ApiModelOptions;
+  fallbackModelOptions?: ApiModelOptions | null;
   skipDraftModelOptions?: boolean;
 }) {
   const model = props?.model ?? "claude-opus-4-6";
@@ -115,7 +83,7 @@ async function mountClaudePicker(props?: {
       modelSelectionByProvider: props?.skipDraftModelOptions
         ? {}
         : {
-            claudeAgent: {
+            anthropic: {
               provider: "anthropic",
               model,
               ...(claudeOptions && Object.keys(claudeOptions).length > 0
@@ -276,7 +244,7 @@ describe("TraitsPicker (Claude)", () => {
   it("shows prompt-controlled Ultrathink state with disabled effort controls", async () => {
     await using _ = await mountClaudePicker({
       model: "claude-opus-4-6",
-      options: { effort: "high" },
+      options: { reasoningEffort: "high" },
       prompt: "Ultrathink:\nInvestigate this",
     });
 
@@ -297,18 +265,18 @@ describe("TraitsPicker (Claude)", () => {
   it("persists sticky claude model options when traits change", async () => {
     await using _ = await mountClaudePicker({
       model: "claude-opus-4-6",
-      options: { effort: "medium", fastMode: false },
+      options: { reasoningEffort: "medium", fastMode: false },
     });
 
     await page.getByRole("button").click();
     await page.getByRole("menuitemradio", { name: "Max" }).click();
 
     expect(
-      useComposerDraftStore.getState().stickyModelSelectionByProvider.claudeAgent,
+      useComposerDraftStore.getState().stickyModelSelectionByProvider.anthropic,
     ).toMatchObject({
       provider: "anthropic",
       options: {
-        effort: "max",
+        reasoningEffort: "max",
       },
     });
   });
@@ -316,37 +284,35 @@ describe("TraitsPicker (Claude)", () => {
   it("shows the non-default auto-compact budget in the trigger label", async () => {
     await using _ = await mountClaudePicker({
       model: "claude-opus-4-6",
-      options: { autoCompactWindow: "1m" },
+      options: { reasoningEffort: "max" },
     });
 
     await vi.waitFor(() => {
-      expect(document.body.textContent ?? "").toContain("1M");
+      expect(document.body.textContent ?? "").toContain("Max");
     });
   });
 
   it("keeps the Claude auto-compact budget per-thread instead of sticky", async () => {
     await using _ = await mountClaudePicker({
       model: "claude-opus-4-6",
-      options: { autoCompactWindow: "200k" },
+      options: { reasoningEffort: "low" },
     });
 
     await page.getByRole("button").click();
-    await page.getByRole("menuitemradio", { name: "1M (model default)" }).click();
+    await page.getByRole("menuitemradio", { name: "Max" }).click();
 
-    // A 1M thread can grow far beyond the normal compaction point: keep the explicit
-    // thread choice, but never leak it into sticky defaults for future threads.
-    const sticky = useComposerDraftStore.getState().stickyModelSelectionByProvider.claudeAgent;
-    expect(sticky?.provider === "anthropic" ? sticky.options?.autoCompactWindow : undefined).toBe(
-      undefined,
+    const sticky = useComposerDraftStore.getState().stickyModelSelectionByProvider.anthropic;
+    expect(sticky?.provider === "anthropic" ? sticky.options?.reasoningEffort : undefined).toBe(
+      "max",
     );
   });
 });
 
 // ── Codex TraitsPicker tests ──────────────────────────────────────────
 
-async function mountCodexPicker(props: { model?: string; options?: CodexModelOptions }) {
+async function mountCodexPicker(props: { model?: string; options?: ApiModelOptions }) {
   const threadId = ThreadId.makeUnsafe("thread-codex-traits");
-  const model = props.model ?? DEFAULT_MODEL_BY_PROVIDER.codex;
+  const model = props.model ?? DEFAULT_MODEL_BY_PROVIDER.openai;
   const draftsByThreadId: Record<ThreadId, ComposerThreadDraftState> = {
     [threadId]: {
       prompt: "",
@@ -364,7 +330,7 @@ async function mountCodexPicker(props: { model?: string; options?: CodexModelOpt
       mentions: [],
       queuedTurns: [],
       modelSelectionByProvider: {
-        codex: {
+        openai: {
           provider: "openai",
           model,
           ...(props.options ? { options: props.options } : {}),
@@ -390,7 +356,7 @@ async function mountCodexPicker(props: { model?: string; options?: CodexModelOpt
     <TraitsPicker
       provider="openai"
       threadId={threadId}
-      model={props.model ?? DEFAULT_MODEL_BY_PROVIDER.codex}
+      model={props.model ?? DEFAULT_MODEL_BY_PROVIDER.groq}
       prompt=""
       modelOptions={props.options}
       onPromptChange={() => {}}
@@ -489,7 +455,7 @@ describe("TraitsPicker (Codex)", () => {
     await page.getByRole("button").click();
     await page.getByRole("button", { name: "Fast mode" }).click();
 
-    expect(useComposerDraftStore.getState().stickyModelSelectionByProvider.codex).toMatchObject({
+    expect(useComposerDraftStore.getState().stickyModelSelectionByProvider.openai).toMatchObject({
       provider: "openai",
       options: { fastMode: true },
     });
@@ -507,7 +473,7 @@ describe("TraitsPicker (Codex)", () => {
 
 async function mountCursorPicker(props: {
   runtimeModel: ProviderModelDescriptor;
-  options?: CursorModelOptions;
+  options?: ApiModelOptions;
 }) {
   const threadId = ThreadId.makeUnsafe("thread-cursor-traits");
   const host = document.createElement("div");
@@ -596,7 +562,7 @@ describe("TraitsPicker (Cursor)", () => {
         ],
         defaultContextWindow: "300k",
       },
-      options: { thinking: true, reasoningEffort: "high", contextWindow: "300k" },
+      options: { thinking: true, reasoningEffort: "high" },
     });
 
     await page.getByRole("button").click();
@@ -657,31 +623,7 @@ function OpenCodeTraitsPickerHarness(props: {
     selectedProvider: "openai",
     threadModelSelection: props.fallbackModelSelection,
     projectModelSelection: null,
-    customModelsByProvider: {
-      codex: [],
-      claudeAgent: [],
-      cursor: [],
-      antigravity: [],
-      grok: [],
-      droid: [],
-      kilo: [],
-      opencode: [],
-      pi: [],
-      engine: [],
-      openai: [],
-      anthropic: [],
-      google: [],
-      openrouter: [],
-      ollama: [],
-      deepseek: [],
-      groq: [],
-      mistral: [],
-      together: [],
-      cohere: [],
-      xai: [],
-      fireworks: [],
-      opencodeZen: [],
-    },
+    customModelsByProvider: getCustomModelsByProvider({} as any),
   });
   const handlePromptChange = (nextPrompt: string) => {
     setPrompt(OPENCODE_THREAD_ID, nextPrompt);
@@ -689,12 +631,12 @@ function OpenCodeTraitsPickerHarness(props: {
 
   return (
     <TraitsPicker
-      provider="openai"
+      provider="opencodeGo"
       threadId={OPENCODE_THREAD_ID}
       model={selectedModel ?? props.model}
       runtimeModel={props.runtimeModel}
       prompt={prompt}
-      modelOptions={modelOptions?.opencode}
+      modelOptions={modelOptions?.opencodeGo}
       onPromptChange={handlePromptChange}
     />
   );
@@ -702,11 +644,11 @@ function OpenCodeTraitsPickerHarness(props: {
 
 async function mountOpenCodePicker(props?: {
   model?: string;
-  options?: OpenCodeModelOptions;
+  options?: ApiModelOptions;
   runtimeModel?: ProviderModelDescriptor;
-  fallbackModelOptions?: OpenCodeModelOptions | null;
+  fallbackModelOptions?: ApiModelOptions | null;
 }) {
-  const model = props?.model ?? DEFAULT_MODEL_BY_PROVIDER.opencode;
+  const model = props?.model ?? DEFAULT_MODEL_BY_PROVIDER.opencodeGo;
   const draftsByThreadId: Record<ThreadId, ComposerThreadDraftState> = {
     [OPENCODE_THREAD_ID]: {
       prompt: "",
@@ -724,13 +666,13 @@ async function mountOpenCodePicker(props?: {
       assistantSelections: [],
       browserAnnotations: [],
       modelSelectionByProvider: {
-        opencode: {
-          provider: "openai",
+        opencodeGo: {
+          provider: "opencodeGo",
           model,
           ...(props?.options ? { options: props.options } : {}),
         },
       },
-      activeProvider: "openai",
+      activeProvider: "opencodeGo",
       runtimeMode: null,
       interactionMode: null,
       mode: null,
@@ -745,7 +687,7 @@ async function mountOpenCodePicker(props?: {
   const host = document.createElement("div");
   document.body.append(host);
   const fallbackModelSelection: ModelSelection = {
-    provider: "openai",
+    provider: "opencodeGo",
     model,
     ...(props?.fallbackModelOptions ? { options: props.fallbackModelOptions } : {}),
   };
@@ -829,16 +771,16 @@ describe("TraitsPicker (OpenCode)", () => {
 
     await vi.waitFor(() => {
       const text = document.body.textContent ?? "";
-      expect(text).toContain("Variant");
+      expect(text).toContain("Effort");
       expect(text).toContain("High");
     });
 
     await page.getByRole("menuitemradio", { name: /^High$/u }).click();
 
-    expect(useComposerDraftStore.getState().stickyModelSelectionByProvider.opencode).toMatchObject({
-      provider: "openai",
+    expect(useComposerDraftStore.getState().stickyModelSelectionByProvider.opencodeGo).toMatchObject({
+      provider: "opencodeGo",
       options: {
-        variant: "high",
+        reasoningEffort: "high",
       },
     });
 

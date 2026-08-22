@@ -66,3 +66,23 @@ export const ApprovalRequestId = makeEntityId("ApprovalRequestId");
 export type ApprovalRequestId = typeof ApprovalRequestId.Type;
 export const CheckpointRef = makeEntityId("CheckpointRef");
 export type CheckpointRef = typeof CheckpointRef.Type;
+
+export const ProviderKind = Schema.Literals([
+  "engine",
+  "openai",
+  "anthropic",
+  "google",
+  "openrouter",
+  "ollama",
+  "deepseek",
+  "groq",
+  "mistral",
+  "together",
+  "cohere",
+  "xai",
+  "fireworks",
+  "opencodeZen",
+  "opencodeGo",
+]);
+export const PROVIDER_KINDS = ProviderKind.literals;
+export type ProviderKind = typeof ProviderKind.Type;

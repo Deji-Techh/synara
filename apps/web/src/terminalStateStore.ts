@@ -106,7 +106,7 @@ function normalizeTerminalCliKinds(
     .filter(
       ([terminalId, cliKind]) =>
         terminalId.length > 0 &&
-        (cliKind === "openai" || cliKind === "claude" || cliKind === "google"),
+        (cliKind === "codex" || cliKind === "claude" || cliKind === "antigravity"),
     )
     .filter(([terminalId]) => validTerminalIdSet.has(terminalId))
     .toSorted(([leftId], [rightId]) => leftId.localeCompare(rightId));
@@ -142,9 +142,9 @@ function clearTerminalReviewState(
 }
 
 function generatedTerminalTitleBase(cliKind: TerminalCliKind | null): string {
-  if (cliKind === "openai") return "Codex";
+  if (cliKind === "codex") return "Codex";
   if (cliKind === "claude") return "Claude";
-  if (cliKind === "google") return "Antigravity";
+  if (cliKind === "antigravity") return "Antigravity";
   return "Terminal";
 }
 

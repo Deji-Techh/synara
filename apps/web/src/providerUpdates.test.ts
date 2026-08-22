@@ -3,7 +3,7 @@
 // Layer: Web utility tests
 // Exports: Vitest suites for providerUpdates.ts
 
-import type { ProviderKind, ServerProviderStatus, ServerSettings } from "@caide/contracts";
+import { DEFAULT_SERVER_SETTINGS_VIEW, type ProviderKind, type ServerProviderStatus, type ServerSettings } from "@caide/contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -31,12 +31,12 @@ function providerStatus(
     status: "ready",
     available: true,
     authStatus: "authenticated",
-    version: "1.0.0",
     checkedAt: "2026-06-10T10:00:00.000Z",
+    version: "1.0.0",
     versionAdvisory: {
       status: "behind_latest",
       currentVersion: "1.0.0",
-      latestVersion: "1.1.0",
+      latestVersion: "2.0.0",
       updateCommand: "npm install -g provider@latest",
       canUpdate: true,
       checkedAt: "2026-06-10T10:00:00.000Z",
@@ -47,77 +47,33 @@ function providerStatus(
 }
 
 function serverSettings(overrides: Partial<ServerSettings["providers"]> = {}): ServerSettings {
-  const provider = {
-    enabled: true,
-    binaryPath: "",
-    customModels: [],
-  };
-
   return {
+    ...DEFAULT_SERVER_SETTINGS_VIEW,
     enableAssistantStreaming: false,
     enableProviderUpdateChecks: true,
-    defaultThreadEnvMode: "local",
-    addProjectBaseDirectory: "",
-    textGenerationModelSelection: { provider: "openai", model: "gpt-5.4-mini" },
     providers: {
-      codex: { ...provider, binaryPath: "openai", homePath: "" },
-      claudeAgent: { ...provider, binaryPath: "claude", launchArgs: "" },
-      cursor: { ...provider, binaryPath: "cursor-agent", apiEndpoint: "" },
-      antigravity: { ...provider, binaryPath: "agy" },
-      grok: { ...provider, binaryPath: "openai" },
-      droid: { ...provider, binaryPath: "openai" },
-      kilo: { ...provider, binaryPath: "openai", serverUrl: "", serverPasswordConfigured: false },
-      opencode: {
-        ...provider,
-        binaryPath: "openai",
-        serverUrl: "",
-        serverPasswordConfigured: false,
-        experimentalWebSockets: false,
-      },
-      pi: { ...provider, binaryPath: "openai", agentDir: "" },
-      engine: {
-        ...provider,
-        binaryPath: "caide-engine",
-        baseUrl: "",
-        modelId: "",
-        apiKeyConfigured: false,
-        flutterSdkBin: "",
-      },
-      openai: { ...provider, baseUrl: "", apiKeyConfigured: false },
-      anthropic: { ...provider, baseUrl: "", apiKeyConfigured: false },
-      google: { ...provider, baseUrl: "", apiKeyConfigured: false },
-      openrouter: { ...provider, baseUrl: "", apiKeyConfigured: false },
-      ollama: { ...provider, baseUrl: "", apiKeyConfigured: false },
-      deepseek: { ...provider, baseUrl: "", apiKeyConfigured: false },
-      groq: { ...provider, baseUrl: "", apiKeyConfigured: false },
-      mistral: { ...provider, baseUrl: "", apiKeyConfigured: false },
-      together: { ...provider, baseUrl: "", apiKeyConfigured: false },
-      cohere: { ...provider, baseUrl: "", apiKeyConfigured: false },
-      xai: { ...provider, baseUrl: "", apiKeyConfigured: false },
-      fireworks: { ...provider, baseUrl: "", apiKeyConfigured: false },
-      opencodeZen: { ...provider, baseUrl: "", apiKeyConfigured: false },
+      ...DEFAULT_SERVER_SETTINGS_VIEW.providers,
       ...overrides,
     },
-    skills: { disabled: [] },
   };
 }
 
 describe("getVisibleProviderUpdateStatuses", () => {
   it("excludes providers hidden from Caide so unchecked providers do not nag", () => {
     const result = getVisibleProviderUpdateStatuses({
-      providers: [providerStatus("openai"), providerStatus("openai")],
+      providers: [providerStatus("openai"), providerStatus("anthropic")],
       hiddenProviders: ["openai"],
       serverSettings: serverSettings(),
     });
 
-    expect(result.map((provider) => provider.provider)).toEqual(["openai"]);
+    expect(result.map((provider) => provider.provider)).toEqual(["anthropic"]);
   });
 
   it("excludes server-disabled providers", () => {
     const result = getVisibleProviderUpdateStatuses({
-      providers: [providerStatus("openai"), providerStatus("openai")],
+      providers: [providerStatus("openai"), providerStatus("anthropic")],
       serverSettings: serverSettings({
-        pi: { enabled: false, binaryPath: "openai", agentDir: "", customModels: [] },
+        anthropic: { ...DEFAULT_SERVER_SETTINGS_VIEW.providers.anthropic, enabled: false },
       }),
     });
 
@@ -241,7 +197,7 @@ describe("shouldShowProviderUpdateStatus", () => {
     const codex = providerStatus("openai");
     const hiddenPi = providerStatus("openai");
     const settings = serverSettings({
-      codex: { enabled: false, binaryPath: "openai", homePath: "", customModels: [] },
+      openai: { ...DEFAULT_SERVER_SETTINGS_VIEW.providers.openai, enabled: false },
     });
 
     expect(

@@ -172,7 +172,7 @@ describe("threadHandoff", () => {
           model: "Claude Sonnet 4.6",
         },
         stickyModelSelectionByProvider: {
-          antigravity: stickySelection,
+          google: stickySelection,
         },
       }),
     ).toEqual(stickySelection);

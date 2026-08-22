@@ -19,7 +19,10 @@ function localDayKey(atMs: number): string {
 }
 
 function shiftDayKey(dayKey: string, daysAgo: number): string {
-  const [year, month, day] = dayKey.split("-").map(Number);
+  const parts = dayKey.split("-").map(Number);
+  const year = parts[0] ?? 0;
+  const month = parts[1] ?? 1;
+  const day = parts[2] ?? 1;
   const date = new Date(year, month - 1, day);
   date.setDate(date.getDate() - daysAgo);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;

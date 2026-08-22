@@ -113,7 +113,7 @@ describe("getComposerProviderState", () => {
       model: "Gemini 3.5 Flash",
       runtimeModel: ANTIGRAVITY_RUNTIME_GEMINI_WITH_REASONING,
       prompt: "",
-      modelOptions: { antigravity: { reasoningEffort: "high" } },
+      modelOptions: { google: { reasoningEffort: "high" } },
     });
 
     expect(state).toEqual({
@@ -187,7 +187,7 @@ describe("getComposerProviderState", () => {
       model: "gpt-5.4",
       prompt: "",
       modelOptions: {
-        codex: {
+        openai: {
           reasoningEffort: "low",
           fastMode: true,
         },
@@ -204,14 +204,13 @@ describe("getComposerProviderState", () => {
     });
   });
 
-  it("reads only Codex options when other provider effort state is present", () => {
+  it("reads only OpenAI options when other provider effort state is present", () => {
     const state = getComposerProviderState({
       provider: "openai",
       model: "gpt-5.4",
       prompt: "",
       modelOptions: {
-        codex: { reasoningEffort: "xhigh" },
-        cursor: { reasoningEffort: "low" },
+        openai: { reasoningEffort: "xhigh" },
       },
     });
 
@@ -219,15 +218,14 @@ describe("getComposerProviderState", () => {
     expect(state.promptEffort).toBe("xhigh");
   });
 
-  it("reads only Cursor options when Codex runtime effort state is present", () => {
+  it("reads only cursor options when OpenAI runtime effort state is present", () => {
     const state = getComposerProviderState({
       provider: "openai",
       model: "claude-opus-4-7",
       runtimeModel: CURSOR_RUNTIME_MODEL_300K,
       prompt: "",
       modelOptions: {
-        codex: { reasoningEffort: "ultra" },
-        cursor: { reasoningEffort: "xhigh" },
+        openai: { reasoningEffort: "xhigh" },
       },
     });
 
@@ -241,7 +239,7 @@ describe("getComposerProviderState", () => {
       model: "gpt-5.6-sol",
       prompt: "",
       modelOptions: {
-        codex: {
+        openai: {
           reasoningEffort: "ultra",
         },
       },
@@ -262,7 +260,7 @@ describe("getComposerProviderState", () => {
       model: "gpt-5.4",
       prompt: "",
       modelOptions: {
-        codex: {
+        openai: {
           reasoningEffort: "ultra",
         },
       },
@@ -295,7 +293,7 @@ describe("getComposerProviderState", () => {
       runtimeModel,
       prompt: "",
       modelOptions: {
-        codex: {
+        openai: {
           reasoningEffort: "xhigh",
         },
       },
@@ -328,7 +326,7 @@ describe("getComposerProviderState", () => {
       },
       prompt: "",
       modelOptions: {
-        codex: {
+        openai: {
           reasoningEffort: "ultra",
         },
       },
@@ -347,7 +345,7 @@ describe("getComposerProviderState", () => {
       model: "gpt-5.4",
       prompt: "",
       modelOptions: {
-        codex: {
+        openai: {
           fastMode: true,
         },
       },
@@ -375,7 +373,7 @@ describe("getComposerProviderState", () => {
       },
       prompt: "",
       modelOptions: {
-        codex: {
+        openai: {
           fastMode: true,
         },
       },
@@ -402,7 +400,7 @@ describe("getComposerProviderState", () => {
       },
       prompt: "",
       modelOptions: {
-        codex: {
+        openai: {
           fastMode: true,
         },
       },
@@ -421,7 +419,7 @@ describe("getComposerProviderState", () => {
       model: "gpt-5.4",
       prompt: "",
       modelOptions: {
-        codex: {
+        openai: {
           reasoningEffort: "high",
           fastMode: false,
         },
@@ -456,8 +454,8 @@ describe("getComposerProviderState", () => {
       model: "claude-sonnet-4-6",
       prompt: "Ultrathink:\nInvestigate this failure",
       modelOptions: {
-        claudeAgent: {
-          effort: "medium",
+        anthropic: {
+          reasoningEffort: "medium",
         },
       },
     });
@@ -466,7 +464,7 @@ describe("getComposerProviderState", () => {
       provider: "anthropic",
       promptEffort: "medium",
       modelOptionsForDispatch: {
-        effort: "medium",
+        reasoningEffort: "medium",
       },
       composerFrameClassName: "ultrathink-frame",
       modelPickerIconClassName: "ultrathink-chroma",
@@ -478,13 +476,13 @@ describe("getComposerProviderState", () => {
       "anthropic",
       "claude-sonnet-4-6",
       "Ultrathink:\nInvestigate this",
-      { effort: "ultrathink" },
+      { reasoningEffort: "ultrathink" },
       {
         slug: "claude-sonnet-4-6",
         name: "Claude Sonnet 4.6",
         optionDescriptors: [
           {
-            id: "effort",
+            id: "reasoningEffort",
             label: "Effort",
             type: "select",
             promptInjectedValues: ["ultrathink"],
@@ -508,8 +506,8 @@ describe("getComposerProviderState", () => {
       model: "claude-haiku-4-5",
       prompt: "",
       modelOptions: {
-        claudeAgent: {
-          effort: "max",
+        anthropic: {
+          reasoningEffort: "max",
           thinking: false,
         },
       },
@@ -530,7 +528,7 @@ describe("getComposerProviderState", () => {
       model: "claude-opus-4-6",
       prompt: "",
       modelOptions: {
-        claudeAgent: {
+        anthropic: {
           fastMode: true,
         },
       },
@@ -551,8 +549,8 @@ describe("getComposerProviderState", () => {
       model: "claude-opus-4-6",
       prompt: "",
       modelOptions: {
-        claudeAgent: {
-          effort: "high",
+        anthropic: {
+          reasoningEffort: "high",
           fastMode: false,
         },
       },
@@ -567,18 +565,18 @@ describe("getComposerProviderState", () => {
 
   it("normalizes Grok reasoning effort options for dispatch", () => {
     const state = getComposerProviderState({
-      provider: "openai",
+      provider: "xai",
       model: "grok-build",
       prompt: "",
       modelOptions: {
-        grok: {
+        xai: {
           reasoningEffort: "high",
         },
       },
     });
 
     expect(state).toEqual({
-      provider: "openai",
+      provider: "xai",
       promptEffort: "high",
       modelOptionsForDispatch: {
         reasoningEffort: "high",
@@ -588,18 +586,18 @@ describe("getComposerProviderState", () => {
 
   it("drops explicit Grok default reasoning effort from dispatch", () => {
     const state = getComposerProviderState({
-      provider: "openai",
+      provider: "xai",
       model: "grok-build",
       prompt: "",
       modelOptions: {
-        grok: {
+        xai: {
           reasoningEffort: "low",
         },
       },
     });
 
     expect(state).toEqual({
-      provider: "openai",
+      provider: "xai",
       promptEffort: "low",
       modelOptionsForDispatch: undefined,
     });
@@ -607,18 +605,18 @@ describe("getComposerProviderState", () => {
 
   it("exposes and dispatches efforts for dynamically discovered Grok models", () => {
     const selection = getComposerTraitSelection(
-      "openai",
+      "xai",
       "grok-4.5",
       "",
       { reasoningEffort: "high" },
       GROK_RUNTIME_4_5_WITH_REASONING,
     );
     const state = getComposerProviderState({
-      provider: "openai",
+      provider: "xai",
       model: "grok-4.5",
       runtimeModel: GROK_RUNTIME_4_5_WITH_REASONING,
       prompt: "",
-      modelOptions: { grok: { reasoningEffort: "high" } },
+      modelOptions: { xai: { reasoningEffort: "high" } },
     });
 
     expect(selection.effortLevels.map((effort) => effort.value)).toEqual([
@@ -630,14 +628,16 @@ describe("getComposerProviderState", () => {
     expect(selection.defaultEffort).toBe("low");
     expect(selection.effort).toBe("high");
     expect(state).toEqual({
-      provider: "openai",
+      provider: "xai",
       promptEffort: "high",
-      modelOptionsForDispatch: { reasoningEffort: "high" },
+      modelOptionsForDispatch: {
+        reasoningEffort: "high",
+      },
     });
   });
 
   it("exposes Grok efforts before runtime model discovery resolves", () => {
-    const selection = getComposerTraitSelection("openai", "grok-4.5", "", undefined);
+    const selection = getComposerTraitSelection("xai", "grok-4.5", "", undefined);
 
     expect(selection.effortLevels.map((effort) => effort.value)).toEqual([
       "none",
@@ -663,7 +663,7 @@ describe("getComposerProviderState", () => {
       model: "gpt-5.6-sol",
       runtimeModel: DROID_RUNTIME_GPT_5_6_WITH_REASONING,
       prompt: "",
-      modelOptions: { droid: { reasoningEffort: "xhigh" } },
+      modelOptions: { openai: { reasoningEffort: "xhigh" } },
     });
     const picker = renderProviderTraitsPicker({
       provider: "openai",
@@ -700,7 +700,7 @@ describe("getComposerProviderState", () => {
         model: "gpt-5.6-sol",
         runtimeModel: DROID_RUNTIME_GPT_5_6_WITH_REASONING,
         prompt: "",
-        modelOptions: { droid: { reasoningEffort: "medium" } },
+        modelOptions: { openai: { reasoningEffort: "medium" } },
       }),
     ).toMatchObject({
       promptEffort: "medium",
@@ -710,21 +710,20 @@ describe("getComposerProviderState", () => {
 
   it("drops stale Cursor context options once runtime metadata is authoritative", () => {
     const state = getComposerProviderState({
-      provider: "openai",
+      provider: "openrouter",
       model: "claude-opus-4-7",
       runtimeModel: CURSOR_RUNTIME_MODEL_300K,
       prompt: "",
       modelOptions: {
-        cursor: {
+        openrouter: {
           reasoningEffort: "xhigh",
-          contextWindow: "1m",
           fastMode: true,
         },
       },
     });
 
     expect(state).toEqual({
-      provider: "openai",
+      provider: "openrouter",
       promptEffort: "xhigh",
       modelOptionsForDispatch: {
         reasoningEffort: "xhigh",
@@ -734,19 +733,19 @@ describe("getComposerProviderState", () => {
 
   it("keeps Pi runtime thinking selections on the thinkingLevel field", () => {
     const selection = getComposerTraitSelection(
-      "openai",
+      "engine",
       "openai/gpt-5.5",
       "",
       { thinkingLevel: "xhigh" },
       PI_RUNTIME_MODEL_WITH_REASONING,
     );
     const state = getComposerProviderState({
-      provider: "openai",
+      provider: "engine",
       model: "openai/gpt-5.5",
       runtimeModel: PI_RUNTIME_MODEL_WITH_REASONING,
       prompt: "",
       modelOptions: {
-        pi: {
+        engine: {
           thinkingLevel: "xhigh",
         },
       },
@@ -755,7 +754,7 @@ describe("getComposerProviderState", () => {
     expect(selection.primarySelectDescriptor?.id).toBe("thinkingLevel");
     expect(selection.effort).toBe("xhigh");
     expect(state).toEqual({
-      provider: "openai",
+      provider: "engine",
       promptEffort: "xhigh",
       modelOptionsForDispatch: {
         thinkingLevel: "xhigh",
@@ -777,19 +776,19 @@ describe("getComposerProviderState", () => {
       defaultReasoningEffort: "high",
     };
     const selection = getComposerTraitSelection(
-      "openai",
+      "engine",
       "moonshotai/kimi-k3",
       "",
       { thinkingLevel: "max" },
       runtimeModel,
     );
     const state = getComposerProviderState({
-      provider: "openai",
+      provider: "engine",
       model: "moonshotai/kimi-k3",
       runtimeModel,
       prompt: "",
       modelOptions: {
-        pi: {
+        engine: {
           thinkingLevel: "max",
         },
       },
@@ -801,7 +800,7 @@ describe("getComposerProviderState", () => {
       currentValue: "max",
     });
     expect(state).toEqual({
-      provider: "openai",
+      provider: "engine",
       promptEffort: "max",
       modelOptionsForDispatch: {
         thinkingLevel: "max",
@@ -813,7 +812,7 @@ describe("getComposerProviderState", () => {
     const threadId = ThreadId.makeUnsafe("thread-opencode-traits-hidden");
 
     const picker = renderProviderTraitsPicker({
-      provider: "openai",
+      provider: "opencodeGo",
       threadId,
       model: "openrouter/gpt-oss-120b:free",
       modelOptions: undefined,
@@ -823,7 +822,7 @@ describe("getComposerProviderState", () => {
     });
 
     const menuContent = renderProviderTraitsMenuContent({
-      provider: "openai",
+      provider: "opencodeGo",
       threadId,
       model: "openrouter/gpt-oss-120b:free",
       modelOptions: undefined,
@@ -835,24 +834,24 @@ describe("getComposerProviderState", () => {
     expect(menuContent).toBeNull();
   });
 
-  it("keeps OpenCode runtime thinking selections on the variant field", () => {
+  it("keeps OpenCode runtime thinking selections on the reasoningEffort field", () => {
     const state = getComposerProviderState({
-      provider: "openai",
+      provider: "opencodeGo",
       model: "openai/gpt-5.4",
       runtimeModel: OPENCODE_RUNTIME_MODEL_WITH_REASONING,
       prompt: "",
       modelOptions: {
-        opencode: {
-          variant: "xhigh",
+        opencodeGo: {
+          reasoningEffort: "xhigh",
         },
       },
     });
 
     expect(state).toEqual({
-      provider: "openai",
+      provider: "opencodeGo",
       promptEffort: "xhigh",
       modelOptionsForDispatch: {
-        variant: "xhigh",
+        reasoningEffort: "xhigh",
       },
     });
   });

@@ -607,10 +607,10 @@ describe("automation shared route helpers", () => {
 
   it("preserves saved provider options when editing without changing models", () => {
     const savedProviderOptions: ProviderStartOptions = {
-      opencode: { binaryPath: "/old/opencode", serverUrl: "http://old.example" },
+      engine: { binaryPath: "/old/engine" },
     };
     const currentProviderOptions: ProviderStartOptions = {
-      opencode: { binaryPath: "/new/opencode", serverUrl: "http://new.example" },
+      engine: { binaryPath: "/new/engine" },
     };
     const definition = definitionWith({
       modelSelection: { provider: "openai", model: "openai/gpt-5" },
@@ -625,10 +625,10 @@ describe("automation shared route helpers", () => {
 
   it("uses current provider options when an automation edit changes models", () => {
     const savedProviderOptions: ProviderStartOptions = {
-      opencode: { binaryPath: "/old/opencode", serverUrl: "http://old.example" },
+      engine: { binaryPath: "/old/engine" },
     };
     const currentProviderOptions: ProviderStartOptions = {
-      cursor: { binaryPath: "/current/cursor", apiEndpoint: "http://cursor.example" },
+      groq: { baseUrl: "http://groq.example" },
     };
     const definition = definitionWith({
       modelSelection: { provider: "openai", model: "openai/gpt-5" },
@@ -647,10 +647,10 @@ describe("automation shared route helpers", () => {
 
   it("preserves saved provider options when only model capability options change", () => {
     const savedProviderOptions: ProviderStartOptions = {
-      codex: { binaryPath: "/old/codex", homePath: "/old/home" },
+      engine: { binaryPath: "/old/engine" },
     };
     const currentProviderOptions: ProviderStartOptions = {
-      codex: { binaryPath: "/new/codex", homePath: "/new/home" },
+      engine: { binaryPath: "/new/engine" },
     };
     const definition = definitionWith({
       modelSelection: {
@@ -678,7 +678,7 @@ describe("automation shared route helpers", () => {
     const definition = definitionWith({
       modelSelection: { provider: "openai", model: "openai/gpt-5" },
       providerOptions: {
-        opencode: { binaryPath: "/old/opencode", serverUrl: "http://old.example" },
+        engine: { binaryPath: "/old/engine" },
       },
     });
 

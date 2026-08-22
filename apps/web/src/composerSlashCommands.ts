@@ -74,7 +74,7 @@ function expandProviderNativeSlashCommandNames(
  * command list but does not honor bare `/review` text turns (#218).
  */
 export function providerUsesAppOwnedReviewSlashCommand(provider: ProviderKind): boolean {
-  return provider === "openai" || provider === "openai";
+  return provider === "opencodeZen" || provider === "opencodeGo";
 }
 
 function shouldKeepBuiltInSlashCommandDespiteNativeCollision(

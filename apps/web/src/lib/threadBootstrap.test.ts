@@ -61,7 +61,7 @@ function makeComposerDraftState(
     mentions: [],
     queuedTurns: [],
     modelSelectionByProvider: {
-      claudeAgent: modelSelection("anthropic", "claude-opus-4-6", { effort: "max" }),
+      anthropic: modelSelection("anthropic", "claude-opus-4-6", { reasoningEffort: "max" }),
     },
     activeProvider: "anthropic",
     runtimeMode: null,
@@ -298,7 +298,7 @@ describe("threadBootstrap", () => {
       }),
     ).toEqual({
       modelSelection: modelSelection("anthropic", "claude-opus-4-6", {
-        effort: "max",
+        reasoningEffort: "max",
       }),
       runtimeMode: "approval-required",
       interactionMode: "default",

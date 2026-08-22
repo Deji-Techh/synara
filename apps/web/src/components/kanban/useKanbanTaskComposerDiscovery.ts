@@ -66,7 +66,6 @@ interface UseKanbanTaskComposerDiscoveryInput {
   readonly providerOptionsForDispatch: ProviderStartOptions | undefined;
   readonly hiddenProviders: readonly ProviderKind[];
   readonly providerOrder: readonly ProviderKind[];
-  readonly piAgentDir: string | null;
 }
 
 export function useKanbanTaskComposerDiscovery(input: UseKanbanTaskComposerDiscoveryInput): {
@@ -88,7 +87,6 @@ export function useKanbanTaskComposerDiscovery(input: UseKanbanTaskComposerDisco
     providerOptionsForDispatch,
     hiddenProviders,
     providerOrder,
-    piAgentDir,
   } = input;
 
   const platform = typeof navigator === "undefined" ? "" : navigator.platform;
@@ -122,23 +120,10 @@ export function useKanbanTaskComposerDiscovery(input: UseKanbanTaskComposerDisco
       provider: selectedProvider,
       cwd: composerSkillCwd,
       threadId: scratchThreadId,
-      binaryPath:
-        (selectedProvider === "openai"
-          ? providerOptionsForDispatch?.opencode?.binaryPath
-          : selectedProvider === "openai"
-            ? providerOptionsForDispatch?.kilo?.binaryPath
-            : null) ?? null,
-      serverUrl:
-        (selectedProvider === "openai"
-          ? providerOptionsForDispatch?.opencode?.serverUrl
-          : selectedProvider === "openai"
-            ? providerOptionsForDispatch?.kilo?.serverUrl
-            : null) ?? null,
-      experimentalWebSockets:
-        selectedProvider === "openai"
-          ? providerOptionsForDispatch?.opencode?.experimentalWebSockets
-          : undefined,
-      agentDir: selectedProvider === "openai" ? piAgentDir : null,
+      binaryPath: null,
+      serverUrl: null,
+      experimentalWebSockets: undefined,
+      agentDir: null,
       enabled:
         (composerTriggerKind === "slash-command" || composerTriggerKind === "slash-model") &&
         supportsNativeSlashCommandDiscovery(providerComposerCapabilitiesQuery.data) &&
@@ -152,7 +137,7 @@ export function useKanbanTaskComposerDiscovery(input: UseKanbanTaskComposerDisco
       provider: selectedProvider,
       cwd: composerSkillCwd,
       threadId: scratchThreadId,
-      agentDir: selectedProvider === "openai" ? piAgentDir : null,
+      agentDir: null,
       enabled:
         (isSkillTrigger ||
           composerTriggerKind === "slash-command" ||

@@ -34,15 +34,15 @@ class CaideErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean; error: unknown }
 > {
-  state = { hasError: false, error: null as unknown };
+  override state = { hasError: false, error: null as unknown };
   static getDerivedStateFromError(error: unknown) {
     return { hasError: true, error };
   }
-  componentDidCatch(error: unknown, info: unknown) {
+  override componentDidCatch(error: unknown, info: unknown) {
     // eslint-disable-next-line no-console
     console.error("[caide] React ErrorBoundary", error, info);
   }
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <div style={{ padding: 24, fontFamily: "system-ui", maxWidth: 720, margin: "0 auto" }}>

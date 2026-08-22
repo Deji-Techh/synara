@@ -192,23 +192,33 @@ export const ProviderModelMenuItems = function ProviderModelMenuItems(
 ) {
   const { onAfterSelection } = props;
   const [modelSearchQuery, setModelSearchQuery] = useState("");
-  const [kiloFavoriteModelSlugs, setKiloFavoriteModelSlugs] = useLocalStorage(
-    FAVORITE_MODEL_STORAGE_KEYS.kilo,
+  const [engineFavoriteModelSlugs, setEngineFavoriteModelSlugs] = useLocalStorage(
+    FAVORITE_MODEL_STORAGE_KEYS.engine,
     EMPTY_FAVORITE_MODEL_SLUGS,
     FavoriteModelSlugs,
   );
-  const [cursorFavoriteModelSlugs, setCursorFavoriteModelSlugs] = useLocalStorage(
-    FAVORITE_MODEL_STORAGE_KEYS.cursor,
+  const [openrouterFavoriteModelSlugs, setOpenrouterFavoriteModelSlugs] = useLocalStorage(
+    FAVORITE_MODEL_STORAGE_KEYS.openrouter,
     EMPTY_FAVORITE_MODEL_SLUGS,
     FavoriteModelSlugs,
   );
-  const [openCodeFavoriteModelSlugs, setOpenCodeFavoriteModelSlugs] = useLocalStorage(
-    FAVORITE_MODEL_STORAGE_KEYS.opencode,
+  const [ollamaFavoriteModelSlugs, setOllamaFavoriteModelSlugs] = useLocalStorage(
+    FAVORITE_MODEL_STORAGE_KEYS.ollama,
     EMPTY_FAVORITE_MODEL_SLUGS,
     FavoriteModelSlugs,
   );
-  const [piFavoriteModelSlugs, setPiFavoriteModelSlugs] = useLocalStorage(
-    FAVORITE_MODEL_STORAGE_KEYS.pi,
+  const [groqFavoriteModelSlugs, setGroqFavoriteModelSlugs] = useLocalStorage(
+    FAVORITE_MODEL_STORAGE_KEYS.groq,
+    EMPTY_FAVORITE_MODEL_SLUGS,
+    FavoriteModelSlugs,
+  );
+  const [opencodeZenFavoriteModelSlugs, setOpencodeZenFavoriteModelSlugs] = useLocalStorage(
+    FAVORITE_MODEL_STORAGE_KEYS.opencodeZen,
+    EMPTY_FAVORITE_MODEL_SLUGS,
+    FavoriteModelSlugs,
+  );
+  const [opencodeGoFavoriteModelSlugs, setOpencodeGoFavoriteModelSlugs] = useLocalStorage(
+    FAVORITE_MODEL_STORAGE_KEYS.opencodeGo,
     EMPTY_FAVORITE_MODEL_SLUGS,
     FavoriteModelSlugs,
   );
@@ -235,15 +245,13 @@ export const ProviderModelMenuItems = function ProviderModelMenuItems(
     hiddenProviderSet,
     protectedProviderSet,
   );
-  const kiloFavoriteModelSlugSet = new Set(kiloFavoriteModelSlugs);
-  const openCodeFavoriteModelSlugSet = new Set(openCodeFavoriteModelSlugs);
-  const cursorFavoriteModelSlugSet = new Set(cursorFavoriteModelSlugs);
-  const piFavoriteModelSlugSet = new Set(piFavoriteModelSlugs);
-  const favoriteModelSlugSets = {
-    cursor: cursorFavoriteModelSlugSet,
-    kilo: kiloFavoriteModelSlugSet,
-    opencode: openCodeFavoriteModelSlugSet,
-    pi: piFavoriteModelSlugSet,
+  const favoriteModelSlugSets: Record<FavoriteModelProvider, Set<string>> = {
+    engine: new Set(engineFavoriteModelSlugs),
+    openrouter: new Set(openrouterFavoriteModelSlugs),
+    ollama: new Set(ollamaFavoriteModelSlugs),
+    groq: new Set(groqFavoriteModelSlugs),
+    opencodeZen: new Set(opencodeZenFavoriteModelSlugs),
+    opencodeGo: new Set(opencodeGoFavoriteModelSlugs),
   };
   const handleModelChange = (provider: ProviderKind, value: string) => {
     if (props.disabled) return;
@@ -258,15 +266,26 @@ export const ProviderModelMenuItems = function ProviderModelMenuItems(
     onAfterSelection?.();
   };
   const toggleFavoriteModel = (provider: FavoriteModelProvider, slug: string) => {
-    const setFavoriteModelSlugs =
-      provider === "openai"
-        ? setCursorFavoriteModelSlugs
-        : provider === "openai"
-          ? setKiloFavoriteModelSlugs
-          : provider === "openai"
-            ? setPiFavoriteModelSlugs
-            : setOpenCodeFavoriteModelSlugs;
-    setFavoriteModelSlugs((current) => toggleFavoriteModelSlug(current, slug));
+    switch (provider) {
+      case "engine":
+        setEngineFavoriteModelSlugs((current) => toggleFavoriteModelSlug(current, slug));
+        break;
+      case "openrouter":
+        setOpenrouterFavoriteModelSlugs((current) => toggleFavoriteModelSlug(current, slug));
+        break;
+      case "ollama":
+        setOllamaFavoriteModelSlugs((current) => toggleFavoriteModelSlug(current, slug));
+        break;
+      case "groq":
+        setGroqFavoriteModelSlugs((current) => toggleFavoriteModelSlug(current, slug));
+        break;
+      case "opencodeZen":
+        setOpencodeZenFavoriteModelSlugs((current) => toggleFavoriteModelSlug(current, slug));
+        break;
+      case "opencodeGo":
+        setOpencodeGoFavoriteModelSlugs((current) => toggleFavoriteModelSlug(current, slug));
+        break;
+    }
   };
 
   const renderModelRadioGroup = (provider: ProviderKind) => {
@@ -284,12 +303,7 @@ export const ProviderModelMenuItems = function ProviderModelMenuItems(
     }
 
     const providerOptions = props.modelOptionsByProvider[provider] ?? [];
-    const shouldShowSearch =
-      (provider === "openai" ||
-        provider === "openai" ||
-        provider === "openai" ||
-        provider === "openai") &&
-      providerOptions.length >= SEARCHABLE_MODEL_PICKER_THRESHOLD;
+    const shouldShowSearch = providerOptions.length >= SEARCHABLE_MODEL_PICKER_THRESHOLD;
     const normalizedModelSearchQuery = deferredModelSearchQuery.trim().toLowerCase();
     const filteredOptions =
       shouldShowSearch && normalizedModelSearchQuery.length > 0
@@ -326,11 +340,7 @@ export const ProviderModelMenuItems = function ProviderModelMenuItems(
           />
         </MenuRadioGroup>
       ) : (
-        <div className="px-2 py-2 text-muted-foreground text-sm">
-          {provider === "openai" && normalizedModelSearchQuery.length === 0
-            ? "No Pi models found"
-            : "No matches"}
-        </div>
+        <div className="px-2 py-2 text-muted-foreground text-sm">No matches</div>
       );
 
     if (!shouldShowSearch) {
@@ -376,10 +386,7 @@ export const ProviderModelMenuItems = function ProviderModelMenuItems(
   return (
     <>
       {visibleAvailableProviderOptions.map((option) => {
-        const OptionIcon =
-          (PROVIDER_ICON_COMPONENT_BY_PROVIDER as Record<string, typeof HammerIcon | undefined>)[
-            option.value
-          ] ?? HammerIcon;
+        const OptionIcon = PROVIDER_ICON_COMPONENT_BY_PROVIDER[option.value];
         const liveProvider = props.providers?.find((entry) => entry.provider === option.value);
         const availability = resolveLiveProviderAvailability(liveProvider);
         if (availability.disabled) {
@@ -422,10 +429,7 @@ export const ProviderModelMenuItems = function ProviderModelMenuItems(
       })}
       {visibleUnavailableProviderOptions.length > 0 && <MenuSeparator />}
       {visibleUnavailableProviderOptions.map((option) => {
-        const OptionIcon =
-          (PROVIDER_ICON_COMPONENT_BY_PROVIDER as Record<string, typeof HammerIcon | undefined>)[
-            option.value
-          ] ?? HammerIcon;
+        const OptionIcon = PROVIDER_ICON_COMPONENT_BY_PROVIDER[option.value];
         return (
           <MenuItem key={option.value} disabled>
             <OptionIcon
@@ -496,10 +500,7 @@ export const ProviderModelPicker = function ProviderModelPicker(props: ProviderM
     model: props.model,
     modelOptionsByProvider: props.modelOptionsByProvider,
   });
-  const ProviderIcon =
-    (PROVIDER_ICON_COMPONENT_BY_PROVIDER as Record<string, typeof HammerIcon | undefined>)[
-      activeProvider
-    ] ?? HammerIcon;
+  const ProviderIcon = PROVIDER_ICON_COMPONENT_BY_PROVIDER[activeProvider];
 
   const setMenuOpen = (nextOpen: boolean) => {
     if (open === undefined) {

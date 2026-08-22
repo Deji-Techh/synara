@@ -4,6 +4,7 @@
 
 import { useMemo, type ReactNode } from "react";
 
+import type { ProviderKind } from "@caide/contracts";
 import { isGenericChatThreadTitle } from "@caide/shared/chatThreads";
 import { pluralize } from "@caide/shared/text";
 
@@ -52,7 +53,7 @@ function ProviderAvatarWithTerminal({
   const avatarNode = hasHandoff ? (
     <span className={containerClass}>
       <span className="sidebar-icon-chip absolute left-0 top-1/2 inline-flex size-3 -translate-y-1/2 items-center justify-center rounded-full">
-        <ProviderIcon provider={handoffSourceProvider!} className="size-2" />
+        <ProviderIcon provider={handoffSourceProvider as ProviderKind} className="size-2" />
       </span>
       <span className="sidebar-icon-chip absolute right-0 top-1/2 z-10 inline-flex size-3 -translate-y-1/2 items-center justify-center rounded-full">
         <ProviderIcon provider={provider} className="size-2" />

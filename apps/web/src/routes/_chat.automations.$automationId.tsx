@@ -5,6 +5,7 @@ import {
   type AutomationWorktreeMode,
   type ModelSelection,
   type ProviderOptionDescriptor,
+  type ProviderStartOptions,
 } from "@caide/contracts";
 import {
   automationContinuationThreadId,
@@ -1027,7 +1028,6 @@ function ModelOptionRows({
         provider,
         model,
         nextOptions,
-        modelSelection.provider === "anthropic" ? modelSelection.supportsAutoMode : undefined,
       ),
     );
   };

@@ -1,4 +1,4 @@
-import { toast } from "sonner";
+import { toastManager } from "~/components/ui/toast";
 import { type ChatMode } from "@caide/contracts";
 import type { ChatModeFallbackReason } from "./chatMode";
 
@@ -43,11 +43,12 @@ export function showChatModeFallbackToast({
   const modeName = getChatModeDisplayName(effectiveMode, isPro);
   const message = `Quota exhausted. Using ${modeName} mode.`;
 
-  toast.warning(message, {
-    id: toastId,
-    duration: 8000,
-    action: {
-      label: "Switch mode",
+  toastManager.add({
+    type: "warning",
+    title: message,
+    timeout: 8000,
+    actionProps: {
+      children: "Switch mode",
       onClick: () => {
         const trigger = document.querySelector<HTMLElement>('[data-testid="chat-mode-selector"]');
         if (trigger) {
@@ -56,10 +57,7 @@ export function showChatModeFallbackToast({
           return;
         }
 
-        if (toastId) {
-          toast.dismiss(toastId);
-        }
-        toast.info("Open a chat to switch modes.", { duration: 5000 });
+        toastManager.add({ type: "info", title: "Open a chat to switch modes.", timeout: 5000 });
       },
     },
   });

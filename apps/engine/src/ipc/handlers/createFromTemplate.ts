@@ -38,6 +38,20 @@ function createFlutterProjectViaToolchain(fullAppPath: string): Promise<void> {
     .toLowerCase();
   return new Promise(async (resolve, reject) => {
     const flutter = await ensureFlutterForCreate();
+    let settled = false;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const settle = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      if (timeout) clearTimeout(timeout);
+      fn();
+    };
+    timeout = setTimeout(() => {
+      settle(() =>
+        reject(new CaideError(`flutter create timed out (${flutter})`, CaideErrorKind.External)),
+      );
+    }, 5 * 60_000);
+
     // flutter create needs its target directory to exist (it runs with
     // cwd = fullAppPath). The template-copy path creates the directory
     // implicitly; the toolchain-only path — packaged builds ship no scaffold
@@ -56,18 +70,6 @@ function createFlutterProjectViaToolchain(fullAppPath: string): Promise<void> {
       );
       return;
     }
-    let settled = false;
-    const settle = (fn: () => void) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeout);
-      fn();
-    };
-    const timeout = setTimeout(() => {
-      settle(() =>
-        reject(new CaideError(`flutter create timed out (${flutter})`, CaideErrorKind.External)),
-      );
-    }, 5 * 60_000);
     const child = spawn(
       flutter,
       ["create", "--org", "com.caide", "--project-name", appName || "caide_app", "."],

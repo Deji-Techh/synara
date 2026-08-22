@@ -208,6 +208,7 @@ export interface ComposerDraftStoreState {
   projectDraftThreadIdByProjectId: Record<string, ThreadId>;
   stickyModelSelectionByProvider: Partial<Record<ProviderKind, ModelSelection>>;
   stickyActiveProvider: ProviderKind | null;
+  stickyChatMode: ChatMode | null;
   getDraftThreadByProjectId: (
     projectId: ProjectId,
     entryPoint?: ThreadPrimarySurface,
@@ -737,6 +738,14 @@ export function buildTransferredComposerDraft(input: {
     pastedTexts: normalizePastedTexts(sourceDraft.pastedTexts),
     skills: [...sourceDraft.skills],
     mentions: [...sourceDraft.mentions],
+    modelSelectionByProvider:
+      Object.keys(sourceDraft.modelSelectionByProvider).length > 0
+        ? { ...sourceDraft.modelSelectionByProvider }
+        : base.modelSelectionByProvider,
+    activeProvider: sourceDraft.activeProvider ?? base.activeProvider,
+    runtimeMode: sourceDraft.runtimeMode ?? base.runtimeMode,
+    interactionMode: sourceDraft.interactionMode ?? base.interactionMode,
+    mode: sourceDraft.mode ?? base.mode,
     restoredSourceProposedPlan: null,
   };
 }

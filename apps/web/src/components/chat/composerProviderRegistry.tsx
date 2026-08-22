@@ -123,145 +123,29 @@ function getProviderStateFromCapabilities(
   let rawEffort: string | null = null;
   let normalizedOptions: ProviderModelOptions[ProviderKind] | undefined;
 
-  switch (provider) {
-    case "openai": {
-      const providerOptions = modelOptions?.codex;
-      rawEffort = trimOrNull(providerOptions?.reasoningEffort);
-      const defaultReasoningEffort = getDefaultEffort(caps);
-      const reasoningEffortSupport = classifyCodexReasoningEffortSupport({
-        model,
-        effort: rawEffort,
-        ...(runtimeModel ? { runtimeModel } : {}),
-      });
-      const reasoningEffort =
-        rawEffort &&
-        reasoningEffortSupport !== "unsupported" &&
-        rawEffort !== defaultReasoningEffort
-          ? rawEffort
-          : undefined;
-      const fastModeEnabled = caps.supportsFastMode && providerOptions?.fastMode === true;
-      const nextOptions = {
-        ...(reasoningEffort ? { reasoningEffort } : {}),
-        ...(fastModeEnabled ? { fastMode: true } : {}),
-      };
-      normalizedOptions = Object.keys(nextOptions).length > 0 ? nextOptions : undefined;
-      break;
-    }
-    case "anthropic": {
-      const providerOptions = modelOptions?.claudeAgent;
-      rawEffort = trimOrNull(providerOptions?.effort);
-      normalizedOptions = normalizeClaudeModelOptions(model, providerOptions);
-      break;
-    }
-    case "openai": {
-      const providerOptions = modelOptions?.cursor;
-      rawEffort = trimOrNull(providerOptions?.reasoningEffort);
-      const defaultReasoningEffort = getDefaultEffort(caps);
-      const reasoningEffort =
-        rawEffort && hasEffortLevel(caps, rawEffort) && rawEffort !== defaultReasoningEffort
-          ? rawEffort
-          : undefined;
-      const rawContextWindow = trimOrNull(providerOptions?.contextWindow);
-      const defaultContextWindow = getDefaultContextWindow(caps);
-      const contextWindow =
-        rawContextWindow &&
-        hasContextWindowOption(caps, rawContextWindow) &&
-        rawContextWindow !== defaultContextWindow
-          ? rawContextWindow
-          : undefined;
-      const fastModeEnabled = caps.supportsFastMode && providerOptions?.fastMode === true;
-      const thinking =
-        caps.supportsThinkingToggle && providerOptions?.thinking !== undefined
-          ? providerOptions.thinking
-          : undefined;
-      const nextOptions = {
-        ...(reasoningEffort ? { reasoningEffort } : {}),
-        ...(fastModeEnabled ? { fastMode: true } : {}),
-        ...(thinking !== undefined ? { thinking } : {}),
-        ...(contextWindow ? { contextWindow } : {}),
-      };
-      normalizedOptions = Object.keys(nextOptions).length > 0 ? nextOptions : undefined;
-      break;
-    }
-    case "google": {
-      const providerOptions = modelOptions?.antigravity;
-      rawEffort = trimOrNull(providerOptions?.reasoningEffort);
-      normalizedOptions = normalizeAntigravityModelOptions(model, providerOptions, caps);
-      break;
-    }
-    case "openai": {
-      const providerOptions = modelOptions?.grok;
-      rawEffort = trimOrNull(providerOptions?.reasoningEffort);
-      const defaultReasoningEffort = getDefaultEffort(caps);
-      const reasoningEffort =
-        rawEffort && hasEffortLevel(caps, rawEffort) && rawEffort !== defaultReasoningEffort
-          ? providerOptions?.reasoningEffort
-          : undefined;
-      normalizedOptions = reasoningEffort ? { reasoningEffort } : undefined;
-      break;
-    }
-    case "openai": {
-      const providerOptions = modelOptions?.droid;
-      rawEffort = trimOrNull(providerOptions?.reasoningEffort);
-      // Droid's advertised "default" is the mutable current CLI preference.
-      // Once the user selects an effort, always dispatch it explicitly.
-      const reasoningEffort =
-        rawEffort && hasEffortLevel(caps, rawEffort) ? providerOptions?.reasoningEffort : undefined;
-      normalizedOptions = reasoningEffort ? { reasoningEffort } : undefined;
-      break;
-    }
-    case "openai":
-    case "openai": {
-      const providerOptions = provider === "openai" ? modelOptions?.kilo : modelOptions?.opencode;
-      rawEffort = trimOrNull(providerOptions?.variant);
-      const variantOptions = caps.variantOptions ?? [];
-      const reasoningVariant =
-        rawEffort && variantOptions.some((option) => option.value === rawEffort)
-          ? rawEffort
-          : undefined;
-      const agent = trimOrNull(providerOptions?.agent);
-      if (variantOptions.length > 0) {
-        const nextOptions = {
-          ...(reasoningVariant ? { variant: reasoningVariant } : {}),
-          ...(agent ? { agent } : {}),
-        };
-        normalizedOptions = Object.keys(nextOptions).length > 0 ? nextOptions : undefined;
-        break;
-      }
-      normalizedOptions = normalizeOpenCodeModelOptions(providerOptions);
-      break;
-    }
-    case "openai": {
-      const providerOptions = modelOptions?.pi;
-      rawEffort = trimOrNull(providerOptions?.thinkingLevel);
-      normalizedOptions = normalizePiModelOptions(providerOptions);
-      break;
-    }
-    case "openai":
-    case "anthropic":
-    case "google":
-    case "openrouter":
-    case "ollama": {
-      const providerOptions = modelOptions?.[provider];
-      rawEffort = trimOrNull(providerOptions?.reasoningEffort);
-      const defaultReasoningEffort = getDefaultEffort(caps);
-      const reasoningEffort =
-        rawEffort && hasEffortLevel(caps, rawEffort) && rawEffort !== defaultReasoningEffort
-          ? providerOptions?.reasoningEffort
-          : undefined;
-      const fastModeEnabled = caps.supportsFastMode && providerOptions?.fastMode === true;
-      const thinking =
-        caps.supportsThinkingToggle && providerOptions?.thinking !== undefined
-          ? providerOptions.thinking
-          : undefined;
-      const nextOptions = {
-        ...(reasoningEffort ? { reasoningEffort } : {}),
-        ...(fastModeEnabled ? { fastMode: true } : {}),
-        ...(thinking !== undefined ? { thinking } : {}),
-      };
-      normalizedOptions = Object.keys(nextOptions).length > 0 ? nextOptions : undefined;
-      break;
-    }
+  if (provider === "engine") {
+    const providerOptions = modelOptions?.engine;
+    rawEffort = trimOrNull(providerOptions?.thinkingLevel);
+    normalizedOptions = normalizePiModelOptions(providerOptions);
+  } else {
+    const providerOptions = (modelOptions as any)?.[provider];
+    rawEffort = trimOrNull(providerOptions?.reasoningEffort);
+    const defaultReasoningEffort = getDefaultEffort(caps);
+    const reasoningEffort =
+      rawEffort && hasEffortLevel(caps, rawEffort) && rawEffort !== defaultReasoningEffort
+        ? providerOptions?.reasoningEffort
+        : undefined;
+    const fastModeEnabled = caps.supportsFastMode && providerOptions?.fastMode === true;
+    const thinking =
+      caps.supportsThinkingToggle && providerOptions?.thinking !== undefined
+        ? providerOptions.thinking
+        : undefined;
+    const nextOptions = {
+      ...(reasoningEffort ? { reasoningEffort } : {}),
+      ...(fastModeEnabled ? { fastMode: true } : {}),
+      ...(thinking !== undefined ? { thinking } : {}),
+    };
+    normalizedOptions = Object.keys(nextOptions).length > 0 ? nextOptions : undefined;
   }
 
   const draftEffort = trimOrNull(rawEffort);
@@ -270,21 +154,11 @@ function getProviderStateFromCapabilities(
     ? caps.promptInjectedEffortLevels.includes(draftEffort)
     : false;
   const promptEffort =
-    provider === "openai" || provider === "openai"
-      ? resolveLabeledOptionValue(caps.variantOptions, draftEffort)
-      : draftEffort &&
-          !isPromptInjected &&
-          (provider === "openai"
-            ? classifyCodexReasoningEffortSupport({
-                model,
-                effort: draftEffort,
-                ...(runtimeModel ? { runtimeModel } : {}),
-              }) !== "unsupported"
-            : hasEffortLevel(caps, draftEffort))
-        ? draftEffort
-        : defaultEffort && hasEffortLevel(caps, defaultEffort)
-          ? defaultEffort
-          : null;
+    draftEffort && !isPromptInjected && hasEffortLevel(caps, draftEffort)
+      ? draftEffort
+      : defaultEffort && hasEffortLevel(caps, defaultEffort)
+        ? defaultEffort
+        : null;
 
   const ultrathinkActive =
     caps.promptInjectedEffortLevels.length > 0 && isClaudeUltrathinkPrompt(prompt);
@@ -299,51 +173,6 @@ function getProviderStateFromCapabilities(
 }
 
 const composerProviderRegistry: Record<ProviderKind, ProviderRegistryEntry> = {
-  codex: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("openai", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("openai", input),
-  },
-  claudeAgent: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("anthropic", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("anthropic", input),
-  },
-  cursor: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("openai", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("openai", input),
-  },
-  antigravity: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("google", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("google", input),
-  },
-  grok: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("openai", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("openai", input),
-  },
-  droid: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("openai", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("openai", input),
-  },
-  kilo: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("openai", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("openai", input),
-  },
-  opencode: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("openai", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("openai", input),
-  },
-  pi: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("openai", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("openai", input),
-  },
   engine: {
     getState: (input) => getProviderStateFromCapabilities(input),
     renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("engine", input),
@@ -414,8 +243,6 @@ const composerProviderRegistry: Record<ProviderKind, ProviderRegistryEntry> = {
     renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("opencodeZen", input),
     renderTraitsPicker: (input) => renderTraitsPickerForProvider("opencodeZen", input),
   },
-  // Missing entries here crash the composer the moment a provider is selected:
-  // getComposerProviderState dereferences registry[provider].getState directly.
   opencodeGo: {
     getState: (input) => getProviderStateFromCapabilities(input),
     renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("opencodeGo", input),
@@ -451,8 +278,7 @@ export function renderProviderTraitsMenuContent(input: {
       selection,
       input.includeFastMode === undefined ? undefined : { includeFastMode: input.includeFastMode },
     ) &&
-    ((input.provider !== "openai" && input.provider !== "openai") ||
-      (input.runtimeAgents?.length ?? 0) === 0)
+    (input.runtimeAgents?.length ?? 0) === 0
   ) {
     return null;
   }
@@ -486,8 +312,7 @@ export function renderProviderTraitsPicker(input: {
       selection,
       input.includeFastMode === undefined ? undefined : { includeFastMode: input.includeFastMode },
     ) &&
-    ((input.provider !== "openai" && input.provider !== "openai") ||
-      (input.runtimeAgents?.length ?? 0) === 0)
+    (input.runtimeAgents?.length ?? 0) === 0
   ) {
     return null;
   }

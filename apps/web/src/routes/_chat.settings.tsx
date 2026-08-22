@@ -3,7 +3,7 @@
 // Layer: Route screen
 // Exports: Settings route component for `/settings`
 
-import { PROVIDER_DISPLAY_NAMES, type ProviderKind } from "@caide/contracts";
+import { PROVIDER_DISPLAY_NAMES, PROVIDER_KINDS, type ProviderKind } from "@caide/contracts";
 import { PROVIDER_DESCRIPTORS } from "@caide/shared/providerMetadata";
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
@@ -146,7 +146,7 @@ const FOLLOW_UP_BEHAVIOR_OPTIONS = [
 // Shared settings controls live in ~/components/settings/SettingControls.
 
 function isProviderSelectOption(value: string): value is ProviderKind {
-  return PROVIDER_SELECT_OPTIONS.includes(value as ProviderKind);
+  return PROVIDER_KINDS.includes(value as ProviderKind);
 }
 
 // Keys of AppSettings whose value is a plain boolean — the only ones that can be

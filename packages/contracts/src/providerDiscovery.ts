@@ -4,10 +4,10 @@
 // Exports: provider discovery schemas and inferred types used by the WS/native API.
 
 import { Schema } from "effect";
-import { TrimmedNonEmptyString } from "./baseSchemas";
+import { ProviderKind, TrimmedNonEmptyString } from "./baseSchemas";
 import { ProviderOptionDescriptor } from "./model";
 
-const ProviderDiscoveryKind = Schema.Literals(["engine", "groq", "opencodeZen", "opencodeGo"]);
+const ProviderDiscoveryKind = ProviderKind;
 
 export const ProviderSkillInterface = Schema.Struct({
   displayName: Schema.optional(TrimmedNonEmptyString),

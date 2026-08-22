@@ -43,10 +43,15 @@ export function ProjectActivityView({ projectId }: { projectId: ProjectId }) {
   const [error, setError] = useState<string | null>(null);
 
   const load = () => {
+    const api = readNativeApi();
+    if (!api) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
-    void readNativeApi()
-      .orchestration.getProjectActivity({ projectId, limit: 200 })
+    void api.orchestration
+      .getProjectActivity({ projectId, limit: 200 })
       .then((result) => {
         setItems(result.items);
         setLoading(false);
@@ -59,8 +64,10 @@ export function ProjectActivityView({ projectId }: { projectId: ProjectId }) {
 
   useEffect(() => {
     load();
-    void readNativeApi()
-      .orchestration.getShellSnapshot()
+    const api = readNativeApi();
+    if (!api) return;
+    void api.orchestration
+      .getShellSnapshot()
       .then((shell) => {
         const project = shell.projects.find((candidate) => candidate.id === projectId);
         setProjectName(project?.title ?? null);

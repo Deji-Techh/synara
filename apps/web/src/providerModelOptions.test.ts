@@ -36,11 +36,10 @@ describe("Antigravity model options", () => {
 });
 
 describe("Claude model selections", () => {
-  it("preserves the discovered Auto capability with the selected model", () => {
-    expect(buildModelSelection("anthropic", "claude-haiku-4-5", undefined, false)).toEqual({
+  it("builds a model selection for anthropic", () => {
+    expect(buildModelSelection("anthropic", "claude-haiku-4-5")).toEqual({
       provider: "anthropic",
       model: "claude-haiku-4-5",
-      supportsAutoMode: false,
     });
   });
 });

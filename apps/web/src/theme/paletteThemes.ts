@@ -50,11 +50,6 @@ const PALETTE_SEEDS: Record<
     darkSeed: { accent: "#7a7f8a", ink: "#e7e7e7", surface: "#181818" },
     lightSeed: { accent: "#6b7280", ink: "#1f1f1f", surface: "#f7f7f8" },
   },
-  // Legacy alias for old DBs that still reference "codex" theme
-  codex: {
-    darkSeed: { accent: "#7a7f8a", ink: "#e7e7e7", surface: "#181818" },
-    lightSeed: { accent: "#6b7280", ink: "#1f1f1f", surface: "#f7f7f8" },
-  },
   graphite: {
     darkSeed: { accent: "#4f8ef7", ink: "#e6e6e6", surface: "#1c1c1c" },
     lightSeed: { accent: "#4f8ef7", ink: "#232323", surface: "#f4f6fa" },

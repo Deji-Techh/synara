@@ -95,7 +95,7 @@ interface SidebarSearchPaletteProps {
 
 export type ImportProviderKind = Extract<
   ProviderKind,
-  "openai" | "anthropic" | "openai" | "openai" | "openai"
+  "openai" | "anthropic" | "groq"
 >;
 
 function actionHandler(
@@ -474,13 +474,9 @@ export function SidebarSearchPalette(props: SidebarSearchPaletteProps) {
   const importPlaceholder =
     importProvider === "anthropic"
       ? "Paste a Claude session id"
-      : importProvider === "openai"
-        ? "Paste a Cursor session id"
-        : importProvider === "openai"
-          ? "Paste a Kilo session id"
-          : importProvider === "openai"
-            ? "Paste an OpenCode session id"
-            : "Paste a Codex thread id";
+      : importProvider === "groq"
+        ? "Paste a Groq session id"
+        : "Paste an OpenAI thread id";
 
   const hasHighlightedFolderItem =
     highlightedItemValue !== null && highlightedItemValue.startsWith("folder:");
@@ -636,13 +632,9 @@ export function SidebarSearchPalette(props: SidebarSearchPaletteProps) {
                       <ProviderIcon provider={provider} />
                       {provider === "anthropic"
                         ? "Claude"
-                        : provider === "openai"
-                          ? "Cursor"
-                          : provider === "openai"
-                            ? "Kilo"
-                            : provider === "openai"
-                              ? "OpenCode"
-                              : "Codex"}
+                        : provider === "groq"
+                          ? "Groq"
+                          : "OpenAI"}
                     </Button>
                   ))}
                 </div>
@@ -671,13 +663,9 @@ export function SidebarSearchPalette(props: SidebarSearchPaletteProps) {
                 <p className="text-xs text-muted-foreground">
                   {importProvider === "anthropic"
                     ? "Claude resumes a persisted session by session id."
-                    : importProvider === "openai"
-                      ? "Cursor resumes a persisted session by session id."
-                      : importProvider === "openai"
-                        ? "Kilo resumes a persisted session by session id."
-                        : importProvider === "openai"
-                          ? "OpenCode resumes a persisted session by session id."
-                          : "Codex resumes a persisted thread by thread id."}
+                    : importProvider === "groq"
+                      ? "Groq resumes a persisted session by session id."
+                      : "OpenAI resumes a persisted thread by thread id."}
                 </p>
               </div>
               {importError ? (

@@ -80,6 +80,7 @@ import { Debouncer, useDebouncedValue } from "@tanstack/react-pacer";
 import { useNavigate } from "@tanstack/react-router";
 import { type LegendListRef } from "@legendapp/list/react";
 import { buildTemporaryWorktreeBranchName } from "@caide/shared/git";
+import { type TerminalCliKind } from "@caide/shared/terminalThreads";
 import {
   GIT_WORKING_TREE_DIFF_LIVE_REFETCH_INTERVAL_MS,
   gitCreateDetachedWorktreeMutationOptions,
@@ -1826,8 +1827,8 @@ export default function ChatView({
             threadId,
             draftThread,
             fallbackDraftProject?.defaultModelSelection ?? {
-              provider: "openai",
-              model: DEFAULT_MODEL_BY_PROVIDER.codex,
+              provider: "groq",
+              model: DEFAULT_MODEL_BY_PROVIDER.groq,
             },
             localDraftError,
           )
@@ -2298,33 +2299,13 @@ export default function ChatView({
   });
   const draftModelSelectionForSelectedProvider =
     composerDraft.modelSelectionByProvider[selectedProvider] ?? null;
-  const persistedClaudeSupportsAutoMode =
-    selectedProvider === "anthropic"
-      ? draftModelSelectionForSelectedProvider?.provider === "anthropic" &&
-        draftModelSelectionForSelectedProvider.model === selectedModel
-        ? draftModelSelectionForSelectedProvider.supportsAutoMode
-        : activeThread?.modelSelection.provider === "anthropic" &&
-            activeThread.modelSelection.model === selectedModel
-          ? activeThread.modelSelection.supportsAutoMode
-          : undefined
-      : undefined;
   const selectedRuntimeModel = useMemo(() => {
-    const discovered = resolveRuntimeModelDescriptor({
+    return resolveRuntimeModelDescriptor({
       provider: selectedProvider,
       model: selectedModel,
       runtimeModels: runtimeModelsByProvider[selectedProvider],
     });
-    if (discovered) {
-      return discovered;
-    }
-    return selectedProvider === "anthropic" && typeof persistedClaudeSupportsAutoMode === "boolean"
-      ? {
-          slug: selectedModel,
-          name: selectedModel,
-          supportsAutoMode: persistedClaudeSupportsAutoMode,
-        }
-      : undefined;
-  }, [persistedClaudeSupportsAutoMode, runtimeModelsByProvider, selectedModel, selectedProvider]);
+  }, [runtimeModelsByProvider, selectedModel, selectedProvider]);
   const composerProviderState = useMemo(
     () =>
       getComposerProviderState({
@@ -2353,7 +2334,6 @@ export default function ChatView({
       selectedProvider,
       selectedModel,
       selectedModelOptionsForDispatch,
-      selectedProvider === "anthropic" ? selectedRuntimeModel?.supportsAutoMode : undefined,
     );
   }, [
     draftModelSelectionForSelectedProvider,
@@ -2384,11 +2364,7 @@ export default function ChatView({
   const providerModelsLoading = selectedProviderModelsLoading;
   const selectedProviderRequiresRuntimeModels =
     selectedProvider === "openai" ||
-    selectedProvider === "google" ||
-    selectedProvider === "openai" ||
-    selectedProvider === "openai" ||
-    selectedProvider === "openai" ||
-    selectedProvider === "openai";
+    selectedProvider === "google";
   const showComposerModelBootstrapSkeleton = shouldShowComposerModelBootstrapSkeleton({
     selectedProvider,
     selectedModel,
@@ -3956,9 +3932,10 @@ export default function ChatView({
     () => (activeThread ? resolveThreadHandoffBadgeLabel(activeThread) : null),
     [activeThread],
   );
-  const handoffBadgeSourceProvider = activeThread?.handoff?.sourceProvider ?? null;
-  const handoffBadgeTargetProvider = activeThread?.handoff
-    ? activeThread.modelSelection.provider
+  const handoffBadgeSourceProvider =
+    (activeThread?.handoff?.sourceProvider as ProviderKind | undefined) ?? null;
+  const handoffBadgeTargetProvider: ProviderKind | null = activeThread?.handoff
+    ? (activeThread.modelSelection.provider as ProviderKind)
     : null;
   const handoffTargetProviders = useMemo(
     () =>
@@ -4482,7 +4459,6 @@ export default function ChatView({
     cwd: threadWorkspaceCwd,
     enabled: environmentPanelVisible,
     latestTurnSettled,
-    codexHomePath: settings.codexHomePath || null,
     providerOptions: providerOptionsForDispatch ?? null,
   });
   const hasRightDockPanes = useRightDockStore(
@@ -4535,7 +4511,7 @@ export default function ChatView({
       onTerminalMetadataChange: (
         terminalId: string,
         metadata: {
-          cliKind: "openai" | "claude" | "google" | null;
+          cliKind: TerminalCliKind | null;
           label: string;
         },
       ) => {
@@ -6205,7 +6181,6 @@ export default function ChatView({
         provider,
         resolvedModel,
         undefined,
-        provider === "anthropic" ? runtimeModel?.supportsAutoMode : undefined,
       );
       const providerStatus = findProviderStatus(providerStatuses, provider);
       const nextRuntimeMode =
@@ -8359,11 +8334,8 @@ export default function ChatView({
         selectedModelSelectionForSend.model ||
           selectedModelForSend ||
           targetProjectDefaultModelSelectionForSend?.model ||
-          DEFAULT_MODEL_BY_PROVIDER.codex,
+          DEFAULT_MODEL_BY_PROVIDER.groq,
         selectedModelSelectionForSend.options,
-        selectedModelSelectionForSend.provider === "anthropic"
-          ? selectedModelSelectionForSend.supportsAutoMode
-          : undefined,
       );
 
       if (isLocalDraftThread) {

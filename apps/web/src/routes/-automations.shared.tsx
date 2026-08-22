@@ -868,17 +868,9 @@ export function AutomationModelPicker({
     modelHintByProvider,
   });
   const providerStatus = findProviderStatus(providerStatuses, value.provider);
-  const persistedRuntimeModel =
-    value.provider === "anthropic" && typeof value.supportsAutoMode === "boolean"
-      ? {
-          slug: value.model,
-          name: value.model,
-          supportsAutoMode: value.supportsAutoMode,
-        }
-      : undefined;
   const autoModeSupported = providerModelSupportsAutoRuntimeMode(
     value.provider,
-    selectedRuntimeModel ?? persistedRuntimeModel,
+    selectedRuntimeModel,
     providerStatus,
   );
   useEffect(() => {
@@ -899,12 +891,7 @@ export function AutomationModelPicker({
       open={open}
       onOpenChange={setOpen}
       onProviderModelChange={(provider, model) => {
-        const runtimeModel = resolveRuntimeModelDescriptor({
-          provider,
-          model,
-          runtimeModels: runtimeModelsByProvider[provider],
-        });
-        onChange(buildModelSelection(provider, model, undefined, runtimeModel?.supportsAutoMode));
+        onChange(buildModelSelection(provider, model));
       }}
     />
   );
@@ -914,15 +901,10 @@ export function reconcileAutomationFormAutoModeSupport(
   form: AutomationFormState,
   supported: boolean,
 ): AutomationFormState {
-  const modelSelection =
-    form.modelSelection.provider === "anthropic" &&
-    form.modelSelection.supportsAutoMode !== supported
-      ? { ...form.modelSelection, supportsAutoMode: supported }
-      : form.modelSelection;
   const runtimeMode =
     !supported && form.runtimeMode === "auto" ? "approval-required" : form.runtimeMode;
-  return modelSelection !== form.modelSelection || runtimeMode !== form.runtimeMode
-    ? { ...form, modelSelection, runtimeMode }
+  return runtimeMode !== form.runtimeMode
+    ? { ...form, runtimeMode }
     : form;
 }
 
@@ -961,9 +943,7 @@ export function AutomationDialog({
   const projectThreads = threads.filter((thread) => thread.projectId === form.projectId);
   const selectedProject = projects.find((project) => project.id === form.projectId);
   const [selectedModelSupportsAuto, setSelectedModelSupportsAuto] = useState(() =>
-    form.modelSelection.provider === "anthropic"
-      ? form.modelSelection.supportsAutoMode !== false
-      : providerSupportsAutoRuntimeMode(form.modelSelection.provider),
+    providerSupportsAutoRuntimeMode(form.modelSelection.provider),
   );
   const handleAutoModeSupportChange = useCallback(
     (supported: boolean) => {

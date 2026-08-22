@@ -25,7 +25,7 @@ import {
   COMPOSER_PICKER_RADIUS_CLASS_NAME,
 } from "./composerPickerStyles";
 
-type FavoriteModelProvider = "openai" | "openai" | "openai" | "openai";
+import type { FavoriteModelProvider } from "../../lib/modelFavorites";
 
 type ProviderModelOptionGroupListProps = {
   groupedOptions: ReadonlyArray<ProviderModelOptionGroup>;

@@ -61,10 +61,7 @@ export function useKanbanTaskScratchDraft(input: { readonly defaultProvider: Pro
   const selectedModel: ModelSlug | null =
     draftModelSelection?.model ?? getDefaultModel(selectedProvider);
   const selectedProviderModelOptions = draftModelSelection?.options;
-  const selectedModelSupportsAutoMode =
-    draftModelSelection?.provider === "anthropic"
-      ? draftModelSelection.supportsAutoMode
-      : undefined;
+  const selectedModelSupportsAutoMode = undefined;
 
   const previousSelectedProviderRef = useRef<{
     threadId: string;
@@ -105,10 +102,9 @@ export function useKanbanTaskScratchDraft(input: { readonly defaultProvider: Pro
   const handleProviderModelChange = (
     provider: ProviderKind,
     model: ModelSlug,
-    supportsAutoMode?: boolean,
   ) => {
     const store = useComposerDraftStore.getState();
-    const nextSelection = buildModelSelection(provider, model, undefined, supportsAutoMode);
+    const nextSelection = buildModelSelection(provider, model);
     // Mirrors the composer: update the scratch draft and persist the sticky selection.
     store.setModelSelectionAndSticky(scratchThreadId, nextSelection);
   };

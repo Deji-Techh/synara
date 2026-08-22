@@ -222,8 +222,8 @@ vi.mock("../../../supabase_admin/supabase_context", () => ({
   getSupabaseClientCode: vi.fn(async () => ""),
 }));
 
-vi.mock("../../utils/codebase", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../utils/codebase")>();
+vi.mock("../../../utils/codebase", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../utils/codebase")>();
   return {
     ...actual,
     extractCodebase: vi.fn(async () => ({
@@ -307,10 +307,10 @@ vi.mock("../../utils/ai_messages_utils", () => ({
 }));
 
 // The unit under observation.
-const handleLocalAgentStream = vi.fn(async () => true);
+const handleLocalAgentStream = vi.fn(async (..._args: unknown[]) => true);
 
 vi.mock("../../../pro/main/ipc/handlers/local_agent/local_agent_handler", () => ({
-  handleLocalAgentStream: (...args: unknown[]) => handleLocalAgentStream(...(args as [])),
+  handleLocalAgentStream: (...args: unknown[]) => handleLocalAgentStream(...args),
 }));
 
 // --- import handler AFTER mocks -------------------------------------------

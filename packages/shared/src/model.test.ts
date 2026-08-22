@@ -358,12 +358,12 @@ describe("resolveSelectableModel", () => {
 });
 
 describe("resolveModelSlugForProvider", () => {
-  it("resolves catalog slugs and falls back to the provider default", () => {
+  it("resolves catalog slugs, preserves custom slugs, and falls back to provider default when empty", () => {
     expect(resolveModelSlugForProvider("groq", "llama-3.1-8b-instant")).toBe(
       "llama-3.1-8b-instant",
     );
     expect(resolveModelSlugForProvider("groq", "totally-custom")).toBe(
-      DEFAULT_MODEL_BY_PROVIDER.groq,
+      "totally-custom",
     );
     expect(resolveModelSlugForProvider("opencodeZen", null)).toBe(
       DEFAULT_MODEL_BY_PROVIDER.opencodeZen,

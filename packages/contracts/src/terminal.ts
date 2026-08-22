@@ -1,5 +1,5 @@
 import { Schema } from "effect";
-import { ProcessEnvRecord, TrimmedNonEmptyString } from "./baseSchemas";
+import { ProcessEnvRecord, ProviderKind, TrimmedNonEmptyString } from "./baseSchemas";
 
 export const DEFAULT_TERMINAL_ID = "default";
 
@@ -154,13 +154,7 @@ const TerminalActivityEvent = Schema.Struct({
   ...TerminalEventBaseSchema.fields,
   type: Schema.Literal("activity"),
   hasRunningSubprocess: Schema.Boolean,
-  cliKind: Schema.NullOr(
-    Schema.Union([
-      Schema.Literal("groq"),
-      Schema.Literal("opencodeZen"),
-      Schema.Literal("opencodeGo"),
-    ]),
-  ),
+  cliKind: Schema.NullOr(ProviderKind),
   agentState: Schema.NullOr(
     Schema.Union([
       Schema.Literal("running"),

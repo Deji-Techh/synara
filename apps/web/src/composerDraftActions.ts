@@ -127,6 +127,7 @@ export const createComposerDraftStoreState =
     projectDraftThreadIdByProjectId: {},
     stickyModelSelectionByProvider: {},
     stickyActiveProvider: null,
+    stickyChatMode: null,
     getDraftThreadByProjectId: (projectId, entryPoint = "chat") => {
       if (projectId.length === 0) {
         return null;
@@ -454,7 +455,61 @@ export const createComposerDraftStoreState =
       if (!draftThread?.promotedTo) {
         return;
       }
-      get().clearDraftThread(threadId);
+      const targetThreadId = draftThread.promotedTo;
+      const sourceDraft = get().draftsByThreadId[threadId];
+      if (sourceDraft && targetThreadId && threadId !== targetThreadId) {
+        const targetDraft = get().draftsByThreadId[targetThreadId];
+        if (!targetDraft || targetDraft.mode === null) {
+          const base = targetDraft ?? createEmptyThreadDraft();
+          const nextTargetDraft: ComposerThreadDraftState = {
+            ...base,
+            mode: base.mode ?? sourceDraft.mode,
+            activeProvider: base.activeProvider ?? sourceDraft.activeProvider,
+            modelSelectionByProvider: {
+              ...sourceDraft.modelSelectionByProvider,
+              ...base.modelSelectionByProvider,
+            },
+            runtimeMode: base.runtimeMode ?? sourceDraft.runtimeMode,
+            interactionMode: base.interactionMode ?? sourceDraft.interactionMode,
+          };
+          if (!shouldRemoveDraft(nextTargetDraft)) {
+            set((state) => ({
+              draftsByThreadId: {
+                ...state.draftsByThreadId,
+                [targetThreadId]: nextTargetDraft,
+              },
+            }));
+          }
+        }
+      }
+
+      if (threadId === targetThreadId) {
+        // When promoting a thread into its own ID (e.g., from the empty landing page),
+        // we must not destroy the user's active composer draft (mode, model selection).
+        // Only clear the routing metadata that marks this as a draft thread.
+        set((state) => {
+          const hasDraftThread = state.draftThreadsByThreadId[threadId] !== undefined;
+          const hasProjectMapping = Object.values(state.projectDraftThreadIdByProjectId).includes(
+            threadId,
+          );
+          if (!hasDraftThread && !hasProjectMapping) {
+            return state;
+          }
+          const nextProjectDraftThreadIdByProjectId = Object.fromEntries(
+            Object.entries(state.projectDraftThreadIdByProjectId).filter(
+              ([, draftThreadId]) => draftThreadId !== threadId,
+            ),
+          ) as Record<string, ThreadId>;
+          const { [threadId]: _removedDraftThread, ...restDraftThreadsByThreadId } =
+            state.draftThreadsByThreadId;
+          return {
+            draftThreadsByThreadId: restDraftThreadsByThreadId,
+            projectDraftThreadIdByProjectId: nextProjectDraftThreadIdByProjectId,
+          };
+        });
+      } else {
+        get().clearDraftThread(threadId);
+      }
     },
     clearDraftThread: (threadId) => {
       if (threadId.length === 0) {
@@ -517,7 +572,12 @@ export const createComposerDraftStoreState =
       set((state) => {
         const stickyMap = state.stickyModelSelectionByProvider;
         const stickyActiveProvider = state.stickyActiveProvider;
-        if (Object.keys(stickyMap).length === 0 && stickyActiveProvider === null) {
+        const stickyChatMode = state.stickyChatMode;
+        if (
+          Object.keys(stickyMap).length === 0 &&
+          stickyActiveProvider === null &&
+          stickyChatMode === null
+        ) {
           return state;
         }
         const existing = state.draftsByThreadId[threadId];
@@ -530,16 +590,20 @@ export const createComposerDraftStoreState =
               current && current.model !== selection.model ? current : selection;
           }
         }
+        const nextActiveProvider = base.activeProvider ?? stickyActiveProvider;
+        const nextMode = base.mode ?? stickyChatMode;
         if (
           Equal.equals(base.modelSelectionByProvider, nextMap) &&
-          base.activeProvider === stickyActiveProvider
+          base.activeProvider === nextActiveProvider &&
+          base.mode === nextMode
         ) {
           return state;
         }
         const nextDraft: ComposerThreadDraftState = {
           ...base,
           modelSelectionByProvider: nextMap,
-          activeProvider: stickyActiveProvider,
+          activeProvider: nextActiveProvider,
+          mode: nextMode,
         };
         const nextDraftsByThreadId = { ...state.draftsByThreadId };
         if (shouldRemoveDraft(nextDraft)) {
@@ -841,7 +905,6 @@ export const createComposerDraftStoreState =
               provider,
               model,
               opts,
-              current?.provider === "anthropic" ? current.supportsAutoMode : undefined,
             );
           } else if (current?.options) {
             // Remove options but keep the selection
@@ -849,7 +912,6 @@ export const createComposerDraftStoreState =
               provider,
               current.model,
               undefined,
-              current.provider === "anthropic" ? current.supportsAutoMode : undefined,
             );
           }
         }
@@ -903,18 +965,12 @@ export const createComposerDraftStoreState =
             normalizedProvider,
             nextModel,
             providerOpts,
-            currentForProvider?.provider === "anthropic"
-              ? currentForProvider.supportsAutoMode
-              : undefined,
           );
         } else if (currentForProvider?.options) {
           nextMap[normalizedProvider] = buildModelSelection(
             normalizedProvider,
             currentForProvider.model,
             undefined,
-            currentForProvider.provider === "anthropic"
-              ? currentForProvider.supportsAutoMode
-              : undefined,
           );
         }
 
@@ -936,7 +992,6 @@ export const createComposerDraftStoreState =
                 normalizedProvider,
                 stickyBase.model,
                 providerOpts,
-                stickyBase.provider === "anthropic" ? stickyBase.supportsAutoMode : undefined,
               ),
             );
           } else if (stickyBase.options) {
@@ -944,7 +999,6 @@ export const createComposerDraftStoreState =
               normalizedProvider,
               stickyBase.model,
               undefined,
-              stickyBase.provider === "anthropic" ? stickyBase.supportsAutoMode : undefined,
             );
           }
           nextStickyActiveProvider = base.activeProvider ?? normalizedProvider;
@@ -1046,12 +1100,9 @@ export const createComposerDraftStoreState =
       set((state) => {
         const existing = state.draftsByThreadId[threadId];
         if (!existing && nextMode === null) {
-          return state;
+          return state.stickyChatMode === nextMode ? state : { stickyChatMode: nextMode };
         }
         const base = existing ?? createEmptyThreadDraft();
-        if (base.mode === nextMode) {
-          return state;
-        }
         const nextDraft: ComposerThreadDraftState = {
           ...base,
           mode: nextMode,
@@ -1062,7 +1113,10 @@ export const createComposerDraftStoreState =
         } else {
           nextDraftsByThreadId[threadId] = nextDraft;
         }
-        return { draftsByThreadId: nextDraftsByThreadId };
+        return {
+          draftsByThreadId: nextDraftsByThreadId,
+          stickyChatMode: nextMode ?? state.stickyChatMode,
+        };
       });
     },
     // Keep queued follow-ups with the thread draft so route changes do not hide them.

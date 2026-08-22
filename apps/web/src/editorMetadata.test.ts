@@ -19,7 +19,7 @@ describe("resolveAvailableEditorOptions", () => {
   it("surfaces every supported available editor from the shared contracts catalog", () => {
     expect(
       resolveAvailableEditorOptions("MacIntel", [
-        "openai",
+        "cursor",
         "trae",
         "vscode-insiders",
         "vscodium",

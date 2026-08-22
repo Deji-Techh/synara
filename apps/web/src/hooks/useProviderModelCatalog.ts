@@ -4,10 +4,11 @@
 // Layer: Web hooks
 // Exports: useProviderModelCatalog, ProviderModelCatalog
 
-import type {
-  ProviderAgentDescriptor,
-  ProviderKind,
-  ProviderModelDescriptor,
+import {
+  PROVIDER_KINDS,
+  type ProviderAgentDescriptor,
+  type ProviderKind,
+  type ProviderModelDescriptor,
 } from "@caide/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
@@ -138,33 +139,22 @@ export function useProviderModelCatalog(input: {
     opencodeGoModelDiscoveryEnabled && isInitialModelDiscoveryPending(opencodeGoDynamicModelsQuery);
 
   const modelOptionsByProvider = useMemo(() => {
-    const staticOptions: Record<ProviderKind, ReturnType<typeof getAppModelOptions>> = {
-      groq: getAppModelOptions("groq", customModelsByProvider.groq, modelHintByProvider?.groq),
-      opencodeZen: getAppModelOptions(
-        "opencodeZen",
-        customModelsByProvider.opencodeZen,
-        modelHintByProvider?.opencodeZen,
-      ),
-      opencodeGo: getAppModelOptions(
-        "opencodeGo",
-        customModelsByProvider.opencodeGo,
-        modelHintByProvider?.opencodeGo,
-      ),
-      engine: getAppModelOptions(
-        "engine",
-        customModelsByProvider.engine,
-        modelHintByProvider?.engine,
-      ),
-    };
+    const staticOptions = Object.fromEntries(
+      (PROVIDER_KINDS as readonly ProviderKind[]).map((p) => [
+        p,
+        getAppModelOptions(p, customModelsByProvider[p], modelHintByProvider?.[p]),
+      ]),
+    ) as Record<ProviderKind, ReturnType<typeof getAppModelOptions>>;
+
     const result: Record<
       ProviderKind,
       ReadonlyArray<ProviderModelOption & { isCustom?: boolean }>
     > = { ...staticOptions };
-    const dynamicSources: Record<ProviderKind, typeof groqDynamicModelsQuery.data> = {
+
+    const dynamicSources: Partial<Record<ProviderKind, typeof groqDynamicModelsQuery.data>> = {
       groq: groqDynamicModelsQuery.data,
       opencodeZen: opencodeZenDynamicModelsQuery.data,
       opencodeGo: opencodeGoDynamicModelsQuery.data,
-      engine: undefined,
     };
     for (const provider of ["groq", "opencodeZen", "opencodeGo"] as const) {
       const dynamicModels = dynamicSources[provider]?.models;
@@ -196,19 +186,22 @@ export function useProviderModelCatalog(input: {
 
   const runtimeModelsByProvider = useMemo<
     Record<ProviderKind, ReadonlyArray<ProviderModelDescriptor>>
-  >(
-    () => ({
-      groq: groqDynamicModelsQuery.data?.models ?? [],
-      opencodeZen: opencodeZenDynamicModelsQuery.data?.models ?? [],
-      opencodeGo: opencodeGoDynamicModelsQuery.data?.models ?? [],
-      engine: [],
-    }),
-    [
-      groqDynamicModelsQuery.data?.models,
-      opencodeZenDynamicModelsQuery.data?.models,
-      opencodeGoDynamicModelsQuery.data?.models,
-    ],
-  );
+  >(() => {
+    const map = Object.fromEntries(
+      (PROVIDER_KINDS as readonly ProviderKind[]).map((p) => [
+        p,
+        [] as ReadonlyArray<ProviderModelDescriptor>,
+      ]),
+    ) as Record<ProviderKind, ReadonlyArray<ProviderModelDescriptor>>;
+    map.groq = groqDynamicModelsQuery.data?.models ?? [];
+    map.opencodeZen = opencodeZenDynamicModelsQuery.data?.models ?? [];
+    map.opencodeGo = opencodeGoDynamicModelsQuery.data?.models ?? [];
+    return map;
+  }, [
+    groqDynamicModelsQuery.data?.models,
+    opencodeZenDynamicModelsQuery.data?.models,
+    opencodeGoDynamicModelsQuery.data?.models,
+  ]);
 
   const selectedRuntimeModel = useMemo(
     () =>

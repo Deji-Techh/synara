@@ -28,7 +28,7 @@ describe("terminalActivityFromEvent", () => {
     const active = terminalActivityFromEvent({
       ...eventBase(),
       type: "activity",
-      cliKind: "openai",
+      cliKind: "codex",
       agentState: "running",
       hasRunningSubprocess: true,
     });

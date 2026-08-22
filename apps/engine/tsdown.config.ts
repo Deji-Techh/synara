@@ -10,7 +10,6 @@ export default defineConfig({
   format: ["esm"],
   outDir: "dist",
   clean: true,
-  splitting: false,
   // `pg-schema-classifier` is a private, TS-source-only workspace package
   // (main: ./src/index.ts). Bundling it avoids shipping/  resolving a .ts file
   // at runtime in the packaged desktop app, where the engine runs from an

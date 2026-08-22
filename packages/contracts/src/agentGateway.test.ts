@@ -67,7 +67,7 @@ describe("agent gateway contracts", () => {
           target: {
             provider: "opencodeZen",
             model: "claude-sonnet-5",
-            options: { variant: "high" } as unknown as { reasoningEffort: string },
+            options: { reasoningEffort: "high" },
           },
         },
       ],

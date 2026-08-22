@@ -44,28 +44,22 @@ import { ShortcutKbd } from "../ui/shortcut-kbd";
 
 const ULTRATHINK_PROMPT_PREFIX = "Ultrathink:\n";
 
-function defaultAgentForProvider(provider: ProviderKind): string | null {
-  if (provider === "openai") return "code";
-  if (provider === "openai") return "build";
+function defaultAgentForProvider(_provider: ProviderKind): string | null {
   return null;
 }
 
 function getAgentOptions(
-  provider: ProviderKind,
-  runtimeAgents: ReadonlyArray<ProviderAgentDescriptor> | null | undefined,
+  _provider: ProviderKind,
+  _runtimeAgents: ReadonlyArray<ProviderAgentDescriptor> | null | undefined,
 ): ReadonlyArray<ProviderAgentDescriptor> {
-  if (provider !== "openai" && provider !== "openai") return [];
-  return runtimeAgents ?? [];
+  return [];
 }
 
 function getSelectedAgentValue(
-  provider: ProviderKind,
-  modelOptions: ProviderOptions | null | undefined,
+  _provider: ProviderKind,
+  _modelOptions: ProviderOptions | null | undefined,
 ): string | null {
-  const defaultAgent = defaultAgentForProvider(provider);
-  if (!defaultAgent) return null;
-  const selectedAgent = (modelOptions as OpenCodeModelOptions | undefined)?.agent?.trim();
-  return selectedAgent && selectedAgent.length > 0 ? selectedAgent : defaultAgent;
+  return null;
 }
 
 function findAgentLabel(
@@ -358,13 +352,9 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
     }
     const optionId =
       primarySelectDescriptorId ??
-      (provider === "openai" || provider === "openai"
-        ? "variant"
-        : provider === "openai"
-          ? "thinkingLevel"
-          : provider === "anthropic"
-            ? "effort"
-            : "reasoningEffort");
+      (provider === "engine"
+        ? "thinkingLevel"
+        : "reasoningEffort");
     commitTrait(buildProviderOptionPatch(provider, optionId, nextOption.value));
   };
 
@@ -406,7 +396,7 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
         <>
           {hasPriorEffortSection ? <MenuDivider /> : null}
           <TraitRadioSection
-            label={provider === "openai" || provider === "openai" ? "Variant" : "Effort"}
+            label="Effort"
             labelTrailing={
               showsFastModeEffortToggle ? (
                 <FastModeToggle

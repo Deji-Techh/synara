@@ -273,14 +273,14 @@ export function RightDock(props: RightDockProps) {
         innerClassName={CHAT_BACKGROUND_CLASS_NAME}
         gapClassName={chromeMotionClass}
         transparentSurface
-        resizable={
-          isPreviewLocked
-            ? undefined
-            : {
+        {...(isPreviewLocked
+          ? {}
+          : {
+              resizable: {
                 minWidth: props.minWidth,
                 shouldAcceptWidth: props.shouldAcceptWidth,
-              }
-        }
+              },
+            })}
       >
         <div
           ref={contentRef}

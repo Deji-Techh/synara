@@ -224,11 +224,8 @@ export function providerModelsQueryOptions(input: {
       });
     },
     enabled: input.enabled ?? true,
-    // Cursor/droid failures are permanent for a session (missing CLI/auth): fail
-    // fast so the picker settles to static options instead of spinning (#103).
-    retry: input.provider === "openai" || input.provider === "openai" ? 0 : 3,
-    staleTime: input.provider === "openai" ? 5 * 60_000 : 60_000,
-    ...(input.provider === "openai" ? { refetchOnWindowFocus: false } : {}),
+    retry: 1,
+    staleTime: 60_000,
     placeholderData: (previous) => previous ?? EMPTY_MODELS_RESULT,
   });
 }

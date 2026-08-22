@@ -6,10 +6,12 @@ import type { ProviderKind } from "@caide/contracts";
 import { Schema } from "effect";
 
 export const FAVORITE_MODEL_STORAGE_KEYS = {
-  cursor: "caide:cursor-favourite-models:v1",
-  kilo: "caide:kilo-favourite-models:v1",
-  opencode: "caide:opencode-favourite-models:v1",
-  pi: "caide:pi-favourite-models:v1",
+  engine: "caide:engine-favourite-models:v1",
+  openrouter: "caide:openrouter-favourite-models:v1",
+  ollama: "caide:ollama-favourite-models:v1",
+  groq: "caide:groq-favourite-models:v1",
+  opencodeZen: "caide:opencodeZen-favourite-models:v1",
+  opencodeGo: "caide:opencodeGo-favourite-models:v1",
 } as const;
 
 export type FavoriteModelProvider = keyof typeof FAVORITE_MODEL_STORAGE_KEYS;
@@ -17,9 +19,7 @@ export type FavoriteModelProvider = keyof typeof FAVORITE_MODEL_STORAGE_KEYS;
 const FavoriteModelSlugsSchema = Schema.Array(Schema.String);
 
 export function supportsModelFavorites(provider: ProviderKind): provider is FavoriteModelProvider {
-  return (
-    provider === "openai" || provider === "openai" || provider === "openai" || provider === "openai"
-  );
+  return provider in FAVORITE_MODEL_STORAGE_KEYS;
 }
 
 // Read favorite slugs for cycle order. Failures (SSR, parse errors) return [].
@@ -28,7 +28,8 @@ export function readFavoriteModelSlugs(provider: ProviderKind): string[] {
     return [];
   }
   try {
-    const raw = globalThis.localStorage.getItem(FAVORITE_MODEL_STORAGE_KEYS[provider]);
+    const key = FAVORITE_MODEL_STORAGE_KEYS[provider];
+    const raw = globalThis.localStorage.getItem(key);
     if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
     const decoded = Schema.decodeUnknownSync(FavoriteModelSlugsSchema)(parsed);

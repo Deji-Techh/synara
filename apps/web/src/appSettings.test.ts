@@ -185,12 +185,12 @@ describe("environment panel defaults", () => {
 });
 
 describe("resolveAppModelSelection", () => {
-  const emptyCustomModels = {
-    engine: [],
-    groq: [],
-    opencodeZen: [],
-    opencodeGo: [],
-  };
+  const emptyCustomModels = getCustomModelsByProvider({
+    customEngineModels: [],
+    customGroqModels: [],
+    customOpenCodeZenModels: [],
+    customOpenCodeGoModels: [],
+  });
 
   it("preserves saved custom model slugs instead of falling back to the default", () => {
     expect(

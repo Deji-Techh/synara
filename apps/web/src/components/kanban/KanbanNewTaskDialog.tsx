@@ -227,7 +227,7 @@ export function KanbanNewTaskDialog({
         runtimeModels: runtimeModelsByProvider[provider],
       });
       setRuntimeMode((current) => normalizeRuntimeModeForProvider(current, provider));
-      setScratchProviderModel(provider, model, runtimeModel?.supportsAutoMode);
+      setScratchProviderModel(provider, model);
     },
     [runtimeModelsByProvider, setScratchProviderModel],
   );
@@ -316,7 +316,6 @@ export function KanbanNewTaskDialog({
     providerOptionsForDispatch,
     hiddenProviders: settings.hiddenProviders,
     providerOrder: settings.providerOrder,
-    piAgentDir: settings.piAgentDir || null,
     handleProviderModelChange,
     setInteractionMode,
     onCreate: handleCreateRequest,
@@ -332,16 +331,7 @@ export function KanbanNewTaskDialog({
     if (firstOption) {
       useComposerDraftStore.getState().setModelSelection(
         scratchThreadId,
-        buildModelSelection(
-          selectedProvider,
-          firstOption.slug,
-          undefined,
-          resolveRuntimeModelDescriptor({
-            provider: selectedProvider,
-            model: firstOption.slug,
-            runtimeModels: runtimeModelsByProvider[selectedProvider],
-          })?.supportsAutoMode,
-        ),
+        buildModelSelection(selectedProvider, firstOption.slug),
       );
     }
   }, [

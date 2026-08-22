@@ -102,17 +102,10 @@ export function useKanbanTaskSubmit(input: UseKanbanTaskSubmitInput) {
     // speed) set through the picker; fall back to a bare selection otherwise.
     const scratchState = useComposerDraftStore.getState().draftsByThreadId[scratchThreadId];
     const storedModelSelection = scratchState?.modelSelectionByProvider[selectedProvider];
-    const storedModelSupportsAutoMode =
-      storedModelSelection?.provider === "anthropic"
-        ? storedModelSelection.supportsAutoMode
-        : undefined;
     const modelSelection = buildModelSelection(
       selectedProvider,
       selectedModel,
       storedModelSelection?.options,
-      selectedProvider === "anthropic"
-        ? (selectedModelSupportsAutoMode ?? storedModelSupportsAutoMode)
-        : undefined,
     );
     const taskInput = {
       projectId: selectedProjectId,

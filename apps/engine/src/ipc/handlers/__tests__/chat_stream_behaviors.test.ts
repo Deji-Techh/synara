@@ -235,8 +235,8 @@ vi.mock("../../../supabase_admin/supabase_context", () => ({
   getSupabaseClientCode: vi.fn(async () => ""),
 }));
 
-vi.mock("../../utils/codebase", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../utils/codebase")>();
+vi.mock("../../../utils/codebase", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../../utils/codebase")>();
   return {
     ...actual,
     extractCodebase: vi.fn(async () => ({

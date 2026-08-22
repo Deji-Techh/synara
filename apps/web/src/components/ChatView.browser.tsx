@@ -4376,7 +4376,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
       await vi.waitFor(() => {
         expect(
           useComposerDraftStore.getState().draftsByThreadId[THREAD_ID]?.modelSelectionByProvider
-            .codex,
+            .openai,
         ).toMatchObject({ provider: "openai", model: "gpt-5.5" });
       });
       expect(document.querySelector('[data-slot="menu-popup"]')).toBeNull();
@@ -4385,7 +4385,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
       await vi.waitFor(() => {
         expect(
           useComposerDraftStore.getState().draftsByThreadId[THREAD_ID]?.modelSelectionByProvider
-            .codex,
+            .openai,
         ).toMatchObject({ provider: "openai", model: "gpt-5.2" });
       });
     } finally {
@@ -6056,7 +6056,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
   it("snapshots sticky codex settings into a new draft thread", async () => {
     useComposerDraftStore.setState({
       stickyModelSelectionByProvider: {
-        codex: {
+        openai: {
           provider: "openai",
           model: "gpt-5.3-codex",
           options: {
@@ -6519,11 +6519,11 @@ describe("ChatView timeline estimator parity (full app)", () => {
   it("hydrates the provider alongside a sticky claude model", async () => {
     useComposerDraftStore.setState({
       stickyModelSelectionByProvider: {
-        claudeAgent: {
+        anthropic: {
           provider: "anthropic",
           model: "claude-opus-4-6",
           options: {
-            effort: "max",
+            reasoningEffort: "max",
             fastMode: true,
           },
         },
@@ -6554,7 +6554,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
 
       expect(useComposerDraftStore.getState().draftsByThreadId[newThreadId]).toMatchObject({
         modelSelectionByProvider: {
-          claudeAgent: {
+          anthropic: {
             provider: "anthropic",
             model: "claude-opus-4-6",
             options: {
@@ -6601,7 +6601,7 @@ describe("ChatView timeline estimator parity (full app)", () => {
   it("reuses the existing draft thread when the user clicks new thread again", async () => {
     useComposerDraftStore.setState({
       stickyModelSelectionByProvider: {
-        codex: {
+        openai: {
           provider: "openai",
           model: "gpt-5.3-codex",
           options: {
@@ -6837,11 +6837,11 @@ describe("ChatView timeline estimator parity (full app)", () => {
           mentions: [],
           queuedTurns: [],
           modelSelectionByProvider: {
-            claudeAgent: {
+            anthropic: {
               provider: "anthropic",
               model: "claude-opus-4-6",
               options: {
-                effort: "max",
+                reasoningEffort: "max",
               },
             },
           },
