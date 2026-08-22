@@ -38,6 +38,24 @@ function createFlutterProjectViaToolchain(fullAppPath: string): Promise<void> {
     .toLowerCase();
   return new Promise(async (resolve, reject) => {
     const flutter = await ensureFlutterForCreate();
+    // flutter create needs its target directory to exist (it runs with
+    // cwd = fullAppPath). The template-copy path creates the directory
+    // implicitly; the toolchain-only path — packaged builds ship no scaffold
+    // template — reaches here with nothing on disk, and spawn would fail
+    // with ENOENT.
+    try {
+      await fs.ensureDir(fullAppPath);
+    } catch (error) {
+      settle(() =>
+        reject(
+          new CaideError(
+            `flutter create could not prepare ${fullAppPath}: ${(error as Error).message}`,
+            CaideErrorKind.External,
+          ),
+        ),
+      );
+      return;
+    }
     let settled = false;
     const settle = (fn: () => void) => {
       if (settled) return;
