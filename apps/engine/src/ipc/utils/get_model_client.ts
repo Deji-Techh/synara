@@ -211,6 +211,24 @@ export async function getModelClient(
         );
       }
     }
+    // Caide's server bridges opencode-zen / opencode-go API keys into this
+    // engine's settings at initialize. The hardcoded alias list above only
+    // covers openai/anthropic/google/openrouter, so auxiliary flows that run
+    // with the literal 'auto' model (git branch naming, theme generation)
+    // would still find no keys. Consult the bridged providers directly.
+    for (const candidate of [
+      { provider: "opencode-go", name: "deepseek-v4-flash" },
+      { provider: "opencode-zen", name: "deepseek-v4-flash-free" },
+    ] as const) {
+      const bridgedApiKey = getProviderApiKeyForRequest(
+        settings.providerSettings?.[candidate.provider]?.apiKey?.value,
+        candidate.provider,
+      );
+      if (bridgedApiKey) {
+        logger.log(`Using provider: ${candidate.provider} model: ${candidate.name}`);
+        return await getModelClient(candidate, settings);
+      }
+    }
     // If no models have API keys, throw an error
     throw new Error("No API keys available for any model supported by the 'auto' provider.");
   }

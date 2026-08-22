@@ -82,14 +82,15 @@ export function resolveEnginePayloadDependencies(): Record<string, string> {
  * tsdown script unless it already exists.
  */
 export function buildEngineDist(engineDir: string, verbose: boolean): boolean {
-  const distEntry = join(engineDir, "dist", "index.mjs");
-  if (existsSync(distEntry)) {
-    return true;
-  }
+  // Always rebuild. A previous existsSync() fast-path shipped stale bundles
+  // inside release artifacts whenever an old dist/index.mjs was lying around
+  // — every source fix stayed invisible in packaged builds. tsdown bundling
+  // is cheap relative to shipping a binary that ignores the source tree.
   const built = spawnSync("bun", ["run", "build"], {
     cwd: engineDir,
     stdio: verbose ? "inherit" : "ignore",
   });
+  const distEntry = join(engineDir, "dist", "index.mjs");
   return built.status === 0 && existsSync(distEntry);
 }
 
