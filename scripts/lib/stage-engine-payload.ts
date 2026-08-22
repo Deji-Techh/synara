@@ -174,7 +174,48 @@ export function stageEnginePayload(
   );
   copyRepoNativeBinding(repoRoot, payloadDir, "node-pty", "node-pty", "build/Release/pty.node");
 
+  copyDugiteEmbeddedGit(repoRoot, payloadDir);
+
   return { payloadDir };
+}
+
+/**
+ * Dugite's npm package fetches its embedded Git distribution via a postinstall
+ * script, which the payload install deliberately skips (`--ignore-scripts`
+ * keeps native compile/download scripts out of staging). Without it,
+ * resolveGitBinary points at a nonexistent `<payload>/node_modules/dugite/git`
+ * and every engine git call fails with dugite's packaging ENOENT. Copy the
+ * repository's already-downloaded distribution into the staged package instead.
+ *
+ * Fails the build only when dugite IS a runtime dep but cannot be populated:
+ * silently shipping a broken engine is what caused the stale-bundle incident.
+ */
+function copyDugiteEmbeddedGit(repoRoot: string, payloadDir: string): void {
+  const stagedPackageDir = join(payloadDir, "node_modules", "dugite");
+  if (!existsSync(join(stagedPackageDir, "package.json"))) {
+    // Not an engine dependency anymore — nothing to do.
+    return;
+  }
+  const cacheDir = join(repoRoot, "node_modules", ".bun");
+  let entries: string[] = [];
+  try {
+    entries = readSyncDir(cacheDir).map((e) => String(e));
+  } catch {
+    entries = [];
+  }
+  const candidate = entries.find((name) => name.startsWith("dugite@"));
+  const source = candidate
+    ? join(cacheDir, candidate, "node_modules", "dugite", "git")
+    : null;
+  if (!source || !existsSync(join(source, "bin"))) {
+    throw new Error(
+      "Could not find dugite's downloaded Git distribution in this repository " +
+        "(node_modules/.bun/dugite@*/node_modules/dugite/git). Run `bun install` " +
+        "at the repository root so dugite's postinstall runs before staging the " +
+        "engine payload.",
+    );
+  }
+  cpSync(source, join(stagedPackageDir, "git"), { recursive: true });
 }
 
 /**
