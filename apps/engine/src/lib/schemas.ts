@@ -488,21 +488,17 @@ export function shouldShowPnpmMinimumReleaseAgeWarning(
   );
 }
 
-/** Uses the configured default, or selects Agent whenever a model provider is ready. */
+/** New Caide defaults to local-agent (tool-calling) for Flutter builds. */
 export function getEffectiveDefaultChatMode(
   settings: UserSettings,
   envVars: Record<string, string | undefined>,
   freeAgentQuotaAvailable?: boolean,
 ): ChatMode {
   void freeAgentQuotaAvailable;
+  void envVars;
   if (settings.defaultChatMode) return settings.defaultChatMode;
-  const providerOptions = { settings, envVars };
-  const hasProvider =
-    isNonGoogleProviderSetup(settings, envVars) ||
-    isProviderSetup("google", providerOptions) ||
-    isProviderSetup("auto", providerOptions) ||
-    settings.selectedModel.provider === "chatgpt";
-  return hasProvider ? "local-agent" : "build";
+  // Flutter Builder: always Agent — Build tag-mode is legacy.
+  return "local-agent";
 }
 
 /** Legacy compatibility hook. CAIDE no longer limits Agent mode by subscription. */

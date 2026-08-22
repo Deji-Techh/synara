@@ -16,8 +16,10 @@ export function normalizeStoredChatMode(mode: string | null | undefined): ChatMo
 }
 
 export function getEffectiveDefaultChatMode(settings: ServerSettingsView): ChatMode {
-  // simplified for the new app
-  return "build";
+  // User wants local-agent always (dyad parity, flutter prompt, tool-calling).
+  // Keep simplified: new chats default to Agent with full tool access.
+  void settings;
+  return "local-agent";
 }
 
 export function getUnavailableChatModeReason({
