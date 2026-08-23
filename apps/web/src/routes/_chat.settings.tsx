@@ -128,7 +128,7 @@ const TIMESTAMP_FORMAT_LABELS = {
 const SIDEBAR_PROJECT_SORT_ORDER_LABELS = {
   updated_at: "Recently active",
   created_at: "Recently added",
-  manual: "Manual order",
+  manual: "Manual order (deprecated)",
 } as const;
 
 const SIDEBAR_THREAD_SORT_ORDER_LABELS = {
@@ -215,7 +215,6 @@ function SettingsRouteView() {
     ...(settings.sidebarThreadSortOrder !== defaults.sidebarThreadSortOrder
       ? ["Thread sort order"]
       : []),
-    ...(settings.showChatsSection !== defaults.showChatsSection ? ["Chats section"] : []),
     ...(settings.uiDensity !== defaults.uiDensity ? ["UI density"] : []),
     ...(settings.desktopAppIcon !== defaults.desktopAppIcon ? ["App icon"] : []),
     ...(settings.chatFontSizePx !== defaults.chatFontSizePx ? ["Base font size"] : []),
@@ -404,7 +403,7 @@ function SettingsRouteView() {
       <SettingsSection title="Sidebar organization">
         <SettingsRow
           title="Project order"
-          description="Controls how projects are arranged in the main sidebar."
+          description="Projects are newest-first. Recently active sorts by last message; Recently added sorts by creation date."
           resetAction={
             settings.sidebarProjectSortOrder !== defaults.sidebarProjectSortOrder ? (
               <SettingResetButton
@@ -419,24 +418,21 @@ function SettingsRouteView() {
           }
           control={
             <SettingsSelectControl
-              value={settings.sidebarProjectSortOrder}
+              value={settings.sidebarProjectSortOrder === "manual" ? "created_at" : settings.sidebarProjectSortOrder}
               onValueChange={(value) => {
-                if (value !== "updated_at" && value !== "created_at" && value !== "manual") {
+                if (value !== "updated_at" && value !== "created_at") {
                   return;
                 }
                 updateSettings({ sidebarProjectSortOrder: value });
               }}
               ariaLabel="Project sort order"
-              valueContent={SIDEBAR_PROJECT_SORT_ORDER_LABELS[settings.sidebarProjectSortOrder]}
+              valueContent={SIDEBAR_PROJECT_SORT_ORDER_LABELS[settings.sidebarProjectSortOrder === "manual" ? "created_at" : settings.sidebarProjectSortOrder]}
             >
               <SelectItem hideIndicator value="updated_at">
                 {SIDEBAR_PROJECT_SORT_ORDER_LABELS.updated_at}
               </SelectItem>
               <SelectItem hideIndicator value="created_at">
                 {SIDEBAR_PROJECT_SORT_ORDER_LABELS.created_at}
-              </SelectItem>
-              <SelectItem hideIndicator value="manual">
-                {SIDEBAR_PROJECT_SORT_ORDER_LABELS.manual}
               </SelectItem>
             </SettingsSelectControl>
           }
@@ -480,16 +476,7 @@ function SettingsRouteView() {
         />
       </SettingsSection>
 
-      <SettingsSection title="Sidebar sections">
-        {renderBooleanSettingRow({
-          settingKey: "showChatsSection",
-          title: "Chats",
-          description:
-            "Show the standalone Chats list in the sidebar footer (chats not tied to a project).",
-          resetLabel: "chats section",
-          ariaLabel: "Show the Chats section in the sidebar",
-        })}
-      </SettingsSection>
+      {/* showChatsSection removed in Flutter-first flatten — standalone Chats footer is retired. */}
 
       <div id={SETTINGS_TARGETS.environmentPanel} className="space-y-6">
         <SettingsSection title="Context panel">

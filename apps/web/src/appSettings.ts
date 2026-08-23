@@ -79,7 +79,7 @@ export type TimestampFormat = typeof TimestampFormat.Type;
 export const DEFAULT_TIMESTAMP_FORMAT: TimestampFormat = "locale";
 export const SidebarProjectSortOrder = Schema.Literals(["updated_at", "created_at", "manual"]);
 export type SidebarProjectSortOrder = typeof SidebarProjectSortOrder.Type;
-export const DEFAULT_SIDEBAR_PROJECT_SORT_ORDER: SidebarProjectSortOrder = "manual";
+export const DEFAULT_SIDEBAR_PROJECT_SORT_ORDER: SidebarProjectSortOrder = "created_at";
 export const SidebarThreadSortOrder = Schema.Literals(["updated_at", "created_at"]);
 export type SidebarThreadSortOrder = typeof SidebarThreadSortOrder.Type;
 export const DEFAULT_SIDEBAR_THREAD_SORT_ORDER: SidebarThreadSortOrder = "updated_at";
@@ -182,9 +182,10 @@ export const AppSettingsSchema = Schema.Struct({
   confirmTerminalTabClose: Schema.Boolean.pipe(withDefaults(() => true)),
   diffWordWrap: Schema.Boolean.pipe(withDefaults(() => false)),
   showPullRequestDiffColors: Schema.Boolean.pipe(withDefaults(() => true)),
-  // Local-only UI preference for hiding the standalone "Chats" list in the sidebar
-  // footer (rootless chats not tied to a project).
-  showChatsSection: Schema.Boolean.pipe(withDefaults(() => true)),
+  // Deprecated: standalone "Chats" list was removed in the Flutter-first flatten
+  // (M4a). Kept for decode compatibility so old localStorage payloads don't fail;
+  // the UI no longer exposes a toggle and the sidebar always hides this surface.
+  showChatsSection: Schema.Boolean.pipe(withDefaults(() => false)),
   // Local-only UI preferences: which optional sections of the chat Environment panel are
   // shown. The git block (Changes/Worktree/branch/Commit and Push) is always visible; these
   // toggle the sections beneath it via the panel header's gear menu.
@@ -526,6 +527,12 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
     hiddenProviders: normalizeHiddenProviders(settings.hiddenProviders),
     providerOrder: normalizeProviderOrder(settings.providerOrder),
     hiddenModels: [],
+    // M4a flatten: manual project ordering is retired; newest-first is the only
+    // supported order. Migrate old manual payloads to the new default.
+    sidebarProjectSortOrder:
+      settings.sidebarProjectSortOrder === "manual" ? "created_at" : settings.sidebarProjectSortOrder,
+    // Standalone Chats section is retired; force hidden.
+    showChatsSection: false,
   };
 }
 
