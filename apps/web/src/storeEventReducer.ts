@@ -604,7 +604,9 @@ function mergeStreamingMessage(
   } else if (existingMessage.text.startsWith(incomingMessage.text)) {
     nextText = existingMessage.text;
   } else {
-    nextText = `${existingMessage.text}${incomingMessage.text}`;
+    // Divergent overlap (patch vs full messages race) — prefer the newer
+    // full message to avoid double-append of the common prefix.
+    nextText = incomingMessage.text;
   }
   const nextAttachments = incomingMessage.attachments ?? existingMessage.attachments;
   const nextSkills =
