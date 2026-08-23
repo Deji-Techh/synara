@@ -462,7 +462,9 @@ const SKILL_ORIGIN_ROOTS = {
   },
 } as const satisfies Record<SkillsHomeOrigin, SkillOriginRootSpec>;
 
-const PROVIDER_SKILL_ORIGIN_PREFERENCES: Partial<Record<ProviderKind, readonly SkillsHomeOrigin[]>> = {
+const PROVIDER_SKILL_ORIGIN_PREFERENCES: Partial<
+  Record<ProviderKind, readonly SkillsHomeOrigin[]>
+> = {
   engine: ["engine", "agents"],
   groq: ["agents"],
   opencodeZen: ["opencode", "agents"],

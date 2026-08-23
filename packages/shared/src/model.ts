@@ -79,7 +79,7 @@ export function getDefaultModel(provider?: ProviderWithDefaultModel): ModelSlug;
 export function getDefaultModel(provider: ProviderKind): ModelSlug | null;
 export function getDefaultModel(provider: ProviderKind = "openai"): ModelSlug | null {
   return hasDefaultModel(provider)
-    ? DEFAULT_MODEL_BY_PROVIDER[provider as ProviderWithDefaultModel] ?? null
+    ? (DEFAULT_MODEL_BY_PROVIDER[provider as ProviderWithDefaultModel] ?? null)
     : null;
 }
 

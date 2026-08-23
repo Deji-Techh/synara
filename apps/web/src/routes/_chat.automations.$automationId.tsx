@@ -1023,13 +1023,7 @@ function ModelOptionRows({
       modelSelection.options as ProviderOptions | undefined,
       optionPatch,
     );
-    onChange(
-      buildModelSelection(
-        provider,
-        model,
-        nextOptions,
-      ),
-    );
+    onChange(buildModelSelection(provider, model, nextOptions));
   };
 
   return (

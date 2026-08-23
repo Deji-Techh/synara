@@ -101,7 +101,8 @@ export function CreateAppDialog(props: {
         <DialogHeader>
           <DialogTitle>Create new app</DialogTitle>
           <DialogDescription>
-            Flutter-first. This creates <code>~/caide-apps/{slug || "..."}</code> and opens its first chat.
+            Flutter-first. This creates <code>~/caide-apps/{slug || "..."}</code> and opens its
+            first chat.
           </DialogDescription>
         </DialogHeader>
         <DialogPanel className="space-y-5">
@@ -164,14 +165,20 @@ export function CreateAppDialog(props: {
                     <div className={active ? "text-sm font-semibold" : "text-sm font-medium"}>
                       {tpl.label}
                     </div>
-                    <div className={active ? "text-xs text-background/70" : "text-xs text-muted-foreground"}>
+                    <div
+                      className={
+                        active ? "text-xs text-background/70" : "text-xs text-muted-foreground"
+                      }
+                    >
                       {tpl.description}
                     </div>
                   </button>
                 );
               })}
             </div>
-            <p className="text-[11px] text-muted-foreground">All templates are Flutter. Blank is the most minimal starting point.</p>
+            <p className="text-[11px] text-muted-foreground">
+              All templates are Flutter. Blank is the most minimal starting point.
+            </p>
           </div>
 
           {error ? <p className="text-xs text-destructive">{error}</p> : null}
@@ -180,7 +187,11 @@ export function CreateAppDialog(props: {
           <Button variant="ghost" onClick={() => props.onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
-          <Button variant="prominent" onClick={() => void handleSubmit()} disabled={submitting || Boolean(nameError)}>
+          <Button
+            variant="prominent"
+            onClick={() => void handleSubmit()}
+            disabled={submitting || Boolean(nameError)}
+          >
             {submitting ? "Creating…" : "Create app"}
           </Button>
         </DialogFooter>

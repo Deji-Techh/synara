@@ -792,9 +792,9 @@ describe("TerminalManager", () => {
       1_200,
     );
 
-    expect(events.some((event) => event.type === "activity" && (event.cliKind as any) === "codex")).toBe(
-      false,
-    );
+    expect(
+      events.some((event) => event.type === "activity" && (event.cliKind as any) === "codex"),
+    ).toBe(false);
     manager.dispose();
   });
 
@@ -813,9 +813,9 @@ describe("TerminalManager", () => {
     process.emitData("Claude Code v1.2.3 is available in this dev-server log\n");
     await waitFor(() => events.some((event) => event.type === "output"));
 
-    expect(events.some((event) => event.type === "activity" && (event.cliKind as any) === "claude")).toBe(
-      false,
-    );
+    expect(
+      events.some((event) => event.type === "activity" && (event.cliKind as any) === "claude"),
+    ).toBe(false);
     manager.dispose();
   });
 
@@ -828,9 +828,9 @@ describe("TerminalManager", () => {
 
     await manager.open(openInput());
     await manager.write({ threadId: "thread-1", data: "codex\r" });
-    expect(events.some((event) => event.type === "activity" && (event.cliKind as any) === "codex")).toBe(
-      true,
-    );
+    expect(
+      events.some((event) => event.type === "activity" && (event.cliKind as any) === "codex"),
+    ).toBe(true);
 
     await manager.write({ threadId: "thread-1", data: "bun run dev\r" });
     expect(events.at(-1)).toMatchObject({
@@ -864,9 +864,9 @@ describe("TerminalManager", () => {
 
     await manager.open(openInput());
     await manager.write({ threadId: "thread-1", data: "codex\r" });
-    expect(events.some((event) => event.type === "activity" && (event.cliKind as any) === "codex")).toBe(
-      true,
-    );
+    expect(
+      events.some((event) => event.type === "activity" && (event.cliKind as any) === "codex"),
+    ).toBe(true);
 
     subprocessActivity = {
       cliKind: "codex",

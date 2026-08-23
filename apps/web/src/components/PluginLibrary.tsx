@@ -82,8 +82,10 @@ type PluginBrandArtwork = {
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
-const PROVIDER_ICON: Record<ProviderKind, React.FC<React.SVGProps<SVGSVGElement>>> =
-  PROVIDER_ICON_COMPONENT_BY_PROVIDER;
+const PROVIDER_ICON: Record<
+  ProviderKind,
+  React.FC<React.SVGProps<SVGSVGElement>>
+> = PROVIDER_ICON_COMPONENT_BY_PROVIDER;
 const KNOWN_PLUGIN_BRANDS: Record<string, PluginBrandArtwork> = {
   canva: { icon: SiCanva, color: "#00C4CC" },
   figma: { icon: SiFigma, color: "#F24E1E" },

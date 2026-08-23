@@ -30,7 +30,10 @@ export const CaideAppBlueprintCard: React.FC<CaideAppBlueprintCardProps> = ({
   };
 
   return (
-    <CaideCard accentColor="purple" className="border-purple-500/30 bg-gradient-to-b from-purple-500/[0.04] to-transparent">
+    <CaideCard
+      accentColor="purple"
+      className="border-purple-500/30 bg-gradient-to-b from-purple-500/[0.04] to-transparent"
+    >
       <CaideCardHeader
         icon={
           <div className="h-6 w-6 rounded-lg bg-purple-500/15 text-purple-500 flex items-center justify-center font-bold text-xs">
@@ -40,12 +43,17 @@ export const CaideAppBlueprintCard: React.FC<CaideAppBlueprintCardProps> = ({
       >
         <div className="flex-1 flex items-center justify-between">
           <div>
-            <div className="text-[10px] uppercase font-bold tracking-wider text-purple-500">App Blueprint</div>
+            <div className="text-[10px] uppercase font-bold tracking-wider text-purple-500">
+              App Blueprint
+            </div>
             <div className="text-sm font-semibold text-foreground">{appName}</div>
           </div>
           {primaryColor && (
             <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 border border-border/40 text-[11px]">
-              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: primaryColor }} />
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: primaryColor }}
+              />
               <span className="font-mono text-muted-foreground">{primaryColor}</span>
             </div>
           )}
@@ -53,21 +61,20 @@ export const CaideAppBlueprintCard: React.FC<CaideAppBlueprintCardProps> = ({
       </CaideCardHeader>
       <div className="px-3.5 pb-3 space-y-2.5 text-xs">
         {designDirection && (
-          <p className="text-muted-foreground leading-relaxed">
-            {designDirection}
-          </p>
+          <p className="text-muted-foreground leading-relaxed">{designDirection}</p>
         )}
         {description && (
-          <p className="text-muted-foreground/90 text-[11px] italic">
-            {description}
-          </p>
+          <p className="text-muted-foreground/90 text-[11px] italic">{description}</p>
         )}
         {features.length > 0 && (
           <div className="space-y-1 pt-1">
             <div className="text-[11px] font-medium text-foreground/80">Key Features:</div>
             <div className="flex flex-wrap gap-1.5">
               {features.map((feat, idx) => (
-                <span key={idx} className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-300 text-[11px] font-medium">
+                <span
+                  key={idx}
+                  className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-300 text-[11px] font-medium"
+                >
                   {feat}
                 </span>
               ))}

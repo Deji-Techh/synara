@@ -25,7 +25,6 @@ import {
   BugIcon,
   CheckIcon,
   ChevronDownIcon,
-  ChevronUpIcon,
   CircleAlertIcon,
   DeviceRecordStopIcon,
   ExternalLinkIcon,
@@ -53,13 +52,7 @@ import { cn } from "~/lib/utils";
 import { buildLocalImageUrl } from "~/lib/localImageUrls";
 import { PanelStateMessage } from "./PanelStateMessage";
 import { toastManager } from "../ui/toast";
-import {
-  Dialog,
-  DialogPopup,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "../ui/dialog";
+import { Dialog, DialogPopup, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
 import { Button } from "../ui/button";
 import {
   analyzeFailed,
@@ -192,8 +185,10 @@ function isDeviceNotFoundError(message: string): boolean {
     lower.includes("no supported devices") ||
     (lower.includes("emulator") && lower.includes("linux")) ||
     (lower.includes("simulator") && lower.includes("macos")) ||
-    lower.includes("not found") ||
-    lower.includes("could not find")
+    (lower.includes("not found") &&
+      (lower.includes("device") || lower.includes("emulator") || lower.includes("simulator"))) ||
+    (lower.includes("could not find") &&
+      (lower.includes("device") || lower.includes("emulator") || lower.includes("simulator")))
   );
 }
 
@@ -1192,7 +1187,9 @@ export function PreviewPanel(props: {
     const nativeAvailable = hasNativeDeviceFor(previewDevices, requestedDevice);
     const initialDevice = nativeAvailable === false ? "web-server" : requestedDevice;
     const initialDeviceId =
-      initialDevice === "web-server" ? undefined : pickNativeDeviceId(previewDevices, initialDevice);
+      initialDevice === "web-server"
+        ? undefined
+        : pickNativeDeviceId(previewDevices, initialDevice);
 
     if (initialDevice !== requestedDevice) {
       toastManager.add({
@@ -1229,7 +1226,9 @@ export function PreviewPanel(props: {
           });
           startWith("web-server", undefined)
             .then((result) => {
-              setPanelState((previous) => previewStarted(previous, result.url, [], result.kind ?? null));
+              setPanelState((previous) =>
+                previewStarted(previous, result.url, [], result.kind ?? null),
+              );
             })
             .catch((retryError: unknown) => {
               const retryMessage =
@@ -1510,7 +1509,10 @@ export function PreviewPanel(props: {
           >
             <TerminalIcon className="size-3.5" />
             {panelState.logs.length > 0 && panelState.status === "failed" && (
-              <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-red-500" aria-hidden="true" />
+              <span
+                className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-red-500"
+                aria-hidden="true"
+              />
             )}
           </button>
           <StatusPill state={panelState} />
@@ -1578,64 +1580,64 @@ export function PreviewPanel(props: {
                 <div aria-hidden className={DEVICE_RAIL_HEIGHT_CLASS} />
                 <DeviceScreen
                   className="min-h-0 w-full flex-1 min-w-0 overflow-hidden self-stretch"
-                      kind={statusFrameKind}
-                      pixelWidth={statusFrameKind === "androidPhone" ? 1080 : undefined}
-                      pixelHeight={statusFrameKind === "androidPhone" ? 2400 : undefined}
-                      landscape={landscape}
-                    >
-                      <div className="flex h-full w-full flex-col items-center justify-center bg-black text-center">
-                        {panelState.status === "starting" ? (
-                          <div className="flex flex-col items-center gap-3 px-[12%] text-center">
-                            <p className="text-[11px] font-medium text-white/90">
-                              Starting Flutter preview…
-                            </p>
-                            <span className="flex items-center gap-1.5 text-[10px] text-white/45">
-                              <LoaderIcon className="size-3 animate-spin" />
-                              Compiling Flutter bundle
-                            </span>
-                          </div>
-                        ) : panelState.status === "failed" ? (
-                          <div className="flex flex-col items-center gap-3 px-[12%] text-center">
-                            <p className="max-w-[240px] break-words text-[11px] leading-snug text-red-400">
-                              {panelState.error ?? "Failed to start"}
-                            </p>
-                            <button
-                              type="button"
-                              onClick={handleStart}
-                              className="rounded-full bg-white px-4 py-1.5 text-[11px] font-medium text-black transition-opacity hover:opacity-90"
-                            >
-                              Retry
-                            </button>
-                          </div>
-                        ) : isRunning && panelState.url !== null ? (
-                          isNativePreview ? (
-                            nativeScreen
-                          ) : (
-                            <iframe
-                              key={panelState.reloadToken}
-                              src={panelState.url}
-                              title="Flutter preview"
-                              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
-                              className="h-full w-full border-0 bg-white"
-                            />
-                          )
-                        ) : (
-                          <div className="flex flex-col items-center justify-center gap-1 px-[12%] text-center">
-                            <p className="text-balance text-[11px] leading-snug text-white/45">
-                              Choose a simulator or start previewing here.
-                            </p>
-                            <button
-                              type="button"
-                              onClick={handleStart}
-                              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-[11px] font-medium text-black transition-opacity hover:opacity-90"
-                            >
-                              <PlayIcon className="size-3 fill-black" />
-                              Start Preview
-                            </button>
-                          </div>
-                        )}
+                  kind={statusFrameKind}
+                  pixelWidth={statusFrameKind === "androidPhone" ? 1080 : undefined}
+                  pixelHeight={statusFrameKind === "androidPhone" ? 2400 : undefined}
+                  landscape={landscape}
+                >
+                  <div className="flex h-full w-full flex-col items-center justify-center bg-black text-center">
+                    {panelState.status === "starting" ? (
+                      <div className="flex flex-col items-center gap-3 px-[12%] text-center">
+                        <p className="text-[11px] font-medium text-white/90">
+                          Starting Flutter preview…
+                        </p>
+                        <span className="flex items-center gap-1.5 text-[10px] text-white/45">
+                          <LoaderIcon className="size-3 animate-spin" />
+                          Compiling Flutter bundle
+                        </span>
                       </div>
-                    </DeviceScreen>
+                    ) : panelState.status === "failed" ? (
+                      <div className="flex flex-col items-center gap-3 px-[12%] text-center">
+                        <p className="max-w-[240px] break-words text-[11px] leading-snug text-red-400">
+                          {panelState.error ?? "Failed to start"}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleStart}
+                          className="rounded-full bg-white px-4 py-1.5 text-[11px] font-medium text-black transition-opacity hover:opacity-90"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    ) : isRunning && panelState.url !== null ? (
+                      isNativePreview ? (
+                        nativeScreen
+                      ) : (
+                        <iframe
+                          key={panelState.reloadToken}
+                          src={panelState.url}
+                          title="Flutter preview"
+                          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
+                          className="h-full w-full border-0 bg-white"
+                        />
+                      )
+                    ) : (
+                      <div className="flex flex-col items-center justify-center gap-1 px-[12%] text-center">
+                        <p className="text-balance text-[11px] leading-snug text-white/45">
+                          Choose a simulator or start previewing here.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleStart}
+                          className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-[11px] font-medium text-black transition-opacity hover:opacity-90"
+                        >
+                          <PlayIcon className="size-3 fill-black" />
+                          Start Preview
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </DeviceScreen>
                 <div className="relative z-10 flex w-full shrink-0 justify-center">
                   <DeviceControlRail
                     disabled={!isRunning}
@@ -1647,7 +1649,6 @@ export function PreviewPanel(props: {
                 </div>
               </div>
             )}
-
           </div>
         )}
 

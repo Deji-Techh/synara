@@ -10,11 +10,7 @@ import { HttpRouter } from "effect/unstable/http";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { ServerAuth, type ServerAuthShape } from "./auth/Services/ServerAuth";
-import {
-  resolveDefaultChatWorkspaceRoot,
-  ServerConfig,
-  type ServerConfigShape,
-} from "./config";
+import { resolveDefaultChatWorkspaceRoot, ServerConfig, type ServerConfigShape } from "./config";
 import {
   editorIconEffectRouteLayer,
   isLegacyTokenAuthorized,

@@ -224,7 +224,9 @@ describe("useProviderModelCatalog", () => {
       modelHintByProvider: MODEL_HINTS,
     }).at(-1);
 
-    expect(catalog?.modelOptionsByProvider.groq.map((model) => model.slug)).toContain("llama-3.3-70b");
+    expect(catalog?.modelOptionsByProvider.groq.map((model) => model.slug)).toContain(
+      "llama-3.3-70b",
+    );
     expect(catalog?.loadingModelProviders.groq).toBe(false);
     expect(catalog?.selectedProviderModelsLoading).toBe(false);
     expect(catalog?.runtimeModelsByProvider.groq).toEqual([

@@ -45,10 +45,7 @@ interface CaideCardHeaderProps {
   accentColor?: keyof typeof ACCENT_BORDER_MAP;
 }
 
-export const CaideCardHeader: React.FC<CaideCardHeaderProps> = ({
-  children,
-  icon,
-}) => {
+export const CaideCardHeader: React.FC<CaideCardHeaderProps> = ({ children, icon }) => {
   return (
     <div className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-foreground/90 font-medium select-none">
       {icon && <div className="shrink-0 text-muted-foreground">{icon}</div>}

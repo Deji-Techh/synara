@@ -1446,7 +1446,9 @@ export async function handleLocalAgentStream(
       // Intercept and handle text-based / DSML tool calls (e.g. DeepSeek DSML format: <｜DSML｜tool_calls> ... </｜DSML｜tool_calls>)
       const extractedDsmlCalls = extractDsmlOrTextToolCalls(fullResponse);
       if (extractedDsmlCalls.length > 0) {
-        logger.info(`Detected ${extractedDsmlCalls.length} text/DSML tool call(s) in chat ${req.chatId}`);
+        logger.info(
+          `Detected ${extractedDsmlCalls.length} text/DSML tool call(s) in chat ${req.chatId}`,
+        );
 
         // Strip the raw DSML/XML tokens from fullResponse and update DB/UI so raw tags never leak
         for (const call of extractedDsmlCalls) {
@@ -2319,13 +2321,15 @@ function extractDsmlOrTextToolCalls(text: string): ExtractedTextToolCall[] {
   let dsmlMatch: RegExpExecArray | null;
   while ((dsmlMatch = dsmlBlockRegex.exec(text)) !== null) {
     const blockContent = dsmlMatch[1];
-    const invokeRegex = /<[|｜]DSML[|｜]invoke\s+name=["']([^"']+)["']>([\s\S]*?)<\/[|｜]DSML[|｜]invoke>/gi;
+    const invokeRegex =
+      /<[|｜]DSML[|｜]invoke\s+name=["']([^"']+)["']>([\s\S]*?)<\/[|｜]DSML[|｜]invoke>/gi;
     let invokeMatch: RegExpExecArray | null;
     while ((invokeMatch = invokeRegex.exec(blockContent)) !== null) {
       const toolName = invokeMatch[1].trim();
       const paramBlock = invokeMatch[2];
       const args: Record<string, any> = {};
-      const paramRegex = /<[|｜]DSML[|｜]parameter\s+name=["']([^"']+)["'][^>]*>([\s\S]*?)<\/[|｜]DSML[|｜]parameter>/gi;
+      const paramRegex =
+        /<[|｜]DSML[|｜]parameter\s+name=["']([^"']+)["'][^>]*>([\s\S]*?)<\/[|｜]DSML[|｜]parameter>/gi;
       let paramMatch: RegExpExecArray | null;
       while ((paramMatch = paramRegex.exec(paramBlock)) !== null) {
         const paramName = paramMatch[1].trim();
@@ -2345,13 +2349,15 @@ function extractDsmlOrTextToolCalls(text: string): ExtractedTextToolCall[] {
 
   // Bare <｜DSML｜invoke name="..."> ... </｜DSML｜invoke>
   if (calls.length === 0) {
-    const bareInvokeRegex = /<[|｜]DSML[|｜]invoke\s+name=["']([^"']+)["']>([\s\S]*?)<\/[|｜]DSML[|｜]invoke>/gi;
+    const bareInvokeRegex =
+      /<[|｜]DSML[|｜]invoke\s+name=["']([^"']+)["']>([\s\S]*?)<\/[|｜]DSML[|｜]invoke>/gi;
     let bareMatch: RegExpExecArray | null;
     while ((bareMatch = bareInvokeRegex.exec(text)) !== null) {
       const toolName = bareMatch[1].trim();
       const paramBlock = bareMatch[2];
       const args: Record<string, any> = {};
-      const paramRegex = /<[|｜]DSML[|｜]parameter\s+name=["']([^"']+)["'][^>]*>([\s\S]*?)<\/[|｜]DSML[|｜]parameter>/gi;
+      const paramRegex =
+        /<[|｜]DSML[|｜]parameter\s+name=["']([^"']+)["'][^>]*>([\s\S]*?)<\/[|｜]DSML[|｜]parameter>/gi;
       let paramMatch: RegExpExecArray | null;
       while ((paramMatch = paramRegex.exec(paramBlock)) !== null) {
         const paramName = paramMatch[1].trim();

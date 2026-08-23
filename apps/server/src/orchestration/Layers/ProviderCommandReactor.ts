@@ -1283,7 +1283,8 @@ const make = Effect.gen(function* () {
               previousModelSelection ?? thread.modelSelection,
               requestedModelSelection,
             )
-          : ((currentProvider as string) === "openai" || (currentProvider as string) === "openai") &&
+          : ((currentProvider as string) === "openai" ||
+              (currentProvider as string) === "openai") &&
             !Equal.equals(previousModelSelection, requestedModelSelection));
 
       if (

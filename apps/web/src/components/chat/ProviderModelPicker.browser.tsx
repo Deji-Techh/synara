@@ -8,9 +8,7 @@ import type { ProviderModelOption } from "../../providerModelOptions";
 import { FAVORITE_MODEL_STORAGE_KEYS } from "../../lib/modelFavorites";
 
 const MODEL_OPTIONS_BY_PROVIDER = {
-  engine: [
-    { slug: "engine-standard", name: "Engine Standard" },
-  ],
+  engine: [{ slug: "engine-standard", name: "Engine Standard" }],
   openai: [
     { slug: "gpt-5.4", name: "GPT-5.4" },
     { slug: "gpt-5.4-mini", name: "GPT-5.4 Mini" },
@@ -66,9 +64,7 @@ const MODEL_OPTIONS_BY_PROVIDER = {
     { slug: "nemotron-3-ultra-free", name: "Nemotron 3 Ultra Free" },
     { slug: "big-pickle", name: "Big Pickle" },
   ],
-  opencodeGo: [
-    { slug: "opencode/nemotron-3-super-free", name: "Nemotron 3 Super Free" },
-  ],
+  opencodeGo: [{ slug: "opencode/nemotron-3-super-free", name: "Nemotron 3 Super Free" }],
 } as const satisfies Record<ProviderKind, ReadonlyArray<ProviderModelOption & { slug: ModelSlug }>>;
 
 const MANY_OPENCODE_MODELS = Array.from({ length: 16 }, (_, index) => ({

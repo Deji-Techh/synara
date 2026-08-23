@@ -99,10 +99,7 @@ export function useKanbanTaskScratchDraft(input: { readonly defaultProvider: Pro
     useComposerDraftStore.getState().setMentions(scratchThreadId, []);
   }, [scratchThreadId, selectedProvider]);
 
-  const handleProviderModelChange = (
-    provider: ProviderKind,
-    model: ModelSlug,
-  ) => {
+  const handleProviderModelChange = (provider: ProviderKind, model: ModelSlug) => {
     const store = useComposerDraftStore.getState();
     const nextSelection = buildModelSelection(provider, model);
     // Mirrors the composer: update the scratch draft and persist the sticky selection.

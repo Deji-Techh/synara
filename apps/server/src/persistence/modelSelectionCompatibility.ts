@@ -13,7 +13,10 @@ const NON_DROID_MODEL_SLUGS = new Set(
   ),
 );
 const DROID_ONLY_MODEL_SLUGS = new Set(
-  ((MODEL_OPTIONS_BY_PROVIDER as Record<string, readonly { slug: string }[] | undefined>).groq ?? [])
+  (
+    (MODEL_OPTIONS_BY_PROVIDER as Record<string, readonly { slug: string }[] | undefined>).groq ??
+    []
+  )
     .map((model) => model.slug.toLowerCase())
     .filter((slug) => !NON_DROID_MODEL_SLUGS.has(slug)),
 );
@@ -42,7 +45,8 @@ function inferProviderFromLabel(label: string): ModelProviderKind | undefined {
   if (lowerLabel.includes("engine")) return "engine";
   if (lowerLabel.includes("opencode") && lowerLabel.includes("go")) return "opencodeGo";
   if (lowerLabel.includes("opencode")) return "opencodeZen";
-  if (lowerLabel.includes("openai") || lowerLabel.includes("codex") || lowerLabel.includes("droid")) return "openai";
+  if (lowerLabel.includes("openai") || lowerLabel.includes("codex") || lowerLabel.includes("droid"))
+    return "openai";
   if (lowerLabel.includes("anthropic") || lowerLabel.includes("claude")) return "anthropic";
   if (lowerLabel.includes("google") || lowerLabel.includes("gemini")) return "google";
   if (lowerLabel.includes("deepseek")) return "deepseek";

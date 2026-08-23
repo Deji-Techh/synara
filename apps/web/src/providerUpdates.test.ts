@@ -3,7 +3,12 @@
 // Layer: Web utility tests
 // Exports: Vitest suites for providerUpdates.ts
 
-import { DEFAULT_SERVER_SETTINGS_VIEW, type ProviderKind, type ServerProviderStatus, type ServerSettings } from "@caide/contracts";
+import {
+  DEFAULT_SERVER_SETTINGS_VIEW,
+  type ProviderKind,
+  type ServerProviderStatus,
+  type ServerSettings,
+} from "@caide/contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {

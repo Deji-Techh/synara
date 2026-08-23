@@ -9,10 +9,7 @@ import { isWorkspaceRootWithin } from "@caide/shared/threadWorkspace";
 
 import { getCaideAppsBaseDirectory } from "./paths/caideApps";
 
-const SCAFFOLD_CANDIDATES = [
-  "scaffold-flutter",
-  "apps/engine/scaffold-flutter",
-];
+const SCAFFOLD_CANDIDATES = ["scaffold-flutter", "apps/engine/scaffold-flutter"];
 
 async function runFlutterCreate(workspaceRoot: string, appName: string): Promise<boolean> {
   try {

@@ -101,7 +101,6 @@ describe("resolveDefaultChatWorkspaceRoot", () => {
   });
 });
 
-
 describe("resolveCanonicalWorkspaceRoots", () => {
   it("canonicalizes a symlinked home directory to match project row realpaths", async () => {
     const root = makeTempDir();

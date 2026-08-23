@@ -136,7 +136,8 @@ function startPreviewWatcher(entry: PreviewEntry): void {
         target,
         { recursive: true } as unknown as fs.WatchOptions,
         (_event: string, filename: string | Buffer | null) => {
-          const name = typeof filename === "string" ? filename : filename ? filename.toString() : "";
+          const name =
+            typeof filename === "string" ? filename : filename ? filename.toString() : "";
           if (
             name.includes(".dart_tool") ||
             name.includes(`${path.sep}build${path.sep}`) ||
@@ -155,8 +156,10 @@ function startPreviewWatcher(entry: PreviewEntry): void {
       // recursive not supported — watch non-recursive and fan out to subdirs
       try {
         const watcher = fs.watch(target, (_event: string, filename: string | Buffer | null) => {
-          const name = typeof filename === "string" ? filename : filename ? filename.toString() : "";
-          if (name.includes(".dart_tool") || name.includes("build") || name.includes(".git")) return;
+          const name =
+            typeof filename === "string" ? filename : filename ? filename.toString() : "";
+          if (name.includes(".dart_tool") || name.includes("build") || name.includes(".git"))
+            return;
           scheduleReload();
         });
         watcher.on("error", () => {});

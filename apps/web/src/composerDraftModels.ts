@@ -215,11 +215,7 @@ export function reconcileProviderScopedModelSelection(
     return requested;
   }
   if (current.model === requested.model) {
-    return makeModelSelection(
-      requested.provider,
-      requested.model,
-      current.options,
-    );
+    return makeModelSelection(requested.provider, requested.model, current.options);
   }
   return requested;
 }
@@ -242,11 +238,7 @@ export function legacySyncModelSelectionOptions(
     return null;
   }
   const options = modelOptions?.[modelSelection.provider];
-  return makeModelSelection(
-    modelSelection.provider,
-    modelSelection.model,
-    options,
-  );
+  return makeModelSelection(modelSelection.provider, modelSelection.model, options);
 }
 
 export function legacyMergeModelSelectionIntoProviderModelOptions(

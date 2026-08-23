@@ -530,7 +530,9 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
     // M4a flatten: manual project ordering is retired; newest-first is the only
     // supported order. Migrate old manual payloads to the new default.
     sidebarProjectSortOrder:
-      settings.sidebarProjectSortOrder === "manual" ? "created_at" : settings.sidebarProjectSortOrder,
+      settings.sidebarProjectSortOrder === "manual"
+        ? "created_at"
+        : settings.sidebarProjectSortOrder,
     // Standalone Chats section is retired; force hidden.
     showChatsSection: false,
   };

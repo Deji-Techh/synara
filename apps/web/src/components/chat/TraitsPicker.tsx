@@ -351,10 +351,7 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
       return;
     }
     const optionId =
-      primarySelectDescriptorId ??
-      (provider === "engine"
-        ? "thinkingLevel"
-        : "reasoningEffort");
+      primarySelectDescriptorId ?? (provider === "engine" ? "thinkingLevel" : "reasoningEffort");
     commitTrait(buildProviderOptionPatch(provider, optionId, nextOption.value));
   };
 

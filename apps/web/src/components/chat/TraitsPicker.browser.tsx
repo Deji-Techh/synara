@@ -271,14 +271,14 @@ describe("TraitsPicker (Claude)", () => {
     await page.getByRole("button").click();
     await page.getByRole("menuitemradio", { name: "Max" }).click();
 
-    expect(
-      useComposerDraftStore.getState().stickyModelSelectionByProvider.anthropic,
-    ).toMatchObject({
-      provider: "anthropic",
-      options: {
-        reasoningEffort: "max",
+    expect(useComposerDraftStore.getState().stickyModelSelectionByProvider.anthropic).toMatchObject(
+      {
+        provider: "anthropic",
+        options: {
+          reasoningEffort: "max",
+        },
       },
-    });
+    );
   });
 
   it("shows the non-default auto-compact budget in the trigger label", async () => {
@@ -777,7 +777,9 @@ describe("TraitsPicker (OpenCode)", () => {
 
     await page.getByRole("menuitemradio", { name: /^High$/u }).click();
 
-    expect(useComposerDraftStore.getState().stickyModelSelectionByProvider.opencodeGo).toMatchObject({
+    expect(
+      useComposerDraftStore.getState().stickyModelSelectionByProvider.opencodeGo,
+    ).toMatchObject({
       provider: "opencodeGo",
       options: {
         reasoningEffort: "high",

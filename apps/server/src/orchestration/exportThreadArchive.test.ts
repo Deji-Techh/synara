@@ -65,7 +65,10 @@ function sampleThread(): OrchestrationThread {
   return {
     id: "thread-abc",
     title: "Export Demo",
-    modelSelection: { provider: "groq", model: "llama-3.3-70b-versatile" } as OrchestrationThread["modelSelection"],
+    modelSelection: {
+      provider: "groq",
+      model: "llama-3.3-70b-versatile",
+    } as OrchestrationThread["modelSelection"],
     runtimeMode: "default" as OrchestrationThread["runtimeMode"],
     messages: [
       {

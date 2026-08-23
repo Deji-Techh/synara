@@ -652,7 +652,9 @@ export const getSystemPromptForChatMode = ({
     (testingEnabled ? `\n\n${TEST_WRITING_GUIDANCE}` : "") +
     (shouldAppendNitroNudge ? `\n\n${BUILD_SERVER_LAYER_NUDGE}` : "");
   const isFlutterForTurbo = frameworkType === "flutter";
-  return buildPrompt + (enableTurboEditsV2 && !isFlutterForTurbo ? TURBO_EDITS_V2_SYSTEM_PROMPT : "");
+  return (
+    buildPrompt + (enableTurboEditsV2 && !isFlutterForTurbo ? TURBO_EDITS_V2_SYSTEM_PROMPT : "")
+  );
 };
 
 export const readAiRules = async (caideAppPath: string) => {

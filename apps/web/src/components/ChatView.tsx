@@ -2333,11 +2333,7 @@ export default function ChatView({
         selectedModelOptionsForDispatch ?? draftModelSelectionForSelectedProvider.options,
       );
     }
-    return buildModelSelection(
-      selectedProvider,
-      selectedModel,
-      selectedModelOptionsForDispatch,
-    );
+    return buildModelSelection(selectedProvider, selectedModel, selectedModelOptionsForDispatch);
   }, [
     draftModelSelectionForSelectedProvider,
     selectedModel,
@@ -2366,8 +2362,7 @@ export default function ChatView({
       : (activeThread?.modelSelection ?? activeProject?.defaultModelSelection ?? null);
   const providerModelsLoading = selectedProviderModelsLoading;
   const selectedProviderRequiresRuntimeModels =
-    selectedProvider === "openai" ||
-    selectedProvider === "google";
+    selectedProvider === "openai" || selectedProvider === "google";
   const showComposerModelBootstrapSkeleton = shouldShowComposerModelBootstrapSkeleton({
     selectedProvider,
     selectedModel,
@@ -6187,11 +6182,7 @@ export default function ChatView({
         model: resolvedModel,
         runtimeModels: runtimeModelsByProvider[provider],
       });
-      const nextModelSelection = buildModelSelection(
-        provider,
-        resolvedModel,
-        undefined,
-      );
+      const nextModelSelection = buildModelSelection(provider, resolvedModel, undefined);
       const providerStatus = findProviderStatus(providerStatuses, provider);
       const nextRuntimeMode =
         runtimeMode === "auto" &&

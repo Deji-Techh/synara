@@ -75,7 +75,9 @@ function ChatIndexRouteView() {
   // instead of auto-minting a blank chat that litters the Chats container.
   const hasRestoreTarget = (() => {
     try {
-      const r = resolveRestoreRoute({ availableSplitViewIds: new Set(Object.keys(useSplitViewStore.getState().splitViewsById)) });
+      const r = resolveRestoreRoute({
+        availableSplitViewIds: new Set(Object.keys(useSplitViewStore.getState().splitViewsById)),
+      });
       return r !== null;
     } catch {
       return false;

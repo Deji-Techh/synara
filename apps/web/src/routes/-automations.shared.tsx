@@ -903,9 +903,7 @@ export function reconcileAutomationFormAutoModeSupport(
 ): AutomationFormState {
   const runtimeMode =
     !supported && form.runtimeMode === "auto" ? "approval-required" : form.runtimeMode;
-  return runtimeMode !== form.runtimeMode
-    ? { ...form, runtimeMode }
-    : form;
+  return runtimeMode !== form.runtimeMode ? { ...form, runtimeMode } : form;
 }
 
 export function AutomationDialog({

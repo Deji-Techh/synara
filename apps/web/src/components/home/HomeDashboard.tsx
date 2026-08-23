@@ -44,7 +44,9 @@ export function HomeDashboard() {
     if (!canCreate) return;
     // Store derived name in sessionStorage so CreateAppDialog can pick it up as initial suggestion
     const derived = deriveAppNameFromPrompt(brief) || generateCuteAppName();
-    try { sessionStorage.setItem("caide:home-derived-app-name", derived); } catch {}
+    try {
+      sessionStorage.setItem("caide:home-derived-app-name", derived);
+    } catch {}
     setCreateOpen(true);
   }, [brief, canCreate]);
 
@@ -61,7 +63,9 @@ export function HomeDashboard() {
       try {
         const snap = await api.orchestration.getShellSnapshot();
         const threads = snap.threads.filter((t) => t.projectId === pid && !t.archivedAt);
-        const latest = threads.toSorted((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0];
+        const latest = threads.toSorted(
+          (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
+        )[0];
         if (latest) {
           await navigate({ to: "/$threadId", params: { threadId: latest.id } });
           return;
@@ -85,14 +89,17 @@ export function HomeDashboard() {
           {/* Eyebrow + heading */}
           <div className="grid gap-6 md:grid-cols-[1.15fr_0.85fr] md:items-end">
             <div>
-              <div className="text-[10px] font-medium tracking-[0.14em] text-muted-foreground">NEW FLUTTER PRODUCT</div>
+              <div className="text-[10px] font-medium tracking-[0.14em] text-muted-foreground">
+                NEW FLUTTER PRODUCT
+              </div>
               <h1 className="mt-2 text-3xl font-semibold tracking-tight md:text-[40px] md:leading-[0.95]">
                 Turn a product brief into a release-ready app.
               </h1>
             </div>
             <p className="text-sm leading-6 text-muted-foreground">
-              Plan the architecture first. Then edit, preview, verify, export, and ship from one workspace.
-              Apps live in <code className="rounded bg-muted px-1 py-0.5 text-xs">~/caide-apps</code>.
+              Plan the architecture first. Then edit, preview, verify, export, and ship from one
+              workspace. Apps live in{" "}
+              <code className="rounded bg-muted px-1 py-0.5 text-xs">~/caide-apps</code>.
             </p>
           </div>
 
@@ -100,12 +107,18 @@ export function HomeDashboard() {
           <div className="mt-8 grid gap-4 md:grid-cols-[1.35fr_0.85fr]">
             <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
               <div className="flex items-center gap-3 border-b px-4 py-3">
-                <div className="grid size-8 place-items-center rounded-lg border bg-background text-sm">◈</div>
+                <div className="grid size-8 place-items-center rounded-lg border bg-background text-sm">
+                  ◈
+                </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium">Start from a brief</div>
-                  <div className="text-xs text-muted-foreground">Caide turns the brief into a working Flutter project.</div>
+                  <div className="text-xs text-muted-foreground">
+                    Caide turns the brief into a working Flutter project.
+                  </div>
                 </div>
-                <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-muted-foreground">01</span>
+                <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-muted-foreground">
+                  01
+                </span>
               </div>
 
               <div className="p-4">
@@ -125,13 +138,20 @@ export function HomeDashboard() {
                     <span className="rounded-full border bg-muted/50 px-2 py-1">PLAN + BUILD</span>
                     <span className="rounded-full border bg-muted/50 px-2 py-1">LOCAL RUNTIME</span>
                   </div>
-                  <Button variant="prominent" size="sm" disabled={!canCreate} onClick={() => void handleCreateFromBrief()}>
+                  <Button
+                    variant="prominent"
+                    size="sm"
+                    disabled={!canCreate}
+                    onClick={() => void handleCreateFromBrief()}
+                  >
                     Create Flutter app →
                   </Button>
                 </div>
 
                 <div className="mt-4 border-t pt-3">
-                  <div className="text-[10px] font-medium tracking-wide text-muted-foreground">STARTING BRIEFS</div>
+                  <div className="text-[10px] font-medium tracking-wide text-muted-foreground">
+                    STARTING BRIEFS
+                  </div>
                   <div className="mt-2 grid gap-1.5">
                     {STARTER_BRIEFS.map((item, idx) => (
                       <button
@@ -140,7 +160,9 @@ export function HomeDashboard() {
                         onClick={() => setBrief(item)}
                         className="flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs hover:bg-accent/50"
                       >
-                        <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">0{idx + 1}</span>
+                        <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                          0{idx + 1}
+                        </span>
                         <span className="min-w-0 flex-1 truncate">{item}</span>
                         <span className="shrink-0 text-muted-foreground">→</span>
                       </button>
@@ -153,7 +175,9 @@ export function HomeDashboard() {
             <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
               <div className="flex items-center justify-between border-b px-4 py-3">
                 <div>
-                  <div className="text-[10px] font-medium tracking-wide text-muted-foreground">PROJECT HISTORY</div>
+                  <div className="text-[10px] font-medium tracking-wide text-muted-foreground">
+                    PROJECT HISTORY
+                  </div>
                   <div className="text-sm font-medium">Continue building</div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => void navigate({ to: "/kanban" })}>
@@ -164,10 +188,19 @@ export function HomeDashboard() {
               <div className="divide-y">
                 {recentProjects.length === 0 ? (
                   <div className="px-4 py-10 text-center">
-                    <div className="mx-auto grid size-10 place-items-center rounded-full border bg-muted text-muted-foreground">◐</div>
+                    <div className="mx-auto grid size-10 place-items-center rounded-full border bg-muted text-muted-foreground">
+                      ◐
+                    </div>
                     <div className="mt-3 text-sm font-medium">No projects yet</div>
-                    <div className="mt-1 text-xs text-muted-foreground">Your Flutter projects will appear here.</div>
-                    <Button variant="outline" size="sm" className="mt-3" onClick={() => setCreateOpen(true)}>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      Your Flutter projects will appear here.
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3"
+                      onClick={() => setCreateOpen(true)}
+                    >
                       Create your first app
                     </Button>
                   </div>
@@ -187,7 +220,9 @@ export function HomeDashboard() {
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium">{p.name}</span>
-                        <span className="block truncate text-[11px] text-muted-foreground">{p.cwd}</span>
+                        <span className="block truncate text-[11px] text-muted-foreground">
+                          {p.cwd}
+                        </span>
                       </span>
                       <span className="shrink-0 text-muted-foreground">→</span>
                     </button>
@@ -198,7 +233,9 @@ export function HomeDashboard() {
               {recentProjects.length > 0 && (
                 <div className="grid grid-cols-3 divide-x border-t bg-muted/20 text-center">
                   <div className="px-2 py-2.5">
-                    <span className="text-sm font-semibold tabular-nums">{recentProjects.length}</span>{" "}
+                    <span className="text-sm font-semibold tabular-nums">
+                      {recentProjects.length}
+                    </span>{" "}
                     <span className="text-[10px] tracking-wide text-muted-foreground">RECENT</span>
                   </div>
                   <div className="px-2 py-2.5">
@@ -206,7 +243,9 @@ export function HomeDashboard() {
                     <span className="text-[10px] tracking-wide text-muted-foreground">TOTAL</span>
                   </div>
                   <div className="px-2 py-2.5">
-                    <span className="text-[10px] tracking-wide text-muted-foreground">~/caide-apps</span>
+                    <span className="text-[10px] tracking-wide text-muted-foreground">
+                      ~/caide-apps
+                    </span>
                   </div>
                 </div>
               )}
@@ -216,14 +255,36 @@ export function HomeDashboard() {
           {/* Starting points */}
           <div className="mt-4 grid gap-2 md:grid-cols-4">
             <div className="hidden md:block">
-              <div className="text-[10px] font-medium tracking-wide text-muted-foreground">STARTING POINTS</div>
-              <div className="mt-1 text-xs leading-5 text-muted-foreground">Build from a brief, import a project, or continue existing work.</div>
+              <div className="text-[10px] font-medium tracking-wide text-muted-foreground">
+                STARTING POINTS
+              </div>
+              <div className="mt-1 text-xs leading-5 text-muted-foreground">
+                Build from a brief, import a project, or continue existing work.
+              </div>
             </div>
             {[
-              { label: "Write custom brief", desc: "Start from product requirements.", action: () => document.getElementById("home-brief")?.focus() },
-              { label: "Import project", desc: "Bring an existing Flutter codebase.", action: () => setCreateOpen(true) },
-              { label: "Open history", desc: recentProjects[0] ? `Continue ${recentProjects[0].name}` : "Create a project first.", action: () => void navigate({ to: "/kanban" }) },
-              { label: "View activity", desc: "Per-project commits, builds, tests.", action: () => void navigate({ to: "/kanban" }) },
+              {
+                label: "Write custom brief",
+                desc: "Start from product requirements.",
+                action: () => document.getElementById("home-brief")?.focus(),
+              },
+              {
+                label: "Import project",
+                desc: "Bring an existing Flutter codebase.",
+                action: () => setCreateOpen(true),
+              },
+              {
+                label: "Open history",
+                desc: recentProjects[0]
+                  ? `Continue ${recentProjects[0].name}`
+                  : "Create a project first.",
+                action: () => void navigate({ to: "/kanban" }),
+              },
+              {
+                label: "View activity",
+                desc: "Per-project commits, builds, tests.",
+                action: () => void navigate({ to: "/kanban" }),
+              },
             ].map((card) => (
               <button
                 key={card.label}
@@ -232,7 +293,9 @@ export function HomeDashboard() {
                 className="rounded-xl border bg-card px-3 py-3 text-left hover:bg-accent/50"
               >
                 <div className="text-sm font-medium">{card.label}</div>
-                <div className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{card.desc}</div>
+                <div className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+                  {card.desc}
+                </div>
                 <div className="mt-2 text-xs text-muted-foreground">→</div>
               </button>
             ))}

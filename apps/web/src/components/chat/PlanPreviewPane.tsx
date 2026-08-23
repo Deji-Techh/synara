@@ -4,7 +4,13 @@ import ChatMarkdown from "../ChatMarkdown";
 
 export function ChatModeBadge({ mode }: { mode: string }) {
   const label =
-    mode === "plan" ? "Plan · Read-only" : mode === "ask" ? "Ask · Explain" : mode === "local-agent" ? "Agent" : "Build";
+    mode === "plan"
+      ? "Plan · Read-only"
+      : mode === "ask"
+        ? "Ask · Explain"
+        : mode === "local-agent"
+          ? "Agent"
+          : "Build";
   const variant = mode === "plan" ? "secondary" : mode === "ask" ? "outline" : "default";
   const cls =
     mode === "plan"
@@ -35,7 +41,10 @@ export function PlanPreviewPane({
         <span className="text-xs font-medium tracking-wide text-amber-800 dark:text-amber-200">
           Plan preview — {isStreaming ? "streaming…" : "ready"}
         </span>
-        <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100">
+        <Badge
+          variant="secondary"
+          className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100"
+        >
           Read-only
         </Badge>
       </div>

@@ -152,7 +152,9 @@ const PROVIDER_ORDER: readonly ProviderWithDefaultModel[] = [...API_PROVIDER_KIN
 
 function resolveTextGenerationProvider(settings: ServerSettings): ServerSettings {
   const selection = settings.textGenerationModelSelection;
-  const currentProvider = (settings.providers as Record<string, { enabled?: boolean }>)[selection.provider];
+  const currentProvider = (settings.providers as Record<string, { enabled?: boolean }>)[
+    selection.provider
+  ];
   if (currentProvider?.enabled) {
     return settings;
   }

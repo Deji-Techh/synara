@@ -117,10 +117,9 @@ export interface EnginePreviewOps {
     },
     ProviderAdapterError
   >;
-  flutterToolchainInstall(input: { threadId: ThreadId }): Effect.Effect<
-    FlutterToolchainInstallResult,
-    ProviderAdapterError
-  >;
+  flutterToolchainInstall(input: {
+    threadId: ThreadId;
+  }): Effect.Effect<FlutterToolchainInstallResult, ProviderAdapterError>;
 }
 
 /**

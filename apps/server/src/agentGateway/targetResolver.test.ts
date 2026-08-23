@@ -511,7 +511,10 @@ describe("agent gateway target resolver", () => {
         unrestrictedGuidance.providerOptions.find((option) => option.key === "agent"),
         { allowedValues: [], allowsCustomValue: true },
       );
-      const custom = { ...accepted, options: { agent: "custom-agent" } } as unknown as ModelSelection;
+      const custom = {
+        ...accepted,
+        options: { agent: "custom-agent" },
+      } as unknown as ModelSelection;
       assert.deepEqual(
         yield* resolveAgentGatewayTarget({ target: custom, discovery: unrestrictedDiscovery }),
         custom,

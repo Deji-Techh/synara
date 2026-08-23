@@ -204,9 +204,7 @@ function copyDugiteEmbeddedGit(repoRoot: string, payloadDir: string): void {
     entries = [];
   }
   const candidate = entries.find((name) => name.startsWith("dugite@"));
-  const source = candidate
-    ? join(cacheDir, candidate, "node_modules", "dugite", "git")
-    : null;
+  const source = candidate ? join(cacheDir, candidate, "node_modules", "dugite", "git") : null;
   if (!source || !existsSync(join(source, "bin"))) {
     throw new Error(
       "Could not find dugite's downloaded Git distribution in this repository " +

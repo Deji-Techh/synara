@@ -418,7 +418,11 @@ function SettingsRouteView() {
           }
           control={
             <SettingsSelectControl
-              value={settings.sidebarProjectSortOrder === "manual" ? "created_at" : settings.sidebarProjectSortOrder}
+              value={
+                settings.sidebarProjectSortOrder === "manual"
+                  ? "created_at"
+                  : settings.sidebarProjectSortOrder
+              }
               onValueChange={(value) => {
                 if (value !== "updated_at" && value !== "created_at") {
                   return;
@@ -426,7 +430,13 @@ function SettingsRouteView() {
                 updateSettings({ sidebarProjectSortOrder: value });
               }}
               ariaLabel="Project sort order"
-              valueContent={SIDEBAR_PROJECT_SORT_ORDER_LABELS[settings.sidebarProjectSortOrder === "manual" ? "created_at" : settings.sidebarProjectSortOrder]}
+              valueContent={
+                SIDEBAR_PROJECT_SORT_ORDER_LABELS[
+                  settings.sidebarProjectSortOrder === "manual"
+                    ? "created_at"
+                    : settings.sidebarProjectSortOrder
+                ]
+              }
             >
               <SelectItem hideIndicator value="updated_at">
                 {SIDEBAR_PROJECT_SORT_ORDER_LABELS.updated_at}

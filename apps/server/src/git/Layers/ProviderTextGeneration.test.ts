@@ -21,4 +21,3 @@ describe("ProviderTextGenerationLive", () => {
     expect(result.subject).toBe("chore: update");
   });
 });
-

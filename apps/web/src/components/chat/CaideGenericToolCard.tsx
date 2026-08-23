@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { CaideCard, CaideCardHeader, CaideCardContent, CaideStateIndicator, type ToolCardState } from "./CaideCardPrimitives";
+import {
+  CaideCard,
+  CaideCardHeader,
+  CaideCardContent,
+  CaideStateIndicator,
+  type ToolCardState,
+} from "./CaideCardPrimitives";
 
 interface CaideGenericToolCardProps {
   toolName: string;
@@ -36,7 +42,8 @@ export const CaideGenericToolCard: React.FC<CaideGenericToolCardProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const icon = TOOL_ICONS[toolName] || "⚙";
   const displayTitle = toolName.replace(/^(caide-|dyad-)/, "").replace(/-/g, " ");
-  const targetPath = attributes.path || attributes.file || attributes.packages || attributes.pattern || "";
+  const targetPath =
+    attributes.path || attributes.file || attributes.packages || attributes.pattern || "";
 
   return (
     <CaideCard
@@ -44,9 +51,7 @@ export const CaideGenericToolCard: React.FC<CaideGenericToolCardProps> = ({
       onClick={() => setIsExpanded(!isExpanded)}
       isExpanded={isExpanded}
     >
-      <CaideCardHeader
-        icon={<span className="text-xs">{icon}</span>}
-      >
+      <CaideCardHeader icon={<span className="text-xs">{icon}</span>}>
         <div className="min-w-0 flex-1 flex items-center justify-between gap-2">
           <div className="truncate flex items-center gap-1.5">
             <span className="font-semibold capitalize text-foreground">{displayTitle}</span>

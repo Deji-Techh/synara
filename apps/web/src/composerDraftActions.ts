@@ -901,18 +901,10 @@ export const createComposerDraftStoreState =
           if (opts) {
             const model = current?.model ?? getDefaultModel(provider);
             if (!model) continue;
-            nextMap[provider] = makeModelSelection(
-              provider,
-              model,
-              opts,
-            );
+            nextMap[provider] = makeModelSelection(provider, model, opts);
           } else if (current?.options) {
             // Remove options but keep the selection
-            nextMap[provider] = buildModelSelection(
-              provider,
-              current.model,
-              undefined,
-            );
+            nextMap[provider] = buildModelSelection(provider, current.model, undefined);
           }
         }
         if (Equal.equals(base.modelSelectionByProvider, nextMap)) {
@@ -990,11 +982,7 @@ export const createComposerDraftStoreState =
           }
           if (providerOpts) {
             nextStickyMap[normalizedProvider] = stripNonStickyModelOptions(
-              makeModelSelection(
-                normalizedProvider,
-                effectiveModel,
-                providerOpts,
-              ),
+              makeModelSelection(normalizedProvider, effectiveModel, providerOpts),
             );
           } else {
             // Plain model pick: persist the new model even when sticky had no options.

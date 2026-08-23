@@ -278,11 +278,7 @@ export function BrandingWizardModal(props: {
               </div>
             </DialogPanel>
             <DialogFooter>
-              <Button
-                variant="ghost"
-                className="h-8 px-3"
-                onClick={() => setStep("initial")}
-              >
+              <Button variant="ghost" className="h-8 px-3" onClick={() => setStep("initial")}>
                 Back
               </Button>
               <Button

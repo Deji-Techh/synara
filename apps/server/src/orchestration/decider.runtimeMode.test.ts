@@ -16,9 +16,9 @@ const NOW = "2026-07-25T18:00:00.000Z";
 const THREAD_ID = ThreadId.makeUnsafe("thread-auto-claude");
 const PROJECT_ID = ProjectId.makeUnsafe("project-auto-claude");
 
-function makeReadModel(
-  threadOverrides?: { creationSource?: "provider_native" },
-): OrchestrationReadModel {
+function makeReadModel(threadOverrides?: {
+  creationSource?: "provider_native";
+}): OrchestrationReadModel {
   return {
     snapshotSequence: 1,
     updatedAt: NOW,

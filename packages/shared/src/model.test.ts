@@ -362,9 +362,7 @@ describe("resolveModelSlugForProvider", () => {
     expect(resolveModelSlugForProvider("groq", "llama-3.1-8b-instant")).toBe(
       "llama-3.1-8b-instant",
     );
-    expect(resolveModelSlugForProvider("groq", "totally-custom")).toBe(
-      "totally-custom",
-    );
+    expect(resolveModelSlugForProvider("groq", "totally-custom")).toBe("totally-custom");
     expect(resolveModelSlugForProvider("opencodeZen", null)).toBe(
       DEFAULT_MODEL_BY_PROVIDER.opencodeZen,
     );

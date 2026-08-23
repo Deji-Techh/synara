@@ -116,12 +116,7 @@ layer("ProviderAdapterRegistryLive", (it) => {
       assert.equal(opencodeGo, fakeOpenCodeGoAdapter);
 
       const providers = yield* registry.listProviders();
-      assert.deepEqual(providers, [
-        "engine",
-        "groq",
-        "opencodeZen",
-        "opencodeGo",
-      ]);
+      assert.deepEqual(providers, ["engine", "groq", "opencodeZen", "opencodeGo"]);
     }),
   );
 

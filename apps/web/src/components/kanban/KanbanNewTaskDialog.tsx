@@ -329,10 +329,12 @@ export function KanbanNewTaskDialog({
     }
     const firstOption = (modelOptionsByProvider[selectedProvider] ?? [])[0];
     if (firstOption) {
-      useComposerDraftStore.getState().setModelSelection(
-        scratchThreadId,
-        buildModelSelection(selectedProvider, firstOption.slug),
-      );
+      useComposerDraftStore
+        .getState()
+        .setModelSelection(
+          scratchThreadId,
+          buildModelSelection(selectedProvider, firstOption.slug),
+        );
     }
   }, [
     modelOptionsByProvider,

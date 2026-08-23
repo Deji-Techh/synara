@@ -26,7 +26,9 @@ export interface TestFixture {
 export interface HybridChatHarness {
   server: ReturnType<typeof setupServer>;
   wsRequests: Array<Record<string, unknown>>;
-  mount: (initialEntry?: string) => ReturnType<typeof render> & { router: ReturnType<typeof getRouter> };
+  mount: (
+    initialEntry?: string,
+  ) => ReturnType<typeof render> & { router: ReturnType<typeof getRouter> };
 }
 
 export function setupHybridChatHarness(fixture: TestFixture): HybridChatHarness {

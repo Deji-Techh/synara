@@ -146,9 +146,7 @@ describe("composerDraftStore modelSelection", () => {
       modelSelection("xai", "grok-4"),
     );
     expect(state.draftsByThreadId[threadId]?.activeProvider).toBe("xai");
-    expect(state.stickyModelSelectionByProvider.xai).toEqual(
-      modelSelection("xai", "grok-4"),
-    );
+    expect(state.stickyModelSelectionByProvider.xai).toEqual(modelSelection("xai", "grok-4"));
     expect(state.stickyActiveProvider).toBe("xai");
   });
 
@@ -162,9 +160,7 @@ describe("composerDraftStore modelSelection", () => {
     store.setStickyModelSelection(selection);
 
     const state = useComposerDraftStore.getState();
-    expect(state.draftsByThreadId[threadId]?.modelSelectionByProvider.google).toEqual(
-      selection,
-    );
+    expect(state.draftsByThreadId[threadId]?.modelSelectionByProvider.google).toEqual(selection);
     expect(state.draftsByThreadId[threadId]?.activeProvider).toBe("google");
     expect(state.stickyModelSelectionByProvider.google).toEqual(selection);
     expect(state.stickyActiveProvider).toBe("google");

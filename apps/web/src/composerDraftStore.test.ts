@@ -578,7 +578,9 @@ describe("composerDraftStore runtime and interaction settings", () => {
     const newThreadId = ThreadId.makeUnsafe("thread-new-sticky");
     store.applyStickyState(newThreadId);
 
-    expect(useComposerDraftStore.getState().draftsByThreadId[newThreadId]?.mode).toBe("local-agent");
+    expect(useComposerDraftStore.getState().draftsByThreadId[newThreadId]?.mode).toBe(
+      "local-agent",
+    );
   });
 
   it("preserves mode and model selection during draft promotion finalization", () => {

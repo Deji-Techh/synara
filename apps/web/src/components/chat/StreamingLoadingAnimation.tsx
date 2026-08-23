@@ -31,9 +31,7 @@ const SCRAMBLE_SPEED_MS = 30;
 const REVEAL_STAGGER_MS = 60;
 
 function useRotatingVerb(verbs: string[]): string {
-  const [index, setIndex] = useState(() =>
-    Math.floor(Math.random() * verbs.length),
-  );
+  const [index, setIndex] = useState(() => Math.floor(Math.random() * verbs.length));
   useEffect(() => {
     const id = setInterval(() => {
       setIndex((prev) => (prev + 1) % verbs.length);
@@ -104,9 +102,7 @@ function ScrambleVerb({ verb }: { verb: string }) {
 export function StreamingLoadingAnimation({
   variant = "streaming",
 }: StreamingLoadingAnimationProps) {
-  const verb = useRotatingVerb(
-    variant === "initial" ? INITIAL_VERBS : STREAMING_VERBS,
-  );
+  const verb = useRotatingVerb(variant === "initial" ? INITIAL_VERBS : STREAMING_VERBS);
 
   return (
     <div className="inline-flex items-center gap-2 py-1 select-none animate-in fade-in duration-300">
@@ -116,9 +112,18 @@ export function StreamingLoadingAnimation({
           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
         </span>
         <div className="flex items-end gap-0.5 h-3.5 px-0.5">
-          <span className="w-1 bg-primary/70 rounded-full animate-pulse h-2" style={{ animationDelay: "0ms" }} />
-          <span className="w-1 bg-primary/90 rounded-full animate-pulse h-3.5" style={{ animationDelay: "150ms" }} />
-          <span className="w-1 bg-primary rounded-full animate-pulse h-2.5" style={{ animationDelay: "300ms" }} />
+          <span
+            className="w-1 bg-primary/70 rounded-full animate-pulse h-2"
+            style={{ animationDelay: "0ms" }}
+          />
+          <span
+            className="w-1 bg-primary/90 rounded-full animate-pulse h-3.5"
+            style={{ animationDelay: "150ms" }}
+          />
+          <span
+            className="w-1 bg-primary rounded-full animate-pulse h-2.5"
+            style={{ animationDelay: "300ms" }}
+          />
         </div>
       </div>
       <ScrambleVerb verb={verb} />

@@ -143,10 +143,7 @@ type ProviderStatuses = ReadonlyArray<ServerProviderStatus>;
 const DISABLED_PROVIDER_STATUS_MESSAGE = "Provider is disabled in Caide settings.";
 const MINIMUM_ANTIGRAVITY_CLI_VERSION = "1.0.12";
 
-const PROVIDERS: ReadonlyArray<ProviderKind> = [
-  ENGINE_PROVIDER,
-  ...API_PROVIDER_KINDS,
-];
+const PROVIDERS: ReadonlyArray<ProviderKind> = [ENGINE_PROVIDER, ...API_PROVIDER_KINDS];
 
 const isProviderCliKind = (provider: ProviderKind): provider is ProviderCliKind =>
   provider === ENGINE_PROVIDER;

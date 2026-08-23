@@ -93,10 +93,7 @@ interface SidebarSearchPaletteProps {
   onImportThread: (provider: ImportProviderKind, externalId: string) => Promise<void>;
 }
 
-export type ImportProviderKind = Extract<
-  ProviderKind,
-  "openai" | "anthropic" | "groq"
->;
+export type ImportProviderKind = Extract<ProviderKind, "openai" | "anthropic" | "groq">;
 
 function actionHandler(
   actionId: string,

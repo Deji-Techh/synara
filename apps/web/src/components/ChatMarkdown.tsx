@@ -1319,12 +1319,7 @@ function ChatMarkdown({
               try {
                 const parsed = JSON.parse(jsonMatch[0]);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                  return (
-                    <CaideQuestionnaireCard
-                      key={`raw-q-${block.id}`}
-                      questions={parsed}
-                    />
-                  );
+                  return <CaideQuestionnaireCard key={`raw-q-${block.id}`} questions={parsed} />;
                 }
               } catch {}
             }
@@ -1405,12 +1400,7 @@ function ChatMarkdown({
             } catch {
               questions = [{ question: block.content }];
             }
-            return (
-              <CaideQuestionnaireCard
-                key={`tag-${block.id}`}
-                questions={questions}
-              />
-            );
+            return <CaideQuestionnaireCard key={`tag-${block.id}`} questions={questions} />;
           }
           if (tag === "caide-command" || tag === "dyad-command") {
             return (

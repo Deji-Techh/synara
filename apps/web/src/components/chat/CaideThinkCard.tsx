@@ -6,10 +6,7 @@ interface CaideThinkCardProps {
   isStreaming?: boolean;
 }
 
-export const CaideThinkCard: React.FC<CaideThinkCardProps> = ({
-  content,
-  isStreaming = false,
-}) => {
+export const CaideThinkCard: React.FC<CaideThinkCardProps> = ({ content, isStreaming = false }) => {
   const [isExpanded, setIsExpanded] = useState(isStreaming);
 
   return (
@@ -21,8 +18,18 @@ export const CaideThinkCard: React.FC<CaideThinkCardProps> = ({
     >
       <CaideCardHeader
         icon={
-          <svg className="w-3.5 h-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          <svg
+            className="w-3.5 h-3.5 text-muted-foreground"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 10V3L4 14h7v7l9-11h-7z"
+            />
           </svg>
         }
       >

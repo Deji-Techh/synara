@@ -25,9 +25,7 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = ({
     setAnswers((prev) => {
       if (isMulti) {
         const current = (prev[qKey] as string[]) || [];
-        const next = current.includes(opt)
-          ? current.filter((x) => x !== opt)
-          : [...current, opt];
+        const next = current.includes(opt) ? current.filter((x) => x !== opt) : [...current, opt];
         return { ...prev, [qKey]: next };
       } else {
         return { ...prev, [qKey]: opt };
@@ -55,7 +53,9 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = ({
         }
       >
         <div>
-          <div className="text-[10px] uppercase font-bold tracking-wider text-amber-500">Plan Questionnaire</div>
+          <div className="text-[10px] uppercase font-bold tracking-wider text-amber-500">
+            Plan Questionnaire
+          </div>
           <div className="text-sm font-semibold text-foreground">Project Questions</div>
         </div>
       </CaideCardHeader>
@@ -90,7 +90,9 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = ({
                       >
                         <span
                           className={`h-3.5 w-3.5 rounded-${isMulti ? "md" : "full"} border flex items-center justify-center shrink-0 ${
-                            isSelected ? "border-amber-500 bg-amber-500 text-white" : "border-muted-foreground/50"
+                            isSelected
+                              ? "border-amber-500 bg-amber-500 text-white"
+                              : "border-muted-foreground/50"
                           }`}
                         >
                           {isSelected && <span className="text-[9px] leading-none">✓</span>}

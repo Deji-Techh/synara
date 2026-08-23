@@ -74,8 +74,6 @@ export const ComposerExtrasMenu = function ComposerExtrasMenu(props: {
             Add files
           </MenuItem>
 
-
-
           {props.supportsFastMode ? (
             <>
               <MenuSeparator />
