@@ -164,6 +164,10 @@ const RETRYABLE_STREAM_ERROR_PATTERNS = [
   "finish chunk",
   "InvalidResponseDataError",
   "No output generated",
+  "TypeValidationError",
+  "type validation",
+  "invalid_tool_input",
+  "invalid tool input",
 ];
 
 // ============================================================================
@@ -1894,8 +1898,20 @@ function buildTerminatedRetryContinuationInstruction(): ModelMessage {
 }
 
 function unwrapStreamError(error: unknown): unknown {
-  if (isRecord(error) && "error" in error) {
-    return error.error;
+  if (isRecord(error)) {
+    if ("error" in error && error.error) {
+      return unwrapStreamError(error.error);
+    }
+    if ("lastError" in error && error.lastError) {
+      return unwrapStreamError((error as Record<string, unknown>).lastError);
+    }
+    if ("cause" in error && (error as Record<string, unknown>).cause) {
+      return unwrapStreamError((error as Record<string, unknown>).cause);
+    }
+    if ("errors" in error && Array.isArray((error as Record<string, unknown>).errors)) {
+      const first = ((error as Record<string, unknown>).errors as unknown[])[0];
+      if (first) return unwrapStreamError(first);
+    }
   }
   return error;
 }
@@ -1986,17 +2002,26 @@ function isRetryableProviderStreamError(error: unknown): boolean {
     return true;
   }
 
-  const errorString =
-    [
-      typeof normalized.message === "string" ? normalized.message : undefined,
-      typeof normalized.code === "string" ? normalized.code : undefined,
-      typeof normalized.type === "string" ? normalized.type : undefined,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase() || getErrorMessage(normalized).toLowerCase();
+  // Use full message including name (AI_InvalidResponseDataError) and any
+  // nested cause, not just message/code/type, so retry patterns like
+  // "without a finish reason" and "InvalidResponseDataError" match even when
+  // wrapped in AI_RetryError { lastError: ... }.
+  const errorString = getErrorMessage(normalized).toLowerCase();
 
-  return RETRYABLE_STREAM_ERROR_PATTERNS.some((pattern) => errorString.includes(pattern));
+  if (RETRYABLE_STREAM_ERROR_PATTERNS.some((pattern) => errorString.includes(pattern))) {
+    return true;
+  }
+
+  // Recurse into cause/lastError — mirrors isTerminatedStreamError but for
+  // retryable patterns. Covers RetryError wrapping.
+  const cause =
+    (isRecord(normalized) && "cause" in normalized ? (normalized as Record<string, unknown>).cause : undefined) ??
+    (isRecord(normalized) && "lastError" in normalized ? (normalized as Record<string, unknown>).lastError : undefined);
+  if (cause) {
+    return isRetryableProviderStreamError(cause);
+  }
+
+  return false;
 }
 
 function shouldRetryTransientStreamError(params: {

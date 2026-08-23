@@ -11893,7 +11893,7 @@ export default function ChatView({
                     activeThreadId={activeThread.id}
                     activeTurnId={activeTurnIdForTranscript}
                     agentActivityDetail={openAgentActivityDetail}
-                    hasMessages={timelineEntries.length > 0}
+                    hasMessages={displayTimelineEntries.length > 0}
                     isWorking={isWorking}
                     workingLabel={resolveWorkingLabel({ isSendBusy, turnTakenOver })}
                     worktreeSetup={activeWorktreeSetup}
@@ -11917,7 +11917,7 @@ export default function ChatView({
                     crossTaskOrigin={crossTaskOrigin}
                     forkSource={forkSource}
                     isTemporaryThread={isThreadTemporary}
-                    timelineEntries={timelineEntries}
+                    timelineEntries={displayTimelineEntries}
                     turnDiffSummaryByAssistantMessageId={turnDiffSummaryByAssistantMessageId}
                     onOpenTurnDiff={onOpenTurnDiff}
                     onOpenThread={onNavigateToThread}
