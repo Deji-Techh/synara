@@ -205,9 +205,13 @@ export const listFilesTool: ToolDefinition<ListFilesArgs> = {
 
     // Build full file list for LLM
     const allFilesList = cappedPaths.map((entry) => " - " + getDisplayPath(entry)).join("\n") || "";
-    const resultText = wasTruncated
-      ? `${allFilesList}\n\n[TRUNCATED: Showing ${cappedPaths.length} of ${totalCount} paths. Use directory to narrow the listing.]`
-      : allFilesList;
+    // Guard for empty new apps: tell the model to stop exploring and write the plan.
+    const resultText =
+      totalCount === 0
+        ? "(No files found — this is a new Flutter app with only the scaffold. Do not call list_files again. Proceed to write_plan or planning_questionnaire.)"
+        : wasTruncated
+          ? `${allFilesList}\n\n[TRUNCATED: Showing ${cappedPaths.length} of ${totalCount} paths. Use directory to narrow the listing.]`
+          : allFilesList;
 
     // Build abbreviated list for UI display
     const MAX_FILES_TO_SHOW = 20;
