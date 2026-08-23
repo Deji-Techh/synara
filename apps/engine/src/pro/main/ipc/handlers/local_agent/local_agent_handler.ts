@@ -2015,8 +2015,12 @@ function isRetryableProviderStreamError(error: unknown): boolean {
   // Recurse into cause/lastError — mirrors isTerminatedStreamError but for
   // retryable patterns. Covers RetryError wrapping.
   const cause =
-    (isRecord(normalized) && "cause" in normalized ? (normalized as Record<string, unknown>).cause : undefined) ??
-    (isRecord(normalized) && "lastError" in normalized ? (normalized as Record<string, unknown>).lastError : undefined);
+    (isRecord(normalized) && "cause" in normalized
+      ? (normalized as Record<string, unknown>).cause
+      : undefined) ??
+    (isRecord(normalized) && "lastError" in normalized
+      ? (normalized as Record<string, unknown>).lastError
+      : undefined);
   if (cause) {
     return isRetryableProviderStreamError(cause);
   }

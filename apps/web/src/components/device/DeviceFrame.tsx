@@ -465,7 +465,10 @@ export const DeviceScreen = memo(function DeviceScreen({
         // began. Padding keeps the device off the pane edges, and the sizing
         // below already stops the frame itself from escaping the box.
         // Synara DevicePanel uses p-6 ([container-type:size]) for breathing room around the bezel.
-        "flex h-full min-h-0 w-full items-center justify-center p-6 [container-type:size]",
+        // Use flex-1 (not h-full) so 100cqh correctly measures the flex-allocated
+        // height inside the preview stage, not content height — otherwise the
+        // phone measured as ~380px and stayed small (the dark bg made it obvious).
+        "flex flex-1 min-h-0 w-full items-center justify-center p-6 [container-type:size]",
         className,
       )}
     >

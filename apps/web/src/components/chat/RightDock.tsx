@@ -209,11 +209,14 @@ export function RightDock(props: RightDockProps) {
   // (≈42rem) so the phone is height-bound and fills the stage without
   // stranded top/bottom space.
   const isPreviewLocked = activePaneKind === "preview";
-  // Use layout effect so the correct 42rem width is present on the first paint
-  // — with `useEffect` the first paint used the narrow `defaultWidth` (28rem)
-  // and the phone measured 100cqw as ~320px, staying permanently small.
+  // For preview we want the wide 42rem on the *first* paint, not after a
+  // useEffect that first renders at defaultWidth (28rem) and then measures
+  // shell/2. The shell/2 logic also makes the dock narrow when the center
+  // composer is wide (shouldAcceptWidth rejects 672). For preview we bypass it
+  // and set the CSS variable synchronously via the provider style below.
+  // Non-preview panes still use the half-shell measurement.
   useLayoutEffect(() => {
-    if (!props.state.open) {
+    if (!props.state.open || isPreviewLocked) {
       return;
     }
     const wrapper = contentRef.current?.closest<HTMLElement>("[data-slot='sidebar-wrapper']");
@@ -226,7 +229,7 @@ export function RightDock(props: RightDockProps) {
     if (openWidth > 0) {
       wrapper.style.setProperty("--sidebar-width", `${Math.max(minWidth, openWidth)}px`);
     }
-  }, [props.state.open, minWidth, activePaneKind]);
+  }, [props.state.open, minWidth, activePaneKind, isPreviewLocked]);
   const renderedPanes = props.state.panes.filter(
     (pane) => pane.id === activePane?.id || keepMountedPaneIds.has(pane.id),
   );
@@ -258,13 +261,17 @@ export function RightDock(props: RightDockProps) {
     ? SIDEBAR_OFFCANVAS_MOTION_SUPPRESSED_CLASS
     : SIDEBAR_OFFCANVAS_MOTION_CLASS;
 
+  const effectiveDefaultWidth = isPreviewLocked
+    ? `${RIGHT_DOCK_PREFERRED_WIDTH.preview}px`
+    : props.defaultWidth;
+
   return (
     <SidebarProvider
       defaultOpen={false}
       open={props.state.open}
       onOpenChange={props.onOpenChange}
       className="w-auto min-h-0 flex-none bg-transparent"
-      style={{ "--sidebar-width": props.defaultWidth } as CSSProperties}
+      style={{ "--sidebar-width": effectiveDefaultWidth } as CSSProperties}
     >
       <Sidebar
         side="right"

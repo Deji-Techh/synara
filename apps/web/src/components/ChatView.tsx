@@ -3317,7 +3317,12 @@ export default function ChatView({
   const displayTimelineEntries = useMemo(() => {
     if (chatMode !== "plan" || !planStreamingText) return timelineEntries;
     return timelineEntries.filter(
-      (entry) => !(entry.kind === "message" && entry.message.role === "assistant" && entry.message.streaming),
+      (entry) =>
+        !(
+          entry.kind === "message" &&
+          entry.message.role === "assistant" &&
+          entry.message.streaming
+        ),
     );
   }, [timelineEntries, chatMode, planStreamingText]);
   const enteringUserMessageIds = useMemo<ReadonlySet<MessageId>>(
