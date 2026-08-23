@@ -776,7 +776,7 @@ export default function DevicePanel(props: {
         above, so the *phone* reads as centered rather than the group — without
         it the device sits visibly high by half the rail's height.
       */}
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-3 py-3">
+      <div className="flex min-h-0 flex-1 flex-col">
         <div aria-hidden className={DEVICE_RAIL_HEIGHT_CLASS} />
         <DeviceScreen
           className="min-h-0 w-full flex-1"

@@ -44,7 +44,6 @@ import {
 import { DeviceScreen, type DeviceKind } from "../device/DeviceFrame";
 import {
   DeviceControlRail,
-  DEVICE_RAIL_HEIGHT_CLASS,
   type DeviceRailAction,
 } from "../device/DeviceControlRail";
 
@@ -1590,10 +1589,10 @@ export function PreviewPanel(props: {
                 )}
               </div>
             ) : (
-              <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden bg-[#0a0a0a] px-3 py-3">
-                <div aria-hidden className={DEVICE_RAIL_HEIGHT_CLASS} />
+              <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden bg-[#0a0a0a]">
+
                 <DeviceScreen
-                  className="min-h-0 w-full flex-1 min-h-0 overflow-hidden"
+                  className="min-h-0 w-full flex-1 overflow-hidden"
                   kind={statusFrameKind}
                   pixelWidth={statusFrameKind === "androidPhone" ? 1206 : undefined}
                   pixelHeight={statusFrameKind === "androidPhone" ? 2622 : undefined}
