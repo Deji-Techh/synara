@@ -93,7 +93,7 @@ describe("EngineAdapter", () => {
 
     const result = await Effect.runPromise(
       provideAdapter(
-        Effect.gen(function* () {
+Effect.gen(function* () {
           const adapter = yield* EngineAdapter;
           const session = yield* adapter.startSession({
             threadId,
@@ -117,7 +117,7 @@ describe("EngineAdapter", () => {
 
     const result = await Effect.runPromise(
       provideAdapter(
-        Effect.gen(function* () {
+Effect.gen(function* () {
           const adapter = yield* EngineAdapter;
           // Collect everything up to and including this thread's terminal
           // event; a fixed take(N) is brittle because the exact notification
@@ -162,7 +162,7 @@ describe("EngineAdapter", () => {
 
     await Effect.runPromise(
       provideAdapter(
-        Effect.gen(function* () {
+Effect.gen(function* () {
           const adapter = yield* EngineAdapter;
           for (const mode of ["build", "ask", "plan", "local-agent"] as const) {
             const threadId = ThreadId.makeUnsafe(randomUUID());
@@ -207,7 +207,7 @@ describe("EngineAdapter", () => {
 
     await Effect.runPromise(
       provideAdapter(
-        Effect.gen(function* () {
+Effect.gen(function* () {
           const adapter = yield* EngineAdapter;
           yield* adapter.startSession({
             threadId,
@@ -227,7 +227,7 @@ describe("EngineAdapter", () => {
 
     const result = await Effect.runPromise(
       provideAdapter(
-        Effect.gen(function* () {
+Effect.gen(function* () {
           const adapter = yield* EngineAdapter;
 
           yield* adapter.startSession({
@@ -302,7 +302,7 @@ describe("EngineAdapter", () => {
 
     const result = await Effect.runPromise(
       provideAdapter(
-        Effect.gen(function* () {
+Effect.gen(function* () {
           const adapter = yield* EngineAdapter;
           yield* adapter.startSession({
             threadId,
@@ -329,7 +329,7 @@ describe("EngineAdapter", () => {
     try {
       const created = await Effect.runPromise(
         provideAdapter(
-          Effect.gen(function* () {
+Effect.gen(function* () {
             const adapter = yield* EngineAdapter;
             return yield* adapter.createApp({ name: slug });
           }),
@@ -355,7 +355,7 @@ describe("EngineAdapter", () => {
     await expect(
       Effect.runPromise(
         provideAdapter(
-          Effect.gen(function* () {
+Effect.gen(function* () {
             const adapter = yield* EngineAdapter;
             yield* adapter.sendTurn({ threadId, input: "hello" });
           }),
@@ -379,7 +379,7 @@ describe("EngineAdapter", () => {
       await expect(
         Effect.runPromise(
           provideAdapter(
-            Effect.gen(function* () {
+Effect.gen(function* () {
               const adapter = yield* EngineAdapter;
               yield* gate(adapter);
             }),

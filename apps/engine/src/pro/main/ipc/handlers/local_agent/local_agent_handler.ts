@@ -1422,9 +1422,10 @@ export async function handleLocalAgentStream(
                 phase: "response_finalization",
               });
             }
-            logger.warn("Failed to retrieve stream response messages:", err);
-            steps = [];
-            responseMessages = [];
+            // A response-finalization failure is still a failed provider
+            // turn. Continuing with empty responseMessages would later emit
+            // chat:response:end and persist a misleading empty assistant row.
+            throw err;
           }
 
           break;
@@ -1848,9 +1849,12 @@ export async function handleLocalAgentStream(
     }
 
     logger.error("Local agent error:", error);
+    const persistedError = `Error: ${getErrorMessageWithDetails(error)}`;
+    await updateResponseInDb(placeholderMessageId, persistedError);
+    sendChunk(persistedError);
     safeSend(event.sender, "chat:response:error", {
       chatId: req.chatId,
-      error: `Error: ${getErrorMessageWithDetails(error)}`,
+      error: persistedError,
       warningMessages: warningMessages.length > 0 ? [...new Set(warningMessages)] : undefined,
     });
     return false; // Error

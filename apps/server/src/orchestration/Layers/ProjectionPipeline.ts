@@ -548,6 +548,7 @@ const makeOrchestrationProjectionPipeline = Effect.gen(function* () {
             projectId: event.payload.projectId,
             title: event.payload.title,
             modelSelection: event.payload.modelSelection,
+            engineChatId: null,
             runtimeMode: event.payload.runtimeMode,
             interactionMode: event.payload.interactionMode,
             envMode: isStudio ? "local" : (event.payload.envMode ?? "local"),

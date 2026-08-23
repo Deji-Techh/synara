@@ -107,6 +107,7 @@ import Migration0088 from "./Migrations/088_ProjectionThreadsSettledAt.ts";
 import Migration0089 from "./Migrations/089_RecoverRetentionHiddenThreads.ts";
 import Migration0090 from "./Migrations/090_RetireStudioProjects.ts";
 import Migration0091 from "./Migrations/091_Artifacts.ts";
+import Migration0092 from "./Migrations/092_ProjectionThreadsEngineChatId.ts";
 
 /**
  * Migration loader with all migrations defined inline.

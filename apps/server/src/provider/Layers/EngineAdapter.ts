@@ -85,7 +85,7 @@ import {
   TestResultSchema,
   PreviewScreenshotResultSchema,
 } from "@caide/engine/protocol";
-import { Effect, Fiber, Layer, Option, PubSub, Ref, Stream } from "effect";
+import { Effect, Fiber, Layer, Option, PubSub, Ref, Semaphore, Stream } from "effect";
 
 import { ArtifactRegistry } from "../../persistence/Services/ArtifactRegistry.ts";
 
@@ -106,6 +106,7 @@ import {
 import { ServerSettingsService } from "../../serverSettings.ts";
 import { ServerConfig } from "../../config.ts";
 import { ServerSecretStore } from "../../auth/Services/ServerSecretStore.ts";
+import { ProjectionThreadRepository } from "../../persistence/Services/ProjectionThreads.ts";
 
 /**
  * Resolve the Flutter engine entrypoint to spawn.
@@ -232,11 +233,16 @@ interface SharedEngine {
   readonly engineServerVersion: string;
 }
 
+const ENGINE_CUSTOM_PROVIDER_ID = "custom::caide-engine";
+
 const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
   Effect.gen(function* () {
     const runtimeEventQueue = yield* PubSub.unbounded<ProviderRuntimeEvent>();
     const sessions = yield* Ref.make<ReadonlyMap<ThreadId, EngineSessionContext>>(new Map());
     const sharedEngineRef = yield* Ref.make<SharedEngine | null>(null);
+    // Engine startup is process-global. Serialize the check/spawn/initialize
+    // sequence so concurrent sessions cannot launch duplicate children.
+    const sharedEngineStartupLock = yield* Semaphore.make(1);
     const chatToThread = yield* Ref.make<ReadonlyMap<number, ThreadId>>(new Map());
     const pendingRequests = yield* Ref.make<ReadonlyMap<string, PendingEngineRequest>>(new Map());
     const settledChats = yield* Ref.make<ReadonlySet<number>>(new Set());
@@ -247,6 +253,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
     const subagentsEventQueue = yield* PubSub.unbounded<EngineSubagentEvent>();
     const serverSettings = yield* ServerSettingsService;
     const secretStore = yield* ServerSecretStore;
+    const projectionThreadRepo = yield* ProjectionThreadRepository;
     // Optional: artifact registration is best-effort; tests and exotic hosts
     // may mount the adapter without the persistence graph.
     const artifactRegistry = Option.getOrUndefined(yield* Effect.serviceOption(ArtifactRegistry));
@@ -320,7 +327,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       ["ollama", "ollama"],
       ["together", "together"],
       ["mistral", "mistral"],
-      ["engine", "caide-engine"],
+      ["engine", ENGINE_CUSTOM_PROVIDER_ID],
       ["auto", "auto"],
     ]);
 
@@ -648,6 +655,47 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             // Ensure the tail of any final message was flushed.
             if (Array.isArray(payload.messages)) {
               yield* emitTranscriptMessages(context, payload.messages);
+            }
+            // Never treat a provider completion with no visible text, tools,
+            // or plan artifact as a successful assistant turn. The engine's
+            // persisted placeholder may otherwise render as "(empty response)"
+            // while the orchestration layer believes the turn completed.
+            const hasVisiblePayloadMessage = Array.isArray(payload.messages)
+              ? payload.messages.some((message) => {
+                  if (typeof message !== "object" || message === null) return false;
+                  const raw = message as Record<string, unknown>;
+                  if (raw.role !== "assistant" && raw.role !== "agent") return false;
+                  if (typeof raw.content === "string") return raw.content.trim().length > 0;
+                  if (!Array.isArray(raw.content)) return false;
+                  return raw.content.some(
+                    (block) =>
+                      typeof block === "object" &&
+                      block !== null &&
+                      (block as Record<string, unknown>).type === "text" &&
+                      typeof (block as Record<string, unknown>).text === "string" &&
+                      ((block as Record<string, unknown>).text as string).trim().length > 0,
+                  );
+                })
+              : false;
+            const hasMessages =
+              hasVisiblePayloadMessage ||
+              [...context.emittedTranscriptRef.current.entries()].some(
+                ([key, count]) => !key.endsWith(":tools") && count > 0,
+              );
+            const hasPlan = typeof payload.planMarkdown === "string" && payload.planMarkdown.trim() !== "";
+            if (!hasMessages && !hasPlan) {
+              yield* publishEvent(
+                makeEvent<ProviderRuntimeEvent>(context.threadId, {
+                  type: "runtime.error",
+                  ...(turnId !== null ? { turnId } : {}),
+                  payload: { message: "Engine completed without a response.", class: "provider_error" as const },
+                }),
+              );
+              yield* publishTurnSettled(context.threadId, turnId, "failed", "empty_response", {
+                errorMessage: "Engine completed without a response.",
+              });
+              context.currentTurnIdRef.current = null;
+              return;
             }
             yield* publishEvent(
               makeEvent<ProviderRuntimeEvent>(context.threadId, {
@@ -1045,7 +1093,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
      * when configured, and prove it alive with a ping. Subsequent calls reuse
      * the running process so apps/chats/goals share one SQLite world.
      */
-    const ensureSharedEngine = (
+    const ensureSharedEngineUnlocked = (
       threadId: ThreadId,
     ): Effect.Effect<SharedEngine, ProviderAdapterError> =>
       Effect.gen(function* () {
@@ -1130,7 +1178,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           ...bridgedProviderSettings,
           ...(modelConfig
             ? {
-                "caide-engine": {
+                [ENGINE_CUSTOM_PROVIDER_ID]: {
                   apiKey: { value: modelConfig.apiKey, encryptionType: "plaintext" },
                 },
               }
@@ -1143,7 +1191,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         if (modelConfig) {
           initializeSettings.selectedModel = {
             name: modelConfig.modelId,
-            provider: "caide-engine",
+            provider: ENGINE_CUSTOM_PROVIDER_ID,
           };
         }
         const initializeResponse = yield* Effect.tryPromise({
@@ -1187,26 +1235,23 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         }
 
         // Provision the custom provider the settings handshake references.
-        // Tolerant: a pre-existing provider/model mid-air errors are fine.
+        // The model depends on the provider, so these calls must be ordered.
+        // Both operations are idempotent from the adapter's perspective:
+        // already-existing rows are treated as success.
         if (modelConfig !== undefined) {
-          const provisionPromises = [
-            client
-              .dyadInvoke("create-custom-language-model-provider", {
+          yield* Effect.tryPromise({
+            try: async () => {
+              await client.dyadInvoke("create-custom-language-model-provider", {
                 id: "caide-engine",
                 name: "Caide Engine",
                 apiBaseUrl: modelConfig.baseUrl,
-              })
-              .catch(() => null) as Promise<unknown>,
-            client
-              .dyadInvoke("create-custom-language-model", {
+              }).catch(() => null);
+              await client.dyadInvoke("create-custom-language-model", {
                 apiName: modelConfig.modelId,
                 displayName: modelConfig.modelId,
-                providerId: "caide-engine",
-              })
-              .catch(() => null) as Promise<unknown>,
-          ];
-          yield* Effect.tryPromise({
-            try: () => Promise.all(provisionPromises),
+                providerId: ENGINE_CUSTOM_PROVIDER_ID,
+              }).catch(() => null);
+            },
             catch: (cause) => processError(threadId, "engine model provisioning failed", cause),
           });
         }
@@ -1240,6 +1285,11 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         yield* Ref.set(sharedEngineRef, shared);
         return shared;
       });
+
+    const ensureSharedEngine = (
+      threadId: ThreadId,
+    ): Effect.Effect<SharedEngine, ProviderAdapterError> =>
+      sharedEngineStartupLock.withPermits(1)(ensureSharedEngineUnlocked(threadId));
 
     /**
      * Resolve the engine app rowid backing a workspace root (app path).
@@ -1340,24 +1390,24 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         }
 
         let chatId: number | null = chatFromCreate;
-        if (chatId === null) {
-          const chatsResponse = yield* Effect.tryPromise({
-            try: () => client.dyadInvoke<Array<Record<string, unknown>>>("get-chats", appId),
-            catch: (cause) => processError(context.threadId, "engine get-chats failed", cause),
-          });
-          chatId =
-            Array.isArray(chatsResponse) &&
-            chatsResponse.length > 0 &&
-            typeof chatsResponse[0]?.id === "number"
-              ? chatsResponse[0].id
-              : null;
+        
+        const threadOpt = yield* projectionThreadRepo.getById({ threadId: context.threadId }).pipe(Effect.catchAll(() => Effect.succeed(Option.none())));
+        const threadRow = Option.getOrNull(threadOpt);
+        
+        if (chatId === null && threadRow !== null && typeof threadRow.engineChatId === "number") {
+          chatId = threadRow.engineChatId;
         }
+
         if (chatId === null) {
           const createChatResponse = yield* Effect.tryPromise({
             try: () => client.dyadInvoke<{ chatId: number }>("create-chat", appId, 120_000),
             catch: (cause) => processError(context.threadId, "engine create-chat failed", cause),
           });
           chatId = createChatResponse?.chatId ?? null;
+          
+          if (chatId !== null && threadRow !== null) {
+            yield* projectionThreadRepo.upsert({ ...threadRow, engineChatId: chatId }).pipe(Effect.catchAll(() => Effect.succeed(undefined)));
+          }
         }
         if (chatId === null) {
           return yield* Effect.fail(

@@ -51,21 +51,41 @@ export function registerLanguageModelHandlers() {
         throw new CaideError("API base URL is required", CaideErrorKind.Validation);
       }
 
-      // Check if a provider with this ID already exists
+      const canonicalId = id.startsWith(CUSTOM_PROVIDER_PREFIX)
+        ? id
+        : CUSTOM_PROVIDER_PREFIX + id;
+
+      // Custom provider IDs are canonical on both reads and writes. Treat an
+      // existing row as an idempotent upsert so concurrent/repeated engine
+      // initialization cannot fail with a UNIQUE constraint violation.
       const existingProvider = db
         .select()
         .from(languageModelProvidersSchema)
-        .where(eq(languageModelProvidersSchema.id, id))
+        .where(eq(languageModelProvidersSchema.id, canonicalId))
         .get();
 
       if (existingProvider) {
-        throw new CaideError(`A provider with ID "${id}" already exists`, CaideErrorKind.Conflict);
+        await db
+          .update(languageModelProvidersSchema)
+          .set({
+            name,
+            api_base_url: apiBaseUrl,
+            env_var_name: envVarName || null,
+          })
+          .where(eq(languageModelProvidersSchema.id, canonicalId));
+        return {
+          id: canonicalId,
+          name,
+          apiBaseUrl,
+          envVarName,
+          type: "custom",
+        };
       }
 
       // Insert the new provider
       await db.insert(languageModelProvidersSchema).values({
         // Make sure we will never have accidental collisions with builtin providers
-        id: CUSTOM_PROVIDER_PREFIX + id,
+        id: canonicalId,
         name,
         api_base_url: apiBaseUrl,
         env_var_name: envVarName || null,
@@ -73,7 +93,7 @@ export function registerLanguageModelHandlers() {
 
       // Return the newly created provider
       return {
-        id,
+        id: canonicalId,
         name,
         apiBaseUrl,
         envVarName,
@@ -104,6 +124,31 @@ export function registerLanguageModelHandlers() {
       const provider = providers.find((p) => p.id === providerId);
       if (!provider) {
         throw new CaideError(`Provider with ID "${providerId}" not found`, CaideErrorKind.NotFound);
+      }
+
+      const existingModel = await db
+        .select()
+        .from(languageModelsSchema)
+        .where(
+          and(
+            eq(languageModelsSchema.apiName, apiName),
+            provider.type === "cloud"
+              ? eq(languageModelsSchema.builtinProviderId, providerId)
+              : eq(languageModelsSchema.customProviderId, providerId),
+          ),
+        )
+        .get();
+      if (existingModel) {
+        await db
+          .update(languageModelsSchema)
+          .set({
+            displayName,
+            description: description || null,
+            max_output_tokens: maxOutputTokens || null,
+            context_window: contextWindow || null,
+          })
+          .where(eq(languageModelsSchema.id, existingModel.id));
+        return;
       }
 
       // Insert the new model
