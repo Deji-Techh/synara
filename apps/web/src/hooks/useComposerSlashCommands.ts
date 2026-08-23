@@ -980,7 +980,14 @@ export function useComposerSlashCommands(input: {
 
       if (slashInvocation.command === "preview") {
         editorActions.clearComposerSlashDraft();
-        usePreviewStageStore.getState().toggle(threadId);
+        const stageStore = usePreviewStageStore.getState();
+        const wasOpen = stageStore.stageStateByThreadId[threadId]?.open ?? false;
+        stageStore.toggle(threadId);
+        const isNowOpen = !wasOpen;
+        if (isNowOpen) {
+          const dockState = useRightDockStore.getState().dockStateByThreadId[threadId];
+          if (dockState?.open) useRightDockStore.getState().setDockOpen(threadId, false);
+        }
         return true;
       }
 
@@ -1003,6 +1010,10 @@ export function useComposerSlashCommands(input: {
       ) {
         editorActions.clearComposerSlashDraft();
         usePreviewStageStore.getState().open(threadId);
+        {
+          const dockState = useRightDockStore.getState().dockStateByThreadId[threadId];
+          if (dockState?.open) useRightDockStore.getState().setDockOpen(threadId, false);
+        }
         if (slashInvocation.command === "test") {
           void ensureNativeApi()
             .preview.test({ threadId })
@@ -1386,7 +1397,14 @@ export function useComposerSlashCommands(input: {
           return;
         }
         editorActions.setComposerHighlightedItemId(null);
-        usePreviewStageStore.getState().toggle(threadId);
+        const stageStore = usePreviewStageStore.getState();
+        const wasOpen = stageStore.stageStateByThreadId[threadId]?.open ?? false;
+        stageStore.toggle(threadId);
+        const isNowOpen = !wasOpen;
+        if (isNowOpen) {
+          const dockState = useRightDockStore.getState().dockStateByThreadId[threadId];
+          if (dockState?.open) useRightDockStore.getState().setDockOpen(threadId, false);
+        }
         return;
       }
 
@@ -1417,6 +1435,10 @@ export function useComposerSlashCommands(input: {
         }
         editorActions.setComposerHighlightedItemId(null);
         usePreviewStageStore.getState().open(threadId);
+        {
+          const dockState = useRightDockStore.getState().dockStateByThreadId[threadId];
+          if (dockState?.open) useRightDockStore.getState().setDockOpen(threadId, false);
+        }
         if (item.command === "test") {
           void ensureNativeApi()
             .preview.test({ threadId })

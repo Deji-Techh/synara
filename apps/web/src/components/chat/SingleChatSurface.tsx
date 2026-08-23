@@ -8,6 +8,7 @@ import {
   type ReactNode,
   startTransition,
   Suspense,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -211,6 +212,28 @@ export function SingleChatSurface(props: {
   const setActivePane = useRightDockStore((store) => store.setActivePane);
   const setDockOpen = useRightDockStore((store) => store.setDockOpen);
   const updatePane = useRightDockStore((store) => store.updatePane);
+
+  const closePreviewStage = useCallback(() => {
+    usePreviewStageStore.getState().close(props.threadId);
+  }, [props.threadId]);
+
+  // Fade mutual exclusion: closing the other panel when one opens.
+  const prevPreviewOpenRef = useRef(previewStageState.open);
+  const prevDockOpenRef = useRef(dockState.open);
+  useEffect(() => {
+    const wasPreviewOpen = prevPreviewOpenRef.current;
+    prevPreviewOpenRef.current = previewStageState.open;
+    if (!wasPreviewOpen && previewStageState.open && dockState.open) {
+      setDockOpen(props.threadId, false);
+    }
+  }, [previewStageState.open, dockState.open, props.threadId, setDockOpen]);
+  useEffect(() => {
+    const wasDockOpen = prevDockOpenRef.current;
+    prevDockOpenRef.current = dockState.open;
+    if (!wasDockOpen && dockState.open && usePreviewStageStore.getState().stageStateByThreadId[props.threadId]?.open) {
+      closePreviewStage();
+    }
+  }, [dockState.open, props.threadId, closePreviewStage]);
   const activeProject = useStore(
     useMemo(() => createProjectSelector(props.projectId), [props.projectId]),
   );
@@ -337,7 +360,11 @@ export function SingleChatSurface(props: {
     toggleSingletonPane(props.threadId, { kind: "device" });
   };
   const handleToggleRightDock = () => {
-    setDockOpen(props.threadId, !dockState.open);
+    const nextOpen = !dockState.open;
+    if (nextOpen && previewStageState.open) {
+      usePreviewStageStore.getState().close(props.threadId);
+    }
+    setDockOpen(props.threadId, nextOpen);
   };
   const handleOpenBrowserUrl = () => {
     requestImmediateDockHydration("browser");
@@ -1108,9 +1135,18 @@ export function SingleChatSurface(props: {
             />
           </RouteInsetSurface>
         </ChatPaneDropOverlay>
-        {previewStageState.open ? (
-          <PreviewStage threadId={props.threadId} isVisible={previewStageState.open} />
-        ) : null}
+        {/* Floating preview stage — fixed 672px, animated width/opacity like right dock (220ms). Mutually exclusive with RightDock via effects above. */}
+        <div
+          className={cn(
+            "shrink-0 overflow-hidden transition-[width,opacity] duration-220 ease-out motion-reduce:transition-none",
+            previewStageState.open ? "w-[672px] opacity-100" : "w-0 opacity-0",
+          )}
+          aria-hidden={previewStageState.open ? undefined : true}
+        >
+          <div className="h-full w-[672px]">
+            <PreviewStage threadId={props.threadId} isVisible={previewStageState.open} workspaceRoot={workspaceRoot} />
+          </div>
+        </div>
         <RightDock
           state={dockState}
           minWidth={SINGLE_PANEL_MIN_WIDTH}
