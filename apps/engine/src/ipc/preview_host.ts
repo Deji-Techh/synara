@@ -296,7 +296,10 @@ export async function runFlutterPubGet(appPath: string): Promise<void> {
   }
 }
 
-/** Allocate a TCP port on 127.0.0.1 — preferred one, or an ephemeral one. */
+/** Ports currently reserved by active previews — avoids concurrent TOCTOU where two starts both grab 8080 before either binds. */
+const allocatedPreviewPorts = new Set<number>();
+
+/** Allocate a TCP port on 127.0.0.1 — preferred one, or an ephemeral one. Tracks allocatedPreviewPorts to avoid races. */
 async function pickFreePort(preferred?: number): Promise<number> {
   const tryListen = (port: number): Promise<number> =>
     new Promise<number>((resolve, reject) => {
@@ -313,12 +316,54 @@ async function pickFreePort(preferred?: number): Promise<number> {
       });
       server.listen(port, "127.0.0.1", () => {
         const address = server.address();
+        const resolvedPort = typeof address === "object" && address !== null ? address.port : port;
+        // Reserve before closing to block concurrent pickers (TOCTOU window).
+        if (resolvedPort !== 0) allocatedPreviewPorts.add(resolvedPort);
         server.close(() => {
-          resolve(typeof address === "object" && address !== null ? address.port : port);
+          // Keep reservation until spawnFlutterRun either binds or fails; if we picked 8080 but there is
+          // a concurrent racer, the second picker will see 8080 in allocatedPreviewPorts and skip it.
+          // We release after a short grace so TOCTOU runners have time to bind.
+          if (resolvedPort !== 0) {
+            setTimeout(() => allocatedPreviewPorts.delete(resolvedPort), 15_000);
+          }
+          resolve(resolvedPort);
         });
       });
     });
-  return tryListen(preferred ?? DEFAULT_PREVIEW_PORT);
+
+  const pick = async (preferredPort?: number): Promise<number> => {
+    // If the preferred port is already reserved by a concurrent start, skip the probe and go ephemeral.
+    if (
+      preferredPort !== undefined &&
+      preferredPort !== 0 &&
+      (allocatedPreviewPorts.has(preferredPort) ||
+        [...activePreviews.values()].some((e) => e.running && e.port === preferredPort))
+    ) {
+      return tryListen(0);
+    }
+    const port = await tryListen(preferredPort ?? DEFAULT_PREVIEW_PORT);
+    // Also avoid ports already held by running previews (defensive — race after probe).
+    const inUseByActive = [...activePreviews.values()].some((e) => e.running && e.port === port);
+    if (inUseByActive && port !== 0) {
+      return tryListen(0);
+    }
+    return port;
+  };
+
+  return pick(preferred);
+}
+
+function isPortInUseError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error ?? "");
+  const lower = msg.toLowerCase();
+  return (
+    lower.includes("address already in use") ||
+    lower.includes("failed to bind web development server") ||
+    lower.includes("failed to create server socket") ||
+    lower.includes("socketexception") ||
+    lower.includes("errno = 98") ||
+    lower.includes("eaddrinuse")
+  );
 }
 
 function emitFlutterProgress(progress: {
@@ -472,6 +517,7 @@ async function runTests(params: unknown): Promise<ProtocolTestResult> {
 
 async function stopPreviewEntry(entry: PreviewEntry): Promise<void> {
   stopPreviewWatcher(entry.appDir);
+  if (entry.port) allocatedPreviewPorts.delete(entry.port);
   const child = entry.child;
   entry.child = null;
   entry.running = false;
@@ -681,22 +727,58 @@ async function startPreview(params: unknown): Promise<PreviewStartResult> {
 
   const device = (parsed.device ?? "web-server") as PreviewEntry["device"];
   validateDevicePlatform(device);
-  const port =
-    device === "web-server" ? (parsed.port ?? (await pickFreePort(DEFAULT_PREVIEW_PORT))) : 0;
   const hostname = parsed.hostname ?? DEFAULT_PREVIEW_HOSTNAME;
-  const entry: PreviewEntry = {
-    appDir: parsed.appDir,
-    child: null,
-    port,
-    url: "",
-    running: false,
-    logs: [],
-    device,
-    deviceId: parsed.deviceId ?? null,
-  };
-  activePreviews.set(parsed.appDir, entry);
-  const url = await spawnFlutterRun(parsed.appDir, entry, hostname);
-  return { url, kind: device === "web-server" ? "web" : "native" };
+
+  const maxAttempts = 3;
+  let lastError: unknown = null;
+  let initialPreferredPort: number | undefined = undefined;
+  if (device === "web-server") {
+    initialPreferredPort = parsed.port ?? DEFAULT_PREVIEW_PORT;
+  }
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const port =
+      device === "web-server"
+        ? attempt === 0
+          ? initialPreferredPort !== undefined
+            ? await pickFreePort(initialPreferredPort)
+            : await pickFreePort(DEFAULT_PREVIEW_PORT)
+          : await pickFreePort(0)
+        : 0;
+
+    const entry: PreviewEntry = {
+      appDir: parsed.appDir,
+      child: null,
+      port,
+      url: "",
+      running: false,
+      logs: [],
+      device,
+      deviceId: parsed.deviceId ?? null,
+    };
+    activePreviews.set(parsed.appDir, entry);
+    try {
+      const url = await spawnFlutterRun(parsed.appDir, entry, hostname);
+      // Success — keep reservation until stopPreviewEntry clears it.
+      return { url, kind: device === "web-server" ? "web" : "native" };
+    } catch (error) {
+      lastError = error;
+      // Clean up failed entry before retry.
+      activePreviews.delete(parsed.appDir);
+      await stopPreviewEntry(entry);
+      // Also ensure logs from failed run are visible if we exhaust retries.
+      if (isPortInUseError(error) && attempt < maxAttempts - 1 && device === "web-server") {
+        logger.warn(
+          `preview: ${parsed.appDir} port ${port} in use — retrying with ephemeral port (attempt ${attempt + 1}/${maxAttempts})`,
+        );
+        // Small backoff to let the OS release the port.
+        await new Promise<void>((resolve) => setTimeout(resolve, 350 + attempt * 300));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw lastError ?? new CaideError("preview start failed after retries", CaideErrorKind.External);
 }
 
 async function stopPreview(params: unknown): Promise<PreviewStopResult> {
