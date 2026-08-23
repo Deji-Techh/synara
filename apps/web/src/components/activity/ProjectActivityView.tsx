@@ -73,6 +73,24 @@ export function ProjectActivityView({ projectId }: { projectId: ProjectId }) {
         setProjectName(project?.title ?? null);
       })
       .catch(() => undefined);
+    // Live refresh while the view is visible (matches t3code/dyad polling pattern).
+    const interval = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      void api.orchestration
+        .getProjectActivity({ projectId, limit: 200 })
+        .then((result) => setItems(result.items))
+        .catch(() => undefined);
+    }, 5000);
+    const onFocus = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
   }, [projectId]);
 
   const groups = useMemo(() => groupProjectActivityByDay(items), [items]);

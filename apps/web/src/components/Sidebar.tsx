@@ -1113,7 +1113,7 @@ function SortableProjectItem({
  * Activity view is on, with an unread dot when completions are waiting.
  */
 const ACTIVITY_ONBOARDING_STORAGE_KEY = "caide:activity-onboarding:v1";
-const ACTIVITY_ONBOARDING_DURATION_MS = 8_000;
+const ACTIVITY_ONBOARDING_DURATION_MS = 4_000;
 
 function shouldShowActivityOnboarding(): boolean {
   if (typeof window === "undefined") return false;
@@ -1790,17 +1790,9 @@ export default function Sidebar() {
     [chatWorkspaceRoot, homeDir, projects],
   );
 
-  const activeSpaceSidebarTreeThreads = useMemo(
-    () =>
-      sidebarTreeThreads.filter((thread) => {
-        const project = projectById.get(thread.projectId);
-        return (
-          !isOrdinarySpaceProject(project, { homeDir, chatWorkspaceRoot }) ||
-          (project.spaceId ?? null) === activeSpaceId
-        );
-      }),
-    [activeSpaceId, chatWorkspaceRoot, homeDir, projectById, sidebarTreeThreads],
-  );
+  // Flattened: show threads from all projects regardless of active Space.
+  // Keeping Space data for legacy compatibility but not filtering the sidebar surface.
+  const activeSpaceSidebarTreeThreads = useMemo(() => sidebarTreeThreads, [sidebarTreeThreads]);
   const pinnedThreads = useMemo(
     () => getPinnedThreadsForSidebar(activeSpaceSidebarTreeThreads, pinnedThreadIds),
     [activeSpaceSidebarTreeThreads, pinnedThreadIds],
@@ -2401,10 +2393,8 @@ export default function Sidebar() {
     [navigate, syncServerShellSnapshot],
   );
 
-  const activeSpaceProjects = useMemo(
-    () => ordinarySpaceProjects.filter((project) => (project.spaceId ?? null) === activeSpaceId),
-    [activeSpaceId, ordinarySpaceProjects],
-  );
+  // Flattened: new-thread targets consider all projects, not just active Space.
+  const activeSpaceProjects = useMemo(() => ordinarySpaceProjects, [ordinarySpaceProjects]);
   const currentProjectShortcutTargetId = useMemo(
     () => resolveCurrentProjectTargetId(activeSpaceProjects, focusedProjectId),
     [activeSpaceProjects, focusedProjectId],
@@ -5440,47 +5430,14 @@ export default function Sidebar() {
               {/* Primary sidebar actions stay limited to features we currently ship. */}
               <SidebarGroup className="px-1.5 pt-1 pb-1.5">
                 <SidebarMenu className="gap-0.5">
-                  {
-                    <>
-                      <SidebarPrimaryAction
-                        icon={NewThreadIcon}
-                        iconClassName="size-3.5"
-                        label="New thread"
-                        onClick={handlePrimaryNewThread}
-                        onMouseEnter={prefetchModelsForPrimaryNewThread}
-                        onFocus={prefetchModelsForPrimaryNewThread}
-                      />
-                      <SidebarPrimaryAction
-                        icon={KanbanIcon}
-                        label="Kanban"
-                        active={isOnKanban}
-                        onClick={() => {
-                          void navigate({ to: "/kanban" });
-                        }}
-                      />
-                      <SidebarPrimaryAction
-                        icon={IoIosGitCompare}
-                        label="Pull requests"
-                        active={isOnPullRequests}
-                        badge={pullRequestsReviewBadge}
-                        onClick={() => {
-                          void navigate({
-                            to: "/pull-requests",
-                            search: { involvement: "all", state: "open" },
-                          });
-                        }}
-                      />
-                      <SidebarPrimaryAction
-                        icon={ClockIcon}
-                        label="Automations"
-                        active={isOnAutomations}
-                        badge={automationAttentionBadge}
-                        onClick={() => {
-                          void navigate({ to: "/automations" });
-                        }}
-                      />
-                    </>
-                  }
+                  <SidebarPrimaryAction
+                    icon={NewThreadIcon}
+                    iconClassName="size-3.5"
+                    label="New thread"
+                    onClick={handlePrimaryNewThread}
+                    onMouseEnter={prefetchModelsForPrimaryNewThread}
+                    onFocus={prefetchModelsForPrimaryNewThread}
+                  />
                 </SidebarMenu>
               </SidebarGroup>
 

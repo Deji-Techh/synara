@@ -9,6 +9,9 @@ import { ModelSelection } from "./orchestration";
 
 const CAIDE_APP_NAME_MAX_LENGTH = 64;
 
+export const FLUTTER_APP_TEMPLATES = ["blank", "counter", "firebase", "supabase"] as const;
+export type FlutterAppTemplateId = (typeof FLUTTER_APP_TEMPLATES)[number];
+
 export const AppCreateInput = Schema.Struct({
   /** Human-facing app name; the server slugifies it into the folder name. */
   name: TrimmedNonEmptyString.check(Schema.isMaxLength(CAIDE_APP_NAME_MAX_LENGTH)),
@@ -18,6 +21,11 @@ export const AppCreateInput = Schema.Struct({
    * Home sends keep their Builder-first behavior.
    */
   modelSelection: Schema.optional(ModelSelection),
+  /**
+   * Flutter template id. When omitted the server scaffolds the default
+   * (Flutter counter) template so Home sends keep their Flutter-first behavior.
+   */
+  templateId: Schema.optional(Schema.Literals(["blank", "counter", "firebase", "supabase"])),
 });
 export type AppCreateInput = typeof AppCreateInput.Type;
 
