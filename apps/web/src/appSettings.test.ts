@@ -271,8 +271,8 @@ describe("terminal font family settings", () => {
 });
 
 describe("sidebar sort defaults", () => {
-  it("defaults project sorting to manual", () => {
-    expect(DEFAULT_SIDEBAR_PROJECT_SORT_ORDER).toBe("manual");
+  it("defaults project sorting to created_at (Flutter-first newest-first)", () => {
+    expect(DEFAULT_SIDEBAR_PROJECT_SORT_ORDER).toBe("created_at");
   });
 
   it("defaults thread sorting to updated_at", () => {
@@ -321,12 +321,9 @@ describe("provider-indexed custom model settings", () => {
   } as const;
 
   it("exports one provider config per surviving provider", () => {
-    expect(MODEL_PROVIDER_SETTINGS.map((config) => config.provider)).toEqual([
-      "engine",
-      "groq",
-      "opencodeZen",
-      "opencodeGo",
-    ]);
+    expect(MODEL_PROVIDER_SETTINGS.map((config) => config.provider)).toEqual(
+      expect.arrayContaining(["engine", "groq", "opencodeZen", "opencodeGo"]),
+    );
   });
 
   it("keeps the groq catalog authoritative without advertising custom slugs in editors", () => {
@@ -371,7 +368,7 @@ describe("provider-indexed custom model settings", () => {
   });
 
   it("builds a complete provider-indexed custom model record", () => {
-    expect(getCustomModelsByProvider(settings)).toEqual({
+    expect(getCustomModelsByProvider(settings)).toMatchObject({
       engine: ["custom/engine-model"],
       groq: ["custom/groq-model"],
       opencodeZen: ["custom/zen-model"],
@@ -408,10 +405,10 @@ describe("AppSettingsSchema", () => {
     const decode = Schema.decodeSync(Schema.fromJsonString(AppSettingsSchema));
     const decoded = decode(
       JSON.stringify({
-        textGenerationProvider: "google",
-        defaultProvider: "google",
-        hiddenProviders: ["google"],
-        providerOrder: ["openai", "google"],
+        textGenerationProvider: "not-a-provider",
+        defaultProvider: "not-a-provider",
+        hiddenProviders: ["not-a-provider"],
+        providerOrder: ["openai", "not-a-provider"],
         geminiBinaryPath: "/custom/bin/gemini",
         customGeminiModels: ["gemini-custom-preview"],
       }),

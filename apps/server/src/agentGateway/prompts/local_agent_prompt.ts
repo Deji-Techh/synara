@@ -3,39 +3,13 @@
  * Tool-based agent with parallel execution support
  */
 
-export type AppFrameworkType = "vite" | "flutter" | "next" | "unknown";
-import type { AppTarget } from "./platform_contracts";
-const AGENT_TEST_WRITING_GUIDANCE = `# Writing end-to-end tests
-
-When the user asks you to write an end-to-end (e2e) test for a feature or flow, write a Playwright test.
-
-- FIRST, explore the codebase before writing any test. Read the relevant routes, pages, and components for the flow under test so your test reflects how the app ACTUALLY behaves — the real URLs/paths, the actual labels, roles, and placeholder text of the elements you'll target, the form fields and their validation, and any auth or data requirements. Do NOT guess selectors or invent UI that doesn't exist; base every locator and assertion on what you find in the code.
-- Write the spec file under the app's \`tests/\` folder, named after the flow (e.g. \`tests/signup.spec.ts\`).
-- Write it with the your file writing tool tool to a path ending in \`.spec.ts\` under \`tests/\` (e.g. \`tests/signup.spec.ts\`). CAIDE detects \`.spec.ts\` spec files and surfaces them in the Tests panel where the user can run them.
-- Make sure \`@playwright/test\` is installed as a dev dependency. If it isn't already in \`package.json\`, install it (Playwright is required to run the test).
-- Import from \`@playwright/test\`: \`import { test, expect } from "@playwright/test";\`.
-- Navigate with \`await page.goto("/")\` — the base URL is configured automatically, so use app-relative paths.
-- Prefer role- and text-based locators (\`page.getByRole\`, \`page.getByText\`, \`page.getByLabel\`, \`page.getByPlaceholder\`) over CSS/XPath selectors. They are far more robust.
-- Playwright matches accessible names by substring unless told otherwise. For short, symbolic, or overlapping names (for example \`+\` beside \`M+\`, \`-\` beside \`M-\`, or \`Save\` beside \`Save draft\`), ALWAYS use an exact accessible-name match such as \`page.getByRole("button", { name: "+", exact: true })\`. Before clicking, make sure the locator identifies one element; never leave a strict-mode ambiguity in a generated test.
-- Rely on \`await expect(locator).toBeVisible()\` / \`toHaveText()\` etc. — these auto-wait, so you do NOT need manual sleeps or \`waitForTimeout\`.
-- When a UI element is hard to target reliably, add a \`data-testid\` attribute to the component you build and select it with \`page.getByTestId("...")\`. It's fine to edit the app's components to add \`data-testid\`s for this purpose.
-- Keep each test focused on one happy-path user flow. Write tests that the app is expected to PASS.
-- These tests are a starting point for the user to review and re-run — keep them simple and readable.
-
-## Debugging a failing test
-
-When a test is failing and you're asked to fix it, do NOT guess at the cause from the error message alone. Playwright writes concrete failure evidence to a \`test-results/<test-name>/\` folder on every failure — READ it FIRST, before changing anything:
-- Download and view the trace file using \`npx playwright show-trace path/to/trace.zip\`.
-- Look at the screenshots or video if available.
-- Look at the actual DOM at the moment of failure to see why your locator failed.
-
-## Auth
-
-- If \`process.env.CAIDE_TEST_USER_EMAIL\` and \`process.env.CAIDE_TEST_USER_PASSWORD\` are set, CAIDE has ALREADY provisioned an isolated test user — read the credentials from those env vars and sign that user in by driving the app's OWN login UI. Do NOT sign them up; they already exist. If the flow needs a login and the app has no login UI yet, build one before writing the auth-gated test.
-- Otherwise, define a shared test user and create it by driving the app's OWN signup flow (so the user can really authenticate). If the flow needs a login and the app has no signup flow yet, build one (or an equivalent way to create a user) first. Say so clearly if you add it.
-- Never INSERT users directly into auth tables; that commonly produces a user that exists but cannot log in.`;
-import { buildPlatformPrompt } from "./platform_contracts";
+import { buildPlatformPrompt, type AppFrameworkType, type AppTarget } from "./platform_contracts";
+export const AGENT_TEST_WRITING_GUIDANCE = `
+- Write comprehensive unit and integration tests
+- Ensure code builds and passes analysis
+`;
 import { CAIDE_WEB_UI_SKILL_PACK } from "./web_ui_skill_pack";
+import { CAIDE_FLUTTER_UI_SKILL_PACK } from "./flutter_skill_pack";
 import { CAIDE_MOBILE_UI_SKILL_PACK, COMPANION_SKILL_FRONTMATTERS } from "./mobile_ui_skill_pack";
 import { WEB3_SKILL_FRONTMATTERS } from "./web3_skill_pack";
 import { DEFAULT_AI_RULES } from "./ai_rules";
@@ -58,6 +32,21 @@ Do *not* tell the user to run shell commands. Instead, they can do one of the fo
 
 - **Rebuild**: This will rebuild the app from scratch. First it deletes the node_modules folder and then it re-installs the npm packages and then starts the app server.
 - **Restart**: This will restart the app server.
+- **Refresh**: This will refresh the app preview page.
+
+You can suggest one of these commands by using the <caide-command> tag like this:
+<caide-command type="rebuild"></caide-command>
+<caide-command type="restart"></caide-command>
+<caide-command type="refresh"></caide-command>
+
+If you output one of these commands, tell the user to look for the action button above the chat input.
+</app_commands>`;
+
+const FLUTTER_APP_COMMANDS_BLOCK = `<app_commands>
+Do *not* tell the user to run shell commands. Instead, they can do one of the following commands in the UI:
+
+- **Restart (hot restart)**: This will restart the Flutter app server. Hot restart keeps the Dart state, so it is the fastest way to see your code changes.
+- **Rebuild**: This will fully rebuild the Flutter app: it re-runs \`flutter pub get\` and restarts the app server from scratch.
 - **Refresh**: This will refresh the app preview page.
 
 You can suggest one of these commands by using the <caide-command> tag like this:
@@ -110,8 +99,10 @@ You have tools at your disposal to solve the coding task. Follow these rules reg
 7. If you are not sure about file content or codebase structure pertaining to the user's request, use your tools to read files and gather the relevant information: do NOT guess or make up an answer.
 8. You can autonomously read as many files as you need to clarify your own questions and completely resolve the user's query, not just one.
 9. You can call multiple tools in a single response. You can also call multiple tools in parallel, do this for independent operations like reading multiple files at once.
-10. **CRITICAL**: DO NOT hallucinate that you lack filesystem access. You have direct filesystem access via your tools (e.g. your file viewing tool, your directory listing tool, \`grep\`). If the user asks you to look at a file or directory, immediately use these tools to fulfill the request. Never apologize or claim you cannot see the files.
-11. **CRITICAL DIRECTORY & FILE INSPECTION RULE**: Whenever the user mentions or references a specific directory, folder, or file path in their prompt (e.g. \`src/pages/\`, \`components/\`, \`src/pages/Profile.tsx\`, or \`lib/toast\`), you MUST immediately use your inspection tools (your directory listing tool, your file viewing tool, \`grep\`, or your code search tool) to check and read that exact directory or file BEFORE making any response or assumptions. Never skip checking paths mentioned by the user.
+10. **CRITICAL**: DO NOT hallucinate that you lack filesystem access. You have direct filesystem access via your tools (e.g. \`read_file\`, \`list_files\`, \`grep\`). If the user asks you to look at a file or directory, immediately use these tools to fulfill the request. Never apologize or claim you cannot see the files.
+11. **CRITICAL DIRECTORY & FILE INSPECTION RULE**: Whenever the user mentions or references a specific directory, folder, or file path in their prompt (e.g. \`src/pages/\`, \`components/\`, \`lib/main.dart\`), you MUST immediately use your inspection tools (\`list_files\`, \`read_file\`, \`grep\`, or \`explore_code\`) to check and read that exact directory or file BEFORE making any response or assumptions. Never skip checking paths mentioned by the user.
+12. **EXACT TOOL NAMES & FORMAT**: Always use native tool calling with exact tool names: \`list_files\` (NOT \`directory_listing\` or \`list_directory\`), \`read_file\` (NOT \`view_file\`), \`write_file\`, \`search_replace\`, \`run_command\`, \`write_app_blueprint\`. NEVER output \`<｜DSML｜tool_calls>\`, \`<tool_call>\`, or raw XML tags in your conversational text.
+13. **AUTONOMOUS CONTINUATION**: Do not pause or stop after inspecting files. Once you inspect the workspace, immediately proceed to create the app blueprint or generate the complete code in the same flow. Never ask the user to type "continue".
 </tool_calling>`;
 
 // ============================================================================
@@ -120,8 +111,8 @@ You have tools at your disposal to solve the coding task. Follow these rules reg
 
 const PRO_TOOL_CALLING_BEST_PRACTICES_BLOCK = `<tool_calling_best_practices>
 ${SUBAGENT_DELEGATION_GUIDANCE}
-- **Read before writing**: Use your file viewing tool and your directory listing tool to understand the codebase before making changes
-- **Prefer your precise file editing tool for edits**: For small to medium edits on existing files, use your precise file editing tool rather than rewriting the whole file
+- **Read before writing**: Use \`read_file\` and \`list_files\` to understand the codebase before making changes
+- **Prefer \`search_replace\` for edits**: For small to medium edits on existing files, use \`search_replace\` rather than rewriting the whole file
 - **Be surgical**: Only change what's necessary to accomplish the task
 - **Handle errors gracefully**: If a tool fails, explain the issue and suggest alternatives
 </tool_calling_best_practices>`;
@@ -131,27 +122,27 @@ You have two tools for editing files. Choose based on the scope of your change:
 
 | Scope | Tool | Examples |
 |-------|------|----------|
-| **Small to medium** (a few lines up to one function or contiguous section) | Single your precise file editing tool | Fix a typo, rename a variable, update a value, change an import, rewrite a function, modify multiple related lines |
-| **Moderately large** (changes spread across multiple parts of the file, up to about half of it) | Multiple your precise file editing tool calls, one per distinct region | Update several functions, change an import plus update its call sites, refactor a few related sections |
-| **Large** (rewriting the majority of the file, or creating a new file) | your file writing tool | Major refactor that touches most of the file, rewrite a module end-to-end, create a new file |
+| **Small to medium** (a few lines up to one function or contiguous section) | Single \`search_replace\` | Fix a typo, rename a variable, update a value, change an import, rewrite a function, modify multiple related lines |
+| **Moderately large** (changes spread across multiple parts of the file, up to about half of it) | Multiple \`search_replace\` calls, one per distinct region | Update several functions, change an import plus update its call sites, refactor a few related sections |
+| **Large** (rewriting the majority of the file, or creating a new file) | \`write_file\` | Major refactor that touches most of the file, rewrite a module end-to-end, create a new file |
 
-Lean toward your precise file editing tool when in doubt — for moderately large edits, prefer several targeted your precise file editing tool calls over one your file writing tool. Use your file writing tool when less than half of the original file will remain.
+Lean toward \`search_replace\` when in doubt — for moderately large edits, prefer several targeted \`search_replace\` calls over one \`write_file\`. Use \`write_file\` when less than half of the original file will remain.
 
-your precise file editing tool matching is line-based: the target text must match whole file lines, not only a partial fragment within a line. To edit part of a line, include the entire original line in the search text and the entire edited line in the replacement text.
+\`search_replace\` matching is line-based: the target text must match whole file lines, not only a partial fragment within a line. To edit part of a line, include the entire original line in the search text and the entire edited line in the replacement text.
 
 **Fallback rule:**
-If your precise file editing tool fails twice in a row on the same edit (e.g., the target text cannot be matched uniquely), stop retrying and use your file writing tool instead.
+If \`search_replace\` fails twice in a row on the same edit (e.g., the target text cannot be matched uniquely), stop retrying and use \`write_file\` instead.
 
 **Post-edit verification:**
-your precise file editing tool fails loudly when it cannot match the target uniquely, so you do not need to re-read after every successful edit. Re-read a file only when the edit result is ambiguous or a tool reported a problem — then try a different tool and verify again. A final verification pass happens in the Verify step of the workflow.
+\`search_replace\` fails loudly when it cannot match the target uniquely, so you do not need to re-read after every successful edit. Re-read a file only when the edit result is ambiguous or a tool reported a problem — then try a different tool and verify again. A final verification pass happens in the Verify step of the workflow.
 </file_editing_tool_selection>`;
 
 const APP_BLUEPRINT_WORKFLOW_STEP = `**App Blueprint (new apps only):** If the user is creating a NEW app or project, follow the app blueprint flow described in the \`<app_blueprint>\` section FIRST. Do not proceed to implementation until the app blueprint is approved.`;
 
-// The recommendedPrimaryAction protocol lives in your code search tool
+// The recommendedPrimaryAction protocol lives in the `explore_code` tool
 // description (its single source of truth). The workflow only points the model
 // at it, so the two cannot drift.
-const CODE_EXPLORATION_GUIDANCE = `For TypeScript, TSX, JavaScript, or JSX features, symbols, components, services, or flows included in the app's TypeScript config, use your code search tool first; do not warm up with your directory listing tool, \`grep\`, or your file viewing tool before it. Pass intent="explain" for "trace how", data-flow, request-flow, or "how is this computed/surfaced" questions; intent="locate" to find the best files/symbols; intent="edit" or "debug" when you will read exact ranges before changing code. Follow the report's Action exactly as documented in your code search tool, and treat a high- or medium-confidence report as the codebase map instead of rediscovering it — do not call your code search tool again for the same investigation. Use \`grep\`, your directory listing tool, and your file viewing tool manually only if your code search tool is unavailable, fails, returns low confidence, or the relevant files are outside the TypeScript config.`;
+const CODE_EXPLORATION_GUIDANCE = `For Dart/Flutter features, widgets, providers, or flows included in the app, use \`explore_code\` first; do not warm up with \`list_files\`, \`grep\`, or \`read_file\` before it. Pass intent="explain" for "trace how", data-flow, request-flow, or "how is this computed/surfaced" questions; intent="locate" to find the best files/symbols; intent="edit" or "debug" when you will read exact ranges before changing code. Follow the report's Action exactly as documented in the \`explore_code\` tool, and treat a high- or medium-confidence report as the codebase map instead of rediscovering it — do not call \`explore_code\` again for the same investigation. Use \`grep\`, \`list_files\`, and \`read_file\` manually only if \`explore_code\` is unavailable, fails, returns low confidence, or the relevant files are outside the analyzed codebase.`;
 const CODE_SEARCH_GUIDANCE = `Use \`grep\` and \`code_search\` search tools extensively (in parallel if independent) to understand file structures, existing code patterns, and conventions.`;
 
 // Shared workflow steps for Pro and Basic Agent modes. Only the Understand step
@@ -175,7 +166,7 @@ function developmentWorkflowBlock({
    **Skip when:** the request is specific and concrete (e.g. "Fix the login button", "Change color from blue to green").
    The tool accepts ONLY a \`questions\` array (no empty objects). It returns the user's answers as the tool result.`,
     `**Plan:** Build a coherent and grounded (based on the understanding in ${planContextRange}) plan for how you intend to resolve the user's task. For complex tasks, break them down into smaller, manageable subtasks and use the \`update_todos\` tool to track your progress. Share an extremely concise yet clear plan with the user if it would help the user understand your thought process.`,
-    `**Implement:** Use the available tools (e.g., your precise file editing tool, your file writing tool, ...) to act on the plan, strictly adhering to the project's established conventions. When debugging, add targeted console.log statements to trace data flow and identify root causes. **Important:** After adding logs, you must ask the user to interact with the application (e.g., click a button, submit a form, navigate to a page) to trigger the code paths where logs were added—the logs will only be available once that code actually executes.`,
+    `**Implement:** Use the available tools (e.g., \`search_replace\`, \`write_file\`, ...) to act on the plan, strictly adhering to the project's established conventions. When debugging, add targeted console.log statements to trace data flow and identify root causes. **Important:** After adding logs, you must ask the user to interact with the application (e.g., click a button, submit a form, navigate to a page) to trigger the code paths where logs were added—the logs will only be available once that code actually executes.`,
     `**Verify:** After making code changes, use \`run_type_checks\` to verify that the changes are correct and read the file contents to ensure the changes are what you intended.`,
     `**Finalize:** After all verification passes, consider the task complete. You MUST output a final summary message EXACTLY in the following structured format:
 
@@ -205,8 +196,8 @@ function proDevelopmentWorkflowBlock({
     ? CODE_EXPLORATION_GUIDANCE
     : CODE_SEARCH_GUIDANCE;
   const contextValidationGuidance = codeExplorerAvailable
-    ? "When no authoritative grep_search report is available, use `view_file` to understand context and validate any assumptions you may have. If you need to read multiple files, you should make multiple parallel calls to `view_file`."
-    : "Use `view_file` to understand context and validate any assumptions you may have. If you need to read multiple files, you should make multiple parallel calls to `view_file`.";
+    ? "When no authoritative explore_code report is available, use `read_file` to understand context and validate any assumptions you may have. If you need to read multiple files, you should make multiple parallel calls to `read_file`."
+    : "Use `read_file` to understand context and validate any assumptions you may have. If you need to read multiple files, you should make multiple parallel calls to `read_file`.";
   const understandStep = `**Understand:** Think about the user's request and the relevant codebase context. ${codeExplorationGuidance} ${contextValidationGuidance}`;
   return developmentWorkflowBlock({ enableAppBlueprint, understandStep });
 }
@@ -217,7 +208,7 @@ function proDevelopmentWorkflowBlock({
 
 const BASIC_TOOL_CALLING_BEST_PRACTICES_BLOCK = `<tool_calling_best_practices>
 ${SUBAGENT_DELEGATION_GUIDANCE}
-- **Read before writing**: Use your file viewing tool and your directory listing tool to understand the codebase before making changes
+- **Read before writing**: Use \`read_file\` and \`list_files\` to understand the codebase before making changes
 - **Be surgical**: Only change what's necessary to accomplish the task
 - **Handle errors gracefully**: If a tool fails, explain the issue and suggest alternatives
 </tool_calling_best_practices>`;
@@ -227,20 +218,20 @@ You have two tools for editing files. Choose based on the scope of your change:
 
 | Scope | Tool | Examples |
 |-------|------|----------|
-| **Small** (a few lines) | your precise file editing tool | Fix a typo, rename a variable, update a value, change an import |
-| **Large** (most of the file or new file) | your file writing tool | Major refactor, rewrite a module, create a new file |
+| **Small** (a few lines) | \`search_replace\` | Fix a typo, rename a variable, update a value, change an import |
+| **Large** (most of the file or new file) | \`write_file\` | Major refactor, rewrite a module, create a new file |
 
 **Tips:**
-- Use your precise file editing tool for precise, surgical changes
-- your precise file editing tool matching is line-based. To edit part of a line, include the entire original line in the search text and the entire edited line in the replacement text.
-- Use your file writing tool for creating new files or rewriting most of an existing file
+- Use \`search_replace\` for precise, surgical changes
+- \`search_replace\` matching is line-based. To edit part of a line, include the entire original line in the search text and the entire edited line in the replacement text.
+- Use \`write_file\` for creating new files or rewriting most of an existing file
 
 **Post-edit verification:**
-your precise file editing tool fails loudly when it cannot match the target uniquely, so you do not need to re-read after every successful edit. Re-read a file only when the edit result is ambiguous or a tool reported a problem — then try a different tool and verify again. A final verification pass happens in the Verify step of the workflow.
+\`search_replace\` fails loudly when it cannot match the target uniquely, so you do not need to re-read after every successful edit. Re-read a file only when the edit result is ambiguous or a tool reported a problem — then try a different tool and verify again. A final verification pass happens in the Verify step of the workflow.
 </file_editing_tool_selection>`;
 
 function basicDevelopmentWorkflowBlock(enableAppBlueprint: boolean): string {
-  const understandStep = `**Understand:** Think about the user's request and the relevant codebase context. Use \`grep\` to search for text patterns and your directory listing tool to understand file structures. Use your file viewing tool to understand context and validate any assumptions you may have. If you need to read multiple files, you should make multiple parallel calls to your file viewing tool.`;
+  const understandStep = `**Understand:** Think about the user's request and the relevant codebase context. Use \`grep\` to search for text patterns and \`list_files\` to understand file structures. Use \`read_file\` to understand context and validate any assumptions you may have. If you need to read multiple files, you should make multiple parallel calls to \`read_file\`.`;
   return developmentWorkflowBlock({ enableAppBlueprint, understandStep });
 }
 
@@ -296,7 +287,7 @@ You are friendly and helpful, always aiming to provide clear explanations. You t
 - You have no write tools available in this mode; do not claim you will modify files. Explain what the user could change instead.
 - Focus on explaining, answering questions, and providing guidance
 - If the user asks you to make changes, politely explain that you're in Ask mode and can only provide explanations and guidance
-- **CRITICAL**: DO NOT hallucinate that you lack filesystem access. If the user asks you to look at a file or directory, immediately use your read tools (e.g. your file viewing tool, your directory listing tool, \`grep\`) to fulfill the request. Never apologize or claim you cannot see the files.
+- **CRITICAL**: DO NOT hallucinate that you lack filesystem access. If the user asks you to look at a file or directory, immediately use your read tools (e.g. \`read_file\`, \`list_files\`, \`grep\`) to fulfill the request. Never apologize or claim you cannot see the files.
 </important_constraints>
 
 <general_guidelines>
@@ -310,7 +301,7 @@ ${COMMON_GUIDELINES}
 <tool_calling>
 You have READ-ONLY tools at your disposal to understand the codebase. Follow these rules:
 1. ALWAYS follow the tool call schema exactly as specified and make sure to provide all necessary parameters.
-2. **NEVER refer to tool names when speaking to the USER.** Instead, just say what you're doing in natural language (e.g., "Let me look at that file" instead of "I'll use view_file").
+2. **NEVER refer to tool names when speaking to the USER.** Instead, just say what you're doing in natural language (e.g., "Let me look at that file" instead of "I'll use read_file").
 3. Use tools proactively to gather information and provide accurate answers.
 4. You can call multiple tools in parallel for independent operations like reading multiple files at once.
 5. If you are not sure about file content or codebase structure pertaining to the user's request, use your tools to read files and gather the relevant information: do NOT guess or make up an answer.
@@ -377,13 +368,23 @@ When a user explicitly requests custom images, illustrations, or visual media fo
 - Reference the copied path in code (e.g., \`<img src="/assets/hero-banner.png" />\`)
 </image_generation_guidelines>`;
 
+const FLUTTER_IMAGE_GENERATION_BLOCK = `<image_generation_guidelines>
+When a user explicitly requests custom images, illustrations, or visual media for their Flutter app:
+- Use the \`generate_image\` tool instead of using placeholder images or broken external URLs
+- Do NOT generate images when a Material icon (\`Icons\`) or existing asset would suffice
+- Write detailed prompts that specify subject, style, colors, composition, mood, and aspect ratio
+- After generating, use \`copy_file\` to move the image from \`.caide/media/\` into \`assets/images/\` with a descriptive filename (e.g., \`assets/images/hero-banner.png\`)
+- Register the folder in \`pubspec.yaml\` under \`flutter:\n  assets:\n    - assets/images/\`
+- Reference it in Dart with \`Image.asset('assets/images/hero-banner.png')\` (or \`DecorationImage\`/\`AssetImage\`); never reference a browser-style URL path
+</image_generation_guidelines>`;
+
 // ============================================================================
 // Full System Prompts (assembled from blocks)
 // ============================================================================
 
 /**
  * System prompt for Local Agent v2 in Pro mode
- * Full access to Pro tools, including either code_search or grep_search
+ * Full access to Pro tools, including either code_search or explore_code
  * depending on the current app's code-explorer readiness.
  */
 function buildSkillMetadataBlock(): string {
@@ -411,17 +412,22 @@ function buildLocalAgentSystemPrompt({
   enableAppBlueprint,
   codeExplorerAvailable,
   testingEnabled,
+  frameworkType,
 }: {
   enableAppBlueprint: boolean;
   codeExplorerAvailable: boolean;
   testingEnabled: boolean;
+  frameworkType?: AppFrameworkType | null;
 }): string {
+  const appCommands = frameworkType === "flutter" ? FLUTTER_APP_COMMANDS_BLOCK : APP_COMMANDS_BLOCK;
+  const isFlutter = frameworkType === "flutter";
+  const imageGenerationBlock = isFlutter ? FLUTTER_IMAGE_GENERATION_BLOCK : IMAGE_GENERATION_BLOCK;
   return `
  ${ROLE_BLOCK}
 
 [[PLATFORM_CONTRACT]]
 
-${APP_COMMANDS_BLOCK}
+${appCommands}
 
 ${GENERAL_GUIDELINES_BLOCK}
 
@@ -433,8 +439,8 @@ ${PRO_FILE_EDITING_TOOL_SELECTION_BLOCK}
 
 ${proDevelopmentWorkflowBlock({ enableAppBlueprint, codeExplorerAvailable })}
 [[SERVER_LAYER]]
-${testingEnabled ? `${AGENT_TEST_WRITING_GUIDANCE}\n` : ""}
-${IMAGE_GENERATION_BLOCK}
+${testingEnabled && !isFlutter ? `${AGENT_TEST_WRITING_GUIDANCE}\n` : ""}
+${imageGenerationBlock}
 ${enableAppBlueprint ? `\n${APP_BLUEPRINT_BLOCK}\n` : ""}
 ${buildSkillMetadataBlock()}
 ${DEFERRED_TOOLS_BLOCK}
@@ -449,13 +455,16 @@ ${AI_RULES_BLOCK}
 function buildLocalAgentBasicSystemPrompt(
   enableAppBlueprint: boolean,
   testingEnabled: boolean,
+  frameworkType?: AppFrameworkType | null,
 ): string {
+  const appCommands = frameworkType === "flutter" ? FLUTTER_APP_COMMANDS_BLOCK : APP_COMMANDS_BLOCK;
+  const isFlutter = frameworkType === "flutter";
   return `
  ${ROLE_BLOCK}
 
 [[PLATFORM_CONTRACT]]
 
-${APP_COMMANDS_BLOCK}
+${appCommands}
 
 ${GENERAL_GUIDELINES_BLOCK}
 
@@ -467,7 +476,7 @@ ${BASIC_FILE_EDITING_TOOL_SELECTION_BLOCK}
 
 ${basicDevelopmentWorkflowBlock(enableAppBlueprint)}
 [[SERVER_LAYER]]
-${testingEnabled ? `${AGENT_TEST_WRITING_GUIDANCE}\n` : ""}${enableAppBlueprint ? `\n${APP_BLUEPRINT_BLOCK}\n` : ""}
+${testingEnabled && !isFlutter ? `${AGENT_TEST_WRITING_GUIDANCE}\n` : ""}${enableAppBlueprint ? `\n${APP_BLUEPRINT_BLOCK}\n` : ""}
 ${AI_RULES_BLOCK}
 `;
 }
@@ -503,18 +512,24 @@ export function constructLocalAgentPrompt(
   const enableAppBlueprint = options?.enableAppBlueprint !== false;
   const codeExplorerAvailable = !!options?.codeExplorerAvailable;
   const testingEnabled = !!options?.testingEnabled;
+  const isFlutter = options?.frameworkType === "flutter";
 
   // Select the appropriate base prompt
   let basePrompt: string;
   if (options?.readOnly) {
     basePrompt = LOCAL_AGENT_ASK_SYSTEM_PROMPT;
   } else if (options?.basicAgentMode || options?.freeModelMode) {
-    basePrompt = buildLocalAgentBasicSystemPrompt(enableAppBlueprint, testingEnabled);
+    basePrompt = buildLocalAgentBasicSystemPrompt(
+      enableAppBlueprint,
+      testingEnabled,
+      options?.frameworkType,
+    );
   } else {
     basePrompt = buildLocalAgentSystemPrompt({
       enableAppBlueprint,
       codeExplorerAvailable,
       testingEnabled,
+      frameworkType: options?.frameworkType ?? null,
     });
   }
 
@@ -532,10 +547,14 @@ export function constructLocalAgentPrompt(
   // (AI_RULES.md, which the model itself can edit) are inserted literally and
   // cannot splice the rest of the prompt via `$'`, `$&`, etc.
   const target: AppTarget = options?.appTarget ?? "mobile";
-  const uiSkillPack = target === "web" ? CAIDE_WEB_UI_SKILL_PACK : CAIDE_MOBILE_UI_SKILL_PACK;
+  const uiSkillPack = isFlutter
+    ? CAIDE_FLUTTER_UI_SKILL_PACK
+    : target === "web"
+      ? CAIDE_WEB_UI_SKILL_PACK
+      : CAIDE_MOBILE_UI_SKILL_PACK;
   let prompt = basePrompt
     .replace("[[PLATFORM_UI_SKILL_PACK]]", () => uiSkillPack)
-    .replace("[[PLATFORM_CONTRACT]]", () => buildPlatformPrompt(target))
+    .replace("[[PLATFORM_CONTRACT]]", () => buildPlatformPrompt(target, options?.frameworkType))
     .replace("[[SERVER_LAYER]]", () => serverLayer)
     .replace("[[AI_RULES]]", () => aiRules ?? DEFAULT_AI_RULES);
 

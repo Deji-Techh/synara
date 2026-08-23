@@ -185,7 +185,7 @@ I want to show a success message when the form is saved.
 
 ### System response
 
-Use the built-in `ScaffoldMessenger` with Material 3 `SnackBar` — no extra package needed.
+Use the built-in \`ScaffoldMessenger\` with Material 3 \`SnackBar\` — no extra package needed.
 
 <caide-write path="lib/features/settings/settings_page.dart" description="Adding SnackBar on save">
 import 'package:flutter/material.dart';
