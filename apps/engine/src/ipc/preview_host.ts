@@ -89,6 +89,120 @@ interface PreviewEntry {
   deviceId: string | null;
 }
 
+// ── realtime watcher (hot-reload on file change) ───────────────────────
+
+const PREVIEW_WATCH_DEBOUNCE_MS = 500;
+const previewWatchers = new Map<string, { close: () => void }>();
+
+function collectSubdirs(root: string): string[] {
+  const result: string[] = [];
+  try {
+    const entries = fs.readdirSync(root, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      if (entry.name.startsWith(".")) continue;
+      if (entry.name === "build" || entry.name === ".dart_tool") continue;
+      const full = path.join(root, entry.name);
+      result.push(full);
+      result.push(...collectSubdirs(full));
+    }
+  } catch {}
+  return result;
+}
+
+function startPreviewWatcher(entry: PreviewEntry): void {
+  stopPreviewWatcher(entry.appDir);
+  let debounce: NodeJS.Timeout | null = null;
+  const scheduleReload = () => {
+    if (debounce) clearTimeout(debounce);
+    debounce = setTimeout(() => {
+      debounce = null;
+      if (!entry.running || !entry.child?.stdin?.writable) return;
+      try {
+        entry.child.stdin.write("r\n");
+        appendLogLines(entry.logs, "[preview] auto hot reload (file change)");
+        logger.info(`preview: auto hot reload for ${entry.appDir}`);
+      } catch {}
+    }, PREVIEW_WATCH_DEBOUNCE_MS);
+  };
+
+  const watchers: fs.FSWatcher[] = [];
+  const watchTargets = [path.join(entry.appDir, "lib"), entry.appDir];
+
+  for (const target of watchTargets) {
+    if (!fs.existsSync(target)) continue;
+    try {
+      const watcher = fs.watch(
+        target,
+        { recursive: true } as unknown as fs.WatchOptions,
+        (_event: string, filename: string | Buffer | null) => {
+          const name = typeof filename === "string" ? filename : filename ? filename.toString() : "";
+          if (
+            name.includes(".dart_tool") ||
+            name.includes(`${path.sep}build${path.sep}`) ||
+            name.startsWith("build") ||
+            name.includes(".git") ||
+            name.includes(".caide")
+          ) {
+            return;
+          }
+          scheduleReload();
+        },
+      );
+      watcher.on("error", () => {});
+      watchers.push(watcher);
+    } catch {
+      // recursive not supported — watch non-recursive and fan out to subdirs
+      try {
+        const watcher = fs.watch(target, (_event: string, filename: string | Buffer | null) => {
+          const name = typeof filename === "string" ? filename : filename ? filename.toString() : "";
+          if (name.includes(".dart_tool") || name.includes("build") || name.includes(".git")) return;
+          scheduleReload();
+        });
+        watcher.on("error", () => {});
+        watchers.push(watcher);
+      } catch {}
+    }
+  }
+
+  // Fallback: enumerate lib subdirs for platforms where recursive watch is a no-op
+  // (Linux older kernels). This ensures nested lib/ files still trigger reload.
+  try {
+    const libDir = path.join(entry.appDir, "lib");
+    if (fs.existsSync(libDir) && watchers.length <= 1) {
+      const subdirs = collectSubdirs(libDir);
+      for (const sub of subdirs) {
+        try {
+          const watcher = fs.watch(sub, (_event: string) => scheduleReload());
+          watcher.on("error", () => {});
+          watchers.push(watcher);
+        } catch {}
+      }
+    }
+  } catch {}
+
+  if (watchers.length === 0) return;
+  previewWatchers.set(entry.appDir, {
+    close: () => {
+      if (debounce) clearTimeout(debounce);
+      for (const watcher of watchers) {
+        try {
+          watcher.close();
+        } catch {}
+      }
+    },
+  });
+}
+
+function stopPreviewWatcher(appDir: string): void {
+  const existing = previewWatchers.get(appDir);
+  if (!existing) return;
+  previewWatchers.delete(appDir);
+  try {
+    existing.close();
+  } catch {}
+}
+
 interface BuildEntry {
   buildId: string;
   appDir: string;
@@ -354,6 +468,7 @@ async function runTests(params: unknown): Promise<ProtocolTestResult> {
 // ── preview lifecycle ────────────────────────────────────────────────
 
 async function stopPreviewEntry(entry: PreviewEntry): Promise<void> {
+  stopPreviewWatcher(entry.appDir);
   const child = entry.child;
   entry.child = null;
   entry.running = false;
@@ -467,6 +582,7 @@ function spawnFlutterRun(appPath: string, entry: PreviewEntry, hostname: string)
           finish(() => {
             entry.running = true;
             logger.info(`preview: serving ${appPath} at ${url}`);
+            startPreviewWatcher(entry);
             resolve(url);
           });
         }
@@ -480,6 +596,7 @@ function spawnFlutterRun(appPath: string, entry: PreviewEntry, hostname: string)
           finish(() => {
             entry.running = true;
             logger.info(`preview: native ${device} confirmed running for ${appPath}`);
+            startPreviewWatcher(entry);
             resolve(nativeUrl);
           });
         }
@@ -502,6 +619,7 @@ function spawnFlutterRun(appPath: string, entry: PreviewEntry, hostname: string)
         appendLogLines(entry.logs, `\n[preview] flutter run exited (code ${code ?? "null"})`);
         entry.running = false;
         entry.child = null;
+        stopPreviewWatcher(appPath);
         reject(
           new CaideError(
             `flutter run exited (code ${code ?? "null"}) before serving.\n\n${tail || "(no output)"}`,
@@ -509,6 +627,18 @@ function spawnFlutterRun(appPath: string, entry: PreviewEntry, hostname: string)
           ),
         );
       });
+    });
+
+    // Post-serve exit: when a running preview's child dies (crash/stop), tear
+    // down the watcher and mark it idle so the pane can retry.
+    child.on("close", (code) => {
+      if (!settled) return;
+      if (!entry.running) return;
+      entry.running = false;
+      entry.child = null;
+      stopPreviewWatcher(appPath);
+      appendLogLines(entry.logs, `\n[preview] flutter run exited (code ${code ?? "null"})`);
+      logger.warn(`preview: ${appPath} exited after serving (code ${code ?? "null"})`);
     });
 
     timer = setTimeout(() => {
@@ -677,8 +807,13 @@ async function listPreviewDevices(): Promise<{
         }
       }
     } catch {}
-    // Always include generic emulator entry so UI can show the option even when no AVD exists
-    if (!devices.some((d) => d.id === "emulator")) {
+    // Only advertise a generic emulator fallback when the host actually has
+    // emulator tooling (at least one AVD or a running emulator/adb device).
+    // Otherwise the UI would offer "Android Phone → emulator" on a machine
+    // with no AVD (e.g. Arch Linux CI), and `flutter run -d emulator` fails
+    // with "No supported devices matching 'emulator'. Found: Linux (desktop)".
+    const hasRealAndroidDevice = devices.some((d) => d.platform === "android");
+    if (hasRealAndroidDevice && !devices.some((d) => d.id === "emulator")) {
       devices.push({
         id: "emulator",
         name: "Android Emulator",
@@ -1314,6 +1449,9 @@ export function createPreviewJsonRpcRouter(): PreviewJsonRpcRouter {
       }
     },
     dispose(): void {
+      for (const [appDir] of previewWatchers.entries()) {
+        stopPreviewWatcher(appDir);
+      }
       for (const entry of activePreviews.values()) {
         void stopPreviewEntry(entry);
       }

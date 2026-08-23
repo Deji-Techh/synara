@@ -498,7 +498,7 @@ import {
 import { ComposerPendingApprovalPanel } from "./chat/ComposerPendingApprovalPanel";
 import { ComposerExtrasMenu } from "./chat/ComposerExtrasMenu";
 import { ChatModeSelector } from "./chat/ChatModeSelector";
-import { ChatModeBadge } from "./chat/PlanPreviewPane";
+import { ChatModeBadge, PlanPreviewPane } from "./chat/PlanPreviewPane";
 import { ContextWindowMeter } from "./chat/ContextWindowMeter";
 import { ComposerInputBanners } from "./chat/ComposerInputBanners";
 import { ComposerPendingUserInputPanel } from "./chat/ComposerPendingUserInputPanel";
@@ -11886,7 +11886,7 @@ export default function ChatView({
                     <PlanPreviewPane
                       planMarkdown={planStreamingText}
                       isStreaming={true}
-                      cwd={threadWorkspaceCwd ?? undefined}
+                      {...(threadWorkspaceCwd !== null ? { cwd: threadWorkspaceCwd } : {})}
                     />
                   </div>
                 ) : null}

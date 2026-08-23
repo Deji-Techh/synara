@@ -18,7 +18,7 @@
 
 export type DeviceFamily = "phone" | "tablet" | "tv";
 export type DeviceHardwareButton = "volume-up" | "volume-down" | "lock" | "home";
-import { memo, useId, useMemo, type CSSProperties, type ReactNode } from "react";
+import { memo, useEffect, useId, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 
 import { cn } from "~/lib/utils";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
@@ -433,15 +433,37 @@ export const DeviceScreen = memo(function DeviceScreen({
     [geo],
   );
 
+  // Fix for "compressed to left" on first open: the sidebar width animates
+  // from 0 → 608px via --sidebar-width, so the first paint's 100cqw is stale
+  // (0 or defaultWidth) and the chassis stays tiny. A second paint after the
+  // transition settles re-evaluates 100cqw correctly — which is why switching
+  // frames cures it. Force a second render after mount/layout settles.
+  const [layoutEpoch, setLayoutEpoch] = useState(0);
+  useEffect(() => {
+    const id = window.requestAnimationFrame(() => {
+      // rAF fires after the sidebar's width transition has committed.
+      setLayoutEpoch((value) => value + 1);
+    });
+    const timeoutId = window.setTimeout(() => setLayoutEpoch((value) => value + 1), 320);
+    return () => {
+      window.cancelAnimationFrame(id);
+      window.clearTimeout(timeoutId);
+    };
+  }, [kind, pixelWidth, pixelHeight, landscape]);
+
   return (
     <div
+      // layoutEpoch key forces the container to re-measure 100cqw/100cqh after
+      // the sidebar's --sidebar-width transition settles. Without this the
+      // first chassis stays at the pre-transition size (tiny, left-aligned).
+      key={layoutEpoch}
       className={cn(
         // No overflow clip: the chassis shadow reaches ~32px past the device,
         // and clipping it left a hard horizontal cut where the control rail
         // began. Padding keeps the device off the pane edges, and the sizing
         // below already stops the frame itself from escaping the box.
         // Synara DevicePanel uses p-6 ([container-type:size]) for breathing room around the bezel.
-        "flex h-full min-h-0 items-center justify-center p-6 [container-type:size]",
+        "flex h-full min-h-0 w-full items-center justify-center p-6 [container-type:size]",
         className,
       )}
     >
@@ -451,6 +473,9 @@ export const DeviceScreen = memo(function DeviceScreen({
           // Turned, the device's height runs across the pane, so the fit is
           // measured against the transposed axis; without this the rotated
           // device shrinks to whatever its untumbled height allowed.
+          // Use both cqw/cqh (container query) with a % fallback so a racy
+          // first paint (cqw=0 during sidebar slide) still occupies full width.
+          width: `min(100%, calc(100cqh * ${geo.aspect}))`,
           height: landscape
             ? `min(100cqw, calc(100cqh / ${geo.aspect}))`
             : `min(100cqh, calc(100cqw / ${geo.aspect}))`,

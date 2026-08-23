@@ -54,6 +54,14 @@ import { buildLocalImageUrl } from "~/lib/localImageUrls";
 import { PanelStateMessage } from "./PanelStateMessage";
 import { toastManager } from "../ui/toast";
 import {
+  Dialog,
+  DialogPopup,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "../ui/dialog";
+import { Button } from "../ui/button";
+import {
   analyzeFailed,
   analyzeFinished,
   analyzeRequested,
@@ -167,6 +175,26 @@ function pickNativeDeviceId(
   }
   const wanted = flutterDevice === "emulator" ? "android" : "ios";
   return devices.find((device) => device.platform === wanted)?.id;
+}
+
+function hasNativeDeviceFor(
+  devices: PreviewDeviceInfo[] | null,
+  flutterDevice: "web-server" | "emulator" | "simulator",
+): boolean | null {
+  if (devices === null || flutterDevice === "web-server") return null;
+  const wanted = flutterDevice === "emulator" ? "android" : "ios";
+  return devices.some((device) => device.platform === wanted);
+}
+
+function isDeviceNotFoundError(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("no supported devices") ||
+    (lower.includes("emulator") && lower.includes("linux")) ||
+    (lower.includes("simulator") && lower.includes("macos")) ||
+    lower.includes("not found") ||
+    lower.includes("could not find")
+  );
 }
 
 function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean }) {
@@ -434,61 +462,94 @@ function PreviewFailedState(props: { error: string | null; onRetry: () => void }
   );
 }
 
-function PreviewConsole(props: { isOpen: boolean; onToggle: () => void; logs: readonly string[] }) {
+function PreviewConsoleDialog(props: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  logs: readonly string[];
+}) {
   const listRef = useRef<HTMLDivElement>(null);
-  const { logs, isOpen } = props;
+  const { logs, open } = props;
   useEffect(() => {
-    if (!isOpen || listRef.current === null) {
+    if (!open || listRef.current === null) {
       return;
     }
-    listRef.current.scrollTop = listRef.current.scrollHeight;
-  }, [logs, isOpen]);
+    // Next frame so Dialog popup has measured height before scrolling.
+    const id = window.requestAnimationFrame(() => {
+      if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [logs, open]);
 
-  const latestLine = logs.at(-1) ?? "No output yet.";
-  // Rendering all 500 lines every poll caused DOM churn (500 <p> recreated
-  // every 2s) — the freeze the user reported when switching to preview.
   const visibleLogs = logs.length > LOGS_RENDER_LIMIT ? logs.slice(-LOGS_RENDER_LIMIT) : logs;
+  const [copied, setCopied] = useState(false);
+  const handleCopy = useCallback(async () => {
+    const text = logs.join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {}
+  }, [logs]);
+
   return (
-    <div className="shrink-0 border-t border-border">
-      <button
-        type="button"
-        onClick={props.onToggle}
-        className="flex w-full items-center gap-2 bg-card px-3 py-1.5 text-left text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        aria-expanded={isOpen}
-      >
-        <TerminalIcon aria-hidden="true" className="size-3.5" />
-        <span>Console</span>
-        {!isOpen && <span className="min-w-0 flex-1 truncate text-muted-foreground/60">{latestLine}</span>}
-        {isOpen ? (
-          <ChevronDownIcon aria-hidden="true" className="size-3.5" />
-        ) : (
-          <ChevronUpIcon aria-hidden="true" className="size-3.5" />
-        )}
-      </button>
-      {isOpen && (
-        <div
-          ref={listRef}
-          className="max-h-40 min-h-0 overflow-y-auto bg-muted/40 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground"
-        >
-          {logs.length === 0 ? (
-            <p>Waiting for `flutter run` output…</p>
-          ) : (
-            <>
-              {logs.length > LOGS_RENDER_LIMIT && (
-                <p className="mb-1 text-[10px] text-muted-foreground/60">
-                  Showing last {LOGS_RENDER_LIMIT} of {logs.length} lines…
-                </p>
-              )}
-              {visibleLogs.map((line, index) => (
-                <p key={index} className="break-words whitespace-pre-wrap">
-                  {line}
-                </p>
-              ))}
-            </>
-          )}
+    <Dialog open={open} onOpenChange={props.onOpenChange}>
+      <DialogPopup className="max-w-2xl" showCloseButton>
+        <DialogHeader className="pb-1">
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <TerminalIcon aria-hidden="true" className="size-4 text-muted-foreground" />
+            Console — flutter run
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            Live `flutter run` output. {logs.length > 0 ? `${logs.length} lines` : "No output yet."}
+            {logs.length > LOGS_RENDER_LIMIT && ` — showing last ${LOGS_RENDER_LIMIT}.`}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex min-h-0 flex-col gap-2 px-4 pb-4">
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCopy}
+              disabled={logs.length === 0}
+              className="h-7 text-xs"
+            >
+              {copied ? "Copied" : "Copy"}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
+              }}
+              className="h-7 text-xs"
+            >
+              Jump to bottom
+            </Button>
+          </div>
+          <div
+            ref={listRef}
+            className="max-h-[50vh] min-h-[220px] overflow-y-auto rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground"
+          >
+            {logs.length === 0 ? (
+              <p>Waiting for `flutter run` output…</p>
+            ) : (
+              <>
+                {logs.length > LOGS_RENDER_LIMIT && (
+                  <p className="mb-1 text-[10px] text-muted-foreground/60">
+                    Showing last {LOGS_RENDER_LIMIT} of {logs.length} lines…
+                  </p>
+                )}
+                {visibleLogs.map((line, index) => (
+                  <p key={index} className="break-words whitespace-pre-wrap">
+                    {line}
+                  </p>
+                ))}
+              </>
+            )}
+          </div>
         </div>
-      )}
-    </div>
+      </DialogPopup>
+    </Dialog>
   );
 }
 
@@ -973,7 +1034,7 @@ export function PreviewPanel(props: {
   const [panelState, setPanelState] = useState<PreviewPanelState>(() =>
     createInitialPreviewPanelState(props.pane.previewDeviceId ?? "mobile"),
   );
-  const [isConsoleOpen, setIsConsoleOpen] = useState(false);
+  const [isConsoleDialogOpen, setIsConsoleDialogOpen] = useState(false);
   const [landscape, setLandscape] = useState(false);
 
   // The chassis choice is persisted per thread (survives the pane closing and
@@ -1123,37 +1184,59 @@ export function PreviewPanel(props: {
 
   const handleStart = useCallback(() => {
     setPanelState((previous) => previewStartRequested(previous));
-    const flutterDevice = FRAME_KIND_TO_FLUTTER_DEVICE[frameKind];
-    const deviceId = pickNativeDeviceId(previewDevices, flutterDevice);
-    ensureNativeApi()
-      .preview.start({
+    const requestedDevice = FRAME_KIND_TO_FLUTTER_DEVICE[frameKind];
+    // If the host has no native device for the requested chassis, fall back
+    // to web-server immediately (e.g. Arch Linux with no AVD advertises no
+    // android device, so `flutter run -d emulator` would fail with
+    // "No supported devices matching 'emulator'. Found: Linux").
+    const nativeAvailable = hasNativeDeviceFor(previewDevices, requestedDevice);
+    const initialDevice = nativeAvailable === false ? "web-server" : requestedDevice;
+    const initialDeviceId =
+      initialDevice === "web-server" ? undefined : pickNativeDeviceId(previewDevices, initialDevice);
+
+    if (initialDevice !== requestedDevice) {
+      toastManager.add({
+        type: "info",
+        title: requestedDevice === "emulator" ? "Emulator unavailable" : "Simulator unavailable",
+        description: "Falling back to web preview.",
+      });
+    }
+
+    const startWith = (
+      device: "web-server" | "emulator" | "simulator",
+      deviceId: string | undefined,
+    ) =>
+      ensureNativeApi().preview.start({
         threadId: props.threadId,
-        device: flutterDevice,
+        device,
         ...(deviceId !== undefined ? { deviceId } : {}),
-      })
+      });
+
+    startWith(initialDevice, initialDeviceId)
       .then((result) => {
         setPanelState((previous) => previewStarted(previous, result.url, [], result.kind ?? null));
       })
       .catch((error: unknown) => {
         const message = error instanceof Error ? error.message : "The preview failed to start.";
-        const lower = message.toLowerCase();
-        if (lower.includes("emulator") && lower.includes("linux") && flutterDevice === "emulator") {
+        // Auto-retry native → web-server on device-not-found errors. This
+        // covers the case where previewDevices was still null (unknown) on
+        // first attempt and the engine reports "No supported devices".
+        if (initialDevice !== "web-server" && isDeviceNotFoundError(message)) {
           toastManager.add({
             type: "info",
-            title: "Emulator unavailable",
-            description:
-              "Android emulator preview needs Linux/Windows. Falling back to web preview.",
+            title: initialDevice === "emulator" ? "Emulator unavailable" : "Simulator unavailable",
+            description: "Retrying with web preview…",
           });
-        } else if (
-          lower.includes("simulator") &&
-          lower.includes("macos") &&
-          flutterDevice === "simulator"
-        ) {
-          toastManager.add({
-            type: "info",
-            title: "Simulator unavailable",
-            description: "iOS Simulator preview needs macOS. Falling back to web preview.",
-          });
+          startWith("web-server", undefined)
+            .then((result) => {
+              setPanelState((previous) => previewStarted(previous, result.url, [], result.kind ?? null));
+            })
+            .catch((retryError: unknown) => {
+              const retryMessage =
+                retryError instanceof Error ? retryError.message : "The preview failed to start.";
+              setPanelState((previous) => previewStartFailed(previous, retryMessage));
+            });
+          return;
         }
         setPanelState((previous) => previewStartFailed(previous, message));
       });
@@ -1372,9 +1455,7 @@ export function PreviewPanel(props: {
     previousBuildStatusRef.current = buildStatus;
   }, [buildStatus, queryClient]);
 
-  const isStarting = panelState.status === "starting";
   const isRunning = panelState.status === "running";
-  const showConsole = isStarting || isRunning || panelState.status === "failed";
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background" data-testid="preview-pane">
@@ -1397,7 +1478,7 @@ export function PreviewPanel(props: {
             className="pointer-events-none absolute right-[calc(100%-208px)] size-3.5 text-muted-foreground sm:right-1.5"
           />
         </div>
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex shrink-0 items-center gap-1">
           {isRunning && (
             <div className="flex items-center gap-0.5">
               <button
@@ -1420,6 +1501,18 @@ export function PreviewPanel(props: {
               </button>
             </div>
           )}
+          <button
+            type="button"
+            onClick={() => setIsConsoleDialogOpen(true)}
+            title="Open console"
+            aria-label="Open console"
+            className="relative flex size-7 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <TerminalIcon className="size-3.5" />
+            {panelState.logs.length > 0 && panelState.status === "failed" && (
+              <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-red-500" aria-hidden="true" />
+            )}
+          </button>
           <StatusPill state={panelState} />
         </div>
       </div>
@@ -1481,13 +1574,13 @@ export function PreviewPanel(props: {
                 )}
               </div>
             ) : (
-              <div className="flex min-h-0 flex-1 min-w-0 flex-col items-center justify-center overflow-hidden bg-muted/30 px-3 py-3">
+              <div className="flex min-h-0 flex-1 min-w-0 w-full flex-col items-stretch justify-center overflow-hidden bg-muted/30 px-3 py-3">
                 <div aria-hidden className={DEVICE_RAIL_HEIGHT_CLASS} />
                 <DeviceScreen
-                  className="min-h-0 w-full flex-1 min-w-0 overflow-hidden"
+                  className="min-h-0 w-full flex-1 min-w-0 overflow-hidden self-stretch"
                       kind={statusFrameKind}
-                      pixelWidth={statusFrameKind === "androidPhone" ? 1206 : undefined}
-                      pixelHeight={statusFrameKind === "androidPhone" ? 2622 : undefined}
+                      pixelWidth={statusFrameKind === "androidPhone" ? 1080 : undefined}
+                      pixelHeight={statusFrameKind === "androidPhone" ? 2400 : undefined}
                       landscape={landscape}
                     >
                       <div className="flex h-full w-full flex-col items-center justify-center bg-black text-center">
@@ -1555,13 +1648,6 @@ export function PreviewPanel(props: {
               </div>
             )}
 
-            {showConsole && (
-              <PreviewConsole
-                isOpen={isConsoleOpen}
-                onToggle={() => setIsConsoleOpen((open) => !open)}
-                logs={panelState.logs}
-              />
-            )}
           </div>
         )}
 
@@ -1624,6 +1710,12 @@ export function PreviewPanel(props: {
           );
         })}
       </div>
+
+      <PreviewConsoleDialog
+        open={isConsoleDialogOpen}
+        onOpenChange={setIsConsoleDialogOpen}
+        logs={panelState.logs}
+      />
     </div>
   );
 }
