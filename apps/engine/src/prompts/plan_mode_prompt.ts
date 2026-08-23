@@ -43,7 +43,7 @@ Once you have sufficient context, create a detailed implementation plan using th
 - **Motion Storyboard**: For every consequential state change, specify trigger, source, destination, purpose, hierarchy, technique, elements, engine, timing, interruption behaviour, rapid repeated-input behaviour, reduced-motion fallback, performance budget, and executable primary core-flow steps
 - **Asset Plan**: Decide whether each animated or visual asset is project-owned, licensed, generated, or unnecessary; include fallbacks and size budgets
 - **UI/UX Design**: User flows, layout, component placement, interactions, and semantic design tokens
-- **Motion Capability Routing**: Use native CSS/WAAPI for simple feedback; \`motion\` for shared layout, gestures, springs, and orchestration; \`@lottiefiles/dotlottie-react\` for linear illustration; \`@rive-app/react-webgl2\` for state-driven illustration; \`gsap\` plus \`@gsap/react\` for exceptional cinematic choreography; Three.js only for product-essential 3D
+- **Motion Capability Routing**: Use native Flutter implicit animations (\`AnimatedContainer\`, \`AnimatedSwitcher\`, \`Hero\`) for transitions; \`AnimationController\` / \`CurvedAnimation\` for custom choreography; \`lottie\` for vector animations; \`rive\` for interactive state-machine art; avoid unneeded third-party packages
 - **Quality Acceptance**: Define measurable gates of at least 94 overall, 94 visual, 92 motion, 95 accessibility, 98 core-flow, zero critical issues, zero major issues, and three review passes
 - **Considerations**: Potential challenges, trade-offs, edge cases, or alternatives
 - **Technical Approach**: Architecture decisions, patterns to use, libraries needed
@@ -120,16 +120,15 @@ Your job is to:
 You are NOT building anything yet - you are planning what will be built.
 `;
 
-const DEFAULT_PLAN_AI_RULES = `# Tech Stack Context
+const DEFAULT_PLAN_AI_RULES = `# Tech Stack Context — Flutter
 When exploring the codebase, identify:
-- Frontend framework (React, Vue, etc.)
-- Styling approach (Tailwind, CSS modules, etc.)
-- State management patterns
-- Component architecture
-- Routing approach
-- API patterns
+- Flutter/Dart patterns (Material 3, Theme, NavigationBar, widget tree)
+- State approach (setState / ValueNotifier / ChangeNotifier + ListenableBuilder)
+- Feature folder layout (lib/features/<feature>/, lib/widgets/, lib/theme/)
+- Routing (MaterialApp routes, Navigator 2.0)
+- Assets & pubspec.yaml conventions
 
-Use this context to inform your implementation plan and ensure consistency with existing patterns.
+Use this context to inform your implementation plan and ensure consistency with existing Flutter patterns.
 `;
 
 export function constructPlanModePrompt(aiRules: string | undefined, themePrompt?: string): string {

@@ -64,10 +64,10 @@ export interface LoadedSkills {
  * when IDs conflict.
  */
 export function loadAllSkills(bundledSkillIds: string[], projectPath?: string): LoadedSkills {
-  const userSkills = projectPath
+  const projectSkills = projectPath
     ? loadSkillsFromDir(getProjectSkillsDir(projectPath), "project")
     : [];
-  const projectSkills = loadSkillsFromDir(getUserSkillsDir(), "user");
+  const userSkills = loadSkillsFromDir(getUserSkillsDir(), "user");
 
   const bySource = {
     bundled: [] as SkillEntry[],
