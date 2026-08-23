@@ -3312,6 +3312,14 @@ export default function ChatView({
       ),
     [activeThread?.proposedPlans, agentActivityTimelineState.timelineWorkEntries, timelineMessages],
   );
+  // Option B: when plan is streaming into the preview pane, hide the same streaming assistant
+  // message from the timeline so it does not type in two places at once.
+  const displayTimelineEntries = useMemo(() => {
+    if (chatMode !== "plan" || !planStreamingText) return timelineEntries;
+    return timelineEntries.filter(
+      (entry) => !(entry.kind === "message" && entry.message.role === "assistant" && entry.message.streaming),
+    );
+  }, [timelineEntries, chatMode, planStreamingText]);
   const enteringUserMessageIds = useMemo<ReadonlySet<MessageId>>(
     () => new Set(optimisticUserMessages.map((message) => message.id)),
     [optimisticUserMessages],
@@ -7645,7 +7653,7 @@ export default function ChatView({
       isBrandingEligibleProject &&
       (chatModeForSend === "build" || chatModeForSend === "local-agent")
     ) {
-      pendingBrandingPromptRef.current = { threadId: activeThread.id, prompt: promptForSend };
+      pendingBrandingPromptRef.current = { threadId: activeThread!.id, prompt: promptForSend };
       setIsBrandingWizardOpen(true);
       return true;
     }

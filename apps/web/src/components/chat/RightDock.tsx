@@ -63,11 +63,12 @@ export const RIGHT_DOCK_DEFAULT_WIDTH = "max(28rem, calc(50vw - 8rem))";
 // while leaving empty space above and below it. The preview pane frames the
 // Flutter app in the same device chassis (mobile/tablet presets are
 // height-bound), so it opens at the same comfortable width instead of the
-// half-shell split.
+// half-shell split. Synara reference: right preview is ~42rem (≈672px) with
+// generous breathing room, phone fills ~80% of height — noticeably wider than
+// the old 38rem.
 const RIGHT_DOCK_PREFERRED_WIDTH: Partial<Record<RightDockPaneKind, number>> = {
   device: 40 * 16,
-  // Synara iOS Simulator opens narrower than half-shell so the portrait phone can fill height without stranded space.
-  preview: 38 * 16,
+  preview: 42 * 16,
 };
 
 interface RightDockProps {
@@ -204,9 +205,14 @@ export function RightDock(props: RightDockProps) {
   const activePaneKind = activePane?.kind ?? null;
   // Preview locks to a fixed viewport so Android/iPhone share the same large
   // middle-centered frame (user request: 60% larger, non-resizable). All other
-  // panes remain freely resizable.
+  // panes remain freely resizable. Synara's preview is deliberately wide
+  // (≈42rem) so the phone is height-bound and fills the stage without
+  // stranded top/bottom space.
   const isPreviewLocked = activePaneKind === "preview";
-  useEffect(() => {
+  // Use layout effect so the correct 42rem width is present on the first paint
+  // — with `useEffect` the first paint used the narrow `defaultWidth` (28rem)
+  // and the phone measured 100cqw as ~320px, staying permanently small.
+  useLayoutEffect(() => {
     if (!props.state.open) {
       return;
     }
@@ -215,9 +221,6 @@ export function RightDock(props: RightDockProps) {
     if (!wrapper || !shell) {
       return;
     }
-    // A phone-shaped pane has a natural width: half the shell leaves the device
-    // stranded in empty space, so kinds that render a fixed-aspect object open
-    // at their own comfortable size instead of the even split.
     const preferredWidth = activePaneKind ? RIGHT_DOCK_PREFERRED_WIDTH[activePaneKind] : undefined;
     const openWidth = preferredWidth ?? Math.round(shell.getBoundingClientRect().width / 2);
     if (openWidth > 0) {

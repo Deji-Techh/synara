@@ -400,7 +400,7 @@ function StatusPill({ state }: { state: PreviewPanelState }) {
           : "Idle";
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+      className="inline-flex items-center gap-1.5 rounded-full border border-zinc-700 bg-zinc-800 px-2 py-0.5 text-xs font-medium text-zinc-400"
       title={state.status === "failed" && state.error ? state.error : label}
     >
       <span
@@ -1457,14 +1457,17 @@ export function PreviewPanel(props: {
   const isRunning = panelState.status === "running";
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-background" data-testid="preview-pane">
-      {/* Top Header — iOS Simulator chrome, full-width spread */}
-      <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border bg-card px-3">
+    <div
+      className="flex h-full min-h-0 flex-col bg-[#0a0a0a] dark:bg-[#0a0a0a]"
+      data-testid="preview-pane"
+    >
+      {/* Top Header — Synara-style dark chrome, full-width spread */}
+      <div className="flex h-9 shrink-0 items-center gap-2 border-b border-zinc-800 bg-[#111113] px-3">
         <div className="relative flex min-w-0 flex-1 items-center">
           <select
             value={frameKind}
             onChange={(event) => handleFrameKindChange(event.target.value as PreviewFrameKind)}
-            className="w-full max-w-[220px] appearance-none rounded-full border border-border bg-muted py-1 pl-2.5 pr-6 text-xs font-medium text-foreground outline-none transition-colors hover:border-border hover:bg-muted/80 focus-visible:ring-1 focus-visible:ring-ring"
+            className="w-full max-w-[220px] appearance-none rounded-full border border-zinc-700 bg-zinc-800 py-1 pl-2.5 pr-6 text-xs font-medium text-zinc-200 outline-none transition-colors hover:border-zinc-600 hover:bg-zinc-700 focus-visible:ring-1 focus-visible:ring-zinc-600"
           >
             {FRAME_KIND_OPTIONS.map((option) => (
               <option key={option.id} value={option.id}>
@@ -1474,7 +1477,7 @@ export function PreviewPanel(props: {
           </select>
           <ChevronDownIcon
             aria-hidden="true"
-            className="pointer-events-none absolute right-[calc(100%-208px)] size-3.5 text-muted-foreground sm:right-1.5"
+            className="pointer-events-none absolute right-[calc(100%-208px)] size-3.5 text-zinc-400 sm:right-1.5"
           />
         </div>
         <div className="flex shrink-0 items-center gap-1">
@@ -1485,7 +1488,7 @@ export function PreviewPanel(props: {
                 onClick={() => handleReload(true)}
                 title="Hot reload"
                 aria-label="Hot reload"
-                className="flex size-7 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex size-7 items-center justify-center rounded-md text-zinc-400 outline-none transition-colors hover:bg-zinc-800 hover:text-zinc-200 focus-visible:ring-1 focus-visible:ring-zinc-600"
               >
                 <RefreshCwIcon className="size-3.5" />
               </button>
@@ -1494,7 +1497,7 @@ export function PreviewPanel(props: {
                 onClick={handleStop}
                 title="Stop preview"
                 aria-label="Stop preview"
-                className="flex size-7 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex size-7 items-center justify-center rounded-md text-zinc-400 outline-none transition-colors hover:bg-red-950/50 hover:text-red-400 focus-visible:ring-1 focus-visible:ring-zinc-600"
               >
                 <DeviceRecordStopIcon className="size-3.5" />
               </button>
@@ -1505,7 +1508,7 @@ export function PreviewPanel(props: {
             onClick={() => setIsConsoleDialogOpen(true)}
             title="Open console"
             aria-label="Open console"
-            className="relative flex size-7 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring"
+            className="relative flex size-7 items-center justify-center rounded-md text-zinc-400 outline-none transition-colors hover:bg-zinc-800 hover:text-zinc-200 focus-visible:ring-1 focus-visible:ring-zinc-600"
           >
             <TerminalIcon className="size-3.5" />
             {panelState.logs.length > 0 && panelState.status === "failed" && (
@@ -1520,12 +1523,12 @@ export function PreviewPanel(props: {
       </div>
       <FlutterToolchainBanner threadId={props.threadId} isVisible={props.isVisible} />
 
-      {/* Main Content Area — themed stage, device+rail optically centered */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
+      {/* Main Content Area — Synara: full-bleed dark stage, device optically centered */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#0a0a0a]">
         {panelState.activeTab === "preview" && (
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {frameKind === "frameless" ? (
-              <div className="flex min-h-0 flex-1 flex-col items-center justify-center bg-background p-4">
+              <div className="flex min-h-0 flex-1 flex-col items-center justify-center bg-[#0a0a0a] p-4">
                 {panelState.status === "starting" ? (
                   <div className="flex flex-col items-center gap-2 py-6">
                     <LoaderIcon className="size-3 animate-spin text-muted-foreground" />
@@ -1535,18 +1538,29 @@ export function PreviewPanel(props: {
                     <p className="text-[10px] text-muted-foreground">Compiling Flutter bundle</p>
                   </div>
                 ) : panelState.status === "failed" ? (
-                  <div className="flex flex-col items-center gap-3 px-[12%] py-6 text-center">
-                    <p className="max-w-[260px] break-words text-center text-[11px] leading-snug text-destructive">
-                      {panelState.error ?? "The preview failed to start."}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleStart}
-                      className="rounded-full bg-foreground px-4 py-1.5 text-[11px] font-medium text-background transition-opacity hover:opacity-90"
-                    >
-                      Retry
-                    </button>
-                  </div>
+                  (() => {
+                    const msg = panelState.error ?? "The preview failed to start.";
+                    const isNoWorkspace = msg.toLowerCase().includes("has no workspace");
+                    return (
+                      <div className="flex flex-col items-center gap-3 px-[12%] py-6 text-center">
+                        <p
+                          className={cn(
+                            "max-w-[260px] break-words text-center text-[11px] leading-snug",
+                            isNoWorkspace ? "text-zinc-400" : "text-destructive",
+                          )}
+                        >
+                          {isNoWorkspace ? "Choose a simulator or start previewing here." : msg}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleStart}
+                          className="rounded-full bg-foreground px-4 py-1.5 text-[11px] font-medium text-background transition-opacity hover:opacity-90"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    );
+                  })()
                 ) : isRunning && panelState.url !== null ? (
                   isNativePreview ? (
                     nativeScreen
@@ -1561,7 +1575,7 @@ export function PreviewPanel(props: {
                   )
                 ) : (
                   <div className="flex flex-col items-center gap-3 px-[12%] py-6 text-center">
-                    <p className="text-balance text-[11px] leading-snug text-muted-foreground">
+                    <p className="text-balance text-[11px] leading-snug text-zinc-400">
                       Preview is idle. Choose a device above and start the preview.
                     </p>
                     <button
@@ -1576,7 +1590,7 @@ export function PreviewPanel(props: {
                 )}
               </div>
             ) : (
-              <div className="flex min-h-0 flex-1 min-w-0 flex-col items-center justify-center overflow-hidden bg-muted/30 px-3 py-3">
+              <div className="flex min-h-0 flex-1 min-w-0 flex-col items-center justify-center overflow-hidden bg-[#0a0a0a] px-3 py-3">
                 <div aria-hidden className={DEVICE_RAIL_HEIGHT_CLASS} />
                 <DeviceScreen
                   className="min-h-0 w-full flex-1 min-w-0 overflow-hidden"
@@ -1597,18 +1611,29 @@ export function PreviewPanel(props: {
                         </span>
                       </div>
                     ) : panelState.status === "failed" ? (
-                      <div className="flex flex-col items-center gap-3 px-[12%] text-center">
-                        <p className="max-w-[240px] break-words text-[11px] leading-snug text-red-400">
-                          {panelState.error ?? "Failed to start"}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={handleStart}
-                          className="rounded-full bg-white px-4 py-1.5 text-[11px] font-medium text-black transition-opacity hover:opacity-90"
-                        >
-                          Retry
-                        </button>
-                      </div>
+                      (() => {
+                        const msg = panelState.error ?? "Failed to start";
+                        const isNoWorkspace = msg.toLowerCase().includes("has no workspace");
+                        return (
+                          <div className="flex flex-col items-center gap-3 px-[12%] text-center">
+                            <p
+                              className={cn(
+                                "max-w-[240px] break-words text-[11px] leading-snug",
+                                isNoWorkspace ? "text-zinc-300" : "text-red-400",
+                              )}
+                            >
+                              {isNoWorkspace ? "Choose a simulator or start previewing here." : msg}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={handleStart}
+                              className="rounded-full bg-white px-4 py-1.5 text-[11px] font-medium text-black transition-opacity hover:opacity-90"
+                            >
+                              Retry
+                            </button>
+                          </div>
+                        );
+                      })()
                     ) : isRunning && panelState.url !== null ? (
                       isNativePreview ? (
                         nativeScreen
@@ -1683,9 +1708,9 @@ export function PreviewPanel(props: {
         )}
       </div>
 
-      {/* Bottom Tab Bar — spread full width */}
+      {/* Bottom Tab Bar — Synara dark */}
       <div
-        className="grid w-full shrink-0 grid-cols-5 gap-1 border-t border-border bg-card px-2 py-1.5"
+        className="grid w-full shrink-0 grid-cols-5 gap-1 border-t border-zinc-800 bg-[#111113] px-2 py-1.5"
         role="tablist"
       >
         {PREVIEW_TABS.map((tab) => {
@@ -1699,10 +1724,10 @@ export function PreviewPanel(props: {
               aria-selected={isSelected}
               onClick={() => handleTabChange(tab.id)}
               className={cn(
-                "flex w-full flex-col items-center justify-center gap-0.5 rounded-md py-1.5 text-[10px] font-medium transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                "flex w-full flex-col items-center justify-center gap-0.5 rounded-md py-1.5 text-[10px] font-medium transition-colors outline-none focus-visible:ring-1 focus-visible:ring-zinc-600",
                 isSelected
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  ? "bg-zinc-800 text-zinc-100"
+                  : "text-zinc-500 hover:bg-zinc-800/60 hover:text-zinc-300",
               )}
             >
               <TabIcon aria-hidden="true" className="size-3.5" />
