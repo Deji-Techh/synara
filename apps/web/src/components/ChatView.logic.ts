@@ -875,12 +875,12 @@ export function shouldShowComposerModelBootstrapSkeleton(input: {
     return false;
   }
 
-  if (persistedSelection.provider !== input.selectedProvider) {
-    return true;
-  }
-
   if (!input.providerModelsLoading) {
     return false;
+  }
+
+  if (persistedSelection.provider !== input.selectedProvider) {
+    return true;
   }
 
   const normalizedSelectedModel =

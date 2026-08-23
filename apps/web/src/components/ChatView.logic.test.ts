@@ -1324,7 +1324,7 @@ describe("shouldShowComposerModelBootstrapSkeleton", () => {
     ).toBe(false);
   });
 
-  it("shows a skeleton when the provisional provider does not match the persisted thread provider", () => {
+  it("shows a skeleton when the provisional provider does not match the persisted thread provider while loading", () => {
     expect(
       shouldShowComposerModelBootstrapSkeleton({
         selectedProvider: "openai",
@@ -1334,7 +1334,7 @@ describe("shouldShowComposerModelBootstrapSkeleton", () => {
           model: "openai/gpt-5.4",
         },
         draftModelSelection: null,
-        providerModelsLoading: false,
+        providerModelsLoading: true,
       }),
     ).toBe(true);
   });

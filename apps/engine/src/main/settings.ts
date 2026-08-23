@@ -68,6 +68,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   enableMcpServersForBuildMode: true,
   enableCodeExplorer: true,
   autoApproveNonSchemaSql: true,
+  autoApproveTools: true,
   autoExpandPreviewPanel: true,
   enableContextCompaction: true,
   enablePnpmMinimumReleaseAgeWarning: true,

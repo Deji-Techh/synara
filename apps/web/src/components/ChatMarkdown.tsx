@@ -67,6 +67,14 @@ import {
 } from "../lib/remarkSpawnSubagentChip";
 import { BotIcon } from "~/lib/icons";
 import { IconButton } from "./ui/icon-button";
+import { parseFullMessage, type Block } from "../lib/streamingMessageParser";
+import { StreamingLoadingAnimation } from "./chat/StreamingLoadingAnimation";
+import { CaideWriteCard } from "./chat/CaideWriteCard";
+import { CaideAppBlueprintCard } from "./chat/CaideAppBlueprintCard";
+import { CaideQuestionnaireCard } from "./chat/CaideQuestionnaireCard";
+import { CaideCommandButton } from "./chat/CaideCommandButton";
+import { CaideThinkCard } from "./chat/CaideThinkCard";
+import { CaideGenericToolCard } from "./chat/CaideGenericToolCard";
 
 const EXTERNAL_HTTP_HREF_PATTERN = /^https?:\/\//i;
 // Trailing `:line` / `:line:col` position suffix on a resolved file link. Kept on
@@ -1287,19 +1295,163 @@ function ChatMarkdown({
     ],
   );
 
+  const parsedBlocks = useMemo<Block[]>(() => {
+    if (isUserVariant || !renderedText) {
+      return [{ kind: "markdown", id: 0, content: renderedText, complete: true }];
+    }
+    const { blocks } = parseFullMessage(renderedText);
+    return blocks;
+  }, [isUserVariant, renderedText]);
+
   return (
     <div
-      className={`chat-markdown ${isUserVariant ? "chat-markdown--user " : ""}w-full min-w-0 ${className} text-foreground`}
+      className={`chat-markdown ${isUserVariant ? "chat-markdown--user " : ""}w-full min-w-0 ${className} text-foreground space-y-2`}
       style={style}
     >
-      <ReactMarkdown
-        remarkPlugins={remarkPlugins}
-        rehypePlugins={rehypePlugins}
-        components={markdownComponents}
-        urlTransform={markdownUrlTransform}
-      >
-        {renderedText}
-      </ReactMarkdown>
+      {parsedBlocks.map((block) => {
+        if (block.kind === "markdown") {
+          if (!block.content || block.content.trim().length === 0) return null;
+
+          // Check if raw tool call JSON leaked in text
+          if (block.content.includes("planning_questionnaire")) {
+            const jsonMatch = block.content.match(/\[\s*\{[\s\S]*\}\s*\]/);
+            if (jsonMatch) {
+              try {
+                const parsed = JSON.parse(jsonMatch[0]);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  return (
+                    <CaideQuestionnaireCard
+                      key={`raw-q-${block.id}`}
+                      questions={parsed}
+                    />
+                  );
+                }
+              } catch {}
+            }
+          }
+
+          if (block.content.includes("write_app_blueprint")) {
+            const jsonMatch = block.content.match(/\{\s*"[\s\S]*"\s*:\s*[\s\S]*\}/);
+            if (jsonMatch) {
+              try {
+                const parsed = JSON.parse(jsonMatch[0]);
+                if (parsed && typeof parsed === "object") {
+                  return (
+                    <CaideAppBlueprintCard
+                      key={`raw-bp-${block.id}`}
+                      appName={parsed.app_name || parsed.appName}
+                      primaryColor={parsed.primary_color || parsed.primaryColor}
+                      designDirection={parsed.design_direction || parsed.designDirection}
+                      description={parsed.description}
+                      features={parsed.features}
+                    />
+                  );
+                }
+              } catch {}
+            }
+          }
+
+          // Strip any residual raw <tool_calls...>, DSML tags, or parameter XML tags
+          const cleanedText = block.content
+            .replace(/<[|｜]DSML[|｜]tool_calls>[\s\S]*?<\/[|｜]DSML[|｜]tool_calls>/gi, "")
+            .replace(/<[|｜]DSML[|｜]invoke[\s\S]*?<\/[|｜]DSML[|｜]invoke>/gi, "")
+            .replace(/<[|｜]DSML[|｜][^>]*>?/gi, "")
+            .replace(/<\/?tool_calls(?::[a-zA-Z0-9]+)?>/gi, "")
+            .replace(/<\/?tool_call(?::[a-zA-Z0-9]+)?>/gi, "");
+          if (cleanedText.trim().length === 0) return null;
+
+          return (
+            <ReactMarkdown
+              key={`md-${block.id}`}
+              remarkPlugins={remarkPlugins}
+              rehypePlugins={rehypePlugins}
+              components={markdownComponents}
+              urlTransform={markdownUrlTransform}
+            >
+              {cleanedText}
+            </ReactMarkdown>
+          );
+        }
+
+        if (block.kind === "custom-tag") {
+          const tag = block.tag.toLowerCase();
+          if (tag === "caide-write" || tag === "dyad-write") {
+            return (
+              <CaideWriteCard
+                key={`tag-${block.id}`}
+                path={block.attributes.path ?? ""}
+                description={block.attributes.description ?? ""}
+                content={block.content}
+                state={block.complete ? "complete" : "pending"}
+              />
+            );
+          }
+          if (tag === "caide-app-blueprint" || tag === "dyad-app-blueprint") {
+            return (
+              <CaideAppBlueprintCard
+                key={`tag-${block.id}`}
+                appName={block.attributes["app-name"] ?? block.attributes.name ?? "Flutter App"}
+                theme={block.attributes.theme ?? "default"}
+                primaryColor={block.attributes["primary-color"] ?? "#0284c7"}
+                designDirection={block.attributes["design-direction"] ?? ""}
+                description={block.content}
+              />
+            );
+          }
+          if (tag === "caide-questionnaire" || tag === "dyad-questionnaire") {
+            let questions: any[] = [];
+            try {
+              questions = JSON.parse(block.content);
+            } catch {
+              questions = [{ question: block.content }];
+            }
+            return (
+              <CaideQuestionnaireCard
+                key={`tag-${block.id}`}
+                questions={questions}
+              />
+            );
+          }
+          if (tag === "caide-command" || tag === "dyad-command") {
+            return (
+              <CaideCommandButton
+                key={`tag-${block.id}`}
+                type={block.attributes.type ?? "restart"}
+              />
+            );
+          }
+          if (tag === "think") {
+            return (
+              <CaideThinkCard
+                key={`tag-${block.id}`}
+                content={block.content}
+                isStreaming={!block.complete && isStreaming}
+              />
+            );
+          }
+          if (tag === "caide-chat-summary" || tag === "dyad-chat-summary") {
+            return null;
+          }
+
+          return (
+            <CaideGenericToolCard
+              key={`tag-${block.id}`}
+              toolName={block.tag}
+              attributes={block.attributes}
+              content={block.content}
+              state={block.complete ? "complete" : "pending"}
+            />
+          );
+        }
+
+        return null;
+      })}
+
+      {isStreaming && (
+        <div className="pt-1">
+          <StreamingLoadingAnimation variant="streaming" />
+        </div>
+      )}
     </div>
   );
 }

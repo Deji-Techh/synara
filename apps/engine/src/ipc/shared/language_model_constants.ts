@@ -731,6 +731,7 @@ export const PROVIDER_TO_ENV_VAR: Record<string, string> = {
   deepseek: "DEEPSEEK_API_KEY",
   "opencode-zen": "OPENCODE_ZEN_API_KEY",
   "opencode-go": "OPENCODE_GO_API_KEY",
+  groq: "GROQ_API_KEY",
   openai: "OPENAI_API_KEY",
   anthropic: "ANTHROPIC_API_KEY",
   google: "GEMINI_API_KEY",
@@ -755,6 +756,12 @@ export const CLOUD_PROVIDERS: Record<
     displayName: "ChatGPT",
     hasFreeTier: false,
     websiteUrl: "https://chatgpt.com/",
+  },
+  groq: {
+    displayName: "Groq",
+    hasFreeTier: true,
+    websiteUrl: "https://console.groq.com/keys",
+    gatewayPrefix: "groq/",
   },
   deepseek: {
     displayName: "DeepSeek",

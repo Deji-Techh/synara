@@ -589,8 +589,45 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
       capabilities: API_MODEL_CAPABILITIES,
     },
   ],
-  ollama: [],
-  deepseek: [],
+  ollama: [
+    {
+      slug: "llama3.3",
+      name: "Llama 3.3",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "qwen2.5-coder",
+      name: "Qwen 2.5 Coder",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "deepseek-r1",
+      name: "DeepSeek R1",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
+  deepseek: [
+    {
+      slug: "deepseek-chat",
+      name: "DeepSeek Chat (V3)",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "deepseek-reasoner",
+      name: "DeepSeek Reasoner (R1)",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "deepseek-v4-pro",
+      name: "DeepSeek V4 Pro",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "deepseek-v4-flash",
+      name: "DeepSeek V4 Flash",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
   groq: [
     {
       slug: "llama-3.3-70b-versatile",
@@ -602,12 +639,97 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
       name: "Llama 3.1 8B Instant",
       capabilities: API_MODEL_CAPABILITIES,
     },
+    {
+      slug: "mixtral-8x7b-32768",
+      name: "Mixtral 8x7B",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "deepseek-r1-distill-llama-70b",
+      name: "DeepSeek R1 Distill Llama 70B",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "qwen-2.5-coder-32b",
+      name: "Qwen 2.5 Coder 32B",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
   ],
-  mistral: [],
-  together: [],
-  cohere: [],
-  xai: [],
-  fireworks: [],
+  mistral: [
+    {
+      slug: "mistral-large-latest",
+      name: "Mistral Large",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "codestral-latest",
+      name: "Codestral",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "mistral-small-latest",
+      name: "Mistral Small",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
+  together: [
+    {
+      slug: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+      name: "Llama 3.3 70B Turbo",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "deepseek-ai/DeepSeek-V3",
+      name: "DeepSeek V3",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "Qwen/Qwen2.5-Coder-32B-Instruct",
+      name: "Qwen 2.5 Coder 32B",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
+  cohere: [
+    {
+      slug: "command-r-plus",
+      name: "Command R+",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "command-r",
+      name: "Command R",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
+  xai: [
+    {
+      slug: "grok-2",
+      name: "Grok 2",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "grok-2-vision-1212",
+      name: "Grok 2 Vision",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "grok-beta",
+      name: "Grok Beta",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
+  fireworks: [
+    {
+      slug: "accounts/fireworks/models/deepseek-v3",
+      name: "DeepSeek V3 (Fireworks)",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "accounts/fireworks/models/llama-v3p3-70b-instruct",
+      name: "Llama 3.3 70B (Fireworks)",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
   opencodeZen: [
     {
       slug: "deepseek-v4-flash-free",
@@ -639,6 +761,16 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
       name: "Big Pickle Free",
       capabilities: API_MODEL_CAPABILITIES,
     },
+    {
+      slug: "deepseek-v4-pro",
+      name: "DeepSeek V4 Pro",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "deepseek-v4-flash",
+      name: "DeepSeek V4 Flash",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
   ],
   opencodeGo: [
     {
@@ -647,8 +779,53 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
       capabilities: API_MODEL_CAPABILITIES,
     },
     {
+      slug: "mimo-v2.5-free",
+      name: "MiMo V2.5 Free",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "laguna-s-2.1-free",
+      name: "Laguna S 2.1 Free",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "north-mini-code-free",
+      name: "North Mini Code Free",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "nemotron-3-ultra-free",
+      name: "Nemotron 3 Ultra Free",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "big-pickle",
+      name: "Big Pickle Free",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "deepseek-v4-pro",
+      name: "DeepSeek V4 Pro",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
       slug: "deepseek-v4-flash",
       name: "DeepSeek V4 Flash",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "gpt-5.5",
+      name: "GPT-5.5",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "claude-sonnet-5",
+      name: "Claude Sonnet 5",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "claude-opus-5",
+      name: "Claude Opus 5",
       capabilities: API_MODEL_CAPABILITIES,
     },
   ],

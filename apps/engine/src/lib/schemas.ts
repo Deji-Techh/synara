@@ -352,6 +352,7 @@ const BaseUserSettingsFields = {
   enableSupabaseWriteSqlMigration: z.boolean().optional(),
   autoApproveNonSchemaSql: z.boolean().optional(),
   autoApproveSafeMcpTools: z.boolean().optional(),
+  autoApproveTools: z.boolean().optional(),
   skipPruneEdgeFunctions: z.boolean().optional(),
   acceptedCommunityCode: z.boolean().optional(),
   zoomLevel: ZoomLevelSchema.optional(),

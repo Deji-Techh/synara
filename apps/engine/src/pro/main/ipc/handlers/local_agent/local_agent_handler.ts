@@ -1443,6 +1443,85 @@ export async function handleLocalAgentStream(
         currentMessageHistory = [...currentMessageHistory, ...messagesToAccumulate];
       }
 
+      // Intercept and handle text-based / DSML tool calls (e.g. DeepSeek DSML format: <｜DSML｜tool_calls> ... </｜DSML｜tool_calls>)
+      const extractedDsmlCalls = extractDsmlOrTextToolCalls(fullResponse);
+      if (extractedDsmlCalls.length > 0) {
+        logger.info(`Detected ${extractedDsmlCalls.length} text/DSML tool call(s) in chat ${req.chatId}`);
+
+        // Strip the raw DSML/XML tokens from fullResponse and update DB/UI so raw tags never leak
+        for (const call of extractedDsmlCalls) {
+          fullResponse = fullResponse.split(call.rawBlock).join("").trim();
+        }
+        fullResponse = fullResponse
+          .replace(/<[|｜]DSML[|｜]tool_calls>[\s\S]*?<\/[|｜]DSML[|｜]tool_calls>/g, "")
+          .replace(/<[|｜]DSML[|｜]invoke[\s\S]*?<\/[|｜]DSML[|｜]invoke>/g, "")
+          .replace(/<[|｜]DSML[|｜][^>]*>?/g, "")
+          .replace(/<\/?tool_calls(?::[a-zA-Z0-9]+)?>/g, "")
+          .trim();
+        await updateResponseInDb(placeholderMessageId, fullResponse);
+        sendChunk(fullResponse);
+
+        // Execute each tool and collect results
+        const executionResults: Array<{ name: string; args: any; result: any }> = [];
+        for (const call of extractedDsmlCalls) {
+          const resolvedName = allTools[call.toolName]
+            ? call.toolName
+            : allTools[call.toolName.replace(/_/g, "")]
+              ? call.toolName.replace(/_/g, "")
+              : call.toolName;
+          const tool = allTools[resolvedName];
+          if (tool && typeof tool.execute === "function") {
+            try {
+              const res = await (tool.execute as any)(call.args, {
+                toolCallId: `call_dsml_${Date.now()}`,
+                messages: currentMessageHistory,
+                abortSignal: abortController.signal,
+              });
+              executionResults.push({ name: resolvedName, args: call.args, result: res });
+            } catch (err: any) {
+              executionResults.push({
+                name: resolvedName,
+                args: call.args,
+                result: `Error: ${err?.message || String(err)}`,
+              });
+            }
+          } else {
+            executionResults.push({
+              name: call.toolName,
+              args: call.args,
+              result: `Error: Tool '${call.toolName}' is not available. Available tools: ${Object.keys(allTools).join(", ")}`,
+            });
+          }
+        }
+
+        // Append tool execution results to currentMessageHistory so model receives outputs
+        const toolResultText =
+          `Tool Execution Results:\n` +
+          executionResults
+            .map(
+              (r) =>
+                `Tool: ${r.name}\nArguments: ${JSON.stringify(r.args)}\nOutput:\n${typeof r.result === "string" ? r.result : JSON.stringify(r.result, null, 2)}`,
+            )
+            .join("\n\n") +
+          `\n\nPlease proceed directly to implement the requested application code or blueprint. Do not pause, do not ask the user for confirmation.`;
+
+        currentMessageHistory = [
+          ...currentMessageHistory,
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: toolResultText,
+              },
+            ],
+          },
+        ];
+
+        // Immediately continue to the next pass without user intervention
+        continue;
+      }
+
       // Check if the model ended with text only (no tool calls in the final step).
       // set_chat_summary is metadata, so a summary-only final step should not
       // suppress the todo safety follow-up when the pass already produced text.
@@ -2223,4 +2302,72 @@ async function getMcpTools(event: IpcMainInvokeEvent, ctx: AgentContext): Promis
   }
 
   return mcpToolSet;
+}
+
+interface ExtractedTextToolCall {
+  toolName: string;
+  args: Record<string, any>;
+  rawBlock: string;
+}
+
+function extractDsmlOrTextToolCalls(text: string): ExtractedTextToolCall[] {
+  if (!text) return [];
+  const calls: ExtractedTextToolCall[] = [];
+
+  // DeepSeek DSML format: <｜DSML｜tool_calls> ... </｜DSML｜tool_calls>
+  const dsmlBlockRegex = /<[|｜]DSML[|｜]tool_calls>([\s\S]*?)<\/[|｜]DSML[|｜]tool_calls>/gi;
+  let dsmlMatch: RegExpExecArray | null;
+  while ((dsmlMatch = dsmlBlockRegex.exec(text)) !== null) {
+    const blockContent = dsmlMatch[1];
+    const invokeRegex = /<[|｜]DSML[|｜]invoke\s+name=["']([^"']+)["']>([\s\S]*?)<\/[|｜]DSML[|｜]invoke>/gi;
+    let invokeMatch: RegExpExecArray | null;
+    while ((invokeMatch = invokeRegex.exec(blockContent)) !== null) {
+      const toolName = invokeMatch[1].trim();
+      const paramBlock = invokeMatch[2];
+      const args: Record<string, any> = {};
+      const paramRegex = /<[|｜]DSML[|｜]parameter\s+name=["']([^"']+)["'][^>]*>([\s\S]*?)<\/[|｜]DSML[|｜]parameter>/gi;
+      let paramMatch: RegExpExecArray | null;
+      while ((paramMatch = paramRegex.exec(paramBlock)) !== null) {
+        const paramName = paramMatch[1].trim();
+        let paramVal: any = paramMatch[2].trim();
+        try {
+          if (paramVal.startsWith("{") || paramVal.startsWith("[")) {
+            paramVal = JSON.parse(paramVal);
+          } else if (paramVal === "true") paramVal = true;
+          else if (paramVal === "false") paramVal = false;
+          else if (!isNaN(Number(paramVal)) && paramVal !== "") paramVal = Number(paramVal);
+        } catch {}
+        args[paramName] = paramVal;
+      }
+      calls.push({ toolName, args, rawBlock: dsmlMatch[0] });
+    }
+  }
+
+  // Bare <｜DSML｜invoke name="..."> ... </｜DSML｜invoke>
+  if (calls.length === 0) {
+    const bareInvokeRegex = /<[|｜]DSML[|｜]invoke\s+name=["']([^"']+)["']>([\s\S]*?)<\/[|｜]DSML[|｜]invoke>/gi;
+    let bareMatch: RegExpExecArray | null;
+    while ((bareMatch = bareInvokeRegex.exec(text)) !== null) {
+      const toolName = bareMatch[1].trim();
+      const paramBlock = bareMatch[2];
+      const args: Record<string, any> = {};
+      const paramRegex = /<[|｜]DSML[|｜]parameter\s+name=["']([^"']+)["'][^>]*>([\s\S]*?)<\/[|｜]DSML[|｜]parameter>/gi;
+      let paramMatch: RegExpExecArray | null;
+      while ((paramMatch = paramRegex.exec(paramBlock)) !== null) {
+        const paramName = paramMatch[1].trim();
+        let paramVal: any = paramMatch[2].trim();
+        try {
+          if (paramVal.startsWith("{") || paramVal.startsWith("[")) {
+            paramVal = JSON.parse(paramVal);
+          } else if (paramVal === "true") paramVal = true;
+          else if (paramVal === "false") paramVal = false;
+          else if (!isNaN(Number(paramVal)) && paramVal !== "") paramVal = Number(paramVal);
+        } catch {}
+        args[paramName] = paramVal;
+      }
+      calls.push({ toolName, args, rawBlock: bareMatch[0] });
+    }
+  }
+
+  return calls;
 }

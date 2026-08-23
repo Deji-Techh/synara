@@ -396,6 +396,21 @@ function getRegularModelClient(
         backupModelClients: [],
       };
     }
+    case "groq": {
+      const provider = createOpenAICompatible({
+        name: "groq",
+        baseURL: "https://api.groq.com/openai/v1",
+        apiKey,
+        ...getModelClientFetchOption(),
+      });
+      return {
+        modelClient: {
+          model: provider(model.name),
+          builtinProviderId: providerId,
+        },
+        backupModelClients: [],
+      };
+    }
     case "opencode-zen": {
       const provider = createOpenAICompatible({
         name: "opencode-zen",

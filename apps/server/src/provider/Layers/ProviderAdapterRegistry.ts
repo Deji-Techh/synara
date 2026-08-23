@@ -38,11 +38,15 @@ const makeProviderAdapterRegistry = (options?: ProviderAdapterRegistryLiveOption
     const byProvider = new Map(adapters.map((adapter) => [adapter.provider, adapter]));
 
     const getByProvider: ProviderAdapterRegistryShape["getByProvider"] = (provider) => {
-      const adapter = byProvider.get(provider);
-      if (!adapter) {
-        return Effect.fail(new ProviderUnsupportedError({ provider }));
+      const engineAdapter = byProvider.get("engine");
+      if (engineAdapter) {
+        return Effect.succeed(engineAdapter);
       }
-      return Effect.succeed(adapter);
+      const adapter = byProvider.get(provider);
+      if (adapter) {
+        return Effect.succeed(adapter);
+      }
+      return Effect.fail(new ProviderUnsupportedError({ provider }));
     };
 
     const listProviders: ProviderAdapterRegistryShape["listProviders"] = () =>

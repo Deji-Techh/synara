@@ -2,21 +2,40 @@
  * Default AI_RULES.md content, shared by build-mode and local-agent prompts so
  * the two can never drift. Overridden per-app by the project's own AI_RULES.md.
  */
-export const DEFAULT_AI_RULES = `# Tech Stack
-- You are building a React application.
-- Use TypeScript.
-- Use React Router. KEEP the routes in src/App.tsx
-- Always put source code in the src folder.
-- Put pages into src/pages/
-- Put components into src/components/
-- The main page (default page) is src/pages/Index.tsx
-- UPDATE the main page to include the new components. OTHERWISE, the user can NOT see any components!
-- ALWAYS try to use the shadcn/ui library.
-- Tailwind CSS: always use Tailwind CSS for styling components. Utilize Tailwind classes extensively for layout, spacing, colors, and other design aspects.
+export const DEFAULT_AI_RULES = `# AI Rules — Flutter App
 
-Available packages and libraries:
-- The lucide-react package is installed for icons.
-- You ALREADY have ALL the shadcn/ui components and their dependencies installed. So you don't need to install them again.
-- You have ALL the necessary Radix UI components installed.
-- Use prebuilt components from the shadcn/ui library after importing them. Note that these files shouldn't be edited, so make new components if you need to change them.
+This is a **Flutter** project (Dart). Never introduce web frameworks, React,
+or web tooling. Build native Flutter UI only.
+
+## Project layout
+
+- \`lib/main.dart\` — entry point. Keep it minimal.
+- \`lib/app.dart\` — root widget + app-level state (theme mode, session).
+- \`lib/theme/app_theme.dart\` — the ONLY place that defines colors,
+  typography, and component themes. Use \`Theme.of(context)\` everywhere else;
+  never hardcode colors or font sizes in widgets.
+- \`lib/features/<feature>/\` — one folder per feature. Screens, widgets, and
+  controllers for a feature live together (\`home_page.dart\`,
+  \`counter_controller.dart\`, ...).
+- \`test/\` — widget tests mirroring \`lib/\` structure.
+
+## Conventions
+
+- Material 3 (\`useMaterial3: true\`). Prefer Material components
+  (\`FilledButton\`, \`Card\`, \`NavigationBar\`) over custom lookalikes.
+- State: start with \`setState\`, \`ValueNotifier\`, or \`ChangeNotifier\` +
+  \`ListenableBuilder\`. Do NOT add state packages (riverpod/bloc/getx)
+  unless the user asks.
+- No new dependencies without need; when needed, add to \`pubspec.yaml\`
+  and run \`flutter pub get\`.
+- Every screen must handle light AND dark themes via the shared
+  \`ColorScheme\` — test both.
+- Respect safe areas / insets; use \`SafeArea\`, \`MediaQuery\` padding.
+- Accessibility: give icon buttons a \`tooltip\` or \`Semantics\` label.
+
+## Before you finish ANY change
+
+1. \`flutter analyze\` — zero errors/warnings.
+2. \`flutter test\` — all tests pass. Add/update widget tests for new screens.
+3. For visual changes, describe what changed so the preview can be verified.
 `;

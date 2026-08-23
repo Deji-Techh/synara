@@ -12,8 +12,6 @@ import { getCaideAppsBaseDirectory } from "./paths/caideApps";
 const SCAFFOLD_CANDIDATES = [
   "scaffold-flutter",
   "apps/engine/scaffold-flutter",
-  "apps/engine/scaffold",
-  "scaffold",
 ];
 
 async function runFlutterCreate(workspaceRoot: string, appName: string): Promise<boolean> {

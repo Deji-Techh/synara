@@ -144,6 +144,7 @@ function precompressPlugin(): Plugin {
         // clobber each other's staging file.
         tempSequence += 1;
         const tempPath = `${sidecarPath}.${process.pid}.${tempSequence}.tmp`;
+        await fs.mkdir(path.dirname(tempPath), { recursive: true });
         await fs.writeFile(tempPath, data);
         await fs.rename(tempPath, sidecarPath);
       };
@@ -188,7 +189,7 @@ export default defineConfig({
   plugins: [
     tanstackRouter({
       target: "react",
-      autoCodeSplitting: true,
+      autoCodeSplitting: false,
     }),
     react(),
     babel({
@@ -239,6 +240,19 @@ export default defineConfig({
     // terminal runtime code, and the chat route—not initial-load bundles.
     chunkSizeWarningLimit: 850,
     rolldownOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("effect")) {
+            return "vendor-effect";
+          }
+          if (id.includes("packages/contracts") || id.includes("packages/shared")) {
+            return "vendor-contracts";
+          }
+          if (id.includes("react") || id.includes("@tanstack")) {
+            return "vendor-react";
+          }
+        },
+      },
       checks: {
         // React Compiler is expected to dominate transform time in this app.
         pluginTimings: false,

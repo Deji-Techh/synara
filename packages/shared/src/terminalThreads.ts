@@ -4,14 +4,32 @@
 // Exports: command parsing plus resolved terminal presentation metadata for web/server consumers.
 
 export const GENERIC_TERMINAL_THREAD_TITLE = "New terminal";
-export type TerminalCliKind = "codex" | "claude" | "antigravity";
+export type TerminalCliKind =
+  | "codex"
+  | "claude"
+  | "antigravity"
+  | "engine"
+  | "openai"
+  | "anthropic"
+  | "google"
+  | "openrouter"
+  | "ollama"
+  | "deepseek"
+  | "groq"
+  | "mistral"
+  | "together"
+  | "cohere"
+  | "xai"
+  | "fireworks"
+  | "opencodeZen"
+  | "opencodeGo";
 export type TerminalIconKey = "terminal" | "openai" | "claude" | "antigravity";
 export type TerminalActivityState = "running" | "attention" | "review";
 export type TerminalVisualState = "idle" | TerminalActivityState;
 export type TerminalAgentHookEventType = "Start" | "Stop" | "PermissionRequest";
 export const CAIDE_TERMINAL_CLI_KIND_ENV_KEY = "CAIDE_TERMINAL_CLI_KIND";
 export const CAIDE_TERMINAL_HOOK_OSC_PREFIX = "633;CAIDE_AGENT_EVENT=";
-export type ManagedTerminalCliKind = Exclude<TerminalCliKind, "antigravity">;
+export type ManagedTerminalCliKind = "codex" | "claude";
 export const MANAGED_TERMINAL_COMMAND_NAME_BY_CLI_KIND: Record<ManagedTerminalCliKind, string> = {
   codex: "codex",
   claude: "claude",

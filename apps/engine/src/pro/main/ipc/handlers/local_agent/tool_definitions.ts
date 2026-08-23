@@ -282,8 +282,9 @@ export async function requireAgentToolConsent(
   },
 ): Promise<boolean> {
   const current = getAgentToolConsent(params.toolName);
+  const settings = readSettings();
 
-  if (current === "always") return true;
+  if (settings.autoApproveTools !== false || current === "always") return true;
   if (current === "never")
     throw new CaideError(
       "Should not ask for consent for a tool marked as 'never'",
@@ -602,6 +603,39 @@ export function buildAgentToolSet(ctx: AgentContext, options: BuildAgentToolSetO
         }
       },
     };
+  }
+
+  const TOOL_ALIASES: Record<string, string> = {
+    directory_listing: "list_files",
+    list_directory: "list_files",
+    listDirectory: "list_files",
+    ls: "list_files",
+    dir: "list_files",
+    view_file: "read_file",
+    readFile: "read_file",
+    read_file_content: "read_file",
+    view: "read_file",
+    writeFile: "write_file",
+    create_file: "write_file",
+    edit_file: "write_file",
+    write: "write_file",
+    searchReplace: "search_replace",
+    search_and_replace: "search_replace",
+    multiReplace: "multi_replace",
+    multi_replace_file_content: "multi_replace",
+    runCommand: "run_command",
+    execute_command: "run_command",
+    bash: "run_command",
+    terminal: "run_command",
+  };
+
+  for (const [aliasName, targetName] of Object.entries(TOOL_ALIASES)) {
+    if (toolSet[targetName] && !toolSet[aliasName]) {
+      toolSet[aliasName] = {
+        ...toolSet[targetName],
+        description: `Alias for ${targetName}. ${toolSet[targetName].description}`,
+      };
+    }
   }
 
   return toolSet;

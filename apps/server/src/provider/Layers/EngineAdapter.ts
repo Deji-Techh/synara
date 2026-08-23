@@ -19,8 +19,12 @@ import { fileURLToPath } from "node:url";
 
 import {
   EventId,
+  MODEL_OPTIONS_BY_PROVIDER,
+  type ApiProviderKind,
   type CanonicalItemType,
   type ProviderKind,
+  type ProviderListModelsInput,
+  type ProviderListModelsResult,
   type ProviderRuntimeEvent,
   type ProviderSession,
   type ProviderTurnStartResult,
@@ -31,6 +35,7 @@ import {
 import { EngineClient } from "@caide/engine/client";
 import { CAIDE_ENGINE_DIR_ENV } from "@caide/shared/desktopIdentity";
 import { getCaideAppPath } from "../../paths/caideApps";
+import { listLiveApiProviderModels } from "../apiModelCatalog.ts";
 
 function safeFlutterEnvironment(overrides?: Record<string, string>): NodeJS.ProcessEnv {
   const ALLOWED_KEYS = [
@@ -216,6 +221,8 @@ interface EngineSessionContext {
    * notification handler to attribute incoming text/tool deltas.
    */
   readonly currentTurnIdRef: { current: TurnId | null };
+  /** Tracks characters emitted per message to avoid duplicates during streaming. */
+  readonly emittedTranscriptRef: { current: Map<string, number> };
   /** Engine app/chat this thread's conversation is bound to (lazy). */
   chatMapping: EngineChatMapping | null;
 }
@@ -270,11 +277,20 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           { apiKey: { value: string; encryptionType: "plaintext" } }
         > = {};
         const bridgedKinds: ReadonlyArray<{
-          caideKind: "opencodeZen" | "opencodeGo";
+          caideKind: string;
           engineId: string;
         }> = [
           { caideKind: "opencodeZen", engineId: "opencode-zen" },
           { caideKind: "opencodeGo", engineId: "opencode-go" },
+          { caideKind: "groq", engineId: "groq" },
+          { caideKind: "openai", engineId: "openai" },
+          { caideKind: "anthropic", engineId: "anthropic" },
+          { caideKind: "google", engineId: "google" },
+          { caideKind: "deepseek", engineId: "deepseek" },
+          { caideKind: "openrouter", engineId: "openrouter" },
+          { caideKind: "xai", engineId: "xai" },
+          { caideKind: "together", engineId: "together" },
+          { caideKind: "mistral", engineId: "mistral" },
         ];
         for (const { caideKind, engineId } of bridgedKinds) {
           const secret = yield* secretStore
@@ -295,7 +311,17 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       ["opencodeZen", "opencode-zen"],
       ["opencodeGo", "opencode-go"],
       ["groq", "groq"],
+      ["openai", "openai"],
+      ["anthropic", "anthropic"],
+      ["google", "google"],
+      ["deepseek", "deepseek"],
+      ["openrouter", "openrouter"],
+      ["xai", "xai"],
+      ["ollama", "ollama"],
+      ["together", "together"],
+      ["mistral", "mistral"],
       ["engine", "caide-engine"],
+      ["auto", "auto"],
     ]);
 
     const engineModelConfig = (): Effect.Effect<
@@ -441,30 +467,34 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         const turnId = context.currentTurnIdRef.current;
         if (!turnId || !Array.isArray(messages)) return;
 
-        // messageId -> number of chars already emitted (across text blocks).
-        const emitted = new Map<string, number>();
+        const emitted = context.emittedTranscriptRef.current;
         for (const message of messages) {
           if (typeof message !== "object" || message === null) continue;
           const raw = message as Record<string, unknown>;
           const messageId =
-            typeof raw.id === "string"
-              ? raw.id
-              : typeof raw.messageId === "string"
-                ? raw.messageId
+            typeof raw.id === "string" || typeof raw.id === "number"
+              ? String(raw.id)
+              : typeof raw.messageId === "string" || typeof raw.messageId === "number"
+                ? String(raw.messageId)
                 : null;
           if (!messageId) continue;
           if (raw.role !== "assistant" && raw.role !== "agent") continue;
           const content = raw.content;
-          if (!Array.isArray(content)) continue;
           const textBlocks: string[] = [];
           const toolBlocks: Array<Record<string, unknown>> = [];
-          for (const block of content) {
-            if (typeof block !== "object" || block === null) continue;
-            const b = block as Record<string, unknown>;
-            if (b.type === "text" && typeof b.text === "string") {
-              textBlocks.push(b.text);
-            } else if (b.type === "tool_use" && typeof b.name === "string") {
-              toolBlocks.push(b);
+          if (typeof content === "string") {
+            if (content.length > 0) {
+              textBlocks.push(content);
+            }
+          } else if (Array.isArray(content)) {
+            for (const block of content) {
+              if (typeof block !== "object" || block === null) continue;
+              const b = block as Record<string, unknown>;
+              if (b.type === "text" && typeof b.text === "string") {
+                textBlocks.push(b.text);
+              } else if (b.type === "tool_use" && typeof b.name === "string") {
+                toolBlocks.push(b);
+              }
             }
           }
           const emittedForMessage = emitted.get(messageId) ?? 0;
@@ -606,6 +636,15 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             }
             if (typeof payload.streamingPatch === "string" && payload.streamingPatch !== "") {
               yield* publishTextDelta(context.threadId, turnId, payload.streamingPatch);
+            } else if (
+              typeof payload.streamingPatch === "object" &&
+              payload.streamingPatch !== null &&
+              typeof (payload.streamingPatch as Record<string, unknown>).text === "string"
+            ) {
+              const patchText = (payload.streamingPatch as Record<string, unknown>).text as string;
+              if (patchText !== "") {
+                yield* publishTextDelta(context.threadId, turnId, patchText);
+              }
             }
             if (payload.messages !== undefined) {
               yield* emitTranscriptMessages(context, payload.messages);
@@ -1425,6 +1464,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           engineServerVersion: shared.engineServerVersion,
           previewAppDir: null,
           currentTurnIdRef: { current: null },
+          emittedTranscriptRef: { current: new Map() },
           chatMapping: null,
         };
         yield* Ref.update(sessions, (map) => new Map(map).set(threadId, context));
@@ -1488,6 +1528,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           engineServerVersion: shared.engineServerVersion,
           previewAppDir: null,
           currentTurnIdRef: { current: null },
+          emittedTranscriptRef: { current: new Map() },
           chatMapping: null,
         };
         yield* Ref.update(sessions, (map) => new Map(map).set(threadId, context));
@@ -1654,15 +1695,6 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
 
       startSession: (input) =>
         Effect.gen(function* () {
-          if (input.provider !== undefined && input.provider !== "engine") {
-            return yield* Effect.fail(
-              new ProviderAdapterValidationError({
-                provider: "engine",
-                operation: "startSession",
-                issue: `expected provider "engine", got ${input.provider}`,
-              }),
-            );
-          }
           return yield* startEngineSession(input.threadId, {
             runtimeMode: input.runtimeMode,
             ...(input.cwd ? { cwd: input.cwd } : {}),
@@ -1676,6 +1708,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           const mapping = yield* ensureThreadChat(context);
           const turnId = TurnId.makeUnsafe(randomUUID());
           context.currentTurnIdRef.current = turnId;
+          context.emittedTranscriptRef.current.clear();
           yield* publishEvent(
             makeEvent<ProviderRuntimeEvent>(input.threadId, {
               type: "turn.started",
@@ -2498,6 +2531,60 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           yield* Ref.set(sessions, new Map());
           yield* Ref.set(chatToThread, new Map());
           yield* Ref.set(pendingRequests, new Map());
+        }),
+
+      listModels: (input?: ProviderListModelsInput) =>
+        Effect.gen(function* () {
+          const provider = (input?.provider ?? "engine") as ProviderKind;
+          const builtInModels = (MODEL_OPTIONS_BY_PROVIDER[provider] ?? []).map((opt) => ({
+            slug: opt.slug,
+            name: opt.name,
+            description: opt.slug,
+          }));
+          if (provider === "engine") {
+            return { models: builtInModels, source: "static", cached: false };
+          }
+          const secret = yield* secretStore
+            .get(`provider-${provider}-api-key`)
+            .pipe(Effect.orElseSucceed(() => null));
+          const textDecoder = new TextDecoder();
+          const apiKey = secret && secret.byteLength > 0 ? textDecoder.decode(secret).trim() : "";
+          if (!apiKey) {
+            return { models: builtInModels, source: "static", cached: false };
+          }
+          const settings = yield* serverSettings.getSettings.pipe(Effect.orElseSucceed(() => null));
+          const configuredBaseUrl = (settings?.providers[provider]?.baseUrl ?? "").trim();
+          const defaultBaseUrlMap: Partial<Record<ApiProviderKind, string>> = {
+            openai: "https://api.openai.com/v1",
+            anthropic: "https://api.anthropic.com/v1",
+            google: "https://generativelanguage.googleapis.com/v1beta",
+            openrouter: "https://openrouter.ai/api/v1",
+            ollama: "http://127.0.0.1:11434/v1",
+            deepseek: "https://api.deepseek.com/v1",
+            groq: "https://api.groq.com/openai/v1",
+            mistral: "https://api.mistral.ai/v1",
+            together: "https://api.together.xyz/v1",
+            cohere: "https://api.cohere.com/compatibility/v1",
+            xai: "https://api.x.ai/v1",
+            fireworks: "https://api.fireworks.ai/inference/v1",
+            opencodeZen: "https://opencode.ai/zen/v1",
+            opencodeGo: "https://opencode.ai/zen/go/v1",
+          };
+          const baseUrl =
+            configuredBaseUrl.length > 0
+              ? configuredBaseUrl
+              : defaultBaseUrlMap[provider as ApiProviderKind];
+          if (!baseUrl) {
+            return { models: builtInModels, source: "static", cached: false };
+          }
+          return yield* Effect.promise(() =>
+            listLiveApiProviderModels({
+              provider: provider as ApiProviderKind,
+              baseUrl,
+              apiKey,
+              builtInModels,
+            }),
+          );
         }),
 
       streamEvents: Stream.fromPubSub(runtimeEventQueue),

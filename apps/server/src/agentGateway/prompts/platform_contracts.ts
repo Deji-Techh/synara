@@ -1,3 +1,4 @@
+export type AppFrameworkType = "vite" | "flutter" | "next" | "unknown";
 export type AppTarget = "mobile" | "web";
 
 /**
@@ -34,6 +35,49 @@ satisfy the checklist below. Audit your own work against it before you finish.
 Before finishing any screen, re-read this checklist and fix every violation.
 `;
 
+export const FLUTTER_PRODUCT_CONTRACT = `
+# PLATFORM CONTRACT — FLUTTER APP (non-negotiable)
+
+You are building a **native-feel Flutter application** (a Dart widget tree) that
+runs in the phone/tablet preview via the Flutter web-server device and stays
+packageable for iOS, Android, and the web. Every screen you ship MUST satisfy
+the checklist below. Audit your own work against it before you finish.
+
+0. **FLUTTER ONLY — NEVER web/React**: Caide builds Flutter (Dart) apps
+   exclusively. NEVER write React/JSX, Vue, Svelte, plain HTML/CSS, or any
+   non-Flutter web framework, and never scaffold or convert an app to them.
+   Do not add \`package.json\`/\`index.html\`/Vite/Next entries to a Flutter
+   project. If you ever see web/React code in a project, convert it to a real
+   Flutter/Dart widget tree instead of editing it. The app target is always
+   Flutter.
+
+1. **Dart widget tree**: every feature is real Dart/Flutter code (widgets,
+   Material 3 theming, go_router/Navigator navigation) — never HTML/CSS, never
+   a static mock seen through the preview.
+2. **Bottom NavigationBar**: the shipping UI MUST include a Material
+   \`NavigationBar\` with at least 2 destinations. It stays visible while
+   navigating between main sections (tab shells / IndexedStack / go_router
+   StatefulShellRoute).
+3. **Screen-based navigation**: the app navigates between screens (tabs/routes),
+   never one infinitely-scrolling page. Primary content fits each screen.
+4. **Touch-first with a11y**: minimum touch target 48x48 logical pixels, semantics
+   labels + tooltips on icon-only controls, and full keyboard/switch focus.
+5. **No desktop patterns**: NO top app-bar-and-sidebar desktop chrome as primary
+   navigation; \`NavigationRail\` is fine on tablet/desktop but the phone layout
+   must use a bottom bar.
+6. **Safe area**: account for status bar / home-indicator / keyboard insets via
+   \`MediaQuery.paddingOf(context)\` / \`viewInsetsOf\`.
+7. **Adaptive**: on large/tablet frames the app still looks like a mobile app
+   (more columns OK) — never a full desktop site. Responsive is in the widget
+   code (LayoutBuilder/MediaQuery), not a stretched phone column.
+8. **Native feel**: Material-true scroll behaviour, back navigation (PopScope),
+   focus states, and feedback behave like an installed app, not a document.
+9. **Quality gates**: keep \`flutter analyze\` clean and \`flutter test\` green
+   before finishing any screen or build.
+
+Before finishing any screen, re-read this checklist and fix every violation.
+`;
+
 export const WEB_PRODUCT_CONTRACT = `
 # PLATFORM CONTRACT — WEB APP (non-negotiable)
 
@@ -66,16 +110,20 @@ export const PLATFORM_SPEC_SYNC_RULE = `
 Write and keep up to date a file at \`${PLATFORM_SPEC_FILE}\` in the app root.
 It records the build target and this platform's design rules so they survive
 across sessions. At the start of EVERY session, read it; before finishing,
-update it if the platform rules changed. Content: one-line target ("mobile" or
-"web"), then the platform contract above verbatim.
+update it if the platform rules changed. Content: one-line target ("flutter",
+"mobile" or "web"), then the platform contract above verbatim.
 `;
 
 /**
  * Returns the platform contract + skill-pack guidance for a build target.
  * Defaults to "mobile" to preserve current behavior for existing apps.
+ * Pass \`frameworkType\` of "flutter" to get the Flutter product contract.
  */
-export function buildPlatformPrompt(appTarget?: AppTarget): string {
-  const target: AppTarget = appTarget ?? "mobile";
-  const contract = target === "web" ? WEB_PRODUCT_CONTRACT : MOBILE_PRODUCT_CONTRACT;
-  return `${contract}\n${PLATFORM_SPEC_SYNC_RULE}`;
+export function buildPlatformPrompt(
+  appTarget?: AppTarget,
+  frameworkType?: AppFrameworkType | null,
+): string {
+  void frameworkType;
+  void appTarget;
+  return `${FLUTTER_PRODUCT_CONTRACT}\n${PLATFORM_SPEC_SYNC_RULE}`;
 }
