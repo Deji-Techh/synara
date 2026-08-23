@@ -3047,6 +3047,12 @@ export default function ChatView({
   const hasStreamingAssistantText =
     activeThread?.messages.some((message) => message.role === "assistant" && message.streaming) ??
     false;
+  const planStreamingText = (() => {
+    if (chatMode !== "plan" || !activeThread) return null;
+    const streaming = activeThread.messages.filter((m) => m.role === "assistant" && m.streaming);
+    if (streaming.length === 0) return null;
+    return streaming[streaming.length - 1]?.text ?? null;
+  })();
   const activeTurnLayoutLive = isWorking || !latestTurnSettled;
   const [keepSettledActiveTurnLayout, setKeepSettledActiveTurnLayout] = useState(false);
   const previousActiveTurnLayoutLiveRef = useRef(activeTurnLayoutLive);
@@ -11875,6 +11881,15 @@ export default function ChatView({
 
             {shouldRenderChatPaneContent && !isCenteredEmptyLanding ? (
               <div className="flex min-h-0 flex-1 flex-col">
+                {isPlanMode && planStreamingText ? (
+                  <div className="shrink-0 border-b bg-background p-2">
+                    <PlanPreviewPane
+                      planMarkdown={planStreamingText}
+                      isStreaming={true}
+                      cwd={threadWorkspaceCwd ?? undefined}
+                    />
+                  </div>
+                ) : null}
                 <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
                   <ChatTranscriptPane
                     activeThreadId={activeThread.id}
