@@ -620,20 +620,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 .catch(() => undefined);
             }
 
-            if (typeof payload.streamingPreview === "object" && payload.streamingPreview !== null) {
-              const content = String(
-                (payload.streamingPreview as Record<string, unknown>).content ?? "",
-              );
-              if (content !== "") {
-                yield* publishEvent(
-                  makeEvent<ProviderRuntimeEvent>(context.threadId, {
-                    type: "turn.proposed.delta",
-                    turnId,
-                    payload: { delta: content },
-                  }),
-                );
-              }
-            }
+
             if (typeof payload.streamingPatch === "string" && payload.streamingPatch !== "") {
               yield* publishTextDelta(context.threadId, turnId, payload.streamingPatch);
             } else if (
@@ -684,6 +671,25 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               next.add(chatId);
               return next;
             });
+            return;
+          }
+          case "plan:update": {
+            if (typeof payload.chatId !== "number") return;
+            const chatId = payload.chatId as number;
+            const context = yield* sessionForChat(chatId);
+            if (context === null) return;
+            const turnId = context.currentTurnIdRef.current;
+            if (turnId === null) return;
+
+            if (typeof payload.planMarkdown === "string" && payload.planMarkdown !== "") {
+              yield* publishEvent(
+                makeEvent<ProviderRuntimeEvent>(context.threadId, {
+                  type: "turn.proposed.completed",
+                  turnId,
+                  payload: { planMarkdown: payload.planMarkdown },
+                }),
+              );
+            }
             return;
           }
           case "chat:response:error": {

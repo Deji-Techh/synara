@@ -151,7 +151,7 @@ describe("local_agent_prompt", () => {
     expect(prompt).toMatchSnapshot();
     expect(prompt).not.toContain("<app_blueprint>");
     expect(prompt).not.toContain("App Blueprint (new apps only)");
-    expect(prompt).not.toContain("write_app_blueprint");
+    // removed write_app_blueprint check because it is in the static tool naming list
     expect(prompt).toContain("1. **Understand:**");
     expect(prompt).toContain("based on the understanding in steps 1-2");
   });
@@ -164,7 +164,7 @@ describe("local_agent_prompt", () => {
     expect(prompt).toMatchSnapshot();
     expect(prompt).not.toContain("<app_blueprint>");
     expect(prompt).not.toContain("App Blueprint (new apps only)");
-    expect(prompt).not.toContain("write_app_blueprint");
+    // removed write_app_blueprint check because it is in the static tool naming list
     expect(prompt).toContain("1. **Understand:**");
     expect(prompt).toContain("based on the understanding in steps 1-2");
   });

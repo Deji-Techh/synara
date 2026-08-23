@@ -46,6 +46,13 @@ import { createChatGPTModel } from "@/main/chatgpt_auth";
 // so secondary factories can use it without import cycles). Re-exported here
 // for existing importers.
 export { setModelClientFetchForTesting } from "./test_fetch_override";
+import { createCustomProviderFetch } from "./custom_provider_stream_fetch";
+
+function getOpenAICompatibleFetchOption(): { fetch?: FetchFunction } {
+  return {
+    fetch: createCustomProviderFetch(getTestFetchOption().fetch),
+  };
+}
 
 function getModelClientFetchOption(): { fetch?: FetchFunction } {
   return getTestFetchOption();
@@ -386,7 +393,7 @@ function getRegularModelClient(
         name: "deepseek",
         baseURL: "https://api.deepseek.com",
         apiKey,
-        ...getModelClientFetchOption(),
+        ...getOpenAICompatibleFetchOption(),
       });
       return {
         modelClient: {
@@ -401,7 +408,7 @@ function getRegularModelClient(
         name: "groq",
         baseURL: "https://api.groq.com/openai/v1",
         apiKey,
-        ...getModelClientFetchOption(),
+        ...getOpenAICompatibleFetchOption(),
       });
       return {
         modelClient: {
@@ -416,7 +423,7 @@ function getRegularModelClient(
         name: "opencode-zen",
         baseURL: OPENCODE_ZEN_API_BASE_URL,
         apiKey,
-        ...getModelClientFetchOption(),
+        ...getOpenAICompatibleFetchOption(),
       });
       return {
         modelClient: {
@@ -431,7 +438,7 @@ function getRegularModelClient(
         name: "opencode-go",
         baseURL: OPENCODE_GO_API_BASE_URL,
         apiKey,
-        ...getModelClientFetchOption(),
+        ...getOpenAICompatibleFetchOption(),
       });
       return {
         modelClient: {
@@ -535,7 +542,7 @@ function getRegularModelClient(
         baseURL: "https://openrouter.ai/api/v1",
         apiKey,
         headers: getOpenRouterAppAttributionHeaders(),
-        ...getModelClientFetchOption(),
+        ...getOpenAICompatibleFetchOption(),
       });
       return {
         modelClient: {
@@ -556,7 +563,7 @@ function getRegularModelClient(
           name: "azure-test",
           baseURL: testAzureBaseUrl,
           apiKey: "fake-api-key-for-testing",
-          ...getModelClientFetchOption(),
+          ...getOpenAICompatibleFetchOption(),
         });
         return {
           modelClient: {
@@ -624,7 +631,7 @@ function getRegularModelClient(
       const provider = createOpenAICompatible({
         name: "lmstudio",
         baseURL,
-        ...getModelClientFetchOption(),
+        ...getOpenAICompatibleFetchOption(),
       });
       return {
         modelClient: {
@@ -654,7 +661,7 @@ function getRegularModelClient(
         name: "minimax",
         baseURL: "https://api.minimax.io/v1",
         apiKey,
-        ...getModelClientFetchOption(),
+        ...getOpenAICompatibleFetchOption(),
       });
       return {
         modelClient: {
@@ -675,7 +682,7 @@ function getRegularModelClient(
           name: providerConfig.id,
           baseURL: providerConfig.apiBaseUrl,
           apiKey,
-          ...getModelClientFetchOption(),
+          ...getOpenAICompatibleFetchOption(),
         });
         return {
           modelClient: {

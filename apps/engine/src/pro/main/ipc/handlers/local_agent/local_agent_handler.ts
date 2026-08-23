@@ -1320,6 +1320,11 @@ export async function handleLocalAgentStream(
             }
           }
 
+          // Ensure a clean visual break before appending retried output
+          if (terminatedRetryCount > 0 && fullResponse.trim().length > 0) {
+            fullResponse += "\n\n";
+          }
+
           // Close thinking block if still open
           if (inThinkingBlock) {
             const closingThinkBlock = "</think>\n";
@@ -1897,20 +1902,24 @@ function buildTerminatedRetryContinuationInstruction(): ModelMessage {
   };
 }
 
-function unwrapStreamError(error: unknown): unknown {
+function unwrapStreamError(error: unknown, seen = new Set<unknown>()): unknown {
   if (isRecord(error)) {
+    if (seen.has(error)) {
+      return error; // break cycle
+    }
+    seen.add(error);
     if ("error" in error && error.error) {
-      return unwrapStreamError(error.error);
+      return unwrapStreamError(error.error, seen);
     }
     if ("lastError" in error && error.lastError) {
-      return unwrapStreamError((error as Record<string, unknown>).lastError);
+      return unwrapStreamError((error as Record<string, unknown>).lastError, seen);
     }
     if ("cause" in error && (error as Record<string, unknown>).cause) {
-      return unwrapStreamError((error as Record<string, unknown>).cause);
+      return unwrapStreamError((error as Record<string, unknown>).cause, seen);
     }
     if ("errors" in error && Array.isArray((error as Record<string, unknown>).errors)) {
       const first = ((error as Record<string, unknown>).errors as unknown[])[0];
-      if (first) return unwrapStreamError(first);
+      if (first) return unwrapStreamError(first, seen);
     }
   }
   return error;
@@ -2007,8 +2016,15 @@ function isRetryableProviderStreamError(error: unknown): boolean {
   // "without a finish reason" and "InvalidResponseDataError" match even when
   // wrapped in AI_RetryError { lastError: ... }.
   const errorString = getErrorMessage(normalized).toLowerCase();
+  const errorType = (typeof normalized.type === "string" ? normalized.type : "").toLowerCase();
+  const errorCode = (typeof normalized.code === "string" ? normalized.code : "").toLowerCase();
 
-  if (RETRYABLE_STREAM_ERROR_PATTERNS.some((pattern) => errorString.includes(pattern))) {
+  if (
+    RETRYABLE_STREAM_ERROR_PATTERNS.some(
+      (pattern) =>
+        errorString.includes(pattern) || errorType.includes(pattern) || errorCode.includes(pattern),
+    )
+  ) {
     return true;
   }
 
