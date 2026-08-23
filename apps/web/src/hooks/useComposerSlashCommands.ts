@@ -44,6 +44,7 @@ import { buildNextProviderOptions } from "../providerModelOptions";
 import { resolveForkThreadEnvironment } from "../lib/threadEnvironment";
 import { type SplitViewId } from "../splitViewStore";
 import { useRightDockStore } from "../rightDockStore";
+import { usePreviewStageStore } from "../previewStageStore";
 import { registerSidechatCreator } from "../lib/sidechatCreatorRegistry";
 import { downloadUrlAsBlob } from "../lib/browserDownload";
 import { resolveWsHttpUrl } from "../lib/wsHttpUrl";
@@ -977,11 +978,15 @@ export function useComposerSlashCommands(input: {
         return true;
       }
 
-      if (slashInvocation.command === "browser" || slashInvocation.command === "preview") {
+      if (slashInvocation.command === "preview") {
         editorActions.clearComposerSlashDraft();
-        useRightDockStore.getState().openPane(threadId, {
-          kind: slashInvocation.command === "browser" ? "browser" : "preview",
-        });
+        usePreviewStageStore.getState().toggle(threadId);
+        return true;
+      }
+
+      if (slashInvocation.command === "browser") {
+        editorActions.clearComposerSlashDraft();
+        useRightDockStore.getState().openPane(threadId, { kind: "browser" });
         return true;
       }
 
@@ -997,7 +1002,7 @@ export function useComposerSlashCommands(input: {
         slashInvocation.command === "build"
       ) {
         editorActions.clearComposerSlashDraft();
-        useRightDockStore.getState().openPane(threadId, { kind: "preview" });
+        usePreviewStageStore.getState().open(threadId);
         if (slashInvocation.command === "test") {
           void ensureNativeApi()
             .preview.test({ threadId })
@@ -1375,15 +1380,23 @@ export function useComposerSlashCommands(input: {
         return;
       }
 
-      if (item.command === "browser" || item.command === "preview") {
+      if (item.command === "preview") {
         const applied = clearSlashCommandFromComposer();
         if (!wasPromptReplacementApplied(applied)) {
           return;
         }
         editorActions.setComposerHighlightedItemId(null);
-        useRightDockStore.getState().openPane(threadId, {
-          kind: item.command === "browser" ? "browser" : "preview",
-        });
+        usePreviewStageStore.getState().toggle(threadId);
+        return;
+      }
+
+      if (item.command === "browser") {
+        const applied = clearSlashCommandFromComposer();
+        if (!wasPromptReplacementApplied(applied)) {
+          return;
+        }
+        editorActions.setComposerHighlightedItemId(null);
+        useRightDockStore.getState().openPane(threadId, { kind: "browser" });
         return;
       }
 
@@ -1403,7 +1416,7 @@ export function useComposerSlashCommands(input: {
           return;
         }
         editorActions.setComposerHighlightedItemId(null);
-        useRightDockStore.getState().openPane(threadId, { kind: "preview" });
+        usePreviewStageStore.getState().open(threadId);
         if (item.command === "test") {
           void ensureNativeApi()
             .preview.test({ threadId })

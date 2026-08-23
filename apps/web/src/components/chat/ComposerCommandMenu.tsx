@@ -101,7 +101,7 @@ function commandMenuTitle(
     case "build":
       return "Flutter Build";
     case "preview":
-      return "Live Preview Dock";
+      return "Floating Preview Stage";
     case "theme":
       return "Theme Palette";
     case "clear":

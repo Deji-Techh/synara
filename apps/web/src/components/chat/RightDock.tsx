@@ -60,15 +60,9 @@ export const RIGHT_DOCK_DEFAULT_WIDTH = "max(28rem, calc(50vw - 8rem))";
 // at the even split. The device pane frames a portrait phone, so its useful
 // width is whatever lets the phone reach full height: a ~19.5:9 chassis stays
 // height-bound well past 480px, and opening narrower only shrinks the device
-// while leaving empty space above and below it. The preview pane frames the
-// Flutter app in the same device chassis (mobile/tablet presets are
-// height-bound), so it opens at the same comfortable width instead of the
-// half-shell split. Synara reference: right preview is ~42rem (≈672px) with
-// generous breathing room, phone fills ~80% of height — noticeably wider than
-// the old 38rem.
+// while leaving empty space above and below it.
 const RIGHT_DOCK_PREFERRED_WIDTH: Partial<Record<RightDockPaneKind, number>> = {
   device: 40 * 16,
-  preview: 42 * 16,
 };
 
 interface RightDockProps {
@@ -203,20 +197,8 @@ export function RightDock(props: RightDockProps) {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const minWidth = props.minWidth;
   const activePaneKind = activePane?.kind ?? null;
-  // Preview locks to a fixed viewport so Android/iPhone share the same large
-  // middle-centered frame (user request: 60% larger, non-resizable). All other
-  // panes remain freely resizable. Synara's preview is deliberately wide
-  // (≈42rem) so the phone is height-bound and fills the stage without
-  // stranded top/bottom space.
-  const isPreviewLocked = activePaneKind === "preview";
-  // For preview we want the wide 42rem on the *first* paint, not after a
-  // useEffect that first renders at defaultWidth (28rem) and then measures
-  // shell/2. The shell/2 logic also makes the dock narrow when the center
-  // composer is wide (shouldAcceptWidth rejects 672). For preview we bypass it
-  // and set the CSS variable synchronously via the provider style below.
-  // Non-preview panes still use the half-shell measurement.
   useLayoutEffect(() => {
-    if (!props.state.open || isPreviewLocked) {
+    if (!props.state.open) {
       return;
     }
     const wrapper = contentRef.current?.closest<HTMLElement>("[data-slot='sidebar-wrapper']");
@@ -229,7 +211,7 @@ export function RightDock(props: RightDockProps) {
     if (openWidth > 0) {
       wrapper.style.setProperty("--sidebar-width", `${Math.max(minWidth, openWidth)}px`);
     }
-  }, [props.state.open, minWidth, activePaneKind, isPreviewLocked]);
+  }, [props.state.open, minWidth, activePaneKind]);
   const renderedPanes = props.state.panes.filter(
     (pane) => pane.id === activePane?.id || keepMountedPaneIds.has(pane.id),
   );
@@ -261,9 +243,7 @@ export function RightDock(props: RightDockProps) {
     ? SIDEBAR_OFFCANVAS_MOTION_SUPPRESSED_CLASS
     : SIDEBAR_OFFCANVAS_MOTION_CLASS;
 
-  const effectiveDefaultWidth = isPreviewLocked
-    ? `${RIGHT_DOCK_PREFERRED_WIDTH.preview}px`
-    : props.defaultWidth;
+  const effectiveDefaultWidth = props.defaultWidth;
 
   return (
     <SidebarProvider
@@ -283,14 +263,10 @@ export function RightDock(props: RightDockProps) {
         innerClassName={CHAT_BACKGROUND_CLASS_NAME}
         gapClassName={chromeMotionClass}
         transparentSurface
-        {...(isPreviewLocked
-          ? {}
-          : {
-              resizable: {
-                minWidth: props.minWidth,
-                shouldAcceptWidth: props.shouldAcceptWidth,
-              },
-            })}
+        resizable={{
+          minWidth: props.minWidth,
+          shouldAcceptWidth: props.shouldAcceptWidth,
+        }}
       >
         <div
           ref={contentRef}
@@ -389,7 +365,7 @@ export function RightDock(props: RightDockProps) {
             })}
           </div>
         </div>
-        {isPreviewLocked ? null : <SidebarRail />}
+        <SidebarRail />
       </Sidebar>
     </SidebarProvider>
   );

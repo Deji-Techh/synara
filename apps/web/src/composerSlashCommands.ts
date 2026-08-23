@@ -234,7 +234,7 @@ const COMPOSER_SLASH_COMMAND_DEFINITIONS: Record<
   preview: {
     command: "preview",
     label: "/preview",
-    description: "Toggle the Flutter live device preview dock",
+    description: "Toggle the floating Android preview stage",
     source: "app",
   },
   theme: {

@@ -19,7 +19,6 @@ export const RIGHT_DOCK_PANE_KINDS = [
   "sidechat",
   "git",
   "pullRequest",
-  "preview",
   "goals",
   "database",
 ] as const;
@@ -229,15 +228,6 @@ function singletonPaneReopenPatch(input: OpenPaneInput): Partial<RightDockPane> 
       pullRequestRepository: input.pullRequestRepository ?? null,
       pullRequestNumber: input.pullRequestNumber ?? null,
       pullRequestInitialTab: input.pullRequestInitialTab ?? null,
-    };
-  }
-  if (
-    input.kind === "preview" &&
-    (input.previewAppId !== undefined || input.previewDeviceId !== undefined)
-  ) {
-    return {
-      previewAppId: input.previewAppId ?? null,
-      previewDeviceId: input.previewDeviceId ?? null,
     };
   }
   return null;

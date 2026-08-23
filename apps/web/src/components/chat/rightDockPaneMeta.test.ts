@@ -109,26 +109,13 @@ describe("resolveRightDockLauncherItems", () => {
     ).not.toContain("device");
   });
 
-  it("offers the preview only when a workspace is available", () => {
-    expect(
-      resolveRightDockLauncherItems({
-        hasWorkspace: true,
-        hasGitRepository: false,
-        hasReview: false,
-        hasPreviewSupport: true,
-      }).map(({ kind }) => kind),
-    ).toContain("preview");
-
+  it("no longer surfaces preview in the dock — it lives in the floating stage", () => {
     expect(
       resolveRightDockLauncherItems({
         hasWorkspace: true,
         hasGitRepository: false,
         hasReview: false,
       }).map(({ kind }) => kind),
-    ).not.toContain("preview");
-  });
-
-  it("labels the preview pane", () => {
-    expect(getRightDockPaneMeta("preview").label).toBe("Preview");
+    ).not.toContain("preview" as never);
   });
 });

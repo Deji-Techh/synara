@@ -17,6 +17,7 @@ import {
 
 import { useAppSettings } from "../../appSettings";
 import { useComposerDraftStore } from "../../composerDraftStore";
+import { selectPreviewStageState, usePreviewStageStore } from "../../previewStageStore";
 import type { DiffRouteSearch } from "../../diffRouteSearch";
 import { stripDiffSearchParams } from "../../diffRouteSearch";
 import { readEditorViewState, storeEditorViewState } from "../../editorViewState";
@@ -88,6 +89,7 @@ import {
   noopChatSurfaceAction,
 } from "./ChatThreadSurfacePrimitives";
 import { PanelStateMessage } from "./PanelStateMessage";
+import { PreviewStage } from "./PreviewStage";
 import { RightDock } from "./RightDock";
 import { getRightDockPaneMeta, resolveRightDockLauncherItems } from "./rightDockPaneMeta";
 import {
@@ -129,11 +131,6 @@ const DockExplorerPane = lazy(() =>
 const DockFilePane = lazy(() =>
   import("./DockFilePane").then((module) => ({
     default: module.DockFilePane,
-  })),
-);
-const LazyPreviewPanel = lazy(() =>
-  import("./PreviewPanel").then((module) => ({
-    default: module.PreviewPanel,
   })),
 );
 const LazyGoalsPanel = lazy(() =>
@@ -205,6 +202,9 @@ export function SingleChatSurface(props: {
   const dockState = useRightDockStore(
     useMemo(() => selectRightDockState(props.threadId), [props.threadId]),
   );
+  const previewStageState = usePreviewStageStore(
+    useMemo(() => selectPreviewStageState(props.threadId), [props.threadId]),
+  );
   const openPane = useRightDockStore((store) => store.openPane);
   const toggleSingletonPane = useRightDockStore((store) => store.toggleSingletonPane);
   const closePane = useRightDockStore((store) => store.closePane);
@@ -241,16 +241,11 @@ export function SingleChatSurface(props: {
     isGitRepo: hasGitRepository,
   });
   const hasDeviceSupport = useDeviceSupport();
-  // The preview pane previews engine-served Flutter apps in the thread's
-  // workspace; without a workspace there is nothing to run, so the launcher
-  // and header toggle stay hidden like the simulator gate above.
-  const hasPreviewSupport = workspaceRoot !== null;
   const dockLauncherItems = resolveRightDockLauncherItems({
     hasWorkspace: workspaceRoot !== null,
     hasGitRepository,
     hasReview: dockDiffTotals.fileCount > 0,
     hasDeviceSupport,
-    hasPreviewSupport,
   });
   const availableDockPaneKinds = dockLauncherItems.map(({ kind }) => kind);
   const projects = useStore((store) => store.projects);
@@ -340,10 +335,6 @@ export function SingleChatSurface(props: {
   const handleToggleDevice = () => {
     requestImmediateDockHydration("device");
     toggleSingletonPane(props.threadId, { kind: "device" });
-  };
-  const handleTogglePreview = () => {
-    requestImmediateDockHydration("preview");
-    toggleSingletonPane(props.threadId, { kind: "preview" });
   };
   const handleToggleRightDock = () => {
     setDockOpen(props.threadId, !dockState.open);
@@ -820,19 +811,6 @@ export function SingleChatSurface(props: {
             />
           </Suspense>
         );
-      case "preview":
-        return (
-          <Suspense fallback={<PanelStateMessage>Loading preview...</PanelStateMessage>}>
-            <LazyPreviewPanel
-              threadId={props.threadId}
-              pane={pane}
-              isVisible={context.isVisible}
-              onUpdatePane={(patch) => updatePane(props.threadId, pane.id, patch)}
-              onClose={() => closePane(props.threadId, pane.id)}
-              workspaceRoot={workspaceRoot}
-            />
-          </Suspense>
-        );
       case "goals":
         return (
           <Suspense fallback={<PanelStateMessage>Loading goals...</PanelStateMessage>}>
@@ -1119,7 +1097,6 @@ export function SingleChatSurface(props: {
               onToggleRightDock={handleToggleRightDock}
               onToggleBrowser={handleToggleBrowser}
               {...(hasDeviceSupport ? { onToggleDevice: handleToggleDevice } : {})}
-              {...(hasPreviewSupport ? { onTogglePreview: handleTogglePreview } : {})}
               onOpenBrowserUrl={handleOpenBrowserUrl}
               onOpenTurnDiff={handleOpenTurnDiff}
               onSplitSurface={handleSplitSurface}
@@ -1131,6 +1108,9 @@ export function SingleChatSurface(props: {
             />
           </RouteInsetSurface>
         </ChatPaneDropOverlay>
+        {previewStageState.open ? (
+          <PreviewStage threadId={props.threadId} isVisible={previewStageState.open} />
+        ) : null}
         <RightDock
           state={dockState}
           minWidth={SINGLE_PANEL_MIN_WIDTH}
