@@ -498,6 +498,7 @@ import {
 import { ComposerPendingApprovalPanel } from "./chat/ComposerPendingApprovalPanel";
 import { ComposerExtrasMenu } from "./chat/ComposerExtrasMenu";
 import { ChatModeSelector } from "./chat/ChatModeSelector";
+import { ChatModeBadge } from "./chat/PlanPreviewPane";
 import { ContextWindowMeter } from "./chat/ContextWindowMeter";
 import { ComposerInputBanners } from "./chat/ComposerInputBanners";
 import { ComposerPendingUserInputPanel } from "./chat/ComposerPendingUserInputPanel";
@@ -10864,7 +10865,10 @@ export default function ChatView({
   const renderComposerLeadingControls = (options: { iconOnly: boolean }) => (
     <>
       {!options.iconOnly ? (
-        <ChatModeSelector mode={chatMode} onChatModeChange={handleChatModeChange} />
+        <div className="flex items-center gap-2">
+          <ChatModeSelector mode={chatMode} onChatModeChange={handleChatModeChange} />
+          <ChatModeBadge mode={chatMode} />
+        </div>
       ) : null}
       <ComposerExtrasMenu
         interactionMode={interactionMode}
@@ -10909,6 +10913,7 @@ export default function ChatView({
       clearTemporaryThread(threadId);
     }
   };
+  const isPlanMode = chatMode === "plan";
   const showEmptyLandingProjectPicker =
     isCenteredEmptyLanding && isLocalDraftThread && activeProject?.kind === "project";
   const showContainerChatWorkspacePicker = isEmptyChatLanding && isHomeChatContainer;
