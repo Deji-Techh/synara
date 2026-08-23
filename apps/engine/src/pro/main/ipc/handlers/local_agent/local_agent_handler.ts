@@ -154,6 +154,16 @@ const RETRYABLE_STREAM_ERROR_PATTERNS = [
   "econnreset",
   "epipe",
   "etimedout",
+  // AI SDK can end a stream without a finish reason when the provider cuts
+  // the stream mid-tool-call (common on weak models / long plan write_plan).
+  // Treat it as a transient termination so we retry instead of surfacing
+  // "Provider runtime error → Turn failed".
+  "without a finish reason",
+  "without a finish chunk",
+  "finish reason",
+  "finish chunk",
+  "InvalidResponseDataError",
+  "No output generated",
 ];
 
 // ============================================================================

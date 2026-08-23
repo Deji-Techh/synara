@@ -7631,13 +7631,12 @@ export default function ChatView({
         setPendingAutomationConversation(null);
       }
     }
-    // App Branding: on the very first native send from a container landing project
-    // (build / agent modes only) pause to let the user choose how to brand the new
-    // app before anything is dispatched. Skip queued turns, live-plan follow-ups,
-    // automation setup, and the immediate re-submit that carries the chosen brand.
+    // App Branding wizard removed per user request — first send goes straight to the model.
+    // Keeping refs for backward compat but never opening the modal.
     const shouldSkipBrandingThisSend = skipBrandingWizardForNextSubmitRef.current;
     skipBrandingWizardForNextSubmitRef.current = false;
     if (
+      false &&
       queuedChatTurn === null &&
       !isLivePlanFollowUpSubmission &&
       !pendingAutomationConversation &&
