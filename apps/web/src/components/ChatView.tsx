@@ -498,7 +498,7 @@ import {
 import { ComposerPendingApprovalPanel } from "./chat/ComposerPendingApprovalPanel";
 import { ComposerExtrasMenu } from "./chat/ComposerExtrasMenu";
 import { ChatModeSelector } from "./chat/ChatModeSelector";
-import { ChatModeBadge, PlanPreviewPane } from "./chat/PlanPreviewPane";
+import { ChatModeBadge } from "./chat/PlanPreviewPane";
 import { ContextWindowMeter } from "./chat/ContextWindowMeter";
 import { ComposerInputBanners } from "./chat/ComposerInputBanners";
 import { ComposerPendingUserInputPanel } from "./chat/ComposerPendingUserInputPanel";
@@ -3042,12 +3042,6 @@ export default function ChatView({
   const hasStreamingAssistantText =
     activeThread?.messages.some((message) => message.role === "assistant" && message.streaming) ??
     false;
-  const planStreamingText = (() => {
-    if (chatMode !== "plan" || !activeThread) return null;
-    const streaming = activeThread.messages.filter((m) => m.role === "assistant" && m.streaming);
-    if (streaming.length === 0) return null;
-    return streaming[streaming.length - 1]?.text ?? null;
-  })();
   const activeTurnLayoutLive = isWorking || !latestTurnSettled;
   const [keepSettledActiveTurnLayout, setKeepSettledActiveTurnLayout] = useState(false);
   const previousActiveTurnLayoutLiveRef = useRef(activeTurnLayoutLive);
@@ -3312,19 +3306,6 @@ export default function ChatView({
       ),
     [activeThread?.proposedPlans, agentActivityTimelineState.timelineWorkEntries, timelineMessages],
   );
-  // Option B: when plan is streaming into the preview pane, hide the same streaming assistant
-  // message from the timeline so it does not type in two places at once.
-  const displayTimelineEntries = useMemo(() => {
-    if (chatMode !== "plan" || !planStreamingText) return timelineEntries;
-    return timelineEntries.filter(
-      (entry) =>
-        !(
-          entry.kind === "message" &&
-          entry.message.role === "assistant" &&
-          entry.message.streaming
-        ),
-    );
-  }, [timelineEntries, chatMode, planStreamingText]);
   const enteringUserMessageIds = useMemo<ReadonlySet<MessageId>>(
     () => new Set(optimisticUserMessages.map((message) => message.id)),
     [optimisticUserMessages],
@@ -11884,21 +11865,12 @@ export default function ChatView({
 
             {shouldRenderChatPaneContent && !isCenteredEmptyLanding ? (
               <div className="flex min-h-0 flex-1 flex-col">
-                {isPlanMode && planStreamingText ? (
-                  <div className="shrink-0 border-b bg-background p-2">
-                    <PlanPreviewPane
-                      planMarkdown={planStreamingText}
-                      isStreaming={true}
-                      {...(threadWorkspaceCwd !== null ? { cwd: threadWorkspaceCwd } : {})}
-                    />
-                  </div>
-                ) : null}
                 <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
                   <ChatTranscriptPane
                     activeThreadId={activeThread.id}
                     activeTurnId={activeTurnIdForTranscript}
                     agentActivityDetail={openAgentActivityDetail}
-                    hasMessages={displayTimelineEntries.length > 0}
+                    hasMessages={timelineEntries.length > 0}
                     isWorking={isWorking}
                     workingLabel={resolveWorkingLabel({ isSendBusy, turnTakenOver })}
                     worktreeSetup={activeWorktreeSetup}
@@ -11922,7 +11894,7 @@ export default function ChatView({
                     crossTaskOrigin={crossTaskOrigin}
                     forkSource={forkSource}
                     isTemporaryThread={isThreadTemporary}
-                    timelineEntries={displayTimelineEntries}
+                    timelineEntries={timelineEntries}
                     turnDiffSummaryByAssistantMessageId={turnDiffSummaryByAssistantMessageId}
                     onOpenTurnDiff={onOpenTurnDiff}
                     onOpenThread={onNavigateToThread}
