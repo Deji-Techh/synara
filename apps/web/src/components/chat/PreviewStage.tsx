@@ -546,7 +546,7 @@ function BranchPopup(props: {
 }) {
   if (!props.open) return null;
   return (
-    <div className="absolute right-2 top-full z-20 mt-2 flex w-[380px] max-h-[60vh] flex-col overflow-hidden rounded-2xl border border-border bg-popover text-popover-foreground shadow-xl animate-in fade-in slide-in-from-top-2 duration-220">
+    <div className="absolute right-3 top-full z-20 mt-2 flex max-h-[60vh] w-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-popover text-popover-foreground shadow-xl animate-in fade-in slide-in-from-top-2 duration-220">
       {/* branch stem */}
       <div className="absolute -top-2 right-8 h-2 w-px bg-border" aria-hidden="true" />
       <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
@@ -827,7 +827,7 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
 
   return (
     <div
-      className={cn("flex shrink-0 flex-col overflow-hidden border-l border-border", CHAT_BACKGROUND_CLASS_NAME)}
+      className={cn("flex h-full w-full shrink-0 flex-col overflow-visible border-l border-border", CHAT_BACKGROUND_CLASS_NAME)}
       data-testid="preview-stage"
       style={{ width: `${PREVIEW_STAGE_FIXED_WIDTH_PX}px` }}
     >

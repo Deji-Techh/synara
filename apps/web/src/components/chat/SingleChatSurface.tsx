@@ -1138,12 +1138,12 @@ export function SingleChatSurface(props: {
         {/* Floating preview stage — fixed 672px, animated width/opacity like right dock (220ms). Mutually exclusive with RightDock via effects above. */}
         <div
           className={cn(
-            "shrink-0 overflow-hidden transition-[width,opacity] duration-220 ease-out motion-reduce:transition-none",
-            previewStageState.open ? "w-[672px] opacity-100" : "w-0 opacity-0",
+            "shrink-0 transition-[width,opacity] duration-220 ease-out motion-reduce:transition-none",
+            previewStageState.open ? "w-[672px] overflow-visible opacity-100" : "w-0 overflow-hidden opacity-0",
           )}
           aria-hidden={previewStageState.open ? undefined : true}
         >
-          <div className="h-full w-[672px]">
+          <div className="h-full w-[672px] overflow-visible">
             <PreviewStage threadId={props.threadId} isVisible={previewStageState.open} workspaceRoot={workspaceRoot} />
           </div>
         </div>
