@@ -1576,13 +1576,13 @@ export function PreviewPanel(props: {
                 )}
               </div>
             ) : (
-              <div className="flex min-h-0 flex-1 min-w-0 w-full flex-col items-stretch justify-center overflow-hidden bg-muted/30 px-3 py-3">
+              <div className="flex min-h-0 flex-1 min-w-0 flex-col items-center justify-center overflow-hidden bg-muted/30 px-3 py-3">
                 <div aria-hidden className={DEVICE_RAIL_HEIGHT_CLASS} />
                 <DeviceScreen
-                  className="min-h-0 w-full flex-1 min-w-0 overflow-hidden self-stretch"
+                  className="min-h-0 w-full flex-1 min-w-0 overflow-hidden"
                   kind={statusFrameKind}
-                  pixelWidth={statusFrameKind === "androidPhone" ? 1080 : undefined}
-                  pixelHeight={statusFrameKind === "androidPhone" ? 2400 : undefined}
+                  pixelWidth={statusFrameKind === "androidPhone" ? 1206 : undefined}
+                  pixelHeight={statusFrameKind === "androidPhone" ? 2622 : undefined}
                   landscape={landscape}
                 >
                   <div className="flex h-full w-full flex-col items-center justify-center bg-black text-center">

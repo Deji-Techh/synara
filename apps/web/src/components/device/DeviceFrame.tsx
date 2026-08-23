@@ -442,29 +442,23 @@ export const DeviceScreen = memo(function DeviceScreen({
   );
 
   // Fix for "compressed to left" on first open: the sidebar width animates
-  // from 0 → 608px via --sidebar-width, so the first paint's 100cqw is stale
-  // (0 or defaultWidth) and the chassis stays tiny. A second paint after the
-  // transition settles re-evaluates 100cqw correctly — which is why switching
-  // frames cures it. Force a second render after mount/layout settles.
-  const [layoutEpoch, setLayoutEpoch] = useState(0);
+  // via --sidebar-width, so the first paint's 100cqw can be stale and the
+  // chassis stays tiny. A second render after the transition settles
+  // re-evaluates 100cqw correctly — which is why switching frames cured it.
+  // We trigger a lightweight re-render (no key remount) after rAF + timeout
+  // so the container query re-measures without tearing the frame subtree.
+  const [, setLayoutTick] = useState(0);
   useEffect(() => {
-    const id = window.requestAnimationFrame(() => {
-      // rAF fires after the sidebar's width transition has committed.
-      setLayoutEpoch((value) => value + 1);
-    });
-    const timeoutId = window.setTimeout(() => setLayoutEpoch((value) => value + 1), 320);
+    const rafId = window.requestAnimationFrame(() => setLayoutTick((value) => value + 1));
+    const timeoutId = window.setTimeout(() => setLayoutTick((value) => value + 1), 320);
     return () => {
-      window.cancelAnimationFrame(id);
+      window.cancelAnimationFrame(rafId);
       window.clearTimeout(timeoutId);
     };
   }, [kind, pixelWidth, pixelHeight, landscape]);
 
   return (
     <div
-      // layoutEpoch key forces the container to re-measure 100cqw/100cqh after
-      // the sidebar's --sidebar-width transition settles. Without this the
-      // first chassis stays at the pre-transition size (tiny, left-aligned).
-      key={layoutEpoch}
       className={cn(
         // No overflow clip: the chassis shadow reaches ~32px past the device,
         // and clipping it left a hard horizontal cut where the control rail
@@ -481,9 +475,6 @@ export const DeviceScreen = memo(function DeviceScreen({
           // Turned, the device's height runs across the pane, so the fit is
           // measured against the transposed axis; without this the rotated
           // device shrinks to whatever its untumbled height allowed.
-          // Use both cqw/cqh (container query) with a % fallback so a racy
-          // first paint (cqw=0 during sidebar slide) still occupies full width.
-          width: `min(100%, calc(100cqh * ${geo.aspect}))`,
           height: landscape
             ? `min(100cqw, calc(100cqh / ${geo.aspect}))`
             : `min(100cqh, calc(100cqw / ${geo.aspect}))`,
