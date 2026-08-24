@@ -157,6 +157,7 @@ export async function createAppForFirstSend(input: {
     try {
       created = await api.app.createApp({
         name: candidateName,
+        framework: "blank",
         ...(input.modelSelection ? { modelSelection: input.modelSelection } : {}),
       });
     } catch (error) {

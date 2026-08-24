@@ -288,6 +288,8 @@ management, web build/test commands, and browser-oriented tools.
 
 ### 7. Framework-aware projects
 
+- [x] Replace the public Flutter-template creation API and dialog with the
+      four locked framework choices.
 - [ ] Implement Blank project creation.
 - [ ] Port React Native/Expo scaffold and runtime behavior from dyad.
 - [ ] Implement Flutter scaffold and runtime behavior.
@@ -362,6 +364,9 @@ management, web build/test commands, and browser-oriented tools.
   and project paths from the server host.
 - Added a boot/ping/shutdown test. The old child-process adapter remains active
   until provider-layer cutover is complete.
+- Replaced the create-app dialog's four Flutter templates with the four locked
+  framework choices and added framework to the app-creation RPC contract.
+  Persistence and framework-specific scaffolding remain pending.
 
 ### 2026-08-24 — Plan reset
 

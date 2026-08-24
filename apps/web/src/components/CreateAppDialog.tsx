@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 
-import type { AppCreateResult, FlutterAppTemplateId } from "@caide/contracts";
+import type { AppCreateResult, ProjectFramework } from "@caide/contracts";
 
 import { Button } from "./ui/button";
 import {
@@ -22,15 +22,15 @@ import { Label } from "./ui/label";
 import { readNativeApi } from "../nativeApi";
 import { generateCuteAppName, toAppSlug } from "../lib/appNaming";
 
-const FLUTTER_TEMPLATES: Array<{
-  id: FlutterAppTemplateId;
+const FRAMEWORKS: Array<{
+  id: ProjectFramework;
   label: string;
   description: string;
 }> = [
-  { id: "blank", label: "Blank", description: "Minimal Flutter scaffold" },
-  { id: "counter", label: "Counter", description: "Default counter app" },
-  { id: "firebase", label: "Firebase", description: "Firebase-ready template" },
-  { id: "supabase", label: "Supabase", description: "Supabase auth + DB" },
+  { id: "blank", label: "Blank", description: "Start from an empty workspace" },
+  { id: "react-native", label: "React Native", description: "Expo / React Native mobile app" },
+  { id: "flutter", label: "Flutter", description: "Flutter mobile app" },
+  { id: "website", label: "Website", description: "Browser-first web application" },
 ];
 
 export function CreateAppDialog(props: {
@@ -39,7 +39,7 @@ export function CreateAppDialog(props: {
   onCreated?: (result: AppCreateResult) => void;
 }) {
   const [name, setName] = useState(generateCuteAppName());
-  const [templateId, setTemplateId] = useState<FlutterAppTemplateId>("counter");
+  const [framework, setFramework] = useState<ProjectFramework>("blank");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fieldId = useId();
@@ -53,7 +53,7 @@ export function CreateAppDialog(props: {
         if (initial) sessionStorage.removeItem("caide:home-derived-app-name");
       } catch {}
       setName(initial ?? generateCuteAppName());
-      setTemplateId("counter");
+      setFramework("blank");
       setError(null);
       setSubmitting(false);
     }
@@ -85,7 +85,7 @@ export function CreateAppDialog(props: {
     setSubmitting(true);
     setError(null);
     try {
-      const result = await api.app.createApp({ name: trimmed, templateId });
+      const result = await api.app.createApp({ name: trimmed, framework });
       props.onCreated?.(result);
       props.onOpenChange(false);
     } catch (e) {
@@ -93,7 +93,7 @@ export function CreateAppDialog(props: {
     } finally {
       setSubmitting(false);
     }
-  }, [name, nameError, templateId, props]);
+  }, [name, nameError, framework, props]);
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
@@ -101,8 +101,8 @@ export function CreateAppDialog(props: {
         <DialogHeader>
           <DialogTitle>Create new app</DialogTitle>
           <DialogDescription>
-            Flutter-first. This creates <code>~/caide-apps/{slug || "..."}</code> and opens its
-            first chat.
+            Choose a framework for <code>~/caide-apps/{slug || "..."}</code>. It is fixed for this
+            project and controls preview, tools, and builds.
           </DialogDescription>
         </DialogHeader>
         <DialogPanel className="space-y-5">
@@ -146,38 +146,24 @@ export function CreateAppDialog(props: {
           </div>
 
           <div className="grid gap-2">
-            <Label>Template</Label>
+            <Label>Framework</Label>
             <div className="grid grid-cols-2 gap-2">
-              {FLUTTER_TEMPLATES.map((tpl) => {
-                const active = tpl.id === templateId;
-                return (
-                  <button
-                    key={tpl.id}
-                    type="button"
-                    disabled={submitting}
-                    onClick={() => setTemplateId(tpl.id)}
-                    className={
-                      active
-                        ? "rounded-xl border border-foreground/15 bg-foreground text-background px-3 py-2.5 text-left transition-colors"
-                        : "rounded-xl border border-border bg-card px-3 py-2.5 text-left hover:bg-accent/50 transition-colors"
-                    }
-                  >
-                    <div className={active ? "text-sm font-semibold" : "text-sm font-medium"}>
-                      {tpl.label}
-                    </div>
-                    <div
-                      className={
-                        active ? "text-xs text-background/70" : "text-xs text-muted-foreground"
-                      }
-                    >
-                      {tpl.description}
-                    </div>
-                  </button>
-                );
-              })}
+              {FRAMEWORKS.map((item) => (
+                <Button
+                  key={item.id}
+                  type="button"
+                  variant={framework === item.id ? "default" : "outline"}
+                  className="h-auto min-h-16 flex-col items-start gap-1 p-3 text-left"
+                  disabled={submitting}
+                  onClick={() => setFramework(item.id)}
+                >
+                  <span>{item.label}</span>
+                  <span className="text-xs font-normal opacity-75">{item.description}</span>
+                </Button>
+              ))}
             </div>
             <p className="text-[11px] text-muted-foreground">
-              All templates are Flutter. Blank is the most minimal starting point.
+              The selected framework cannot be changed after the project is created.
             </p>
           </div>
 

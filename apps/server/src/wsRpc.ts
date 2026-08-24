@@ -1181,8 +1181,9 @@ const makeWsRpcHandlersLayer = () =>
           // Seed the app with the composer's picked provider/model so a Home
           // first send does not silently fall back to the engine default.
           const modelSelection = input.modelSelection ?? { provider: "engine", model: "default" };
+          const framework = input.framework ?? "blank";
           const created = yield* engineAdapterEffect.pipe(
-            Effect.flatMap((adapter) => adapter.createApp({ name: slug })),
+            Effect.flatMap((adapter) => adapter.createApp({ name: slug, framework })),
             Effect.mapError((cause) => new WsRpcError({ message: cause.message })),
           );
 
@@ -1222,6 +1223,7 @@ const makeWsRpcHandlersLayer = () =>
             appId: created.appId,
             chatId: created.chatId,
             appPath: created.appPath,
+            framework,
           };
         });
 

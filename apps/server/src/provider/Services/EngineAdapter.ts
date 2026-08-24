@@ -29,7 +29,7 @@ import type {
   FlutterToolchainStatusResult,
   FlutterToolchainInstallResult,
 } from "@caide/contracts";
-import type { ProviderSession, ThreadId } from "@caide/contracts";
+import type { ProjectFramework, ProviderSession, ThreadId } from "@caide/contracts";
 import type { ProviderAdapterError } from "../Errors.ts";
 import type { ProviderAdapterShape } from "./ProviderAdapter.ts";
 
@@ -264,7 +264,10 @@ export interface EngineAdapterShape
   readonly streamGoalDomainEvents: Stream.Stream<GoalDomainEvent>;
   readonly subagents: EngineSubagentsApi;
   readonly streamSubagentEvents: Stream.Stream<EngineSubagentEvent>;
-  createApp(input: { name: string }): Effect.Effect<EngineCreateAppResult, ProviderAdapterError>;
+  createApp(input: {
+    name: string;
+    framework?: ProjectFramework;
+  }): Effect.Effect<EngineCreateAppResult, ProviderAdapterError>;
 }
 
 export class EngineAdapter extends ServiceMap.Service<EngineAdapter, EngineAdapterShape>()(

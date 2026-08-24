@@ -1,6 +1,7 @@
 import { Schema } from "effect";
 import { ProjectId, ThreadId, TrimmedNonEmptyString } from "./baseSchemas";
 import { ModelSelection } from "./orchestration";
+import { ProjectFramework } from "./projectFramework";
 
 // FILE: caideApps.ts
 // Purpose: Contracts for the dyad-style app-creation flow — new apps are
@@ -21,6 +22,8 @@ export const AppCreateInput = Schema.Struct({
    * Home sends keep their Builder-first behavior.
    */
   modelSelection: Schema.optional(ModelSelection),
+  /** Immutable project framework selected at creation time. */
+  framework: Schema.optional(ProjectFramework),
   /**
    * Flutter template id. When omitted the server scaffolds the default
    * (Flutter counter) template so Home sends keep their Flutter-first behavior.
@@ -38,5 +41,6 @@ export const AppCreateResult = Schema.Struct({
   chatId: Schema.Number,
   /** Absolute workspace path (~/caide-apps/<slug>). */
   appPath: TrimmedNonEmptyString,
+  framework: Schema.optional(ProjectFramework),
 });
 export type AppCreateResult = typeof AppCreateResult.Type;
