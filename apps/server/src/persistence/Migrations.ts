@@ -214,6 +214,7 @@ export const migrationEntries = [
   [89, "RecoverRetentionHiddenThreads", Migration0089],
   [90, "RetireStudioProjects", Migration0090],
   [91, "Artifacts", Migration0091],
+  [92, "ProjectionThreadsEngineChatId", Migration0092],
 ] as const;
 
 export const makeMigrationLoader = (throughId?: number) =>
