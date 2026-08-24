@@ -157,11 +157,14 @@ export async function createFromTemplate({
   if (templateId === "flutter") {
     const scaffoldDir = "scaffold-flutter";
     const sourceScaffoldPath = path.join(__dirname, "..", "..", scaffoldDir);
-    const engineScaffoldPath = path.join(process.cwd(), "apps", "engine", scaffoldDir);
-    const repoScaffoldPath = path.join(process.cwd(), scaffoldDir);
-    const candidatePath = [sourceScaffoldPath, engineScaffoldPath, repoScaffoldPath].find((p) =>
-      fs.existsSync(p),
-    );
+    const candidatePaths = [sourceScaffoldPath];
+    for (let directory = process.cwd(); ; directory = path.dirname(directory)) {
+      candidatePaths.push(path.join(directory, scaffoldDir));
+      candidatePaths.push(path.join(directory, "apps", "engine", scaffoldDir));
+      const parent = path.dirname(directory);
+      if (parent === directory) break;
+    }
+    const candidatePath = candidatePaths.find((p) => fs.existsSync(p));
     const hasScaffold = candidatePath !== undefined;
     const scaffoldLooksValid =
       hasScaffold &&
@@ -187,13 +190,15 @@ export async function createFromTemplate({
     await copyDirectoryRecursive(candidatePath!, fullAppPath);
     // Additive pass so platform dirs (android/, ios/, ...) exist for builds
     // without clobbering the curated lib/, pubspec.yaml, or AI_RULES.md.
-    try {
-      await createFlutterProjectViaToolchain(fullAppPath);
-    } catch (error) {
-      logger.warn(
-        `flutter create after template copy failed for ${fullAppPath}; platform dirs may be missing`,
-        error,
-      );
+    if (process.env.CAIDE_SKIP_FLUTTER_PLATFORM_BOOTSTRAP !== "1") {
+      try {
+        await createFlutterProjectViaToolchain(fullAppPath);
+      } catch (error) {
+        logger.warn(
+          `flutter create after template copy failed for ${fullAppPath}; platform dirs may be missing`,
+          error,
+        );
+      }
     }
     return;
   }

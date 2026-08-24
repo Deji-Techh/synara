@@ -2402,6 +2402,17 @@ const makeWsRpcHandlersLayer = () =>
             }),
         }),
         ...makeWsDatabaseHandlers(providerAdapterRegistry, {
+          resolveProjectWorkspace: (threadId) =>
+            Effect.gen(function* () {
+              const threadShell = yield* projectionReadModelQuery
+                .getThreadShellById(threadId)
+                .pipe(Effect.mapError((cause) => new WsRpcError({ message: cause.message })));
+              if (Option.isNone(threadShell)) return null;
+              const projectShell = yield* projectionReadModelQuery
+                .getProjectShellById(threadShell.value.projectId)
+                .pipe(Effect.mapError((cause) => new WsRpcError({ message: cause.message })));
+              return Option.isSome(projectShell) ? projectShell.value.workspaceRoot : null;
+            }),
           ensureEngineSession: (threadId) =>
             Effect.gen(function* () {
               // Same lazy-session strategy as the preview pane: the Database

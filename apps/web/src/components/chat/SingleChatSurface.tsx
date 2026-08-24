@@ -849,7 +849,10 @@ export function SingleChatSurface(props: {
           <Suspense fallback={<PanelStateMessage>Loading database...</PanelStateMessage>}>
             <LazyDatabasePanel
               threadId={props.threadId}
-              workspaceRoot={workspaceRoot}
+              // Database integrations belong to the project, so resolve the
+              // engine app against the canonical project root even when this
+              // chat is using a worktree/alternate thread cwd.
+              workspaceRoot={activeProject?.cwd ?? workspaceRoot}
               onClose={() => closePane(props.threadId, pane.id)}
             />
           </Suspense>

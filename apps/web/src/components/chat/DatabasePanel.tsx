@@ -35,6 +35,7 @@ interface EngineApp {
   id: number;
   name: string;
   path: string;
+  resolvedPath?: string;
   supabaseProjectId: string | null;
   supabaseParentProjectId?: string | null;
   supabaseOrganizationSlug: string | null;
@@ -76,12 +77,6 @@ async function invokeDatabase<T>(
   return result.value as T;
 }
 
-function basename(p: string): string {
-  const normalized = p.replace(/\\/g, "/").replace(/\/+$/, "");
-  const idx = normalized.lastIndexOf("/");
-  return idx === -1 ? normalized : normalized.slice(idx + 1);
-}
-
 export function DatabasePanel(props: {
   threadId: ThreadId;
   workspaceRoot?: string | null;
@@ -103,15 +98,24 @@ export function DatabasePanel(props: {
   const [branches, setBranches] = useState<NeonBranch[] | null>(null);
 
   const refreshApp = useCallback(async () => {
+    if (!props.workspaceRoot) {
+      setApp(null);
+      setResolveError("This chat has no project workspace.");
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setResolveError(null);
     try {
       const response = await invokeDatabase<{ apps?: EngineApp[] }>(props.threadId, "list-apps");
       const apps = Array.isArray(response?.apps) ? response.apps : [];
-      const root = props.workspaceRoot ?? "";
-      const match =
-        apps.find((candidate) => candidate.path === root) ??
-        apps.find((candidate) => basename(candidate.path) === basename(root));
+      const root = props.workspaceRoot;
+      const match = apps.find(
+        (candidate) =>
+          (candidate.resolvedPath ?? candidate.path) === root ||
+          (candidate.resolvedPath ?? candidate.path).replace(/\\/g, "/") ===
+            root.replace(/\\/g, "/"),
+      );
       if (!match) {
         setApp(null);
         setResolveError("No engine app matches this workspace yet. Start a chat to provision it.");
@@ -124,7 +128,7 @@ export function DatabasePanel(props: {
     } finally {
       setLoading(false);
     }
-  }, [props.workspaceRoot]);
+  }, [props.threadId, props.workspaceRoot]);
 
   useEffect(() => {
     void refreshApp();

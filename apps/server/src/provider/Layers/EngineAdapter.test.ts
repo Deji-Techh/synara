@@ -71,14 +71,17 @@ function makeIsolatedFixture(): { appsDir: string; userDataDir: string; fixtureP
 function provideAdapter<T>(
   effect: Effect.Effect<T, unknown, EngineAdapter>,
   extraEnv?: Record<string, string>,
+  fixture = makeIsolatedFixture(),
 ) {
-  const { appsDir, userDataDir } = makeIsolatedFixture();
+  const { appsDir, userDataDir } = fixture;
   return effect.pipe(
     Effect.provide(
       EngineAdapterLiveWithOptions({
         appsDir,
         env: {
           CAIDE_DEV_USER_DATA_DIR: userDataDir,
+          CAIDE_USER_DATA_DIR: userDataDir,
+          CAIDE_ENGINE_DATA_DIR: userDataDir,
           ...(extraEnv ?? {}),
         },
       }).pipe(
@@ -344,9 +347,16 @@ Effect.gen(function* () {
         provideAdapter(
 Effect.gen(function* () {
             const adapter = yield* EngineAdapter;
-            return yield* adapter.createApp({ name: slug });
+            return yield* adapter.createApp({ name: slug, framework: "flutter" });
           }),
-          { CAIDE_DEV_APPS_DIR: appsDir, CAIDE_DEV_USER_DATA_DIR: userDataDir },
+          {
+            CAIDE_DEV_APPS_DIR: appsDir,
+            CAIDE_DEV_USER_DATA_DIR: userDataDir,
+            CAIDE_USER_DATA_DIR: userDataDir,
+            CAIDE_ENGINE_DATA_DIR: userDataDir,
+            CAIDE_SKIP_FLUTTER_PLATFORM_BOOTSTRAP: "1",
+          },
+          { appsDir, userDataDir, fixturePath: path.join(appsDir, "fixture-unused") },
         ),
       );
 
@@ -431,6 +441,9 @@ Effect.gen(function* () {
           }).pipe(
             Layer.provide(ServerSettingsService.layerTest()),
             Layer.provide(secretStoreWithZenKey),
+            Layer.provide(
+              ProjectionThreadRepositoryLive.pipe(Layer.provideMerge(SqlitePersistenceMemory)),
+            ),
           ),
         ),
       ) as never,

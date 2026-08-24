@@ -1209,8 +1209,10 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           : yield* Effect.tryPromise({
               try: () =>
                 EmbeddedEngineClient.create({
-                  dataDir: engineEnv.CAIDE_ENGINE_DATA_DIR ?? path.join(process.cwd(), "userData", "engine"),
-                  appsDir: options?.appsDir,
+                  dataDir:
+                    engineEnv.CAIDE_ENGINE_DATA_DIR ??
+                    path.join(process.cwd(), "userData", "engine"),
+                  ...(options?.appsDir !== undefined ? { appsDir: options.appsDir } : {}),
                   settings: initializeSettings,
                   onNotification,
                 }),
@@ -1379,18 +1381,6 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         if (typeof appPath === "string" && appPath !== "" && appPath !== ".") {
           const existing = yield* resolveAppIdByPath(client, appPath, context.threadId);
           appId = existing;
-          if (appId !== null) {
-            const chatsResponse = yield* Effect.tryPromise({
-              try: () => client.dyadInvoke<Array<Record<string, unknown>>>("get-chats", appId),
-              catch: (cause) => processError(context.threadId, "engine get-chats failed", cause),
-            });
-            const firstChat =
-              Array.isArray(chatsResponse) && chatsResponse.length > 0
-                ? chatsResponse[0]
-                : undefined;
-            chatFromCreate =
-              firstChat !== undefined && typeof firstChat.id === "number" ? firstChat.id : null;
-          }
         }
         if (appId === null) {
           const name = `caide-workspace-${Date.now()}`;
@@ -1416,14 +1406,25 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         }
 
         let chatId: number | null = chatFromCreate;
-        
+
         const threadOpt = yield* projectionThreadRepo
           .getById({ threadId: context.threadId })
           .pipe(Effect.catch(() => Effect.succeed(Option.none())));
         const threadRow = Option.getOrNull(threadOpt);
         
         if (chatId === null && threadRow !== null && typeof threadRow.engineChatId === "number") {
-          chatId = threadRow.engineChatId;
+          const chatsResponse = yield* Effect.tryPromise({
+            try: () => client.dyadInvoke<Array<Record<string, unknown>>>("get-chats", appId),
+            catch: (cause) => processError(context.threadId, "engine get-chats failed", cause),
+          });
+          const persistedChat =
+            Array.isArray(chatsResponse) &&
+            chatsResponse.find(
+              (candidate) => candidate?.id === threadRow.engineChatId,
+            );
+          if (persistedChat !== undefined) {
+            chatId = threadRow.engineChatId;
+          }
         }
 
         if (chatId === null) {
@@ -1446,6 +1447,16 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         }
 
         const mapping: EngineChatMapping = { appId, chatId };
+        const existingOwner = (yield* Ref.get(chatToThread)).get(chatId);
+        if (existingOwner !== undefined && existingOwner !== context.threadId) {
+          return yield* Effect.fail(
+            processError(
+              context.threadId,
+              `engine chat ${chatId} is already owned by thread ${existingOwner}`,
+              null,
+            ),
+          );
+        }
         context.chatMapping = mapping;
         yield* Ref.update(chatToThread, (map) => {
           const next = new Map(map);

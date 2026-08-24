@@ -82,6 +82,11 @@ inspection, but it must never participate in new turn execution.
     passed replacement acceptance tests.
 12. Work is committed in small milestones. This file is updated after every
     meaningful code change so another agent can resume without hidden context.
+13. Project and chat boundaries are strict security boundaries. Project state
+    never crosses projects, and chat state never crosses chats, including two
+    chats belonging to the same project. This applies to persisted messages,
+    streamed output, lifecycle state, tools, approvals, questions, previews,
+    builds, artifacts, goals, MCP activity, and recovery after restart.
 
 ## Target Architecture
 
@@ -174,6 +179,21 @@ management, web build/test commands, and browser-oriented tools.
   adapter. Callers do not select arbitrary preview/build implementations.
 - The new dyad runtime uses a fresh database namespace/path. The old Caide
   orchestration database is never silently interpreted as the new schema.
+- Every engine chat ID has exactly one owning Caide thread and project. A
+  persisted mapping is accepted only after its app/project ownership is
+  verified; a new thread creates a new engine chat and never adopts an
+  arbitrary existing or "first" chat.
+- Runtime state is keyed by project, thread, chat, and turn where applicable.
+  Message IDs, tool IDs, approval IDs, question IDs, and build IDs are not
+  treated as globally sufficient routing keys unless the runtime guarantees
+  and validates their global uniqueness.
+- Database integration state shown in the existing right-sidebar Database pane
+  is owned by the project, not by an individual chat. Neon/Supabase links and
+  branch selection persist when switching between chats in that project, but
+  another project cannot list, read, mutate, or inherit those links.
+- Preview and build requests identify a project. The server resolves the
+  trusted workspace and framework from persistence and rejects caller-supplied
+  paths or artifacts that do not belong to that project.
 
 ## UI Integration
 
@@ -254,6 +274,38 @@ management, web build/test commands, and browser-oriented tools.
       and readable error propagation.
 - [ ] Update this checklist and commit milestone.
 
+### 3A. Project and chat isolation
+
+- [x] Give every project a unique persisted app ID and canonical workspace
+      root, and reject any workspace outside that project's trusted root.
+- [x] Enforce a one-to-one engine-chat-to-Caide-thread ownership invariant.
+- [x] Remove arbitrary first-chat fallback and silently rebound chat mappings.
+- [ ] Scope transcript offsets, current turns, terminal settlement, tool
+      activity, approvals, questions, consent, todos, work logs, goals, and MCP
+      events to their owning project/thread/chat/turn.
+- [ ] Reject notifications and pending-interaction settlements whose ownership
+      cannot be proven from explicit identifiers.
+- [ ] Verify persisted engine chat mappings against their owning app/project
+      during restart and create a fresh chat when no valid mapping exists.
+- [ ] Make preview/build/artifact APIs resolve their workspace server-side and
+      prevent one project from operating on another project's files/artifacts.
+- [x] Rebind the existing right-sidebar Database pane to the owning project:
+      all chats in one project resolve the same database integration record,
+      while list/read/connect/disconnect/branch operations cannot expose or
+      mutate any other project's integration.
+- [ ] Test two projects with unique workspaces and chats: activity in either
+      project emits no events or messages into the other.
+- [ ] Test two chats in one project: each has its own engine chat, streamed
+      transcript, current turn, tools, interactions, and terminal settlement.
+- [ ] Test restart restoration without chat ID reuse or first-chat fallback.
+- [ ] Test that approval, question, and consent responses from chat A cannot
+      settle a pending interaction in chat B.
+- [ ] Test that arbitrary preview/build paths and artifact IDs cannot cross
+      project ownership boundaries.
+- [ ] Test database persistence across two chats in one project and complete
+      database isolation between two different projects.
+- [ ] Update this checklist and commit milestone.
+
 ### 4. Complete chat and agent lifecycle
 
 - [ ] Import `chat_stream_handlers` and its required helpers.
@@ -331,6 +383,8 @@ management, web build/test commands, and browser-oriented tools.
 - [ ] Replace create-app choices with the four frameworks.
 - [x] Add shared framework icons and replace sidebar model icons.
 - [ ] Rebind preview/build controls to framework capabilities.
+- [x] Keep the existing right-sidebar Database UI and make its data source
+      project-scoped rather than thread-scoped or globally enumerated.
 - [ ] Preserve transcript scroll and performance guardrails.
 - [ ] Add focused UI tests for explicit lifecycle states.
 - [ ] Update this checklist and commit milestone.
@@ -355,6 +409,9 @@ management, web build/test commands, and browser-oriented tools.
 - [ ] Approvals and questions suspend and resume the same turn.
 - [ ] Cancellation produces no stale running state.
 - [ ] Provider failures persist a visible failed response with useful detail.
+- [ ] Two projects and multiple chats can run concurrently and across restart
+      without any messages, streams, tool events, interactions, workspace
+      access, previews, builds, or artifacts crossing their ownership boundary.
 - [ ] Long conversations compact and continue.
 - [ ] MCP and goals operate across restart.
 - [ ] React Native preview/build works.
@@ -457,6 +514,31 @@ Validation notes:
 - The focused `EngineAdapter.test.ts` start-session case now mounts its required
   projection layer and exercises the embedded runtime. Remaining cases still
   need lifecycle-specific acceptance coverage as the adapter is simplified.
+- The full focused adapter suite exposed two isolation-harness defects that
+  must be fixed before its result is accepted: the embedded database resolved
+  to `apps/server/userData/engine/sqlite.db` instead of the supplied fixture,
+  and the Flutter creation case attempted a network package lookup. Tests must
+  use per-case runtime/database roots and network-independent scaffolding.
+
+### 2026-08-24 — project-scoped Database pane and chat ownership hardening
+
+- Added explicit project/chat isolation requirements to the canonical plan.
+- Right-sidebar Database operations now resolve the trusted project workspace
+  from the Caide thread, return only that project's engine app, inject its app
+  ID into operations, and reject mismatched app or Neon project IDs.
+- Removed UI basename matching, which could select the wrong app when projects
+  shared a folder name. Database state therefore persists across chats in one
+  project through the same engine app row, but cannot cross projects.
+- Engine chat binding no longer adopts the first chat returned by `get-chats`.
+  Persisted IDs are accepted only when present under the resolved app, and a
+  duplicate chat-to-thread ownership is rejected.
+- Embedded adapter tests now pass explicit per-fixture data directory env vars;
+  Flutter scaffold lookup walks the source checkout and tests can skip the
+  network-dependent platform bootstrap.
+- Validation: web typecheck passed. Server-wide typecheck remains blocked by
+  existing engine alias/schema/type errors plus pre-existing projection fixture
+  drift; no new error remains in the changed embedded-client call. Focused
+  Vitest rerun was temporarily blocked by low disk space after prior builds.
 - Replaced the create-app dialog's four Flutter templates with the four locked
   framework choices and added framework to the app-creation RPC contract.
   Persistence and framework-specific scaffolding remain pending.

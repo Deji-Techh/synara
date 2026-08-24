@@ -5,6 +5,7 @@ import * as eventBus from "./ipc/utils/event_bus.ts";
 import * as settingsModule from "./main/settings.ts";
 import * as host from "./ipc/engine_ipc_host.ts";
 import * as preview from "./ipc/preview_host.ts";
+import { invalidateCaideAppsBaseDirectoryCache } from "./paths/paths.ts";
 
 export interface EmbeddedEngineOptions {
   readonly dataDir: string;
@@ -40,6 +41,7 @@ export async function createEmbeddedEngine(options: EmbeddedEngineOptions): Prom
   process.env.CAIDE_ENGINE_DATA_DIR = path.resolve(options.dataDir);
   process.env.CAIDE_USER_DATA_DIR = path.resolve(options.dataDir);
   if (options.appsDir) process.env.CAIDE_DEV_APPS_DIR = path.resolve(options.appsDir);
+  invalidateCaideAppsBaseDirectoryCache();
 
   db.initializeDatabase();
   if (options.settings) {
