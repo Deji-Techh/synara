@@ -633,14 +633,31 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
 
             if (typeof payload.streamingPatch === "string" && payload.streamingPatch !== "") {
               yield* publishTextDelta(context.threadId, turnId, payload.streamingPatch);
+              const messageId =
+                typeof payload.streamingMessageId === "string" ||
+                typeof payload.streamingMessageId === "number"
+                  ? String(payload.streamingMessageId)
+                  : "streaming";
+              const emitted = context.emittedTranscriptRef.current;
+              emitted.set(messageId, (emitted.get(messageId) ?? 0) + payload.streamingPatch.length);
             } else if (
               typeof payload.streamingPatch === "object" &&
               payload.streamingPatch !== null &&
-              typeof (payload.streamingPatch as Record<string, unknown>).text === "string"
+              typeof (payload.streamingPatch as Record<string, unknown>).content === "string"
             ) {
-              const patchText = (payload.streamingPatch as Record<string, unknown>).text as string;
-              if (patchText !== "") {
+              const patch = payload.streamingPatch as Record<string, unknown>;
+              const patchText = patch.content as string;
+              const patchOffset = typeof patch.offset === "number" ? patch.offset : 0;
+              const messageId =
+                typeof payload.streamingMessageId === "string" ||
+                typeof payload.streamingMessageId === "number"
+                  ? String(payload.streamingMessageId)
+                  : "streaming";
+              const emitted = context.emittedTranscriptRef.current;
+              const emittedLength = emitted.get(messageId) ?? 0;
+              if (patchText !== "" && patchOffset >= emittedLength) {
                 yield* publishTextDelta(context.threadId, turnId, patchText);
+                emitted.set(messageId, patchOffset + patchText.length);
               }
             }
             if (payload.messages !== undefined) {

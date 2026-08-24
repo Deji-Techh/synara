@@ -154,6 +154,14 @@ Effect.gen(function* () {
     expect(eventTypes[0]).toBe("session.started");
     expect(eventTypes).toContain("thread.started");
     expect(eventTypes).toContain("turn.started");
+    expect(
+      result.events.some(
+        (event) =>
+          event.type === "content.delta" &&
+          event.payload.streamKind === "assistant_text" &&
+          event.payload.delta.length > 0,
+      ),
+    ).toBe(true);
     expect(eventTypes[eventTypes.length - 1]).toBe("turn.completed");
   }, 120_000);
 

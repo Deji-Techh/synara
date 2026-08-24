@@ -11,9 +11,12 @@ import log from "electron-log";
 import { normalizePath } from "../../../shared/normalizePath";
 import { ensureLibcurlShimOnLinux } from "./linux_libcurl_shim";
 import { getPathEnvKey } from "./path_env";
+import { execFile as nodeExecFile } from "node:child_process";
+import { promisify } from "node:util";
 import type { UncommittedFile, UncommittedFileStatus } from "@/ipc/types";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
 const logger = log.scope("git_utils");
+const execFileAsync = promisify(nodeExecFile);
 
 function isUserVisibleGitPath(filePath: string) {
   return !filePath.startsWith(".caide/") && filePath !== "pnpm-workspace.yaml";
@@ -92,7 +95,11 @@ async function execGit(
         [pathKey]: sanitizedEnv[pathKey],
       },
     };
-    return exec(args, path, execOptions);
+    try {
+      return await exec(args, path, execOptions);
+    } catch (error) {
+      return fallbackSystemGit(args, path, execOptions, error);
+    }
   }
 
   // On Linux, the bundled git http helpers are linked against
@@ -104,18 +111,51 @@ async function execGit(
   if (shimDir) {
     const existingLdPath = options?.env?.LD_LIBRARY_PATH ?? process.env.LD_LIBRARY_PATH;
     const ldLibraryPath = [shimDir, existingLdPath].filter(Boolean).join(":");
-    return exec(args, path, {
+    try {
+      return await exec(args, path, {
       ...options,
       env: {
         ...process.env,
         ...options?.env,
         LD_LIBRARY_PATH: ldLibraryPath,
       },
-    });
+      });
+    } catch (error) {
+      return fallbackSystemGit(args, path, options, error);
+    }
   }
 
   // On non-Windows without a shim, pass options through unchanged
-  return exec(args, path, options);
+  try {
+    return await exec(args, path, options);
+  } catch (error) {
+    return fallbackSystemGit(args, path, options, error);
+  }
+}
+
+async function fallbackSystemGit(
+  args: string[],
+  cwd: string,
+  options: IGitStringExecutionOptions | undefined,
+  originalError: unknown,
+): Promise<IGitStringResult> {
+  const message = originalError instanceof Error ? originalError.message : String(originalError);
+  if (!/ENOENT|failed to execute|resolveGitBinary/i.test(message)) throw originalError;
+  try {
+    const result = await execFileAsync("git", args, {
+      cwd,
+      env: { ...process.env, ...(options?.env ?? {}) },
+      maxBuffer: 16 * 1024 * 1024,
+    });
+    return { stdout: result.stdout, stderr: result.stderr, exitCode: 0 } as IGitStringResult;
+  } catch (error) {
+    const failure = error as { stdout?: string; stderr?: string; code?: number };
+    return {
+      stdout: failure.stdout ?? "",
+      stderr: failure.stderr ?? String(error),
+      exitCode: typeof failure.code === "number" ? failure.code : 1,
+    } as IGitStringResult;
+  }
 }
 import type {
   GitBaseParams,

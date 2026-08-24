@@ -408,6 +408,17 @@ management, web build/test commands, and browser-oriented tools.
   projection dependency, and embedded migration discovery supports both the
   packaged staged directory and the source checkout's authoritative engine
   `drizzle` directory.
+- Embedded Git operations now fall back to the system `git` executable when
+  dugite's bundled binary is unavailable in a server/AppImage bundle. This
+  removes an ENOENT failure that previously aborted every turn before model
+  execution.
+- Fixed the stream bridge to consume dyad's real tail-patch shape
+  (`{ offset, content, prefixHash }`) instead of looking for a nonexistent
+  `text` field. The adapter tracks emitted length by the placeholder assistant
+  message ID, so final transcript snapshots do not duplicate streamed text.
+- Focused lifecycle acceptance now proves non-empty assistant deltas and one
+  completed terminal event for build, ask, plan, and local-agent modes using
+  the embedded runtime.
 
 Validation notes:
 
@@ -416,6 +427,8 @@ Validation notes:
 - `apps/server`: `bun run typecheck` passes.
 - `apps/engine`: `bun run build` passes.
 - `apps/server`: focused default embedded start-session test passes.
+- `apps/server`: embedded send-turn streaming and all explicit mode cases pass.
+- `apps/engine`: native Git behavior tests pass with the embedded fallback.
 - The focused `EngineAdapter.test.ts` start-session case now mounts its required
   projection layer and exercises the embedded runtime. Remaining cases still
   need lifecycle-specific acceptance coverage as the adapter is simplified.
