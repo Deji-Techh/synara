@@ -27,7 +27,7 @@ import type { SqlConsentMetadata } from "@/shared/sqlConsentMetadata";
 import { isFreeProModel } from "@/lib/freeProModel";
 import { readSettings } from "@/main/settings";
 import { getCaideAppPath } from "@/paths/paths";
-import { detectFrameworkType } from "@/ipc/utils/framework_utils";
+import { resolveProjectFrameworkType } from "@/ipc/utils/framework_utils";
 import { getModelClient } from "@/ipc/utils/get_model_client";
 import { createMobileUiQualityPrompt, scanMobileUiFiles } from "@/ipc/utils/mobile_ui_quality";
 import { safeSend } from "@/ipc/utils/safe_sender";
@@ -662,7 +662,7 @@ export async function handleLocalAgentStream(
       supabaseOrganizationSlug: chat.app.supabaseOrganizationSlug,
       neonProjectId: chat.app.neonProjectId,
       neonActiveBranchId: chat.app.neonActiveBranchId ?? chat.app.neonDevelopmentBranchId,
-      frameworkType: detectFrameworkType(appPath),
+      frameworkType: resolveProjectFrameworkType(chat.app.framework, appPath),
       messageId: placeholderMessageId,
       isSharedModulesChanged: false,
       sharedServerModulePaths: [],

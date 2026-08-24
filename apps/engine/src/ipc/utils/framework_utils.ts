@@ -57,6 +57,18 @@ export function detectFrameworkType(appPath: string): AppFrameworkType | null {
   }
 }
 
+/** Resolve the immutable product framework before falling back to file detection. */
+export function resolveProjectFrameworkType(
+  framework: "blank" | "react-native" | "flutter" | "website" | null | undefined,
+  appPath: string,
+): AppFrameworkType | null {
+  if (framework === "flutter") return "flutter";
+  if (framework === "website") return "vite";
+  if (framework === "react-native") return "other";
+  if (framework === "blank") return "other";
+  return detectFrameworkType(appPath);
+}
+
 function hasNitro(appPath: string, deps: Record<string, string> | null): boolean {
   const nitroConfigs = ["nitro.config.ts", "nitro.config.js", "nitro.config.mjs"];
   for (const config of nitroConfigs) {

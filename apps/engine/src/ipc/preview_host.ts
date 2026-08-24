@@ -89,6 +89,51 @@ interface PreviewEntry {
   deviceId: string | null;
 }
 
+function isNodeProject(appDir: string): boolean {
+  return fs.existsSync(path.join(appDir, "package.json"));
+}
+
+function spawnNodePreview(appDir: string, entry: PreviewEntry, hostname: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const port = entry.port;
+    const command = process.platform === "win32" ? "npm.cmd" : "npm";
+    const packageJson = JSON.parse(fs.readFileSync(path.join(appDir, "package.json"), "utf8")) as { scripts?: Record<string, string> };
+    const script = packageJson.scripts?.dev ? "dev" : packageJson.scripts?.web ? "web" : packageJson.scripts?.start ? "start" : null;
+    if (!script) {
+      reject(new CaideError("This project has no dev, web, or start preview script.", CaideErrorKind.Precondition));
+      return;
+    }
+    const forwardedArgs = script === "dev" ? ["--host", hostname, "--port", String(port)] : ["--port", String(port)];
+    const child = spawn(command, ["run", script, "--", ...forwardedArgs], {
+      cwd: appDir, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, BROWSER: "none" },
+    });
+    entry.child = child;
+    let settled = false;
+    const finish = (fn: () => void) => { if (settled) return; settled = true; fn(); };
+    const onData = (chunk: Buffer) => {
+      const text = chunk.toString();
+      appendLogLines(entry.logs, text);
+      const url = extractPreviewUrl(text, port) ?? `http://${hostname}:${port}`;
+      if (/local|ready|listening|localhost|127\.0\.0\.1/i.test(text)) {
+        entry.url = url;
+        finish(() => { entry.running = true; resolve(url); });
+      }
+    };
+    child.stdout?.on("data", onData); child.stderr?.on("data", onData);
+    child.once("error", (error) => finish(() => reject(new CaideError(`web preview could not start: ${error.message}`, CaideErrorKind.External))));
+    child.once("close", (code) => {
+      if (!settled) finish(() => reject(new CaideError(`web preview exited (code ${code ?? "null"}) before serving`, CaideErrorKind.External)));
+      else { entry.running = false; entry.child = null; stopPreviewWatcher(appDir); }
+    });
+    setTimeout(() => {
+      if (!settled) {
+        entry.url = `http://${hostname}:${port}`;
+        finish(() => { entry.running = true; resolve(entry.url); });
+      }
+    }, 1500);
+  });
+}
+
 // ── realtime watcher (hot-reload on file change) ───────────────────────
 
 const PREVIEW_WATCH_DEBOUNCE_MS = 500;
@@ -709,6 +754,18 @@ function spawnFlutterRun(appPath: string, entry: PreviewEntry, hostname: string)
 
 async function startPreview(params: unknown): Promise<PreviewStartResult> {
   const parsed = PreviewStartParamsSchema.parse(params);
+  const nodeProject = isNodeProject(parsed.appDir) && !isFlutterApp(parsed.appDir);
+  if (nodeProject) {
+    const existing = activePreviews.get(parsed.appDir);
+    if (existing?.running) return { url: existing.url, kind: "web" };
+    if (existing) { await stopPreviewEntry(existing); activePreviews.delete(parsed.appDir); }
+    const hostname = parsed.hostname ?? DEFAULT_PREVIEW_HOSTNAME;
+    const port = await pickFreePort(parsed.port ?? DEFAULT_PREVIEW_PORT);
+    const entry: PreviewEntry = { appDir: parsed.appDir, child: null, port, url: "", running: false, logs: [], device: "web-server", deviceId: null };
+    activePreviews.set(parsed.appDir, entry);
+    try { return { url: await spawnNodePreview(parsed.appDir, entry, hostname), kind: "web" }; }
+    catch (error) { activePreviews.delete(parsed.appDir); await stopPreviewEntry(entry); throw error; }
+  }
   assertFlutterApp(parsed.appDir);
 
   const existing = activePreviews.get(parsed.appDir);

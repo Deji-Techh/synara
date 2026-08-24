@@ -22,7 +22,7 @@ import { appPrompts, chats, messages } from "../../db/schema";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import type { SmartContextMode } from "../../lib/schemas";
 import { constructSystemPrompt, readAiRules } from "../../prompts/system_prompt";
-import { detectFrameworkType } from "../utils/framework_utils";
+import { resolveProjectFrameworkType } from "../utils/framework_utils";
 import { getThemePromptById } from "../utils/theme_utils";
 import {
   getSupabaseAvailableSystemPrompt,
@@ -901,7 +901,7 @@ ${componentSnippet}
           `Theme for app ${updatedChat.app.id}: ${updatedChat.app.themeId ?? "none"}, prompt length: ${themePrompt.length} chars`,
         );
 
-        const frameworkType = detectFrameworkType(appPath);
+        const frameworkType = resolveProjectFrameworkType(updatedChat.app.framework, appPath);
         // Gate on Pro to match the `explore_code` tool's `isEnabled`, so the
         // prompt never points the model at a tool that isn't in the toolset.
         const codeExplorerAvailable = !!settings.enableCodeExplorer && isCodeExplorerReady(appPath);

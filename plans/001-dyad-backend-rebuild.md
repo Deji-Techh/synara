@@ -304,9 +304,11 @@ management, web build/test commands, and browser-oriented tools.
 
 ### 8. Preview and build routing
 
-- [ ] Create framework preview/build adapter interface.
+- [x] Add framework-aware preview routing inside the current preview host.
 - [ ] Route Blank to an unavailable/detection state.
-- [ ] Route React Native to Metro/Expo and device previews.
+- [x] Route React Native/Website Node projects to the browser dev-server
+      preview path; React Native's Expo web target uses the same browser
+      surface while retaining mobile-oriented agent prompts and builds.
 - [ ] Route Flutter to emulator/iOS Simulator and Flutter device tooling.
 - [ ] Route Website to browser dev-server preview.
 - [ ] Add Flutter APK/AAB/IPA actions.
@@ -365,8 +367,13 @@ management, web build/test commands, and browser-oriented tools.
 - Dyad `create-app` now accepts the framework and routes scaffolding to Blank,
   React Native/Expo, Website/Vite, or the existing Flutter path.
 - Added server/engine creation tests for Blank, React Native, and Website.
-- Preview routing still needs to select the browser adapter for Website and the
-  Metro/Expo adapter for React Native; current raw preview host remains Flutter.
+- Preview routing now selects the browser adapter for Website and React Native
+  Node projects through their `dev`/`web`/`start` scripts; native Expo device
+  builds remain a separate build/launch milestone.
+- Restored the platform-contract selector: Flutter gets the Dart/Flutter
+  contract, Website/Vite gets the responsive web contract, and React Native's
+  non-web target gets the native-feel mobile contract. Prompt snapshots were
+  updated and pass.
 
 ### 2026-08-24 — embedded runtime seam
 
