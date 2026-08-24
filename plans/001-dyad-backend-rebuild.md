@@ -308,7 +308,8 @@ management, web build/test commands, and browser-oriented tools.
 ### 8. Preview and build routing
 
 - [x] Add framework-aware preview routing inside the current preview host.
-- [ ] Route Blank to an unavailable/detection state.
+- [x] Route Blank to an explicit unavailable/detection state in the preview
+      surface; no engine start request is sent for an unrecognized workspace.
 - [x] Route React Native/Website Node projects to the browser dev-server
       preview path; React Native's Expo web target uses the same browser
       surface while retaining mobile-oriented agent prompts and builds.
@@ -419,6 +420,13 @@ management, web build/test commands, and browser-oriented tools.
 - Focused lifecycle acceptance now proves non-empty assistant deltas and one
   completed terminal event for build, ask, plan, and local-agent modes using
   the embedded runtime.
+- The preview stage now receives the persisted project framework. Website and
+  React Native render a browser-style surface with framework-specific copy and
+  controls; Flutter retains the device frame/toolchain banner; Blank shows an
+  explicit unavailable state instead of attempting a Flutter launch.
+- Renderer project fixtures remain compatible with pre-framework snapshots by
+  treating a missing framework as `blank` at the UI boundary; normalized server
+  projects still persist the immutable framework value.
 
 Validation notes:
 
@@ -429,6 +437,8 @@ Validation notes:
 - `apps/server`: focused default embedded start-session test passes.
 - `apps/server`: embedded send-turn streaming and all explicit mode cases pass.
 - `apps/engine`: native Git behavior tests pass with the embedded fallback.
+- `apps/web`: typecheck passes after framework-aware preview wiring.
+- `apps/engine`: preview host test suite passes.
 - The focused `EngineAdapter.test.ts` start-session case now mounts its required
   projection layer and exercises the embedded runtime. Remaining cases still
   need lifecycle-specific acceptance coverage as the adapter is simplified.

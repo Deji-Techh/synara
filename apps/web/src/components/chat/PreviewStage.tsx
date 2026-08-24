@@ -4,7 +4,7 @@
 // Depends on: DeviceFrame (androidPhone), previewStageStore, wsNativeApi.preview, previewPanel.logic.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ThreadId } from "@caide/contracts";
+import type { ProjectFramework, ThreadId } from "@caide/contracts";
 
 import { ensureNativeApi } from "~/nativeApi";
 import { DeviceScreen } from "../device/DeviceFrame";
@@ -567,13 +567,20 @@ function BranchPopup(props: {
   );
 }
 
-export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; workspaceRoot?: string | null }) {
+export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; workspaceRoot?: string | null; framework?: ProjectFramework }) {
   const [panelState, setPanelState] = useState<PreviewPanelState>(() => createInitialPreviewPanelState("mobile"));
   const [isConsoleDialogOpen, setIsConsoleDialogOpen] = useState(false);
   const [landscape, setLandscape] = useState(false);
   const [headerMode, setHeaderMode] = useState<HeaderMode>("quality");
   const [branch, setBranch] = useState<BranchId>(null);
   const [branchOpen, setBranchOpen] = useState(false);
+  const framework = props.framework ?? "blank";
+  const isBlankProject = framework === "blank";
+  const isBrowserProject = framework === "website" || framework === "react-native";
+
+  useEffect(() => {
+    if (isBrowserProject) setHeaderMode("controls");
+  }, [isBrowserProject]);
 
   const openBranch = useCallback((id: BranchId) => {
     setBranch(id);
@@ -659,6 +666,10 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
 
   const handleStart = useCallback(() => {
     setPanelState((prev) => previewStartRequested(prev));
+    if (isBlankProject) {
+      setPanelState((prev) => previewStartFailed(prev, "Preview is unavailable until this blank project has an application framework."));
+      return;
+    }
     ensureNativeApi()
       .preview.start({ threadId: props.threadId, device: "web-server" })
       .then((result) => setPanelState((prev) => previewStarted(prev, result.url, [], result.kind ?? null)))
@@ -677,7 +688,7 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
       setPanelState((prev) => previewReloadRequested(prev));
       void ensureNativeApi().preview.reload({ threadId: props.threadId, hotReload });
     },
-    [props.threadId],
+    [isBlankProject, props.threadId],
   );
 
   const savePreviewScreenshot = useCallback(() => {
@@ -838,7 +849,7 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
         <span className="min-w-0 flex-1" />
         {/* Icon cluster */}
         <div className="flex shrink-0 items-center gap-0.5">
-          {headerMode === "quality" ? (
+          {headerMode === "quality" && !isBrowserProject ? (
             <>
               <button type="button" onClick={() => openBranch("tests")} className={cn("flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", branch === "tests" && branchOpen && "bg-accent text-foreground")} title="Tests" aria-label="Tests">
                 <FlaskConicalIcon className="size-3.5" />
@@ -875,10 +886,7 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
               </button>
             </>
           )}
-          <span className="mx-0.5 h-4 w-px bg-border" aria-hidden="true" />
-          <button type="button" onClick={handleToggleHeaderMode} className="flex size-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground" title={headerMode === "quality" ? "Show preview controls" : "Show quality tools"} aria-label={headerMode === "quality" ? "Show preview controls" : "Show quality tools"}>
-            {headerMode === "quality" ? <ChevronDownIcon className="size-3.5" /> : <ChevronUpIcon className="size-3.5" />}
-          </button>
+          {!isBrowserProject && <><span className="mx-0.5 h-4 w-px bg-border" aria-hidden="true" /><button type="button" onClick={handleToggleHeaderMode} className="flex size-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground" title={headerMode === "quality" ? "Show preview controls" : "Show quality tools"} aria-label={headerMode === "quality" ? "Show preview controls" : "Show quality tools"}>{headerMode === "quality" ? <ChevronDownIcon className="size-3.5" /> : <ChevronUpIcon className="size-3.5" />}</button></>}
         </div>
 
         {/* Branch popup anchored to header */}
@@ -886,18 +894,28 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
           open={branchOpen}
           title={branchTitle}
           onClose={closeBranch}
-          onToggleMode={handleToggleHeaderMode}
+          {...(!isBrowserProject ? { onToggleMode: handleToggleHeaderMode } : {})}
           toggleIcon={headerMode === "quality" ? "down" : "up"}
         >
           {branchContent}
         </BranchPopup>
       </div>
 
-      <FlutterToolchainBanner threadId={props.threadId} isVisible={props.isVisible} />
+      {!isBrowserProject && <FlutterToolchainBanner threadId={props.threadId} isVisible={props.isVisible} />}
 
-      {/* Centered Android frame — themed background */}
+      {/* Browser projects use a full browser surface; Flutter keeps the device frame. */}
       <div className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", CHAT_BACKGROUND_CLASS_NAME)}>
-        <DeviceScreen className="min-h-0 w-full flex-1 overflow-hidden" kind="androidPhone" pixelWidth={1080} pixelHeight={2400} landscape={landscape}>
+        {isBrowserProject ? (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+            <div className="flex h-8 shrink-0 items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 text-[10px] text-slate-500">
+              <span className="size-2 rounded-full bg-red-400" /><span className="size-2 rounded-full bg-amber-400" /><span className="size-2 rounded-full bg-emerald-400" />
+              <span className="ml-2 truncate">{framework === "react-native" ? "React Native app preview" : "Website preview"}</span>
+            </div>
+            <div className="min-h-0 flex-1">
+              {panelState.status === "starting" ? <div className="flex h-full items-center justify-center text-xs text-slate-500">Starting preview…</div> : panelState.status === "failed" ? <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center text-xs text-red-500"><p>{panelState.error ?? "Failed to start"}</p><button type="button" onClick={handleStart} className="rounded bg-slate-900 px-3 py-1.5 text-white">Retry</button></div> : isRunning && panelState.url !== null ? <iframe key={panelState.reloadToken} src={panelState.url} title={`${framework} preview`} sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads" className="h-full w-full border-0" /> : <div className="flex h-full flex-col items-center justify-center gap-3 text-xs text-slate-500"><p>{framework === "react-native" ? "Preview the app's mobile UI in the browser surface." : "Preview the responsive website in the browser surface."}</p><button type="button" onClick={handleStart} className="rounded bg-slate-900 px-3 py-1.5 text-white"><PlayIcon className="mr-1 inline size-3 fill-white" />Start Preview</button></div>}
+            </div>
+          </div>
+        ) : <DeviceScreen className="min-h-0 w-full flex-1 overflow-hidden" kind="androidPhone" pixelWidth={1080} pixelHeight={2400} landscape={landscape}>
           <div className="flex h-full w-full flex-col items-center justify-center bg-black text-center">
             {panelState.status === "starting" ? (
               <div className="flex flex-col items-center gap-3 px-[12%] text-center">
@@ -922,7 +940,7 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
               </div>
             )}
           </div>
-        </DeviceScreen>
+        </DeviceScreen>}
       </div>
 
       <PreviewConsoleDialog open={isConsoleDialogOpen} onOpenChange={setIsConsoleDialogOpen} logs={panelState.logs} />

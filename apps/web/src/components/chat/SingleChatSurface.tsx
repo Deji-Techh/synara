@@ -1144,7 +1144,12 @@ export function SingleChatSurface(props: {
           aria-hidden={previewStageState.open ? undefined : true}
         >
           <div className="h-full w-[672px] overflow-visible">
-            <PreviewStage threadId={props.threadId} isVisible={previewStageState.open} workspaceRoot={workspaceRoot} />
+            <PreviewStage
+              threadId={props.threadId}
+              isVisible={previewStageState.open}
+              workspaceRoot={workspaceRoot}
+              {...(activeProject?.framework ? { framework: activeProject.framework } : {})}
+            />
           </div>
         </div>
         <RightDock
