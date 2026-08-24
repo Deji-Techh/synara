@@ -19,6 +19,7 @@ import { makeDurableProviderServiceLive } from "./Layers/ProviderService";
 import { ProviderSessionDirectoryLive } from "./Layers/ProviderSessionDirectory";
 import { ProviderSessionRuntimeRepositoryLive } from "../persistence/Layers/ProviderSessionRuntime";
 import { ProviderRuntimeEventRepositoryLive } from "../persistence/Layers/ProviderRuntimeEvents";
+import { ProjectionThreadRepositoryLive } from "../persistence/Layers/ProjectionThreads";
 
 export function makeServerProviderLayer(
   options: {
@@ -69,6 +70,7 @@ export function makeServerProviderLayer(
           Layer.provide(ServerSettingsLive),
           Layer.provide(ServerSecretStoreLive),
           Layer.provide(ArtifactRegistryLive),
+          Layer.provide(ProjectionThreadRepositoryLive),
         ),
       ),
       Layer.provide(apiAdaptersLayer),
