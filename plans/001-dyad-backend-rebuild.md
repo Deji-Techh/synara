@@ -302,7 +302,7 @@ management, web build/test commands, and browser-oriented tools.
       settle a pending interaction in chat B.
 - [ ] Test that arbitrary preview/build paths and artifact IDs cannot cross
       project ownership boundaries.
-- [ ] Test database persistence across two chats in one project and complete
+- [x] Test database persistence across two chats in one project and complete
       database isolation between two different projects.
 - [ ] Update this checklist and commit milestone.
 
@@ -539,6 +539,8 @@ Validation notes:
   existing engine alias/schema/type errors plus pre-existing projection fixture
   drift; no new error remains in the changed embedded-client call. Focused
   Vitest rerun was temporarily blocked by low disk space after prior builds.
+- Added focused `wsDatabaseHandlers.isolation.test.ts`: project A/B receive
+  only their own engine app rows, and a foreign app mutation is rejected.
 - Replaced the create-app dialog's four Flutter templates with the four locked
   framework choices and added framework to the app-creation RPC contract.
   Persistence and framework-specific scaffolding remain pending.
