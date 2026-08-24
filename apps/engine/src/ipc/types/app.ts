@@ -17,6 +17,7 @@ export const AppBaseSchema = z.object({
   id: z.number(),
   name: z.string(),
   path: z.string(),
+  framework: z.enum(["blank", "react-native", "flutter", "website"]),
   createdAt: z.date(),
   updatedAt: z.date(),
   githubOrg: z.string().nullable(),
@@ -69,6 +70,7 @@ export const CreateAppParamsSchema = z.object({
   name: z.string().min(1),
   initialChatMode: ChatModeSchema.optional(),
   templateId: z.string().optional(),
+  framework: z.enum(["blank", "react-native", "flutter", "website"]).optional(),
 });
 
 /**

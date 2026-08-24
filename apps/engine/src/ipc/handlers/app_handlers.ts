@@ -398,10 +398,12 @@ export function registerAppHandlers() {
     }
     // Create a new app
     const settings = readSettings();
+    const framework = params.framework ?? (params.templateId === "flutter" ? "flutter" : "blank");
     const [app] = await db
       .insert(apps)
       .values({
         name: params.name,
+        framework,
         // Use the name as the path for now
         path: appPath,
         needsAppBlueprint: settings.enableAppBlueprint,
@@ -422,6 +424,7 @@ export function registerAppHandlers() {
     await createFromTemplate({
       fullAppPath,
       templateId: params.templateId,
+      framework,
     });
 
     // Ensure `.caide/` is gitignored before the initial commit so the agent's

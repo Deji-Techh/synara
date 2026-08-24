@@ -41,6 +41,6 @@ export const AppCreateResult = Schema.Struct({
   chatId: Schema.Number,
   /** Absolute workspace path (~/caide-apps/<slug>). */
   appPath: TrimmedNonEmptyString,
-  framework: Schema.optional(ProjectFramework),
+  framework: ProjectFramework,
 });
 export type AppCreateResult = typeof AppCreateResult.Type;

@@ -2506,7 +2506,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
 
       streamSubagentEvents: Stream.fromPubSub(subagentsEventQueue),
 
-      createApp: ({ name }) =>
+      createApp: ({ name, framework = "blank" }) =>
         Effect.gen(function* () {
           const errorContext = ThreadId.makeUnsafe(randomUUID());
           const { client } = yield* ensureSharedEngine(errorContext);
@@ -2520,9 +2520,8 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 {
                   name,
                   initialChatMode: "build",
-                  // The engine contract defaults to the legacy web template;
-                  // this product builds Flutter apps only.
-                  templateId: "flutter",
+                  framework,
+                  templateId: framework === "flutter" ? "flutter" : undefined,
                 },
                 // Flutter scaffold + git init can take a while on first run.
                 180_000,

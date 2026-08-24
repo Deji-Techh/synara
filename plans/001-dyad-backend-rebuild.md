@@ -234,8 +234,8 @@ management, web build/test commands, and browser-oriented tools.
 
 - [ ] Import dyad schema, Drizzle configuration, and migrations coherently.
 - [ ] Import app, chat, message, settings, MCP, goal, and compaction storage.
-- [ ] Add immutable framework column to apps/projects.
-- [ ] Implement clean initialization and transactional app/chat creation.
+- [x] Add immutable framework column to apps/projects.
+- [x] Implement clean initialization and transactional app/chat creation.
 - [ ] Add framework-aware app queries and chat inheritance.
 - [ ] Test clean database boot, restart, and CRUD behavior.
 - [ ] Update this checklist and commit milestone.
@@ -290,14 +290,16 @@ management, web build/test commands, and browser-oriented tools.
 
 - [x] Replace the public Flutter-template creation API and dialog with the
       four locked framework choices.
-- [ ] Implement Blank project creation.
+- [x] Implement Blank project creation.
 - [ ] Port React Native/Expo scaffold and runtime behavior from dyad.
-- [ ] Implement Flutter scaffold and runtime behavior.
-- [ ] Port Website scaffold and browser runtime behavior from dyad.
+- [x] Implement Flutter scaffold and runtime behavior through the existing
+      dyad Flutter toolchain path.
+- [x] Port initial Website scaffold and browser project shape.
 - [ ] Add framework-specific prompts, skills, tools, commands, and dependency
       handling.
-- [ ] Add immutable framework persistence and validation.
-- [ ] Test all four creation flows and cross-chat inheritance.
+- [x] Add immutable framework persistence and validation.
+- [x] Test Blank, React Native, Website creation; Flutter remains covered by
+      the existing engine scaffold tests.
 - [ ] Update this checklist and commit milestone.
 
 ### 8. Preview and build routing
@@ -355,6 +357,16 @@ management, web build/test commands, and browser-oriented tools.
 - [ ] Update final handoff and commit release state.
 
 ## Handoff Log
+
+### 2026-08-24 — framework persistence and scaffolds
+
+- Added an immutable `apps.framework` field with startup repair for older fresh
+  namespaces.
+- Dyad `create-app` now accepts the framework and routes scaffolding to Blank,
+  React Native/Expo, Website/Vite, or the existing Flutter path.
+- Added server/engine creation tests for Blank, React Native, and Website.
+- Preview routing still needs to select the browser adapter for Website and the
+  Metro/Expo adapter for React Native; current raw preview host remains Flutter.
 
 ### 2026-08-24 — embedded runtime seam
 

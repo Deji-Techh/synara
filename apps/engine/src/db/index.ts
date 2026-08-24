@@ -89,6 +89,13 @@ export function initializeDatabase(): BetterSQLite3Database<typeof schema> & {
     }
     logger.log("Running migrations from:", migrationsFolder);
     migrate(_db, { migrationsFolder });
+    // The integrated runtime owns a fresh namespace, but packaged upgrades
+    // can still encounter an older dyad schema. Keep framework persistence
+    // self-healing without relying on a stale migration journal.
+    const columns = sqlite.prepare("PRAGMA table_info(apps)").all() as Array<{ name: string }>;
+    if (!columns.some((column) => column.name === "framework")) {
+      sqlite.exec("ALTER TABLE apps ADD COLUMN framework TEXT NOT NULL DEFAULT 'blank'");
+    }
   } catch (error) {
     logger.error("Migration error:", error);
     _db = null;
