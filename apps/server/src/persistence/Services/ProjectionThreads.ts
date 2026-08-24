@@ -32,7 +32,11 @@ export const ProjectionThread = Schema.Struct({
   projectId: ProjectId,
   title: Schema.String,
   modelSelection: ModelSelection,
-  engineChatId: Schema.NullOr(Schema.Number),
+  // Added after existing installations already had projected thread rows.
+  // Missing values mean the thread has not been bound to an engine chat yet.
+  engineChatId: Schema.optional(Schema.NullOr(Schema.Number)).pipe(
+    Schema.withDecodingDefault(() => null),
+  ),
   runtimeMode: RuntimeMode,
   interactionMode: ProviderInteractionMode,
   envMode: ThreadEnvironmentMode,
