@@ -2314,6 +2314,16 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       previewBuildState: (input) =>
         Effect.gen(function* () {
           const context = yield* getSession(input.threadId);
+          const buildOwner = (yield* Ref.get(buildIdToThread)).get(input.buildId);
+          if (buildOwner !== input.threadId) {
+            return yield* Effect.fail(
+              processError(
+                input.threadId,
+                `engine build ${input.buildId} does not belong to this thread`,
+                null,
+              ),
+            );
+          }
           const response = yield* Effect.tryPromise({
             try: () => context.client.buildState({ buildId: input.buildId }),
             catch: (cause) =>

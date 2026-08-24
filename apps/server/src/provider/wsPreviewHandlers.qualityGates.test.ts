@@ -86,6 +86,45 @@ describe("makeWsPreviewHandlers quality gates (M5)", () => {
     expect(seen).toMatchObject({ threadId, target: "apk", channel: "release" });
   });
 
+  it("uses the trusted server workspace instead of a caller-supplied preview path", async () => {
+    let seen: { appDir?: string } | undefined;
+    const engine: Partial<EngineAdapterShape> = {
+      previewStart: (input) => {
+        seen = input;
+        return Effect.succeed({ url: "http://localhost:8081", kind: "browser" });
+      },
+    };
+    const handlers = makeWsPreviewHandlers(makeRegistry(engine), {
+      ensureEngineSession: () => Effect.void,
+      resolveWorkspace: () => Effect.succeed("/trusted/project"),
+    });
+    await Effect.runPromise(
+      handlers[PREVIEW_WS_METHODS.start]({
+        threadId,
+        appDir: "/foreign/project",
+      }),
+    );
+    expect(seen?.appDir).toBe("/trusted/project");
+  });
+
+  it("passes the trusted server workspace to release builds", async () => {
+    let seen: { appDir?: string } | undefined;
+    const engine: Partial<EngineAdapterShape> = {
+      previewBuildStart: (input) => {
+        seen = input;
+        return Effect.succeed({ buildId: "b_scoped" });
+      },
+    };
+    const handlers = makeWsPreviewHandlers(makeRegistry(engine), {
+      ensureEngineSession: () => Effect.void,
+      resolveWorkspace: () => Effect.succeed("/trusted/project"),
+    });
+    await Effect.runPromise(
+      handlers[PREVIEW_WS_METHODS.buildStart]({ threadId, target: "web" }),
+    );
+    expect(seen?.appDir).toBe("/trusted/project");
+  });
+
   it("routes preview.buildState, forwarding buildId", async () => {
     let seen: { buildId?: string } | undefined;
     const engine: Partial<EngineAdapterShape> = {

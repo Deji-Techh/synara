@@ -287,7 +287,7 @@ management, web build/test commands, and browser-oriented tools.
       cannot be proven from explicit identifiers.
 - [ ] Verify persisted engine chat mappings against their owning app/project
       during restart and create a fresh chat when no valid mapping exists.
-- [ ] Make preview/build/artifact APIs resolve their workspace server-side and
+- [x] Make preview/build/artifact APIs resolve their workspace server-side and
       prevent one project from operating on another project's files/artifacts.
 - [x] Rebind the existing right-sidebar Database pane to the owning project:
       all chats in one project resolve the same database integration record,
@@ -300,7 +300,7 @@ management, web build/test commands, and browser-oriented tools.
 - [ ] Test restart restoration without chat ID reuse or first-chat fallback.
 - [ ] Test that approval, question, and consent responses from chat A cannot
       settle a pending interaction in chat B.
-- [ ] Test that arbitrary preview/build paths and artifact IDs cannot cross
+- [x] Test that arbitrary preview/build paths and artifact IDs cannot cross
       project ownership boundaries.
 - [x] Test database persistence across two chats in one project and complete
       database isolation between two different projects.
@@ -541,6 +541,10 @@ Validation notes:
   Vitest rerun was temporarily blocked by low disk space after prior builds.
 - Added focused `wsDatabaseHandlers.isolation.test.ts`: project A/B receive
   only their own engine app rows, and a foreign app mutation is rejected.
+- Preview start/build now ignore client-supplied workspace paths and use the
+  project/thread workspace resolved from the server projection. Build-state
+  lookup rejects a build ID not owned by the requesting thread.
+- Focused database and preview ownership suites pass together: 12 tests.
 - Replaced the create-app dialog's four Flutter templates with the four locked
   framework choices and added framework to the app-creation RPC contract.
   Persistence and framework-specific scaffolding remain pending.

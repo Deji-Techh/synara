@@ -77,6 +77,7 @@ const resolveEngineAdapter = (
  */
 export interface PreviewSessionEnsurer {
   readonly ensureEngineSession: (threadId: ThreadId) => Effect.Effect<void, WsRpcError>;
+  readonly resolveWorkspace?: (threadId: ThreadId) => Effect.Effect<string | null, WsRpcError>;
 }
 
 export interface WsPreviewHandlers {
@@ -139,12 +140,16 @@ export function makeWsPreviewHandlers(
 
   const withEngineSession = <A>(
     threadId: ThreadId,
-    run: (adapter: EngineAdapterShape) => Effect.Effect<A, ProviderAdapterError>,
+    run: (
+      adapter: EngineAdapterShape,
+      workspace: string | null,
+    ) => Effect.Effect<A, ProviderAdapterError | WsRpcError>,
   ): Effect.Effect<A, WsRpcError> =>
     resolveEngineAdapter(registry).pipe(
       Effect.flatMap((adapter) =>
         (ensure?.ensureEngineSession(threadId) ?? Effect.void).pipe(
-          Effect.flatMap(() => run(adapter)),
+          Effect.flatMap(() => ensure?.resolveWorkspace?.(threadId) ?? Effect.succeed(null)),
+          Effect.flatMap((workspace) => run(adapter, workspace)),
         ),
       ),
       Effect.mapError((cause) => mapEngineError(cause, "Preview operation failed")),
@@ -152,16 +157,19 @@ export function makeWsPreviewHandlers(
 
   return {
     [PREVIEW_WS_METHODS.start]: (input) =>
-      withEngineSession(ThreadId.makeUnsafe(input.threadId), (adapter) =>
-        adapter.previewStart({
+      withEngineSession(ThreadId.makeUnsafe(input.threadId), (adapter, workspace) => {
+        if (ensure?.resolveWorkspace && workspace === null) {
+          return Effect.fail(new WsRpcError({ message: "Preview project workspace was not found." }));
+        }
+        return adapter.previewStart({
           threadId: ThreadId.makeUnsafe(input.threadId),
-          ...(input.appDir !== undefined ? { appDir: input.appDir } : {}),
+          ...(workspace !== null ? { appDir: workspace } : {}),
           ...(input.port !== undefined ? { port: input.port } : {}),
           ...(input.hostname !== undefined ? { hostname: input.hostname } : {}),
           ...(input.device !== undefined ? { device: input.device } : {}),
           ...(input.deviceId !== undefined ? { deviceId: input.deviceId } : {}),
-        }),
-      ),
+        });
+      }),
     [PREVIEW_WS_METHODS.stop]: (input) =>
       withEngineSession(ThreadId.makeUnsafe(input.threadId), (adapter) =>
         adapter.previewStop({ threadId: ThreadId.makeUnsafe(input.threadId) }),
@@ -189,9 +197,10 @@ export function makeWsPreviewHandlers(
         }),
       ),
     [PREVIEW_WS_METHODS.buildStart]: (input) =>
-      withEngineSession(ThreadId.makeUnsafe(input.threadId), (adapter) =>
+      withEngineSession(ThreadId.makeUnsafe(input.threadId), (adapter, workspace) =>
         adapter.previewBuildStart({
           threadId: ThreadId.makeUnsafe(input.threadId),
+          ...(workspace !== null ? { appDir: workspace } : {}),
           target: input.target,
           ...(input.channel !== undefined ? { channel: input.channel } : {}),
           ...(input.signing !== undefined

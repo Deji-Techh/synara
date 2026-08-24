@@ -2346,6 +2346,23 @@ const makeWsRpcHandlersLayer = () =>
         ...makeWsArtifactsHandlers(artifactRegistry),
 
         ...makeWsPreviewHandlers(providerAdapterRegistry, {
+          resolveWorkspace: (threadId) =>
+            Effect.gen(function* () {
+              const threadShell = yield* projectionReadModelQuery
+                .getThreadShellById(threadId)
+                .pipe(Effect.mapError((cause) => new WsRpcError({ message: cause.message })));
+              if (Option.isNone(threadShell)) return null;
+              const projectShell = yield* projectionReadModelQuery
+                .getProjectShellById(threadShell.value.projectId)
+                .pipe(Effect.mapError((cause) => new WsRpcError({ message: cause.message })));
+              if (Option.isNone(projectShell)) return null;
+              return (
+                resolveThreadWorkspaceCwd({
+                  thread: threadShell.value,
+                  projects: [projectShell.value],
+                }) ?? null
+              );
+            }),
           ensureEngineSession: (threadId) =>
             Effect.gen(function* () {
               // Preview panes work for threads whose chat runs on any provider.
