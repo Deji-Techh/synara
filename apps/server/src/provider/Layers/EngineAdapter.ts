@@ -704,7 +704,6 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             const chatId = payload.chatId as number;
             const context = yield* sessionForChat(chatId);
             if (context === null) return;
-            if (!(yield* claimChatSettlement(chatId))) return;
             const turnId = context.currentTurnIdRef.current;
             const wasCancelled = payload.wasCancelled === true;
             // Ensure the tail of any final message was flushed.

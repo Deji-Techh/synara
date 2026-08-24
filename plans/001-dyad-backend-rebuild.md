@@ -370,7 +370,9 @@ management, web build/test commands, and browser-oriented tools.
       preview path; React Native's Expo web target uses the same browser
       surface while retaining mobile-oriented agent prompts and builds.
 - [ ] Route Flutter to emulator/iOS Simulator and Flutter device tooling.
-- [ ] Route Website to browser dev-server preview.
+- [x] Route Website to browser dev-server preview.
+- [x] Route React Native/Expo to the same browser preview surface as Website,
+      while preserving native-app prompts and native build targets.
 - [ ] Add Flutter APK/AAB/IPA actions.
 - [x] Add React Native/Expo Android APK and app-bundle build actions supported
       locally (`expo prebuild` + Gradle release tasks). iOS still requires the

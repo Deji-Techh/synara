@@ -93,18 +93,56 @@ function isNodeProject(appDir: string): boolean {
   return fs.existsSync(path.join(appDir, "package.json"));
 }
 
+export function getNodePreviewLaunch(appDir: string, hostname: string, port: number): {
+  script: string;
+  args: string[];
+  isExpo: boolean;
+} {
+  const packageJson = JSON.parse(fs.readFileSync(path.join(appDir, "package.json"), "utf8")) as {
+    scripts?: Record<string, string>;
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
+  };
+  const scripts = packageJson.scripts ?? {};
+  const isExpo = Boolean(packageJson.dependencies?.expo ?? packageJson.devDependencies?.expo);
+  const script = isExpo
+    ? scripts.web
+      ? "web"
+      : scripts.start
+        ? "start"
+        : scripts.dev
+          ? "dev"
+          : null
+    : scripts.dev
+      ? "dev"
+      : scripts.web
+        ? "web"
+        : scripts.start
+          ? "start"
+          : null;
+  if (!script) {
+    throw new CaideError("This project has no dev, web, or start preview script.", CaideErrorKind.Precondition);
+  }
+  const args = isExpo
+    ? ["--web", "--host", hostname, "--port", String(port)]
+    : script === "dev"
+      ? ["--host", hostname, "--port", String(port)]
+      : ["--port", String(port)];
+  return { script, args, isExpo };
+}
+
 function spawnNodePreview(appDir: string, entry: PreviewEntry, hostname: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const port = entry.port;
     const command = process.platform === "win32" ? "npm.cmd" : "npm";
-    const packageJson = JSON.parse(fs.readFileSync(path.join(appDir, "package.json"), "utf8")) as { scripts?: Record<string, string> };
-    const script = packageJson.scripts?.dev ? "dev" : packageJson.scripts?.web ? "web" : packageJson.scripts?.start ? "start" : null;
-    if (!script) {
-      reject(new CaideError("This project has no dev, web, or start preview script.", CaideErrorKind.Precondition));
+    let launch: ReturnType<typeof getNodePreviewLaunch>;
+    try {
+      launch = getNodePreviewLaunch(appDir, hostname, port);
+    } catch (error) {
+      reject(error);
       return;
     }
-    const forwardedArgs = script === "dev" ? ["--host", hostname, "--port", String(port)] : ["--port", String(port)];
-    const child = spawn(command, ["run", script, "--", ...forwardedArgs], {
+    const child = spawn(command, ["run", launch.script, "--", ...launch.args], {
       cwd: appDir, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, BROWSER: "none" },
     });
     entry.child = child;

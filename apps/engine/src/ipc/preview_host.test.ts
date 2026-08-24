@@ -20,6 +20,7 @@ import {
   appendLogLines,
   createPreviewJsonRpcRouter,
   extractPreviewUrl,
+  getNodePreviewLaunch,
   parseAnalyzeIssues,
   runFlutterPubGet,
 } from "./preview_host";
@@ -176,6 +177,45 @@ describe("appendLogLines / extractPreviewUrl", () => {
     );
     expect(extractPreviewUrl("is being served at", 8080)).toBeNull();
     expect(extractPreviewUrl("http://localhost:9999/", 8080)).toBeNull();
+  });
+});
+
+describe("framework-aware Node preview launch", () => {
+  it("forces Expo/React Native projects onto their browser preview", () => {
+    const appDir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-expo-preview-"));
+    try {
+      fs.writeFileSync(
+        path.join(appDir, "package.json"),
+        JSON.stringify({
+          dependencies: { expo: "latest", react: "latest", "react-native": "latest" },
+          scripts: { start: "expo start", web: "expo start --web" },
+        }),
+      );
+      expect(getNodePreviewLaunch(appDir, "localhost", 8080)).toEqual({
+        script: "web",
+        args: ["--web", "--host", "localhost", "--port", "8080"],
+        isExpo: true,
+      });
+    } finally {
+      fs.rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps Website/Vite projects on their regular dev script", () => {
+    const appDir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-website-preview-"));
+    try {
+      fs.writeFileSync(
+        path.join(appDir, "package.json"),
+        JSON.stringify({ scripts: { dev: "vite", build: "vite build" }, devDependencies: { vite: "latest" } }),
+      );
+      expect(getNodePreviewLaunch(appDir, "127.0.0.1", 5173)).toEqual({
+        script: "dev",
+        args: ["--host", "127.0.0.1", "--port", "5173"],
+        isExpo: false,
+      });
+    } finally {
+      fs.rmSync(appDir, { recursive: true, force: true });
+    }
   });
 });
 
