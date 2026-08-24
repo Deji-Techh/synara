@@ -14,6 +14,14 @@ export default defineConfig({
         find: /^~\//,
         replacement: `${path.resolve(import.meta.dirname, "./apps/web/src")}/`,
       },
+      {
+        find: "electron",
+        replacement: path.resolve(import.meta.dirname, "./apps/engine/src/electron-shim.ts"),
+      },
+      {
+        find: /^@\//,
+        replacement: `${path.resolve(import.meta.dirname, "./apps/engine/src")}/`,
+      },
     ],
   },
   test: {

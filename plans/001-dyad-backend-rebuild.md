@@ -221,10 +221,14 @@ management, web build/test commands, and browser-oriented tools.
 - [x] Create integrated `apps/server/src/dyadRuntime` module boundaries.
 - [x] Define runtime host interfaces for notifications, settings, secrets,
       filesystem paths, cancellation, and logging.
+- [x] Confirm `apps/engine` already contains the coherent dyad backend and make
+      it embeddable through `apps/engine/src/embedded.ts`; no second backend
+      copy is being created.
 - [x] Add project framework contract and registry skeleton.
-- [ ] Add a fresh runtime database path and startup ownership.
-- [ ] Add a minimal runtime health/startup test.
-- [ ] Update this checklist and commit milestone.
+- [x] Add a fresh runtime database path and startup ownership.
+- [x] Add a minimal runtime health/startup test.
+- [ ] Wire the embedded runtime into the server provider layer.
+- [x] Update this checklist and commit milestone.
 
 ### 2. Dyad database and application model
 
@@ -349,6 +353,15 @@ management, web build/test commands, and browser-oriented tools.
 - [ ] Update final handoff and commit release state.
 
 ## Handoff Log
+
+### 2026-08-24 — embedded runtime seam
+
+- Added `apps/engine/src/embedded.ts`, an in-process API around the existing
+  dyad handler graph (`invoke`, notifications, ping, shutdown).
+- Added `apps/server/src/dyadRuntime/embeddedRuntime.ts` to own isolated state
+  and project paths from the server host.
+- Added a boot/ping/shutdown test. The old child-process adapter remains active
+  until provider-layer cutover is complete.
 
 ### 2026-08-24 — Plan reset
 

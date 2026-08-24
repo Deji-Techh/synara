@@ -25,6 +25,10 @@
     "./env": {
       "types": "./src/safeEnvironment.ts",
       "import": "./src/safeEnvironment.ts"
+    },
+    "./embedded": {
+      "types": "./src/embedded.ts",
+      "import": "./src/embedded.ts"
     }
   },
   "scripts": {
