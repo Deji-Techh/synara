@@ -66,7 +66,7 @@ This structured thinking ensures you:
 `;
 
 export const BUILD_SYSTEM_PREFIX = `
-<role> You are CAIDE, an AI editor that creates and modifies production Flutter mobile applications. You assist users by chatting with them and making changes to their code in real-time. Users see the app inside a phone or tablet preview. The preview uses a web-server device, but the product must behave like a complete native mobile app and remain packageable for iOS and Android.
+<role>[[PRODUCT_ROLE]]</role>
 You make efficient and effective changes to codebases while following best practices for maintainability and readability. You take pride in keeping things simple and elegant. You are friendly and helpful, always aiming to provide clear explanations. </role>
 
 <conversational_greetings>
@@ -561,7 +561,7 @@ export const constructSystemPrompt = ({
   appTarget?: AppTarget;
 }) => {
   if (chatMode === "plan") {
-    return constructPlanModePrompt(aiRules, themePrompt);
+    return constructPlanModePrompt(aiRules, themePrompt, { frameworkType });
   }
 
   if (chatMode === "local-agent") {
@@ -641,13 +641,21 @@ export const getSystemPromptForChatMode = ({
   const shouldAppendNitroNudge = frameworkType === "vite" && !hasSupabaseProject;
   const target: AppTarget = appTarget ?? "mobile";
   const isFlutter = frameworkType === "flutter";
+  const isWebsite =
+    frameworkType === "vite" || frameworkType === "vite-nitro" || frameworkType === "nextjs";
+  const productRole = isWebsite
+    ? "You are CAIDE, an AI editor that creates and modifies production responsive websites. Users see the project in a browser preview. The product must behave like a complete website across desktop, tablet, and mobile browsers."
+    : isFlutter
+      ? "You are CAIDE, an AI editor that creates and modifies production Flutter mobile applications. Users see the app inside a phone or tablet preview. The product must behave like a complete native mobile app and remain packageable for iOS and Android."
+      : "You are CAIDE, an AI editor that creates and modifies production React Native mobile applications. Users see the app in a browser-backed phone/tablet preview, but the product must feel native and remain packageable for iOS and Android.";
   const uiSkillPack = isFlutter
     ? CAIDE_FLUTTER_UI_SKILL_PACK
     : target === "web"
       ? CAIDE_WEB_UI_SKILL_PACK
       : CAIDE_MOBILE_UI_SKILL_PACK;
   const buildPrompt =
-    BUILD_SYSTEM_PROMPT_BASE.replace("[[PLATFORM_UI_SKILL_PACK]]", () => uiSkillPack)
+    BUILD_SYSTEM_PROMPT_BASE.replace("[[PRODUCT_ROLE]]", () => productRole)
+      .replace("[[PLATFORM_UI_SKILL_PACK]]", () => uiSkillPack)
       // Keep the platform contract near the top, right after the role block,
       // so it is never diluted by the rest of the prompt.
       .replace("[[PLATFORM_CONTRACT]]", () => buildPlatformPrompt(target, frameworkType)) +

@@ -1,4 +1,11 @@
-export const APP_FRAMEWORK_TYPES = ["nextjs", "vite", "vite-nitro", "flutter", "other"] as const;
+export const APP_FRAMEWORK_TYPES = [
+  "nextjs",
+  "vite",
+  "vite-nitro",
+  "react-native",
+  "flutter",
+  "other",
+] as const;
 export type AppFrameworkType = (typeof APP_FRAMEWORK_TYPES)[number];
 
 export const FLUTTER_CONFIG_FILES = ["pubspec.yaml"];

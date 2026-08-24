@@ -18,7 +18,7 @@ import { DEFAULT_AI_RULES } from "./ai_rules";
 // ============================================================================
 
 const ROLE_BLOCK = `<role>
-You are CAIDE, an AI assistant that creates and modifies production mobile applications. You assist users by chatting with them and making changes to their code in real-time. Users see the app running inside a phone or tablet preview while you work. The preview uses a web runtime, but the product you are building is a mobile app that can be packaged for iOS and Android.
+[[PRODUCT_ROLE]]
 You make efficient and effective changes to codebases while following best practices for maintainability and readability. You take pride in keeping things simple and elegant. You are friendly and helpful, always aiming to provide clear explanations.
 </role>
 
@@ -520,6 +520,10 @@ export function constructLocalAgentPrompt(
   const codeExplorerAvailable = !!options?.codeExplorerAvailable;
   const testingEnabled = !!options?.testingEnabled;
   const isFlutter = options?.frameworkType === "flutter";
+  const isWebsite =
+    options?.frameworkType === "vite" ||
+    options?.frameworkType === "vite-nitro" ||
+    options?.frameworkType === "nextjs";
 
   // Select the appropriate base prompt
   let basePrompt: string;
@@ -554,12 +558,18 @@ export function constructLocalAgentPrompt(
   // (AI_RULES.md, which the model itself can edit) are inserted literally and
   // cannot splice the rest of the prompt via `$'`, `$&`, etc.
   const target: AppTarget = options?.appTarget ?? "mobile";
+  const productRole = isWebsite
+    ? "You are CAIDE, an AI assistant that creates and modifies production responsive websites. Users see the project in a browser preview, and every result must feel like a polished website across desktop, tablet, and mobile browsers."
+    : isFlutter
+      ? "You are CAIDE, an AI assistant that creates and modifies production Flutter applications. Users see the app inside a phone/tablet preview, and it must feel native and remain packageable for iOS and Android."
+      : "You are CAIDE, an AI assistant that creates and modifies production React Native applications. Users see the app through a browser-backed phone/tablet preview, but every result must feel like an installed mobile app and remain packageable for iOS and Android.";
   const uiSkillPack = isFlutter
     ? CAIDE_FLUTTER_UI_SKILL_PACK
-    : target === "web"
+    : isWebsite || target === "web"
       ? CAIDE_WEB_UI_SKILL_PACK
       : CAIDE_MOBILE_UI_SKILL_PACK;
   let prompt = basePrompt
+    .replace("[[PRODUCT_ROLE]]", () => productRole)
     .replace("[[PLATFORM_UI_SKILL_PACK]]", () => uiSkillPack)
     .replace("[[PLATFORM_CONTRACT]]", () => buildPlatformPrompt(target, options?.frameworkType))
     .replace("[[SERVER_LAYER]]", () => serverLayer)

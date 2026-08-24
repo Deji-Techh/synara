@@ -134,8 +134,34 @@ When exploring the codebase, identify:
 Use this context to inform your implementation plan and ensure consistency with existing Flutter patterns.
 `;
 
-export function constructPlanModePrompt(aiRules: string | undefined, themePrompt?: string): string {
+export function constructPlanModePrompt(
+  aiRules: string | undefined,
+  themePrompt?: string,
+  options?: { frameworkType?: AppFrameworkType | null },
+): string {
   let prompt = PLAN_MODE_SYSTEM_PROMPT.replace("[[AI_RULES]]", aiRules ?? DEFAULT_PLAN_AI_RULES);
+
+  if (
+    options?.frameworkType === "vite" ||
+    options?.frameworkType === "vite-nitro" ||
+    options?.frameworkType === "nextjs"
+  ) {
+    prompt = prompt.replace(
+      "specialized in gathering requirements and creating detailed implementation plans for mobile apps and their supporting services",
+      "specialized in gathering requirements and creating detailed implementation plans for responsive websites and their supporting services",
+    );
+    prompt = prompt.replace("what Flutter app they would like to build", "what website they would like to build");
+  } else if (options?.frameworkType === "react-native") {
+    prompt = prompt.replace(
+      "what Flutter app they would like to build",
+      "what native-feel React Native app they would like to build",
+    );
+  }
+
+  const frameworkType = options?.frameworkType;
+  const isWebsite =
+    frameworkType === "vite" || frameworkType === "vite-nitro" || frameworkType === "nextjs";
+  prompt += `\n\n${buildPlatformPrompt(isWebsite ? "web" : "mobile", frameworkType)}`;
 
   if (themePrompt) {
     prompt += "\n\n" + themePrompt;
@@ -143,3 +169,5 @@ export function constructPlanModePrompt(aiRules: string | undefined, themePrompt
 
   return prompt;
 }
+import type { AppFrameworkType } from "@/lib/framework_constants";
+import { buildPlatformPrompt } from "./platform_contracts";

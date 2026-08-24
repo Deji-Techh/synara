@@ -350,7 +350,7 @@ management, web build/test commands, and browser-oriented tools.
 - [x] Implement Flutter scaffold and runtime behavior through the existing
       dyad Flutter toolchain path.
 - [x] Port initial Website scaffold and browser project shape.
-- [ ] Add framework-specific prompts, skills, tools, commands, and dependency
+- [x] Add framework-specific prompts, skills, tools, commands, and dependency
       handling.
 - [x] Add immutable framework persistence and validation.
 - [x] Test Blank, React Native, Website creation; Flutter remains covered by
@@ -545,6 +545,14 @@ Validation notes:
   project/thread workspace resolved from the server projection. Build-state
   lookup rejects a build ID not owned by the requesting thread.
 - Focused database and preview ownership suites pass together: 12 tests.
+- Framework prompt routing now preserves immutable project intent: Website
+  receives a browser/responsive-web role and contract, React Native receives a
+  native-feel mobile role and contract, and Flutter keeps its Dart contract.
+  Plan mode receives the same framework-specific platform guidance.
+- Engine bundle build passes after prompt routing changes. The existing
+  `chat_mode_flow.test.ts` default-mode assertion still fails independently
+  (`local-agent` versus its stale expected `build`) and remains documented
+  rather than hidden.
 - Replaced the create-app dialog's four Flutter templates with the four locked
   framework choices and added framework to the app-creation RPC contract.
   Persistence and framework-specific scaffolding remain pending.

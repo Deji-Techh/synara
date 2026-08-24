@@ -64,7 +64,7 @@ export function resolveProjectFrameworkType(
 ): AppFrameworkType | null {
   if (framework === "flutter") return "flutter";
   if (framework === "website") return "vite";
-  if (framework === "react-native") return "other";
+  if (framework === "react-native") return "react-native";
   if (framework === "blank") return "other";
   return detectFrameworkType(appPath);
 }

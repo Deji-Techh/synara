@@ -127,7 +127,9 @@ export function buildPlatformPrompt(
     ? FLUTTER_PRODUCT_CONTRACT
     : frameworkType === "flutter"
     ? FLUTTER_PRODUCT_CONTRACT
-    : frameworkType === "vite" || frameworkType === "vite-nitro" || frameworkType === "nextjs"
+    : frameworkType === "vite" ||
+        frameworkType === "vite-nitro" ||
+        frameworkType === "nextjs"
       ? WEB_PRODUCT_CONTRACT
       : appTarget === "web"
         ? WEB_PRODUCT_CONTRACT
