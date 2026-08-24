@@ -368,6 +368,16 @@ management, web build/test commands, and browser-oriented tools.
   validation exposed that server bundling cannot yet resolve the engine's
   Electron/path aliases. The embeddable seam remains isolated and tested; the
   provider cutover is deferred until a shared bundle strategy is in place.
+
+Validation notes:
+
+- `apps/server`: focused embedded/framework tests pass (4 tests).
+- `packages/contracts`: project framework tests pass (2 tests).
+- `apps/server`: `bun run typecheck` passes.
+- `apps/engine`: `bun run build` passes.
+- Full `EngineAdapter.test.ts` currently requires its existing projection test
+  layer and is not a valid embedded-runtime acceptance test yet; it reports a
+  missing `ProjectionThreadRepository` service before exercising the adapter.
 - Replaced the create-app dialog's four Flutter templates with the four locked
   framework choices and added framework to the app-creation RPC contract.
   Persistence and framework-specific scaffolding remain pending.
