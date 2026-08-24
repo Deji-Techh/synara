@@ -1391,7 +1391,9 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
 
         let chatId: number | null = chatFromCreate;
         
-        const threadOpt = yield* projectionThreadRepo.getById({ threadId: context.threadId }).pipe(Effect.catchAll(() => Effect.succeed(Option.none())));
+        const threadOpt = yield* projectionThreadRepo
+          .getById({ threadId: context.threadId })
+          .pipe(Effect.catch(() => Effect.succeed(Option.none())));
         const threadRow = Option.getOrNull(threadOpt);
         
         if (chatId === null && threadRow !== null && typeof threadRow.engineChatId === "number") {
@@ -1406,7 +1408,9 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           chatId = createChatResponse?.chatId ?? null;
           
           if (chatId !== null && threadRow !== null) {
-            yield* projectionThreadRepo.upsert({ ...threadRow, engineChatId: chatId }).pipe(Effect.catchAll(() => Effect.succeed(undefined)));
+            yield* projectionThreadRepo
+              .upsert({ ...threadRow, engineChatId: chatId })
+              .pipe(Effect.catch(() => Effect.void));
           }
         }
         if (chatId === null) {
