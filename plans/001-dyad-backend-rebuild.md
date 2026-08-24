@@ -228,6 +228,9 @@ management, web build/test commands, and browser-oriented tools.
 - [x] Add a fresh runtime database path and startup ownership.
 - [x] Add a minimal runtime health/startup test.
 - [ ] Wire the embedded runtime into the server provider layer.
+- [x] Produce a self-contained `apps/engine/dist/embedded.mjs` bundle and add
+      a server-side `EmbeddedEngineClient` seam; active adapter replacement is
+      the next cutover step.
 - [x] Update this checklist and commit milestone.
 
 ### 2. Dyad database and application model
@@ -393,6 +396,13 @@ management, web build/test commands, and browser-oriented tools.
   validation exposed that server bundling cannot yet resolve the engine's
   Electron/path aliases. The embeddable seam remains isolated and tested; the
   provider cutover is deferred until a shared bundle strategy is in place.
+- The embedded bundle now builds independently (`apps/engine/src/embedded.ts`)
+  and `apps/server/src/dyadRuntime/embeddedEngineClient.ts` can load it without
+  importing engine source aliases into the server bundle.
+- Server build now builds/contracts the engine embedded entry and stages its
+  self-contained chunks under `apps/server/dist/dyad-engine`. A packaged-style
+  direct load smoke test reaches database initialization, handler registration,
+  ping, and clean shutdown.
 
 Validation notes:
 

@@ -1,4 +1,10 @@
 import path from "node:path";
+import { app, ipcMain } from "./electron-shim.ts";
+import * as db from "./db/index.ts";
+import * as eventBus from "./ipc/utils/event_bus.ts";
+import * as settingsModule from "./main/settings.ts";
+import * as host from "./ipc/engine_ipc_host.ts";
+import * as preview from "./ipc/preview_host.ts";
 
 export interface EmbeddedEngineOptions {
   readonly dataDir: string;
@@ -18,6 +24,7 @@ export interface EmbeddedEngine {
   readonly invoke: <T = unknown>(channel: string, ...payload: unknown[]) => Promise<T>;
   readonly subscribe: (listener: (notification: EmbeddedEngineNotification) => void) => () => void;
   readonly ping: () => Promise<{ pong: "pong"; time: string }>;
+  readonly request: (method: string, params?: unknown) => Promise<unknown>;
   readonly shutdown: () => Promise<void>;
 }
 
@@ -31,15 +38,8 @@ export interface EmbeddedEngine {
  */
 export async function createEmbeddedEngine(options: EmbeddedEngineOptions): Promise<EmbeddedEngine> {
   process.env.CAIDE_ENGINE_DATA_DIR = path.resolve(options.dataDir);
+  process.env.CAIDE_USER_DATA_DIR = path.resolve(options.dataDir);
   if (options.appsDir) process.env.CAIDE_DEV_APPS_DIR = path.resolve(options.appsDir);
-
-  const [{ app, ipcMain }, db, eventBus, settingsModule, host] = await Promise.all([
-    import("./electron-shim.ts"),
-    import("./db/index.ts"),
-    import("./ipc/utils/event_bus.ts"),
-    import("./main/settings.ts"),
-    import("./ipc/engine_ipc_host.ts"),
-  ]);
 
   db.initializeDatabase();
   if (options.settings) {
@@ -54,6 +54,7 @@ export async function createEmbeddedEngine(options: EmbeddedEngineOptions): Prom
   }
   settingsModule.readSettings();
   host.registerEngineIpcHandlers();
+  const previewRouter = preview.createPreviewJsonRpcRouter();
 
   let stopped = false;
   const listeners = new Set<(notification: EmbeddedEngineNotification) => void>();
@@ -77,14 +78,21 @@ export async function createEmbeddedEngine(options: EmbeddedEngineOptions): Prom
     return (result && typeof result === "object" && "ok" in result) ? (result as T) : ({ ok: true, data: result } as T);
   };
 
+  const ping = async () => ({ pong: "pong" as const, time: new Date().toISOString() });
   return {
     invoke,
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
-    async ping() { return { pong: "pong", time: new Date().toISOString() }; },
+    ping,
+    async request(method, params) {
+      if (method === "engine/ping") return ping();
+      if (previewRouter.isPreviewMethod(method)) return previewRouter.handle(method, params);
+      throw new Error(`embedded dyad runtime does not implement method "${method}"`);
+    },
     async shutdown() {
       if (stopped) return;
       stopped = true;
       unsubscribeBus();
+      previewRouter.dispose();
       await app._fireQuitHandlers();
       db.closeDatabase();
     },

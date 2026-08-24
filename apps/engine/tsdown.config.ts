@@ -6,15 +6,15 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: ["src/index.ts"],
+  entry: ["src/index.ts", "src/embedded.ts"],
   format: ["esm"],
   outDir: "dist",
   clean: true,
-  // `pg-schema-classifier` is a private, TS-source-only workspace package
-  // (main: ./src/index.ts). Bundling it avoids shipping/  resolving a .ts file
-  // at runtime in the packaged desktop app, where the engine runs from an
-  // unpacked self-contained directory with no workspace symlink.
-  noExternal: (id) => id.startsWith("@caide/") || id === "pg-schema-classifier",
+  // The embedded runtime is loaded from the server process and must not rely
+  // on a second engine node_modules tree. Keep only native addons external;
+  // they are shipped by the server/desktop package itself.
+  external: ["better-sqlite3", "node-pty"],
+  noExternal: [/.*/],
   banner: {
     js: "#!/usr/bin/env node\n",
   },

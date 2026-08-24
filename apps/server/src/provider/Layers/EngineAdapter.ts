@@ -33,6 +33,7 @@ import {
   TurnId,
 } from "@caide/contracts";
 import { EngineClient } from "@caide/engine/client";
+import { EmbeddedEngineClient } from "../../dyadRuntime/embeddedEngineClient.ts";
 import { CAIDE_ENGINE_DIR_ENV } from "@caide/shared/desktopIdentity";
 import { getCaideAppPath } from "../../paths/caideApps";
 import { listLiveApiProviderModels } from "../apiModelCatalog.ts";
@@ -210,7 +211,7 @@ interface EngineSessionContext {
   readonly session: ProviderSession;
   readonly engineServerVersion: string;
   /** Reference to the shared engine client (all sessions share one process). */
-  readonly client: EngineClient;
+  readonly client: EngineClientLike;
   /**
    * The appDir the pane last previewed for this thread (first preview/start
    * wins, then stop/reload/state reuse it so the pair never drifts from the
@@ -229,11 +230,12 @@ interface EngineSessionContext {
 }
 
 interface SharedEngine {
-  readonly client: EngineClient;
+  readonly client: EngineClientLike;
   readonly engineServerVersion: string;
 }
 
 const ENGINE_CUSTOM_PROVIDER_ID = "custom::caide-engine";
+type EngineClientLike = EngineClient | EmbeddedEngineClient;
 
 const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
   Effect.gen(function* () {
@@ -360,8 +362,9 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       });
 
     const binaryPath = options?.binaryPath;
+    const useLegacyChild = Boolean(options?.command || options?.args || options?.binaryPath);
     const resolvedCommand = options?.command ?? "node";
-    const resolvedArgs = options?.args ?? (binaryPath ? [binaryPath] : resolveEngineCommand().args);
+    const resolvedArgs = options?.args ?? (binaryPath ? [binaryPath] : useLegacyChild ? resolveEngineCommand().args : []);
     const engineDir = fileURLToPath(new URL("../../../../engine", import.meta.url));
     const engineCwd = options?.cwd ?? engineDir;
 
@@ -1144,32 +1147,6 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             engineEnv[key] = value;
           }
         }
-        const client = new EngineClient({
-          command: resolvedCommand,
-          args: resolvedArgs,
-          ...(cwd !== undefined ? { cwd } : {}),
-          env: engineEnv,
-          onStderr: (line) => {
-            Effect.runFork(
-              Effect.logWarning(`engine stderr: ${line}`).pipe(
-                Effect.annotateLogs({ provider: "engine", threadId }),
-              ),
-            );
-          },
-          onNotification: (method, params) => {
-            Effect.runFork(handleEngineNotification(method, params));
-          },
-        });
-        yield* Effect.tryPromise({
-          try: () => client.waitForSpawn(),
-          catch: (cause) =>
-            processError(
-              threadId,
-              `engine process failed to spawn (command=${resolvedCommand} args=${resolvedArgs.join(" ")})`,
-              cause,
-            ),
-        });
-
         const modelConfig = yield* engineModelConfig();
         const bridgedProviderSettings = yield* bridgeEngineProviderSettings();
         // Merge order: Builder custom-provider settings win over the generic
@@ -1194,6 +1171,38 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             provider: ENGINE_CUSTOM_PROVIDER_ID,
           };
         }
+        const onNotification = (method: string, params: unknown) => {
+          Effect.runFork(handleEngineNotification(method, params));
+        };
+        const client: EngineClientLike = useLegacyChild
+          ? new EngineClient({
+              command: resolvedCommand,
+              args: resolvedArgs,
+              ...(cwd !== undefined ? { cwd } : {}),
+              env: engineEnv,
+              onStderr: (line) => {
+                Effect.runFork(
+                  Effect.logWarning(`engine stderr: ${line}`).pipe(
+                    Effect.annotateLogs({ provider: "engine", threadId }),
+                  ),
+                );
+              },
+              onNotification,
+            })
+          : yield* Effect.tryPromise({
+              try: () =>
+                EmbeddedEngineClient.create({
+                  dataDir: engineEnv.CAIDE_ENGINE_DATA_DIR ?? path.join(process.cwd(), "userData", "engine"),
+                  appsDir: options?.appsDir,
+                  settings: initializeSettings,
+                  onNotification,
+                }),
+              catch: (cause) => processError(threadId, "embedded dyad runtime failed to start", cause),
+            });
+        yield* Effect.tryPromise({
+          try: () => client.waitForSpawn(),
+          catch: (cause) => processError(threadId, "dyad runtime failed to become ready", cause),
+        });
         const initializeResponse = yield* Effect.tryPromise({
           try: () =>
             client.initialize({
@@ -1298,7 +1307,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
      * path is empty.
      */
     const resolveAppIdByPath = (
-      client: EngineClient,
+      client: EngineClientLike,
       appPath: string | null | undefined,
       errorContext: ThreadId,
     ): Effect.Effect<number | null, ProviderAdapterError> =>
