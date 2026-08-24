@@ -159,7 +159,7 @@ export const PreviewTestResult = Schema.Struct({
 });
 export type PreviewTestResult = typeof PreviewTestResult.Type;
 
-export const PreviewBuildTarget = Schema.Literals(["apk", "appbundle", "ipa"] as const);
+export const PreviewBuildTarget = Schema.Literals(["apk", "appbundle", "ipa", "web"] as const);
 export type PreviewBuildTarget = typeof PreviewBuildTarget.Type;
 
 export const PreviewBuildChannel = Schema.Literals(["debug", "profile", "release"] as const);

@@ -422,8 +422,9 @@ function artifactDownloadLabel(outputPath: string): string {
 
 function ReleasePanel(props: {
   build: PreviewBuildState;
-  onBuild: (options: { target: "apk" | "appbundle" | "ipa"; channel: "debug" | "profile" | "release"; signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null }) => void;
+  onBuild: (options: { target: "apk" | "appbundle" | "ipa" | "web"; channel: "debug" | "profile" | "release"; signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null }) => void;
   workspaceRoot: string | null;
+  framework?: ProjectFramework;
 }) {
   const [target, setTarget] = useState(props.build.target);
   const [channel, setChannel] = useState(props.build.channel);
@@ -433,6 +434,9 @@ function ReleasePanel(props: {
   const [storePassword, setStorePassword] = useState("");
   const [keyPassword, setKeyPassword] = useState("");
   const isRunning = props.build.running;
+  useEffect(() => {
+    if (props.framework === "website") setTarget("web");
+  }, [props.framework]);
   const needsSigning = (target === "apk" || target === "appbundle") && channel === "release";
   const canBuild = !isRunning && (!needsSigning || !showSigning || (keystorePath.trim() && keyAlias.trim() && storePassword.trim() && keyPassword.trim()));
   return (
@@ -445,10 +449,8 @@ function ReleasePanel(props: {
         <div className="mt-3 grid grid-cols-2 gap-2">
           <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
             Target
-            <select value={target} onChange={(e) => setTarget(e.target.value as "apk" | "appbundle" | "ipa")} disabled={isRunning} className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground">
-              <option value="apk">APK (Android)</option>
-              <option value="appbundle">AAB (Play Store)</option>
-              <option value="ipa">IPA (iOS)</option>
+            <select value={target} onChange={(e) => setTarget(e.target.value as "apk" | "appbundle" | "ipa" | "web")} disabled={isRunning || props.framework === "website"} className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground">
+              {props.framework === "website" ? <option value="web">Website bundle</option> : <><option value="apk">APK (Android)</option><option value="appbundle">AAB (Play Store)</option><option value="ipa">IPA (iOS)</option></>}
             </select>
           </label>
           <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
@@ -727,7 +729,7 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
   }, [props.threadId]);
 
   const handleBuild = useCallback(
-    (options: { target: "apk" | "appbundle" | "ipa"; channel: "debug" | "profile" | "release"; signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null }) => {
+    (options: { target: "apk" | "appbundle" | "ipa" | "web"; channel: "debug" | "profile" | "release"; signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null }) => {
       setPanelState((prev) => buildRequested(prev, { target: options.target, channel: options.channel }));
       ensureNativeApi()
         .preview.buildStart({ threadId: props.threadId, target: options.target, channel: options.channel, ...(options.signing ? { signing: options.signing } : {}) })
@@ -766,7 +768,7 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
       case "qualityGate":
         return <QualityGatePanel analyze={panelState.analyze} test={panelState.test} onRunAnalyze={handleRunAnalyze} onRunTest={handleRunTest} />;
       case "release":
-        return <ReleasePanel build={panelState.build} onBuild={handleBuild} workspaceRoot={props.workspaceRoot ?? null} />;
+        return <ReleasePanel build={panelState.build} onBuild={handleBuild} workspaceRoot={props.workspaceRoot ?? null} framework={framework} />;
       case "terminal":
         return (
           <div className="flex h-full min-h-[240px] flex-col">
@@ -866,6 +868,7 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
             </>
           ) : (
             <>
+              {framework === "website" && <button type="button" onClick={() => openBranch("release")} className={cn("flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", branch === "release" && branchOpen && "bg-accent text-foreground")} title="Build website" aria-label="Build website"><ArchiveIcon className="size-3.5" /></button>}
               <button type="button" onClick={() => openBranch("home")} className={cn("flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", branch === "home" && branchOpen && "bg-accent text-foreground")} title="Home" aria-label="Home">
                 <DeviceHomeIcon className="size-3.5" />
               </button>

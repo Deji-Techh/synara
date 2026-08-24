@@ -350,7 +350,7 @@ export type TestResult = z.infer<typeof TestResultSchema>;
 
 // ── build ──────────────────────────────────────────────────────────────
 
-export const BuildTargetSchema = z.enum(["apk", "appbundle", "ipa"]);
+export const BuildTargetSchema = z.enum(["apk", "appbundle", "ipa", "web"]);
 export type BuildTarget = z.infer<typeof BuildTargetSchema>;
 
 export const BuildStartParamsSchema = z.object({
@@ -401,7 +401,7 @@ export type BuildStateResult = z.infer<typeof BuildStateResultSchema>;
 
 // ── build artifacts ───────────────────────────────────────────────────
 
-export const ArtifactKindSchema = z.enum(["apk", "aab", "ipa"]);
+export const ArtifactKindSchema = z.enum(["apk", "aab", "ipa", "web"]);
 export type ArtifactKind = z.infer<typeof ArtifactKindSchema>;
 
 /**

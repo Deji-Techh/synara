@@ -271,7 +271,7 @@ export class EngineClient {
 
   async buildStart(params: {
     appDir: string;
-    target: "apk" | "appbundle" | "ipa";
+    target: "apk" | "appbundle" | "ipa" | "web";
     channel?: "debug" | "profile" | "release";
     signing?: {
       keystorePath: string;

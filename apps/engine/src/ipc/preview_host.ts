@@ -1235,7 +1235,8 @@ function artifactStoreDir(appDir: string): string {
   return path.join(appDir, ".caide", "artifacts");
 }
 
-function artifactKindForTarget(target: BuildTarget): "apk" | "aab" | "ipa" {
+function artifactKindForTarget(target: BuildTarget): "apk" | "aab" | "ipa" | "web" {
+  if (target === "web") return "web";
   if (target === "appbundle") return "aab";
   if (target === "ipa") return "ipa";
   return "apk";
@@ -1324,6 +1325,52 @@ async function maybeWriteSigningConfig(
 }
 
 async function runBuild(appDir: string, build: BuildEntry): Promise<void> {
+  if (build.target === "web") {
+    if (!isNodeProject(appDir) || isFlutterApp(appDir)) {
+      build.status = "failed";
+      build.error = "Website production builds require a Node website project.";
+      appendLogLines(build.logs, `[build] ${build.error}`);
+      return;
+    }
+    const packageJson = JSON.parse(await fsp.readFile(path.join(appDir, "package.json"), "utf8")) as { scripts?: Record<string, string> };
+    if (!packageJson.scripts?.build) {
+      build.status = "failed";
+      build.error = "This website has no package.json build script.";
+      appendLogLines(build.logs, `[build] ${build.error}`);
+      return;
+    }
+    const command = process.platform === "win32" ? "npm.cmd" : "npm";
+    appendLogLines(build.logs, `$ ${command} run build`);
+    const run = await spawnStreaming({ command, args: ["run", "build"], cwd: appDir, env: { ...process.env, CI: "1" }, onOutput: (chunk) => appendLogLines(build.logs, chunk), onProcess: (child) => { build.child = child; }, timeoutMs: 30 * 60 * 1000 }).catch((error) => ({ code: 1, stdout: "", stderr: error instanceof Error ? error.message : String(error) }));
+    build.child = null;
+    if (run.code !== 0) {
+      build.status = "failed";
+      build.exitCode = run.code;
+      build.error = (run.stderr.trim() || run.stdout.trim()).slice(-1500) || `website build exited with code ${run.code}`;
+      return;
+    }
+    const outputDir = fs.existsSync(path.join(appDir, "dist")) ? "dist" : fs.existsSync(path.join(appDir, "build")) ? "build" : null;
+    if (!outputDir) {
+      build.status = "failed";
+      build.error = "Website build completed but produced no dist/ or build/ directory.";
+      return;
+    }
+    const archivePath = path.join(appDir, ".caide", "artifacts", `${build.buildId}-website.tar.gz`);
+    await fsp.mkdir(path.dirname(archivePath), { recursive: true });
+    const archive = await spawnStreaming({ command: "tar", args: ["-czf", archivePath, "-C", appDir, outputDir], cwd: appDir, env: process.env, timeoutMs: 5 * 60 * 1000 });
+    if (archive.code !== 0) {
+      build.status = "failed";
+      build.error = archive.stderr.trim() || "Could not archive website build output.";
+      return;
+    }
+    build.status = "succeeded";
+    build.exitCode = 0;
+    build.outputPath = archivePath;
+    build.sha256 = await computeSha256(archivePath);
+    appendLogLines(build.logs, `[build] succeeded: ${archivePath}`);
+    await snapshotBuildArtifact(appDir, build);
+    return;
+  }
   appendLogLines(build.logs, "[build] ensuring Flutter SDK…");
   try {
     await ensureFlutterAvailable();
@@ -1445,7 +1492,16 @@ async function runBuild(appDir: string, build: BuildEntry): Promise<void> {
 
 async function buildStart(params: unknown): Promise<{ buildId: string }> {
   const parsed = BuildStartParamsSchema.parse(params);
-  assertFlutterApp(parsed.appDir);
+  if (parsed.target === "web") {
+    if (!isNodeProject(parsed.appDir) || isFlutterApp(parsed.appDir)) {
+      throw new CaideError(
+        "Website production builds require a Node website project.",
+        CaideErrorKind.Validation,
+      );
+    }
+  } else {
+    assertFlutterApp(parsed.appDir);
+  }
   const buildId = randomUUID();
   const build: BuildEntry = {
     buildId,

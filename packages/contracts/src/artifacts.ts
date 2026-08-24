@@ -29,7 +29,7 @@ export const ARTIFACTS_LIST_MAX_COUNT = 500;
 export const ArtifactId = TrimmedNonEmptyString.check(Schema.isMaxLength(ARTIFACT_ID_MAX_LENGTH));
 export type ArtifactId = typeof ArtifactId.Type;
 
-export const ArtifactKind = Schema.Literals(["apk", "aab", "ipa"]);
+export const ArtifactKind = Schema.Literals(["apk", "aab", "ipa", "web"]);
 export type ArtifactKind = typeof ArtifactKind.Type;
 
 export const ArtifactChannel = Schema.Literals(["debug", "profile", "release"]);

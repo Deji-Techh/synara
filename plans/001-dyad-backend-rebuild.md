@@ -317,7 +317,8 @@ management, web build/test commands, and browser-oriented tools.
 - [ ] Route Website to browser dev-server preview.
 - [ ] Add Flutter APK/AAB/IPA actions.
 - [ ] Add React Native/Expo native build actions supported locally.
-- [ ] Add Website production build artifacts.
+- [x] Add Website production build artifacts (Node `build` script output is
+      archived as a stable `.tar.gz` artifact and registered like mobile builds).
 - [ ] Test start, stop, restart, port conflict, crash, and build failure states.
 - [ ] Update this checklist and commit milestone.
 
@@ -427,6 +428,10 @@ management, web build/test commands, and browser-oriented tools.
 - Renderer project fixtures remain compatible with pre-framework snapshots by
   treating a missing framework as `blank` at the UI boundary; normalized server
   projects still persist the immutable framework value.
+- Added the `web` build target and artifact kind across engine, contracts,
+  server registry, and UI. Website release controls now select the web bundle
+  target and the engine runs `npm run build`, archives `dist/` or `build/`, and
+  exposes the resulting tarball for download.
 
 Validation notes:
 
@@ -439,6 +444,8 @@ Validation notes:
 - `apps/engine`: native Git behavior tests pass with the embedded fallback.
 - `apps/web`: typecheck passes after framework-aware preview wiring.
 - `apps/engine`: preview host test suite passes.
+- `apps/engine`: website build/archive integration test passes.
+- `apps/server`: typecheck passes with the web target contract.
 - The focused `EngineAdapter.test.ts` start-session case now mounts its required
   projection layer and exercises the embedded runtime. Remaining cases still
   need lifecycle-specific acceptance coverage as the adapter is simplified.

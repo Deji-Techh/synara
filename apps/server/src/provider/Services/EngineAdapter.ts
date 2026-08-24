@@ -74,7 +74,7 @@ export interface EnginePreviewOps {
   previewBuildStart(input: {
     threadId: ThreadId;
     appDir?: string;
-    target: "apk" | "appbundle" | "ipa";
+    target: "apk" | "appbundle" | "ipa" | "web";
     channel?: "debug" | "profile" | "release";
     signing?: {
       keystorePath: string;

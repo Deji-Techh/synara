@@ -20,7 +20,7 @@ export const InsertArtifactInput = Schema.Struct({
   appDir: TrimmedNonEmptyString,
   filePath: TrimmedNonEmptyString,
   fileName: TrimmedNonEmptyString,
-  kind: Schema.Literals(["apk", "aab", "ipa"]),
+  kind: Schema.Literals(["apk", "aab", "ipa", "web"]),
   channel: Schema.NullOr(Schema.Literals(["debug", "profile", "release"])),
   target: TrimmedNonEmptyString,
   sizeBytes: Schema.Number,

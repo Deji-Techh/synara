@@ -232,6 +232,36 @@ describe("preview RPC router (no live flutter)", () => {
     );
   });
 
+  it("builds and archives a website production bundle", async () => {
+    const appDir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-website-build-"));
+    fs.writeFileSync(
+      path.join(appDir, "package.json"),
+      JSON.stringify({
+        name: "website-build-fixture",
+        private: true,
+        scripts: { build: "mkdir -p dist && printf website > dist/index.html" },
+      }),
+    );
+    try {
+      const started = (await router.handle("build/start", {
+        appDir,
+        target: "web",
+        channel: "release",
+      })) as { buildId: string };
+      let state: { status: string; outputPath?: string | null; error?: string | null };
+      do {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        state = (await router.handle("build/state", { buildId: started.buildId })) as typeof state;
+      } while (state.status === "running");
+      expect(state.status).toBe("succeeded");
+      expect(state.error ?? null).toBeNull();
+      expect(state.outputPath).toMatch(/website\.tar\.gz$/);
+      expect(fs.existsSync(state.outputPath!)).toBe(true);
+    } finally {
+      fs.rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
   it("rejects invalid params with a zod error", async () => {
     await expect(router.handle("preview/state", {})).rejects.toThrow();
   });

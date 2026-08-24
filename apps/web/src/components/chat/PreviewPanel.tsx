@@ -134,10 +134,11 @@ const FRAME_KIND_OPTIONS: readonly { id: PreviewFrameKind; label: string }[] = [
   { id: "frameless", label: "Frameless" },
 ];
 
-const BUILD_TARGET_OPTIONS: readonly { id: "apk" | "appbundle" | "ipa"; label: string }[] = [
+const BUILD_TARGET_OPTIONS: readonly { id: "apk" | "appbundle" | "ipa" | "web"; label: string }[] = [
   { id: "apk", label: "APK (Android)" },
   { id: "appbundle", label: "AAB (Play Store)" },
   { id: "ipa", label: "IPA (iOS)" },
+  { id: "web", label: "Website bundle" },
 ];
 
 const BUILD_CHANNEL_OPTIONS: readonly { id: "debug" | "profile" | "release"; label: string }[] = [
@@ -780,7 +781,7 @@ function artifactDownloadLabel(outputPath: string): string {
 function ReleasePanel(props: {
   build: PreviewBuildState;
   onBuild: (options: {
-    target: "apk" | "appbundle" | "ipa";
+    target: "apk" | "appbundle" | "ipa" | "web";
     channel: "debug" | "profile" | "release";
     signing?: {
       keystorePath: string;
@@ -819,7 +820,7 @@ function ReleasePanel(props: {
             Target
             <select
               value={target}
-              onChange={(event) => setTarget(event.target.value as "apk" | "appbundle" | "ipa")}
+              onChange={(event) => setTarget(event.target.value as "apk" | "appbundle" | "ipa" | "web")}
               disabled={isRunning}
               className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
             >
@@ -1384,7 +1385,7 @@ export function PreviewPanel(props: {
 
   const handleBuild = useCallback(
     (options: {
-      target: "apk" | "appbundle" | "ipa";
+      target: "apk" | "appbundle" | "ipa" | "web";
       channel: "debug" | "profile" | "release";
       signing?: {
         keystorePath: string;
