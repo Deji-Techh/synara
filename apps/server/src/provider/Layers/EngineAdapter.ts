@@ -1429,10 +1429,13 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
 
         if (chatId === null) {
           const createChatResponse = yield* Effect.tryPromise({
-            try: () => client.dyadInvoke<{ chatId: number }>("create-chat", appId, 120_000),
+            try: () => client.dyadInvoke<number | { chatId?: number }>("create-chat", appId, 120_000),
             catch: (cause) => processError(context.threadId, "engine create-chat failed", cause),
           });
-          chatId = createChatResponse?.chatId ?? null;
+          chatId =
+            typeof createChatResponse === "number"
+              ? createChatResponse
+              : (createChatResponse?.chatId ?? null);
           
           if (chatId !== null && threadRow !== null) {
             yield* projectionThreadRepo

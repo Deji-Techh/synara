@@ -553,6 +553,11 @@ Validation notes:
   `chat_mode_flow.test.ts` default-mode assertion still fails independently
   (`local-agent` versus its stale expected `build`) and remains documented
   rather than hidden.
+- Rebuilt the dedicated embedded bundle (`bun tsdown --config
+  embedded-tsdown.config.ts`) and corrected the adapter boundary for dyad's
+  numeric `create-chat` response. Full `EngineAdapter.test.ts` now passes 10/10
+  tests, including streaming, explicit modes, lifecycle teardown, goals,
+  subagents, Flutter creation, and credential bridging.
 - Replaced the create-app dialog's four Flutter templates with the four locked
   framework choices and added framework to the app-creation RPC contract.
   Persistence and framework-specific scaffolding remain pending.
