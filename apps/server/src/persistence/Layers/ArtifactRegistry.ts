@@ -30,7 +30,7 @@ const ArtifactDbRow = Schema.Struct({
   filePath: Schema.String,
   displayName: Schema.String,
   fileName: Schema.String,
-  kind: Schema.Literals(["apk", "aab", "ipa"]),
+  kind: Schema.Literals(["apk", "aab", "ipa", "web"]),
   channel: Schema.NullOr(Schema.Literals(["debug", "profile", "release"])),
   target: Schema.String,
   sizeBytes: Schema.Number,

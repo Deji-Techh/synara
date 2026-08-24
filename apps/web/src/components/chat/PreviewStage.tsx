@@ -436,6 +436,9 @@ function ReleasePanel(props: {
   const isRunning = props.build.running;
   useEffect(() => {
     if (props.framework === "website") setTarget("web");
+    if (props.framework === "react-native" || props.framework === "flutter") {
+      setTarget((current) => (current === "web" ? "apk" : current));
+    }
   }, [props.framework]);
   const needsSigning = (target === "apk" || target === "appbundle") && channel === "release";
   const canBuild = !isRunning && (!needsSigning || !showSigning || (keystorePath.trim() && keyAlias.trim() && storePassword.trim() && keyPassword.trim()));
@@ -579,6 +582,7 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
   const framework = props.framework ?? "blank";
   const isBlankProject = framework === "blank";
   const isBrowserProject = framework === "website" || framework === "react-native";
+  const isBuildableProject = framework === "website" || framework === "react-native" || framework === "flutter";
 
   useEffect(() => {
     if (isBrowserProject) setHeaderMode("controls");
@@ -868,7 +872,7 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
             </>
           ) : (
             <>
-              {framework === "website" && <button type="button" onClick={() => openBranch("release")} className={cn("flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", branch === "release" && branchOpen && "bg-accent text-foreground")} title="Build website" aria-label="Build website"><ArchiveIcon className="size-3.5" /></button>}
+              {isBuildableProject && <button type="button" onClick={() => openBranch("release")} className={cn("flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", branch === "release" && branchOpen && "bg-accent text-foreground")} title={framework === "website" ? "Build website" : "Build app"} aria-label={framework === "website" ? "Build website" : "Build app"}><ArchiveIcon className="size-3.5" /></button>}
               <button type="button" onClick={() => openBranch("home")} className={cn("flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", branch === "home" && branchOpen && "bg-accent text-foreground")} title="Home" aria-label="Home">
                 <DeviceHomeIcon className="size-3.5" />
               </button>

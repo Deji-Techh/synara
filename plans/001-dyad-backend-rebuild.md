@@ -316,7 +316,9 @@ management, web build/test commands, and browser-oriented tools.
 - [ ] Route Flutter to emulator/iOS Simulator and Flutter device tooling.
 - [ ] Route Website to browser dev-server preview.
 - [ ] Add Flutter APK/AAB/IPA actions.
-- [ ] Add React Native/Expo native build actions supported locally.
+- [x] Add React Native/Expo Android APK and app-bundle build actions supported
+      locally (`expo prebuild` + Gradle release tasks). iOS still requires the
+      macOS/Xcode export acceptance pass below.
 - [x] Add Website production build artifacts (Node `build` script output is
       archived as a stable `.tar.gz` artifact and registered like mobile builds).
 - [ ] Test start, stop, restart, port conflict, crash, and build failure states.
@@ -432,6 +434,10 @@ management, web build/test commands, and browser-oriented tools.
   server registry, and UI. Website release controls now select the web bundle
   target and the engine runs `npm run build`, archives `dist/` or `build/`, and
   exposes the resulting tarball for download.
+- React Native keeps the shared browser preview but now exposes app release
+  controls. Android release builds run Expo prebuild followed by
+  `assembleRelease` or `bundleRelease`, locate the APK/AAB, hash it, and feed
+  it through the same stable artifact pipeline as Flutter.
 
 Validation notes:
 
@@ -446,6 +452,8 @@ Validation notes:
 - `apps/engine`: preview host test suite passes.
 - `apps/engine`: website build/archive integration test passes.
 - `apps/server`: typecheck passes with the web target contract.
+- `apps/engine`: Expo Android APK routing test passes with isolated fake
+  prebuild/Gradle executables.
 - The focused `EngineAdapter.test.ts` start-session case now mounts its required
   projection layer and exercises the embedded runtime. Remaining cases still
   need lifecycle-specific acceptance coverage as the adapter is simplified.

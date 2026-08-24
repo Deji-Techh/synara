@@ -12,7 +12,6 @@ export interface ArtifactSort {
   by: ArtifactSortBy;
   direction: ArtifactSortDirection;
 }
-
 export const DEFAULT_ARTIFACT_SORT: ArtifactSort = { by: "createdAt", direction: "desc" };
 
 const EMPTY_TIMESTAMP = 0;
@@ -84,6 +83,8 @@ export function artifactKindLabel(kind: ArtifactKind): string {
       return "Android bundle";
     case "ipa":
       return "iOS app";
+    case "web":
+      return "Website bundle";
   }
 }
 
@@ -96,5 +97,7 @@ export function artifactKindBadge(kind: ArtifactKind): string {
       return "AAB";
     case "ipa":
       return "IPA";
+    case "web":
+      return "WEB";
   }
 }

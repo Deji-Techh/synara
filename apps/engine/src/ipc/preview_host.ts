@@ -1371,6 +1371,46 @@ async function runBuild(appDir: string, build: BuildEntry): Promise<void> {
     await snapshotBuildArtifact(appDir, build);
     return;
   }
+  if (isNodeProject(appDir) && !isFlutterApp(appDir)) {
+    const packageJson = JSON.parse(await fsp.readFile(path.join(appDir, "package.json"), "utf8")) as { dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
+    const isExpo = Boolean(packageJson.dependencies?.expo ?? packageJson.devDependencies?.expo);
+    if (!isExpo || (build.target !== "apk" && build.target !== "appbundle" && build.target !== "ipa")) {
+      build.status = "failed";
+      build.error = "Native builds require an Expo/React Native project and a supported mobile target.";
+      appendLogLines(build.logs, `[build] ${build.error}`);
+      return;
+    }
+    if (build.target === "ipa" && process.platform !== "darwin") {
+      build.status = "failed";
+      build.error = "iOS IPA builds require macOS with Xcode installed.";
+      appendLogLines(build.logs, `[build] ${build.error}`);
+      return;
+    }
+    const command = process.platform === "win32" ? "npx.cmd" : "npx";
+    const platform = build.target === "ipa" ? "ios" : "android";
+    appendLogLines(build.logs, `$ npx expo prebuild --non-interactive`);
+    const prebuild = await spawnStreaming({ command, args: ["expo", "prebuild", "--non-interactive", "--no-install"], cwd: appDir, env: { ...process.env, CI: "1" }, onOutput: (chunk) => appendLogLines(build.logs, chunk), onProcess: (child) => { build.child = child; }, timeoutMs: 15 * 60 * 1000 });
+    if (prebuild.code !== 0) { build.child = null; build.status = "failed"; build.error = (prebuild.stderr || prebuild.stdout).slice(-1500); return; }
+    const gradle = path.join(appDir, "android", process.platform === "win32" ? "gradlew.bat" : "gradlew");
+    const args = build.target === "appbundle" ? ["bundleRelease"] : ["assembleRelease"];
+    const nativeRun = platform === "android"
+      ? await spawnStreaming({ command: gradle, args, cwd: path.join(appDir, "android"), env: { ...process.env, CI: "1" }, onOutput: (chunk) => appendLogLines(build.logs, chunk), onProcess: (child) => { build.child = child; }, timeoutMs: 30 * 60 * 1000 })
+      : await spawnStreaming({ command, args: ["expo", "run:ios", "--configuration", "Release", "--no-bundler"], cwd: appDir, env: { ...process.env, CI: "1" }, onOutput: (chunk) => appendLogLines(build.logs, chunk), onProcess: (child) => { build.child = child; }, timeoutMs: 30 * 60 * 1000 });
+    build.child = null;
+    if (nativeRun.code !== 0) { build.status = "failed"; build.exitCode = nativeRun.code; build.error = (nativeRun.stderr || nativeRun.stdout).slice(-1500); return; }
+    const candidates = build.target === "appbundle"
+      ? [path.join(appDir, "android", "app", "build", "outputs", "bundle", "release", "app-release.aab")]
+      : build.target === "apk"
+        ? [path.join(appDir, "android", "app", "build", "outputs", "apk", "release", "app-release.apk")]
+        : [];
+    build.status = "succeeded";
+    build.exitCode = 0;
+    build.outputPath = candidates.find((candidate) => fs.existsSync(candidate)) ?? null;
+    build.sha256 = build.outputPath ? await computeSha256(build.outputPath) : null;
+    appendLogLines(build.logs, `[build] succeeded${build.outputPath ? `: ${build.outputPath}` : ""}`);
+    await snapshotBuildArtifact(appDir, build);
+    return;
+  }
   appendLogLines(build.logs, "[build] ensuring Flutter SDK…");
   try {
     await ensureFlutterAvailable();
@@ -1499,7 +1539,7 @@ async function buildStart(params: unknown): Promise<{ buildId: string }> {
         CaideErrorKind.Validation,
       );
     }
-  } else {
+  } else if (!(isNodeProject(parsed.appDir) && !isFlutterApp(parsed.appDir))) {
     assertFlutterApp(parsed.appDir);
   }
   const buildId = randomUUID();

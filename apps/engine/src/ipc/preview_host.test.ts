@@ -262,6 +262,37 @@ describe("preview RPC router (no live flutter)", () => {
     }
   });
 
+  it("builds an Expo Android APK through the native Gradle route", async () => {
+    const appDir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-expo-build-"));
+    const binDir = path.join(appDir, "test-bin");
+    const androidDir = path.join(appDir, "android");
+    fs.mkdirSync(binDir, { recursive: true });
+    fs.mkdirSync(androidDir, { recursive: true });
+    fs.writeFileSync(path.join(appDir, "package.json"), JSON.stringify({ name: "expo-fixture", private: true, dependencies: { expo: "1.0.0" } }));
+    const npxPath = path.join(binDir, "npx");
+    fs.writeFileSync(npxPath, "#!/bin/sh\nexit 0\n");
+    fs.chmodSync(npxPath, 0o755);
+    const gradlePath = path.join(androidDir, "gradlew");
+    fs.writeFileSync(gradlePath, "#!/bin/sh\nmkdir -p app/build/outputs/apk/release\nprintf apk > app/build/outputs/apk/release/app-release.apk\n");
+    fs.chmodSync(gradlePath, 0o755);
+    const previousPath = process.env.PATH;
+    process.env.PATH = `${binDir}:${previousPath ?? ""}`;
+    try {
+      const started = (await router.handle("build/start", { appDir, target: "apk", channel: "release" })) as { buildId: string };
+      let state: { status: string; outputPath?: string | null; error?: string | null };
+      do {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        state = (await router.handle("build/state", { buildId: started.buildId })) as typeof state;
+      } while (state.status === "running");
+      expect(state.status).toBe("succeeded");
+      expect(state.outputPath).toMatch(/app-release\.apk$/);
+      expect(fs.existsSync(state.outputPath!)).toBe(true);
+    } finally {
+      process.env.PATH = previousPath;
+      fs.rmSync(appDir, { recursive: true, force: true });
+    }
+  });
+
   it("rejects invalid params with a zod error", async () => {
     await expect(router.handle("preview/state", {})).rejects.toThrow();
   });
