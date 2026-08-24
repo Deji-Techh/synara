@@ -212,16 +212,16 @@ management, web build/test commands, and browser-oriented tools.
 - [x] Remove superseded numbered plan documents.
 - [x] Create this canonical plan and handoff checklist.
 - [x] Update `AGENTS.md` to reference only this plan and new architecture.
-- [ ] Commit documentation reset (next commit after this update).
+- [x] Commit documentation reset (`dbc73a65`).
 - [ ] Record current target tests/build failures as baseline evidence.
 - [ ] Record dyad source smoke-test status without modifying its worktree.
 
 ### 1. Runtime package skeleton
 
-- [ ] Create integrated `apps/server/src/dyadRuntime` module boundaries.
-- [ ] Define runtime host interfaces for notifications, settings, secrets,
+- [x] Create integrated `apps/server/src/dyadRuntime` module boundaries.
+- [x] Define runtime host interfaces for notifications, settings, secrets,
       filesystem paths, cancellation, and logging.
-- [ ] Add project framework contract and registry skeleton.
+- [x] Add project framework contract and registry skeleton.
 - [ ] Add a fresh runtime database path and startup ownership.
 - [ ] Add a minimal runtime health/startup test.
 - [ ] Update this checklist and commit milestone.
@@ -363,6 +363,9 @@ management, web build/test commands, and browser-oriented tools.
 - Superseded plans removed and this canonical plan created.
 - `AGENTS.md` now points only to this plan and describes the integrated,
   multi-framework product architecture.
+- Milestone 1 skeleton added: `ProjectFramework` contract, framework registry,
+  capability declarations, and `DyadRuntimeHost` boundary. Focused tests pass:
+  2 contract tests and 3 registry tests.
 - Next action: commit documentation reset, then establish baseline tests and
   create the integrated runtime skeleton.
 
