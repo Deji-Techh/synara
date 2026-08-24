@@ -473,6 +473,14 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         }),
       );
 
+    const claimChatSettlement = (chatId: number): Effect.Effect<boolean> =>
+      Ref.modify(settledChats, (set) => {
+        if (set.has(chatId)) return [false, set] as const;
+        const next = new Set(set);
+        next.add(chatId);
+        return [true, next] as const;
+      });
+
     // ── Engine chat turn helpers ──────────────────────────────────────────
 
     /**
@@ -612,9 +620,9 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 return next;
               });
             } else {
-              const settled = yield* Ref.get(settledChats);
               const context = yield* sessionForChat(chatId);
-              if (!settled.has(chatId) && context !== null) {
+              const claimed = yield* claimChatSettlement(chatId);
+              if (claimed && context !== null) {
                 // The engine ended the stream without a chat:response:end
                 // (abort/restart mid-turn). Close the turn cleanly.
                 const turnId = context.currentTurnIdRef.current;
@@ -696,6 +704,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             const chatId = payload.chatId as number;
             const context = yield* sessionForChat(chatId);
             if (context === null) return;
+            if (!(yield* claimChatSettlement(chatId))) return;
             const turnId = context.currentTurnIdRef.current;
             const wasCancelled = payload.wasCancelled === true;
             // Ensure the tail of any final message was flushed.
@@ -760,11 +769,6 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 : undefined,
             );
             context.currentTurnIdRef.current = null;
-            yield* Ref.update(settledChats, (set) => {
-              const next = new Set(set);
-              next.add(chatId);
-              return next;
-            });
             return;
           }
           case "plan:update": {
@@ -791,6 +795,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             const chatId = payload.chatId as number;
             const context = yield* sessionForChat(chatId);
             if (context === null) return;
+            if (!(yield* claimChatSettlement(chatId))) return;
             const turnId = context.currentTurnIdRef.current;
             const message = String(payload.error ?? "engine turn failed");
             yield* publishEvent(
@@ -821,11 +826,6 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               message !== "" ? { errorMessage: message } : undefined,
             );
             context.currentTurnIdRef.current = null;
-            yield* Ref.update(settledChats, (set) => {
-              const next = new Set(set);
-              next.add(chatId);
-              return next;
-            });
             return;
           }
 
@@ -1527,8 +1527,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           onSuccess: () => Effect.void,
           onFailure: (error) =>
             Effect.gen(function* () {
-              const settled = yield* Ref.get(settledChats);
-              if (settled.has(chatId)) return;
+              if (!(yield* claimChatSettlement(chatId))) return;
               const turn = context.currentTurnIdRef.current;
               yield* publishEvent(
                 makeEvent<ProviderRuntimeEvent>(context.threadId, {
@@ -1921,6 +1920,8 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         Effect.gen(function* () {
           const context = yield* getSession(threadId);
           const pending = context.chatMapping;
+          const shouldSettle =
+            pending === null ? context.currentTurnIdRef.current !== null : yield* claimChatSettlement(pending.chatId);
           if (pending !== null) {
             const { client } = yield* ensureSharedEngine(threadId);
             yield* Effect.tryPromise({
@@ -1931,6 +1932,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               catch: () => null,
             }).pipe(Effect.ignore);
           }
+          if (!shouldSettle) return;
           const turnId = context.currentTurnIdRef.current;
           yield* publishEvent(
             makeEvent<ProviderRuntimeEvent>(threadId, {

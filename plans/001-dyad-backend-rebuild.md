@@ -316,8 +316,9 @@ management, web build/test commands, and browser-oriented tools.
 - [ ] Port ask, plan, build/agent, and follow-up modes.
 - [ ] Port streaming text, reasoning, message persistence, retry/replay,
       cancellation, and finalization.
-- [ ] Guarantee exactly one terminal settlement per turn.
-- [ ] Add restart reconciliation without repeated stale-state recovery.
+- [x] Guarantee exactly one terminal settlement per turn across response,
+      transport-error, cancellation, empty-response, and stream-end races.
+- [x] Add restart reconciliation without repeated stale-state recovery.
 - [ ] Test greeting, normal response, empty response, provider error, abort,
       restart, concurrent chats, and mode switching.
 - [ ] Update this checklist and commit milestone.
