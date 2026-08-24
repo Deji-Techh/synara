@@ -18,6 +18,8 @@ import { ThreadId } from "@caide/contracts";
 
 import { ServerSettingsService } from "../../serverSettings";
 import { ServerSecretStore } from "../../auth/Services/ServerSecretStore";
+import { SqlitePersistenceMemory } from "../../persistence/Layers/Sqlite";
+import { ProjectionThreadRepositoryLive } from "../../persistence/Layers/ProjectionThreads";
 import { EngineAdapter, EngineAdapterShape } from "../Services/EngineAdapter.ts";
 import { EngineAdapterLive, EngineAdapterLiveWithOptions } from "./EngineAdapter.ts";
 
@@ -82,6 +84,9 @@ function provideAdapter<T>(
       }).pipe(
         Layer.provide(ServerSettingsService.layerTest()),
         Layer.provide(fakeSecretStoreLayer),
+        Layer.provide(
+          ProjectionThreadRepositoryLive.pipe(Layer.provideMerge(SqlitePersistenceMemory)),
+        ),
       ),
     ),
   );

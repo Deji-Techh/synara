@@ -227,7 +227,7 @@ management, web build/test commands, and browser-oriented tools.
 - [x] Add project framework contract and registry skeleton.
 - [x] Add a fresh runtime database path and startup ownership.
 - [x] Add a minimal runtime health/startup test.
-- [ ] Wire the embedded runtime into the server provider layer.
+- [x] Wire the embedded runtime into the server provider layer.
 - [x] Produce a self-contained `apps/engine/dist/embedded.mjs` bundle and add
       a server-side `EmbeddedEngineClient` seam; active adapter replacement is
       the next cutover step.
@@ -403,6 +403,11 @@ management, web build/test commands, and browser-oriented tools.
   self-contained chunks under `apps/server/dist/dyad-engine`. A packaged-style
   direct load smoke test reaches database initialization, handler registration,
   ping, and clean shutdown.
+- The server's default `EngineAdapter` path now selects the embedded client and
+  passes a focused start-session test. The test harness mounts the production
+  projection dependency, and embedded migration discovery supports both the
+  packaged staged directory and the source checkout's authoritative engine
+  `drizzle` directory.
 
 Validation notes:
 
@@ -410,9 +415,10 @@ Validation notes:
 - `packages/contracts`: project framework tests pass (2 tests).
 - `apps/server`: `bun run typecheck` passes.
 - `apps/engine`: `bun run build` passes.
-- Full `EngineAdapter.test.ts` currently requires its existing projection test
-  layer and is not a valid embedded-runtime acceptance test yet; it reports a
-  missing `ProjectionThreadRepository` service before exercising the adapter.
+- `apps/server`: focused default embedded start-session test passes.
+- The focused `EngineAdapter.test.ts` start-session case now mounts its required
+  projection layer and exercises the embedded runtime. Remaining cases still
+  need lifecycle-specific acceptance coverage as the adapter is simplified.
 - Replaced the create-app dialog's four Flutter templates with the four locked
   framework choices and added framework to the app-creation RPC contract.
   Persistence and framework-specific scaffolding remain pending.

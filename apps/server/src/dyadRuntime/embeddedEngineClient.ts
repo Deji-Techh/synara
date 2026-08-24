@@ -29,6 +29,20 @@ function resolveEmbeddedEntry(): string {
   return entry;
 }
 
+function resolveDrizzleDir(entry: string): string {
+  const candidates = [
+    path.join(path.dirname(entry), "drizzle"),
+    fileURLToPath(new URL("../../../engine/drizzle", import.meta.url)),
+  ];
+  const drizzleDir = candidates.find((candidate) =>
+    existsSync(path.join(candidate, "meta", "_journal.json")),
+  );
+  if (!drizzleDir) {
+    throw new Error(`embedded dyad migrations missing; checked ${candidates.join(", ")}`);
+  }
+  return drizzleDir;
+}
+
 function response(result: unknown): JsonRpcResponse {
   return { jsonrpc: "2.0", id: 1, result };
 }
@@ -49,7 +63,7 @@ export class EmbeddedEngineClient {
     process.env.CAIDE_USER_DATA_DIR = path.resolve(options.dataDir);
     process.env.CAIDE_ENGINE_DATA_DIR = path.resolve(options.dataDir);
     if (options.appsDir) process.env.CAIDE_DEV_APPS_DIR = path.resolve(options.appsDir);
-    process.env.CAIDE_ENGINE_DRIZZLE_DIR ??= path.join(path.dirname(entry), "drizzle");
+    process.env.CAIDE_ENGINE_DRIZZLE_DIR = resolveDrizzleDir(entry);
     const module = (await import(pathToFileURL(entry).href)) as EmbeddedModule;
     const runtime = await module.createEmbeddedEngine(options);
     const unsubscribe = runtime.subscribe(({ channel, payload }) =>
