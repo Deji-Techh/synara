@@ -206,6 +206,32 @@ interface PendingEngineRequest {
   readonly chatId?: number;
 }
 
+/**
+ * Register an interaction without ever rebinding an existing request ID.
+ * Engine request IDs are expected to be unique, but keeping this invariant at
+ * the adapter boundary prevents a malformed/replayed event from moving an
+ * approval or question to another thread.
+ */
+export function tryRegisterPendingRequest(
+  map: ReadonlyMap<string, PendingEngineRequest>,
+  requestId: string,
+  entry: PendingEngineRequest,
+): readonly [registered: boolean, next: ReadonlyMap<string, PendingEngineRequest>] {
+  if (map.has(requestId)) return [false, map];
+  const next = new Map(map);
+  next.set(requestId, entry);
+  return [true, next];
+}
+
+export function ownsPendingRequest(
+  entry: PendingEngineRequest,
+  threadId: ThreadId,
+  chatId?: number,
+): boolean {
+  if (entry.threadId !== threadId) return false;
+  return entry.chatId === undefined || entry.chatId === chatId;
+}
+
 interface EngineSessionContext {
   readonly threadId: ThreadId;
   readonly session: ProviderSession;
@@ -842,15 +868,14 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             const chatId = typeof payload.chatId === "number" ? payload.chatId : undefined;
             const context = chatId !== undefined ? yield* sessionForChat(chatId) : null;
             if (context === null) return;
-            yield* Ref.update(pendingRequests, (map) => {
-              const next = new Map(map);
-              next.set(requestId, {
+            const registered = yield* Ref.modify(pendingRequests, (map) =>
+              tryRegisterPendingRequest(map, requestId, {
                 kind: "agent-tool-consent",
                 threadId: context.threadId,
                 ...(chatId !== undefined ? { chatId } : {}),
-              });
-              return next;
-            });
+              }),
+            ).pipe(Effect.map(([ok]) => ok));
+            if (!registered) return;
             const toolName = String(payload.toolName ?? "tool");
             yield* publishEvent(
               makeEvent<ProviderRuntimeEvent>(context.threadId, {
@@ -877,15 +902,14 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             const chatId = typeof payload.chatId === "number" ? payload.chatId : undefined;
             const context = chatId !== undefined ? yield* sessionForChat(chatId) : null;
             if (context === null) return;
-            yield* Ref.update(pendingRequests, (map) => {
-              const next = new Map(map);
-              next.set(requestId, {
+            const registered = yield* Ref.modify(pendingRequests, (map) =>
+              tryRegisterPendingRequest(map, requestId, {
                 kind: "mcp-consent",
                 threadId: context.threadId,
                 ...(chatId !== undefined ? { chatId } : {}),
-              });
-              return next;
-            });
+              }),
+            ).pipe(Effect.map(([ok]) => ok));
+            if (!registered) return;
             const toolName = String(payload.toolName ?? "tool");
             const serverName = payload.serverName;
             yield* publishEvent(
@@ -916,6 +940,8 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             const pending = yield* Ref.get(pendingRequests);
             const entry = pending.get(requestId);
             if (!entry) return;
+            const eventChatId = typeof payload.chatId === "number" ? payload.chatId : null;
+            if (!ownsPendingRequest(entry, entry.threadId, eventChatId ?? undefined)) return;
             yield* Ref.update(pendingRequests, (map) => {
               const next = new Map(map);
               next.delete(requestId);
@@ -941,15 +967,14 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             if (context === null) return;
             const requestId = String(payload.requestId ?? "");
             if (requestId === "") return;
-            yield* Ref.update(pendingRequests, (map) => {
-              const next = new Map(map);
-              next.set(requestId, {
+            const registered = yield* Ref.modify(pendingRequests, (map) =>
+              tryRegisterPendingRequest(map, requestId, {
                 kind: "questionnaire",
                 threadId: context.threadId,
                 chatId: payload.chatId as number,
-              });
-              return next;
-            });
+              }),
+            ).pipe(Effect.map(([ok]) => ok));
+            if (!registered) return;
             const questions = Array.isArray(payload.questions)
               ? payload.questions.map((question) => {
                   const q = (question ?? {}) as Record<string, unknown>;
@@ -984,15 +1009,14 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             if (context === null) return;
             const requestId = String(payload.requestId ?? "");
             if (requestId === "") return;
-            yield* Ref.update(pendingRequests, (map) => {
-              const next = new Map(map);
-              next.set(requestId, {
+            const registered = yield* Ref.modify(pendingRequests, (map) =>
+              tryRegisterPendingRequest(map, requestId, {
                 kind: "env-vars",
                 threadId: context.threadId,
                 chatId: payload.chatId as number,
-              });
-              return next;
-            });
+              }),
+            ).pipe(Effect.map(([ok]) => ok));
+            if (!registered) return;
             const questions = Array.isArray(payload.vars)
               ? (payload.vars as unknown[]).map((variable) => {
                   const v = (variable ?? {}) as Record<string, unknown>;
@@ -1925,6 +1949,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             Effect.map((map) => map.get(String(requestId)) ?? null),
           );
           if (entry === null) return;
+          if (!ownsPendingRequest(entry, threadId)) return;
           const engineDecision =
             decision === "accept"
               ? "accept-once"
@@ -1977,6 +2002,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             Effect.map((map) => map.get(String(requestId)) ?? null),
           );
           if (entry === null) return;
+          if (!ownsPendingRequest(entry, threadId)) return;
           const { client } = yield* ensureSharedEngine(threadId);
           const serialized: Record<string, string> = {};
           for (const [key, value] of Object.entries(answers ?? {})) {

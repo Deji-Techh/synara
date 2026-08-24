@@ -21,7 +21,12 @@ import { ServerSecretStore } from "../../auth/Services/ServerSecretStore";
 import { SqlitePersistenceMemory } from "../../persistence/Layers/Sqlite";
 import { ProjectionThreadRepositoryLive } from "../../persistence/Layers/ProjectionThreads";
 import { EngineAdapter, EngineAdapterShape } from "../Services/EngineAdapter.ts";
-import { EngineAdapterLive, EngineAdapterLiveWithOptions } from "./EngineAdapter.ts";
+import {
+  EngineAdapterLive,
+  EngineAdapterLiveWithOptions,
+  ownsPendingRequest,
+  tryRegisterPendingRequest,
+} from "./EngineAdapter.ts";
 
 const fakeSecretStoreLayer = Layer.succeed(ServerSecretStore, {
   get: () => Effect.succeed(null),
@@ -96,6 +101,38 @@ function provideAdapter<T>(
 }
 
 describe("EngineAdapter", () => {
+  it("keeps pending interaction ownership stable when request IDs collide", () => {
+    const firstThread = ThreadId.makeUnsafe("thread-a");
+    const secondThread = ThreadId.makeUnsafe("thread-b");
+    const first = new Map([
+      [
+        "request-1",
+        { kind: "questionnaire" as const, threadId: firstThread, chatId: 11 },
+      ],
+    ]);
+
+    const [registered, next] = tryRegisterPendingRequest(first, "request-1", {
+      kind: "agent-tool-consent",
+      threadId: secondThread,
+      chatId: 22,
+    });
+
+    expect(registered).toBe(false);
+    expect(next).toBe(first);
+    expect(next.get("request-1")).toEqual(first.get("request-1"));
+  });
+
+  it("requires both thread and chat ownership for pending interactions", () => {
+    const threadA = ThreadId.makeUnsafe("thread-a");
+    const threadB = ThreadId.makeUnsafe("thread-b");
+    const entry = { kind: "mcp-consent" as const, threadId: threadA, chatId: 11 };
+
+    expect(ownsPendingRequest(entry, threadA, 11)).toBe(true);
+    expect(ownsPendingRequest(entry, threadA, 12)).toBe(false);
+    expect(ownsPendingRequest(entry, threadB, 11)).toBe(false);
+    expect(ownsPendingRequest(entry, threadA, undefined)).toBe(false);
+  });
+
   it("startSession spawns the engine and completes initialize + ping hello-world", async () => {
     const threadId = ThreadId.makeUnsafe(randomUUID());
 

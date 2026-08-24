@@ -283,8 +283,10 @@ management, web build/test commands, and browser-oriented tools.
 - [ ] Scope transcript offsets, current turns, terminal settlement, tool
       activity, approvals, questions, consent, todos, work logs, goals, and MCP
       events to their owning project/thread/chat/turn.
-- [ ] Reject notifications and pending-interaction settlements whose ownership
-      cannot be proven from explicit identifiers.
+- [x] Reject notifications and pending-interaction settlements whose ownership
+      cannot be proven from explicit identifiers. Pending approvals/questions
+      now require thread ownership; consent resolutions also require chat
+      ownership, and duplicate request IDs cannot rebind an existing request.
 - [ ] Verify persisted engine chat mappings against their owning app/project
       during restart and create a fresh chat when no valid mapping exists.
 - [x] Make preview/build/artifact APIs resolve their workspace server-side and
@@ -298,8 +300,9 @@ management, web build/test commands, and browser-oriented tools.
 - [ ] Test two chats in one project: each has its own engine chat, streamed
       transcript, current turn, tools, interactions, and terminal settlement.
 - [ ] Test restart restoration without chat ID reuse or first-chat fallback.
-- [ ] Test that approval, question, and consent responses from chat A cannot
-      settle a pending interaction in chat B.
+- [x] Test that approval, question, and consent responses from chat A cannot
+      settle a pending interaction in chat B (including request-ID collision
+      protection and missing/mismatched chat IDs).
 - [x] Test that arbitrary preview/build paths and artifact IDs cannot cross
       project ownership boundaries.
 - [x] Test database persistence across two chats in one project and complete
