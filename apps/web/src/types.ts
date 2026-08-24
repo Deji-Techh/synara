@@ -184,6 +184,7 @@ export interface Project {
   folderName: string;
   localName: string | null;
   cwd: string;
+  framework: import("@caide/contracts").ProjectFramework;
   defaultModelSelection: ModelSelection | null;
   expanded: boolean;
   isPinned?: boolean;

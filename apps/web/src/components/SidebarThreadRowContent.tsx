@@ -4,7 +4,7 @@
 
 import { useMemo, type ReactNode } from "react";
 
-import type { ProviderKind } from "@caide/contracts";
+import type { ProjectFramework, ProviderKind } from "@caide/contracts";
 import { isGenericChatThreadTitle } from "@caide/shared/chatThreads";
 import { pluralize } from "@caide/shared/text";
 
@@ -19,6 +19,14 @@ import { cn } from "../lib/utils";
 import { ProviderIcon } from "./ProviderIcon";
 import { SidebarGlyph } from "./sidebarGlyphs";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
+import { SiFlutter, SiReact } from "react-icons/si";
+import { FiBox, FiGlobe } from "react-icons/fi";
+
+function FrameworkAvatar({ framework }: { framework: ProjectFramework }) {
+  const Icon = framework === "flutter" ? SiFlutter : framework === "react-native" ? SiReact : framework === "website" ? FiGlobe : FiBox;
+  const label = framework === "react-native" ? "React Native" : framework[0]!.toUpperCase() + framework.slice(1);
+  return <span title={label} aria-label={`${label} project`} className="inline-flex size-3 shrink-0 items-center justify-center"><Icon className="size-3" /></span>;
+}
 
 export interface SidebarThreadTerminalStatus {
   label: "Terminal input needed" | "Terminal task completed" | "Terminal process running";
@@ -174,6 +182,7 @@ export function SidebarThreadRowContent({
   subagentIndentPx: subagentIndentPxProp,
   pendingStatusColorClass,
   suffix,
+  framework,
 }: {
   thread: SidebarThreadSummary;
   terminalEntryPoint: boolean;
@@ -184,6 +193,7 @@ export function SidebarThreadRowContent({
   subagentIndentPx?: number;
   pendingStatusColorClass?: string | null | undefined;
   suffix?: ReactNode;
+  framework?: ProjectFramework;
 }) {
   const subagentIndentPx = subagentIndentPxProp ?? 0;
   const isSubagentThread = Boolean(thread.parentThreadId);
@@ -219,6 +229,8 @@ export function SidebarThreadRowContent({
         </span>
       ) : terminalEntryPoint ? (
         <SidebarGlyph icon={TerminalIcon} variant="chrome" />
+      ) : framework ? (
+        <FrameworkAvatar framework={framework} />
       ) : showThreadProviderAvatar ? (
         <ProviderAvatarWithTerminal
           thread={thread}

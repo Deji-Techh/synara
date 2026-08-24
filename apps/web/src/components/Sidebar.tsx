@@ -4054,6 +4054,7 @@ export default function Sidebar() {
           >
             <SidebarThreadRowContent
               thread={thread}
+              framework={projectById.get(thread.projectId)?.framework ?? "blank"}
               terminalEntryPoint={threadEntryPoint === "terminal"}
               terminalStatus={terminalStatus}
               terminalCount={terminalCount}
@@ -4251,6 +4252,7 @@ export default function Sidebar() {
           >
             <SidebarThreadRowContent
               thread={thread}
+              framework={projectById.get(thread.projectId)?.framework ?? "blank"}
               terminalEntryPoint={threadEntryPoint === "terminal"}
               terminalStatus={terminalStatus}
               terminalCount={terminalCount}

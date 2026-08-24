@@ -2,6 +2,7 @@ import { Effect, Option, Schema, SchemaIssue, Struct } from "effect";
 import { ApiModelOptions, PiModelOptions } from "./model";
 import { ProviderMentionReference, ProviderSkillReference } from "./providerDiscovery";
 import { ProjectKind } from "./project";
+import { ProjectFramework } from "./projectFramework";
 import {
   ApprovalRequestId,
   CheckpointRef,
@@ -510,6 +511,7 @@ export const OrchestrationProject = Schema.Struct({
   kind: Schema.optional(ProjectKind).pipe(Schema.withDecodingDefault(() => "project")),
   title: TrimmedNonEmptyString,
   workspaceRoot: TrimmedNonEmptyString,
+  framework: Schema.optional(ProjectFramework).pipe(Schema.withDecodingDefault(() => "blank")),
   defaultModelSelection: Schema.NullOr(ModelSelection),
   scripts: Schema.Array(ProjectScript),
   isPinned: Schema.optional(Schema.Boolean).pipe(Schema.withDecodingDefault(() => false)),
@@ -525,6 +527,7 @@ export const OrchestrationProjectShell = Schema.Struct({
   kind: Schema.optional(ProjectKind).pipe(Schema.withDecodingDefault(() => "project")),
   title: TrimmedNonEmptyString,
   workspaceRoot: TrimmedNonEmptyString,
+  framework: Schema.optional(ProjectFramework).pipe(Schema.withDecodingDefault(() => "blank")),
   defaultModelSelection: Schema.NullOr(ModelSelection),
   scripts: Schema.Array(ProjectScript),
   isPinned: Schema.optional(Schema.Boolean).pipe(Schema.withDecodingDefault(() => false)),
@@ -1064,6 +1067,7 @@ export const ProjectCreateCommand = Schema.Struct({
   kind: Schema.optional(ProjectKind).pipe(Schema.withDecodingDefault(() => "project")),
   title: TrimmedNonEmptyString,
   workspaceRoot: TrimmedNonEmptyString,
+  framework: Schema.optional(ProjectFramework).pipe(Schema.withDecodingDefault(() => "blank")),
   createWorkspaceRootIfMissing: Schema.optional(Schema.Boolean).pipe(
     Schema.withDecodingDefault(() => false),
   ),
@@ -1773,6 +1777,7 @@ export const ProjectCreatedPayload = Schema.Struct({
   kind: Schema.optional(ProjectKind).pipe(Schema.withDecodingDefault(() => "project")),
   title: TrimmedNonEmptyString,
   workspaceRoot: TrimmedNonEmptyString,
+  framework: Schema.optional(ProjectFramework).pipe(Schema.withDecodingDefault(() => "blank")),
   defaultModelSelection: Schema.NullOr(ModelSelection),
   scripts: Schema.Array(ProjectScript),
   isPinned: Schema.optional(Schema.Boolean).pipe(Schema.withDecodingDefault(() => false)),

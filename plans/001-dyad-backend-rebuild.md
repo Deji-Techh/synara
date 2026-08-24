@@ -236,7 +236,7 @@ management, web build/test commands, and browser-oriented tools.
 - [ ] Import app, chat, message, settings, MCP, goal, and compaction storage.
 - [x] Add immutable framework column to apps/projects.
 - [x] Implement clean initialization and transactional app/chat creation.
-- [ ] Add framework-aware app queries and chat inheritance.
+- [x] Add framework-aware app queries and chat inheritance.
 - [ ] Test clean database boot, restart, and CRUD behavior.
 - [ ] Update this checklist and commit milestone.
 
@@ -322,7 +322,7 @@ management, web build/test commands, and browser-oriented tools.
 - [ ] Rebind chat submission and streaming to integrated dyad runtime events.
 - [ ] Rebind modes, approvals, user input, tools, todos, goals, and MCP.
 - [ ] Replace create-app choices with the four frameworks.
-- [ ] Add shared framework icons and replace sidebar model icons.
+- [x] Add shared framework icons and replace sidebar model icons.
 - [ ] Rebind preview/build controls to framework capabilities.
 - [ ] Preserve transcript scroll and performance guardrails.
 - [ ] Add focused UI tests for explicit lifecycle states.
@@ -374,6 +374,12 @@ management, web build/test commands, and browser-oriented tools.
   contract, Website/Vite gets the responsive web contract, and React Native's
   non-web target gets the native-feel mobile contract. Prompt snapshots were
   updated and pass.
+- Added orchestration migration 93 and project projection fields so framework
+  survives server restart and is available to every chat's owning project.
+- Web normalization now retains framework, and pinned/standard sidebar rows
+  render framework icons instead of provider logos. Server and web typechecks
+  pass; one unrelated pre-existing Claude alias assertion remains in the broad
+  store projection suite.
 
 ### 2026-08-24 — embedded runtime seam
 

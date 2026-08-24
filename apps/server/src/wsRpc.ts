@@ -1198,6 +1198,7 @@ const makeWsRpcHandlersLayer = () =>
             kind: "project",
             title: trimmedName,
             workspaceRoot: created.appPath,
+            framework,
             createWorkspaceRootIfMissing: true,
             defaultModelSelection: modelSelection,
             createdAt,

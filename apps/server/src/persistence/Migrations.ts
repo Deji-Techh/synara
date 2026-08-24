@@ -108,6 +108,7 @@ import Migration0089 from "./Migrations/089_RecoverRetentionHiddenThreads.ts";
 import Migration0090 from "./Migrations/090_RetireStudioProjects.ts";
 import Migration0091 from "./Migrations/091_Artifacts.ts";
 import Migration0092 from "./Migrations/092_ProjectionThreadsEngineChatId.ts";
+import Migration0093 from "./Migrations/093_ProjectionProjectsFramework.ts";
 
 /**
  * Migration loader with all migrations defined inline.
@@ -215,6 +216,7 @@ export const migrationEntries = [
   [90, "RetireStudioProjects", Migration0090],
   [91, "Artifacts", Migration0091],
   [92, "ProjectionThreadsEngineChatId", Migration0092],
+  [93, "ProjectionProjectsFramework", Migration0093],
 ] as const;
 
 export const makeMigrationLoader = (throughId?: number) =>

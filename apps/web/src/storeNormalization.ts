@@ -44,6 +44,7 @@ export type ProjectNormalizationInput = Pick<
   | "kind"
   | "title"
   | "workspaceRoot"
+  | "framework"
   | "defaultModelSelection"
   | "scripts"
   | "isPinned"
@@ -340,6 +341,7 @@ export function normalizeProject(
     previous.folderName === folderName &&
     previous.localName === localName &&
     previous.cwd === incoming.workspaceRoot &&
+    previous.framework === (incoming.framework ?? "blank") &&
     previous.defaultModelSelection === defaultModelSelection &&
     previous.expanded === expanded &&
     (previous.isPinned ?? false) === (incoming.isPinned ?? false) &&
@@ -359,6 +361,7 @@ export function normalizeProject(
     folderName,
     localName,
     cwd: incoming.workspaceRoot,
+    framework: incoming.framework ?? "blank",
     defaultModelSelection,
     expanded,
     isPinned: incoming.isPinned ?? false,
