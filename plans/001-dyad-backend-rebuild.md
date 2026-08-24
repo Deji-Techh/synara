@@ -1,0 +1,382 @@
+# Caide Integrated Dyad Backend Rebuild
+
+Status: IN PROGRESS
+
+Last updated: 2026-08-24
+
+Current branch: `feature/backend-transplant`
+
+Pre-rebuild snapshot commit: `edf15bea`
+
+## Mission
+
+Keep Caide's current desktop shell and web UI/UX, but replace its complete
+agentic backend with the known-working dyad×caide backend. The final product
+must behave as smoothly as dyad×caide for conversation streaming, tool calls,
+plan mode, ask mode, agent/build mode, approvals, user questions, compaction,
+MCP, goals, retries, cancellation, and recovery.
+
+The new runtime is integrated into Caide's server process. The current spawned
+`apps/engine` process, JSON-RPC bridge, synthetic provider, duplicated SQLite
+state, and `EngineAdapter` translation lifecycle must leave the active product
+path. Caide's server remains the desktop/web host, but dyad's runtime becomes
+the only agent lifecycle owner.
+
+This is a clean backend generation. Existing Caide conversations do not need
+to migrate into the new dyad data model. Old state may be archived for manual
+inspection, but it must never participate in new turn execution.
+
+## Repository Locations
+
+### Target product
+
+- Root: `/home/DejiTech/Caide final`
+- UI: `/home/DejiTech/Caide final/apps/web`
+- Integrated backend target: `/home/DejiTech/Caide final/apps/server`
+- Old engine to retire: `/home/DejiTech/Caide final/apps/engine`
+- Shared contracts: `/home/DejiTech/Caide final/packages/contracts`
+- Desktop shell/packaging: `/home/DejiTech/Caide final/apps/desktop`
+- Active plan: `/home/DejiTech/Caide final/plans/001-dyad-backend-rebuild.md`
+- Release artifact: `/home/DejiTech/Caide final/release/Caide-0.0.1-x86_64.AppImage`
+
+### Authoritative source backend
+
+- Root: `/home/DejiTech/dev/personal projects/dyad x caide`
+- Git revision at planning time: `e1fed18f`
+- Source backend: `/home/DejiTech/dev/personal projects/dyad x caide/src`
+- Chat lifecycle: `src/ipc/handlers/chat_stream_handlers.ts`
+- Agent loop: `src/pro/main/ipc/handlers/local_agent/local_agent_handler.ts`
+- Agent tools: `src/pro/main/ipc/handlers/local_agent/tools`
+- Tool definitions: `src/pro/main/ipc/handlers/local_agent/tool_definitions.ts`
+- Database/schema: `src/db` and `drizzle`
+- Providers/models: `src/ipc` model/provider helpers and settings modules
+- Prompts/skills: `src/prompts` and `src/pro/main/prompts`
+- Compaction: `src/ipc/handlers/compaction`
+- MCP: `src/ipc` MCP services/handlers
+- Goals: `src/ipc/goal`
+- Source repository has user changes. Treat it as read-only and never commit,
+  format, clean, or otherwise modify it during the transplant.
+
+### Secondary references
+
+- Kimi Code lifecycle reference: `/home/DejiTech/dev/kimi-code`
+- Generated app root: `/home/DejiTech/caide-apps` by default
+
+## Locked Product Decisions
+
+1. Caide's current UI and UX remain the visual product shell.
+2. Dyad×caide is the behavioral source of truth for the agent runtime.
+3. The dyad runtime runs inside `apps/server`; there is no separate engine
+   process in the final active architecture.
+4. New backend state starts clean. No conversation migration is required.
+5. API-key providers are supported. Provider-specific CLI agent runtimes are
+   not part of the new active path.
+6. Every project has one immutable framework chosen at creation.
+7. Framework choices are `blank`, `react-native`, `flutter`, and `website`.
+8. Every chat inherits its project framework.
+9. The sidebar shows the framework icon beside chat names instead of a model
+   or provider logo.
+10. Framework selection controls scaffolding, prompts, tools, dependencies,
+    preview, testing, build commands, devices, and distributable artifacts.
+11. The existing old backend is removed only after the integrated runtime has
+    passed replacement acceptance tests.
+12. Work is committed in small milestones. This file is updated after every
+    meaningful code change so another agent can resume without hidden context.
+
+## Target Architecture
+
+### Single runtime owner
+
+`apps/server` hosts a new `dyadRuntime` module containing the imported backend.
+It owns apps, chats, messages, turns, tools, approvals, user questions, goals,
+MCP sessions, model configuration, and compaction. A turn has exactly one
+lifecycle controller and exactly one terminal settlement.
+
+The server exposes the runtime to `apps/web` through Caide's existing WebSocket
+transport. The adapter is intentionally narrow: validate requests, call dyad,
+and translate dyad notifications into UI events. It must not infer lifecycle
+state from empty messages or maintain a second competing turn state machine.
+
+### Event lifecycle
+
+Every turn follows:
+
+`created -> running -> waiting (optional) -> running -> terminal`
+
+Terminal is exactly one of `completed`, `failed`, `cancelled`, or `aborted`.
+Text, reasoning, tool activity, approvals, user input, plans, todos, file
+changes, builds, and previews are child events of the turn. Stream completion
+without visible output becomes a failed turn with an actionable error.
+
+On restart, the runtime reconciles non-terminal turns once. It persists a
+terminal recovery state and never repeatedly prints stale-running notices.
+
+### Framework registry
+
+Create one shared project framework contract:
+
+```ts
+type ProjectFramework = "blank" | "react-native" | "flutter" | "website";
+```
+
+Each framework definition supplies:
+
+- stable ID, label, description, and icon;
+- scaffold/create handler;
+- framework detection and validation;
+- system prompt additions and skill packs;
+- enabled/disabled tools and tool behavior;
+- package/dependency commands;
+- analyze/lint/test commands;
+- development server or device launch strategy;
+- preview adapter;
+- release build actions and artifact metadata.
+
+Framework selection is stored on the app/project record, never inferred on
+each message, and cannot be changed after creation.
+
+#### Blank
+
+Creates an empty managed directory and minimal project metadata. The agent may
+choose an implementation later, but the project remains framework `blank`
+until a future explicit migration feature is designed. Preview/build actions
+stay unavailable until the workspace is recognizable.
+
+#### React Native
+
+Uses the working mobile behavior from dyad×caide: Expo/React Native prompts,
+tools, Metro/dev-server handling, device preview, package management, native
+build commands, and mobile-specific validation.
+
+#### Flutter
+
+Uses Flutter scaffolding, Dart/Flutter prompts and skills, `flutter pub`,
+`flutter analyze`, `flutter test`, emulator/iOS Simulator preview, APK, app
+bundle, and IPA/release actions where the local toolchain supports them.
+
+#### Website
+
+Uses dyad's web app scaffolding and proven browser preview flow, Node package
+management, web build/test commands, and browser-oriented tools.
+
+## Public Contracts and Persistence
+
+- Add `ProjectFramework` to shared contracts and persist it on every new app.
+- Project creation accepts `{ name, framework }`; template choice is derived
+  from the framework registry rather than free-form UI values.
+- Chat creation references an app/project and inherits its framework.
+- Turn requests carry mode and chat identity. Framework is resolved server-side
+  from the app record and cannot be overridden by a message.
+- Runtime notifications expose explicit turn ID, chat ID, lifecycle status,
+  message deltas, tool IDs, tool status, approval/user-input request IDs, and
+  terminal error/cancellation information.
+- Preview/build APIs accept project identity and route through its framework
+  adapter. Callers do not select arbitrary preview/build implementations.
+- The new dyad runtime uses a fresh database namespace/path. The old Caide
+  orchestration database is never silently interpreted as the new schema.
+
+## UI Integration
+
+- Replace the current create-app choices with Blank, React Native, Flutter,
+  and Website.
+- Display the selected framework icon in project creation, sidebar chat rows,
+  project headers, preview/build surfaces, and empty states.
+- Preserve `ChatView`, `MessagesTimeline`, composer layout, plan UI, approval
+  cards, question cards, work logs, tool rows, goals UI, and disclosure motion
+  where possible. Rewire their data rather than redesigning them prematurely.
+- Tool rows render explicit running/completed/failed/cancelled states from the
+  runtime. They never infer success from the presence of a blank assistant row.
+- Provider errors show the actual provider/model response and retry guidance.
+  A generic `Internal server error` is allowed only when no safer detail exists.
+
+## Import Rules
+
+1. Copy coherent dyad subsystems, including their tests, rather than copying
+   isolated files and recreating hidden assumptions manually.
+2. Preserve dyad's internal lifecycle and database semantics wherever possible.
+3. Replace Electron IPC edges with a small in-process host interface:
+   `invoke`, `notify`, cancellation signal, settings/secrets access, and paths.
+4. Do not mix Effect and dyad Promise error APIs inside imported runtime code.
+   Boundary conversion occurs only at the Caide service/WS edge.
+5. Do not write into or commit changes in the source dyad repository.
+6. Do not remove the old runtime until equivalent new behavior is verified.
+7. Avoid broad compatibility shims. New state starts clean, so code should use
+   the new schema directly.
+
+## Detailed Work Checklist
+
+### 0. Safety, documentation, and baseline
+
+- [x] Commit all pre-existing target work before starting (`edf15bea`).
+- [x] Identify authoritative dyad source repository and revision.
+- [x] Remove superseded numbered plan documents.
+- [x] Create this canonical plan and handoff checklist.
+- [x] Update `AGENTS.md` to reference only this plan and new architecture.
+- [ ] Commit documentation reset (next commit after this update).
+- [ ] Record current target tests/build failures as baseline evidence.
+- [ ] Record dyad source smoke-test status without modifying its worktree.
+
+### 1. Runtime package skeleton
+
+- [ ] Create integrated `apps/server/src/dyadRuntime` module boundaries.
+- [ ] Define runtime host interfaces for notifications, settings, secrets,
+      filesystem paths, cancellation, and logging.
+- [ ] Add project framework contract and registry skeleton.
+- [ ] Add a fresh runtime database path and startup ownership.
+- [ ] Add a minimal runtime health/startup test.
+- [ ] Update this checklist and commit milestone.
+
+### 2. Dyad database and application model
+
+- [ ] Import dyad schema, Drizzle configuration, and migrations coherently.
+- [ ] Import app, chat, message, settings, MCP, goal, and compaction storage.
+- [ ] Add immutable framework column to apps/projects.
+- [ ] Implement clean initialization and transactional app/chat creation.
+- [ ] Add framework-aware app queries and chat inheritance.
+- [ ] Test clean database boot, restart, and CRUD behavior.
+- [ ] Update this checklist and commit milestone.
+
+### 3. Providers and model configuration
+
+- [ ] Import dyad model clients, provider options, token accounting, and retry
+      helpers.
+- [ ] Bind Caide's secret/settings UI to dyad provider settings directly.
+- [ ] Remove the synthetic `custom::caide-engine` provider from the new path.
+- [ ] Support direct API-key/base-URL/model configuration per turn/runtime.
+- [ ] Test provider initialization, invalid keys, transient failures, aborts,
+      and readable error propagation.
+- [ ] Update this checklist and commit milestone.
+
+### 4. Complete chat and agent lifecycle
+
+- [ ] Import `chat_stream_handlers` and its required helpers.
+- [ ] Import `local_agent_handler` as a coherent subsystem.
+- [ ] Port ask, plan, build/agent, and follow-up modes.
+- [ ] Port streaming text, reasoning, message persistence, retry/replay,
+      cancellation, and finalization.
+- [ ] Guarantee exactly one terminal settlement per turn.
+- [ ] Add restart reconciliation without repeated stale-state recovery.
+- [ ] Test greeting, normal response, empty response, provider error, abort,
+      restart, concurrent chats, and mode switching.
+- [ ] Update this checklist and commit milestone.
+
+### 5. Complete tool system
+
+- [ ] Import all dyad tool definitions and implementations required for the
+      four framework modes.
+- [ ] Port tool approval and permission policy.
+- [ ] Port user questions/environment-variable requests.
+- [ ] Port todos, work logs, file changes, terminal activity, subagents, and
+      background task events.
+- [ ] Enforce plan/read-only restrictions using dyad's tool metadata.
+- [ ] Test tool success, failure, timeout, cancellation, consent, and resume.
+- [ ] Update this checklist and commit milestone.
+
+### 6. Compaction, MCP, goals, and recovery
+
+- [ ] Import compaction and mid-turn continuation.
+- [ ] Import MCP manager, OAuth/configuration, tool discovery, and consent.
+- [ ] Import goals storage, scheduler, execution, heartbeat, and activity.
+- [ ] Port checkpoint-chain behavior and plan implementation flow.
+- [ ] Test long chat compaction, MCP failure/reconnect, goal restart, and
+      terminal recovery.
+- [ ] Update this checklist and commit milestone.
+
+### 7. Framework-aware projects
+
+- [ ] Implement Blank project creation.
+- [ ] Port React Native/Expo scaffold and runtime behavior from dyad.
+- [ ] Implement Flutter scaffold and runtime behavior.
+- [ ] Port Website scaffold and browser runtime behavior from dyad.
+- [ ] Add framework-specific prompts, skills, tools, commands, and dependency
+      handling.
+- [ ] Add immutable framework persistence and validation.
+- [ ] Test all four creation flows and cross-chat inheritance.
+- [ ] Update this checklist and commit milestone.
+
+### 8. Preview and build routing
+
+- [ ] Create framework preview/build adapter interface.
+- [ ] Route Blank to an unavailable/detection state.
+- [ ] Route React Native to Metro/Expo and device previews.
+- [ ] Route Flutter to emulator/iOS Simulator and Flutter device tooling.
+- [ ] Route Website to browser dev-server preview.
+- [ ] Add Flutter APK/AAB/IPA actions.
+- [ ] Add React Native/Expo native build actions supported locally.
+- [ ] Add Website production build artifacts.
+- [ ] Test start, stop, restart, port conflict, crash, and build failure states.
+- [ ] Update this checklist and commit milestone.
+
+### 9. Caide web wiring
+
+- [ ] Rebind chat submission and streaming to integrated dyad runtime events.
+- [ ] Rebind modes, approvals, user input, tools, todos, goals, and MCP.
+- [ ] Replace create-app choices with the four frameworks.
+- [ ] Add shared framework icons and replace sidebar model icons.
+- [ ] Rebind preview/build controls to framework capabilities.
+- [ ] Preserve transcript scroll and performance guardrails.
+- [ ] Add focused UI tests for explicit lifecycle states.
+- [ ] Update this checklist and commit milestone.
+
+### 10. Cutover and deletion
+
+- [ ] Make integrated dyad runtime the default provider/runtime path.
+- [ ] Remove active use of `EngineAdapter` and child engine supervision.
+- [ ] Remove engine JSON-RPC protocol and duplicate settings/state bridges.
+- [ ] Remove obsolete server provider adapters and Codex/CLI active paths.
+- [ ] Stop packaging the old engine payload.
+- [ ] Archive or delete obsolete code only after replacement tests pass.
+- [ ] Update this checklist and commit milestone.
+
+### 11. Acceptance and release
+
+- [ ] Clean-state app starts without migration/schema repair errors.
+- [ ] Create Blank, React Native, Flutter, and Website projects.
+- [ ] Framework icons display consistently and persist after restart.
+- [ ] `hey` works in ask, plan, and agent/build modes.
+- [ ] Text and tool streaming remain ordered and visible.
+- [ ] Approvals and questions suspend and resume the same turn.
+- [ ] Cancellation produces no stale running state.
+- [ ] Provider failures persist a visible failed response with useful detail.
+- [ ] Long conversations compact and continue.
+- [ ] MCP and goals operate across restart.
+- [ ] React Native preview/build works.
+- [ ] Flutter preview and APK build work.
+- [ ] Website preview/build works.
+- [ ] Run focused tests throughout implementation.
+- [ ] Run final `bun fmt`, `bun lint`, and `bun typecheck` once.
+- [ ] Build AppImage and run clean-profile desktop smoke test.
+- [ ] Update final handoff and commit release state.
+
+## Handoff Log
+
+### 2026-08-24 — Plan reset
+
+- User approved replacing the entire unstable backend/engine path with the
+  complete dyad×caide backend while keeping Caide's UI.
+- Runtime decision: integrated into `apps/server`, not a child engine process.
+- Data decision: fresh backend state; old conversations need not migrate.
+- Framework decision: immutable project-level Blank, React Native, Flutter,
+  or Website selection.
+- UI decision: framework icon replaces model/provider logo in sidebar chats.
+- Safety snapshot committed as `edf15bea`.
+- Superseded plans removed and this canonical plan created.
+- `AGENTS.md` now points only to this plan and describes the integrated,
+  multi-framework product architecture.
+- Next action: commit documentation reset, then establish baseline tests and
+  create the integrated runtime skeleton.
+
+## Known Current Failures (Old Architecture)
+
+- Repeated provider `AI_APICallError: Internal server error` responses.
+- Empty assistant messages incorrectly rendered as successful completion.
+- Repeated stale running-state recovery.
+- Provider/model provisioning ID mismatches and duplicate rows.
+- Missing server Effect services in packaged builds.
+- Migration registration/schema drift broke project and thread creation.
+- Server and engine maintain competing lifecycle and persistence state.
+- AppImage fixes frequently expose the next boundary mismatch.
+
+These failures are evidence for replacing the boundary. They are not a list of
+bugs to keep patching in the old runtime unless a temporary fix is required to
+complete the transplant.

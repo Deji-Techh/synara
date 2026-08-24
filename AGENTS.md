@@ -2,25 +2,20 @@
 
 ## Permanent Session Rules (user requirements — do not forget)
 
-1. **After EVERY compaction, re-read this AGENTS.md and `plans/013-agentic-backend-transplant.md`** (the ACTIVE plan) before continuing work. Do not assume context survived. `plans/008-flutter-builder-engine.md` remains background context.
+1. **After EVERY compaction, re-read this AGENTS.md and `plans/001-dyad-backend-rebuild.md`** (the ACTIVE plan) before continuing work. Do not assume context survived.
 2. **Commit after EVERY major change.** Major change = any milestone step, any new tool/feature, any significant refactor, any plan/AGENTS.md update. Commit even if the change is unpolished. Never leave the working tree dirty across sessions for structural work.
 3. The product mission (see next section) overrides any codebase-local convention that conflicts with it.
-4. **New product = "new caide".** The end state must be: the `apps/web` + `apps/server` + `apps/engine` harness of Caide, fully functional with the dyad×caide harness, AND the ability to create a real Flutter app, build it, and preview it. Flutter build + preview MUST work end-to-end.
-5. **Autonomy mandate (user directive).** The user granted open-ended autonomous execution on the Full Caide Import (plans/009) and the Backend Transplant (plans/013, the ACTIVE plan): proceed through milestones without stopping to ask for permissions. Execute to completion — strip Caide's entire agentic side (modes, goals, providers incl. CLI+API selectors, harness, loop, commands) and replace with dyad×caide's complete backend (API-key providers only, plan/build/ask/local-agent modes, goals, tools, MCP, compaction) living in `apps/engine`, keeping Caide's UI, plus the App Projects product model (created apps in `~/caide-apps`, flattened Projects+chats sidebar with 8/5 caps + See more, redesigned per-project Activity view). Commit after every milestone step. If truly blocked, note the blocker, leave the tree in a safe committable state, and move on.
+4. **New product = "new caide".** The end state is Caide's current UI/UX backed by the complete dyad×caide runtime, with immutable Blank, React Native, Flutter, and Website project frameworks and reliable chat, tools, modes, streaming, previews, and builds.
+5. **Autonomy mandate (user directive).** Execute the active dyad backend rebuild plan without stopping for permission. Port the complete dyad×caide runtime into the integrated server, preserve Caide's UI, and commit after every milestone. If truly blocked, document the blocker and leave the tree in a safe committable state.
 
-## Project Mission (Flutter Builder)
+## Project Mission (Multi-framework Caide Builder)
 
-This repo is now the home of the **Flutter Builder** product: Caide's UI
-(kept as-is) + a rebuilt **Caide engine** (`apps/engine`, under construction)
-that builds **real Flutter applications**. The previous dyad×caide product
-failed because it built web apps; this engine targets Dart/Flutter: scaffold,
-analyze/test/build, emulator + iOS Simulator preview, APK/IPA release.
-
-The engine is a NEW spawned process (pattern: `codex app-server`, JSON-RPC
-over stdio) supervised by `apps/server` through a new provider adapter. The
-engine keeps its own SQLite; Caide keeps the event store. External provider
-adapters (codex/claude/cursor/etc.) are being stripped from the active product
-path for v1. Full details in `plans/008-flutter-builder-engine.md`.
+Caide's current desktop shell and web UI remain the product surface. The
+unstable child-engine/adapter path is being replaced by the complete
+dyad×caide backend integrated into `apps/server`. Projects are immutable
+Blank, React Native, Flutter, or Website projects; the framework controls
+prompts, tools, preview, build, and artifacts. Full details are in
+`plans/001-dyad-backend-rebuild.md`.
 
 ## Task Completion Requirements
 
