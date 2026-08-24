@@ -201,6 +201,7 @@ vi.mock("../../../prompts/system_prompt", () => ({
 
 vi.mock("../../utils/framework_utils", () => ({
   detectFrameworkType: vi.fn(async () => "flutter"),
+  resolveProjectFrameworkType: vi.fn(() => "flutter"),
 }));
 
 vi.mock("../../utils/theme_utils", () => ({
