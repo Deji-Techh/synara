@@ -318,7 +318,7 @@ management, web build/test commands, and browser-oriented tools.
       cancellation, and finalization.
 - [x] Guarantee exactly one terminal settlement per turn across response,
       transport-error, cancellation, empty-response, and stream-end races.
-- [ ] Add restart reconciliation without repeated stale-state recovery.
+- [x] Add restart reconciliation without repeated stale-state recovery. ProviderRuntimeReconciler now suppresses duplicate activity when session already matches and updates timestamps to avoid frozen staleness clock; EngineAdapter uses claimChatSettlement for all terminal paths including chat:response:end.
 - [ ] Test greeting, normal response, empty response, provider error, abort,
       restart, concurrent chats, and mode switching.
 - [ ] Update this checklist and commit milestone.

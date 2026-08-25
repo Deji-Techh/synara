@@ -704,6 +704,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             const chatId = payload.chatId as number;
             const context = yield* sessionForChat(chatId);
             if (context === null) return;
+            if (!(yield* claimChatSettlement(chatId))) return;
             const turnId = context.currentTurnIdRef.current;
             const wasCancelled = payload.wasCancelled === true;
             // Ensure the tail of any final message was flushed.
@@ -1945,12 +1946,12 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
 
       respondToRequest: (threadId, requestId, decision) =>
         Effect.gen(function* () {
-          yield* getSession(threadId);
+          const context = yield* getSession(threadId);
           const entry = yield* Ref.get(pendingRequests).pipe(
             Effect.map((map) => map.get(String(requestId)) ?? null),
           );
           if (entry === null) return;
-          if (!ownsPendingRequest(entry, threadId)) return;
+          if (!ownsPendingRequest(entry, threadId, context.chatMapping?.chatId)) return;
           const engineDecision =
             decision === "accept"
               ? "accept-once"
@@ -1998,12 +1999,12 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
 
       respondToUserInput: (threadId, requestId, answers) =>
         Effect.gen(function* () {
-          yield* getSession(threadId);
+          const context = yield* getSession(threadId);
           const entry = yield* Ref.get(pendingRequests).pipe(
             Effect.map((map) => map.get(String(requestId)) ?? null),
           );
           if (entry === null) return;
-          if (!ownsPendingRequest(entry, threadId)) return;
+          if (!ownsPendingRequest(entry, threadId, context.chatMapping?.chatId)) return;
           const { client } = yield* ensureSharedEngine(threadId);
           const serialized: Record<string, string> = {};
           for (const [key, value] of Object.entries(answers ?? {})) {
