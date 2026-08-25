@@ -30,14 +30,14 @@ inspection, but it must never participate in new turn execution.
 
 ### Target product
 
-- Root: `/home/DejiTech/Caide final`
-- UI: `/home/DejiTech/Caide final/apps/web`
-- Integrated backend target: `/home/DejiTech/Caide final/apps/server`
-- Old engine to retire: `/home/DejiTech/Caide final/apps/engine`
-- Shared contracts: `/home/DejiTech/Caide final/packages/contracts`
-- Desktop shell/packaging: `/home/DejiTech/Caide final/apps/desktop`
-- Active plan: `/home/DejiTech/Caide final/plans/001-dyad-backend-rebuild.md`
-- Release artifact: `/home/DejiTech/Caide final/release/Caide-0.0.1-x86_64.AppImage`
+- Root: `/home/DejiTech/Caide-final`
+- UI: `/home/DejiTech/Caide-final/apps/web`
+- Integrated backend target: `/home/DejiTech/Caide-final/apps/server`
+- Old engine to retire: `/home/DejiTech/Caide-final/apps/engine`
+- Shared contracts: `/home/DejiTech/Caide-final/packages/contracts`
+- Desktop shell/packaging: `/home/DejiTech/Caide-final/apps/desktop`
+- Active plan: `/home/DejiTech/Caide-final/plans/001-dyad-backend-rebuild.md`
+- Release artifact: `/home/DejiTech/Caide-final/release/Caide-0.0.1-x86_64.AppImage`
 
 ### Authoritative source backend
 
