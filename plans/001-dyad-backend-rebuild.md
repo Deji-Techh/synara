@@ -2,7 +2,7 @@
 
 Status: IN PROGRESS
 
-Last updated: 2026-08-24
+Last updated: 2026-08-25
 
 Current branch: `feature/backend-transplant`
 
@@ -567,6 +567,13 @@ embedded-tsdown.config.ts`) and corrected the adapter boundary for dyad's
 - Replaced the create-app dialog's four Flutter templates with the four locked
   framework choices and added framework to the app-creation RPC contract.
   Persistence and framework-specific scaffolding remain pending.
+
+### 2026-08-25 — __dirname and path-space AppImage fixes
+
+- **Rename:** `Caide final` → `Caide-final` to remove space in path. The space caused `node-gyp` warnings (`Attempting to build a module with a space in the path`) and `electron-builder` packaging to hang at `dist/linux-unpacked`. All builds now run from `/home/DejiTech/Caide-final`.
+- **Fix `ReferenceError: __dirname is not defined`:** `apps/engine/src/index.ts` already shimmed `__dirname` for the stdio entry, but `apps/engine/src/embedded.ts` and its bundled chunks (`tool_definitions`, `paths`, etc.) referenced `__dirname` directly in ESM. `tsdown` banner now injects `const __filename = fileURLToPath(import.meta.url); const __dirname = dirname(__filename);` into both `tsdown.config.ts` (`dist`) and `embedded-tsdown.config.ts` (`dist-single`). Verified `apps/engine/dist-single/embedded.mjs` and `apps/engine/dist/*.mjs` each contain the shim at line 2-5 and `apps/server/dist/dyad-engine/embedded.mjs` copied via `apps/server/scripts/cli.ts build` now also contains it.
+- **Build:** `bun --cwd apps/engine build` and `bun --cwd apps/engine tsdown --config embedded-tsdown.config.ts` rebuilt, then `node apps/server/scripts/cli.ts build --verbose` rebuilt server and bundled new `dist-single` into `apps/server/dist/dyad-engine`. `apps/web/dist` and `apps/desktop/dist-electron` remain present.
+- **Next:** `bun fmt`, `bun lint`, full `turbo run typecheck`, then `node scripts/build-desktop-artifact.ts --platform linux --target AppImage --arch x64` (nospace path should now complete) and clean-profile smoke (`hey` in ask/plan/build, streaming, approvals, cancel, preview per framework).
 
 ### 2026-08-24 — Plan reset
 
