@@ -8,7 +8,9 @@ export interface DyadEmbeddedRuntime {
   readonly close: () => Promise<void>;
 }
 
-export async function startDyadEmbeddedRuntime(host: DyadRuntimeHost): Promise<DyadEmbeddedRuntime> {
+export async function startDyadEmbeddedRuntime(
+  host: DyadRuntimeHost,
+): Promise<DyadEmbeddedRuntime> {
   await mkdir(host.paths.runtimeDataDir, { recursive: true });
   await mkdir(host.paths.appsDir, { recursive: true });
   const engine = await createEmbeddedEngine({
@@ -17,5 +19,11 @@ export async function startDyadEmbeddedRuntime(host: DyadRuntimeHost): Promise<D
     settings: await host.readSettings(),
   });
   const unsubscribe = engine.subscribe((notification) => host.notify(notification));
-  return { engine, close: async () => { unsubscribe(); await engine.shutdown(); } };
+  return {
+    engine,
+    close: async () => {
+      unsubscribe();
+      await engine.shutdown();
+    },
+  };
 }

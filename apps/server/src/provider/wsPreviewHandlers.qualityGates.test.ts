@@ -119,9 +119,7 @@ describe("makeWsPreviewHandlers quality gates (M5)", () => {
       ensureEngineSession: () => Effect.void,
       resolveWorkspace: () => Effect.succeed("/trusted/project"),
     });
-    await Effect.runPromise(
-      handlers[PREVIEW_WS_METHODS.buildStart]({ threadId, target: "web" }),
-    );
+    await Effect.runPromise(handlers[PREVIEW_WS_METHODS.buildStart]({ threadId, target: "web" }));
     expect(seen?.appDir).toBe("/trusted/project");
   });
 

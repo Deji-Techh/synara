@@ -93,7 +93,11 @@ function isNodeProject(appDir: string): boolean {
   return fs.existsSync(path.join(appDir, "package.json"));
 }
 
-export function getNodePreviewLaunch(appDir: string, hostname: string, port: number): {
+export function getNodePreviewLaunch(
+  appDir: string,
+  hostname: string,
+  port: number,
+): {
   script: string;
   args: string[];
   isExpo: boolean;
@@ -121,7 +125,10 @@ export function getNodePreviewLaunch(appDir: string, hostname: string, port: num
           ? "start"
           : null;
   if (!script) {
-    throw new CaideError("This project has no dev, web, or start preview script.", CaideErrorKind.Precondition);
+    throw new CaideError(
+      "This project has no dev, web, or start preview script.",
+      CaideErrorKind.Precondition,
+    );
   }
   const args = isExpo
     ? ["--web", "--host", hostname, "--port", String(port)]
@@ -143,30 +150,61 @@ function spawnNodePreview(appDir: string, entry: PreviewEntry, hostname: string)
       return;
     }
     const child = spawn(command, ["run", launch.script, "--", ...launch.args], {
-      cwd: appDir, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, BROWSER: "none" },
+      cwd: appDir,
+      stdio: ["pipe", "pipe", "pipe"],
+      env: { ...process.env, BROWSER: "none" },
     });
     entry.child = child;
     let settled = false;
-    const finish = (fn: () => void) => { if (settled) return; settled = true; fn(); };
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      fn();
+    };
     const onData = (chunk: Buffer) => {
       const text = chunk.toString();
       appendLogLines(entry.logs, text);
       const url = extractPreviewUrl(text, port) ?? `http://${hostname}:${port}`;
       if (/local|ready|listening|localhost|127\.0\.0\.1/i.test(text)) {
         entry.url = url;
-        finish(() => { entry.running = true; resolve(url); });
+        finish(() => {
+          entry.running = true;
+          resolve(url);
+        });
       }
     };
-    child.stdout?.on("data", onData); child.stderr?.on("data", onData);
-    child.once("error", (error) => finish(() => reject(new CaideError(`web preview could not start: ${error.message}`, CaideErrorKind.External))));
+    child.stdout?.on("data", onData);
+    child.stderr?.on("data", onData);
+    child.once("error", (error) =>
+      finish(() =>
+        reject(
+          new CaideError(`web preview could not start: ${error.message}`, CaideErrorKind.External),
+        ),
+      ),
+    );
     child.once("close", (code) => {
-      if (!settled) finish(() => reject(new CaideError(`web preview exited (code ${code ?? "null"}) before serving`, CaideErrorKind.External)));
-      else { entry.running = false; entry.child = null; stopPreviewWatcher(appDir); }
+      if (!settled)
+        finish(() =>
+          reject(
+            new CaideError(
+              `web preview exited (code ${code ?? "null"}) before serving`,
+              CaideErrorKind.External,
+            ),
+          ),
+        );
+      else {
+        entry.running = false;
+        entry.child = null;
+        stopPreviewWatcher(appDir);
+      }
     });
     setTimeout(() => {
       if (!settled) {
         entry.url = `http://${hostname}:${port}`;
-        finish(() => { entry.running = true; resolve(entry.url); });
+        finish(() => {
+          entry.running = true;
+          resolve(entry.url);
+        });
       }
     }, 1500);
   });
@@ -796,13 +834,30 @@ async function startPreview(params: unknown): Promise<PreviewStartResult> {
   if (nodeProject) {
     const existing = activePreviews.get(parsed.appDir);
     if (existing?.running) return { url: existing.url, kind: "web" };
-    if (existing) { await stopPreviewEntry(existing); activePreviews.delete(parsed.appDir); }
+    if (existing) {
+      await stopPreviewEntry(existing);
+      activePreviews.delete(parsed.appDir);
+    }
     const hostname = parsed.hostname ?? DEFAULT_PREVIEW_HOSTNAME;
     const port = await pickFreePort(parsed.port ?? DEFAULT_PREVIEW_PORT);
-    const entry: PreviewEntry = { appDir: parsed.appDir, child: null, port, url: "", running: false, logs: [], device: "web-server", deviceId: null };
+    const entry: PreviewEntry = {
+      appDir: parsed.appDir,
+      child: null,
+      port,
+      url: "",
+      running: false,
+      logs: [],
+      device: "web-server",
+      deviceId: null,
+    };
     activePreviews.set(parsed.appDir, entry);
-    try { return { url: await spawnNodePreview(parsed.appDir, entry, hostname), kind: "web" }; }
-    catch (error) { activePreviews.delete(parsed.appDir); await stopPreviewEntry(entry); throw error; }
+    try {
+      return { url: await spawnNodePreview(parsed.appDir, entry, hostname), kind: "web" };
+    } catch (error) {
+      activePreviews.delete(parsed.appDir);
+      await stopPreviewEntry(entry);
+      throw error;
+    }
   }
   assertFlutterApp(parsed.appDir);
 
@@ -1370,7 +1425,9 @@ async function runBuild(appDir: string, build: BuildEntry): Promise<void> {
       appendLogLines(build.logs, `[build] ${build.error}`);
       return;
     }
-    const packageJson = JSON.parse(await fsp.readFile(path.join(appDir, "package.json"), "utf8")) as { scripts?: Record<string, string> };
+    const packageJson = JSON.parse(
+      await fsp.readFile(path.join(appDir, "package.json"), "utf8"),
+    ) as { scripts?: Record<string, string> };
     if (!packageJson.scripts?.build) {
       build.status = "failed";
       build.error = "This website has no package.json build script.";
@@ -1379,15 +1436,35 @@ async function runBuild(appDir: string, build: BuildEntry): Promise<void> {
     }
     const command = process.platform === "win32" ? "npm.cmd" : "npm";
     appendLogLines(build.logs, `$ ${command} run build`);
-    const run = await spawnStreaming({ command, args: ["run", "build"], cwd: appDir, env: { ...process.env, CI: "1" }, onOutput: (chunk) => appendLogLines(build.logs, chunk), onProcess: (child) => { build.child = child; }, timeoutMs: 30 * 60 * 1000 }).catch((error) => ({ code: 1, stdout: "", stderr: error instanceof Error ? error.message : String(error) }));
+    const run = await spawnStreaming({
+      command,
+      args: ["run", "build"],
+      cwd: appDir,
+      env: { ...process.env, CI: "1" },
+      onOutput: (chunk) => appendLogLines(build.logs, chunk),
+      onProcess: (child) => {
+        build.child = child;
+      },
+      timeoutMs: 30 * 60 * 1000,
+    }).catch((error) => ({
+      code: 1,
+      stdout: "",
+      stderr: error instanceof Error ? error.message : String(error),
+    }));
     build.child = null;
     if (run.code !== 0) {
       build.status = "failed";
       build.exitCode = run.code;
-      build.error = (run.stderr.trim() || run.stdout.trim()).slice(-1500) || `website build exited with code ${run.code}`;
+      build.error =
+        (run.stderr.trim() || run.stdout.trim()).slice(-1500) ||
+        `website build exited with code ${run.code}`;
       return;
     }
-    const outputDir = fs.existsSync(path.join(appDir, "dist")) ? "dist" : fs.existsSync(path.join(appDir, "build")) ? "build" : null;
+    const outputDir = fs.existsSync(path.join(appDir, "dist"))
+      ? "dist"
+      : fs.existsSync(path.join(appDir, "build"))
+        ? "build"
+        : null;
     if (!outputDir) {
       build.status = "failed";
       build.error = "Website build completed but produced no dist/ or build/ directory.";
@@ -1395,7 +1472,13 @@ async function runBuild(appDir: string, build: BuildEntry): Promise<void> {
     }
     const archivePath = path.join(appDir, ".caide", "artifacts", `${build.buildId}-website.tar.gz`);
     await fsp.mkdir(path.dirname(archivePath), { recursive: true });
-    const archive = await spawnStreaming({ command: "tar", args: ["-czf", archivePath, "-C", appDir, outputDir], cwd: appDir, env: process.env, timeoutMs: 5 * 60 * 1000 });
+    const archive = await spawnStreaming({
+      command: "tar",
+      args: ["-czf", archivePath, "-C", appDir, outputDir],
+      cwd: appDir,
+      env: process.env,
+      timeoutMs: 5 * 60 * 1000,
+    });
     if (archive.code !== 0) {
       build.status = "failed";
       build.error = archive.stderr.trim() || "Could not archive website build output.";
@@ -1410,11 +1493,17 @@ async function runBuild(appDir: string, build: BuildEntry): Promise<void> {
     return;
   }
   if (isNodeProject(appDir) && !isFlutterApp(appDir)) {
-    const packageJson = JSON.parse(await fsp.readFile(path.join(appDir, "package.json"), "utf8")) as { dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
+    const packageJson = JSON.parse(
+      await fsp.readFile(path.join(appDir, "package.json"), "utf8"),
+    ) as { dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
     const isExpo = Boolean(packageJson.dependencies?.expo ?? packageJson.devDependencies?.expo);
-    if (!isExpo || (build.target !== "apk" && build.target !== "appbundle" && build.target !== "ipa")) {
+    if (
+      !isExpo ||
+      (build.target !== "apk" && build.target !== "appbundle" && build.target !== "ipa")
+    ) {
       build.status = "failed";
-      build.error = "Native builds require an Expo/React Native project and a supported mobile target.";
+      build.error =
+        "Native builds require an Expo/React Native project and a supported mobile target.";
       appendLogLines(build.logs, `[build] ${build.error}`);
       return;
     }
@@ -1427,25 +1516,96 @@ async function runBuild(appDir: string, build: BuildEntry): Promise<void> {
     const command = process.platform === "win32" ? "npx.cmd" : "npx";
     const platform = build.target === "ipa" ? "ios" : "android";
     appendLogLines(build.logs, `$ npx expo prebuild --non-interactive`);
-    const prebuild = await spawnStreaming({ command, args: ["expo", "prebuild", "--non-interactive", "--no-install"], cwd: appDir, env: { ...process.env, CI: "1" }, onOutput: (chunk) => appendLogLines(build.logs, chunk), onProcess: (child) => { build.child = child; }, timeoutMs: 15 * 60 * 1000 });
-    if (prebuild.code !== 0) { build.child = null; build.status = "failed"; build.error = (prebuild.stderr || prebuild.stdout).slice(-1500); return; }
-    const gradle = path.join(appDir, "android", process.platform === "win32" ? "gradlew.bat" : "gradlew");
+    const prebuild = await spawnStreaming({
+      command,
+      args: ["expo", "prebuild", "--non-interactive", "--no-install"],
+      cwd: appDir,
+      env: { ...process.env, CI: "1" },
+      onOutput: (chunk) => appendLogLines(build.logs, chunk),
+      onProcess: (child) => {
+        build.child = child;
+      },
+      timeoutMs: 15 * 60 * 1000,
+    });
+    if (prebuild.code !== 0) {
+      build.child = null;
+      build.status = "failed";
+      build.error = (prebuild.stderr || prebuild.stdout).slice(-1500);
+      return;
+    }
+    const gradle = path.join(
+      appDir,
+      "android",
+      process.platform === "win32" ? "gradlew.bat" : "gradlew",
+    );
     const args = build.target === "appbundle" ? ["bundleRelease"] : ["assembleRelease"];
-    const nativeRun = platform === "android"
-      ? await spawnStreaming({ command: gradle, args, cwd: path.join(appDir, "android"), env: { ...process.env, CI: "1" }, onOutput: (chunk) => appendLogLines(build.logs, chunk), onProcess: (child) => { build.child = child; }, timeoutMs: 30 * 60 * 1000 })
-      : await spawnStreaming({ command, args: ["expo", "run:ios", "--configuration", "Release", "--no-bundler"], cwd: appDir, env: { ...process.env, CI: "1" }, onOutput: (chunk) => appendLogLines(build.logs, chunk), onProcess: (child) => { build.child = child; }, timeoutMs: 30 * 60 * 1000 });
+    const nativeRun =
+      platform === "android"
+        ? await spawnStreaming({
+            command: gradle,
+            args,
+            cwd: path.join(appDir, "android"),
+            env: { ...process.env, CI: "1" },
+            onOutput: (chunk) => appendLogLines(build.logs, chunk),
+            onProcess: (child) => {
+              build.child = child;
+            },
+            timeoutMs: 30 * 60 * 1000,
+          })
+        : await spawnStreaming({
+            command,
+            args: ["expo", "run:ios", "--configuration", "Release", "--no-bundler"],
+            cwd: appDir,
+            env: { ...process.env, CI: "1" },
+            onOutput: (chunk) => appendLogLines(build.logs, chunk),
+            onProcess: (child) => {
+              build.child = child;
+            },
+            timeoutMs: 30 * 60 * 1000,
+          });
     build.child = null;
-    if (nativeRun.code !== 0) { build.status = "failed"; build.exitCode = nativeRun.code; build.error = (nativeRun.stderr || nativeRun.stdout).slice(-1500); return; }
-    const candidates = build.target === "appbundle"
-      ? [path.join(appDir, "android", "app", "build", "outputs", "bundle", "release", "app-release.aab")]
-      : build.target === "apk"
-        ? [path.join(appDir, "android", "app", "build", "outputs", "apk", "release", "app-release.apk")]
-        : [];
+    if (nativeRun.code !== 0) {
+      build.status = "failed";
+      build.exitCode = nativeRun.code;
+      build.error = (nativeRun.stderr || nativeRun.stdout).slice(-1500);
+      return;
+    }
+    const candidates =
+      build.target === "appbundle"
+        ? [
+            path.join(
+              appDir,
+              "android",
+              "app",
+              "build",
+              "outputs",
+              "bundle",
+              "release",
+              "app-release.aab",
+            ),
+          ]
+        : build.target === "apk"
+          ? [
+              path.join(
+                appDir,
+                "android",
+                "app",
+                "build",
+                "outputs",
+                "apk",
+                "release",
+                "app-release.apk",
+              ),
+            ]
+          : [];
     build.status = "succeeded";
     build.exitCode = 0;
     build.outputPath = candidates.find((candidate) => fs.existsSync(candidate)) ?? null;
     build.sha256 = build.outputPath ? await computeSha256(build.outputPath) : null;
-    appendLogLines(build.logs, `[build] succeeded${build.outputPath ? `: ${build.outputPath}` : ""}`);
+    appendLogLines(
+      build.logs,
+      `[build] succeeded${build.outputPath ? `: ${build.outputPath}` : ""}`,
+    );
     await snapshotBuildArtifact(appDir, build);
     return;
   }

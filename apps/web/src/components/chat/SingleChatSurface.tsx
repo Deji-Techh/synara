@@ -230,7 +230,11 @@ export function SingleChatSurface(props: {
   useEffect(() => {
     const wasDockOpen = prevDockOpenRef.current;
     prevDockOpenRef.current = dockState.open;
-    if (!wasDockOpen && dockState.open && usePreviewStageStore.getState().stageStateByThreadId[props.threadId]?.open) {
+    if (
+      !wasDockOpen &&
+      dockState.open &&
+      usePreviewStageStore.getState().stageStateByThreadId[props.threadId]?.open
+    ) {
       closePreviewStage();
     }
   }, [dockState.open, props.threadId, closePreviewStage]);
@@ -1142,7 +1146,9 @@ export function SingleChatSurface(props: {
         <div
           className={cn(
             "shrink-0 transition-[width,opacity] duration-220 ease-out motion-reduce:transition-none",
-            previewStageState.open ? "w-[672px] overflow-visible opacity-100" : "w-0 overflow-hidden opacity-0",
+            previewStageState.open
+              ? "w-[672px] overflow-visible opacity-100"
+              : "w-0 overflow-hidden opacity-0",
           )}
           aria-hidden={previewStageState.open ? undefined : true}
         >

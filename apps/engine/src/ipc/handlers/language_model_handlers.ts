@@ -51,9 +51,7 @@ export function registerLanguageModelHandlers() {
         throw new CaideError("API base URL is required", CaideErrorKind.Validation);
       }
 
-      const canonicalId = id.startsWith(CUSTOM_PROVIDER_PREFIX)
-        ? id
-        : CUSTOM_PROVIDER_PREFIX + id;
+      const canonicalId = id.startsWith(CUSTOM_PROVIDER_PREFIX) ? id : CUSTOM_PROVIDER_PREFIX + id;
 
       // Custom provider IDs are canonical on both reads and writes. Treat an
       // existing row as an idempotent upsert so concurrent/repeated engine

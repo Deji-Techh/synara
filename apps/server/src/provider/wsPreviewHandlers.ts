@@ -159,7 +159,9 @@ export function makeWsPreviewHandlers(
     [PREVIEW_WS_METHODS.start]: (input) =>
       withEngineSession(ThreadId.makeUnsafe(input.threadId), (adapter, workspace) => {
         if (ensure?.resolveWorkspace && workspace === null) {
-          return Effect.fail(new WsRpcError({ message: "Preview project workspace was not found." }));
+          return Effect.fail(
+            new WsRpcError({ message: "Preview project workspace was not found." }),
+          );
         }
         return adapter.previewStart({
           threadId: ThreadId.makeUnsafe(input.threadId),

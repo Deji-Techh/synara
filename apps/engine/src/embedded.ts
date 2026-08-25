@@ -37,7 +37,9 @@ export interface EmbeddedEngine {
  * namespace isolated and makes the same backend usable by the server and by
  * the legacy stdio compatibility entrypoint.
  */
-export async function createEmbeddedEngine(options: EmbeddedEngineOptions): Promise<EmbeddedEngine> {
+export async function createEmbeddedEngine(
+  options: EmbeddedEngineOptions,
+): Promise<EmbeddedEngine> {
   process.env.CAIDE_ENGINE_DATA_DIR = path.resolve(options.dataDir);
   process.env.CAIDE_USER_DATA_DIR = path.resolve(options.dataDir);
   if (options.appsDir) process.env.CAIDE_DEV_APPS_DIR = path.resolve(options.appsDir);
@@ -49,7 +51,10 @@ export async function createEmbeddedEngine(options: EmbeddedEngineOptions): Prom
     if (options.settings.selectedModel && typeof options.settings.selectedModel === "object") {
       patch.selectedModel = options.settings.selectedModel;
     }
-    if (options.settings.providerSettings && typeof options.settings.providerSettings === "object") {
+    if (
+      options.settings.providerSettings &&
+      typeof options.settings.providerSettings === "object"
+    ) {
       patch.providerSettings = options.settings.providerSettings;
     }
     if (Object.keys(patch).length > 0) settingsModule.writeSettings(patch as never);
@@ -69,21 +74,31 @@ export async function createEmbeddedEngine(options: EmbeddedEngineOptions): Prom
   const invoke = async <T>(channel: string, ...payload: unknown[]): Promise<T> => {
     if (stopped) throw new Error("embedded dyad runtime is stopped");
     const handler = ipcMain._handlers.get(channel);
-    if (!handler) throw new Error(`dyad.invoke: no IPC handler registered for channel "${channel}"`);
+    if (!handler)
+      throw new Error(`dyad.invoke: no IPC handler registered for channel "${channel}"`);
     const event = {
-      sender: { id: 0, isDestroyed: () => false, send: (eventChannel: string, ...args: unknown[]) =>
-        eventBus.emit(eventChannel, args.length === 1 ? args[0] : args) },
+      sender: {
+        id: 0,
+        isDestroyed: () => false,
+        send: (eventChannel: string, ...args: unknown[]) =>
+          eventBus.emit(eventChannel, args.length === 1 ? args[0] : args),
+      },
       processId: process.pid,
       frameId: 0,
     };
     const result = await handler(event, ...payload);
-    return (result && typeof result === "object" && "ok" in result) ? (result as T) : ({ ok: true, data: result } as T);
+    return result && typeof result === "object" && "ok" in result
+      ? (result as T)
+      : ({ ok: true, data: result } as T);
   };
 
   const ping = async () => ({ pong: "pong" as const, time: new Date().toISOString() });
   return {
     invoke,
-    subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
     ping,
     async request(method, params) {
       if (method === "engine/ping") return ping();

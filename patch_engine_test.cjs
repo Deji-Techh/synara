@@ -13,11 +13,17 @@ const MockProjectionThreadRepository = Layer.succeed(ProjectionThreadRepository,
 `;
 
 if (!content.includes("MockProjectionThreadRepository")) {
-  content = content.replace('import { EngineAdapterLive } from "./EngineAdapter.ts";', mockRepo + '\nimport { EngineAdapterLive } from "./EngineAdapter.ts";');
-  
+  content = content.replace(
+    'import { EngineAdapterLive } from "./EngineAdapter.ts";',
+    mockRepo + '\nimport { EngineAdapterLive } from "./EngineAdapter.ts";',
+  );
+
   // Now replace provideAdapter(
-  content = content.replace(/provideAdapter\(\s*Effect.gen\(function\*\s*\(\)\s*\{/g, 'provideAdapter(\nEffect.gen(function* () {');
-  
+  content = content.replace(
+    /provideAdapter\(\s*Effect.gen\(function\*\s*\(\)\s*\{/g,
+    "provideAdapter(\nEffect.gen(function* () {",
+  );
+
   // Actually, we can just replace Layer.provide(EngineAdapterLive) with Layer.provide(EngineAdapterLive.pipe(Layer.provide(MockProjectionThreadRepository)))
   // Let's see how EngineAdapterLive is provided.
 }

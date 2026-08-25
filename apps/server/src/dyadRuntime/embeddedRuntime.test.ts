@@ -30,13 +30,17 @@ describe("embedded dyad runtime", () => {
     const runtime = await startDyadEmbeddedRuntime({
       paths: { runtimeDataDir: path.join(root, "state"), appsDir: path.join(root, "apps") },
       notify: () => undefined,
-      readSettings: async () => ({}), readSecret: async () => null, log: () => undefined,
-      now: () => new Date(), randomId: () => "test-id",
+      readSettings: async () => ({}),
+      readSecret: async () => null,
+      log: () => undefined,
+      now: () => new Date(),
+      randomId: () => "test-id",
     });
     const create = async (name: string, framework: "blank" | "react-native" | "website") => {
-      const envelope = await runtime.engine.invoke<{ ok: true; value: { app: { framework: string } } }>(
-        "create-app", { name, framework, initialChatMode: "build" },
-      );
+      const envelope = await runtime.engine.invoke<{
+        ok: true;
+        value: { app: { framework: string } };
+      }>("create-app", { name, framework, initialChatMode: "build" });
       expect(envelope.ok).toBe(true);
       expect(envelope.value.app.framework).toBe(framework);
     };
@@ -45,8 +49,16 @@ describe("embedded dyad runtime", () => {
       await create("native-project", "react-native");
       await create("website-project", "website");
       await expect(stat(path.join(root, "apps", "blank-project"))).resolves.toMatchObject({});
-      expect(JSON.parse(await readFile(path.join(root, "apps", "native-project", "package.json"), "utf8")).dependencies).toHaveProperty("react-native");
-      expect(JSON.parse(await readFile(path.join(root, "apps", "website-project", "package.json"), "utf8")).scripts).toHaveProperty("dev");
+      expect(
+        JSON.parse(
+          await readFile(path.join(root, "apps", "native-project", "package.json"), "utf8"),
+        ).dependencies,
+      ).toHaveProperty("react-native");
+      expect(
+        JSON.parse(
+          await readFile(path.join(root, "apps", "website-project", "package.json"), "utf8"),
+        ).scripts,
+      ).toHaveProperty("dev");
     } finally {
       await runtime.close();
       await rm(root, { recursive: true, force: true });

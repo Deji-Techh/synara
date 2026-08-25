@@ -69,7 +69,10 @@ export const apps = sqliteTable(
     name: text("name").notNull(),
     path: text("path").notNull(),
     /** Immutable creation-time product framework. */
-    framework: text("framework").notNull().default("blank").$type<"blank" | "react-native" | "flutter" | "website">(),
+    framework: text("framework")
+      .notNull()
+      .default("blank")
+      .$type<"blank" | "react-native" | "flutter" | "website">(),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),

@@ -123,17 +123,17 @@ export function buildPlatformPrompt(
   appTarget?: AppTarget,
   frameworkType?: AppFrameworkType | null,
 ): string {
-  const contract = frameworkType === undefined && appTarget === undefined
-    ? FLUTTER_PRODUCT_CONTRACT
-    : frameworkType === "flutter"
-    ? FLUTTER_PRODUCT_CONTRACT
-    : frameworkType === "vite" ||
-        frameworkType === "vite-nitro" ||
-        frameworkType === "nextjs"
-      ? WEB_PRODUCT_CONTRACT
-      : appTarget === "web"
-        ? WEB_PRODUCT_CONTRACT
-        : MOBILE_PRODUCT_CONTRACT;
-  const target = frameworkType === "flutter" ? "flutter" : contract === WEB_PRODUCT_CONTRACT ? "web" : "mobile";
+  const contract =
+    frameworkType === undefined && appTarget === undefined
+      ? FLUTTER_PRODUCT_CONTRACT
+      : frameworkType === "flutter"
+        ? FLUTTER_PRODUCT_CONTRACT
+        : frameworkType === "vite" || frameworkType === "vite-nitro" || frameworkType === "nextjs"
+          ? WEB_PRODUCT_CONTRACT
+          : appTarget === "web"
+            ? WEB_PRODUCT_CONTRACT
+            : MOBILE_PRODUCT_CONTRACT;
+  const target =
+    frameworkType === "flutter" ? "flutter" : contract === WEB_PRODUCT_CONTRACT ? "web" : "mobile";
   return `${contract}\n${PLATFORM_SPEC_SYNC_RULE.replace('("flutter", "mobile" or "web")', `("${target}")`)}`;
 }

@@ -206,7 +206,10 @@ describe("framework-aware Node preview launch", () => {
     try {
       fs.writeFileSync(
         path.join(appDir, "package.json"),
-        JSON.stringify({ scripts: { dev: "vite", build: "vite build" }, devDependencies: { vite: "latest" } }),
+        JSON.stringify({
+          scripts: { dev: "vite", build: "vite build" },
+          devDependencies: { vite: "latest" },
+        }),
       );
       expect(getNodePreviewLaunch(appDir, "127.0.0.1", 5173)).toEqual({
         script: "dev",
@@ -308,17 +311,27 @@ describe("preview RPC router (no live flutter)", () => {
     const androidDir = path.join(appDir, "android");
     fs.mkdirSync(binDir, { recursive: true });
     fs.mkdirSync(androidDir, { recursive: true });
-    fs.writeFileSync(path.join(appDir, "package.json"), JSON.stringify({ name: "expo-fixture", private: true, dependencies: { expo: "1.0.0" } }));
+    fs.writeFileSync(
+      path.join(appDir, "package.json"),
+      JSON.stringify({ name: "expo-fixture", private: true, dependencies: { expo: "1.0.0" } }),
+    );
     const npxPath = path.join(binDir, "npx");
     fs.writeFileSync(npxPath, "#!/bin/sh\nexit 0\n");
     fs.chmodSync(npxPath, 0o755);
     const gradlePath = path.join(androidDir, "gradlew");
-    fs.writeFileSync(gradlePath, "#!/bin/sh\nmkdir -p app/build/outputs/apk/release\nprintf apk > app/build/outputs/apk/release/app-release.apk\n");
+    fs.writeFileSync(
+      gradlePath,
+      "#!/bin/sh\nmkdir -p app/build/outputs/apk/release\nprintf apk > app/build/outputs/apk/release/app-release.apk\n",
+    );
     fs.chmodSync(gradlePath, 0o755);
     const previousPath = process.env.PATH;
     process.env.PATH = `${binDir}:${previousPath ?? ""}`;
     try {
-      const started = (await router.handle("build/start", { appDir, target: "apk", channel: "release" })) as { buildId: string };
+      const started = (await router.handle("build/start", {
+        appDir,
+        target: "apk",
+        channel: "release",
+      })) as { buildId: string };
       let state: { status: string; outputPath?: string | null; error?: string | null };
       do {
         await new Promise((resolve) => setTimeout(resolve, 50));

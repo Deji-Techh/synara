@@ -390,7 +390,9 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
     const binaryPath = options?.binaryPath;
     const useLegacyChild = Boolean(options?.command || options?.args || options?.binaryPath);
     const resolvedCommand = options?.command ?? "node";
-    const resolvedArgs = options?.args ?? (binaryPath ? [binaryPath] : useLegacyChild ? resolveEngineCommand().args : []);
+    const resolvedArgs =
+      options?.args ??
+      (binaryPath ? [binaryPath] : useLegacyChild ? resolveEngineCommand().args : []);
     const engineDir = fileURLToPath(new URL("../../../../engine", import.meta.url));
     const engineCwd = options?.cwd ?? engineDir;
 
@@ -664,7 +666,6 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 .catch(() => undefined);
             }
 
-
             if (typeof payload.streamingPatch === "string" && payload.streamingPatch !== "") {
               yield* publishTextDelta(context.threadId, turnId, payload.streamingPatch);
               const messageId =
@@ -737,13 +738,17 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               [...context.emittedTranscriptRef.current.entries()].some(
                 ([key, count]) => !key.endsWith(":tools") && count > 0,
               );
-            const hasPlan = typeof payload.planMarkdown === "string" && payload.planMarkdown.trim() !== "";
+            const hasPlan =
+              typeof payload.planMarkdown === "string" && payload.planMarkdown.trim() !== "";
             if (!hasMessages && !hasPlan) {
               yield* publishEvent(
                 makeEvent<ProviderRuntimeEvent>(context.threadId, {
                   type: "runtime.error",
                   ...(turnId !== null ? { turnId } : {}),
-                  payload: { message: "Engine completed without a response.", class: "provider_error" as const },
+                  payload: {
+                    message: "Engine completed without a response.",
+                    class: "provider_error" as const,
+                  },
                 }),
               );
               yield* publishTurnSettled(context.threadId, turnId, "failed", "empty_response", {
@@ -1240,7 +1245,8 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                   settings: initializeSettings,
                   onNotification,
                 }),
-              catch: (cause) => processError(threadId, "embedded dyad runtime failed to start", cause),
+              catch: (cause) =>
+                processError(threadId, "embedded dyad runtime failed to start", cause),
             });
         yield* Effect.tryPromise({
           try: () => client.waitForSpawn(),
@@ -1293,16 +1299,20 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         if (modelConfig !== undefined) {
           yield* Effect.tryPromise({
             try: async () => {
-              await client.dyadInvoke("create-custom-language-model-provider", {
-                id: "caide-engine",
-                name: "Caide Engine",
-                apiBaseUrl: modelConfig.baseUrl,
-              }).catch(() => null);
-              await client.dyadInvoke("create-custom-language-model", {
-                apiName: modelConfig.modelId,
-                displayName: modelConfig.modelId,
-                providerId: ENGINE_CUSTOM_PROVIDER_ID,
-              }).catch(() => null);
+              await client
+                .dyadInvoke("create-custom-language-model-provider", {
+                  id: "caide-engine",
+                  name: "Caide Engine",
+                  apiBaseUrl: modelConfig.baseUrl,
+                })
+                .catch(() => null);
+              await client
+                .dyadInvoke("create-custom-language-model", {
+                  apiName: modelConfig.modelId,
+                  displayName: modelConfig.modelId,
+                  providerId: ENGINE_CUSTOM_PROVIDER_ID,
+                })
+                .catch(() => null);
             },
             catch: (cause) => processError(threadId, "engine model provisioning failed", cause),
           });
@@ -1435,7 +1445,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           .getById({ threadId: context.threadId })
           .pipe(Effect.catch(() => Effect.succeed(Option.none())));
         const threadRow = Option.getOrNull(threadOpt);
-        
+
         if (chatId === null && threadRow !== null && typeof threadRow.engineChatId === "number") {
           const chatsResponse = yield* Effect.tryPromise({
             try: () => client.dyadInvoke<Array<Record<string, unknown>>>("get-chats", appId),
@@ -1443,9 +1453,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           });
           const persistedChat =
             Array.isArray(chatsResponse) &&
-            chatsResponse.find(
-              (candidate) => candidate?.id === threadRow.engineChatId,
-            );
+            chatsResponse.find((candidate) => candidate?.id === threadRow.engineChatId);
           if (persistedChat !== undefined) {
             chatId = threadRow.engineChatId;
           }
@@ -1453,14 +1461,15 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
 
         if (chatId === null) {
           const createChatResponse = yield* Effect.tryPromise({
-            try: () => client.dyadInvoke<number | { chatId?: number }>("create-chat", appId, 120_000),
+            try: () =>
+              client.dyadInvoke<number | { chatId?: number }>("create-chat", appId, 120_000),
             catch: (cause) => processError(context.threadId, "engine create-chat failed", cause),
           });
           chatId =
             typeof createChatResponse === "number"
               ? createChatResponse
               : (createChatResponse?.chatId ?? null);
-          
+
           if (chatId !== null && threadRow !== null) {
             yield* projectionThreadRepo
               .upsert({ ...threadRow, engineChatId: chatId })
@@ -1921,7 +1930,9 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           const context = yield* getSession(threadId);
           const pending = context.chatMapping;
           const shouldSettle =
-            pending === null ? context.currentTurnIdRef.current !== null : yield* claimChatSettlement(pending.chatId);
+            pending === null
+              ? context.currentTurnIdRef.current !== null
+              : yield* claimChatSettlement(pending.chatId);
           if (pending !== null) {
             const { client } = yield* ensureSharedEngine(threadId);
             yield* Effect.tryPromise({

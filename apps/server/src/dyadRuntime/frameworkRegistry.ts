@@ -75,10 +75,8 @@ const definitions = [
   }),
 ] as const;
 
-export const projectFrameworkRegistry: ReadonlyMap<
-  ProjectFramework,
-  ProjectFrameworkDefinition
-> = new Map(definitions.map((definition) => [definition.id, definition]));
+export const projectFrameworkRegistry: ReadonlyMap<ProjectFramework, ProjectFrameworkDefinition> =
+  new Map(definitions.map((definition) => [definition.id, definition]));
 
 export function getProjectFrameworkDefinition(
   framework: ProjectFramework,

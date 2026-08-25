@@ -134,7 +134,12 @@ const buildCmd = Command.make(
       const contractsDir = path.join(repoRoot, "packages/contracts");
 
       yield* runCommand(
-        ChildProcess.make({ cwd: contractsDir, stdout: config.verbose ? "inherit" : "ignore", stderr: "inherit", shell: process.platform === "win32" })`bun run build`,
+        ChildProcess.make({
+          cwd: contractsDir,
+          stdout: config.verbose ? "inherit" : "ignore",
+          stderr: "inherit",
+          shell: process.platform === "win32",
+        })`bun run build`,
       );
 
       yield* Effect.log("[cli] Building embedded dyad runtime...");

@@ -61,7 +61,18 @@ import { CHAT_BACKGROUND_CLASS_NAME } from "./composerPickerStyles";
 export const PREVIEW_STAGE_FIXED_WIDTH_PX = 42 * 16; // 672px
 
 type HeaderMode = "quality" | "controls";
-type BranchId = "tests" | "problems" | "qualityGate" | "release" | "screenshot" | "record" | "rotate" | "home" | "terminal" | "shutdown" | null;
+type BranchId =
+  | "tests"
+  | "problems"
+  | "qualityGate"
+  | "release"
+  | "screenshot"
+  | "record"
+  | "rotate"
+  | "home"
+  | "terminal"
+  | "shutdown"
+  | null;
 
 const PREVIEW_POLL_INTERVAL_MS = 2_000;
 const NATIVE_FRAME_POLL_INTERVAL_MS = 1_500;
@@ -96,7 +107,10 @@ function StatusPill({ state }: { state: PreviewPanelState }) {
       className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
       title={state.status === "failed" && state.error ? state.error : label}
     >
-      <span className={cn("size-1.5 rounded-full", dotClassName, live && "animate-pulse")} aria-hidden="true" />
+      <span
+        className={cn("size-1.5 rounded-full", dotClassName, live && "animate-pulse")}
+        aria-hidden="true"
+      />
       {label}
     </span>
   );
@@ -185,7 +199,11 @@ function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean 
           totalBytes: status?.estimatedDownloadBytes ?? null,
           message: "Flutter SDK ready.",
         });
-        toastManager.add({ type: "success", title: "Flutter SDK installed", description: "Flutter is ready to build and preview." });
+        toastManager.add({
+          type: "success",
+          title: "Flutter SDK installed",
+          description: "Flutter is ready to build and preview.",
+        });
         refresh();
         window.setTimeout(() => setProgress(null), 3000);
       })
@@ -194,7 +212,11 @@ function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean 
         installingRef.current = false;
         const msg = e instanceof Error ? e.message : String(e);
         setError(msg);
-        toastManager.add({ type: "error", title: "Flutter install failed", description: msg.slice(0, 300) });
+        toastManager.add({
+          type: "error",
+          title: "Flutter install failed",
+          description: msg.slice(0, 300),
+        });
       });
   }, [props.threadId, status?.estimatedDownloadBytes, refresh]);
 
@@ -204,7 +226,9 @@ function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean 
     return (
       <div className="mx-3 mt-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
         Flutter auto-install is not available on this platform.
-        {status.unsupportedReason && <span className="block text-amber-600/80">{status.unsupportedReason}</span>}
+        {status.unsupportedReason && (
+          <span className="block text-amber-600/80">{status.unsupportedReason}</span>
+        )}
       </div>
     );
   }
@@ -215,13 +239,24 @@ function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean 
   return (
     <div className="mx-3 mt-3 rounded-md border border-border bg-muted/50 px-3 py-2.5">
       <div className="flex items-center gap-2">
-        <LoaderIcon aria-hidden="true" className={cn("size-3.5 text-muted-foreground", installing && "animate-spin")} />
+        <LoaderIcon
+          aria-hidden="true"
+          className={cn("size-3.5 text-muted-foreground", installing && "animate-spin")}
+        />
         <span className="text-xs font-medium">
-          {installing ? (progress?.message ?? "Installing Flutter SDK…") : !status.installed ? `Flutter ${status.version} not installed` : "Flutter SDK"}
+          {installing
+            ? (progress?.message ?? "Installing Flutter SDK…")
+            : !status.installed
+              ? `Flutter ${status.version} not installed`
+              : "Flutter SDK"}
         </span>
         <span className="min-w-0 flex-1" />
         {!status.installed && !installing && (
-          <button type="button" onClick={handleInstall} className="rounded-md bg-foreground px-2.5 py-1 text-xs font-medium text-background hover:opacity-90">
+          <button
+            type="button"
+            onClick={handleInstall}
+            className="rounded-md bg-foreground px-2.5 py-1 text-xs font-medium text-background hover:opacity-90"
+          >
             Download {status.version}
           </button>
         )}
@@ -230,7 +265,10 @@ function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean 
       {(installing || progress) && (
         <div className="mt-2">
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div className="h-full bg-foreground transition-all duration-300" style={{ width: `${Math.max(2, pct)}%` }} />
+            <div
+              className="h-full bg-foreground transition-all duration-300"
+              style={{ width: `${Math.max(2, pct)}%` }}
+            />
           </div>
           <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
             <span className="truncate">{progress?.message ?? ""}</span>
@@ -243,7 +281,11 @@ function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean 
   );
 }
 
-function PreviewConsoleDialog(props: { open: boolean; onOpenChange: (open: boolean) => void; logs: readonly string[] }) {
+function PreviewConsoleDialog(props: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  logs: readonly string[];
+}) {
   const listRef = useRef<HTMLDivElement>(null);
   const { logs, open } = props;
   useEffect(() => {
@@ -277,12 +319,29 @@ function PreviewConsoleDialog(props: { open: boolean; onOpenChange: (open: boole
         </DialogHeader>
         <div className="flex min-h-0 flex-col gap-2 px-4 pb-4">
           <div className="flex items-center justify-end gap-2">
-            <Button variant="ghost" size="sm" onClick={handleCopy} disabled={logs.length === 0} className="h-7 text-xs">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCopy}
+              disabled={logs.length === 0}
+              className="h-7 text-xs"
+            >
               {copied ? "Copied" : "Copy"}
             </Button>
           </div>
-          <div ref={listRef} className="max-h-[50vh] min-h-[220px] overflow-y-auto rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
-            {logs.length === 0 ? <p>Waiting for `flutter run` output…</p> : visibleLogs.map((line, i) => <p key={i} className="break-words whitespace-pre-wrap">{line}</p>)}
+          <div
+            ref={listRef}
+            className="max-h-[50vh] min-h-[220px] overflow-y-auto rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground"
+          >
+            {logs.length === 0 ? (
+              <p>Waiting for `flutter run` output…</p>
+            ) : (
+              visibleLogs.map((line, i) => (
+                <p key={i} className="break-words whitespace-pre-wrap">
+                  {line}
+                </p>
+              ))
+            )}
           </div>
         </div>
       </DialogPopup>
@@ -306,7 +365,8 @@ function ProblemList({ state }: { state: PreviewAnalyzeState }) {
         <span className="text-red-600 dark:text-red-400">{state.error}</span>
       </PanelStateMessage>
     );
-  if (!state.clean && state.issues.length === 0) return <PanelStateMessage density="compact">No analyze results yet.</PanelStateMessage>;
+  if (!state.clean && state.issues.length === 0)
+    return <PanelStateMessage density="compact">No analyze results yet.</PanelStateMessage>;
   if (state.issues.length === 0)
     return (
       <PanelStateMessage density="compact">
@@ -320,10 +380,23 @@ function ProblemList({ state }: { state: PreviewAnalyzeState }) {
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <div className="flex min-h-0 flex-1 flex-col px-2 py-2">
         {state.issues.map((issue, index) => {
-          const location = issue.line !== undefined ? `${issue.path}:${issue.line}${issue.column !== undefined ? `:${issue.column}` : ""}` : issue.path;
+          const location =
+            issue.line !== undefined
+              ? `${issue.path}:${issue.line}${issue.column !== undefined ? `:${issue.column}` : ""}`
+              : issue.path;
           return (
-            <div key={index} className="flex items-start gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-muted" data-testid="analyze-issue-row">
-              <span className={cn("mt-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-[10px] font-semibold text-background", issue.severity === "error" ? "bg-red-500" : "bg-amber-500")} title={issue.severity}>
+            <div
+              key={index}
+              className="flex items-start gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-muted"
+              data-testid="analyze-issue-row"
+            >
+              <span
+                className={cn(
+                  "mt-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-[10px] font-semibold text-background",
+                  issue.severity === "error" ? "bg-red-500" : "bg-amber-500",
+                )}
+                title={issue.severity}
+              >
                 {issue.severity === "error" ? "E" : "W"}
               </span>
               <div className="min-w-0 flex-1">
@@ -354,16 +427,30 @@ function TestResults({ state }: { state: PreviewTestState }) {
         <span className="text-red-600 dark:text-red-400">{state.error}</span>
       </PanelStateMessage>
     );
-  if (state.output.length === 0) return <PanelStateMessage density="compact">No test results yet.</PanelStateMessage>;
+  if (state.output.length === 0)
+    return <PanelStateMessage density="compact">No test results yet.</PanelStateMessage>;
   const total = state.passed + state.failed + state.skipped;
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2 text-xs">
-        <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">{state.passed} passed</span>
-        <span className={cn("inline-flex items-center gap-1.5", state.failed > 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground")}>{state.failed} failed</span>
-        <span className="inline-flex items-center gap-1.5 text-muted-foreground">{state.skipped} skipped</span>
+        <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+          {state.passed} passed
+        </span>
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5",
+            state.failed > 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground",
+          )}
+        >
+          {state.failed} failed
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+          {state.skipped} skipped
+        </span>
         <span className="min-w-0 flex-1" />
-        {state.running && <LoaderIcon aria-hidden="true" className="size-3.5 animate-spin text-muted-foreground" />}
+        {state.running && (
+          <LoaderIcon aria-hidden="true" className="size-3.5 animate-spin text-muted-foreground" />
+        )}
         <span className="text-muted-foreground/70">{total} total</span>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto bg-muted/50 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
@@ -377,7 +464,12 @@ function TestResults({ state }: { state: PreviewTestState }) {
   );
 }
 
-function QualityGatePanel(props: { analyze: PreviewAnalyzeState; test: PreviewTestState; onRunAnalyze: () => void; onRunTest: () => void }) {
+function QualityGatePanel(props: {
+  analyze: PreviewAnalyzeState;
+  test: PreviewTestState;
+  onRunAnalyze: () => void;
+  onRunTest: () => void;
+}) {
   const analyzeDirty = props.analyze.clean === null && props.analyze.error === null;
   const testRan = props.test.output.length > 0 || props.test.error !== null;
   const allGreen = props.analyze.clean === true && props.test.failed === 0 && testRan;
@@ -394,22 +486,72 @@ function QualityGatePanel(props: { analyze: PreviewAnalyzeState; test: PreviewTe
           <BugIcon aria-hidden="true" className="size-4 text-muted-foreground" />
           <h3 className="text-xs font-semibold">flutter analyze</h3>
           <div className="min-w-0 flex-1" />
-          <button type="button" onClick={props.onRunAnalyze} disabled={props.analyze.running} className={cn("inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors", "bg-foreground text-background hover:opacity-90", props.analyze.running && "cursor-wait opacity-60")}>
-            {props.analyze.running ? (<><LoaderIcon aria-hidden="true" className="size-3.5 animate-spin" /> Analyzing…</>) : (<><RefreshCwIcon aria-hidden="true" className="size-3.5" /> Run</>)}
+          <button
+            type="button"
+            onClick={props.onRunAnalyze}
+            disabled={props.analyze.running}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+              "bg-foreground text-background hover:opacity-90",
+              props.analyze.running && "cursor-wait opacity-60",
+            )}
+          >
+            {props.analyze.running ? (
+              <>
+                <LoaderIcon aria-hidden="true" className="size-3.5 animate-spin" /> Analyzing…
+              </>
+            ) : (
+              <>
+                <RefreshCwIcon aria-hidden="true" className="size-3.5" /> Run
+              </>
+            )}
           </button>
         </div>
-        {analyzeDirty ? <p className="mt-2 text-xs text-muted-foreground">No analyze run yet.</p> : props.analyze.error !== null ? <p className="mt-2 text-xs text-red-600 dark:text-red-400">{props.analyze.error}</p> : <p className="mt-2 text-xs text-muted-foreground"><span className={props.analyze.clean ? "text-emerald-600 dark:text-emerald-400" : ""}>{props.analyze.clean ? "Clean" : `${props.analyze.issues.length} issue(s)`}</span></p>}
+        {analyzeDirty ? (
+          <p className="mt-2 text-xs text-muted-foreground">No analyze run yet.</p>
+        ) : props.analyze.error !== null ? (
+          <p className="mt-2 text-xs text-red-600 dark:text-red-400">{props.analyze.error}</p>
+        ) : (
+          <p className="mt-2 text-xs text-muted-foreground">
+            <span className={props.analyze.clean ? "text-emerald-600 dark:text-emerald-400" : ""}>
+              {props.analyze.clean ? "Clean" : `${props.analyze.issues.length} issue(s)`}
+            </span>
+          </p>
+        )}
       </div>
       <div className="rounded-lg border border-border p-3">
         <div className="flex items-center gap-2">
           <FlaskConicalIcon aria-hidden="true" className="size-4 text-muted-foreground" />
           <h3 className="text-xs font-semibold">flutter test</h3>
           <div className="min-w-0 flex-1" />
-          <button type="button" onClick={props.onRunTest} disabled={props.test.running} className={cn("inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors", "bg-foreground text-background hover:opacity-90", props.test.running && "cursor-wait opacity-60")}>
-            {props.test.running ? (<><LoaderIcon aria-hidden="true" className="size-3.5 animate-spin" /> Testing…</>) : (<><RefreshCwIcon aria-hidden="true" className="size-3.5" /> Run</>)}
+          <button
+            type="button"
+            onClick={props.onRunTest}
+            disabled={props.test.running}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+              "bg-foreground text-background hover:opacity-90",
+              props.test.running && "cursor-wait opacity-60",
+            )}
+          >
+            {props.test.running ? (
+              <>
+                <LoaderIcon aria-hidden="true" className="size-3.5 animate-spin" /> Testing…
+              </>
+            ) : (
+              <>
+                <RefreshCwIcon aria-hidden="true" className="size-3.5" /> Run
+              </>
+            )}
           </button>
         </div>
-        {testRan ? <p className="mt-2 text-xs text-muted-foreground">{props.test.passed} passed · {props.test.failed} failed · {props.test.skipped} skipped</p> : <p className="mt-2 text-xs text-muted-foreground">No test run yet.</p>}
+        {testRan ? (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {props.test.passed} passed · {props.test.failed} failed · {props.test.skipped} skipped
+          </p>
+        ) : (
+          <p className="mt-2 text-xs text-muted-foreground">No test run yet.</p>
+        )}
       </div>
     </div>
   );
@@ -422,7 +564,16 @@ function artifactDownloadLabel(outputPath: string): string {
 
 function ReleasePanel(props: {
   build: PreviewBuildState;
-  onBuild: (options: { target: "apk" | "appbundle" | "ipa" | "web"; channel: "debug" | "profile" | "release"; signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null }) => void;
+  onBuild: (options: {
+    target: "apk" | "appbundle" | "ipa" | "web";
+    channel: "debug" | "profile" | "release";
+    signing?: {
+      keystorePath: string;
+      keyAlias: string;
+      storePassword: string;
+      keyPassword: string;
+    } | null;
+  }) => void;
   workspaceRoot: string | null;
   framework?: ProjectFramework;
 }) {
@@ -441,7 +592,11 @@ function ReleasePanel(props: {
     }
   }, [props.framework]);
   const needsSigning = (target === "apk" || target === "appbundle") && channel === "release";
-  const canBuild = !isRunning && (!needsSigning || !showSigning || (keystorePath.trim() && keyAlias.trim() && storePassword.trim() && keyPassword.trim()));
+  const canBuild =
+    !isRunning &&
+    (!needsSigning ||
+      !showSigning ||
+      (keystorePath.trim() && keyAlias.trim() && storePassword.trim() && keyPassword.trim()));
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-4">
       <div className="rounded-lg border border-border p-3">
@@ -452,44 +607,93 @@ function ReleasePanel(props: {
         <div className="mt-3 grid grid-cols-2 gap-2">
           <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
             Target
-            <select value={target} onChange={(e) => setTarget(e.target.value as "apk" | "appbundle" | "ipa" | "web")} disabled={isRunning || props.framework === "website"} className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground">
-              {props.framework === "website" ? <option value="web">Website bundle</option> : <><option value="apk">APK (Android)</option><option value="appbundle">AAB (Play Store)</option><option value="ipa">IPA (iOS)</option></>}
+            <select
+              value={target}
+              onChange={(e) => setTarget(e.target.value as "apk" | "appbundle" | "ipa" | "web")}
+              disabled={isRunning || props.framework === "website"}
+              className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
+            >
+              {props.framework === "website" ? (
+                <option value="web">Website bundle</option>
+              ) : (
+                <>
+                  <option value="apk">APK (Android)</option>
+                  <option value="appbundle">AAB (Play Store)</option>
+                  <option value="ipa">IPA (iOS)</option>
+                </>
+              )}
             </select>
           </label>
           <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
             Channel
-            <select value={channel} onChange={(e) => setChannel(e.target.value as "debug" | "profile" | "release")} disabled={isRunning} className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground">
+            <select
+              value={channel}
+              onChange={(e) => setChannel(e.target.value as "debug" | "profile" | "release")}
+              disabled={isRunning}
+              className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
+            >
               <option value="debug">Debug</option>
               <option value="profile">Profile</option>
               <option value="release">Release</option>
             </select>
           </label>
         </div>
-        {target === "ipa" && <p className="mt-2 text-[11px] text-amber-600 dark:text-amber-400">IPA builds require macOS with Xcode installed.</p>}
+        {target === "ipa" && (
+          <p className="mt-2 text-[11px] text-amber-600 dark:text-amber-400">
+            IPA builds require macOS with Xcode installed.
+          </p>
+        )}
         {needsSigning && (
           <div className="mt-3 rounded-md border border-border bg-muted/30 p-2.5">
-            <button type="button" onClick={() => setShowSigning((v) => !v)} className="flex w-full items-center justify-between text-xs font-medium">
+            <button
+              type="button"
+              onClick={() => setShowSigning((v) => !v)}
+              className="flex w-full items-center justify-between text-xs font-medium"
+            >
               <span>Signing (optional for store release)</span>
-              <ChevronDownIcon aria-hidden="true" className={cn("size-3.5 transition-transform", showSigning && "rotate-180")} />
+              <ChevronDownIcon
+                aria-hidden="true"
+                className={cn("size-3.5 transition-transform", showSigning && "rotate-180")}
+              />
             </button>
             {showSigning && (
               <div className="mt-2 grid grid-cols-1 gap-2">
                 <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
                   Keystore path
-                  <input value={keystorePath} onChange={(e) => setKeystorePath(e.target.value)} placeholder="/path/to/release.jks" className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground" />
+                  <input
+                    value={keystorePath}
+                    onChange={(e) => setKeystorePath(e.target.value)}
+                    placeholder="/path/to/release.jks"
+                    className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
+                  />
                 </label>
                 <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
                   Key alias
-                  <input value={keyAlias} onChange={(e) => setKeyAlias(e.target.value)} placeholder="upload" className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground" />
+                  <input
+                    value={keyAlias}
+                    onChange={(e) => setKeyAlias(e.target.value)}
+                    placeholder="upload"
+                    className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
+                  />
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
                     Store password
-                    <input type="password" value={storePassword} onChange={(e) => setStorePassword(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground" />
+                    <input
+                      type="password"
+                      value={storePassword}
+                      onChange={(e) => setStorePassword(e.target.value)}
+                      className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
+                    />
                   </label>
                   <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
                     Key password
-                    <input type="password" value={keyPassword} onChange={(e) => setKeyPassword(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground" />
+                    <input
+                      type="password"
+                      value={keyPassword}
+                      onChange={(e) => setKeyPassword(e.target.value)}
+                      className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
+                    />
                   </label>
                 </div>
               </div>
@@ -498,11 +702,37 @@ function ReleasePanel(props: {
         )}
         <button
           type="button"
-          onClick={() => props.onBuild({ target, channel, signing: showSigning && keystorePath.trim() ? { keystorePath: keystorePath.trim(), keyAlias: keyAlias.trim(), storePassword, keyPassword } : null })}
+          onClick={() =>
+            props.onBuild({
+              target,
+              channel,
+              signing:
+                showSigning && keystorePath.trim()
+                  ? {
+                      keystorePath: keystorePath.trim(),
+                      keyAlias: keyAlias.trim(),
+                      storePassword,
+                      keyPassword,
+                    }
+                  : null,
+            })
+          }
           disabled={!canBuild}
-          className={cn("mt-3 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors", "bg-foreground text-background hover:opacity-90", !canBuild && "cursor-not-allowed opacity-60")}
+          className={cn(
+            "mt-3 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+            "bg-foreground text-background hover:opacity-90",
+            !canBuild && "cursor-not-allowed opacity-60",
+          )}
         >
-          {isRunning ? (<><LoaderIcon aria-hidden="true" className="size-3.5 animate-spin" /> Building…</>) : (<><ArchiveIcon aria-hidden="true" className="size-3.5" /> Build {target.toUpperCase()}</>)}
+          {isRunning ? (
+            <>
+              <LoaderIcon aria-hidden="true" className="size-3.5 animate-spin" /> Building…
+            </>
+          ) : (
+            <>
+              <ArchiveIcon aria-hidden="true" className="size-3.5" /> Build {target.toUpperCase()}
+            </>
+          )}
         </button>
       </div>
       {isRunning && (
@@ -513,12 +743,28 @@ function ReleasePanel(props: {
       )}
       {props.build.status === "succeeded" && (
         <div className="flex flex-col gap-1 rounded-md bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-          <span className="inline-flex items-center gap-2"><CheckIcon aria-hidden="true" className="size-4" /> Build succeeded</span>
-          {props.build.outputPath !== null && <span className="break-all text-muted-foreground"> {props.build.outputPath}</span>}
-          {(props.build as unknown as { sha256?: string | null }).sha256 && <span className="break-all font-mono text-[11px] text-muted-foreground">sha256: {(props.build as unknown as { sha256: string }).sha256}</span>}
+          <span className="inline-flex items-center gap-2">
+            <CheckIcon aria-hidden="true" className="size-4" /> Build succeeded
+          </span>
+          {props.build.outputPath !== null && (
+            <span className="break-all text-muted-foreground"> {props.build.outputPath}</span>
+          )}
+          {(props.build as unknown as { sha256?: string | null }).sha256 && (
+            <span className="break-all font-mono text-[11px] text-muted-foreground">
+              sha256: {(props.build as unknown as { sha256: string }).sha256}
+            </span>
+          )}
           {props.build.outputPath !== null && props.workspaceRoot !== null && (
-            <a href={buildLocalImageUrl({ src: props.build.outputPath, cwd: props.workspaceRoot, download: true })} className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-medium text-white transition-opacity hover:opacity-90">
-              <ArchiveIcon aria-hidden="true" className="size-3" /> Download {artifactDownloadLabel(props.build.outputPath)}
+            <a
+              href={buildLocalImageUrl({
+                src: props.build.outputPath,
+                cwd: props.workspaceRoot,
+                download: true,
+              })}
+              className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-medium text-white transition-opacity hover:opacity-90"
+            >
+              <ArchiveIcon aria-hidden="true" className="size-3" /> Download{" "}
+              {artifactDownloadLabel(props.build.outputPath)}
             </a>
           )}
         </div>
@@ -532,7 +778,9 @@ function ReleasePanel(props: {
       {props.build.logs.length > 0 && (
         <div className="min-h-0 flex-1 overflow-y-auto rounded-md bg-muted/50 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
           {props.build.logs.map((line, i) => (
-            <p key={i} className="break-words whitespace-pre-wrap">{line}</p>
+            <p key={i} className="break-words whitespace-pre-wrap">
+              {line}
+            </p>
           ))}
         </div>
       )}
@@ -558,11 +806,24 @@ function BranchPopup(props: {
         <span className="text-xs font-semibold">{props.title}</span>
         <div className="flex items-center gap-1">
           {props.onToggleMode && (
-            <button type="button" onClick={props.onToggleMode} className="flex size-6 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground" title={props.toggleIcon === "down" ? "Show controls" : "Show quality"}>
-              {props.toggleIcon === "down" ? <ChevronDownIcon className="size-3.5" /> : <ChevronUpIcon className="size-3.5" />}
+            <button
+              type="button"
+              onClick={props.onToggleMode}
+              className="flex size-6 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
+              title={props.toggleIcon === "down" ? "Show controls" : "Show quality"}
+            >
+              {props.toggleIcon === "down" ? (
+                <ChevronDownIcon className="size-3.5" />
+              ) : (
+                <ChevronUpIcon className="size-3.5" />
+              )}
             </button>
           )}
-          <button type="button" onClick={props.onClose} className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground">
+          <button
+            type="button"
+            onClick={props.onClose}
+            className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
             <span className="text-xs">✕</span>
           </button>
         </div>
@@ -572,8 +833,15 @@ function BranchPopup(props: {
   );
 }
 
-export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; workspaceRoot?: string | null; framework?: ProjectFramework }) {
-  const [panelState, setPanelState] = useState<PreviewPanelState>(() => createInitialPreviewPanelState("mobile"));
+export function PreviewStage(props: {
+  threadId: ThreadId;
+  isVisible: boolean;
+  workspaceRoot?: string | null;
+  framework?: ProjectFramework;
+}) {
+  const [panelState, setPanelState] = useState<PreviewPanelState>(() =>
+    createInitialPreviewPanelState("mobile"),
+  );
   const [isConsoleDialogOpen, setIsConsoleDialogOpen] = useState(false);
   const [landscape, setLandscape] = useState(false);
   const [headerMode, setHeaderMode] = useState<HeaderMode>("quality");
@@ -582,7 +850,8 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
   const framework = props.framework ?? "blank";
   const isBlankProject = framework === "blank";
   const isBrowserProject = framework === "website" || framework === "react-native";
-  const isBuildableProject = framework === "website" || framework === "react-native" || framework === "flutter";
+  const isBuildableProject =
+    framework === "website" || framework === "react-native" || framework === "flutter";
 
   useEffect(() => {
     if (isBrowserProject) setHeaderMode("controls");
@@ -625,10 +894,17 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
     return () => window.clearInterval(timer);
   }, [props.isVisible, pollOnce]);
 
-  const [nativeFrame, setNativeFrame] = useState<{ image: string; capturedAt: number } | null>(null);
+  const [nativeFrame, setNativeFrame] = useState<{ image: string; capturedAt: number } | null>(
+    null,
+  );
   const nativeFrameBusy = useRef(false);
   useEffect(() => {
-    if (!props.isVisible || panelState.status !== "running" || panelState.kind !== "native" || panelState.url === null) {
+    if (
+      !props.isVisible ||
+      panelState.status !== "running" ||
+      panelState.kind !== "native" ||
+      panelState.url === null
+    ) {
       setNativeFrame(null);
       return;
     }
@@ -640,7 +916,8 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
         .preview.screenshot({ threadId: props.threadId })
         .then((result) => {
           const image = (result as { image?: string | null }).image;
-          if (!cancelled && typeof image === "string" && image.length > 0) setNativeFrame({ image, capturedAt: Date.now() });
+          if (!cancelled && typeof image === "string" && image.length > 0)
+            setNativeFrame({ image, capturedAt: Date.now() });
         })
         .catch(() => {})
         .finally(() => {
@@ -655,13 +932,21 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
     };
   }, [props.isVisible, props.threadId, panelState.status, panelState.kind, panelState.url]);
 
-  const isNativePreview = panelState.kind === "native" || (panelState.kind === null && panelState.url !== null && panelState.url.startsWith("native:"));
+  const isNativePreview =
+    panelState.kind === "native" ||
+    (panelState.kind === null && panelState.url !== null && panelState.url.startsWith("native:"));
   const isRunning = panelState.status === "running";
 
   const nativeScreen =
     isNativePreview && isRunning ? (
       nativeFrame !== null ? (
-        <img key={nativeFrame.capturedAt} src={`data:image/png;base64,${nativeFrame.image}`} alt="Flutter app running on the device" draggable={false} className="h-full w-full bg-white object-contain" />
+        <img
+          key={nativeFrame.capturedAt}
+          src={`data:image/png;base64,${nativeFrame.image}`}
+          alt="Flutter app running on the device"
+          draggable={false}
+          className="h-full w-full bg-white object-contain"
+        />
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-black text-center">
           <LoaderIcon className="size-3 animate-spin text-white/60" />
@@ -673,12 +958,19 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
   const handleStart = useCallback(() => {
     setPanelState((prev) => previewStartRequested(prev));
     if (isBlankProject) {
-      setPanelState((prev) => previewStartFailed(prev, "Preview is unavailable until this blank project has an application framework."));
+      setPanelState((prev) =>
+        previewStartFailed(
+          prev,
+          "Preview is unavailable until this blank project has an application framework.",
+        ),
+      );
       return;
     }
     ensureNativeApi()
       .preview.start({ threadId: props.threadId, device: "web-server" })
-      .then((result) => setPanelState((prev) => previewStarted(prev, result.url, [], result.kind ?? null)))
+      .then((result) =>
+        setPanelState((prev) => previewStarted(prev, result.url, [], result.kind ?? null)),
+      )
       .catch((error: unknown) => {
         const msg = error instanceof Error ? error.message : "The preview failed to start.";
         setPanelState((prev) => previewStartFailed(prev, msg));
@@ -702,17 +994,29 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
       .preview.screenshot({ threadId: props.threadId })
       .then((result) => {
         if (!result.image) {
-          toastManager.add({ type: "error", title: "No screenshot available", description: "The engine did not return a frame to save." });
+          toastManager.add({
+            type: "error",
+            title: "No screenshot available",
+            description: "The engine did not return a frame to save.",
+          });
           return;
         }
         const anchor = document.createElement("a");
         anchor.href = `data:image/png;base64,${result.image}`;
         anchor.download = `flutter-preview-${Date.now()}.png`;
         anchor.click();
-        toastManager.add({ type: "success", title: "Screenshot saved", description: "Flutter preview screenshot downloaded." });
+        toastManager.add({
+          type: "success",
+          title: "Screenshot saved",
+          description: "Flutter preview screenshot downloaded.",
+        });
       })
       .catch((error: unknown) => {
-        toastManager.add({ type: "error", title: "Could not save the screenshot", description: errorMessage(error, "The engine did not return a frame.") });
+        toastManager.add({
+          type: "error",
+          title: "Could not save the screenshot",
+          description: errorMessage(error, "The engine did not return a frame."),
+        });
       });
   }, [props.threadId]);
 
@@ -720,25 +1024,70 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
     setPanelState((prev) => analyzeRequested(prev));
     ensureNativeApi()
       .preview.analyze({ threadId: props.threadId })
-      .then((result) => setPanelState((prev) => analyzeFinished(prev, { issues: result.issues, clean: result.clean, output: result.output })))
-      .catch((e: unknown) => setPanelState((prev) => analyzeFailed(prev, e instanceof Error ? e.message : "flutter analyze failed.")));
+      .then((result) =>
+        setPanelState((prev) =>
+          analyzeFinished(prev, {
+            issues: result.issues,
+            clean: result.clean,
+            output: result.output,
+          }),
+        ),
+      )
+      .catch((e: unknown) =>
+        setPanelState((prev) =>
+          analyzeFailed(prev, e instanceof Error ? e.message : "flutter analyze failed."),
+        ),
+      );
   }, [props.threadId]);
 
   const handleRunTest = useCallback(() => {
     setPanelState((prev) => testRequested(prev));
     ensureNativeApi()
       .preview.test({ threadId: props.threadId })
-      .then((result) => setPanelState((prev) => testFinished(prev, { passed: result.passed, failed: result.failed, skipped: result.skipped, output: result.output })))
-      .catch((e: unknown) => setPanelState((prev) => testFailed(prev, e instanceof Error ? e.message : "flutter test failed.")));
+      .then((result) =>
+        setPanelState((prev) =>
+          testFinished(prev, {
+            passed: result.passed,
+            failed: result.failed,
+            skipped: result.skipped,
+            output: result.output,
+          }),
+        ),
+      )
+      .catch((e: unknown) =>
+        setPanelState((prev) =>
+          testFailed(prev, e instanceof Error ? e.message : "flutter test failed."),
+        ),
+      );
   }, [props.threadId]);
 
   const handleBuild = useCallback(
-    (options: { target: "apk" | "appbundle" | "ipa" | "web"; channel: "debug" | "profile" | "release"; signing?: { keystorePath: string; keyAlias: string; storePassword: string; keyPassword: string } | null }) => {
-      setPanelState((prev) => buildRequested(prev, { target: options.target, channel: options.channel }));
+    (options: {
+      target: "apk" | "appbundle" | "ipa" | "web";
+      channel: "debug" | "profile" | "release";
+      signing?: {
+        keystorePath: string;
+        keyAlias: string;
+        storePassword: string;
+        keyPassword: string;
+      } | null;
+    }) => {
+      setPanelState((prev) =>
+        buildRequested(prev, { target: options.target, channel: options.channel }),
+      );
       ensureNativeApi()
-        .preview.buildStart({ threadId: props.threadId, target: options.target, channel: options.channel, ...(options.signing ? { signing: options.signing } : {}) })
+        .preview.buildStart({
+          threadId: props.threadId,
+          target: options.target,
+          channel: options.channel,
+          ...(options.signing ? { signing: options.signing } : {}),
+        })
         .then((result) => setPanelState((prev) => buildAccepted(prev, result.buildId)))
-        .catch((e: unknown) => setPanelState((prev) => buildFailed(prev, e instanceof Error ? e.message : "Build failed to start.")));
+        .catch((e: unknown) =>
+          setPanelState((prev) =>
+            buildFailed(prev, e instanceof Error ? e.message : "Build failed to start."),
+          ),
+        );
     },
     [props.threadId],
   );
@@ -770,56 +1119,142 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
       case "problems":
         return <ProblemList state={panelState.analyze} />;
       case "qualityGate":
-        return <QualityGatePanel analyze={panelState.analyze} test={panelState.test} onRunAnalyze={handleRunAnalyze} onRunTest={handleRunTest} />;
+        return (
+          <QualityGatePanel
+            analyze={panelState.analyze}
+            test={panelState.test}
+            onRunAnalyze={handleRunAnalyze}
+            onRunTest={handleRunTest}
+          />
+        );
       case "release":
-        return <ReleasePanel build={panelState.build} onBuild={handleBuild} workspaceRoot={props.workspaceRoot ?? null} framework={framework} />;
+        return (
+          <ReleasePanel
+            build={panelState.build}
+            onBuild={handleBuild}
+            workspaceRoot={props.workspaceRoot ?? null}
+            framework={framework}
+          />
+        );
       case "terminal":
         return (
           <div className="flex h-full min-h-[240px] flex-col">
             <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
               <span className="text-xs font-medium">Console — flutter run</span>
-              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setIsConsoleDialogOpen(true)}>Open full console</Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setIsConsoleDialogOpen(true)}
+              >
+                Open full console
+              </Button>
             </div>
             <div className="min-h-[200px] flex-1 overflow-y-auto bg-muted/30 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
-              {panelState.logs.length === 0 ? <p>Waiting for `flutter run` output…</p> : panelState.logs.slice(-80).map((l, i) => <p key={i} className="break-words whitespace-pre-wrap">{l}</p>)}
+              {panelState.logs.length === 0 ? (
+                <p>Waiting for `flutter run` output…</p>
+              ) : (
+                panelState.logs.slice(-80).map((l, i) => (
+                  <p key={i} className="break-words whitespace-pre-wrap">
+                    {l}
+                  </p>
+                ))
+              )}
             </div>
           </div>
         );
       case "screenshot":
         return (
           <div className="p-4">
-            <p className="text-xs text-muted-foreground">Capture the current preview frame as a PNG.</p>
-            <Button size="sm" className="mt-3" onClick={savePreviewScreenshot} disabled={!isRunning}>Save screenshot</Button>
+            <p className="text-xs text-muted-foreground">
+              Capture the current preview frame as a PNG.
+            </p>
+            <Button
+              size="sm"
+              className="mt-3"
+              onClick={savePreviewScreenshot}
+              disabled={!isRunning}
+            >
+              Save screenshot
+            </Button>
           </div>
         );
       case "home":
         return (
           <div className="p-4">
-            <p className="text-xs text-muted-foreground">Reload the Flutter app. Hot-reload preserves state, restart rebuilds from scratch.</p>
+            <p className="text-xs text-muted-foreground">
+              Reload the Flutter app. Hot-reload preserves state, restart rebuilds from scratch.
+            </p>
             <div className="mt-3 flex gap-2">
-              <Button size="sm" onClick={() => { handleReload(true); closeBranch(); }} disabled={!isRunning}>Hot reload</Button>
-              <Button size="sm" variant="outline" onClick={() => { handleReload(false); closeBranch(); }} disabled={!isRunning}>Hot restart</Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  handleReload(true);
+                  closeBranch();
+                }}
+                disabled={!isRunning}
+              >
+                Hot reload
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  handleReload(false);
+                  closeBranch();
+                }}
+                disabled={!isRunning}
+              >
+                Hot restart
+              </Button>
             </div>
           </div>
         );
       case "rotate":
         return (
           <div className="p-4">
-            <p className="text-xs text-muted-foreground">Rotate the device frame to preview landscape. The app keeps rendering portrait — this is a view transform.</p>
-            <Button size="sm" className="mt-3" onClick={() => { setLandscape((v) => !v); closeBranch(); }}>{landscape ? "Back to portrait" : "Rotate to landscape"}</Button>
+            <p className="text-xs text-muted-foreground">
+              Rotate the device frame to preview landscape. The app keeps rendering portrait — this
+              is a view transform.
+            </p>
+            <Button
+              size="sm"
+              className="mt-3"
+              onClick={() => {
+                setLandscape((v) => !v);
+                closeBranch();
+              }}
+            >
+              {landscape ? "Back to portrait" : "Rotate to landscape"}
+            </Button>
           </div>
         );
       case "record":
         return (
           <div className="p-4">
-            <p className="text-xs text-muted-foreground">Screen recording is not available in web preview.</p>
+            <p className="text-xs text-muted-foreground">
+              Screen recording is not available in web preview.
+            </p>
           </div>
         );
       case "shutdown":
         return (
           <div className="p-4">
-            <p className="text-xs text-muted-foreground">Stop the running preview. You can restart it from the idle screen.</p>
-            <Button size="sm" variant="destructive" className="mt-3" onClick={() => { handleStop(); closeBranch(); }} disabled={!isRunning}>Stop preview</Button>
+            <p className="text-xs text-muted-foreground">
+              Stop the running preview. You can restart it from the idle screen.
+            </p>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="mt-3"
+              onClick={() => {
+                handleStop();
+                closeBranch();
+              }}
+              disabled={!isRunning}
+            >
+              Stop preview
+            </Button>
           </div>
         );
       default:
@@ -828,23 +1263,36 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
   })();
 
   const branchTitle =
-    branch === "tests" ? "Tests"
-    : branch === "problems" ? "Problems"
-    : branch === "qualityGate" ? "Quality Gate"
-    : branch === "release" ? "Release"
-    : branch === "terminal" ? "Console"
-    : branch === "screenshot" ? "Screenshot"
-    : branch === "home" ? "Home / Reload"
-    : branch === "rotate" ? "Rotate"
-    : branch === "record" ? "Record"
-    : branch === "shutdown" ? "Stop Preview"
-    : "";
+    branch === "tests"
+      ? "Tests"
+      : branch === "problems"
+        ? "Problems"
+        : branch === "qualityGate"
+          ? "Quality Gate"
+          : branch === "release"
+            ? "Release"
+            : branch === "terminal"
+              ? "Console"
+              : branch === "screenshot"
+                ? "Screenshot"
+                : branch === "home"
+                  ? "Home / Reload"
+                  : branch === "rotate"
+                    ? "Rotate"
+                    : branch === "record"
+                      ? "Record"
+                      : branch === "shutdown"
+                        ? "Stop Preview"
+                        : "";
 
   if (!props.isVisible) return null;
 
   return (
     <div
-      className={cn("flex h-full w-full shrink-0 flex-col overflow-visible border-l border-border", CHAT_BACKGROUND_CLASS_NAME)}
+      className={cn(
+        "flex h-full w-full shrink-0 flex-col overflow-visible border-l border-border",
+        CHAT_BACKGROUND_CLASS_NAME,
+      )}
       data-testid="preview-stage"
       style={{ width: `${PREVIEW_STAGE_FIXED_WIDTH_PX}px` }}
     >
@@ -857,43 +1305,170 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
         <div className="flex shrink-0 items-center gap-0.5">
           {headerMode === "quality" && !isBrowserProject ? (
             <>
-              <button type="button" onClick={() => openBranch("tests")} className={cn("flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", branch === "tests" && branchOpen && "bg-accent text-foreground")} title="Tests" aria-label="Tests">
+              <button
+                type="button"
+                onClick={() => openBranch("tests")}
+                className={cn(
+                  "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
+                  branch === "tests" && branchOpen && "bg-accent text-foreground",
+                )}
+                title="Tests"
+                aria-label="Tests"
+              >
                 <FlaskConicalIcon className="size-3.5" />
               </button>
-              <button type="button" onClick={() => openBranch("problems")} className={cn("flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", branch === "problems" && branchOpen && "bg-accent text-foreground")} title="Problems" aria-label="Problems">
+              <button
+                type="button"
+                onClick={() => openBranch("problems")}
+                className={cn(
+                  "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
+                  branch === "problems" && branchOpen && "bg-accent text-foreground",
+                )}
+                title="Problems"
+                aria-label="Problems"
+              >
                 <BugIcon className="size-3.5" />
               </button>
-              <button type="button" onClick={() => openBranch("qualityGate")} className={cn("flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", branch === "qualityGate" && branchOpen && "bg-accent text-foreground")} title="Quality" aria-label="Quality">
+              <button
+                type="button"
+                onClick={() => openBranch("qualityGate")}
+                className={cn(
+                  "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
+                  branch === "qualityGate" && branchOpen && "bg-accent text-foreground",
+                )}
+                title="Quality"
+                aria-label="Quality"
+              >
                 <ListChecksIcon className="size-3.5" />
               </button>
-              <button type="button" onClick={() => openBranch("release")} className={cn("flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", branch === "release" && branchOpen && "bg-accent text-foreground")} title="Release" aria-label="Release">
+              <button
+                type="button"
+                onClick={() => openBranch("release")}
+                className={cn(
+                  "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
+                  branch === "release" && branchOpen && "bg-accent text-foreground",
+                )}
+                title="Release"
+                aria-label="Release"
+              >
                 <ArchiveIcon className="size-3.5" />
               </button>
             </>
           ) : (
             <>
-              {isBuildableProject && <button type="button" onClick={() => openBranch("release")} className={cn("flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", branch === "release" && branchOpen && "bg-accent text-foreground")} title={framework === "website" ? "Build website" : "Build app"} aria-label={framework === "website" ? "Build website" : "Build app"}><ArchiveIcon className="size-3.5" /></button>}
-              <button type="button" onClick={() => openBranch("home")} className={cn("flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", branch === "home" && branchOpen && "bg-accent text-foreground")} title="Home" aria-label="Home">
+              {isBuildableProject && (
+                <button
+                  type="button"
+                  onClick={() => openBranch("release")}
+                  className={cn(
+                    "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
+                    branch === "release" && branchOpen && "bg-accent text-foreground",
+                  )}
+                  title={framework === "website" ? "Build website" : "Build app"}
+                  aria-label={framework === "website" ? "Build website" : "Build app"}
+                >
+                  <ArchiveIcon className="size-3.5" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => openBranch("home")}
+                className={cn(
+                  "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
+                  branch === "home" && branchOpen && "bg-accent text-foreground",
+                )}
+                title="Home"
+                aria-label="Home"
+              >
                 <DeviceHomeIcon className="size-3.5" />
               </button>
-              <button type="button" onClick={() => openBranch("rotate")} className={cn("flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", branch === "rotate" && branchOpen && "bg-accent text-foreground", landscape && "bg-accent text-foreground")} title="Rotate" aria-label="Rotate">
+              <button
+                type="button"
+                onClick={() => openBranch("rotate")}
+                className={cn(
+                  "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
+                  branch === "rotate" && branchOpen && "bg-accent text-foreground",
+                  landscape && "bg-accent text-foreground",
+                )}
+                title="Rotate"
+                aria-label="Rotate"
+              >
                 <DeviceRotateIcon className="size-3.5" />
               </button>
-              <button type="button" onClick={() => openBranch("screenshot")} className={cn("flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", branch === "screenshot" && branchOpen && "bg-accent text-foreground")} title="Screenshot" aria-label="Screenshot">
+              <button
+                type="button"
+                onClick={() => openBranch("screenshot")}
+                className={cn(
+                  "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
+                  branch === "screenshot" && branchOpen && "bg-accent text-foreground",
+                )}
+                title="Screenshot"
+                aria-label="Screenshot"
+              >
                 <DeviceShutterIcon className="size-3.5" />
               </button>
-              <button type="button" onClick={() => openBranch("record")} className={cn("flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", branch === "record" && branchOpen && "bg-accent text-foreground")} title="Record" aria-label="Record">
-                {panelState.status === "running" ? <DeviceRecordIcon className="size-3.5" /> : <DeviceRecordStopIcon className="size-3.5" />}
+              <button
+                type="button"
+                onClick={() => openBranch("record")}
+                className={cn(
+                  "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
+                  branch === "record" && branchOpen && "bg-accent text-foreground",
+                )}
+                title="Record"
+                aria-label="Record"
+              >
+                {panelState.status === "running" ? (
+                  <DeviceRecordIcon className="size-3.5" />
+                ) : (
+                  <DeviceRecordStopIcon className="size-3.5" />
+                )}
               </button>
-              <button type="button" onClick={() => openBranch("terminal")} className={cn("flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", branch === "terminal" && branchOpen && "bg-accent text-foreground")} title="Console" aria-label="Console">
+              <button
+                type="button"
+                onClick={() => openBranch("terminal")}
+                className={cn(
+                  "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
+                  branch === "terminal" && branchOpen && "bg-accent text-foreground",
+                )}
+                title="Console"
+                aria-label="Console"
+              >
                 <TerminalIcon className="size-3.5" />
               </button>
-              <button type="button" onClick={() => openBranch("shutdown")} className={cn("flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", branch === "shutdown" && branchOpen && "bg-accent text-foreground")} title="Stop" aria-label="Stop">
+              <button
+                type="button"
+                onClick={() => openBranch("shutdown")}
+                className={cn(
+                  "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
+                  branch === "shutdown" && branchOpen && "bg-accent text-foreground",
+                )}
+                title="Stop"
+                aria-label="Stop"
+              >
                 <DevicePowerIcon className="size-3.5" />
               </button>
             </>
           )}
-          {!isBrowserProject && <><span className="mx-0.5 h-4 w-px bg-border" aria-hidden="true" /><button type="button" onClick={handleToggleHeaderMode} className="flex size-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground" title={headerMode === "quality" ? "Show preview controls" : "Show quality tools"} aria-label={headerMode === "quality" ? "Show preview controls" : "Show quality tools"}>{headerMode === "quality" ? <ChevronDownIcon className="size-3.5" /> : <ChevronUpIcon className="size-3.5" />}</button></>}
+          {!isBrowserProject && (
+            <>
+              <span className="mx-0.5 h-4 w-px bg-border" aria-hidden="true" />
+              <button
+                type="button"
+                onClick={handleToggleHeaderMode}
+                className="flex size-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
+                title={headerMode === "quality" ? "Show preview controls" : "Show quality tools"}
+                aria-label={
+                  headerMode === "quality" ? "Show preview controls" : "Show quality tools"
+                }
+              >
+                {headerMode === "quality" ? (
+                  <ChevronDownIcon className="size-3.5" />
+                ) : (
+                  <ChevronUpIcon className="size-3.5" />
+                )}
+              </button>
+            </>
+          )}
         </div>
 
         {/* Branch popup anchored to header */}
@@ -908,49 +1483,132 @@ export function PreviewStage(props: { threadId: ThreadId; isVisible: boolean; wo
         </BranchPopup>
       </div>
 
-      {!isBrowserProject && <FlutterToolchainBanner threadId={props.threadId} isVisible={props.isVisible} />}
+      {!isBrowserProject && (
+        <FlutterToolchainBanner threadId={props.threadId} isVisible={props.isVisible} />
+      )}
 
       {/* Browser projects use a full browser surface; Flutter keeps the device frame. */}
-      <div className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", CHAT_BACKGROUND_CLASS_NAME)}>
+      <div
+        className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", CHAT_BACKGROUND_CLASS_NAME)}
+      >
         {isBrowserProject ? (
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
             <div className="flex h-8 shrink-0 items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 text-[10px] text-slate-500">
-              <span className="size-2 rounded-full bg-red-400" /><span className="size-2 rounded-full bg-amber-400" /><span className="size-2 rounded-full bg-emerald-400" />
-              <span className="ml-2 truncate">{framework === "react-native" ? "React Native app preview" : "Website preview"}</span>
+              <span className="size-2 rounded-full bg-red-400" />
+              <span className="size-2 rounded-full bg-amber-400" />
+              <span className="size-2 rounded-full bg-emerald-400" />
+              <span className="ml-2 truncate">
+                {framework === "react-native" ? "React Native app preview" : "Website preview"}
+              </span>
             </div>
             <div className="min-h-0 flex-1">
-              {panelState.status === "starting" ? <div className="flex h-full items-center justify-center text-xs text-slate-500">Starting preview…</div> : panelState.status === "failed" ? <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center text-xs text-red-500"><p>{panelState.error ?? "Failed to start"}</p><button type="button" onClick={handleStart} className="rounded bg-slate-900 px-3 py-1.5 text-white">Retry</button></div> : isRunning && panelState.url !== null ? <iframe key={panelState.reloadToken} src={panelState.url} title={`${framework} preview`} sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads" className="h-full w-full border-0" /> : <div className="flex h-full flex-col items-center justify-center gap-3 text-xs text-slate-500"><p>{framework === "react-native" ? "Preview the app's mobile UI in the browser surface." : "Preview the responsive website in the browser surface."}</p><button type="button" onClick={handleStart} className="rounded bg-slate-900 px-3 py-1.5 text-white"><PlayIcon className="mr-1 inline size-3 fill-white" />Start Preview</button></div>}
+              {panelState.status === "starting" ? (
+                <div className="flex h-full items-center justify-center text-xs text-slate-500">
+                  Starting preview…
+                </div>
+              ) : panelState.status === "failed" ? (
+                <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center text-xs text-red-500">
+                  <p>{panelState.error ?? "Failed to start"}</p>
+                  <button
+                    type="button"
+                    onClick={handleStart}
+                    className="rounded bg-slate-900 px-3 py-1.5 text-white"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : isRunning && panelState.url !== null ? (
+                <iframe
+                  key={panelState.reloadToken}
+                  src={panelState.url}
+                  title={`${framework} preview`}
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
+                  className="h-full w-full border-0"
+                />
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-3 text-xs text-slate-500">
+                  <p>
+                    {framework === "react-native"
+                      ? "Preview the app's mobile UI in the browser surface."
+                      : "Preview the responsive website in the browser surface."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleStart}
+                    className="rounded bg-slate-900 px-3 py-1.5 text-white"
+                  >
+                    <PlayIcon className="mr-1 inline size-3 fill-white" />
+                    Start Preview
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-        ) : <DeviceScreen className="min-h-0 w-full flex-1 overflow-hidden" kind="androidPhone" pixelWidth={1080} pixelHeight={2400} landscape={landscape}>
-          <div className="flex h-full w-full flex-col items-center justify-center bg-black text-center">
-            {panelState.status === "starting" ? (
-              <div className="flex flex-col items-center gap-3 px-[12%] text-center">
-                <p className="text-[11px] font-medium text-white/90">Starting Flutter preview…</p>
-                <span className="flex items-center gap-1.5 text-[10px] text-white/45">
-                  <LoaderIcon className="size-3 animate-spin" /> Compiling Flutter bundle
-                </span>
-              </div>
-            ) : panelState.status === "failed" ? (
-              <div className="flex flex-col items-center gap-3 px-[12%] text-center">
-                <p className="max-w-[240px] break-words text-[11px] leading-snug text-red-400">{panelState.error ?? "Failed to start"}</p>
-                <button type="button" onClick={handleStart} className="rounded-full bg-white px-4 py-1.5 text-[11px] font-medium text-black transition-opacity hover:opacity-90">Retry</button>
-              </div>
-            ) : isRunning && panelState.url !== null ? (
-              isNativePreview ? nativeScreen : <iframe key={panelState.reloadToken} src={panelState.url} title="Flutter preview" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads" className="h-full w-full border-0 bg-white" />
-            ) : (
-              <div className="flex flex-col items-center justify-center gap-1 px-[12%] text-center">
-                <p className="text-balance text-[11px] leading-snug text-white/45">Choose a simulator or start previewing here.</p>
-                <button type="button" onClick={handleStart} className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-[11px] font-medium text-black transition-opacity hover:opacity-90">
-                  <PlayIcon className="size-3 fill-black" /> Start Preview
-                </button>
-              </div>
-            )}
-          </div>
-        </DeviceScreen>}
+        ) : (
+          <DeviceScreen
+            className="min-h-0 w-full flex-1 overflow-hidden"
+            kind="androidPhone"
+            pixelWidth={1080}
+            pixelHeight={2400}
+            landscape={landscape}
+          >
+            <div className="flex h-full w-full flex-col items-center justify-center bg-black text-center">
+              {panelState.status === "starting" ? (
+                <div className="flex flex-col items-center gap-3 px-[12%] text-center">
+                  <p className="text-[11px] font-medium text-white/90">Starting Flutter preview…</p>
+                  <span className="flex items-center gap-1.5 text-[10px] text-white/45">
+                    <LoaderIcon className="size-3 animate-spin" /> Compiling Flutter bundle
+                  </span>
+                </div>
+              ) : panelState.status === "failed" ? (
+                <div className="flex flex-col items-center gap-3 px-[12%] text-center">
+                  <p className="max-w-[240px] break-words text-[11px] leading-snug text-red-400">
+                    {panelState.error ?? "Failed to start"}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleStart}
+                    className="rounded-full bg-white px-4 py-1.5 text-[11px] font-medium text-black transition-opacity hover:opacity-90"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : isRunning && panelState.url !== null ? (
+                isNativePreview ? (
+                  nativeScreen
+                ) : (
+                  <iframe
+                    key={panelState.reloadToken}
+                    src={panelState.url}
+                    title="Flutter preview"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
+                    className="h-full w-full border-0 bg-white"
+                  />
+                )
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-1 px-[12%] text-center">
+                  <p className="text-balance text-[11px] leading-snug text-white/45">
+                    Choose a simulator or start previewing here.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleStart}
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-[11px] font-medium text-black transition-opacity hover:opacity-90"
+                  >
+                    <PlayIcon className="size-3 fill-black" /> Start Preview
+                  </button>
+                </div>
+              )}
+            </div>
+          </DeviceScreen>
+        )}
       </div>
 
-      <PreviewConsoleDialog open={isConsoleDialogOpen} onOpenChange={setIsConsoleDialogOpen} logs={panelState.logs} />
+      <PreviewConsoleDialog
+        open={isConsoleDialogOpen}
+        onOpenChange={setIsConsoleDialogOpen}
+        logs={panelState.logs}
+      />
     </div>
   );
 }

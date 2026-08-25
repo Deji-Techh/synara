@@ -150,7 +150,10 @@ export function constructPlanModePrompt(
       "specialized in gathering requirements and creating detailed implementation plans for mobile apps and their supporting services",
       "specialized in gathering requirements and creating detailed implementation plans for responsive websites and their supporting services",
     );
-    prompt = prompt.replace("what Flutter app they would like to build", "what website they would like to build");
+    prompt = prompt.replace(
+      "what Flutter app they would like to build",
+      "what website they would like to build",
+    );
   } else if (options?.frameworkType === "react-native") {
     prompt = prompt.replace(
       "what Flutter app they would like to build",

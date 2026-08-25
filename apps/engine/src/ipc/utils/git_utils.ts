@@ -113,12 +113,12 @@ async function execGit(
     const ldLibraryPath = [shimDir, existingLdPath].filter(Boolean).join(":");
     try {
       return await exec(args, path, {
-      ...options,
-      env: {
-        ...process.env,
-        ...options?.env,
-        LD_LIBRARY_PATH: ldLibraryPath,
-      },
+        ...options,
+        env: {
+          ...process.env,
+          ...options?.env,
+          LD_LIBRARY_PATH: ldLibraryPath,
+        },
       });
     } catch (error) {
       return fallbackSystemGit(args, path, options, error);

@@ -59,7 +59,8 @@ describe("database right-dock project isolation", () => {
 
   it("rejects a database mutation that names another project's app", async () => {
     const engine: Partial<EngineAdapterShape> = {
-      databaseInvoke: () => Effect.succeed({ value: { apps: [{ id: 11, resolvedPath: "/work/a" }] } }),
+      databaseInvoke: () =>
+        Effect.succeed({ value: { apps: [{ id: 11, resolvedPath: "/work/a" }] } }),
     };
     const handlers = handlersFor({ [String(threadA)]: "/work/a" }, engine);
     const exit = await Effect.runPromise(

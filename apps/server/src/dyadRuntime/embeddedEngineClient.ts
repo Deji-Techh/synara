@@ -72,28 +72,81 @@ export class EmbeddedEngineClient {
     return new EmbeddedEngineClient(runtime, unsubscribe);
   }
 
-  describeHealth() { return "embedded dyad runtime"; }
+  describeHealth() {
+    return "embedded dyad runtime";
+  }
   async waitForSpawn() {}
-  async initialize() { return response({ serverName: "caide-engine", serverVersion: "embedded", protocolVersion: 1, capabilities: { flutter: true, preview: true } }); }
-  async ping() { return response(await this.runtime.ping()); }
+  async initialize() {
+    return response({
+      serverName: "caide-engine",
+      serverVersion: "embedded",
+      protocolVersion: 1,
+      capabilities: { flutter: true, preview: true },
+    });
+  }
+  async ping() {
+    return response(await this.runtime.ping());
+  }
   async dyadInvoke<T = unknown>(channel: string, payload?: unknown): Promise<T> {
-    const envelope = await this.runtime.invoke<{ ok: boolean; value?: unknown; data?: unknown; error?: unknown }>(channel, payload);
-    if (!envelope?.ok) throw new Error(typeof envelope?.error === "object" && envelope.error && "message" in envelope.error ? String((envelope.error as { message: unknown }).message) : String(envelope?.error ?? `engine channel ${channel} failed`));
+    const envelope = await this.runtime.invoke<{
+      ok: boolean;
+      value?: unknown;
+      data?: unknown;
+      error?: unknown;
+    }>(channel, payload);
+    if (!envelope?.ok)
+      throw new Error(
+        typeof envelope?.error === "object" && envelope.error && "message" in envelope.error
+          ? String((envelope.error as { message: unknown }).message)
+          : String(envelope?.error ?? `engine channel ${channel} failed`),
+      );
     return (envelope.value !== undefined ? envelope.value : envelope.data) as T;
   }
-  private async call(method: string, params?: unknown) { return response(await this.runtime.request(method, params)); }
-  previewStart(params: unknown) { return this.call("preview/start", params); }
-  previewStop(params: unknown) { return this.call("preview/stop", params); }
-  previewReload(params: unknown) { return this.call("preview/reload", params); }
-  previewState(params: unknown) { return this.call("preview/state", params); }
-  previewScreenshot(params?: unknown) { return this.call("preview/screenshot", params ?? {}); }
-  previewDevices() { return this.call("preview/devices", {}); }
-  analyzeRun(params: unknown) { return this.call("analyze/run", params); }
-  testRun(params: unknown) { return this.call("test/run", params); }
-  buildStart(params: unknown) { return this.call("build/start", params); }
-  buildState(params: unknown) { return this.call("build/state", params); }
-  flutterToolchainStatus() { return this.call("flutter/toolchain/status", {}); }
-  flutterToolchainInstall() { return this.call("flutter/toolchain/install", {}); }
-  async shutdown() { this.unsubscribe(); await this.runtime.shutdown(); }
-  kill() { this.unsubscribe(); void this.runtime.shutdown(); }
+  private async call(method: string, params?: unknown) {
+    return response(await this.runtime.request(method, params));
+  }
+  previewStart(params: unknown) {
+    return this.call("preview/start", params);
+  }
+  previewStop(params: unknown) {
+    return this.call("preview/stop", params);
+  }
+  previewReload(params: unknown) {
+    return this.call("preview/reload", params);
+  }
+  previewState(params: unknown) {
+    return this.call("preview/state", params);
+  }
+  previewScreenshot(params?: unknown) {
+    return this.call("preview/screenshot", params ?? {});
+  }
+  previewDevices() {
+    return this.call("preview/devices", {});
+  }
+  analyzeRun(params: unknown) {
+    return this.call("analyze/run", params);
+  }
+  testRun(params: unknown) {
+    return this.call("test/run", params);
+  }
+  buildStart(params: unknown) {
+    return this.call("build/start", params);
+  }
+  buildState(params: unknown) {
+    return this.call("build/state", params);
+  }
+  flutterToolchainStatus() {
+    return this.call("flutter/toolchain/status", {});
+  }
+  flutterToolchainInstall() {
+    return this.call("flutter/toolchain/install", {});
+  }
+  async shutdown() {
+    this.unsubscribe();
+    await this.runtime.shutdown();
+  }
+  kill() {
+    this.unsubscribe();
+    void this.runtime.shutdown();
+  }
 }

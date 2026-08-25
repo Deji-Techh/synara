@@ -42,10 +42,7 @@ import {
   type PreviewFrameKind,
 } from "../../deviceStateStore";
 import { DeviceScreen, type DeviceKind } from "../device/DeviceFrame";
-import {
-  DeviceControlRail,
-  type DeviceRailAction,
-} from "../device/DeviceControlRail";
+import { DeviceControlRail, type DeviceRailAction } from "../device/DeviceControlRail";
 
 import { cn } from "~/lib/utils";
 import { buildLocalImageUrl } from "~/lib/localImageUrls";
@@ -134,12 +131,13 @@ const FRAME_KIND_OPTIONS: readonly { id: PreviewFrameKind; label: string }[] = [
   { id: "frameless", label: "Frameless" },
 ];
 
-const BUILD_TARGET_OPTIONS: readonly { id: "apk" | "appbundle" | "ipa" | "web"; label: string }[] = [
-  { id: "apk", label: "APK (Android)" },
-  { id: "appbundle", label: "AAB (Play Store)" },
-  { id: "ipa", label: "IPA (iOS)" },
-  { id: "web", label: "Website bundle" },
-];
+const BUILD_TARGET_OPTIONS: readonly { id: "apk" | "appbundle" | "ipa" | "web"; label: string }[] =
+  [
+    { id: "apk", label: "APK (Android)" },
+    { id: "appbundle", label: "AAB (Play Store)" },
+    { id: "ipa", label: "IPA (iOS)" },
+    { id: "web", label: "Website bundle" },
+  ];
 
 const BUILD_CHANNEL_OPTIONS: readonly { id: "debug" | "profile" | "release"; label: string }[] = [
   { id: "debug", label: "Debug" },
@@ -820,7 +818,9 @@ function ReleasePanel(props: {
             Target
             <select
               value={target}
-              onChange={(event) => setTarget(event.target.value as "apk" | "appbundle" | "ipa" | "web")}
+              onChange={(event) =>
+                setTarget(event.target.value as "apk" | "appbundle" | "ipa" | "web")
+              }
               disabled={isRunning}
               className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
             >
@@ -1591,7 +1591,6 @@ export function PreviewPanel(props: {
               </div>
             ) : (
               <div className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden bg-[#0a0a0a]">
-
                 <DeviceScreen
                   className="min-h-0 w-full flex-1 overflow-hidden"
                   kind={statusFrameKind}

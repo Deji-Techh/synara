@@ -132,25 +132,51 @@ export async function createFromTemplate({
       return;
     }
     await fs.ensureDir(fullAppPath);
-    await fs.writeJson(path.join(fullAppPath, "package.json"), {
-      name: path.basename(fullAppPath), private: true, type: "module",
-      scripts: { dev: "vite", build: "vite build", preview: "vite preview" },
-      devDependencies: { vite: "latest" },
-    }, { spaces: 2 });
+    await fs.writeJson(
+      path.join(fullAppPath, "package.json"),
+      {
+        name: path.basename(fullAppPath),
+        private: true,
+        type: "module",
+        scripts: { dev: "vite", build: "vite build", preview: "vite preview" },
+        devDependencies: { vite: "latest" },
+      },
+      { spaces: 2 },
+    );
     await fs.ensureDir(path.join(fullAppPath, "src"));
-    await fs.writeFile(path.join(fullAppPath, "index.html"), "<div id=\"root\"></div><script type=\"module\" src=\"/src/main.js\"></script>\n");
-    await fs.writeFile(path.join(fullAppPath, "src/main.js"), "document.querySelector('#root').innerHTML = '<h1>New Website</h1>';\n");
+    await fs.writeFile(
+      path.join(fullAppPath, "index.html"),
+      '<div id="root"></div><script type="module" src="/src/main.js"></script>\n',
+    );
+    await fs.writeFile(
+      path.join(fullAppPath, "src/main.js"),
+      "document.querySelector('#root').innerHTML = '<h1>New Website</h1>';\n",
+    );
     return;
   }
 
   if (framework === "react-native") {
     await fs.ensureDir(fullAppPath);
-    await fs.writeJson(path.join(fullAppPath, "package.json"), {
-      name: path.basename(fullAppPath), private: true, main: "node_modules/expo/AppEntry.js",
-      scripts: { start: "expo start", android: "expo start --android", ios: "expo start --ios", web: "expo start --web" },
-      dependencies: { expo: "latest", react: "latest", "react-native": "latest" },
-    }, { spaces: 2 });
-    await fs.writeFile(path.join(fullAppPath, "App.js"), "import { Text, View } from 'react-native';\nexport default function App() { return <View><Text>New React Native App</Text></View>; }\n");
+    await fs.writeJson(
+      path.join(fullAppPath, "package.json"),
+      {
+        name: path.basename(fullAppPath),
+        private: true,
+        main: "node_modules/expo/AppEntry.js",
+        scripts: {
+          start: "expo start",
+          android: "expo start --android",
+          ios: "expo start --ios",
+          web: "expo start --web",
+        },
+        dependencies: { expo: "latest", react: "latest", "react-native": "latest" },
+      },
+      { spaces: 2 },
+    );
+    await fs.writeFile(
+      path.join(fullAppPath, "App.js"),
+      "import { Text, View } from 'react-native';\nexport default function App() { return <View><Text>New React Native App</Text></View>; }\n",
+    );
     return;
   }
 

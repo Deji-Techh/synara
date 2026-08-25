@@ -140,7 +140,7 @@ projectionRepositoriesLayer("Projection repositories", (it) => {
         projectId: ProjectId.makeUnsafe("project-null-options"),
         title: "Null options thread",
         modelSelection: {
-        engineChatId: null,
+          engineChatId: null,
           provider: "groq",
           model: "llama-3.3-70b-versatile",
         },

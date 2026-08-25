@@ -9907,7 +9907,6 @@ export default function ChatView({
     [setPrompt, setRestoredQueuedSourceProposedPlan, threadId],
   );
 
-
   const clearComposerSlashDraft = useCallback(() => {
     promptRef.current = "";
     setRestoredQueuedSourceProposedPlan(threadId, null);
