@@ -11,11 +11,8 @@
  * @module EngineAdapterLive
  */
 import { randomUUID } from "node:crypto";
-import { existsSync } from "node:fs";
 import fs from "node:fs";
-import { spawnSync } from "node:child_process";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import {
   EventId,
@@ -32,9 +29,7 @@ import {
   ThreadId,
   TurnId,
 } from "@caide/contracts";
-import { EngineClient } from "@caide/engine/client";
 import { EmbeddedEngineClient } from "../../dyadRuntime/embeddedEngineClient.ts";
-import { CAIDE_ENGINE_DIR_ENV } from "@caide/shared/desktopIdentity";
 import { getCaideAppPath } from "../../paths/caideApps";
 import { listLiveApiProviderModels } from "../apiModelCatalog.ts";
 
@@ -109,84 +104,8 @@ import { ServerConfig } from "../../config.ts";
 import { ServerSecretStore } from "../../auth/Services/ServerSecretStore.ts";
 import { ProjectionThreadRepository } from "../../persistence/Services/ProjectionThreads.ts";
 
-/**
- * Resolve the Flutter engine entrypoint to spawn.
- *
- * The engine bundle is a Node program (better-sqlite3 native binding is not
- * supported by Bun — see apps/engine/src/spawn.test.ts), so the adapter
- * spawns `node dist/index.mjs`. If the bundle is missing (fresh checkout),
- * build it once via the engine package's tsdown script.
- */
-function resolveEngineCommand(): { command: string; args: readonly string[] } {
-  const candidates: ReadonlyArray<string> = [
-    // Packaged desktop: the desktop main injects the unpacked engine dir
-    // (process.resourcesPath/engine) which a plain `node` child can read —
-    // unlike app.asar.
-    process.env[CAIDE_ENGINE_DIR_ENV],
-    // Repo dev, bundled server (apps/server/dist/index.mjs → apps/engine).
-    fileURLToPath(new URL("../../../apps/engine", import.meta.url)),
-    // Repo dev, TS source under vitest (apps/server/src/provider/Layers →
-    // apps/engine).
-    fileURLToPath(new URL("../../../../engine", import.meta.url)),
-  ].filter(
-    (candidate): candidate is string => typeof candidate === "string" && candidate.length > 0,
-  );
-
-  // Both layouts are accepted: the current packaged payload is FLAT
-  // (resources/engine/dist/index.mjs) while legacy/staged payloads nest the
-  // bundle under apps/engine (resources/engine/apps/engine/dist/index.mjs).
-  const distVariants = (engineDir: string): string[] => [
-    path.join(engineDir, "dist", "index.mjs"),
-    path.join(engineDir, "apps", "engine", "dist", "index.mjs"),
-  ];
-
-  for (const engineDir of candidates) {
-    for (const distEntry of distVariants(engineDir)) {
-      if (existsSync(distEntry)) {
-        return { command: "node", args: [distEntry] };
-      }
-    }
-  }
-
-  // Fresh checkout: build once via the engine package's tsdown script — but
-  // ONLY for a writable repo checkout. A packaged desktop mount
-  // (`resources/engine` under an AppImage `.mount_*`/`.app`) is read-only and
-  // holds no tsdown build inputs; building there is futile (and slow), so
-  // surface the missing-bundle error directly instead.
-  const isPackagedMount = (candidate: string): boolean =>
-    candidate.includes(`${path.sep}resources${path.sep}engine`) ||
-    candidate.includes(`.mount_`) ||
-    candidate.endsWith(".app");
-  const buildCandidate = candidates.find(
-    (candidate) =>
-      !isPackagedMount(candidate) &&
-      existsSync(path.join(candidate, "package.json")) &&
-      distVariants(candidate).every((entry) => !existsSync(entry)),
-  );
-  if (buildCandidate) {
-    const built = spawnSync("bun", ["run", "build"], {
-      cwd: buildCandidate,
-      stdio: "ignore",
-    });
-    const rebuilt = distVariants(buildCandidate).find((entry) => existsSync(entry));
-    if (built.status === 0 && rebuilt) {
-      return { command: "node", args: [rebuilt] };
-    }
-  }
-
-  const firstCandidate = candidates[0] ?? "apps/engine";
-  throw new Error(
-    `engine bundle missing at ${path.join(firstCandidate, "dist", "index.mjs")}; ` +
-      `expected a packaged payload at CAIDE_ENGINE_DIR (${CAIDE_ENGINE_DIR_ENV}) or a built ` +
-      `apps/engine (bun run build in apps/engine)`,
-  );
-}
-
 export interface EngineAdapterLiveOptions {
-  readonly binaryPath?: string;
   readonly cwd?: string;
-  readonly command?: string;
-  readonly args?: readonly string[];
   /** Dev/test override for the engine's caide-apps base directory. */
   readonly appsDir?: string;
   /** Extra environment variables for the engine process (dev/test only). */
@@ -269,7 +188,7 @@ interface SharedEngine {
 }
 
 const ENGINE_CUSTOM_PROVIDER_ID = "custom::caide-engine";
-type EngineClientLike = EngineClient | EmbeddedEngineClient;
+type EngineClientLike = EmbeddedEngineClient;
 
 const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
   Effect.gen(function* () {
@@ -394,15 +313,6 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         const apiKey = secret ? decoder.decode(secret) : "";
         return { baseUrl, apiKey, modelId };
       });
-
-    const binaryPath = options?.binaryPath;
-    const useLegacyChild = Boolean(options?.command || options?.args || options?.binaryPath);
-    const resolvedCommand = options?.command ?? "node";
-    const resolvedArgs =
-      options?.args ??
-      (binaryPath ? [binaryPath] : useLegacyChild ? resolveEngineCommand().args : []);
-    const engineDir = fileURLToPath(new URL("../../../../engine", import.meta.url));
-    const engineCwd = options?.cwd ?? engineDir;
 
     const makeEvent = <T extends { type: string; payload: unknown }>(
       threadId: ThreadId,
@@ -1176,7 +1086,6 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         const existing = yield* Ref.get(sharedEngineRef);
         if (existing !== null) return existing;
 
-        const cwd = engineCwd;
         const engineSettings = (yield* serverSettings.getSettings.pipe(
           Effect.orElseSucceed(() => undefined),
         ))?.providers?.engine;
@@ -1247,34 +1156,19 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         const onNotification = (method: string, params: unknown) => {
           Effect.runFork(handleEngineNotification(method, params));
         };
-        const client: EngineClientLike = useLegacyChild
-          ? new EngineClient({
-              command: resolvedCommand,
-              args: resolvedArgs,
-              ...(cwd !== undefined ? { cwd } : {}),
-              env: engineEnv,
-              onStderr: (line) => {
-                Effect.runFork(
-                  Effect.logWarning(`engine stderr: ${line}`).pipe(
-                    Effect.annotateLogs({ provider: "engine", threadId }),
-                  ),
-                );
-              },
+        const client: EngineClientLike = yield* Effect.tryPromise({
+          try: () =>
+            EmbeddedEngineClient.create({
+              dataDir:
+                engineEnv.CAIDE_ENGINE_DATA_DIR ??
+                path.join(process.cwd(), "userData", "engine"),
+              ...(options?.appsDir !== undefined ? { appsDir: options.appsDir } : {}),
+              settings: initializeSettings,
               onNotification,
-            })
-          : yield* Effect.tryPromise({
-              try: () =>
-                EmbeddedEngineClient.create({
-                  dataDir:
-                    engineEnv.CAIDE_ENGINE_DATA_DIR ??
-                    path.join(process.cwd(), "userData", "engine"),
-                  ...(options?.appsDir !== undefined ? { appsDir: options.appsDir } : {}),
-                  settings: initializeSettings,
-                  onNotification,
-                }),
-              catch: (cause) =>
-                processError(threadId, "embedded dyad runtime failed to start", cause),
-            });
+            }),
+          catch: (cause) =>
+            processError(threadId, "embedded dyad runtime failed to start", cause),
+        });
         yield* Effect.tryPromise({
           try: () => client.waitForSpawn(),
           catch: (cause) => processError(threadId, "dyad runtime failed to become ready", cause),
