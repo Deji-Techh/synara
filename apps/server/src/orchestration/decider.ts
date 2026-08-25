@@ -2178,7 +2178,11 @@ export const decideOrchestrationCommand = Effect.fn("decideOrchestrationCommand"
             existingTurnId: existingMessage?.turnId,
             incomingTurnId: command.turnId,
           }),
-          streaming: true,
+          // A snapshot is an authoritative full-text replace. Preserve the
+          // message's existing streaming state so a re-sent transcript of an
+          // already-finalized message does not re-open it as live; new
+          // messages default to streaming and settle via item.completed.
+          streaming: existingMessage?.streaming ?? true,
           createdAt: command.createdAt,
           updatedAt: command.createdAt,
           isSnapshot: true,

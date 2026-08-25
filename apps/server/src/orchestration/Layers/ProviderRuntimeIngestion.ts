@@ -729,17 +729,23 @@ const make = Effect.gen(function* () {
         )
       : Effect.succeed(DEFAULT_ASSISTANT_DELIVERY_MODE);
 
-  const clearAssistantDeliveryModeBindingsForThread = (threadId: ThreadId) =>
+  const clearAssistantDeliveryModeBindingsForThread = (
+    threadId: ThreadId,
+    options: { readonly preservePendingModes?: boolean } = {},
+  ) =>
     Ref.update(assistantDeliveryModeBindingsRef, (state) => {
+      const pendingModes = state.pendingModesByThreadId.get(threadId) ?? [];
       if (
-        !state.pendingModesByThreadId.has(threadId) &&
+        (options.preservePendingModes ? pendingModes.length === 0 : true) &&
         !state.unmatchedTurnIdsByThreadId.has(threadId) &&
         !state.settledUnmatchedRequestDebtByThreadId.has(threadId)
       ) {
         return state;
       }
       const nextState = cloneAssistantDeliveryModeBindings(state);
-      nextState.pendingModesByThreadId.delete(threadId);
+      if (!options.preservePendingModes) {
+        nextState.pendingModesByThreadId.delete(threadId);
+      }
       nextState.unmatchedTurnIdsByThreadId.delete(threadId);
       nextState.settledUnmatchedRequestDebtByThreadId.delete(threadId);
       return nextState;
@@ -2532,9 +2538,14 @@ const make = Effect.gen(function* () {
       // Exact-turn delivery modes deliberately survive terminal events for a
       // bounded TTL: providers may send late item/delta events after settlement.
       // Unbound request/turn state is safe to clear when a session ends before
-      // the two sides can be matched.
+      // the two sides can be matched. Pending delivery-mode requests for turns
+      // already dispatched by the orchestrator are preserved: a provider session
+      // restart between turns must not silently demote the next turn to the
+      // buffered default (which hides its streaming text until turn end).
       if (event.type === "session.exited" || event.type === "runtime.error") {
-        yield* clearAssistantDeliveryModeBindingsForThread(thread.id);
+        yield* clearAssistantDeliveryModeBindingsForThread(thread.id, {
+          preservePendingModes: true,
+        });
       }
     });
 

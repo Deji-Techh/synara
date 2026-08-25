@@ -21,10 +21,10 @@ const QuestionSchema = z
     options: z
       .array(z.string())
       .min(1)
-      .max(3)
+      .max(8)
       .optional()
       .describe(
-        "Options for radio/checkbox questions. Keep to max 3 — users can always provide a custom answer via the free-form text input. Omit for text questions.",
+        "Options for radio/checkbox questions. Keep to 3-6 options — users can always provide a custom answer via the free-form text input. Omit for text questions.",
       ),
     required: z
       .boolean()
@@ -41,8 +41,8 @@ const planningQuestionnaireSchema = z.object({
   questions: z
     .array(QuestionSchema)
     .min(1, "questions array must not be empty")
-    .max(3, "questions array must have at most 3 questions")
-    .describe("A non empty array of 1-3 questions to present to the user"),
+    .max(4, "questions array must have at most 4 questions")
+    .describe("A non empty array of 1-4 questions to present to the user"),
 });
 
 const DESCRIPTION = `Present a structured questionnaire to gather requirements from the user. The tool displays questions in the UI and waits for the user's responses, returning them as the tool result.
@@ -61,7 +61,7 @@ The tool accepts ONLY a "questions" array.
 Each question object has these fields:
 - "question" (string, REQUIRED): The question text shown to the user
 - "type" (string, REQUIRED): One of "text", "radio", or "checkbox"
-- "options" (string array, REQUIRED for radio/checkbox, OMIT for text): 1-3 predefined choices
+- "options" (string array, REQUIRED for radio/checkbox, OMIT for text): 3-6 predefined choices
 - "id" (string, optional): Unique identifier, auto-generated if omitted
 - "required" (boolean, optional): Defaults to true
 - "placeholder" (string, optional): Placeholder for text inputs
@@ -99,7 +99,7 @@ WRONG — Empty options array:
 WRONG — Missing options for radio:
 { "type": "radio", "question": "..." }
 
-WRONG — More than 3 questions or more than 3 options
+WRONG — More than 4 questions or more than 6 options
 
 WRONG — Array with empty object (missing required "question" and "type" fields):
 { "questions": [{}] }
