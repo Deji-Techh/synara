@@ -7878,6 +7878,7 @@ export default function ChatView({
             kind: firstSendTarget.creation.kind,
             title: firstSendTarget.creation.title,
             workspaceRoot: firstSendTarget.creation.workspaceRoot,
+            framework: "blank",
             createWorkspaceRootIfMissing: firstSendTarget.creation.createWorkspaceRootIfMissing,
             defaultModelSelection: firstSendTarget.creation.defaultModelSelection,
             ...createProjectSpaceFields,

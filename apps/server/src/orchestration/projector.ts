@@ -394,7 +394,7 @@ export function projectEvent(
         })),
       );
 
-    case "project.created":
+   case "project.created":
       return decodeForEvent(ProjectCreatedPayload, event.payload, event.type, "payload").pipe(
         Effect.map((payload) => {
           const existing = nextBase.projects.find((entry) => entry.id === payload.projectId);
@@ -403,7 +403,7 @@ export function projectEvent(
             kind: payload.kind,
             title: payload.title,
             workspaceRoot: payload.workspaceRoot,
-            framework: payload.framework,
+            framework: (payload.framework as string | undefined) ?? "blank",
             defaultModelSelection: payload.defaultModelSelection,
             scripts: payload.scripts,
             isPinned: payload.isPinned ?? false,
@@ -936,13 +936,27 @@ export function projectEvent(
         if (existingIndex >= 0) {
           const entry = thread.messages[existingIndex]!;
           const nextMessages = thread.messages.slice();
+          // Handle both incremental deltas ("Hello" + " world") and cumulative
+          // replays/full-buffer flushes ("Hello world") without duplicating the
+          // common prefix. This mirrors the web's mergeStreamingMessage logic
+          // but keeps the server read model idempotent for provider replays.
+          let nextText: string;
+          if (message.streaming) {
+            if (message.text.length === 0) {
+              nextText = entry.text;
+            } else if (message.text.startsWith(entry.text)) {
+              nextText = message.text;
+            } else if (entry.text.endsWith(message.text)) {
+              nextText = entry.text;
+            } else {
+              nextText = `${entry.text}${message.text}`;
+            }
+          } else {
+            nextText = message.text.length > 0 ? message.text : entry.text;
+          }
           nextMessages[existingIndex] = {
             ...entry,
-            text: message.streaming
-              ? `${entry.text}${message.text}`
-              : message.text.length > 0
-                ? message.text
-                : entry.text,
+            text: nextText,
             streaming: message.streaming,
             source: message.source,
             updatedAt: message.updatedAt,

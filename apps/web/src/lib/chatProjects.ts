@@ -266,6 +266,7 @@ export async function ensureHomeChatProject(
         kind: "chat",
         title: "Home",
         workspaceRoot: placeholderWorkspaceRoot,
+        framework: "blank",
         createdAt: new Date().toISOString(),
       });
       return projectId;

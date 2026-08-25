@@ -20,7 +20,7 @@ import { nonEmptyTrimmed } from "@caide/shared/text";
 import type { ProviderRuntimeEventPumpHealth } from "./Services/ProviderService.ts";
 import type { ProviderRuntimeBinding } from "./Services/ProviderSessionDirectory.ts";
 
-export const DEFAULT_RUNTIME_RECONCILIATION_STALE_AFTER_MS = 15_000;
+export const DEFAULT_RUNTIME_RECONCILIATION_STALE_AFTER_MS = 60_000;
 
 /**
  * Absolute upper bound on a single turn. Past this the turn is settled even

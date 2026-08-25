@@ -597,8 +597,18 @@ function mergeStreamingMessage(
     !incomingMessage.streaming
   ) {
     nextText = incomingMessage.text;
-  } else if (incomingMessage.streaming || incomingMessage.text.length === 0) {
-    nextText = `${existingMessage.text}${incomingMessage.text}`;
+  } else if (incomingMessage.streaming) {
+    if (incomingMessage.text.length === 0) {
+      nextText = existingMessage.text;
+    } else if (incomingMessage.text.startsWith(existingMessage.text)) {
+      nextText = incomingMessage.text;
+    } else if (existingMessage.text.endsWith(incomingMessage.text)) {
+      nextText = existingMessage.text;
+    } else {
+      nextText = `${existingMessage.text}${incomingMessage.text}`;
+    }
+  } else if (incomingMessage.text.length === 0) {
+    nextText = existingMessage.text;
   } else if (incomingMessage.text.startsWith(existingMessage.text)) {
     nextText = incomingMessage.text;
   } else if (existingMessage.text.startsWith(incomingMessage.text)) {

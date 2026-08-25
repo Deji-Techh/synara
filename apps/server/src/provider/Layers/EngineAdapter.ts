@@ -210,16 +210,24 @@ interface PendingEngineRequest {
  * Register an interaction without ever rebinding an existing request ID.
  * Engine request IDs are expected to be unique, but keeping this invariant at
  * the adapter boundary prevents a malformed/replayed event from moving an
- * approval or question to another thread.
+ * approval or question to another thread. The map key is now
+ * `${threadId}::${requestId}` so the same requestId in two different
+ * threads/chats never collides and a response is never settled against the
+ * wrong thread.
  */
+export function pendingInteractionKey(threadId: ThreadId, requestId: string): string {
+  return `${String(threadId)}::${String(requestId)}`;
+}
+
 export function tryRegisterPendingRequest(
   map: ReadonlyMap<string, PendingEngineRequest>,
   requestId: string,
   entry: PendingEngineRequest,
 ): readonly [registered: boolean, next: ReadonlyMap<string, PendingEngineRequest>] {
-  if (map.has(requestId)) return [false, map];
+  const key = pendingInteractionKey(entry.threadId, requestId);
+  if (map.has(key)) return [false, map];
   const next = new Map(map);
-  next.set(requestId, entry);
+  next.set(key, entry);
   return [true, next];
 }
 
@@ -943,13 +951,28 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             const requestId = String(payload.requestId ?? "");
             if (requestId === "") return;
             const pending = yield* Ref.get(pendingRequests);
-            const entry = pending.get(requestId);
-            if (!entry) return;
-            const eventChatId = typeof payload.chatId === "number" ? payload.chatId : null;
-            if (!ownsPendingRequest(entry, entry.threadId, eventChatId ?? undefined)) return;
+            const eventChatId = typeof payload.chatId === "number" ? payload.chatId : undefined;
+            let matchedKey: string | null = null;
+            let entry: PendingEngineRequest | null = null;
+            for (const [key, candidate] of pending.entries()) {
+              if (String(candidate.requestId ?? key.split("::").pop()) !== requestId) {
+                // Fallback for legacy keys stored as bare requestId: also match requestId directly
+                if (key !== requestId) continue;
+              }
+              // Composite key format is `${threadId}::${requestId}`; extract requestId suffix for comparison
+              const suffix = key.includes("::") ? key.split("::").pop()! : key;
+              if (suffix !== requestId) continue;
+              if (!ownsPendingRequest(candidate, candidate.threadId, eventChatId)) continue;
+              // Prefer entry whose thread's chatId matches event chat when available
+              if (eventChatId !== undefined && candidate.chatId !== undefined && candidate.chatId !== eventChatId) continue;
+              matchedKey = key;
+              entry = candidate;
+              break;
+            }
+            if (!matchedKey || !entry) return;
             yield* Ref.update(pendingRequests, (map) => {
               const next = new Map(map);
-              next.delete(requestId);
+              next.delete(matchedKey!);
               return next;
             });
             yield* publishEvent(
@@ -1958,8 +1981,9 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       respondToRequest: (threadId, requestId, decision) =>
         Effect.gen(function* () {
           const context = yield* getSession(threadId);
+          const key = pendingInteractionKey(threadId, String(requestId));
           const entry = yield* Ref.get(pendingRequests).pipe(
-            Effect.map((map) => map.get(String(requestId)) ?? null),
+            Effect.map((map) => map.get(key) ?? null),
           );
           if (entry === null) return;
           if (!ownsPendingRequest(entry, threadId, context.chatMapping?.chatId)) return;
@@ -1992,7 +2016,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           }
           yield* Ref.update(pendingRequests, (map) => {
             const next = new Map(map);
-            next.delete(String(requestId));
+            next.delete(key);
             return next;
           });
           yield* publishEvent(
@@ -2011,8 +2035,9 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       respondToUserInput: (threadId, requestId, answers) =>
         Effect.gen(function* () {
           const context = yield* getSession(threadId);
+          const key = pendingInteractionKey(threadId, String(requestId));
           const entry = yield* Ref.get(pendingRequests).pipe(
-            Effect.map((map) => map.get(String(requestId)) ?? null),
+            Effect.map((map) => map.get(key) ?? null),
           );
           if (entry === null) return;
           if (!ownsPendingRequest(entry, threadId, context.chatMapping?.chatId)) return;
@@ -2047,7 +2072,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           }
           yield* Ref.update(pendingRequests, (map) => {
             const next = new Map(map);
-            next.delete(String(requestId));
+            next.delete(key);
             return next;
           });
           yield* publishEvent(

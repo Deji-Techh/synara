@@ -104,8 +104,10 @@ describe("EngineAdapter", () => {
   it("keeps pending interaction ownership stable when request IDs collide", () => {
     const firstThread = ThreadId.makeUnsafe("thread-a");
     const secondThread = ThreadId.makeUnsafe("thread-b");
+    const firstKey = `${String(firstThread)}::request-1`;
+    const secondKey = `${String(secondThread)}::request-1`;
     const first = new Map([
-      ["request-1", { kind: "questionnaire" as const, threadId: firstThread, chatId: 11 }],
+      [firstKey, { kind: "questionnaire" as const, threadId: firstThread, chatId: 11 }],
     ]);
 
     const [registered, next] = tryRegisterPendingRequest(first, "request-1", {
@@ -114,9 +116,14 @@ describe("EngineAdapter", () => {
       chatId: 22,
     });
 
-    expect(registered).toBe(false);
-    expect(next).toBe(first);
-    expect(next.get("request-1")).toEqual(first.get("request-1"));
+    expect(registered).toBe(true);
+    expect(next.size).toBe(2);
+    expect(next.get(firstKey)).toEqual(first.get(firstKey));
+    expect(next.get(secondKey)).toEqual({
+      kind: "agent-tool-consent",
+      threadId: secondThread,
+      chatId: 22,
+    });
   });
 
   it("requires both thread and chat ownership for pending interactions", () => {
