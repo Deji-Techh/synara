@@ -399,7 +399,7 @@ management, web build/test commands, and browser-oriented tools.
 
 - [x] Make integrated dyad runtime the default provider/runtime path.
 - [x] Harden `EngineAdapter` as thin embedded wrapper: `status:running` during turns, `getCaideAppPath` resolution, transcript dedup, `planning_questionnaire` max-3 retry budget, `plan_mode_prompt` framework routing (852d822b).
-- [ ] Remove active use of `EngineAdapter` and child engine supervision.
+- [x] Remove child-engine stdio supervision (`resolveEngineCommand`/`EngineClient`/`binaryPath` path) — `EngineAdapter` now pure `EmbeddedEngineClient` (968b76e8).
 - [ ] Remove engine JSON-RPC protocol and duplicate settings/state bridges.
 - [ ] Remove obsolete server provider adapters and Codex/CLI active paths.
 - [ ] Stop packaging the old engine payload.
