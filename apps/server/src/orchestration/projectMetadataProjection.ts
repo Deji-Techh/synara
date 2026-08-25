@@ -33,6 +33,7 @@ export const applyProjectMetadataProjection = (input: {
           kind: input.event.payload.kind ?? "project",
           title: input.event.payload.title,
           workspaceRoot: input.event.payload.workspaceRoot,
+          framework: input.event.payload.framework ?? "blank",
           defaultModelSelection: input.event.payload.defaultModelSelection,
           scripts: input.event.payload.scripts,
           isPinned: input.event.payload.isPinned ?? false,

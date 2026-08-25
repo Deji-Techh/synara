@@ -134,17 +134,60 @@ When exploring the codebase, identify:
 Use this context to inform your implementation plan and ensure consistency with existing Flutter patterns.
 `;
 
+const DEFAULT_PLAN_AI_RULES_REACT_NATIVE = `# Tech Stack Context — React Native / Expo
+When exploring the codebase, identify:
+- Expo / React Native patterns (Expo Router or React Navigation, components, hooks)
+- State approach (React state, Context, Zustand/Jotai if present)
+- Feature folder layout (app/, components/, hooks/, assets/)
+- Routing and navigation conventions
+- Assets, app.json / app.config.js, and package.json conventions
+
+Use this context to inform your implementation plan and ensure consistency with existing React Native / Expo patterns.
+`;
+
+const DEFAULT_PLAN_AI_RULES_WEBSITE = `# Tech Stack Context — Website (Vite / Next.js)
+When exploring the codebase, identify:
+- Web patterns (React, Vite or Next.js, components, pages/routes)
+- State approach (React state, Context, stores)
+- Feature folder layout (src/, components/, pages/ or app/)
+- Routing conventions
+- Assets and package.json / vite.config / next.config conventions
+
+Use this context to inform your implementation plan and ensure consistency with existing web patterns.
+`;
+
+const DEFAULT_PLAN_AI_RULES_GENERIC = `# Tech Stack Context — Project
+When exploring the codebase, identify:
+- Project structure, language and framework in use
+- State and architecture patterns
+- Feature folder layout
+- Routing/navigation if any
+- Assets and configuration conventions
+
+Use this context to inform your implementation plan and ensure consistency with the existing project patterns.
+`;
+
 export function constructPlanModePrompt(
   aiRules: string | undefined,
   themePrompt?: string,
   options?: { frameworkType?: AppFrameworkType | null },
 ): string {
-  let prompt = PLAN_MODE_SYSTEM_PROMPT.replace("[[AI_RULES]]", aiRules ?? DEFAULT_PLAN_AI_RULES);
+  const frameworkType = options?.frameworkType ?? null;
+  const resolvedAiRules =
+    aiRules ??
+    (frameworkType === "react-native"
+      ? DEFAULT_PLAN_AI_RULES_REACT_NATIVE
+      : frameworkType === "vite" || frameworkType === "vite-nitro" || frameworkType === "nextjs"
+        ? DEFAULT_PLAN_AI_RULES_WEBSITE
+        : frameworkType === "other" || frameworkType === null
+          ? DEFAULT_PLAN_AI_RULES_GENERIC
+          : DEFAULT_PLAN_AI_RULES);
+  let prompt = PLAN_MODE_SYSTEM_PROMPT.replace("[[AI_RULES]]", resolvedAiRules);
 
   if (
-    options?.frameworkType === "vite" ||
-    options?.frameworkType === "vite-nitro" ||
-    options?.frameworkType === "nextjs"
+    frameworkType === "vite" ||
+    frameworkType === "vite-nitro" ||
+    frameworkType === "nextjs"
   ) {
     prompt = prompt.replace(
       "specialized in gathering requirements and creating detailed implementation plans for mobile apps and their supporting services",
@@ -154,14 +197,40 @@ export function constructPlanModePrompt(
       "what Flutter app they would like to build",
       "what website they would like to build",
     );
-  } else if (options?.frameworkType === "react-native") {
+  } else if (frameworkType === "react-native") {
     prompt = prompt.replace(
       "what Flutter app they would like to build",
       "what native-feel React Native app they would like to build",
     );
+  } else if (frameworkType === "other" || frameworkType === null) {
+    prompt = prompt.replace(
+      "specialized in gathering requirements and creating detailed implementation plans for mobile apps and their supporting services",
+      "specialized in gathering requirements and creating detailed implementation plans for apps and projects of any kind",
+    );
+    prompt = prompt.replace(
+      "what Flutter app they would like to build",
+      "what app or project they would like to build",
+    );
+  }
+  // Motion capability is Flutter-specific; replace for other frameworks.
+  if (frameworkType === "react-native") {
+    prompt = prompt.replace(
+      "Use native Flutter implicit animations (`AnimatedContainer`, `AnimatedSwitcher`, `Hero`) for transitions; `AnimationController` / `CurvedAnimation` for custom choreography; `lottie` for vector animations; `rive` for interactive state-machine art; avoid unneeded third-party packages",
+      "Use React Native / Expo idiomatic motion (Reanimated, Animated API, Expo-friendly transitions); `lottie-react-native` for vector animations where needed; avoid unneeded native dependencies",
+    );
+  } else if (
+    frameworkType === "vite" ||
+    frameworkType === "vite-nitro" ||
+    frameworkType === "nextjs" ||
+    frameworkType === "other" ||
+    frameworkType === null
+  ) {
+    prompt = prompt.replace(
+      "Use native Flutter implicit animations (`AnimatedContainer`, `AnimatedSwitcher`, `Hero`) for transitions; `AnimationController` / `CurvedAnimation` for custom choreography; `lottie` for vector animations; `rive` for interactive state-machine art; avoid unneeded third-party packages",
+      "Use platform-idiomatic motion for the target (CSS transitions/animations or Framer Motion for web, Reanimated for React Native); `lottie` where useful; avoid unneeded third-party packages",
+    );
   }
 
-  const frameworkType = options?.frameworkType;
   const isWebsite =
     frameworkType === "vite" || frameworkType === "vite-nitro" || frameworkType === "nextjs";
   prompt += `\n\n${buildPlatformPrompt(isWebsite ? "web" : "mobile", frameworkType)}`;

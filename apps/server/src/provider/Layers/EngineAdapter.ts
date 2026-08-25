@@ -242,7 +242,7 @@ export function ownsPendingRequest(
 
 interface EngineSessionContext {
   readonly threadId: ThreadId;
-  readonly session: ProviderSession;
+  session: ProviderSession;
   readonly engineServerVersion: string;
   /** Reference to the shared engine client (all sessions share one process). */
   readonly client: EngineClientLike;
@@ -644,6 +644,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                   }),
                 );
                 context.currentTurnIdRef.current = null;
+                markSessionIdle(context, "interrupted");
               }
               yield* Ref.update(chatToThread, (map) => {
                 const next = new Map(map);
@@ -763,6 +764,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 errorMessage: "Engine completed without a response.",
               });
               context.currentTurnIdRef.current = null;
+              markSessionIdle(context, "error");
               return;
             }
             yield* publishEvent(
@@ -782,6 +784,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 : undefined,
             );
             context.currentTurnIdRef.current = null;
+            markSessionIdle(context, wasCancelled ? "interrupted" : "ready");
             return;
           }
           case "plan:update": {
@@ -839,6 +842,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               message !== "" ? { errorMessage: message } : undefined,
             );
             context.currentTurnIdRef.current = null;
+            markSessionIdle(context, "error");
             return;
           }
 
@@ -1398,13 +1402,16 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         const apps = Array.isArray(appListResponse?.apps) ? appListResponse.apps : [];
         const existing = apps.find((app) => {
           const appPathField = app.path;
-          return (
-            typeof appPathField === "string" &&
-            (appPathField === appPath ||
-              // engine resolves relative names under its apps dir; compare
-              // both raw path and resolved absolute forms.
-              path.resolve(appPathField) === path.resolve(appPath))
-          );
+          if (typeof appPathField !== "string") return false;
+          if (appPathField === appPath) return true;
+          // Engine stores relative names (e.g. "nebulous-otter") under
+          // ~/caide-apps; compare the resolved absolute forms via
+          // getCaideAppPath so relative-vs-absolute lookups match.
+          try {
+            return getCaideAppPath(appPathField) === getCaideAppPath(appPath);
+          } catch {
+            return false;
+          }
         });
         if (existing !== undefined && typeof existing.id === "number") {
           return existing.id;
@@ -1446,9 +1453,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               client.dyadInvoke<{ app?: { id?: number }; chatId?: number }>("create-app", {
                 name,
                 initialChatMode: "build",
-                // Flutter-only product: never let the engine fall back to the
-                // legacy web template.
-                templateId: "flutter",
+                framework: "blank",
               }),
             catch: (cause) => processError(context.threadId, "engine create-app failed", cause),
           });
@@ -1585,6 +1590,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 errorMessage: error.message,
               });
               context.currentTurnIdRef.current = null;
+              markSessionIdle(context, "error");
             }),
         }),
         Effect.forkDetach,
@@ -1704,6 +1710,29 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           return Effect.succeed(context);
         }),
       );
+
+    const markSessionRunning = (context: EngineSessionContext, turnId: TurnId): void => {
+      const now = new Date().toISOString();
+      context.session = {
+        ...context.session,
+        status: "running" as const,
+        activeTurnId: turnId as unknown as string,
+        updatedAt: now,
+      };
+    };
+
+    const markSessionIdle = (
+      context: EngineSessionContext,
+      status: ProviderSession["status"] = "ready",
+    ): void => {
+      const now = new Date().toISOString();
+      context.session = {
+        ...context.session,
+        status,
+        activeTurnId: null,
+        updatedAt: now,
+      };
+    };
 
     // Layer teardown: kill the shared engine process so nothing outlives the
     // adapter (ProviderService also calls stopAll on shutdown, this is the
@@ -1863,7 +1892,12 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           const mapping = yield* ensureThreadChat(context);
           const turnId = TurnId.makeUnsafe(randomUUID());
           context.currentTurnIdRef.current = turnId;
-          context.emittedTranscriptRef.current.clear();
+          markSessionRunning(context, turnId);
+          // Keep per-message emission state across turns so the engine's
+          // full-transcript `messages` payloads on the next turn don't
+          // replay prior assistant messages as new deltas. Only the generic
+          // streaming key (used when no messageId is supplied) is reset.
+          context.emittedTranscriptRef.current.delete("streaming");
           yield* publishEvent(
             makeEvent<ProviderRuntimeEvent>(input.threadId, {
               type: "turn.started",
@@ -1976,6 +2010,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             }),
           );
           context.currentTurnIdRef.current = null;
+          markSessionIdle(context, "interrupted");
         }),
 
       respondToRequest: (threadId, requestId, decision) =>

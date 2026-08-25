@@ -206,9 +206,17 @@ export const listFilesTool: ToolDefinition<ListFilesArgs> = {
     // Build full file list for LLM
     const allFilesList = cappedPaths.map((entry) => " - " + getDisplayPath(entry)).join("\n") || "";
     // Guard for empty new apps: tell the model to stop exploring and write the plan.
+    const labelForFramework =
+      ctx.frameworkType === "flutter"
+        ? "Flutter"
+        : ctx.frameworkType === "react-native"
+          ? "React Native / Expo"
+          : ctx.frameworkType === "vite" || ctx.frameworkType === "vite-nitro" || ctx.frameworkType === "nextjs"
+            ? "website"
+            : "new";
     const resultText =
       totalCount === 0
-        ? "(No files found — this is a new Flutter app with only the scaffold. Do not call list_files again. Proceed to write_plan or planning_questionnaire.)"
+        ? `(No files found — this is a new ${labelForFramework} app with only the scaffold. Do not call list_files again. Proceed to write_plan or planning_questionnaire.)`
         : wasTruncated
           ? `${allFilesList}\n\n[TRUNCATED: Showing ${cappedPaths.length} of ${totalCount} paths. Use directory to narrow the listing.]`
           : allFilesList;
