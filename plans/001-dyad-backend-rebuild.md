@@ -398,6 +398,7 @@ management, web build/test commands, and browser-oriented tools.
 ### 10. Cutover and deletion
 
 - [x] Make integrated dyad runtime the default provider/runtime path.
+- [x] Harden `EngineAdapter` as thin embedded wrapper: `status:running` during turns, `getCaideAppPath` resolution, transcript dedup, `planning_questionnaire` max-3 retry budget, `plan_mode_prompt` framework routing (852d822b).
 - [ ] Remove active use of `EngineAdapter` and child engine supervision.
 - [ ] Remove engine JSON-RPC protocol and duplicate settings/state bridges.
 - [ ] Remove obsolete server provider adapters and Codex/CLI active paths.
