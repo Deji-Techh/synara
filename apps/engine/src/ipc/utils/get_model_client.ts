@@ -119,9 +119,7 @@ export async function getModelClient(
         ...getModelClientFetchOption(),
         caideOptions: {
           enableLazyEdits:
-            settings.selectedChatMode === "ask"
-              ? false
-              : settings.enableProLazyEditsMode && settings.proLazyEditsMode !== "v2",
+            settings.enableProLazyEditsMode && settings.proLazyEditsMode !== "v2",
           enableSmartFilesContext,
           enableWebSearch: settings.enableProWebSearch,
         },

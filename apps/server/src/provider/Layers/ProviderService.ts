@@ -2300,6 +2300,7 @@ const makeProviderService = (options?: ProviderServiceLiveOptions) =>
               input.threadId,
               input.requestId,
               response.input.decision,
+              response.input.blueprintEdits,
             );
             return;
           }

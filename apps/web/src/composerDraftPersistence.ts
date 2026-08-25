@@ -622,12 +622,12 @@ function normalizePersistedQueuedTurns(
           ? candidate.interactionMode
           : null;
       const mode =
-        candidate.mode === "build" ||
-        candidate.mode === "ask" ||
         candidate.mode === "local-agent" ||
         candidate.mode === "plan"
           ? candidate.mode
-          : null;
+          : candidate.mode === "build" || candidate.mode === "ask" || candidate.mode === "agent"
+            ? "local-agent"
+            : null;
       const envMode =
         candidate.envMode === "local" || candidate.envMode === "worktree"
           ? candidate.envMode
@@ -670,12 +670,12 @@ function normalizePersistedQueuedTurns(
           ? candidate.interactionMode
           : null;
       const mode =
-        candidate.mode === "build" ||
-        candidate.mode === "ask" ||
         candidate.mode === "local-agent" ||
         candidate.mode === "plan"
           ? candidate.mode
-          : null;
+          : candidate.mode === "build" || candidate.mode === "ask" || candidate.mode === "agent"
+            ? "local-agent"
+            : null;
       if (interactionMode === null) {
         continue;
       }
@@ -899,12 +899,13 @@ function normalizePersistedDraftsByThreadId(
         ? draftCandidate.interactionMode
         : null;
     const mode =
-      draftCandidate.mode === "build" ||
-      draftCandidate.mode === "ask" ||
-      draftCandidate.mode === "local-agent" ||
-      draftCandidate.mode === "plan"
+      draftCandidate.mode === "local-agent" || draftCandidate.mode === "plan"
         ? draftCandidate.mode
-        : null;
+        : draftCandidate.mode === "build" ||
+            draftCandidate.mode === "ask" ||
+            draftCandidate.mode === "agent"
+          ? "local-agent"
+          : null;
     const prompt = ensureInlineTerminalContextPlaceholders(
       promptCandidate,
       terminalContexts.length,
@@ -1344,13 +1345,16 @@ export function normalizeCurrentPersistedComposerDraftStoreState(
     stickyActiveProvider = normalizeProviderKind(normalizedPersistedState.stickyProvider);
   }
 
+  const rawStickyChatMode: string | null | undefined =
+    normalizedPersistedState.stickyChatMode;
   const stickyChatMode =
-    normalizedPersistedState.stickyChatMode === "build" ||
-    normalizedPersistedState.stickyChatMode === "ask" ||
-    normalizedPersistedState.stickyChatMode === "local-agent" ||
-    normalizedPersistedState.stickyChatMode === "plan"
-      ? normalizedPersistedState.stickyChatMode
-      : null;
+    rawStickyChatMode === "local-agent" || rawStickyChatMode === "plan"
+      ? (rawStickyChatMode as ChatMode)
+      : rawStickyChatMode === "build" ||
+          rawStickyChatMode === "ask" ||
+          rawStickyChatMode === "agent"
+        ? "local-agent"
+        : null;
 
   return {
     draftsByThreadId: normalizePersistedDraftsByThreadId(normalizedPersistedState.draftsByThreadId),

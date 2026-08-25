@@ -435,6 +435,7 @@ function toProjectedProject(row: ProjectionProjectDbRow): OrchestrationProject {
     kind: row.kind,
     title: row.title,
     workspaceRoot: row.workspaceRoot,
+    framework: row.framework,
     defaultModelSelection: row.defaultModelSelection,
     scripts: row.scripts,
     isPinned: row.isPinned > 0,
@@ -778,6 +779,7 @@ const makeProjectionSnapshotQuery = Effect.gen(function* () {
         SELECT
           project_id AS "projectId",
           kind,
+          framework,
           title,
           workspace_root AS "workspaceRoot",
           default_model_selection_json AS "defaultModelSelection",
@@ -1265,6 +1267,7 @@ const makeProjectionSnapshotQuery = Effect.gen(function* () {
         SELECT
           project_id AS "projectId",
           kind,
+          framework,
           title,
           workspace_root AS "workspaceRoot",
           default_model_selection_json AS "defaultModelSelection",
@@ -1325,6 +1328,7 @@ const makeProjectionSnapshotQuery = Effect.gen(function* () {
         SELECT
           project_id AS "projectId",
           kind,
+          framework,
           title,
           workspace_root AS "workspaceRoot",
           default_model_selection_json AS "defaultModelSelection",

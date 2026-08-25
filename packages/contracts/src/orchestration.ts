@@ -280,9 +280,9 @@ export const DEFAULT_PROVIDER_INTERACTION_MODE: ProviderInteractionMode = "defau
  *   engine loop as `build`, kept as a distinct label for parity with Caide).
  * - `plan`: produce a plan artifact only — single-step, no file edits.
  */
-export const ChatMode = Schema.Literals(["build", "ask", "local-agent", "plan"]);
+export const ChatMode = Schema.Literals(["local-agent", "plan"]);
 export type ChatMode = typeof ChatMode.Type;
-export const DEFAULT_CHAT_MODE: ChatMode = "build";
+export const DEFAULT_CHAT_MODE: ChatMode = "local-agent";
 const SidechatSourceThreadId = Schema.optional(Schema.NullOr(ThreadId)).pipe(
   Schema.withDecodingDefault(() => null),
 );
@@ -1454,6 +1454,9 @@ const ThreadApprovalRespondCommand = Schema.Struct({
   requestId: ApprovalRequestId,
   lifecycleGeneration: Schema.optional(TrimmedNonEmptyString),
   decision: ProviderApprovalDecision,
+  blueprintEdits: Schema.optional(
+    Schema.Record(Schema.String, Schema.Unknown),
+  ),
   createdAt: IsoDateTime,
 });
 
@@ -2046,6 +2049,9 @@ export const ThreadApprovalResponseRequestedPayload = Schema.Struct({
   requestId: ApprovalRequestId,
   lifecycleGeneration: Schema.optional(TrimmedNonEmptyString),
   decision: ProviderApprovalDecision,
+  blueprintEdits: Schema.optional(
+    Schema.Record(Schema.String, Schema.Unknown),
+  ),
   createdAt: IsoDateTime,
 });
 

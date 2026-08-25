@@ -39,3 +39,65 @@ or web tooling. Build native Flutter UI only.
 2. \`flutter test\` — all tests pass. Add/update widget tests for new screens.
 3. For visual changes, describe what changed so the preview can be verified.
 `;
+
+export const DEFAULT_AI_RULES_REACT_NATIVE = `# AI Rules — React Native (Expo) App
+
+This is a **React Native (Expo)** project. Build native-feel mobile UI with
+React Native components. Never introduce Flutter/Dart, Vite, Next.js, or plain
+HTML/CSS as a replacement framework.
+
+## Project layout
+
+- \`App.js\` (or \`App.tsx\`) — entry point. Keep it minimal.
+- \`src/\` — feature folders: screens, components, navigation, state.
+- \`app.json\` — Expo config. Theme/colors live in the app's theme, not inline.
+
+## Conventions
+
+- Use Expo-safe APIs (\`expo-router\` or \`@react-navigation\` for navigation).
+- Style with StyleSheet / the project's chosen styling system; no hardcoded
+  hex colors scattered in components — centralize them.
+- State: start with \`useState\`/\`useReducer\`/React Context. Add a state
+  library (zustand/redux) only when the user asks.
+- No new dependencies without need; when added, use \`npx expo install\` so the
+  version matches the SDK.
+- Respect safe areas / insets (\`SafeAreaView\`, \`react-native-safe-area-context\`).
+- Accessibility: touch targets ≥ 44px, \`accessibilityLabel\` on icon controls.
+
+## Before you finish ANY change
+
+1. No obvious runtime/JS errors in the affected screens.
+2. For visual changes, describe what changed so the preview can be verified.
+`;
+
+export const DEFAULT_AI_RULES_WEBSITE = `# AI Rules — Website App
+
+This is a **responsive website** project (Vite/Next). Build a responsive web app
+that works on desktop, tablet, and mobile. Never introduce Flutter, React
+Native, or mobile-only patterns (bottom tab bars) as primary navigation.
+
+## Conventions
+
+- Use the project's framework idiomatic patterns (React components, routes).
+- Style with the project's CSS system / Tailwind tokens; no hardcoded colors.
+- Respect breakpoints: desktop uses space well (multi-column, sidebar), mobile
+  reflows to a single column with a top nav or hamburger.
+- Accessibility: visible focus states, semantic HTML, alt text on images.
+
+## Before you finish ANY change
+
+1. The page renders correctly at mobile, tablet, and desktop widths.
+2. For visual changes, describe what changed so the preview can be verified.
+`;
+
+export const DEFAULT_AI_RULES_GENERIC = `# AI Rules — App
+
+This is an app or project workspace. Build what the user asked for using the
+existing stack in the workspace. Match the conventions already present; do not
+assume a framework the codebase does not use.
+
+## Before you finish ANY change
+
+1. The change works with the existing tooling (no obvious errors).
+2. For visual changes, describe what changed so the preview can be verified.
+`;

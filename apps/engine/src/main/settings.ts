@@ -52,7 +52,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   experiments: {},
   enableProLazyEditsMode: true,
   enableProSmartFilesContextMode: true,
-  selectedChatMode: "build",
+  selectedChatMode: "local-agent",
   enableAutoFixProblems: true,
   enableAppBlueprint: true,
   enableAutoUpdate: true,

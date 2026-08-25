@@ -35,7 +35,7 @@ async function mountApprovalPanel(input?: { approval?: PendingApproval; isRespon
       _requestId: ApprovalRequestId,
       _decision: ProviderApprovalDecision,
       _lifecycleGeneration?: string,
-      _requestKind?: ProviderRequestKind,
+      _requestKind?: PendingApproval["requestKind"],
     ) => undefined,
   );
   const screen = await render(

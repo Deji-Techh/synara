@@ -74,6 +74,7 @@ const KIND_PROMPT: Record<PendingApproval["requestKind"], string> = {
   "file-read": "Approve reading this file?",
   "file-change": "Approve this file change?",
   permissions: "Grant these permissions?",
+  blueprint: "Review and approve this app blueprint?",
 };
 
 export const ComposerPendingApprovalPanel = function ComposerPendingApprovalPanel({

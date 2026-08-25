@@ -5,7 +5,7 @@ const __filename = __cFL(import.meta.url);
 const __dirname = __cDP.dirname(__filename);
 
 import { a as __toCommonJS, i as __require, n as __esmMin, o as __toESM, r as __exportAll, t as __commonJSMin } from "./chunk-CeepVFa8.mjs";
-import { $ as _undefined, $t as init_electron_shim, A as themesData, C as writeSettings, Ct as ZodError$1, D as init_caide_error, Dt as IS_TEST_BUILD, E as CaideErrorKind, Et as NEVER, F as ChatModeSchema, Ft as language_models, G as migrateStoredChatMode, Ht as and, I as SecretSchema, It as mcpServers, J as number$1, K as shouldShowPnpmMinimumReleaseAgeWarning, Kt as isNull, L as StoredChatModeSchema, Lt as mcpToolConsents, Mt as chats, N as AgentToolConsentSchema, O as isCaideError, Ot as AI_MESSAGES_SDK_VERSION, Pt as language_model_providers, Q as _null, R as UserSettingsSchema, Rt as messages, St as safeParseAsync, T as CaideError, Tt as toJSONSchema, Ut as eq, Vt as desc, X as _enum, Y as ZodIssueCode$1, Yt as BrowserWindow, Z as _instanceof, Zt as app, _t as record, an as emit$2, at as custom, b as readEffectiveSettings, bt as union, cn as require_src$5, ct as intersection, dt as looseObject, en as ipcMain, et as _void, ft as never, g as isAppLocationAccessible, gt as preprocess, ht as optional, i as generateCuteAppName, in as utilityProcess, it as boolean, j as localTemplatesData, jt as apps, k as isCaideErrorKindFilteredFromTelemetry, l as getCaideAppPath, ln as require_node$1, lt as lazy, m as getUserDataPath, mt as object$1, n as PersistedGoalStateSchema, nn as safeStorage, nt as array$1, o as db, on as init_event_bus, ot as date$1, p as getTypeScriptCachePath, pt as number, rn as shell$1, rt as base64, st as discriminatedUnion, t as PersistedGoalEvidenceSchema, tt as any, ut as literal, v as decrypt, vt as string, w as safeSendToBrowserWindow, wt as datetime, x as readSettings, xt as unknown, y as encrypt, yt as tuple } from "./goal_state-1zBU18Ra.mjs";
+import { $ as any, $t as ipcMain, A as themesData, At as apps, Bt as desc, C as writeSettings, Ct as toJSONSchema, D as init_caide_error, Dt as AI_MESSAGES_SDK_VERSION, E as CaideErrorKind, Et as IS_TEST_BUILD, F as ChatModeSchema, Ft as mcpServers, G as migrateStoredChatMode, Gt as isNull, Ht as eq, I as SecretSchema, It as mcpToolConsents, J as _enum, Jt as BrowserWindow, K as shouldShowPnpmMinimumReleaseAgeWarning, L as StoredChatModeSchema, Lt as messages, N as AgentToolConsentSchema, Nt as language_model_providers, O as isCaideError, Pt as language_models, Q as _void, Qt as init_electron_shim, R as UserSettingsSchema, St as datetime, T as CaideError, Tt as NEVER, Vt as and, X as _null, Xt as app, Y as _instanceof, Z as _undefined, _t as tuple, an as init_event_bus, at as discriminatedUnion, b as readEffectiveSettings, bt as safeParseAsync, cn as require_node$1, ct as literal, dt as number$1, et as array$1, ft as object$1, g as isAppLocationAccessible, gt as string, ht as record, i as generateCuteAppName, in as emit$2, it as date$1, j as localTemplatesData, jt as chats, k as isCaideErrorKindFilteredFromTelemetry, l as getCaideAppPath, lt as looseObject, m as getUserDataPath, mt as preprocess, n as PersistedGoalStateSchema, nn as shell$1, nt as boolean, o as db, ot as intersection, p as getTypeScriptCachePath, pt as optional, q as ZodNumber$1, rn as utilityProcess, rt as custom, sn as require_src$5, st as lazy, t as PersistedGoalEvidenceSchema, tn as safeStorage, tt as base64, ut as never, v as decrypt, vt as union, w as safeSendToBrowserWindow, wt as _coercedNumber, x as readSettings, xt as ZodError$1, y as encrypt, yt as unknown } from "./goal_state-CLqg91US.mjs";
 import { t as require_src$6 } from "./src-ChbvHV8d.mjs";
 import { n as require_auth_errors, r as require_token_error, t as require_token_util } from "./token-util-BsaBGcvn.mjs";
 import { createRequire } from "node:module";
@@ -31,6 +31,32 @@ import { inflateRawSync } from "node:zlib";
 import Stream, { PassThrough, Readable, Writable } from "node:stream";
 import { Worker } from "node:worker_threads";
 
+//#region ../../node_modules/.bun/zod@4.3.6/node_modules/zod/v4/classic/compat.js
+/** @deprecated Use the raw string literal codes instead, e.g. "invalid_type". */
+const ZodIssueCode$1 = {
+	invalid_type: "invalid_type",
+	too_big: "too_big",
+	too_small: "too_small",
+	invalid_format: "invalid_format",
+	not_multiple_of: "not_multiple_of",
+	unrecognized_keys: "unrecognized_keys",
+	invalid_union: "invalid_union",
+	invalid_key: "invalid_key",
+	invalid_element: "invalid_element",
+	invalid_value: "invalid_value",
+	custom: "custom"
+};
+/** @deprecated Do not use. Stub definition, only included for zod-to-json-schema compatibility. */
+var ZodFirstPartyTypeKind$1;
+(function(ZodFirstPartyTypeKind) {})(ZodFirstPartyTypeKind$1 || (ZodFirstPartyTypeKind$1 = {}));
+
+//#endregion
+//#region ../../node_modules/.bun/zod@4.3.6/node_modules/zod/v4/classic/coerce.js
+function number(params) {
+	return _coercedNumber(ZodNumber$1, params);
+}
+
+//#endregion
 //#region src/lib/async_activity.ts
 const listeners = /* @__PURE__ */ new Set();
 const active = /* @__PURE__ */ new Map();
@@ -462,7 +488,7 @@ const AppIdentitySchema = object$1({
 	iosDisplayName: string().trim().min(1).max(80).nullable(),
 	androidLabel: string().trim().min(1).max(80).nullable(),
 	versionName: string().trim().max(64).regex(VERSION_NAME),
-	versionCode: number().int().positive().max(21e8),
+	versionCode: number$1().int().positive().max(21e8),
 	deepLinkScheme: string().trim().max(64).regex(DEEP_LINK_SCHEME).nullable(),
 	logoPath: string().max(260).nullable(),
 	logoUpdatedAt: string().datetime().nullable()
@@ -531,8 +557,8 @@ const ImportAppParamsSchema = object$1({
 	skipCopy: boolean().optional()
 });
 const ImportAppResultSchema = object$1({
-	appId: number(),
-	chatId: number()
+	appId: number$1(),
+	chatId: number$1()
 });
 const CheckAppNameParamsSchema = object$1({
 	appName: string(),
@@ -567,7 +593,7 @@ const importClient = createClient$1(importContracts);
 * These are the core fields stored in the apps table.
 */
 const AppBaseSchema = object$1({
-	id: number(),
+	id: number$1(),
 	name: string(),
 	path: string(),
 	framework: _enum([
@@ -598,7 +624,7 @@ const AppBaseSchema = object$1({
 	appIdentity: AppIdentitySchema.nullable(),
 	isFavorite: boolean(),
 	testingEnabled: boolean(),
-	collectionId: number().nullable(),
+	collectionId: number$1().nullable(),
 	sourceType: _enum([
 		"local",
 		"imported",
@@ -641,22 +667,22 @@ const CreateAppParamsSchema = object$1({
 */
 const CreateAppResultSchema = object$1({
 	app: AppBaseSchema.extend({ resolvedPath: string() }),
-	chatId: number()
+	chatId: number$1()
 });
 /**
 * Schema for delete app params.
 */
-const DeleteAppParamsSchema = object$1({ appId: number() });
+const DeleteAppParamsSchema = object$1({ appId: number$1() });
 /**
 * Schema for bulk delete apps params.
 */
-const DeleteAppsParamsSchema = object$1({ appIds: array$1(number()).min(1) });
+const DeleteAppsParamsSchema = object$1({ appIds: array$1(number$1()).min(1) });
 /**
 * Schema for bulk delete apps result. Per-app success/error so partial
 * failures can be surfaced to the user without aborting the whole batch.
 */
 const DeleteAppsResultSchema = object$1({ results: array$1(object$1({
-	appId: number(),
+	appId: number$1(),
 	success: boolean(),
 	error: string().optional()
 })) });
@@ -664,7 +690,7 @@ const DeleteAppsResultSchema = object$1({ results: array$1(object$1({
 * Schema for copy app params.
 */
 const CopyAppParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	newAppName: string(),
 	withHistory: boolean()
 });
@@ -677,19 +703,19 @@ const CopyAppResultSchema = object$1({ app: AppBaseSchema.extend({ resolvedPath:
 * Schema for rename app params.
 */
 const RenameAppParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	appName: string(),
 	appPath: string()
 });
 /**
 * Schema for run/stop/restart app params.
 */
-const AppIdParamsSchema = object$1({ appId: number() });
+const AppIdParamsSchema = object$1({ appId: number$1() });
 /**
 * Schema for restart app params (with optional removeNodeModules).
 */
 const RestartAppParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	removeNodeModules: boolean().optional(),
 	recreateSandbox: boolean().optional()
 });
@@ -698,8 +724,8 @@ const CloudSandboxStatusSchema = object$1({
 	status: string(),
 	previewUrl: string(),
 	previewAuthToken: string(),
-	previewPort: number().int(),
-	syncRevision: number().int().nonnegative(),
+	previewPort: number$1().int(),
+	syncRevision: number$1().int().nonnegative(),
 	initialSyncCompleted: boolean(),
 	appStatus: _enum([
 		"starting",
@@ -722,8 +748,8 @@ const CloudSandboxStatusSchema = object$1({
 	billingLockedAt: string().nullable(),
 	lastChargedAt: string().nullable(),
 	nextChargeAt: string(),
-	billingSlicesCharged: number().int().nonnegative(),
-	creditsCharged: number().nonnegative(),
+	billingSlicesCharged: number$1().int().nonnegative(),
+	creditsCharged: number$1().nonnegative(),
 	terminationReason: _enum([
 		"manual",
 		"idle_timeout",
@@ -735,8 +761,8 @@ const CloudSandboxStatusSchema = object$1({
 	localSyncErrorMessage: string().nullable().optional()
 });
 const CreateCloudSandboxShareLinkParamsSchema = object$1({
-	appId: number(),
-	expiresInSeconds: number().int().positive().optional()
+	appId: number$1(),
+	expiresInSeconds: number$1().int().positive().optional()
 });
 const CreateCloudSandboxShareLinkResultSchema = object$1({
 	sandboxId: string(),
@@ -753,7 +779,7 @@ const PublicPreviewStateSchema = _enum([
 	"expired"
 ]);
 const PublicPreviewStatusSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	sandboxId: string(),
 	url: string().url(),
 	expiresAt: string(),
@@ -763,8 +789,8 @@ const PublicPreviewStatusSchema = object$1({
 	managedSandbox: boolean()
 });
 const StartPublicPreviewParamsSchema = object$1({
-	appId: number(),
-	expiresInSeconds: number().int().positive().optional()
+	appId: number$1(),
+	expiresInSeconds: number$1().int().positive().optional()
 });
 const TunnelPreviewStateSchema = _enum([
 	"connecting",
@@ -773,7 +799,7 @@ const TunnelPreviewStateSchema = _enum([
 	"expired"
 ]);
 const TunnelPreviewStatusSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	tunnelId: string(),
 	url: string().url(),
 	expiresAt: string(),
@@ -784,7 +810,7 @@ const TunnelPreviewStatusSchema = object$1({
 * Schema for edit app file params.
 */
 const EditAppFileParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	filePath: string(),
 	content: string()
 });
@@ -796,7 +822,7 @@ const EditAppFileResultSchema = object$1({ warning: string().optional() });
 * Schema for read app file params.
 */
 const ReadAppFileParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	filePath: string()
 });
 const RestoreReviewedFileParamsSchema = ReadAppFileParamsSchema.extend({ content: string().nullable() });
@@ -804,14 +830,14 @@ const RestoreReviewedFileParamsSchema = ReadAppFileParamsSchema.extend({ content
 * Schema for respond to app input params.
 */
 const RespondToAppInputParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	response: string()
 });
 /**
 * Schema for search app files params.
 */
 const SearchAppFilesParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	query: string()
 });
 /**
@@ -821,7 +847,7 @@ const FileSearchSnippetSchema = object$1({
 	before: string(),
 	match: string(),
 	after: string(),
-	line: number()
+	line: number$1()
 });
 /**
 * Schema for app file search result.
@@ -835,7 +861,7 @@ const AppFileSearchResultSchema = object$1({
 * Schema for change app location params.
 */
 const ChangeAppLocationParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	parentDirectory: string()
 });
 /**
@@ -856,7 +882,7 @@ const ListAppsResponseSchema = object$1({ apps: array$1(ListedAppSchema) });
 * Schema for rename branch params.
 */
 const RenameBranchParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	oldBranchName: string(),
 	newBranchName: string()
 });
@@ -868,12 +894,12 @@ const AddToFavoriteResultSchema = object$1({ isFavorite: boolean() });
 * Schema for setting the per-app E2E testing opt-in flag.
 */
 const SetTestingEnabledParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	enabled: boolean()
 });
 const SetTestingEnabledResultSchema = object$1({ testingEnabled: boolean() });
 const UpdateAppIdentityParamsSchema = object$1({
-	appId: number().int().positive(),
+	appId: number$1().int().positive(),
 	identity: EditableAppIdentitySchema,
 	logoDataUrl: string().max(16e6).optional(),
 	removeLogo: boolean().optional()
@@ -886,7 +912,7 @@ const UpdateAppIdentityResultSchema = object$1({
 * Schema for update app commands params.
 */
 const UpdateAppCommandsParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	installCommand: string().nullable(),
 	startCommand: string().nullable()
 });
@@ -905,7 +931,7 @@ const SelectAppLocationResultSchema = object$1({
 * Schema for app search result.
 */
 const AppSearchResultSchema = object$1({
-	id: number(),
+	id: number$1(),
 	name: string(),
 	createdAt: date$1(),
 	matchedChatTitle: string().nullable(),
@@ -919,7 +945,7 @@ const appContracts = {
 	}),
 	getApp: defineContract({
 		channel: "get-app",
-		input: number(),
+		input: number$1(),
 		output: AppSchema
 	}),
 	listApps: defineContract({
@@ -1084,18 +1110,18 @@ const appContracts = {
 	}),
 	selectAppForPreview: defineContract({
 		channel: "select-app-for-preview",
-		input: object$1({ appId: number().nullable() }),
+		input: object$1({ appId: number$1().nullable() }),
 		output: _void()
 	}),
 	getCurrentCommitHash: defineContract({
 		channel: "app:get-current-commit-hash",
-		input: object$1({ appId: number() }),
+		input: object$1({ appId: number$1() }),
 		output: object$1({ commitHash: string().nullable() })
 	}),
 	saveAppScreenshot: defineContract({
 		channel: "app:save-screenshot",
 		input: object$1({
-			appId: number(),
+			appId: number$1(),
 			dataUrl: string(),
 			commitHash: string()
 		}),
@@ -1103,7 +1129,7 @@ const appContracts = {
 	}),
 	listAppScreenshots: defineContract({
 		channel: "app:list-screenshots",
-		input: object$1({ appId: number() }),
+		input: object$1({ appId: number$1() }),
 		output: object$1({ screenshots: array$1(object$1({
 			commitHash: string(),
 			url: string()
@@ -1111,16 +1137,16 @@ const appContracts = {
 	}),
 	listAppThumbnails: defineContract({
 		channel: "app:list-thumbnails",
-		input: object$1({ appIds: array$1(number()) }),
+		input: object$1({ appIds: array$1(number$1()) }),
 		output: object$1({ thumbnails: array$1(object$1({
-			appId: number(),
+			appId: number$1(),
 			thumbnailUrl: string().nullable()
 		})) })
 	}),
 	setAppMobilePreview: defineContract({
 		channel: "app:set-mobile-preview",
 		input: object$1({
-			appId: number(),
+			appId: number$1(),
 			enabled: boolean()
 		}),
 		output: string().nullable()
@@ -1155,14 +1181,14 @@ const BackgroundTaskSchema$1 = object$1({
 	]),
 	stdout: string(),
 	stderr: string(),
-	exitCode: number().nullable()
+	exitCode: number$1().nullable()
 });
 /**
 * Schema for agent tool consent request payload.
 */
 const AgentToolConsentRequestSchema = object$1({
 	requestId: string(),
-	chatId: number(),
+	chatId: number$1(),
 	toolName: string(),
 	toolDescription: string().nullable().optional(),
 	inputPreview: string().nullable().optional(),
@@ -1199,7 +1225,7 @@ const AgentTodoSchema = object$1({
 * Schema for agent todos update payload.
 */
 const AgentTodosUpdateSchema = object$1({
-	chatId: number(),
+	chatId: number$1(),
 	todos: array$1(AgentTodoSchema)
 });
 /**
@@ -1208,10 +1234,10 @@ const AgentTodosUpdateSchema = object$1({
 */
 const ProblemSchema = object$1({
 	file: string(),
-	line: number(),
-	column: number(),
+	line: number$1(),
+	column: number$1(),
 	message: string(),
-	code: number(),
+	code: number$1(),
 	snippet: string()
 });
 /**
@@ -1223,7 +1249,7 @@ const ProblemReportSchema = object$1({ problems: array$1(ProblemSchema) });
 * Schema for agent problems update payload.
 */
 const AgentProblemsUpdateSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	problems: ProblemReportSchema
 });
 /**
@@ -1231,7 +1257,7 @@ const AgentProblemsUpdateSchema = object$1({
 */
 const PromptEnvVarRequestSchema = object$1({
 	requestId: string(),
-	chatId: number(),
+	chatId: number$1(),
 	vars: array$1(object$1({
 		key: string(),
 		description: string().optional(),
@@ -1354,8 +1380,8 @@ const ListSupabaseBranchesParamsSchema = object$1({
 });
 const GetSupabaseEdgeLogsParamsSchema = object$1({
 	projectId: string(),
-	timestampStart: number().optional(),
-	appId: number(),
+	timestampStart: number$1().optional(),
+	appId: number$1(),
 	organizationSlug: string().nullable()
 });
 const ConsoleEntrySchema = object$1({
@@ -1371,12 +1397,12 @@ const ConsoleEntrySchema = object$1({
 		"network-requests"
 	]),
 	message: string(),
-	timestamp: number(),
+	timestamp: number$1(),
 	sourceName: string().optional(),
-	appId: number()
+	appId: number$1()
 });
 const SetSupabaseAppProjectParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	projectId: string().nullable().optional(),
 	parentProjectId: string().nullable().optional(),
 	organizationSlug: string().nullable().optional()
@@ -1433,18 +1459,18 @@ const supabaseContracts = {
 	}),
 	unsetAppProject: defineContract({
 		channel: "supabase:unset-app-project",
-		input: object$1({ app: number() }),
+		input: object$1({ app: number$1() }),
 		output: _void()
 	}),
 	listSocialAuthProviders: defineContract({
 		channel: "supabase:list-social-auth-providers",
-		input: object$1({ appId: number().int().positive() }),
+		input: object$1({ appId: number$1().int().positive() }),
 		output: array$1(SocialAuthProviderStatusSchema)
 	}),
 	updateSocialAuthProvider: defineContract({
 		channel: "supabase:update-social-auth-provider",
 		input: object$1({
-			appId: number().int().positive(),
+			appId: number$1().int().positive(),
 			provider: SocialAuthProviderIdSchema,
 			enabled: boolean(),
 			clientId: string().trim().max(4096).optional(),
@@ -1467,7 +1493,7 @@ const supabaseContracts = {
 	fakeConnectAndSetProject: defineContract({
 		channel: "supabase:fake-connect-and-set-project",
 		input: object$1({
-			appId: number(),
+			appId: number$1(),
 			fakeProjectId: string()
 		}),
 		output: _void()
@@ -1477,9 +1503,9 @@ const supabaseClient = createClient$1(supabaseContracts);
 
 //#endregion
 //#region src/ipc/types/misc.ts
-const PortalMigrateCreateParamsSchema = object$1({ appId: number() });
+const PortalMigrateCreateParamsSchema = object$1({ appId: number$1() });
 const PortalMigrateCreateResultSchema = object$1({ output: string() });
-const GetAppEnvVarsParamsSchema = object$1({ appId: number() });
+const GetAppEnvVarsParamsSchema = object$1({ appId: number$1() });
 const EnvVarSchema = object$1({
 	key: string().min(1).max(256).regex(/^[A-Za-z_][A-Za-z0-9_]*$/, "Environment variable names must use letters, numbers, and underscores and cannot start with a number"),
 	value: string().max(65536).refine((value) => !/[\0\r\n]/.test(value), "Environment variable values cannot contain null bytes or line breaks"),
@@ -1488,7 +1514,7 @@ const EnvVarSchema = object$1({
 const REDACTED_ENV_VALUE = "••••••••";
 const AppEnvVarSchema = EnvVarSchema.extend({ sensitive: boolean() });
 const SetAppEnvVarsParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	envVars: array$1(EnvVarSchema)
 }).superRefine(({ envVars }, context) => {
 	const seen = /* @__PURE__ */ new Set();
@@ -1519,14 +1545,14 @@ const DebugSettingsSchema = object$1({
 	selectedModel: object$1({
 		name: string(),
 		provider: string(),
-		customModelId: number().optional()
+		customModelId: number$1().optional()
 	}),
 	selectedChatMode: string().nullable(),
 	defaultChatMode: string().nullable(),
 	autoApproveChanges: boolean().nullable(),
 	enableCaidePro: boolean().nullable(),
 	thinkingBudget: string().nullable(),
-	maxChatTurnsInContext: number().nullable(),
+	maxChatTurnsInContext: number$1().nullable(),
 	enableAutoFixProblems: boolean().nullable(),
 	enableNativeGit: boolean().nullable(),
 	enableAutoUpdate: boolean(),
@@ -1546,7 +1572,7 @@ const DebugSettingsSchema = object$1({
 	providerSetupStatus: record(string(), boolean())
 });
 const DebugAppInfoSchema = object$1({
-	id: number(),
+	id: number$1(),
 	name: string(),
 	path: string(),
 	createdAt: string(),
@@ -1566,13 +1592,13 @@ const DebugAppInfoSchema = object$1({
 	themeId: string().nullable()
 });
 const DebugMessageSchema = object$1({
-	id: number(),
+	id: number$1(),
 	role: _enum(["user", "assistant"]),
 	content: string(),
 	createdAt: string(),
 	aiMessagesJson: any().nullable(),
 	model: string().nullable(),
-	totalTokens: number().nullable(),
+	totalTokens: number$1().nullable(),
 	approvalState: _enum(["approved", "rejected"]).nullable(),
 	sourceCommitHash: string().nullable(),
 	commitHash: string().nullable(),
@@ -1580,8 +1606,8 @@ const DebugMessageSchema = object$1({
 	usingFreeAgentModeQuota: boolean().nullable()
 });
 const DebugChatSchema = object$1({
-	id: number(),
-	appId: number(),
+	id: number$1(),
+	appId: number$1(),
 	title: string().nullable(),
 	initialCommitHash: string().nullable(),
 	createdAt: string(),
@@ -1595,17 +1621,17 @@ const DebugProvidersSchema = object$1({
 		envVarName: string().nullable()
 	})),
 	customModels: array$1(object$1({
-		id: number(),
+		id: number$1(),
 		displayName: string(),
 		apiName: string(),
 		builtinProviderId: string().nullable(),
 		customProviderId: string().nullable(),
-		maxOutputTokens: number().nullable(),
-		contextWindow: number().nullable()
+		maxOutputTokens: number$1().nullable(),
+		contextWindow: number$1().nullable()
 	}))
 });
 const DebugMcpServerSchema = object$1({
-	id: number(),
+	id: number$1(),
 	name: string(),
 	transport: string(),
 	command: string().nullable(),
@@ -1614,41 +1640,41 @@ const DebugMcpServerSchema = object$1({
 	enabled: boolean()
 });
 const ProcessMetricSchema = object$1({
-	pid: number(),
-	rssKb: number(),
+	pid: number$1(),
+	rssKb: number$1(),
 	command: string()
 });
 const ElectronProcessMetricSchema = object$1({
 	type: string(),
-	pid: number(),
-	workingSetSizeKb: number(),
-	creationTime: number(),
+	pid: number$1(),
+	workingSetSizeKb: number$1(),
+	creationTime: number$1(),
 	name: string().optional(),
 	serviceName: string().optional()
 });
 const ElectronProcessMetricsResultSchema = object$1({
 	processes: array$1(ElectronProcessMetricSchema),
-	totalWorkingSetSizeMb: number(),
+	totalWorkingSetSizeMb: number$1(),
 	mainProcess: object$1({
-		rssMb: number(),
-		heapTotalMb: number(),
-		heapUsedMb: number(),
-		externalMb: number()
+		rssMb: number$1(),
+		heapTotalMb: number$1(),
+		heapUsedMb: number$1(),
+		externalMb: number$1()
 	}),
 	v8Heap: object$1({
-		heapSizeLimitMb: number(),
-		totalHeapSizeMb: number(),
-		usedHeapSizeMb: number(),
-		mallocedMemoryMb: number(),
-		externalMemoryMb: number()
+		heapSizeLimitMb: number$1(),
+		totalHeapSizeMb: number$1(),
+		usedHeapSizeMb: number$1(),
+		mallocedMemoryMb: number$1(),
+		externalMemoryMb: number$1()
 	}),
 	error: string().optional()
 });
 const AppProcessTreeSchema = object$1({
-	appId: number(),
-	rootPid: number(),
+	appId: number$1(),
+	rootPid: number$1(),
 	processes: array$1(ProcessMetricSchema),
-	totalRssMb: number(),
+	totalRssMb: number$1(),
 	note: string().optional()
 });
 const AppProcessTreesResultSchema = object$1({
@@ -1657,30 +1683,30 @@ const AppProcessTreesResultSchema = object$1({
 	error: string().optional()
 });
 const VmStatSummarySchema = object$1({
-	pageSizeBytes: number(),
-	freePages: number(),
-	activePages: number(),
-	inactivePages: number(),
-	speculativePages: number(),
-	wiredPages: number(),
-	purgeablePages: number(),
-	compressorPages: number(),
-	pageouts: number()
+	pageSizeBytes: number$1(),
+	freePages: number$1(),
+	activePages: number$1(),
+	inactivePages: number$1(),
+	speculativePages: number$1(),
+	wiredPages: number$1(),
+	purgeablePages: number$1(),
+	compressorPages: number$1(),
+	pageouts: number$1()
 });
 const SystemMemorySignalsSchema = object$1({
 	platform: string(),
-	totalMemoryMb: number(),
-	appMemoryMb: number().optional(),
-	reclaimableMb: number().optional(),
-	freeMb: number().optional(),
-	swapUsedMb: number().optional(),
-	swapTotalMb: number().optional(),
+	totalMemoryMb: number$1(),
+	appMemoryMb: number$1().optional(),
+	reclaimableMb: number$1().optional(),
+	freeMb: number$1().optional(),
+	swapUsedMb: number$1().optional(),
+	swapTotalMb: number$1().optional(),
 	pressureDetected: boolean().optional(),
 	vmStat: VmStatSummarySchema.optional(),
 	fallback: object$1({
-		usedMemoryMb: number(),
-		freeMemoryMb: number(),
-		usagePercent: number()
+		usedMemoryMb: number$1(),
+		freeMemoryMb: number$1(),
+		usagePercent: number$1()
 	}).optional(),
 	error: string().optional()
 });
@@ -1710,7 +1736,7 @@ const ProcessMemoryDiagnosticsSchema = object$1({
 * Base64 image data in AI SDK messages is replaced with placeholders.
 */
 const SessionDebugBundleSchema = object$1({
-	schemaVersion: number(),
+	schemaVersion: number$1(),
 	exportedAt: string(),
 	system: DebugSystemInfoSchema,
 	settings: DebugSettingsSchema,
@@ -1742,10 +1768,10 @@ const AppOutputSchema = object$1({
 		"proxy-failed"
 	]),
 	message: string(),
-	appId: number(),
+	appId: number$1(),
 	warningKind: _enum(["release-age", "pnpm-migration"]).optional(),
-	timestamp: number().optional(),
-	exitCode: number().nullable().optional(),
+	timestamp: number$1().optional(),
+	exitCode: number$1().nullable().optional(),
 	signal: string().nullable().optional()
 });
 const miscContracts = {
@@ -1771,7 +1797,7 @@ const miscContracts = {
 	}),
 	getSessionDebugBundle: defineContract({
 		channel: "get-session-debug-bundle",
-		input: number(),
+		input: number$1(),
 		output: SessionDebugBundleSchema
 	}),
 	addLog: defineContract({
@@ -1781,7 +1807,7 @@ const miscContracts = {
 	}),
 	clearLogs: defineContract({
 		channel: "clear-logs",
-		input: object$1({ appId: number() }),
+		input: object$1({ appId: number$1() }),
 		output: _void()
 	}),
 	rendererErrorToastReady: defineContract({
@@ -1791,13 +1817,13 @@ const miscContracts = {
 	}),
 	checkProblems: defineContract({
 		channel: "check-problems",
-		input: object$1({ appId: number() }),
+		input: object$1({ appId: number$1() }),
 		output: ProblemReportSchema
 	}),
 	addDependency: defineContract({
 		channel: "chat:add-dep",
 		input: object$1({
-			chatId: number(),
+			chatId: number$1(),
 			packages: array$1(string())
 		}),
 		output: _void()
@@ -1818,11 +1844,11 @@ const miscEvents = {
 	}),
 	chatStreamStart: defineEvent({
 		channel: "chat:stream:start",
-		payload: object$1({ chatId: number() })
+		payload: object$1({ chatId: number$1() })
 	}),
 	chatStreamEnd: defineEvent({
 		channel: "chat:stream:end",
-		payload: object$1({ chatId: number() })
+		payload: object$1({ chatId: number$1() })
 	}),
 	errorToast: defineEvent({
 		channel: "toast:error",
@@ -1865,7 +1891,7 @@ const ManagedNodeInstallProgressSchema = object$1({
 		"installing",
 		"done"
 	]),
-	percent: number().min(0).max(100)
+	percent: number$1().min(0).max(100)
 });
 const SystemDebugInfoSchema = object$1({
 	nodeVersion: string().nullable(),
@@ -1905,8 +1931,8 @@ const DoesReleaseNoteExistResultSchema = object$1({
 	url: string().optional()
 });
 const UserBudgetInfoSchema = object$1({
-	usedCredits: number(),
-	totalCredits: number(),
+	usedCredits: number$1(),
+	totalCredits: number$1(),
 	budgetResetDate: date$1(),
 	redactedUserId: string(),
 	isTrial: boolean()
@@ -1917,14 +1943,14 @@ const TelemetryEventPayloadSchema = object$1({
 });
 const ForceCloseDetectedPayloadSchema = object$1({
 	performanceData: object$1({
-		timestamp: number(),
-		memoryUsageMB: number(),
-		cpuUsagePercent: number().optional(),
-		systemMemoryUsageMB: number().optional(),
-		systemMemoryTotalMB: number().optional(),
-		systemCpuPercent: number().optional()
+		timestamp: number$1(),
+		memoryUsageMB: number$1(),
+		cpuUsagePercent: number$1().optional(),
+		systemMemoryUsageMB: number$1().optional(),
+		systemMemoryTotalMB: number$1().optional(),
+		systemCpuPercent: number$1().optional()
 	}).optional(),
-	activeChatId: number().optional()
+	activeChatId: number$1().optional()
 });
 const systemContracts = {
 	minimizeWindow: defineContract({
@@ -8816,21 +8842,21 @@ const ThemeSchema = object$1({
 	prompt: string()
 });
 const SetAppThemeParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	themeId: string().nullable()
 });
-const GetAppThemeParamsSchema = object$1({ appId: number() });
+const GetAppThemeParamsSchema = object$1({ appId: number$1() });
 const ApplyAppTemplateParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	templateId: string(),
-	chatId: number().optional()
+	chatId: number$1().optional()
 });
 const ApplyAppTemplateResultSchema = object$1({
 	applied: boolean(),
 	needsRestart: boolean()
 });
 const CustomThemeSchema = object$1({
-	id: number(),
+	id: number$1(),
 	name: string(),
 	description: string().nullable(),
 	prompt: string(),
@@ -8843,12 +8869,12 @@ const CreateCustomThemeParamsSchema = object$1({
 	prompt: string()
 });
 const UpdateCustomThemeParamsSchema = object$1({
-	id: number(),
+	id: number$1(),
 	name: string().optional(),
 	description: string().optional(),
 	prompt: string().optional()
 });
-const DeleteCustomThemeParamsSchema = object$1({ id: number() });
+const DeleteCustomThemeParamsSchema = object$1({ id: number$1() });
 const ThemeGenerationModeSchema = _enum(["inspired", "high-fidelity"]);
 const ThemeGenerationModelSchema = string().min(1);
 const ThemeGenerationModelOptionSchema = object$1({
@@ -8989,10 +9015,10 @@ const CatalogModelSchema = object$1({
 	description: string(),
 	tag: string().optional(),
 	tagColor: string().optional(),
-	dollarSigns: number().optional(),
-	temperature: number().optional(),
-	maxOutputTokens: number().optional(),
-	contextWindow: number().optional(),
+	dollarSigns: number$1().optional(),
+	temperature: number$1().optional(),
+	maxOutputTokens: number$1().optional(),
+	contextWindow: number$1().optional(),
 	lifecycle: object$1({ stage: _enum([
 		"stable",
 		"preview",
@@ -15638,7 +15664,7 @@ var openaiErrorDataSchema$1 = object$1({ error: object$1({
 	message: string(),
 	type: string().nullish(),
 	param: any().nullish(),
-	code: union([string(), number()]).nullish()
+	code: union([string(), number$1()]).nullish()
 }) });
 var openaiFailedResponseHandler$1 = createJsonErrorResponseHandler({
 	errorSchema: openaiErrorDataSchema$1,
@@ -16017,7 +16043,7 @@ function mapOpenAIFinishReason$1(finishReason) {
 }
 var openaiChatResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 	id: string().nullish(),
-	created: number().nullish(),
+	created: number$1().nullish(),
 	model: string().nullish(),
 	choices: array$1(object$1({
 		message: object$1({
@@ -16034,49 +16060,49 @@ var openaiChatResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 			annotations: array$1(object$1({
 				type: literal("url_citation"),
 				url_citation: object$1({
-					start_index: number(),
-					end_index: number(),
+					start_index: number$1(),
+					end_index: number$1(),
 					url: string(),
 					title: string()
 				})
 			})).nullish()
 		}),
-		index: number(),
+		index: number$1(),
 		logprobs: object$1({ content: array$1(object$1({
 			token: string(),
-			logprob: number(),
+			logprob: number$1(),
 			top_logprobs: array$1(object$1({
 				token: string(),
-				logprob: number()
+				logprob: number$1()
 			}))
 		})).nullish() }).nullish(),
 		finish_reason: string().nullish()
 	})),
 	usage: object$1({
-		prompt_tokens: number().nullish(),
-		completion_tokens: number().nullish(),
-		total_tokens: number().nullish(),
+		prompt_tokens: number$1().nullish(),
+		completion_tokens: number$1().nullish(),
+		total_tokens: number$1().nullish(),
 		prompt_tokens_details: object$1({
-			cached_tokens: number().nullish(),
-			cache_write_tokens: number().nullish()
+			cached_tokens: number$1().nullish(),
+			cache_write_tokens: number$1().nullish()
 		}).nullish(),
 		completion_tokens_details: object$1({
-			reasoning_tokens: number().nullish(),
-			accepted_prediction_tokens: number().nullish(),
-			rejected_prediction_tokens: number().nullish()
+			reasoning_tokens: number$1().nullish(),
+			accepted_prediction_tokens: number$1().nullish(),
+			rejected_prediction_tokens: number$1().nullish()
 		}).nullish()
 	}).nullish()
 })));
 var openaiChatChunkSchema$1 = lazySchema(() => zodSchema(union([object$1({
 	id: string().nullish(),
-	created: number().nullish(),
+	created: number$1().nullish(),
 	model: string().nullish(),
 	choices: array$1(object$1({
 		delta: object$1({
 			role: _enum(["assistant"]).nullish(),
 			content: string().nullish(),
 			tool_calls: array$1(object$1({
-				index: number(),
+				index: number$1(),
 				id: string().nullish(),
 				type: literal("function").nullish(),
 				function: object$1({
@@ -16087,8 +16113,8 @@ var openaiChatChunkSchema$1 = lazySchema(() => zodSchema(union([object$1({
 			annotations: array$1(object$1({
 				type: literal("url_citation"),
 				url_citation: object$1({
-					start_index: number(),
-					end_index: number(),
+					start_index: number$1(),
+					end_index: number$1(),
 					url: string(),
 					title: string()
 				})
@@ -16096,33 +16122,33 @@ var openaiChatChunkSchema$1 = lazySchema(() => zodSchema(union([object$1({
 		}).nullish(),
 		logprobs: object$1({ content: array$1(object$1({
 			token: string(),
-			logprob: number(),
+			logprob: number$1(),
 			top_logprobs: array$1(object$1({
 				token: string(),
-				logprob: number()
+				logprob: number$1()
 			}))
 		})).nullish() }).nullish(),
 		finish_reason: string().nullish(),
-		index: number()
+		index: number$1()
 	})),
 	usage: object$1({
-		prompt_tokens: number().nullish(),
-		completion_tokens: number().nullish(),
-		total_tokens: number().nullish(),
+		prompt_tokens: number$1().nullish(),
+		completion_tokens: number$1().nullish(),
+		total_tokens: number$1().nullish(),
 		prompt_tokens_details: object$1({
-			cached_tokens: number().nullish(),
-			cache_write_tokens: number().nullish()
+			cached_tokens: number$1().nullish(),
+			cache_write_tokens: number$1().nullish()
 		}).nullish(),
 		completion_tokens_details: object$1({
-			reasoning_tokens: number().nullish(),
-			accepted_prediction_tokens: number().nullish(),
-			rejected_prediction_tokens: number().nullish()
+			reasoning_tokens: number$1().nullish(),
+			accepted_prediction_tokens: number$1().nullish(),
+			rejected_prediction_tokens: number$1().nullish()
 		}).nullish()
 	}).nullish()
 }), openaiErrorDataSchema$1])));
 var openaiLanguageModelChatOptions$1 = lazySchema(() => zodSchema(object$1({
-	logitBias: record(number$1(), number()).optional(),
-	logprobs: union([boolean(), number()]).optional(),
+	logitBias: record(number(), number$1()).optional(),
+	logprobs: union([boolean(), number$1()]).optional(),
 	parallelToolCalls: boolean().optional(),
 	user: string().optional(),
 	reasoningEffort: _enum([
@@ -16134,7 +16160,7 @@ var openaiLanguageModelChatOptions$1 = lazySchema(() => zodSchema(object$1({
 		"xhigh",
 		"max"
 	]).optional(),
-	maxCompletionTokens: number().optional(),
+	maxCompletionTokens: number$1().optional(),
 	store: boolean().optional(),
 	metadata: record(string().max(64), string().max(512)).optional(),
 	prediction: record(string(), any()).optional(),
@@ -16751,49 +16777,49 @@ function mapOpenAIFinishReason2$1(finishReason) {
 }
 var openaiCompletionResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 	id: string().nullish(),
-	created: number().nullish(),
+	created: number$1().nullish(),
 	model: string().nullish(),
 	choices: array$1(object$1({
 		text: string(),
 		finish_reason: string(),
 		logprobs: object$1({
 			tokens: array$1(string()),
-			token_logprobs: array$1(number()),
-			top_logprobs: array$1(record(string(), number())).nullish()
+			token_logprobs: array$1(number$1()),
+			top_logprobs: array$1(record(string(), number$1())).nullish()
 		}).nullish()
 	})),
 	usage: object$1({
-		prompt_tokens: number(),
-		completion_tokens: number(),
-		total_tokens: number()
+		prompt_tokens: number$1(),
+		completion_tokens: number$1(),
+		total_tokens: number$1()
 	}).nullish()
 })));
 var openaiCompletionChunkSchema$1 = lazySchema(() => zodSchema(union([object$1({
 	id: string().nullish(),
-	created: number().nullish(),
+	created: number$1().nullish(),
 	model: string().nullish(),
 	choices: array$1(object$1({
 		text: string(),
 		finish_reason: string().nullish(),
-		index: number(),
+		index: number$1(),
 		logprobs: object$1({
 			tokens: array$1(string()),
-			token_logprobs: array$1(number()),
-			top_logprobs: array$1(record(string(), number())).nullish()
+			token_logprobs: array$1(number$1()),
+			top_logprobs: array$1(record(string(), number$1())).nullish()
 		}).nullish()
 	})),
 	usage: object$1({
-		prompt_tokens: number(),
-		completion_tokens: number(),
-		total_tokens: number()
+		prompt_tokens: number$1(),
+		completion_tokens: number$1(),
+		total_tokens: number$1()
 	}).nullish()
 }), openaiErrorDataSchema$1])));
 var openaiLanguageModelCompletionOptions$1 = lazySchema(() => zodSchema(object$1({
 	echo: boolean().optional(),
-	logitBias: record(string(), number()).optional(),
+	logitBias: record(string(), number$1()).optional(),
 	suffix: string().optional(),
 	user: string().optional(),
-	logprobs: union([boolean(), number()]).optional()
+	logprobs: union([boolean(), number$1()]).optional()
 })));
 var OpenAICompletionLanguageModel$1 = class {
 	constructor(modelId, config) {
@@ -17016,12 +17042,12 @@ function isOpenAICompletionOutputChunk$1(chunk) {
 	return !("error" in chunk) && chunk.choices.some((choice) => choice.text.length > 0);
 }
 var openaiEmbeddingModelOptions$1 = lazySchema(() => zodSchema(object$1({
-	dimensions: number().optional(),
+	dimensions: number$1().optional(),
 	user: string().optional()
 })));
 var openaiTextEmbeddingResponseSchema$2 = lazySchema(() => zodSchema(object$1({
-	data: array$1(object$1({ embedding: array$1(number()) })),
-	usage: object$1({ prompt_tokens: number() }).nullish()
+	data: array$1(object$1({ embedding: array$1(number$1()) })),
+	usage: object$1({ prompt_tokens: number$1() }).nullish()
 })));
 var OpenAIEmbeddingModel$1 = class {
 	constructor(modelId, config) {
@@ -17077,7 +17103,7 @@ var OpenAIEmbeddingModel$1 = class {
 	}
 };
 var openaiImageResponseSchema$1 = lazySchema(() => zodSchema(object$1({
-	created: number().nullish(),
+	created: number$1().nullish(),
 	data: array$1(object$1({
 		b64_json: string(),
 		revised_prompt: string().nullish()
@@ -17087,12 +17113,12 @@ var openaiImageResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 	size: string().nullish(),
 	quality: string().nullish(),
 	usage: object$1({
-		input_tokens: number().nullish(),
-		output_tokens: number().nullish(),
-		total_tokens: number().nullish(),
+		input_tokens: number$1().nullish(),
+		output_tokens: number$1().nullish(),
+		total_tokens: number$1().nullish(),
 		input_tokens_details: object$1({
-			image_tokens: number().nullish(),
-			text_tokens: number().nullish()
+			image_tokens: number$1().nullish(),
+			text_tokens: number$1().nullish()
 		}).nullish()
 	}).nullish()
 })));
@@ -17132,7 +17158,7 @@ var baseImageModelOptionsObject$1 = object$1({
 		"jpeg",
 		"webp"
 	]).optional(),
-	outputCompression: number().int().min(0).max(100).optional(),
+	outputCompression: number$1().int().min(0).max(100).optional(),
 	user: string().optional()
 });
 lazySchema(() => zodSchema(baseImageModelOptionsObject$1));
@@ -17380,7 +17406,7 @@ var comparisonFilterSchema$1 = object$1({
 	]),
 	value: union([
 		string(),
-		number(),
+		number$1(),
 		boolean(),
 		array$1(string())
 	])
@@ -17391,10 +17417,10 @@ var compoundFilterSchema$1 = object$1({
 });
 var fileSearchArgsSchema$2 = lazySchema(() => zodSchema(object$1({
 	vectorStoreIds: array$1(string()),
-	maxNumResults: number().optional(),
+	maxNumResults: number$1().optional(),
 	ranking: object$1({
 		ranker: string().optional(),
-		scoreThreshold: number().optional()
+		scoreThreshold: number$1().optional()
 	}).optional(),
 	filters: union([comparisonFilterSchema$1, compoundFilterSchema$1]).optional()
 })));
@@ -17404,7 +17430,7 @@ var fileSearchOutputSchema$2 = lazySchema(() => zodSchema(object$1({
 		attributes: record(string(), unknown()),
 		fileId: string(),
 		filename: string(),
-		score: number(),
+		score: number$1(),
 		text: string()
 	})).nullable()
 })));
@@ -17426,13 +17452,13 @@ var imageGenerationArgsSchema$1 = lazySchema(() => zodSchema(object$1({
 	}).optional(),
 	model: string().optional(),
 	moderation: _enum(["auto"]).optional(),
-	outputCompression: number().int().min(0).max(100).optional(),
+	outputCompression: number$1().int().min(0).max(100).optional(),
 	outputFormat: _enum([
 		"png",
 		"jpeg",
 		"webp"
 	]).optional(),
-	partialImages: number().int().min(0).max(3).optional(),
+	partialImages: number$1().int().min(0).max(3).optional(),
 	quality: _enum([
 		"auto",
 		"low",
@@ -17457,7 +17483,7 @@ var imageGeneration$1 = (args = {}) => {
 var localShellInputSchema$1 = lazySchema(() => zodSchema(object$1({ action: object$1({
 	type: literal("exec"),
 	command: array$1(string()),
-	timeoutMs: number().optional(),
+	timeoutMs: number$1().optional(),
 	user: string().optional(),
 	workingDirectory: string().optional(),
 	env: record(string(), string()).optional()
@@ -17470,15 +17496,15 @@ var localShell = createProviderToolFactoryWithOutputSchema({
 });
 var shellInputSchema$1 = lazySchema(() => zodSchema(object$1({ action: object$1({
 	commands: array$1(string()),
-	timeoutMs: number().optional(),
-	maxOutputLength: number().optional()
+	timeoutMs: number$1().optional(),
+	maxOutputLength: number$1().optional()
 }) })));
 var shellOutputSchema$1 = lazySchema(() => zodSchema(object$1({ output: array$1(object$1({
 	stdout: string(),
 	stderr: string(),
 	outcome: discriminatedUnion("type", [object$1({ type: literal("timeout") }), object$1({
 		type: literal("exit"),
-		exitCode: number()
+		exitCode: number$1()
 	})])
 })) })));
 var shellSkillsSchema$1 = array$1(discriminatedUnion("type", [object$1({
@@ -17634,7 +17660,7 @@ var webSearchPreview$1 = createProviderToolFactoryWithOutputSchema({
 });
 var jsonValueSchema$2 = lazy(() => union([
 	string(),
-	number(),
+	number$1(),
 	boolean(),
 	_null(),
 	array$1(jsonValueSchema$2),
@@ -18323,7 +18349,7 @@ function mapOpenAIResponseFinishReason$1({ finishReason, hasFunctionCall }) {
 }
 var jsonValueSchema2$1 = lazy(() => union([
 	string(),
-	number(),
+	number$1(),
 	boolean(),
 	_null(),
 	array$1(jsonValueSchema2$1),
@@ -18331,7 +18357,7 @@ var jsonValueSchema2$1 = lazy(() => union([
 ]));
 var openaiResponsesNestedErrorChunkSchema$1 = object$1({
 	type: literal("error"),
-	sequence_number: number(),
+	sequence_number: number$1(),
 	error: object$1({
 		type: string(),
 		code: string(),
@@ -18341,7 +18367,7 @@ var openaiResponsesNestedErrorChunkSchema$1 = object$1({
 });
 var openaiResponsesErrorChunkSchema$1 = object$1({
 	type: literal("error"),
-	sequence_number: number(),
+	sequence_number: number$1(),
 	code: string().nullish(),
 	message: string(),
 	param: string().nullish()
@@ -18353,10 +18379,10 @@ var openaiResponsesChunkSchema$1 = lazySchema(() => zodSchema(union([
 		delta: string(),
 		logprobs: array$1(object$1({
 			token: string(),
-			logprob: number(),
+			logprob: number$1(),
 			top_logprobs: array$1(object$1({
 				token: string(),
-				logprob: number()
+				logprob: number$1()
 			}))
 		})).nullish()
 	}),
@@ -18365,17 +18391,17 @@ var openaiResponsesChunkSchema$1 = lazySchema(() => zodSchema(union([
 		response: object$1({
 			incomplete_details: object$1({ reason: string() }).nullish(),
 			usage: object$1({
-				input_tokens: number(),
+				input_tokens: number$1(),
 				input_tokens_details: object$1({
-					cached_tokens: number().nullish(),
-					cache_write_tokens: number().nullish(),
-					orchestration_input_tokens: number().nullish(),
-					orchestration_input_cached_tokens: number().nullish()
+					cached_tokens: number$1().nullish(),
+					cache_write_tokens: number$1().nullish(),
+					orchestration_input_tokens: number$1().nullish(),
+					orchestration_input_cached_tokens: number$1().nullish()
 				}).nullish(),
-				output_tokens: number(),
+				output_tokens: number$1(),
 				output_tokens_details: object$1({
-					reasoning_tokens: number().nullish(),
-					orchestration_output_tokens: number().nullish()
+					reasoning_tokens: number$1().nullish(),
+					orchestration_output_tokens: number$1().nullish()
 				}).nullish()
 			}),
 			reasoning: object$1({ context: string().nullish() }).nullish(),
@@ -18384,7 +18410,7 @@ var openaiResponsesChunkSchema$1 = lazySchema(() => zodSchema(union([
 	}),
 	object$1({
 		type: literal("response.failed"),
-		sequence_number: number(),
+		sequence_number: number$1(),
 		response: object$1({
 			error: object$1({
 				code: string().nullish(),
@@ -18392,17 +18418,17 @@ var openaiResponsesChunkSchema$1 = lazySchema(() => zodSchema(union([
 			}).nullish(),
 			incomplete_details: object$1({ reason: string() }).nullish(),
 			usage: object$1({
-				input_tokens: number(),
+				input_tokens: number$1(),
 				input_tokens_details: object$1({
-					cached_tokens: number().nullish(),
-					cache_write_tokens: number().nullish(),
-					orchestration_input_tokens: number().nullish(),
-					orchestration_input_cached_tokens: number().nullish()
+					cached_tokens: number$1().nullish(),
+					cache_write_tokens: number$1().nullish(),
+					orchestration_input_tokens: number$1().nullish(),
+					orchestration_input_cached_tokens: number$1().nullish()
 				}).nullish(),
-				output_tokens: number(),
+				output_tokens: number$1(),
 				output_tokens_details: object$1({
-					reasoning_tokens: number().nullish(),
-					orchestration_output_tokens: number().nullish()
+					reasoning_tokens: number$1().nullish(),
+					orchestration_output_tokens: number$1().nullish()
 				}).nullish()
 			}).nullish(),
 			reasoning: object$1({ context: string().nullish() }).nullish(),
@@ -18413,14 +18439,14 @@ var openaiResponsesChunkSchema$1 = lazySchema(() => zodSchema(union([
 		type: literal("response.created"),
 		response: object$1({
 			id: string(),
-			created_at: number(),
+			created_at: number$1(),
 			model: string(),
 			service_tier: string().nullish()
 		})
 	}),
 	object$1({
 		type: literal("response.output_item.added"),
-		output_index: number(),
+		output_index: number$1(),
 		item: discriminatedUnion("type", [
 			object$1({
 				type: literal("message"),
@@ -18540,7 +18566,7 @@ var openaiResponsesChunkSchema$1 = lazySchema(() => zodSchema(union([
 					stderr: string(),
 					outcome: discriminatedUnion("type", [object$1({ type: literal("timeout") }), object$1({
 						type: literal("exit"),
-						exit_code: number()
+						exit_code: number$1()
 					})])
 				}))
 			}),
@@ -18572,7 +18598,7 @@ var openaiResponsesChunkSchema$1 = lazySchema(() => zodSchema(union([
 	}),
 	object$1({
 		type: literal("response.output_item.done"),
-		output_index: number(),
+		output_index: number$1(),
 		item: discriminatedUnion("type", [
 			object$1({
 				type: literal("message"),
@@ -18654,12 +18680,12 @@ var openaiResponsesChunkSchema$1 = lazySchema(() => zodSchema(union([
 				results: array$1(object$1({
 					attributes: record(string(), union([
 						string(),
-						number(),
+						number$1(),
 						boolean()
 					])),
 					file_id: string(),
 					filename: string(),
-					score: number(),
+					score: number$1(),
 					text: string()
 				})).nullish()
 			}),
@@ -18670,7 +18696,7 @@ var openaiResponsesChunkSchema$1 = lazySchema(() => zodSchema(union([
 				action: object$1({
 					type: literal("exec"),
 					command: array$1(string()),
-					timeout_ms: number().optional(),
+					timeout_ms: number$1().optional(),
 					user: string().optional(),
 					working_directory: string().optional(),
 					env: record(string(), string()).optional()
@@ -18691,7 +18717,7 @@ var openaiResponsesChunkSchema$1 = lazySchema(() => zodSchema(union([
 				output: string().nullish(),
 				error: union([string(), object$1({
 					type: string().optional(),
-					code: union([number(), string()]).optional(),
+					code: union([number$1(), string()]).optional(),
 					message: string().optional()
 				}).loose()]).nullish(),
 				approval_request_id: string().nullish()
@@ -18708,7 +18734,7 @@ var openaiResponsesChunkSchema$1 = lazySchema(() => zodSchema(union([
 				})),
 				error: union([string(), object$1({
 					type: string().optional(),
-					code: union([number(), string()]).optional(),
+					code: union([number$1(), string()]).optional(),
 					message: string().optional()
 				}).loose()]).optional()
 			}),
@@ -18767,7 +18793,7 @@ var openaiResponsesChunkSchema$1 = lazySchema(() => zodSchema(union([
 					stderr: string(),
 					outcome: discriminatedUnion("type", [object$1({ type: literal("timeout") }), object$1({
 						type: literal("exit"),
-						exit_code: number()
+						exit_code: number$1()
 					})])
 				}))
 			}),
@@ -18800,31 +18826,31 @@ var openaiResponsesChunkSchema$1 = lazySchema(() => zodSchema(union([
 	object$1({
 		type: literal("response.function_call_arguments.delta"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		delta: string()
 	}),
 	object$1({
 		type: literal("response.custom_tool_call_input.delta"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		delta: string()
 	}),
 	object$1({
 		type: literal("response.image_generation_call.partial_image"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		partial_image_b64: string()
 	}),
 	object$1({
 		type: literal("response.code_interpreter_call_code.delta"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		delta: string()
 	}),
 	object$1({
 		type: literal("response.code_interpreter_call_code.done"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		code: string()
 	}),
 	object$1({
@@ -18832,8 +18858,8 @@ var openaiResponsesChunkSchema$1 = lazySchema(() => zodSchema(union([
 		annotation: discriminatedUnion("type", [
 			object$1({
 				type: literal("url_citation"),
-				start_index: number(),
-				end_index: number(),
+				start_index: number$1(),
+				end_index: number$1(),
 				url: string(),
 				title: string()
 			}),
@@ -18841,50 +18867,50 @@ var openaiResponsesChunkSchema$1 = lazySchema(() => zodSchema(union([
 				type: literal("file_citation"),
 				file_id: string(),
 				filename: string(),
-				index: number()
+				index: number$1()
 			}),
 			object$1({
 				type: literal("container_file_citation"),
 				container_id: string(),
 				file_id: string(),
 				filename: string(),
-				start_index: number(),
-				end_index: number()
+				start_index: number$1(),
+				end_index: number$1()
 			}),
 			object$1({
 				type: literal("file_path"),
 				file_id: string(),
-				index: number()
+				index: number$1()
 			})
 		])
 	}),
 	object$1({
 		type: literal("response.reasoning_summary_part.added"),
 		item_id: string(),
-		summary_index: number()
+		summary_index: number$1()
 	}),
 	object$1({
 		type: literal("response.reasoning_summary_text.delta"),
 		item_id: string(),
-		summary_index: number(),
+		summary_index: number$1(),
 		delta: string()
 	}),
 	object$1({
 		type: literal("response.reasoning_summary_part.done"),
 		item_id: string(),
-		summary_index: number()
+		summary_index: number$1()
 	}),
 	object$1({
 		type: literal("response.apply_patch_call_operation_diff.delta"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		delta: string(),
 		obfuscation: string().nullish()
 	}),
 	object$1({
 		type: literal("response.apply_patch_call_operation_diff.done"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		diff: string()
 	}),
 	openaiResponsesNestedErrorChunkSchema$1,
@@ -18896,7 +18922,7 @@ var openaiResponsesChunkSchema$1 = lazySchema(() => zodSchema(union([
 ])));
 var openaiResponsesResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 	id: string().optional(),
-	created_at: number().optional(),
+	created_at: number$1().optional(),
 	error: object$1({
 		message: string(),
 		type: string(),
@@ -18915,17 +18941,17 @@ var openaiResponsesResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 				text: string(),
 				logprobs: array$1(object$1({
 					token: string(),
-					logprob: number(),
+					logprob: number$1(),
 					top_logprobs: array$1(object$1({
 						token: string(),
-						logprob: number()
+						logprob: number$1()
 					}))
 				})).nullish(),
 				annotations: array$1(discriminatedUnion("type", [
 					object$1({
 						type: literal("url_citation"),
-						start_index: number(),
-						end_index: number(),
+						start_index: number$1(),
+						end_index: number$1(),
 						url: string(),
 						title: string()
 					}),
@@ -18933,20 +18959,20 @@ var openaiResponsesResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 						type: literal("file_citation"),
 						file_id: string(),
 						filename: string(),
-						index: number()
+						index: number$1()
 					}),
 					object$1({
 						type: literal("container_file_citation"),
 						container_id: string(),
 						file_id: string(),
 						filename: string(),
-						start_index: number(),
-						end_index: number()
+						start_index: number$1(),
+						end_index: number$1()
 					}),
 					object$1({
 						type: literal("file_path"),
 						file_id: string(),
-						index: number()
+						index: number$1()
 					})
 				]))
 			}))
@@ -18986,12 +19012,12 @@ var openaiResponsesResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 			results: array$1(object$1({
 				attributes: record(string(), union([
 					string(),
-					number(),
+					number$1(),
 					boolean()
 				])),
 				file_id: string(),
 				filename: string(),
-				score: number(),
+				score: number$1(),
 				text: string()
 			})).nullish()
 		}),
@@ -19020,7 +19046,7 @@ var openaiResponsesResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 			action: object$1({
 				type: literal("exec"),
 				command: array$1(string()),
-				timeout_ms: number().optional(),
+				timeout_ms: number$1().optional(),
 				user: string().optional(),
 				working_directory: string().optional(),
 				env: record(string(), string()).optional()
@@ -19065,7 +19091,7 @@ var openaiResponsesResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 			output: string().nullish(),
 			error: union([string(), object$1({
 				type: string().optional(),
-				code: union([number(), string()]).optional(),
+				code: union([number$1(), string()]).optional(),
 				message: string().optional()
 			}).loose()]).nullish(),
 			approval_request_id: string().nullish()
@@ -19082,7 +19108,7 @@ var openaiResponsesResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 			})),
 			error: union([string(), object$1({
 				type: string().optional(),
-				code: union([number(), string()]).optional(),
+				code: union([number$1(), string()]).optional(),
 				message: string().optional()
 			}).loose()]).optional()
 		}),
@@ -19141,7 +19167,7 @@ var openaiResponsesResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 				stderr: string(),
 				outcome: discriminatedUnion("type", [object$1({ type: literal("timeout") }), object$1({
 					type: literal("exit"),
-					exit_code: number()
+					exit_code: number$1()
 				})])
 			}))
 		}),
@@ -19174,17 +19200,17 @@ var openaiResponsesResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 	reasoning: object$1({ context: string().nullish() }).nullish(),
 	incomplete_details: object$1({ reason: string() }).nullish(),
 	usage: object$1({
-		input_tokens: number(),
+		input_tokens: number$1(),
 		input_tokens_details: object$1({
-			cached_tokens: number().nullish(),
-			cache_write_tokens: number().nullish(),
-			orchestration_input_tokens: number().nullish(),
-			orchestration_input_cached_tokens: number().nullish()
+			cached_tokens: number$1().nullish(),
+			cache_write_tokens: number$1().nullish(),
+			orchestration_input_tokens: number$1().nullish(),
+			orchestration_input_cached_tokens: number$1().nullish()
 		}).nullish(),
-		output_tokens: number(),
+		output_tokens: number$1(),
 		output_tokens_details: object$1({
-			reasoning_tokens: number().nullish(),
-			orchestration_output_tokens: number().nullish()
+			reasoning_tokens: number$1().nullish(),
+			orchestration_output_tokens: number$1().nullish()
 		}).nullish()
 	}).optional()
 })));
@@ -19198,8 +19224,8 @@ var openaiLanguageModelResponsesOptionsSchema$1 = lazySchema(() => zodSchema(obj
 		"message.output_text.logprobs"
 	])).nullish(),
 	instructions: string().nullish(),
-	logprobs: union([boolean(), number().min(1).max(TOP_LOGPROBS_MAX$1)]).optional(),
-	maxToolCalls: number().nullish(),
+	logprobs: union([boolean(), number$1().min(1).max(TOP_LOGPROBS_MAX$1)]).optional(),
+	maxToolCalls: number$1().nullish(),
 	metadata: any().nullish(),
 	parallelToolCalls: boolean().nullish(),
 	previousResponseId: string().nullish(),
@@ -21012,7 +21038,7 @@ function escapeJSONDelta$1(delta) {
 }
 var openaiSpeechModelOptionsSchema$1 = lazySchema(() => zodSchema(object$1({
 	instructions: string().nullish(),
-	speed: number().min(.25).max(4).default(1).nullish()
+	speed: number$1().min(.25).max(4).default(1).nullish()
 })));
 var OpenAISpeechModel$1 = class {
 	constructor(modelId, config) {
@@ -21100,30 +21126,30 @@ var OpenAISpeechModel$1 = class {
 var openaiTranscriptionResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 	text: string(),
 	language: string().nullish(),
-	duration: number().nullish(),
+	duration: number$1().nullish(),
 	words: array$1(object$1({
 		word: string(),
-		start: number(),
-		end: number()
+		start: number$1(),
+		end: number$1()
 	})).nullish(),
 	segments: array$1(object$1({
-		id: number(),
-		seek: number(),
-		start: number(),
-		end: number(),
+		id: number$1(),
+		seek: number$1(),
+		start: number$1(),
+		end: number$1(),
 		text: string(),
-		tokens: array$1(number()),
-		temperature: number(),
-		avg_logprob: number(),
-		compression_ratio: number(),
-		no_speech_prob: number()
+		tokens: array$1(number$1()),
+		temperature: number$1(),
+		avg_logprob: number$1(),
+		compression_ratio: number$1(),
+		no_speech_prob: number$1()
 	})).nullish()
 })));
 var openAITranscriptionModelOptions$1 = lazySchema(() => zodSchema(object$1({
 	include: array$1(string()).optional(),
 	language: string().optional(),
 	prompt: string().optional(),
-	temperature: number().min(0).max(1).default(0).optional(),
+	temperature: number$1().min(0).max(1).default(0).optional(),
 	timestampGranularities: array$1(_enum(["word", "segment"])).default(["segment"]).optional()
 })));
 var languageMap$1 = {
@@ -60088,27 +60114,27 @@ const GitHubCollaboratorSchema = object$1({
 	avatar_url: string(),
 	permissions: any().optional()
 });
-const GitBranchAppIdParamsSchema = object$1({ appId: number() });
+const GitBranchAppIdParamsSchema = object$1({ appId: number$1() });
 const GitBranchParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	branch: string()
 });
 const CreateGitBranchParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	branch: string(),
 	from: string().optional()
 });
 const RenameGitBranchParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	oldBranch: string(),
 	newBranch: string()
 });
 const ListRemoteGitBranchesParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	remote: string().optional()
 });
 const CommitChangesParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	message: string(),
 	filesToStage: array$1(string()).optional()
 });
@@ -60159,7 +60185,7 @@ const GitHubDeviceFlowErrorSchema = object$1({ error: string() });
 const githubContracts = {
 	startFlow: defineContract({
 		channel: "github:start-flow",
-		input: object$1({ appId: number().nullable() }),
+		input: object$1({ appId: number$1().nullable() }),
 		output: _void()
 	}),
 	listRepos: defineContract({
@@ -60188,7 +60214,7 @@ const githubContracts = {
 		input: object$1({
 			org: string(),
 			repo: string(),
-			appId: number(),
+			appId: number$1(),
 			branch: string().optional()
 		}),
 		output: _void()
@@ -60199,14 +60225,14 @@ const githubContracts = {
 			owner: string(),
 			repo: string(),
 			branch: string(),
-			appId: number()
+			appId: number$1()
 		}),
 		output: _void()
 	}),
 	push: defineContract({
 		channel: "github:push",
 		input: object$1({
-			appId: number(),
+			appId: number$1(),
 			force: boolean().optional(),
 			forceWithLease: boolean().optional()
 		}),
@@ -60224,12 +60250,12 @@ const githubContracts = {
 	}),
 	rebase: defineContract({
 		channel: "github:rebase",
-		input: object$1({ appId: number() }),
+		input: object$1({ appId: number$1() }),
 		output: _void()
 	}),
 	rebaseAbort: defineContract({
 		channel: "github:rebase-abort",
-		input: object$1({ appId: number() }),
+		input: object$1({ appId: number$1() }),
 		output: _void()
 	}),
 	mergeAbort: defineContract({
@@ -60239,7 +60265,7 @@ const githubContracts = {
 	}),
 	rebaseContinue: defineContract({
 		channel: "github:rebase-continue",
-		input: object$1({ appId: number() }),
+		input: object$1({ appId: number$1() }),
 		output: _void()
 	}),
 	listLocalBranches: defineContract({
@@ -60279,28 +60305,28 @@ const githubContracts = {
 	}),
 	getConflicts: defineContract({
 		channel: "github:get-conflicts",
-		input: object$1({ appId: number() }),
+		input: object$1({ appId: number$1() }),
 		output: array$1(string())
 	}),
 	getGitState: defineContract({
 		channel: "github:get-git-state",
-		input: object$1({ appId: number() }),
+		input: object$1({ appId: number$1() }),
 		output: GitStateSchema
 	}),
 	disconnect: defineContract({
 		channel: "github:disconnect",
-		input: object$1({ appId: number() }),
+		input: object$1({ appId: number$1() }),
 		output: _void()
 	}),
 	listCollaborators: defineContract({
 		channel: "github:list-collaborators",
-		input: object$1({ appId: number() }),
+		input: object$1({ appId: number$1() }),
 		output: array$1(GitHubCollaboratorSchema)
 	}),
 	inviteCollaborator: defineContract({
 		channel: "github:invite-collaborator",
 		input: object$1({
-			appId: number(),
+			appId: number$1(),
 			username: string()
 		}),
 		output: _void()
@@ -60308,7 +60334,7 @@ const githubContracts = {
 	removeCollaborator: defineContract({
 		channel: "github:remove-collaborator",
 		input: object$1({
-			appId: number(),
+			appId: number$1(),
 			username: string()
 		}),
 		output: _void()
@@ -108774,7 +108800,7 @@ function validateSerializedChatAttachments(attachments) {
 * Schema for a Message object.
 */
 const MessageSchema = object$1({
-	id: number(),
+	id: number$1(),
 	role: _enum(["user", "assistant"]),
 	content: string(),
 	approvalState: _enum(["approved", "rejected"]).nullable().optional(),
@@ -108783,7 +108809,7 @@ const MessageSchema = object$1({
 	dbTimestamp: string().nullable().optional(),
 	createdAt: union([date$1(), string()]).optional(),
 	requestId: string().nullable().optional(),
-	totalTokens: number().nullable().optional(),
+	totalTokens: number$1().nullable().optional(),
 	model: string().nullable().optional()
 });
 const NullableChatModeSchema = StoredChatModeSchema.nullable().transform((mode) => migrateStoredChatMode(mode ?? void 0) ?? null);
@@ -108791,8 +108817,8 @@ const NullableChatModeSchema = StoredChatModeSchema.nullable().transform((mode) 
 * Schema for a Chat object.
 */
 const ChatSchema = object$1({
-	id: number(),
-	appId: number(),
+	id: number$1(),
+	appId: number$1(),
 	title: string(),
 	messages: array$1(MessageSchema),
 	initialCommitHash: string().nullable().optional(),
@@ -108807,8 +108833,8 @@ const ComponentSelectionSchema = object$1({
 	name: string(),
 	runtimeId: string().optional(),
 	relativePath: string(),
-	lineNumber: number(),
-	columnNumber: number()
+	lineNumber: number$1(),
+	columnNumber: number$1()
 });
 /**
 * Schema for file attachment in chat (base64 encoded for IPC transfer).
@@ -108841,12 +108867,12 @@ const ChatAttachmentsSchema = unknown().superRefine((value, context) => {
 * Schema for chat stream parameters.
 */
 const ChatStreamParamsSchema = object$1({
-	chatId: number(),
+	chatId: number$1(),
 	prompt: string(),
 	redo: boolean().optional(),
 	attachments: ChatAttachmentsSchema.optional(),
 	selectedComponents: array$1(ComponentSelectionSchema).optional(),
-	requestedChatMode: ChatModeSchema.optional(),
+	requestedChatMode: StoredChatModeSchema.optional(),
 	suppressUserMessage: boolean().optional()
 }).superRefine((params, context) => {
 	const validation = validateSerializedChatAttachments(params.attachments ?? []);
@@ -108868,9 +108894,9 @@ const ChatStreamParamsSchema = object$1({
 * earlier bytes inside in-progress caide-tag attribute values).
 */
 const StreamingPatchSchema = object$1({
-	offset: number().int().nonnegative(),
+	offset: number$1().int().nonnegative(),
 	content: string(),
-	prefixHash: number().int().nonnegative().optional()
+	prefixHash: number$1().int().nonnegative().optional()
 });
 /**
 * Schema for a transient tool-input XML preview.
@@ -108898,12 +108924,12 @@ const StreamingPreviewSchema = object$1({ content: string() });
 *    `message.content`; rendered as a sidecar block on the frontend.
 */
 const ChatResponseChunkSchema = object$1({
-	chatId: number(),
+	chatId: number$1(),
 	messages: array$1(MessageSchema).optional(),
-	streamingMessageId: number().optional(),
+	streamingMessageId: number$1().optional(),
 	streamingPatch: StreamingPatchSchema.optional(),
 	streamingPreview: StreamingPreviewSchema.optional(),
-	chunkSeq: number().int().nonnegative().finite().optional(),
+	chunkSeq: number$1().int().nonnegative().finite().optional(),
 	effectiveChatMode: ChatModeSchema.optional(),
 	chatModeFallbackReason: literal("quota-exhausted").optional()
 });
@@ -108911,13 +108937,13 @@ const ChatResponseChunkSchema = object$1({
 * Schema for chat response end event.
 */
 const ChatResponseEndSchema = object$1({
-	chatId: number(),
+	chatId: number$1(),
 	updatedFiles: boolean(),
 	extraFiles: array$1(string()).optional(),
 	extraFilesError: string().optional(),
 	warningMessages: array$1(string()).optional(),
-	totalTokens: number().optional(),
-	contextWindow: number().optional(),
+	totalTokens: number$1().optional(),
+	contextWindow: number$1().optional(),
 	chatSummary: string().optional(),
 	wasCancelled: boolean().optional(),
 	pausePromptQueue: boolean().optional()
@@ -108926,19 +108952,19 @@ const ChatResponseEndSchema = object$1({
 * Schema for chat response error event.
 */
 const ChatResponseErrorSchema = object$1({
-	chatId: number(),
+	chatId: number$1(),
 	error: string(),
 	warningMessages: array$1(string()).optional()
 });
 /**
 * Schema for create chat result (returns chatId).
 */
-const CreateChatResultSchema = number();
+const CreateChatResultSchema = number$1();
 /**
 * Schema for update chat params.
 */
 const UpdateChatParamsSchema = object$1({
-	chatId: number(),
+	chatId: number$1(),
 	title: string().optional(),
 	chatMode: ChatModeSchema.nullable().optional()
 });
@@ -108946,34 +108972,34 @@ const UpdateChatParamsSchema = object$1({
 * Schema for token count params.
 */
 const TokenCountParamsSchema = object$1({
-	chatId: number(),
+	chatId: number$1(),
 	input: string()
 });
 /**
 * Schema for token count result.
 */
 const TokenCountResultSchema = object$1({
-	estimatedTotalTokens: number(),
-	actualMaxTokens: number().nullable(),
-	messageHistoryTokens: number(),
-	codebaseTokens: number(),
-	mentionedAppsTokens: number(),
-	inputTokens: number(),
-	systemPromptTokens: number(),
-	contextWindow: number()
+	estimatedTotalTokens: number$1(),
+	actualMaxTokens: number$1().nullable(),
+	messageHistoryTokens: number$1(),
+	codebaseTokens: number$1(),
+	mentionedAppsTokens: number$1(),
+	inputTokens: number$1(),
+	systemPromptTokens: number$1(),
+	contextWindow: number$1()
 });
 const chatContracts = {
 	getChat: defineContract({
 		channel: "get-chat",
-		input: number(),
+		input: number$1(),
 		output: ChatSchema
 	}),
 	getChats: defineContract({
 		channel: "get-chats",
-		input: number().optional(),
+		input: number$1().optional(),
 		output: array$1(object$1({
-			id: number(),
-			appId: number(),
+			id: number$1(),
+			appId: number$1(),
 			title: string().nullable(),
 			createdAt: date$1(),
 			chatMode: NullableChatModeSchema
@@ -108981,10 +109007,10 @@ const chatContracts = {
 	}),
 	getChatMetadata: defineContract({
 		channel: "get-chat-metadata",
-		input: number(),
+		input: number$1(),
 		output: object$1({
-			id: number(),
-			appId: number(),
+			id: number$1(),
+			appId: number$1(),
 			title: string().nullable(),
 			createdAt: date$1(),
 			chatMode: NullableChatModeSchema
@@ -108992,8 +109018,8 @@ const chatContracts = {
 	}),
 	createChat: defineContract({
 		channel: "create-chat",
-		input: union([number(), object$1({
-			appId: number(),
+		input: union([number$1(), object$1({
+			appId: number$1(),
 			initialChatMode: ChatModeSchema.optional()
 		})]),
 		output: CreateChatResultSchema
@@ -109001,7 +109027,7 @@ const chatContracts = {
 	runSilentAgent: defineContract({
 		channel: "run-silent-agent",
 		input: object$1({
-			appId: number(),
+			appId: number$1(),
 			prompt: string(),
 			title: string().optional()
 		}),
@@ -109013,8 +109039,8 @@ const chatContracts = {
 	forkChat: defineContract({
 		channel: "fork-chat",
 		input: object$1({
-			chatId: number(),
-			messageId: number().optional()
+			chatId: number$1(),
+			messageId: number$1().optional()
 		}),
 		output: CreateChatResultSchema
 	}),
@@ -109025,23 +109051,23 @@ const chatContracts = {
 	}),
 	deleteChat: defineContract({
 		channel: "delete-chat",
-		input: number(),
+		input: number$1(),
 		output: _void()
 	}),
 	deleteMessages: defineContract({
 		channel: "delete-messages",
-		input: number(),
+		input: number$1(),
 		output: _void()
 	}),
 	searchChats: defineContract({
 		channel: "search-chats",
 		input: object$1({
-			appId: number(),
+			appId: number$1(),
 			query: string()
 		}),
 		output: array$1(object$1({
-			id: number(),
-			appId: number(),
+			id: number$1(),
+			appId: number$1(),
 			title: string().nullable(),
 			createdAt: date$1(),
 			matchedMessageContent: string().nullable()
@@ -109054,14 +109080,14 @@ const chatContracts = {
 	}),
 	cancelStream: defineContract({
 		channel: "chat:cancel",
-		input: number(),
+		input: number$1(),
 		output: boolean()
 	}),
 	responseAck: defineContract({
 		channel: "chat:response:ack",
 		input: object$1({
-			chatId: number().int().nonnegative().finite(),
-			lastSeq: number().int().nonnegative().finite()
+			chatId: number$1().int().nonnegative().finite(),
+			lastSeq: number$1().int().nonnegative().finite()
 		}),
 		output: _void()
 	})
@@ -109599,7 +109625,7 @@ var gatewayErrorResponseSchema = lazySchema(() => zodSchema(object$1({
 		message: string(),
 		type: string().nullish(),
 		param: unknown().nullish(),
-		code: union([string(), number()]).nullish()
+		code: union([string(), number$1()]).nullish()
 	}),
 	generationId: string().nullish()
 })));
@@ -109819,14 +109845,14 @@ var gatewaySpendReportResponseSchema = lazySchema(() => zodSchema(object$1({ res
 	tag: string().optional(),
 	provider: string().optional(),
 	credential_type: _enum(["byok", "system"]).optional(),
-	total_cost: number(),
-	market_cost: number().optional(),
-	input_tokens: number().optional(),
-	output_tokens: number().optional(),
-	cached_input_tokens: number().optional(),
-	cache_creation_input_tokens: number().optional(),
-	reasoning_tokens: number().optional(),
-	request_count: number().optional()
+	total_cost: number$1(),
+	market_cost: number$1().optional(),
+	input_tokens: number$1().optional(),
+	output_tokens: number$1().optional(),
+	cached_input_tokens: number$1().optional(),
+	cache_creation_input_tokens: number$1().optional(),
+	reasoning_tokens: number$1().optional(),
+	request_count: number$1().optional()
 }).transform(({ credential_type, total_cost, market_cost, input_tokens, output_tokens, cached_input_tokens, cache_creation_input_tokens, reasoning_tokens, request_count, ...rest }) => ({
 	...rest,
 	...credential_type !== void 0 ? { credentialType: credential_type } : {},
@@ -109866,23 +109892,23 @@ var GatewayGenerationInfoFetcher = class {
 };
 var gatewayGenerationInfoResponseSchema = lazySchema(() => zodSchema(object$1({ data: object$1({
 	id: string(),
-	total_cost: number(),
-	upstream_inference_cost: number(),
-	usage: number(),
+	total_cost: number$1(),
+	upstream_inference_cost: number$1(),
+	usage: number$1(),
 	created_at: string(),
 	model: string(),
 	is_byok: boolean(),
 	provider_name: string(),
 	streamed: boolean(),
 	finish_reason: string(),
-	latency: number(),
-	generation_time: number(),
-	native_tokens_prompt: number(),
-	native_tokens_completion: number(),
-	native_tokens_reasoning: number(),
-	native_tokens_cached: number(),
-	native_tokens_cache_creation: number(),
-	billable_web_search_calls: number()
+	latency: number$1(),
+	generation_time: number$1(),
+	native_tokens_prompt: number$1(),
+	native_tokens_completion: number$1(),
+	native_tokens_reasoning: number$1(),
+	native_tokens_cached: number$1(),
+	native_tokens_cache_creation: number$1(),
+	billable_web_search_calls: number$1()
 }).transform(({ total_cost, upstream_inference_cost, created_at, is_byok, provider_name, finish_reason, generation_time, native_tokens_prompt, native_tokens_completion, native_tokens_reasoning, native_tokens_cached, native_tokens_cache_creation, billable_web_search_calls, ...rest }) => ({
 	...rest,
 	totalCost: total_cost,
@@ -110098,8 +110124,8 @@ var gatewayEmbeddingWarningSchema = discriminatedUnion("type", [
 	})
 ]);
 var gatewayEmbeddingResponseSchema = lazySchema(() => zodSchema(object$1({
-	embeddings: array$1(array$1(number())),
-	usage: object$1({ tokens: number() }).nullish(),
+	embeddings: array$1(array$1(number$1())),
+	usage: object$1({ tokens: number$1() }).nullish(),
 	warnings: array$1(gatewayEmbeddingWarningSchema).optional(),
 	providerMetadata: record(string(), record(string(), unknown())).optional()
 })));
@@ -110206,9 +110232,9 @@ var gatewayImageWarningSchema = discriminatedUnion("type", [
 	})
 ]);
 var gatewayImageUsageSchema = object$1({
-	inputTokens: number().nullish(),
-	outputTokens: number().nullish(),
-	totalTokens: number().nullish()
+	inputTokens: number$1().nullish(),
+	outputTokens: number$1().nullish(),
+	totalTokens: number$1().nullish()
 });
 var gatewayImageResponseSchema = object$1({
 	images: array$1(string()),
@@ -110379,7 +110405,7 @@ var gatewayVideoEventSchema = discriminatedUnion("type", [object$1({
 	type: literal("error"),
 	message: string(),
 	errorType: string(),
-	statusCode: number(),
+	statusCode: number$1(),
 	param: unknown().nullable()
 })]);
 var GatewayRerankingModel = class {
@@ -110456,8 +110482,8 @@ var gatewayRerankingWarningSchema = discriminatedUnion("type", [
 ]);
 var gatewayRerankingResponseSchema = lazySchema(() => zodSchema(object$1({
 	ranking: array$1(object$1({
-		index: number(),
-		relevanceScore: number()
+		index: number$1(),
+		relevanceScore: number$1()
 	})),
 	warnings: array$1(gatewayRerankingWarningSchema).optional(),
 	providerMetadata: record(string(), record(string(), unknown())).optional()
@@ -110635,11 +110661,11 @@ var gatewayTranscriptionResponseSchema = object$1({
 	text: string(),
 	segments: array$1(object$1({
 		text: string(),
-		startSecond: number(),
-		endSecond: number()
+		startSecond: number$1(),
+		endSecond: number$1()
 	})).optional(),
 	language: string().nullish(),
-	durationInSeconds: number().nullish(),
+	durationInSeconds: number$1().nullish(),
 	warnings: array$1(gatewayTranscriptionWarningSchema).optional(),
 	providerMetadata: record(string(), providerMetadataEntrySchema4).optional()
 });
@@ -110652,7 +110678,7 @@ var exaSearchToolFactory = createProviderToolFactoryWithOutputSchema({
 			"fast",
 			"instant"
 		]).optional().describe("Search method. Use auto for the default balance of speed and quality."),
-		num_results: number().optional().describe("Maximum number of results to return (1-100, default: 10)."),
+		num_results: number$1().optional().describe("Maximum number of results to return (1-100, default: 10)."),
 		category: _enum([
 			"company",
 			"people",
@@ -110668,7 +110694,7 @@ var exaSearchToolFactory = createProviderToolFactoryWithOutputSchema({
 		end_published_date: string().optional().describe("Only return links published before this ISO 8601 date."),
 		contents: object$1({
 			text: union([boolean(), object$1({
-				max_characters: number().optional(),
+				max_characters: number$1().optional(),
 				include_html_tags: boolean().optional(),
 				verbosity: _enum([
 					"compact",
@@ -110696,15 +110722,15 @@ var exaSearchToolFactory = createProviderToolFactoryWithOutputSchema({
 			})]).optional(),
 			highlights: union([boolean(), object$1({
 				query: string().optional(),
-				max_characters: number().optional()
+				max_characters: number$1().optional()
 			})]).optional(),
-			max_age_hours: number().optional(),
-			livecrawl_timeout: number().optional(),
-			subpages: number().optional(),
+			max_age_hours: number$1().optional(),
+			livecrawl_timeout: number$1().optional(),
+			subpages: number$1().optional(),
 			subpage_target: union([string(), array$1(string())]).optional(),
 			extras: object$1({
-				links: number().optional(),
-				image_links: number().optional()
+				links: number$1().optional(),
+				image_links: number$1().optional()
 			}).optional()
 		}).optional().describe("Controls extracted page content and freshness.")
 	}))),
@@ -110722,7 +110748,7 @@ var exaSearchToolFactory = createProviderToolFactoryWithOutputSchema({
 			favicon: string().nullable().optional(),
 			text: string().optional(),
 			highlights: array$1(string()).optional(),
-			highlightScores: array$1(number()).optional(),
+			highlightScores: array$1(number$1()).optional(),
 			summary: string().optional(),
 			subpages: array$1(any()).optional(),
 			extras: object$1({
@@ -110731,8 +110757,8 @@ var exaSearchToolFactory = createProviderToolFactoryWithOutputSchema({
 			}).optional()
 		})),
 		costDollars: object$1({
-			total: number().optional(),
-			search: record(number()).optional()
+			total: number$1().optional(),
+			search: record(number$1()).optional()
 		}).optional()
 	}), object$1({
 		error: _enum([
@@ -110744,7 +110770,7 @@ var exaSearchToolFactory = createProviderToolFactoryWithOutputSchema({
 			"execution_error",
 			"unknown"
 		]),
-		statusCode: number().optional(),
+		statusCode: number$1().optional(),
 		message: string()
 	})])))
 });
@@ -110755,17 +110781,17 @@ var parallelSearchToolFactory = createProviderToolFactoryWithOutputSchema({
 		objective: string().describe("Natural-language description of the web research goal, including source or freshness guidance and broader context from the task. Maximum 5000 characters."),
 		search_queries: array$1(string()).optional().describe("Optional search queries to supplement the objective. Maximum 200 characters per query."),
 		mode: _enum(["one-shot", "agentic"]).optional().describe("Mode preset: \"one-shot\" for comprehensive results with longer excerpts (default), \"agentic\" for concise, token-efficient results for multi-step workflows."),
-		max_results: number().optional().describe("Maximum number of results to return (1-20). Defaults to 10 if not specified."),
+		max_results: number$1().optional().describe("Maximum number of results to return (1-20). Defaults to 10 if not specified."),
 		source_policy: object$1({
 			include_domains: array$1(string()).optional().describe("Limit results to these domains. Use plain domain names only — e.g. example.com or sub.example.gov, or a bare extension like .edu. Do not include a scheme, path, or port (e.g. not https://example.com/page)."),
 			exclude_domains: array$1(string()).optional().describe("Exclude results from these domains. Use plain domain names only — e.g. example.com or sub.example.gov, or a bare extension like .edu. Do not include a scheme, path, or port (e.g. not https://example.com/page)."),
 			after_date: string().optional().describe("Only include results published after this date. Use an ISO 8601 calendar date formatted YYYY-MM-DD (e.g. 2025-01-01); do not include a time.")
 		}).optional().describe("Source policy for controlling which domains to include/exclude and freshness."),
 		excerpts: object$1({
-			max_chars_per_result: number().optional().describe("Maximum characters per result."),
-			max_chars_total: number().optional().describe("Maximum total characters across all results.")
+			max_chars_per_result: number$1().optional().describe("Maximum characters per result."),
+			max_chars_total: number$1().optional().describe("Maximum total characters across all results.")
 		}).optional().describe("Excerpt configuration for controlling result length."),
-		fetch_policy: object$1({ max_age_seconds: number().optional().describe("Maximum age in seconds for cached content. Set to 0 to always fetch fresh content.") }).optional().describe("Fetch policy for controlling content freshness.")
+		fetch_policy: object$1({ max_age_seconds: number$1().optional().describe("Maximum age in seconds for cached content. Set to 0 to always fetch fresh content.") }).optional().describe("Fetch policy for controlling content freshness.")
 	}))),
 	outputSchema: lazySchema(() => zodSchema(union([object$1({
 		searchId: string(),
@@ -110774,7 +110800,7 @@ var parallelSearchToolFactory = createProviderToolFactoryWithOutputSchema({
 			title: string(),
 			excerpt: string(),
 			publishDate: string().nullable().optional(),
-			relevanceScore: number().optional()
+			relevanceScore: number$1().optional()
 		}))
 	}), object$1({
 		error: _enum([
@@ -110785,7 +110811,7 @@ var parallelSearchToolFactory = createProviderToolFactoryWithOutputSchema({
 			"configuration_error",
 			"unknown"
 		]),
-		statusCode: number().optional(),
+		statusCode: number$1().optional(),
 		message: string()
 	})])))
 });
@@ -110794,9 +110820,9 @@ var perplexitySearchToolFactory = createProviderToolFactoryWithOutputSchema({
 	id: "gateway.perplexity_search",
 	inputSchema: lazySchema(() => zodSchema(object$1({
 		query: union([string(), array$1(string())]).describe("Search query (string) or multiple queries (array of up to 5 strings). Multi-query searches return combined results from all queries."),
-		max_results: number().optional().describe("Maximum number of search results to return (1-20, default: 10)"),
-		max_tokens_per_page: number().optional().describe("Maximum number of tokens to extract per search result page (256-2048, default: 2048)"),
-		max_tokens: number().optional().describe("Maximum total tokens across all search results (default: 25000, max: 1000000)"),
+		max_results: number$1().optional().describe("Maximum number of search results to return (1-20, default: 10)"),
+		max_tokens_per_page: number$1().optional().describe("Maximum number of tokens to extract per search result page (256-2048, default: 2048)"),
+		max_tokens: number$1().optional().describe("Maximum total tokens across all search results (default: 25000, max: 1000000)"),
 		country: string().optional().describe("Two-letter ISO 3166-1 alpha-2 country code for regional search results (e.g., 'US', 'GB', 'FR')"),
 		search_domain_filter: array$1(string()).optional().describe("List of domains to include or exclude from search results (max 20). To include: ['nature.com', 'science.org']. To exclude: ['-example.com', '-spam.net']"),
 		search_language_filter: array$1(string()).optional().describe("List of ISO 639-1 language codes to filter results (max 10, lowercase). Examples: ['en', 'fr', 'de']"),
@@ -110828,7 +110854,7 @@ var perplexitySearchToolFactory = createProviderToolFactoryWithOutputSchema({
 			"invalid_input",
 			"unknown"
 		]),
-		statusCode: number().optional(),
+		statusCode: number$1().optional(),
 		message: string()
 	})])))
 });
@@ -113042,7 +113068,7 @@ async function prepareToolsAndToolChoice({ tools, toolChoice, activeTools }) {
 var jsonValueSchema$1 = lazy(() => union([
 	_null(),
 	string(),
-	number(),
+	number$1(),
 	boolean(),
 	record(string(), jsonValueSchema$1.optional()),
 	array$1(jsonValueSchema$1)
@@ -118609,7 +118635,7 @@ function cancelOrphanedBaseStream(streamResult) {
 var VERSION$7 = "3.0.110";
 var googleFailedResponseHandler$1 = createJsonErrorResponseHandler({
 	errorSchema: lazySchema(() => zodSchema(object$1({ error: object$1({
-		code: number().nullable(),
+		code: number$1().nullable(),
 		message: string(),
 		status: string(),
 		details: array$1(unknown()).nullish()
@@ -118628,7 +118654,7 @@ var googleEmbeddingContentPartSchema = union([
 	}) })
 ]);
 var googleEmbeddingModelOptions = lazySchema(() => zodSchema(object$1({
-	outputDimensionality: number().optional(),
+	outputDimensionality: number$1().optional(),
 	taskType: _enum([
 		"SEMANTIC_SIMILARITY",
 		"CLASSIFICATION",
@@ -118727,8 +118753,8 @@ var GoogleGenerativeAIEmbeddingModel = class {
 		};
 	}
 };
-var googleGenerativeAITextEmbeddingResponseSchema = lazySchema(() => zodSchema(object$1({ embeddings: array$1(object$1({ values: array$1(number()) })) })));
-var googleGenerativeAISingleEmbeddingResponseSchema = lazySchema(() => zodSchema(object$1({ embedding: object$1({ values: array$1(number()) }) })));
+var googleGenerativeAITextEmbeddingResponseSchema = lazySchema(() => zodSchema(object$1({ embeddings: array$1(object$1({ values: array$1(number$1()) })) })));
+var googleGenerativeAISingleEmbeddingResponseSchema = lazySchema(() => zodSchema(object$1({ embedding: object$1({ values: array$1(number$1()) }) })));
 function convertGoogleGenerativeAIUsage$1(usage) {
 	var _a, _b, _c, _d;
 	if (usage == null) return {
@@ -119096,7 +119122,7 @@ function getModelPath$1(modelId) {
 var googleLanguageModelOptions$1 = lazySchema(() => zodSchema(object$1({
 	responseModalities: array$1(_enum(["TEXT", "IMAGE"])).optional(),
 	thinkingConfig: object$1({
-		thinkingBudget: number().optional(),
+		thinkingBudget: number$1().optional(),
 		includeThoughts: boolean().optional(),
 		thinkingLevel: _enum([
 			"minimal",
@@ -119177,12 +119203,12 @@ var googleLanguageModelOptions$1 = lazySchema(() => zodSchema(object$1({
 		]).optional(),
 		imageOutputOptions: object$1({
 			mimeType: _enum(["image/jpeg", "image/png"]).optional(),
-			compressionQuality: number().optional()
+			compressionQuality: number$1().optional()
 		}).optional()
 	}).optional(),
 	retrievalConfig: object$1({ latLng: object$1({
-		latitude: number(),
-		longitude: number()
+		latitude: number$1(),
+		longitude: number$1()
 	}).optional() }).optional(),
 	streamFunctionCallArguments: boolean().optional(),
 	serviceTier: _enum([
@@ -120389,22 +120415,22 @@ var getGroundingMetadataSchema$1 = () => object$1({
 	})).nullish(),
 	groundingSupports: array$1(object$1({
 		segment: object$1({
-			startIndex: number().nullish(),
-			endIndex: number().nullish(),
+			startIndex: number$1().nullish(),
+			endIndex: number$1().nullish(),
 			text: string().nullish()
 		}).nullish(),
 		segment_text: string().nullish(),
-		groundingChunkIndices: array$1(number()).nullish(),
-		supportChunkIndices: array$1(number()).nullish(),
-		confidenceScores: array$1(number()).nullish(),
-		confidenceScore: array$1(number()).nullish()
+		groundingChunkIndices: array$1(number$1()).nullish(),
+		supportChunkIndices: array$1(number$1()).nullish(),
+		confidenceScores: array$1(number$1()).nullish(),
+		confidenceScore: array$1(number$1()).nullish()
 	})).nullish(),
-	retrievalMetadata: union([object$1({ webDynamicRetrievalScore: number() }), object$1({})]).nullish()
+	retrievalMetadata: union([object$1({ webDynamicRetrievalScore: number$1() }), object$1({})]).nullish()
 });
 var partialArgSchema$1 = object$1({
 	jsonPath: string(),
 	stringValue: string().nullish(),
-	numberValue: number().nullish(),
+	numberValue: number$1().nullish(),
 	boolValue: boolean().nullish(),
 	nullValue: unknown().nullish(),
 	willContinue: boolean().nullish()
@@ -120461,21 +120487,21 @@ var getContentSchema$1 = () => object$1({ parts: array$1(union([
 var getSafetyRatingSchema$1 = () => object$1({
 	category: string().nullish(),
 	probability: string().nullish(),
-	probabilityScore: number().nullish(),
+	probabilityScore: number$1().nullish(),
 	severity: string().nullish(),
-	severityScore: number().nullish(),
+	severityScore: number$1().nullish(),
 	blocked: boolean().nullish()
 });
 var tokenDetailsSchema$1 = array$1(object$1({
 	modality: string(),
-	tokenCount: number()
+	tokenCount: number$1()
 })).nullish();
 var usageSchema$2 = object$1({
-	cachedContentTokenCount: number().nullish(),
-	thoughtsTokenCount: number().nullish(),
-	promptTokenCount: number().nullish(),
-	candidatesTokenCount: number().nullish(),
-	totalTokenCount: number().nullish(),
+	cachedContentTokenCount: number$1().nullish(),
+	thoughtsTokenCount: number$1().nullish(),
+	promptTokenCount: number$1().nullish(),
+	candidatesTokenCount: number$1().nullish(),
+	totalTokenCount: number$1().nullish(),
 	trafficType: string().nullish(),
 	serviceTier: string().nullish(),
 	promptTokensDetails: tokenDetailsSchema$1,
@@ -120534,7 +120560,7 @@ var enterpriseWebSearch$1 = createProviderToolFactory({
 });
 var fileSearchArgsBaseSchema$1 = object$1({
 	fileSearchStoreNames: array$1(string()).describe("The names of the file_search_stores to retrieve from. Example: `fileSearchStores/my-file-search-store-123`"),
-	topK: number().int().positive().describe("The number of file search retrieval chunks to retrieve.").optional(),
+	topK: number$1().int().positive().describe("The number of file search retrieval chunks to retrieve.").optional(),
 	metadataFilter: string().describe("Metadata filter to apply to the file search retrieval documents. See https://google.aip.dev/160 for the syntax of the filter expression.").optional()
 }).passthrough();
 var fileSearch$3 = createProviderToolFactory({
@@ -120574,7 +120600,7 @@ var googleTools$1 = {
 		id: "google.vertex_rag_store",
 		inputSchema: object$1({
 			ragCorpus: string(),
-			topK: number().optional()
+			topK: number$1().optional()
 		})
 	})
 };
@@ -120950,15 +120976,15 @@ var googleOperationSchema = object$1({
 	name: string().nullish(),
 	done: boolean().nullish(),
 	error: object$1({
-		code: number().nullish(),
+		code: number$1().nullish(),
 		message: string(),
 		status: string().nullish()
 	}).nullish(),
 	response: object$1({ generateVideoResponse: object$1({ generatedSamples: array$1(object$1({ video: object$1({ uri: string().nullish() }).nullish() })).nullish() }).nullish() }).nullish()
 });
 var googleVideoModelOptionsSchema = lazySchema(() => zodSchema(object$1({
-	pollIntervalMs: number().positive().nullish(),
-	pollTimeoutMs: number().positive().nullish(),
+	pollIntervalMs: number$1().positive().nullish(),
+	pollTimeoutMs: number$1().positive().nullish(),
 	personGeneration: _enum([
 		"dont_allow",
 		"allow_adult",
@@ -122003,22 +122029,22 @@ ${block.text}`
 }
 var tokenByModalitySchema$1 = () => object$1({
 	modality: string().nullish(),
-	tokens: number().nullish()
+	tokens: number$1().nullish()
 }).loose();
 var usageSchema2$1 = () => object$1({
-	total_input_tokens: number().nullish(),
-	total_output_tokens: number().nullish(),
-	total_thought_tokens: number().nullish(),
-	total_cached_tokens: number().nullish(),
-	total_tool_use_tokens: number().nullish(),
-	total_tokens: number().nullish(),
+	total_input_tokens: number$1().nullish(),
+	total_output_tokens: number$1().nullish(),
+	total_thought_tokens: number$1().nullish(),
+	total_cached_tokens: number$1().nullish(),
+	total_tool_use_tokens: number$1().nullish(),
+	total_tokens: number$1().nullish(),
 	input_tokens_by_modality: array$1(tokenByModalitySchema$1()).nullish(),
 	output_tokens_by_modality: array$1(tokenByModalitySchema$1()).nullish(),
 	cached_tokens_by_modality: array$1(tokenByModalitySchema$1()).nullish(),
 	tool_use_tokens_by_modality: array$1(tokenByModalitySchema$1()).nullish(),
 	grounding_tool_count: array$1(object$1({
 		type: string().nullish(),
-		count: number().nullish()
+		count: number$1().nullish()
 	}).loose()).nullish()
 }).loose();
 var interactionStatusSchema$1 = () => _enum([
@@ -122034,18 +122060,18 @@ var annotationSchema$2 = () => {
 		type: literal("url_citation"),
 		url: string().nullish(),
 		title: string().nullish(),
-		start_index: number().nullish(),
-		end_index: number().nullish()
+		start_index: number$1().nullish(),
+		end_index: number$1().nullish()
 	}).loose();
 	const fileCitation = object$1({
 		type: literal("file_citation"),
 		file_name: string().nullish(),
 		document_uri: string().nullish(),
 		url: string().nullish(),
-		page_number: number().nullish(),
+		page_number: number$1().nullish(),
 		media_id: string().nullish(),
-		start_index: number().nullish(),
-		end_index: number().nullish(),
+		start_index: number$1().nullish(),
+		end_index: number$1().nullish(),
 		custom_metadata: record(string(), unknown()).nullish()
 	}).loose();
 	const placeCitation = object$1({
@@ -122053,8 +122079,8 @@ var annotationSchema$2 = () => {
 		name: string().nullish(),
 		url: string().nullish(),
 		place_id: string().nullish(),
-		start_index: number().nullish(),
-		end_index: number().nullish()
+		start_index: number$1().nullish(),
+		end_index: number$1().nullish()
 	}).loose();
 	return union([
 		urlCitation,
@@ -122196,7 +122222,7 @@ var googleInteractionsEventSchema$1 = lazySchema(() => zodSchema((() => {
 	const stepStartEvent = object$1({
 		event_type: literal("step.start"),
 		event_id: string().nullish(),
-		index: number(),
+		index: number$1(),
 		step: stepSchema$1()
 	}).loose();
 	const stepDeltaText = object$1({
@@ -122273,13 +122299,13 @@ var googleInteractionsEventSchema$1 = lazySchema(() => zodSchema((() => {
 	const stepDeltaEvent = object$1({
 		event_type: literal("step.delta"),
 		event_id: string().nullish(),
-		index: number(),
+		index: number$1(),
 		delta: stepDeltaUnion
 	}).loose();
 	const stepStopEvent = object$1({
 		event_type: literal("step.stop"),
 		event_id: string().nullish(),
-		index: number()
+		index: number$1()
 	}).loose();
 	const interactionStatusUpdateEvent = object$1({
 		event_type: literal("interaction.status_update"),
@@ -122430,7 +122456,7 @@ var googleInteractionsLanguageModelOptions$1 = lazySchema(() => zodSchema(object
 	systemInstruction: string().nullish(),
 	signature: string().nullish(),
 	interactionId: string().nullish(),
-	pollingTimeoutMs: number().int().positive().nullish(),
+	pollingTimeoutMs: number$1().int().positive().nullish(),
 	background: boolean().nullish(),
 	environment: union([string(), object$1({
 		type: literal("remote"),
@@ -130959,7 +130985,7 @@ const SPEC_FILE_RE = new RegExp(`\\.spec\\.(${TEST_SPEC_EXT_ALTERNATION})$`);
 */
 const TestCaseSchema = object$1({
 	title: string(),
-	line: number()
+	line: number$1()
 });
 const TestSpecSchema = object$1({
 	file: string(),
@@ -130977,26 +131003,26 @@ const TestRunStatusSchema = _enum([
 /** Result for a single `test()` case within a file. */
 const TestCaseResultSchema = object$1({
 	title: string(),
-	line: number().optional(),
+	line: number$1().optional(),
 	status: TestRunStatusSchema,
-	durationMs: number().optional(),
+	durationMs: number$1().optional(),
 	error: string().optional(),
 	screenshotPath: string().optional()
 });
 const TestResultSchema = object$1({
 	file: string(),
 	status: TestRunStatusSchema,
-	durationMs: number().optional(),
+	durationMs: number$1().optional(),
 	error: string().optional(),
 	screenshotPath: string().optional(),
 	tests: array$1(TestCaseResultSchema).optional()
 });
-const ListAppTestsParamsSchema = object$1({ appId: number() });
+const ListAppTestsParamsSchema = object$1({ appId: number$1() });
 const ListAppTestsResultSchema = object$1({ specs: array$1(TestSpecSchema) });
 const RunAppTestsParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	testFile: string().optional(),
-	testLine: number().int().positive().optional(),
+	testLine: number$1().int().positive().optional(),
 	headed: boolean().optional(),
 	parallel: boolean().optional(),
 	watch: boolean().optional()
@@ -131020,7 +131046,7 @@ const TestIsolationSchema = object$1({
 	reason: string().optional()
 });
 const RunAppTestsResultSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	results: array$1(TestResultSchema),
 	infraError: object$1({ message: string() }).optional(),
 	isolation: TestIsolationSchema.optional(),
@@ -131029,14 +131055,14 @@ const RunAppTestsResultSchema = object$1({
 		videos: array$1(string())
 	}).optional()
 });
-const StopAppTestsParamsSchema = object$1({ appId: number() });
+const StopAppTestsParamsSchema = object$1({ appId: number$1() });
 const GetTestScreenshotParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	path: string()
 });
 const GetTestScreenshotResultSchema = object$1({ dataUrl: string().nullable() });
 const OpenTestRecordingParamsSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	path: string()
 });
 const testsContracts = {
@@ -131067,7 +131093,7 @@ const testsContracts = {
 	})
 };
 const TestOutputPayloadSchema = object$1({
-	appId: number(),
+	appId: number$1(),
 	chunk: string(),
 	phase: _enum(["setup", "running"])
 });
@@ -132400,18 +132426,18 @@ var anthropicMessagesResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 				object$1({
 					type: literal("page_location"),
 					cited_text: string(),
-					document_index: number(),
+					document_index: number$1(),
 					document_title: string().nullable(),
-					start_page_number: number(),
-					end_page_number: number()
+					start_page_number: number$1(),
+					end_page_number: number$1()
 				}),
 				object$1({
 					type: literal("char_location"),
 					cited_text: string(),
-					document_index: number(),
+					document_index: number$1(),
 					document_title: string().nullable(),
-					start_char_index: number(),
-					end_char_index: number()
+					start_char_index: number$1(),
+					end_char_index: number$1()
 				})
 			])).optional()
 		}),
@@ -132508,7 +132534,7 @@ var anthropicMessagesResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 					type: literal("code_execution_result"),
 					stdout: string(),
 					stderr: string(),
-					return_code: number(),
+					return_code: number$1(),
 					content: array$1(object$1({
 						type: literal("code_execution_output"),
 						file_id: string()
@@ -132518,7 +132544,7 @@ var anthropicMessagesResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 					type: literal("encrypted_code_execution_result"),
 					encrypted_stdout: string(),
 					stderr: string(),
-					return_code: number(),
+					return_code: number$1(),
 					content: array$1(object$1({
 						type: literal("code_execution_output"),
 						file_id: string()
@@ -132541,7 +132567,7 @@ var anthropicMessagesResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 				})),
 				stdout: string(),
 				stderr: string(),
-				return_code: number()
+				return_code: number$1()
 			}), object$1({
 				type: literal("bash_code_execution_tool_result_error"),
 				error_code: string()
@@ -132559,9 +132585,9 @@ var anthropicMessagesResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 					type: literal("text_editor_code_execution_view_result"),
 					content: string(),
 					file_type: string(),
-					num_lines: number().nullable(),
-					start_line: number().nullable(),
-					total_lines: number().nullable()
+					num_lines: number$1().nullable(),
+					start_line: number$1().nullable(),
+					total_lines: number$1().nullable()
 				}),
 				object$1({
 					type: literal("text_editor_code_execution_create_result"),
@@ -132570,10 +132596,10 @@ var anthropicMessagesResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 				object$1({
 					type: literal("text_editor_code_execution_str_replace_result"),
 					lines: array$1(string()).nullable(),
-					new_lines: number().nullable(),
-					new_start: number().nullable(),
-					old_lines: number().nullable(),
-					old_start: number().nullable()
+					new_lines: number$1().nullable(),
+					new_start: number$1().nullable(),
+					old_lines: number$1().nullable(),
+					old_start: number$1().nullable()
 				})
 			])
 		}),
@@ -132615,11 +132641,11 @@ var anthropicMessagesResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 	stop_sequence: string().nullish(),
 	stop_details: anthropicStopDetailsSchema$1.nullish(),
 	usage: looseObject({
-		input_tokens: number(),
-		output_tokens: number(),
-		output_tokens_details: object$1({ thinking_tokens: number().nullish() }).nullish(),
-		cache_creation_input_tokens: number().nullish(),
-		cache_read_input_tokens: number().nullish(),
+		input_tokens: number$1(),
+		output_tokens: number$1(),
+		output_tokens_details: object$1({ thinking_tokens: number$1().nullish() }).nullish(),
+		cache_creation_input_tokens: number$1().nullish(),
+		cache_read_input_tokens: number$1().nullish(),
 		iterations: array$1(object$1({
 			type: union([
 				literal("compaction"),
@@ -132628,10 +132654,10 @@ var anthropicMessagesResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 				literal("fallback_message")
 			]),
 			model: string().nullish(),
-			input_tokens: number(),
-			output_tokens: number(),
-			cache_creation_input_tokens: number().nullish(),
-			cache_read_input_tokens: number().nullish()
+			input_tokens: number$1(),
+			output_tokens: number$1(),
+			cache_creation_input_tokens: number$1().nullish(),
+			cache_read_input_tokens: number$1().nullish()
 		})).nullish()
 	}),
 	container: object$1({
@@ -132646,13 +132672,13 @@ var anthropicMessagesResponseSchema$1 = lazySchema(() => zodSchema(object$1({
 	context_management: object$1({ applied_edits: array$1(union([
 		object$1({
 			type: literal("clear_tool_uses_20250919"),
-			cleared_tool_uses: number(),
-			cleared_input_tokens: number()
+			cleared_tool_uses: number$1(),
+			cleared_input_tokens: number$1()
 		}),
 		object$1({
 			type: literal("clear_thinking_20251015"),
-			cleared_thinking_turns: number(),
-			cleared_input_tokens: number()
+			cleared_thinking_turns: number$1(),
+			cleared_input_tokens: number$1()
 		}),
 		object$1({ type: literal("compact_20260112") })
 	])) }).nullish()
@@ -132665,9 +132691,9 @@ var anthropicMessagesChunkSchema$1 = lazySchema(() => zodSchema(discriminatedUni
 			model: string().nullish(),
 			role: string().nullish(),
 			usage: looseObject({
-				input_tokens: number(),
-				cache_creation_input_tokens: number().nullish(),
-				cache_read_input_tokens: number().nullish()
+				input_tokens: number$1(),
+				cache_creation_input_tokens: number$1().nullish(),
+				cache_read_input_tokens: number$1().nullish()
 			}),
 			content: array$1(discriminatedUnion("type", [object$1({
 				type: literal("tool_use"),
@@ -132685,7 +132711,7 @@ var anthropicMessagesChunkSchema$1 = lazySchema(() => zodSchema(discriminatedUni
 	}),
 	object$1({
 		type: literal("content_block_start"),
-		index: number(),
+		index: number$1(),
 		content_block: discriminatedUnion("type", [
 			object$1({
 				type: literal("text"),
@@ -132783,7 +132809,7 @@ var anthropicMessagesChunkSchema$1 = lazySchema(() => zodSchema(discriminatedUni
 						type: literal("code_execution_result"),
 						stdout: string(),
 						stderr: string(),
-						return_code: number(),
+						return_code: number$1(),
 						content: array$1(object$1({
 							type: literal("code_execution_output"),
 							file_id: string()
@@ -132793,7 +132819,7 @@ var anthropicMessagesChunkSchema$1 = lazySchema(() => zodSchema(discriminatedUni
 						type: literal("encrypted_code_execution_result"),
 						encrypted_stdout: string(),
 						stderr: string(),
-						return_code: number(),
+						return_code: number$1(),
 						content: array$1(object$1({
 							type: literal("code_execution_output"),
 							file_id: string()
@@ -132816,7 +132842,7 @@ var anthropicMessagesChunkSchema$1 = lazySchema(() => zodSchema(discriminatedUni
 					})),
 					stdout: string(),
 					stderr: string(),
-					return_code: number()
+					return_code: number$1()
 				}), object$1({
 					type: literal("bash_code_execution_tool_result_error"),
 					error_code: string()
@@ -132834,9 +132860,9 @@ var anthropicMessagesChunkSchema$1 = lazySchema(() => zodSchema(discriminatedUni
 						type: literal("text_editor_code_execution_view_result"),
 						content: string(),
 						file_type: string(),
-						num_lines: number().nullable(),
-						start_line: number().nullable(),
-						total_lines: number().nullable()
+						num_lines: number$1().nullable(),
+						start_line: number$1().nullable(),
+						total_lines: number$1().nullable()
 					}),
 					object$1({
 						type: literal("text_editor_code_execution_create_result"),
@@ -132845,10 +132871,10 @@ var anthropicMessagesChunkSchema$1 = lazySchema(() => zodSchema(discriminatedUni
 					object$1({
 						type: literal("text_editor_code_execution_str_replace_result"),
 						lines: array$1(string()).nullable(),
-						new_lines: number().nullable(),
-						new_start: number().nullable(),
-						old_lines: number().nullable(),
-						old_start: number().nullable()
+						new_lines: number$1().nullable(),
+						new_start: number$1().nullable(),
+						old_lines: number$1().nullable(),
+						old_start: number$1().nullable()
 					})
 				])
 			}),
@@ -132889,7 +132915,7 @@ var anthropicMessagesChunkSchema$1 = lazySchema(() => zodSchema(discriminatedUni
 	}),
 	object$1({
 		type: literal("content_block_delta"),
-		index: number(),
+		index: number$1(),
 		delta: discriminatedUnion("type", [
 			object$1({
 				type: literal("input_json_delta"),
@@ -132924,18 +132950,18 @@ var anthropicMessagesChunkSchema$1 = lazySchema(() => zodSchema(discriminatedUni
 					object$1({
 						type: literal("page_location"),
 						cited_text: string(),
-						document_index: number(),
+						document_index: number$1(),
 						document_title: string().nullable(),
-						start_page_number: number(),
-						end_page_number: number()
+						start_page_number: number$1(),
+						end_page_number: number$1()
 					}),
 					object$1({
 						type: literal("char_location"),
 						cited_text: string(),
-						document_index: number(),
+						document_index: number$1(),
 						document_title: string().nullable(),
-						start_char_index: number(),
-						end_char_index: number()
+						start_char_index: number$1(),
+						end_char_index: number$1()
 					})
 				])
 			})
@@ -132943,7 +132969,7 @@ var anthropicMessagesChunkSchema$1 = lazySchema(() => zodSchema(discriminatedUni
 	}),
 	object$1({
 		type: literal("content_block_stop"),
-		index: number()
+		index: number$1()
 	}),
 	object$1({
 		type: literal("error"),
@@ -132969,11 +132995,11 @@ var anthropicMessagesChunkSchema$1 = lazySchema(() => zodSchema(discriminatedUni
 			}).nullish()
 		}),
 		usage: looseObject({
-			input_tokens: number().nullish(),
-			output_tokens: number(),
-			output_tokens_details: object$1({ thinking_tokens: number().nullish() }).nullish(),
-			cache_creation_input_tokens: number().nullish(),
-			cache_read_input_tokens: number().nullish(),
+			input_tokens: number$1().nullish(),
+			output_tokens: number$1(),
+			output_tokens_details: object$1({ thinking_tokens: number$1().nullish() }).nullish(),
+			cache_creation_input_tokens: number$1().nullish(),
+			cache_read_input_tokens: number$1().nullish(),
 			iterations: array$1(object$1({
 				type: union([
 					literal("compaction"),
@@ -132982,22 +133008,22 @@ var anthropicMessagesChunkSchema$1 = lazySchema(() => zodSchema(discriminatedUni
 					literal("fallback_message")
 				]),
 				model: string().nullish(),
-				input_tokens: number(),
-				output_tokens: number(),
-				cache_creation_input_tokens: number().nullish(),
-				cache_read_input_tokens: number().nullish()
+				input_tokens: number$1(),
+				output_tokens: number$1(),
+				cache_creation_input_tokens: number$1().nullish(),
+				cache_read_input_tokens: number$1().nullish()
 			})).nullish()
 		}),
 		context_management: object$1({ applied_edits: array$1(union([
 			object$1({
 				type: literal("clear_tool_uses_20250919"),
-				cleared_tool_uses: number(),
-				cleared_input_tokens: number()
+				cleared_tool_uses: number$1(),
+				cleared_input_tokens: number$1()
 			}),
 			object$1({
 				type: literal("clear_thinking_20251015"),
-				cleared_thinking_turns: number(),
-				cleared_input_tokens: number()
+				cleared_thinking_turns: number$1(),
+				cleared_input_tokens: number$1()
 			}),
 			object$1({ type: literal("compact_20260112") })
 		])) }).nullish()
@@ -133035,7 +133061,7 @@ var anthropicLanguageModelOptions$1 = object$1({
 		}),
 		object$1({
 			type: literal("enabled"),
-			budgetTokens: number().optional()
+			budgetTokens: number$1().optional()
 		}),
 		object$1({ type: literal("disabled") })
 	]).optional(),
@@ -133073,14 +133099,14 @@ var anthropicLanguageModelOptions$1 = object$1({
 	]).optional(),
 	taskBudget: object$1({
 		type: literal("tokens"),
-		total: number().int().min(2e4),
-		remaining: number().int().min(0).optional()
+		total: number$1().int().min(2e4),
+		remaining: number$1().int().min(0).optional()
 	}).optional(),
 	speed: _enum(["fast", "standard"]).optional(),
 	inferenceGeo: _enum(["us", "global"]).optional(),
 	fallbacks: union([literal("default"), array$1(object$1({
 		model: string(),
-		max_tokens: number().int().optional(),
+		max_tokens: number$1().int().optional(),
 		thinking: record(string(), unknown()).optional(),
 		output_config: record(string(), unknown()).optional(),
 		speed: _enum(["fast", "standard"]).optional()
@@ -133091,18 +133117,18 @@ var anthropicLanguageModelOptions$1 = object$1({
 			type: literal("clear_tool_uses_20250919"),
 			trigger: discriminatedUnion("type", [object$1({
 				type: literal("input_tokens"),
-				value: number()
+				value: number$1()
 			}), object$1({
 				type: literal("tool_uses"),
-				value: number()
+				value: number$1()
 			})]).optional(),
 			keep: object$1({
 				type: literal("tool_uses"),
-				value: number()
+				value: number$1()
 			}).optional(),
 			clearAtLeast: object$1({
 				type: literal("input_tokens"),
-				value: number()
+				value: number$1()
 			}).optional(),
 			clearToolInputs: boolean().optional(),
 			excludeTools: array$1(string()).optional()
@@ -133111,14 +133137,14 @@ var anthropicLanguageModelOptions$1 = object$1({
 			type: literal("clear_thinking_20251015"),
 			keep: union([literal("all"), object$1({
 				type: literal("thinking_turns"),
-				value: number()
+				value: number$1()
 			})]).optional()
 		}),
 		object$1({
 			type: literal("compact_20260112"),
 			trigger: object$1({
 				type: literal("input_tokens"),
-				value: number()
+				value: number$1()
 			}).optional(),
 			pauseAfterCompaction: boolean().optional(),
 			instructions: string().optional()
@@ -133164,7 +133190,7 @@ var CacheControlValidator$1 = class {
 };
 var advisor_20260301ArgsSchema$1 = lazySchema(() => zodSchema(object$1({
 	model: string(),
-	maxUses: number().optional(),
+	maxUses: number$1().optional(),
 	caching: object$1({
 		type: literal("ephemeral"),
 		ttl: union([literal("5m"), literal("1h")])
@@ -133193,7 +133219,7 @@ var factory$1 = createProviderToolFactoryWithOutputSchema({
 var advisor_20260301$1 = (args) => {
 	return factory$1(args);
 };
-var textEditor_20250728ArgsSchema$1 = lazySchema(() => zodSchema(object$1({ maxCharacters: number().optional() })));
+var textEditor_20250728ArgsSchema$1 = lazySchema(() => zodSchema(object$1({ maxCharacters: number$1().optional() })));
 var factory2$1 = createProviderToolFactory({
 	id: "anthropic.text_editor_20250728",
 	inputSchema: lazySchema(() => zodSchema(object$1({
@@ -133205,18 +133231,18 @@ var factory2$1 = createProviderToolFactory({
 		]),
 		path: string(),
 		file_text: string().optional(),
-		insert_line: number().int().optional(),
+		insert_line: number$1().int().optional(),
 		new_str: string().optional(),
 		insert_text: string().optional(),
 		old_str: string().optional(),
-		view_range: array$1(number().int()).optional()
+		view_range: array$1(number$1().int()).optional()
 	})))
 });
 var textEditor_20250728$1 = (args = {}) => {
 	return factory2$1(args);
 };
 var webSearch_20260209ArgsSchema$1 = lazySchema(() => zodSchema(object$1({
-	maxUses: number().optional(),
+	maxUses: number$1().optional(),
 	allowedDomains: array$1(string()).optional(),
 	blockedDomains: array$1(string()).optional(),
 	userLocation: object$1({
@@ -133244,7 +133270,7 @@ var webSearch_20260209$1 = (args = {}) => {
 	return factory3$1(args);
 };
 var webSearch_20250305ArgsSchema$1 = lazySchema(() => zodSchema(object$1({
-	maxUses: number().optional(),
+	maxUses: number$1().optional(),
 	allowedDomains: array$1(string()).optional(),
 	blockedDomains: array$1(string()).optional(),
 	userLocation: object$1({
@@ -133272,11 +133298,11 @@ var webSearch_20250305$1 = (args = {}) => {
 	return factory4$1(args);
 };
 var webFetch_20260209ArgsSchema$1 = lazySchema(() => zodSchema(object$1({
-	maxUses: number().optional(),
+	maxUses: number$1().optional(),
 	allowedDomains: array$1(string()).optional(),
 	blockedDomains: array$1(string()).optional(),
 	citations: object$1({ enabled: boolean() }).optional(),
-	maxContentTokens: number().optional()
+	maxContentTokens: number$1().optional()
 })));
 var webFetch_20260209OutputSchema$1 = lazySchema(() => zodSchema(object$1({
 	type: literal("web_fetch_result"),
@@ -133307,11 +133333,11 @@ var webFetch_20260209$1 = (args = {}) => {
 	return factory5$1(args);
 };
 var webFetch_20250910ArgsSchema$1 = lazySchema(() => zodSchema(object$1({
-	maxUses: number().optional(),
+	maxUses: number$1().optional(),
 	allowedDomains: array$1(string()).optional(),
 	blockedDomains: array$1(string()).optional(),
 	citations: object$1({ enabled: boolean() }).optional(),
-	maxContentTokens: number().optional()
+	maxContentTokens: number$1().optional()
 })));
 var webFetch_20250910OutputSchema$1 = lazySchema(() => zodSchema(object$1({
 	type: literal("web_fetch_result"),
@@ -133707,7 +133733,7 @@ var codeExecution_20250522OutputSchema$1 = lazySchema(() => zodSchema(object$1({
 	type: literal("code_execution_result"),
 	stdout: string(),
 	stderr: string(),
-	return_code: number(),
+	return_code: number$1(),
 	content: array$1(object$1({
 		type: literal("code_execution_output"),
 		file_id: string()
@@ -133726,7 +133752,7 @@ var codeExecution_20250825OutputSchema$1 = lazySchema(() => zodSchema(discrimina
 		type: literal("code_execution_result"),
 		stdout: string(),
 		stderr: string(),
-		return_code: number(),
+		return_code: number$1(),
 		content: array$1(object$1({
 			type: literal("code_execution_output"),
 			file_id: string()
@@ -133740,7 +133766,7 @@ var codeExecution_20250825OutputSchema$1 = lazySchema(() => zodSchema(discrimina
 		})),
 		stdout: string(),
 		stderr: string(),
-		return_code: number()
+		return_code: number$1()
 	}),
 	object$1({
 		type: literal("bash_code_execution_tool_result_error"),
@@ -133754,9 +133780,9 @@ var codeExecution_20250825OutputSchema$1 = lazySchema(() => zodSchema(discrimina
 		type: literal("text_editor_code_execution_view_result"),
 		content: string(),
 		file_type: string(),
-		num_lines: number().nullable(),
-		start_line: number().nullable(),
-		total_lines: number().nullable()
+		num_lines: number$1().nullable(),
+		start_line: number$1().nullable(),
+		total_lines: number$1().nullable()
 	}),
 	object$1({
 		type: literal("text_editor_code_execution_create_result"),
@@ -133765,10 +133791,10 @@ var codeExecution_20250825OutputSchema$1 = lazySchema(() => zodSchema(discrimina
 	object$1({
 		type: literal("text_editor_code_execution_str_replace_result"),
 		lines: array$1(string()).nullable(),
-		new_lines: number().nullable(),
-		new_start: number().nullable(),
-		old_lines: number().nullable(),
-		old_start: number().nullable()
+		new_lines: number$1().nullable(),
+		new_start: number$1().nullable(),
+		old_lines: number$1().nullable(),
+		old_start: number$1().nullable()
 	})
 ])));
 var factory8$1 = createProviderToolFactoryWithOutputSchema({
@@ -133814,7 +133840,7 @@ var codeExecution_20260120OutputSchema$1 = lazySchema(() => zodSchema(discrimina
 		type: literal("code_execution_result"),
 		stdout: string(),
 		stderr: string(),
-		return_code: number(),
+		return_code: number$1(),
 		content: array$1(object$1({
 			type: literal("code_execution_output"),
 			file_id: string()
@@ -133824,7 +133850,7 @@ var codeExecution_20260120OutputSchema$1 = lazySchema(() => zodSchema(discrimina
 		type: literal("encrypted_code_execution_result"),
 		encrypted_stdout: string(),
 		stderr: string(),
-		return_code: number(),
+		return_code: number$1(),
 		content: array$1(object$1({
 			type: literal("code_execution_output"),
 			file_id: string()
@@ -133838,7 +133864,7 @@ var codeExecution_20260120OutputSchema$1 = lazySchema(() => zodSchema(discrimina
 		})),
 		stdout: string(),
 		stderr: string(),
-		return_code: number()
+		return_code: number$1()
 	}),
 	object$1({
 		type: literal("bash_code_execution_tool_result_error"),
@@ -133852,9 +133878,9 @@ var codeExecution_20260120OutputSchema$1 = lazySchema(() => zodSchema(discrimina
 		type: literal("text_editor_code_execution_view_result"),
 		content: string(),
 		file_type: string(),
-		num_lines: number().nullable(),
-		start_line: number().nullable(),
-		total_lines: number().nullable()
+		num_lines: number$1().nullable(),
+		start_line: number$1().nullable(),
+		total_lines: number$1().nullable()
 	}),
 	object$1({
 		type: literal("text_editor_code_execution_create_result"),
@@ -133863,10 +133889,10 @@ var codeExecution_20260120OutputSchema$1 = lazySchema(() => zodSchema(discrimina
 	object$1({
 		type: literal("text_editor_code_execution_str_replace_result"),
 		lines: array$1(string()).nullable(),
-		new_lines: number().nullable(),
-		new_start: number().nullable(),
-		old_lines: number().nullable(),
-		old_start: number().nullable()
+		new_lines: number$1().nullable(),
+		new_start: number$1().nullable(),
+		old_lines: number$1().nullable(),
+		old_start: number$1().nullable()
 	})
 ])));
 var factory9$1 = createProviderToolFactoryWithOutputSchema({
@@ -133915,7 +133941,7 @@ var factory10$1 = createProviderToolFactoryWithOutputSchema({
 	id: "anthropic.tool_search_regex_20251119",
 	inputSchema: lazySchema(() => zodSchema(object$1({
 		pattern: string(),
-		limit: number().optional()
+		limit: number$1().optional()
 	}))),
 	outputSchema: toolSearchRegex_20251119OutputSchema$1,
 	supportsDeferredResults: true
@@ -136579,7 +136605,7 @@ var computer_20241022$1 = createProviderToolFactory({
 			"screenshot",
 			"cursor_position"
 		]),
-		coordinate: array$1(number().int()).optional(),
+		coordinate: array$1(number$1().int()).optional(),
 		text: string().optional()
 	})))
 });
@@ -136604,16 +136630,16 @@ var computer_20250124$1 = createProviderToolFactory({
 			"wait",
 			"screenshot"
 		]),
-		coordinate: tuple([number().int(), number().int()]).optional(),
-		duration: number().optional(),
-		scroll_amount: number().optional(),
+		coordinate: tuple([number$1().int(), number$1().int()]).optional(),
+		duration: number$1().optional(),
+		scroll_amount: number$1().optional(),
 		scroll_direction: _enum([
 			"up",
 			"down",
 			"left",
 			"right"
 		]).optional(),
-		start_coordinate: tuple([number().int(), number().int()]).optional(),
+		start_coordinate: tuple([number$1().int(), number$1().int()]).optional(),
 		text: string().optional()
 	})))
 });
@@ -136639,22 +136665,22 @@ var computer_20251124$1 = createProviderToolFactory({
 			"screenshot",
 			"zoom"
 		]),
-		coordinate: tuple([number().int(), number().int()]).optional(),
-		duration: number().optional(),
+		coordinate: tuple([number$1().int(), number$1().int()]).optional(),
+		duration: number$1().optional(),
 		region: tuple([
-			number().int(),
-			number().int(),
-			number().int(),
-			number().int()
+			number$1().int(),
+			number$1().int(),
+			number$1().int(),
+			number$1().int()
 		]).optional(),
-		scroll_amount: number().optional(),
+		scroll_amount: number$1().optional(),
 		scroll_direction: _enum([
 			"up",
 			"down",
 			"left",
 			"right"
 		]).optional(),
-		start_coordinate: tuple([number().int(), number().int()]).optional(),
+		start_coordinate: tuple([number$1().int(), number$1().int()]).optional(),
 		text: string().optional()
 	})))
 });
@@ -136664,7 +136690,7 @@ var memory_20250818$1 = createProviderToolFactory({
 		object$1({
 			command: literal("view"),
 			path: string(),
-			view_range: tuple([number(), number()]).optional()
+			view_range: tuple([number$1(), number$1()]).optional()
 		}),
 		object$1({
 			command: literal("create"),
@@ -136680,7 +136706,7 @@ var memory_20250818$1 = createProviderToolFactory({
 		object$1({
 			command: literal("insert"),
 			path: string(),
-			insert_line: number(),
+			insert_line: number$1(),
 			insert_text: string()
 		}),
 		object$1({
@@ -136706,11 +136732,11 @@ var textEditor_20241022$1 = createProviderToolFactory({
 		]),
 		path: string(),
 		file_text: string().optional(),
-		insert_line: number().int().optional(),
+		insert_line: number$1().int().optional(),
 		new_str: string().optional(),
 		insert_text: string().optional(),
 		old_str: string().optional(),
-		view_range: array$1(number().int()).optional()
+		view_range: array$1(number$1().int()).optional()
 	})))
 });
 var textEditor_20250124$1 = createProviderToolFactory({
@@ -136725,11 +136751,11 @@ var textEditor_20250124$1 = createProviderToolFactory({
 		]),
 		path: string(),
 		file_text: string().optional(),
-		insert_line: number().int().optional(),
+		insert_line: number$1().int().optional(),
 		new_str: string().optional(),
 		insert_text: string().optional(),
 		old_str: string().optional(),
-		view_range: array$1(number().int()).optional()
+		view_range: array$1(number$1().int()).optional()
 	})))
 });
 var textEditor_20250429$1 = createProviderToolFactory({
@@ -136743,11 +136769,11 @@ var textEditor_20250429$1 = createProviderToolFactory({
 		]),
 		path: string(),
 		file_text: string().optional(),
-		insert_line: number().int().optional(),
+		insert_line: number$1().int().optional(),
 		new_str: string().optional(),
 		insert_text: string().optional(),
 		old_str: string().optional(),
-		view_range: array$1(number().int()).optional()
+		view_range: array$1(number$1().int()).optional()
 	})))
 });
 var toolSearchBm25_20251119OutputSchema$1 = lazySchema(() => zodSchema(array$1(object$1({
@@ -136758,7 +136784,7 @@ var factory11$1 = createProviderToolFactoryWithOutputSchema({
 	id: "anthropic.tool_search_bm25_20251119",
 	inputSchema: lazySchema(() => zodSchema(object$1({
 		query: string(),
-		limit: number().optional()
+		limit: number$1().optional()
 	}))),
 	outputSchema: toolSearchBm25_20251119OutputSchema$1,
 	supportsDeferredResults: true
@@ -137025,8 +137051,8 @@ var xSourceSchema = object$1({
 	type: literal("x"),
 	excludedXHandles: array$1(string()).optional(),
 	includedXHandles: array$1(string()).optional(),
-	postFavoriteCount: number().int().optional(),
-	postViewCount: number().int().optional(),
+	postFavoriteCount: number$1().int().optional(),
+	postViewCount: number$1().int().optional(),
 	xHandles: array$1(string()).optional()
 });
 var newsSourceSchema = object$1({
@@ -137054,7 +137080,7 @@ var xaiLanguageModelChatOptions = object$1({
 		"xhigh"
 	]).optional(),
 	logprobs: boolean().optional(),
-	topLogprobs: number().int().min(0).max(8).optional(),
+	topLogprobs: number$1().int().min(0).max(8).optional(),
 	serviceTier: _enum(["default", "priority"]).optional(),
 	parallel_function_calling: boolean().optional(),
 	searchParameters: object$1({
@@ -137066,7 +137092,7 @@ var xaiLanguageModelChatOptions = object$1({
 		returnCitations: boolean().optional(),
 		fromDate: string().optional(),
 		toDate: string().optional(),
-		maxSearchResults: number().min(1).max(50).optional(),
+		maxSearchResults: number$1().min(1).max(50).optional(),
 		sources: array$1(searchSourceSchema).optional()
 	}).optional()
 });
@@ -137074,7 +137100,7 @@ var chatCompletionsErrorSchema = object$1({ error: object$1({
 	message: string(),
 	type: string().nullish(),
 	param: any().nullish(),
-	code: union([string(), number()]).nullish()
+	code: union([string(), number$1()]).nullish()
 }) });
 var responsesErrorSchema = object$1({
 	code: string(),
@@ -137542,25 +137568,25 @@ var XaiChatLanguageModel = class {
 	}
 };
 var xaiUsageSchema = object$1({
-	prompt_tokens: number(),
-	completion_tokens: number(),
-	total_tokens: number(),
+	prompt_tokens: number$1(),
+	completion_tokens: number$1(),
+	total_tokens: number$1(),
 	prompt_tokens_details: object$1({
-		text_tokens: number().nullish(),
-		audio_tokens: number().nullish(),
-		image_tokens: number().nullish(),
-		cached_tokens: number().nullish()
+		text_tokens: number$1().nullish(),
+		audio_tokens: number$1().nullish(),
+		image_tokens: number$1().nullish(),
+		cached_tokens: number$1().nullish()
 	}).nullish(),
 	completion_tokens_details: object$1({
-		reasoning_tokens: number().nullish(),
-		audio_tokens: number().nullish(),
-		accepted_prediction_tokens: number().nullish(),
-		rejected_prediction_tokens: number().nullish()
+		reasoning_tokens: number$1().nullish(),
+		audio_tokens: number$1().nullish(),
+		accepted_prediction_tokens: number$1().nullish(),
+		rejected_prediction_tokens: number$1().nullish()
 	}).nullish()
 });
 var xaiChatResponseSchema = object$1({
 	id: string().nullish(),
-	created: number().nullish(),
+	created: number$1().nullish(),
 	model: string().nullish(),
 	choices: array$1(object$1({
 		message: object$1({
@@ -137576,7 +137602,7 @@ var xaiChatResponseSchema = object$1({
 				})
 			})).nullish()
 		}),
-		index: number(),
+		index: number$1(),
 		finish_reason: string().nullish()
 	})).nullish(),
 	object: literal("chat.completion").nullish(),
@@ -137588,7 +137614,7 @@ var xaiChatResponseSchema = object$1({
 });
 var xaiChatChunkSchema = object$1({
 	id: string().nullish(),
-	created: number().nullish(),
+	created: number$1().nullish(),
 	model: string().nullish(),
 	choices: array$1(object$1({
 		delta: object$1({
@@ -137605,7 +137631,7 @@ var xaiChatChunkSchema = object$1({
 			})).nullish()
 		}),
 		finish_reason: string().nullish(),
-		index: number()
+		index: number$1()
 	})),
 	usage: xaiUsageSchema.nullish(),
 	citations: array$1(string().url()).nullish(),
@@ -137724,7 +137750,7 @@ var xaiImageResponseSchema = object$1({
 		b64_json: string().nullish(),
 		revised_prompt: string().nullish()
 	})),
-	usage: object$1({ cost_in_usd_ticks: number().nullish() }).nullish()
+	usage: object$1({ cost_in_usd_ticks: number$1().nullish() }).nullish()
 });
 async function convertToXaiResponsesInput({ prompt }) {
 	var _a, _b, _c, _d, _e, _f, _g, _h, _i;
@@ -137999,7 +138025,7 @@ var outputItemSchema = discriminatedUnion("type", [
 		results: array$1(object$1({
 			file_id: string(),
 			filename: string(),
-			score: number(),
+			score: number$1(),
 			text: string()
 		})).nullish()
 	}),
@@ -138038,17 +138064,17 @@ var outputItemSchema = discriminatedUnion("type", [
 	})
 ]);
 var xaiResponsesUsageSchema = object$1({
-	input_tokens: number(),
-	output_tokens: number(),
-	total_tokens: number().optional(),
-	input_tokens_details: object$1({ cached_tokens: number().optional() }).optional(),
-	output_tokens_details: object$1({ reasoning_tokens: number().optional() }).optional(),
-	num_sources_used: number().optional(),
-	num_server_side_tools_used: number().optional()
+	input_tokens: number$1(),
+	output_tokens: number$1(),
+	total_tokens: number$1().optional(),
+	input_tokens_details: object$1({ cached_tokens: number$1().optional() }).optional(),
+	output_tokens_details: object$1({ reasoning_tokens: number$1().optional() }).optional(),
+	num_sources_used: number$1().optional(),
+	num_server_side_tools_used: number$1().optional()
 });
 var xaiResponsesResponseSchema = object$1({
 	id: string().nullish(),
-	created_at: number().nullish(),
+	created_at: number$1().nullish(),
 	model: string().nullish(),
 	object: literal("response"),
 	output: array$1(outputItemSchema),
@@ -138074,40 +138100,40 @@ var xaiResponsesChunkSchema = union([
 	object$1({
 		type: literal("response.output_item.added"),
 		item: outputItemSchema,
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.output_item.done"),
 		item: outputItemSchema,
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.content_part.added"),
 		item_id: string(),
-		output_index: number(),
-		content_index: number(),
+		output_index: number$1(),
+		content_index: number$1(),
 		part: messageContentPartSchema
 	}),
 	object$1({
 		type: literal("response.content_part.done"),
 		item_id: string(),
-		output_index: number(),
-		content_index: number(),
+		output_index: number$1(),
+		content_index: number$1(),
 		part: messageContentPartSchema
 	}),
 	object$1({
 		type: literal("response.output_text.delta"),
 		item_id: string(),
-		output_index: number(),
-		content_index: number(),
+		output_index: number$1(),
+		content_index: number$1(),
 		delta: string(),
 		logprobs: array$1(any()).optional()
 	}),
 	object$1({
 		type: literal("response.output_text.done"),
 		item_id: string(),
-		output_index: number(),
-		content_index: number(),
+		output_index: number$1(),
+		content_index: number$1(),
 		text: string(),
 		logprobs: array$1(any()).optional(),
 		annotations: array$1(annotationSchema$1).optional()
@@ -138115,211 +138141,211 @@ var xaiResponsesChunkSchema = union([
 	object$1({
 		type: literal("response.output_text.annotation.added"),
 		item_id: string(),
-		output_index: number(),
-		content_index: number(),
-		annotation_index: number(),
+		output_index: number$1(),
+		content_index: number$1(),
+		annotation_index: number$1(),
 		annotation: annotationSchema$1
 	}),
 	object$1({
 		type: literal("response.reasoning_summary_part.added"),
 		item_id: string(),
-		output_index: number(),
-		summary_index: number(),
+		output_index: number$1(),
+		summary_index: number$1(),
 		part: reasoningSummaryPartSchema
 	}),
 	object$1({
 		type: literal("response.reasoning_summary_part.done"),
 		item_id: string(),
-		output_index: number(),
-		summary_index: number(),
+		output_index: number$1(),
+		summary_index: number$1(),
 		part: reasoningSummaryPartSchema
 	}),
 	object$1({
 		type: literal("response.reasoning_summary_text.delta"),
 		item_id: string(),
-		output_index: number(),
-		summary_index: number(),
+		output_index: number$1(),
+		summary_index: number$1(),
 		delta: string()
 	}),
 	object$1({
 		type: literal("response.reasoning_summary_text.done"),
 		item_id: string(),
-		output_index: number(),
-		summary_index: number(),
+		output_index: number$1(),
+		summary_index: number$1(),
 		text: string()
 	}),
 	object$1({
 		type: literal("response.reasoning_text.delta"),
 		item_id: string(),
-		output_index: number(),
-		content_index: number(),
+		output_index: number$1(),
+		content_index: number$1(),
 		delta: string()
 	}),
 	object$1({
 		type: literal("response.reasoning_text.done"),
 		item_id: string(),
-		output_index: number(),
-		content_index: number(),
+		output_index: number$1(),
+		content_index: number$1(),
 		text: string()
 	}),
 	object$1({
 		type: literal("response.web_search_call.in_progress"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.web_search_call.searching"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.web_search_call.completed"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.x_search_call.in_progress"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.x_search_call.searching"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.x_search_call.completed"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.file_search_call.in_progress"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.file_search_call.searching"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.file_search_call.completed"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.code_execution_call.in_progress"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.code_execution_call.executing"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.code_execution_call.completed"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.code_interpreter_call.in_progress"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.code_interpreter_call.executing"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.code_interpreter_call.interpreting"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.code_interpreter_call.completed"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.code_interpreter_call_code.delta"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		delta: string()
 	}),
 	object$1({
 		type: literal("response.code_interpreter_call_code.done"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		code: string()
 	}),
 	object$1({
 		type: literal("response.custom_tool_call_input.delta"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		delta: string()
 	}),
 	object$1({
 		type: literal("response.custom_tool_call_input.done"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		input: string()
 	}),
 	object$1({
 		type: literal("response.function_call_arguments.delta"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		delta: string()
 	}),
 	object$1({
 		type: literal("response.function_call_arguments.done"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		arguments: string()
 	}),
 	object$1({
 		type: literal("response.mcp_call.in_progress"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.mcp_call.executing"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.mcp_call.completed"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.mcp_call.failed"),
 		item_id: string(),
-		output_index: number()
+		output_index: number$1()
 	}),
 	object$1({
 		type: literal("response.mcp_call_arguments.delta"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		delta: string()
 	}),
 	object$1({
 		type: literal("response.mcp_call_arguments.done"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		arguments: string().optional()
 	}),
 	object$1({
 		type: literal("response.mcp_call_output.delta"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		delta: string()
 	}),
 	object$1({
 		type: literal("response.mcp_call_output.done"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		output: string().optional()
 	}),
 	object$1({
@@ -138365,7 +138391,7 @@ var xaiLanguageModelResponsesOptions = object$1({
 		"xhigh"
 	]).optional(),
 	logprobs: boolean().optional(),
-	topLogprobs: number().int().min(0).max(8).optional(),
+	topLogprobs: number$1().int().min(0).max(8).optional(),
 	serviceTier: _enum(["default", "priority"]).optional(),
 	store: boolean().optional(),
 	previousResponseId: string().optional(),
@@ -138373,14 +138399,14 @@ var xaiLanguageModelResponsesOptions = object$1({
 });
 var fileSearchArgsSchema$1 = lazySchema(() => zodSchema(object$1({
 	vectorStoreIds: array$1(string()),
-	maxNumResults: number().optional()
+	maxNumResults: number$1().optional()
 })));
 var fileSearchOutputSchema$1 = lazySchema(() => zodSchema(object$1({
 	queries: array$1(string()),
 	results: array$1(object$1({
 		fileId: string(),
 		filename: string(),
-		score: number().min(0).max(1),
+		score: number$1().min(0).max(1),
 		text: string()
 	})).nullable()
 })));
@@ -138443,7 +138469,7 @@ var xSearchOutputSchema = lazySchema(() => zodSchema(object$1({
 		author: string(),
 		text: string(),
 		url: string(),
-		likes: number()
+		likes: number$1()
 	}))
 })));
 var xSearchToolFactory = createProviderToolFactoryWithOutputSchema({
@@ -139234,7 +139260,7 @@ var viewImage = (args = {}) => viewImageToolFactory(args);
 var viewXVideoOutputSchema = object$1({
 	transcript: string().optional().describe("transcript of the video"),
 	description: string().describe("description of the video content"),
-	duration: number().optional().describe("duration in seconds")
+	duration: number$1().optional().describe("duration in seconds")
 });
 var viewXVideoToolFactory = createProviderToolFactoryWithOutputSchema({
 	id: "xai.view_x_video",
@@ -139264,8 +139290,8 @@ var modeSchema = _enum([
 	"reference-to-video"
 ]);
 var baseFields = {
-	pollIntervalMs: number().positive().nullish(),
-	pollTimeoutMs: number().positive().nullish(),
+	pollIntervalMs: number$1().positive().nullish(),
+	pollTimeoutMs: number$1().positive().nullish(),
 	resolution: resolutionSchema.nullish()
 };
 var userField = { user: string().optional() };
@@ -139604,12 +139630,12 @@ var xaiVideoStatusResponseSchema = object$1({
 	status: string().nullish(),
 	video: object$1({
 		url: string(),
-		duration: number().nullish(),
+		duration: number$1().nullish(),
 		respect_moderation: boolean().nullish()
 	}).nullish(),
 	model: string().nullish(),
-	usage: object$1({ cost_in_usd_ticks: number().nullish() }).nullish(),
-	progress: number().nullish(),
+	usage: object$1({ cost_in_usd_ticks: number$1().nullish() }).nullish(),
+	progress: number$1().nullish(),
 	error: object$1({
 		code: string().nullish(),
 		message: string().nullish()
@@ -149855,7 +149881,7 @@ function getModelPath(modelId) {
 }
 var googleFailedResponseHandler = createJsonErrorResponseHandler({
 	errorSchema: lazySchema(() => zodSchema(object$1({ error: object$1({
-		code: number().nullable(),
+		code: number$1().nullable(),
 		message: string(),
 		status: string(),
 		details: array$1(unknown()).nullish()
@@ -149865,7 +149891,7 @@ var googleFailedResponseHandler = createJsonErrorResponseHandler({
 var googleLanguageModelOptions = lazySchema(() => zodSchema(object$1({
 	responseModalities: array$1(_enum(["TEXT", "IMAGE"])).optional(),
 	thinkingConfig: object$1({
-		thinkingBudget: number().optional(),
+		thinkingBudget: number$1().optional(),
 		includeThoughts: boolean().optional(),
 		thinkingLevel: _enum([
 			"minimal",
@@ -149946,12 +149972,12 @@ var googleLanguageModelOptions = lazySchema(() => zodSchema(object$1({
 		]).optional(),
 		imageOutputOptions: object$1({
 			mimeType: _enum(["image/jpeg", "image/png"]).optional(),
-			compressionQuality: number().optional()
+			compressionQuality: number$1().optional()
 		}).optional()
 	}).optional(),
 	retrievalConfig: object$1({ latLng: object$1({
-		latitude: number(),
-		longitude: number()
+		latitude: number$1(),
+		longitude: number$1()
 	}).optional() }).optional(),
 	streamFunctionCallArguments: boolean().optional(),
 	serviceTier: _enum([
@@ -151158,22 +151184,22 @@ var getGroundingMetadataSchema = () => object$1({
 	})).nullish(),
 	groundingSupports: array$1(object$1({
 		segment: object$1({
-			startIndex: number().nullish(),
-			endIndex: number().nullish(),
+			startIndex: number$1().nullish(),
+			endIndex: number$1().nullish(),
 			text: string().nullish()
 		}).nullish(),
 		segment_text: string().nullish(),
-		groundingChunkIndices: array$1(number()).nullish(),
-		supportChunkIndices: array$1(number()).nullish(),
-		confidenceScores: array$1(number()).nullish(),
-		confidenceScore: array$1(number()).nullish()
+		groundingChunkIndices: array$1(number$1()).nullish(),
+		supportChunkIndices: array$1(number$1()).nullish(),
+		confidenceScores: array$1(number$1()).nullish(),
+		confidenceScore: array$1(number$1()).nullish()
 	})).nullish(),
-	retrievalMetadata: union([object$1({ webDynamicRetrievalScore: number() }), object$1({})]).nullish()
+	retrievalMetadata: union([object$1({ webDynamicRetrievalScore: number$1() }), object$1({})]).nullish()
 });
 var partialArgSchema = object$1({
 	jsonPath: string(),
 	stringValue: string().nullish(),
-	numberValue: number().nullish(),
+	numberValue: number$1().nullish(),
 	boolValue: boolean().nullish(),
 	nullValue: unknown().nullish(),
 	willContinue: boolean().nullish()
@@ -151230,21 +151256,21 @@ var getContentSchema = () => object$1({ parts: array$1(union([
 var getSafetyRatingSchema = () => object$1({
 	category: string().nullish(),
 	probability: string().nullish(),
-	probabilityScore: number().nullish(),
+	probabilityScore: number$1().nullish(),
 	severity: string().nullish(),
-	severityScore: number().nullish(),
+	severityScore: number$1().nullish(),
 	blocked: boolean().nullish()
 });
 var tokenDetailsSchema = array$1(object$1({
 	modality: string(),
-	tokenCount: number()
+	tokenCount: number$1()
 })).nullish();
 var usageSchema$1 = object$1({
-	cachedContentTokenCount: number().nullish(),
-	thoughtsTokenCount: number().nullish(),
-	promptTokenCount: number().nullish(),
-	candidatesTokenCount: number().nullish(),
-	totalTokenCount: number().nullish(),
+	cachedContentTokenCount: number$1().nullish(),
+	thoughtsTokenCount: number$1().nullish(),
+	promptTokenCount: number$1().nullish(),
+	candidatesTokenCount: number$1().nullish(),
+	totalTokenCount: number$1().nullish(),
 	trafficType: string().nullish(),
 	serviceTier: string().nullish(),
 	promptTokensDetails: tokenDetailsSchema,
@@ -151303,7 +151329,7 @@ var enterpriseWebSearch = createProviderToolFactory({
 });
 var fileSearchArgsBaseSchema = object$1({
 	fileSearchStoreNames: array$1(string()).describe("The names of the file_search_stores to retrieve from. Example: `fileSearchStores/my-file-search-store-123`"),
-	topK: number().int().positive().describe("The number of file search retrieval chunks to retrieve.").optional(),
+	topK: number$1().int().positive().describe("The number of file search retrieval chunks to retrieve.").optional(),
 	metadataFilter: string().describe("Metadata filter to apply to the file search retrieval documents. See https://google.aip.dev/160 for the syntax of the filter expression.").optional()
 }).passthrough();
 var fileSearch$1 = createProviderToolFactory({
@@ -151343,7 +151369,7 @@ var googleTools = {
 		id: "google.vertex_rag_store",
 		inputSchema: object$1({
 			ragCorpus: string(),
-			topK: number().optional()
+			topK: number$1().optional()
 		})
 	})
 };
@@ -152380,22 +152406,22 @@ ${block.text}`
 }
 var tokenByModalitySchema = () => object$1({
 	modality: string().nullish(),
-	tokens: number().nullish()
+	tokens: number$1().nullish()
 }).loose();
 var usageSchema2 = () => object$1({
-	total_input_tokens: number().nullish(),
-	total_output_tokens: number().nullish(),
-	total_thought_tokens: number().nullish(),
-	total_cached_tokens: number().nullish(),
-	total_tool_use_tokens: number().nullish(),
-	total_tokens: number().nullish(),
+	total_input_tokens: number$1().nullish(),
+	total_output_tokens: number$1().nullish(),
+	total_thought_tokens: number$1().nullish(),
+	total_cached_tokens: number$1().nullish(),
+	total_tool_use_tokens: number$1().nullish(),
+	total_tokens: number$1().nullish(),
 	input_tokens_by_modality: array$1(tokenByModalitySchema()).nullish(),
 	output_tokens_by_modality: array$1(tokenByModalitySchema()).nullish(),
 	cached_tokens_by_modality: array$1(tokenByModalitySchema()).nullish(),
 	tool_use_tokens_by_modality: array$1(tokenByModalitySchema()).nullish(),
 	grounding_tool_count: array$1(object$1({
 		type: string().nullish(),
-		count: number().nullish()
+		count: number$1().nullish()
 	}).loose()).nullish()
 }).loose();
 var interactionStatusSchema = () => _enum([
@@ -152411,18 +152437,18 @@ var annotationSchema = () => {
 		type: literal("url_citation"),
 		url: string().nullish(),
 		title: string().nullish(),
-		start_index: number().nullish(),
-		end_index: number().nullish()
+		start_index: number$1().nullish(),
+		end_index: number$1().nullish()
 	}).loose();
 	const fileCitation = object$1({
 		type: literal("file_citation"),
 		file_name: string().nullish(),
 		document_uri: string().nullish(),
 		url: string().nullish(),
-		page_number: number().nullish(),
+		page_number: number$1().nullish(),
 		media_id: string().nullish(),
-		start_index: number().nullish(),
-		end_index: number().nullish(),
+		start_index: number$1().nullish(),
+		end_index: number$1().nullish(),
 		custom_metadata: record(string(), unknown()).nullish()
 	}).loose();
 	const placeCitation = object$1({
@@ -152430,8 +152456,8 @@ var annotationSchema = () => {
 		name: string().nullish(),
 		url: string().nullish(),
 		place_id: string().nullish(),
-		start_index: number().nullish(),
-		end_index: number().nullish()
+		start_index: number$1().nullish(),
+		end_index: number$1().nullish()
 	}).loose();
 	return union([
 		urlCitation,
@@ -152573,7 +152599,7 @@ var googleInteractionsEventSchema = lazySchema(() => zodSchema((() => {
 	const stepStartEvent = object$1({
 		event_type: literal("step.start"),
 		event_id: string().nullish(),
-		index: number(),
+		index: number$1(),
 		step: stepSchema()
 	}).loose();
 	const stepDeltaText = object$1({
@@ -152650,13 +152676,13 @@ var googleInteractionsEventSchema = lazySchema(() => zodSchema((() => {
 	const stepDeltaEvent = object$1({
 		event_type: literal("step.delta"),
 		event_id: string().nullish(),
-		index: number(),
+		index: number$1(),
 		delta: stepDeltaUnion
 	}).loose();
 	const stepStopEvent = object$1({
 		event_type: literal("step.stop"),
 		event_id: string().nullish(),
-		index: number()
+		index: number$1()
 	}).loose();
 	const interactionStatusUpdateEvent = object$1({
 		event_type: literal("interaction.status_update"),
@@ -152807,7 +152833,7 @@ var googleInteractionsLanguageModelOptions = lazySchema(() => zodSchema(object$1
 	systemInstruction: string().nullish(),
 	signature: string().nullish(),
 	interactionId: string().nullish(),
-	pollingTimeoutMs: number().int().positive().nullish(),
+	pollingTimeoutMs: number$1().int().positive().nullish(),
 	background: boolean().nullish(),
 	environment: union([string(), object$1({
 		type: literal("remote"),
@@ -153831,14 +153857,14 @@ function createAuthTokenGenerator(options) {
 var VERSION$4 = "4.0.184";
 var googleVertexFailedResponseHandler = createJsonErrorResponseHandler({
 	errorSchema: object$1({ error: object$1({
-		code: number().nullable(),
+		code: number$1().nullable(),
 		message: string(),
 		status: string()
 	}) }),
 	errorToMessage: (data) => data.error.message
 });
 var googleVertexEmbeddingModelOptions = object$1({
-	outputDimensionality: number().optional(),
+	outputDimensionality: number$1().optional(),
 	taskType: _enum([
 		"SEMANTIC_SIMILARITY",
 		"CLASSIFICATION",
@@ -153944,12 +153970,12 @@ var GoogleVertexEmbeddingModel = class {
 	}
 };
 var googleVertexTextEmbeddingResponseSchema = object$1({ predictions: array$1(object$1({ embeddings: object$1({
-	values: array$1(number()),
-	statistics: object$1({ token_count: number() })
+	values: array$1(number$1()),
+	statistics: object$1({ token_count: number$1() })
 }) })) });
 var googleVertexEmbedContentResponseSchema = object$1({
-	embedding: object$1({ values: array$1(number()) }),
-	usageMetadata: object$1({ promptTokenCount: number().nullish() }).nullish()
+	embedding: object$1({ values: array$1(number$1()) }),
+	usageMetadata: object$1({ promptTokenCount: number$1().nullish() }).nullish()
 });
 function usesEmbedContentEndpoint(modelId) {
 	return modelId === "gemini-embedding-2" || modelId === "gemini-embedding-2-preview";
@@ -154146,7 +154172,7 @@ var googleVertexImageModelOptionsSchema = object$1({
 	storageUri: string().nullish(),
 	sampleImageSize: _enum(["1K", "2K"]).nullish(),
 	edit: object$1({
-		baseSteps: number().nullish(),
+		baseSteps: number$1().nullish(),
 		mode: _enum([
 			"EDIT_MODE_INPAINT_INSERTION",
 			"EDIT_MODE_INPAINT_REMOVAL",
@@ -154162,7 +154188,7 @@ var googleVertexImageModelOptionsSchema = object$1({
 			"MASK_MODE_CLOTHING_AREA",
 			"MASK_MODE_PARSED_PERSON"
 		]).nullish(),
-		maskDilation: number().nullish()
+		maskDilation: number$1().nullish()
 	}).nullish()
 });
 function getBase64Data$1(file) {
@@ -154490,7 +154516,7 @@ var vertexOperationSchema = object$1({
 	name: string().nullish(),
 	done: boolean().nullish(),
 	error: object$1({
-		code: number().nullish(),
+		code: number$1().nullish(),
 		message: string(),
 		status: string().nullish()
 	}).nullish(),
@@ -154500,12 +154526,12 @@ var vertexOperationSchema = object$1({
 			gcsUri: string().nullish(),
 			mimeType: string().nullish()
 		})).nullish(),
-		raiMediaFilteredCount: number().nullish()
+		raiMediaFilteredCount: number$1().nullish()
 	}).nullish()
 });
 var googleVertexVideoModelOptionsSchema = lazySchema(() => zodSchema(object$1({
-	pollIntervalMs: number().positive().nullish(),
-	pollTimeoutMs: number().positive().nullish(),
+	pollIntervalMs: number$1().positive().nullish(),
+	pollTimeoutMs: number$1().positive().nullish(),
 	personGeneration: _enum([
 		"dont_allow",
 		"allow_adult",
@@ -154658,7 +154684,7 @@ var openaiErrorDataSchema = object$1({ error: object$1({
 	message: string(),
 	type: string().nullish(),
 	param: any().nullish(),
-	code: union([string(), number()]).nullish()
+	code: union([string(), number$1()]).nullish()
 }) });
 var openaiFailedResponseHandler = createJsonErrorResponseHandler({
 	errorSchema: openaiErrorDataSchema,
@@ -155037,7 +155063,7 @@ function mapOpenAIFinishReason(finishReason) {
 }
 var openaiChatResponseSchema = lazySchema(() => zodSchema(object$1({
 	id: string().nullish(),
-	created: number().nullish(),
+	created: number$1().nullish(),
 	model: string().nullish(),
 	choices: array$1(object$1({
 		message: object$1({
@@ -155054,49 +155080,49 @@ var openaiChatResponseSchema = lazySchema(() => zodSchema(object$1({
 			annotations: array$1(object$1({
 				type: literal("url_citation"),
 				url_citation: object$1({
-					start_index: number(),
-					end_index: number(),
+					start_index: number$1(),
+					end_index: number$1(),
 					url: string(),
 					title: string()
 				})
 			})).nullish()
 		}),
-		index: number(),
+		index: number$1(),
 		logprobs: object$1({ content: array$1(object$1({
 			token: string(),
-			logprob: number(),
+			logprob: number$1(),
 			top_logprobs: array$1(object$1({
 				token: string(),
-				logprob: number()
+				logprob: number$1()
 			}))
 		})).nullish() }).nullish(),
 		finish_reason: string().nullish()
 	})),
 	usage: object$1({
-		prompt_tokens: number().nullish(),
-		completion_tokens: number().nullish(),
-		total_tokens: number().nullish(),
+		prompt_tokens: number$1().nullish(),
+		completion_tokens: number$1().nullish(),
+		total_tokens: number$1().nullish(),
 		prompt_tokens_details: object$1({
-			cached_tokens: number().nullish(),
-			cache_write_tokens: number().nullish()
+			cached_tokens: number$1().nullish(),
+			cache_write_tokens: number$1().nullish()
 		}).nullish(),
 		completion_tokens_details: object$1({
-			reasoning_tokens: number().nullish(),
-			accepted_prediction_tokens: number().nullish(),
-			rejected_prediction_tokens: number().nullish()
+			reasoning_tokens: number$1().nullish(),
+			accepted_prediction_tokens: number$1().nullish(),
+			rejected_prediction_tokens: number$1().nullish()
 		}).nullish()
 	}).nullish()
 })));
 var openaiChatChunkSchema = lazySchema(() => zodSchema(union([object$1({
 	id: string().nullish(),
-	created: number().nullish(),
+	created: number$1().nullish(),
 	model: string().nullish(),
 	choices: array$1(object$1({
 		delta: object$1({
 			role: _enum(["assistant"]).nullish(),
 			content: string().nullish(),
 			tool_calls: array$1(object$1({
-				index: number(),
+				index: number$1(),
 				id: string().nullish(),
 				type: literal("function").nullish(),
 				function: object$1({
@@ -155107,8 +155133,8 @@ var openaiChatChunkSchema = lazySchema(() => zodSchema(union([object$1({
 			annotations: array$1(object$1({
 				type: literal("url_citation"),
 				url_citation: object$1({
-					start_index: number(),
-					end_index: number(),
+					start_index: number$1(),
+					end_index: number$1(),
 					url: string(),
 					title: string()
 				})
@@ -155116,33 +155142,33 @@ var openaiChatChunkSchema = lazySchema(() => zodSchema(union([object$1({
 		}).nullish(),
 		logprobs: object$1({ content: array$1(object$1({
 			token: string(),
-			logprob: number(),
+			logprob: number$1(),
 			top_logprobs: array$1(object$1({
 				token: string(),
-				logprob: number()
+				logprob: number$1()
 			}))
 		})).nullish() }).nullish(),
 		finish_reason: string().nullish(),
-		index: number()
+		index: number$1()
 	})),
 	usage: object$1({
-		prompt_tokens: number().nullish(),
-		completion_tokens: number().nullish(),
-		total_tokens: number().nullish(),
+		prompt_tokens: number$1().nullish(),
+		completion_tokens: number$1().nullish(),
+		total_tokens: number$1().nullish(),
 		prompt_tokens_details: object$1({
-			cached_tokens: number().nullish(),
-			cache_write_tokens: number().nullish()
+			cached_tokens: number$1().nullish(),
+			cache_write_tokens: number$1().nullish()
 		}).nullish(),
 		completion_tokens_details: object$1({
-			reasoning_tokens: number().nullish(),
-			accepted_prediction_tokens: number().nullish(),
-			rejected_prediction_tokens: number().nullish()
+			reasoning_tokens: number$1().nullish(),
+			accepted_prediction_tokens: number$1().nullish(),
+			rejected_prediction_tokens: number$1().nullish()
 		}).nullish()
 	}).nullish()
 }), openaiErrorDataSchema])));
 var openaiLanguageModelChatOptions = lazySchema(() => zodSchema(object$1({
-	logitBias: record(number$1(), number()).optional(),
-	logprobs: union([boolean(), number()]).optional(),
+	logitBias: record(number(), number$1()).optional(),
+	logprobs: union([boolean(), number$1()]).optional(),
 	parallelToolCalls: boolean().optional(),
 	user: string().optional(),
 	reasoningEffort: _enum([
@@ -155154,7 +155180,7 @@ var openaiLanguageModelChatOptions = lazySchema(() => zodSchema(object$1({
 		"xhigh",
 		"max"
 	]).optional(),
-	maxCompletionTokens: number().optional(),
+	maxCompletionTokens: number$1().optional(),
 	store: boolean().optional(),
 	metadata: record(string().max(64), string().max(512)).optional(),
 	prediction: record(string(), any()).optional(),
@@ -155771,49 +155797,49 @@ function mapOpenAIFinishReason2(finishReason) {
 }
 var openaiCompletionResponseSchema = lazySchema(() => zodSchema(object$1({
 	id: string().nullish(),
-	created: number().nullish(),
+	created: number$1().nullish(),
 	model: string().nullish(),
 	choices: array$1(object$1({
 		text: string(),
 		finish_reason: string(),
 		logprobs: object$1({
 			tokens: array$1(string()),
-			token_logprobs: array$1(number()),
-			top_logprobs: array$1(record(string(), number())).nullish()
+			token_logprobs: array$1(number$1()),
+			top_logprobs: array$1(record(string(), number$1())).nullish()
 		}).nullish()
 	})),
 	usage: object$1({
-		prompt_tokens: number(),
-		completion_tokens: number(),
-		total_tokens: number()
+		prompt_tokens: number$1(),
+		completion_tokens: number$1(),
+		total_tokens: number$1()
 	}).nullish()
 })));
 var openaiCompletionChunkSchema = lazySchema(() => zodSchema(union([object$1({
 	id: string().nullish(),
-	created: number().nullish(),
+	created: number$1().nullish(),
 	model: string().nullish(),
 	choices: array$1(object$1({
 		text: string(),
 		finish_reason: string().nullish(),
-		index: number(),
+		index: number$1(),
 		logprobs: object$1({
 			tokens: array$1(string()),
-			token_logprobs: array$1(number()),
-			top_logprobs: array$1(record(string(), number())).nullish()
+			token_logprobs: array$1(number$1()),
+			top_logprobs: array$1(record(string(), number$1())).nullish()
 		}).nullish()
 	})),
 	usage: object$1({
-		prompt_tokens: number(),
-		completion_tokens: number(),
-		total_tokens: number()
+		prompt_tokens: number$1(),
+		completion_tokens: number$1(),
+		total_tokens: number$1()
 	}).nullish()
 }), openaiErrorDataSchema])));
 var openaiLanguageModelCompletionOptions = lazySchema(() => zodSchema(object$1({
 	echo: boolean().optional(),
-	logitBias: record(string(), number()).optional(),
+	logitBias: record(string(), number$1()).optional(),
 	suffix: string().optional(),
 	user: string().optional(),
-	logprobs: union([boolean(), number()]).optional()
+	logprobs: union([boolean(), number$1()]).optional()
 })));
 var OpenAICompletionLanguageModel = class {
 	constructor(modelId, config) {
@@ -156036,12 +156062,12 @@ function isOpenAICompletionOutputChunk(chunk) {
 	return !("error" in chunk) && chunk.choices.some((choice) => choice.text.length > 0);
 }
 var openaiEmbeddingModelOptions = lazySchema(() => zodSchema(object$1({
-	dimensions: number().optional(),
+	dimensions: number$1().optional(),
 	user: string().optional()
 })));
 var openaiTextEmbeddingResponseSchema$1 = lazySchema(() => zodSchema(object$1({
-	data: array$1(object$1({ embedding: array$1(number()) })),
-	usage: object$1({ prompt_tokens: number() }).nullish()
+	data: array$1(object$1({ embedding: array$1(number$1()) })),
+	usage: object$1({ prompt_tokens: number$1() }).nullish()
 })));
 var OpenAIEmbeddingModel = class {
 	constructor(modelId, config) {
@@ -156097,7 +156123,7 @@ var OpenAIEmbeddingModel = class {
 	}
 };
 var openaiImageResponseSchema = lazySchema(() => zodSchema(object$1({
-	created: number().nullish(),
+	created: number$1().nullish(),
 	data: array$1(object$1({
 		b64_json: string(),
 		revised_prompt: string().nullish()
@@ -156107,12 +156133,12 @@ var openaiImageResponseSchema = lazySchema(() => zodSchema(object$1({
 	size: string().nullish(),
 	quality: string().nullish(),
 	usage: object$1({
-		input_tokens: number().nullish(),
-		output_tokens: number().nullish(),
-		total_tokens: number().nullish(),
+		input_tokens: number$1().nullish(),
+		output_tokens: number$1().nullish(),
+		total_tokens: number$1().nullish(),
 		input_tokens_details: object$1({
-			image_tokens: number().nullish(),
-			text_tokens: number().nullish()
+			image_tokens: number$1().nullish(),
+			text_tokens: number$1().nullish()
 		}).nullish()
 	}).nullish()
 })));
@@ -156152,7 +156178,7 @@ var baseImageModelOptionsObject = object$1({
 		"jpeg",
 		"webp"
 	]).optional(),
-	outputCompression: number().int().min(0).max(100).optional(),
+	outputCompression: number$1().int().min(0).max(100).optional(),
 	user: string().optional()
 });
 var openaiImageModelOptions = lazySchema(() => zodSchema(baseImageModelOptionsObject));
@@ -156326,30 +156352,30 @@ async function fileToBlob$1(file) {
 var openaiTranscriptionResponseSchema = lazySchema(() => zodSchema(object$1({
 	text: string(),
 	language: string().nullish(),
-	duration: number().nullish(),
+	duration: number$1().nullish(),
 	words: array$1(object$1({
 		word: string(),
-		start: number(),
-		end: number()
+		start: number$1(),
+		end: number$1()
 	})).nullish(),
 	segments: array$1(object$1({
-		id: number(),
-		seek: number(),
-		start: number(),
-		end: number(),
+		id: number$1(),
+		seek: number$1(),
+		start: number$1(),
+		end: number$1(),
 		text: string(),
-		tokens: array$1(number()),
-		temperature: number(),
-		avg_logprob: number(),
-		compression_ratio: number(),
-		no_speech_prob: number()
+		tokens: array$1(number$1()),
+		temperature: number$1(),
+		avg_logprob: number$1(),
+		compression_ratio: number$1(),
+		no_speech_prob: number$1()
 	})).nullish()
 })));
 var openAITranscriptionModelOptions = lazySchema(() => zodSchema(object$1({
 	include: array$1(string()).optional(),
 	language: string().optional(),
 	prompt: string().optional(),
-	temperature: number().min(0).max(1).default(0).optional(),
+	temperature: number$1().min(0).max(1).default(0).optional(),
 	timestampGranularities: array$1(_enum(["word", "segment"])).default(["segment"]).optional()
 })));
 var languageMap = {
@@ -156491,7 +156517,7 @@ var OpenAITranscriptionModel = class {
 };
 var openaiSpeechModelOptionsSchema = lazySchema(() => zodSchema(object$1({
 	instructions: string().nullish(),
-	speed: number().min(.25).max(4).default(1).nullish()
+	speed: number$1().min(.25).max(4).default(1).nullish()
 })));
 var OpenAISpeechModel = class {
 	constructor(modelId, config) {
@@ -156644,7 +156670,7 @@ var applyPatchToolFactory = createProviderToolFactoryWithOutputSchema({
 var localShellInputSchema = lazySchema(() => zodSchema(object$1({ action: object$1({
 	type: literal("exec"),
 	command: array$1(string()),
-	timeoutMs: number().optional(),
+	timeoutMs: number$1().optional(),
 	user: string().optional(),
 	workingDirectory: string().optional(),
 	env: record(string(), string()).optional()
@@ -156657,15 +156683,15 @@ createProviderToolFactoryWithOutputSchema({
 });
 var shellInputSchema = lazySchema(() => zodSchema(object$1({ action: object$1({
 	commands: array$1(string()),
-	timeoutMs: number().optional(),
-	maxOutputLength: number().optional()
+	timeoutMs: number$1().optional(),
+	maxOutputLength: number$1().optional()
 }) })));
 var shellOutputSchema = lazySchema(() => zodSchema(object$1({ output: array$1(object$1({
 	stdout: string(),
 	stderr: string(),
 	outcome: discriminatedUnion("type", [object$1({ type: literal("timeout") }), object$1({
 		type: literal("exit"),
-		exitCode: number()
+		exitCode: number$1()
 	})])
 })) })));
 var shellSkillsSchema = array$1(discriminatedUnion("type", [object$1({
@@ -157344,7 +157370,7 @@ function mapOpenAIResponseFinishReason({ finishReason, hasFunctionCall }) {
 }
 var jsonValueSchema = lazy(() => union([
 	string(),
-	number(),
+	number$1(),
 	boolean(),
 	_null(),
 	array$1(jsonValueSchema),
@@ -157352,7 +157378,7 @@ var jsonValueSchema = lazy(() => union([
 ]));
 var openaiResponsesNestedErrorChunkSchema = object$1({
 	type: literal("error"),
-	sequence_number: number(),
+	sequence_number: number$1(),
 	error: object$1({
 		type: string(),
 		code: string(),
@@ -157362,7 +157388,7 @@ var openaiResponsesNestedErrorChunkSchema = object$1({
 });
 var openaiResponsesErrorChunkSchema = object$1({
 	type: literal("error"),
-	sequence_number: number(),
+	sequence_number: number$1(),
 	code: string().nullish(),
 	message: string(),
 	param: string().nullish()
@@ -157374,10 +157400,10 @@ var openaiResponsesChunkSchema = lazySchema(() => zodSchema(union([
 		delta: string(),
 		logprobs: array$1(object$1({
 			token: string(),
-			logprob: number(),
+			logprob: number$1(),
 			top_logprobs: array$1(object$1({
 				token: string(),
-				logprob: number()
+				logprob: number$1()
 			}))
 		})).nullish()
 	}),
@@ -157386,17 +157412,17 @@ var openaiResponsesChunkSchema = lazySchema(() => zodSchema(union([
 		response: object$1({
 			incomplete_details: object$1({ reason: string() }).nullish(),
 			usage: object$1({
-				input_tokens: number(),
+				input_tokens: number$1(),
 				input_tokens_details: object$1({
-					cached_tokens: number().nullish(),
-					cache_write_tokens: number().nullish(),
-					orchestration_input_tokens: number().nullish(),
-					orchestration_input_cached_tokens: number().nullish()
+					cached_tokens: number$1().nullish(),
+					cache_write_tokens: number$1().nullish(),
+					orchestration_input_tokens: number$1().nullish(),
+					orchestration_input_cached_tokens: number$1().nullish()
 				}).nullish(),
-				output_tokens: number(),
+				output_tokens: number$1(),
 				output_tokens_details: object$1({
-					reasoning_tokens: number().nullish(),
-					orchestration_output_tokens: number().nullish()
+					reasoning_tokens: number$1().nullish(),
+					orchestration_output_tokens: number$1().nullish()
 				}).nullish()
 			}),
 			reasoning: object$1({ context: string().nullish() }).nullish(),
@@ -157405,7 +157431,7 @@ var openaiResponsesChunkSchema = lazySchema(() => zodSchema(union([
 	}),
 	object$1({
 		type: literal("response.failed"),
-		sequence_number: number(),
+		sequence_number: number$1(),
 		response: object$1({
 			error: object$1({
 				code: string().nullish(),
@@ -157413,17 +157439,17 @@ var openaiResponsesChunkSchema = lazySchema(() => zodSchema(union([
 			}).nullish(),
 			incomplete_details: object$1({ reason: string() }).nullish(),
 			usage: object$1({
-				input_tokens: number(),
+				input_tokens: number$1(),
 				input_tokens_details: object$1({
-					cached_tokens: number().nullish(),
-					cache_write_tokens: number().nullish(),
-					orchestration_input_tokens: number().nullish(),
-					orchestration_input_cached_tokens: number().nullish()
+					cached_tokens: number$1().nullish(),
+					cache_write_tokens: number$1().nullish(),
+					orchestration_input_tokens: number$1().nullish(),
+					orchestration_input_cached_tokens: number$1().nullish()
 				}).nullish(),
-				output_tokens: number(),
+				output_tokens: number$1(),
 				output_tokens_details: object$1({
-					reasoning_tokens: number().nullish(),
-					orchestration_output_tokens: number().nullish()
+					reasoning_tokens: number$1().nullish(),
+					orchestration_output_tokens: number$1().nullish()
 				}).nullish()
 			}).nullish(),
 			reasoning: object$1({ context: string().nullish() }).nullish(),
@@ -157434,14 +157460,14 @@ var openaiResponsesChunkSchema = lazySchema(() => zodSchema(union([
 		type: literal("response.created"),
 		response: object$1({
 			id: string(),
-			created_at: number(),
+			created_at: number$1(),
 			model: string(),
 			service_tier: string().nullish()
 		})
 	}),
 	object$1({
 		type: literal("response.output_item.added"),
-		output_index: number(),
+		output_index: number$1(),
 		item: discriminatedUnion("type", [
 			object$1({
 				type: literal("message"),
@@ -157561,7 +157587,7 @@ var openaiResponsesChunkSchema = lazySchema(() => zodSchema(union([
 					stderr: string(),
 					outcome: discriminatedUnion("type", [object$1({ type: literal("timeout") }), object$1({
 						type: literal("exit"),
-						exit_code: number()
+						exit_code: number$1()
 					})])
 				}))
 			}),
@@ -157593,7 +157619,7 @@ var openaiResponsesChunkSchema = lazySchema(() => zodSchema(union([
 	}),
 	object$1({
 		type: literal("response.output_item.done"),
-		output_index: number(),
+		output_index: number$1(),
 		item: discriminatedUnion("type", [
 			object$1({
 				type: literal("message"),
@@ -157675,12 +157701,12 @@ var openaiResponsesChunkSchema = lazySchema(() => zodSchema(union([
 				results: array$1(object$1({
 					attributes: record(string(), union([
 						string(),
-						number(),
+						number$1(),
 						boolean()
 					])),
 					file_id: string(),
 					filename: string(),
-					score: number(),
+					score: number$1(),
 					text: string()
 				})).nullish()
 			}),
@@ -157691,7 +157717,7 @@ var openaiResponsesChunkSchema = lazySchema(() => zodSchema(union([
 				action: object$1({
 					type: literal("exec"),
 					command: array$1(string()),
-					timeout_ms: number().optional(),
+					timeout_ms: number$1().optional(),
 					user: string().optional(),
 					working_directory: string().optional(),
 					env: record(string(), string()).optional()
@@ -157712,7 +157738,7 @@ var openaiResponsesChunkSchema = lazySchema(() => zodSchema(union([
 				output: string().nullish(),
 				error: union([string(), object$1({
 					type: string().optional(),
-					code: union([number(), string()]).optional(),
+					code: union([number$1(), string()]).optional(),
 					message: string().optional()
 				}).loose()]).nullish(),
 				approval_request_id: string().nullish()
@@ -157729,7 +157755,7 @@ var openaiResponsesChunkSchema = lazySchema(() => zodSchema(union([
 				})),
 				error: union([string(), object$1({
 					type: string().optional(),
-					code: union([number(), string()]).optional(),
+					code: union([number$1(), string()]).optional(),
 					message: string().optional()
 				}).loose()]).optional()
 			}),
@@ -157788,7 +157814,7 @@ var openaiResponsesChunkSchema = lazySchema(() => zodSchema(union([
 					stderr: string(),
 					outcome: discriminatedUnion("type", [object$1({ type: literal("timeout") }), object$1({
 						type: literal("exit"),
-						exit_code: number()
+						exit_code: number$1()
 					})])
 				}))
 			}),
@@ -157821,31 +157847,31 @@ var openaiResponsesChunkSchema = lazySchema(() => zodSchema(union([
 	object$1({
 		type: literal("response.function_call_arguments.delta"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		delta: string()
 	}),
 	object$1({
 		type: literal("response.custom_tool_call_input.delta"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		delta: string()
 	}),
 	object$1({
 		type: literal("response.image_generation_call.partial_image"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		partial_image_b64: string()
 	}),
 	object$1({
 		type: literal("response.code_interpreter_call_code.delta"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		delta: string()
 	}),
 	object$1({
 		type: literal("response.code_interpreter_call_code.done"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		code: string()
 	}),
 	object$1({
@@ -157853,8 +157879,8 @@ var openaiResponsesChunkSchema = lazySchema(() => zodSchema(union([
 		annotation: discriminatedUnion("type", [
 			object$1({
 				type: literal("url_citation"),
-				start_index: number(),
-				end_index: number(),
+				start_index: number$1(),
+				end_index: number$1(),
 				url: string(),
 				title: string()
 			}),
@@ -157862,50 +157888,50 @@ var openaiResponsesChunkSchema = lazySchema(() => zodSchema(union([
 				type: literal("file_citation"),
 				file_id: string(),
 				filename: string(),
-				index: number()
+				index: number$1()
 			}),
 			object$1({
 				type: literal("container_file_citation"),
 				container_id: string(),
 				file_id: string(),
 				filename: string(),
-				start_index: number(),
-				end_index: number()
+				start_index: number$1(),
+				end_index: number$1()
 			}),
 			object$1({
 				type: literal("file_path"),
 				file_id: string(),
-				index: number()
+				index: number$1()
 			})
 		])
 	}),
 	object$1({
 		type: literal("response.reasoning_summary_part.added"),
 		item_id: string(),
-		summary_index: number()
+		summary_index: number$1()
 	}),
 	object$1({
 		type: literal("response.reasoning_summary_text.delta"),
 		item_id: string(),
-		summary_index: number(),
+		summary_index: number$1(),
 		delta: string()
 	}),
 	object$1({
 		type: literal("response.reasoning_summary_part.done"),
 		item_id: string(),
-		summary_index: number()
+		summary_index: number$1()
 	}),
 	object$1({
 		type: literal("response.apply_patch_call_operation_diff.delta"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		delta: string(),
 		obfuscation: string().nullish()
 	}),
 	object$1({
 		type: literal("response.apply_patch_call_operation_diff.done"),
 		item_id: string(),
-		output_index: number(),
+		output_index: number$1(),
 		diff: string()
 	}),
 	openaiResponsesNestedErrorChunkSchema,
@@ -157917,7 +157943,7 @@ var openaiResponsesChunkSchema = lazySchema(() => zodSchema(union([
 ])));
 var openaiResponsesResponseSchema = lazySchema(() => zodSchema(object$1({
 	id: string().optional(),
-	created_at: number().optional(),
+	created_at: number$1().optional(),
 	error: object$1({
 		message: string(),
 		type: string(),
@@ -157936,17 +157962,17 @@ var openaiResponsesResponseSchema = lazySchema(() => zodSchema(object$1({
 				text: string(),
 				logprobs: array$1(object$1({
 					token: string(),
-					logprob: number(),
+					logprob: number$1(),
 					top_logprobs: array$1(object$1({
 						token: string(),
-						logprob: number()
+						logprob: number$1()
 					}))
 				})).nullish(),
 				annotations: array$1(discriminatedUnion("type", [
 					object$1({
 						type: literal("url_citation"),
-						start_index: number(),
-						end_index: number(),
+						start_index: number$1(),
+						end_index: number$1(),
 						url: string(),
 						title: string()
 					}),
@@ -157954,20 +157980,20 @@ var openaiResponsesResponseSchema = lazySchema(() => zodSchema(object$1({
 						type: literal("file_citation"),
 						file_id: string(),
 						filename: string(),
-						index: number()
+						index: number$1()
 					}),
 					object$1({
 						type: literal("container_file_citation"),
 						container_id: string(),
 						file_id: string(),
 						filename: string(),
-						start_index: number(),
-						end_index: number()
+						start_index: number$1(),
+						end_index: number$1()
 					}),
 					object$1({
 						type: literal("file_path"),
 						file_id: string(),
-						index: number()
+						index: number$1()
 					})
 				]))
 			}))
@@ -158007,12 +158033,12 @@ var openaiResponsesResponseSchema = lazySchema(() => zodSchema(object$1({
 			results: array$1(object$1({
 				attributes: record(string(), union([
 					string(),
-					number(),
+					number$1(),
 					boolean()
 				])),
 				file_id: string(),
 				filename: string(),
-				score: number(),
+				score: number$1(),
 				text: string()
 			})).nullish()
 		}),
@@ -158041,7 +158067,7 @@ var openaiResponsesResponseSchema = lazySchema(() => zodSchema(object$1({
 			action: object$1({
 				type: literal("exec"),
 				command: array$1(string()),
-				timeout_ms: number().optional(),
+				timeout_ms: number$1().optional(),
 				user: string().optional(),
 				working_directory: string().optional(),
 				env: record(string(), string()).optional()
@@ -158086,7 +158112,7 @@ var openaiResponsesResponseSchema = lazySchema(() => zodSchema(object$1({
 			output: string().nullish(),
 			error: union([string(), object$1({
 				type: string().optional(),
-				code: union([number(), string()]).optional(),
+				code: union([number$1(), string()]).optional(),
 				message: string().optional()
 			}).loose()]).nullish(),
 			approval_request_id: string().nullish()
@@ -158103,7 +158129,7 @@ var openaiResponsesResponseSchema = lazySchema(() => zodSchema(object$1({
 			})),
 			error: union([string(), object$1({
 				type: string().optional(),
-				code: union([number(), string()]).optional(),
+				code: union([number$1(), string()]).optional(),
 				message: string().optional()
 			}).loose()]).optional()
 		}),
@@ -158162,7 +158188,7 @@ var openaiResponsesResponseSchema = lazySchema(() => zodSchema(object$1({
 				stderr: string(),
 				outcome: discriminatedUnion("type", [object$1({ type: literal("timeout") }), object$1({
 					type: literal("exit"),
-					exit_code: number()
+					exit_code: number$1()
 				})])
 			}))
 		}),
@@ -158195,17 +158221,17 @@ var openaiResponsesResponseSchema = lazySchema(() => zodSchema(object$1({
 	reasoning: object$1({ context: string().nullish() }).nullish(),
 	incomplete_details: object$1({ reason: string() }).nullish(),
 	usage: object$1({
-		input_tokens: number(),
+		input_tokens: number$1(),
 		input_tokens_details: object$1({
-			cached_tokens: number().nullish(),
-			cache_write_tokens: number().nullish(),
-			orchestration_input_tokens: number().nullish(),
-			orchestration_input_cached_tokens: number().nullish()
+			cached_tokens: number$1().nullish(),
+			cache_write_tokens: number$1().nullish(),
+			orchestration_input_tokens: number$1().nullish(),
+			orchestration_input_cached_tokens: number$1().nullish()
 		}).nullish(),
-		output_tokens: number(),
+		output_tokens: number$1(),
 		output_tokens_details: object$1({
-			reasoning_tokens: number().nullish(),
-			orchestration_output_tokens: number().nullish()
+			reasoning_tokens: number$1().nullish(),
+			orchestration_output_tokens: number$1().nullish()
 		}).nullish()
 	}).optional()
 })));
@@ -158219,8 +158245,8 @@ var openaiLanguageModelResponsesOptionsSchema = lazySchema(() => zodSchema(objec
 		"message.output_text.logprobs"
 	])).nullish(),
 	instructions: string().nullish(),
-	logprobs: union([boolean(), number().min(1).max(TOP_LOGPROBS_MAX)]).optional(),
-	maxToolCalls: number().nullish(),
+	logprobs: union([boolean(), number$1().min(1).max(TOP_LOGPROBS_MAX)]).optional(),
+	maxToolCalls: number$1().nullish(),
 	metadata: any().nullish(),
 	parallelToolCalls: boolean().nullish(),
 	previousResponseId: string().nullish(),
@@ -158301,7 +158327,7 @@ var comparisonFilterSchema = object$1({
 	]),
 	value: union([
 		string(),
-		number(),
+		number$1(),
 		boolean(),
 		array$1(string())
 	])
@@ -158312,10 +158338,10 @@ var compoundFilterSchema = object$1({
 });
 var fileSearchArgsSchema = lazySchema(() => zodSchema(object$1({
 	vectorStoreIds: array$1(string()),
-	maxNumResults: number().optional(),
+	maxNumResults: number$1().optional(),
 	ranking: object$1({
 		ranker: string().optional(),
-		scoreThreshold: number().optional()
+		scoreThreshold: number$1().optional()
 	}).optional(),
 	filters: union([comparisonFilterSchema, compoundFilterSchema]).optional()
 })));
@@ -158325,7 +158351,7 @@ var fileSearchOutputSchema = lazySchema(() => zodSchema(object$1({
 		attributes: record(string(), unknown()),
 		fileId: string(),
 		filename: string(),
-		score: number(),
+		score: number$1(),
 		text: string()
 	})).nullable()
 })));
@@ -158347,13 +158373,13 @@ var imageGenerationArgsSchema = lazySchema(() => zodSchema(object$1({
 	}).optional(),
 	model: string().optional(),
 	moderation: _enum(["auto"]).optional(),
-	outputCompression: number().int().min(0).max(100).optional(),
+	outputCompression: number$1().int().min(0).max(100).optional(),
 	outputFormat: _enum([
 		"png",
 		"jpeg",
 		"webp"
 	]).optional(),
-	partialImages: number().int().min(0).max(3).optional(),
+	partialImages: number$1().int().min(0).max(3).optional(),
 	quality: _enum([
 		"auto",
 		"low",
@@ -158392,7 +158418,7 @@ createProviderToolFactory({
 });
 var jsonValueSchema2 = lazy(() => union([
 	string(),
-	number(),
+	number$1(),
 	boolean(),
 	_null(),
 	array$1(jsonValueSchema2),
@@ -160432,22 +160458,22 @@ function convertDeepSeekUsage(usage) {
 	};
 }
 var tokenUsageSchema = object$1({
-	prompt_tokens: number().nullish(),
-	completion_tokens: number().nullish(),
-	prompt_cache_hit_tokens: number().nullish(),
-	prompt_cache_miss_tokens: number().nullish(),
-	total_tokens: number().nullish(),
-	completion_tokens_details: object$1({ reasoning_tokens: number().nullish() }).nullish()
+	prompt_tokens: number$1().nullish(),
+	completion_tokens: number$1().nullish(),
+	prompt_cache_hit_tokens: number$1().nullish(),
+	prompt_cache_miss_tokens: number$1().nullish(),
+	total_tokens: number$1().nullish(),
+	completion_tokens_details: object$1({ reasoning_tokens: number$1().nullish() }).nullish()
 }).nullish();
 var deepSeekErrorSchema = object$1({ error: object$1({
 	message: string(),
 	type: string().nullish(),
 	param: any().nullish(),
-	code: union([string(), number()]).nullish()
+	code: union([string(), number$1()]).nullish()
 }) });
 var deepseekChatResponseSchema = object$1({
 	id: string().nullish(),
-	created: number().nullish(),
+	created: number$1().nullish(),
 	model: string().nullish(),
 	choices: array$1(object$1({
 		message: object$1({
@@ -160468,7 +160494,7 @@ var deepseekChatResponseSchema = object$1({
 });
 var deepseekChatChunkSchema = lazySchema(() => zodSchema(union([object$1({
 	id: string().nullish(),
-	created: number().nullish(),
+	created: number$1().nullish(),
 	model: string().nullish(),
 	choices: array$1(object$1({
 		delta: object$1({
@@ -160476,7 +160502,7 @@ var deepseekChatChunkSchema = lazySchema(() => zodSchema(union([object$1({
 			content: string().nullish(),
 			reasoning_content: string().nullish(),
 			tool_calls: array$1(object$1({
-				index: number(),
+				index: number$1(),
 				id: string().nullish(),
 				function: object$1({
 					name: string().nullish(),
@@ -161054,7 +161080,7 @@ var defaultOpenAICompatibleErrorStructure = {
 		message: string(),
 		type: string().nullish(),
 		param: any().nullish(),
-		code: union([string(), number()]).nullish()
+		code: union([string(), number$1()]).nullish()
 	}) }),
 	errorToMessage: (data) => data.error.message
 };
@@ -161758,19 +161784,19 @@ var OpenAICompatibleChatLanguageModel = class {
 	}
 };
 var openaiCompatibleTokenUsageSchema = looseObject({
-	prompt_tokens: number().nullish(),
-	completion_tokens: number().nullish(),
-	total_tokens: number().nullish(),
-	prompt_tokens_details: looseObject({ cached_tokens: number().nullish() }).nullish(),
+	prompt_tokens: number$1().nullish(),
+	completion_tokens: number$1().nullish(),
+	total_tokens: number$1().nullish(),
+	prompt_tokens_details: looseObject({ cached_tokens: number$1().nullish() }).nullish(),
 	completion_tokens_details: looseObject({
-		reasoning_tokens: number().nullish(),
-		accepted_prediction_tokens: number().nullish(),
-		rejected_prediction_tokens: number().nullish()
+		reasoning_tokens: number$1().nullish(),
+		accepted_prediction_tokens: number$1().nullish(),
+		rejected_prediction_tokens: number$1().nullish()
 	}).nullish()
 }).nullish();
 var OpenAICompatibleChatResponseSchema = looseObject({
 	id: string().nullish(),
-	created: number().nullish(),
+	created: number$1().nullish(),
 	model: string().nullish(),
 	choices: array$1(object$1({
 		message: object$1({
@@ -161793,7 +161819,7 @@ var OpenAICompatibleChatResponseSchema = looseObject({
 });
 var chunkBaseSchema = looseObject({
 	id: string().nullish(),
-	created: number().nullish(),
+	created: number$1().nullish(),
 	model: string().nullish(),
 	choices: array$1(object$1({
 		delta: object$1({
@@ -161802,7 +161828,7 @@ var chunkBaseSchema = looseObject({
 			reasoning_content: string().nullish(),
 			reasoning: string().nullish(),
 			tool_calls: array$1(object$1({
-				index: number().nullish(),
+				index: number$1().nullish(),
 				id: string().nullish(),
 				function: object$1({
 					name: string().nullish(),
@@ -161920,7 +161946,7 @@ function mapOpenAICompatibleFinishReason2(finishReason) {
 }
 var openaiCompatibleLanguageModelCompletionOptions = object$1({
 	echo: boolean().optional(),
-	logitBias: record(string(), number()).optional(),
+	logitBias: record(string(), number$1()).optional(),
 	suffix: string().optional(),
 	user: string().optional()
 });
@@ -162135,13 +162161,13 @@ var OpenAICompatibleCompletionLanguageModel = class {
 	}
 };
 var usageSchema = looseObject({
-	prompt_tokens: number(),
-	completion_tokens: number(),
-	total_tokens: number()
+	prompt_tokens: number$1(),
+	completion_tokens: number$1(),
+	total_tokens: number$1()
 });
 var openaiCompatibleCompletionResponseSchema = object$1({
 	id: string().nullish(),
-	created: number().nullish(),
+	created: number$1().nullish(),
 	model: string().nullish(),
 	choices: array$1(object$1({
 		text: string(),
@@ -162151,17 +162177,17 @@ var openaiCompatibleCompletionResponseSchema = object$1({
 });
 var createOpenAICompatibleCompletionChunkSchema = (errorSchema) => union([object$1({
 	id: string().nullish(),
-	created: number().nullish(),
+	created: number$1().nullish(),
 	model: string().nullish(),
 	choices: array$1(object$1({
 		text: string(),
 		finish_reason: string().nullish(),
-		index: number()
+		index: number$1()
 	})),
 	usage: usageSchema.nullish()
 }), errorSchema]);
 var openaiCompatibleEmbeddingModelOptions = object$1({
-	dimensions: number().optional(),
+	dimensions: number$1().optional(),
 	user: string().optional()
 });
 var OpenAICompatibleEmbeddingModel = class {
@@ -162242,8 +162268,8 @@ var OpenAICompatibleEmbeddingModel = class {
 	}
 };
 var openaiTextEmbeddingResponseSchema = object$1({
-	data: array$1(object$1({ embedding: array$1(number()) })),
-	usage: object$1({ prompt_tokens: number() }).nullish(),
+	data: array$1(object$1({ embedding: array$1(number$1()) })),
+	usage: object$1({ prompt_tokens: number$1() }).nullish(),
 	providerMetadata: record(string(), record(string(), any())).optional()
 });
 var OpenAICompatibleImageModel = class {
@@ -162443,18 +162469,18 @@ var anthropicMessagesResponseSchema = lazySchema(() => zodSchema(object$1({
 				object$1({
 					type: literal("page_location"),
 					cited_text: string(),
-					document_index: number(),
+					document_index: number$1(),
 					document_title: string().nullable(),
-					start_page_number: number(),
-					end_page_number: number()
+					start_page_number: number$1(),
+					end_page_number: number$1()
 				}),
 				object$1({
 					type: literal("char_location"),
 					cited_text: string(),
-					document_index: number(),
+					document_index: number$1(),
 					document_title: string().nullable(),
-					start_char_index: number(),
-					end_char_index: number()
+					start_char_index: number$1(),
+					end_char_index: number$1()
 				})
 			])).optional()
 		}),
@@ -162551,7 +162577,7 @@ var anthropicMessagesResponseSchema = lazySchema(() => zodSchema(object$1({
 					type: literal("code_execution_result"),
 					stdout: string(),
 					stderr: string(),
-					return_code: number(),
+					return_code: number$1(),
 					content: array$1(object$1({
 						type: literal("code_execution_output"),
 						file_id: string()
@@ -162561,7 +162587,7 @@ var anthropicMessagesResponseSchema = lazySchema(() => zodSchema(object$1({
 					type: literal("encrypted_code_execution_result"),
 					encrypted_stdout: string(),
 					stderr: string(),
-					return_code: number(),
+					return_code: number$1(),
 					content: array$1(object$1({
 						type: literal("code_execution_output"),
 						file_id: string()
@@ -162584,7 +162610,7 @@ var anthropicMessagesResponseSchema = lazySchema(() => zodSchema(object$1({
 				})),
 				stdout: string(),
 				stderr: string(),
-				return_code: number()
+				return_code: number$1()
 			}), object$1({
 				type: literal("bash_code_execution_tool_result_error"),
 				error_code: string()
@@ -162602,9 +162628,9 @@ var anthropicMessagesResponseSchema = lazySchema(() => zodSchema(object$1({
 					type: literal("text_editor_code_execution_view_result"),
 					content: string(),
 					file_type: string(),
-					num_lines: number().nullable(),
-					start_line: number().nullable(),
-					total_lines: number().nullable()
+					num_lines: number$1().nullable(),
+					start_line: number$1().nullable(),
+					total_lines: number$1().nullable()
 				}),
 				object$1({
 					type: literal("text_editor_code_execution_create_result"),
@@ -162613,10 +162639,10 @@ var anthropicMessagesResponseSchema = lazySchema(() => zodSchema(object$1({
 				object$1({
 					type: literal("text_editor_code_execution_str_replace_result"),
 					lines: array$1(string()).nullable(),
-					new_lines: number().nullable(),
-					new_start: number().nullable(),
-					old_lines: number().nullable(),
-					old_start: number().nullable()
+					new_lines: number$1().nullable(),
+					new_start: number$1().nullable(),
+					old_lines: number$1().nullable(),
+					old_start: number$1().nullable()
 				})
 			])
 		}),
@@ -162658,11 +162684,11 @@ var anthropicMessagesResponseSchema = lazySchema(() => zodSchema(object$1({
 	stop_sequence: string().nullish(),
 	stop_details: anthropicStopDetailsSchema.nullish(),
 	usage: looseObject({
-		input_tokens: number(),
-		output_tokens: number(),
-		output_tokens_details: object$1({ thinking_tokens: number().nullish() }).nullish(),
-		cache_creation_input_tokens: number().nullish(),
-		cache_read_input_tokens: number().nullish(),
+		input_tokens: number$1(),
+		output_tokens: number$1(),
+		output_tokens_details: object$1({ thinking_tokens: number$1().nullish() }).nullish(),
+		cache_creation_input_tokens: number$1().nullish(),
+		cache_read_input_tokens: number$1().nullish(),
 		iterations: array$1(object$1({
 			type: union([
 				literal("compaction"),
@@ -162671,10 +162697,10 @@ var anthropicMessagesResponseSchema = lazySchema(() => zodSchema(object$1({
 				literal("fallback_message")
 			]),
 			model: string().nullish(),
-			input_tokens: number(),
-			output_tokens: number(),
-			cache_creation_input_tokens: number().nullish(),
-			cache_read_input_tokens: number().nullish()
+			input_tokens: number$1(),
+			output_tokens: number$1(),
+			cache_creation_input_tokens: number$1().nullish(),
+			cache_read_input_tokens: number$1().nullish()
 		})).nullish()
 	}),
 	container: object$1({
@@ -162689,13 +162715,13 @@ var anthropicMessagesResponseSchema = lazySchema(() => zodSchema(object$1({
 	context_management: object$1({ applied_edits: array$1(union([
 		object$1({
 			type: literal("clear_tool_uses_20250919"),
-			cleared_tool_uses: number(),
-			cleared_input_tokens: number()
+			cleared_tool_uses: number$1(),
+			cleared_input_tokens: number$1()
 		}),
 		object$1({
 			type: literal("clear_thinking_20251015"),
-			cleared_thinking_turns: number(),
-			cleared_input_tokens: number()
+			cleared_thinking_turns: number$1(),
+			cleared_input_tokens: number$1()
 		}),
 		object$1({ type: literal("compact_20260112") })
 	])) }).nullish()
@@ -162708,9 +162734,9 @@ var anthropicMessagesChunkSchema = lazySchema(() => zodSchema(discriminatedUnion
 			model: string().nullish(),
 			role: string().nullish(),
 			usage: looseObject({
-				input_tokens: number(),
-				cache_creation_input_tokens: number().nullish(),
-				cache_read_input_tokens: number().nullish()
+				input_tokens: number$1(),
+				cache_creation_input_tokens: number$1().nullish(),
+				cache_read_input_tokens: number$1().nullish()
 			}),
 			content: array$1(discriminatedUnion("type", [object$1({
 				type: literal("tool_use"),
@@ -162728,7 +162754,7 @@ var anthropicMessagesChunkSchema = lazySchema(() => zodSchema(discriminatedUnion
 	}),
 	object$1({
 		type: literal("content_block_start"),
-		index: number(),
+		index: number$1(),
 		content_block: discriminatedUnion("type", [
 			object$1({
 				type: literal("text"),
@@ -162826,7 +162852,7 @@ var anthropicMessagesChunkSchema = lazySchema(() => zodSchema(discriminatedUnion
 						type: literal("code_execution_result"),
 						stdout: string(),
 						stderr: string(),
-						return_code: number(),
+						return_code: number$1(),
 						content: array$1(object$1({
 							type: literal("code_execution_output"),
 							file_id: string()
@@ -162836,7 +162862,7 @@ var anthropicMessagesChunkSchema = lazySchema(() => zodSchema(discriminatedUnion
 						type: literal("encrypted_code_execution_result"),
 						encrypted_stdout: string(),
 						stderr: string(),
-						return_code: number(),
+						return_code: number$1(),
 						content: array$1(object$1({
 							type: literal("code_execution_output"),
 							file_id: string()
@@ -162859,7 +162885,7 @@ var anthropicMessagesChunkSchema = lazySchema(() => zodSchema(discriminatedUnion
 					})),
 					stdout: string(),
 					stderr: string(),
-					return_code: number()
+					return_code: number$1()
 				}), object$1({
 					type: literal("bash_code_execution_tool_result_error"),
 					error_code: string()
@@ -162877,9 +162903,9 @@ var anthropicMessagesChunkSchema = lazySchema(() => zodSchema(discriminatedUnion
 						type: literal("text_editor_code_execution_view_result"),
 						content: string(),
 						file_type: string(),
-						num_lines: number().nullable(),
-						start_line: number().nullable(),
-						total_lines: number().nullable()
+						num_lines: number$1().nullable(),
+						start_line: number$1().nullable(),
+						total_lines: number$1().nullable()
 					}),
 					object$1({
 						type: literal("text_editor_code_execution_create_result"),
@@ -162888,10 +162914,10 @@ var anthropicMessagesChunkSchema = lazySchema(() => zodSchema(discriminatedUnion
 					object$1({
 						type: literal("text_editor_code_execution_str_replace_result"),
 						lines: array$1(string()).nullable(),
-						new_lines: number().nullable(),
-						new_start: number().nullable(),
-						old_lines: number().nullable(),
-						old_start: number().nullable()
+						new_lines: number$1().nullable(),
+						new_start: number$1().nullable(),
+						old_lines: number$1().nullable(),
+						old_start: number$1().nullable()
 					})
 				])
 			}),
@@ -162932,7 +162958,7 @@ var anthropicMessagesChunkSchema = lazySchema(() => zodSchema(discriminatedUnion
 	}),
 	object$1({
 		type: literal("content_block_delta"),
-		index: number(),
+		index: number$1(),
 		delta: discriminatedUnion("type", [
 			object$1({
 				type: literal("input_json_delta"),
@@ -162967,18 +162993,18 @@ var anthropicMessagesChunkSchema = lazySchema(() => zodSchema(discriminatedUnion
 					object$1({
 						type: literal("page_location"),
 						cited_text: string(),
-						document_index: number(),
+						document_index: number$1(),
 						document_title: string().nullable(),
-						start_page_number: number(),
-						end_page_number: number()
+						start_page_number: number$1(),
+						end_page_number: number$1()
 					}),
 					object$1({
 						type: literal("char_location"),
 						cited_text: string(),
-						document_index: number(),
+						document_index: number$1(),
 						document_title: string().nullable(),
-						start_char_index: number(),
-						end_char_index: number()
+						start_char_index: number$1(),
+						end_char_index: number$1()
 					})
 				])
 			})
@@ -162986,7 +163012,7 @@ var anthropicMessagesChunkSchema = lazySchema(() => zodSchema(discriminatedUnion
 	}),
 	object$1({
 		type: literal("content_block_stop"),
-		index: number()
+		index: number$1()
 	}),
 	object$1({
 		type: literal("error"),
@@ -163012,11 +163038,11 @@ var anthropicMessagesChunkSchema = lazySchema(() => zodSchema(discriminatedUnion
 			}).nullish()
 		}),
 		usage: looseObject({
-			input_tokens: number().nullish(),
-			output_tokens: number(),
-			output_tokens_details: object$1({ thinking_tokens: number().nullish() }).nullish(),
-			cache_creation_input_tokens: number().nullish(),
-			cache_read_input_tokens: number().nullish(),
+			input_tokens: number$1().nullish(),
+			output_tokens: number$1(),
+			output_tokens_details: object$1({ thinking_tokens: number$1().nullish() }).nullish(),
+			cache_creation_input_tokens: number$1().nullish(),
+			cache_read_input_tokens: number$1().nullish(),
 			iterations: array$1(object$1({
 				type: union([
 					literal("compaction"),
@@ -163025,22 +163051,22 @@ var anthropicMessagesChunkSchema = lazySchema(() => zodSchema(discriminatedUnion
 					literal("fallback_message")
 				]),
 				model: string().nullish(),
-				input_tokens: number(),
-				output_tokens: number(),
-				cache_creation_input_tokens: number().nullish(),
-				cache_read_input_tokens: number().nullish()
+				input_tokens: number$1(),
+				output_tokens: number$1(),
+				cache_creation_input_tokens: number$1().nullish(),
+				cache_read_input_tokens: number$1().nullish()
 			})).nullish()
 		}),
 		context_management: object$1({ applied_edits: array$1(union([
 			object$1({
 				type: literal("clear_tool_uses_20250919"),
-				cleared_tool_uses: number(),
-				cleared_input_tokens: number()
+				cleared_tool_uses: number$1(),
+				cleared_input_tokens: number$1()
 			}),
 			object$1({
 				type: literal("clear_thinking_20251015"),
-				cleared_thinking_turns: number(),
-				cleared_input_tokens: number()
+				cleared_thinking_turns: number$1(),
+				cleared_input_tokens: number$1()
 			}),
 			object$1({ type: literal("compact_20260112") })
 		])) }).nullish()
@@ -163078,7 +163104,7 @@ var anthropicLanguageModelOptions = object$1({
 		}),
 		object$1({
 			type: literal("enabled"),
-			budgetTokens: number().optional()
+			budgetTokens: number$1().optional()
 		}),
 		object$1({ type: literal("disabled") })
 	]).optional(),
@@ -163116,14 +163142,14 @@ var anthropicLanguageModelOptions = object$1({
 	]).optional(),
 	taskBudget: object$1({
 		type: literal("tokens"),
-		total: number().int().min(2e4),
-		remaining: number().int().min(0).optional()
+		total: number$1().int().min(2e4),
+		remaining: number$1().int().min(0).optional()
 	}).optional(),
 	speed: _enum(["fast", "standard"]).optional(),
 	inferenceGeo: _enum(["us", "global"]).optional(),
 	fallbacks: union([literal("default"), array$1(object$1({
 		model: string(),
-		max_tokens: number().int().optional(),
+		max_tokens: number$1().int().optional(),
 		thinking: record(string(), unknown()).optional(),
 		output_config: record(string(), unknown()).optional(),
 		speed: _enum(["fast", "standard"]).optional()
@@ -163134,18 +163160,18 @@ var anthropicLanguageModelOptions = object$1({
 			type: literal("clear_tool_uses_20250919"),
 			trigger: discriminatedUnion("type", [object$1({
 				type: literal("input_tokens"),
-				value: number()
+				value: number$1()
 			}), object$1({
 				type: literal("tool_uses"),
-				value: number()
+				value: number$1()
 			})]).optional(),
 			keep: object$1({
 				type: literal("tool_uses"),
-				value: number()
+				value: number$1()
 			}).optional(),
 			clearAtLeast: object$1({
 				type: literal("input_tokens"),
-				value: number()
+				value: number$1()
 			}).optional(),
 			clearToolInputs: boolean().optional(),
 			excludeTools: array$1(string()).optional()
@@ -163154,14 +163180,14 @@ var anthropicLanguageModelOptions = object$1({
 			type: literal("clear_thinking_20251015"),
 			keep: union([literal("all"), object$1({
 				type: literal("thinking_turns"),
-				value: number()
+				value: number$1()
 			})]).optional()
 		}),
 		object$1({
 			type: literal("compact_20260112"),
 			trigger: object$1({
 				type: literal("input_tokens"),
-				value: number()
+				value: number$1()
 			}).optional(),
 			pauseAfterCompaction: boolean().optional(),
 			instructions: string().optional()
@@ -163207,7 +163233,7 @@ var CacheControlValidator = class {
 };
 var advisor_20260301ArgsSchema = lazySchema(() => zodSchema(object$1({
 	model: string(),
-	maxUses: number().optional(),
+	maxUses: number$1().optional(),
 	caching: object$1({
 		type: literal("ephemeral"),
 		ttl: union([literal("5m"), literal("1h")])
@@ -163236,7 +163262,7 @@ var factory = createProviderToolFactoryWithOutputSchema({
 var advisor_20260301 = (args) => {
 	return factory(args);
 };
-var textEditor_20250728ArgsSchema = lazySchema(() => zodSchema(object$1({ maxCharacters: number().optional() })));
+var textEditor_20250728ArgsSchema = lazySchema(() => zodSchema(object$1({ maxCharacters: number$1().optional() })));
 var factory2 = createProviderToolFactory({
 	id: "anthropic.text_editor_20250728",
 	inputSchema: lazySchema(() => zodSchema(object$1({
@@ -163248,18 +163274,18 @@ var factory2 = createProviderToolFactory({
 		]),
 		path: string(),
 		file_text: string().optional(),
-		insert_line: number().int().optional(),
+		insert_line: number$1().int().optional(),
 		new_str: string().optional(),
 		insert_text: string().optional(),
 		old_str: string().optional(),
-		view_range: array$1(number().int()).optional()
+		view_range: array$1(number$1().int()).optional()
 	})))
 });
 var textEditor_20250728 = (args = {}) => {
 	return factory2(args);
 };
 var webSearch_20260209ArgsSchema = lazySchema(() => zodSchema(object$1({
-	maxUses: number().optional(),
+	maxUses: number$1().optional(),
 	allowedDomains: array$1(string()).optional(),
 	blockedDomains: array$1(string()).optional(),
 	userLocation: object$1({
@@ -163287,7 +163313,7 @@ var webSearch_20260209 = (args = {}) => {
 	return factory3(args);
 };
 var webSearch_20250305ArgsSchema = lazySchema(() => zodSchema(object$1({
-	maxUses: number().optional(),
+	maxUses: number$1().optional(),
 	allowedDomains: array$1(string()).optional(),
 	blockedDomains: array$1(string()).optional(),
 	userLocation: object$1({
@@ -163315,11 +163341,11 @@ var webSearch_20250305 = (args = {}) => {
 	return factory4(args);
 };
 var webFetch_20260209ArgsSchema = lazySchema(() => zodSchema(object$1({
-	maxUses: number().optional(),
+	maxUses: number$1().optional(),
 	allowedDomains: array$1(string()).optional(),
 	blockedDomains: array$1(string()).optional(),
 	citations: object$1({ enabled: boolean() }).optional(),
-	maxContentTokens: number().optional()
+	maxContentTokens: number$1().optional()
 })));
 var webFetch_20260209OutputSchema = lazySchema(() => zodSchema(object$1({
 	type: literal("web_fetch_result"),
@@ -163350,11 +163376,11 @@ var webFetch_20260209 = (args = {}) => {
 	return factory5(args);
 };
 var webFetch_20250910ArgsSchema = lazySchema(() => zodSchema(object$1({
-	maxUses: number().optional(),
+	maxUses: number$1().optional(),
 	allowedDomains: array$1(string()).optional(),
 	blockedDomains: array$1(string()).optional(),
 	citations: object$1({ enabled: boolean() }).optional(),
-	maxContentTokens: number().optional()
+	maxContentTokens: number$1().optional()
 })));
 var webFetch_20250910OutputSchema = lazySchema(() => zodSchema(object$1({
 	type: literal("web_fetch_result"),
@@ -163707,7 +163733,7 @@ var codeExecution_20250522OutputSchema = lazySchema(() => zodSchema(object$1({
 	type: literal("code_execution_result"),
 	stdout: string(),
 	stderr: string(),
-	return_code: number(),
+	return_code: number$1(),
 	content: array$1(object$1({
 		type: literal("code_execution_output"),
 		file_id: string()
@@ -163726,7 +163752,7 @@ var codeExecution_20250825OutputSchema = lazySchema(() => zodSchema(discriminate
 		type: literal("code_execution_result"),
 		stdout: string(),
 		stderr: string(),
-		return_code: number(),
+		return_code: number$1(),
 		content: array$1(object$1({
 			type: literal("code_execution_output"),
 			file_id: string()
@@ -163740,7 +163766,7 @@ var codeExecution_20250825OutputSchema = lazySchema(() => zodSchema(discriminate
 		})),
 		stdout: string(),
 		stderr: string(),
-		return_code: number()
+		return_code: number$1()
 	}),
 	object$1({
 		type: literal("bash_code_execution_tool_result_error"),
@@ -163754,9 +163780,9 @@ var codeExecution_20250825OutputSchema = lazySchema(() => zodSchema(discriminate
 		type: literal("text_editor_code_execution_view_result"),
 		content: string(),
 		file_type: string(),
-		num_lines: number().nullable(),
-		start_line: number().nullable(),
-		total_lines: number().nullable()
+		num_lines: number$1().nullable(),
+		start_line: number$1().nullable(),
+		total_lines: number$1().nullable()
 	}),
 	object$1({
 		type: literal("text_editor_code_execution_create_result"),
@@ -163765,10 +163791,10 @@ var codeExecution_20250825OutputSchema = lazySchema(() => zodSchema(discriminate
 	object$1({
 		type: literal("text_editor_code_execution_str_replace_result"),
 		lines: array$1(string()).nullable(),
-		new_lines: number().nullable(),
-		new_start: number().nullable(),
-		old_lines: number().nullable(),
-		old_start: number().nullable()
+		new_lines: number$1().nullable(),
+		new_start: number$1().nullable(),
+		old_lines: number$1().nullable(),
+		old_start: number$1().nullable()
 	})
 ])));
 var factory8 = createProviderToolFactoryWithOutputSchema({
@@ -163814,7 +163840,7 @@ var codeExecution_20260120OutputSchema = lazySchema(() => zodSchema(discriminate
 		type: literal("code_execution_result"),
 		stdout: string(),
 		stderr: string(),
-		return_code: number(),
+		return_code: number$1(),
 		content: array$1(object$1({
 			type: literal("code_execution_output"),
 			file_id: string()
@@ -163824,7 +163850,7 @@ var codeExecution_20260120OutputSchema = lazySchema(() => zodSchema(discriminate
 		type: literal("encrypted_code_execution_result"),
 		encrypted_stdout: string(),
 		stderr: string(),
-		return_code: number(),
+		return_code: number$1(),
 		content: array$1(object$1({
 			type: literal("code_execution_output"),
 			file_id: string()
@@ -163838,7 +163864,7 @@ var codeExecution_20260120OutputSchema = lazySchema(() => zodSchema(discriminate
 		})),
 		stdout: string(),
 		stderr: string(),
-		return_code: number()
+		return_code: number$1()
 	}),
 	object$1({
 		type: literal("bash_code_execution_tool_result_error"),
@@ -163852,9 +163878,9 @@ var codeExecution_20260120OutputSchema = lazySchema(() => zodSchema(discriminate
 		type: literal("text_editor_code_execution_view_result"),
 		content: string(),
 		file_type: string(),
-		num_lines: number().nullable(),
-		start_line: number().nullable(),
-		total_lines: number().nullable()
+		num_lines: number$1().nullable(),
+		start_line: number$1().nullable(),
+		total_lines: number$1().nullable()
 	}),
 	object$1({
 		type: literal("text_editor_code_execution_create_result"),
@@ -163863,10 +163889,10 @@ var codeExecution_20260120OutputSchema = lazySchema(() => zodSchema(discriminate
 	object$1({
 		type: literal("text_editor_code_execution_str_replace_result"),
 		lines: array$1(string()).nullable(),
-		new_lines: number().nullable(),
-		new_start: number().nullable(),
-		old_lines: number().nullable(),
-		old_start: number().nullable()
+		new_lines: number$1().nullable(),
+		new_start: number$1().nullable(),
+		old_lines: number$1().nullable(),
+		old_start: number$1().nullable()
 	})
 ])));
 var factory9 = createProviderToolFactoryWithOutputSchema({
@@ -163915,7 +163941,7 @@ var factory10 = createProviderToolFactoryWithOutputSchema({
 	id: "anthropic.tool_search_regex_20251119",
 	inputSchema: lazySchema(() => zodSchema(object$1({
 		pattern: string(),
-		limit: number().optional()
+		limit: number$1().optional()
 	}))),
 	outputSchema: toolSearchRegex_20251119OutputSchema,
 	supportsDeferredResults: true
@@ -164117,7 +164143,7 @@ var computer_20241022 = createProviderToolFactory({
 			"screenshot",
 			"cursor_position"
 		]),
-		coordinate: array$1(number().int()).optional(),
+		coordinate: array$1(number$1().int()).optional(),
 		text: string().optional()
 	})))
 });
@@ -164142,16 +164168,16 @@ var computer_20250124 = createProviderToolFactory({
 			"wait",
 			"screenshot"
 		]),
-		coordinate: tuple([number().int(), number().int()]).optional(),
-		duration: number().optional(),
-		scroll_amount: number().optional(),
+		coordinate: tuple([number$1().int(), number$1().int()]).optional(),
+		duration: number$1().optional(),
+		scroll_amount: number$1().optional(),
 		scroll_direction: _enum([
 			"up",
 			"down",
 			"left",
 			"right"
 		]).optional(),
-		start_coordinate: tuple([number().int(), number().int()]).optional(),
+		start_coordinate: tuple([number$1().int(), number$1().int()]).optional(),
 		text: string().optional()
 	})))
 });
@@ -164177,22 +164203,22 @@ var computer_20251124 = createProviderToolFactory({
 			"screenshot",
 			"zoom"
 		]),
-		coordinate: tuple([number().int(), number().int()]).optional(),
-		duration: number().optional(),
+		coordinate: tuple([number$1().int(), number$1().int()]).optional(),
+		duration: number$1().optional(),
 		region: tuple([
-			number().int(),
-			number().int(),
-			number().int(),
-			number().int()
+			number$1().int(),
+			number$1().int(),
+			number$1().int(),
+			number$1().int()
 		]).optional(),
-		scroll_amount: number().optional(),
+		scroll_amount: number$1().optional(),
 		scroll_direction: _enum([
 			"up",
 			"down",
 			"left",
 			"right"
 		]).optional(),
-		start_coordinate: tuple([number().int(), number().int()]).optional(),
+		start_coordinate: tuple([number$1().int(), number$1().int()]).optional(),
 		text: string().optional()
 	})))
 });
@@ -164202,7 +164228,7 @@ var memory_20250818 = createProviderToolFactory({
 		object$1({
 			command: literal("view"),
 			path: string(),
-			view_range: tuple([number(), number()]).optional()
+			view_range: tuple([number$1(), number$1()]).optional()
 		}),
 		object$1({
 			command: literal("create"),
@@ -164218,7 +164244,7 @@ var memory_20250818 = createProviderToolFactory({
 		object$1({
 			command: literal("insert"),
 			path: string(),
-			insert_line: number(),
+			insert_line: number$1(),
 			insert_text: string()
 		}),
 		object$1({
@@ -164244,11 +164270,11 @@ var textEditor_20241022 = createProviderToolFactory({
 		]),
 		path: string(),
 		file_text: string().optional(),
-		insert_line: number().int().optional(),
+		insert_line: number$1().int().optional(),
 		new_str: string().optional(),
 		insert_text: string().optional(),
 		old_str: string().optional(),
-		view_range: array$1(number().int()).optional()
+		view_range: array$1(number$1().int()).optional()
 	})))
 });
 var textEditor_20250124 = createProviderToolFactory({
@@ -164263,11 +164289,11 @@ var textEditor_20250124 = createProviderToolFactory({
 		]),
 		path: string(),
 		file_text: string().optional(),
-		insert_line: number().int().optional(),
+		insert_line: number$1().int().optional(),
 		new_str: string().optional(),
 		insert_text: string().optional(),
 		old_str: string().optional(),
-		view_range: array$1(number().int()).optional()
+		view_range: array$1(number$1().int()).optional()
 	})))
 });
 var textEditor_20250429 = createProviderToolFactory({
@@ -164281,11 +164307,11 @@ var textEditor_20250429 = createProviderToolFactory({
 		]),
 		path: string(),
 		file_text: string().optional(),
-		insert_line: number().int().optional(),
+		insert_line: number$1().int().optional(),
 		new_str: string().optional(),
 		insert_text: string().optional(),
 		old_str: string().optional(),
-		view_range: array$1(number().int()).optional()
+		view_range: array$1(number$1().int()).optional()
 	})))
 });
 var toolSearchBm25_20251119OutputSchema = lazySchema(() => zodSchema(array$1(object$1({
@@ -164296,7 +164322,7 @@ var factory11 = createProviderToolFactoryWithOutputSchema({
 	id: "anthropic.tool_search_bm25_20251119",
 	inputSchema: lazySchema(() => zodSchema(object$1({
 		query: string(),
-		limit: number().optional()
+		limit: number$1().optional()
 	}))),
 	outputSchema: toolSearchBm25_20251119OutputSchema,
 	supportsDeferredResults: true
@@ -168208,7 +168234,7 @@ var amazonBedrockLanguageModelOptions = object$1({
 			literal("disabled"),
 			literal("adaptive")
 		]).optional(),
-		budgetTokens: number().optional(),
+		budgetTokens: number$1().optional(),
 		maxReasoningEffort: _enum([
 			"low",
 			"medium",
@@ -169395,7 +169421,7 @@ var BedrockReasoningTextSchema = object$1({
 });
 var BedrockRedactedReasoningSchema = object$1({ data: string() });
 var BedrockResponseSchema = object$1({
-	metrics: object$1({ latencyMs: number() }).nullish(),
+	metrics: object$1({ latencyMs: number$1() }).nullish(),
 	output: object$1({ message: object$1({
 		content: array$1(object$1({
 			text: string().nullish(),
@@ -169410,20 +169436,20 @@ var BedrockResponseSchema = object$1({
 	performanceConfig: object$1({ latency: string() }).nullish(),
 	serviceTier: object$1({ type: string() }).nullish(),
 	usage: object$1({
-		inputTokens: number(),
-		outputTokens: number(),
-		totalTokens: number(),
-		cacheReadInputTokens: number().nullish(),
-		cacheWriteInputTokens: number().nullish(),
+		inputTokens: number$1(),
+		outputTokens: number$1(),
+		totalTokens: number$1(),
+		cacheReadInputTokens: number$1().nullish(),
+		cacheWriteInputTokens: number$1().nullish(),
 		cacheDetails: array$1(object$1({
-			inputTokens: number(),
+			inputTokens: number$1(),
 			ttl: string()
 		})).nullish()
 	})
 });
 var BedrockStreamSchema = object$1({
 	contentBlockDelta: object$1({
-		contentBlockIndex: number(),
+		contentBlockIndex: number$1(),
 		delta: union([
 			object$1({ text: string() }),
 			object$1({ toolUse: object$1({ input: string() }) }),
@@ -169433,10 +169459,10 @@ var BedrockStreamSchema = object$1({
 		]).nullish()
 	}).nullish(),
 	contentBlockStart: object$1({
-		contentBlockIndex: number(),
+		contentBlockIndex: number$1(),
 		start: object$1({ toolUse: BedrockToolUseSchema.nullish() }).nullish()
 	}).nullish(),
-	contentBlockStop: object$1({ contentBlockIndex: number() }).nullish(),
+	contentBlockStop: object$1({ contentBlockIndex: number$1() }).nullish(),
 	internalServerException: record(string(), unknown()).nullish(),
 	messageStop: object$1({
 		additionalModelResponseFields: BedrockAdditionalModelResponseFieldsSchema.nullish(),
@@ -169447,14 +169473,14 @@ var BedrockStreamSchema = object$1({
 		performanceConfig: object$1({ latency: string() }).nullish(),
 		serviceTier: object$1({ type: string() }).nullish(),
 		usage: object$1({
-			cacheReadInputTokens: number().nullish(),
-			cacheWriteInputTokens: number().nullish(),
+			cacheReadInputTokens: number$1().nullish(),
+			cacheWriteInputTokens: number$1().nullish(),
 			cacheDetails: array$1(object$1({
-				inputTokens: number(),
+				inputTokens: number$1(),
 				ttl: string()
 			})).nullish(),
-			inputTokens: number(),
-			outputTokens: number()
+			inputTokens: number$1(),
+			outputTokens: number$1()
 		}).nullish()
 	}).nullish(),
 	modelStreamErrorException: record(string(), unknown()).nullish(),
@@ -169589,18 +169615,18 @@ function isNovaEmbeddingModel(modelId) {
 }
 var BedrockEmbeddingResponseSchema = union([
 	object$1({
-		embedding: array$1(number()),
-		inputTextTokenCount: number()
+		embedding: array$1(number$1()),
+		inputTextTokenCount: number$1()
 	}),
 	object$1({
 		embeddings: array$1(object$1({
 			embeddingType: string(),
-			embedding: array$1(number())
+			embedding: array$1(number$1())
 		})),
-		inputTokenCount: number().optional()
+		inputTokenCount: number$1().optional()
 	}),
-	object$1({ embeddings: array$1(array$1(number())) }),
-	object$1({ embeddings: object$1({ float: array$1(array$1(number())) }) })
+	object$1({ embeddings: array$1(array$1(number$1())) }),
+	object$1({ embeddings: object$1({ float: array$1(array$1(number$1())) }) })
 ]);
 var modelMaxImagesPerCall = { "amazon.nova-canvas-v1:0": 5 };
 var BedrockImageModel = class {
@@ -169802,8 +169828,8 @@ function createApiKeyFetchFunction(apiKey, fetch) {
 }
 var bedrockRerankingResponseSchema = lazySchema(() => zodSchema(object$1({
 	results: array$1(object$1({
-		index: number(),
-		relevanceScore: number()
+		index: number$1(),
+		relevanceScore: number$1()
 	})),
 	nextToken: string().optional()
 })));
@@ -170324,16 +170350,16 @@ const LanguageModelProviderSchema = object$1({
 	configured: boolean().optional()
 });
 const LanguageModelSchema = object$1({
-	id: number().optional(),
+	id: number$1().optional(),
 	apiName: string(),
 	displayName: string(),
 	description: string().optional(),
 	tag: string().optional(),
 	tagColor: string().optional(),
-	maxOutputTokens: number().optional(),
-	contextWindow: number().optional(),
-	temperature: number().optional(),
-	dollarSigns: number().optional(),
+	maxOutputTokens: number$1().optional(),
+	contextWindow: number$1().optional(),
+	temperature: number$1().optional(),
+	dollarSigns: number$1().optional(),
 	type: _enum([
 		"custom",
 		"local",
@@ -170356,8 +170382,8 @@ const CreateCustomLanguageModelParamsSchema = object$1({
 	displayName: string(),
 	providerId: string(),
 	description: string().optional(),
-	maxOutputTokens: number().optional(),
-	contextWindow: number().optional()
+	maxOutputTokens: number$1().optional(),
+	contextWindow: number$1().optional()
 });
 const DeleteCustomModelParamsSchema = object$1({
 	providerId: string(),
@@ -170798,7 +170824,7 @@ async function getModelClient(model, settings) {
 				baseURL: getCaideEngineBaseUrl(),
 				...getModelClientFetchOption(),
 				caideOptions: {
-					enableLazyEdits: settings.selectedChatMode === "ask" ? false : settings.enableProLazyEditsMode && settings.proLazyEditsMode !== "v2",
+					enableLazyEdits: settings.enableProLazyEditsMode && settings.proLazyEditsMode !== "v2",
 					enableSmartFilesContext,
 					enableWebSearch: settings.enableProWebSearch
 				},
@@ -171745,7 +171771,7 @@ var ResourceSchema$1 = object$1({
 	title: optional(string()),
 	description: optional(string()),
 	mimeType: optional(string()),
-	size: optional(number())
+	size: optional(number$1())
 }).loose();
 var ListResourcesResultSchema$1 = PaginatedResultSchema$1.extend({ resources: array$1(ResourceSchema$1) });
 var ResourceContentsSchema$1 = object$1({
@@ -171805,7 +171831,7 @@ BaseParamsSchema.extend({
 });
 var CompleteResultSchema$1 = ResultSchema$1.extend({ completion: object$1({
 	values: array$1(string()).max(100),
-	total: optional(number().int()),
+	total: optional(number$1().int()),
 	hasMore: optional(boolean())
 }).loose() });
 var PromptArgumentSchema$1 = object$1({
@@ -171852,18 +171878,18 @@ var ElicitResultSchema$1 = ResultSchema$1.extend({
 var JSONRPC_VERSION$1 = "2.0";
 var JSONRPCRequestSchema$1 = object$1({
 	jsonrpc: literal(JSONRPC_VERSION$1),
-	id: union([string(), number().int()])
+	id: union([string(), number$1().int()])
 }).merge(RequestSchema$1).strict();
 var JSONRPCResponseSchema$1 = object$1({
 	jsonrpc: literal(JSONRPC_VERSION$1),
-	id: union([string(), number().int()]),
+	id: union([string(), number$1().int()]),
 	result: ResultSchema$1
 }).strict();
 var JSONRPCErrorSchema = object$1({
 	jsonrpc: literal(JSONRPC_VERSION$1),
-	id: union([string(), number().int()]),
+	id: union([string(), number$1().int()]),
 	error: object$1({
-		code: number().int(),
+		code: number$1().int(),
 		message: string(),
 		data: optional(unknown())
 	})
@@ -171923,7 +171949,7 @@ var OAuthTokensSchema = object$1({
 	access_token: string(),
 	id_token: string().optional(),
 	token_type: string(),
-	expires_in: number().optional(),
+	expires_in: number$1().optional(),
 	scope: string().optional(),
 	refresh_token: string().optional(),
 	authorization_server: SafeUrlSchema.optional(),
@@ -171975,8 +172001,8 @@ var OpenIdProviderDiscoveryMetadataSchema = object$1({
 var OAuthClientInformationSchema = object$1({
 	client_id: string(),
 	client_secret: string().optional(),
-	client_id_issued_at: number().optional(),
-	client_secret_expires_at: number().optional(),
+	client_id_issued_at: number$1().optional(),
+	client_secret_expires_at: number$1().optional(),
 	authorization_server: SafeUrlSchema.optional(),
 	token_endpoint: SafeUrlSchema.optional()
 }).strip();
@@ -173655,7 +173681,7 @@ const AssertObjectSchema = custom((v) => v !== null && (typeof v === "object" ||
 /**
 * A progress token, used to associate progress notifications with the original request.
 */
-const ProgressTokenSchema = union([string(), number().int()]);
+const ProgressTokenSchema = union([string(), number$1().int()]);
 /**
 * An opaque token used to represent a cursor for pagination.
 */
@@ -173664,10 +173690,10 @@ const CursorSchema = string();
 * Task creation parameters, used to ask that the server create a task to represent a request.
 */
 const TaskCreationParamsSchema = looseObject({
-	ttl: number().optional(),
-	pollInterval: number().optional()
+	ttl: number$1().optional(),
+	pollInterval: number$1().optional()
 });
-const TaskMetadataSchema = object$1({ ttl: number().optional() });
+const TaskMetadataSchema = object$1({ ttl: number$1().optional() });
 /**
 * Metadata for associating messages with a task.
 * Include this in the `_meta` field under the key `io.modelcontextprotocol/related-task`.
@@ -173698,7 +173724,7 @@ const ResultSchema = looseObject({ _meta: RequestMetaSchema.optional() });
 /**
 * A uniquely identifying ID for a request in JSON-RPC.
 */
-const RequestIdSchema = union([string(), number().int()]);
+const RequestIdSchema = union([string(), number$1().int()]);
 /**
 * A request that expects a response.
 */
@@ -173743,7 +173769,7 @@ const JSONRPCErrorResponseSchema = object$1({
 	jsonrpc: literal(JSONRPC_VERSION),
 	id: RequestIdSchema.optional(),
 	error: object$1({
-		code: number().int(),
+		code: number$1().int(),
 		message: string(),
 		data: unknown().optional()
 	})
@@ -173902,8 +173928,8 @@ const PingRequestSchema = RequestSchema.extend({
 	params: BaseRequestParamsSchema.optional()
 });
 const ProgressSchema = object$1({
-	progress: number(),
-	total: optional(number()),
+	progress: number$1(),
+	total: optional(number$1()),
 	message: optional(string())
 });
 const ProgressNotificationParamsSchema = object$1({
@@ -173939,10 +173965,10 @@ const TaskStatusSchema = _enum([
 const TaskSchema = object$1({
 	taskId: string(),
 	status: TaskStatusSchema,
-	ttl: union([number(), _null()]),
+	ttl: union([number$1(), _null()]),
 	createdAt: string(),
 	lastUpdatedAt: string(),
-	pollInterval: optional(number()),
+	pollInterval: optional(number$1()),
 	statusMessage: optional(string())
 });
 /**
@@ -174036,7 +174062,7 @@ const RoleSchema = _enum(["user", "assistant"]);
 */
 const AnnotationsSchema = object$1({
 	audience: array$1(RoleSchema).optional(),
-	priority: number().min(0).max(1).optional(),
+	priority: number$1().min(0).max(1).optional(),
 	lastModified: datetime({ offset: true }).optional()
 });
 /**
@@ -174048,7 +174074,7 @@ const ResourceSchema = object$1({
 	uri: string(),
 	description: optional(string()),
 	mimeType: optional(string()),
-	size: optional(number()),
+	size: optional(number$1()),
 	annotations: AnnotationsSchema.optional(),
 	_meta: optional(looseObject({}))
 });
@@ -174349,7 +174375,7 @@ const ToolListChangedNotificationSchema = NotificationSchema.extend({
 */
 const ListChangedOptionsBaseSchema = object$1({
 	autoRefresh: boolean().default(true),
-	debounceMs: number().int().nonnegative().default(300)
+	debounceMs: number$1().int().nonnegative().default(300)
 });
 /**
 * The severity of a log message.
@@ -174399,9 +174425,9 @@ const ModelHintSchema = object$1({ name: string().optional() });
 */
 const ModelPreferencesSchema = object$1({
 	hints: array$1(ModelHintSchema).optional(),
-	costPriority: number().min(0).max(1).optional(),
-	speedPriority: number().min(0).max(1).optional(),
-	intelligencePriority: number().min(0).max(1).optional()
+	costPriority: number$1().min(0).max(1).optional(),
+	speedPriority: number$1().min(0).max(1).optional(),
+	intelligencePriority: number$1().min(0).max(1).optional()
 });
 /**
 * Controls tool usage behavior in sampling requests.
@@ -174463,8 +174489,8 @@ const CreateMessageRequestParamsSchema = TaskAugmentedRequestParamsSchema.extend
 		"thisServer",
 		"allServers"
 	]).optional(),
-	temperature: number().optional(),
-	maxTokens: number().int(),
+	temperature: number$1().optional(),
+	maxTokens: number$1().int(),
 	stopSequences: array$1(string()).optional(),
 	metadata: AssertObjectSchema.optional(),
 	tools: array$1(ToolSchema).optional(),
@@ -174523,8 +174549,8 @@ const StringSchemaSchema = object$1({
 	type: literal("string"),
 	title: string().optional(),
 	description: string().optional(),
-	minLength: number().optional(),
-	maxLength: number().optional(),
+	minLength: number$1().optional(),
+	maxLength: number$1().optional(),
 	format: _enum([
 		"email",
 		"uri",
@@ -174540,9 +174566,9 @@ const NumberSchemaSchema = object$1({
 	type: _enum(["number", "integer"]),
 	title: string().optional(),
 	description: string().optional(),
-	minimum: number().optional(),
-	maximum: number().optional(),
-	default: number().optional()
+	minimum: number$1().optional(),
+	maximum: number$1().optional(),
+	default: number$1().optional()
 });
 /**
 * Schema for single-selection enumeration without display titles for options.
@@ -174587,8 +174613,8 @@ const UntitledMultiSelectEnumSchemaSchema = object$1({
 	type: literal("array"),
 	title: string().optional(),
 	description: string().optional(),
-	minItems: number().optional(),
-	maxItems: number().optional(),
+	minItems: number$1().optional(),
+	maxItems: number$1().optional(),
 	items: object$1({
 		type: literal("string"),
 		enum: array$1(string())
@@ -174602,8 +174628,8 @@ const TitledMultiSelectEnumSchemaSchema = object$1({
 	type: literal("array"),
 	title: string().optional(),
 	description: string().optional(),
-	minItems: number().optional(),
-	maxItems: number().optional(),
+	minItems: number$1().optional(),
+	maxItems: number$1().optional(),
 	items: object$1({ anyOf: array$1(object$1({
 		const: string(),
 		title: string()
@@ -174691,7 +174717,7 @@ const ElicitResultSchema = ResultSchema.extend({
 	]),
 	content: preprocess((val) => val === null ? void 0 : val, record(string(), union([
 		string(),
-		number(),
+		number$1(),
 		boolean(),
 		array$1(string())
 	])).optional())
@@ -174733,7 +174759,7 @@ const CompleteRequestSchema = RequestSchema.extend({
 */
 const CompleteResultSchema = ResultSchema.extend({ completion: looseObject({
 	values: array$1(string()).max(100),
-	total: optional(number().int()),
+	total: optional(number$1().int()),
 	hasMore: optional(boolean())
 }) });
 /**
@@ -175031,7 +175057,7 @@ const McpTransportEnum = _enum([
 	"http"
 ]);
 const McpServerSchema = object$1({
-	id: number(),
+	id: number$1(),
 	name: string(),
 	transport: McpTransportEnum,
 	command: string().nullable(),
@@ -175043,7 +175069,7 @@ const McpServerSchema = object$1({
 	oauthEnabled: boolean(),
 	oauthConnected: boolean(),
 	hasBearerToken: boolean(),
-	oauthCallbackPort: number().nullable(),
+	oauthCallbackPort: number$1().nullable(),
 	createdAt: date$1(),
 	updatedAt: date$1()
 });
@@ -175060,11 +175086,11 @@ const CreateMcpServerSchema = object$1({
 	oauthClientId: string().nullable().optional(),
 	oauthClientSecret: string().nullable().optional(),
 	oauthScope: string().regex(/^(?:[\x21\x23-\x5b\x5d-\x7e]+(?: [\x21\x23-\x5b\x5d-\x7e]+)*)?$/, { message: "OAuth scope contains invalid characters" }).nullable().optional(),
-	oauthCallbackPort: number().int().min(1024).max(65535).nullable().optional(),
+	oauthCallbackPort: number$1().int().min(1024).max(65535).nullable().optional(),
 	bearerToken: string().nullable().optional()
 });
 const McpServerUpdateSchema = object$1({
-	id: number(),
+	id: number$1(),
 	name: string().optional(),
 	transport: McpTransportEnum.optional(),
 	command: string().optional(),
@@ -175076,7 +175102,7 @@ const McpServerUpdateSchema = object$1({
 	oauthEnabled: boolean().optional()
 });
 const SetMcpBearerTokenParamsSchema = object$1({
-	serverId: number(),
+	serverId: number$1(),
 	token: string()
 });
 const McpConsentEnum = _enum([
@@ -175098,25 +175124,25 @@ const McpListToolsResultSchema = object$1({
 	])
 });
 const McpToolConsentRecordSchema = object$1({
-	id: number(),
-	serverId: number(),
+	id: number$1(),
+	serverId: number$1(),
 	toolName: string(),
 	consent: McpConsentEnum,
 	updatedAt: date$1()
 });
 const SetMcpToolConsentParamsSchema = object$1({
-	serverId: number(),
+	serverId: number$1(),
 	toolName: string(),
 	consent: McpConsentEnum
 });
 const McpConsentRequestSchema = object$1({
 	requestId: string(),
-	serverId: number(),
+	serverId: number$1(),
 	serverName: string(),
 	toolName: string(),
 	toolDescription: string().nullable().optional(),
 	inputPreview: string().nullable().optional(),
-	chatId: number(),
+	chatId: number$1(),
 	reason: string().nullable().optional(),
 	classifierPending: boolean().optional()
 });
@@ -175124,7 +175150,7 @@ const McpConsentResolvedSchema = object$1({ requestId: string() });
 const McpConsentClassifiedSchema = object$1({
 	requestId: string(),
 	reason: string().nullable().optional(),
-	chatId: number(),
+	chatId: number$1(),
 	toolName: string(),
 	serverName: string().nullable().optional()
 });
@@ -175155,12 +175181,12 @@ const mcpContracts = {
 	}),
 	deleteServer: defineContract({
 		channel: "mcp:delete-server",
-		input: number(),
+		input: number$1(),
 		output: object$1({ success: boolean() })
 	}),
 	listTools: defineContract({
 		channel: "mcp:list-tools",
-		input: number(),
+		input: number$1(),
 		output: McpListToolsResultSchema
 	}),
 	getToolConsents: defineContract({
@@ -175181,8 +175207,8 @@ const mcpContracts = {
 	startOAuth: defineContract({
 		channel: "mcp:start-oauth",
 		input: object$1({
-			serverId: number(),
-			callbackPort: number().int().min(1024).max(65535).optional()
+			serverId: number$1(),
+			callbackPort: number$1().int().min(1024).max(65535).optional()
 		}),
 		output: object$1({
 			success: boolean(),
@@ -175192,17 +175218,17 @@ const mcpContracts = {
 	}),
 	disconnectOAuth: defineContract({
 		channel: "mcp:disconnect-oauth",
-		input: number(),
+		input: number$1(),
 		output: object$1({ success: boolean() })
 	}),
 	probeCallbackPort: defineContract({
 		channel: "mcp:probe-callback-port",
 		input: _void(),
-		output: object$1({ port: number().int() })
+		output: object$1({ port: number$1().int() })
 	}),
 	probeConnection: defineContract({
 		channel: "mcp:probe-connection",
-		input: number(),
+		input: number$1(),
 		output: object$1({
 			status: _enum([
 				"ok",
@@ -175224,7 +175250,7 @@ const mcpContracts = {
 	}),
 	clearBearerToken: defineContract({
 		channel: "mcp:clear-bearer-token",
-		input: number(),
+		input: number$1(),
 		output: _void()
 	})
 };
@@ -176110,13 +176136,13 @@ const DesignReferenceSchema = object$1({
 });
 const TypographyTokenSchema = object$1({
 	family: string().trim().min(1).max(120),
-	size: number().positive().max(96),
-	lineHeight: number().positive().max(3),
-	weight: number().int().min(300).max(900),
-	letterSpacing: number().min(-.1).max(.3).default(0)
+	size: number$1().positive().max(96),
+	lineHeight: number$1().positive().max(3),
+	weight: number$1().int().min(300).max(900),
+	letterSpacing: number$1().min(-.1).max(.3).default(0)
 });
 const MotionTokenSchema = object$1({
-	durationMs: number().int().min(0).max(600),
+	durationMs: number$1().int().min(0).max(600),
 	easing: string().trim().min(1).max(80),
 	purpose: string().trim().min(3).max(160)
 });
@@ -176199,28 +176225,28 @@ const CaideDesignSpecSchema = object$1({
 		safeAreaPolicy: string().trim().min(4).max(240),
 		keyboardPolicy: string().trim().min(4).max(240),
 		systemBarPolicy: string().trim().min(4).max(240),
-		minimumTouchTarget: number().int().min(40).max(64)
+		minimumTouchTarget: number$1().int().min(40).max(64)
 	}),
 	tokens: object$1({
 		colours: record(string(), string().min(1)),
 		typography: record(string(), TypographyTokenSchema),
-		spacing: array$1(number().int().positive().max(128)).min(4).max(16),
-		radii: array$1(number().int().min(0).max(64)).min(2).max(8),
+		spacing: array$1(number$1().int().positive().max(128)).min(4).max(16),
+		radii: array$1(number$1().int().min(0).max(64)).min(2).max(8),
 		elevations: record(string(), string().min(1)),
 		motion: record(string(), MotionTokenSchema)
 	}),
 	screens: array$1(ScreenSpecificationSchema).min(1).max(60),
 	components: array$1(ComponentSpecificationSchema).min(1).max(100),
 	quality: object$1({
-		minimumOverallScore: number().int().min(90).max(100),
-		minimumAccessibilityScore: number().int().min(90).max(100),
-		minimumMotionScore: number().int().min(85).max(100),
-		minimumCoreFlowScore: number().int().min(90).max(100),
-		maximumCriticalIssues: number().int().min(0).max(5),
-		maximumMajorIssues: number().int().min(0).max(10),
-		maximumMinorIssues: number().int().min(0).max(20),
-		autoRepairPasses: number().int().min(0).max(5),
-		requiredReviewPasses: number().int().min(1).max(5)
+		minimumOverallScore: number$1().int().min(90).max(100),
+		minimumAccessibilityScore: number$1().int().min(90).max(100),
+		minimumMotionScore: number$1().int().min(85).max(100),
+		minimumCoreFlowScore: number$1().int().min(90).max(100),
+		maximumCriticalIssues: number$1().int().min(0).max(5),
+		maximumMajorIssues: number$1().int().min(0).max(10),
+		maximumMinorIssues: number$1().int().min(0).max(20),
+		autoRepairPasses: number$1().int().min(0).max(5),
+		requiredReviewPasses: number$1().int().min(1).max(5)
 	})
 });
 function designSpecCompleteness(spec) {
@@ -176269,13 +176295,13 @@ const MOTION_ENGINE_PACKAGES = {
 	]
 };
 const MotionTimingSchema = object$1({
-	durationMs: number().int().min(0).max(1200),
-	delayMs: number().int().min(0).max(1e3).default(0),
+	durationMs: number$1().int().min(0).max(1200),
+	delayMs: number$1().int().min(0).max(1e3).default(0),
 	easing: string().trim().min(2).max(120),
 	spring: object$1({
-		stiffness: number().positive().max(2e3),
-		damping: number().positive().max(200),
-		mass: number().positive().max(10).default(1)
+		stiffness: number$1().positive().max(2e3),
+		damping: number$1().positive().max(200),
+		mass: number$1().positive().max(10).default(1)
 	}).optional()
 });
 const ReducedMotionStrategySchema = object$1({
@@ -176285,7 +176311,7 @@ const ReducedMotionStrategySchema = object$1({
 		"crossfade",
 		"simplified"
 	]),
-	durationMs: number().int().min(0).max(200),
+	durationMs: number$1().int().min(0).max(200),
 	preservesMeaning: string().trim().min(8).max(300)
 });
 const MotionTransitionSchema = object$1({
@@ -176327,8 +176353,8 @@ const MotionTransitionSchema = object$1({
 	repeatedInputBehaviour: string().trim().min(8).max(300),
 	reducedMotion: ReducedMotionStrategySchema,
 	performanceBudget: object$1({
-		targetFps: number().int().min(30).max(120),
-		maximumLongTaskMs: number().int().min(20).max(100),
+		targetFps: number$1().int().min(30).max(120),
+		maximumLongTaskMs: number$1().int().min(20).max(100),
 		allowLayoutAnimation: boolean()
 	})
 });
@@ -176350,7 +176376,7 @@ const MotionAssetSchema = object$1({
 		"none"
 	]),
 	fallback: string().trim().min(4).max(240),
-	maximumBytes: number().int().min(0).max(2e7)
+	maximumBytes: number$1().int().min(0).max(2e7)
 });
 const MotionCoreFlowStepSchema = object$1({
 	action: _enum([
@@ -176365,7 +176391,7 @@ const MotionCoreFlowStepSchema = object$1({
 	value: string().max(1e3).optional(),
 	text: string().max(500).optional(),
 	key: string().max(80).optional(),
-	timeoutMs: number().int().min(100).max(2e4).default(5e3)
+	timeoutMs: number$1().int().min(100).max(2e4).default(5e3)
 }).superRefine((step, context) => {
 	if (step.action !== "press" && !step.selector) context.addIssue({
 		code: "custom",
@@ -176411,18 +176437,18 @@ const CaideMotionSpecSchema = object$1({
 		prohibitedPatterns: array$1(string().trim().min(4).max(180)).min(3).max(20)
 	}),
 	tokens: object$1({
-		instantMs: number().int().min(0).max(80),
-		pressMs: number().int().min(80).max(160),
-		quickMs: number().int().min(120).max(220),
-		standardMs: number().int().min(180).max(340),
-		navigationMs: number().int().min(220).max(420),
-		expressiveMs: number().int().min(320).max(600),
+		instantMs: number$1().int().min(0).max(80),
+		pressMs: number$1().int().min(80).max(160),
+		quickMs: number$1().int().min(120).max(220),
+		standardMs: number$1().int().min(180).max(340),
+		navigationMs: number$1().int().min(220).max(420),
+		expressiveMs: number$1().int().min(320).max(600),
 		standardEase: string().trim().min(2).max(120),
 		emphasizedEase: string().trim().min(2).max(120),
 		responsiveSpring: object$1({
-			stiffness: number().positive().max(2e3),
-			damping: number().positive().max(200),
-			mass: number().positive().max(10)
+			stiffness: number$1().positive().max(2e3),
+			damping: number$1().positive().max(200),
+			mass: number$1().positive().max(10)
 		})
 	}),
 	transitions: array$1(MotionTransitionSchema).min(1).max(100),
@@ -176439,12 +176465,12 @@ const CaideMotionSpecSchema = object$1({
 		captureTrace: boolean()
 	}),
 	quality: object$1({
-		minimumMotionScore: number().int().min(85).max(100),
-		minimumCoreFlowScore: number().int().min(90).max(100),
-		maximumLayoutShift: number().min(0).max(.25),
-		maximumLongTasks: number().int().min(0).max(20),
-		maximumLeakedAnimations: number().int().min(0).max(20),
-		maximumDroppedFrameRatio: number().min(0).max(.5)
+		minimumMotionScore: number$1().int().min(85).max(100),
+		minimumCoreFlowScore: number$1().int().min(90).max(100),
+		maximumLayoutShift: number$1().min(0).max(.25),
+		maximumLongTasks: number$1().int().min(0).max(20),
+		maximumLeakedAnimations: number$1().int().min(0).max(20),
+		maximumDroppedFrameRatio: number$1().min(0).max(.5)
 	})
 });
 function requiredMotionPackages(spec) {
@@ -177309,8 +177335,8 @@ init_caide_error();
 const readFileSchema = object$1({
 	path: string().describe("The file path to read"),
 	app_name: string().optional().describe("Optional. Name of a referenced app (from `@app:Name` mentions in the user's prompt) to read from instead of the current app. Omit to read from the current app."),
-	start_line_one_indexed: number().int().min(1).optional().describe("The one-indexed line number to start reading from (inclusive)."),
-	end_line_one_indexed_inclusive: number().int().min(1).optional().describe("The one-indexed line number to end reading at (inclusive).")
+	start_line_one_indexed: number$1().int().min(1).optional().describe("The one-indexed line number to start reading from (inclusive)."),
+	end_line_one_indexed_inclusive: number$1().int().min(1).optional().describe("The one-indexed line number to end reading at (inclusive).")
 }).refine((data) => {
 	if (data.start_line_one_indexed != null && data.end_line_one_indexed_inclusive != null) return data.start_line_one_indexed <= data.end_line_one_indexed_inclusive;
 	return true;
@@ -204852,7 +204878,7 @@ const readLogsSchema = object$1({
 		"error"
 	]).optional().describe("Filter by log level (default: all)"),
 	searchTerm: string().optional().describe("Search for logs containing this text (case-insensitive)"),
-	limit: number().min(1).max(200).optional().describe("Maximum number of logs to return (default: 50, max: 200)")
+	limit: number$1().min(1).max(200).optional().describe("Maximum number of logs to return (default: 50, max: 200)")
 });
 function truncateMessage(message, maxLength = 1e3) {
 	if (message.length <= maxLength) return message;
@@ -205047,8 +205073,8 @@ CRITICAL REQUIREMENTS FOR USING THIS TOOL:
 init_caide_error();
 const logger$19 = import_src$1.default.scope("multi_replace");
 const replacementChunkSchema = object$1({
-	startLine: number().describe("The starting line number (1-indexed) of the chunk to replace."),
-	endLine: number().describe("The ending line number (1-indexed) of the chunk to replace."),
+	startLine: number$1().describe("The starting line number (1-indexed) of the chunk to replace."),
+	endLine: number$1().describe("The ending line number (1-indexed) of the chunk to replace."),
 	replacementContent: string().describe("The content to replace the target chunk with.")
 });
 const multiReplaceSchema = object$1({
@@ -205679,13 +205705,13 @@ const ImageThemeModeSchema = _enum([
 const GenerateImageParamsSchema = object$1({
 	prompt: string().min(1).max(2e3),
 	themeMode: ImageThemeModeSchema,
-	targetAppId: number(),
+	targetAppId: number$1(),
 	requestId: string()
 });
 const CancelImageGenerationParamsSchema = object$1({ requestId: string() });
 const CancelImageGenerationResponseSchema = object$1({ cancelled: boolean() });
 const ImageGenerationApiResponseSchema = object$1({
-	created: number(),
+	created: number$1(),
 	data: array$1(object$1({
 		url: string().nullable().optional(),
 		b64_json: string().nullable().optional(),
@@ -205696,7 +205722,7 @@ const GenerateImageResponseSchema = object$1({
 	fileName: string(),
 	filePath: string(),
 	appPath: string(),
-	appId: number(),
+	appId: number$1(),
 	appName: string()
 });
 const imageGenerationContracts = {
@@ -205850,7 +205876,7 @@ const settingsClient = createClient$1(settingsContracts);
 //#region src/ipc/types/prompts.ts
 const slugSchema = string().optional().nullable().refine((s) => s === void 0 || s === null || s === "" || /^[a-zA-Z0-9-]+$/.test(s), "Slug must be letters, numbers, and hyphens only").transform((s) => s === "" ? void 0 : s);
 const PromptDtoSchema = object$1({
-	id: number(),
+	id: number$1(),
 	title: string(),
 	description: string().nullable(),
 	content: string(),
@@ -205865,19 +205891,19 @@ const CreatePromptParamsDtoSchema = object$1({
 	slug: slugSchema
 });
 const UpdatePromptParamsDtoSchema = object$1({
-	id: number(),
+	id: number$1(),
 	title: string().optional(),
 	description: string().optional(),
 	content: string().optional(),
 	slug: slugSchema
 });
 const SetAppPromptsParamsDtoSchema = object$1({
-	appId: number(),
-	promptIds: array$1(number())
+	appId: number$1(),
+	promptIds: array$1(number$1())
 });
 const SetPromptAppsParamsDtoSchema = object$1({
-	promptId: number(),
-	appIds: array$1(number())
+	promptId: number$1(),
+	appIds: array$1(number$1())
 });
 const promptContracts = {
 	list: defineContract({
@@ -205887,7 +205913,7 @@ const promptContracts = {
 	}),
 	listForApp: defineContract({
 		channel: "prompts:listForApp",
-		input: number(),
+		input: number$1(),
 		output: array$1(PromptDtoSchema)
 	}),
 	setForApp: defineContract({
@@ -205897,8 +205923,8 @@ const promptContracts = {
 	}),
 	appIdsForPrompt: defineContract({
 		channel: "prompts:appIdsForPrompt",
-		input: number(),
-		output: array$1(number())
+		input: number$1(),
+		output: array$1(number$1())
 	}),
 	setPromptApps: defineContract({
 		channel: "prompts:setPromptApps",
@@ -205917,7 +205943,7 @@ const promptContracts = {
 	}),
 	delete: defineContract({
 		channel: "prompts:delete",
-		input: number(),
+		input: number$1(),
 		output: _void()
 	})
 };
@@ -205990,12 +206016,12 @@ const ProposalSchema = union([
 ]);
 const ProposalResultSchema = object$1({
 	proposal: ProposalSchema,
-	chatId: number(),
-	messageId: number()
+	chatId: number$1(),
+	messageId: number$1()
 }).nullable();
 const ApproveProposalParamsSchema = object$1({
-	chatId: number(),
-	messageId: number()
+	chatId: number$1(),
+	messageId: number$1()
 });
 const ApproveProposalResultSchema = object$1({
 	success: boolean(),
@@ -206008,7 +206034,7 @@ const ApproveProposalResultSchema = object$1({
 const proposalContracts = {
 	getProposal: defineContract({
 		channel: "get-proposal",
-		input: object$1({ chatId: number() }),
+		input: object$1({ chatId: number$1() }),
 		output: ProposalResultSchema
 	}),
 	approveProposal: defineContract({
@@ -206088,11 +206114,11 @@ const SecurityFindingSchema = object$1({
 const SecurityReviewResultSchema = object$1({
 	findings: array$1(SecurityFindingSchema),
 	timestamp: string(),
-	chatId: number()
+	chatId: number$1()
 });
 const securityContracts = { getLatestSecurityReview: defineContract({
 	channel: "get-latest-security-review",
-	input: number(),
+	input: number$1(),
 	output: SecurityReviewResultSchema
 }) };
 const securityClient = createClient$1(securityContracts);
@@ -206103,12 +206129,12 @@ const securityClient = createClient$1(securityContracts);
 * Schema for free agent quota status response.
 */
 const FreeAgentQuotaStatusSchema = object$1({
-	messagesUsed: number(),
-	messagesLimit: number(),
+	messagesUsed: number$1(),
+	messagesLimit: number$1(),
 	isQuotaExceeded: boolean(),
-	windowStartTime: number().nullable(),
-	resetTime: number().nullable(),
-	hoursUntilReset: number().nullable()
+	windowStartTime: number$1().nullable(),
+	resetTime: number$1().nullable(),
+	hoursUntilReset: number$1().nullable()
 });
 /**
 * Free agent quota contracts define the IPC interface for managing
@@ -206133,11 +206159,11 @@ const freeAgentQuotaClient = createClient$1(freeAgentQuotaContracts);
 //#endregion
 //#region src/ipc/types/free_model_quota.ts
 const FreeModelQuotaStatusSchema = object$1({
-	messagesUsed: number(),
-	messagesLimit: number(),
-	messagesRemaining: number(),
+	messagesUsed: number$1(),
+	messagesLimit: number$1(),
+	messagesRemaining: number$1(),
 	isQuotaExceeded: boolean(),
-	resetTime: number().nullable()
+	resetTime: number$1().nullable()
 });
 const freeModelQuotaContracts = { getFreeModelQuotaStatus: defineContract({
 	channel: "free-model-quota:get-status",
@@ -206174,15 +206200,15 @@ const AppBlueprintDataSchema = object$1({
 	visuals: array$1(AppBlueprintVisualSchema).optional().default([])
 });
 const AppBlueprintUpdatePayloadSchema = object$1({
-	chatId: number(),
+	chatId: number$1(),
 	data: AppBlueprintDataSchema
 });
 const AppBlueprintVisualsUpdatePayloadSchema = object$1({
-	chatId: number(),
+	chatId: number$1(),
 	visuals: array$1(AppBlueprintVisualSchema),
 	complete: boolean().optional().default(false)
 });
-const AppBlueprintApproveSchema = object$1({ chatId: number() });
+const AppBlueprintApproveSchema = object$1({ chatId: number$1() });
 const APP_BLUEPRINT_EDITABLE_FIELDS = [
 	"appName",
 	"templateId",
@@ -206192,30 +206218,30 @@ const APP_BLUEPRINT_EDITABLE_FIELDS = [
 ];
 const AppBlueprintEditableFieldSchema = _enum(APP_BLUEPRINT_EDITABLE_FIELDS);
 const AppBlueprintFieldEditSchema = object$1({
-	chatId: number(),
+	chatId: number$1(),
 	field: AppBlueprintEditableFieldSchema,
 	value: string()
 });
 const APP_BLUEPRINT_VISUAL_EDITABLE_FIELDS = ["prompt", "description"];
 const AppBlueprintVisualEditableFieldSchema = _enum(APP_BLUEPRINT_VISUAL_EDITABLE_FIELDS);
 const AppBlueprintVisualEditSchema = object$1({
-	chatId: number(),
+	chatId: number$1(),
 	visualId: string(),
 	field: AppBlueprintVisualEditableFieldSchema,
 	value: string()
 });
 const AppBlueprintAddVisualSchema = object$1({
-	chatId: number(),
+	chatId: number$1(),
 	type: AppBlueprintVisualTypeSchema,
 	description: string(),
 	prompt: string()
 });
 const AppBlueprintRemoveVisualSchema = object$1({
-	chatId: number(),
+	chatId: number$1(),
 	visualId: string()
 });
-const AppBlueprintApprovedSchema = object$1({ chatId: number() });
-const AppBlueprintTimeoutSchema = object$1({ chatId: number() });
+const AppBlueprintApprovedSchema = object$1({ chatId: number$1() });
+const AppBlueprintTimeoutSchema = object$1({ chatId: number$1() });
 const appBlueprintEvents = {
 	update: defineEvent({
 		channel: "app-blueprint:update",
@@ -206267,24 +206293,24 @@ const appBlueprintClient = createClient$1(appBlueprintContracts);
 //#endregion
 //#region src/ipc/types/app_collections.ts
 const AppCollectionDtoSchema = object$1({
-	id: number(),
+	id: number$1(),
 	name: string(),
-	appIds: array$1(number()),
+	appIds: array$1(number$1()),
 	createdAt: date$1(),
 	updatedAt: date$1()
 });
 const CreateAppCollectionParamsSchema = object$1({
 	name: string().min(1),
-	appIds: array$1(number()).optional()
+	appIds: array$1(number$1()).optional()
 });
 const UpdateAppCollectionParamsSchema = object$1({
-	id: number(),
+	id: number$1(),
 	name: string().min(1),
-	appIds: array$1(number()).optional()
+	appIds: array$1(number$1()).optional()
 });
 const AssignAppsParamsSchema = object$1({
-	collectionId: number().nullable(),
-	appIds: array$1(number())
+	collectionId: number$1().nullable(),
+	appIds: array$1(number$1())
 });
 const appCollectionContracts = {
 	list: defineContract({
@@ -206304,7 +206330,7 @@ const appCollectionContracts = {
 	}),
 	delete: defineContract({
 		channel: "appCollections:delete",
-		input: number(),
+		input: number$1(),
 		output: _void()
 	}),
 	assignApps: defineContract({
@@ -206327,7 +206353,7 @@ const referenceContracts = {
 		channel: "reference:add",
 		input: object$1({
 			appPath: string(),
-			chatId: number()
+			chatId: number$1()
 		}),
 		output: array$1(ReferenceEntrySchema)
 	}),
@@ -206335,7 +206361,7 @@ const referenceContracts = {
 		channel: "reference:list",
 		input: object$1({
 			appPath: string(),
-			chatId: number()
+			chatId: number$1()
 		}),
 		output: array$1(ReferenceEntrySchema)
 	}),
@@ -206343,7 +206369,7 @@ const referenceContracts = {
 		channel: "reference:remove",
 		input: object$1({
 			appPath: string(),
-			chatId: number(),
+			chatId: number$1(),
 			referencePath: string()
 		}),
 		output: _void()
@@ -206403,13 +206429,13 @@ const GoalTaskSchema = object$1({
 	title: string(),
 	description: string(),
 	status: GoalTaskStatusSchema,
-	order: number().int().nonnegative(),
+	order: number$1().int().nonnegative(),
 	required: boolean(),
 	dependencies: array$1(string()),
 	completionCriteria: array$1(string()),
 	verificationMethod: string().nullable(),
-	createdAt: number(),
-	updatedAt: number()
+	createdAt: number$1(),
+	updatedAt: number$1()
 });
 const GoalEvidenceSchema = object$1({
 	id: string(),
@@ -206432,19 +206458,19 @@ const GoalEvidenceSchema = object$1({
 	reference: string(),
 	passed: boolean(),
 	revision: string().nullable(),
-	createdAt: number()
+	createdAt: number$1()
 });
 const GoalBlockerSchema = object$1({
 	reason: string(),
 	userAction: string().nullable(),
 	retryable: boolean(),
-	detectedAt: number()
+	detectedAt: number$1()
 });
 const GoalSchema = object$1({
 	id: string(),
-	appId: number(),
-	originatingChatId: number().nullable(),
-	goalChatId: number().nullable(),
+	appId: number$1(),
+	originatingChatId: number$1().nullable(),
+	goalChatId: number$1().nullable(),
 	title: string(),
 	objective: string(),
 	definitionOfDone: array$1(string()),
@@ -206454,17 +206480,17 @@ const GoalSchema = object$1({
 	currentPhase: string().nullable(),
 	currentTask: string().nullable(),
 	blocker: GoalBlockerSchema.nullable(),
-	nextRetryAt: number().nullable(),
-	consecutiveFailures: number().int().nonnegative(),
-	verifiedTaskCount: number().int().nonnegative(),
-	totalTaskCount: number().int().nonnegative(),
-	createdAt: number(),
-	updatedAt: number(),
-	activatedAt: number().nullable(),
-	completedAt: number().nullable(),
-	cancelledAt: number().nullable(),
-	lastHeartbeatAt: number().nullable(),
-	stateRevision: number().int().nonnegative(),
+	nextRetryAt: number$1().nullable(),
+	consecutiveFailures: number$1().int().nonnegative(),
+	verifiedTaskCount: number$1().int().nonnegative(),
+	totalTaskCount: number$1().int().nonnegative(),
+	createdAt: number$1(),
+	updatedAt: number$1(),
+	activatedAt: number$1().nullable(),
+	completedAt: number$1().nullable(),
+	cancelledAt: number$1().nullable(),
+	lastHeartbeatAt: number$1().nullable(),
+	stateRevision: number$1().int().nonnegative(),
 	tasks: array$1(GoalTaskSchema),
 	evidence: array$1(GoalEvidenceSchema)
 });
@@ -206474,22 +206500,22 @@ const GoalActivityEventSchema = object$1({
 	type: string(),
 	summary: string(),
 	metadata: record(string(), unknown()),
-	createdAt: number()
+	createdAt: number$1()
 });
 const GoalRunSchema = object$1({
 	id: string(),
 	goalId: string(),
-	appId: number(),
-	chatId: number(),
+	appId: number$1(),
+	chatId: number$1(),
 	kind: GoalRunKindSchema,
 	status: GoalRunStatusSchema,
 	prompt: string(),
-	attempt: number().int().positive(),
+	attempt: number$1().int().positive(),
 	runnerId: string().nullable(),
-	leaseExpiresAt: number().nullable(),
-	createdAt: number(),
-	startedAt: number().nullable(),
-	finishedAt: number().nullable(),
+	leaseExpiresAt: number$1().nullable(),
+	createdAt: number$1(),
+	startedAt: number$1().nullable(),
+	finishedAt: number$1().nullable(),
 	error: string().nullable()
 });
 const GoalRunRequestedSchema = object$1({ run: GoalRunSchema });
@@ -206499,7 +206525,7 @@ const GoalUpdatedSchema = object$1({
 });
 const GoalControlRequestedSchema = object$1({
 	goalId: string(),
-	chatId: number().nullable(),
+	chatId: number$1().nullable(),
 	action: _enum([
 		"pause",
 		"cancel",
@@ -206511,8 +206537,8 @@ const goalContracts = {
 	createGoal: defineContract({
 		channel: "goal:create",
 		input: object$1({
-			appId: number().nullable().optional(),
-			chatId: number().optional(),
+			appId: number$1().nullable().optional(),
+			chatId: number$1().optional(),
 			title: string().trim().min(1).max(120).optional(),
 			objective: string().trim().min(3).max(2e4),
 			definitionOfDone: array$1(string().trim().min(1)).max(100).optional(),
@@ -206528,13 +206554,13 @@ const goalContracts = {
 	}),
 	getActiveGoal: defineContract({
 		channel: "goal:get-active",
-		input: object$1({ appId: number().nullable().optional() }),
+		input: object$1({ appId: number$1().nullable().optional() }),
 		output: GoalSchema.nullable()
 	}),
 	listGoals: defineContract({
 		channel: "goal:list",
 		input: object$1({
-			appId: number().optional(),
+			appId: number$1().optional(),
 			statuses: array$1(GoalStatusSchema).optional()
 		}),
 		output: array$1(GoalSchema)
@@ -206543,7 +206569,7 @@ const goalContracts = {
 		channel: "goal:list-activity",
 		input: object$1({
 			goalId: string().min(1),
-			limit: number().int().positive().max(1e3).default(200)
+			limit: number$1().int().positive().max(1e3).default(200)
 		}),
 		output: array$1(GoalActivityEventSchema)
 	}),
@@ -206551,7 +206577,7 @@ const goalContracts = {
 		channel: "goal:list-runs",
 		input: object$1({
 			goalId: string().min(1),
-			limit: number().int().positive().max(1e3).default(50)
+			limit: number$1().int().positive().max(1e3).default(50)
 		}),
 		output: array$1(GoalRunSchema)
 	}),
@@ -206662,21 +206688,21 @@ const ActiveSubagentSchema = object$1({
 	id: string(),
 	name: string(),
 	description: string(),
-	startedAt: number(),
+	startedAt: number$1(),
 	status: _enum([
 		"running",
 		"completed",
 		"failed"
 	]).optional(),
-	appId: number().optional(),
-	chatId: number().optional()
+	appId: number$1().optional(),
+	chatId: number$1().optional()
 });
 const ProjectArtifactSchema = object$1({
 	path: string(),
 	name: string(),
 	type: string(),
-	size: number(),
-	createdAt: number()
+	size: number$1(),
+	createdAt: number$1()
 });
 const BackgroundTaskSchema = object$1({
 	id: string(),
@@ -206692,17 +206718,17 @@ const BackgroundTaskSchema = object$1({
 const sidebarContracts = {
 	getActiveSubagents: defineContract({
 		channel: "sidebar:getActiveSubagents",
-		input: object$1({ appId: number().optional() }),
+		input: object$1({ appId: number$1().optional() }),
 		output: array$1(ActiveSubagentSchema)
 	}),
 	getArtifacts: defineContract({
 		channel: "sidebar:getArtifacts",
-		input: object$1({ appId: number() }),
+		input: object$1({ appId: number$1() }),
 		output: array$1(ProjectArtifactSchema)
 	}),
 	getBackgroundTasks: defineContract({
 		channel: "sidebar:getBackgroundTasks",
-		input: object$1({ appId: number() }),
+		input: object$1({ appId: number$1() }),
 		output: array$1(BackgroundTaskSchema)
 	})
 };
@@ -207480,7 +207506,7 @@ function appendCappedOutput(buf, chunk) {
 }
 const runCommandSchema = object$1({
 	command: string().describe("The shell command to run. Examples: 'npm run test', 'npm run build', 'npx biome check src/', 'npm run lint'"),
-	timeout_seconds: number().min(1).max(300).optional().default(120).describe("Max seconds to wait before killing the command (default 120, max 300)"),
+	timeout_seconds: number$1().min(1).max(300).optional().default(120).describe("Max seconds to wait before killing the command (default 120, max 300)"),
 	working_directory: string().optional().describe("Subdirectory relative to the app root to run the command in. Omit to run in the app root.")
 });
 const runCommandTool = buildTool({
@@ -207658,7 +207684,7 @@ Useful for reviewing what you've changed before committing, or verifying that a 
 		return diff;
 	}
 });
-const gitLogSchema = object$1({ limit: number().min(1).max(50).optional().default(10).describe("Number of recent commits to show (default 10, max 50)") });
+const gitLogSchema = object$1({ limit: number$1().min(1).max(50).optional().default(10).describe("Number of recent commits to show (default 10, max 50)") });
 const gitLogTool = buildTool({
 	name: "git_log",
 	description: `Show recent git commit history.
@@ -207807,7 +207833,7 @@ async function detectLintCommand(appPath) {
 }
 const runTestsSchema = object$1({
 	test_pattern: string().optional().describe("Optional glob/regex pattern to filter which test files to run. Omit to run all tests."),
-	timeout_seconds: number().min(30).max(300).optional().default(120).describe("Max seconds to wait (default 120, max 300)"),
+	timeout_seconds: number$1().min(30).max(300).optional().default(120).describe("Max seconds to wait (default 120, max 300)"),
 	command_override: string().optional().describe("Override the auto-detected test command. Use this when the project uses an unusual test setup.")
 });
 const runTestsTool = buildTool({
@@ -207843,7 +207869,7 @@ After running, use capture_evidence to record the result in the active Goal.`,
 	}
 });
 const runLintSchema = object$1({
-	timeout_seconds: number().min(10).max(180).optional().default(60).describe("Max seconds to wait (default 60)"),
+	timeout_seconds: number$1().min(10).max(180).optional().default(60).describe("Max seconds to wait (default 60)"),
 	command_override: string().optional().describe("Override the auto-detected lint command")
 });
 const runLintTool = buildTool({
@@ -208028,7 +208054,7 @@ const grepSchema = object$1({
 	include_ignored: boolean().optional().describe("Whether to include git-ignored and hidden files/directories such as node_modules (default: false). Use include_pattern to keep this scoped."),
 	case_sensitive: boolean().optional().describe("Whether the search should be case sensitive (default: false)"),
 	literal: boolean().optional().describe("Search query as exact text instead of a regex. Use this for symbols or snippets containing punctuation such as createBooking({, route paths, JSX tags, or import strings."),
-	limit: number().min(1).max(MAX_LIMIT).optional().describe(`Maximum number of matches to return (default: ${DEFAULT_LIMIT}, max: ${MAX_LIMIT}). Use include_pattern to narrow results if limit is reached.`)
+	limit: number$1().min(1).max(MAX_LIMIT).optional().describe(`Maximum number of matches to return (default: ${DEFAULT_LIMIT}, max: ${MAX_LIMIT}). Use include_pattern to narrow results if limit is reached.`)
 });
 var RipgrepError = class extends Error {
 	constructor(message, stderr) {
@@ -208626,8 +208652,8 @@ const exploreCodeBaseSchema = object$1({
 	query: string().min(1).describe("Natural-language code exploration query"),
 	app_name: string().optional().describe("Optional. Name of a referenced app (from `@app:Name` mentions in the user's prompt) to explore instead of the current app. Omit to explore the current app."),
 	tsconfig_path: string().optional().describe("Optional app-relative path to a TypeScript config file. Omit to use tsconfig.app.json or tsconfig.json."),
-	max_files: number().int().min(1).max(MAX_FILES).optional().describe(`Maximum number of relevant files to return (default: ${DEFAULT_MAX_FILES}, max: ${MAX_FILES}).`),
-	max_depth: number().int().min(0).max(MAX_DEPTH).optional().describe(`Graph expansion depth from matching symbols (default: ${DEFAULT_MAX_DEPTH}, max: ${MAX_DEPTH}).`)
+	max_files: number$1().int().min(1).max(MAX_FILES).optional().describe(`Maximum number of relevant files to return (default: ${DEFAULT_MAX_FILES}, max: ${MAX_FILES}).`),
+	max_depth: number$1().int().min(0).max(MAX_DEPTH).optional().describe(`Graph expansion depth from matching symbols (default: ${DEFAULT_MAX_DEPTH}, max: ${MAX_DEPTH}).`)
 });
 const rawExploreCodeSchema = exploreCodeBaseSchema;
 const exploreCodeSchema = exploreCodeBaseSchema.extend({ intent: _enum([
@@ -209973,7 +209999,7 @@ Only use this for files included in the app's TypeScript config. JavaScript and 
 const lspSymbolLookupSchema = object$1({
 	query: string().min(1).describe("The symbol, function, or class name to look up in the workspace (e.g. 'User class', 'handleAuth references')."),
 	app_name: string().optional().describe("Optional. Name of the app to explore. Omit for the current app."),
-	max_files: number().int().min(1).max(MAX_FILES).optional().describe(`Max files to return (default: ${DEFAULT_MAX_FILES}).`)
+	max_files: number$1().int().min(1).max(MAX_FILES).optional().describe(`Max files to return (default: ${DEFAULT_MAX_FILES}).`)
 });
 function formatLspResult(result) {
 	const lines = [`## LSP Lookup: ${result.query}`, `Found ${result.totalSymbols} symbols across ${result.totalFiles} files.`];

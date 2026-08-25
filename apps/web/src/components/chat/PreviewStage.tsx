@@ -847,9 +847,28 @@ export function PreviewStage(props: {
   const [headerMode, setHeaderMode] = useState<HeaderMode>("quality");
   const [branch, setBranch] = useState<BranchId>(null);
   const [branchOpen, setBranchOpen] = useState(false);
+  const browserPreviewRef = useRef<HTMLDivElement | null>(null);
+  const [browserDims, setBrowserDims] = useState<{ w: number; h: number } | null>(null);
+  useEffect(() => {
+    const el = browserPreviewRef.current;
+    if (!el) return;
+    const measure = () => setBrowserDims({ w: el.clientWidth, h: el.clientHeight });
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   const framework = props.framework ?? "blank";
   const isBlankProject = framework === "blank";
   const isBrowserProject = framework === "website" || framework === "react-native";
+  const frameworkLabel =
+    framework === "react-native"
+      ? "React Native app"
+      : framework === "flutter"
+        ? "Flutter app"
+        : framework === "website"
+          ? "website"
+          : "app";
   const isBuildableProject =
     framework === "website" || framework === "react-native" || framework === "flutter";
 
@@ -1003,12 +1022,12 @@ export function PreviewStage(props: {
         }
         const anchor = document.createElement("a");
         anchor.href = `data:image/png;base64,${result.image}`;
-        anchor.download = `flutter-preview-${Date.now()}.png`;
+        anchor.download = `${framework === "flutter" ? "flutter" : "preview"}-${Date.now()}.png`;
         anchor.click();
         toastManager.add({
           type: "success",
           title: "Screenshot saved",
-          description: "Flutter preview screenshot downloaded.",
+          description: "Preview screenshot downloaded.",
         });
       })
       .catch((error: unknown) => {
@@ -1035,7 +1054,7 @@ export function PreviewStage(props: {
       )
       .catch((e: unknown) =>
         setPanelState((prev) =>
-          analyzeFailed(prev, e instanceof Error ? e.message : "flutter analyze failed."),
+          analyzeFailed(prev, e instanceof Error ? e.message : "analyze failed."),
         ),
       );
   }, [props.threadId]);
@@ -1183,7 +1202,8 @@ export function PreviewStage(props: {
         return (
           <div className="p-4">
             <p className="text-xs text-muted-foreground">
-              Reload the Flutter app. Hot-reload preserves state, restart rebuilds from scratch.
+              Reload the {frameworkLabel}. Hot-reload preserves state, restart rebuilds from
+              scratch.
             </p>
             <div className="mt-3 flex gap-2">
               <Button
@@ -1518,13 +1538,30 @@ export function PreviewStage(props: {
                   </button>
                 </div>
               ) : isRunning && panelState.url !== null ? (
-                <iframe
-                  key={panelState.reloadToken}
-                  src={panelState.url}
-                  title={`${framework} preview`}
-                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
-                  className="h-full w-full border-0"
-                />
+                <div ref={browserPreviewRef} className="relative h-full w-full overflow-hidden">
+                  {landscape && browserDims ? (
+                    <iframe
+                      key={panelState.reloadToken}
+                      src={panelState.url}
+                      title={`${framework} preview`}
+                      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
+                      className="absolute left-1/2 top-1/2 border-0 bg-white"
+                      style={{
+                        width: `${browserDims.h}px`,
+                        height: `${browserDims.w}px`,
+                        transform: "translate(-50%, -50%) rotate(90deg)",
+                      }}
+                    />
+                  ) : (
+                    <iframe
+                      key={panelState.reloadToken}
+                      src={panelState.url}
+                      title={`${framework} preview`}
+                      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
+                      className="h-full w-full border-0"
+                    />
+                  )}
+                </div>
               ) : (
                 <div className="flex h-full flex-col items-center justify-center gap-3 text-xs text-slate-500">
                   <p>

@@ -494,6 +494,7 @@ import {
   type ComposerLocalDirectoryMenuHandle,
 } from "./chat/ComposerLocalDirectoryMenu";
 import { ComposerPendingApprovalPanel } from "./chat/ComposerPendingApprovalPanel";
+import { CaideBlueprintApprovalPanel } from "./chat/CaideBlueprintApprovalPanel";
 import { ComposerExtrasMenu } from "./chat/ComposerExtrasMenu";
 import { ChatModeSelector } from "./chat/ChatModeSelector";
 import { ChatModeBadge } from "./chat/PlanPreviewPane";
@@ -8614,6 +8615,7 @@ export default function ChatView({
       decision: ProviderApprovalDecision,
       lifecycleGeneration?: string,
       requestKind?: ProviderRequestKind,
+      blueprintEdits?: Readonly<Record<string, unknown>>,
     ) => {
       const api = readNativeApi();
       if (!api || !activeThreadId) return;
@@ -8640,6 +8642,7 @@ export default function ChatView({
           threadId: activeThreadId,
           requestId,
           decision,
+          ...(blueprintEdits !== undefined ? { blueprintEdits } : {}),
           ...(lifecycleGeneration !== undefined ? { lifecycleGeneration } : {}),
           createdAt: new Date().toISOString(),
         })
@@ -11057,17 +11060,30 @@ export default function ChatView({
                   precedence and suppresses the question card while one is active. */}
               {activePendingApproval ? (
                 <div className="pb-2">
-                  <ComposerPendingApprovalPanel
-                    approval={activePendingApproval}
-                    pendingCount={pendingApprovals.length}
-                    isResponding={respondingRequestKeys.includes(
-                      pendingRequestInstanceKey(
-                        activePendingApproval.requestId,
-                        activePendingApproval.lifecycleGeneration,
-                      ),
-                    )}
-                    onRespond={onRespondToApproval}
-                  />
+                  {activePendingApproval.requestKind === "blueprint" ? (
+                    <CaideBlueprintApprovalPanel
+                      approval={activePendingApproval}
+                      isResponding={respondingRequestKeys.includes(
+                        pendingRequestInstanceKey(
+                          activePendingApproval.requestId,
+                          activePendingApproval.lifecycleGeneration,
+                        ),
+                      )}
+                      onRespond={onRespondToApproval}
+                    />
+                  ) : (
+                    <ComposerPendingApprovalPanel
+                      approval={activePendingApproval}
+                      pendingCount={pendingApprovals.length}
+                      isResponding={respondingRequestKeys.includes(
+                        pendingRequestInstanceKey(
+                          activePendingApproval.requestId,
+                          activePendingApproval.lifecycleGeneration,
+                        ),
+                      )}
+                      onRespond={onRespondToApproval}
+                    />
+                  )}
                 </div>
               ) : pendingUserInputs.length > 0 ? (
                 <div className="pb-2">

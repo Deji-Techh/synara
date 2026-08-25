@@ -127,7 +127,7 @@ export const ChatStreamParamsSchema = z
     redo: z.boolean().optional(),
     attachments: ChatAttachmentsSchema.optional(),
     selectedComponents: z.array(ComponentSelectionSchema).optional(),
-    requestedChatMode: ChatModeSchema.optional(),
+    requestedChatMode: StoredChatModeSchema.optional(),
     suppressUserMessage: z.boolean().optional(),
   })
   .superRefine((params, context) => {

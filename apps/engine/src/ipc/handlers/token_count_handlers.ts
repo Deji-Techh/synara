@@ -71,7 +71,7 @@ export function registerTokenCountHandlers() {
     const isWeb3App = fs.existsSync(path.join(appPath, "src", "caide-web3"));
     let systemPrompt = constructSystemPrompt({
       aiRules: await readAiRules(appPath),
-      chatMode: selectedChatMode === "local-agent" ? "build" : selectedChatMode,
+      chatMode: selectedChatMode,
       enableTurboEditsV2: isTurboEditsV2Enabled(settings),
       themePrompt,
       frameworkType,

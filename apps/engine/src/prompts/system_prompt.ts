@@ -4,7 +4,12 @@ import log from "electron-log";
 import { TURBO_EDITS_V2_SYSTEM_PROMPT } from "../pro/main/prompts/turbo_edits_v2_prompt";
 import { constructLocalAgentPrompt } from "./local_agent_prompt";
 import { constructPlanModePrompt } from "./plan_mode_prompt";
-import { DEFAULT_AI_RULES } from "./ai_rules";
+import {
+  DEFAULT_AI_RULES,
+  DEFAULT_AI_RULES_GENERIC,
+  DEFAULT_AI_RULES_REACT_NATIVE,
+  DEFAULT_AI_RULES_WEBSITE,
+} from "./ai_rules";
 import type { AppFrameworkType } from "@/lib/framework_constants";
 import { CAIDE_MOBILE_UI_SKILL_PACK } from "./mobile_ui_skill_pack";
 import { CAIDE_WEB_UI_SKILL_PACK } from "./web_ui_skill_pack";
@@ -516,7 +521,7 @@ Remember: Your goal is to be a knowledgeable, helpful companion in the user's le
 
 export const constructSystemPrompt = ({
   aiRules,
-  chatMode = "build",
+  chatMode = "local-agent",
   enableTurboEditsV2,
   themePrompt,
   readOnly,
@@ -595,7 +600,7 @@ export const constructSystemPrompt = ({
 
   systemPrompt = systemPrompt.replace(
     "[[AI_RULES]]",
-    (aiRules ?? DEFAULT_AI_RULES) + web3Suffix + appSkillSuffix,
+    (aiRules ?? defaultAiRulesForFramework(frameworkType)) + web3Suffix + appSkillSuffix,
   );
 
   if (themePrompt) {
@@ -676,6 +681,73 @@ export const readAiRules = async (caideAppPath: string) => {
     return aiRules;
   } catch (error) {
     logger.info(`Error reading AI_RULES.md, fallback to default AI rules: ${error}`);
-    return DEFAULT_AI_RULES;
+    return defaultAiRulesForPath(caideAppPath);
   }
 };
+
+/**
+ * Framework-appropriate default AI rules used when a prompt path has no
+ * resolved aiRules string. Mirrors readAiRules' detection for callers that
+ * already know the framework type.
+ */
+function defaultAiRulesForFramework(
+  frameworkType: AppFrameworkType | null | undefined,
+): string {
+  if (frameworkType === "react-native") return DEFAULT_AI_RULES_REACT_NATIVE;
+  if (
+    frameworkType === "vite" ||
+    frameworkType === "vite-nitro" ||
+    frameworkType === "nextjs"
+  ) {
+    return DEFAULT_AI_RULES_WEBSITE;
+  }
+  if (frameworkType === "flutter") return DEFAULT_AI_RULES;
+  return DEFAULT_AI_RULES_GENERIC;
+}
+
+/**
+ * Pick the framework-appropriate default AI rules by inspecting the app dir.
+ * The old behavior always returned Flutter rules, which told React Native /
+ * website apps they were Flutter projects. Detects via pubspec.yaml,
+ * package.json deps, and known entry files.
+ */
+function defaultAiRulesForPath(caideAppPath: string): string {
+  try {
+    const pubspecPath = path.join(caideAppPath, "pubspec.yaml");
+    if (fs.existsSync(pubspecPath)) {
+      const pubspec = fs.readFileSync(pubspecPath, "utf8");
+      if (pubspec.includes("sdk: flutter")) {
+        return DEFAULT_AI_RULES;
+      }
+    }
+    const packageJsonPath = path.join(caideAppPath, "package.json");
+    if (fs.existsSync(packageJsonPath)) {
+      const parsed = JSON.parse(fs.readFileSync(packageJsonPath, "utf8")) as {
+        dependencies?: Record<string, string>;
+        devDependencies?: Record<string, string>;
+      };
+      const deps: Record<string, string> = {
+        ...(parsed.dependencies ?? {}),
+        ...(parsed.devDependencies ?? {}),
+      };
+      if (deps.reactNative || deps.expo) {
+        return DEFAULT_AI_RULES_REACT_NATIVE;
+      }
+      if (deps.next || deps.vite) {
+        return DEFAULT_AI_RULES_WEBSITE;
+      }
+    }
+    if (fs.existsSync(path.join(caideAppPath, "App.js"))) {
+      return DEFAULT_AI_RULES_REACT_NATIVE;
+    }
+    if (
+      fs.existsSync(path.join(caideAppPath, "index.html")) &&
+      (fs.existsSync(path.join(caideAppPath, "src")) || fs.existsSync(path.join(caideAppPath, "vite.config.js")))
+    ) {
+      return DEFAULT_AI_RULES_WEBSITE;
+    }
+  } catch {
+    return DEFAULT_AI_RULES_GENERIC;
+  }
+  return DEFAULT_AI_RULES_GENERIC;
+}

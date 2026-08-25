@@ -1096,9 +1096,7 @@ export const createComposerDraftStoreState =
         return;
       }
       const nextMode =
-        mode === "build" || mode === "ask" || mode === "local-agent" || mode === "plan"
-          ? mode
-          : null;
+        mode === "local-agent" || mode === "plan" ? mode : null;
       set((state) => {
         const existing = state.draftsByThreadId[threadId];
         if (!existing && nextMode === null) {

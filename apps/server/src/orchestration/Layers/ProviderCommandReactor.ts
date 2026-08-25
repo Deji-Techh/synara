@@ -2947,6 +2947,9 @@ const make = Effect.gen(function* () {
           ? { lifecycleGeneration: event.payload.lifecycleGeneration }
           : {}),
         decision: event.payload.decision,
+        ...(event.payload.blueprintEdits !== undefined
+          ? { blueprintEdits: event.payload.blueprintEdits }
+          : {}),
       })
       .pipe(
         Effect.asVoid,

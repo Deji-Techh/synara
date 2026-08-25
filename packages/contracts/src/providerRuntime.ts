@@ -149,6 +149,7 @@ export const CanonicalRequestType = Schema.Literals([
   "tool_user_input",
   "dynamic_tool_call",
   "auth_tokens_refresh",
+  "app_blueprint",
   "unknown",
 ]);
 export type CanonicalRequestType = typeof CanonicalRequestType.Type;

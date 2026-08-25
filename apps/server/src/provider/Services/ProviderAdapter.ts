@@ -165,6 +165,7 @@ export interface ProviderAdapterShape<TError> {
     threadId: ThreadId,
     requestId: ApprovalRequestId,
     decision: ProviderApprovalDecision,
+    blueprintEdits?: Readonly<Record<string, unknown>>,
   ) => Effect.Effect<void, TError>;
 
   /**

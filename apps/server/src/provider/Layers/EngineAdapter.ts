@@ -118,7 +118,12 @@ interface EngineChatMapping {
   readonly chatId: number;
 }
 
-type PendingRequestKind = "mcp-consent" | "agent-tool-consent" | "questionnaire" | "env-vars";
+type PendingRequestKind =
+  | "mcp-consent"
+  | "agent-tool-consent"
+  | "questionnaire"
+  | "env-vars"
+  | "app-blueprint";
 
 interface PendingEngineRequest {
   readonly kind: PendingRequestKind;
@@ -404,8 +409,23 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       Ref.get(chatToThread).pipe(
         Effect.flatMap((map) => {
           const threadId = map.get(chatId);
-          if (!threadId) return Effect.succeed(null);
-          return Ref.get(sessions).pipe(Effect.map((next) => next.get(threadId) ?? null));
+          if (threadId) {
+            return Ref.get(sessions).pipe(Effect.map((next) => next.get(threadId) ?? null));
+          }
+          // A provider session restart between turns clears the chat→thread
+          // reverse index even though the engine keeps streaming the same chat.
+          // Fall back to scanning live sessions by their chat binding so
+          // plan:questionnaire / app-blueprint:update / consent notifications
+          // arriving mid-turn are not dropped (they surfaced as "no card showed"
+          // + the 5-min resolver timeout).
+          return Ref.get(sessions).pipe(
+            Effect.map((next) => {
+              for (const context of next.values()) {
+                if (context.chatMapping?.chatId === chatId) return context;
+              }
+              return null;
+            }),
+          );
         }),
       );
 
@@ -1069,6 +1089,57 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             });
             return;
           }
+          case "app-blueprint:update": {
+            // The agent wrote an app blueprint and ended its turn (consent was
+            // granted earlier). Surface it to the orchestrator as an approval so
+            // the web can show an editable card; approving routes back through
+            // respondToRequest -> app-blueprint:approve.
+            if (typeof payload.chatId !== "number") return;
+            const chatId = payload.chatId as number;
+            const context = yield* sessionForChat(chatId);
+            if (context === null) return;
+            const data = (payload.data ?? {}) as Record<string, unknown>;
+            const appName = (String(data.appName ?? "App").trim() || "App");
+            const requestId = `app-blueprint:${chatId}:${Date.now()}`;
+            const registered = yield* Ref.modify(pendingRequests, (map) =>
+              tryRegisterPendingRequest(map, requestId, {
+                kind: "app-blueprint",
+                threadId: context.threadId,
+                chatId,
+              }),
+            ).pipe(Effect.map(([ok]) => ok));
+            if (!registered) return;
+            yield* publishEvent(
+              makeEvent<ProviderRuntimeEvent>(context.threadId, {
+                type: "request.opened",
+                requestId: requestId as never,
+                payload: {
+                  requestType: "app_blueprint" as const,
+                  detail: appName,
+                  args: { chatId, blueprint: data },
+                },
+              }),
+            );
+            return;
+          }
+          case "app-blueprint:approved": {
+            // The engine confirmed the blueprint approval. Kick a fresh turn so
+            // the agent proceeds with implementation under the approved
+            // blueprint (mirrors dyad's renderer starting the follow-up turn).
+            if (typeof payload.chatId !== "number") return;
+            const chatId = payload.chatId as number;
+            const context = yield* sessionForChat(chatId);
+            if (context === null) return;
+            const turnId = context.currentTurnIdRef.current ?? TurnId.makeUnsafe(randomUUID());
+            yield* forkChatStream(
+              context,
+              chatId,
+              turnId,
+              "[App blueprint approved — proceed with implementation.]",
+              "local-agent",
+            );
+            return;
+          }
           case "build:completed": {
             // The engine snapshotted a successful build into the app's stable
             // artifact store; persist it in the global registry. Attribution
@@ -1393,7 +1464,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             try: () =>
               client.dyadInvoke<{ app?: { id?: number }; chatId?: number }>("create-app", {
                 name,
-                initialChatMode: "build",
+                initialChatMode: "local-agent",
                 framework: "blank",
               }),
             catch: (cause) => processError(context.threadId, "engine create-app failed", cause),
@@ -1481,7 +1552,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       chatId: number,
       turnId: TurnId,
       prompt: string,
-      requestedChatMode: "build" | "ask" | "plan" | "local-agent",
+      requestedChatMode: "plan" | "local-agent",
     ): Effect.Effect<Fiber.Fiber<void, never>, never, never> =>
       Effect.gen(function* () {
         const { client } = yield* ensureSharedEngine(context.threadId);
@@ -1850,11 +1921,12 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             }),
           );
 
-          // The engine accepts each of build/ask/plan/local-agent. The send
-          // input's `mode` is the single source of truth (contracts decode it
-          // with a "build" default). If it is still missing here the caller
-          // bypassed schema decoding — degrade visibly instead of guessing.
-          let requestedChatMode: "build" | "ask" | "plan" | "local-agent" = input.mode ?? "build";
+          // The engine accepts plan and local-agent (agent). Build/ask were removed
+          // and route through local-agent. The send input's `mode` is the single
+          // source of truth (contracts decode it with a "local-agent" default).
+          // If it is still missing here the caller bypassed schema decoding —
+          // degrade visibly instead of guessing.
+          let requestedChatMode: "plan" | "local-agent" = input.mode ?? "local-agent";
           if (input.mode === undefined) {
             yield* Effect.logWarning(
               `[engine] sendTurn thread=${input.threadId}: input.mode missing (caller skipped schema decode); degrading to "${requestedChatMode}"`,
@@ -1955,7 +2027,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           markSessionIdle(context, "interrupted");
         }),
 
-      respondToRequest: (threadId, requestId, decision) =>
+      respondToRequest: (threadId, requestId, decision, blueprintEdits) =>
         Effect.gen(function* () {
           const context = yield* getSession(threadId);
           const key = pendingInteractionKey(threadId, String(requestId));
@@ -1980,6 +2052,32 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 }),
               catch: (cause) => processError(threadId, "engine consent-response failed", cause),
             }).pipe(Effect.ignore);
+          } else if (entry.kind === "app-blueprint") {
+            if (entry.chatId !== undefined && decision !== "decline") {
+              const blueprintChatId = entry.chatId;
+              // Apply any user edits before approving so the engine builds from
+              // the edited blueprint, not the original draft.
+              if (blueprintEdits !== undefined) {
+                for (const [field, value] of Object.entries(blueprintEdits)) {
+                  if (typeof value !== "string" || value === "") continue;
+                  yield* Effect.tryPromise({
+                    try: () =>
+                      client.dyadInvoke("app-blueprint:edit-field", {
+                        chatId: blueprintChatId,
+                        field,
+                        value,
+                      }),
+                    catch: (cause) =>
+                      processError(threadId, "engine app-blueprint edit-field failed", cause),
+                  }).pipe(Effect.ignore);
+                }
+              }
+              yield* Effect.tryPromise({
+                try: () =>
+                  client.dyadInvoke("app-blueprint:approve", { chatId: blueprintChatId }),
+                catch: (cause) => processError(threadId, "engine app-blueprint approve failed", cause),
+              }).pipe(Effect.ignore);
+            }
           } else {
             yield* Effect.tryPromise({
               try: () =>
@@ -2610,7 +2708,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 "create-app",
                 {
                   name,
-                  initialChatMode: "build",
+                  initialChatMode: "local-agent",
                   framework,
                   templateId: framework === "flutter" ? "flutter" : undefined,
                 },

@@ -146,6 +146,11 @@ const activeStreams = new Map<number, AbortController>();
 // Track partial responses for cancelled streams
 const partialResponses = new Map<number, string>();
 
+// Build mode (and its MCP + legacy streaming path) was removed: build/ask now
+// route through local-agent (agent). This flag keeps the unreachable legacy
+// block compile-safe until it is deleted.
+const LEGACY_BUILD_MODE_STREAM = false;
+
 // Use escapeXmlAttr from shared/xmlEscape for XML escaping
 
 // Safely parse an MCP tool key that combines server and tool names.
@@ -752,7 +757,6 @@ ${componentSnippet}
         }
 
         const isLocalAgentMode = selectedChatMode === "local-agent";
-        const isAskMode = selectedChatMode === "ask";
         const isPlanMode = selectedChatMode === "plan";
         const willUseLocalAgentStream = isLocalAgentBackedMode(selectedChatMode);
 
@@ -955,13 +959,11 @@ ${componentSnippet}
           appSkillPack,
           appTarget: settings.appTarget,
         });
-        if (selectedChatMode !== "ask") {
-          systemPrompt +=
-            "\n\n" +
-            buildAppIdentityPrompt(
-              parseStoredAppIdentity(updatedChat.app.appIdentity, updatedChat.app.name),
-            );
-        }
+        systemPrompt +=
+          "\n\n" +
+          buildAppIdentityPrompt(
+            parseStoredAppIdentity(updatedChat.app.appIdentity, updatedChat.app.name),
+          );
 
         // Add information about mentioned apps for build mode only.
         // Full codebase injection (build mode): full file contents already
@@ -1105,7 +1107,7 @@ This conversation includes one or more image attachments. When the user uploads 
 
         const limitedHistoryChatMessages = limitedMessageHistory.map((msg) => ({
           role: msg.role as "user" | "assistant" | "system",
-          content: sanitizeContentForHistory(msg.content, selectedChatMode === "ask"),
+          content: sanitizeContentForHistory(msg.content, false),
           providerOptions: {
             "caide-engine": {
               sourceCommitHash: msg.sourceCommitHash,
@@ -1391,45 +1393,8 @@ This conversation includes one or more image attachments. When the user uploads 
         };
 
         // Handle ask mode: use local-agent in read-only mode
-        // This gives users access to code reading tools while in ask mode
-        // Ask mode does not consume free agent quota
-        if (isAskMode && !isSecurityReviewIntent) {
-          // Reconstruct system prompt for local-agent read-only mode
-          const readOnlySystemPrompt = constructSystemPrompt({
-            aiRules,
-            chatMode: "local-agent",
-            enableTurboEditsV2: false,
-            themePrompt,
-            readOnly: true,
-            freeModelMode,
-            codeExplorerAvailable,
-          });
-
-          // Return value indicates success/failure for quota tracking.
-          // Ask mode doesn't consume quota, but we still capture it for
-          // consistent error handling.
-          const streamSuccess = await handleLocalAgentStream(event, req, abortController, {
-            placeholderMessageId: placeholderAssistantMessage.id,
-            // Note: this is using the read-only system prompt rather than the
-            // regular system prompt which gets overrides for special intents
-            // like summarize chat, security review, etc.
-            //
-            // This is OK because those intents should always happen in a new chat
-            // and new chats will default to non-ask modes.
-            systemPrompt: readOnlySystemPrompt,
-            caideRequestId: caideRequestId ?? "[no-request-id]",
-            readOnly: true,
-            messageOverride: isSummarizeIntent ? chatMessages : undefined,
-            settingsOverride: settings,
-            freeModelMode,
-            referencedApps: referencedAppsForAgent,
-            currentTurnHasOnDiskAttachment: hasScriptReadableAttachment(storedAttachments),
-          });
-          if (!streamSuccess) {
-            logger.warn("Ask mode local agent stream did not complete successfully");
-          }
-          return req.chatId;
-        }
+        // Ask mode (removed) now routes through the local-agent stream; the
+        // agent path below (isLocalAgentMode) covers it.
 
         // Handle plan mode: use local-agent with plan tools only
         // Plan mode is for requirements gathering and creating implementation plans
@@ -1441,6 +1406,7 @@ This conversation includes one or more image attachments. When the user uploads 
             enableTurboEditsV2: false,
             themePrompt,
             freeModelMode,
+            frameworkType,
           });
 
           await handleLocalAgentStream(event, req, abortController, {
@@ -1494,7 +1460,7 @@ This conversation includes one or more image attachments. When the user uploads 
         // Use MCP agent code path if:
         // 1. The enableMcpServersForBuildMode experiment is on AND
         // 2. Mode is "build" AND there are enabled MCP servers
-        if (settings.enableMcpServersForBuildMode && selectedChatMode === "build") {
+        if (LEGACY_BUILD_MODE_STREAM && settings.enableMcpServersForBuildMode) {
           const tools = await getMcpTools(event, req.chatId);
           const hasEnabledMcpServers = Object.keys(tools).length > 0;
 
@@ -1710,7 +1676,7 @@ ${formattedSearchReplaceIssues}`,
           // the local-agent chain (see local_agent_handler.ts).
           if (
             !abortController.signal.aborted &&
-            selectedChatMode === "build" &&
+            LEGACY_BUILD_MODE_STREAM &&
             !isSummarizeIntent
           ) {
             const preChainWriteTags = getCaideWriteTags(fullResponse);
@@ -1974,7 +1940,7 @@ ${problemReport.problems
           .set({ content: fullResponse })
           .where(eq(messages.id, placeholderAssistantMessage.id));
         const latestSettings = readSettings();
-        const shouldAutoApply = latestSettings.autoApproveChanges && selectedChatMode !== "ask";
+        const shouldAutoApply = latestSettings.autoApproveChanges;
         const hasDestructiveSql =
           shouldAutoApply &&
           getCaideExecuteSqlTags(fullResponse).some((query) => doesSqlDeleteData(query.content));

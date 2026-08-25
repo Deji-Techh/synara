@@ -166,6 +166,7 @@ export const ProviderRespondToRequestInput = Schema.Struct({
   requestId: ApprovalRequestId,
   lifecycleGeneration: Schema.optional(TrimmedNonEmptyString),
   decision: ProviderApprovalDecision,
+  blueprintEdits: Schema.optional(Schema.Record(Schema.String, Schema.Unknown)),
 });
 export type ProviderRespondToRequestInput = typeof ProviderRespondToRequestInput.Type;
 

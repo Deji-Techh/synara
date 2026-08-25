@@ -17,11 +17,13 @@ import { orderedActivities } from "./workLog";
 export interface PendingApproval {
   requestId: ApprovalRequestId;
   lifecycleGeneration?: string;
-  requestKind: "command" | "file-read" | "file-change" | "permissions";
+  requestKind: "command" | "file-read" | "file-change" | "permissions" | "blueprint";
   createdAt: string;
   detail?: string;
   permissionProfile?: Record<string, unknown>;
   sessionApprovalAvailable?: boolean;
+  blueprint?: Record<string, unknown>;
+  blueprintChatId?: number;
 }
 
 export interface PendingUserInput {
@@ -299,7 +301,8 @@ export function derivePendingApprovals(
           payload?.requestKind === "command" ||
           payload?.requestKind === "file-read" ||
           payload?.requestKind === "file-change" ||
-          payload?.requestKind === "permissions"
+          payload?.requestKind === "permissions" ||
+          payload?.requestKind === "blueprint"
             ? payload.requestKind
             : approvalRequestKindFromRequestType(payload?.requestType);
         if (!requestKind) {
@@ -316,6 +319,22 @@ export function derivePendingApprovals(
           typeof payload?.sessionApprovalAvailable === "boolean"
             ? payload.sessionApprovalAvailable
             : undefined;
+        const blueprintArgs = payload?.args;
+        const blueprint =
+          blueprintArgs &&
+          typeof blueprintArgs === "object" &&
+          !Array.isArray(blueprintArgs) &&
+          (blueprintArgs as Record<string, unknown>).blueprint &&
+          typeof (blueprintArgs as Record<string, unknown>).blueprint === "object"
+            ? ((blueprintArgs as Record<string, unknown>).blueprint as Record<string, unknown>)
+            : undefined;
+        const blueprintChatId =
+          blueprintArgs &&
+          typeof blueprintArgs === "object" &&
+          !Array.isArray(blueprintArgs) &&
+          typeof (blueprintArgs as Record<string, unknown>).chatId === "number"
+            ? ((blueprintArgs as Record<string, unknown>).chatId as number)
+            : undefined;
         return {
           requestId,
           ...(lifecycleGeneration !== undefined ? { lifecycleGeneration } : {}),
@@ -324,6 +343,8 @@ export function derivePendingApprovals(
           ...(detail ? { detail } : {}),
           ...(permissionProfile ? { permissionProfile } : {}),
           ...(sessionApprovalAvailable !== undefined ? { sessionApprovalAvailable } : {}),
+          ...(blueprint ? { blueprint } : {}),
+          ...(blueprintChatId !== undefined ? { blueprintChatId } : {}),
         };
       },
     },

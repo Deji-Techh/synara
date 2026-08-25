@@ -5,13 +5,11 @@ import { Select, SelectPopup, SelectItem, SelectValue } from "~/components/ui/se
 import { Select as SelectPrimitive } from "@base-ui/react/select";
 import { Tooltip, TooltipTrigger, TooltipPopup } from "~/components/ui/tooltip";
 import {
-  HammerIcon as Hammer,
   BotIcon as Bot,
-  AskIcon as MessageCircle,
   LightBulbIcon as Lightbulb,
 } from "~/lib/icons";
 
-export const CHAT_MODE_ORDER: ChatMode[] = ["local-agent", "plan", "build", "ask"];
+export const CHAT_MODE_ORDER: ChatMode[] = ["local-agent", "plan"];
 
 export const CHAT_MODE_META: Record<
   ChatMode,
@@ -27,20 +25,10 @@ export const CHAT_MODE_META: Record<
     description: "Design before you build",
     Icon: Lightbulb,
   },
-  build: {
-    name: "Build",
-    description: "Generate and edit code",
-    Icon: Hammer,
-  },
-  ask: {
-    name: "Ask",
-    description: "Ask questions about the app",
-    Icon: MessageCircle,
-  },
 };
 
 export function getChatModeDisplayName(mode: ChatMode): string {
-  return CHAT_MODE_META[mode]?.name || "Build";
+  return CHAT_MODE_META[mode]?.name || "Agent";
 }
 
 interface ChatModeSelectorProps {
@@ -49,7 +37,7 @@ interface ChatModeSelectorProps {
 }
 
 export function ChatModeSelector({ mode, onChatModeChange }: ChatModeSelectorProps) {
-  const meta = CHAT_MODE_META[mode] || CHAT_MODE_META.build;
+  const meta = CHAT_MODE_META[mode] || CHAT_MODE_META["local-agent"];
   const Icon = meta.Icon;
 
   return (
@@ -63,13 +51,11 @@ export function ChatModeSelector({ mode, onChatModeChange }: ChatModeSelectorPro
                 aria-label={`Chat mode: ${meta.name}`}
                 className={cn(
                   "cursor-pointer inline-flex items-center w-fit px-2 py-0 h-7 text-xs font-medium border-none shadow-none gap-1 rounded-lg transition-colors outline-none",
-                  mode === "build" || mode === "local-agent"
+                  mode === "local-agent"
                     ? "text-foreground/80 hover:text-foreground hover:bg-muted/60"
-                    : mode === "ask"
-                      ? "bg-purple-500/10 text-purple-600 hover:bg-purple-500/15 dark:bg-purple-500/15 dark:text-purple-400 dark:hover:bg-purple-500/20"
-                      : mode === "plan"
-                        ? "bg-blue-500/10 text-blue-600 hover:bg-blue-500/15 dark:bg-blue-500/15 dark:text-blue-400 dark:hover:bg-blue-500/20"
-                        : "text-foreground/80 hover:text-foreground hover:bg-muted/60",
+                    : mode === "plan"
+                      ? "bg-blue-500/10 text-blue-600 hover:bg-blue-500/15 dark:bg-blue-500/15 dark:text-blue-400 dark:hover:bg-blue-500/20"
+                      : "text-foreground/80 hover:text-foreground hover:bg-muted/60",
                 )}
               />
             }
@@ -94,11 +80,7 @@ export function ChatModeSelector({ mode, onChatModeChange }: ChatModeSelectorPro
                     <MIcon
                       size={14}
                       className={
-                        m === "plan"
-                          ? "text-blue-500"
-                          : m === "ask"
-                            ? "text-purple-500"
-                            : "text-muted-foreground"
+                        m === "plan" ? "text-blue-500" : "text-muted-foreground"
                       }
                     />
                     <span className="font-medium">{mMeta.name}</span>

@@ -5,11 +5,11 @@ const __filename = __cFL(import.meta.url);
 const __dirname = __cDP.dirname(__filename);
 
 import { a as __toCommonJS, i as __require, o as __toESM, t as __commonJSMin } from "./chunk-CeepVFa8.mjs";
-import { $t as init_electron_shim, A as themesData, At as appPrompts, B as hasCaideProKey, Bt as versions, C as writeSettings, D as init_caide_error, Dt as IS_TEST_BUILD, E as CaideErrorKind, Ft as language_models, G as migrateStoredChatMode, Gt as isNotNull, H as isLocalAgentBackedMode, Ht as and, It as mcpServers, Jt as sql, Kt as isNull, L as StoredChatModeSchema, Lt as mcpToolConsents, M as v4, Mt as chats, Nt as customThemes, O as isCaideError, P as AppChatContextSchema, Pt as language_model_providers, Q as _null, Qt as dialog, Rt as messages, S as setSentinelActiveChat, T as CaideError, U as isSupabaseConnected, Ut as eq, V as isBasicAgentMode, Vt as desc, W as isTurboEditsV2Enabled, Wt as inArray, X as _enum, Xt as ShimmerNotification, Yt as BrowserWindow, Zt as app, _ as isDirectoryAccessible, _t as record, a as closeDatabase, an as emit, b as readEffectiveSettings, bt as union, c as initializeDatabase, cn as require_src, d as getCustomFolderCache, en as ipcMain, et as _void, f as getDefaultCaideAppsDirectory, g as isAppLocationAccessible, h as invalidateCaideAppsBaseDirectoryCache, it as boolean, j as localTemplatesData, jt as apps, kt as appCollections, l as getCaideAppPath, m as getUserDataPath, mt as object, nn as safeStorage, nt as array, o as db, on as init_event_bus, pt as number, q as zod_default, qt as like, r as isPersistedGoalComplete, rn as shell, s as getDatabaseFilePaths, sn as onAll, tn as nativeImage, u as getCaideAppsBaseDirectory, ut as literal, vt as string, x as readSettings, xt as unknown, z as getEffectiveDefaultChatMode, zt as prompts } from "./goal_state-1zBU18Ra.mjs";
-import { $ as addIntegrationTool, $i as stopCloudSandboxFileSync, $n as getNeonOrganizationId, $r as registerGithubHandlers, $t as doesSqlDeleteData, A as getBackgroundTasks, Ai as listSupabaseSocialAuthProviders, An as computeStreamingPatch, Ar as gitAddSafeDirectory, At as getCompactionThreshold, B as goalContracts, Bi as createUniqueAttachmentLogicalName, Bn as readAppFileForEditor, Br as gitListBranches, Bt as getCaideEngineBaseUrl, C as normalizePlanStatus, Ca as createEventClient, Ci as executeSupabaseSql, Cn as parsePartialJson, Cr as GitStateError, Ct as clearPendingMcpConsentsForChat, D as parsePlanFile, Da as defineEvent, Di as getSupabaseProjectLogs, Dn as createGoogleGenerativeAI, Dr as getGitUncommittedFilesWithStatus, Dt as withSystemCacheBreakpoint, E as buildFrontmatter, Ea as defineContract, Ei as getSupabaseClientForOrganization, En as FLUTTER_DESIGN_ENGINE_CONTRACT, Er as getGitUncommittedFiles, Et as resolveConsent, F as getTypeCheckPreconditionKind, Fi as CAIDE_MEDIA_DIR_NAME, Fn as streamText, Fr as gitCurrentBranch, Ft as getSupabaseClientCode, G as freeAgentQuotaContracts, Gi as getEnvVar, Gn as RIPGREP_EXCLUDED_GLOBS, Gr as gitPush, Gt as findInvalidProviderApiKeyCharacter, H as referenceContracts, Hi as toAttachmentLogicalPath, Hn as detectNextJsMajorVersion, Hr as gitMerge, Ht as languageModelContracts, I as deleteTodos, Ii as CAIDE_SCREENSHOT_DIR_NAME, In as backgroundTaskRegistry, Ir as gitDeleteBranch, It as getSupabaseContext, J as promptContracts, Ji as destroyCloudSandbox, Jn as getConnectionUri, Jr as hasStagedChanges, Jt as CAIDE_INTERNAL_REQUEST_ID_HEADER, K as securityContracts, Ki as shellEnvSync, Kn as getRgExecutablePath, Kr as gitRemove, Kt as formatInvalidProviderApiKeyMessage, L as loadTodos, Li as MAX_SCREENSHOTS_PER_APP, Ln as ChatStreamParamsSchema, Lr as gitDiff, Lt as getModelClient, M as isCodeExplorerReady, Mi as isRateLimitError, Mn as generateText, Mr as gitClone, Mt as getMaxTokens, N as generateProblemReport, Ni as terminatePtyProcess, Nn as hasToolCall, Nr as gitCommit, Nt as getTemperature, O as validatePlanId, Oi as getSupabaseProjectName, On as StreamingPatchTracker, Or as gitAdd, Ot as withToolCacheBreakpoint, P as getTypeCheckPreconditionGuidance, Pi as safeSend, Pn as stepCountIs, Pr as gitCreateBranch, Pt as shouldTriggerCompaction, Q as ensureNitroIfVite, Qi as restartCloudSandbox, Qn as getNeonClient, Qr as ensureCleanWorkspace, Qt as createOpenAICompatible, R as saveTodos, Ri as SCREENSHOT_FILENAME_REGEX, Rn as chatContracts, Rr as gitDiscardAllChanges, Rt as getOpenRouterAppAttributionHeaders, S as writePlanTool, Sa as createClient, Si as deploySupabaseFunction, Sn as stripFrontmatter, Sr as GIT_ERROR_CODES, St as auth, T as savePlanToDisk, Ta as createIpcSuccessEnvelope, Ti as getOrganizationMembers, Tn as escapeXmlContent, Tr as getFileAtCommit, Tt as requireMcpToolConsent, U as appCollectionContracts, Ui as addLog, Un as resolveProjectFrameworkType, Ur as gitMergeAbort, Ut as getLmStudioBaseUrl, V as goalEvents, Vi as isFileWithinAnyCaideMediaDir, Vn as detectFrameworkType, Vr as gitListRemoteBranches, Vt as registerOllamaHandlers, W as freeModelQuotaContracts, Wi as clearLogs, Wn as MAX_FILE_SEARCH_SIZE, Wr as gitPull, Wt as createCaideEngine, X as webCrawlResponseSchema, Xi as queueCloudSandboxSnapshotSync, Xn as getNeonContext, Xr as isGitRebaseInProgress, Xt as getProviderOptions, Y as settingsContracts, Yi as getCloudSandboxStatus, Yn as getNeonClientCode, Yr as isGitMergeInProgress, Yt as getAiHeaders, Z as validateImageDimensions, Zi as reconcileCloudSandboxes, Zn as getCachedEmailPasswordConfig, Zr as isGitStatusClean, Zt as getTestFetchOption, _ as getMcpInlineTokenThreshold, _a as parseStoredAppIdentity, _i as OPENCODE_GO_FREE_MODEL_IDS, _n as filterGuideByFramework, _r as getLastManagedFlutterInstallProgress, _t as decryptFromString, a as getDefaultConsent, aa as writeMigrationFile, ai as githubContracts, an as getCaideDeleteTags, ar as deployAllSupabaseFunctions, at as createMobileUiQualityPrompt, b as isSandboxSupportedPlatform, ba as sendTelemetryEvent, bi as PROVIDER_TO_ENV_VAR, bn as CAIDE_MOBILE_UI_SKILL_PACK, br as installManagedFlutterToolchain, bt as DEFAULT_OAUTH_CALLBACK_PORT, c as setAgentToolConsent, ca as withLock, ci as getLanguageModelProviders, cn as getCaideRenameTags, cr as isServerFunction, ct as sanitizeMcpName, d as writeAppBlueprintTool, da as miscContracts, di as createOpenAI, dn as ExecuteAddDependencyError, dr as ensureCaideGitignored, dt as ensureReasoningConsistency, ea as unregisterRunningCloudSandbox, ei as updateAppGithubRepo, en as doesSqlMutateSchema, er as invalidateEmailPasswordConfigCache, et as envVarResolver, f as buildExecuteSandboxScriptDescription, fa as supabaseContracts, fi as openai, fn as executeAddDependency, fr as ensureFlutterSdkAvailable, ft as getAiMessagesJsonIfWithinLimit, g as estimateMcpInlineTokens, ga as buildAppIdentityPrompt, gi as OPENCODE_GO_API_BASE_URL, gn as readFileWithCache, gr as isFlutterApp, gt as CaideOAuthClientProvider, h as collectMcpToolDefs, ha as AppIdentitySchema, hi as templateContracts, hn as extractCodebase, hr as getFlutterExecutable, ht as mcpManager, i as getAllAgentToolConsents, ia as getFilesRecursively, ii as gitContracts, in as getCaideCopyTags, ir as deployAffectedSupabaseFunctions, it as writeFileTool, j as stopBackgroundTask, ji as updateSupabaseSocialAuthProvider, jn as fastTextOutput, jr as gitCheckout, jt as getContextWindow, k as getAllSubagentTasks, ki as listSupabaseBranches, kn as cancelOrphanedBaseStream, kr as gitAddAll, kt as estimateTokens, l as shouldIncludeTool, la as systemContracts, li as getLanguageModels, ln as getCaideSearchReplaceTags, lr as isSharedServerModule, lt as buildMcpAutoApprove, m as isSandboxScriptExecutionEnabled, ma as importContracts, mi as resolveBuiltinModelAlias, mn as TEST_SPEC_EXT_ALTERNATION, mr as getDartExecutable, mt as sanitizeToolCallMessages, n as buildAgentToolSet, na as copyDirectoryRecursive, ni as require_node, nn as applySearchReplace, nr as require_dist, nt as questionnaireResolver, o as requireAgentToolConsent, oa as normalizePath, oi as gitService, on as getCaideExecuteSqlTags, or as extractFunctionName, ot as scanMobileUiFiles, p as executeSandboxScriptTool, pa as appContracts, pi as getThemeGenerationModelOptions, pn as SPEC_FILE_RE, pr as getDartDefineFromFileArgs, pt as parseAiMessagesJson, q as helpContracts, qi as createCloudSandboxShareLink, qn as executeNeonSql, qr as gitRenameBranch, qt as normalizeProviderApiKeyInput, r as clearPendingConsentsForChat, ra as fileExists$1, ri as slugifyAppPath, rn as getCaideAddDependencyTags, rr as cs, rt as setChatSummaryTool, s as resolveAgentToolConsent, sa as require_lib, si as CUSTOM_PROVIDER_PREFIX, sn as getCaideGenerateTestTags, sr as extractFunctionNameFromPath, st as parseMcpToolKey$1, t as TOOL_DEFINITIONS, ta as require_tree_kill, ti as rawAsset, tn as executeCopyFile, tr as getNeonErrorMessage, tt as integrationResolver, ua as REDACTED_ENV_VALUE, ui as getLanguageModelsByProviders, un as getCaideWriteTags, ur as safeJoin, ut as cleanMessage, v as deleteAppBlueprintForChat, va as createTypedHandler, vi as OPENCODE_ZEN_API_BASE_URL, vn as WEB3_SKILL_FRONTMATTERS, vr as init_managed_flutter_toolchain_service, vt as encryptToString, w as planDirForAppPath, wa as createIpcErrorEnvelope, wi as getOrganizationDetails, wn as escapeXmlAttr, wr as getCurrentCommitHash, wt as getStoredConsent, x as exitPlanTool, xa as sendTelemetryException, xi as deleteSupabaseFunction, xn as COMPANION_SKILL_FRONTMATTERS, xr as managed_flutter_toolchain_service_exports, xt as mcpContracts, y as registerAppBlueprintHandlers, ya as registerLegacyIpcHandler, yi as OPENCODE_ZEN_FREE_MODEL_IDS, yn as WEB3_SKILL_PACK, yr as inspectManagedFlutterToolchain, yt as oauthStateHasTokens, z as sidebarContracts, zi as appendAttachmentManifestEntriesWithLogicalNames, zn as inspectBase64DataUrl, zr as gitFetch, zt as isFreeProModel } from "./tool_definitions-D5vHFw4R.mjs";
+import { $t as ipcMain, A as themesData, At as apps, B as hasCaideProKey, Bt as desc, C as writeSettings, D as init_caide_error, E as CaideErrorKind, Et as IS_TEST_BUILD, Ft as mcpServers, G as migrateStoredChatMode, Gt as isNull, H as isLocalAgentBackedMode, Ht as eq, It as mcpToolConsents, J as _enum, Jt as BrowserWindow, Kt as like, L as StoredChatModeSchema, Lt as messages, M as v4, Mt as customThemes, Nt as language_model_providers, O as isCaideError, Ot as appCollections, P as AppChatContextSchema, Pt as language_models, Q as _void, Qt as init_electron_shim, Rt as prompts, S as setSentinelActiveChat, T as CaideError, U as isSupabaseConnected, Ut as inArray, V as isBasicAgentMode, Vt as and, W as isTurboEditsV2Enabled, Wt as isNotNull, X as _null, Xt as app, Yt as ShimmerNotification, Zt as dialog, _ as isDirectoryAccessible, a as closeDatabase, an as init_event_bus, b as readEffectiveSettings, c as initializeDatabase, ct as literal, d as getCustomFolderCache, dt as number, en as nativeImage, et as array, f as getDefaultCaideAppsDirectory, ft as object, g as isAppLocationAccessible, gt as string, h as invalidateCaideAppsBaseDirectoryCache, ht as record, in as emit, j as localTemplatesData, jt as chats, kt as appPrompts, l as getCaideAppPath, m as getUserDataPath, nn as shell, nt as boolean, o as db, on as onAll, qt as sql, r as isPersistedGoalComplete, s as getDatabaseFilePaths, sn as require_src, tn as safeStorage, u as getCaideAppsBaseDirectory, vt as union, x as readSettings, yt as unknown, z as getEffectiveDefaultChatMode, zt as versions } from "./goal_state-CLqg91US.mjs";
+import { $ as addIntegrationTool, $i as stopCloudSandboxFileSync, $n as getNeonOrganizationId, $r as registerGithubHandlers, $t as doesSqlDeleteData, A as getBackgroundTasks, Ai as listSupabaseSocialAuthProviders, An as computeStreamingPatch, Ar as gitAddSafeDirectory, At as getCompactionThreshold, B as goalContracts, Bi as createUniqueAttachmentLogicalName, Bn as readAppFileForEditor, Br as gitListBranches, Bt as getCaideEngineBaseUrl, C as normalizePlanStatus, Ca as createEventClient, Ci as executeSupabaseSql, Cn as parsePartialJson, Cr as GitStateError, Ct as clearPendingMcpConsentsForChat, D as parsePlanFile, Da as defineEvent, Di as getSupabaseProjectLogs, Dn as createGoogleGenerativeAI, Dr as getGitUncommittedFilesWithStatus, Dt as withSystemCacheBreakpoint, E as buildFrontmatter, Ea as defineContract, Ei as getSupabaseClientForOrganization, En as FLUTTER_DESIGN_ENGINE_CONTRACT, Er as getGitUncommittedFiles, Et as resolveConsent, F as getTypeCheckPreconditionKind, Fi as CAIDE_MEDIA_DIR_NAME, Fn as streamText, Fr as gitCurrentBranch, Ft as getSupabaseClientCode, G as freeAgentQuotaContracts, Gi as getEnvVar, Gn as RIPGREP_EXCLUDED_GLOBS, Gr as gitPush, Gt as findInvalidProviderApiKeyCharacter, H as referenceContracts, Hi as toAttachmentLogicalPath, Hn as detectNextJsMajorVersion, Hr as gitMerge, Ht as languageModelContracts, I as deleteTodos, Ii as CAIDE_SCREENSHOT_DIR_NAME, In as backgroundTaskRegistry, Ir as gitDeleteBranch, It as getSupabaseContext, J as promptContracts, Ji as destroyCloudSandbox, Jn as getConnectionUri, Jr as hasStagedChanges, Jt as CAIDE_INTERNAL_REQUEST_ID_HEADER, K as securityContracts, Ki as shellEnvSync, Kn as getRgExecutablePath, Kr as gitRemove, Kt as formatInvalidProviderApiKeyMessage, L as loadTodos, Li as MAX_SCREENSHOTS_PER_APP, Ln as ChatStreamParamsSchema, Lr as gitDiff, Lt as getModelClient, M as isCodeExplorerReady, Mi as isRateLimitError, Mn as generateText, Mr as gitClone, Mt as getMaxTokens, N as generateProblemReport, Ni as terminatePtyProcess, Nn as hasToolCall, Nr as gitCommit, Nt as getTemperature, O as validatePlanId, Oi as getSupabaseProjectName, On as StreamingPatchTracker, Or as gitAdd, Ot as withToolCacheBreakpoint, P as getTypeCheckPreconditionGuidance, Pi as safeSend, Pn as stepCountIs, Pr as gitCreateBranch, Pt as shouldTriggerCompaction, Q as ensureNitroIfVite, Qi as restartCloudSandbox, Qn as getNeonClient, Qr as ensureCleanWorkspace, Qt as createOpenAICompatible, R as saveTodos, Ri as SCREENSHOT_FILENAME_REGEX, Rn as chatContracts, Rr as gitDiscardAllChanges, Rt as getOpenRouterAppAttributionHeaders, S as writePlanTool, Sa as createClient, Si as deploySupabaseFunction, Sn as stripFrontmatter, Sr as GIT_ERROR_CODES, St as auth, T as savePlanToDisk, Ta as createIpcSuccessEnvelope, Ti as getOrganizationMembers, Tn as escapeXmlContent, Tr as getFileAtCommit, Tt as requireMcpToolConsent, U as appCollectionContracts, Ui as addLog, Un as resolveProjectFrameworkType, Ur as gitMergeAbort, Ut as getLmStudioBaseUrl, V as goalEvents, Vi as isFileWithinAnyCaideMediaDir, Vn as detectFrameworkType, Vr as gitListRemoteBranches, Vt as registerOllamaHandlers, W as freeModelQuotaContracts, Wi as clearLogs, Wn as MAX_FILE_SEARCH_SIZE, Wr as gitPull, Wt as createCaideEngine, X as webCrawlResponseSchema, Xi as queueCloudSandboxSnapshotSync, Xn as getNeonContext, Xr as isGitRebaseInProgress, Xt as getProviderOptions, Y as settingsContracts, Yi as getCloudSandboxStatus, Yn as getNeonClientCode, Yr as isGitMergeInProgress, Yt as getAiHeaders, Z as validateImageDimensions, Zi as reconcileCloudSandboxes, Zn as getCachedEmailPasswordConfig, Zr as isGitStatusClean, Zt as getTestFetchOption, _ as getMcpInlineTokenThreshold, _a as parseStoredAppIdentity, _i as OPENCODE_GO_FREE_MODEL_IDS, _n as filterGuideByFramework, _r as getLastManagedFlutterInstallProgress, _t as decryptFromString, a as getDefaultConsent, aa as writeMigrationFile, ai as githubContracts, an as getCaideDeleteTags, ar as deployAllSupabaseFunctions, at as createMobileUiQualityPrompt, b as isSandboxSupportedPlatform, ba as sendTelemetryEvent, bi as PROVIDER_TO_ENV_VAR, bn as CAIDE_MOBILE_UI_SKILL_PACK, br as installManagedFlutterToolchain, bt as DEFAULT_OAUTH_CALLBACK_PORT, c as setAgentToolConsent, ca as withLock, ci as getLanguageModelProviders, cn as getCaideRenameTags, cr as isServerFunction, ct as sanitizeMcpName, d as writeAppBlueprintTool, da as miscContracts, di as createOpenAI, dn as ExecuteAddDependencyError, dr as ensureCaideGitignored, dt as ensureReasoningConsistency, ea as unregisterRunningCloudSandbox, ei as updateAppGithubRepo, en as doesSqlMutateSchema, er as invalidateEmailPasswordConfigCache, et as envVarResolver, f as buildExecuteSandboxScriptDescription, fa as supabaseContracts, fi as openai, fn as executeAddDependency, fr as ensureFlutterSdkAvailable, ft as getAiMessagesJsonIfWithinLimit, g as estimateMcpInlineTokens, ga as buildAppIdentityPrompt, gi as OPENCODE_GO_API_BASE_URL, gn as readFileWithCache, gr as isFlutterApp, gt as CaideOAuthClientProvider, h as collectMcpToolDefs, ha as AppIdentitySchema, hi as templateContracts, hn as extractCodebase, hr as getFlutterExecutable, ht as mcpManager, i as getAllAgentToolConsents, ia as getFilesRecursively, ii as gitContracts, in as getCaideCopyTags, ir as deployAffectedSupabaseFunctions, it as writeFileTool, j as stopBackgroundTask, ji as updateSupabaseSocialAuthProvider, jn as fastTextOutput, jr as gitCheckout, jt as getContextWindow, k as getAllSubagentTasks, ki as listSupabaseBranches, kn as cancelOrphanedBaseStream, kr as gitAddAll, kt as estimateTokens, l as shouldIncludeTool, la as systemContracts, li as getLanguageModels, ln as getCaideSearchReplaceTags, lr as isSharedServerModule, lt as buildMcpAutoApprove, m as isSandboxScriptExecutionEnabled, ma as importContracts, mi as resolveBuiltinModelAlias, mn as TEST_SPEC_EXT_ALTERNATION, mr as getDartExecutable, mt as sanitizeToolCallMessages, n as buildAgentToolSet, na as copyDirectoryRecursive, ni as require_node, nn as applySearchReplace, nr as require_dist, nt as questionnaireResolver, o as requireAgentToolConsent, oa as normalizePath, oi as gitService, on as getCaideExecuteSqlTags, or as extractFunctionName, ot as scanMobileUiFiles, p as executeSandboxScriptTool, pa as appContracts, pi as getThemeGenerationModelOptions, pn as SPEC_FILE_RE, pr as getDartDefineFromFileArgs, pt as parseAiMessagesJson, q as helpContracts, qi as createCloudSandboxShareLink, qn as executeNeonSql, qr as gitRenameBranch, qt as normalizeProviderApiKeyInput, r as clearPendingConsentsForChat, ra as fileExists$1, ri as slugifyAppPath, rn as getCaideAddDependencyTags, rr as cs, rt as setChatSummaryTool, s as resolveAgentToolConsent, sa as require_lib, si as CUSTOM_PROVIDER_PREFIX, sn as getCaideGenerateTestTags, sr as extractFunctionNameFromPath, st as parseMcpToolKey$1, t as TOOL_DEFINITIONS, ta as require_tree_kill, ti as rawAsset, tn as executeCopyFile, tr as getNeonErrorMessage, tt as integrationResolver, ua as REDACTED_ENV_VALUE, ui as getLanguageModelsByProviders, un as getCaideWriteTags, ur as safeJoin, ut as cleanMessage, v as deleteAppBlueprintForChat, va as createTypedHandler, vi as OPENCODE_ZEN_API_BASE_URL, vn as WEB3_SKILL_FRONTMATTERS, vr as init_managed_flutter_toolchain_service, vt as encryptToString, w as planDirForAppPath, wa as createIpcErrorEnvelope, wi as getOrganizationDetails, wn as escapeXmlAttr, wr as getCurrentCommitHash, wt as getStoredConsent, x as exitPlanTool, xa as sendTelemetryException, xi as deleteSupabaseFunction, xn as COMPANION_SKILL_FRONTMATTERS, xr as managed_flutter_toolchain_service_exports, xt as mcpContracts, y as registerAppBlueprintHandlers, ya as registerLegacyIpcHandler, yi as OPENCODE_ZEN_FREE_MODEL_IDS, yn as WEB3_SKILL_PACK, yr as inspectManagedFlutterToolchain, yt as oauthStateHasTokens, z as sidebarContracts, zi as appendAttachmentManifestEntriesWithLogicalNames, zn as inspectBase64DataUrl, zr as gitFetch, zt as isFreeProModel } from "./tool_definitions-Bf3tUTAQ.mjs";
 import "./src-ChbvHV8d.mjs";
 import "./token-util-BsaBGcvn.mjs";
-import { C as recordVerificationApproval, D as steerGoal, E as setRunWaiting, O as syncGoalFromState, S as pauseGoal, T as resumeGoal, _ as listActivity, a as createRun, b as listRuns, c as finishPause, d as getGoal, f as getGoalRowForScheduler, g as heartbeatRun, h as hasOpenRun, i as createGoal, k as updateGoalStatus, l as forceGoalStateActive, m as hasCurrentVerificationApproval, n as cancelOpenRuns, o as editGoal, r as claimRun, s as ensureGoalTables, t as cancelGoal, u as getActiveGoal, v as listGoals, w as recoverExpiredRuns, x as listSchedulableGoalRows, y as listRunnableRuns } from "./goal_store-VywDmbcs.mjs";
+import { C as recordVerificationApproval, D as steerGoal, E as setRunWaiting, O as syncGoalFromState, S as pauseGoal, T as resumeGoal, _ as listActivity, a as createRun, b as listRuns, c as finishPause, d as getGoal, f as getGoalRowForScheduler, g as heartbeatRun, h as hasOpenRun, i as createGoal, k as updateGoalStatus, l as forceGoalStateActive, m as hasCurrentVerificationApproval, n as cancelOpenRuns, o as editGoal, r as claimRun, s as ensureGoalTables, t as cancelGoal, u as getActiveGoal, v as listGoals, w as recoverExpiredRuns, x as listSchedulableGoalRows, y as listRunnableRuns } from "./goal_store-BgeZ13wq.mjs";
 import * as path$3 from "node:path";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -3410,6 +3410,65 @@ or web tooling. Build native Flutter UI only.
 2. \`flutter test\` — all tests pass. Add/update widget tests for new screens.
 3. For visual changes, describe what changed so the preview can be verified.
 `;
+const DEFAULT_AI_RULES_REACT_NATIVE = `# AI Rules — React Native (Expo) App
+
+This is a **React Native (Expo)** project. Build native-feel mobile UI with
+React Native components. Never introduce Flutter/Dart, Vite, Next.js, or plain
+HTML/CSS as a replacement framework.
+
+## Project layout
+
+- \`App.js\` (or \`App.tsx\`) — entry point. Keep it minimal.
+- \`src/\` — feature folders: screens, components, navigation, state.
+- \`app.json\` — Expo config. Theme/colors live in the app's theme, not inline.
+
+## Conventions
+
+- Use Expo-safe APIs (\`expo-router\` or \`@react-navigation\` for navigation).
+- Style with StyleSheet / the project's chosen styling system; no hardcoded
+  hex colors scattered in components — centralize them.
+- State: start with \`useState\`/\`useReducer\`/React Context. Add a state
+  library (zustand/redux) only when the user asks.
+- No new dependencies without need; when added, use \`npx expo install\` so the
+  version matches the SDK.
+- Respect safe areas / insets (\`SafeAreaView\`, \`react-native-safe-area-context\`).
+- Accessibility: touch targets ≥ 44px, \`accessibilityLabel\` on icon controls.
+
+## Before you finish ANY change
+
+1. No obvious runtime/JS errors in the affected screens.
+2. For visual changes, describe what changed so the preview can be verified.
+`;
+const DEFAULT_AI_RULES_WEBSITE = `# AI Rules — Website App
+
+This is a **responsive website** project (Vite/Next). Build a responsive web app
+that works on desktop, tablet, and mobile. Never introduce Flutter, React
+Native, or mobile-only patterns (bottom tab bars) as primary navigation.
+
+## Conventions
+
+- Use the project's framework idiomatic patterns (React components, routes).
+- Style with the project's CSS system / Tailwind tokens; no hardcoded colors.
+- Respect breakpoints: desktop uses space well (multi-column, sidebar), mobile
+  reflows to a single column with a top nav or hamburger.
+- Accessibility: visible focus states, semantic HTML, alt text on images.
+
+## Before you finish ANY change
+
+1. The page renders correctly at mobile, tablet, and desktop widths.
+2. For visual changes, describe what changed so the preview can be verified.
+`;
+const DEFAULT_AI_RULES_GENERIC = `# AI Rules — App
+
+This is an app or project workspace. Build what the user asked for using the
+existing stack in the workspace. Match the conventions already present; do not
+assume a framework the codebase does not use.
+
+## Before you finish ANY change
+
+1. The change works with the existing tooling (no obvious errors).
+2. For visual changes, describe what changed so the preview can be verified.
+`;
 
 //#endregion
 //#region src/prompts/local_agent_prompt.ts
@@ -4413,7 +4472,7 @@ When discussing code or technical concepts:
 - Full implementations, full components, and multi-file solutions are NOT allowed — tell the user to switch to Build mode instead.
 
 Remember: Your goal is to be a knowledgeable, helpful companion in the user's learning journey. Explain clearly, illustrate briefly when helpful, and guide the user toward switching to Build mode when they're ready to write code.`;
-const constructSystemPrompt = ({ aiRules, chatMode = "build", enableTurboEditsV2, themePrompt, readOnly, basicAgentMode, freeModelMode, frameworkType, hasSupabaseProject, enableAppBlueprint, codeExplorerAvailable, testingEnabled, isWeb3App, appSkillPack, appTarget }) => {
+const constructSystemPrompt = ({ aiRules, chatMode = "local-agent", enableTurboEditsV2, themePrompt, readOnly, basicAgentMode, freeModelMode, frameworkType, hasSupabaseProject, enableAppBlueprint, codeExplorerAvailable, testingEnabled, isWeb3App, appSkillPack, appTarget }) => {
 	if (chatMode === "plan") return constructPlanModePrompt(aiRules, themePrompt, { frameworkType });
 	if (chatMode === "local-agent") return constructLocalAgentPrompt(aiRules, themePrompt, {
 		readOnly,
@@ -4436,7 +4495,7 @@ const constructSystemPrompt = ({ aiRules, chatMode = "build", enableTurboEditsV2
 	});
 	const web3Suffix = isWeb3App ? `\n\n${WEB3_SKILL_PACK}` : "";
 	const appSkillSuffix = appSkillPack ? `\n\n${appSkillPack}` : "";
-	systemPrompt = systemPrompt.replace("[[AI_RULES]]", (aiRules ?? DEFAULT_AI_RULES) + web3Suffix + appSkillSuffix);
+	systemPrompt = systemPrompt.replace("[[AI_RULES]]", (aiRules ?? defaultAiRulesForFramework(frameworkType)) + web3Suffix + appSkillSuffix);
 	if (themePrompt) systemPrompt += "\n\n" + themePrompt;
 	return systemPrompt;
 };
@@ -4455,9 +4514,49 @@ const readAiRules = async (caideAppPath) => {
 		return await fs$1.promises.readFile(aiRulesPath, "utf8");
 	} catch (error) {
 		logger$32.info(`Error reading AI_RULES.md, fallback to default AI rules: ${error}`);
-		return DEFAULT_AI_RULES;
+		return defaultAiRulesForPath(caideAppPath);
 	}
 };
+/**
+* Framework-appropriate default AI rules used when a prompt path has no
+* resolved aiRules string. Mirrors readAiRules' detection for callers that
+* already know the framework type.
+*/
+function defaultAiRulesForFramework(frameworkType) {
+	if (frameworkType === "react-native") return DEFAULT_AI_RULES_REACT_NATIVE;
+	if (frameworkType === "vite" || frameworkType === "vite-nitro" || frameworkType === "nextjs") return DEFAULT_AI_RULES_WEBSITE;
+	if (frameworkType === "flutter") return DEFAULT_AI_RULES;
+	return DEFAULT_AI_RULES_GENERIC;
+}
+/**
+* Pick the framework-appropriate default AI rules by inspecting the app dir.
+* The old behavior always returned Flutter rules, which told React Native /
+* website apps they were Flutter projects. Detects via pubspec.yaml,
+* package.json deps, and known entry files.
+*/
+function defaultAiRulesForPath(caideAppPath) {
+	try {
+		const pubspecPath = path.join(caideAppPath, "pubspec.yaml");
+		if (fs$1.existsSync(pubspecPath)) {
+			if (fs$1.readFileSync(pubspecPath, "utf8").includes("sdk: flutter")) return DEFAULT_AI_RULES;
+		}
+		const packageJsonPath = path.join(caideAppPath, "package.json");
+		if (fs$1.existsSync(packageJsonPath)) {
+			const parsed = JSON.parse(fs$1.readFileSync(packageJsonPath, "utf8"));
+			const deps = {
+				...parsed.dependencies ?? {},
+				...parsed.devDependencies ?? {}
+			};
+			if (deps.reactNative || deps.expo) return DEFAULT_AI_RULES_REACT_NATIVE;
+			if (deps.next || deps.vite) return DEFAULT_AI_RULES_WEBSITE;
+		}
+		if (fs$1.existsSync(path.join(caideAppPath, "App.js"))) return DEFAULT_AI_RULES_REACT_NATIVE;
+		if (fs$1.existsSync(path.join(caideAppPath, "index.html")) && (fs$1.existsSync(path.join(caideAppPath, "src")) || fs$1.existsSync(path.join(caideAppPath, "vite.config.js")))) return DEFAULT_AI_RULES_WEBSITE;
+	} catch {
+		return DEFAULT_AI_RULES_GENERIC;
+	}
+	return DEFAULT_AI_RULES_GENERIC;
+}
 
 //#endregion
 //#region src/ipc/utils/theme_utils.ts
@@ -7783,7 +7882,7 @@ async function handleLocalAgentStream(event, req, abortController, { placeholder
 			delete agentTools.get_mcp_tool_schema;
 		}
 		const hasGetSchemaTool = agentTools.get_mcp_tool_schema != void 0;
-		const mcpToolsForRegistration = !readOnly && !planModeOnly && !mcpInSandboxEnabled ? await getMcpTools$1(event, ctx) : {};
+		const mcpToolsForRegistration = !readOnly && !planModeOnly && !mcpInSandboxEnabled ? await getMcpTools(event, ctx) : {};
 		if (agentTools.execute_sandbox_script != void 0) {
 			agentTools.execute_sandbox_script.description = await buildExecuteSandboxScriptDescription([], {
 				useSearch: useMcpToolSearch,
@@ -8579,7 +8678,7 @@ function shouldRunTodoFollowUpPass(params) {
 * `<caide-mcp-tool-call>` / `<caide-mcp-tool-result>` pair for the UI,
 * and surfaces tool errors as `<caide-output type="error">`.
 */
-async function getMcpTools$1(event, ctx) {
+async function getMcpTools(event, ctx) {
 	const mcpToolSet = {};
 	try {
 		const servers = await db.select().from(mcpServers).where(eq(mcpServers.enabled, true));
@@ -9250,15 +9349,15 @@ function hasScriptReadableAttachment(attachments) {
 }
 function resolveAttachmentDeliveryConfig({ mode, settings, hasImageAttachments, hasUploadedAttachments }) {
 	const willUseLocalAgentStream = isLocalAgentBackedMode(mode);
-	const useOnDiskAttachmentBlock = mode === "local-agent" || mode === "ask";
+	const useOnDiskAttachmentBlock = mode === "local-agent";
 	return {
 		inlineTextAttachments: !useOnDiskAttachmentBlock,
 		includeImageParts: true,
 		useOnDiskAttachmentBlock,
 		includeSandboxScriptHint: useOnDiskAttachmentBlock && isSandboxScriptExecutionEnabled(settings) && isSandboxSupportedPlatform(),
 		includeCopyFileHint: mode === "local-agent",
-		addSystemCopyInstructions: !willUseLocalAgentStream && hasUploadedAttachments && mode !== "ask",
-		addSystemVisionInstructions: hasImageAttachments && (!willUseLocalAgentStream || mode === "plan") && !(hasUploadedAttachments && mode !== "ask")
+		addSystemCopyInstructions: !willUseLocalAgentStream && hasUploadedAttachments,
+		addSystemVisionInstructions: hasImageAttachments && (!willUseLocalAgentStream || mode === "plan") && !hasUploadedAttachments
 	};
 }
 
@@ -9269,6 +9368,7 @@ init_caide_error();
 const logger$21 = import_src.default.scope("chat_stream_handlers");
 const activeStreams = /* @__PURE__ */ new Map();
 const partialResponses = /* @__PURE__ */ new Map();
+const LEGACY_BUILD_MODE_STREAM = false;
 function parseMcpToolKey(toolKey) {
 	const lastIndex = toolKey.lastIndexOf("__");
 	if (lastIndex === -1) return {
@@ -9613,7 +9713,6 @@ ${componentSnippet}
 					for (const file of files) if (selectedPaths.has(file.path)) file.focused = true;
 				}
 				const isLocalAgentMode = selectedChatMode === "local-agent";
-				const isAskMode = selectedChatMode === "ask";
 				const isPlanMode = selectedChatMode === "plan";
 				const willUseLocalAgentStream = isLocalAgentBackedMode(selectedChatMode);
 				let mentionedAppsCodebases = [];
@@ -9697,7 +9796,7 @@ ${componentSnippet}
 					appSkillPack,
 					appTarget: settings.appTarget
 				});
-				if (selectedChatMode !== "ask") systemPrompt += "\n\n" + buildAppIdentityPrompt(parseStoredAppIdentity(updatedChat.app.appIdentity, updatedChat.app.name));
+				systemPrompt += "\n\n" + buildAppIdentityPrompt(parseStoredAppIdentity(updatedChat.app.appIdentity, updatedChat.app.name));
 				if (otherAppsCodebaseInfo) {
 					const mentionedAppsList = mentionedAppsCodebases.map(({ appName }) => appName).join(", ");
 					systemPrompt += `\n\n# Referenced Apps\nThe user has mentioned the following apps in their prompt: ${mentionedAppsList}. Their codebases have been included in the context for your reference. When referring to these apps, you can understand their structure and code to provide better assistance, however you should NOT edit the files in these referenced apps. The referenced apps are NOT part of the current app and are READ-ONLY.`;
@@ -9770,7 +9869,7 @@ This conversation includes one or more image attachments. When the user uploads 
 				}] : [];
 				const limitedHistoryChatMessages = limitedMessageHistory.map((msg) => ({
 					role: msg.role,
-					content: sanitizeContentForHistory(msg.content, selectedChatMode === "ask"),
+					content: sanitizeContentForHistory(msg.content, false),
 					providerOptions: { "caide-engine": {
 						sourceCommitHash: msg.sourceCommitHash,
 						commitHash: msg.commitHash
@@ -9925,36 +10024,14 @@ This conversation includes one or more image attachments. When the user uploads 
 					});
 					return fullResponse;
 				};
-				if (isAskMode && !isSecurityReviewIntent) {
-					const readOnlySystemPrompt = constructSystemPrompt({
-						aiRules,
-						chatMode: "local-agent",
-						enableTurboEditsV2: false,
-						themePrompt,
-						readOnly: true,
-						freeModelMode,
-						codeExplorerAvailable
-					});
-					if (!await handleLocalAgentStream(event, req, abortController, {
-						placeholderMessageId: placeholderAssistantMessage.id,
-						systemPrompt: readOnlySystemPrompt,
-						caideRequestId: caideRequestId ?? "[no-request-id]",
-						readOnly: true,
-						messageOverride: isSummarizeIntent ? chatMessages : void 0,
-						settingsOverride: settings,
-						freeModelMode,
-						referencedApps: referencedAppsForAgent,
-						currentTurnHasOnDiskAttachment: hasScriptReadableAttachment(storedAttachments)
-					})) logger$21.warn("Ask mode local agent stream did not complete successfully");
-					return req.chatId;
-				}
 				if (isPlanMode && !isSecurityReviewIntent) {
 					const planModeSystemPrompt = constructSystemPrompt({
 						aiRules,
 						chatMode: "plan",
 						enableTurboEditsV2: false,
 						themePrompt,
-						freeModelMode
+						freeModelMode,
+						frameworkType
 					});
 					await handleLocalAgentStream(event, req, abortController, {
 						placeholderMessageId: placeholderAssistantMessage.id,
@@ -9986,50 +10063,6 @@ This conversation includes one or more image attachments. When the user uploads 
 						suppressCompaction: suppressUserMessage
 					});
 					return req.chatId;
-				}
-				if (settings.enableMcpServersForBuildMode && selectedChatMode === "build") {
-					const tools = await getMcpTools(event, req.chatId);
-					if (Object.keys(tools).length > 0) {
-						const { fullStream } = await simpleStreamText({
-							chatMessages: limitedHistoryChatMessages,
-							modelClient,
-							tools: {
-								...tools,
-								"generate-code": {
-									description: "ALWAYS use this tool whenever generating or editing code for the codebase.",
-									inputSchema: zod_default.object({}),
-									execute: async () => ""
-								}
-							},
-							systemPromptOverride: constructSystemPrompt({
-								aiRules: await readAiRules(getCaideAppPath(updatedChat.app.path)),
-								chatMode: "build",
-								enableTurboEditsV2: false,
-								freeModelMode,
-								frameworkType,
-								hasSupabaseProject: !!updatedChat.app?.supabaseProjectId,
-								testingEnabled: !!updatedChat.app?.testingEnabled,
-								appTarget: settings.appTarget
-							}),
-							files,
-							caideDisableFiles: true
-						});
-						fullResponse = (await processStreamChunks({
-							fullStream,
-							fullResponse,
-							abortController,
-							chatId: req.chatId,
-							processResponseChunkUpdate
-						})).fullResponse;
-						chatMessages.push({
-							role: "assistant",
-							content: fullResponse
-						});
-						chatMessages.push({
-							role: "user",
-							content: "OK."
-						});
-					}
 				}
 				const { fullStream } = await simpleStreamText({
 					chatMessages,
@@ -10150,61 +10183,7 @@ ${formattedSearchReplaceIssues}`
 							}
 						}
 					}
-					if (!abortController.signal.aborted && selectedChatMode === "build" && !isSummarizeIntent) {
-						const preChainWriteTags = getCaideWriteTags(fullResponse);
-						const preChainRenameTags = getCaideRenameTags(fullResponse);
-						const preChainDeletePaths = getCaideDeleteTags(fullResponse);
-						const chainNeedsEditsBeforePass = 2;
-						let chainEditsNow = preChainWriteTags.length + preChainRenameTags.length + preChainDeletePaths.length;
-						if (chainEditsNow >= chainNeedsEditsBeforePass) {
-							const chainTouchedPaths = [
-								...preChainWriteTags.map((tag) => tag.path),
-								...preChainRenameTags.flatMap((tag) => [tag.from, tag.to]),
-								...preChainDeletePaths
-							];
-							const checkpointChain = createChain({
-								isNewApp: updatedChat.app?.needsAppBlueprint ?? false,
-								hasOnboardingScreens: chainTouchedPaths.some(isOnboardingScreenPath),
-								hasBackendCode: chainTouchedPaths.some(isBackendCodePath),
-								freeModelMode,
-								isWebApp: (settings.appTarget ?? "mobile") === "web",
-								frameworkType
-							});
-							let chainEditsAtPassStart = chainEditsNow;
-							while (!abortController.signal.aborted) {
-								const { step, pass } = advanceChain(checkpointChain, chainEditsNow > chainEditsAtPassStart);
-								if (!pass) break;
-								chainEditsAtPassStart = chainEditsNow;
-								logger$21.info(`Starting checkpoint pass ${pass.id} (${step}) for chat ${req.chatId}`);
-								const { fullStream: passFullStream } = await simpleStreamText({
-									chatMessages: [
-										...chatMessages,
-										{
-											role: "assistant",
-											content: fullResponse
-										},
-										{
-											role: "user",
-											content: buildPassPrompt(pass, { retry: step === "retry" })
-										}
-									],
-									modelClient,
-									files
-								});
-								for await (const part of passFullStream) {
-									if (abortController.signal.aborted) {
-										logger$21.log(`Stream for chat ${req.chatId} was aborted`);
-										break;
-									}
-									if (part.type !== "text-delta") continue;
-									fullResponse += part.text;
-									fullResponse = cleanFullResponse(fullResponse);
-									fullResponse = await processResponseChunkUpdate({ fullResponse });
-								}
-								chainEditsNow = getCaideWriteTags(fullResponse).length + getCaideRenameTags(fullResponse).length + getCaideDeleteTags(fullResponse).length;
-							}
-						}
-					}
+					if (!abortController.signal.aborted && LEGACY_BUILD_MODE_STREAM);
 					const addDependencies = getCaideAddDependencyTags(fullResponse);
 					const writeTags = getCaideWriteTags(fullResponse);
 					const renameTags = getCaideRenameTags(fullResponse);
@@ -10321,7 +10300,7 @@ ${problemReport.problems.map((problem) => `<problem file="${escapeXmlAttr(proble
 				if (chatTitle) await db.update(chats).set({ title: chatTitle[1] }).where(and(eq(chats.id, req.chatId), isNull(chats.title)));
 				const chatSummary = chatTitle?.[1];
 				await db.update(messages).set({ content: fullResponse }).where(eq(messages.id, placeholderAssistantMessage.id));
-				const shouldAutoApply = readSettings().autoApproveChanges && selectedChatMode !== "ask";
+				const shouldAutoApply = readSettings().autoApproveChanges;
 				const hasDestructiveSql = shouldAutoApply && getCaideExecuteSqlTags(fullResponse).some((query) => doesSqlDeleteData(query.content));
 				if (shouldAutoApply && !hasDestructiveSql) {
 					const status = await processFullResponseActions(fullResponse, req.chatId, {
@@ -10504,47 +10483,6 @@ These are the other apps that I've mentioned in my prompt. These other apps' cod
 
 ${otherAppsCodebaseInfo}
 `;
-}
-async function getMcpTools(event, chatId) {
-	const mcpToolSet = {};
-	try {
-		const servers = await db.select().from(mcpServers).where(eq(mcpServers.enabled, true));
-		for (const s of servers) {
-			const toolSet = await (async () => {
-				try {
-					return await (await mcpManager.getClient(s.id)).tools();
-				} catch (e) {
-					logger$21.warn(`Failed to load tools for MCP server ${s.id} (${s.name})`, e);
-					return null;
-				}
-			})();
-			if (!toolSet) continue;
-			for (const [name, mcpTool] of Object.entries(toolSet)) {
-				const key = `${String(s.name || "").replace(/[^a-zA-Z0-9_-]/g, "-")}__${String(name).replace(/[^a-zA-Z0-9_-]/g, "-")}`;
-				mcpToolSet[key] = {
-					description: mcpTool.description,
-					inputSchema: mcpTool.inputSchema,
-					execute: async (args, execCtx) => {
-						const inputPreview = typeof args === "string" ? args : Array.isArray(args) ? args.join(" ") : JSON.stringify(args).slice(0, 500);
-						const { approved } = await requireMcpToolConsent(event, {
-							serverId: s.id,
-							serverName: s.name,
-							toolName: name,
-							toolDescription: mcpTool.description,
-							inputPreview,
-							chatId
-						});
-						if (!approved) throw new CaideError(`User declined running tool ${key}`, CaideErrorKind.UserCancelled);
-						const res = await mcpTool.execute(args, execCtx);
-						return typeof res === "string" ? res : JSON.stringify(res);
-					}
-				};
-			}
-		}
-	} catch (e) {
-		logger$21.warn("Failed building MCP toolset", e);
-	}
-	return mcpToolSet;
 }
 
 //#endregion
@@ -11198,7 +11136,7 @@ function registerTokenCountHandlers() {
 		const isWeb3App = fs$1.existsSync(path.join(appPath, "src", "caide-web3"));
 		let systemPrompt = constructSystemPrompt({
 			aiRules: await readAiRules(appPath),
-			chatMode: selectedChatMode === "local-agent" ? "build" : selectedChatMode,
+			chatMode: selectedChatMode,
 			enableTurboEditsV2: isTurboEditsV2Enabled(settings),
 			themePrompt,
 			frameworkType,
@@ -13899,7 +13837,7 @@ function wakeGoalScheduler() {
 	tick();
 }
 async function handleCompletedRun(input) {
-	const { finishRun } = await import("./goal_store-VywDmbcs.mjs").then((n) => n.p);
+	const { finishRun } = await import("./goal_store-BgeZ13wq.mjs").then((n) => n.p);
 	const run = finishRun(input);
 	const before = await getGoal(run.goalId);
 	if (before.status === "pausing") return finishPause(before.id);

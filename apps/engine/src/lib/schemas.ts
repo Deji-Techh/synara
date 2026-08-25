@@ -159,29 +159,28 @@ export type FlutterRunDevice = z.infer<typeof FlutterRunDeviceSchema>;
  * Chat modes that can be stored in settings (includes deprecated values for backwards compat)
  */
 export const StoredChatModeSchema = z.enum([
-  "build",
-  "ask",
-  "agent", // DEPRECATED: converted to "build" on read
+  "build", // DEPRECATED: converted to "local-agent" on read
+  "ask", // DEPRECATED: converted to "local-agent" on read
+  "agent", // DEPRECATED: converted to "local-agent" on read
   "local-agent",
   "plan",
 ]);
 export type StoredChatMode = z.infer<typeof StoredChatModeSchema>;
 
 /**
- * Active chat modes (excludes deprecated values)
+ * Active chat modes. Build and ask are deprecated product modes — plan is
+ * requirements/planning, local-agent (agent) is the full agent. Both route
+ * through the local-agent tool-calling stream.
  */
-export const ChatModeSchema = z.enum(["build", "ask", "local-agent", "plan"]);
+export const ChatModeSchema = z.enum(["local-agent", "plan"]);
 export type ChatMode = z.infer<typeof ChatModeSchema>;
 
 /**
- * Modes that stream through the local agent (tool-calling) path rather than
- * the build-mode path that injects full codebases into the prompt. Keep this
- * in sync with the chat-stream and token-count handlers: whenever a new mode
- * routes through the local agent, add it here so the token estimate matches
- * what's actually sent to the model.
+ * Every active mode streams through the local agent (tool-calling) path.
+ * Kept for call sites that gate codebase injection / token estimation.
  */
 export function isLocalAgentBackedMode(mode: ChatMode | undefined): boolean {
-  return mode === "local-agent" || mode === "ask" || mode === "plan";
+  return mode === "local-agent" || mode === "plan";
 }
 
 export const GitHubSecretsSchema = z.object({
@@ -447,8 +446,10 @@ export type UserSettings = z.infer<typeof UserSettingsSchema>;
  * Converts deprecated "agent" mode to "build".
  */
 export function migrateStoredChatMode(mode: StoredChatMode | undefined): ChatMode | undefined {
-  if (mode === "agent") {
-    return "build";
+  // Build and ask were predecessor product modes. They now route through the
+  // local-agent (agent) stream so no new prompt/streaming path is needed.
+  if (mode === "build" || mode === "ask" || mode === "agent") {
+    return "local-agent";
   }
   return mode;
 }

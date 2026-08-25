@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React from "react";
 import { CaideCard, CaideCardHeader, CaideCardContent } from "./CaideCardPrimitives";
+import { cn } from "~/lib/utils";
 
 interface CaideAppBlueprintCardProps {
   appName?: string | undefined;
@@ -9,71 +10,64 @@ interface CaideAppBlueprintCardProps {
   primaryColor?: string | undefined;
   features?: string[] | undefined;
   description?: string | undefined;
-  onApprove?: (() => void) | undefined;
+  framework?: string | undefined;
 }
 
+const COLOR_RE = /^#[0-9a-fA-F]{6}$/u;
+
 export const CaideAppBlueprintCard: React.FC<CaideAppBlueprintCardProps> = ({
-  appName = "Flutter App",
+  appName = "App",
   designDirection,
   primaryColor = "#0284c7",
   features = [],
   description,
-  onApprove,
 }) => {
-  const [approved, setApproved] = useState(false);
-
-  const handleApprove = () => {
-    setApproved(true);
-    if (onApprove) {
-      onApprove();
-    }
-  };
+  const color = COLOR_RE.test(primaryColor) ? primaryColor : "#0284c7";
 
   return (
     <CaideCard
       accentColor="purple"
-      className="border-purple-500/30 bg-gradient-to-b from-purple-500/[0.04] to-transparent"
+      className="border-purple-500/30 bg-gradient-to-b from-purple-500/[0.05] to-transparent"
     >
       <CaideCardHeader
         icon={
-          <div className="h-6 w-6 rounded-lg bg-purple-500/15 text-purple-500 flex items-center justify-center font-bold text-xs">
+          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-purple-500/15 text-[12px] font-bold text-purple-500">
             ✦
           </div>
         }
       >
-        <div className="flex-1 flex items-center justify-between">
-          <div>
-            <div className="text-[10px] uppercase font-bold tracking-wider text-purple-500">
+        <div className="flex w-full items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-purple-500">
               App Blueprint
             </div>
-            <div className="text-sm font-semibold text-foreground">{appName}</div>
+            <div className="truncate text-[13px] font-semibold text-foreground">{appName}</div>
           </div>
-          {primaryColor && (
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 border border-border/40 text-[11px]">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: primaryColor }}
-              />
-              <span className="font-mono text-muted-foreground">{primaryColor}</span>
-            </div>
-          )}
+          <div className="flex shrink-0 items-center gap-1.5 rounded-md border border-border/40 bg-muted/40 px-2 py-1">
+            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+            <span className="font-mono text-[10.5px] text-muted-foreground">{color}</span>
+          </div>
         </div>
       </CaideCardHeader>
-      <div className="px-3.5 pb-3 space-y-2.5 text-xs">
+      <CaideCardContent>
         {designDirection && (
-          <p className="text-muted-foreground leading-relaxed">{designDirection}</p>
+          <p className="leading-relaxed text-muted-foreground">{designDirection}</p>
         )}
         {description && (
-          <p className="text-muted-foreground/90 text-[11px] italic">{description}</p>
+          <p className="mt-1 text-[11px] italic leading-relaxed text-muted-foreground/80">
+            {description}
+          </p>
         )}
         {features.length > 0 && (
-          <div className="space-y-1 pt-1">
-            <div className="text-[11px] font-medium text-foreground/80">Key Features:</div>
+          <div className="mt-2.5 space-y-1.5">
+            <div className="text-[10.5px] font-medium uppercase tracking-wide text-foreground/70">
+              Key features
+            </div>
             <div className="flex flex-wrap gap-1.5">
               {features.map((feat, idx) => (
                 <span
                   key={idx}
-                  className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-300 text-[11px] font-medium"
+                  className="rounded-md bg-purple-500/10 px-2 py-0.5 text-[11px] font-medium text-purple-600 dark:text-purple-300"
                 >
                   {feat}
                 </span>
@@ -81,24 +75,13 @@ export const CaideAppBlueprintCard: React.FC<CaideAppBlueprintCardProps> = ({
             </div>
           </div>
         )}
-        <div className="pt-2 flex items-center justify-between border-t border-border/40">
-          <span className="text-[11px] text-muted-foreground">
-            {approved ? "✓ Blueprint Approved" : "Ready to scaffold & generate Flutter app"}
-          </span>
-          <button
-            type="button"
-            onClick={handleApprove}
-            disabled={approved}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition-all ${
-              approved
-                ? "bg-emerald-500 text-white cursor-default"
-                : "bg-purple-600 hover:bg-purple-500 text-white cursor-pointer active:scale-95"
-            }`}
-          >
-            {approved ? "Approved ✓" : "Approve & Build App"}
-          </button>
+        <div className="mt-2.5 border-t border-border/40 pt-2.5">
+          <p className={cn("text-[11px] text-muted-foreground")}>
+            This blueprint waits for your review in the composer. Approve it there to start
+            building.
+          </p>
         </div>
-      </div>
+      </CaideCardContent>
     </CaideCard>
   );
 };
