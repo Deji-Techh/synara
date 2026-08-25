@@ -2154,6 +2154,38 @@ export const decideOrchestrationCommand = Effect.fn("decideOrchestrationCommand"
       }));
     }
 
+    case "thread.message.assistant.snapshot": {
+      const thread = yield* requireThread({
+        readModel,
+        command,
+        threadId: command.threadId,
+      });
+      const existingMessage = thread.messages.find((message) => message.id === command.messageId);
+      return {
+        ...withEventBase({
+          aggregateKind: "thread",
+          aggregateId: command.threadId,
+          occurredAt: command.createdAt,
+          commandId: command.commandId,
+        }),
+        type: "thread.message-sent",
+        payload: {
+          threadId: command.threadId,
+          messageId: command.messageId,
+          role: "assistant",
+          text: command.snapshot,
+          turnId: resolveStableMessageTurnId({
+            existingTurnId: existingMessage?.turnId,
+            incomingTurnId: command.turnId,
+          }),
+          streaming: true,
+          createdAt: command.createdAt,
+          updatedAt: command.createdAt,
+          isSnapshot: true,
+        },
+      };
+    }
+
     case "thread.message.assistant.delta": {
       const thread = yield* requireThread({
         readModel,

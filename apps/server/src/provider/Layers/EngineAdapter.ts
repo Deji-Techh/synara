@@ -364,6 +364,19 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         }),
       );
 
+    const publishSnapshot = (threadId: ThreadId, turnId: TurnId, snapshot: string, itemId?: string) =>
+      publishEvent(
+        makeEvent<ProviderRuntimeEvent>(threadId, {
+          type: "content.snapshot",
+          turnId,
+          ...(itemId ? { itemId: itemId as unknown as string } : {}),
+          payload: {
+            streamKind: "assistant_text" as const,
+            snapshot,
+          },
+        }),
+      );
+
     const publishTurnSettled = (
       threadId: ThreadId,
       turnId: TurnId | null,
@@ -418,10 +431,12 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
     };
 
     /**
-     * Emit the assistant's final message payload from a full `messages`
-     * chunk (arrives when the engine completes a message) as a content
-     * delta. Tracks emitted length per text block so repeated full-message
-     * chunks never double-send.
+     * Dyad-like idempotent transcript forwarder. The engine resends the full
+     * `messages` transcript on every chunk (like dyad's `updatedChat.messages`).
+     * Instead of delta bookkeeping (`emittedTranscriptRef` length tracking) we
+     * publish full snapshots keyed by `messageId` — ingestion dedupes them
+     * last-write-wins, so duplicate retransmits on the 2nd turn are no-ops.
+     * This mirrors dyad's `next.set(chatId, updatedMessages)` full replace.
      */
     const emitTranscriptMessages = (
       context: EngineSessionContext,
@@ -461,13 +476,11 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               }
             }
           }
-          const emittedForMessage = emitted.get(messageId) ?? 0;
           if (textBlocks.length > 0) {
             const text = textBlocks.join("\n");
-            if (text.length > emittedForMessage) {
-              const delta = text.slice(emittedForMessage);
-              emitted.set(messageId, text.length);
-              yield* publishTextDelta(context.threadId, turnId, delta);
+            if (text.length > 0) {
+              // Full snapshot — ingestion dedupes via prefix check last-write-wins.
+              yield* publishSnapshot(context.threadId, turnId, text, messageId);
             }
           }
           const alreadyLaunched = emitted.get(`${messageId}:tools`) ?? 0;

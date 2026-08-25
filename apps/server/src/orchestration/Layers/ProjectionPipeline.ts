@@ -1019,9 +1019,11 @@ const makeOrchestrationProjectionPipeline = Effect.gen(function* () {
     Effect.gen(function* () {
       switch (event.type) {
         case "thread.message-sent": {
+          const isSnapshot = (event.payload as { isSnapshot?: boolean }).isSnapshot === true;
           // Hot path: append onto an existing streaming message without reading
-          // the accumulated text back out of SQLite.
-          if (event.payload.streaming && (yield* appendStreamingThreadMessageText(event))) {
+          // the accumulated text back out of SQLite. Snapshots must not use the append
+          // shortcut — they carry full text and must replace, not concatenate.
+          if (event.payload.streaming && !isSnapshot && (yield* appendStreamingThreadMessageText(event))) {
             return;
           }
           const existingMessage = yield* projectionThreadMessageRepository.getByThreadAndMessageId({
@@ -1043,11 +1045,13 @@ const makeOrchestrationProjectionPipeline = Effect.gen(function* () {
             }),
             role: event.payload.role,
             text:
-              Option.isSome(existingMessage) && event.payload.streaming
-                ? `${existingMessage.value.text}${event.payload.text}`
-                : Option.isSome(existingMessage) && event.payload.text.length === 0
-                  ? existingMessage.value.text
-                  : event.payload.text,
+              (event.payload as { isSnapshot?: boolean }).isSnapshot === true
+                ? event.payload.text
+                : Option.isSome(existingMessage) && event.payload.streaming
+                  ? `${existingMessage.value.text}${event.payload.text}`
+                  : Option.isSome(existingMessage) && event.payload.text.length === 0
+                    ? existingMessage.value.text
+                    : event.payload.text,
             ...(nextAttachments !== undefined ? { attachments: [...nextAttachments] } : {}),
             ...(event.payload.skills !== undefined ? { skills: event.payload.skills } : {}),
             ...(event.payload.mentions !== undefined ? { mentions: event.payload.mentions } : {}),

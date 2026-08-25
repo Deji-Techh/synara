@@ -1623,6 +1623,16 @@ const ThreadMessageAssistantDeltaCommand = Schema.Struct({
   createdAt: IsoDateTime,
 });
 
+const ThreadMessageAssistantSnapshotCommand = Schema.Struct({
+  type: Schema.Literal("thread.message.assistant.snapshot"),
+  commandId: CommandId,
+  threadId: ThreadId,
+  messageId: MessageId,
+  snapshot: Schema.String,
+  turnId: Schema.optional(TurnId),
+  createdAt: IsoDateTime,
+});
+
 const ThreadMessageAssistantCompleteCommand = Schema.Struct({
   type: Schema.Literal("thread.message.assistant.complete"),
   commandId: CommandId,
@@ -1679,6 +1689,7 @@ const InternalOrchestrationCommand = Schema.Union([
   ThreadSessionSetCommand,
   ThreadMessagesImportCommand,
   ThreadMessageAssistantDeltaCommand,
+  ThreadMessageAssistantSnapshotCommand,
   ThreadMessageAssistantCompleteCommand,
   ThreadProposedPlanUpsertCommand,
   ThreadTurnDiffCompleteCommand,
@@ -1989,6 +2000,7 @@ export const ThreadMessageSentPayload = Schema.Struct({
   source: OrchestrationMessageSource.pipe(Schema.withDecodingDefault(() => "native")),
   createdAt: IsoDateTime,
   updatedAt: IsoDateTime,
+  isSnapshot: Schema.optional(Schema.Boolean),
 });
 
 export const ThreadTurnStartRequestedPayload = Schema.Struct({

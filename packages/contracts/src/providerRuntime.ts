@@ -179,6 +179,7 @@ const ProviderRuntimeEventType = Schema.Literals([
   "item.updated",
   "item.completed",
   "content.delta",
+  "content.snapshot",
   "request.opened",
   "request.resolved",
   "user-input.requested",
@@ -441,6 +442,13 @@ const ContentDeltaPayload = Schema.Struct({
   summaryIndex: Schema.optional(Schema.Int),
 });
 export type ContentDeltaPayload = typeof ContentDeltaPayload.Type;
+
+const ContentSnapshotPayload = Schema.Struct({
+  streamKind: RuntimeContentStreamKind,
+  snapshot: Schema.String,
+  contentIndex: Schema.optional(Schema.Int),
+});
+export type ContentSnapshotPayload = typeof ContentSnapshotPayload.Type;
 
 const RequestOpenedPayload = Schema.Struct({
   requestType: CanonicalRequestType,
@@ -923,6 +931,14 @@ const ProviderRuntimeContentDeltaEvent = Schema.Struct({
 });
 export type ProviderRuntimeContentDeltaEvent = typeof ProviderRuntimeContentDeltaEvent.Type;
 
+const ContentSnapshotType = Schema.Literal("content.snapshot");
+const ProviderRuntimeContentSnapshotEvent = Schema.Struct({
+  ...ProviderRuntimeEventBase.fields,
+  type: ContentSnapshotType,
+  payload: ContentSnapshotPayload,
+});
+export type ProviderRuntimeContentSnapshotEvent = typeof ProviderRuntimeContentSnapshotEvent.Type;
+
 const ProviderRuntimeRequestOpenedEvent = Schema.Struct({
   ...ProviderRuntimeEventBase.fields,
   type: RequestOpenedType,
@@ -1129,6 +1145,7 @@ export const ProviderRuntimeEventV2 = Schema.Union([
   ProviderRuntimeItemUpdatedEvent,
   ProviderRuntimeItemCompletedEvent,
   ProviderRuntimeContentDeltaEvent,
+  ProviderRuntimeContentSnapshotEvent,
   ProviderRuntimeRequestOpenedEvent,
   ProviderRuntimeRequestResolvedEvent,
   ProviderRuntimeUserInputRequestedEvent,

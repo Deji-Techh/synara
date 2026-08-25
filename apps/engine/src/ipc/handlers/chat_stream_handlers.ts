@@ -269,6 +269,13 @@ export function registerChatStreamHandlers() {
       req = parsedRequest.data;
 
       let caideRequestId: string | undefined;
+      // Guard concurrent streams on same chatId (Caide-final can race second send before first settles).
+      // Dyad's renderer tolerates it via idempotent full-replace; our delta path would double-count.
+      const existingController = activeStreams.get(req.chatId);
+      if (existingController) {
+        existingController.abort();
+        activeStreams.delete(req.chatId);
+      }
       // Create an AbortController for this stream
       const abortController = new AbortController();
       activeStreams.set(req.chatId, abortController);
