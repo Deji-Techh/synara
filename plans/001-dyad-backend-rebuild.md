@@ -397,7 +397,7 @@ management, web build/test commands, and browser-oriented tools.
 
 ### 10. Cutover and deletion
 
-- [ ] Make integrated dyad runtime the default provider/runtime path.
+- [x] Make integrated dyad runtime the default provider/runtime path.
 - [ ] Remove active use of `EngineAdapter` and child engine supervision.
 - [ ] Remove engine JSON-RPC protocol and duplicate settings/state bridges.
 - [ ] Remove obsolete server provider adapters and Codex/CLI active paths.
