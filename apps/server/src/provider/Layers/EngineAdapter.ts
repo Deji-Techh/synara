@@ -947,23 +947,38 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             ).pipe(Effect.map(([ok]) => ok));
             if (!registered) return;
             const questions = Array.isArray(payload.questions)
-              ? payload.questions.map((question) => {
-                  const q = (question ?? {}) as Record<string, unknown>;
-                  const id = String(q.id ?? "");
-                  return {
-                    id: id !== "" ? id : randomUUID(),
-                    header: "Question",
-                    question: String(q.question ?? ""),
-                    options: Array.isArray(q.options)
-                      ? (q.options as unknown[]).map((option) => ({
-                          label: String(option),
-                          description: "",
-                        }))
-                      : [],
-                    multiSelect: q.type === "checkbox",
-                  };
-                })
+              ? payload.questions
+                  .map((question) => {
+                    const q = (question ?? {}) as Record<string, unknown>;
+                    const id = String(q.id ?? "");
+                    const questionText = String(q.question ?? "").trim();
+                    if (questionText === "") return null;
+                    const options = Array.isArray(q.options)
+                      ? (q.options as unknown[])
+                          .map((option) => String(option).trim())
+                          .filter((option) => option !== "")
+                          .map((option) => ({
+                            label: option,
+                            description: "",
+                          }))
+                      : [];
+                    return {
+                      id: id !== "" ? id : randomUUID(),
+                      header: "Question",
+                      question: questionText,
+                      options,
+                      multiSelect: q.type === "checkbox",
+                    };
+                  })
+                  .filter((question) => question !== null)
               : [];
+            if (questions.length === 0) {
+              yield* Effect.logWarning(
+                "engine questionnaire yielded no renderable questions; skipping",
+                { chatId: payload.chatId, requestId },
+              );
+              return;
+            }
             yield* publishEvent(
               makeEvent<ProviderRuntimeEvent>(context.threadId, {
                 type: "user-input.requested",
@@ -989,21 +1004,24 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             ).pipe(Effect.map(([ok]) => ok));
             if (!registered) return;
             const questions = Array.isArray(payload.vars)
-              ? (payload.vars as unknown[]).map((variable) => {
-                  const v = (variable ?? {}) as Record<string, unknown>;
-                  const key = String(v.key ?? "");
-                  return {
-                    id: key,
-                    header: "Environment variable",
-                    question:
-                      key +
-                      (typeof v.description === "string" && v.description !== ""
-                        ? ` — ${v.description}`
-                        : ""),
-                    options: [],
-                    multiSelect: false,
-                  };
-                })
+              ? (payload.vars as unknown[])
+                  .map((variable) => {
+                    const v = (variable ?? {}) as Record<string, unknown>;
+                    const key = String(v.key ?? "").trim();
+                    if (key === "") return null;
+                    return {
+                      id: key,
+                      header: "Environment variable",
+                      question:
+                        key +
+                        (typeof v.description === "string" && v.description !== ""
+                          ? ` — ${v.description}`
+                          : ""),
+                      options: [],
+                      multiSelect: false,
+                    };
+                  })
+                  .filter((question) => question !== null)
               : [];
             yield* publishEvent(
               makeEvent<ProviderRuntimeEvent>(context.threadId, {
