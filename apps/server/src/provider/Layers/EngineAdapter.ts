@@ -25,6 +25,7 @@ import {
   type ProviderRuntimeEvent,
   type ProviderSession,
   type ProviderTurnStartResult,
+  RuntimeItemId,
   RuntimeMode,
   ThreadId,
   TurnId,
@@ -351,11 +352,13 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       turnId: TurnId,
       delta: string,
       summaryIndex?: number,
+      itemId?: string,
     ) =>
       publishEvent(
         makeEvent<ProviderRuntimeEvent>(threadId, {
           type: "content.delta",
           turnId,
+          ...(itemId ? { itemId: RuntimeItemId.makeUnsafe(itemId) } : {}),
           payload: {
             streamKind: "assistant_text" as const,
             delta,
@@ -369,7 +372,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         makeEvent<ProviderRuntimeEvent>(threadId, {
           type: "content.snapshot",
           turnId,
-          ...(itemId ? { itemId: itemId as unknown as string } : {}),
+          ...(itemId ? { itemId: RuntimeItemId.makeUnsafe(itemId) } : {}),
           payload: {
             streamKind: "assistant_text" as const,
             snapshot,
@@ -599,12 +602,19 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             }
 
             if (typeof payload.streamingPatch === "string" && payload.streamingPatch !== "") {
-              yield* publishTextDelta(context.threadId, turnId, payload.streamingPatch);
-              const messageId =
+              const streamingMessageId =
                 typeof payload.streamingMessageId === "string" ||
                 typeof payload.streamingMessageId === "number"
                   ? String(payload.streamingMessageId)
-                  : "streaming";
+                  : undefined;
+              yield* publishTextDelta(
+                context.threadId,
+                turnId,
+                payload.streamingPatch,
+                undefined,
+                streamingMessageId,
+              );
+              const messageId = streamingMessageId ?? "streaming";
               const emitted = context.emittedTranscriptRef.current;
               emitted.set(messageId, (emitted.get(messageId) ?? 0) + payload.streamingPatch.length);
             } else if (
@@ -623,7 +633,13 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               const emitted = context.emittedTranscriptRef.current;
               const emittedLength = emitted.get(messageId) ?? 0;
               if (patchText !== "" && patchOffset >= emittedLength) {
-                yield* publishTextDelta(context.threadId, turnId, patchText);
+                yield* publishTextDelta(
+                  context.threadId,
+                  turnId,
+                  patchText,
+                  undefined,
+                  messageId,
+                );
                 emitted.set(messageId, patchOffset + patchText.length);
               }
             }

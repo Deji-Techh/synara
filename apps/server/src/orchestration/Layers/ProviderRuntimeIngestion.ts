@@ -2110,10 +2110,15 @@ const make = Effect.gen(function* () {
       const proposedPlanDelta =
         event.type === "turn.proposed.delta" ? event.payload.delta : undefined;
 
-      // Dyad-like idempotent snapshot: engine resends full transcript messages each chunk.
-      // Ingestion dedupes by comparing snapshot to buffered prefix — duplicate full resends
-      // become no-ops, true new content is forwarded as a delta suffix. Mirrors dyad's
-      // `next.set(chatId, updatedMessages)` full-replace semantics.
+      // Dyad-like idempotent snapshot: the engine resends the full transcript
+      // on every chunk (like dyad's `updatedChat.messages`). Each assistant
+      // message is keyed by its engine message id (now also carried on
+      // `content.delta`), so streaming deltas and snapshots share one identity.
+      // Snapshots are authoritative full text: dedupe against the known text
+      // and, on any real change, replace last-write-wins — mirroring dyad's
+      // `next.set(chatId, updatedMessages)` full replace. A lagging snapshot
+      // (shorter than live streaming buffer) is ignored so live text never
+      // truncates.
       if (assistantSnapshot !== undefined) {
         const assistantMessageId = MessageId.makeUnsafe(
           `assistant:${event.itemId ?? event.turnId ?? event.eventId}`,
@@ -2128,96 +2133,23 @@ const make = Effect.gen(function* () {
           assistantMessageId,
         );
         const bufferedText = Option.getOrElse(bufferedOpt, () => "");
-        // Duplicate full retransmission — no new content
-        if (assistantSnapshot === bufferedText) {
-          // no-op
-        } else if (assistantSnapshot.length === 0) {
-          // empty snapshot — no-op
-        } else if (bufferedText.length === 0) {
-          // First snapshot for this message — treat as delta
-          const assistantDeliveryMode = yield* getAssistantDeliveryMode(
-            thread.id,
-            turnId ?? activeTurnId ?? undefined,
-          );
-          if (assistantDeliveryMode === "buffered") {
-            const spillChunk = yield* appendBufferedAssistantText(
-              assistantMessageId,
-              assistantSnapshot,
-            );
-            if (spillChunk.length > 0) {
-              yield* orchestrationEngine.dispatch({
-                type: "thread.message.assistant.delta",
-                commandId: providerCommandId(
-                  event,
-                  "assistant-snapshot-buffer-spill",
-                  assistantMessageId,
-                ),
-                threadId: thread.id,
-                messageId: assistantMessageId,
-                delta: spillChunk,
-                ...(turnId ? { turnId } : {}),
-                createdAt: now,
-              });
-            }
-          } else {
-            yield* orchestrationEngine.dispatch({
-              type: "thread.message.assistant.delta",
-              commandId: providerCommandId(event, "assistant-snapshot", assistantMessageId),
-              threadId: thread.id,
-              messageId: assistantMessageId,
-              delta: assistantSnapshot,
-              ...(turnId ? { turnId } : {}),
-              createdAt: now,
-            });
-          }
-        } else if (assistantSnapshot.startsWith(bufferedText)) {
-          const suffix = assistantSnapshot.slice(bufferedText.length);
-          if (suffix.length > 0) {
-            const assistantDeliveryMode = yield* getAssistantDeliveryMode(
-              thread.id,
-              turnId ?? activeTurnId ?? undefined,
-            );
-            if (assistantDeliveryMode === "buffered") {
-              const spillChunk = yield* appendBufferedAssistantText(assistantMessageId, suffix);
-              if (spillChunk.length > 0) {
-                yield* orchestrationEngine.dispatch({
-                  type: "thread.message.assistant.delta",
-                  commandId: providerCommandId(
-                    event,
-                    "assistant-snapshot-suffix-spill",
-                    assistantMessageId,
-                  ),
-                  threadId: thread.id,
-                  messageId: assistantMessageId,
-                  delta: spillChunk,
-                  ...(turnId ? { turnId } : {}),
-                  createdAt: now,
-                });
-              }
-            } else {
-              yield* orchestrationEngine.dispatch({
-                type: "thread.message.assistant.delta",
-                commandId: providerCommandId(
-                  event,
-                  "assistant-snapshot-suffix",
-                  assistantMessageId,
-                ),
-                threadId: thread.id,
-                messageId: assistantMessageId,
-                delta: suffix,
-                ...(turnId ? { turnId } : {}),
-                createdAt: now,
-              });
-            }
-          }
+        const existingMessage = thread.messages.find(
+          (entry) => entry.id === assistantMessageId,
+        );
+        const knownText =
+          bufferedText.length > 0 ? bufferedText : (existingMessage?.text ?? "");
+        if (assistantSnapshot.length === 0) {
+          // empty placeholder snapshot — no-op
+        } else if (bufferedText.length > 0 && assistantSnapshot.length < bufferedText.length) {
+          // lagging snapshot while streaming — never truncate live text
+        } else if (assistantSnapshot === knownText) {
+          // duplicate full retransmission — no-op
         } else {
-          // Divergent snapshot (not a prefix extension) — engine text diverged from buffered.
-          // Fall back to idempotent snapshot replace so we don't duplicate the prefix.
-          // This mirrors dyad's last-write-wins full replace.
+          // authoritative full text — idempotent last-write-wins replace.
           yield* Cache.set(bufferedAssistantTextByMessageId, assistantMessageId, assistantSnapshot);
           yield* orchestrationEngine.dispatch({
             type: "thread.message.assistant.snapshot",
-            commandId: providerCommandId(event, "assistant-snapshot-replace", assistantMessageId),
+            commandId: providerCommandId(event, "assistant-snapshot", assistantMessageId),
             threadId: thread.id,
             messageId: assistantMessageId,
             snapshot: assistantSnapshot,
