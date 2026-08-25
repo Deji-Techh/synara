@@ -291,7 +291,7 @@ export const makeApiAdapter = (provider: ApiProviderKind) =>
             makeEvent<ProviderRuntimeEvent>(input.threadId, {
               type: "turn.started",
               turnId,
-              payload: { model },
+              payload: { ...(model && model.trim() ? { model } : {}) },
             }),
           );
 

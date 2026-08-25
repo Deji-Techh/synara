@@ -490,7 +490,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           if (toolBlocks.length > alreadyLaunched) {
             emitted.set(`${messageId}:tools`, toolBlocks.length);
             for (const tool of toolBlocks.slice(alreadyLaunched)) {
-              const toolName = String(tool.name);
+              const toolName = (String(tool.name ?? "").trim() || "tool");
               const callId =
                 typeof tool.id === "string" ? tool.id : `${toolName}:${alreadyLaunched}`;
               const itemType = canonicalToolItemType(toolName);
@@ -752,7 +752,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             if (context === null) return;
             if (!(yield* claimChatSettlement(chatId))) return;
             const turnId = context.currentTurnIdRef.current;
-            const message = String(payload.error ?? "engine turn failed");
+            const message = (String(payload.error ?? "").trim() || "engine turn failed");
             yield* publishEvent(
               makeEvent<ProviderRuntimeEvent>(context.threadId, {
                 type: "runtime.error",
@@ -802,7 +802,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                       ? "completed"
                       : "pending";
                 return {
-                  task: String(t.content ?? t.task ?? "…"),
+                  task: (String(t.content ?? t.task ?? "").trim() || "…"),
                   status: status as "pending" | "inProgress" | "completed",
                 };
               })
@@ -832,7 +832,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               }),
             ).pipe(Effect.map(([ok]) => ok));
             if (!registered) return;
-            const toolName = String(payload.toolName ?? "tool");
+            const toolName = (String(payload.toolName ?? "").trim() || "tool");
             yield* publishEvent(
               makeEvent<ProviderRuntimeEvent>(context.threadId, {
                 type: "request.opened",
@@ -866,7 +866,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               }),
             ).pipe(Effect.map(([ok]) => ok));
             if (!registered) return;
-            const toolName = String(payload.toolName ?? "tool");
+            const toolName = (String(payload.toolName ?? "").trim() || "tool");
             const serverName = payload.serverName;
             yield* publishEvent(
               makeEvent<ProviderRuntimeEvent>(context.threadId, {
@@ -1507,12 +1507,13 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             Effect.gen(function* () {
               if (!(yield* claimChatSettlement(chatId))) return;
               const turn = context.currentTurnIdRef.current;
+              const transportMessage = (error.message.trim() || "engine chat:stream failed");
               yield* publishEvent(
                 makeEvent<ProviderRuntimeEvent>(context.threadId, {
                   type: "runtime.error",
                   ...(turn !== null ? { turnId: turn } : {}),
                   payload: {
-                    message: error.message,
+                    message: transportMessage,
                     class: "transport_error" as const,
                   },
                 }),
@@ -1528,7 +1529,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 }),
               );
               yield* publishTurnSettled(context.threadId, turn, "failed", "error", {
-                errorMessage: error.message,
+                errorMessage: transportMessage,
               });
               context.currentTurnIdRef.current = null;
               markSessionIdle(context, "error");
