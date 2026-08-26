@@ -35,7 +35,8 @@ async function mountApprovalPanel(input?: { approval?: PendingApproval; isRespon
       _requestId: ApprovalRequestId,
       _decision: ProviderApprovalDecision,
       _lifecycleGeneration?: string,
-      _requestKind?: PendingApproval["requestKind"],
+      _requestKind?: PendingApproval["requestKind"] | string,
+      _blueprintEdits?: Readonly<Record<string, unknown>>,
     ) => undefined,
   );
   const screen = await render(

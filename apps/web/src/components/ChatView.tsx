@@ -8614,7 +8614,7 @@ export default function ChatView({
       requestId: ApprovalRequestId,
       decision: ProviderApprovalDecision,
       lifecycleGeneration?: string,
-      requestKind?: ProviderRequestKind,
+      _requestKind?: string,
       blueprintEdits?: Readonly<Record<string, unknown>>,
     ) => {
       const api = readNativeApi();
@@ -8630,7 +8630,7 @@ export default function ChatView({
       const durableRuntimeMode = resolveRuntimeModeAfterApprovalDecision(
         runtimeMode,
         decision,
-        requestKind,
+        _requestKind as any,
       );
       if (durableRuntimeMode) {
         setComposerDraftRuntimeMode(activeThreadId, durableRuntimeMode);
@@ -8820,10 +8820,48 @@ export default function ChatView({
         pendingDraftAnswers,
       );
       if (activePendingProgress.isLastQuestion) {
-        if (resolvedAnswers) {
+        // Allow submit even if not all questions are answered - the tool handles
+        // missing answers as "(no answer)". Require at least the current question
+        // to be answerable (canAdvance) to avoid empty submits.
+        const answersToSubmit =
+          resolvedAnswers ??
+          (() => {
+            const partial: Record<string, string | string[]> = {};
+            let hasAny = false;
+            for (const q of activePendingUserInput.questions) {
+              const ans = pendingDraftAnswers[q.id];
+              const resolved = ans
+                ? (q.multiSelect
+                    ? (ans.selectedOptionLabels?.length ? ans.selectedOptionLabels : null)
+                    : (ans.selectedOptionLabels?.[0] ??
+                      (ans.customAnswer?.trim() || null)))
+                : null;
+              if (resolved) {
+                const val = Array.isArray(resolved) ? resolved : String(resolved).trim();
+                if ((Array.isArray(val) && val.length > 0) || (typeof val === "string" && val !== "")) {
+                  partial[q.id] = Array.isArray(resolved) ? resolved : String(resolved).trim();
+                  hasAny = true;
+                }
+              }
+            }
+            return hasAny ? partial : null;
+          })();
+        if (answersToSubmit && Object.keys(answersToSubmit).length > 0) {
           void onRespondToUserInput(
             activePendingUserInput.requestId,
-            resolvedAnswers,
+            answersToSubmit,
+            activePendingUserInput.lifecycleGeneration,
+          );
+          return true;
+        }
+        // Fallback: if current question has an answer, submit it alone
+        if (activePendingProgress.canAdvance && activePendingProgress.resolvedAnswer) {
+          const fallback: Record<string, string | string[]> = {
+            [activePendingProgress.activeQuestion!.id]: activePendingProgress.resolvedAnswer,
+          };
+          void onRespondToUserInput(
+            activePendingUserInput.requestId,
+            fallback,
             activePendingUserInput.lifecycleGeneration,
           );
           return true;
@@ -11366,10 +11404,7 @@ export default function ChatView({
                           size="sm"
                           className="rounded-full px-4"
                           disabled={
-                            activePendingIsResponding ||
-                            (activePendingProgress.isLastQuestion
-                              ? !activePendingResolvedAnswers
-                              : !activePendingProgress.canAdvance)
+                            activePendingIsResponding || !activePendingProgress.canAdvance
                           }
                         >
                           {activePendingIsResponding

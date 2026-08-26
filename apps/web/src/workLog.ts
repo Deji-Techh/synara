@@ -506,7 +506,7 @@ function toDerivedWorkLogEntry(activity: OrchestrationThreadActivity): DerivedWo
     entry.itemType = itemType;
   }
   if (requestKind) {
-    entry.requestKind = requestKind;
+    entry.requestKind = requestKind as WorkLogRequestKind;
   }
   if (
     activity.kind === "tool.started" &&
@@ -549,7 +549,7 @@ function toDerivedWorkLogEntry(activity: OrchestrationThreadActivity): DerivedWo
       title: commandActionDisplay?.title ?? title,
       fallbackLabel: activity.summary,
       itemType,
-      requestKind,
+      requestKind: requestKind as any,
       command: commandPreview.command,
       payload,
       isRunning: activity.kind !== "tool.completed",
@@ -571,7 +571,7 @@ function toDerivedWorkLogEntry(activity: OrchestrationThreadActivity): DerivedWo
   const toolDetails = deriveWorkLogToolDetails({
     payload,
     itemType,
-    requestKind,
+    requestKind: requestKind as any,
     command: entry.command,
     rawCommand: entry.rawCommand,
     detail: entry.detail,

@@ -22,7 +22,8 @@ interface ComposerPendingApprovalPanelProps {
     requestId: ApprovalRequestId,
     decision: ProviderApprovalDecision,
     lifecycleGeneration?: string,
-    requestKind?: PendingApproval["requestKind"],
+    requestKind?: PendingApproval["requestKind"] | string,
+    blueprintEdits?: Readonly<Record<string, unknown>>,
   ) => Promise<void>;
 }
 

@@ -738,7 +738,7 @@ export function collectThreadAttentionCandidates(
         title: thread.title,
         requestId: approval.requestId,
         createdAt: approval.createdAt,
-        requestKind: approval.requestKind,
+        requestKind: approval.requestKind as any,
       });
     }
 

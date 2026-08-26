@@ -553,9 +553,9 @@ describe("composerDraftStore runtime and interaction settings", () => {
   it("stores chat mode overrides in the composer draft", () => {
     const store = useComposerDraftStore.getState();
 
-    store.setChatMode(threadId, "ask");
+    store.setChatMode(threadId, "local-agent");
 
-    expect(useComposerDraftStore.getState().draftsByThreadId[threadId]?.mode).toBe("ask");
+    expect(useComposerDraftStore.getState().draftsByThreadId[threadId]?.mode).toBe("local-agent");
   });
 
   it("clears chat mode overrides when set back to null", () => {

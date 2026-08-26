@@ -178,7 +178,7 @@ describe("composerDraftStore restored source proposed plan", () => {
   it("round-trips chat mode overrides through persistence hydration", () => {
     const store = useComposerDraftStore.getState();
 
-    store.setChatMode(threadId, "ask");
+    store.setChatMode(threadId, "local-agent");
 
     const persistedState = partializeComposerDraftStoreState(
       useComposerDraftStore.getState(),
@@ -186,7 +186,7 @@ describe("composerDraftStore restored source proposed plan", () => {
       draftsByThreadId?: Record<string, { mode?: unknown }>;
     };
 
-    expect(persistedState.draftsByThreadId?.[threadId]?.mode).toBe("ask");
+    expect(persistedState.draftsByThreadId?.[threadId]?.mode).toBe("local-agent");
   });
 });
 
