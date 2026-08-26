@@ -443,6 +443,23 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         return null;
       });
 
+    /**
+     * Resolve the chatId a thread is bound to, surviving session restarts.
+     * Used by the response handlers' ownership checks: after a restart the
+     * fresh session context has a null chatMapping, which made
+     * ownsPendingRequest fail for entries that carry a chatId (questionnaire,
+     * blueprint, consent) and silently dropped the user's answer/approval.
+     */
+    const resolveThreadChatId = (threadId: ThreadId): Effect.Effect<number | undefined> =>
+      Ref.get(chatIdToThread).pipe(
+        Effect.map((persistent) => {
+          for (const [chatId, mappedThread] of persistent) {
+            if (mappedThread === threadId) return chatId;
+          }
+          return undefined;
+        }),
+      );
+
     const claimChatSettlement = (chatId: number): Effect.Effect<boolean> =>
       Ref.modify(settledChats, (set) => {
         if (set.has(chatId)) return [false, set] as const;
@@ -2099,7 +2116,9 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             Effect.map((map) => map.get(key) ?? null),
           );
           if (entry === null) return;
-          if (!ownsPendingRequest(entry, threadId, context.chatMapping?.chatId)) return;
+          const chatId =
+            context.chatMapping?.chatId ?? (yield* resolveThreadChatId(threadId));
+          if (!ownsPendingRequest(entry, threadId, chatId)) return;
           const engineDecision =
             decision === "accept"
               ? "accept-once"
@@ -2179,7 +2198,9 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             Effect.map((map) => map.get(key) ?? null),
           );
           if (entry === null) return;
-          if (!ownsPendingRequest(entry, threadId, context.chatMapping?.chatId)) return;
+          const chatId =
+            context.chatMapping?.chatId ?? (yield* resolveThreadChatId(threadId));
+          if (!ownsPendingRequest(entry, threadId, chatId)) return;
           const { client } = yield* ensureSharedEngine(threadId);
           const serialized: Record<string, string> = {};
           for (const [key, value] of Object.entries(answers ?? {})) {
