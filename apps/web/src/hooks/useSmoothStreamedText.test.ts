@@ -1,17 +1,21 @@
 // FILE: useSmoothStreamedText.test.ts
-// Purpose: Pins the pure reveal stepper — velocity-driven drain plus quantized commits.
-//          The hook itself is thin wiring (refs + rAF scheduling) around this function.
+// Purpose: Pins the pure reveal stepper — velocity-driven drain plus quantized commits —
+//          and the adaptive commit-interval governor. The hook itself is thin wiring
+//          (refs + rAF scheduling) around these functions.
 
 import { describe, expect, it } from "vitest";
 
 import {
+  adaptEmitInterval,
+  BASE_EMIT_INTERVAL_MS,
   createSmoothRevealState,
-  MIN_EMIT_INTERVAL_MS,
+  MAX_EMIT_INTERVAL_MS,
   stepSmoothReveal,
   type SmoothRevealState,
 } from "./useSmoothStreamedText";
 
 const FRAME_MS = 8; // ~120Hz display
+const DEFAULT_INTERVAL_MS = 16;
 
 interface DrainRun {
   emits: { at: number; count: number }[];
@@ -24,6 +28,7 @@ function drain(
   state: SmoothRevealState,
   targetLength: number,
   startMs: number,
+  emitIntervalMs = DEFAULT_INTERVAL_MS,
   maxFrames = 10_000,
 ): DrainRun {
   const emits: { at: number; count: number }[] = [];
@@ -31,7 +36,7 @@ function drain(
   let now = startMs;
   let frames = 0;
   for (; frames < maxFrames; frames += 1) {
-    const step = stepSmoothReveal(state, now, targetLength, emitted);
+    const step = stepSmoothReveal(state, now, targetLength, emitted, emitIntervalMs);
     if (step.emitCount !== null) {
       emits.push({ at: now, count: step.emitCount });
       emitted = step.emitCount;
@@ -45,17 +50,18 @@ function drain(
 }
 
 describe("stepSmoothReveal", () => {
-  it("spaces commits at least MIN_EMIT_INTERVAL_MS apart while draining", () => {
+  it("spaces commits at least the emit interval apart while draining", () => {
     const run = drain(createSmoothRevealState(0), 400, 1_000);
 
     expect(run.emits.length).toBeGreaterThan(1);
     for (let index = 1; index < run.emits.length - 1; index += 1) {
       expect(run.emits[index]!.at - run.emits[index - 1]!.at).toBeGreaterThanOrEqual(
-        MIN_EMIT_INTERVAL_MS,
+        DEFAULT_INTERVAL_MS,
       );
     }
-    // Quantization is the point: far fewer commits than frames.
-    expect(run.emits.length).toBeLessThan(run.frames / 3);
+    // A 16ms interval on 8ms frames yields roughly one commit every other frame —
+    // quantized, but far denser than the old 40ms cadence.
+    expect(run.emits.length).toBeLessThan(run.frames);
   });
 
   it("reveals every character: the final commit is the full target length", () => {
@@ -74,7 +80,7 @@ describe("stepSmoothReveal", () => {
       lastFrameAt: 992,
       lastEmitAt: 996,
     };
-    const step = stepSmoothReveal(state, 1_000, 103, 101);
+    const step = stepSmoothReveal(state, 1_000, 103, 101, DEFAULT_INTERVAL_MS);
 
     expect(step.emitCount).toBe(103);
     expect(step.done).toBe(true);
@@ -83,11 +89,11 @@ describe("stepSmoothReveal", () => {
   it("clamps the frame delta after a background-tab resume", () => {
     const state = createSmoothRevealState(0);
     // Prime one frame so velocity builds, then jump far ahead as if rAF was paused.
-    stepSmoothReveal(state, 1_000, 500, 0);
-    stepSmoothReveal(state, 1_008, 500, 0);
+    stepSmoothReveal(state, 1_000, 500, 0, DEFAULT_INTERVAL_MS);
+    stepSmoothReveal(state, 1_008, 500, 0, DEFAULT_INTERVAL_MS);
     const shownBefore = state.shown;
     const velocityBefore = state.velocity;
-    stepSmoothReveal(state, 61_000, 500, Math.floor(shownBefore));
+    stepSmoothReveal(state, 61_000, 500, Math.floor(shownBefore), DEFAULT_INTERVAL_MS);
 
     // At most MAX_FRAME_SECONDS (0.05s) of reveal, not 60s of backlog dump.
     expect(state.shown - shownBefore).toBeLessThanOrEqual(
@@ -98,7 +104,7 @@ describe("stepSmoothReveal", () => {
 
   it("clamps and sleeps when the target shrank below the revealed count", () => {
     const state = createSmoothRevealState(200);
-    const step = stepSmoothReveal(state, 1_000, 50, 200);
+    const step = stepSmoothReveal(state, 1_000, 50, 200, DEFAULT_INTERVAL_MS);
 
     expect(state.shown).toBe(50);
     expect(step.done).toBe(true);
@@ -118,8 +124,26 @@ describe("stepSmoothReveal", () => {
   it("drains a large paste at the bounded ceiling instead of snapping", () => {
     const run = drain(createSmoothRevealState(0), 10_000, 0);
 
-    // 10k chars at the 2000 chars/sec ceiling needs ≥5s of frames.
-    expect(run.frames * FRAME_MS).toBeGreaterThanOrEqual(5_000);
+    // 10k chars at the 4000 chars/sec ceiling needs ≥2.5s of frames.
+    expect(run.frames * FRAME_MS).toBeGreaterThanOrEqual(2_500);
     expect(run.emits.at(-1)?.count).toBe(10_000);
+  });
+});
+
+describe("adaptEmitInterval", () => {
+  it("backs off when commit cost steals frame budget", () => {
+    expect(adaptEmitInterval(BASE_EMIT_INTERVAL_MS, 10)).toBe(12);
+    expect(adaptEmitInterval(16, 20)).toBe(24);
+    expect(adaptEmitInterval(MAX_EMIT_INTERVAL_MS, 10)).toBe(MAX_EMIT_INTERVAL_MS);
+  });
+
+  it("recovers toward the base interval when cost is negligible", () => {
+    expect(adaptEmitInterval(MAX_EMIT_INTERVAL_MS, 1)).toBe(27);
+    expect(adaptEmitInterval(12, 1)).toBe(BASE_EMIT_INTERVAL_MS);
+    expect(adaptEmitInterval(BASE_EMIT_INTERVAL_MS, 1)).toBe(BASE_EMIT_INTERVAL_MS);
+  });
+
+  it("keeps the interval unchanged in the mid band", () => {
+    expect(adaptEmitInterval(16, 5)).toBe(16);
   });
 });

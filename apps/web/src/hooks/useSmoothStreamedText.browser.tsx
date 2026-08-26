@@ -16,11 +16,11 @@ interface SmoothTextProps {
   readonly isStreaming: boolean;
 }
 
-// Large enough that the rAF loop (≤2000 chars/s, ≤100 chars per clamped frame)
+// Large enough that the rAF loop (≤4000 chars/s, ≤200 chars per clamped frame)
 // needs many quantized commits to drain it, so partially-revealed states are
 // reliably observable between polls and a handful of stray frames cannot
 // accidentally finish the reveal before an assertion runs.
-const LONG_DELTA = "x".repeat(1_200);
+const LONG_DELTA = "x".repeat(2_400);
 
 function renderSmoothText(initialProps: SmoothTextProps) {
   return renderHook(
