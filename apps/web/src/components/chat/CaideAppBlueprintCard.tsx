@@ -1,10 +1,6 @@
-import React, { useCallback, useState } from "react";
+import React, { useState } from "react";
 import { CaideCard, CaideCardHeader, CaideCardContent } from "./CaideCardPrimitives";
-import { cn } from "~/lib/utils";
-import { newCommandId } from "~/lib/utils";
-import { ensureNativeApi } from "~/nativeApi";
 import { useOpenPendingBlueprint } from "~/usePendingInteractionHooks";
-import { Button } from "../ui/button";
 
 interface CaideAppBlueprintCardProps {
   appName?: string | undefined;
@@ -26,32 +22,30 @@ export const CaideAppBlueprintCard: React.FC<CaideAppBlueprintCardProps> = ({
   features = [],
   description,
 }) => {
-  const color = COLOR_RE.test(primaryColor) ? primaryColor : "#0284c7";
-  const [isApproving, setIsApproving] = useState(false);
-  const [approved, setApproved] = useState(false);
   const pending = useOpenPendingBlueprint();
+  // When a pending blueprint exists, derive display from the live pending
+  // blueprint (the source of truth including any composer edits) instead of
+  // the stale snapshot props from the original <caide-app-blueprint> tag.
+  const liveBlueprint = pending?.blueprint as Record<string, unknown> | undefined;
+  const displayAppName =
+    typeof liveBlueprint?.appName === "string" && liveBlueprint.appName.trim() !== ""
+      ? (liveBlueprint.appName as string)
+      : appName;
+  const displayDesignDirection =
+    typeof liveBlueprint?.designDirection === "string"
+      ? (liveBlueprint.designDirection as string)
+      : designDirection;
+  const displayPrimaryColor =
+    typeof liveBlueprint?.primaryColor === "string" && COLOR_RE.test(liveBlueprint.primaryColor as string)
+      ? (liveBlueprint.primaryColor as string)
+      : primaryColor;
+  const color = COLOR_RE.test(displayPrimaryColor) ? displayPrimaryColor : "#0284c7";
+  const [approved, setApproved] = useState(false);
 
-  const handleApprove = useCallback(async () => {
-    if (!pending || isApproving || approved) return;
-    setIsApproving(true);
-    try {
-      const api = ensureNativeApi();
-      await api.orchestration.dispatchCommand({
-        type: "thread.approval.respond",
-        commandId: newCommandId(),
-        threadId: pending.threadId as never,
-        requestId: pending.requestId as never,
-        decision: "accept",
-        ...(pending.lifecycleGeneration
-          ? { lifecycleGeneration: pending.lifecycleGeneration as never }
-          : {}),
-        createdAt: new Date().toISOString(),
-      });
-      setApproved(true);
-    } catch {
-      setIsApproving(false);
-    }
-  }, [pending, isApproving, approved]);
+  // Static card no longer owns the approve action. The composer
+  // CaideBlueprintApprovalPanel is the single writer that collects edits
+  // and sends blueprintEdits atomically. Approving here would bypass edits
+  // and make the agent use the draft (reported as "uses its own not mine").
 
   return (
     <CaideCard accentColor="gray" className="border-border/70 bg-card/60">
@@ -67,7 +61,7 @@ export const CaideAppBlueprintCard: React.FC<CaideAppBlueprintCardProps> = ({
             <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               App Blueprint
             </div>
-            <div className="truncate text-[13px] font-semibold text-foreground">{appName}</div>
+            <div className="truncate text-[13px] font-semibold text-foreground">{displayAppName}</div>
           </div>
           <div className="flex shrink-0 items-center gap-1.5 rounded-md border border-border/40 bg-muted/40 px-2 py-1">
             <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
@@ -76,8 +70,8 @@ export const CaideAppBlueprintCard: React.FC<CaideAppBlueprintCardProps> = ({
         </div>
       </CaideCardHeader>
       <CaideCardContent>
-        {designDirection && (
-          <p className="leading-relaxed text-muted-foreground">{designDirection}</p>
+        {displayDesignDirection && (
+          <p className="leading-relaxed text-muted-foreground">{displayDesignDirection}</p>
         )}
         {description && (
           <p className="mt-1 text-[11px] italic leading-relaxed text-muted-foreground/80">
@@ -107,19 +101,9 @@ export const CaideAppBlueprintCard: React.FC<CaideAppBlueprintCardProps> = ({
               Blueprint approved — building started.
             </p>
           ) : pending ? (
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[11px] text-muted-foreground">
-                Approve to apply this blueprint and start building.
-              </p>
-              <Button
-                size="sm"
-                onClick={handleApprove}
-                disabled={isApproving}
-                className="h-7 px-3 text-xs font-semibold"
-              >
-                {isApproving ? "Approving..." : "Approve & Build"}
-              </Button>
-            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Review and edit the blueprint in the composer below. Approve there to apply your changes — the agent will use your edited values.
+            </p>
           ) : (
             <p className="text-[11px] text-muted-foreground">
               Blueprint was reviewed in the composer.

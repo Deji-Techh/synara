@@ -87,7 +87,7 @@ const providerTurnKey = (threadId: ThreadId, turnId: TurnId) => `${threadId}:${t
 const providerCommandId = (event: ProviderRuntimeEvent, tag: string, target = "event"): CommandId =>
   CommandId.makeUnsafe(`provider:${event.eventId}:${tag}:${target}`);
 
-const DEFAULT_ASSISTANT_DELIVERY_MODE: AssistantDeliveryMode = "buffered";
+const DEFAULT_ASSISTANT_DELIVERY_MODE: AssistantDeliveryMode = "streaming";
 const PROVIDER_RUNTIME_INGESTION_CAPACITY = 1_024;
 const PROVIDER_RUNTIME_REPLAY_PAGE_SIZE = 128;
 const PROVIDER_RUNTIME_REPLAY_POLL_MIN_MS = 250;

@@ -44,6 +44,38 @@ export function registerAppBlueprintHandlers() {
       return;
     }
 
+    // Apply atomic edits from the approval before marking as approved.
+    // This replaces the previous N× edit-field round-trips with a single
+    // transaction, ensuring the user's input is the blueprint that gets built.
+    const edits = (params as { edits?: Record<string, string> }).edits;
+    if (edits && typeof edits === "object") {
+      for (const [field, value] of Object.entries(edits)) {
+        if (typeof value !== "string") continue;
+        switch (field) {
+          case "appName":
+            if (value.trim() !== "") plan.appName = value;
+            break;
+          case "templateId":
+            plan.templateId = value;
+            break;
+          case "themeId":
+            plan.themeId = value;
+            break;
+          case "designDirection":
+            plan.designDirection = value;
+            break;
+          case "primaryColor":
+            plan.primaryColor = value;
+            break;
+          default:
+            logger.warn(`Unknown app blueprint field in approve edits: ${field}`);
+        }
+      }
+      logger.info(`App blueprint edits applied for chat ${params.chatId}`, {
+        editFields: Object.keys(edits),
+      });
+    }
+
     // Flip the per-app needs_app_blueprint flag so future chats in this app
     // skip the blueprint flow. Persist DB state BEFORE flipping the in-memory
     // `plan.approved` flag — if the DB write throws, the blueprint stays

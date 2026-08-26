@@ -1179,6 +1179,9 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             // The engine confirmed the blueprint approval. Kick a fresh turn so
             // the agent proceeds with implementation under the approved
             // blueprint (mirrors dyad's renderer starting the follow-up turn).
+            // This path previously reused the prior turnId and skipped the
+            // turn lifecycle, causing per-chat settledChats to drop the second
+            // terminal and leave two `running_tool` rows in the same chat.
             if (typeof payload.chatId !== "number") return;
             const chatId = payload.chatId as number;
             const blueprint = payload.blueprint as Record<string, unknown> | undefined;
@@ -1193,15 +1196,52 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               });
               return;
             }
-            const turnId = context.currentTurnIdRef.current ?? TurnId.makeUnsafe(randomUUID());
-            // Build the follow-up message with the approved blueprint data so
-            // the agent sees the exact configuration the user approved.
+            // Always allocate a fresh turnId for the follow-up. Reusing
+            // currentTurnIdRef would interleave two streams on the same turn
+            // and make per-chat settlement drop one terminal.
+            const newTurnId = TurnId.makeUnsafe(randomUUID());
+            if (context.currentTurnIdRef.current !== null) {
+              yield* Effect.logWarning(
+                "[engine-adapter] app-blueprint:approved overwriting active turn",
+                {
+                  chatId,
+                  previousTurnId: String(context.currentTurnIdRef.current),
+                  newTurnId: String(newTurnId),
+                },
+              );
+            }
+            // Clear per-chat settlement so the new turn can claim its terminal.
+            yield* Ref.update(settledChats, (set) => {
+              const next = new Set(set);
+              next.delete(chatId);
+              return next;
+            });
+            context.currentTurnIdRef.current = newTurnId;
+            markSessionRunning(context, newTurnId);
+            context.emittedTranscriptRef.current.delete("streaming");
+            yield* publishEvent(
+              makeEvent<ProviderRuntimeEvent>(context.threadId, {
+                type: "turn.started",
+                turnId: newTurnId,
+                payload: { assistantDeliveryMode: "streaming" as const },
+              }),
+            );
+            yield* publishEvent(
+              makeEvent<ProviderRuntimeEvent>(context.threadId, {
+                type: "item.started",
+                turnId: newTurnId,
+                payload: { itemType: "assistant_message" as const },
+              }),
+            );
+            // Build authoritative follow-up so the agent MUST use the edited
+            // blueprint verbatim (prevents "uses its own not mine").
             let followUpMessage = "[App blueprint approved — proceed with implementation.]";
             if (blueprint && typeof blueprint === "object") {
               const bp = blueprint as Record<string, unknown>;
               const parts: string[] = [];
-              if (typeof bp.appName === "string") parts.push(`App name: ${bp.appName}`);
-              if (typeof bp.designDirection === "string")
+              if (typeof bp.appName === "string" && bp.appName.trim() !== "")
+                parts.push(`App name: ${bp.appName}`);
+              if (typeof bp.designDirection === "string" && bp.designDirection.trim() !== "")
                 parts.push(`Design direction: ${bp.designDirection}`);
               if (typeof bp.primaryColor === "string")
                 parts.push(`Primary color: ${bp.primaryColor}`);
@@ -1215,19 +1255,22 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 parts.push(`Visual assets: ${visualDescriptions}`);
               }
               if (parts.length > 0) {
-                followUpMessage = `[App blueprint approved — proceed with implementation.]\n\nApproved blueprint:\n${parts.map((p) => `- ${p}`).join("\n")}`;
+                followUpMessage =
+                  `[App blueprint approved — CRITICAL: Use this approved blueprint exactly as provided. Do not invent alternative app names or design directions.]\n\n` +
+                  `Approved blueprint:\n${parts.map((p) => `- ${p}`).join("\n")}\n\n` +
+                  `Proceed with implementation using the approved blueprint above. The app name must be exactly "${String((bp as Record<string, unknown>).appName ?? "App")}"`;
               }
             }
             yield* Effect.logInfo("[engine-adapter] app-blueprint:approved forking follow-up", {
               chatId,
               threadId: String(context.threadId),
-              turnId: String(turnId),
+              turnId: String(newTurnId),
               followUpLength: followUpMessage.length,
             });
             yield* forkChatStream(
               context,
               chatId,
-              turnId,
+              newTurnId,
               followUpMessage,
               "local-agent",
             );
@@ -2180,33 +2223,29 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           } else if (entry.kind === "app-blueprint") {
             if (entry.chatId !== undefined && decision !== "decline") {
               const blueprintChatId = entry.chatId;
+              // Normalize edits to string map for atomic approve.
+              const normalizedEdits: Record<string, string> | undefined = (() => {
+                if (!blueprintEdits || typeof blueprintEdits !== "object") return undefined;
+                const out: Record<string, string> = {};
+                for (const [k, v] of Object.entries(blueprintEdits)) {
+                  if (typeof v === "string") out[k] = v;
+                }
+                return Object.keys(out).length > 0 ? out : undefined;
+              })();
               yield* Effect.logInfo("[engine-adapter] app-blueprint approve branch", {
                 threadId: String(threadId),
                 chatId: blueprintChatId,
                 requestId: String(requestId),
-                editFieldCount: blueprintEdits ? Object.keys(blueprintEdits).length : 0,
-                editFields: blueprintEdits ? Object.keys(blueprintEdits) : [],
+                editFieldCount: normalizedEdits ? Object.keys(normalizedEdits).length : 0,
+                editFields: normalizedEdits ? Object.keys(normalizedEdits) : [],
               });
-              // Apply any user edits before approving so the engine builds from
-              // the edited blueprint, not the original draft.
-              if (blueprintEdits !== undefined) {
-                for (const [field, value] of Object.entries(blueprintEdits)) {
-                  if (typeof value !== "string" || value === "") continue;
-                  yield* Effect.tryPromise({
-                    try: () =>
-                      client.dyadInvoke("app-blueprint:edit-field", {
-                        chatId: blueprintChatId,
-                        field,
-                        value,
-                      }),
-                    catch: (cause) =>
-                      processError(threadId, "engine app-blueprint edit-field failed", cause),
-                  }).pipe(Effect.ignore);
-                }
-              }
+              // Atomic approve with edits so the engine builds from the edited
+              // blueprint in a single transaction (no N× edit-field round-trips).
+              const approvePayload: Record<string, unknown> = { chatId: blueprintChatId };
+              if (normalizedEdits) approvePayload.edits = normalizedEdits;
               yield* Effect.tryPromise({
                 try: () =>
-                  client.dyadInvoke("app-blueprint:approve", { chatId: blueprintChatId }),
+                  client.dyadInvoke("app-blueprint:approve", approvePayload),
                 catch: (cause) => processError(threadId, "engine app-blueprint approve failed", cause),
               }).pipe(
                 Effect.tap(() =>
@@ -2214,6 +2253,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                     threadId: String(threadId),
                     chatId: blueprintChatId,
                     requestId: String(requestId),
+                    hasEdits: normalizedEdits !== undefined,
                   }),
                 ),
                 Effect.ignore,

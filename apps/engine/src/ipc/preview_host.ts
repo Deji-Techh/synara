@@ -94,28 +94,78 @@ function isNodeProject(appDir: string): boolean {
 }
 
 async function ensureNodeDependenciesInstalled(appDir: string): Promise<void> {
-  const nodeModules = path.join(appDir, "node_modules");
-  if (fs.existsSync(nodeModules)) return;
-  // Best-effort `npm install` so `npm run dev` doesn't fail with "vite: not found".
-  // Uses a longer timeout (3 min) and streams logs into the preview buffer when available.
+  const pkgPath = path.join(appDir, "package.json");
+  let pkg: { dependencies?: Record<string, string>; devDependencies?: Record<string, string> } = {};
   try {
-    logger.info(`preview: installing node dependencies for ${appDir}`);
-    const command = process.platform === "win32" ? "npm.cmd" : "npm";
-    const result = await spawnStreaming({
-      command,
-      args: ["install", "--silent"],
-      cwd: appDir,
-      env: { ...process.env, CI: "1" },
-      timeoutMs: 3 * 60 * 1000,
-    });
-    if (result.code !== 0) {
-      logger.warn(`preview: npm install exited with code ${result.code} for ${appDir}`);
+    pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+  } catch {}
+  const isExpo = Boolean(pkg.dependencies?.expo ?? pkg.devDependencies?.expo);
+  const nodeModules = path.join(appDir, "node_modules");
+
+  // 1) If node_modules is completely missing, do a full install.
+  if (!fs.existsSync(nodeModules)) {
+    try {
+      logger.info(`preview: installing node dependencies for ${appDir}`);
+      const command = process.platform === "win32" ? "npm.cmd" : "npm";
+      const result = await spawnStreaming({
+        command,
+        args: ["install", "--silent"],
+        cwd: appDir,
+        env: { ...process.env, CI: "1" },
+        timeoutMs: 3 * 60 * 1000,
+      });
+      if (result.code !== 0) {
+        logger.warn(`preview: npm install exited with code ${result.code} for ${appDir}`);
+      }
+    } catch (error) {
+      logger.warn(
+        `preview: npm install failed for ${appDir}: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
-  } catch (error) {
-    logger.warn(
-      `preview: npm install failed for ${appDir}: ${error instanceof Error ? error.message : String(error)}`,
-    );
-    // Don't throw – let the subsequent `npm run dev` surface a clearer error.
+  }
+
+  // 2) Expo web needs react-dom + react-native-web even when node_modules exists.
+  // Fresh `expo` templates often ship without them; `expo start --web` then fails
+  // with "CommandError: It looks like you're trying to use web support but don't have
+  // the required dependencies installed." Auto-install them so the preview can start.
+  if (isExpo) {
+    const hasReactDom = fs.existsSync(path.join(nodeModules, "react-dom"));
+    const hasRNWeb = fs.existsSync(path.join(nodeModules, "react-native-web"));
+    if (!hasReactDom || !hasRNWeb) {
+      try {
+        logger.info(`preview: expo web deps missing for ${appDir} — installing react-dom + react-native-web`);
+        // Prefer `npx expo install` so versions are pinned to the expo SDK.
+        const expoInstall = await spawnStreaming({
+          command: "npx",
+          args: ["expo", "install", "react-dom", "react-native-web", "--fix"],
+          cwd: appDir,
+          env: { ...process.env, CI: "1" },
+          timeoutMs: 3 * 60 * 1000,
+        });
+        if (expoInstall.code !== 0) {
+          logger.warn(
+            `preview: npx expo install exited ${expoInstall.code} for ${appDir}: ${expoInstall.stderr.slice(-600)}`,
+          );
+          // Fallback to plain npm install of the same packages.
+          const fallback = await spawnStreaming({
+            command: process.platform === "win32" ? "npm.cmd" : "npm",
+            args: ["install", "--silent", "react-dom", "react-native-web"],
+            cwd: appDir,
+            env: { ...process.env, CI: "1" },
+            timeoutMs: 2 * 60 * 1000,
+          });
+          if (fallback.code !== 0) {
+            logger.warn(`preview: fallback npm install web deps exited ${fallback.code} for ${appDir}`);
+          }
+        } else {
+          logger.info(`preview: installed expo web deps for ${appDir}`);
+        }
+      } catch (error) {
+        logger.warn(
+          `preview: failed to install expo web deps for ${appDir}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
   }
 }
 
@@ -182,11 +232,16 @@ export function getNodePreviewLaunch(
       CaideErrorKind.Precondition,
     );
   }
-  const args = isExpo
-    ? ["--web", "--host", hostname, "--port", String(port)]
-    : script === "dev"
-      ? ["--host", hostname, "--port", String(port)]
-      : ["--port", String(port)];
+  // For Expo, `npm run web` already expands to `expo start --web`, so adding another
+  // `--web` would duplicate (`--web --web`). Only inject `--web` when the chosen
+  // script doesn't already contain it.
+  let args: string[];
+  if (isExpo) {
+    const needsWebFlag = script !== "web";
+    args = [...(needsWebFlag ? ["--web"] : []), "--host", hostname, "--port", String(port)];
+  } else {
+    args = script === "dev" ? ["--host", hostname, "--port", String(port)] : ["--port", String(port)];
+  }
   return { script, args, isExpo };
 }
 

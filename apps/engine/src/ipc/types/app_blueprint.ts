@@ -57,6 +57,7 @@ export type AppBlueprintVisualsUpdatePayload = z.infer<
 
 export const AppBlueprintApproveSchema = z.object({
   chatId: z.number(),
+  edits: z.record(z.string(), z.string()).optional(),
 });
 
 export type AppBlueprintApprovePayload = z.infer<typeof AppBlueprintApproveSchema>;
