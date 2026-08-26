@@ -431,7 +431,18 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               const persistentThreadId = persistent.get(chatId);
               if (persistentThreadId) {
                 return Ref.get(sessions).pipe(
-                  Effect.map((next) => next.get(persistentThreadId) ?? null),
+                  Effect.map((next) => {
+                    const session = next.get(persistentThreadId) ?? null;
+                    if (session === null) {
+                      Effect.runSync(
+                        Effect.logWarning("[engine-adapter] sessionForChat persistent miss", {
+                          chatId,
+                          threadId: String(persistentThreadId),
+                        }),
+                      );
+                    }
+                    return session;
+                  }),
                 );
               }
               return Ref.get(sessions).pipe(
@@ -439,6 +450,9 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                   for (const context of next.values()) {
                     if (context.chatMapping?.chatId === chatId) return context;
                   }
+                  Effect.runSync(
+                    Effect.logWarning("[engine-adapter] sessionForChat unresolvable", { chatId }),
+                  );
                   return null;
                 }),
               );
@@ -580,6 +594,22 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           if (typeof envelope.channel !== "string") return;
           method = envelope.channel;
           params = envelope.payload;
+        }
+        // DEBUG: trace interaction-channel notifications (questionnaire,
+        // blueprint, consent, env-vars) so we can see whether they reach the
+        // adapter and what chatId they carry.
+        if (
+          method === "plan:questionnaire" ||
+          method === "app-blueprint:update" ||
+          method === "agent-tool:consent-request" ||
+          method === "agent-tool:prompt-env-vars"
+        ) {
+          const debugPayload = (params ?? {}) as Record<string, unknown>;
+          yield* Effect.logInfo("[engine-adapter] interaction notification", {
+            channel: method,
+            chatId: debugPayload.chatId,
+            requestId: debugPayload.requestId,
+          });
         }
         const payload = (params ?? {}) as Record<string, unknown>;
         switch (method) {
@@ -846,13 +876,19 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               })
               .filter((task): task is NonNullable<typeof task> => task !== null);
             if (tasks.length === 0) return;
-            yield* publishEvent(
+yield* publishEvent(
               makeEvent<ProviderRuntimeEvent>(context.threadId, {
-                type: "turn.tasks.updated",
-                turnId,
-                payload: { tasks },
+                type: "user-input.requested",
+                requestId: requestId as never,
+                payload: { questions },
               }),
             );
+            yield* Effect.logInfo("[engine-adapter] published user-input.requested", {
+              chatId: payload.chatId,
+              requestId,
+              threadId: String(context.threadId),
+              questionCount: questions.length,
+            });
             return;
           }
 

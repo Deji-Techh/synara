@@ -1690,6 +1690,18 @@ const make = Effect.gen(function* () {
   const processRuntimeEvent = (event: ProviderRuntimeEvent) =>
     Effect.gen(function* () {
       const now = event.createdAt;
+      // DEBUG: trace interaction events through ingestion.
+      if (
+        event.type === "user-input.requested" ||
+        event.type === "request.opened" ||
+        event.type === "user-input.resolved"
+      ) {
+        yield* Effect.logInfo("[ingestion] processing interaction event", {
+          type: event.type,
+          threadId: String(event.threadId),
+          eventId: String(event.eventId),
+        });
+      }
       // Load the full (heavy) detail only when this event's handlers actually read
       // thread.messages / proposedPlans / checkpoints; otherwise use the cheap
       // shell so high-frequency streaming events don't re-decode the whole
