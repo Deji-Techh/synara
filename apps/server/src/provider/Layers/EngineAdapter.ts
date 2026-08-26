@@ -880,7 +880,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 threadId: context.threadId,
                 ...(chatId !== undefined ? { chatId } : {}),
               }),
-            ).pipe(Effect.map(([ok]) => ok));
+            );
             if (!registered) return;
             const toolName = (String(payload.toolName ?? "").trim() || "tool");
             yield* publishEvent(
@@ -914,7 +914,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 threadId: context.threadId,
                 ...(chatId !== undefined ? { chatId } : {}),
               }),
-            ).pipe(Effect.map(([ok]) => ok));
+            );
             if (!registered) return;
             const toolName = (String(payload.toolName ?? "").trim() || "tool");
             const serverName = payload.serverName;
@@ -994,7 +994,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 threadId: context.threadId,
                 chatId: payload.chatId as number,
               }),
-            ).pipe(Effect.map(([ok]) => ok));
+            );
             if (!registered) return;
             const questions = Array.isArray(payload.questions)
               ? payload.questions
@@ -1057,7 +1057,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 threadId: context.threadId,
                 chatId: payload.chatId as number,
               }),
-            ).pipe(Effect.map(([ok]) => ok));
+            );
             if (!registered) return;
             const questions = Array.isArray(payload.vars)
               ? (payload.vars as unknown[])
@@ -1143,7 +1143,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 threadId: context.threadId,
                 chatId,
               }),
-            ).pipe(Effect.map(([ok]) => ok));
+            );
             if (!registered) return;
             yield* publishEvent(
               makeEvent<ProviderRuntimeEvent>(context.threadId, {
