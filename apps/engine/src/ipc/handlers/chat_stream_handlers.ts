@@ -757,6 +757,7 @@ ${componentSnippet}
         }
 
         const isLocalAgentMode = selectedChatMode === "local-agent";
+        const isAskMode = selectedChatMode === "ask";
         const isPlanMode = selectedChatMode === "plan";
         const willUseLocalAgentStream = isLocalAgentBackedMode(selectedChatMode);
 
@@ -1392,9 +1393,29 @@ This conversation includes one or more image attachments. When the user uploads 
           return fullResponse;
         };
 
-        // Handle ask mode: use local-agent in read-only mode
-        // Ask mode (removed) now routes through the local-agent stream; the
-        // agent path below (isLocalAgentMode) covers it.
+        // Handle ask mode: use local-agent in read-only mode (Q&A, no file edits — better than dyad removal)
+        if (isAskMode && !isSecurityReviewIntent) {
+          const readOnlySystemPrompt = constructSystemPrompt({
+            aiRules,
+            chatMode: "local-agent",
+            enableTurboEditsV2: false,
+            themePrompt,
+            freeModelMode,
+            frameworkType,
+          });
+          await handleLocalAgentStream(event, req, abortController, {
+            placeholderMessageId: placeholderAssistantMessage.id,
+            systemPrompt: readOnlySystemPrompt,
+            caideRequestId: caideRequestId ?? "[no-request-id]",
+            readOnly: true,
+            messageOverride: isSummarizeIntent ? chatMessages : undefined,
+            settingsOverride: settings,
+            freeModelMode,
+            referencedApps: referencedAppsForAgent,
+            currentTurnHasOnDiskAttachment: false,
+          });
+          return req.chatId;
+        }
 
         // Handle plan mode: use local-agent with plan tools only
         // Plan mode is for requirements gathering and creating implementation plans

@@ -168,19 +168,19 @@ export const StoredChatModeSchema = z.enum([
 export type StoredChatMode = z.infer<typeof StoredChatModeSchema>;
 
 /**
- * Active chat modes. Build and ask are deprecated product modes — plan is
- * requirements/planning, local-agent (agent) is the full agent. Both route
- * through the local-agent tool-calling stream.
+ * Active chat modes. Build is alias for local-agent, ask is read-only Q&A,
+ * local-agent is full agent, plan is requirements/planning. All route through
+ * the local-agent tool-calling stream but ask uses readOnly flag.
  */
-export const ChatModeSchema = z.enum(["local-agent", "plan"]);
+export const ChatModeSchema = z.enum(["local-agent", "plan", "ask", "build"]);
 export type ChatMode = z.infer<typeof ChatModeSchema>;
 
 /**
- * Every active mode streams through the local agent (tool-calling) path.
- * Kept for call sites that gate codebase injection / token estimation.
+ * Every active mode streams through the local agent (tool-calling) path,
+ * except legacy build which uses codebase-priming streamText.
  */
 export function isLocalAgentBackedMode(mode: ChatMode | undefined): boolean {
-  return mode === "local-agent" || mode === "plan";
+  return mode === "local-agent" || mode === "plan" || mode === "ask";
 }
 
 export const GitHubSecretsSchema = z.object({
@@ -443,14 +443,13 @@ export type UserSettings = z.infer<typeof UserSettingsSchema>;
 
 /**
  * Migrates a stored chat mode to an active chat mode.
- * Converts deprecated "agent" mode to "build".
+ * Build preserved as legacy, ask preserved as read-only, agent→local-agent.
  */
 export function migrateStoredChatMode(mode: StoredChatMode | undefined): ChatMode | undefined {
-  // Build and ask were predecessor product modes. They now route through the
-  // local-agent (agent) stream so no new prompt/streaming path is needed.
-  if (mode === "build" || mode === "ask" || mode === "agent") {
+  if (mode === "agent") {
     return "local-agent";
   }
+  // build and ask are preserved as distinct active modes
   return mode;
 }
 
