@@ -165,6 +165,22 @@ export function ownsPendingRequest(
   return entry.chatId === undefined || entry.chatId === chatId;
 }
 
+export function chatSettlementKey(chatId: number, turnId: TurnId | null): string {
+  return turnId !== null ? `${chatId}::${String(turnId)}` : String(chatId);
+}
+
+export function transcriptKey(turnId: TurnId, messageId: string): string {
+  return `${String(turnId)}::${messageId}`;
+}
+
+export function isSettledForChatTurn(
+  settled: ReadonlySet<string>,
+  chatId: number,
+  turnId: TurnId | null,
+): boolean {
+  return settled.has(chatSettlementKey(chatId, turnId));
+}
+
 interface EngineSessionContext {
   readonly threadId: ThreadId;
   session: ProviderSession;
@@ -214,7 +230,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
     // intentionally never cleared on stream-end or stop.
     const chatIdToThread = yield* Ref.make<ReadonlyMap<number, ThreadId>>(new Map());
     const pendingRequests = yield* Ref.make<ReadonlyMap<string, PendingEngineRequest>>(new Map());
-    const settledChats = yield* Ref.make<ReadonlySet<number>>(new Set());
+    const settledChats = yield* Ref.make<ReadonlySet<string>>(new Set());
     const goalsEventQueue = yield* PubSub.unbounded<{
       type: "goal.updated" | "goal.run-requested" | "goal.control-requested";
       payload: unknown;
@@ -460,13 +476,45 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         }),
       );
 
-    const claimChatSettlement = (chatId: number): Effect.Effect<boolean> =>
+    const claimChatSettlement = (
+      chatId: number,
+      turnId: TurnId | null,
+    ): Effect.Effect<boolean> =>
       Ref.modify(settledChats, (set) => {
-        if (set.has(chatId)) return [false, set] as const;
+        const key = chatSettlementKey(chatId, turnId);
+        if (set.has(key)) return [false, set] as const;
         const next = new Set(set);
-        next.add(chatId);
+        next.add(key);
         return [true, next] as const;
       });
+
+    const clearSettledForChat = (chatId: number): Effect.Effect<void> =>
+      Ref.update(settledChats, (set) => {
+        const next = new Set<string>();
+        for (const key of set) {
+          if (!key.startsWith(`${chatId}::`) && key !== String(chatId)) next.add(key);
+        }
+        return next;
+      });
+
+    const clearEmittedForTurn = (context: EngineSessionContext, turnId: TurnId): void => {
+      const prefix = `${String(turnId)}::`;
+      for (const key of Array.from(context.emittedTranscriptRef.current.keys())) {
+        if (key.startsWith(prefix)) context.emittedTranscriptRef.current.delete(key);
+      }
+    };
+
+    const assertChatOwnership = (
+      context: EngineSessionContext,
+      chatId: number,
+    ): boolean => {
+      // chatId must be bound to this thread's session (or the persistent registry)
+      // and the session's chatMapping (when present) must match.
+      if (context.chatMapping !== null && context.chatMapping.chatId !== chatId) {
+        return false;
+      }
+      return true;
+    };
 
     // ── Engine chat turn helpers ──────────────────────────────────────────
 
@@ -537,9 +585,10 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               yield* publishSnapshot(context.threadId, turnId, text, messageId);
             }
           }
-          const alreadyLaunched = emitted.get(`${messageId}:tools`) ?? 0;
+          const toolsKey = transcriptKey(turnId, `${messageId}:tools`);
+          const alreadyLaunched = emitted.get(toolsKey) ?? 0;
           if (toolBlocks.length > alreadyLaunched) {
-            emitted.set(`${messageId}:tools`, toolBlocks.length);
+            emitted.set(toolsKey, toolBlocks.length);
             for (const tool of toolBlocks.slice(alreadyLaunched)) {
               const toolName = (String(tool.name ?? "").trim() || "tool");
               const callId =
@@ -617,14 +666,14 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             if (typeof payload.chatId !== "number") return;
             const chatId = payload.chatId as number;
             if (method === "chat:stream:start") {
-              yield* Ref.update(settledChats, (set) => {
-                const next = new Set(set);
-                next.delete(chatId);
-                return next;
-              });
+              // New turn: clear any prior terminal for this chat (scoped by chat+turn).
+              // Settlement keys include turnId, so simply drop stale keys for this chat.
+              yield* clearSettledForChat(chatId);
             } else {
               const context = yield* sessionForChat(chatId);
-              const claimed = yield* claimChatSettlement(chatId);
+              if (context !== null && !assertChatOwnership(context, chatId)) return;
+              const turnId = context?.currentTurnIdRef.current ?? null;
+              const claimed = yield* claimChatSettlement(chatId, turnId);
               if (claimed && context !== null) {
                 // The engine ended the stream without a chat:response:end
                 // (abort/restart mid-turn). Close the turn cleanly.
@@ -636,6 +685,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                     payload: { reason: "engine stream ended before response" },
                   }),
                 );
+                if (turnId !== null) clearEmittedForTurn(context, turnId);
                 context.currentTurnIdRef.current = null;
                 markSessionIdle(context, "interrupted");
               }
@@ -652,6 +702,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             const chatId = payload.chatId as number;
             const context = yield* sessionForChat(chatId);
             if (context === null) return;
+            if (!assertChatOwnership(context, chatId)) return;
             const turnId = context.currentTurnIdRef.current;
             if (turnId === null) return;
 
@@ -683,7 +734,8 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               );
               const messageId = streamingMessageId ?? "streaming";
               const emitted = context.emittedTranscriptRef.current;
-              emitted.set(messageId, (emitted.get(messageId) ?? 0) + payload.streamingPatch.length);
+              const scopedKey = transcriptKey(turnId, messageId);
+              emitted.set(scopedKey, (emitted.get(scopedKey) ?? 0) + payload.streamingPatch.length);
             } else if (
               typeof payload.streamingPatch === "object" &&
               payload.streamingPatch !== null &&
@@ -698,7 +750,8 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                   ? String(payload.streamingMessageId)
                   : "streaming";
               const emitted = context.emittedTranscriptRef.current;
-              const emittedLength = emitted.get(messageId) ?? 0;
+              const scopedKey = transcriptKey(turnId, messageId);
+              const emittedLength = emitted.get(scopedKey) ?? 0;
               if (patchText !== "" && patchOffset >= emittedLength) {
                 yield* publishTextDelta(
                   context.threadId,
@@ -707,7 +760,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                   undefined,
                   messageId,
                 );
-                emitted.set(messageId, patchOffset + patchText.length);
+                emitted.set(scopedKey, patchOffset + patchText.length);
               }
             }
             if (payload.messages !== undefined) {
@@ -720,8 +773,9 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             const chatId = payload.chatId as number;
             const context = yield* sessionForChat(chatId);
             if (context === null) return;
-            if (!(yield* claimChatSettlement(chatId))) return;
+            if (!assertChatOwnership(context, chatId)) return;
             const turnId = context.currentTurnIdRef.current;
+            if (!(yield* claimChatSettlement(chatId, turnId))) return;
             const wasCancelled = payload.wasCancelled === true;
             // Ensure the tail of any final message was flushed.
             if (Array.isArray(payload.messages)) {
@@ -751,7 +805,10 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             const hasMessages =
               hasVisiblePayloadMessage ||
               [...context.emittedTranscriptRef.current.entries()].some(
-                ([key, count]) => !key.endsWith(":tools") && count > 0,
+                ([key, count]) =>
+                  !key.endsWith(":tools") &&
+                  count > 0 &&
+                  (turnId === null || key.startsWith(`${String(turnId)}::`)),
               );
             const hasPlan =
               typeof payload.planMarkdown === "string" && payload.planMarkdown.trim() !== "";
@@ -769,6 +826,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               yield* publishTurnSettled(context.threadId, turnId, "failed", "empty_response", {
                 errorMessage: "Engine completed without a response.",
               });
+              if (turnId !== null) clearEmittedForTurn(context, turnId);
               context.currentTurnIdRef.current = null;
               markSessionIdle(context, "error");
               return;
@@ -789,6 +847,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 ? { usage: { updatedFiles: payload.updatedFiles as unknown[] } }
                 : undefined,
             );
+            if (turnId !== null) clearEmittedForTurn(context, turnId);
             context.currentTurnIdRef.current = null;
             markSessionIdle(context, wasCancelled ? "interrupted" : "ready");
             return;
@@ -798,6 +857,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             const chatId = payload.chatId as number;
             const context = yield* sessionForChat(chatId);
             if (context === null) return;
+            if (!assertChatOwnership(context, chatId)) return;
             const turnId = context.currentTurnIdRef.current;
             if (turnId === null) return;
 
@@ -817,8 +877,9 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             const chatId = payload.chatId as number;
             const context = yield* sessionForChat(chatId);
             if (context === null) return;
-            if (!(yield* claimChatSettlement(chatId))) return;
+            if (!assertChatOwnership(context, chatId)) return;
             const turnId = context.currentTurnIdRef.current;
+            if (!(yield* claimChatSettlement(chatId, turnId))) return;
             const message = (String(payload.error ?? "").trim() || "engine turn failed");
             yield* publishEvent(
               makeEvent<ProviderRuntimeEvent>(context.threadId, {
@@ -847,6 +908,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               "error",
               message !== "" ? { errorMessage: message } : undefined,
             );
+            if (turnId !== null) clearEmittedForTurn(context, turnId);
             context.currentTurnIdRef.current = null;
             markSessionIdle(context, "error");
             return;
@@ -854,8 +916,10 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
 
           case "agent-tool:todos-update": {
             if (typeof payload.chatId !== "number") return;
-            const context = yield* sessionForChat(payload.chatId);
+            const chatId = payload.chatId as number;
+            const context = yield* sessionForChat(chatId);
             if (context === null) return;
+            if (!assertChatOwnership(context, chatId)) return;
             const turnId = context.currentTurnIdRef.current;
             if (turnId === null || !Array.isArray(payload.todos)) return;
             const tasks = payload.todos
@@ -891,6 +955,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             const chatId = typeof payload.chatId === "number" ? payload.chatId : undefined;
             const context = chatId !== undefined ? yield* sessionForChat(chatId) : null;
             if (context === null) return;
+            if (chatId !== undefined && !assertChatOwnership(context, chatId)) return;
             const registered = yield* Ref.modify(pendingRequests, (map) =>
               tryRegisterPendingRequest(map, requestId, {
                 kind: "agent-tool-consent",
@@ -925,6 +990,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             const chatId = typeof payload.chatId === "number" ? payload.chatId : undefined;
             const context = chatId !== undefined ? yield* sessionForChat(chatId) : null;
             if (context === null) return;
+            if (chatId !== undefined && !assertChatOwnership(context, chatId)) return;
             const registered = yield* Ref.modify(pendingRequests, (map) =>
               tryRegisterPendingRequest(map, requestId, {
                 kind: "mcp-consent",
@@ -1001,8 +1067,10 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
 
           case "plan:questionnaire": {
             if (typeof payload.chatId !== "number") return;
-            const context = yield* sessionForChat(payload.chatId);
+            const chatId = payload.chatId as number;
+            const context = yield* sessionForChat(chatId);
             if (context === null) return;
+            if (!assertChatOwnership(context, chatId)) return;
             const requestId = String(payload.requestId ?? "");
             if (requestId === "") return;
             const registered = yield* Ref.modify(pendingRequests, (map) =>
@@ -1064,8 +1132,10 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
 
           case "agent-tool:prompt-env-vars": {
             if (typeof payload.chatId !== "number") return;
-            const context = yield* sessionForChat(payload.chatId);
+            const chatId = payload.chatId as number;
+            const context = yield* sessionForChat(chatId);
             if (context === null) return;
+            if (!assertChatOwnership(context, chatId)) return;
             const requestId = String(payload.requestId ?? "");
             if (requestId === "") return;
             const registered = yield* Ref.modify(pendingRequests, (map) =>
@@ -1151,6 +1221,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             const chatId = payload.chatId as number;
             const context = yield* sessionForChat(chatId);
             if (context === null) return;
+            if (!assertChatOwnership(context, chatId)) return;
             const data = (payload.data ?? {}) as Record<string, unknown>;
             const appName = (String(data.appName ?? "App").trim() || "App");
             const requestId = `app-blueprint:${chatId}:${Date.now()}`;
@@ -1196,6 +1267,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               });
               return;
             }
+            if (!assertChatOwnership(context, chatId)) return;
             // Always allocate a fresh turnId for the follow-up. Reusing
             // currentTurnIdRef would interleave two streams on the same turn
             // and make per-chat settlement drop one terminal.
@@ -1210,15 +1282,13 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 },
               );
             }
-            // Clear per-chat settlement so the new turn can claim its terminal.
-            yield* Ref.update(settledChats, (set) => {
-              const next = new Set(set);
-              next.delete(chatId);
-              return next;
-            });
+            // Clear per-chat settlement (scoped by chat+turn) so the new turn can claim its terminal.
+            yield* clearSettledForChat(chatId);
             context.currentTurnIdRef.current = newTurnId;
             markSessionRunning(context, newTurnId);
-            context.emittedTranscriptRef.current.delete("streaming");
+            if (context.currentTurnIdRef.current !== null) {
+              clearEmittedForTurn(context, newTurnId);
+            }
             yield* publishEvent(
               makeEvent<ProviderRuntimeEvent>(context.threadId, {
                 type: "turn.started",
@@ -1636,11 +1706,37 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             try: () => client.dyadInvoke<Array<Record<string, unknown>>>("get-chats", appId),
             catch: (cause) => processError(context.threadId, "engine get-chats failed", cause),
           });
+          const persistedChatId = threadRow.engineChatId;
           const persistedChat =
             Array.isArray(chatsResponse) &&
-            chatsResponse.find((candidate) => candidate?.id === threadRow.engineChatId);
+            chatsResponse.find((candidate) => candidate?.id === persistedChatId);
           if (persistedChat !== undefined) {
-            chatId = threadRow.engineChatId;
+            // Ownership verification: the persisted chat must be under the thread's owning app.
+            // get-chats was scoped to the resolved appId, so existence proves app ownership.
+            // Additionally verify the thread's project has not been rebound to a different app.
+            chatId = persistedChatId;
+          } else {
+            // Restart verification: persisted mapping is stale or belongs to another project/app.
+            // Create a fresh engine chat instead of silently rebinding a mismatched one.
+            yield* Effect.logWarning(
+              "[engine-adapter] persisted chat mismatch — creating fresh chat",
+              {
+                threadId: String(context.threadId),
+                persistedChatId,
+                resolvedAppId: appId,
+              },
+            );
+            // Ensure stale chat→thread entries do not linger
+            yield* Ref.update(chatToThread, (map) => {
+              const next = new Map(map);
+              next.delete(persistedChatId);
+              return next;
+            });
+            yield* Ref.update(chatIdToThread, (map) => {
+              const next = new Map(map);
+              next.delete(persistedChatId);
+              return next;
+            });
           }
         }
 
@@ -1726,8 +1822,8 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           onSuccess: () => Effect.void,
           onFailure: (error) =>
             Effect.gen(function* () {
-              if (!(yield* claimChatSettlement(chatId))) return;
               const turn = context.currentTurnIdRef.current;
+              if (!(yield* claimChatSettlement(chatId, turn))) return;
               const transportMessage = (error.message.trim() || "engine chat:stream failed");
               yield* publishEvent(
                 makeEvent<ProviderRuntimeEvent>(context.threadId, {
@@ -2070,11 +2166,14 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           const turnId = TurnId.makeUnsafe(randomUUID());
           context.currentTurnIdRef.current = turnId;
           markSessionRunning(context, turnId);
-          // Keep per-message emission state across turns so the engine's
-          // full-transcript `messages` payloads on the next turn don't
-          // replay prior assistant messages as new deltas. Only the generic
-          // streaming key (used when no messageId is supplied) is reset.
-          context.emittedTranscriptRef.current.delete("streaming");
+          // Transcript offsets are scoped by chat+turn. Prior turn's streaming
+          // state must not leak into the new turn's offsets, so clear any
+          // leftover generic key. Per-turn tool keys remain isolated via prefix.
+          for (const key of Array.from(context.emittedTranscriptRef.current.keys())) {
+            if (key === "streaming" || key === transcriptKey(turnId, "streaming")) {
+              context.emittedTranscriptRef.current.delete(key);
+            }
+          }
           yield* publishEvent(
             makeEvent<ProviderRuntimeEvent>(input.threadId, {
               type: "turn.started",
@@ -2167,7 +2266,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           const shouldSettle =
             pending === null
               ? context.currentTurnIdRef.current !== null
-              : yield* claimChatSettlement(pending.chatId);
+              : yield* claimChatSettlement(pending.chatId, context.currentTurnIdRef.current);
           if (pending !== null) {
             const { client } = yield* ensureSharedEngine(threadId);
             yield* Effect.tryPromise({
