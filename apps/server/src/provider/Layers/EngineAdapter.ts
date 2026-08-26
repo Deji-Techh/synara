@@ -1181,9 +1181,22 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             // blueprint (mirrors dyad's renderer starting the follow-up turn).
             if (typeof payload.chatId !== "number") return;
             const chatId = payload.chatId as number;
+            yield* Effect.logInfo("[engine-adapter] app-blueprint:approved arrived", {
+              chatId,
+            });
             const context = yield* sessionForChat(chatId);
-            if (context === null) return;
+            if (context === null) {
+              yield* Effect.logWarning("[engine-adapter] app-blueprint:approved no session", {
+                chatId,
+              });
+              return;
+            }
             const turnId = context.currentTurnIdRef.current ?? TurnId.makeUnsafe(randomUUID());
+            yield* Effect.logInfo("[engine-adapter] app-blueprint:approved forking follow-up", {
+              chatId,
+              threadId: String(context.threadId),
+              turnId: String(turnId),
+            });
             yield* forkChatStream(
               context,
               chatId,
@@ -2161,7 +2174,16 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 try: () =>
                   client.dyadInvoke("app-blueprint:approve", { chatId: blueprintChatId }),
                 catch: (cause) => processError(threadId, "engine app-blueprint approve failed", cause),
-              }).pipe(Effect.ignore);
+              }).pipe(
+                Effect.tap(() =>
+                  Effect.logInfo("[engine-adapter] app-blueprint approve invoked", {
+                    threadId: String(threadId),
+                    chatId: blueprintChatId,
+                    requestId: String(requestId),
+                  }),
+                ),
+                Effect.ignore,
+              );
             }
           } else {
             yield* Effect.tryPromise({
