@@ -1,5 +1,10 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { CaideCard, CaideCardHeader } from "./CaideCardPrimitives";
+import { cn } from "~/lib/utils";
+import { newCommandId } from "~/lib/utils";
+import { ensureNativeApi } from "~/nativeApi";
+import { useOpenPendingUserInput } from "~/usePendingInteractionHooks";
+import { Button } from "../ui/button";
 
 export interface QuestionnaireQuestion {
   id?: string;
@@ -10,38 +15,63 @@ export interface QuestionnaireQuestion {
 
 interface CaideQuestionnaireCardProps {
   questions: QuestionnaireQuestion[];
-  onSubmit?: (answers: Record<string, string | string[]>) => void;
 }
 
 export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = ({
   questions = [],
-  onSubmit,
 }) => {
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [submitted, setSubmitted] = useState(false);
+  const pending = useOpenPendingUserInput();
 
-  const handleSelectOption = (qIdx: number, qKey: string, opt: string, isMulti: boolean) => {
+  const handleSelectOption = (qKey: string, opt: string, isMulti: boolean) => {
     if (submitted) return;
     setAnswers((prev) => {
       if (isMulti) {
         const current = (prev[qKey] as string[]) || [];
-        const next = current.includes(opt) ? current.filter((x) => x !== opt) : [...current, opt];
+        const next = current.includes(opt)
+          ? current.filter((x) => x !== opt)
+          : [...current, opt];
         return { ...prev, [qKey]: next };
-      } else {
-        return { ...prev, [qKey]: opt };
       }
+      return { ...prev, [qKey]: opt };
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitted(true);
-    if (onSubmit) {
-      onSubmit(answers);
-    }
-  };
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!pending || submitted) return;
+      setSubmitted(true);
+      const api = ensureNativeApi();
+      void api.orchestration
+        .dispatchCommand({
+          type: "thread.user-input.respond",
+          commandId: newCommandId(),
+          threadId: pending.threadId as never,
+          requestId: pending.requestId as never,
+          answers,
+          ...(pending.lifecycleGeneration
+            ? { lifecycleGeneration: pending.lifecycleGeneration as never }
+            : {}),
+          createdAt: new Date().toISOString(),
+        })
+        .catch((err: unknown) => {
+          setSubmitted(false);
+          console.error("questionnaire submit failed", err);
+        });
+    },
+    [pending, submitted, answers],
+  );
 
   if (!questions || questions.length === 0) return null;
+
+  // Render from the pending interaction's structured questions (which carry
+  // real ids + options) when available; otherwise fall back to the XML parse.
+  const effectiveQuestions =
+    pending && pending.pending.questions.length > 0
+      ? (pending.pending.questions as unknown as QuestionnaireQuestion[])
+      : questions;
 
   return (
     <CaideCard accentColor="amber" className="border-amber-500/30 bg-amber-500/[0.02]">
@@ -60,7 +90,7 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = ({
         </div>
       </CaideCardHeader>
       <form onSubmit={handleSubmit} className="px-3.5 pb-3 space-y-3.5 text-xs">
-        {questions.map((q, idx) => {
+        {effectiveQuestions.map((q, idx) => {
           const qKey = q.id || `q_${idx}`;
           const isMulti = q.type === "checkbox";
           const currentVal = answers[qKey];
@@ -81,19 +111,22 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = ({
                       <button
                         key={opt}
                         type="button"
-                        onClick={() => handleSelectOption(idx, qKey, opt, isMulti)}
-                        className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border text-left text-xs transition-colors cursor-pointer ${
+                        onClick={() => handleSelectOption(qKey, opt, isMulti)}
+                        className={cn(
+                          "flex items-center gap-2.5 px-3 py-2 rounded-lg border text-left text-xs transition-colors cursor-pointer",
                           isSelected
                             ? "border-amber-500 bg-amber-500/10 text-foreground font-medium"
-                            : "border-border/60 hover:border-border hover:bg-muted/40 text-muted-foreground"
-                        }`}
+                            : "border-border/60 hover:border-border hover:bg-muted/40 text-muted-foreground",
+                        )}
                       >
                         <span
-                          className={`h-3.5 w-3.5 rounded-${isMulti ? "md" : "full"} border flex items-center justify-center shrink-0 ${
+                          className={cn(
+                            "h-3.5 w-3.5 border flex items-center justify-center shrink-0",
+                            isMulti ? "rounded-md" : "rounded-full",
                             isSelected
                               ? "border-amber-500 bg-amber-500 text-white"
-                              : "border-muted-foreground/50"
-                          }`}
+                              : "border-muted-foreground/50",
+                          )}
                         >
                           {isSelected && <span className="text-[9px] leading-none">✓</span>}
                         </span>
@@ -105,31 +138,36 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = ({
               ) : (
                 <input
                   type="text"
+                  value={(currentVal as string) ?? ""}
+                  onChange={(e) =>
+                    handleSelectOption(qKey, e.target.value, false)
+                  }
                   placeholder="Your answer..."
                   disabled={submitted}
-                  value={(currentVal as string) || ""}
-                  onChange={(e) => setAnswers((prev) => ({ ...prev, [qKey]: e.target.value }))}
-                  className="w-full px-3 py-1.5 text-xs rounded-lg border border-border/60 bg-background focus:border-amber-500 focus:outline-none"
+                  className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
                 />
               )}
             </div>
           );
         })}
-        <div className="pt-2 flex items-center justify-between border-t border-border/40">
+        <div className="flex items-center justify-between border-t border-border/40 pt-2.5">
           <span className="text-[11px] text-muted-foreground">
-            {submitted ? "✓ Answers submitted" : "Select options and submit to guide the agent"}
+            {submitted
+              ? "✓ Answers submitted"
+              : pending
+                ? "Select options and submit to guide the agent"
+                : "Answers were captured in the composer"}
           </span>
-          <button
-            type="submit"
-            disabled={submitted}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition-all ${
-              submitted
-                ? "bg-emerald-500 text-white cursor-default"
-                : "bg-amber-600 hover:bg-amber-500 text-white cursor-pointer active:scale-95"
-            }`}
-          >
-            {submitted ? "Submitted ✓" : "Submit Answers"}
-          </button>
+          {pending ? (
+            <Button
+              type="submit"
+              size="sm"
+              disabled={submitted}
+              className="rounded-full px-4"
+            >
+              {submitted ? "Submitted ✓" : "Submit answers"}
+            </Button>
+          ) : null}
         </div>
       </form>
     </CaideCard>

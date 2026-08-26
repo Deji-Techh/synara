@@ -1,6 +1,10 @@
-import React from "react";
+import React, { useCallback, useState } from "react";
 import { CaideCard, CaideCardHeader, CaideCardContent } from "./CaideCardPrimitives";
 import { cn } from "~/lib/utils";
+import { newCommandId } from "~/lib/utils";
+import { ensureNativeApi } from "~/nativeApi";
+import { useOpenPendingBlueprint } from "~/usePendingInteractionHooks";
+import { Button } from "../ui/button";
 
 interface CaideAppBlueprintCardProps {
   appName?: string | undefined;
@@ -23,22 +27,44 @@ export const CaideAppBlueprintCard: React.FC<CaideAppBlueprintCardProps> = ({
   description,
 }) => {
   const color = COLOR_RE.test(primaryColor) ? primaryColor : "#0284c7";
+  const [isApproving, setIsApproving] = useState(false);
+  const [approved, setApproved] = useState(false);
+  const pending = useOpenPendingBlueprint();
+
+  const handleApprove = useCallback(async () => {
+    if (!pending || isApproving || approved) return;
+    setIsApproving(true);
+    try {
+      const api = ensureNativeApi();
+      await api.orchestration.dispatchCommand({
+        type: "thread.approval.respond",
+        commandId: newCommandId(),
+        threadId: pending.threadId as never,
+        requestId: pending.requestId as never,
+        decision: "accept",
+        ...(pending.lifecycleGeneration
+          ? { lifecycleGeneration: pending.lifecycleGeneration as never }
+          : {}),
+        createdAt: new Date().toISOString(),
+      });
+      setApproved(true);
+    } catch {
+      setIsApproving(false);
+    }
+  }, [pending, isApproving, approved]);
 
   return (
-    <CaideCard
-      accentColor="purple"
-      className="border-purple-500/30 bg-gradient-to-b from-purple-500/[0.05] to-transparent"
-    >
+    <CaideCard accentColor="gray" className="border-border/70 bg-card/60">
       <CaideCardHeader
         icon={
-          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-purple-500/15 text-[12px] font-bold text-purple-500">
+          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary text-[12px] font-bold">
             ✦
           </div>
         }
       >
         <div className="flex w-full items-center justify-between gap-2">
           <div className="min-w-0">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-purple-500">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               App Blueprint
             </div>
             <div className="truncate text-[13px] font-semibold text-foreground">{appName}</div>
@@ -67,7 +93,7 @@ export const CaideAppBlueprintCard: React.FC<CaideAppBlueprintCardProps> = ({
               {features.map((feat, idx) => (
                 <span
                   key={idx}
-                  className="rounded-md bg-purple-500/10 px-2 py-0.5 text-[11px] font-medium text-purple-600 dark:text-purple-300"
+                  className="rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground/80"
                 >
                   {feat}
                 </span>
@@ -76,10 +102,29 @@ export const CaideAppBlueprintCard: React.FC<CaideAppBlueprintCardProps> = ({
           </div>
         )}
         <div className="mt-2.5 border-t border-border/40 pt-2.5">
-          <p className={cn("text-[11px] text-muted-foreground")}>
-            This blueprint waits for your review in the composer. Approve it there to start
-            building.
-          </p>
+          {approved ? (
+            <p className="text-[11px] text-muted-foreground">
+              Blueprint approved — building started.
+            </p>
+          ) : pending ? (
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] text-muted-foreground">
+                Approve to apply this blueprint and start building.
+              </p>
+              <Button
+                size="sm"
+                onClick={handleApprove}
+                disabled={isApproving}
+                className="h-7 px-3 text-xs font-semibold"
+              >
+                {isApproving ? "Approving..." : "Approve & Build"}
+              </Button>
+            </div>
+          ) : (
+            <p className="text-[11px] text-muted-foreground">
+              Blueprint was reviewed in the composer.
+            </p>
+          )}
         </div>
       </CaideCardContent>
     </CaideCard>

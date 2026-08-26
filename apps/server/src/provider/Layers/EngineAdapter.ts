@@ -2110,14 +2110,16 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
 
       respondToRequest: (threadId, requestId, decision, blueprintEdits) =>
         Effect.gen(function* () {
-          const context = yield* getSession(threadId);
+          // Do not require a live session here: the response must reach the
+          // engine even if the provider session was restarted (the chat binding
+          // survives via the persistent registry). The session is only needed
+          // for the chatId ownership check, which falls back to the registry.
           const key = pendingInteractionKey(threadId, String(requestId));
           const entry = yield* Ref.get(pendingRequests).pipe(
             Effect.map((map) => map.get(key) ?? null),
           );
           if (entry === null) return;
-          const chatId =
-            context.chatMapping?.chatId ?? (yield* resolveThreadChatId(threadId));
+          const chatId = yield* resolveThreadChatId(threadId);
           if (!ownsPendingRequest(entry, threadId, chatId)) return;
           const engineDecision =
             decision === "accept"
@@ -2196,7 +2198,8 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             threadId: String(threadId),
             requestId: String(requestId),
           });
-          const context = yield* getSession(threadId);
+          // Do not require a live session (see respondToRequest): the response
+          // must reach the engine even after a provider session restart.
           const key = pendingInteractionKey(threadId, String(requestId));
           const entry = yield* Ref.get(pendingRequests).pipe(
             Effect.map((map) => map.get(key) ?? null),
@@ -2208,8 +2211,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             });
             return;
           }
-          const chatId =
-            context.chatMapping?.chatId ?? (yield* resolveThreadChatId(threadId));
+          const chatId = yield* resolveThreadChatId(threadId);
           if (!ownsPendingRequest(entry, threadId, chatId)) {
             yield* Effect.logWarning("[engine-adapter] respondToUserInput owns check failed", {
               threadId: String(threadId),
