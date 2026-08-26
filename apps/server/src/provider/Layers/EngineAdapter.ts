@@ -1181,8 +1181,10 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             // blueprint (mirrors dyad's renderer starting the follow-up turn).
             if (typeof payload.chatId !== "number") return;
             const chatId = payload.chatId as number;
+            const blueprint = payload.blueprint as Record<string, unknown> | undefined;
             yield* Effect.logInfo("[engine-adapter] app-blueprint:approved arrived", {
               chatId,
+              hasBlueprint: blueprint !== undefined,
             });
             const context = yield* sessionForChat(chatId);
             if (context === null) {
@@ -1192,16 +1194,41 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               return;
             }
             const turnId = context.currentTurnIdRef.current ?? TurnId.makeUnsafe(randomUUID());
+            // Build the follow-up message with the approved blueprint data so
+            // the agent sees the exact configuration the user approved.
+            let followUpMessage = "[App blueprint approved — proceed with implementation.]";
+            if (blueprint && typeof blueprint === "object") {
+              const bp = blueprint as Record<string, unknown>;
+              const parts: string[] = [];
+              if (typeof bp.appName === "string") parts.push(`App name: ${bp.appName}`);
+              if (typeof bp.designDirection === "string")
+                parts.push(`Design direction: ${bp.designDirection}`);
+              if (typeof bp.primaryColor === "string")
+                parts.push(`Primary color: ${bp.primaryColor}`);
+              if (typeof bp.templateId === "string" && bp.templateId)
+                parts.push(`Template: ${bp.templateId}`);
+              if (typeof bp.themeId === "string" && bp.themeId) parts.push(`Theme: ${bp.themeId}`);
+              if (Array.isArray(bp.visuals) && bp.visuals.length > 0) {
+                const visualDescriptions = (bp.visuals as Array<Record<string, unknown>>)
+                  .map((v) => `${v.type}: ${v.description}`)
+                  .join(", ");
+                parts.push(`Visual assets: ${visualDescriptions}`);
+              }
+              if (parts.length > 0) {
+                followUpMessage = `[App blueprint approved — proceed with implementation.]\n\nApproved blueprint:\n${parts.map((p) => `- ${p}`).join("\n")}`;
+              }
+            }
             yield* Effect.logInfo("[engine-adapter] app-blueprint:approved forking follow-up", {
               chatId,
               threadId: String(context.threadId),
               turnId: String(turnId),
+              followUpLength: followUpMessage.length,
             });
             yield* forkChatStream(
               context,
               chatId,
               turnId,
-              "[App blueprint approved — proceed with implementation.]",
+              followUpMessage,
               "local-agent",
             );
             return;

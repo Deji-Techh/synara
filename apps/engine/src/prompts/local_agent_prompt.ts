@@ -50,6 +50,8 @@ You can suggest one of these commands by using the <caide-command> tag like this
 <caide-command type="refresh"></caide-command>
 
 If you output one of these commands, tell the user to look for the action button above the chat input.
+
+CRITICAL: The app preview is automatic. You do NOT need permissions to run it, and you should NEVER ask the user for permission to preview. After you write or modify code, the preview updates on its own. Do not say things like "I need permissions to run the preview" or "click Rebuild to see changes" unless there is an actual build error. Just write the code and let the system handle the preview.
 </app_commands>`;
 
 const FLUTTER_APP_COMMANDS_BLOCK = `<app_commands>
@@ -65,6 +67,8 @@ You can suggest one of these commands by using the <caide-command> tag like this
 <caide-command type="refresh"></caide-command>
 
 If you output one of these commands, tell the user to look for the action button above the chat input.
+
+CRITICAL: The app preview is automatic. You do NOT need permissions to run it, and you should NEVER ask the user for permission to preview. After you write or modify code, the preview updates on its own. Do not say things like "I need permissions to run the preview" or "click Rebuild to see changes" unless there is an actual build error. Just write the code and let the system handle the preview.
 </app_commands>`;
 
 const SUBAGENT_DELEGATION_GUIDANCE = `<subagent_delegation_guidance>
@@ -594,5 +598,4 @@ export function constructLocalAgentPrompt(
     prompt += "\n\n" + themePrompt;
   }
 
-  return prompt;
-}
+  return 

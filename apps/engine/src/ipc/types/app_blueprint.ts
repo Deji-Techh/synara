@@ -114,6 +114,7 @@ export type AppBlueprintRemoveVisualPayload = z.infer<typeof AppBlueprintRemoveV
 
 export const AppBlueprintApprovedSchema = z.object({
   chatId: z.number(),
+  blueprint: AppBlueprintDataSchema.optional(),
 });
 
 export type AppBlueprintApprovedPayload = z.infer<typeof AppBlueprintApprovedSchema>;

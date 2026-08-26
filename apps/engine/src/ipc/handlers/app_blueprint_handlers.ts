@@ -61,9 +61,18 @@ export function registerAppBlueprintHandlers() {
     plan.approved = true;
     logger.info(`App blueprint approved for chat ${params.chatId}`);
 
-    // Notify renderer that approval is confirmed
+    // Notify renderer that approval is confirmed, including the final blueprint
+    // data so the follow-up turn can reference the approved configuration.
     safeSend(event.sender, "app-blueprint:approved", {
       chatId: params.chatId,
+      blueprint: {
+        appName: plan.appName,
+        templateId: plan.templateId,
+        themeId: plan.themeId,
+        designDirection: plan.designDirection,
+        primaryColor: plan.primaryColor,
+        visuals: plan.visuals,
+      },
     });
   });
 
