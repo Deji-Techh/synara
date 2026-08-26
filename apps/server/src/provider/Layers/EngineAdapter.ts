@@ -2192,15 +2192,33 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
 
       respondToUserInput: (threadId, requestId, answers) =>
         Effect.gen(function* () {
+          yield* Effect.logInfo("[engine-adapter] respondToUserInput called", {
+            threadId: String(threadId),
+            requestId: String(requestId),
+          });
           const context = yield* getSession(threadId);
           const key = pendingInteractionKey(threadId, String(requestId));
           const entry = yield* Ref.get(pendingRequests).pipe(
             Effect.map((map) => map.get(key) ?? null),
           );
-          if (entry === null) return;
+          if (entry === null) {
+            yield* Effect.logWarning("[engine-adapter] respondToUserInput no pending entry", {
+              threadId: String(threadId),
+              requestId: String(requestId),
+            });
+            return;
+          }
           const chatId =
             context.chatMapping?.chatId ?? (yield* resolveThreadChatId(threadId));
-          if (!ownsPendingRequest(entry, threadId, chatId)) return;
+          if (!ownsPendingRequest(entry, threadId, chatId)) {
+            yield* Effect.logWarning("[engine-adapter] respondToUserInput owns check failed", {
+              threadId: String(threadId),
+              requestId: String(requestId),
+              chatId: chatId ?? null,
+              entryChatId: entry.chatId ?? null,
+            });
+            return;
+          }
           const { client } = yield* ensureSharedEngine(threadId);
           const serialized: Record<string, string> = {};
           for (const [key, value] of Object.entries(answers ?? {})) {
@@ -2211,6 +2229,10 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 : String(value);
           }
           if (entry.kind === "questionnaire") {
+            yield* Effect.logInfo("[engine-adapter] questionnaire-response invoking", {
+              threadId: String(threadId),
+              requestId: String(requestId),
+            });
             yield* Effect.tryPromise({
               try: () =>
                 client.dyadInvoke("plan:questionnaire-response", {
@@ -2219,7 +2241,15 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
                 }),
               catch: (cause) =>
                 processError(threadId, "engine questionnaire-response failed", cause),
-            }).pipe(Effect.ignore);
+            }).pipe(
+              Effect.tap(() =>
+                Effect.logInfo("[engine-adapter] questionnaire-response sent", {
+                  threadId: String(threadId),
+                  requestId: String(requestId),
+                }),
+              ),
+              Effect.ignore,
+            );
           } else {
             yield* Effect.tryPromise({
               try: () =>
