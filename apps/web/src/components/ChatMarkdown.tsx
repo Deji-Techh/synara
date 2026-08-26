@@ -41,6 +41,7 @@ import { resolveMarkdownFileLinkTarget, rewriteMarkdownFileUriHref } from "../ma
 import type { ExpandedImagePreview } from "./chat/ExpandedImagePreview";
 import { GeneratedMarkdownImage } from "./chat/GeneratedMarkdownImage";
 import { TerminalContextInlineChip } from "./chat/TerminalContextInlineChip";
+import { StreamingCaret } from "./chat/StreamingCaret";
 import type { ParsedTerminalContextEntry } from "../lib/terminalContext";
 import { formatInlineTerminalContextLabel } from "./chat/userMessageTerminalContexts";
 import {
@@ -1053,6 +1054,8 @@ function ChatMarkdown({
   // streaming or under reduced motion. Governs cadence only; the deferred value below still
   // bounds the markdown re-parse cost.
   const smoothedText = useSmoothStreamedText(text, isStreaming);
+  // Host for the streaming caret: its last text line is measured by StreamingCaret.
+  const containerRef = useRef<HTMLDivElement>(null);
   // The dollar rewrite exists to disambiguate math from currency; the user
   // variant has no math, so its text must stay byte-for-byte what was typed.
   // Table repair runs first and can change text length, so the thread-marker
@@ -1305,7 +1308,8 @@ function ChatMarkdown({
 
   return (
     <div
-      className={`chat-markdown ${isUserVariant ? "chat-markdown--user " : ""}w-full min-w-0 ${className} text-foreground space-y-2`}
+      ref={containerRef}
+      className={`chat-markdown ${isUserVariant ? "chat-markdown--user " : ""}w-full min-w-0 relative ${className} text-foreground space-y-2`}
       style={style}
     >
       {parsedBlocks.map((block) => {
@@ -1437,11 +1441,14 @@ function ChatMarkdown({
         return null;
       })}
 
-      {isStreaming && (
-        <div className="pt-1">
-          <StreamingLoadingAnimation variant="streaming" />
-        </div>
-      )}
+      {isStreaming &&
+        (smoothedText.length > 0 ? (
+          <StreamingCaret containerRef={containerRef} revision={smoothedText.length} />
+        ) : (
+          <div className="pt-1">
+            <StreamingLoadingAnimation variant="streaming" />
+          </div>
+        ))}
     </div>
   );
 }

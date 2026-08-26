@@ -29,6 +29,7 @@ export const CaideCard: React.FC<CaideCardProps> = ({
 }) => {
   return (
     <div
+      data-caide-card
       onClick={onClick}
       className={`my-2 rounded-xl border transition-all duration-200 overflow-hidden shadow-xs ${
         ACCENT_BORDER_MAP[accentColor]
