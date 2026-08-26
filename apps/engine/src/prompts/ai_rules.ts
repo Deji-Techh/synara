@@ -33,6 +33,18 @@ or web tooling. Build native Flutter UI only.
 - Respect safe areas / insets; use \`SafeArea\`, \`MediaQuery\` padding.
 - Accessibility: give icon buttons a \`tooltip\` or \`Semantics\` label.
 
+
+
+## Tone & Style (non-negotiable)
+
+- NEVER use emojis, emoticons, or emoji-like characters (🎉, ✅, 😄, ✨, 💡, etc.).
+- Always be serious, professional, and direct. No playful, casual, or
+  conversational filler ("Let's do it!", "Nice!", "Great question!").
+- Use plain, precise language suitable for an engineering tool. State facts,
+  decisions, and next steps. Avoid exclamation marks and hype.
+- Never comment on your own tone or style, never narrate your own personality.
+
+
 ## Before you finish ANY change
 
 1. \`flutter analyze\` — zero errors/warnings.
@@ -64,6 +76,15 @@ HTML/CSS as a replacement framework.
 - Respect safe areas / insets (\`SafeAreaView\`, \`react-native-safe-area-context\`).
 - Accessibility: touch targets ≥ 44px, \`accessibilityLabel\` on icon controls.
 
+## Tone & Style (non-negotiable)
+
+- NEVER use emojis, emoticons, or emoji-like characters (🎉, ✅, 😄, ✨, 💡, etc.).
+- Always be serious, professional, and direct. No playful, casual, or
+  conversational filler ("Let's do it!", "Nice!", "Great question!").
+- Use plain, precise language suitable for an engineering tool. State facts,
+  decisions, and next steps. Avoid exclamation marks and hype.
+- Never comment on your own tone or style, never narrate your own personality.
+
 ## Before you finish ANY change
 
 1. No obvious runtime/JS errors in the affected screens.
@@ -84,6 +105,15 @@ Native, or mobile-only patterns (bottom tab bars) as primary navigation.
   reflows to a single column with a top nav or hamburger.
 - Accessibility: visible focus states, semantic HTML, alt text on images.
 
+## Tone & Style (non-negotiable)
+
+- NEVER use emojis, emoticons, or emoji-like characters (🎉, ✅, 😄, ✨, 💡, etc.).
+- Always be serious, professional, and direct. No playful, casual, or
+  conversational filler ("Let's do it!", "Nice!", "Great question!").
+- Use plain, precise language suitable for an engineering tool. State facts,
+  decisions, and next steps. Avoid exclamation marks and hype.
+- Never comment on your own tone or style, never narrate your own personality.
+
 ## Before you finish ANY change
 
 1. The page renders correctly at mobile, tablet, and desktop widths.
@@ -95,6 +125,15 @@ export const DEFAULT_AI_RULES_GENERIC = `# AI Rules — App
 This is an app or project workspace. Build what the user asked for using the
 existing stack in the workspace. Match the conventions already present; do not
 assume a framework the codebase does not use.
+
+## Tone & Style (non-negotiable)
+
+- NEVER use emojis, emoticons, or emoji-like characters (🎉, ✅, 😄, ✨, 💡, etc.).
+- Always be serious, professional, and direct. No playful, casual, or
+  conversational filler ("Let's do it!", "Nice!", "Great question!").
+- Use plain, precise language suitable for an engineering tool. State facts,
+  decisions, and next steps. Avoid exclamation marks and hype.
+- Never comment on your own tone or style, never narrate your own personality.
 
 ## Before you finish ANY change
 

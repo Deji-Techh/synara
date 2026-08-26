@@ -17,9 +17,7 @@ interface CaideQuestionnaireCardProps {
   questions: QuestionnaireQuestion[];
 }
 
-export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = ({
-  questions = [],
-}) => {
+export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = () => {
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [submitted, setSubmitted] = useState(false);
   const pending = useOpenPendingUserInput();
@@ -50,7 +48,7 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = ({
           commandId: newCommandId(),
           threadId: pending.threadId as never,
           requestId: pending.requestId as never,
-          answers,
+          answers: answers as never,
           ...(pending.lifecycleGeneration
             ? { lifecycleGeneration: pending.lifecycleGeneration as never }
             : {}),
@@ -64,33 +62,47 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = ({
     [pending, submitted, answers],
   );
 
-  if (!questions || questions.length === 0) return null;
+  if (!pending) {
+    return (
+      <CaideCard accentColor="gray" className="border-border/70 bg-card/60">
+        <CaideCardHeader
+          icon={
+            <div className="h-6 w-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+              ✓
+            </div>
+          }
+        >
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Questionnaire
+            </div>
+            <div className="text-sm font-semibold text-foreground">Answers recorded</div>
+          </div>
+        </CaideCardHeader>
+      </CaideCard>
+    );
+  }
 
-  // Render from the pending interaction's structured questions (which carry
-  // real ids + options) when available; otherwise fall back to the XML parse.
-  const effectiveQuestions =
-    pending && pending.pending.questions.length > 0
-      ? (pending.pending.questions as unknown as QuestionnaireQuestion[])
-      : questions;
+  const questions = pending.pending.questions as unknown as QuestionnaireQuestion[];
 
   return (
-    <CaideCard accentColor="amber" className="border-amber-500/30 bg-amber-500/[0.02]">
+    <CaideCard accentColor="gray" className="border-border/70 bg-card/60">
       <CaideCardHeader
         icon={
-          <div className="h-6 w-6 rounded-lg bg-amber-500/15 text-amber-500 flex items-center justify-center font-bold text-xs">
+          <div className="h-6 w-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
             ?
           </div>
         }
       >
         <div>
-          <div className="text-[10px] uppercase font-bold tracking-wider text-amber-500">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
             Plan Questionnaire
           </div>
           <div className="text-sm font-semibold text-foreground">Project Questions</div>
         </div>
       </CaideCardHeader>
       <form onSubmit={handleSubmit} className="px-3.5 pb-3 space-y-3.5 text-xs">
-        {effectiveQuestions.map((q, idx) => {
+        {questions.map((q, idx) => {
           const qKey = q.id || `q_${idx}`;
           const isMulti = q.type === "checkbox";
           const currentVal = answers[qKey];
@@ -115,7 +127,7 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = ({
                         className={cn(
                           "flex items-center gap-2.5 px-3 py-2 rounded-lg border text-left text-xs transition-colors cursor-pointer",
                           isSelected
-                            ? "border-amber-500 bg-amber-500/10 text-foreground font-medium"
+                            ? "border-primary bg-primary/10 text-foreground font-medium"
                             : "border-border/60 hover:border-border hover:bg-muted/40 text-muted-foreground",
                         )}
                       >
@@ -124,7 +136,7 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = ({
                             "h-3.5 w-3.5 border flex items-center justify-center shrink-0",
                             isMulti ? "rounded-md" : "rounded-full",
                             isSelected
-                              ? "border-amber-500 bg-amber-500 text-white"
+                              ? "border-primary bg-primary text-primary-foreground"
                               : "border-muted-foreground/50",
                           )}
                         >
@@ -139,9 +151,7 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = ({
                 <input
                   type="text"
                   value={(currentVal as string) ?? ""}
-                  onChange={(e) =>
-                    handleSelectOption(qKey, e.target.value, false)
-                  }
+                  onChange={(e) => handleSelectOption(qKey, e.target.value, false)}
                   placeholder="Your answer..."
                   disabled={submitted}
                   className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
@@ -152,20 +162,11 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = ({
         })}
         <div className="flex items-center justify-between border-t border-border/40 pt-2.5">
           <span className="text-[11px] text-muted-foreground">
-            {submitted
-              ? "✓ Answers submitted"
-              : pending
-                ? "Select options and submit to guide the agent"
-                : "Answers were captured in the composer"}
+            {submitted ? "✓ Answers submitted" : "Select options and submit to guide the agent"}
           </span>
-          {pending ? (
-            <Button
-              type="submit"
-              size="sm"
-              disabled={submitted}
-              className="rounded-full px-4"
-            >
-              {submitted ? "Submitted ✓" : "Submit answers"}
+          {!submitted ? (
+            <Button type="submit" size="sm" className="rounded-full px-4">
+              Submit answers
             </Button>
           ) : null}
         </div>

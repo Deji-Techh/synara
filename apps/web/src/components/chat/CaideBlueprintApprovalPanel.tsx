@@ -104,11 +104,11 @@ export const CaideBlueprintApprovalPanel = function CaideBlueprintApprovalPanel(
       <div className="border-b border-border/60 px-3.5 py-2.5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-purple-500/15 text-[12px] font-bold text-purple-500">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-[12px] font-bold text-primary">
               ✦
             </span>
             <div className="min-w-0">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-purple-500">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 App Blueprint
               </div>
               <div className="truncate text-[13px] font-semibold text-foreground">

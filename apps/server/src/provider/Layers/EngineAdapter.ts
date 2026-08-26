@@ -2153,6 +2153,13 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           } else if (entry.kind === "app-blueprint") {
             if (entry.chatId !== undefined && decision !== "decline") {
               const blueprintChatId = entry.chatId;
+              yield* Effect.logInfo("[engine-adapter] app-blueprint approve branch", {
+                threadId: String(threadId),
+                chatId: blueprintChatId,
+                requestId: String(requestId),
+                editFieldCount: blueprintEdits ? Object.keys(blueprintEdits).length : 0,
+                editFields: blueprintEdits ? Object.keys(blueprintEdits) : [],
+              });
               // Apply any user edits before approving so the engine builds from
               // the edited blueprint, not the original draft.
               if (blueprintEdits !== undefined) {
