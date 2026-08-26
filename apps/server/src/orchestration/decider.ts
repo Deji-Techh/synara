@@ -1847,6 +1847,9 @@ export const decideOrchestrationCommand = Effect.fn("decideOrchestrationCommand"
             : {}),
           decision: command.decision,
           createdAt: command.createdAt,
+          ...(command.blueprintEdits !== undefined
+            ? { blueprintEdits: command.blueprintEdits }
+            : {}),
         },
       };
     }

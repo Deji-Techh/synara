@@ -8,7 +8,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { COMPOSER_INPUT_SURFACE_CLASS_NAME } from "./composerPickerStyles";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface CaideBlueprintApprovalPanelProps {
   approval: PendingApproval;
@@ -63,6 +63,14 @@ export const CaideBlueprintApprovalPanel = function CaideBlueprintApprovalPanel(
   const initial = useMemo(() => readFields(approval.blueprint), [approval.blueprint]);
   const [fields, setFields] = useState<BlueprintFields>(initial);
   const [submitted, setSubmitted] = useState(false);
+
+  // Sync fields when blueprint arrives async (initial is empty on first render
+  // because pending derivation pending). Without this, inputs stay empty even
+  // though draft appName exists, forcing user to retype and causing edits diff
+  // to be computed against wrong initial.
+  useEffect(() => {
+    setFields(initial);
+  }, [initial]);
 
   const visualCount =
     Array.isArray(approval.blueprint?.visuals) && approval.blueprint?.visuals.length > 0
