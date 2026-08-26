@@ -1684,6 +1684,20 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           emittedTranscriptRef: { current: new Map() },
           chatMapping: null,
         };
+        // A provider session restart between turns creates a fresh context with
+        // no chat binding, but the engine keeps streaming the same chat. Restore
+        // the chat→thread transient index from the persistent registry so
+        // mid-turn notifications (questionnaire/blueprint/consent) stay
+        // attributable to this thread until ensureThreadChat re-binds on the
+        // next sendTurn.
+        const persistentChats = yield* Ref.get(chatIdToThread);
+        yield* Ref.update(chatToThread, (transient) => {
+          const next = new Map(transient);
+          for (const [chatId, mappedThread] of persistentChats) {
+            if (mappedThread === threadId) next.set(chatId, threadId);
+          }
+          return next;
+        });
         yield* Ref.update(sessions, (map) => new Map(map).set(threadId, context));
 
         yield* publishEvent(
