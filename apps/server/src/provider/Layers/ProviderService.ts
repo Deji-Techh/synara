@@ -2276,7 +2276,13 @@ const makeProviderService = (options?: ProviderServiceLiveOptions) =>
             );
           }
           const routedGeneration = routed.lifecycleGeneration ?? currentGeneration;
+          // The embedded engine adapter does not stamp lifecycle generations on
+          // its user-input/approval events (its pending requests are adapter-
+          // scoped and already claimed), so a missing generation must not be
+          // treated as stale for it. Other providers still require it below via
+          // the staleness check when one IS provided.
           if (
+            routed.adapter.provider !== "engine" &&
             routedGeneration !== undefined &&
             routedGeneration !== "legacy" &&
             input.lifecycleGeneration === undefined
