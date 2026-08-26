@@ -598,4 +598,5 @@ export function constructLocalAgentPrompt(
     prompt += "\n\n" + themePrompt;
   }
 
-  return 
+  return prompt;
+}
