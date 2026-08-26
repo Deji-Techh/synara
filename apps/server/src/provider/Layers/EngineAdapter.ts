@@ -82,7 +82,7 @@ import {
   TestResultSchema,
   PreviewScreenshotResultSchema,
 } from "@caide/engine/protocol";
-import { Effect, Fiber, Layer, Option, PubSub, Ref, Semaphore, Stream } from "effect";
+import { Cause, Effect, Fiber, Layer, Option, PubSub, Ref, Semaphore, Stream } from "effect";
 
 import { ArtifactRegistry } from "../../persistence/Services/ArtifactRegistry.ts";
 
@@ -435,13 +435,11 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             return context;
           }
         }
-        Effect.runSync(
-          Effect.logWarning("[engine-adapter] sessionForChat unresolvable", {
-            chatId,
-            mappedThreadId: threadId === undefined ? null : String(threadId),
-            liveSessions: Array.from(live.keys()).map(String),
-          }),
-        );
+        yield* Effect.logWarning("[engine-adapter] sessionForChat unresolvable", {
+          chatId,
+          mappedThreadId: threadId === undefined ? null : String(threadId),
+          liveSessions: Array.from(live.keys()).map(String),
+        });
         return null;
       });
 
@@ -1310,7 +1308,16 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           };
         }
         const onNotification = (method: string, params: unknown) => {
-          Effect.runFork(handleEngineNotification(method, params));
+          Effect.runFork(
+            handleEngineNotification(method, params).pipe(
+              Effect.catchCause((cause) =>
+                Effect.logError("[engine-adapter] notification handler failed", {
+                  method,
+                  cause: Cause.pretty(cause),
+                }),
+              ),
+            ),
+          );
         };
         const client: EngineClientLike = yield* Effect.tryPromise({
           try: () =>
