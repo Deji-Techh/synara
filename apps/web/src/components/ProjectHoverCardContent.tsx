@@ -8,10 +8,12 @@
 //      pin and "Edit project" rows are real controls. Spacing/type mirror the
 //      app's menu rows (12px UI font, compact padding) so it reads as native.
 
+import type { ProjectFramework } from "@caide/contracts";
 import { MessageCircleIcon, SettingsIcon } from "~/lib/icons";
 import { PinStatusIcon, pinActionLabel } from "~/lib/pin";
 import { cn } from "~/lib/utils";
 import { FolderClosed, FolderOpen } from "./FolderClosed";
+import { FrameworkIcon, frameworkDisplayName } from "./FrameworkIcon";
 import {
   SIDEBAR_HOVER_CARD_CONTAINER_PADDING_CLASS_NAME,
   SIDEBAR_HOVER_CARD_ROW_CLASS_NAME,
@@ -23,6 +25,7 @@ export type ProjectHoverCardContentProps = {
   chatCount: number;
   /** Display path (already home-abbreviated, e.g. ~/Developer/caide). */
   path: string;
+  framework: ProjectFramework | null;
   onTogglePin: () => void;
   onEditProject: () => void;
 };
@@ -46,6 +49,7 @@ export function ProjectHoverCardContent({
   isPinned,
   chatCount,
   path,
+  framework,
   onTogglePin,
   onEditProject,
 }: ProjectHoverCardContentProps) {
@@ -54,7 +58,11 @@ export function ProjectHoverCardContent({
       className={cn("flex w-full flex-col gap-0", SIDEBAR_HOVER_CARD_CONTAINER_PADDING_CLASS_NAME)}
     >
       <div className={cn(ROW_CLASS_NAME, "gap-2.5")}>
-        <FolderOpen className={ICON_CLASS_NAME} aria-hidden />
+        {framework ? (
+          <FrameworkIcon framework={framework} size={14} className="size-3.5" />
+        ) : (
+          <FolderOpen className={ICON_CLASS_NAME} aria-hidden />
+        )}
         <span className="min-w-0 flex-1 truncate font-medium text-foreground">{name}</span>
         <button
           type="button"
@@ -73,6 +81,12 @@ export function ProjectHoverCardContent({
         <MessageCircleIcon className={ICON_CLASS_NAME} aria-hidden />
         <span className="min-w-0 truncate">{formatChatCount(chatCount)}</span>
       </div>
+      {framework ? (
+        <div className={cn(ROW_CLASS_NAME, "text-foreground/80")}>
+          <FrameworkIcon framework={framework} size={14} className="size-3.5" />
+          <span className="min-w-0 truncate">{frameworkDisplayName(framework)}</span>
+        </div>
+      ) : null}
       <div className="-mx-0.5 my-0.5 h-px bg-[color:var(--color-border)]" aria-hidden />
       <div className={cn(ROW_CLASS_NAME, "text-foreground/80")}>
         <FolderClosed className={ICON_CLASS_NAME} aria-hidden />

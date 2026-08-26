@@ -19,29 +19,17 @@ import { cn } from "../lib/utils";
 import { ProviderIcon } from "./ProviderIcon";
 import { SidebarGlyph } from "./sidebarGlyphs";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
-import { SiFlutter, SiReact } from "react-icons/si";
-import { FiBox, FiGlobe } from "react-icons/fi";
+import { FrameworkIcon, frameworkDisplayName } from "./FrameworkIcon";
 
 function FrameworkAvatar({ framework }: { framework: ProjectFramework }) {
-  const Icon =
-    framework === "flutter"
-      ? SiFlutter
-      : framework === "react-native"
-        ? SiReact
-        : framework === "website"
-          ? FiGlobe
-          : FiBox;
-  const label =
-    framework === "react-native"
-      ? "React Native"
-      : framework[0]!.toUpperCase() + framework.slice(1);
+  const label = frameworkDisplayName(framework);
   return (
     <span
       title={label}
       aria-label={`${label} project`}
       className="inline-flex size-3 shrink-0 items-center justify-center"
     >
-      <Icon className="size-3" />
+      <FrameworkIcon framework={framework} size={12} />
     </span>
   );
 }

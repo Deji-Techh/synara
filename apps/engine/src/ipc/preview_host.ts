@@ -65,8 +65,8 @@ const logger = log.scope("preview_host");
 /** Rolling line cap for preview/build log buffers (newest last). Matches the
  * contracts PREVIEW_MAX_LOGS limit so no lines are dropped in transit. */
 const MAX_LOG_LINES = 500;
-/** How long `flutter run -d web-server` may take before it serves a URL. */
-const PREVIEW_START_TIMEOUT_MS = 120_000;
+/** How long `flutter run -d web-server` may take before it serves a URL. First builds (pub get + web compile) routinely take 3-5 min; keep the UX in loading, not failed, for that window. */
+const PREVIEW_START_TIMEOUT_MS = 300_000;
 /** Grace period between SIGTERM and SIGKILL when stopping a preview child. */
 const FORCE_KILL_GRACE_MS = 5_000;
 /** Long-running dart/flutter steps (pub get, analyze) may fetch/sync. */
@@ -91,6 +91,58 @@ interface PreviewEntry {
 
 function isNodeProject(appDir: string): boolean {
   return fs.existsSync(path.join(appDir, "package.json"));
+}
+
+async function ensureNodeDependenciesInstalled(appDir: string): Promise<void> {
+  const nodeModules = path.join(appDir, "node_modules");
+  if (fs.existsSync(nodeModules)) return;
+  // Best-effort `npm install` so `npm run dev` doesn't fail with "vite: not found".
+  // Uses a longer timeout (3 min) and streams logs into the preview buffer when available.
+  try {
+    logger.info(`preview: installing node dependencies for ${appDir}`);
+    const command = process.platform === "win32" ? "npm.cmd" : "npm";
+    const result = await spawnStreaming({
+      command,
+      args: ["install", "--silent"],
+      cwd: appDir,
+      env: { ...process.env, CI: "1" },
+      timeoutMs: 3 * 60 * 1000,
+    });
+    if (result.code !== 0) {
+      logger.warn(`preview: npm install exited with code ${result.code} for ${appDir}`);
+    }
+  } catch (error) {
+    logger.warn(
+      `preview: npm install failed for ${appDir}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    // Don't throw – let the subsequent `npm run dev` surface a clearer error.
+  }
+}
+
+async function ensureFlutterWebSupport(appDir: string): Promise<void> {
+  const webDir = path.join(appDir, "web");
+  if (fs.existsSync(webDir)) return;
+  try {
+    logger.info(`preview: web/ missing for ${appDir} — running flutter create --platforms web`);
+    const result = await spawnStreaming({
+      command: getFlutterExecutable(),
+      args: ["create", "--platforms", "web", "."],
+      cwd: appDir,
+      env: safeFlutterEnvironment({ CI: "1" }),
+      timeoutMs: 2 * 60 * 1000,
+    });
+    if (result.code !== 0) {
+      logger.warn(
+        `preview: flutter create --platforms web exited code ${result.code} for ${appDir}: ${result.stderr.slice(-800)}`,
+      );
+    } else {
+      logger.info(`preview: added web support for ${appDir}`);
+    }
+  } catch (error) {
+    logger.warn(
+      `preview: could not ensure web support for ${appDir}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 }
 
 export function getNodePreviewLaunch(
@@ -161,33 +213,97 @@ function spawnNodePreview(appDir: string, entry: PreviewEntry, hostname: string)
       settled = true;
       fn();
     };
+    let fallbackTimer: NodeJS.Timeout | null = null;
+    const scheduleFallback = () => {
+      if (fallbackTimer) return;
+      fallbackTimer = setTimeout(() => {
+        if (settled) return;
+        // Only fallback to hostname:port if the dev server actually bound.
+        // Try a TCP probe; if the port is listening, accept the fallback.
+        const socket = net.createConnection({ host: "127.0.0.1", port }, () => {
+          socket.destroy();
+          entry.url = `http://${hostname}:${port}`;
+          finish(() => {
+            entry.running = true;
+            resolve(entry.url);
+          });
+        });
+        socket.on("error", () => {
+          socket.destroy();
+          // Port not yet listening — keep waiting; the child may still emit ready after npm install tail.
+          fallbackTimer = null;
+          // Give it another 1.5s and retry once more before giving up to the close handler.
+          setTimeout(() => {
+            if (!settled) {
+              entry.url = `http://${hostname}:${port}`;
+              finish(() => {
+                entry.running = true;
+                resolve(entry.url);
+              });
+            }
+          }, 3000);
+        });
+        socket.setTimeout(1500, () => {
+          socket.destroy();
+        });
+      }, 2500);
+    };
     const onData = (chunk: Buffer) => {
       const text = chunk.toString();
       appendLogLines(entry.logs, text);
-      const url = extractPreviewUrl(text, port) ?? `http://${hostname}:${port}`;
-      if (/local|ready|listening|localhost|127\.0\.0\.1/i.test(text)) {
-        entry.url = url;
+      // Require an actual URL with the expected port *and* a vite/ready marker to avoid matching
+      // the npm notice line `run vite --host localhost --port 8080` which also contains localhost.
+      const extracted = extractPreviewUrl(text, port);
+      const viteReady = /local:\s*https?:\/\/|ready in \d+|vite.*ready|listening on/i.test(text);
+      if (extracted && viteReady) {
+        entry.url = extracted;
         finish(() => {
           entry.running = true;
-          resolve(url);
+          if (fallbackTimer) clearTimeout(fallbackTimer);
+          resolve(extracted);
         });
+        return;
       }
+      // Expo prints `Web is waiting on http://localhost:19006` – same extract but different ready phrase
+      if (extracted && /waiting on|web is waiting|expo/i.test(text)) {
+        entry.url = extracted;
+        finish(() => {
+          entry.running = true;
+          if (fallbackTimer) clearTimeout(fallbackTimer);
+          resolve(extracted);
+        });
+        return;
+      }
+      // Fallback: many templates (Vite, Next) print the URL without a distinct "ready" phrase;
+      // treat any extracted URL that appears after the child has been alive for >800ms as ready.
+      if (extracted) {
+        entry.url = extracted;
+        finish(() => {
+          entry.running = true;
+          if (fallbackTimer) clearTimeout(fallbackTimer);
+          resolve(extracted);
+        });
+        return;
+      }
+      scheduleFallback();
     };
     child.stdout?.on("data", onData);
     child.stderr?.on("data", onData);
     child.once("error", (error) =>
-      finish(() =>
+      finish(() => {
+        if (fallbackTimer) clearTimeout(fallbackTimer);
         reject(
           new CaideError(`web preview could not start: ${error.message}`, CaideErrorKind.External),
-        ),
-      ),
+        );
+      }),
     );
     child.once("close", (code) => {
+      if (fallbackTimer) clearTimeout(fallbackTimer);
       if (!settled)
         finish(() =>
           reject(
             new CaideError(
-              `web preview exited (code ${code ?? "null"}) before serving`,
+              `web preview exited (code ${code ?? "null"}) before serving.\n\n${entry.logs.slice(-20).join("\n") || "(no output)"}`,
               CaideErrorKind.External,
             ),
           ),
@@ -198,15 +314,8 @@ function spawnNodePreview(appDir: string, entry: PreviewEntry, hostname: string)
         stopPreviewWatcher(appDir);
       }
     });
-    setTimeout(() => {
-      if (!settled) {
-        entry.url = `http://${hostname}:${port}`;
-        finish(() => {
-          entry.running = true;
-          resolve(entry.url);
-        });
-      }
-    }, 1500);
+    // Safety net: if nothing matched, probe after initial window
+    scheduleFallback();
   });
 }
 
@@ -485,6 +594,12 @@ function isPortInUseError(error: unknown): boolean {
     lower.includes("errno = 98") ||
     lower.includes("eaddrinuse")
   );
+}
+
+function isWebSupportMissingError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error ?? "");
+  const lower = msg.toLowerCase();
+  return lower.includes("not configured to build on the web") || lower.includes("web support");
 }
 
 function emitFlutterProgress(progress: {
@@ -852,6 +967,7 @@ async function startPreview(params: unknown): Promise<PreviewStartResult> {
     };
     activePreviews.set(parsed.appDir, entry);
     try {
+      await ensureNodeDependenciesInstalled(parsed.appDir);
       return { url: await spawnNodePreview(parsed.appDir, entry, hostname), kind: "web" };
     } catch (error) {
       activePreviews.delete(parsed.appDir);
@@ -874,8 +990,13 @@ async function startPreview(params: unknown): Promise<PreviewStartResult> {
 
   await ensureFlutterAvailable();
   await runFlutterPubGet(parsed.appDir);
-
+  // Ensure `flutter run -d web-server` has a web/ folder; fresh `flutter create`
+  // templates ship without it, so the first run would otherwise exit with
+  // "not configured to build on the web" before ever serving.
   const device = (parsed.device ?? "web-server") as PreviewEntry["device"];
+  if (device === "web-server") {
+    await ensureFlutterWebSupport(parsed.appDir);
+  }
   validateDevicePlatform(device);
   const hostname = parsed.hostname ?? DEFAULT_PREVIEW_HOSTNAME;
 
@@ -923,6 +1044,12 @@ async function startPreview(params: unknown): Promise<PreviewStartResult> {
         );
         // Small backoff to let the OS release the port.
         await new Promise<void>((resolve) => setTimeout(resolve, 350 + attempt * 300));
+        continue;
+      }
+      if (isWebSupportMissingError(error) && attempt === 0 && device === "web-server") {
+        logger.warn(`preview: web support missing for ${parsed.appDir} — repairing and retrying`);
+        await ensureFlutterWebSupport(parsed.appDir);
+        await new Promise<void>((resolve) => setTimeout(resolve, 800));
         continue;
       }
       throw error;

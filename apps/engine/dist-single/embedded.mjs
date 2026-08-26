@@ -3404,6 +3404,18 @@ or web tooling. Build native Flutter UI only.
 - Respect safe areas / insets; use \`SafeArea\`, \`MediaQuery\` padding.
 - Accessibility: give icon buttons a \`tooltip\` or \`Semantics\` label.
 
+
+
+## Tone & Style (non-negotiable)
+
+- NEVER use emojis, emoticons, or emoji-like characters (🎉, ✅, 😄, ✨, 💡, etc.).
+- Always be serious, professional, and direct. No playful, casual, or
+  conversational filler ("Let's do it!", "Nice!", "Great question!").
+- Use plain, precise language suitable for an engineering tool. State facts,
+  decisions, and next steps. Avoid exclamation marks and hype.
+- Never comment on your own tone or style, never narrate your own personality.
+
+
 ## Before you finish ANY change
 
 1. \`flutter analyze\` — zero errors/warnings.
@@ -3434,6 +3446,15 @@ HTML/CSS as a replacement framework.
 - Respect safe areas / insets (\`SafeAreaView\`, \`react-native-safe-area-context\`).
 - Accessibility: touch targets ≥ 44px, \`accessibilityLabel\` on icon controls.
 
+## Tone & Style (non-negotiable)
+
+- NEVER use emojis, emoticons, or emoji-like characters (🎉, ✅, 😄, ✨, 💡, etc.).
+- Always be serious, professional, and direct. No playful, casual, or
+  conversational filler ("Let's do it!", "Nice!", "Great question!").
+- Use plain, precise language suitable for an engineering tool. State facts,
+  decisions, and next steps. Avoid exclamation marks and hype.
+- Never comment on your own tone or style, never narrate your own personality.
+
 ## Before you finish ANY change
 
 1. No obvious runtime/JS errors in the affected screens.
@@ -3453,6 +3474,15 @@ Native, or mobile-only patterns (bottom tab bars) as primary navigation.
   reflows to a single column with a top nav or hamburger.
 - Accessibility: visible focus states, semantic HTML, alt text on images.
 
+## Tone & Style (non-negotiable)
+
+- NEVER use emojis, emoticons, or emoji-like characters (🎉, ✅, 😄, ✨, 💡, etc.).
+- Always be serious, professional, and direct. No playful, casual, or
+  conversational filler ("Let's do it!", "Nice!", "Great question!").
+- Use plain, precise language suitable for an engineering tool. State facts,
+  decisions, and next steps. Avoid exclamation marks and hype.
+- Never comment on your own tone or style, never narrate your own personality.
+
 ## Before you finish ANY change
 
 1. The page renders correctly at mobile, tablet, and desktop widths.
@@ -3464,6 +3494,15 @@ This is an app or project workspace. Build what the user asked for using the
 existing stack in the workspace. Match the conventions already present; do not
 assume a framework the codebase does not use.
 
+## Tone & Style (non-negotiable)
+
+- NEVER use emojis, emoticons, or emoji-like characters (🎉, ✅, 😄, ✨, 💡, etc.).
+- Always be serious, professional, and direct. No playful, casual, or
+  conversational filler ("Let's do it!", "Nice!", "Great question!").
+- Use plain, precise language suitable for an engineering tool. State facts,
+  decisions, and next steps. Avoid exclamation marks and hype.
+- Never comment on your own tone or style, never narrate your own personality.
+
 ## Before you finish ANY change
 
 1. The change works with the existing tooling (no obvious errors).
@@ -3474,11 +3513,18 @@ assume a framework the codebase does not use.
 //#region src/prompts/local_agent_prompt.ts
 const ROLE_BLOCK = `<role>
 [[PRODUCT_ROLE]]
-You make efficient and effective changes to codebases while following best practices for maintainability and readability. You take pride in keeping things simple and elegant. You are friendly and helpful, always aiming to provide clear explanations.
+ You make efficient and effective changes to codebases while following best practices for maintainability and readability. You take pride in keeping things simple and elegant. You are professional, direct, and precise.
 </role>
 
+<communication_style>
+- NEVER use emojis, emoticons, or emoji-like characters (🎉, ✅, 😄, ✨, 💡, etc.).
+- Always be serious, professional, and direct. No playful, casual, or conversational filler ("Let's do it!", "Nice!", "Great question!").
+- Use plain, precise language. State facts, decisions, and next steps. Avoid exclamation marks and hype.
+- Never narrate your own personality, tone, or style. Never comment on being friendly or helpful.
+</communication_style>
+
 <conversational_greetings>
-If the user's message is a pure greeting (e.g., "hey", "hello", "hi", "good morning"), respond warmly and conversationally asking what they would like to build. **DO NOT** use any tools (like \`list_files\`, \`grep_search\`, \`read_file\`, etc.) on pure greetings. Wait for them to state their intent.
+If the user's message is a pure greeting (e.g., "hey", "hello", "hi", "good morning"), briefly acknowledge it. **DO NOT** use any tools (like \`list_files\`, \`grep_search\`, \`read_file\`, etc.) on pure greetings. Wait for them to state their intent and respond plainly.
 </conversational_greetings>`;
 const PLATFORM_UI_SKILL_PACK_BLOCK = `<platform_ui_skill_pack>
 [[PLATFORM_UI_SKILL_PACK]]
@@ -3669,11 +3715,18 @@ Treat AI_RULES.md as authoritative project context, unless it conflicts with the
 const LOCAL_AGENT_ASK_SYSTEM_PROMPT = `
 <role>
 You are CAIDE, an AI assistant that helps users understand their mobile applications. You assist users by answering questions about their frontend, backend, native packaging, and code. You can read and analyze the codebase to provide accurate, context-aware answers.
-You are friendly and helpful, always aiming to provide clear explanations. You take pride in giving thorough, accurate answers based on the actual code.
+You are professional, direct, and precise.
 </role>
 
+<communication_style>
+- NEVER use emojis, emoticons, or emoji-like characters (🎉, ✅, 😄, ✨, 💡, etc.).
+- Always be serious, professional, and direct. No playful, casual, or conversational filler ("Let's do it!", "Nice!", "Great question!").
+- Use plain, precise language. State facts, decisions, and next steps. Avoid exclamation marks and hype.
+- Never narrate your own personality, tone, or style.
+</communication_style>
+
 <conversational_greetings>
-If the user's message is a pure greeting (e.g., "hey", "hello", "hi", "good morning"), respond warmly and conversationally asking what they would like to build. **DO NOT** use any tools (like \`list_files\`, \`grep_search\`, \`read_file\`, etc.) on pure greetings. Wait for them to state their intent.
+If the user's message is a pure greeting (e.g., "hey", "hello", "hi", "good morning"), briefly acknowledge it. **DO NOT** use any tools (like \`list_files\`, \`grep_search\`, \`read_file\`, etc.) on pure greetings. Wait for them to state their intent and respond plainly.
 </conversational_greetings>
 
 <important_constraints>
@@ -3926,11 +3979,11 @@ After presenting the plan:
 # Communication Guidelines
 
 ## Tone & Style
-- Be collaborative and conversational, like a thoughtful colleague brainstorming together
-- Show genuine curiosity about the user's vision
-- Think out loud about trade-offs and options
+- Be professional, direct, and precise. Never use emojis or emoticons.
+- Never be playful, casual, or overly conversational. No filler ("Let's do it!", "Nice!"). No exclamation marks or hype.
+- State facts, decisions, and next steps plainly. Do not narrate your own personality or tone.
+- Think out loud about trade-offs and options, but keep it focused and technical.
 - Be concise but thorough - avoid over-explaining obvious points
-- Use natural language, not overly formal or robotic phrasing
 
 ## Question Strategy
 - Ask 1-3 focused questions at a time (don't overwhelm)
@@ -15801,8 +15854,8 @@ const logger = import_src.default.scope("preview_host");
 /** Rolling line cap for preview/build log buffers (newest last). Matches the
 * contracts PREVIEW_MAX_LOGS limit so no lines are dropped in transit. */
 const MAX_LOG_LINES = 500;
-/** How long `flutter run -d web-server` may take before it serves a URL. */
-const PREVIEW_START_TIMEOUT_MS = 12e4;
+/** How long `flutter run -d web-server` may take before it serves a URL. First builds (pub get + web compile) routinely take 3-5 min; keep the UX in loading, not failed, for that window. */
+const PREVIEW_START_TIMEOUT_MS = 3e5;
 /** Grace period between SIGTERM and SIGKILL when stopping a preview child. */
 const FORCE_KILL_GRACE_MS = 5e3;
 /** Long-running dart/flutter steps (pub get, analyze) may fetch/sync. */
@@ -15813,6 +15866,49 @@ const DEFAULT_PREVIEW_PORT = 8080;
 const MACHINE_LINE_RE = /^(ERROR|WARNING|INFO)\|/;
 function isNodeProject(appDir) {
 	return fs$1.existsSync(path.join(appDir, "package.json"));
+}
+async function ensureNodeDependenciesInstalled(appDir) {
+	const nodeModules = path.join(appDir, "node_modules");
+	if (fs$1.existsSync(nodeModules)) return;
+	try {
+		logger.info(`preview: installing node dependencies for ${appDir}`);
+		const result = await spawnStreaming({
+			command: process.platform === "win32" ? "npm.cmd" : "npm",
+			args: ["install", "--silent"],
+			cwd: appDir,
+			env: {
+				...process.env,
+				CI: "1"
+			},
+			timeoutMs: 180 * 1e3
+		});
+		if (result.code !== 0) logger.warn(`preview: npm install exited with code ${result.code} for ${appDir}`);
+	} catch (error) {
+		logger.warn(`preview: npm install failed for ${appDir}: ${error instanceof Error ? error.message : String(error)}`);
+	}
+}
+async function ensureFlutterWebSupport(appDir) {
+	const webDir = path.join(appDir, "web");
+	if (fs$1.existsSync(webDir)) return;
+	try {
+		logger.info(`preview: web/ missing for ${appDir} — running flutter create --platforms web`);
+		const result = await spawnStreaming({
+			command: getFlutterExecutable(),
+			args: [
+				"create",
+				"--platforms",
+				"web",
+				"."
+			],
+			cwd: appDir,
+			env: safeFlutterEnvironment({ CI: "1" }),
+			timeoutMs: 120 * 1e3
+		});
+		if (result.code !== 0) logger.warn(`preview: flutter create --platforms web exited code ${result.code} for ${appDir}: ${result.stderr.slice(-800)}`);
+		else logger.info(`preview: added web support for ${appDir}`);
+	} catch (error) {
+		logger.warn(`preview: could not ensure web support for ${appDir}: ${error instanceof Error ? error.message : String(error)}`);
+	}
 }
 function getNodePreviewLaunch(appDir, hostname, port) {
 	const packageJson = JSON.parse(fs$1.readFileSync(path.join(appDir, "package.json"), "utf8"));
@@ -15872,38 +15968,90 @@ function spawnNodePreview(appDir, entry, hostname) {
 			settled = true;
 			fn();
 		};
+		let fallbackTimer = null;
+		const scheduleFallback = () => {
+			if (fallbackTimer) return;
+			fallbackTimer = setTimeout(() => {
+				if (settled) return;
+				const socket = net$1.createConnection({
+					host: "127.0.0.1",
+					port
+				}, () => {
+					socket.destroy();
+					entry.url = `http://${hostname}:${port}`;
+					finish(() => {
+						entry.running = true;
+						resolve(entry.url);
+					});
+				});
+				socket.on("error", () => {
+					socket.destroy();
+					fallbackTimer = null;
+					setTimeout(() => {
+						if (!settled) {
+							entry.url = `http://${hostname}:${port}`;
+							finish(() => {
+								entry.running = true;
+								resolve(entry.url);
+							});
+						}
+					}, 3e3);
+				});
+				socket.setTimeout(1500, () => {
+					socket.destroy();
+				});
+			}, 2500);
+		};
 		const onData = (chunk) => {
 			const text = chunk.toString();
 			appendLogLines(entry.logs, text);
-			const url = extractPreviewUrl(text, port) ?? `http://${hostname}:${port}`;
-			if (/local|ready|listening|localhost|127\.0\.0\.1/i.test(text)) {
-				entry.url = url;
+			const extracted = extractPreviewUrl(text, port);
+			const viteReady = /local:\s*https?:\/\/|ready in \d+|vite.*ready|listening on/i.test(text);
+			if (extracted && viteReady) {
+				entry.url = extracted;
 				finish(() => {
 					entry.running = true;
-					resolve(url);
+					if (fallbackTimer) clearTimeout(fallbackTimer);
+					resolve(extracted);
 				});
+				return;
 			}
+			if (extracted && /waiting on|web is waiting|expo/i.test(text)) {
+				entry.url = extracted;
+				finish(() => {
+					entry.running = true;
+					if (fallbackTimer) clearTimeout(fallbackTimer);
+					resolve(extracted);
+				});
+				return;
+			}
+			if (extracted) {
+				entry.url = extracted;
+				finish(() => {
+					entry.running = true;
+					if (fallbackTimer) clearTimeout(fallbackTimer);
+					resolve(extracted);
+				});
+				return;
+			}
+			scheduleFallback();
 		};
 		child.stdout?.on("data", onData);
 		child.stderr?.on("data", onData);
-		child.once("error", (error) => finish(() => reject(new CaideError(`web preview could not start: ${error.message}`, CaideErrorKind.External))));
+		child.once("error", (error) => finish(() => {
+			if (fallbackTimer) clearTimeout(fallbackTimer);
+			reject(new CaideError(`web preview could not start: ${error.message}`, CaideErrorKind.External));
+		}));
 		child.once("close", (code) => {
-			if (!settled) finish(() => reject(new CaideError(`web preview exited (code ${code ?? "null"}) before serving`, CaideErrorKind.External)));
+			if (fallbackTimer) clearTimeout(fallbackTimer);
+			if (!settled) finish(() => reject(new CaideError(`web preview exited (code ${code ?? "null"}) before serving.\n\n${entry.logs.slice(-20).join("\n") || "(no output)"}`, CaideErrorKind.External)));
 			else {
 				entry.running = false;
 				entry.child = null;
 				stopPreviewWatcher(appDir);
 			}
 		});
-		setTimeout(() => {
-			if (!settled) {
-				entry.url = `http://${hostname}:${port}`;
-				finish(() => {
-					entry.running = true;
-					resolve(entry.url);
-				});
-			}
-		}, 1500);
+		scheduleFallback();
 	});
 }
 const PREVIEW_WATCH_DEBOUNCE_MS = 500;
@@ -16063,6 +16211,10 @@ async function pickFreePort(preferred) {
 function isPortInUseError(error) {
 	const lower = (error instanceof Error ? error.message : String(error ?? "")).toLowerCase();
 	return lower.includes("address already in use") || lower.includes("failed to bind web development server") || lower.includes("failed to create server socket") || lower.includes("socketexception") || lower.includes("errno = 98") || lower.includes("eaddrinuse");
+}
+function isWebSupportMissingError(error) {
+	const lower = (error instanceof Error ? error.message : String(error ?? "")).toLowerCase();
+	return lower.includes("not configured to build on the web") || lower.includes("web support");
 }
 function emitFlutterProgress(progress) {
 	try {
@@ -16345,6 +16497,7 @@ async function startPreview(params) {
 		};
 		activePreviews.set(parsed.appDir, entry);
 		try {
+			await ensureNodeDependenciesInstalled(parsed.appDir);
 			return {
 				url: await spawnNodePreview(parsed.appDir, entry, hostname),
 				kind: "web"
@@ -16368,6 +16521,7 @@ async function startPreview(params) {
 	await ensureFlutterAvailable();
 	await runFlutterPubGet(parsed.appDir);
 	const device = parsed.device ?? "web-server";
+	if (device === "web-server") await ensureFlutterWebSupport(parsed.appDir);
 	validateDevicePlatform(device);
 	const hostname = parsed.hostname ?? DEFAULT_PREVIEW_HOSTNAME;
 	const maxAttempts = 3;
@@ -16399,6 +16553,12 @@ async function startPreview(params) {
 			if (isPortInUseError(error) && attempt < maxAttempts - 1 && device === "web-server") {
 				logger.warn(`preview: ${parsed.appDir} port ${port} in use — retrying with ephemeral port (attempt ${attempt + 1}/${maxAttempts})`);
 				await new Promise((resolve) => setTimeout(resolve, 350 + attempt * 300));
+				continue;
+			}
+			if (isWebSupportMissingError(error) && attempt === 0 && device === "web-server") {
+				logger.warn(`preview: web support missing for ${parsed.appDir} — repairing and retrying`);
+				await ensureFlutterWebSupport(parsed.appDir);
+				await new Promise((resolve) => setTimeout(resolve, 800));
 				continue;
 			}
 			throw error;

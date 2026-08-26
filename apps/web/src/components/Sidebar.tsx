@@ -33,6 +33,7 @@ import {
   XIcon,
 } from "~/lib/icons";
 import { CaideLogo } from "~/components/CaideLogo";
+import { FrameworkIcon } from "~/components/FrameworkIcon";
 import { createCentralIconComponent } from "~/lib/central-icons";
 import {
   PR_STATE_PRESENTATION_ICONS,
@@ -3922,6 +3923,7 @@ export default function Sidebar() {
           sourceProjectName={hoverMetadata.sourceProjectName}
           branch={hoverMetadata.branch}
           worktreeName={hoverMetadata.worktreeName}
+          framework={hoverProject?.framework ?? null}
           model={resolveThreadModelSummary(thread.modelSelection)}
           status={hoverStatus}
         />
@@ -3947,6 +3949,7 @@ export default function Sidebar() {
           isPinned={pinnedProjectIdSet.has(project.id)}
           chatCount={chatCount}
           path={abbreviateHomePath(project.cwd, homeDir)}
+          framework={project.framework ?? null}
           onTogglePin={() => toggleProjectPinned(project.id)}
           onEditProject={() => void handleProjectContextMenuAction(project.id, "rename")}
         />
@@ -4395,7 +4398,11 @@ export default function Sidebar() {
                 tone={SIDEBAR_ROW_LABEL_TEXT_CLASS_NAME}
                 className={projectFolderIconClassName}
               >
-                <ProjectSidebarIcon cwd={project.cwd} expanded={project.expanded} />
+                {project.framework && project.framework !== "blank" ? (
+                  <FrameworkIcon framework={project.framework} size={14} className="size-3.5" />
+                ) : (
+                  <ProjectSidebarIcon cwd={project.cwd} expanded={project.expanded} />
+                )}
               </SidebarLeadingIcon>
               <div
                 className={cn(

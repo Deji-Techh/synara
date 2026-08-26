@@ -903,7 +903,17 @@ function shouldFlushDomainEventImmediately(
   event: OrchestrationEvent,
   immediatelyFlushedAssistantMessageIds: Set<string>,
 ): boolean {
-  if (event.type !== "thread.message-sent" || event.payload.role !== "assistant") {
+  if (event.type !== "thread.message-sent") {
+    return false;
+  }
+
+  // User messages flush immediately so the sent message appears in the transcript
+  // without waiting for the 100ms domain event throttle.
+  if (event.payload.role === "user") {
+    return true;
+  }
+
+  if (event.payload.role !== "assistant") {
     return false;
   }
 
@@ -942,6 +952,7 @@ function shouldPollThreadDetailCatchup(threadId: ThreadId): boolean {
   const thread = getThreadFromState(useStore.getState(), threadId);
   return (
     thread?.session?.orchestrationStatus === "running" ||
+    thread?.session?.orchestrationStatus === "starting" ||
     thread?.latestTurn?.state === "running" ||
     hasPendingTurnDispatch(threadId)
   );

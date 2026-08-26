@@ -9,6 +9,7 @@
 import { Schema } from "effect";
 import { IsoDateTime, NonNegativeInt, TrimmedNonEmptyString } from "./baseSchemas";
 import { ProviderKind } from "./orchestration";
+import { ProjectFramework } from "./projectFramework";
 
 // ── Input ────────────────────────────────────────────────────────────
 
@@ -129,6 +130,13 @@ export const ProfileTimezone = Schema.Struct({
 });
 export type ProfileTimezone = typeof ProfileTimezone.Type;
 
+export const ProfileFrameworkUsage = Schema.Struct({
+  framework: ProjectFramework,
+  count: NonNegativeInt,
+  percent: Schema.Number,
+});
+export type ProfileFrameworkUsage = typeof ProfileFrameworkUsage.Type;
+
 // ── Aggregate result ─────────────────────────────────────────────────
 
 export const ProfileStats = Schema.Struct({
@@ -142,6 +150,12 @@ export const ProfileStats = Schema.Struct({
   skills: Schema.Array(ProfileSkillUsage),
   mostUsedSkill: Schema.NullOr(ProfileSkillUsage),
   mostWorkedProject: Schema.NullOr(ProfileMostWorkedProject),
+  frameworks: Schema.optional(Schema.Array(ProfileFrameworkUsage)).pipe(
+    Schema.withDecodingDefault(() => []),
+  ),
+  mostUsedFramework: Schema.optional(Schema.NullOr(ProjectFramework)).pipe(
+    Schema.withDecodingDefault(() => null),
+  ),
   quota: ProfileQuota,
 });
 export type ProfileStats = typeof ProfileStats.Type;

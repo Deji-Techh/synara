@@ -80,6 +80,33 @@ const THREAD_SUMMARY_ACTIVITY_KINDS = new Set([
   "provider.user-input.respond.failed",
 ]);
 
+// Bounded set of recently applied event IDs to prevent duplicate event
+// processing during reconnect replay or dual-stream delivery. Cleared on
+// snapshot hydration when the server is authoritative.
+const MAX_APPLIED_EVENT_IDS = 1024;
+const appliedEventIds: string[] = [];
+const appliedEventIdSet = new Set<string>();
+
+function markEventApplied(eventId: string): void {
+  if (appliedEventIdSet.has(eventId)) return;
+  if (appliedEventIds.length >= MAX_APPLIED_EVENT_IDS) {
+    const evicted = appliedEventIds.shift();
+    if (evicted !== undefined) appliedEventIdSet.delete(evicted);
+  }
+  appliedEventIds.push(eventId);
+  appliedEventIdSet.add(eventId);
+}
+
+function isEventAlreadyApplied(eventId: string): boolean {
+  return appliedEventIdSet.has(eventId);
+}
+
+/** Reset the dedup set when a full snapshot makes history authoritative. */
+export function resetAppliedEventDedup(): void {
+  appliedEventIds.length = 0;
+  appliedEventIdSet.clear();
+}
+
 function resolveEventUpdatedAt(thread: Thread, updatedAt: string): string {
   const currentUpdatedAt = thread.updatedAt ?? thread.createdAt;
   return currentUpdatedAt > updatedAt ? currentUpdatedAt : updatedAt;
@@ -604,6 +631,10 @@ function mergeStreamingMessage(
       nextText = incomingMessage.text;
     } else if (existingMessage.text.endsWith(incomingMessage.text)) {
       nextText = existingMessage.text;
+    } else if (existingMessage.text.includes(incomingMessage.text)) {
+      // Incoming text is already fully contained in the existing text —
+      // this happens when overlapping server chunks arrive out of order.
+      nextText = existingMessage.text;
     } else {
       nextText = `${existingMessage.text}${incomingMessage.text}`;
     }
@@ -718,28 +749,36 @@ function applyThreadMessageSentEvent(thread: Thread, event: ThreadMessageSentEve
       : thread.turnDiffSummaries;
 
   let latestTurn = thread.latestTurn;
-  if (
-    payload.role === "assistant" &&
-    payload.turnId !== null &&
-    (thread.latestTurn === null || thread.latestTurn.turnId === payload.turnId)
-  ) {
+  if (payload.role === "assistant" && payload.turnId !== null) {
     const previousTurn = thread.latestTurn;
-    latestTurn = buildLatestTurn({
-      previous: previousTurn,
-      turnId: payload.turnId,
-      state: payload.streaming
-        ? "running"
-        : previousTurn?.state === "interrupted"
-          ? "interrupted"
-          : previousTurn?.state === "error"
-            ? "error"
-            : "completed",
-      requestedAt: previousTurn?.requestedAt ?? payload.createdAt,
-      startedAt: previousTurn?.startedAt ?? payload.createdAt,
-      completedAt: payload.streaming ? (previousTurn?.completedAt ?? null) : payload.updatedAt,
-      assistantMessageId: payload.messageId,
-      sourceProposedPlan: thread.pendingSourceProposedPlan,
-    });
+    const sameTurn = previousTurn !== null && previousTurn.turnId === payload.turnId;
+    // Allow a new turn to replace a stale latestTurn that already reached a
+    // terminal state (completed/error/interrupted). Without this, the old turn
+    // blocks the new turn from becoming latestTurn when its streaming: false
+    // event has not yet arrived.
+    const previousTurnTerminal =
+      previousTurn !== null &&
+      (previousTurn.state === "completed" ||
+        previousTurn.state === "error" ||
+        previousTurn.state === "interrupted");
+    if (sameTurn || previousTurn === null || previousTurnTerminal) {
+      latestTurn = buildLatestTurn({
+        previous: sameTurn ? previousTurn : null,
+        turnId: payload.turnId,
+        state: payload.streaming
+          ? "running"
+          : previousTurn?.state === "interrupted"
+            ? "interrupted"
+            : previousTurn?.state === "error"
+              ? "error"
+              : "completed",
+        requestedAt: sameTurn ? (previousTurn?.requestedAt ?? payload.createdAt) : payload.createdAt,
+        startedAt: sameTurn ? (previousTurn?.startedAt ?? payload.createdAt) : payload.createdAt,
+        completedAt: payload.streaming ? (sameTurn ? previousTurn?.completedAt ?? null : null) : payload.updatedAt,
+        assistantMessageId: payload.messageId,
+        sourceProposedPlan: thread.pendingSourceProposedPlan,
+      });
+    }
   }
 
   const updatedAt =
@@ -1705,6 +1744,12 @@ export function applyOrchestrationEventsHotPath(
   let nextState = state;
   for (let index = 0; index < events.length; index += 1) {
     const event = events[index]!;
+    // Deduplicate events by eventId to prevent double-processing during
+    // reconnect replay or dual-stream delivery (domain + thread streams).
+    if (isEventAlreadyApplied(event.eventId)) {
+      continue;
+    }
+    markEventApplied(event.eventId);
     if (event.type === "thread.activity-appended") {
       const activityEvents = [event];
       while (index + 1 < events.length) {

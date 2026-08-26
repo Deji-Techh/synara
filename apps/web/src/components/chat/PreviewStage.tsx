@@ -83,6 +83,33 @@ function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message.length > 0 ? error.message : fallback;
 }
 
+/**
+ * Flutter's first `flutter run` can take 3-5 min (pub get + compilation).
+ * The engine may surface a transient "exited (code 0) before serving" with
+ * logs like "Launching lib/main.dart..." while the Dart compiler is still
+ * running. Showing a hard "Failed" screen for that window is a bad UX –
+ * the preview *will* appear after the build finishes (poll will recover to
+ * running). Treat that shape as "still starting" and keep the skeleton.
+ */
+function isTransientStartingError(state: PreviewPanelState): boolean {
+  if (state.status !== "failed" || !state.error) return false;
+  const msg = state.error.toLowerCase();
+  const transientPhrase =
+    msg.includes("before serving") ||
+    msg.includes("did not start serving") ||
+    msg.includes("exited (code 0)") ||
+    msg.includes("waiting for connection");
+  if (!transientPhrase) return false;
+  const logText = state.logs.join("\n").toLowerCase();
+  return (
+    logText.includes("launching lib/main.dart") ||
+    logText.includes("waiting for connection") ||
+    logText.includes("resolving dependencies") ||
+    logText.includes("downloading packages") ||
+    logText.includes("compiling")
+  );
+}
+
 // Status pill — themed, mirrors PreviewPanel StatusPill
 function StatusPill({ state }: { state: PreviewPanelState }) {
   const live = state.status === "starting" || state.status === "running";
@@ -285,6 +312,7 @@ function PreviewConsoleDialog(props: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   logs: readonly string[];
+  framework?: ProjectFramework;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
   const { logs, open } = props;
@@ -311,10 +339,11 @@ function PreviewConsoleDialog(props: {
         <DialogHeader className="pb-1">
           <DialogTitle className="flex items-center gap-2 text-base">
             <TerminalIcon aria-hidden="true" className="size-4 text-muted-foreground" />
-            Console — flutter run
+            Console — {props.framework === "website" ? "dev server" : props.framework === "react-native" ? "Expo" : "flutter run"}
           </DialogTitle>
           <DialogDescription className="text-xs">
-            Live `flutter run` output. {logs.length > 0 ? `${logs.length} lines` : "No output yet."}
+            Live {props.framework === "website" ? "`npm run dev`" : props.framework === "react-native" ? "Expo" : "`flutter run`"} output.{" "}
+            {logs.length > 0 ? `${logs.length} lines` : "No output yet."}
           </DialogDescription>
         </DialogHeader>
         <div className="flex min-h-0 flex-col gap-2 px-4 pb-4">
@@ -859,7 +888,14 @@ export function PreviewStage(props: {
     return () => observer.disconnect();
   }, []);
   const framework = props.framework ?? "blank";
-  const isBrowserProject = framework === "website" || framework === "react-native";
+  const isWebsite = framework === "website";
+  const isFlutter = framework === "flutter";
+  const isReactNative = framework === "react-native";
+  // Only Website uses the browser chrome (traffic lights + full iframe). React Native
+  // now renders inside the same device frame as Flutter – the user explicitly
+  // requested RN = Flutter device UI, website = browser surface.
+  const isBrowserProject = isWebsite;
+  const isDeviceFrameProject = isFlutter || isReactNative;
   const frameworkLabel =
     framework === "react-native"
       ? "React Native app"
@@ -1154,7 +1190,9 @@ export function PreviewStage(props: {
         return (
           <div className="flex h-full min-h-[240px] flex-col">
             <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
-              <span className="text-xs font-medium">Console — flutter run</span>
+              <span className="text-xs font-medium">
+                Console — {framework === "website" ? "dev server" : framework === "react-native" ? "Expo" : "flutter run"}
+              </span>
               <Button
                 variant="ghost"
                 size="sm"
@@ -1166,7 +1204,9 @@ export function PreviewStage(props: {
             </div>
             <div className="min-h-[200px] flex-1 overflow-y-auto bg-muted/30 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
               {panelState.logs.length === 0 ? (
-                <p>Waiting for `flutter run` output…</p>
+                <p>
+                  Waiting for {framework === "website" ? "`npm run dev`" : framework === "react-native" ? "Expo" : "`flutter run`"} output…
+                </p>
               ) : (
                 panelState.logs.slice(-80).map((l, i) => (
                   <p key={i} className="break-words whitespace-pre-wrap">
@@ -1498,11 +1538,11 @@ export function PreviewStage(props: {
         </BranchPopup>
       </div>
 
-      {!isBrowserProject && (
+      {isFlutter && (
         <FlutterToolchainBanner threadId={props.threadId} isVisible={props.isVisible} />
       )}
 
-      {/* Browser projects use a full browser surface; Flutter keeps the device frame. */}
+      {/* Website uses a full browser surface; Flutter & React Native share the device frame. */}
       <div
         className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", CHAT_BACKGROUND_CLASS_NAME)}
       >
@@ -1512,14 +1552,18 @@ export function PreviewStage(props: {
               <span className="size-2 rounded-full bg-red-400" />
               <span className="size-2 rounded-full bg-amber-400" />
               <span className="size-2 rounded-full bg-emerald-400" />
-              <span className="ml-2 truncate">
-                {framework === "react-native" ? "React Native app preview" : "Website preview"}
-              </span>
+              <span className="ml-2 truncate">Website preview</span>
             </div>
             <div className="min-h-0 flex-1">
-              {panelState.status === "starting" ? (
-                <div className="flex h-full items-center justify-center text-xs text-slate-500">
-                  Starting preview…
+              {panelState.status === "starting" || isTransientStartingError(panelState) ? (
+                <div className="flex h-full flex-col items-center justify-center gap-2 px-8 text-center">
+                  <LoaderIcon aria-hidden="true" className="size-5 animate-spin text-slate-400" />
+                  <p className="text-xs font-medium text-slate-600">
+                    {isWebsite ? "Starting website preview…" : "Starting preview…"}
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    This can take a minute on first run — compiling the app.
+                  </p>
                 </div>
               ) : panelState.status === "failed" ? (
                 <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center text-xs text-red-500">
@@ -1559,11 +1603,7 @@ export function PreviewStage(props: {
                 </div>
               ) : (
                 <div className="flex h-full flex-col items-center justify-center gap-3 text-xs text-slate-500">
-                  <p>
-                    {framework === "react-native"
-                      ? "Preview the app's mobile UI in the browser surface."
-                      : "Preview the responsive website in the browser surface."}
-                  </p>
+                  <p>Preview the responsive website in the browser surface.</p>
                   <button
                     type="button"
                     onClick={handleStart}
@@ -1585,12 +1625,19 @@ export function PreviewStage(props: {
             landscape={landscape}
           >
             <div className="flex h-full w-full flex-col items-center justify-center bg-black text-center">
-              {panelState.status === "starting" ? (
+              {panelState.status === "starting" || isTransientStartingError(panelState) ? (
                 <div className="flex flex-col items-center gap-3 px-[12%] text-center">
-                  <p className="text-[11px] font-medium text-white/90">Starting Flutter preview…</p>
+                  <p className="text-[11px] font-medium text-white/90">
+                    {isFlutter
+                      ? "Starting Flutter preview…"
+                      : isReactNative
+                        ? "Starting React Native preview…"
+                        : "Starting preview…"}
+                  </p>
                   <span className="flex items-center gap-1.5 text-[10px] text-white/45">
-                    <LoaderIcon className="size-3 animate-spin" /> Compiling Flutter bundle
+                    <LoaderIcon className="size-3 animate-spin" /> Compiling bundle
                   </span>
+                  <span className="text-[10px] text-white/30">This can take a few minutes on first run.</span>
                 </div>
               ) : panelState.status === "failed" ? (
                 <div className="flex flex-col items-center gap-3 px-[12%] text-center">
@@ -1612,7 +1659,7 @@ export function PreviewStage(props: {
                   <iframe
                     key={panelState.reloadToken}
                     src={panelState.url}
-                    title="Flutter preview"
+                    title={`${frameworkLabel} preview`}
                     sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
                     className="h-full w-full border-0 bg-white"
                   />
@@ -1640,6 +1687,7 @@ export function PreviewStage(props: {
         open={isConsoleDialogOpen}
         onOpenChange={setIsConsoleDialogOpen}
         logs={panelState.logs}
+        framework={framework}
       />
     </div>
   );

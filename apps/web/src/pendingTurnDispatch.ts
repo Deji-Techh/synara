@@ -26,7 +26,9 @@ const pendingDispatchArmedAtByThreadId = new Map<ThreadId, number>();
 // Upper bound on how long a pending dispatch keeps forcing catch-up work.
 // Covers both leaked markers and a dispatched turn that settles before the
 // watchdog ever observes a busy state (nothing else clears that marker).
-export const PENDING_TURN_DISPATCH_MAX_AGE_MS = 30_000;
+// 60s covers slow provider cold starts and worktree setup that can delay the
+// running transition well beyond the old 30s cap.
+export const PENDING_TURN_DISPATCH_MAX_AGE_MS = 60_000;
 
 export function markPendingTurnDispatch(threadId: ThreadId): void {
   pendingDispatchArmedAtByThreadId.set(threadId, Date.now());

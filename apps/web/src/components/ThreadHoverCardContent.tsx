@@ -11,8 +11,10 @@
 import type { ReactNode } from "react";
 
 import { FastModeIcon, GitBranchIcon, WorktreeIcon } from "~/lib/icons";
+import type { ProjectFramework } from "@caide/contracts";
 import type { ThreadModelSummary } from "~/lib/threadModelSummary";
 import { FolderClosed } from "./FolderClosed";
+import { FrameworkIcon, frameworkDisplayName } from "./FrameworkIcon";
 import { ProjectSidebarIcon } from "./ProjectSidebarIcon";
 import { ProviderIcon } from "./ProviderIcon";
 import type { ThreadStatusPill } from "./Sidebar.logic";
@@ -34,6 +36,8 @@ export type ThreadHoverCardContentProps = {
   branch: string | null;
   /** Last path segment of the associated worktree path. */
   worktreeName: string | null;
+  /** Immutable project framework for this chat (drives the leading row icon, not the AI model). */
+  framework: ProjectFramework | null;
   /** Provider/model/effort currently selected for this chat. */
   model: ThreadModelSummary | null;
   /** Current live/actionable state, shown as text so compact row glyphs stay discoverable. */
@@ -53,7 +57,8 @@ function MetaRow({ icon, children }: { icon: ReactNode; children: string }) {
 }
 
 // Model row: provider glyph, model name, then the reasoning/effort label so the
-// line reads like the composer's model trigger.
+// line reads like the composer's model trigger. Kept for non-framework surfaces only;
+// the sidebar hover now surfaces framework instead.
 function ModelRow({ model }: { model: ThreadModelSummary }) {
   return (
     <span className={META_ROW_CLASS_NAME}>
@@ -69,6 +74,15 @@ function ModelRow({ model }: { model: ThreadModelSummary }) {
   );
 }
 
+function FrameworkRow({ framework }: { framework: ProjectFramework }) {
+  return (
+    <span className={META_ROW_CLASS_NAME}>
+      <FrameworkIcon framework={framework} size={14} className="size-3.5" />
+      <span className="min-w-0 truncate">{frameworkDisplayName(framework)}</span>
+    </span>
+  );
+}
+
 export function ThreadHoverCardContent({
   title,
   timeLabel,
@@ -77,6 +91,7 @@ export function ThreadHoverCardContent({
   sourceProjectName,
   branch,
   worktreeName,
+  framework,
   model,
   status,
 }: ThreadHoverCardContentProps) {
@@ -85,6 +100,7 @@ export function ThreadHoverCardContent({
     Boolean(sourceProjectName) ||
     Boolean(branch) ||
     Boolean(worktreeName) ||
+    Boolean(framework) ||
     Boolean(model) ||
     Boolean(status);
 
@@ -152,7 +168,8 @@ export function ThreadHoverCardContent({
               {worktreeName}
             </MetaRow>
           ) : null}
-          {model ? <ModelRow model={model} /> : null}
+          {framework ? <FrameworkRow framework={framework} /> : null}
+          {framework ? null : model ? <ModelRow model={model} /> : null}
         </div>
       ) : null}
     </div>

@@ -11,6 +11,7 @@ import {
   PROVIDER_DISPLAY_NAMES,
   type ProfileStats,
   type ProfileTokenStats,
+  type ProjectFramework,
   type ProviderKind,
 } from "@caide/contracts";
 import {
@@ -18,6 +19,7 @@ import {
   serverProfileTokenStatsQueryOptions,
 } from "~/lib/serverReactQuery";
 import { CentralIcon } from "~/lib/central-icons";
+import { FrameworkIcon, frameworkDisplayName } from "~/components/FrameworkIcon";
 import { ProviderIcon } from "~/components/ProviderIcon";
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -92,6 +94,14 @@ function ProfileContent({
   const modelUsage = selectProfileModelUsage(stats, tokenStats);
   const peakHourLabel = formatPeakHourLabel(stats.activeHours.startHour);
   const mostWorkedProjectLabel = formatMostWorkedProjectLabel(stats.mostWorkedProject);
+  const mostUsedFramework = stats.mostUsedFramework ?? null;
+  const frameworks = stats.frameworks ?? [];
+  const mostUsedFrameworkLabel = (() => {
+    if (!mostUsedFramework) return "—";
+    const entry = frameworks.find((f) => f.framework === mostUsedFramework);
+    const suffix = entry ? ` · ${entry.percent}% · ${formatNumber(entry.count)} project${entry.count === 1 ? "" : "s"}` : "";
+    return `${frameworkDisplayName(mostUsedFramework)}${suffix}`;
+  })();
 
   return (
     <div className="flex min-w-0 flex-col gap-7">
@@ -200,6 +210,7 @@ function ProfileContent({
               value={formatNumber(stats.insights.totalSkillsUsed)}
             />
             <InsightRow label="Total threads" value={formatNumber(stats.activity.totalThreads)} />
+            <InsightRow label="Most used framework" value={mostUsedFrameworkLabel} />
           </dl>
         </section>
 
@@ -232,6 +243,25 @@ function ProfileContent({
           )}
         </section>
       </div>
+
+      {/* Framework usage */}
+      <section className="flex flex-col gap-3">
+        <h3 className="text-sm font-medium">Framework usage</h3>
+        {frameworks.length > 0 ? (
+          <ul className="grid grid-cols-1 gap-x-12 gap-y-3 sm:grid-cols-2">
+            {frameworks.slice(0, 4).map((entry) => (
+              <FrameworkUsageRow
+                key={entry.framework}
+                framework={entry.framework}
+                count={entry.count}
+                percent={entry.percent}
+              />
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">No framework activity yet.</p>
+        )}
+      </section>
 
       {/* Model usage */}
       <section className="flex flex-col gap-3">
@@ -355,6 +385,37 @@ function ModelUsageRow({
             <CentralIcon name="chart-2" className="size-3.5 shrink-0 text-muted-foreground" />
           )}
           <span className="truncate">{model}</span>
+        </span>
+        <span className="shrink-0 tabular-nums text-muted-foreground">{percent}%</span>
+      </div>
+      <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className="h-full rounded-full bg-[var(--info)]"
+          style={{ width: `${Math.min(100, Math.max(2, percent))}%` }}
+        />
+      </div>
+    </li>
+  );
+}
+
+function FrameworkUsageRow({
+  framework,
+  count,
+  percent,
+}: {
+  framework: ProjectFramework;
+  count: number;
+  percent: number;
+}) {
+  return (
+    <li className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between gap-3 text-sm">
+        <span className="flex min-w-0 items-center gap-2">
+          <FrameworkIcon framework={framework} size={14} className="size-3.5 shrink-0" />
+          <span className="truncate">{frameworkDisplayName(framework)}</span>
+          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+            {count} project{count === 1 ? "" : "s"}
+          </span>
         </span>
         <span className="shrink-0 tabular-nums text-muted-foreground">{percent}%</span>
       </div>

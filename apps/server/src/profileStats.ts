@@ -42,6 +42,10 @@ const PROVIDER_KINDS = new Set<ProviderKind>([
   "opencodeGo",
 ]);
 
+const PROJECT_FRAMEWORKS = ["blank", "react-native", "flutter", "website"] as const;
+type ProjectFramework = (typeof PROJECT_FRAMEWORKS)[number];
+const PROJECT_FRAMEWORK_SET = new Set<string>(PROJECT_FRAMEWORKS);
+
 type HeatmapCell = ProfileStats["activity"]["heatmap"][number];
 type ProviderModelUsage = ProfileStats["providerModels"][number];
 type SkillUsage = ProfileStats["skills"][number];
@@ -91,6 +95,11 @@ interface TokenDayRow {
   readonly provider: string | null;
   readonly model: string | null;
   readonly tokens: number;
+}
+
+interface FrameworkCountRow {
+  readonly framework: string | null;
+  readonly count: number;
 }
 
 type UsageKind = "skill" | "agent";
@@ -445,6 +454,11 @@ function normalizeProviderKind(value: unknown): ProviderKind | "unknown" {
   return provider && PROVIDER_KINDS.has(provider as ProviderKind)
     ? (provider as ProviderKind)
     : "unknown";
+}
+
+function normalizeProjectFramework(value: unknown): ProjectFramework | null {
+  const framework = nonEmptyString(value);
+  return framework && PROJECT_FRAMEWORK_SET.has(framework) ? (framework as ProjectFramework) : null;
 }
 
 interface TokenModelUsageCount {
@@ -1075,6 +1089,16 @@ const makeProfileStatsQuery = Effect.gen(function* () {
       `,
     );
 
+  const queryFrameworkCounts = () =>
+    legacyCompatibleQuery(
+      "profileStats.frameworkCounts",
+      sql<FrameworkCountRow>`
+        SELECT COALESCE(framework, 'blank') AS framework, COUNT(*) AS count
+        FROM projection_projects
+        GROUP BY framework
+      `,
+    );
+
   // ── Result builders ─────────────────────────────────────────────────
 
   const getProfileStats = (
@@ -1090,6 +1114,7 @@ const makeProfileStatsQuery = Effect.gen(function* () {
       const skillMessageRows = yield* querySkillUsageMessages();
       const archivedSkillRows = yield* queryArchivedSkillUsage();
       const mostWorkedProjectRows = yield* queryMostWorkedProject(tz);
+      const frameworkCountRows = yield* queryFrameworkCounts();
 
       // ── Activity / heatmap / streaks ──
       const countByDay = new Map<string, number>();
@@ -1232,6 +1257,30 @@ const makeProfileStatsQuery = Effect.gen(function* () {
       const skills = allSkillUsages.slice(0, SKILL_RESULT_LIMIT);
       const totalSkillsUsed = allSkillUsages.reduce((sum, row) => sum + row.runCount, 0);
 
+      // ── Framework usage (immutable project framework selected at creation) ──
+      const frameworkCounts = new Map<ProjectFramework, number>();
+      for (const row of frameworkCountRows) {
+        const framework = normalizeProjectFramework(row.framework);
+        if (!framework) continue;
+        frameworkCounts.set(framework, (frameworkCounts.get(framework) ?? 0) + num(row.count));
+      }
+      const totalFrameworkProjects = [...frameworkCounts.values()].reduce((sum, c) => sum + c, 0);
+      const frameworks = [...frameworkCounts.entries()]
+        .map(([framework, count]) => ({
+          framework,
+          count,
+          percent: percent1(count, totalFrameworkProjects),
+        }))
+        .toSorted((a, b) => b.count - a.count || a.framework.localeCompare(b.framework));
+      let mostUsedFramework: ProjectFramework | null = null;
+      let mostUsedFrameworkCount = 0;
+      for (const entry of frameworks) {
+        if (entry.count > mostUsedFrameworkCount) {
+          mostUsedFrameworkCount = entry.count;
+          mostUsedFramework = entry.framework;
+        }
+      }
+
       // ── Identity ──
       const homeDirBasename = nodePath.basename(config.homeDir) || "caide";
 
@@ -1265,6 +1314,8 @@ const makeProfileStatsQuery = Effect.gen(function* () {
         skills,
         mostUsedSkill: skills[0] ?? null,
         mostWorkedProject: buildMostWorkedProject(mostWorkedProjectRows[0]),
+        frameworks,
+        mostUsedFramework,
         quota: emptyQuota(),
       } satisfies ProfileStats;
     });

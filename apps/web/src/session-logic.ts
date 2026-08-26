@@ -380,7 +380,7 @@ export function hasLiveTurnTailWork(input: {
   latestTurn: Pick<OrchestrationLatestTurn, "turnId" | "completedAt"> | null;
   messages: ReadonlyArray<Pick<ChatMessage, "role" | "streaming" | "turnId">>;
   activities: ReadonlyArray<OrchestrationThreadActivity>;
-  session?: Pick<ThreadSession, "orchestrationStatus"> | null;
+  session?: Pick<ThreadSession, "orchestrationStatus" | "activeTurnId"> | null;
 }): boolean {
   const latestTurnId = input.latestTurn?.turnId;
   if (!latestTurnId) {
@@ -389,7 +389,13 @@ export function hasLiveTurnTailWork(input: {
 
   const hasStreamingAssistantText = input.messages.some(
     (message) =>
-      message.role === "assistant" && message.turnId === latestTurnId && message.streaming,
+      message.role === "assistant" &&
+      message.turnId === latestTurnId &&
+      message.streaming &&
+      // Scope to the session's active turn when available: a stale streaming
+      // flag on an older turn must not keep the indicator alive while a newer
+      // turn is already active.
+      (input.session?.activeTurnId == null || message.turnId === input.session.activeTurnId),
   );
   if (hasStreamingAssistantText) {
     // Once the turn is terminal, a stale `streaming` flag should not keep the

@@ -190,6 +190,25 @@ function isDeviceNotFoundError(message: string): boolean {
   );
 }
 
+function isTransientStartingErrorState(state: { status: string; error: string | null; logs: readonly string[] }): boolean {
+  if (state.status !== "failed" || !state.error) return false;
+  const msg = state.error.toLowerCase();
+  const transientPhrase =
+    msg.includes("before serving") ||
+    msg.includes("did not start serving") ||
+    msg.includes("exited (code 0)") ||
+    msg.includes("waiting for connection");
+  if (!transientPhrase) return false;
+  const logText = state.logs.join("\n").toLowerCase();
+  return (
+    logText.includes("launching lib/main.dart") ||
+    logText.includes("waiting for connection") ||
+    logText.includes("resolving dependencies") ||
+    logText.includes("downloading packages") ||
+    logText.includes("compiling")
+  );
+}
+
 function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean }) {
   const [status, setStatus] = useState<{
     supported: boolean;
@@ -379,21 +398,23 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 function StatusPill({ state }: { state: PreviewPanelState }) {
-  const live = state.status === "starting" || state.status === "running";
+  const isTransient = isTransientStartingErrorState(state);
+  const effectiveStatus = isTransient ? "starting" : state.status;
+  const live = effectiveStatus === "starting" || effectiveStatus === "running";
   const dotClassName =
-    state.status === "running"
+    effectiveStatus === "running"
       ? "bg-emerald-500"
-      : state.status === "starting"
+      : effectiveStatus === "starting"
         ? "bg-amber-500"
-        : state.status === "failed"
+        : effectiveStatus === "failed"
           ? "bg-red-500"
           : "bg-muted-foreground";
   const label =
-    state.status === "starting"
+    effectiveStatus === "starting"
       ? "Starting…"
-      : state.status === "running"
+      : effectiveStatus === "running"
         ? "Running"
-        : state.status === "failed"
+        : effectiveStatus === "failed"
           ? "Failed"
           : "Idle";
   return (
@@ -1529,13 +1550,13 @@ export function PreviewPanel(props: {
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {frameKind === "frameless" ? (
               <div className="flex min-h-0 flex-1 flex-col items-center justify-center bg-[#0a0a0a] p-4">
-                {panelState.status === "starting" ? (
+                {panelState.status === "starting" || isTransientStartingErrorState(panelState) ? (
                   <div className="flex flex-col items-center gap-2 py-6">
                     <LoaderIcon className="size-3 animate-spin text-muted-foreground" />
-                    <p className="text-[11px] font-medium text-foreground">
-                      Starting Flutter preview…
+                    <p className="text-[11px] font-medium text-foreground">Starting preview…</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Compiling bundle — this can take a few minutes on first run.
                     </p>
-                    <p className="text-[10px] text-muted-foreground">Compiling Flutter bundle</p>
                   </div>
                 ) : panelState.status === "failed" ? (
                   (() => {
@@ -1599,15 +1620,13 @@ export function PreviewPanel(props: {
                   landscape={landscape}
                 >
                   <div className="flex h-full w-full flex-col items-center justify-center bg-black text-center">
-                    {panelState.status === "starting" ? (
+                    {panelState.status === "starting" || isTransientStartingErrorState(panelState) ? (
                       <div className="flex flex-col items-center gap-3 px-[12%] text-center">
-                        <p className="text-[11px] font-medium text-white/90">
-                          Starting Flutter preview…
-                        </p>
+                        <p className="text-[11px] font-medium text-white/90">Starting preview…</p>
                         <span className="flex items-center gap-1.5 text-[10px] text-white/45">
-                          <LoaderIcon className="size-3 animate-spin" />
-                          Compiling Flutter bundle
+                          <LoaderIcon className="size-3 animate-spin" /> Compiling bundle
                         </span>
+                        <span className="text-[10px] text-white/30">This can take a few minutes on first run.</span>
                       </div>
                     ) : panelState.status === "failed" ? (
                       (() => {
