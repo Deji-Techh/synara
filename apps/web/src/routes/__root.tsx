@@ -1607,7 +1607,11 @@ function EventRouter() {
         flushPendingDomainEvents();
       },
       {
-        wait: 100,
+        // Trailing throttle that coalesces the wire's token clumps into compact store
+        // commits. 40ms keeps the streaming reveal target close to the actual stream
+        // (the reveal engine drains ~100ms of backlog anyway), while still bounding
+        // how often the store and transcript re-derive.
+        wait: 40,
         leading: false,
         trailing: true,
       },
