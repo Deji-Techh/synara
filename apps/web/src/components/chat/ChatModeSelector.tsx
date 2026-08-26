@@ -7,9 +7,11 @@ import { Tooltip, TooltipTrigger, TooltipPopup } from "~/components/ui/tooltip";
 import {
   BotIcon as Bot,
   LightBulbIcon as Lightbulb,
+  AskIcon,
+  HammerIcon as Hammer,
 } from "~/lib/icons";
 
-export const CHAT_MODE_ORDER: ChatMode[] = ["local-agent", "plan"];
+export const CHAT_MODE_ORDER: ChatMode[] = ["local-agent", "plan", "build", "ask"];
 
 export const CHAT_MODE_META: Record<
   ChatMode,
@@ -24,6 +26,16 @@ export const CHAT_MODE_META: Record<
     name: "Plan",
     description: "Design before you build",
     Icon: Lightbulb,
+  },
+  ask: {
+    name: "Ask",
+    description: "Q&A only — no file edits",
+    Icon: AskIcon,
+  },
+  build: {
+    name: "Build",
+    description: "Legacy alias for Agent",
+    Icon: Hammer,
   },
 };
 

@@ -9,10 +9,10 @@ export interface ChatModeResolution {
 
 export function normalizeStoredChatMode(mode: string | null | undefined): ChatMode | null {
   if (!mode) return null;
-  const validModes: ChatMode[] = ["local-agent", "plan"];
+  const validModes: ChatMode[] = ["local-agent", "plan", "ask", "build"];
   if (validModes.includes(mode as ChatMode)) return mode as ChatMode;
-  // Legacy build/ask/agent values route through the agent stream.
-  if (mode === "build" || mode === "ask" || mode === "agent") return "local-agent";
+  // Legacy agent value routes through the agent stream.
+  if (mode === "agent") return "local-agent";
   return null;
 }
 

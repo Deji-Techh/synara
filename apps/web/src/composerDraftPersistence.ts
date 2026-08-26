@@ -899,7 +899,7 @@ function normalizePersistedDraftsByThreadId(
         ? draftCandidate.interactionMode
         : null;
     const mode =
-      draftCandidate.mode === "local-agent" || draftCandidate.mode === "plan"
+      draftCandidate.mode === "local-agent" || draftCandidate.mode === "plan" || draftCandidate.mode === "ask" || draftCandidate.mode === "build"
         ? draftCandidate.mode
         : draftCandidate.mode === "build" ||
             draftCandidate.mode === "ask" ||
@@ -1348,11 +1348,12 @@ export function normalizeCurrentPersistedComposerDraftStoreState(
   const rawStickyChatMode: string | null | undefined =
     normalizedPersistedState.stickyChatMode;
   const stickyChatMode =
-    rawStickyChatMode === "local-agent" || rawStickyChatMode === "plan"
+    rawStickyChatMode === "local-agent" ||
+    rawStickyChatMode === "plan" ||
+    rawStickyChatMode === "ask" ||
+    rawStickyChatMode === "build"
       ? (rawStickyChatMode as ChatMode)
-      : rawStickyChatMode === "build" ||
-          rawStickyChatMode === "ask" ||
-          rawStickyChatMode === "agent"
+      : rawStickyChatMode === "agent"
         ? "local-agent"
         : null;
 

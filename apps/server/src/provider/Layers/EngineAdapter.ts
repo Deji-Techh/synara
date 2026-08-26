@@ -1702,7 +1702,7 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
       chatId: number,
       turnId: TurnId,
       prompt: string,
-      requestedChatMode: "plan" | "local-agent",
+      requestedChatMode: "plan" | "local-agent" | "ask",
     ): Effect.Effect<Fiber.Fiber<void, never>, never, never> =>
       Effect.gen(function* () {
         const { client } = yield* ensureSharedEngine(context.threadId);
@@ -2085,12 +2085,12 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
             }),
           );
 
-          // The engine accepts plan and local-agent (agent). Build/ask were removed
-          // and route through local-agent. The send input's `mode` is the single
-          // source of truth (contracts decode it with a "local-agent" default).
-          // If it is still missing here the caller bypassed schema decoding —
-          // degrade visibly instead of guessing.
-          let requestedChatMode: "plan" | "local-agent" = input.mode ?? "local-agent";
+          // The engine accepts plan, ask (read-only), and local-agent (agent). Build is a legacy alias for local-agent.
+          // The send input's `mode` is the single source of truth (contracts decode it with a "local-agent" default).
+          // If it is still missing here the caller bypassed schema decoding — degrade visibly instead of guessing.
+          let rawMode: "plan" | "local-agent" | "ask" | "build" = (input.mode as "plan" | "local-agent" | "ask" | "build") ?? "local-agent";
+          // Normalize build → local-agent for engine
+          let requestedChatMode: "plan" | "local-agent" | "ask" = rawMode === "build" ? "local-agent" : (rawMode as "plan" | "local-agent" | "ask");
           if (input.mode === undefined) {
             yield* Effect.logWarning(
               `[engine] sendTurn thread=${input.threadId}: input.mode missing (caller skipped schema decode); degrading to "${requestedChatMode}"`,

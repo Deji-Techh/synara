@@ -9,17 +9,23 @@ import { Button } from "../ui/button";
 import { cn } from "~/lib/utils";
 import { Badge } from "../ui/badge";
 import { ProposedPlanActions } from "./ProposedPlanActions";
+import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
+import { toastManager } from "../ui/toast";
 
 export const ProposedPlanCard = function ProposedPlanCard({
   planMarkdown,
   cwd,
   workspaceRoot,
   chatTypographyStyle,
+  threadId,
+  onApprovePlan,
 }: {
   planMarkdown: string;
   cwd: string | undefined;
   workspaceRoot: string | undefined;
   chatTypographyStyle?: CSSProperties;
+  threadId?: string;
+  onApprovePlan?: (text: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const title = proposedPlanTitle(planMarkdown) ?? "Proposed plan";
@@ -29,6 +35,26 @@ export const ProposedPlanCard = function ProposedPlanCard({
   const collapsedPreview = canCollapse
     ? buildCollapsedProposedPlanPreviewMarkdown(planMarkdown, { maxLines: 10 })
     : null;
+  const { copyToClipboard } = useCopyToClipboard<void>({
+    onCopy: () => toastManager.add({ type: "success", title: "Approval text copied — paste and send" }),
+  });
+  const approvalText = "Approved — proceed to build. Please call exit_plan with confirmation:true and start implementation.";
+  const handleApprove = () => {
+    if (onApprovePlan) {
+      onApprovePlan(approvalText);
+    } else {
+      copyToClipboard(approvalText, undefined);
+      toastManager.add({ type: "success", title: "Plan approved — paste in composer and send" });
+    }
+  };
+  const handleRequestChanges = () => {
+    if (onApprovePlan) {
+      onApprovePlan("Request changes: ");
+    } else {
+      copyToClipboard("Request changes: ", undefined);
+    }
+  };
+  void threadId;
   return (
     <div className="rounded-[24px] border border-border/80 bg-card/70 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -37,6 +63,14 @@ export const ProposedPlanCard = function ProposedPlanCard({
           <p className="truncate text-sm font-medium text-foreground">{title}</p>
         </div>
         <ProposedPlanActions planMarkdown={planMarkdown} workspaceRoot={workspaceRoot} />
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button size="sm" data-scroll-anchor-ignore onClick={handleApprove} className="bg-blue-600 text-white hover:bg-blue-700">
+          Approve & Build
+        </Button>
+        <Button size="sm" variant="outline" data-scroll-anchor-ignore onClick={handleRequestChanges}>
+          Request changes
+        </Button>
       </div>
       <div className="mt-4">
         <div className={cn("relative", canCollapse && !expanded && "max-h-104 overflow-hidden")}>

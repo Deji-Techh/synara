@@ -274,15 +274,26 @@ export const DEFAULT_PROVIDER_INTERACTION_MODE: ProviderInteractionMode = "defau
  * Chat mode — which kind of agent behavior a turn runs under. Maps to the
  * engine's session-mode routing; other adapters ignore it.
  *
- * - `build`: the Flutter builder agent loop (tools enabled).
- * - `ask`: plain Q&A — no tool execution, single-step answer.
+ * - `build`: the Flutter builder agent loop (tools enabled) — legacy alias for `local-agent`.
+ * - `ask`: plain Q&A — no tool execution, single-step answer (read-only).
  * - `local-agent`: project-aware scripting for the current workspace (same
  *   engine loop as `build`, kept as a distinct label for parity with Caide).
  * - `plan`: produce a plan artifact only — single-step, no file edits.
  */
-export const ChatMode = Schema.Literals(["local-agent", "plan"]);
+export const ChatMode = Schema.Literals(["build", "ask", "local-agent", "plan"]);
 export type ChatMode = typeof ChatMode.Type;
 export const DEFAULT_CHAT_MODE: ChatMode = "local-agent";
+/** Normalize legacy `build` → `local-agent`; `ask` and `plan` are preserved. */
+export function normalizeChatMode(mode: ChatMode): "local-agent" | "ask" | "plan" {
+  if (mode === "build") return "local-agent";
+  return mode as "local-agent" | "ask" | "plan";
+}
+export function chatModeRequiresReadOnly(mode: ChatMode): boolean {
+  return normalizeChatMode(mode) === "ask";
+}
+export function chatModeIsPlanOnly(mode: ChatMode): boolean {
+  return normalizeChatMode(mode) === "plan";
+}
 const SidechatSourceThreadId = Schema.optional(Schema.NullOr(ThreadId)).pipe(
   Schema.withDecodingDefault(() => null),
 );
