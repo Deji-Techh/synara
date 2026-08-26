@@ -595,6 +595,7 @@ function toProjectedProjectShell(row: ProjectionProjectDbRow): OrchestrationProj
     kind: row.kind,
     title: row.title,
     workspaceRoot: row.workspaceRoot,
+    framework: row.framework,
     defaultModelSelection: row.defaultModelSelection,
     scripts: row.scripts,
     isPinned: row.isPinned > 0,

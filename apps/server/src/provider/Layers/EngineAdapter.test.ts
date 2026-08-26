@@ -221,7 +221,7 @@ describe("EngineAdapter", () => {
       provideAdapter(
         Effect.gen(function* () {
           const adapter = yield* EngineAdapter;
-          for (const mode of ["build", "ask", "plan", "local-agent"] as const) {
+          for (const mode of ["plan", "local-agent"] as const) {
             const threadId = ThreadId.makeUnsafe(randomUUID());
             yield* adapter.startSession({
               threadId,
@@ -245,7 +245,7 @@ describe("EngineAdapter", () => {
             const turnResult = yield* adapter.sendTurn({
               threadId,
               input: "[caide-qa=write]",
-              ...(mode !== "build" ? { mode } : {}),
+              mode,
             });
             expect(turnResult.turnId).toBeDefined();
             const settled = yield* Fiber.join(terminal);

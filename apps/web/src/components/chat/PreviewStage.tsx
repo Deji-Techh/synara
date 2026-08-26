@@ -859,7 +859,6 @@ export function PreviewStage(props: {
     return () => observer.disconnect();
   }, []);
   const framework = props.framework ?? "blank";
-  const isBlankProject = framework === "blank";
   const isBrowserProject = framework === "website" || framework === "react-native";
   const frameworkLabel =
     framework === "react-native"
@@ -976,15 +975,11 @@ export function PreviewStage(props: {
 
   const handleStart = useCallback(() => {
     setPanelState((prev) => previewStartRequested(prev));
-    if (isBlankProject) {
-      setPanelState((prev) =>
-        previewStartFailed(
-          prev,
-          "Preview is unavailable until this blank project has an application framework.",
-        ),
-      );
-      return;
-    }
+    // The engine is the source of truth for whether a project can be previewed —
+    // it knows the app's actual framework (blank/RN/flutter/website) from the
+    // engine DB. A web-side framework gate was dropping valid RN/website apps
+    // (and stale "blank" values persisted across projects); let preview/start
+    // succeed or fail with an accurate engine error instead.
     ensureNativeApi()
       .preview.start({ threadId: props.threadId, device: "web-server" })
       .then((result) =>
@@ -1005,7 +1000,7 @@ export function PreviewStage(props: {
       setPanelState((prev) => previewReloadRequested(prev));
       void ensureNativeApi().preview.reload({ threadId: props.threadId, hotReload });
     },
-    [isBlankProject, props.threadId],
+    [props.threadId],
   );
 
   const savePreviewScreenshot = useCallback(() => {

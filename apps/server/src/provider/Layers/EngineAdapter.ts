@@ -205,6 +205,14 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
     // sequence so concurrent sessions cannot launch duplicate children.
     const sharedEngineStartupLock = yield* Semaphore.make(1);
     const chatToThread = yield* Ref.make<ReadonlyMap<number, ThreadId>>(new Map());
+    // Persistent chat→thread binding that survives chat:stream:end and session
+    // restarts. Engine notifications carry only the numeric chatId; after a
+    // provider session restart the transient `chatToThread` index is cleared and
+    // the fresh session context has no chatMapping yet, so notifications
+    // (plan:questionnaire, app-blueprint:update, consent, env-vars) must still be
+    // attributable to the owning thread. Populated alongside `chatToThread` and
+    // intentionally never cleared on stream-end or stop.
+    const chatIdToThread = yield* Ref.make<ReadonlyMap<number, ThreadId>>(new Map());
     const pendingRequests = yield* Ref.make<ReadonlyMap<string, PendingEngineRequest>>(new Map());
     const settledChats = yield* Ref.make<ReadonlySet<number>>(new Set());
     const goalsEventQueue = yield* PubSub.unbounded<{
@@ -414,16 +422,26 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
           }
           // A provider session restart between turns clears the chat→thread
           // reverse index even though the engine keeps streaming the same chat.
-          // Fall back to scanning live sessions by their chat binding so
-          // plan:questionnaire / app-blueprint:update / consent notifications
-          // arriving mid-turn are not dropped (they surfaced as "no card showed"
-          // + the 5-min resolver timeout).
-          return Ref.get(sessions).pipe(
-            Effect.map((next) => {
-              for (const context of next.values()) {
-                if (context.chatMapping?.chatId === chatId) return context;
+          // Fall back to the persistent chat registry, then to scanning live
+          // sessions by their chat binding so plan:questionnaire /
+          // app-blueprint:update / consent notifications arriving mid-turn are
+          // not dropped (they surfaced as "no card showed" + 5-min timeout).
+          return Ref.get(chatIdToThread).pipe(
+            Effect.flatMap((persistent) => {
+              const persistentThreadId = persistent.get(chatId);
+              if (persistentThreadId) {
+                return Ref.get(sessions).pipe(
+                  Effect.map((next) => next.get(persistentThreadId) ?? null),
+                );
               }
-              return null;
+              return Ref.get(sessions).pipe(
+                Effect.map((next) => {
+                  for (const context of next.values()) {
+                    if (context.chatMapping?.chatId === chatId) return context;
+                  }
+                  return null;
+                }),
+              );
             }),
           );
         }),
@@ -1535,6 +1553,11 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         }
         context.chatMapping = mapping;
         yield* Ref.update(chatToThread, (map) => {
+          const next = new Map(map);
+          next.set(chatId!, context.threadId);
+          return next;
+        });
+        yield* Ref.update(chatIdToThread, (map) => {
           const next = new Map(map);
           next.set(chatId!, context.threadId);
           return next;
