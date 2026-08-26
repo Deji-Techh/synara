@@ -423,31 +423,26 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
         // persistent registry, then a scan of live sessions by chat binding.
         let threadId = transient.get(chatId);
         if (threadId === undefined) threadId = persistent.get(chatId);
-        if (threadId === undefined) {
-          for (const context of live.values()) {
-            if (context.chatMapping?.chatId === chatId) {
-              return context;
-            }
+        const directSession =
+          threadId === undefined ? null : (live.get(threadId) ?? null);
+        if (directSession !== null) return directSession;
+
+        // The mapped thread's session is gone (session restart torn it down) or
+        // the chat is unknown — scan live sessions by their chat binding; a
+        // freshly re-created session may already have re-bound via ensureThreadChat.
+        for (const context of live.values()) {
+          if (context.chatMapping?.chatId === chatId) {
+            return context;
           }
-          Effect.runSync(
-            Effect.logWarning("[engine-adapter] sessionForChat unresolvable", {
-              chatId,
-              liveSessions: Array.from(live.keys()).map(String),
-            }),
-          );
-          return null;
         }
-        const session = live.get(threadId) ?? null;
-        if (session === null) {
-          Effect.runSync(
-            Effect.logWarning("[engine-adapter] sessionForChat session missing", {
-              chatId,
-              threadId: String(threadId),
-              liveSessions: Array.from(live.keys()).map(String),
-            }),
-          );
-        }
-        return session;
+        Effect.runSync(
+          Effect.logWarning("[engine-adapter] sessionForChat unresolvable", {
+            chatId,
+            mappedThreadId: threadId === undefined ? null : String(threadId),
+            liveSessions: Array.from(live.keys()).map(String),
+          }),
+        );
+        return null;
       });
 
     const claimChatSettlement = (chatId: number): Effect.Effect<boolean> =>
