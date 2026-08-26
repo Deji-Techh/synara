@@ -414,52 +414,41 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
      * preview-only sessions, which never bind chats.
      */
     const sessionForChat = (chatId: number): Effect.Effect<EngineSessionContext | null> =>
-      Ref.get(chatToThread).pipe(
-        Effect.flatMap((map) => {
-          const threadId = map.get(chatId);
-          if (threadId) {
-            return Ref.get(sessions).pipe(Effect.map((next) => next.get(threadId) ?? null));
+      Effect.gen(function* () {
+        const transient = yield* Ref.get(chatToThread);
+        const persistent = yield* Ref.get(chatIdToThread);
+        const live = yield* Ref.get(sessions);
+
+        // Resolve the owning thread: transient index first (fast path), then the
+        // persistent registry, then a scan of live sessions by chat binding.
+        let threadId = transient.get(chatId);
+        if (threadId === undefined) threadId = persistent.get(chatId);
+        if (threadId === undefined) {
+          for (const context of live.values()) {
+            if (context.chatMapping?.chatId === chatId) {
+              return context;
+            }
           }
-          // A provider session restart between turns clears the chat→thread
-          // reverse index even though the engine keeps streaming the same chat.
-          // Fall back to the persistent chat registry, then to scanning live
-          // sessions by their chat binding so plan:questionnaire /
-          // app-blueprint:update / consent notifications arriving mid-turn are
-          // not dropped (they surfaced as "no card showed" + 5-min timeout).
-          return Ref.get(chatIdToThread).pipe(
-            Effect.flatMap((persistent) => {
-              const persistentThreadId = persistent.get(chatId);
-              if (persistentThreadId) {
-                return Ref.get(sessions).pipe(
-                  Effect.map((next) => {
-                    const session = next.get(persistentThreadId) ?? null;
-                    if (session === null) {
-                      Effect.runSync(
-                        Effect.logWarning("[engine-adapter] sessionForChat persistent miss", {
-                          chatId,
-                          threadId: String(persistentThreadId),
-                        }),
-                      );
-                    }
-                    return session;
-                  }),
-                );
-              }
-              return Ref.get(sessions).pipe(
-                Effect.map((next) => {
-                  for (const context of next.values()) {
-                    if (context.chatMapping?.chatId === chatId) return context;
-                  }
-                  Effect.runSync(
-                    Effect.logWarning("[engine-adapter] sessionForChat unresolvable", { chatId }),
-                  );
-                  return null;
-                }),
-              );
+          Effect.runSync(
+            Effect.logWarning("[engine-adapter] sessionForChat unresolvable", {
+              chatId,
+              liveSessions: Array.from(live.keys()).map(String),
             }),
           );
-        }),
-      );
+          return null;
+        }
+        const session = live.get(threadId) ?? null;
+        if (session === null) {
+          Effect.runSync(
+            Effect.logWarning("[engine-adapter] sessionForChat session missing", {
+              chatId,
+              threadId: String(threadId),
+              liveSessions: Array.from(live.keys()).map(String),
+            }),
+          );
+        }
+        return session;
+      });
 
     const claimChatSettlement = (chatId: number): Effect.Effect<boolean> =>
       Ref.modify(settledChats, (set) => {
@@ -876,19 +865,13 @@ const makeEngineAdapter = (options?: EngineAdapterLiveOptions) =>
               })
               .filter((task): task is NonNullable<typeof task> => task !== null);
             if (tasks.length === 0) return;
-yield* publishEvent(
+            yield* publishEvent(
               makeEvent<ProviderRuntimeEvent>(context.threadId, {
-                type: "user-input.requested",
-                requestId: requestId as never,
-                payload: { questions },
+                type: "turn.tasks.updated",
+                turnId,
+                payload: { tasks },
               }),
             );
-            yield* Effect.logInfo("[engine-adapter] published user-input.requested", {
-              chatId: payload.chatId,
-              requestId,
-              threadId: String(context.threadId),
-              questionCount: questions.length,
-            });
             return;
           }
 
@@ -1060,6 +1043,12 @@ yield* publishEvent(
                 payload: { questions },
               }),
             );
+            yield* Effect.logInfo("[engine-adapter] published user-input.requested", {
+              chatId: payload.chatId,
+              requestId,
+              threadId: String(context.threadId),
+              questionCount: questions.length,
+            });
             return;
           }
 
