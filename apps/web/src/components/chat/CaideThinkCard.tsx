@@ -1,5 +1,14 @@
+// FILE: CaideThinkCard.tsx
+// Purpose: Collapsible "thinking" card. While streaming it stays open and the content
+//          reveals at the same smooth cadence as the answer text; when the turn settles
+//          it collapses with the shared disclosure motion.
+// Layer: Web chat presentation component
+
 import React, { useState } from "react";
-import { CaideCard, CaideCardHeader, CaideCardContent } from "./CaideCardPrimitives";
+import { useSmoothStreamedText } from "~/hooks/useSmoothStreamedText";
+import { DisclosureChevron } from "~/components/ui/DisclosureChevron";
+import { DisclosureRegion } from "~/components/ui/DisclosureRegion";
+import { CaideCard, CaideCardContent, CaideCardHeader } from "./CaideCardPrimitives";
 
 interface CaideThinkCardProps {
   content: string;
@@ -8,6 +17,9 @@ interface CaideThinkCardProps {
 
 export const CaideThinkCard: React.FC<CaideThinkCardProps> = ({ content, isStreaming = false }) => {
   const [isExpanded, setIsExpanded] = useState(isStreaming);
+  // Same reveal engine as the answer text, so thinking content flows instead of
+  // jumping in ~100ms clumps. No-ops (returns full content) when not streaming.
+  const smoothedContent = useSmoothStreamedText(content, isStreaming);
 
   return (
     <CaideCard
@@ -37,16 +49,14 @@ export const CaideThinkCard: React.FC<CaideThinkCardProps> = ({ content, isStrea
           <span className="text-[11px] font-medium text-muted-foreground">
             {isStreaming ? "Thinking..." : "Thought process"}
           </span>
-          <span className="text-[10px] text-muted-foreground/60">
-            {isExpanded ? "Collapse ▲" : "Expand ▼"}
-          </span>
+          <DisclosureChevron open={isExpanded} className="w-3 h-3 text-muted-foreground/60" />
         </div>
       </CaideCardHeader>
-      {isExpanded && (
+      <DisclosureRegion open={isExpanded}>
         <CaideCardContent className="text-muted-foreground/80 font-mono text-[11px] leading-relaxed whitespace-pre-wrap select-text">
-          {content}
+          {smoothedContent}
         </CaideCardContent>
-      )}
+      </DisclosureRegion>
     </CaideCard>
   );
 };
