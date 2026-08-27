@@ -27,7 +27,7 @@ import { useMediaQuery } from "./useMediaQuery";
 const DRAIN_WINDOW_SECONDS = 0.1;
 // Hard ceiling so a single huge flush (e.g. a pasted code block) reveals fast but bounded
 // rather than snapping in all at once.
-const MAX_CHARS_PER_SECOND = 4000;
+const MAX_CHARS_PER_SECOND = 3000;
 // Low-pass factor: how aggressively the live velocity chases the target velocity each
 // frame. Smaller is smoother but laggier; ~0.3 ≈ a ~55ms time constant at 60fps, which
 // tracks the stream closely without feeling floaty.
@@ -35,8 +35,9 @@ const VELOCITY_LERP = 0.3;
 // Clamp per-frame delta so returning from a backgrounded tab (rAF paused) does not dump
 // the whole backlog in a single frame.
 const MAX_FRAME_SECONDS = 0.05;
-// Base spacing between React commits: per-frame on 60Hz, every-other-frame on 120Hz.
-export const BASE_EMIT_INTERVAL_MS = 8;
+// Base spacing between React commits: 16ms ≈ 60fps, compositor-friendly. The reveal float
+// still advances every frame; this only throttles how often the growing prefix hits React.
+export const BASE_EMIT_INTERVAL_MS = 16;
 // Ceiling for the adaptive commit interval under sustained render pressure.
 export const MAX_EMIT_INTERVAL_MS = 40;
 // A frame delta exceeding the idle display baseline by this much (ms) means the commit
@@ -46,8 +47,9 @@ const BACKOFF_EXTRA_COST_MS = 8;
 const RECOVER_EXTRA_COST_MS = 2;
 // Hysteresis: how far the interval moves per adjustment, keeping it from oscillating.
 const INTERVAL_ADJUST_FACTOR = 1.5;
-// Re-evaluate the interval after this many emitting frames have been sampled.
-const ADAPT_SAMPLE_FRAMES = 12;
+// Re-evaluate the interval after this many emitting frames have been sampled. 6 frames
+// ≈ 100ms at 60fps, so backoff kicks in before the first scroll jank is perceptible.
+const ADAPT_SAMPLE_FRAMES = 6;
 
 /**
  * Mutable per-message reveal state. Owned by the hook via refs; the pure stepper below

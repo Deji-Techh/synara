@@ -124,22 +124,22 @@ describe("stepSmoothReveal", () => {
   it("drains a large paste at the bounded ceiling instead of snapping", () => {
     const run = drain(createSmoothRevealState(0), 10_000, 0);
 
-    // 10k chars at the 4000 chars/sec ceiling needs ≥2.5s of frames.
-    expect(run.frames * FRAME_MS).toBeGreaterThanOrEqual(2_500);
+    // 10k chars at the 3000 chars/sec ceiling needs ≥3.3s of frames.
+    expect(run.frames * FRAME_MS).toBeGreaterThanOrEqual(3_300);
     expect(run.emits.at(-1)?.count).toBe(10_000);
   });
 });
 
 describe("adaptEmitInterval", () => {
   it("backs off when commit cost steals frame budget", () => {
-    expect(adaptEmitInterval(BASE_EMIT_INTERVAL_MS, 10)).toBe(12);
-    expect(adaptEmitInterval(16, 20)).toBe(24);
+    expect(adaptEmitInterval(BASE_EMIT_INTERVAL_MS, 10)).toBe(24);
+    expect(adaptEmitInterval(24, 20)).toBe(36);
     expect(adaptEmitInterval(MAX_EMIT_INTERVAL_MS, 10)).toBe(MAX_EMIT_INTERVAL_MS);
   });
 
   it("recovers toward the base interval when cost is negligible", () => {
     expect(adaptEmitInterval(MAX_EMIT_INTERVAL_MS, 1)).toBe(27);
-    expect(adaptEmitInterval(12, 1)).toBe(BASE_EMIT_INTERVAL_MS);
+    expect(adaptEmitInterval(24, 1)).toBe(BASE_EMIT_INTERVAL_MS);
     expect(adaptEmitInterval(BASE_EMIT_INTERVAL_MS, 1)).toBe(BASE_EMIT_INTERVAL_MS);
   });
 

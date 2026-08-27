@@ -235,15 +235,9 @@ export function SidebarThreadRowContent({
         </span>
       ) : terminalEntryPoint ? (
         <SidebarGlyph icon={TerminalIcon} variant="chrome" />
-      ) : framework ? (
-        <FrameworkAvatar framework={framework} />
-      ) : showThreadProviderAvatar ? (
-        <ProviderAvatarWithTerminal
-          thread={thread}
-          terminalStatus={terminalStatus}
-          terminalCount={terminalCount}
-        />
-      ) : null}
+      ) : (
+        <FrameworkAvatar framework={framework ?? "blank"} />
+      )}
       <div
         className={cn(
           "flex min-w-0 flex-1 items-center text-left",

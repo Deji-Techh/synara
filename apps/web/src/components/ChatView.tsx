@@ -3367,6 +3367,40 @@ export default function ChatView({
     },
     [handleTogglePinMessage, isPendingSetupBubbleId],
   );
+  const handleApprovePlan = useCallback(
+    async (text: string) => {
+      if (!activeThread) return;
+      const messageId = newMessageId();
+      const commandId = newCommandId();
+      const createdAt = new Date().toISOString();
+      // Dispatch directly as local-agent with approval text — bypasses composer draft queue
+      // so Approve & Build is one-click. Falls back to composer copy if dispatch fails.
+      try {
+        await api.orchestration.dispatchCommand({
+          type: "thread.turn.start",
+          commandId,
+          threadId: activeThread.id,
+          message: {
+            messageId,
+            role: "user",
+            text,
+          },
+          modelSelection: activeThread.modelSelection,
+          runtimeMode: activeThread.runtimeMode,
+          interactionMode: activeThread.interactionMode,
+          mode: "local-agent",
+          createdAt,
+        } as unknown as Parameters<typeof api.orchestration.dispatchCommand>[0]);
+      } catch {
+        // Fallback: put text in composer draft if direct dispatch fails
+        try {
+          const { useComposerDraftStore } = await import("~/composerDraftStore");
+          useComposerDraftStore.getState().setPrompt(activeThread.id, text);
+        } catch {}
+      }
+    },
+    [activeThread],
+  );
   // Stable identity: this is forwarded to the memoized MessagesTimeline, so an inline
   // arrow here would defeat its `memo()` and re-derive every row on every keystroke.
   const canPinMessage = useCallback(
@@ -11806,6 +11840,7 @@ export default function ChatView({
                     worktreeSetup={activeWorktreeSetup}
                     worktreeSetupPendingAction={worktreeSetupPendingAction}
                     onResolveWorktreeSetup={onResolveWorktreeSetup}
+                    onApprovePlan={handleApprovePlan}
                     activeTurnInProgress={activeTurnInProgress}
                     activeTurnStartedAt={activeWorkStartedAt}
                     listRef={legendListRef}

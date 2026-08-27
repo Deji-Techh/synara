@@ -103,6 +103,7 @@ interface ChatTranscriptPaneProps {
     typeof MessagesTimeline
   >["worktreeSetupPendingAction"];
   onResolveWorktreeSetup?: ComponentProps<typeof MessagesTimeline>["onResolveWorktreeSetup"];
+  onApprovePlan?: (text: string) => void;
 }
 
 export function ChatTranscriptPane({
@@ -170,6 +171,7 @@ export function ChatTranscriptPane({
   worktreeSetup,
   worktreeSetupPendingAction,
   onResolveWorktreeSetup,
+  onApprovePlan,
 }: ChatTranscriptPaneProps) {
   // The composer floats over the transcript's bottom edge, so the scroll-to-bottom
   // affordance rides above it on the same inset the transcript content uses.
@@ -254,6 +256,8 @@ export function ChatTranscriptPane({
             isRevertingCheckpoint={isRevertingCheckpoint}
             onImageExpand={onExpandTimelineImage}
             followLiveOutput={followLiveOutput}
+            activeThreadId={activeThreadId as ThreadId}
+            onApprovePlan={onApprovePlan}
             onIsAtEndChange={onIsAtEndChange}
             onTrailHighlightsChange={activeTrailStore.set}
             onMessagesScroll={onMessagesScroll}

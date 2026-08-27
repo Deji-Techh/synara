@@ -498,6 +498,8 @@ interface MessagesTimelineProps {
   contentInsetBottomPx?: number | undefined;
   /** Measured distance from the composer's bottom edge to the top of its footer controls. */
   contentInsetBottomClearancePx?: number | undefined;
+  activeThreadId?: ThreadId;
+  onApprovePlan?: (text: string) => void;
 }
 
 export const MessagesTimeline = memo(function MessagesTimeline({
@@ -560,6 +562,8 @@ export const MessagesTimeline = memo(function MessagesTimeline({
   contentInsetRightPx,
   contentInsetBottomPx,
   contentInsetBottomClearancePx,
+  activeThreadId,
+  onApprovePlan,
 }: MessagesTimelineProps) {
   // Prop defaults are resolved in the body rather than in the destructuring pattern:
   // an `AssignmentPattern` in the parameter list makes React Compiler bail out on the
@@ -2329,6 +2333,8 @@ export const MessagesTimeline = memo(function MessagesTimeline({
             cwd={markdownCwd}
             workspaceRoot={workspaceRoot}
             chatTypographyStyle={chatTypographyStyle}
+            threadId={activeThreadId as string | undefined}
+            onApprovePlan={onApprovePlan}
           />
         </div>
       )}
@@ -2400,7 +2406,7 @@ export const MessagesTimeline = memo(function MessagesTimeline({
         data={rows}
         keyExtractor={(row) => row.id}
         renderItem={({ item }) => renderRowContent(item)}
-        estimatedItemSize={90}
+        estimatedItemSize={180}
         // LegendList caches rendered rows, so every local expansion map that changes row content
         // has to be surfaced through extraData.
         extraData={timelineExtraData}
@@ -2412,7 +2418,7 @@ export const MessagesTimeline = memo(function MessagesTimeline({
         initialScrollAtEnd={tailAnchorMessageId === null || hasInheritedTailAnchor}
         {...(anchoredEndSpace ? { anchoredEndSpace } : {})}
         maintainScrollAtEnd={followLiveOutput && !tailAnchorSlideInFlight}
-        maintainScrollAtEndThreshold={0.1}
+        maintainScrollAtEndThreshold={0.02}
         {...(tailAnchorMessageId !== null
           ? { maintainVisibleContentPosition: false }
           : !followLiveOutput
@@ -2446,7 +2452,6 @@ export const MessagesTimeline = memo(function MessagesTimeline({
         // are fully cut before the composer's footer controls.
         className={cn(
           "h-full overflow-x-hidden overscroll-y-contain py-3 [scrollbar-gutter:stable] sm:py-4",
-          contentInsetBottomPx ? null : "scroll-fade-b",
           ENVIRONMENT_CONTENT_INSET_MOTION_CLASS,
           CHAT_COLUMN_GUTTER_CLASS_NAME,
         )}
