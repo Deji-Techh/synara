@@ -26,6 +26,7 @@ import { DISCLOSURE_CONTENT_MOTION_CLASS } from "~/lib/disclosureMotion";
 import { type ExpandedImagePreview } from "./ExpandedImagePreview";
 import { ChatEmptyStateHero } from "./ChatEmptyStateHero";
 import { MessagesTimeline, type MessagesTimelineController } from "./MessagesTimeline";
+import { BackpressureBanner, ReconnectBanner } from "./TranscriptBanners";
 import { composerOverlayAffordanceBottomPx } from "./composerOverlay";
 import { MessageTrail } from "./MessageTrail";
 import { createActiveTrailStore, deriveMessageTrailItems } from "./messageTrail.logic";
@@ -46,6 +47,10 @@ interface ChatTranscriptPaneProps {
   chatFontSizePx: number;
   emptyStateContent?: ReactNode;
   emptyStateProjectName: string | undefined;
+  emptyStateFramework?: string | null;
+  onEmptyStatePickPrompt?: (prompt: string) => void;
+  reconnecting?: boolean;
+  backpressurePaused?: boolean;
   expandedWorkGroups?: Record<string, boolean>;
   hasMessages: boolean;
   isRevertingCheckpoint: boolean;
@@ -118,6 +123,10 @@ export function ChatTranscriptPane({
   chatFontSizePx,
   emptyStateContent,
   emptyStateProjectName,
+  emptyStateFramework,
+  onEmptyStatePickPrompt,
+  reconnecting,
+  backpressurePaused,
   expandedWorkGroups,
   hasMessages,
   isRevertingCheckpoint,
@@ -208,6 +217,8 @@ export function ChatTranscriptPane({
         terminalWorkspaceTerminalTabActive ? "pointer-events-none invisible" : "",
       )}
     >
+      <ReconnectBanner reconnecting={Boolean(reconnecting)} />
+      <BackpressureBanner paused={Boolean(backpressurePaused)} />
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         {agentActivityDetail && onCloseAgentActivityDetail ? (
           <AgentActivityDetailView
@@ -281,7 +292,11 @@ export function ChatTranscriptPane({
             {...(onOpenAgentActivity ? { onOpenAgentActivity } : {})}
             emptyStateContent={
               emptyStateContent === undefined ? (
-                <ChatEmptyStateHero projectName={emptyStateProjectName} />
+                <ChatEmptyStateHero
+                  projectName={emptyStateProjectName}
+                  framework={emptyStateFramework as never}
+                  onPickPrompt={onEmptyStatePickPrompt}
+                />
               ) : (
                 emptyStateContent
               )
