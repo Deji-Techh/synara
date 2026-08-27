@@ -5356,8 +5356,13 @@ export default function Sidebar() {
           </SidebarHeader>
         </>
       ) : (
-        <SidebarHeader className="gap-3 px-3 py-2.5 font-system-ui sm:gap-2.5 sm:px-4 sm:py-3">
-          {wordmark}
+        <SidebarHeader className="relative gap-3 overflow-hidden px-3 py-2.5 font-system-ui sm:gap-2.5 sm:px-4 sm:py-3">
+          {/* T3-style stage backdrop — subtle starry gradient */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-gradient-to-br from-indigo-600/15 via-purple-500/10 to-transparent dark:from-indigo-500/20 dark:via-purple-500/15"
+          />
+          <div className="relative z-10 flex w-full items-center gap-3">{wordmark}</div>
         </SidebarHeader>
       )}
 

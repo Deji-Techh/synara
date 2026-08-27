@@ -527,6 +527,7 @@ import {
 } from "./chat/WorkflowRunCard.logic";
 import { ComposerColumnFrame } from "./chat/ComposerColumnFrame";
 import { ComposerBranchBar } from "./chat/ComposerBranchBar";
+import { ComposerCommandMenuPortal } from "./chat/ComposerCommandMenuPortal";
 import { useTranscriptAssistantSelectionAction } from "./chat/useTranscriptAssistantSelectionAction";
 import {
   scrollTranscriptToSettledEnd,
@@ -1582,6 +1583,7 @@ export default function ChatView({
   }, [threadId]);
   const composerEditorRef = useRef<ComposerPromptEditorHandle>(null);
   const composerFormRef = useRef<HTMLFormElement>(null);
+  const composerMenuAnchorRef = useRef<HTMLDivElement | null>(null);
   // Set by whichever mounted GitActionsControl instance (header quick-action or the
   // Environment panel row) last registered — either performs the identical commit &
   // push mutation for this thread's repo, so it doesn't matter which one is "current".
@@ -11183,6 +11185,7 @@ export default function ChatView({
               )}
             >
               <div
+                data-chat-composer-main-surface="true"
                 className={cn(
                   COMPOSER_INPUT_SURFACE_CLASS_NAME,
                   composerProviderState.composerSurfaceClassName,
@@ -11217,8 +11220,10 @@ export default function ChatView({
                     composerMenuOpen && !isComposerApprovalState && "overflow-visible",
                   )}
                 >
+                  {/* anchor for T3-style portal positioning */}
+                  <div ref={composerMenuAnchorRef} className="h-0 w-full" aria-hidden />
                   {composerMenuOpen && !isComposerApprovalState ? (
-                    <div className={COMPOSER_COMMAND_MENU_FLOATING_WRAPPER_CLASS_NAME}>
+                    <ComposerCommandMenuPortal anchor={composerMenuAnchorRef.current}>
                       {isLocalFolderBrowserOpen ? (
                         <ComposerLocalDirectoryMenu
                           mentionQuery={mentionTriggerQuery}
@@ -11245,6 +11250,12 @@ export default function ChatView({
                           onSelect={onSelectComposerItem}
                         />
                       )}
+                    </ComposerCommandMenuPortal>
+                  ) : null}
+                  {/* fallback absolute wrapper for first paint before portal positions */}
+                  {composerMenuOpen && !isComposerApprovalState ? (
+                    <div className={COMPOSER_COMMAND_MENU_FLOATING_WRAPPER_CLASS_NAME + " pointer-events-none opacity-0"} aria-hidden>
+                      <div className="h-1" />
                     </div>
                   ) : null}
                   {!isComposerApprovalState &&
