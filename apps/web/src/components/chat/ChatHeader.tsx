@@ -674,19 +674,30 @@ export function ChatHeader({
           >
             {threadBreadcrumbs.length > 0 ? (
               <div className="flex min-w-0 items-center gap-1 overflow-hidden text-[11px] text-muted-foreground/55">
-                {threadBreadcrumbs.map((breadcrumb, index) => (
-                  <React.Fragment key={breadcrumb.threadId}>
+                {(threadBreadcrumbs.length > 3
+                  ? [
+                      threadBreadcrumbs[0]!,
+                      { threadId: "__ellipsis__" as unknown as ThreadId, title: "…" },
+                      ...threadBreadcrumbs.slice(-2),
+                    ]
+                  : threadBreadcrumbs
+                ).map((breadcrumb, index) => (
+                  <React.Fragment key={String(breadcrumb.threadId) + String(index)}>
                     {index > 0 ? (
                       <span className="shrink-0 text-muted-foreground/35">/</span>
                     ) : null}
-                    <button
-                      type="button"
-                      className="min-w-0 truncate transition-colors hover:text-foreground/80"
-                      title={breadcrumb.title}
-                      onClick={() => onNavigateToThread(breadcrumb.threadId)}
-                    >
-                      {breadcrumb.title}
-                    </button>
+                    {breadcrumb.title === "…" ? (
+                      <span className="shrink-0 px-0.5 text-muted-foreground/40">…</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="min-w-0 max-w-[10rem] truncate transition-colors hover:text-foreground/80"
+                        title={breadcrumb.title}
+                        onClick={() => onNavigateToThread(breadcrumb.threadId)}
+                      >
+                        {breadcrumb.title}
+                      </button>
+                    )}
                   </React.Fragment>
                 ))}
               </div>
