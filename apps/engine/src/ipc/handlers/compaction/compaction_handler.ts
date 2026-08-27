@@ -200,13 +200,11 @@ export async function performCompaction(
     }
 
     // Create the compaction indicator message
-    // Include relative backup path so the AI can read the full original conversation later
+    // Backup path is for AI internal use only - hide from user view in a comment
     const compactionMessageContent = `<caide-compaction title="Conversation compacted" state="finished">
 ${escapeXmlContent(summary)}
 </caide-compaction>
-
-If you need to retrieve earlier parts of the conversation history, you can read the backup file at: ${backupPath}
-Note: This file may be large. Read only the sections you need or use grep to search for specific content rather than reading the entire file.`;
+<!-- compaction-backup: ${backupPath} - for AI to retrieve earlier history if needed - not user visible -->`;
 
     // Insert summary message as a new assistant message
     // Original messages are preserved in the DB for the user to see

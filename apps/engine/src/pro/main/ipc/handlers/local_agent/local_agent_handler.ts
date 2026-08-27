@@ -505,7 +505,7 @@ export async function handleLocalAgentStream(
     const summaryText = summary && summary.trim().length > 0 ? summary : "Conversation compacted.";
     const inlineCompaction = `<caide-compaction title="Conversation compacted" state="finished">\n${escapeXmlContent(summaryText)}\n</caide-compaction>`;
     const backupPathNote = backupPath
-      ? `\nIf you need to retrieve earlier parts of the conversation history, you can read the backup file at: ${backupPath}\nNote: This file may be large. Read only the sections you need or use grep to search for specific content rather than reading the entire file.`
+      ? `\n<!-- compaction-backup: ${backupPath} - for AI internal use -->`
       : "";
     const separator = fullResponse.length > 0 && !fullResponse.endsWith("\n") ? "\n" : "";
     fullResponse = `${fullResponse}${separator}${inlineCompaction}${backupPathNote}\n`;

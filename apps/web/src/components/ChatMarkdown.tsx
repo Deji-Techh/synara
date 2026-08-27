@@ -1355,8 +1355,13 @@ function ChatMarkdown({
             .replace(/<[|｜]DSML[|｜]tool_calls>[\s\S]*?<\/[|｜]DSML[|｜]tool_calls>/gi, "")
             .replace(/<[|｜]DSML[|｜]invoke[\s\S]*?<\/[|｜]DSML[|｜]invoke>/gi, "")
             .replace(/<[|｜]DSML[|｜][^>]*>?/gi, "")
+            .replace(/<tool_calls[^>]*>[\s\S]*?<\/tool_calls>/gi, "")
+            .replace(/<tool_call[^>]*>[\s\S]*?<\/tool_call>/gi, "")
             .replace(/<\/?tool_calls(?::[a-zA-Z0-9]+)?>/gi, "")
-            .replace(/<\/?tool_call(?::[a-zA-Z0-9]+)?>/gi, "");
+            .replace(/<\/?tool_call(?::[a-zA-Z0-9]+)?>/gi, "")
+            .replace(/<tool_name>[\s\S]*?<\/tool_name>/gi, "")
+            .replace(/<parameters>[\s\S]*?<\/parameters>/gi, "")
+            .replace(/<command>[\s\S]*?<\/command>/gi, "");
           if (cleanedText.trim().length === 0) return null;
 
           return (

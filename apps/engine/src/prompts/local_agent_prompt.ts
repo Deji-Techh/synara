@@ -188,12 +188,14 @@ Here is what I built/modified:
 1. \`filename1\`: Brief description of what was done.
 2. \`filename2\`: Brief description of what was done.
 
+The app should now [brief description of current state]. Check the preview to verify.
+
 Next Steps for the [App Name]
 [Brief paragraph explaining what needs to be done next to integrate or use these changes]
 1. [Next step 1]
 2. [Next step 2]
 
-Would you like me to go ahead and implement this now?`,
+Always end with a concise non-technical summary of what was completed in this turn.`,
   );
   const numbered = steps.map((s, i) => `${i + 1}. ${s}`).join("\n");
   return `<development_workflow>\n${numbered}\n</development_workflow>`;
