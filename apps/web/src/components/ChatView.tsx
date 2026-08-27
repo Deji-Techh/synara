@@ -11880,6 +11880,14 @@ export default function ChatView({
                     workspaceRoot={threadArtifactWorkspaceRoot ?? undefined}
                     emptyStateContent={transcriptEmptyStateContent}
                     emptyStateProjectName={activeProjectDisplayName}
+                    emptyStateFramework={(activeProject as unknown as { framework?: string | null })?.framework ?? null}
+                    onEmptyStatePickPrompt={(prompt: string) => {
+                      setComposerDraftPrompt(activeThread.id, prompt);
+                      setTimeout(() => {
+                        const el = document.querySelector("[data-composer-editor]") as HTMLElement | null;
+                        el?.focus();
+                      }, 0);
+                    }}
                     terminalWorkspaceTerminalTabActive={terminalWorkspaceTerminalTabActive}
                     onMessagesScroll={onMessagesScroll}
                     onMessagesClickCapture={onMessagesClickCapture}
