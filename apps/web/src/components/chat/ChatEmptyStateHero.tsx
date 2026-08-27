@@ -3,6 +3,7 @@
 // Replaces generic "Let's build" with actionable starters per AGENTS.md premium bar.
 
 import { CaideLogo } from "~/components/CaideLogo";
+import { FrameworkIcon } from "~/components/FrameworkIcon";
 import { promptsForFramework } from "~/lib/frameworkPrompts";
 import type { ProjectFramework } from "@caide/contracts";
 
@@ -18,10 +19,13 @@ export const ChatEmptyStateHero = function ChatEmptyStateHero({
   const prompts = promptsForFramework(framework ?? null);
   return (
     <div className="flex flex-col items-center gap-6 select-none">
-      <CaideLogo aria-label="Caide logo" className="size-10" />
-      <div className="flex flex-col items-center gap-0.5">
-        <h1 className="text-2xl font-semibold text-foreground/90">Let's build</h1>
-        {projectName && <span className="text-lg text-muted-foreground/40">{projectName}</span>}
+      <div className="flex flex-col items-center gap-3">
+        {framework ? <FrameworkIcon framework={framework} className="size-10 opacity-80" /> : <CaideLogo aria-label="Caide logo" className="size-10" />}
+        <div className="flex flex-col items-center gap-0.5">
+          <h1 className="text-2xl font-semibold text-foreground/90">Let's build</h1>
+          {projectName && <span className="text-lg text-muted-foreground/40">{projectName}</span>}
+          {framework && <span className="text-xs uppercase tracking-widest text-muted-foreground/50">{framework}</span>}
+        </div>
       </div>
       <div className="flex flex-col gap-2 w-full max-w-sm">
         {prompts.map((prompt) => (
