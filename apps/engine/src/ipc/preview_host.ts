@@ -59,6 +59,14 @@ import {
   inspectManagedFlutterToolchain,
   installManagedFlutterToolchain,
 } from "@/ipc/services/managed_flutter_toolchain_service";
+import {
+  choosePackageManagerFromSignal,
+  getPackageManagerSignal,
+} from "@/ipc/utils/package_manager_selection";
+import {
+  getPackageManagerCommandEnv,
+  getPnpmMinimumReleaseAgeSupport,
+} from "@/ipc/utils/socket_firewall";
 
 const logger = log.scope("preview_host");
 
@@ -102,63 +110,69 @@ async function ensureNodeDependenciesInstalled(appDir: string): Promise<void> {
   const isExpo = Boolean(pkg.dependencies?.expo ?? pkg.devDependencies?.expo);
   const nodeModules = path.join(appDir, "node_modules");
 
-  // 1) If node_modules is completely missing, do a full install.
+  // Resolve PM like dyad's app_runtime_service: prefer pnpm when signal says so.
+  const signal = getPackageManagerSignal(appDir);
+  let pnpmAvailable = false;
+  try {
+    const pnpmSupport = await getPnpmMinimumReleaseAgeSupport();
+    pnpmAvailable = pnpmSupport.available;
+  } catch {
+    pnpmAvailable = fs.existsSync(path.join(appDir, "pnpm-lock.yaml"));
+  }
+  const pm = choosePackageManagerFromSignal({ signal, pnpmAvailable });
+  const pmEnv = getPackageManagerCommandEnv();
+
+  // 1) If node_modules is completely missing, do a fast install with the
+  // correct PM (dyad parity: pnpm is 2-3x faster than npm, uses store).
+  // Keep timeout short — let the dev server's own install handle retries.
   if (!fs.existsSync(nodeModules)) {
     try {
-      logger.info(`preview: installing node dependencies for ${appDir}`);
-      const command = process.platform === "win32" ? "npm.cmd" : "npm";
+      logger.info(`preview: installing node dependencies via ${pm} for ${appDir}`);
+      const command = pm === "pnpm" ? "pnpm" : process.platform === "win32" ? "npm.cmd" : "npm";
+      const args =
+        pm === "pnpm" ? ["install", "--silent"] : ["install", "--silent", "--legacy-peer-deps"];
       const result = await spawnStreaming({
         command,
-        args: ["install", "--silent"],
+        args,
         cwd: appDir,
-        env: { ...process.env, CI: "1" },
-        timeoutMs: 3 * 60 * 1000,
+        env: { ...pmEnv, CI: "1" },
+        timeoutMs: 90 * 1000,
       });
       if (result.code !== 0) {
-        logger.warn(`preview: npm install exited with code ${result.code} for ${appDir}`);
+        logger.warn(`preview: ${pm} install exited with code ${result.code} for ${appDir}`);
       }
     } catch (error) {
       logger.warn(
-        `preview: npm install failed for ${appDir}: ${error instanceof Error ? error.message : String(error)}`,
+        `preview: ${pm} install failed for ${appDir}: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
 
   // 2) Expo web needs react-dom + react-native-web even when node_modules exists.
-  // Fresh `expo` templates often ship without them; `expo start --web` then fails
-  // with "CommandError: It looks like you're trying to use web support but don't have
-  // the required dependencies installed." Auto-install them so the preview can start.
+  // Use the project's PM directly (pnpm add / npm install) — npx expo install
+  // is 3m + network + SDK version resolution, and was the main "minutes" bottleneck.
   if (isExpo) {
     const hasReactDom = fs.existsSync(path.join(nodeModules, "react-dom"));
     const hasRNWeb = fs.existsSync(path.join(nodeModules, "react-native-web"));
     if (!hasReactDom || !hasRNWeb) {
       try {
-        logger.info(`preview: expo web deps missing for ${appDir} — installing react-dom + react-native-web`);
-        // Prefer `npx expo install` so versions are pinned to the expo SDK.
-        const expoInstall = await spawnStreaming({
-          command: "npx",
-          args: ["expo", "install", "react-dom", "react-native-web", "--fix"],
+        logger.info(`preview: expo web deps missing for ${appDir} — installing via ${pm}`);
+        const command = pm === "pnpm" ? "pnpm" : process.platform === "win32" ? "npm.cmd" : "npm";
+        const args =
+          pm === "pnpm"
+            ? ["add", "react-dom", "react-native-web", "--silent"]
+            : ["install", "--silent", "--legacy-peer-deps", "react-dom", "react-native-web"];
+        const result = await spawnStreaming({
+          command,
+          args,
           cwd: appDir,
-          env: { ...process.env, CI: "1" },
-          timeoutMs: 3 * 60 * 1000,
+          env: { ...pmEnv, CI: "1" },
+          timeoutMs: 90 * 1000,
         });
-        if (expoInstall.code !== 0) {
-          logger.warn(
-            `preview: npx expo install exited ${expoInstall.code} for ${appDir}: ${expoInstall.stderr.slice(-600)}`,
-          );
-          // Fallback to plain npm install of the same packages.
-          const fallback = await spawnStreaming({
-            command: process.platform === "win32" ? "npm.cmd" : "npm",
-            args: ["install", "--silent", "react-dom", "react-native-web"],
-            cwd: appDir,
-            env: { ...process.env, CI: "1" },
-            timeoutMs: 2 * 60 * 1000,
-          });
-          if (fallback.code !== 0) {
-            logger.warn(`preview: fallback npm install web deps exited ${fallback.code} for ${appDir}`);
-          }
+        if (result.code !== 0) {
+          logger.warn(`preview: ${pm} expo web deps exited ${result.code} for ${appDir}: ${result.stderr.slice(-600)}`);
         } else {
-          logger.info(`preview: installed expo web deps for ${appDir}`);
+          logger.info(`preview: installed expo web deps via ${pm} for ${appDir}`);
         }
       } catch (error) {
         logger.warn(
@@ -203,6 +217,7 @@ export function getNodePreviewLaunch(
   script: string;
   args: string[];
   isExpo: boolean;
+  useDirectExpo?: boolean;
 } {
   const packageJson = JSON.parse(fs.readFileSync(path.join(appDir, "package.json"), "utf8")) as {
     scripts?: Record<string, string>;
@@ -232,23 +247,33 @@ export function getNodePreviewLaunch(
       CaideErrorKind.Precondition,
     );
   }
-  // For Expo, `npm run web` already expands to `expo start --web`, so adding another
-  // `--web` would duplicate (`--web --web`). Only inject `--web` when the chosen
-  // script doesn't already contain it.
-  let args: string[];
+  // For Expo, bypass `npm run web -- ...` which mishandles --host/--port forwarding
+  // on some expo versions (binds 19006 instead of requested port, causing
+  // extractPreviewUrl(port) mismatch). Use `npx expo start --web` directly.
   if (isExpo) {
-    const needsWebFlag = script !== "web";
-    args = [...(needsWebFlag ? ["--web"] : []), "--host", hostname, "--port", String(port)];
-  } else {
-    args = script === "dev" ? ["--host", hostname, "--port", String(port)] : ["--port", String(port)];
+    return {
+      script: "expo-start-direct",
+      args: ["expo", "start", "--web", "--port", String(port), "--host", hostname],
+      isExpo: true,
+      useDirectExpo: true,
+    };
   }
+  let args: string[];
+  args = script === "dev" ? ["--host", hostname, "--port", String(port)] : ["--port", String(port)];
   return { script, args, isExpo };
 }
 
 function spawnNodePreview(appDir: string, entry: PreviewEntry, hostname: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const port = entry.port;
-    const command = process.platform === "win32" ? "npm.cmd" : "npm";
+    // Use project PM like dyad: pnpm is 2-3x faster and respects pnpm-lock.yaml.
+    const signal = getPackageManagerSignal(appDir);
+    // Assume pnpm available when project signals pnpm; otherwise probe is async
+    // in ensureNodeDependenciesInstalled — here keep sync fast path.
+    const pnpmAvailable = signal.hasPnpmLockfile || signal.hasPnpmNodeModules || signal.packageManagerField?.startsWith("pnpm@") === true;
+    const pm = choosePackageManagerFromSignal({ signal, pnpmAvailable: pnpmAvailable || true });
+    const pmEnv = { ...getPackageManagerCommandEnv(), BROWSER: "none" as const };
+
     let launch: ReturnType<typeof getNodePreviewLaunch>;
     try {
       launch = getNodePreviewLaunch(appDir, hostname, port);
@@ -256,11 +281,48 @@ function spawnNodePreview(appDir: string, entry: PreviewEntry, hostname: string)
       reject(error);
       return;
     }
-    const child = spawn(command, ["run", launch.script, "--", ...launch.args], {
+
+    // Expo: run npx expo directly to ensure --port/--host are forwarded correctly.
+    let command: string;
+    let spawnArgs: string[];
+    let spawnEnv: NodeJS.ProcessEnv = pmEnv;
+    if (launch.useDirectExpo) {
+      command = process.platform === "win32" ? "npx.cmd" : "npx";
+      spawnArgs = launch.args;
+    } else {
+      command = pm === "pnpm" ? "pnpm" : process.platform === "win32" ? "npm.cmd" : "npm";
+      spawnArgs = ["run", launch.script, "--", ...launch.args];
+      // For pnpm, npm -- semantics still work; pnpm passes args after -- correctly.
+    }
+
+    const child = spawn(command, spawnArgs, {
       cwd: appDir,
       stdio: ["pipe", "pipe", "pipe"],
-      env: { ...process.env, BROWSER: "none" },
+      env: spawnEnv,
     });
+
+    // Auto-heal missing package like dyad's handlePotentialMissingModule.
+    const autoInstalled = new Set<string>();
+    const tryAutoInstall = (message: string) => {
+      const match =
+        message.match(/Failed to resolve import "([^"]+)"/) ||
+        message.match(/Cannot find module '([^']+)'/) ||
+        message.match(/Cannot find package '([^']+)'/);
+      if (!match) return;
+      const pkg = match[1] ?? "";
+      if (!pkg || pkg.startsWith(".") || pkg.startsWith("/")) return;
+      const base = pkg.startsWith("@") ? pkg.split("/").slice(0, 2).join("/") : pkg.split("/")[0] ?? "";
+      if (!base || autoInstalled.has(base)) return;
+      autoInstalled.add(base);
+      logger.info(`preview: auto-installing missing dep ${base} for ${appDir}`);
+      const addCmd = pm === "pnpm" ? "pnpm" : process.platform === "win32" ? "npm.cmd" : "npm";
+      const addArgs = pm === "pnpm" ? ["add", base] : ["install", "--silent", "--legacy-peer-deps", base];
+      const installer = spawn(addCmd, addArgs, { cwd: appDir, shell: false, env: pmEnv });
+      installer.on("close", (code) => {
+        logger.info(`preview: auto-install ${base} exited ${code}`);
+      });
+      installer.on("error", () => {});
+    };
     entry.child = child;
     let settled = false;
     const finish = (fn: () => void) => {
@@ -273,8 +335,6 @@ function spawnNodePreview(appDir: string, entry: PreviewEntry, hostname: string)
       if (fallbackTimer) return;
       fallbackTimer = setTimeout(() => {
         if (settled) return;
-        // Only fallback to hostname:port if the dev server actually bound.
-        // Try a TCP probe; if the port is listening, accept the fallback.
         const socket = net.createConnection({ host: "127.0.0.1", port }, () => {
           socket.destroy();
           entry.url = `http://${hostname}:${port}`;
@@ -285,52 +345,26 @@ function spawnNodePreview(appDir: string, entry: PreviewEntry, hostname: string)
         });
         socket.on("error", () => {
           socket.destroy();
-          // Port not yet listening — keep waiting; the child may still emit ready after npm install tail.
           fallbackTimer = null;
-          // Give it another 1.5s and retry once more before giving up to the close handler.
+          // Keep waiting — dev server may still be installing.
+          // Retry probe quickly instead of forcing a false URL.
           setTimeout(() => {
-            if (!settled) {
-              entry.url = `http://${hostname}:${port}`;
-              finish(() => {
-                entry.running = true;
-                resolve(entry.url);
-              });
-            }
-          }, 3000);
+            if (!settled) scheduleFallback();
+          }, 800);
         });
-        socket.setTimeout(1500, () => {
+        socket.setTimeout(800, () => {
           socket.destroy();
+          fallbackTimer = null;
         });
-      }, 2500);
+      }, 800);
     };
     const onData = (chunk: Buffer) => {
       const text = chunk.toString();
       appendLogLines(entry.logs, text);
-      // Require an actual URL with the expected port *and* a vite/ready marker to avoid matching
-      // the npm notice line `run vite --host localhost --port 8080` which also contains localhost.
-      const extracted = extractPreviewUrl(text, port);
-      const viteReady = /local:\s*https?:\/\/|ready in \d+|vite.*ready|listening on/i.test(text);
-      if (extracted && viteReady) {
-        entry.url = extracted;
-        finish(() => {
-          entry.running = true;
-          if (fallbackTimer) clearTimeout(fallbackTimer);
-          resolve(extracted);
-        });
-        return;
-      }
-      // Expo prints `Web is waiting on http://localhost:19006` – same extract but different ready phrase
-      if (extracted && /waiting on|web is waiting|expo/i.test(text)) {
-        entry.url = extracted;
-        finish(() => {
-          entry.running = true;
-          if (fallbackTimer) clearTimeout(fallbackTimer);
-          resolve(extracted);
-        });
-        return;
-      }
-      // Fallback: many templates (Vite, Next) print the URL without a distinct "ready" phrase;
-      // treat any extracted URL that appears after the child has been alive for >800ms as ready.
+      tryAutoInstall(text);
+      // Dyad parity: first URL wins — Vite/Expo prints Local: http://localhost:PORT
+      // immediately. Avoid gating on viteReady marker which added seconds.
+      const extracted = extractPreviewUrl(text); // any localhost URL; expo may bind 19006 vs 8080
       if (extracted) {
         entry.url = extracted;
         finish(() => {

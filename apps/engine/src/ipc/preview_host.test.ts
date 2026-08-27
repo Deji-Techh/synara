@@ -192,9 +192,10 @@ describe("framework-aware Node preview launch", () => {
         }),
       );
       expect(getNodePreviewLaunch(appDir, "localhost", 8080)).toEqual({
-        script: "web",
-        args: ["--web", "--host", "localhost", "--port", "8080"],
+        script: "expo-start-direct",
+        args: ["expo", "start", "--web", "--port", "8080", "--host", "localhost"],
         isExpo: true,
+        useDirectExpo: true,
       });
     } finally {
       fs.rmSync(appDir, { recursive: true, force: true });
