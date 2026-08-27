@@ -54,8 +54,10 @@ function resolvePositionedContainer(row: HTMLElement): HTMLElement | null {
 export function useTimelineRowOverlapGuard(): (element: HTMLElement | null) => (() => void) | void {
   const observerRef = useRef<ResizeObserver | null>(null);
   const observedRowsRef = useRef(new Set<HTMLElement>());
+  const rafRef = useRef<number | null>(null);
 
   const closeOverlaps = useCallback(() => {
+    rafRef.current = null;
     const containers = new Set<HTMLElement>();
     for (const row of observedRowsRef.current) {
       if (!row.isConnected) {
@@ -92,9 +94,23 @@ export function useTimelineRowOverlapGuard(): (element: HTMLElement | null) => (
     }
   }, []);
 
+  const scheduleCloseOverlaps = useCallback(() => {
+    if (rafRef.current !== null) {
+      return;
+    }
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      closeOverlaps();
+    });
+  }, [closeOverlaps]);
+
   useEffect(() => {
     const observedRows = observedRowsRef.current;
     return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
       observerRef.current?.disconnect();
       observerRef.current = null;
       observedRows.clear();
@@ -106,9 +122,9 @@ export function useTimelineRowOverlapGuard(): (element: HTMLElement | null) => (
       if (!element) {
         return;
       }
-      // ResizeObserver callbacks run after layout but before paint, so the
-      // correction below lands in the same frame as the size change.
-      observerRef.current ??= new ResizeObserver(closeOverlaps);
+      // ResizeObserver callbacks run after layout but before paint; coalesce via rAF
+      // so multiple row resizes in the same frame batch into one overlap pass.
+      observerRef.current ??= new ResizeObserver(scheduleCloseOverlaps);
       const observer = observerRef.current;
       observer.observe(element);
       observedRowsRef.current.add(element);
@@ -117,6 +133,6 @@ export function useTimelineRowOverlapGuard(): (element: HTMLElement | null) => (
         observedRowsRef.current.delete(element);
       };
     },
-    [closeOverlaps],
+    [scheduleCloseOverlaps],
   );
 }

@@ -2406,7 +2406,8 @@ export const MessagesTimeline = memo(function MessagesTimeline({
         data={rows}
         keyExtractor={(row) => row.id}
         renderItem={({ item }) => renderRowContent(item)}
-        estimatedItemSize={180}
+        estimatedItemSize={220}
+        recycleItems={false}
         // LegendList caches rendered rows, so every local expansion map that changes row content
         // has to be surfaced through extraData.
         extraData={timelineExtraData}
