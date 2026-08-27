@@ -1043,26 +1043,53 @@ async function startPreview(params: unknown): Promise<PreviewStartResult> {
       activePreviews.delete(parsed.appDir);
     }
     const hostname = parsed.hostname ?? DEFAULT_PREVIEW_HOSTNAME;
-    const port = await pickFreePort(parsed.port ?? DEFAULT_PREVIEW_PORT);
-    const entry: PreviewEntry = {
-      appDir: parsed.appDir,
-      child: null,
-      port,
-      url: "",
-      running: false,
-      logs: [],
-      device: "web-server",
-      deviceId: null,
-    };
-    activePreviews.set(parsed.appDir, entry);
-    try {
-      await ensureNodeDependenciesInstalled(parsed.appDir);
-      return { url: await spawnNodePreview(parsed.appDir, entry, hostname), kind: "web" };
-    } catch (error) {
-      activePreviews.delete(parsed.appDir);
-      await stopPreviewEntry(entry);
-      throw error;
+    // Retry on port conflict (e.g. bouncy-koala vs medical-vulcana both on 8080).
+    // Expo prints "Port 8080 is running medical-vulcana in another window" and
+    // exits 1 because it requires interactive input to pick 8081. Detect that
+    // and retry with an ephemeral port.
+    const maxAttempts = 3;
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const port =
+        attempt === 0
+          ? await pickFreePort(parsed.port ?? DEFAULT_PREVIEW_PORT)
+          : await pickFreePort(0);
+      const entry: PreviewEntry = {
+        appDir: parsed.appDir,
+        child: null,
+        port,
+        url: "",
+        running: false,
+        logs: [],
+        device: "web-server",
+        deviceId: null,
+      };
+      activePreviews.set(parsed.appDir, entry);
+      try {
+        await ensureNodeDependenciesInstalled(parsed.appDir);
+        const url = await spawnNodePreview(parsed.appDir, entry, hostname);
+        return { url, kind: "web" };
+      } catch (error) {
+        lastError = error;
+        activePreviews.delete(parsed.appDir);
+        await stopPreviewEntry(entry);
+        const msg = error instanceof Error ? error.message : String(error ?? "");
+        const isPortConflict =
+          msg.toLowerCase().includes("port 8080 is running") ||
+          msg.toLowerCase().includes("is running in another window") ||
+          isPortInUseError(error) ||
+          entry.logs.some((l) => l.toLowerCase().includes("port 8080 is running"));
+        if (isPortConflict && attempt < maxAttempts - 1) {
+          logger.warn(
+            `preview: ${parsed.appDir} port ${port} conflict — retrying with ephemeral port (attempt ${attempt + 1}/${maxAttempts})`,
+          );
+          await new Promise<void>((r) => setTimeout(r, 400 + attempt * 300));
+          continue;
+        }
+        throw error;
+      }
     }
+    throw lastError ?? new CaideError("preview start failed after retries", CaideErrorKind.External);
   }
   assertFlutterApp(parsed.appDir);
 
