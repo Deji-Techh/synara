@@ -76,10 +76,10 @@ import {
   type PreviewTestState,
 } from "./previewPanel.logic";
 
-const PREVIEW_POLL_INTERVAL_MS = 2_000;
+const PREVIEW_POLL_INTERVAL_MS = 4_000;
 const NATIVE_FRAME_POLL_INTERVAL_MS = 1_500;
 const BUILD_POLL_INTERVAL_MS = 2_000;
-const TOOLCHAIN_POLL_INTERVAL_MS = 10_000;
+const TOOLCHAIN_POLL_INTERVAL_MS = 15_000;
 const LOGS_RENDER_LIMIT = 80;
 
 const PREVIEW_TABS: readonly {
