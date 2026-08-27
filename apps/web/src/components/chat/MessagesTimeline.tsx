@@ -2402,9 +2402,14 @@ export const MessagesTimeline = memo(function MessagesTimeline({
     );
   }
 
-  // Premium: for small transcripts, bypass virtualization entirely — plain div is faster,
-  // avoids measure/scroll feedback loops, and keeps auto-scroll one-way per guardrail.
+  // Premium: for small transcripts, bypass virtualization — plain div is faster,
+  // avoids measure/scroll feedback, and keeps auto-follow one-way per guardrail.
+  // Preserves tail anchor spacing and scroll handlers so composer overlay still works.
   if (!shouldVirtualize) {
+    const tailAnchorSpacerPx =
+      tailAnchorRowIndex >= 0 && typeof window !== "undefined"
+        ? Math.max(0, window.innerHeight - 320 - anchorVerticalInsetPx)
+        : 0;
     return (
       <div
         ref={timelineRootRef}
@@ -2430,6 +2435,9 @@ export const MessagesTimeline = memo(function MessagesTimeline({
         {rows.map((row) => (
           <div key={row.id}>{renderRowContent(row)}</div>
         ))}
+        {tailAnchorRowIndex >= 0 ? (
+          <div aria-hidden="true" style={{ height: tailAnchorSpacerPx }} />
+        ) : null}
         {listFooter}
       </div>
     );
