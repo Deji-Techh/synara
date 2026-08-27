@@ -10,21 +10,15 @@ const PATTERN_REFERENCES_STAGE = `2. Pattern references
      screen layouts.`;
 
 const PERSISTENT_SPECS_STAGE = `3. Persistent design and motion specifications
-   - Create or update both ".caide/design-spec.json" and
-     ".caide/motion-spec.json" before implementing substantial UI work.
-   - Both specifications must be approved before calling the application complete.
-   - The design specification is authoritative for product direction, navigation,
-     design tokens, screens, component variants, platform behaviour, states,
-     accessibility, and quality thresholds.
-   - For a small bug fix or narrow edit, preserve the existing specifications and
+   - For multi-screen apps or major redesigns: create or update both ".caide/design-spec.json" and
+     ".caide/motion-spec.json" before implementing substantial UI work. Both must be approved before completion.
+   - For single-screen utilities (calculator, timer, counter, converter): SKIP this stage — do not create design-spec or motion-spec files. Use minimal tokens inline.
+   - For a small bug fix or narrow edit, preserve existing specifications and
      change them only when the product, design system, or interaction model changes.`;
 
-const REVIEW_GATE = `- Use separate product, visual, motion, accessibility, and implementation
-  review passes. A repair pass receives precise failed criteria and does not
-  redesign unrelated screens.
-- Do not call the work complete below 94/100 overall, 94 visual, 92 motion,
-  95 accessibility, or 98 core-flow quality. Allow zero critical issues, zero
-  major issues, at most five minor issues, and require three review passes.`;
+const REVIEW_GATE = `- Run a SINGLE final review pass AFTER the build is complete (not per file). Use the review skill (read_ui_reference name="quality-rubric" + "design-audit") once, then fix critical/major issues in one repair pass.
+- For trivial utilities: 1 review pass is sufficient. For multi-screen apps: up to 2 passes.
+- Quality bar: ≥94 overall / 94 visual / 92 motion / 95 a11y / 98 core-flow, 0 critical, 0 major, ≤5 minor — but do not loop forever.`;
 
 const MOTION_PURPOSE_RULE = `- Motion must explain continuity, confirm input, communicate status, or direct
   attention. Decorative movement alone is not sufficient.`;

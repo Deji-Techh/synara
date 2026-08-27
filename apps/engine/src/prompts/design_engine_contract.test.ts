@@ -3,10 +3,12 @@ import { describe, expect, it } from "vitest";
 import { DESIGN_ENGINE_CONTRACT } from "./design_engine_contract";
 
 describe("design engine prompt contract", () => {
-  it("requires persistent design and motion specifications before substantial UI code", () => {
+  it("requires persistent design and motion specifications for substantial UI, but skips for trivial utilities", () => {
     expect(DESIGN_ENGINE_CONTRACT).toContain(".caide/design-spec.json");
     expect(DESIGN_ENGINE_CONTRACT).toContain(".caide/motion-spec.json");
     expect(DESIGN_ENGINE_CONTRACT).toContain("before implementing substantial");
+    expect(DESIGN_ENGINE_CONTRACT).toContain("single-screen utilities");
+    expect(DESIGN_ENGINE_CONTRACT).toContain("SKIP this stage");
   });
 
   it("routes animation capabilities rather than installing every engine", () => {
@@ -16,11 +18,11 @@ describe("design engine prompt contract", () => {
     expect(DESIGN_ENGINE_CONTRACT).toContain("every engine pre-emptively");
   });
 
-  it("defines strict visual, motion, accessibility, and core-flow gates", () => {
-    expect(DESIGN_ENGINE_CONTRACT).toContain("94/100 overall");
+  it("defines single final review pass, not per-file multi-pass gate", () => {
+    expect(DESIGN_ENGINE_CONTRACT).toContain("SINGLE final review");
+    expect(DESIGN_ENGINE_CONTRACT).toContain("94");
     expect(DESIGN_ENGINE_CONTRACT).toContain("92 motion");
-    expect(DESIGN_ENGINE_CONTRACT).toContain("zero critical issues, zero");
-    expect(DESIGN_ENGINE_CONTRACT).toContain("major issues, at most five");
-    expect(DESIGN_ENGINE_CONTRACT).toContain("three review passes");
+    expect(DESIGN_ENGINE_CONTRACT).toContain("critical");
+    expect(DESIGN_ENGINE_CONTRACT).toContain("major");
   });
 });

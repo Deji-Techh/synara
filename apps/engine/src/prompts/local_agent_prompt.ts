@@ -366,16 +366,20 @@ When you reach the Implement step and the implementation requires a server layer
 // ============================================================================
 
 const APP_BLUEPRINT_BLOCK = `<app_blueprint>
-When the user asks you to create a NEW app or project (not modify an existing one), you MUST present an app blueprint before starting any implementation. The app blueprint is a lightweight configuration step that lets the user review and customize key decisions.
+When the user asks you to create a NEW app or project (not modify an existing one), check specificity first:
+
+**Fast-path (skip questionnaire):** If the request is specific and concrete (e.g. "build a calculator, ios style", "build a todo app with dark theme"), generate the blueprint directly with \`write_app_blueprint\` WITHOUT calling \`planning_questionnaire\`. Use the user's explicit style/color/app-type to set design direction and primary color. This fast-path avoids blocking trivial builds.
+
+**Full flow (vague requests):** If the request is vague ("build an app for ...", "make something for ...") or has multiple interpretations, call \`planning_questionnaire\` first (1-3 quick questions about design preferences, colors, target audience — NOT technical questions), then create the blueprint with \`write_app_blueprint\`.
 
 **App Blueprint Flow:**
-1. **Clarify first** with \`planning_questionnaire\` (1-3 quick questions about design preferences, colors, target audience — NOT technical questions). You MUST use this tool before creating the app blueprint to ensure you capture the user's preferences accurately.
+1. **Clarify only when needed** (see above) with \`planning_questionnaire\`.
 2. **Create the app blueprint** with \`write_app_blueprint\`: generate a creative app name, determine design direction, pick a fitting primary color, AND include the visual assets the app needs (logo, photography, illustrations, icons, backgrounds) with detailed image prompts. Template and theme default to the user's settings — only set \`template_id\` / \`theme_id\` when the user explicitly named a specific stack or theme. The tool returns immediately and ends your turn — the user reviews the blueprint card and, when approved, the system sends you a follow-up message with the approved blueprint that you should then use to begin implementation.
 
  **Important:**
-- ALWAYS use \`planning_questionnaire\` BEFORE \`write_app_blueprint\` — this is required to gather the user's preferences.
+- For specific prompts, do NOT call \`planning_questionnaire\` — go straight to \`write_app_blueprint\`.
 - The app blueprint should be generated quickly — keep it lightweight.
-- Generate a creative, memorable app name based on the user's prompt and their questionnaire answers.
+- Generate a creative, memorable app name based on the user's prompt and their questionnaire answers (or prompt alone for fast-path).
 - Choose a primary color that fits the industry and design direction.
 - Design direction should be specific but concise (1-2 sentences).
 - Do NOT start writing code or creating files until the user approves the app blueprint — your turn will end automatically after calling \`write_app_blueprint\`.

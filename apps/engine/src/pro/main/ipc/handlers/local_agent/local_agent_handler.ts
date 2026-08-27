@@ -115,7 +115,13 @@ import {
   checkAndMarkForCompaction,
 } from "@/ipc/handlers/compaction/compaction_handler";
 import { getPostCompactionMessages } from "@/ipc/handlers/compaction/compaction_utils";
-import { DEFAULT_MAX_TOOL_CALL_STEPS } from "@/constants/settings_constants";
+import {
+  DEFAULT_MAX_TOOL_CALL_STEPS,
+  TRIVIAL_MAX_TOOL_CALL_STEPS,
+  SINGLE_SCREEN_MAX_TOOL_CALL_STEPS,
+  MULTI_SCREEN_MAX_TOOL_CALL_STEPS,
+  MAX_TOOL_CALL_STEPS_CEILING,
+} from "@/constants/settings_constants";
 import { CaideError, CaideErrorKind } from "@/errors/caide_error";
 import { listReferences } from "@/ipc/reference/reference_store";
 import type { ReferenceEntry } from "@/ipc/types/reference";
@@ -448,7 +454,20 @@ export async function handleLocalAgentStream(
   },
 ): Promise<boolean> {
   const settings = settingsOverride ?? readSettings();
-  const maxToolCallSteps = settings.maxToolCallSteps ?? DEFAULT_MAX_TOOL_CALL_STEPS;
+  const adaptiveMaxSteps = (() => {
+    if (settings.maxToolCallSteps !== undefined && settings.maxToolCallSteps !== null) {
+      return settings.maxToolCallSteps;
+    }
+    const prompt = (req.prompt ?? "").toLowerCase();
+    if (!prompt) return DEFAULT_MAX_TOOL_CALL_STEPS;
+    const trivialRe = /\b(calculator|timer|counter|converter|stopwatch|todo\b.*single|single.*screen.*utility)\b/;
+    const multiRe = /\b(4\s*tabs?|multi.?screen|social.*app|marketplace|dashboard.*with.*\d+.*tabs|several.*screens|multiple.*flows)\b/;
+    if (trivialRe.test(prompt) && prompt.length < 120) return TRIVIAL_MAX_TOOL_CALL_STEPS;
+    if (multiRe.test(prompt)) return MULTI_SCREEN_MAX_TOOL_CALL_STEPS;
+    if (prompt.length < 200) return SINGLE_SCREEN_MAX_TOOL_CALL_STEPS;
+    return DEFAULT_MAX_TOOL_CALL_STEPS;
+  })();
+  const maxToolCallSteps = Math.min(adaptiveMaxSteps, MAX_TOOL_CALL_STEPS_CEILING);
   let fullResponse = "";
   let streamingPreview = ""; // Temporary preview for current tool, not persisted
   // Tracks what was last sent to the renderer for the placeholder

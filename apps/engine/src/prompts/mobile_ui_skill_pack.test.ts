@@ -9,44 +9,40 @@ import { getSystemPromptForChatMode } from "./system_prompt";
 
 const mandatoryMarkers = [
   "<mandatory-ui-ux-skill>",
-  "World-Class UI/UX Production Skill",
-  "## 0. Mission",
-  "## 6. Full Production Workflow",
-  "## 51. Final Directive",
-  "Do not optimize for the appearance of design competence",
+  "CAIDE preview contract",
+  "<skill_index>",
+  "Available on-demand skills",
 ];
 
 describe("CAIDE UI/UX mastery skill", () => {
-  it("loads the permanent SKILL.md without its metadata frontmatter", () => {
+  it("is slim — contains preview contract and skill index, not full skill bodies", () => {
     expect(CAIDE_MOBILE_UI_SKILL_PACK).not.toContain("name: world-class-ui-ux");
     for (const marker of mandatoryMarkers) {
       expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain(marker);
     }
-  });
-
-  it("permanently wires production motion, product-flow, and backend skills", () => {
-    for (const marker of [
+    // Heavy bodies must stay out of always-on prompt — only index remains
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).not.toContain("World-Class UI/UX Production Skill");
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).not.toContain("## 0. Mission");
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).not.toContain(
       '<companion-skill name="Motion and Interaction">',
-      '<companion-skill name="Product Flow">',
-      '<companion-skill name="Backend Production">',
-      "# Motion and Interaction Contract",
-      "# Product Flow Contract",
-      "# Backend Production Contract",
-    ]) {
-      expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain(marker);
-    }
+    );
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).not.toContain("# Motion and Interaction Contract");
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).not.toContain("# Product Flow Contract");
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).not.toContain("# Backend Production Contract");
   });
 
-  it("requires distinct phone, landscape, and tablet compositions", () => {
-    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain(
-      "Responsive does not mean stretching or centering the same narrow phone column",
-    );
-    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("844x390 phone landscape");
-    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("768x1024 tablet portrait");
-    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("1024x768 tablet landscape");
-    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain(
-      "Do not finish a build or edit until responsive behavior is implemented",
-    );
+  it("exposes conditional guidance for single-screen utilities", () => {
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("single-screen utilities");
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("SKIP persistent design-spec");
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("final review");
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("read_ui_reference");
+  });
+
+  it("requires distinct phone, landscape, and tablet compositions (via preview contract)", () => {
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("320x568");
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("844x390");
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("768x1024");
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("1024x768");
   });
 
   it("ships an index of on-demand reference documents instead of inlining them", () => {
@@ -58,7 +54,7 @@ describe("CAIDE UI/UX mastery skill", () => {
     // The heavy documents themselves must stay out of the always-on prompt.
     expect(CAIDE_MOBILE_UI_SKILL_PACK).not.toContain("# Product Archetype Decision Matrix");
     expect(CAIDE_MOBILE_UI_SKILL_PACK).not.toContain("# Screen Specification Template");
-    expect(CAIDE_MOBILE_UI_SKILL_PACK.length).toBeLessThan(120_000);
+    expect(CAIDE_MOBILE_UI_SKILL_PACK.length).toBeLessThan(20_000);
   });
 });
 
@@ -79,7 +75,7 @@ describe("read_ui_reference library", () => {
 });
 
 describe("CAIDE UI/UX skill pack injection", () => {
-  it("is always injected into the standard build agent with the reference index", () => {
+  it("is always injected into the standard build agent with the slim index", () => {
     const prompt = getSystemPromptForChatMode({
       chatMode: "build",
       enableTurboEditsV2: false,
@@ -87,6 +83,7 @@ describe("CAIDE UI/UX skill pack injection", () => {
     for (const marker of mandatoryMarkers) {
       expect(prompt).toContain(marker);
     }
+    expect(prompt).toContain("<skill_index>");
     expect(prompt).toContain("<ui-ux-reference-library>");
   });
 
@@ -100,6 +97,7 @@ describe("CAIDE UI/UX skill pack injection", () => {
       for (const marker of mandatoryMarkers) {
         expect(prompt).toContain(marker);
       }
+      expect(prompt).toContain("<skill_index>");
       expect(prompt).toContain("<ui-ux-reference-library>");
     }
   });
