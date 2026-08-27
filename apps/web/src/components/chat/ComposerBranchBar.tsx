@@ -4,7 +4,7 @@
 // the screenshot's "Local checkout · feature/backend-transplant" bar.
 // Layer: Chat composer chrome (pure presentation, no I/O)
 
-import { GitBranchIcon } from "lucide-react";
+import { GitBranchIcon } from "~/lib/icons";
 import { cn } from "~/lib/utils";
 
 export function ComposerBranchBar({
