@@ -177,6 +177,7 @@ import {
   type AutomationDraftWarningId,
 } from "../lib/automationDraft";
 import { dispatchThreadRename } from "../lib/threadRename";
+import { useGlobalCommandPalette } from "../hooks/useGlobalCommandPalette";
 import { useHandleNewChat } from "../hooks/useHandleNewChat";
 import { splitComposerDropzoneFiles, useComposerDropzone } from "../hooks/useComposerDropzone";
 import { useComposerImageIntake } from "../hooks/useComposerImageIntake";
@@ -1353,6 +1354,7 @@ export default function ChatView({
   const clearTemporaryThread = useTemporaryThreadStore((store) => store.clearTemporaryThread);
   const markWorkflowRunPaused = useWorkflowRunUiStore((store) => store.markPaused);
   const markWorkflowRunDismissed = useWorkflowRunUiStore((store) => store.markDismissed);
+  const { open: isGlobalPaletteOpen, setOpen: setGlobalPaletteOpen } = useGlobalCommandPalette();
   const serverThread = useStore(useMemo(() => createThreadSelector(threadId), [threadId]));
   const threadDetailSyncState = useStore((state) =>
     threadId ? (state.threadDetailSyncById?.[threadId] ?? null) : null,
@@ -11911,6 +11913,28 @@ export default function ChatView({
                     contentInsetBottomPx={composerTranscriptInsetPx}
                     contentInsetBottomClearancePx={composerOverlayBottomClearancePx}
                   />
+                  {isGlobalPaletteOpen ? (
+                    <div
+                      className="absolute inset-0 z-50 flex items-start justify-center bg-black/20 pt-20 backdrop-blur-sm"
+                      onClick={() => setGlobalPaletteOpen(false)}
+                    >
+                      <div
+                        className="w-full max-w-xl rounded-xl border bg-background p-4 shadow-xl"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <p className="text-sm text-muted-foreground">
+                          Global palette — threads, files, skills, commands (premium cmd+k)
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setGlobalPaletteOpen(false)}
+                          className="mt-2 text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          Close Esc
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
 
                 {/* Trailing block below the transcript: the composer floats on top of it
