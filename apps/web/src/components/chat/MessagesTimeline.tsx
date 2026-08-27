@@ -755,6 +755,9 @@ export const MessagesTimeline = memo(function MessagesTimeline({
     ],
   );
   const rows = useStableRows(rawRows);
+  // Premium: small transcripts (<80 rows) avoid virtualization churn per AGENTS.md guardrail.
+  // Virtualization only for long chats where measurement cost pays off.
+  const shouldVirtualize = rows.length >= 80;
   const canRenderForkSourceDivider = forkSource !== null && onOpenThread !== undefined;
   const forkSourceDivider = useMemo(
     () =>
@@ -2395,6 +2398,39 @@ export const MessagesTimeline = memo(function MessagesTimeline({
         <p className="text-sm text-muted-foreground/30">
           Send a message to start the conversation.
         </p>
+      </div>
+    );
+  }
+
+  // Premium: for small transcripts, bypass virtualization entirely — plain div is faster,
+  // avoids measure/scroll feedback loops, and keeps auto-scroll one-way per guardrail.
+  if (!shouldVirtualize) {
+    return (
+      <div
+        ref={timelineRootRef}
+        data-messages-timeline-root="true"
+        data-chat-scroll-container="true"
+        className={cn(
+          "h-full overflow-y-auto overflow-x-hidden overscroll-y-contain py-3 [scrollbar-gutter:stable] sm:py-4",
+          ENVIRONMENT_CONTENT_INSET_MOTION_CLASS,
+          CHAT_COLUMN_GUTTER_CLASS_NAME,
+        )}
+        {...(listScrollStyle ? { style: listScrollStyle as never } : {})}
+        onScroll={handleListScroll as never}
+        onClickCapture={onMessagesClickCapture}
+        onMouseUp={onMessagesMouseUp}
+        onPointerCancel={handleMessagesPointerCancel}
+        onPointerDown={handleMessagesPointerDown}
+        onPointerUp={onMessagesPointerUp}
+        onTouchEnd={onMessagesTouchEnd}
+        onTouchMove={handleMessagesTouchMove}
+        onTouchStart={handleMessagesTouchStart}
+        onWheel={handleMessagesWheel}
+      >
+        {rows.map((row) => (
+          <div key={row.id}>{renderRowContent(row)}</div>
+        ))}
+        {listFooter}
       </div>
     );
   }
