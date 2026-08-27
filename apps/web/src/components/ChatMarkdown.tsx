@@ -1071,8 +1071,12 @@ function ChatMarkdown({
   // fast token stream (one flush per ~100ms) doesn't re-render the full ReactMarkdown
   // tree on every flush. The deferred value always converges to the latest text, and
   // completed messages render the exact current text immediately (no visual change).
+  // Exception: when text contains <think>, bypass defer so the Thought process
+  // disclosure encloses immediately instead of flashing as plain markdown until
+  // the closing tag arrives (fixes bouncy-koala leak).
   const deferredNormalizedText = useDeferredValue(normalizedText);
-  const renderedText = isStreaming ? deferredNormalizedText : normalizedText;
+  const containsThink = !isUserVariant && normalizedText.includes("<think");
+  const renderedText = isStreaming && !containsThink ? deferredNormalizedText : normalizedText;
   // Marker offsets are applied against mdast positions, which come from the
   // repaired text — validate them against the same string. A marker recorded
   // after a repaired delimiter row fails its `selectedText` check and is
