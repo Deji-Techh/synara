@@ -63,6 +63,7 @@ const RAW_TAG_NAMES = [
   "dyad-neon-project-info",
   "dyad-neon-table-schema",
   "dyad-read-guide",
+  "dyad-read-ui-reference",
   "dyad-status",
   "dyad-summarize-context",
   "dyad-compaction",

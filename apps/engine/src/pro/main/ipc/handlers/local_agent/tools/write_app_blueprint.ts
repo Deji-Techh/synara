@@ -9,6 +9,9 @@ import { readSettings } from "@/main/settings";
 import { localTemplatesData } from "@/shared/templates";
 import { themesData } from "@/shared/themes";
 import type { UserSettings } from "@/lib/schemas";
+import { db } from "@/db";
+import { chats } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 // Only accept template/theme IDs the model could plausibly know about — the
 // built-in catalogs. Unknown IDs (hallucinated names, API-only template IDs,
@@ -21,8 +24,31 @@ const formatIdList = (ids: Iterable<string>) => Array.from(ids, (id) => `"${id}"
 const VALID_TEMPLATE_IDS_LIST = formatIdList(VALID_TEMPLATE_IDS);
 const VALID_THEME_IDS_LIST = formatIdList(VALID_THEME_IDS);
 
-function resolveTemplateId(provided: string | undefined, settings: UserSettings): string {
+function resolveTemplateId(
+  provided: string | undefined,
+  settings: UserSettings,
+  framework?: string | null,
+): string {
   if (provided && VALID_TEMPLATE_IDS.has(provided)) return provided;
+  // Framework-aware default: don't use global Flutter default for React Native/Website projects.
+  // When the project is already React Native or Website, the blueprint should reflect that.
+  if (framework === "react-native") {
+    // Prefer an RN template if available, otherwise fall back to settings but log.
+    if (VALID_TEMPLATE_IDS.has("expo")) return "expo";
+    if (VALID_TEMPLATE_IDS.has("react-native")) return "react-native";
+    // No dedicated RN template in catalog - use a neutral placeholder that won't confuse the agent.
+    // The agent's AI_RULES correctly identifies the project as React Native via framework, so
+    // the blueprint's template field is less critical for existing projects.
+    return "react-native";
+  }
+  if (framework === "website" || framework === "vite" || framework === "nextjs") {
+    if (VALID_TEMPLATE_IDS.has("next")) return "next";
+    if (VALID_TEMPLATE_IDS.has("react-vite-nitro")) return "react-vite-nitro";
+    return "vite";
+  }
+  if (framework === "flutter") {
+    if (VALID_TEMPLATE_IDS.has("flutter")) return "flutter";
+  }
   return settings.selectedTemplateId;
 }
 
@@ -170,6 +196,26 @@ export const writeAppBlueprintTool: ToolDefinition<z.infer<typeof writeAppBluepr
     logger.log(`Writing app blueprint: ${args.app_name}`);
 
     const settings = readSettings();
+    // Framework-aware template: for existing projects, respect the project's
+    // framework instead of global Flutter default. Prevents "Template: flutter"
+    // on React Native/Expo projects (flawless-koalab bug).
+    let framework: string | null = null;
+    try {
+      const chat = await db.query.chats.findFirst({
+        where: eq(chats.id, ctx.chatId),
+        with: { app: true },
+      });
+      framework = (chat?.app as unknown as { framework?: string })?.framework ?? null;
+    } catch {}
+    // Also try to infer from appPath if DB not available
+    if (!framework) {
+      try {
+        const { getCaideAppPath } = await import("@/paths/paths");
+        const { resolveProjectFrameworkType } = await import("@/ipc/utils/framework_utils");
+        const appPath = getCaideAppPath(ctx.appPath);
+        framework = resolveProjectFrameworkType(null, appPath);
+      } catch {}
+    }
 
     const visuals = args.visuals.map((v) => ({
       id: `visual_${crypto.randomUUID().slice(0, 8)}`,
@@ -182,7 +228,7 @@ export const writeAppBlueprintTool: ToolDefinition<z.infer<typeof writeAppBluepr
       appName: args.app_name,
       userPrompt: args.user_prompt,
       attachments: args.attachments ?? [],
-      templateId: resolveTemplateId(args.template_id, settings),
+      templateId: resolveTemplateId(args.template_id, settings, framework),
       themeId: resolveThemeId(args.theme_id, settings),
       designDirection: args.design_direction,
       primaryColor: args.primary_color,

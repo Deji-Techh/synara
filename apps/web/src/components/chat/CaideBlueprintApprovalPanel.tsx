@@ -88,15 +88,14 @@ export const CaideBlueprintApprovalPanel = function CaideBlueprintApprovalPanel(
     setSubmitted(true);
     const edits: Record<string, unknown> = {};
     if (decision === "accept") {
-      if (appName !== initial.appName && appName !== "") edits.appName = appName;
-      if (fields.designDirection !== initial.designDirection) {
-        edits.designDirection = fields.designDirection;
-      }
-      if (fields.templateId !== initial.templateId) edits.templateId = fields.templateId;
-      if (fields.themeId !== initial.themeId) edits.themeId = fields.themeId;
-      if (colorValid && fields.primaryColor !== initial.primaryColor) {
-        edits.primaryColor = fields.primaryColor.trim();
-      }
+      // Send full edited blueprint, not just diff - ensures what the user sees
+      // in the inputs is exactly what the agent builds, even if initial was
+      // stale or empty on first render. More robust than diff against initial.
+      if (appName !== "") edits.appName = appName;
+      edits.designDirection = fields.designDirection;
+      edits.templateId = fields.templateId;
+      edits.themeId = fields.themeId;
+      if (colorValid) edits.primaryColor = fields.primaryColor.trim();
     }
     void onRespond(
       approval.requestId,
