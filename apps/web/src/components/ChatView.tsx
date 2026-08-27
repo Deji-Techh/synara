@@ -526,6 +526,7 @@ import {
   type WorkflowSubagentThreadRef,
 } from "./chat/WorkflowRunCard.logic";
 import { ComposerColumnFrame } from "./chat/ComposerColumnFrame";
+import { ComposerBranchBar } from "./chat/ComposerBranchBar";
 import { useTranscriptAssistantSelectionAction } from "./chat/useTranscriptAssistantSelectionAction";
 import {
   scrollTranscriptToSettledEnd,
@@ -11527,7 +11528,7 @@ export default function ChatView({
                               type="submit"
                               variant="prominent"
                               size="icon-xs"
-                              className="size-7 rounded-full sm:size-7"
+                              className="size-7 rounded-full bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 sm:size-7"
                               disabled={
                                 isSendBusy ||
                                 isConnecting ||
@@ -11581,6 +11582,8 @@ export default function ChatView({
                     </div>
                   </div>
                 )}
+                {/* T3-style bottom bar: local checkout + branch, glued to composer bottom */}
+                <ComposerBranchBar cwd={gitCwd} branch={activeThread?.branch ?? null} />
               </div>
             </div>
           </ComposerColumnFrame>

@@ -27,9 +27,9 @@ function FrameworkAvatar({ framework }: { framework: ProjectFramework }) {
     <span
       title={label}
       aria-label={`${label} project`}
-      className="inline-flex size-3 shrink-0 items-center justify-center"
+      className="inline-flex size-4 shrink-0 items-center justify-center"
     >
-      <FrameworkIcon framework={framework} size={12} />
+      <FrameworkIcon framework={framework} size={16} />
     </span>
   );
 }

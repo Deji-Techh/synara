@@ -21,16 +21,24 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { readNativeApi } from "../nativeApi";
 import { generateCuteAppName, toAppSlug } from "../lib/appNaming";
+import { FrameworkIcon } from "./FrameworkIcon";
+import { cn } from "~/lib/utils";
 
 const FRAMEWORKS: Array<{
   id: ProjectFramework;
   label: string;
   description: string;
+  hint: string;
 }> = [
-  { id: "blank", label: "Blank", description: "Start from an empty workspace" },
-  { id: "react-native", label: "React Native", description: "Expo / React Native mobile app" },
-  { id: "flutter", label: "Flutter", description: "Flutter mobile app" },
-  { id: "website", label: "Website", description: "Browser-first web application" },
+  { id: "blank", label: "Blank", description: "Start from an empty workspace", hint: "No preview" },
+  {
+    id: "react-native",
+    label: "React Native",
+    description: "Expo / React Native mobile app",
+    hint: "Browser preview · APK build",
+  },
+  { id: "flutter", label: "Flutter", description: "Flutter mobile app", hint: "Device preview · APK/AAB" },
+  { id: "website", label: "Website", description: "Browser-first web application", hint: "Browser preview · Web build" },
 ];
 
 export function CreateAppDialog(props: {
@@ -147,20 +155,47 @@ export function CreateAppDialog(props: {
 
           <div className="grid gap-2">
             <Label>Framework</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {FRAMEWORKS.map((item) => (
-                <Button
-                  key={item.id}
-                  type="button"
-                  variant={framework === item.id ? "default" : "outline"}
-                  className="h-auto min-h-16 flex-col items-start gap-1 p-3 text-left"
-                  disabled={submitting}
-                  onClick={() => setFramework(item.id)}
-                >
-                  <span>{item.label}</span>
-                  <span className="text-xs font-normal opacity-75">{item.description}</span>
-                </Button>
-              ))}
+            <div className="grid grid-cols-2 gap-2.5">
+              {FRAMEWORKS.map((item) => {
+                const selected = framework === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => setFramework(item.id)}
+                    className={cn(
+                      "group relative flex h-auto min-h-[5.5rem] flex-col items-start gap-1.5 rounded-xl border p-3 text-left transition-all",
+                      selected
+                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                        : "border-border bg-card hover:border-foreground/15 hover:bg-accent/50",
+                    )}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          "inline-flex size-7 items-center justify-center rounded-lg",
+                          selected ? "bg-primary-foreground/15" : "bg-muted",
+                        )}
+                      >
+                        <FrameworkIcon framework={item.id} size={18} />
+                      </span>
+                      <span className={cn("text-[13px] font-medium", selected && "text-primary-foreground")}>
+                        {item.label}
+                      </span>
+                    </span>
+                    <span className={cn("text-xs font-normal leading-snug", selected ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                      {item.description}
+                    </span>
+                    <span className={cn("text-[10px] font-medium tabular-nums", selected ? "text-primary-foreground/60" : "text-muted-foreground/60")}>
+                      {item.hint}
+                    </span>
+                    {selected ? (
+                      <span className="absolute right-2 top-2 size-2 rounded-full bg-primary-foreground" aria-hidden />
+                    ) : null}
+                  </button>
+                );
+              })}
             </div>
             <p className="text-[11px] text-muted-foreground">
               The selected framework cannot be changed after the project is created.
