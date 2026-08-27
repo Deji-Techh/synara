@@ -7,7 +7,7 @@ interface CaideCommandButtonProps {
 
 const COMMAND_LABELS: Record<string, { label: string; icon: string; color: string }> = {
   rebuild: {
-    label: "Rebuild Flutter App",
+    label: "Rebuild App",
     icon: "⚡",
     color: "bg-blue-500/10 text-blue-600 border-blue-500/30 hover:bg-blue-500/20",
   },
