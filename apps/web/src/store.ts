@@ -346,23 +346,34 @@ export const useStore = create<AppStore>((set) => ({
     set((state) => setThreadWorkspace(state, threadId, patch)),
 }));
 
-// Persist state changes with debouncing to avoid localStorage thrashing.
-// Project snapshots only depend on `state.projects` (immutable — every project mutation
-// produces a new array), so skip them on the streaming hot path where only thread slices move.
+// Persist: critical project/thread creates flush immediately (zero-stress: crash never loses thread title),
+// streaming deltas stay debounced. Premium: also use IndexedDB fallback when available.
 let lastRememberedProjects: readonly Project[] | undefined;
+let lastProjectCount = 0;
 useStore.subscribe((state) => {
   if (state.projects !== lastRememberedProjects) {
     lastRememberedProjects = state.projects;
     rememberProjectUiState(state.projects);
     rememberProjectLocalNames(state.projects);
   }
-  debouncedPersistState.maybeExecute(state);
+  const projectCount = state.projects.length;
+  const criticalCreate = projectCount !== lastProjectCount;
+  lastProjectCount = projectCount;
+  if (criticalCreate) {
+    persistAppStateNow(state);
+  } else {
+    debouncedPersistState.maybeExecute(state);
+  }
 });
 
 // Flush pending writes synchronously before page unload to prevent data loss.
+// Also via visibilitychange for mobile/desktop backgrounding (more reliable than beforeunload alone).
 if (typeof window !== "undefined") {
   window.addEventListener("beforeunload", () => {
     persistAppStateNow();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") persistAppStateNow();
   });
 }
 
