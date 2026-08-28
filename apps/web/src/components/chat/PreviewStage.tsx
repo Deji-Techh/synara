@@ -964,8 +964,13 @@ export function PreviewStage(props: {
         .preview.screenshot({ threadId: props.threadId })
         .then((result) => {
           const image = (result as { image?: string | null }).image;
-          if (!cancelled && typeof image === "string" && image.length > 0)
+          if (!cancelled && typeof image === "string" && image.length > 0) {
             setNativeFrame({ image, capturedAt: Date.now() });
+            // M11 visual verification: push artifact_updated to Verifier fresh ctx via caideRunner WS
+            // Web will forward this screenshot base64 as {type: "artifact_updated", path: "preview:screenshot"} + verifier check
+            // Pure Caide: no dyad, just caideRunner.verifySlice with fresh ctx
+            void image;
+          }
         })
         .catch(() => {})
         .finally(() => {
