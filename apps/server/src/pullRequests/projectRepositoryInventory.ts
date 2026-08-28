@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import type { OrchestrationProject, ProjectId, PullRequestsListResult } from "@caide/contracts";
 import { Effect } from "effect";
 

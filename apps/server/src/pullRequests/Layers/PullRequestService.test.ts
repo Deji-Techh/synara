@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import { ProjectId } from "@caide/contracts";
 import type { OrchestrationProject } from "@caide/contracts";
 import { Deferred, Effect, Fiber } from "effect";

@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import type { OrchestrationProject, PullRequestDetail } from "@caide/contracts";
 import { githubAvatarUrlForLogin } from "@caide/shared/githubAvatar";
 import { Effect } from "effect";

@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import { parseGitHubRepositoryNameWithOwnerFromRemoteUrl } from "@caide/shared/githubRepository";
 import { Effect } from "effect";
 

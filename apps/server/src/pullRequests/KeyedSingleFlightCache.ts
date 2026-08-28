@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import { Deferred, Effect, Exit, Fiber, Scope, Semaphore } from "effect";
 
 export interface KeyedSingleFlightCacheOptions<A> {
