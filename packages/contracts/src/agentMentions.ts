@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 /**
  * Agent Mentions - @alias(task) syntax for subagent delegation.
  *

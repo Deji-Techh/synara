@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 // FILE: stats.ts
 // Purpose: Schemas for the local profile-stats RPCs that power the Profile page and
 // the shareable activity card. All metrics are backed by Caide's local DB

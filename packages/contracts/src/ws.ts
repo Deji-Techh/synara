@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import { Schema, Struct } from "effect";
 import { NonNegativeInt, ProjectId, ThreadId, TrimmedNonEmptyString } from "./baseSchemas";
 

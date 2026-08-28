@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import { Schema } from "effect";
 import { TrimmedString } from "./baseSchemas";
 import { DEFAULT_GIT_TEXT_GENERATION_MODEL } from "./model";

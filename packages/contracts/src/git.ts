@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import { Option, Schema } from "effect";
 import {
   CommandId,

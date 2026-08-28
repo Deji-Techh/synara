@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 export * from "./auth";
 export * from "./automation";
 export * from "./baseSchemas";

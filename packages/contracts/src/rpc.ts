@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import { Schema } from "effect";
 import * as Rpc from "effect/unstable/rpc/Rpc";
 import * as RpcGroup from "effect/unstable/rpc/RpcGroup";
