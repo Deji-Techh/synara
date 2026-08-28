@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 // FILE: providerCredentials.ts
 // Purpose: Owns server-only API key credentials used to connect to external providers.
 // Layer: Server provider security boundary

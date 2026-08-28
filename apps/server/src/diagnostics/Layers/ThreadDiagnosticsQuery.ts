@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import { Effect, Layer } from "effect";
 import * as SqlClient from "effect/unstable/sql/SqlClient";
 

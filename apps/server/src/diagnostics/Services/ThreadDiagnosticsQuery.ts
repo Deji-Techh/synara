@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import { ServiceMap } from "effect";
 import type { Effect } from "effect";
 

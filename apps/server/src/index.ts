@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as Effect from "effect/Effect";

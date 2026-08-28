@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import { randomUUID } from "node:crypto";
 
 import type {

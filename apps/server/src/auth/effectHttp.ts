@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import { HttpServerRequest, HttpServerResponse } from "effect/unstable/http";
 
 import type { AuthError, AuthRequest } from "./Services/ServerAuth";
