@@ -62,16 +62,10 @@ export const PREVIEW_STAGE_FIXED_WIDTH_PX = 42 * 16; // 672px
 
 type HeaderMode = "quality" | "controls";
 type BranchId =
-  | "tests"
-  | "problems"
   | "qualityGate"
   | "release"
-  | "screenshot"
-  | "record"
-  | "rotate"
-  | "home"
   | "terminal"
-  | "shutdown"
+  | "screenshot"
   | null;
 
 const PREVIEW_POLL_INTERVAL_MS = 2_000;
@@ -1160,14 +1154,10 @@ export function PreviewStage(props: {
     return () => window.clearInterval(timer);
   }, [props.isVisible, pollBuildOnce]);
 
-  // Branch content resolver
+  // Branch content — 2+2 → 3+console: tests+problems folded into qualityGate
   const branchContent = (() => {
     if (!branch) return null;
     switch (branch) {
-      case "tests":
-        return <TestResults state={panelState.test} />;
-      case "problems":
-        return <ProblemList state={panelState.analyze} />;
       case "qualityGate":
         return (
           <QualityGatePanel
@@ -1233,112 +1223,21 @@ export function PreviewStage(props: {
             </Button>
           </div>
         );
-      case "home":
-        return (
-          <div className="p-4">
-            <p className="text-xs text-muted-foreground">
-              Reload the {frameworkLabel}. Hot-reload preserves state, restart rebuilds from
-              scratch.
-            </p>
-            <div className="mt-3 flex gap-2">
-              <Button
-                size="sm"
-                onClick={() => {
-                  handleReload(true);
-                  closeBranch();
-                }}
-                disabled={!isRunning}
-              >
-                Hot reload
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  handleReload(false);
-                  closeBranch();
-                }}
-                disabled={!isRunning}
-              >
-                Hot restart
-              </Button>
-            </div>
-          </div>
-        );
-      case "rotate":
-        return (
-          <div className="p-4">
-            <p className="text-xs text-muted-foreground">
-              Rotate the device frame to preview landscape. The app keeps rendering portrait — this
-              is a view transform.
-            </p>
-            <Button
-              size="sm"
-              className="mt-3"
-              onClick={() => {
-                setLandscape((v) => !v);
-                closeBranch();
-              }}
-            >
-              {landscape ? "Back to portrait" : "Rotate to landscape"}
-            </Button>
-          </div>
-        );
-      case "record":
-        return (
-          <div className="p-4">
-            <p className="text-xs text-muted-foreground">
-              Screen recording is not available in web preview.
-            </p>
-          </div>
-        );
-      case "shutdown":
-        return (
-          <div className="p-4">
-            <p className="text-xs text-muted-foreground">
-              Stop the running preview. You can restart it from the idle screen.
-            </p>
-            <Button
-              size="sm"
-              variant="destructive"
-              className="mt-3"
-              onClick={() => {
-                handleStop();
-                closeBranch();
-              }}
-              disabled={!isRunning}
-            >
-              Stop preview
-            </Button>
-          </div>
-        );
       default:
         return null;
     }
   })();
 
   const branchTitle =
-    branch === "tests"
-      ? "Tests"
-      : branch === "problems"
-        ? "Problems"
-        : branch === "qualityGate"
-          ? "Quality Gate"
-          : branch === "release"
-            ? "Release"
-            : branch === "terminal"
-              ? "Console"
-              : branch === "screenshot"
-                ? "Screenshot"
-                : branch === "home"
-                  ? "Home / Reload"
-                  : branch === "rotate"
-                    ? "Rotate"
-                    : branch === "record"
-                      ? "Record"
-                      : branch === "shutdown"
-                        ? "Stop Preview"
-                        : "";
+    branch === "qualityGate"
+      ? "Quality Gate"
+      : branch === "release"
+        ? "Release"
+        : branch === "terminal"
+          ? "Console"
+          : branch === "screenshot"
+            ? "Screenshot"
+            : "";
 
   if (!props.isVisible) return null;
 
@@ -1362,37 +1261,13 @@ export function PreviewStage(props: {
             <>
               <button
                 type="button"
-                onClick={() => openBranch("tests")}
-                className={cn(
-                  "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
-                  branch === "tests" && branchOpen && "bg-accent text-foreground",
-                )}
-                title="Tests"
-                aria-label="Tests"
-              >
-                <FlaskConicalIcon className="size-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => openBranch("problems")}
-                className={cn(
-                  "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
-                  branch === "problems" && branchOpen && "bg-accent text-foreground",
-                )}
-                title="Problems"
-                aria-label="Problems"
-              >
-                <BugIcon className="size-3.5" />
-              </button>
-              <button
-                type="button"
                 onClick={() => openBranch("qualityGate")}
                 className={cn(
                   "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
                   branch === "qualityGate" && branchOpen && "bg-accent text-foreground",
                 )}
-                title="Quality"
-                aria-label="Quality"
+                title="Quality Gate (tests + problems)"
+                aria-label="Quality Gate"
               >
                 <ListChecksIcon className="size-3.5" />
               </button>
@@ -1425,27 +1300,25 @@ export function PreviewStage(props: {
                   <ArchiveIcon className="size-3.5" />
                 </button>
               )}
+              {/* Demoted tiny controls — not branches: inline icon actions */}
               <button
                 type="button"
-                onClick={() => openBranch("home")}
-                className={cn(
-                  "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
-                  branch === "home" && branchOpen && "bg-accent text-foreground",
-                )}
-                title="Home"
-                aria-label="Home"
+                onClick={() => handleReload(true)}
+                disabled={!isRunning}
+                className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40"
+                title="Hot reload"
+                aria-label="Hot reload"
               >
-                <DeviceHomeIcon className="size-3.5" />
+                <RefreshCwIcon className="size-3.5" />
               </button>
               <button
                 type="button"
-                onClick={() => openBranch("rotate")}
+                onClick={() => setLandscape((v) => !v)}
                 className={cn(
                   "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
-                  branch === "rotate" && branchOpen && "bg-accent text-foreground",
                   landscape && "bg-accent text-foreground",
                 )}
-                title="Rotate"
+                title={landscape ? "Back to portrait" : "Rotate to landscape"}
                 aria-label="Rotate"
               >
                 <DeviceRotateIcon className="size-3.5" />
@@ -1464,22 +1337,6 @@ export function PreviewStage(props: {
               </button>
               <button
                 type="button"
-                onClick={() => openBranch("record")}
-                className={cn(
-                  "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
-                  branch === "record" && branchOpen && "bg-accent text-foreground",
-                )}
-                title="Record"
-                aria-label="Record"
-              >
-                {panelState.status === "running" ? (
-                  <DeviceRecordIcon className="size-3.5" />
-                ) : (
-                  <DeviceRecordStopIcon className="size-3.5" />
-                )}
-              </button>
-              <button
-                type="button"
                 onClick={() => openBranch("terminal")}
                 className={cn(
                   "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -1492,13 +1349,11 @@ export function PreviewStage(props: {
               </button>
               <button
                 type="button"
-                onClick={() => openBranch("shutdown")}
-                className={cn(
-                  "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
-                  branch === "shutdown" && branchOpen && "bg-accent text-foreground",
-                )}
-                title="Stop"
-                aria-label="Stop"
+                onClick={() => handleStop()}
+                disabled={!isRunning}
+                className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground hover:text-red-500 disabled:opacity-40"
+                title="Stop preview"
+                aria-label="Stop preview"
               >
                 <DevicePowerIcon className="size-3.5" />
               </button>

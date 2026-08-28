@@ -4,25 +4,20 @@
 // Layer: Shared runtime utility
 // Exports: command-name constants and normalization helpers.
 
+/** Perfect builder slash set — 13 wired to real harness modes/quality gates.
+ *  `preview` toggles the floating 672px stage (M11 visual verification).
+ *  `build` + `test`/`analyze` drive distribution + qualityGate (M16/M21).
+ *  `plan`/`debug`/`default` switch Plan / Evidence-first Debug / Normal stage context (M4).
+ *  `review` triggers comparative benchmark (M16g). `fork`/`side` branch threads,
+ *  `status` shows context window + rate-limit, `clear`/`compact` fresh + compaction @70%.
+ *  `theme` switches the palette via theme changer. All other legacy engine
+ *  commands (init/spawn/btw/goal/etc.) are deleted — see plans/002 §3.
+ *  Keep `theme` as palette switcher; `model` is Router-decided per role/budget (M20). */
 export const BUILT_IN_COMPOSER_SLASH_COMMANDS = [
-  "init",
-  "spawn",
-  "btw",
-  "goal",
-  "schedule",
-  "browser",
-  "grill-me",
-  "teamwork-preview",
-  "learn",
-  "doctor",
+  "preview",
+  "build",
   "test",
   "analyze",
-  "build",
-  "preview",
-  "theme",
-  "clear",
-  "compact",
-  "model",
   "plan",
   "debug",
   "default",
@@ -30,18 +25,9 @@ export const BUILT_IN_COMPOSER_SLASH_COMMANDS = [
   "fork",
   "side",
   "status",
-  "subagents",
-  "fast",
-  "export",
-  "feedback",
-  "automation",
-  // Dyad/engine registry commands surfaced to the composer so the shared
-  // package stays the single source of truth for what the web parses/menus.
-  // The engine does not yet expose its command registry over RPC; when it does
-  // (`slash:list`), that response should replace this static mirror.
-  "goals",
-  "commands",
-  "help",
+  "clear",
+  "compact",
+  "theme",
 ] as const;
 
 export type BuiltInComposerSlashCommand = (typeof BUILT_IN_COMPOSER_SLASH_COMMANDS)[number];

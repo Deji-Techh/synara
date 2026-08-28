@@ -66,6 +66,26 @@ const DEFAULT_BASE_URL_BY_PROVIDER: Record<ApiProviderKind, string> = {
   opencodeGo: "https://opencode.ai/zen/go/v1",
 };
 
+/** Per-model endpoint routing per opencode docs: Go Zen uses 3 shapes.
+ *  Keep the baseUrl + modelId contract explicit so /responses and /messages
+ *  models (grok/gpt/muse-spark → responses; minimax/qwen → messages) stop
+ *  404ing on hard-coded chat/completions. Fallback = chat/completions. */
+function endpointForModel(baseUrl: string, model: string): string {
+  const normalized = model.toLowerCase();
+  const base = baseUrl.replace(/\/+$/, "");
+  // Responses API — @ai-sdk/openai
+  const responsesHints = ["grok", "gpt-5", "gpt-5.6", "muse-spark", "grok-4", "hy4", "hy3-free"];
+  // Anthropic Messages API — @ai-sdk/anthropic
+  const messagesHints = ["minimax", "qwen", "qwen3", "claude", "sonnet", "opus", "haiku", "anthropic"];
+  if (responsesHints.some((h) => normalized.includes(h))) return `${base}/responses`;
+  if (messagesHints.some((h) => normalized.includes(h)) && (base.includes("opencode.ai") || base.includes("anthropic"))) {
+    return `${base}/messages`;
+  }
+  // Special: Gemini via zen uses /models/<model> path per docs
+  if (normalized.includes("gemini")) return `${base}/models/${encodeURIComponent(model)}`;
+  return `${base}/chat/completions`;
+}
+
 async function streamOpenAiCompatible(
   url: string,
   headers: Record<string, string>,
@@ -75,21 +95,41 @@ async function streamOpenAiCompatible(
   onDelta: (text: string) => void,
   systemPrompt?: string,
 ): Promise<void> {
-  const endpoint = url.replace(/\/+$/, "") + "/chat/completions";
+  const endpoint = endpointForModel(url, model);
+  const isResponses = endpoint.endsWith("/responses");
+  const isMessages = endpoint.endsWith("/messages");
+  const requestBody = isResponses
+    ? {
+        model,
+        input: [
+          ...(systemPrompt ? [{ role: "system", content: [{ type: "input_text", text: systemPrompt }] }] : []),
+          { role: "user", content: [{ type: "input_text", text: prompt }] },
+        ],
+        stream: true,
+      }
+    : isMessages
+      ? {
+          model,
+          ...(systemPrompt ? { system: systemPrompt } : {}),
+          messages: [{ role: "user", content: prompt }],
+          stream: true,
+        }
+      : {
+          model,
+          messages: [
+            ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
+            { role: "user", content: prompt },
+          ],
+          stream: true,
+        };
+
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...headers,
     },
-    body: JSON.stringify({
-      model,
-      messages: [
-        ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
-        { role: "user", content: prompt },
-      ],
-      stream: true,
-    }),
+    body: JSON.stringify(requestBody),
     signal,
   });
 
@@ -115,14 +155,32 @@ async function streamOpenAiCompatible(
 
     for (const line of lines) {
       const trimmed = line.trim();
-      if (!trimmed || !trimmed.startsWith("data:")) continue;
+      if (!trimmed) continue;
+      // SSE can be `data:` or `event:` prefixed — only parse data lines
+      if (!trimmed.startsWith("data:")) {
+        // Non-data lines (event:, id:) are protocol framing for responses/messages — ignore
+        continue;
+      }
       const dataStr = trimmed.slice(5).trim();
       if (dataStr === "[DONE]") return;
       try {
         const parsed = JSON.parse(dataStr);
-        const delta = parsed.choices?.[0]?.delta?.content;
+        // chat/completions: choices[0].delta.content
+        // responses: output_text.delta or delta.text
+        // messages (anthropic): delta.text or content_block_delta
+        const delta =
+          parsed.choices?.[0]?.delta?.content ??
+          parsed.delta?.text ??
+          parsed.delta?.content?.[0]?.text ??
+          parsed.output_text?.delta ??
+          parsed.response?.output_text?.delta ??
+          parsed.content_block?.delta?.text ??
+          (typeof parsed.text === "string" ? parsed.text : undefined) ??
+          (typeof parsed.delta === "string" ? parsed.delta : undefined);
         if (typeof delta === "string" && delta.length > 0) {
           onDelta(delta);
+        } else if (typeof parsed.text === "string" && parsed.text.length > 0 && isMessages) {
+          onDelta(parsed.text);
         }
       } catch {
         // Skip malformed chunk lines

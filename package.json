@@ -47,6 +47,7 @@
     "test:device:probe": "bun scripts/device-helper-smoke.ts --probe-only",
     "test:device:sweep": "bun scripts/device-helper-sweep.ts",
     "fmt": "oxfmt",
+    "skill:new": "bun scripts/skill.ts",
     "fmt:check": "oxfmt --check",
     "build:contracts": "turbo run build --filter=@caide/contracts",
     "dist:desktop:artifact": "node scripts/build-desktop-artifact.ts",

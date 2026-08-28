@@ -22,8 +22,8 @@ import type { PreviewDeviceId } from "~/rightDockStore.logic";
 
 export type PreviewPanelStatus = "idle" | "starting" | "running" | "failed";
 
-/** Tabs in the preview pane; the console is folded into the preview tab. */
-export type PreviewPaneTab = "preview" | "tests" | "problems" | "qualityGate" | "release";
+/** Tabs — pruned 5→3+console per plans/002 §2: tests+problems fold into qualityGate, console is a branch not a tab. */
+export type PreviewPaneTab = "preview" | "qualityGate" | "release";
 
 export const DEFAULT_PREVIEW_DEVICE_ID: PreviewDeviceId = "mobile";
 
