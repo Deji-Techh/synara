@@ -151,6 +151,9 @@ async function ensureNodeDependenciesInstalled(appDir: string): Promise<void> {
   // 2) Expo web needs react-dom + react-native-web even when node_modules exists.
   // Use the project's PM directly (pnpm add / npm install) — npx expo install
   // is 3m + network + SDK version resolution, and was the main "minutes" bottleneck.
+  // Pin to SDK 57-compatible versions (expo 57 => RN 0.86 + react 19.2.3); unpinned
+  // latest pulls RN 0.87 which drops the `rn-get-polyfills` export that
+  // @expo/cli@57 requires (ERR_PACKAGE_PATH_NOT_EXPORTED).
   if (isExpo) {
     const hasReactDom = fs.existsSync(path.join(nodeModules, "react-dom"));
     const hasRNWeb = fs.existsSync(path.join(nodeModules, "react-native-web"));
@@ -160,8 +163,8 @@ async function ensureNodeDependenciesInstalled(appDir: string): Promise<void> {
         const command = pm === "pnpm" ? "pnpm" : process.platform === "win32" ? "npm.cmd" : "npm";
         const args =
           pm === "pnpm"
-            ? ["add", "react-dom", "react-native-web", "--silent"]
-            : ["install", "--silent", "--legacy-peer-deps", "react-dom", "react-native-web"];
+            ? ["add", "react-dom@19.2.3", "react-native-web@~0.21.1", "--silent"]
+            : ["install", "--silent", "--legacy-peer-deps", "react-dom@19.2.3", "react-native-web@~0.21.1"];
         const result = await spawnStreaming({
           command,
           args,

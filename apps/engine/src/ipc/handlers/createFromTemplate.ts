@@ -157,6 +157,11 @@ export async function createFromTemplate({
 
   if (framework === "react-native") {
     await fs.ensureDir(fullAppPath);
+    // Expo SDK 57 pins React Native 0.86.x + React 19.2.3. Using "latest"
+    // pulls react-native 0.87.x which drops the `rn-get-polyfills` export that
+    // @expo/cli@57 still imports (see withMetroMultiPlatform.js), causing:
+    //   ERR_PACKAGE_PATH_NOT_EXPORTED: './rn-get-polyfills' is not defined
+    // Pin to the SDK-tested versions instead.
     await fs.writeJson(
       path.join(fullAppPath, "package.json"),
       {
@@ -169,7 +174,13 @@ export async function createFromTemplate({
           ios: "expo start --ios",
           web: "expo start --web",
         },
-        dependencies: { expo: "latest", react: "latest", "react-native": "latest" },
+        dependencies: {
+          expo: "~57.0.16",
+          react: "19.2.3",
+          "react-native": "0.86.2",
+          "react-dom": "19.2.3",
+          "react-native-web": "~0.21.1",
+        },
       },
       { spaces: 2 },
     );

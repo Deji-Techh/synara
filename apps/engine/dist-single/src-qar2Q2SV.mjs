@@ -5,15 +5,15 @@ const __filename = __cFL(import.meta.url);
 const __dirname = __cDP.dirname(__filename);
 
 import { n as __esmMin } from "./chunk-CeepVFa8.mjs";
-import { a as File, i as init_esm_min, n as FormData, o as Blob, r as formDataToBlob, s as init_fetch_blob, t as init_from } from "./from-Bj--8xAd.mjs";
+import { a as File, i as init_esm_min, n as FormData, o as Blob, r as formDataToBlob, s as init_fetch_blob, t as init_from } from "./from-DEZ_XOfN.mjs";
 import http from "node:http";
 import https from "node:https";
 import { format } from "node:url";
-import { deprecate, promisify, types } from "node:util";
 import zlib from "node:zlib";
 import Stream, { PassThrough, pipeline } from "node:stream";
-import { isIP } from "node:net";
 import { Buffer as Buffer$1 } from "node:buffer";
+import { deprecate, promisify, types } from "node:util";
+import { isIP } from "node:net";
 
 //#region ../../node_modules/.bun/data-uri-to-buffer@4.0.1/node_modules/data-uri-to-buffer/dist/index.js
 /**
@@ -220,7 +220,7 @@ var init_body = __esmMin((() => {
 				for (const [name, value] of parameters) formData.append(name, value);
 				return formData;
 			}
-			const { toFormData } = await import("./multipart-parser-D4uZIU3T.mjs");
+			const { toFormData } = await import("./multipart-parser-tMU9bfg-.mjs");
 			return toFormData(this.body, ct);
 		}
 		/**

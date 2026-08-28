@@ -5,11 +5,14 @@ const __filename = __cFL(import.meta.url);
 const __dirname = __cDP.dirname(__filename);
 
 import { a as __toCommonJS, i as __require, o as __toESM, t as __commonJSMin } from "./chunk-CeepVFa8.mjs";
-import { $t as ipcMain, A as themesData, At as apps, B as hasCaideProKey, Bt as desc, C as writeSettings, D as init_caide_error, E as CaideErrorKind, Et as IS_TEST_BUILD, Ft as mcpServers, G as migrateStoredChatMode, Gt as isNull, H as isLocalAgentBackedMode, Ht as eq, It as mcpToolConsents, J as _enum, Jt as BrowserWindow, Kt as like, L as StoredChatModeSchema, Lt as messages, M as v4, Mt as customThemes, Nt as language_model_providers, O as isCaideError, Ot as appCollections, P as AppChatContextSchema, Pt as language_models, Q as _void, Qt as init_electron_shim, Rt as prompts, S as setSentinelActiveChat, T as CaideError, U as isSupabaseConnected, Ut as inArray, V as isBasicAgentMode, Vt as and, W as isTurboEditsV2Enabled, Wt as isNotNull, X as _null, Xt as app, Yt as ShimmerNotification, Zt as dialog, _ as isDirectoryAccessible, a as closeDatabase, an as init_event_bus, b as readEffectiveSettings, c as initializeDatabase, ct as literal, d as getCustomFolderCache, dt as number, en as nativeImage, et as array, f as getDefaultCaideAppsDirectory, ft as object, g as isAppLocationAccessible, gt as string, h as invalidateCaideAppsBaseDirectoryCache, ht as record, in as emit, j as localTemplatesData, jt as chats, kt as appPrompts, l as getCaideAppPath, m as getUserDataPath, nn as shell, nt as boolean, o as db, on as onAll, qt as sql, r as isPersistedGoalComplete, s as getDatabaseFilePaths, sn as require_src, tn as safeStorage, u as getCaideAppsBaseDirectory, vt as union, x as readSettings, yt as unknown, z as getEffectiveDefaultChatMode, zt as versions } from "./goal_state-CLqg91US.mjs";
-import { $ as addIntegrationTool, $i as stopCloudSandboxFileSync, $n as getNeonOrganizationId, $r as registerGithubHandlers, $t as doesSqlDeleteData, A as getBackgroundTasks, Ai as listSupabaseSocialAuthProviders, An as computeStreamingPatch, Ar as gitAddSafeDirectory, At as getCompactionThreshold, B as goalContracts, Bi as createUniqueAttachmentLogicalName, Bn as readAppFileForEditor, Br as gitListBranches, Bt as getCaideEngineBaseUrl, C as normalizePlanStatus, Ca as createEventClient, Ci as executeSupabaseSql, Cn as parsePartialJson, Cr as GitStateError, Ct as clearPendingMcpConsentsForChat, D as parsePlanFile, Da as defineEvent, Di as getSupabaseProjectLogs, Dn as createGoogleGenerativeAI, Dr as getGitUncommittedFilesWithStatus, Dt as withSystemCacheBreakpoint, E as buildFrontmatter, Ea as defineContract, Ei as getSupabaseClientForOrganization, En as FLUTTER_DESIGN_ENGINE_CONTRACT, Er as getGitUncommittedFiles, Et as resolveConsent, F as getTypeCheckPreconditionKind, Fi as CAIDE_MEDIA_DIR_NAME, Fn as streamText, Fr as gitCurrentBranch, Ft as getSupabaseClientCode, G as freeAgentQuotaContracts, Gi as getEnvVar, Gn as RIPGREP_EXCLUDED_GLOBS, Gr as gitPush, Gt as findInvalidProviderApiKeyCharacter, H as referenceContracts, Hi as toAttachmentLogicalPath, Hn as detectNextJsMajorVersion, Hr as gitMerge, Ht as languageModelContracts, I as deleteTodos, Ii as CAIDE_SCREENSHOT_DIR_NAME, In as backgroundTaskRegistry, Ir as gitDeleteBranch, It as getSupabaseContext, J as promptContracts, Ji as destroyCloudSandbox, Jn as getConnectionUri, Jr as hasStagedChanges, Jt as CAIDE_INTERNAL_REQUEST_ID_HEADER, K as securityContracts, Ki as shellEnvSync, Kn as getRgExecutablePath, Kr as gitRemove, Kt as formatInvalidProviderApiKeyMessage, L as loadTodos, Li as MAX_SCREENSHOTS_PER_APP, Ln as ChatStreamParamsSchema, Lr as gitDiff, Lt as getModelClient, M as isCodeExplorerReady, Mi as isRateLimitError, Mn as generateText, Mr as gitClone, Mt as getMaxTokens, N as generateProblemReport, Ni as terminatePtyProcess, Nn as hasToolCall, Nr as gitCommit, Nt as getTemperature, O as validatePlanId, Oi as getSupabaseProjectName, On as StreamingPatchTracker, Or as gitAdd, Ot as withToolCacheBreakpoint, P as getTypeCheckPreconditionGuidance, Pi as safeSend, Pn as stepCountIs, Pr as gitCreateBranch, Pt as shouldTriggerCompaction, Q as ensureNitroIfVite, Qi as restartCloudSandbox, Qn as getNeonClient, Qr as ensureCleanWorkspace, Qt as createOpenAICompatible, R as saveTodos, Ri as SCREENSHOT_FILENAME_REGEX, Rn as chatContracts, Rr as gitDiscardAllChanges, Rt as getOpenRouterAppAttributionHeaders, S as writePlanTool, Sa as createClient, Si as deploySupabaseFunction, Sn as stripFrontmatter, Sr as GIT_ERROR_CODES, St as auth, T as savePlanToDisk, Ta as createIpcSuccessEnvelope, Ti as getOrganizationMembers, Tn as escapeXmlContent, Tr as getFileAtCommit, Tt as requireMcpToolConsent, U as appCollectionContracts, Ui as addLog, Un as resolveProjectFrameworkType, Ur as gitMergeAbort, Ut as getLmStudioBaseUrl, V as goalEvents, Vi as isFileWithinAnyCaideMediaDir, Vn as detectFrameworkType, Vr as gitListRemoteBranches, Vt as registerOllamaHandlers, W as freeModelQuotaContracts, Wi as clearLogs, Wn as MAX_FILE_SEARCH_SIZE, Wr as gitPull, Wt as createCaideEngine, X as webCrawlResponseSchema, Xi as queueCloudSandboxSnapshotSync, Xn as getNeonContext, Xr as isGitRebaseInProgress, Xt as getProviderOptions, Y as settingsContracts, Yi as getCloudSandboxStatus, Yn as getNeonClientCode, Yr as isGitMergeInProgress, Yt as getAiHeaders, Z as validateImageDimensions, Zi as reconcileCloudSandboxes, Zn as getCachedEmailPasswordConfig, Zr as isGitStatusClean, Zt as getTestFetchOption, _ as getMcpInlineTokenThreshold, _a as parseStoredAppIdentity, _i as OPENCODE_GO_FREE_MODEL_IDS, _n as filterGuideByFramework, _r as getLastManagedFlutterInstallProgress, _t as decryptFromString, a as getDefaultConsent, aa as writeMigrationFile, ai as githubContracts, an as getCaideDeleteTags, ar as deployAllSupabaseFunctions, at as createMobileUiQualityPrompt, b as isSandboxSupportedPlatform, ba as sendTelemetryEvent, bi as PROVIDER_TO_ENV_VAR, bn as CAIDE_MOBILE_UI_SKILL_PACK, br as installManagedFlutterToolchain, bt as DEFAULT_OAUTH_CALLBACK_PORT, c as setAgentToolConsent, ca as withLock, ci as getLanguageModelProviders, cn as getCaideRenameTags, cr as isServerFunction, ct as sanitizeMcpName, d as writeAppBlueprintTool, da as miscContracts, di as createOpenAI, dn as ExecuteAddDependencyError, dr as ensureCaideGitignored, dt as ensureReasoningConsistency, ea as unregisterRunningCloudSandbox, ei as updateAppGithubRepo, en as doesSqlMutateSchema, er as invalidateEmailPasswordConfigCache, et as envVarResolver, f as buildExecuteSandboxScriptDescription, fa as supabaseContracts, fi as openai, fn as executeAddDependency, fr as ensureFlutterSdkAvailable, ft as getAiMessagesJsonIfWithinLimit, g as estimateMcpInlineTokens, ga as buildAppIdentityPrompt, gi as OPENCODE_GO_API_BASE_URL, gn as readFileWithCache, gr as isFlutterApp, gt as CaideOAuthClientProvider, h as collectMcpToolDefs, ha as AppIdentitySchema, hi as templateContracts, hn as extractCodebase, hr as getFlutterExecutable, ht as mcpManager, i as getAllAgentToolConsents, ia as getFilesRecursively, ii as gitContracts, in as getCaideCopyTags, ir as deployAffectedSupabaseFunctions, it as writeFileTool, j as stopBackgroundTask, ji as updateSupabaseSocialAuthProvider, jn as fastTextOutput, jr as gitCheckout, jt as getContextWindow, k as getAllSubagentTasks, ki as listSupabaseBranches, kn as cancelOrphanedBaseStream, kr as gitAddAll, kt as estimateTokens, l as shouldIncludeTool, la as systemContracts, li as getLanguageModels, ln as getCaideSearchReplaceTags, lr as isSharedServerModule, lt as buildMcpAutoApprove, m as isSandboxScriptExecutionEnabled, ma as importContracts, mi as resolveBuiltinModelAlias, mn as TEST_SPEC_EXT_ALTERNATION, mr as getDartExecutable, mt as sanitizeToolCallMessages, n as buildAgentToolSet, na as copyDirectoryRecursive, ni as require_node, nn as applySearchReplace, nr as require_dist, nt as questionnaireResolver, o as requireAgentToolConsent, oa as normalizePath, oi as gitService, on as getCaideExecuteSqlTags, or as extractFunctionName, ot as scanMobileUiFiles, p as executeSandboxScriptTool, pa as appContracts, pi as getThemeGenerationModelOptions, pn as SPEC_FILE_RE, pr as getDartDefineFromFileArgs, pt as parseAiMessagesJson, q as helpContracts, qi as createCloudSandboxShareLink, qn as executeNeonSql, qr as gitRenameBranch, qt as normalizeProviderApiKeyInput, r as clearPendingConsentsForChat, ra as fileExists$1, ri as slugifyAppPath, rn as getCaideAddDependencyTags, rr as cs, rt as setChatSummaryTool, s as resolveAgentToolConsent, sa as require_lib, si as CUSTOM_PROVIDER_PREFIX, sn as getCaideGenerateTestTags, sr as extractFunctionNameFromPath, st as parseMcpToolKey$1, t as TOOL_DEFINITIONS, ta as require_tree_kill, ti as rawAsset, tn as executeCopyFile, tr as getNeonErrorMessage, tt as integrationResolver, ua as REDACTED_ENV_VALUE, ui as getLanguageModelsByProviders, un as getCaideWriteTags, ur as safeJoin, ut as cleanMessage, v as deleteAppBlueprintForChat, va as createTypedHandler, vi as OPENCODE_ZEN_API_BASE_URL, vn as WEB3_SKILL_FRONTMATTERS, vr as init_managed_flutter_toolchain_service, vt as encryptToString, w as planDirForAppPath, wa as createIpcErrorEnvelope, wi as getOrganizationDetails, wn as escapeXmlAttr, wr as getCurrentCommitHash, wt as getStoredConsent, x as exitPlanTool, xa as sendTelemetryException, xi as deleteSupabaseFunction, xn as COMPANION_SKILL_FRONTMATTERS, xr as managed_flutter_toolchain_service_exports, xt as mcpContracts, y as registerAppBlueprintHandlers, ya as registerLegacyIpcHandler, yi as OPENCODE_ZEN_FREE_MODEL_IDS, yn as WEB3_SKILL_PACK, yr as inspectManagedFlutterToolchain, yt as oauthStateHasTokens, z as sidebarContracts, zi as appendAttachmentManifestEntriesWithLogicalNames, zn as inspectBase64DataUrl, zr as gitFetch, zt as isFreeProModel } from "./tool_definitions-Bf3tUTAQ.mjs";
-import "./src-ChbvHV8d.mjs";
-import "./token-util-BsaBGcvn.mjs";
-import { C as recordVerificationApproval, D as steerGoal, E as setRunWaiting, O as syncGoalFromState, S as pauseGoal, T as resumeGoal, _ as listActivity, a as createRun, b as listRuns, c as finishPause, d as getGoal, f as getGoalRowForScheduler, g as heartbeatRun, h as hasOpenRun, i as createGoal, k as updateGoalStatus, l as forceGoalStateActive, m as hasCurrentVerificationApproval, n as cancelOpenRuns, o as editGoal, r as claimRun, s as ensureGoalTables, t as cancelGoal, u as getActiveGoal, v as listGoals, w as recoverExpiredRuns, x as listSchedulableGoalRows, y as listRunnableRuns } from "./goal_store-BgeZ13wq.mjs";
+import { A as StoredChatModeSchema, At as emit, C as themesData, Ct as dialog, D as AppChatContextSchema, Dt as safeStorage, Et as nativeImage, F as isLocalAgentBackedMode, G as _void, I as isSupabaseConnected, L as isTurboEditsV2Enabled, M as getEffectiveDefaultChatMode, Mt as onAll, N as hasCaideProKey, Nt as require_src, Ot as shell, P as isBasicAgentMode, R as migrateStoredChatMode, St as app, T as v4, Tt as ipcMain, U as _null, V as _enum, Y as boolean, at as object, b as init_caide_error, bt as BrowserWindow, c as isAppLocationAccessible, ct as record, dt as union, ft as unknown, g as writeSettings, h as setSentinelActiveChat, i as getDefaultCaideAppsDirectory, it as number, jt as init_event_bus, l as isDirectoryAccessible, lt as string, m as readSettings, n as getCaideAppsBaseDirectory, o as getUserDataPath, p as readEffectiveSettings, q as array, r as getCustomFolderCache, s as invalidateCaideAppsBaseDirectoryCache, t as getCaideAppPath, tt as literal, v as CaideError, w as localTemplatesData, wt as init_electron_shim, x as isCaideError, xt as ShimmerNotification, y as CaideErrorKind, yt as IS_TEST_BUILD } from "./paths-Cht_zAlA.mjs";
+import { C as and, D as isNull, E as isNotNull, O as like, S as desc, T as inArray, _ as mcpServers, a as closeDatabase, b as prompts, c as initializeDatabase, d as appPrompts, f as apps, g as language_models, h as language_model_providers, k as sql, m as customThemes, o as db, p as chats, r as isPersistedGoalComplete, s as getDatabaseFilePaths, u as appCollections, v as mcpToolConsents, w as eq, x as versions, y as messages } from "./goal_state-DoBtgEmD.mjs";
+import { $ as addIntegrationTool, $i as stopCloudSandboxFileSync, $n as getNeonErrorMessage, $r as getPackageManagerCommandEnv, $t as doesSqlDeleteData, A as getBackgroundTasks, Ai as listSupabaseSocialAuthProviders, An as cancelOrphanedBaseStream, Ar as gitClone, At as getCompactionThreshold, B as goalContracts, Bi as createUniqueAttachmentLogicalName, Bn as inspectBase64DataUrl, Br as gitMerge, Bt as getCaideEngineBaseUrl, C as normalizePlanStatus, Ca as createEventClient, Ci as executeSupabaseSql, Cn as COMPANION_SKILL_FRONTMATTERS, Cr as getFileAtCommit, Ct as clearPendingMcpConsentsForChat, D as parsePlanFile, Da as defineEvent, Di as getSupabaseProjectLogs, Dn as escapeXmlContent, Dr as gitAddAll, Dt as withSystemCacheBreakpoint, E as buildFrontmatter, Ea as defineContract, Ei as getSupabaseClientForOrganization, En as escapeXmlAttr, Er as gitAdd, Et as resolveConsent, F as getTypeCheckPreconditionKind, Fi as CAIDE_MEDIA_DIR_NAME, Fn as stepCountIs, Fr as gitDiff, Ft as getSupabaseClientCode, G as freeAgentQuotaContracts, Gi as getEnvVar, Gn as executeNeonSql, Gr as gitRenameBranch, Gt as findInvalidProviderApiKeyCharacter, H as referenceContracts, Hi as toAttachmentLogicalPath, Hn as MAX_FILE_SEARCH_SIZE, Hr as gitPull, Ht as languageModelContracts, I as deleteTodos, Ii as CAIDE_SCREENSHOT_DIR_NAME, In as streamText, Ir as gitDiscardAllChanges, It as getSupabaseContext, J as promptContracts, Ji as destroyCloudSandbox, Jn as getNeonContext, Jr as isGitRebaseInProgress, Jt as CAIDE_INTERNAL_REQUEST_ID_HEADER, K as securityContracts, Ki as shellEnvSync, Kn as getConnectionUri, Kr as hasStagedChanges, Kt as formatInvalidProviderApiKeyMessage, L as loadTodos, Li as MAX_SCREENSHOTS_PER_APP, Ln as backgroundTaskRegistry, Lr as gitFetch, Lt as getModelClient, M as isCodeExplorerReady, Mi as isRateLimitError, Mn as fastTextOutput, Mr as gitCreateBranch, Mt as getMaxTokens, N as generateProblemReport, Ni as terminatePtyProcess, Nn as generateText, Nr as gitCurrentBranch, Nt as getTemperature, O as validatePlanId, Oi as getSupabaseProjectName, On as createGoogleGenerativeAI, Or as gitAddSafeDirectory, Ot as withToolCacheBreakpoint, P as getTypeCheckPreconditionGuidance, Pi as safeSend, Pn as hasToolCall, Pr as gitDeleteBranch, Pt as shouldTriggerCompaction, Q as ensureNitroIfVite, Qi as restartCloudSandbox, Qn as invalidateEmailPasswordConfigCache, Qr as updateAppGithubRepo, Qt as createOpenAICompatible, R as saveTodos, Ri as SCREENSHOT_FILENAME_REGEX, Rn as ChatStreamParamsSchema, Rr as gitListBranches, Rt as getOpenRouterAppAttributionHeaders, S as writePlanTool, Sa as createClient, Si as deploySupabaseFunction, Sn as CAIDE_MOBILE_UI_SKILL_PACK, Sr as getCurrentCommitHash, St as auth, T as savePlanToDisk, Ta as createIpcSuccessEnvelope, Ti as getOrganizationMembers, Tn as parsePartialJson, Tr as getGitUncommittedFilesWithStatus, Tt as requireMcpToolConsent, U as appCollectionContracts, Ui as addLog, Un as RIPGREP_EXCLUDED_GLOBS, Ur as gitPush, Ut as getLmStudioBaseUrl, V as goalEvents, Vi as isFileWithinAnyCaideMediaDir, Vn as readAppFileForEditor, Vr as gitMergeAbort, Vt as registerOllamaHandlers, W as freeModelQuotaContracts, Wi as clearLogs, Wn as getRgExecutablePath, Wr as gitRemove, Wt as createCaideEngine, X as webCrawlResponseSchema, Xi as queueCloudSandboxSnapshotSync, Xn as getNeonClient, Xr as ensureCleanWorkspace, Xt as getProviderOptions, Y as settingsContracts, Yi as getCloudSandboxStatus, Yn as getCachedEmailPasswordConfig, Yr as isGitStatusClean, Yt as getAiHeaders, Z as validateImageDimensions, Zi as reconcileCloudSandboxes, Zn as getNeonOrganizationId, Zr as registerGithubHandlers, Zt as getTestFetchOption, _ as getMcpInlineTokenThreshold, _a as parseStoredAppIdentity, _i as OPENCODE_GO_FREE_MODEL_IDS, _n as extractCodebase, _r as inspectManagedFlutterToolchain, _t as decryptFromString, a as getDefaultConsent, aa as writeMigrationFile, ai as githubContracts, an as getCaideDeleteTags, ar as extractFunctionNameFromPath, at as createMobileUiQualityPrompt, b as isSandboxSupportedPlatform, ba as sendTelemetryEvent, bi as PROVIDER_TO_ENV_VAR, bn as WEB3_SKILL_FRONTMATTERS, br as GIT_ERROR_CODES, bt as DEFAULT_OAUTH_CALLBACK_PORT, c as setAgentToolConsent, ca as withLock, ci as getLanguageModelProviders, cn as getCaideRenameTags, cr as safeJoin, ct as sanitizeMcpName, d as writeAppBlueprintTool, da as miscContracts, di as createOpenAI, dn as ExecuteAddDependencyError, dr as getDartDefineFromFileArgs, dt as ensureReasoningConsistency, ea as unregisterRunningCloudSandbox, ei as getPnpmMinimumReleaseAgeSupport, en as doesSqlMutateSchema, er as require_dist, et as envVarResolver, f as buildExecuteSandboxScriptDescription, fa as supabaseContracts, fi as openai, fn as executeAddDependency, fr as getDartExecutable, ft as getAiMessagesJsonIfWithinLimit, g as estimateMcpInlineTokens, ga as buildAppIdentityPrompt, gi as OPENCODE_GO_API_BASE_URL, gn as TEST_SPEC_EXT_ALTERNATION, gr as init_managed_flutter_toolchain_service, gt as CaideOAuthClientProvider, h as collectMcpToolDefs, ha as AppIdentitySchema, hi as templateContracts, hn as SPEC_FILE_RE, hr as getLastManagedFlutterInstallProgress, ht as mcpManager, i as getAllAgentToolConsents, ia as getFilesRecursively, ii as gitContracts, in as getCaideCopyTags, ir as extractFunctionName, it as writeFileTool, j as stopBackgroundTask, ji as updateSupabaseSocialAuthProvider, jn as computeStreamingPatch, jr as gitCommit, jt as getContextWindow, k as getAllSubagentTasks, ki as listSupabaseBranches, kn as StreamingPatchTracker, kr as gitCheckout, kt as estimateTokens, l as shouldIncludeTool, la as systemContracts, li as getLanguageModels, ln as getCaideSearchReplaceTags, lr as ensureCaideGitignored, lt as buildMcpAutoApprove, m as isSandboxScriptExecutionEnabled, ma as importContracts, mi as resolveBuiltinModelAlias, mn as getPackageManagerSignal, mr as isFlutterApp, mt as sanitizeToolCallMessages, n as buildAgentToolSet, na as copyDirectoryRecursive, ni as require_node, nn as applySearchReplace, nr as deployAffectedSupabaseFunctions, nt as questionnaireResolver, o as requireAgentToolConsent, oa as normalizePath, oi as gitService, on as getCaideExecuteSqlTags, or as isServerFunction, ot as scanMobileUiFiles, p as executeSandboxScriptTool, pa as appContracts, pi as getThemeGenerationModelOptions, pn as choosePackageManagerFromSignal, pr as getFlutterExecutable, pt as parseAiMessagesJson, q as helpContracts, qi as createCloudSandboxShareLink, qn as getNeonClientCode, qr as isGitMergeInProgress, qt as normalizeProviderApiKeyInput, r as clearPendingConsentsForChat, ra as fileExists$1, ri as slugifyAppPath, rn as getCaideAddDependencyTags, rr as deployAllSupabaseFunctions, rt as setChatSummaryTool, s as resolveAgentToolConsent, sa as require_lib, si as CUSTOM_PROVIDER_PREFIX, sn as getCaideGenerateTestTags, sr as isSharedServerModule, st as parseMcpToolKey$1, t as TOOL_DEFINITIONS, ta as require_tree_kill, ti as rawAsset, tn as executeCopyFile, tr as cs, tt as integrationResolver, ua as REDACTED_ENV_VALUE, ui as getLanguageModelsByProviders, un as getCaideWriteTags, ur as ensureFlutterSdkAvailable, ut as cleanMessage, v as deleteAppBlueprintForChat, va as createTypedHandler, vi as OPENCODE_ZEN_API_BASE_URL, vn as readFileWithCache, vr as installManagedFlutterToolchain, vt as encryptToString, w as planDirForAppPath, wa as createIpcErrorEnvelope, wi as getOrganizationDetails, wn as stripFrontmatter, wr as getGitUncommittedFiles, wt as getStoredConsent, x as exitPlanTool, xa as sendTelemetryException, xi as deleteSupabaseFunction, xn as WEB3_SKILL_PACK, xr as GitStateError, xt as mcpContracts, y as registerAppBlueprintHandlers, ya as registerLegacyIpcHandler, yi as OPENCODE_ZEN_FREE_MODEL_IDS, yn as filterGuideByFramework, yr as managed_flutter_toolchain_service_exports, yt as oauthStateHasTokens, z as sidebarContracts, zi as appendAttachmentManifestEntriesWithLogicalNames, zn as chatContracts, zr as gitListRemoteBranches, zt as isFreeProModel } from "./tool_definitions-PSy6TeLe.mjs";
+import { i as resolveProjectFrameworkType, n as detectNextJsMajorVersion, t as detectFrameworkType } from "./framework_utils-CUR8FEk1.mjs";
+import "./from-DIpICKK4.mjs";
+import "./src-C41d7lf4.mjs";
+import "./token-util-BGYF00bI.mjs";
+import { C as recordVerificationApproval, D as steerGoal, E as setRunWaiting, O as syncGoalFromState, S as pauseGoal, T as resumeGoal, _ as listActivity, a as createRun, b as listRuns, c as finishPause, d as getGoal, f as getGoalRowForScheduler, g as heartbeatRun, h as hasOpenRun, i as createGoal, k as updateGoalStatus, l as forceGoalStateActive, m as hasCurrentVerificationApproval, n as cancelOpenRuns, o as editGoal, r as claimRun, s as ensureGoalTables, t as cancelGoal, u as getActiveGoal, v as listGoals, w as recoverExpiredRuns, x as listSchedulableGoalRows, y as listRunnableRuns } from "./goal_store-DOHUn1CV.mjs";
 import * as path$3 from "node:path";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -26,11 +29,11 @@ import fs$1, { promises } from "node:fs";
 import os$1 from "node:os";
 import fs$2 from "node:fs/promises";
 import { spawn as spawn$2 } from "node-pty";
+import net from "node:net";
 import * as crypto$3 from "crypto";
 import crypto$2 from "crypto";
-import net from "net";
+import net$1 from "net";
 import { mkdir, readFile as readFile$1, unlink, writeFile } from "fs/promises";
-import net$1 from "node:net";
 
 //#region src/ipc/utils/process_manager.ts
 init_electron_shim();
@@ -1254,9 +1257,11 @@ async function createFromTemplate({ fullAppPath, templateId: requestedTemplateId
 				web: "expo start --web"
 			},
 			dependencies: {
-				expo: "latest",
-				react: "latest",
-				"react-native": "latest"
+				expo: "~57.0.16",
+				react: "19.2.3",
+				"react-native": "0.86.2",
+				"react-dom": "19.2.3",
+				"react-native-web": "~0.21.1"
 			}
 		}, { spaces: 2 });
 		await import_lib.default.writeFile(path$1.join(fullAppPath, "App.js"), "import { Text, View } from 'react-native';\nexport default function App() { return <View><Text>New React Native App</Text></View>; }\n");
@@ -3030,8 +3035,10 @@ You are building a **native-feel mobile app** that runs inside the phone/tablet
 preview and stays packageable for iOS and Android. Every screen you ship MUST
 satisfy the checklist below. Audit your own work against it before you finish.
 
-1. **Bottom tab bar**: the shipping UI MUST include a bottom tab bar with at
-   least 2 tabs. It stays visible while navigating between main sections.
+1. **Bottom tab bar**: the shipping UI SHOULD include a bottom tab bar with at
+   least 2 tabs for multi-screen apps. For single-screen utilities (calculator,
+   timer, counter, converter) a single tab or no tabs is acceptable — read the
+   platform-tabs skill (\`read_ui_reference\` name="platform-patterns") only if unsure.
 2. **Screen-based navigation**: the app navigates between screens (tabs/routes),
    never one infinitely-scrolling webpage. Primary content fits each screen.
 3. **Touch-first**: minimum touch target of 44×44 CSS px. No interaction may
@@ -3065,10 +3072,9 @@ the checklist below. Audit your own work against it before you finish.
 1. **Dart widget tree**: every feature is real Dart/Flutter code (widgets,
    Material 3 theming, go_router/Navigator navigation) — never HTML/CSS, never
    a static mock seen through the preview.
-2. **Bottom NavigationBar**: the shipping UI MUST include a Material
-   \`NavigationBar\` with at least 2 destinations. It stays visible while
-   navigating between main sections (tab shells / IndexedStack / go_router
-   StatefulShellRoute).
+2. **Bottom NavigationBar**: for multi-screen apps the UI MUST include a Material
+   \`NavigationBar\` with at least 2 destinations. For single-screen utilities
+   (calculator, timer) a single destination is acceptable — read platform guidance if unsure.
 3. **Screen-based navigation**: the app navigates between screens (tabs/routes),
    never one infinitely-scrolling page. Primary content fits each screen.
 4. **Touch-first with a11y**: minimum touch target 48x48 logical pixels, semantics
@@ -3170,6 +3176,251 @@ so the result looks and works like a polished website on every device.
 - **Platform plumbing**: correct <title>, <meta name="description">, viewport,
   favicon and accessible landmarks (header, nav, main, footer).
 `;
+
+//#endregion
+//#region src/prompts/design_engine_contract.ts
+const PATTERN_REFERENCES_STAGE = `2. Pattern references
+   - Select no more than three named reference apps: one for information
+     architecture, one for interaction behaviour, and one for visual character.
+   - Describe the abstract pattern being studied.
+   - Never copy branding, proprietary assets, wording, iconography, or exact
+     screen layouts.`;
+const PERSISTENT_SPECS_STAGE = `3. Persistent design and motion specifications
+   - For multi-screen apps or major redesigns: create or update both ".caide/design-spec.json" and
+     ".caide/motion-spec.json" before implementing substantial UI work. Both must be approved before completion.
+   - For single-screen utilities (calculator, timer, counter, converter): SKIP this stage — do not create design-spec or motion-spec files. Use minimal tokens inline.
+   - For a small bug fix or narrow edit, preserve existing specifications and
+     change them only when the product, design system, or interaction model changes.`;
+const REVIEW_GATE = `- Run a SINGLE final review pass AFTER the build is complete (not per file). Use the review skill (read_ui_reference name="quality-rubric" + "design-audit") once, then fix critical/major issues in one repair pass.
+- For trivial utilities: 1 review pass is sufficient. For multi-screen apps: up to 2 passes.
+- Quality bar: ≥94 overall / 94 visual / 92 motion / 95 a11y / 98 core-flow, 0 critical, 0 major, ≤5 minor — but do not loop forever.`;
+const MOTION_PURPOSE_RULE = `- Motion must explain continuity, confirm input, communicate status, or direct
+  attention. Decorative movement alone is not sufficient.`;
+const REDUCED_MOTION_FALLBACK = `- A reduced-motion fallback is not merely "disable everything". Preserve status,
+  hierarchy, continuity, and confirmation through instant state, labelled
+  feedback, fade, or crossfade.`;
+const CORE_ANTI_SLOP = `- At most two accent colours and two font families unless the product requires
+  otherwise.
+- Do not use gradients, glass blur, oversized empty heroes, excessive pills,
+  random badges, fake metrics, fabricated charts, or animation as default polish.
+- Use realistic product-specific content instead of lorem ipsum.
+- Keep content and user tasks visually dominant.`;
+const DESIGN_ENGINE_CONTRACT = `
+<caide-design-engine>
+## SUPERIOR DESIGN DIRECTIVE (CRITICAL)
+
+DESIGN STANDARD: deliver modern, professional, top-class UI designs that are
+distinctive and outside the box — never generic "AI-slop" output. Match the
+best production apps: polished, purposeful, premium. The UI must feel alive
+through considered, site-wide motion. Excellence is the default, not an
+afterthought.
+
+YOUR PRIMARY MISSION is to deliver jaw-dropping, award-winning, outside-the-box UI designs.
+- Break out of safe, boring, "AI-generated" templates.
+- Use highly polished, modern, premium aesthetics: deep shadows, crisp
+  typography, layered compositions, strong hierarchy, and restrained use of
+  accent colour. Note the anti-slop constraints below: gradients and glass
+  blur are banned as default polish, not ingredients of premium design.
+- Implement insane, buttery-smooth motions and micro-interactions for every user action. The UI must feel alive.
+- You are a top-tier professional design engineer. Your output must instantly WOW the user.
+
+## Design-first generation contract
+
+For a substantial new application, a new multi-screen flow, or a major redesign,
+do not start by styling components. Complete these stages in order:
+
+1. Product brief
+   - Identify the primary user, outcome, core actions, risk, content type,
+     usage frequency, and platform.
+   - Select one primary product archetype.
+${PATTERN_REFERENCES_STAGE}
+${PERSISTENT_SPECS_STAGE}
+   - The motion specification is authoritative for motion character, capability
+     routing, transition storyboards, timing, interruption, repeated input,
+     reduced-motion meaning, assets, performance budgets, and audit routes.
+4. Motion capability routing
+   - Use native CSS and the Web Animations API for simple press feedback, fades,
+     and small local state changes.
+   - Install "motion" when shared layout, gestures, springs, drag, presence, or
+     orchestration is required.
+   - Install "@lottiefiles/dotlottie-react" only for authored linear animation.
+   - Install "@rive-app/react-webgl2" only for state-machine-driven interactive
+     illustration.
+   - Install "gsap" and "@gsap/react" only for exceptional timelines, SVG motion
+     paths, or cinematic choreography that cannot be expressed cleanly otherwise.
+   - Install "three", "@react-three/fiber", and "@react-three/drei" only when 3D
+     is essential to the product task.
+   - Never import a motion engine that is absent from package.json. Never install
+     every engine pre-emptively.
+5. System implementation
+   - Prefer the components in "src/caide-ui".
+   - Use semantic design and motion tokens; do not scatter arbitrary colour,
+     spacing, radius, elevation, duration, easing, or spring values through features.
+      Dynamic inline styles are limited to semantic CSS custom-property values used
+      by audited primitives.
+   - Every consequential transition must be interruptible, must define rapid
+     repeated-input behaviour, and must preserve meaning under reduced motion.
+   - Provide loading, empty, error, offline, permission, disabled, pressed,
+     selected, focus-visible, success, and reduced-motion behaviour where relevant.
+6. Validation and specialist review
+   - Inspect compact phone, large phone, phone landscape, tablet portrait, and
+     tablet landscape in light and dark themes.
+   - Audit normal motion, reduced motion, diagnostic slow motion, rapid repeated
+     input, CPU throttling, layout shift, long tasks, dropped frames, leaked
+     animations, accessibility, and executable primary core flows declared in
+     the motion specification.
+${REVIEW_GATE}
+
+## Motion rules
+
+${MOTION_PURPOSE_RULE}
+- Prefer transform and opacity. Do not use transition-all or routine animation of
+  width, height, top, left, margin, or padding.
+- Press feedback should normally be 90-130ms; quick state changes 140-180ms;
+  local transitions 200-260ms; navigation 260-340ms; rare expressive completion
+  moments 360-500ms.
+- Do not use uncontrolled infinite animation, scroll hijacking, queued press
+  animations, animation that blocks the next action, or motion that restarts on
+  unrelated rerenders.
+- Cancel animation when a screen unmounts. Preserve stable dimensions while
+  loading and changing state.
+${REDUCED_MOTION_FALLBACK}
+
+## Anti-slop constraints
+
+- One clear primary action per screen.
+${CORE_ANTI_SLOP}
+- Cards communicate real containment; do not wrap every section in a card.
+- Do not nest decorative cards.
+- Do not use emoji as interface icons.
+- Do not use unlabelled icon-only controls.
+- Maintain one navigation model and one coherent token system.
+
+## Platform profiles
+
+iOS-oriented output should use safe areas, restrained chrome, platform-appropriate
+navigation and sheets, text scaling, and at least 44px interaction targets.
+
+Android-oriented output should use edge-to-edge layout with protected controls,
+adaptive bottom navigation/rails, an 8px layout rhythm, and at least 48px targets.
+
+Adaptive output must define both behaviours rather than merely stretching one
+phone layout. Motion must adapt when navigation changes between bottom bars,
+rails, panes, sheets, and full-screen destinations.
+</caide-design-engine>
+`.trim();
+const FLUTTER_DESIGN_ENGINE_CONTRACT = `
+<caide-design-engine>
+## SUPERIOR DESIGN DIRECTIVE (CRITICAL)
+
+DESIGN STANDARD: deliver modern, professional, top-class Flutter UIs that are
+distinctive and outside the box — never generic "AI-slop" output. Match the best
+production apps: polished, purposeful, premium. The UI must feel alive through
+considered Material motion. Excellence is the default, not an afterthought.
+
+YOUR PRIMARY MISSION is to deliver jaw-dropping, award-winning, outside-the-box
+Flutter UI designs.
+- Break out of safe, boring, "AI-generated" templates.
+- Use highly polished, modern, premium Material 3 aesthetics: a real
+  \`ColorScheme.fromSeed\` derived from the product's brand seed, crisp type
+  scale, layered compositions, strong hierarchy, and restrained accent use.
+  Note the anti-slop constraints below: gradients and glass blur are banned as
+  default polish, not ingredients of premium design.
+- Implement buttery-smooth Motion widgets and micro-interactions for every user
+  action. The UI must feel alive.
+- You are a top-tier professional design engineer. Your output must instantly
+  WOW the user.
+
+## Design-first generation contract
+
+For a substantial new app, a new multi-screen flow, or a major redesign, do not
+start by styling widgets. Complete these stages in order:
+
+1. Product brief
+   - Identify the primary user, outcome, core actions, risk, content type,
+     usage frequency, and form factor mix (phone, tablet, desktop, web).
+   - Select one primary product archetype.
+   - Decide state management by app size: \`setState\`/ValueNotifier for small,
+     provider for medium, riverpod for larger, bloc for complex domains. Keep
+     it boring; never introduce a state library before the code needs it.
+${PATTERN_REFERENCES_STAGE}
+${PERSISTENT_SPECS_STAGE}
+   - The motion specification is authoritative for motion character, timing
+     budgets, transition storyboards, interruption, repeated input,
+     reduced-motion meaning, assets, and performance budgets.
+4. Material motion capability routing
+   - Use implicit animations (AnimatedContainer, AnimatedSwitcher,
+     TweenAnimationBuilder) for press feedback, fades, and local state changes.
+   - Use AnimationController/Tween only when explicit control, shared layout
+     (\`AnimatedSwitcher\`/hero) or chained orchestration is required.
+   - Use \`Hero\` for shared-element transitions, \`PageRouteBuilder\` for custom
+     route transitions, \`AnimatedList\`/\`AnimatedSlide\` etc. for presence.
+   - Use \`flutter_animate\` or \`rive\`/\`lottie\` only for authored linear or
+     state-machine-driven illustration; never stockpile animation packages.
+   - Reduce motion via \`MediaQuery.disableAnimationsOf(context)\` so motion
+     degrades meaningfully. Do not spell BGRA/easing constants everywhere;
+     centralize durations and curves as tokens or constants.
+5. System implementation
+   - Build small, focused widgets; prefer \`const\` constructors; one widget per
+     file for non-trivial components; no giant \`build()\` methods.
+   - Centralize \`ColorScheme\`, \`ThemeData.textTheme\`, \`ThemeExtension\`
+     tokens, spacing rhythm, radius, durations and easing. Define light and dark
+     themes from the same seed.
+   - Every consequential transition must be interruptible, must define rapid
+     repeated-input behaviour, and must preserve meaning under reduced motion.
+   - Provide loading, empty, error, offline, permission, disabled, pressed,
+     selected, focus, success, and reduced-motion behaviour where relevant.
+6. Validation and specialist review
+   - Inspect compact phone, large phone, phone landscape, tablet portrait and
+     tablet landscape frames in light and dark themes, plus desktop web when
+     targeting it. Use \`LayoutBuilder\`/\`MediaQuery\` breakpoints, never one
+     hard-coded phone size.
+   - Audit normal motion, reduced motion, rapid repeated input, dropped frames,
+     leaked controllers (\`AnimationController.dispose()\`, streams closed),
+     accessibility (semantics labels, 48dp targets, contrast >= 4.5:1), and
+     executable primary core flows declared in the motion specification.
+   - Run \`flutter analyze\` and sanity widget tests before finishing.
+${REVIEW_GATE}
+
+## Motion rules (Material timings)
+
+${MOTION_PURPOSE_RULE}
+- Press feedback 50-120ms; quick widget state changes 150-250ms; local
+  transitions 200-300ms; navigation 300-500ms; rare expressive completion
+  moments 400-700ms. Use one easing/fast curve family for the app.
+- Do not use uncontrolled infinite animation, queued press animations, implicit
+  animation that blocks the next action, or motion that restarts on unrelated
+  rebuilds.
+- TickerProviderStateMixin is per-State; cancel controllers on dispose. Keep
+  stable dimensions while loading and changing state.
+${REDUCED_MOTION_FALLBACK}
+
+## Anti-slop constraints (Flutter)
+
+- One clear primary action per screen (a prominent FilledButton, a FAB).
+${CORE_ANTI_SLOP}
+- Default to \`Card\`/\`ListTile\` only for real containment; do not wrap every
+  section in a card.
+- Do not use emoji as interface icons — use Material \`Icons\`.
+- Do not use unlabelled icon-only controls; every icon button needs a \`Tooltip\`
+  and a semantic label.
+- Maintain one navigation model (go_router or Navigator) and one coherent token
+  system; never mix navigation models or ad-hoc ThemeData overrides per screen.
+
+## Platform profiles (adaptive Flutter)
+
+- Phone: bottom NavigationBar (>= 2 destinations, safe-area aware via
+  \`MediaQuery.paddingOf(context)\`), single screen at a time, comfortable
+  \`ListView\` with lazy builders.
+- Tablet/desktop: widen content, use \`NavigationRail\`, \`Scaffold\` body
+  emerges into panes/grids (LayoutBuilder), never a stretched phone column.
+- Keep every screen reachable and back-able; \`PopScope\` on flows that should
+  intercept back; deep links via go_router \`extra\`/uri if the product needs them.
+- React to keyboard \`viewInsets\` (autofocus/scroll) and safe areas; adapt to
+  \`textScaler\` (\`MediaQuery.textScalerOf(context)\`) with \`textScaler\`
+  protector rules so large text does not clip.
+</caide-design-engine>
+`.trim();
 
 //#endregion
 //#region src/prompts/flutter_skill_pack.ts
@@ -3542,6 +3793,8 @@ You can suggest one of these commands by using the <caide-command> tag like this
 <caide-command type="refresh"></caide-command>
 
 If you output one of these commands, tell the user to look for the action button above the chat input.
+
+CRITICAL: The app preview is automatic. You do NOT need permissions to run it, and you should NEVER ask the user for permission to preview. After you write or modify code, the preview updates on its own. Do not say things like "I need permissions to run the preview" or "click Rebuild to see changes" unless there is an actual build error. Just write the code and let the system handle the preview.
 </app_commands>`;
 const FLUTTER_APP_COMMANDS_BLOCK = `<app_commands>
 Do *not* tell the user to run shell commands. Instead, they can do one of the following commands in the UI:
@@ -3556,6 +3809,8 @@ You can suggest one of these commands by using the <caide-command> tag like this
 <caide-command type="refresh"></caide-command>
 
 If you output one of these commands, tell the user to look for the action button above the chat input.
+
+CRITICAL: The app preview is automatic. You do NOT need permissions to run it, and you should NEVER ask the user for permission to preview. After you write or modify code, the preview updates on its own. Do not say things like "I need permissions to run the preview" or "click Rebuild to see changes" unless there is an actual build error. Just write the code and let the system handle the preview.
 </app_commands>`;
 const SUBAGENT_DELEGATION_GUIDANCE = `<subagent_delegation_guidance>
 - **Spawning Subagents for Broad/Heavy Tasks**: When a task is heavy, broad, touches many files, or contains independent sub-components (e.g., auditing API endpoints + UI layout + auth infrastructure, or refactoring multiple modules), spawn autonomous background subagents with \`spawn_subagent\`.
@@ -3642,12 +3897,14 @@ Here is what I built/modified:
 1. \`filename1\`: Brief description of what was done.
 2. \`filename2\`: Brief description of what was done.
 
+The app should now [brief description of current state]. Check the preview to verify.
+
 Next Steps for the [App Name]
 [Brief paragraph explaining what needs to be done next to integrate or use these changes]
 1. [Next step 1]
 2. [Next step 2]
 
-Would you like me to go ahead and implement this now?`);
+Always end with a concise non-technical summary of what was completed in this turn.`);
 	return `<development_workflow>\n${steps.map((s, i) => `${i + 1}. ${s}`).join("\n")}\n</development_workflow>`;
 }
 function proDevelopmentWorkflowBlock({ enableAppBlueprint, codeExplorerAvailable }) {
@@ -3778,20 +4035,25 @@ When you reach the Implement step and the implementation requires a server layer
 - For non-database server work (e.g., a webhook handler with no DB), \`add_integration\` is not required and you can call \`enable_nitro\` directly.
 </server_layer>`;
 const APP_BLUEPRINT_BLOCK = `<app_blueprint>
-When the user asks you to create a NEW app or project (not modify an existing one), you MUST present an app blueprint before starting any implementation. The app blueprint is a lightweight configuration step that lets the user review and customize key decisions.
+When the user asks you to create a NEW app or project (not modify an existing one), check specificity first:
+
+**Fast-path (skip questionnaire):** If the request is specific and concrete (e.g. "build a calculator, ios style", "build a todo app with dark theme"), generate the blueprint directly with \`write_app_blueprint\` WITHOUT calling \`planning_questionnaire\`. Use the user's explicit style/color/app-type to set design direction and primary color. This fast-path avoids blocking trivial builds.
+
+**Full flow (vague requests):** If the request is vague ("build an app for ...", "make something for ...") or has multiple interpretations, call \`planning_questionnaire\` first (1-3 quick questions about design preferences, colors, target audience — NOT technical questions), then create the blueprint with \`write_app_blueprint\`.
 
 **App Blueprint Flow:**
-1. **Clarify first** with \`planning_questionnaire\` (1-3 quick questions about design preferences, colors, target audience — NOT technical questions). You MUST use this tool before creating the app blueprint to ensure you capture the user's preferences accurately.
+1. **Clarify only when needed** (see above) with \`planning_questionnaire\`.
 2. **Create the app blueprint** with \`write_app_blueprint\`: generate a creative app name, determine design direction, pick a fitting primary color, AND include the visual assets the app needs (logo, photography, illustrations, icons, backgrounds) with detailed image prompts. Template and theme default to the user's settings — only set \`template_id\` / \`theme_id\` when the user explicitly named a specific stack or theme. The tool returns immediately and ends your turn — the user reviews the blueprint card and, when approved, the system sends you a follow-up message with the approved blueprint that you should then use to begin implementation.
 
-**Important:**
-- ALWAYS use \`planning_questionnaire\` BEFORE \`write_app_blueprint\` — this is required to gather the user's preferences.
+ **Important:**
+- For specific prompts, do NOT call \`planning_questionnaire\` — go straight to \`write_app_blueprint\`.
 - The app blueprint should be generated quickly — keep it lightweight.
-- Generate a creative, memorable app name based on the user's prompt and their questionnaire answers.
+- Generate a creative, memorable app name based on the user's prompt and their questionnaire answers (or prompt alone for fast-path).
 - Choose a primary color that fits the industry and design direction.
 - Design direction should be specific but concise (1-2 sentences).
 - Do NOT start writing code or creating files until the user approves the app blueprint — your turn will end automatically after calling \`write_app_blueprint\`.
 - When the next user message contains the approved blueprint (e.g. "The app blueprint has been approved..."), use all the information in it to guide your implementation.
+- CRITICAL: The approved blueprint is authoritative. You MUST use its appName, designDirection, primaryColor, templateId, themeId exactly as provided in the follow-up message. Do not invent alternative names, do not reuse your draft. The appName from the approved blueprint must appear verbatim in package.json / pubspec.yaml and in the UI title. If the user edited the blueprint, the edited values are the only correct ones.
 </app_blueprint>`;
 const IMAGE_GENERATION_BLOCK = `<image_generation_guidelines>
 When a user explicitly requests custom images, illustrations, or visual media for their app:
@@ -3918,7 +4180,7 @@ You are CAIDE Plan Mode, an AI planning assistant specialized in gathering requi
 </role>
 
 # Conversational Greetings & Intent
-If the user's message is a pure greeting (e.g., "hey", "hello", "hi", "good morning"), respond warmly and conversationally asking what Flutter app they would like to build. **DO NOT** use any tools (like \`list_files\` or \`planning_questionnaire\`) on pure greetings. Wait for them to state their intent.
+If the user's message is a pure greeting (e.g., "hey", "hello", "hi", "good morning"), briefly acknowledge them and ask what they would like to build. Be direct and professional. **DO NOT** use any tools (like \`list_files\` or \`planning_questionnaire\`) on pure greetings. Wait for them to state their intent.
 
 # Core Mission
 
@@ -4100,10 +4362,10 @@ function constructPlanModePrompt(aiRules, themePrompt, options) {
 const logger$32 = import_src.default.scope("system_prompt");
 const BUILD_SYSTEM_PREFIX = `
 <role>[[PRODUCT_ROLE]]</role>
-You make efficient and effective changes to codebases while following best practices for maintainability and readability. You take pride in keeping things simple and elegant. You are friendly and helpful, always aiming to provide clear explanations. </role>
+You make efficient and effective changes to codebases while following best practices for maintainability and readability. You take pride in keeping things simple and elegant. Be serious, professional, and direct in all responses. </role>
 
 <conversational_greetings>
-If the user's message is a pure greeting (e.g., "hey", "hello", "hi", "good morning"), respond warmly and conversationally asking what they would like to build. Wait for them to state their intent before proposing any code changes.
+If the user's message is a pure greeting (e.g., "hey", "hello", "hi", "good morning"), briefly acknowledge them and ask what they would like to build. Be direct and professional. Wait for them to state their intent before proposing any code changes.
 </conversational_greetings>
 
 # App Preview / Commands
@@ -4120,6 +4382,8 @@ You can suggest one of these commands by using the <caide-command> tag like this
 <caide-command type="refresh"></caide-command>
 
 If you output one of these commands, tell the user to look for the action button above the chat input.
+
+CRITICAL: The app preview is automatic. You do NOT need permissions to run it, and you should NEVER ask the user for permission to preview. After you write or modify code, the preview updates on its own. Do not say things like "I need permissions to run the preview" or "click Rebuild to see changes" unless there is an actual build error. Just write the code and let the system handle the preview.
 
 # Guidelines
 
@@ -6638,7 +6902,11 @@ Begin your security review.
 //#endregion
 //#region src/constants/settings_constants.ts
 const MAX_CHAT_TURNS_IN_CONTEXT = 3;
-const DEFAULT_MAX_TOOL_CALL_STEPS = 100;
+const DEFAULT_MAX_TOOL_CALL_STEPS = 40;
+const TRIVIAL_MAX_TOOL_CALL_STEPS = 15;
+const SINGLE_SCREEN_MAX_TOOL_CALL_STEPS = 30;
+const MULTI_SCREEN_MAX_TOOL_CALL_STEPS = 60;
+const MAX_TOOL_CALL_STEPS_CEILING = 100;
 
 //#endregion
 //#region src/ipc/utils/context_paths_utils.ts
@@ -7343,9 +7611,7 @@ async function performCompaction(event, chatId, appPath, caideRequestId, onSumma
 		const compactionMessageContent = `<caide-compaction title="Conversation compacted" state="finished">
 ${escapeXmlContent(summary)}
 </caide-compaction>
-
-If you need to retrieve earlier parts of the conversation history, you can read the backup file at: ${backupPath}
-Note: This file may be large. Read only the sections you need or use grep to search for specific content rather than reading the entire file.`;
+<!-- compaction-backup: ${backupPath} - for AI to retrieve earlier history if needed - not user visible -->`;
 		const latestUserMessage = [...chatMessages].reverse().find((m) => m.role === "user");
 		const compactionCreatedAt = options?.createdAtStrategy === "now" ? /* @__PURE__ */ new Date() : latestUserMessage ? /* @__PURE__ */ new Date(latestUserMessage.createdAt.getTime() - 1e3) : /* @__PURE__ */ new Date();
 		await db.insert(messages).values({
@@ -7770,7 +8036,18 @@ function isAttachmentAccessToolCall(toolName, input) {
 */
 async function handleLocalAgentStream(event, req, abortController, { placeholderMessageId, systemPrompt, caideRequestId, readOnly = false, planModeOnly = false, messageOverride, settingsOverride, freeModelMode, referencedApps = [], currentTurnHasOnDiskAttachment, suppressCompaction }) {
 	const settings = settingsOverride ?? readSettings();
-	const maxToolCallSteps = settings.maxToolCallSteps ?? DEFAULT_MAX_TOOL_CALL_STEPS;
+	const adaptiveMaxSteps = (() => {
+		if (settings.maxToolCallSteps !== void 0 && settings.maxToolCallSteps !== null) return settings.maxToolCallSteps;
+		const prompt = (req.prompt ?? "").toLowerCase();
+		if (!prompt) return DEFAULT_MAX_TOOL_CALL_STEPS;
+		const trivialRe = /\b(calculator|timer|counter|converter|stopwatch|todo\b.*single|single.*screen.*utility)\b/;
+		const multiRe = /\b(4\s*tabs?|multi.?screen|social.*app|marketplace|dashboard.*with.*\d+.*tabs|several.*screens|multiple.*flows)\b/;
+		if (trivialRe.test(prompt) && prompt.length < 120) return TRIVIAL_MAX_TOOL_CALL_STEPS;
+		if (multiRe.test(prompt)) return MULTI_SCREEN_MAX_TOOL_CALL_STEPS;
+		if (prompt.length < 200) return SINGLE_SCREEN_MAX_TOOL_CALL_STEPS;
+		return DEFAULT_MAX_TOOL_CALL_STEPS;
+	})();
+	const maxToolCallSteps = Math.min(adaptiveMaxSteps, MAX_TOOL_CALL_STEPS_CEILING);
 	let fullResponse = "";
 	let streamingPreview = "";
 	const lastSentRef = {
@@ -7797,7 +8074,7 @@ async function handleLocalAgentStream(event, req, abortController, { placeholder
 	};
 	const appendInlineCompactionToTurn = async (summary, backupPath) => {
 		const inlineCompaction = `<caide-compaction title="Conversation compacted" state="finished">\n${escapeXmlContent(summary && summary.trim().length > 0 ? summary : "Conversation compacted.")}\n</caide-compaction>`;
-		const backupPathNote = backupPath ? `\nIf you need to retrieve earlier parts of the conversation history, you can read the backup file at: ${backupPath}\nNote: This file may be large. Read only the sections you need or use grep to search for specific content rather than reading the entire file.` : "";
+		const backupPathNote = backupPath ? `\n<!-- compaction-backup: ${backupPath} - for AI internal use -->` : "";
 		const separator = fullResponse.length > 0 && !fullResponse.endsWith("\n") ? "\n" : "";
 		fullResponse = `${fullResponse}${separator}${inlineCompaction}${backupPathNote}\n`;
 		await updateResponseInDb(placeholderMessageId, fullResponse);
@@ -9766,6 +10043,7 @@ ${componentSnippet}
 					for (const file of files) if (selectedPaths.has(file.path)) file.focused = true;
 				}
 				const isLocalAgentMode = selectedChatMode === "local-agent";
+				const isAskMode = selectedChatMode === "ask";
 				const isPlanMode = selectedChatMode === "plan";
 				const willUseLocalAgentStream = isLocalAgentBackedMode(selectedChatMode);
 				let mentionedAppsCodebases = [];
@@ -10077,6 +10355,28 @@ This conversation includes one or more image attachments. When the user uploads 
 					});
 					return fullResponse;
 				};
+				if (isAskMode && !isSecurityReviewIntent) {
+					const readOnlySystemPrompt = constructSystemPrompt({
+						aiRules,
+						chatMode: "local-agent",
+						enableTurboEditsV2: false,
+						themePrompt,
+						freeModelMode,
+						frameworkType
+					});
+					await handleLocalAgentStream(event, req, abortController, {
+						placeholderMessageId: placeholderAssistantMessage.id,
+						systemPrompt: readOnlySystemPrompt,
+						caideRequestId: caideRequestId ?? "[no-request-id]",
+						readOnly: true,
+						messageOverride: isSummarizeIntent ? chatMessages : void 0,
+						settingsOverride: settings,
+						freeModelMode,
+						referencedApps: referencedAppsForAgent,
+						currentTurnHasOnDiskAttachment: false
+					});
+					return req.chatId;
+				}
 				if (isPlanMode && !isSecurityReviewIntent) {
 					const planModeSystemPrompt = constructSystemPrompt({
 						aiRules,
@@ -12911,7 +13211,7 @@ function findAvailablePort(minPort, maxPort) {
 			}
 			attempts++;
 			const port = Math.floor(Math.random() * (maxPort - minPort + 1)) + minPort;
-			const server = net.createServer();
+			const server = net$1.createServer();
 			server.once("error", (err) => {
 				if (err.code === "EADDRINUSE") {
 					console.log(`Port ${port} is in use, trying another...`);
@@ -12953,7 +13253,7 @@ init_electron_shim();
 const logger$7 = import_src.default.scope("mcp_handlers");
 async function isPortFreeOnBothLoopbacks(port) {
 	const probeOne = (host) => new Promise((resolve) => {
-		const s = net$1.createServer();
+		const s = net.createServer();
 		s.once("error", (err) => {
 			s.close(() => void 0);
 			resolve(err.code === "EADDRINUSE" ? "in_use" : "other");
@@ -13890,7 +14190,7 @@ function wakeGoalScheduler() {
 	tick();
 }
 async function handleCompletedRun(input) {
-	const { finishRun } = await import("./goal_store-BgeZ13wq.mjs").then((n) => n.p);
+	const { finishRun } = await import("./goal_store-DOHUn1CV.mjs").then((n) => n.p);
 	const run = finishRun(input);
 	const before = await getGoal(run.goalId);
 	if (before.status === "pausing") return finishPause(before.id);
@@ -15868,23 +16168,76 @@ function isNodeProject(appDir) {
 	return fs$1.existsSync(path.join(appDir, "package.json"));
 }
 async function ensureNodeDependenciesInstalled(appDir) {
-	const nodeModules = path.join(appDir, "node_modules");
-	if (fs$1.existsSync(nodeModules)) return;
+	const pkgPath = path.join(appDir, "package.json");
+	let pkg = {};
 	try {
-		logger.info(`preview: installing node dependencies for ${appDir}`);
+		pkg = JSON.parse(fs$1.readFileSync(pkgPath, "utf8"));
+	} catch {}
+	const isExpo = Boolean(pkg.dependencies?.expo ?? pkg.devDependencies?.expo);
+	const nodeModules = path.join(appDir, "node_modules");
+	const signal = getPackageManagerSignal(appDir);
+	let pnpmAvailable = false;
+	try {
+		pnpmAvailable = (await getPnpmMinimumReleaseAgeSupport()).available;
+	} catch {
+		pnpmAvailable = fs$1.existsSync(path.join(appDir, "pnpm-lock.yaml"));
+	}
+	const pm = choosePackageManagerFromSignal({
+		signal,
+		pnpmAvailable
+	});
+	const pmEnv = getPackageManagerCommandEnv();
+	if (!fs$1.existsSync(nodeModules)) try {
+		logger.info(`preview: installing node dependencies via ${pm} for ${appDir}`);
 		const result = await spawnStreaming({
-			command: process.platform === "win32" ? "npm.cmd" : "npm",
-			args: ["install", "--silent"],
+			command: pm === "pnpm" ? "pnpm" : process.platform === "win32" ? "npm.cmd" : "npm",
+			args: pm === "pnpm" ? ["install", "--silent"] : [
+				"install",
+				"--silent",
+				"--legacy-peer-deps"
+			],
 			cwd: appDir,
 			env: {
-				...process.env,
+				...pmEnv,
 				CI: "1"
 			},
-			timeoutMs: 180 * 1e3
+			timeoutMs: 90 * 1e3
 		});
-		if (result.code !== 0) logger.warn(`preview: npm install exited with code ${result.code} for ${appDir}`);
+		if (result.code !== 0) logger.warn(`preview: ${pm} install exited with code ${result.code} for ${appDir}`);
 	} catch (error) {
-		logger.warn(`preview: npm install failed for ${appDir}: ${error instanceof Error ? error.message : String(error)}`);
+		logger.warn(`preview: ${pm} install failed for ${appDir}: ${error instanceof Error ? error.message : String(error)}`);
+	}
+	if (isExpo) {
+		const hasReactDom = fs$1.existsSync(path.join(nodeModules, "react-dom"));
+		const hasRNWeb = fs$1.existsSync(path.join(nodeModules, "react-native-web"));
+		if (!hasReactDom || !hasRNWeb) try {
+			logger.info(`preview: expo web deps missing for ${appDir} — installing via ${pm}`);
+			const result = await spawnStreaming({
+				command: pm === "pnpm" ? "pnpm" : process.platform === "win32" ? "npm.cmd" : "npm",
+				args: pm === "pnpm" ? [
+					"add",
+					"react-dom@19.2.3",
+					"react-native-web@~0.21.1",
+					"--silent"
+				] : [
+					"install",
+					"--silent",
+					"--legacy-peer-deps",
+					"react-dom@19.2.3",
+					"react-native-web@~0.21.1"
+				],
+				cwd: appDir,
+				env: {
+					...pmEnv,
+					CI: "1"
+				},
+				timeoutMs: 90 * 1e3
+			});
+			if (result.code !== 0) logger.warn(`preview: ${pm} expo web deps exited ${result.code} for ${appDir}: ${result.stderr.slice(-600)}`);
+			else logger.info(`preview: installed expo web deps via ${pm} for ${appDir}`);
+		} catch (error) {
+			logger.warn(`preview: failed to install expo web deps for ${appDir}: ${error instanceof Error ? error.message : String(error)}`);
+		}
 	}
 }
 async function ensureFlutterWebSupport(appDir) {
@@ -15916,27 +16269,45 @@ function getNodePreviewLaunch(appDir, hostname, port) {
 	const isExpo = Boolean(packageJson.dependencies?.expo ?? packageJson.devDependencies?.expo);
 	const script = isExpo ? scripts.web ? "web" : scripts.start ? "start" : scripts.dev ? "dev" : null : scripts.dev ? "dev" : scripts.web ? "web" : scripts.start ? "start" : null;
 	if (!script) throw new CaideError("This project has no dev, web, or start preview script.", CaideErrorKind.Precondition);
+	if (isExpo) return {
+		script: "expo-start-direct",
+		args: [
+			"expo",
+			"start",
+			"--web",
+			"--port",
+			String(port),
+			"--host",
+			hostname
+		],
+		isExpo: true,
+		useDirectExpo: true
+	};
+	let args;
+	args = script === "dev" ? [
+		"--host",
+		hostname,
+		"--port",
+		String(port)
+	] : ["--port", String(port)];
 	return {
 		script,
-		args: isExpo ? [
-			"--web",
-			"--host",
-			hostname,
-			"--port",
-			String(port)
-		] : script === "dev" ? [
-			"--host",
-			hostname,
-			"--port",
-			String(port)
-		] : ["--port", String(port)],
+		args,
 		isExpo
 	};
 }
 function spawnNodePreview(appDir, entry, hostname) {
 	return new Promise((resolve, reject) => {
 		const port = entry.port;
-		const command = process.platform === "win32" ? "npm.cmd" : "npm";
+		const signal = getPackageManagerSignal(appDir);
+		const pm = choosePackageManagerFromSignal({
+			signal,
+			pnpmAvailable: signal.hasPnpmLockfile || signal.hasPnpmNodeModules || signal.packageManagerField?.startsWith("pnpm@") === true || true
+		});
+		const pmEnv = {
+			...getPackageManagerCommandEnv(),
+			BROWSER: "none"
+		};
 		let launch;
 		try {
 			launch = getNodePreviewLaunch(appDir, hostname, port);
@@ -15944,23 +16315,55 @@ function spawnNodePreview(appDir, entry, hostname) {
 			reject(error);
 			return;
 		}
-		const child = spawn(command, [
-			"run",
-			launch.script,
-			"--",
-			...launch.args
-		], {
+		let command;
+		let spawnArgs;
+		let spawnEnv = pmEnv;
+		if (launch.useDirectExpo) {
+			command = process.platform === "win32" ? "npx.cmd" : "npx";
+			spawnArgs = launch.args;
+		} else {
+			command = pm === "pnpm" ? "pnpm" : process.platform === "win32" ? "npm.cmd" : "npm";
+			spawnArgs = [
+				"run",
+				launch.script,
+				"--",
+				...launch.args
+			];
+		}
+		const child = spawn(command, spawnArgs, {
 			cwd: appDir,
 			stdio: [
 				"pipe",
 				"pipe",
 				"pipe"
 			],
-			env: {
-				...process.env,
-				BROWSER: "none"
-			}
+			env: spawnEnv
 		});
+		const autoInstalled = /* @__PURE__ */ new Set();
+		const tryAutoInstall = (message) => {
+			const match = message.match(/Failed to resolve import "([^"]+)"/) || message.match(/Cannot find module '([^']+)'/) || message.match(/Cannot find package '([^']+)'/);
+			if (!match) return;
+			const pkg = match[1] ?? "";
+			if (!pkg || pkg.startsWith(".") || pkg.startsWith("/")) return;
+			const base = pkg.startsWith("@") ? pkg.split("/").slice(0, 2).join("/") : pkg.split("/")[0] ?? "";
+			if (!base || autoInstalled.has(base)) return;
+			autoInstalled.add(base);
+			logger.info(`preview: auto-installing missing dep ${base} for ${appDir}`);
+			const installer = spawn(pm === "pnpm" ? "pnpm" : process.platform === "win32" ? "npm.cmd" : "npm", pm === "pnpm" ? ["add", base] : [
+				"install",
+				"--silent",
+				"--legacy-peer-deps",
+				base
+			], {
+				cwd: appDir,
+				shell: false,
+				env: pmEnv
+			});
+			installer.on("close", (code) => {
+				logger.info(`preview: auto-install ${base} exited ${code}`);
+			});
+			installer.on("error", () => {});
+		};
 		entry.child = child;
 		let settled = false;
 		const finish = (fn) => {
@@ -15973,7 +16376,7 @@ function spawnNodePreview(appDir, entry, hostname) {
 			if (fallbackTimer) return;
 			fallbackTimer = setTimeout(() => {
 				if (settled) return;
-				const socket = net$1.createConnection({
+				const socket = net.createConnection({
 					host: "127.0.0.1",
 					port
 				}, () => {
@@ -15988,43 +16391,20 @@ function spawnNodePreview(appDir, entry, hostname) {
 					socket.destroy();
 					fallbackTimer = null;
 					setTimeout(() => {
-						if (!settled) {
-							entry.url = `http://${hostname}:${port}`;
-							finish(() => {
-								entry.running = true;
-								resolve(entry.url);
-							});
-						}
-					}, 3e3);
+						if (!settled) scheduleFallback();
+					}, 800);
 				});
-				socket.setTimeout(1500, () => {
+				socket.setTimeout(800, () => {
 					socket.destroy();
+					fallbackTimer = null;
 				});
-			}, 2500);
+			}, 800);
 		};
 		const onData = (chunk) => {
 			const text = chunk.toString();
 			appendLogLines(entry.logs, text);
-			const extracted = extractPreviewUrl(text, port);
-			const viteReady = /local:\s*https?:\/\/|ready in \d+|vite.*ready|listening on/i.test(text);
-			if (extracted && viteReady) {
-				entry.url = extracted;
-				finish(() => {
-					entry.running = true;
-					if (fallbackTimer) clearTimeout(fallbackTimer);
-					resolve(extracted);
-				});
-				return;
-			}
-			if (extracted && /waiting on|web is waiting|expo/i.test(text)) {
-				entry.url = extracted;
-				finish(() => {
-					entry.running = true;
-					if (fallbackTimer) clearTimeout(fallbackTimer);
-					resolve(extracted);
-				});
-				return;
-			}
+			tryAutoInstall(text);
+			const extracted = extractPreviewUrl(text);
 			if (extracted) {
 				entry.url = extracted;
 				finish(() => {
@@ -16184,7 +16564,7 @@ const allocatedPreviewPorts = /* @__PURE__ */ new Set();
 /** Allocate a TCP port on 127.0.0.1 — preferred one, or an ephemeral one. Tracks allocatedPreviewPorts to avoid races. */
 async function pickFreePort(preferred) {
 	const tryListen = (port) => new Promise((resolve, reject) => {
-		const server = net$1.createServer();
+		const server = net.createServer();
 		server.unref();
 		server.once("error", () => {
 			if (port === 0) reject(new CaideError("could not allocate a free port for preview", CaideErrorKind.External));
@@ -16484,29 +16864,41 @@ async function startPreview(params) {
 			activePreviews.delete(parsed.appDir);
 		}
 		const hostname = parsed.hostname ?? DEFAULT_PREVIEW_HOSTNAME;
-		const port = await pickFreePort(parsed.port ?? DEFAULT_PREVIEW_PORT);
-		const entry = {
-			appDir: parsed.appDir,
-			child: null,
-			port,
-			url: "",
-			running: false,
-			logs: [],
-			device: "web-server",
-			deviceId: null
-		};
-		activePreviews.set(parsed.appDir, entry);
-		try {
-			await ensureNodeDependenciesInstalled(parsed.appDir);
-			return {
-				url: await spawnNodePreview(parsed.appDir, entry, hostname),
-				kind: "web"
+		const maxAttempts = 3;
+		let lastError = null;
+		for (let attempt = 0; attempt < maxAttempts; attempt++) {
+			const port = attempt === 0 ? await pickFreePort(parsed.port ?? DEFAULT_PREVIEW_PORT) : await pickFreePort(0);
+			const entry = {
+				appDir: parsed.appDir,
+				child: null,
+				port,
+				url: "",
+				running: false,
+				logs: [],
+				device: "web-server",
+				deviceId: null
 			};
-		} catch (error) {
-			activePreviews.delete(parsed.appDir);
-			await stopPreviewEntry(entry);
-			throw error;
+			activePreviews.set(parsed.appDir, entry);
+			try {
+				await ensureNodeDependenciesInstalled(parsed.appDir);
+				return {
+					url: await spawnNodePreview(parsed.appDir, entry, hostname),
+					kind: "web"
+				};
+			} catch (error) {
+				lastError = error;
+				activePreviews.delete(parsed.appDir);
+				await stopPreviewEntry(entry);
+				const msg = error instanceof Error ? error.message : String(error ?? "");
+				if ((msg.toLowerCase().includes("port 8080 is running") || msg.toLowerCase().includes("is running in another window") || isPortInUseError(error) || entry.logs.some((l) => l.toLowerCase().includes("port 8080 is running"))) && attempt < maxAttempts - 1) {
+					logger.warn(`preview: ${parsed.appDir} port ${port} conflict — retrying with ephemeral port (attempt ${attempt + 1}/${maxAttempts})`);
+					await new Promise((r) => setTimeout(r, 400 + attempt * 300));
+					continue;
+				}
+				throw error;
+			}
 		}
+		throw lastError ?? new CaideError("preview start failed after retries", CaideErrorKind.External);
 	}
 	assertFlutterApp(parsed.appDir);
 	const existing = activePreviews.get(parsed.appDir);
