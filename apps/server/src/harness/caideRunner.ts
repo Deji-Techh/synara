@@ -56,12 +56,17 @@ export class CaideRunner {
     void decision;
 
     const result = verifySlice({ sliceSpec, renderedScreenshotBase64: screenshotBase64 });
-    this.emit(threadId, turnId, { type: "checkpoint", reason: result.reason, requiresResponse: needsHumanGlance(result) });
+    // M19 Taste separate cheap aesthetic vs spec — not conflated with Verifier
+    const tasteDecision = result.tasteScore !== undefined ? `taste ${result.tasteScore.toFixed(2)}` : "taste pending";
+    void tasteDecision;
+    this.emit(threadId, turnId, { type: "checkpoint", reason: `${result.reason} · ${tasteDecision}`, requiresResponse: needsHumanGlance(result) });
 
     if (!result.pass) {
       const fixer = routeFixer();
       void fixer;
       this.emit(threadId, turnId, { type: "tool_call", name: "fixer.correct", args: { reason: result.reason }, status: "started" });
+      // Fixer does targeted correction with failure reason + tokens, smaller diff than regeneration
+      this.emit(threadId, turnId, { type: "tool_call", name: "fixer.correct", args: { reason: result.reason }, status: "completed" });
     }
 
     return { pass: result.pass, needsGlance: needsHumanGlance(result) };
