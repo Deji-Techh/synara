@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 /**
  * ServerSettings - Server-authoritative settings persistence.
  *

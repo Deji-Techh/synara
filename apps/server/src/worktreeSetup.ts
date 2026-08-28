@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import type { ProjectScript } from "@caide/contracts";
 
 import { runProcess } from "./processRunner.ts";

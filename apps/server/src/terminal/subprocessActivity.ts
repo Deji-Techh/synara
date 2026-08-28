@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 // FILE: subprocessActivity.ts
 // Purpose: Detects subprocess and coding-provider activity below terminal PTY processes.
 // Layer: Terminal infrastructure

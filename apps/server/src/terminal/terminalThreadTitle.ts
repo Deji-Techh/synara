@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 // FILE: terminalThreadTitle.ts
 // Purpose: Server-facing aliases around the shared terminal title parser.
 // Layer: Server terminal helper

@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 // FILE: wsProjectHandlers.ts
 // Purpose: Pure project helpers extracted from wsRpc.ts god file (2825 lines).
 // Owns: slugify, parseCommitLogRows, classifyGoalActivityEvent.

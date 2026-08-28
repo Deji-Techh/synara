@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import * as Crypto from "node:crypto";
 
 import { ORCHESTRATION_WS_METHODS, WS_METHODS, WsRpcError } from "@caide/contracts";

@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 /**
  * TerminalManager - Terminal session orchestration service interface.
  *

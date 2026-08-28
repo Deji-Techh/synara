@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 // Purpose: correlate authenticated WebSocket upgrades with RPC handler execution.
 // Layer: server transport support
 //

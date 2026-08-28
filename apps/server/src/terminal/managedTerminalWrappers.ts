@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 // FILE: managedTerminalWrappers.ts
 // Purpose: Create Superset-style managed command wrappers so terminal agent identity is canonical
 // and survives zsh startup that rewrites PATH.

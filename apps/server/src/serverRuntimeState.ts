@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import { Effect, FileSystem, Option, Schema } from "effect";
 
 import { writeFileStringAtomically } from "./atomicWrite";

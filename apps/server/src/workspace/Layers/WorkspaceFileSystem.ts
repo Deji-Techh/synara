@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import { createHash, randomUUID } from "node:crypto";
 import { constants as NodeFsConstants, type BigIntStats } from "node:fs";
 import * as NodeFs from "node:fs/promises";

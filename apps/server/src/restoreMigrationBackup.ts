@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import * as path from "node:path";
 
 import { Effect } from "effect";

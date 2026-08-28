@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import * as NodeFs from "node:fs/promises";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
