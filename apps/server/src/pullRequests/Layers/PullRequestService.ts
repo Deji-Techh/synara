@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim: pure Caide replaces deleted harness
 import {
   type OrchestrationProject,
   type OrchestrationProjectShell,

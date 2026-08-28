@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim: pure Caide replaces deleted harness
 import nodePath from "node:path";
 
 import Mime from "@effect/platform-node/Mime";

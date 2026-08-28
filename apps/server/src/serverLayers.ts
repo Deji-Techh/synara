@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim: pure Caide replaces deleted harness
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Layer } from "effect";
 

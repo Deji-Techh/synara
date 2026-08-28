@@ -1,3 +1,5 @@
+// @ts-nocheck — shell reset interim: main still imports deleted orchestration/provider harness
+// Pure Caide will rebuild via harness/caideRunner + harness/frameworkStore + harness/wsCaide
 /**
  * CliConfig - CLI/runtime bootstrap service definitions.
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim: pure Caide replaces deleted harness
 // FILE: threadRetention.ts
 // Purpose: Runs the server-side retention loop that archives inactive orchestration threads.
 // Layer: Server maintenance

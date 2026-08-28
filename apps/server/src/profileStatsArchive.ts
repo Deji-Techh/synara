@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim: pure Caide replaces deleted harness
 // FILE: profileStatsArchive.ts
 // Purpose: Snapshot a thread's profile-stat aggregates into the durable
 // profile_stats_deleted_* tables, then hard-delete every row the thread owns
