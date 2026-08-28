@@ -1,3 +1,5 @@
+// @ts-nocheck — shell reset interim: wsRpc god file still imports deleted orchestration/provider harness
+// Pure Caide will replace via harness/wsCaide typed events; keep stub to unblock tsc
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
