@@ -2,7 +2,7 @@
 
 ## Permanent Session Rules (user requirements — do not forget)
 
-1. **After EVERY compaction, re-read this AGENTS.md and `plans/001-dyad-backend-rebuild.md`** (the ACTIVE plan) before continuing work. Do not assume context survived.
+1. **After EVERY compaction, re-read this AGENTS.md and `plans/002-shell-rebuild.md`** (the ACTIVE plan — `001` is archived) before continuing work. Do not assume context survived.
 2. **Commit after EVERY major change.** Major change = any milestone step, any new tool/feature, any significant refactor, any plan/AGENTS.md update. Commit even if the change is unpolished. Never leave the working tree dirty across sessions for structural work.
 3. The product mission (see next section) overrides any codebase-local convention that conflicts with it.
 4. **New product = "new caide".** The end state is Caide's current UI/UX backed by the complete dyad×caide runtime, with immutable Blank, React Native, Flutter, and Website project frameworks and reliable chat, tools, modes, streaming, previews, and builds.
