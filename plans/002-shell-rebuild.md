@@ -47,7 +47,7 @@ Schema stays `packages/contracts/src/preview.ts:1-289` (`PREVIEW_WS_METHODS star
 Current `BUILT_IN_COMPOSER_SLASH_COMMANDS:33` in `packages/shared/src/composerSlashCommands.ts:1-33` + `apps/web/src/composerSlashCommands.ts:134-336`:
 `init, spawn, btw, goal, schedule, browser, grill-me, teamwork-preview, learn, doctor, test, analyze, build, preview, theme, clear, compact, model, plan, debug, default, review, fork, side, status, subagents, fast, export, feedback, automation, goals, commands, help`
 
-For perfect milestones (`M1-M27`) only 13 survive attached to real harness mechanics. Rest are legacy dyad/Flutter/engine or never-functional filler.
+For perfect milestones (`M1-M27`) only 13 survive attached to real harness mechanics. Rest are legacy Flutter/engine or never-functional filler — no dyad.
 
 **Keep (13) — wired to real state:**
 - `preview` — toggle floating stage (`§2`)
@@ -112,10 +112,10 @@ apps/web (dumb shell)
 ## 7. Import rules
 
 1. Copy coherent subsystems (tests included) not isolated files.
-2. Preserve dyad lifecycle/DB semantics where reused, but new state starts clean — no broad compat shims.
+2. New runtime is pure Caide harness — no dyad lifecycle/DB reuse, state starts clean — no broad compat shims.
 3. Replace Electron IPC edges with tiny in-process host `{invoke,notify,cancel,settings/secrets,paths}`.
-4. No `Effect ⋈ Promise` mixing inside imported runtime — boundary conversion at WS edge only.
-5. Never modify the source dyad checkout.
+4. No `Effect ⋈ Promise` mixing inside harness — boundary conversion at WS edge only.
+5. There is no dyad source checkout — this is green-field Caide harness.
 6. Do not delete old runtime until replacement passes `§10 Acceptance`.
 7. Slash list is single source of truth in `packages/shared/composerSlashCommands.ts` — web must not hardcode a parallel list.
 
@@ -140,13 +140,13 @@ apps/web (dumb shell)
 - [ ] Component library `buttons,inputs,cards,bottomNav(icon+label+FAB device frame),empty 2 variants,search pill, top brand+badge` (§3 of `design.md`)
 
 ### M4 State machine
-- [ ] Single `dyadRunner` with `created→running→waiting→terminal{completed,failed,cancelled,aborted}` exactly one settlement; reconcile stale once
+- [ ] Single `caideRunner` with `created→running→waiting→terminal{completed,failed,cancelled,aborted}` exactly one settlement; reconcile stale once
 
 ### M5 Prompts
 - [ ] `L0+L1` cached, `L2(stage)+L3(skill)` dynamic; describe `L3` retrieval + `web3/skill packs` under registry
 
 ### M6 Tools
-- [ ] 86 dyad tools + `planning_questionnaire` + `explore_code_subagent` with metadata `readOnly` + `failure modes` in description; double validation; pre-digested results
+- [ ] 86 Caide tools (inspired by dyad×caide set, now rebuilt as Caide-native) + `planning_questionnaire` + `explore_code_subagent` with metadata `readOnly` + `failure modes` in description; double validation; pre-digested results
 
 ### M7 Roles
 - [ ] `Router(cheap/fast) → Planner → Builder(per-slice fresh ctx) → Verifier(fresh ctx+render never sees builder trace) → Fixer(targeted) → distinct harness voice`
