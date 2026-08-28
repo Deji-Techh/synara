@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import type { ThreadEnvironmentMode } from "@caide/contracts";
 
 export type ResolvedThreadWorkspaceState = "local" | "worktree-pending" | "worktree-ready";

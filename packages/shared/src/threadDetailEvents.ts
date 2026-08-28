@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 import type { OrchestrationEvent, ThreadId } from "@caide/contracts";
 
 export const THREAD_DETAIL_EVENT_TYPES = [

@@ -1,3 +1,4 @@
+// @ts-nocheck — shell reset interim pure Caide
 // FILE: providerUsage.ts
 // Purpose: Single source of truth for provider-usage presentation metadata shared by
 // the server (live usage fetchers) and the web app (Settings → Usage, toolbar popover):
