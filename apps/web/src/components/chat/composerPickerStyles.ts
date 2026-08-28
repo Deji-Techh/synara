@@ -119,14 +119,13 @@ export const COMPOSER_COLUMN_FRAME_CLASS_NAME = CHAT_COLUMN_FRAME_CLASS_NAME;
  */
 export const COMPOSER_STACKED_HEADER_FRAME_CLASS_NAME = "mx-auto -mb-px w-11/12 min-w-0";
 
-/** Shell around the composer surface. Deliberately has NO background: the composer
- *  floats over the scrolling transcript (see `composerOverlay.ts`) and its frosted
- *  material is meant to reveal and blur the content passing behind it — an opaque
- *  backing here would be the only thing its `backdrop-filter` ever sampled.
+/** Shell around the composer surface — floating pill container.
  *  `relative z-[1]` keeps the full input outline above the inset stacked rail
- *  (`-mb-px`), so the top border is never covered by live-changes / task / queue chrome. */
+ *  (`-mb-px`). Adds subtle outer padding so the pill breathes from screen edges,
+ *  matching `design.md:6` pill-floating depth. Frosted material reveals transcript
+ *  behind it via backdrop-filter — theme-aware through --composer-surface. */
 export const COMPOSER_INPUT_SHELL_CLASS_NAME =
-  "group relative z-[1] chat-composer-shell transition-colors duration-200";
+  "group relative z-[1] chat-composer-shell mx-1 sm:mx-0 transition-all duration-200";
 
 /** Defined composer border: the heaviest border token nudged a bit darker with foreground. */
 export const COMPOSER_SURFACE_BORDER_CLASS_NAME =
@@ -143,10 +142,11 @@ export const COMPOSER_STACKED_SURFACE_BORDER_CLASS_NAME = [
  *  ring (box-shadow). Dark mode drops the border and leans on the shadow for separation. */
 export const RAISED_SURFACE_CHROME_CLASS_NAME = `border ${COMPOSER_SURFACE_BORDER_CLASS_NAME} ${COMPOSER_SURFACE_SHADOW_CLASS_NAME} dark:border-0`;
 
-/** Composer input shell. Like RAISED_SURFACE_CHROME but keeps a visible border in
- *  dark mode using the same `border-border` token as the Environment panel, instead
- *  of dropping to shadow-only separation. */
-export const COMPOSER_INPUT_SURFACE_CLASS_NAME = `chat-composer-surface border ${COMPOSER_SURFACE_BORDER_CLASS_NAME} dark:border-border ${COMPOSER_SURFACE_SHADOW_CLASS_NAME} transition-colors duration-200`;
+/** Composer input shell — pill/floating aesthetic, theme-aware.
+ *  Uses theme-derived CSS variables so theme changer (light/dark/system + contrast + accent)
+ *  flows through without hard-coded hex. Frosted glass + soft dispersed shadow + squircle
+ *  radius reads as layered over transcript. Focus state uses accent-tinted border. */
+export const COMPOSER_INPUT_SURFACE_CLASS_NAME = `chat-composer-surface rounded-[1.35rem] border ${COMPOSER_SURFACE_BORDER_CLASS_NAME} dark:border-border ${COMPOSER_SURFACE_SHADOW_CLASS_NAME} bg-[var(--composer-surface)] backdrop-blur-xl backdrop-saturate-150 shadow-[0_8px_32px_-12px_color-mix(in_srgb,var(--foreground)_14%,transparent),0_1px_4px_-1px_color-mix(in_srgb,var(--foreground)_8%,transparent)] dark:shadow-[0_12px_40px_-14px_rgba(0,0,0,0.45),0_1px_6px_-1px_rgba(0,0,0,0.3)] transition-all duration-200 hover:shadow-[0_10px_36px_-12px_color-mix(in_srgb,var(--foreground)_16%,transparent),0_2px_8px_-2px_color-mix(in_srgb,var(--foreground)_10%,transparent)] focus-within:border-[color-mix(in_srgb,var(--color-text-accent)_28%,var(--border))] focus-within:shadow-[0_10px_36px_-12px_color-mix(in_srgb,var(--color-text-accent)_18%,transparent),0_0_0_3px_color-mix(in_srgb,var(--color-text-accent)_10%,transparent)]`;
 
 /** Shadcn default-translucent shell for floating menus, pickers, and popovers. */
 export const APP_TRANSLUCENT_POPUP_SURFACE_BASE_CLASS_NAME =
@@ -236,15 +236,17 @@ export const RUNTIME_FULL_ACCESS_ACCENT_CLASS_NAME =
 export const RUNTIME_AUTO_ACCENT_CLASS_NAME = "text-[var(--color-text-accent)] hover:opacity-85";
 export const RUNTIME_AUTO_ICON_ACCENT_CLASS_NAME = "text-[var(--color-text-accent)]";
 
-/** Minimum composer editor height — two lines at the element's line-height.
- *  `leading-relaxed` (1.625) keeps the input in step with the transcript/bubble leading. */
-export const COMPOSER_EDITOR_LINE_HEIGHT_CLASS_NAME = "leading-relaxed";
-export const COMPOSER_EDITOR_TEXT_CLASS_NAME = "text-[length:var(--app-font-size-chat,12px)]";
+/** Composer editor typography — slightly airier for pill UX.
+ *  `leading-relaxed` (1.625) keeps the input in step with transcript/bubble leading.
+ *  Bump to 13px base for readability in the larger pill, still scales via --app-font-size-chat. */
+export const COMPOSER_EDITOR_LINE_HEIGHT_CLASS_NAME = "leading-[1.65]";
+export const COMPOSER_EDITOR_TEXT_CLASS_NAME = "text-[length:var(--app-font-size-chat,13px)] tracking-[-0.01em]";
 /** Font, size, and leading shared by the composer editor and its placeholder so the
  *  placeholder always aligns with typed text. Keep both surfaces on this one token. */
 export const COMPOSER_EDITOR_TYPOGRAPHY_CLASS_NAME = `font-system-ui ${COMPOSER_EDITOR_TEXT_CLASS_NAME} ${COMPOSER_EDITOR_LINE_HEIGHT_CLASS_NAME}`;
-/** Muted empty-state copy for the composer prompt editor. */
-export const COMPOSER_PLACEHOLDER_TEXT_CLASS_NAME = "text-muted-foreground/40";
+/** Muted placeholder — contextual per design.md:7, not generic.
+ *  Slightly warmer muted with accent hint when focused, theme-aware. */
+export const COMPOSER_PLACEHOLDER_TEXT_CLASS_NAME = "text-muted-foreground/45 placeholder:text-muted-foreground/45 focus-within:placeholder:text-[color-mix(in_srgb,var(--muted-foreground)_60%,var(--color-text-accent)_12%)]";
 export const COMPOSER_EDITOR_MIN_HEIGHT_CLASS_NAME =
   "min-h-[var(--app-density-composer-editor-min-height,2lh)]";
 /** Lexical wraps lines in `<p>` nodes; reset default margins so text sits flush above the footer. */

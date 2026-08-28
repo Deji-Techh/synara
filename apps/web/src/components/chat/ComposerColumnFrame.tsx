@@ -37,14 +37,14 @@ interface ComposerColumnFrameProps {
   className?: string;
 }
 
-/** Centers the composer column at the shared chat max width. */
+/** Centers the composer column at the shared chat max width — now with floating pill breathing room. */
 export const ComposerColumnFrame = function ComposerColumnFrame({
   children,
   className,
 }: ComposerColumnFrameProps) {
   return (
     <ComposerColumnFrameContext.Provider value={true}>
-      <div className={cn(COMPOSER_COLUMN_FRAME_CLASS_NAME, className)}>{children}</div>
+      <div className={cn(COMPOSER_COLUMN_FRAME_CLASS_NAME, "px-1 sm:px-0 pb-2", className)}>{children}</div>
     </ComposerColumnFrameContext.Provider>
   );
 };

@@ -364,16 +364,27 @@ function Sidebar({
           data-slot="sidebar-container"
           {...props}
         >
-          {/* The inner surface is the safe place for visual skinning. The outer shell owns
-              fixed positioning, width transitions, and the resize rail hit area. */}
+          {/* Inner surface — theme-aware aesthetics: frosted when translucent+macOS, otherwise opaque card.
+              Uses --app-sidebar-surface + --app-sidebar-backdrop-filter from theme.logic so light/dark/system + contrast flow. */}
           <div
             className={cn(
-              "relative z-0 flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow-sm/5",
-              !transparentSurface && "bg-sidebar",
+              "relative z-0 flex h-full w-full flex-col overflow-hidden backdrop-saturate-150 transition-colors duration-200",
+              "group-data-[variant=floating]:rounded-[1.1rem] group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow-[0_8px_24px_-12px_color-mix(in_srgb,var(--foreground)_12%,transparent)]",
+              "supports-[backdrop-filter:blur(0)]:backdrop-blur-xl",
+              !transparentSurface && "bg-sidebar app-sidebar-surface",
+              "dark:shadow-[0_8px_32px_-16px_rgba(0,0,0,0.5)]",
               innerClassName,
             )}
             data-sidebar="sidebar"
             data-slot="sidebar-inner"
+            style={
+              {
+                background: "var(--app-sidebar-surface, var(--sidebar))",
+                backdropFilter: "var(--app-sidebar-backdrop-filter, none)",
+                WebkitBackdropFilter: "var(--app-sidebar-backdrop-filter, none)",
+                boxShadow: "var(--app-sidebar-shadow, none)",
+              } as React.CSSProperties
+            }
           >
             {children}
           </div>
@@ -762,7 +773,10 @@ function SidebarInput({ className, ...props }: React.ComponentProps<typeof Input
 function SidebarHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("flex flex-col gap-2 p-2", className)}
+      className={cn(
+        "flex flex-col gap-2 p-2.5 pb-3 border-b border-[color-mix(in_srgb,var(--sidebar-border)_70%,transparent)] bg-[color-mix(in_srgb,var(--sidebar)_96%,var(--color-text-accent)_2%)] backdrop-blur-[2px] transition-colors",
+        className,
+      )}
       data-sidebar="header"
       data-slot="sidebar-header"
       {...props}
@@ -797,7 +811,7 @@ function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
     <ScrollArea hideScrollbars scrollFade className="h-auto min-h-0 flex-1">
       <div
         className={cn(
-          "flex w-full min-w-0 flex-col gap-2 group-data-[collapsible=icon]:overflow-hidden",
+          "flex w-full min-w-0 flex-col gap-3 px-1 py-1 group-data-[collapsible=icon]:overflow-hidden",
           className,
         )}
         data-sidebar="content"
@@ -822,7 +836,7 @@ function SidebarGroup({ className, ...props }: React.ComponentProps<"div">) {
 function SidebarGroupLabel({ className, render, ...props }: useRender.ComponentProps<"div">) {
   const defaultProps = {
     className: cn(
-      "flex h-8 shrink-0 items-center rounded-lg px-2 font-medium text-sidebar-foreground text-xs outline-hidden ring-ring/60 transition-[margin,opacity] duration-200 ease-linear focus-visible:ring-1 [&>svg]:size-4 [&>svg]:shrink-0",
+      "flex h-7 shrink-0 items-center rounded-full px-2.5 font-semibold tracking-[0.04em] text-[10px] uppercase text-sidebar-foreground/55 outline-hidden ring-ring/60 transition-[margin,opacity] duration-200 ease-linear focus-visible:ring-1 [&>svg]:size-3.5 [&>svg]:shrink-0 [&>svg]:opacity-50",
       "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
       className,
     ),
@@ -891,7 +905,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
 }
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full cursor-pointer items-center gap-2 overflow-hidden rounded-xl p-2 text-left text-sm outline-hidden ring-ring/60 transition-[width,height,padding] hover:bg-[var(--sidebar-accent)] focus-visible:ring-1 active:bg-[var(--sidebar-accent-active)] active:text-[var(--sidebar-accent-foreground)] disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pe-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-[var(--sidebar-accent-active)] data-[active=true]:text-[var(--sidebar-accent-foreground)] data-[state=open]:hover:bg-[var(--sidebar-accent)] group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg:not([class*='size-'])]:size-4 [&>svg]:shrink-0",
+  "peer/menu-button flex w-full cursor-pointer items-center gap-2 overflow-hidden rounded-[1rem] p-2.5 text-left text-sm outline-hidden ring-ring/60 transition-all duration-200 ease-out hover:bg-[color-mix(in_srgb,var(--sidebar-accent)_72%,transparent)] hover:shadow-[0_1px_6px_-3px_color-mix(in_srgb,var(--foreground)_10%,transparent)] focus-visible:ring-1 focus-visible:ring-[color-mix(in_srgb,var(--color-text-accent)_32%,transparent)] active:bg-[var(--sidebar-accent-active)] active:text-[var(--sidebar-accent-foreground)] disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pe-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-[var(--sidebar-accent-active)] data-[active=true]:text-[var(--sidebar-accent-foreground)] data-[active=true]:shadow-[0_1px_8px_-4px_color-mix(in_srgb,var(--color-text-accent)_22%,transparent)] data-[state=open]:hover:bg-[var(--sidebar-accent)] group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg:not([class*='size-'])]:size-4 [&>svg]:shrink-0",
   {
     defaultVariants: {
       size: "default",
