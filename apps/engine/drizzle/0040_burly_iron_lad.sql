@@ -1,1 +1,0 @@
-ALTER TABLE `mcp_servers` ADD `bearer_token` text;
