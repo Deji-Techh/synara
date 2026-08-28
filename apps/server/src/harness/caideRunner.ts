@@ -6,6 +6,7 @@ import { composePrompt, type AgentRole } from "./layers";
 import { route, routeVerifier, routeFixer } from "./router";
 import { verifySlice, needsHumanGlance } from "./verifier";
 import type { StreamEvent } from "./stream";
+import { CAIDE_TOOLS, canRunToolInMode, isReadOnlyTool } from "./tools";
 
 export interface CaideRunnerEvent {
   readonly threadId: string;
@@ -36,11 +37,19 @@ export class CaideRunner {
     void prompt;
   }
 
-  // Called per slice in vertical loop — Builder writes, then visual verification → Verifier
-  async runSlice(threadId: string, turnId: string, sliceSpec: string, screenshotBase64: string | null): Promise<{ pass: boolean; needsGlance: boolean }> {
-    this.emit(threadId, turnId, { type: "tool_call", name: "builder.write", args: { sliceSpec }, status: "started" });
-    // Builder would write files here via tools, then screenshot
-    this.emit(threadId, turnId, { type: "tool_call", name: "builder.write", args: { sliceSpec }, status: "completed" });
+  // Called per slice — vertical loop: Builder writes via tools → screenshot → Verifier fresh ctx (M11)
+  async runSlice(threadId: string, turnId: string, sliceSpec: string, screenshotBase64: string | null, mode: "plan" | "default" = "default"): Promise<{ pass: boolean; needsGlance: boolean }> {
+    const tool = "write";
+    if (!canRunToolInMode(tool, mode)) {
+      this.emit(threadId, turnId, { type: "tool_call", name: tool, args: { sliceSpec, error: `tool ${tool} not allowed in ${mode} mode` }, status: "failed" });
+      return { pass: false, needsGlance: true };
+    }
+    this.emit(threadId, turnId, { type: "tool_call", name: tool, args: { sliceSpec }, status: "started" });
+    // Real Builder: validates schema + stage/permission, then executes; pre-digested errors on fail
+    // For now, tool execution is stubbed as success — file ops will be wired to trusted workspace via frameworkStore
+    const isReadOnly = isReadOnlyTool(tool);
+    void isReadOnly;
+    this.emit(threadId, turnId, { type: "tool_call", name: tool, args: { sliceSpec }, status: "completed" });
     this.emit(threadId, turnId, { type: "artifact_updated", path: `slice:${sliceSpec.slice(0, 40)}` });
 
     const decision = route("screen", { complexity: "medium" });
