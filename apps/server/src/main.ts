@@ -1,589 +1,82 @@
-// @ts-nocheck — shell reset interim: main still imports deleted orchestration/provider harness
-// Pure Caide will rebuild via harness/caideRunner + harness/frameworkStore + harness/wsCaide
-/**
- * CliConfig - CLI/runtime bootstrap service definitions.
- *
- * Defines startup-only service contracts used while resolving process config
- * and constructing server runtime layers.
- *
- * @module CliConfig
- */
-import OS from "node:os";
-import { Config, Data, Effect, FileSystem, Layer, Option, Path, Schema, ServiceMap } from "effect";
-import { Command, Flag } from "effect/unstable/cli";
-import { NetService } from "@caide/shared/Net";
-import {
-  optionalBooleanEnvironmentConfig,
-  optionalBooleanFlag,
-  resolveBooleanConfig,
-  type BooleanFlagInput,
-} from "@caide/shared/cli";
-import {
-  DEFAULT_PORT,
-  deriveServerPaths,
-  normalizeHttpsPublicOrigin,
-  preparePrivateServerPaths,
-  remoteAccessPolicyError,
-  resolveCanonicalWorkspaceRoots,
-  resolveStaticDir,
-  ServerConfig,
-  type RuntimeMode,
-  type ServerConfigShape,
-} from "./config";
-import { fixPath, resolveBaseDir } from "./os-jank";
-import { Open } from "./open";
-import { ServerAuth } from "./auth/Services/ServerAuth";
-import * as SqlitePersistence from "./persistence/Layers/Sqlite";
-import { ProviderRuntimeEventRepositoryLive } from "./persistence/Layers/ProviderRuntimeEvents";
-import { makeServerApplicationLayers } from "./serverLayers";
-import { startServerMemoryDiagnostics } from "./memoryDiagnostics";
-import { startClaudeCredentialKeepalive } from "./provider/claudeCredentialKeepalive";
-import { ProjectionSnapshotQuery } from "./orchestration/Services/ProjectionSnapshotQuery";
-import { ProviderSessionReaperLive } from "./provider/Layers/ProviderSessionReaper";
-import { ProviderRuntimeReconcilerLive } from "./provider/Layers/ProviderRuntimeReconciler";
-import { Server } from "./effectServer";
-import { ServerLoggerLive } from "./serverLogger";
-import { ServerSettingsService } from "./serverSettings";
-import { formatHostForUrl, isLoopbackHost, isWildcardHost } from "./startupAccess";
-import { OrchestrationEngineService } from "./orchestration/Services/OrchestrationEngine";
-import { startThreadRetentionJob } from "./threadRetention";
-import {
-  pairExternalMcpClient,
-  resolveExternalMcpBaseDir,
-  serveExternalMcpStdio,
-} from "./externalMcp/bridge";
-import { externalMcpLauncher, externalMcpShellCommand } from "./externalMcp/launcher";
+// apps/server/src/main.ts — Pure Caide server (no dyad, no harness engine)
+// Replaces 589-line Effect CLI that imported deleted persistence/orchestration/provider modules
+// Routes: GET /health, POST /api/harness/stream (SSE), POST /api/harness/verify (JSON)
 
-export class StartupError extends Data.TaggedError("StartupError")<{
-  readonly message: string;
-  readonly cause?: unknown;
-}> {}
+import { getCaideRunner } from "./harness/wsCaide";
+import { handleVerifySlice } from "./harness/wsCaide";
 
-const DESKTOP_SHUTDOWN_TOKEN_ENV_KEY = "CAIDE_DESKTOP_SHUTDOWN_TOKEN";
+const PORT = parseInt(process.env.CAIDE_PORT ?? "58080", 10);
+const HOST = process.env.CAIDE_HOST ?? "127.0.0.1";
 
-function consumeDesktopShutdownTokenFromProcessEnvironment(): string | undefined {
-  const matchingKeys =
-    process.platform === "win32"
-      ? Object.keys(process.env).filter(
-          (key) => key.toUpperCase() === DESKTOP_SHUTDOWN_TOKEN_ENV_KEY,
-        )
-      : [DESKTOP_SHUTDOWN_TOKEN_ENV_KEY];
-  let token: string | undefined;
+async function handleStream(req: Request): Promise<Response> {
+  const body = await req.json().catch(() => ({})) as { threadId?: string; turnId?: string; prompt?: string; model?: string; baseUrl?: string; apiKey?: string };
+  const threadId = body.threadId ?? `thread-${Date.now()}`;
+  const turnId = body.turnId ?? `turn-${Date.now()}`;
+  const model = body.model ?? "deepseek-v4-flash";
+  const prompt = body.prompt ?? "hey";
+  const baseUrl = body.baseUrl ?? process.env.OPENCODE_ZEN_URL ?? "https://opencode.ai/zen/v1";
+  const apiKey = body.apiKey ?? process.env.OPENCODE_ZEN_API_KEY ?? "";
 
-  for (const key of matchingKeys) {
-    token ??= process.env[key];
-    delete process.env[key];
-  }
+  const runner = getCaideRunner();
+  runner.startTurn(threadId, turnId, "proj-default", "builder", "stage", []);
 
-  return token;
-}
-
-interface CliInput {
-  readonly mode: Option.Option<RuntimeMode>;
-  readonly port: Option.Option<number>;
-  readonly host: Option.Option<string>;
-  readonly caideHome: Option.Option<string>;
-  readonly devUrl: Option.Option<URL>;
-  readonly publicUrl: Option.Option<URL>;
-  readonly allowInsecureRemote: BooleanFlagInput;
-  readonly noBrowser: BooleanFlagInput;
-  readonly authToken: Option.Option<string>;
-  readonly autoBootstrapProjectFromCwd: BooleanFlagInput;
-  readonly logProviderEvents: BooleanFlagInput;
-  readonly logWebSocketEvents: BooleanFlagInput;
-}
-
-/**
- * CliConfigShape - Startup helpers required while building server layers.
- */
-export interface CliConfigShape {
-  /**
-   * Current process working directory.
-   */
-  readonly cwd: string;
-
-  /**
-   * Apply OS-specific PATH normalization.
-   */
-  readonly fixPath: Effect.Effect<void>;
-
-  /**
-   * Resolve static web asset directory for server mode.
-   */
-  readonly resolveStaticDir: Effect.Effect<string | undefined>;
-}
-
-/**
- * CliConfig - Service tag for startup CLI/runtime helpers.
- */
-export class CliConfig extends ServiceMap.Service<CliConfig, CliConfigShape>()(
-  "caide/main/CliConfig",
-) {
-  static readonly layer = Layer.effect(
-    CliConfig,
-    Effect.gen(function* () {
-      const fileSystem = yield* FileSystem.FileSystem;
-      const path = yield* Path.Path;
-      return {
-        cwd: process.cwd(),
-        fixPath: Effect.sync(fixPath),
-        resolveStaticDir: resolveStaticDir().pipe(
-          Effect.provideService(FileSystem.FileSystem, fileSystem),
-          Effect.provideService(Path.Path, path),
-        ),
-      } satisfies CliConfigShape;
-    }),
-  );
-}
-
-const CliEnvConfig = Config.all({
-  mode: Config.string("CAIDE_MODE").pipe(
-    Config.option,
-    Config.map(
-      Option.match<RuntimeMode, string>({
-        onNone: () => "web",
-        onSome: (value) => (value === "desktop" ? "desktop" : "web"),
-      }),
-    ),
-  ),
-  port: Config.port("CAIDE_PORT").pipe(Config.option, Config.map(Option.getOrUndefined)),
-  host: Config.string("CAIDE_HOST").pipe(Config.option, Config.map(Option.getOrUndefined)),
-  caideHome: Config.string("CAIDE_HOME").pipe(Config.option, Config.map(Option.getOrUndefined)),
-  devUrl: Config.url("VITE_DEV_SERVER_URL").pipe(Config.option, Config.map(Option.getOrUndefined)),
-  publicUrl: Config.url("CAIDE_PUBLIC_URL").pipe(Config.option, Config.map(Option.getOrUndefined)),
-  allowInsecureRemote: optionalBooleanEnvironmentConfig("CAIDE_ALLOW_INSECURE_REMOTE"),
-  noBrowser: optionalBooleanEnvironmentConfig("CAIDE_NO_BROWSER"),
-  authToken: Config.string("CAIDE_AUTH_TOKEN").pipe(
-    Config.option,
-    Config.map(Option.getOrUndefined),
-  ),
-  desktopShutdownToken: Config.string("CAIDE_DESKTOP_SHUTDOWN_TOKEN").pipe(
-    Config.option,
-    Config.map(Option.getOrUndefined),
-  ),
-  autoBootstrapProjectFromCwd: optionalBooleanEnvironmentConfig(
-    "CAIDE_AUTO_BOOTSTRAP_PROJECT_FROM_CWD",
-  ),
-  logProviderEvents: optionalBooleanEnvironmentConfig("CAIDE_LOG_PROVIDER_EVENTS"),
-  logWebSocketEvents: optionalBooleanEnvironmentConfig("CAIDE_LOG_WS_EVENTS"),
-});
-
-const ServerConfigLive = (input: CliInput) =>
-  Layer.effect(
-    ServerConfig,
-    Effect.gen(function* () {
-      const cliConfig = yield* CliConfig;
-      const { findAvailablePort } = yield* NetService;
-      const env = yield* CliEnvConfig.asEffect().pipe(
-        Effect.mapError(
-          (cause) =>
-            new StartupError({ message: "Failed to read environment configuration", cause }),
-        ),
-      );
-      const liveProcessDesktopShutdownToken = yield* Effect.sync(
-        consumeDesktopShutdownTokenFromProcessEnvironment,
-      );
-
-      const mode = Option.getOrElse(input.mode, () => env.mode);
-
-      const port = yield* Option.match(input.port, {
-        onSome: (value) => Effect.succeed(value),
-        onNone: () => {
-          if (env.port) {
-            return Effect.succeed(env.port);
-          }
-          if (mode === "desktop") {
-            return Effect.succeed(DEFAULT_PORT);
-          }
-          return findAvailablePort(DEFAULT_PORT);
-        },
-      });
-
-      const devUrl = Option.getOrElse(input.devUrl, () => env.devUrl);
-      const configuredPublicUrl = Option.getOrUndefined(input.publicUrl) ?? env.publicUrl;
-      const publicUrl = configuredPublicUrl
-        ? (normalizeHttpsPublicOrigin(configuredPublicUrl) ?? undefined)
-        : undefined;
-      if (configuredPublicUrl && publicUrl === undefined) {
-        return yield* new StartupError({
-          message:
-            "CAIDE_PUBLIC_URL/--public-url must be an HTTPS root origin without credentials, path, query, or fragment (for example https://caide.example.com).",
-        });
-      }
-      const allowInsecureRemote = resolveBooleanConfig(
-        input.allowInsecureRemote,
-        env.allowInsecureRemote,
-        false,
-      );
-      const configuredHome = Option.getOrUndefined(input.caideHome) ?? env.caideHome;
-      const baseDir = yield* resolveBaseDir(configuredHome);
-      const userHomeDir = OS.homedir();
-      const derivedPaths = yield* deriveServerPaths(baseDir, devUrl);
-      yield* Effect.try({
-        try: () => preparePrivateServerPaths(derivedPaths),
-        catch: (cause) =>
-          new StartupError({ message: "Failed to secure Caide's local state directory", cause }),
-      });
-      const noBrowser = resolveBooleanConfig(input.noBrowser, env.noBrowser, mode === "desktop");
-      const authToken = Option.getOrUndefined(input.authToken) ?? env.authToken;
-      const desktopShutdownToken = env.desktopShutdownToken ?? liveProcessDesktopShutdownToken;
-      const autoBootstrapProjectFromCwd = resolveBooleanConfig(
-        input.autoBootstrapProjectFromCwd,
-        env.autoBootstrapProjectFromCwd,
-        mode === "web",
-      );
-      // Provider event NDJSON logging is helpful for debugging, but it is too
-      // expensive to keep enabled on the streaming hot path by default.
-      const logProviderEvents = resolveBooleanConfig(
-        input.logProviderEvents,
-        env.logProviderEvents,
-        false,
-      );
-      // Keep websocket payload logging opt-in in dev. Terminal/TUI traffic is
-      // high-volume enough that automatic logging adds noticeable CPU and I/O.
-      const logWebSocketEvents = resolveBooleanConfig(
-        input.logWebSocketEvents,
-        env.logWebSocketEvents,
-        false,
-      );
-      const staticDir = devUrl ? undefined : yield* cliConfig.resolveStaticDir;
-      // Omitting Node's host listens on an unspecified address, which exposes
-      // the server beyond the local machine on common platforms. Keep every
-      // mode loopback-only unless remote access is explicit and authenticated.
-      const host = Option.getOrUndefined(input.host) ?? env.host ?? "127.0.0.1";
-      const remotePolicyError = remoteAccessPolicyError({
-        host,
-        authToken,
-        devUrl,
-        publicUrl,
-        allowInsecureRemote,
-      });
-      if (remotePolicyError) {
-        return yield* new StartupError({
-          message: remotePolicyError,
-        });
-      }
-
-      const { homeDir, chatWorkspaceRoot } = yield* resolveCanonicalWorkspaceRoots({
-        homeDir: userHomeDir,
-      });
-
-      const config: ServerConfigShape = {
-        mode,
-        port,
-        cwd: cliConfig.cwd,
-        homeDir,
-        chatWorkspaceRoot,
-        host,
-        baseDir,
-        ...derivedPaths,
-        staticDir,
-        devUrl,
-        publicUrl,
-        allowInsecureRemote,
-        noBrowser,
-        authToken,
-        desktopShutdownToken,
-        autoBootstrapProjectFromCwd,
-        logProviderEvents,
-        logWebSocketEvents,
-      } satisfies ServerConfigShape;
-
-      return config;
-    }),
-  );
-
-const LayerLive = (input: CliInput) => {
-  const { runtimeServicesLayer, providerLayer } = makeServerApplicationLayers();
-  const providerSessionReaperLayer = ProviderSessionReaperLive.pipe(
-    // The reaper coordinates orchestration state with live provider sessions,
-    // so it belongs at the top level where both layers are available.
-    Layer.provideMerge(runtimeServicesLayer),
-    Layer.provideMerge(providerLayer),
-  );
-  const providerRuntimeReconcilerLayer = ProviderRuntimeReconcilerLive.pipe(
-    Layer.provide(ProviderRuntimeEventRepositoryLive),
-    Layer.provideMerge(runtimeServicesLayer),
-    Layer.provideMerge(providerLayer),
-  );
-
-  return Layer.empty.pipe(
-    Layer.provideMerge(runtimeServicesLayer),
-    Layer.provideMerge(providerLayer),
-    Layer.provideMerge(providerSessionReaperLayer),
-    Layer.provideMerge(providerRuntimeReconcilerLayer),
-    Layer.provideMerge(SqlitePersistence.layerConfig),
-    Layer.provideMerge(ServerLoggerLive),
-    Layer.provideMerge(ServerConfigLive(input)),
-  );
-};
-
-export function makeServerStartupLogData(config: ServerConfigShape): Record<string, unknown> {
-  const safeConfig: Record<string, unknown> = { ...config };
-  delete safeConfig.authToken;
-  delete safeConfig.desktopShutdownToken;
-  delete safeConfig.devUrl;
-
-  return {
-    ...safeConfig,
-    devUrl: config.devUrl?.toString(),
-    authEnabled: Boolean(config.authToken),
-  };
-}
-
-const makeServerProgram = (input: CliInput) =>
-  Effect.gen(function* () {
-    const cliConfig = yield* CliConfig;
-    const { start, stopSignal } = yield* Server;
-    const openDeps = yield* Open;
-    const serverAuth = yield* ServerAuth;
-    const serverSettings = yield* ServerSettingsService;
-    yield* cliConfig.fixPath;
-
-    const config = yield* ServerConfig;
-    yield* Effect.sync(() => startServerMemoryDiagnostics({ mode: config.mode }));
-
-    if (!config.devUrl && !config.staticDir) {
-      yield* Effect.logWarning(
-        "web bundle missing and no VITE_DEV_SERVER_URL; web UI unavailable",
-        {
-          hint: "Run `bun run --cwd apps/web build` or set VITE_DEV_SERVER_URL for dev mode.",
-        },
-      );
-    }
-
-    yield* start;
-
-    const localUrl = `http://localhost:${config.port}`;
-    const bindUrl =
-      config.host && !isWildcardHost(config.host)
-        ? `http://${formatHostForUrl(config.host)}:${config.port}`
-        : localUrl;
-    const pairingBaseUrl = config.publicUrl?.origin ?? bindUrl;
-    const startupPairingUrl =
-      config.publicUrl || !isLoopbackHost(config.host)
-        ? yield* serverAuth.issueStartupPairingUrl(pairingBaseUrl).pipe(
-            Effect.mapError(
-              (cause) =>
-                new StartupError({
-                  message: "Failed to create the remote-access startup pairing link.",
-                  cause,
-                }),
-            ),
-          )
-        : undefined;
-
-    const orchestrationEngine = yield* OrchestrationEngineService;
-    const projectionSnapshotQuery = yield* ProjectionSnapshotQuery;
-    // Start the retention loop after the server is live so startup can serve
-    // existing history first, then hide inactive threads from the app in the background.
-    yield* startThreadRetentionJob(orchestrationEngine, projectionSnapshotQuery);
-    // Optional Claude OAuth keepalive. Disabled by default because it touches
-    // Claude Code auth data in the background; users can opt in with
-    // CAIDE_CLAUDE_KEEPALIVE=1.
-    yield* Effect.forkChild(
-      Effect.gen(function* () {
-        const settings = yield* serverSettings.getSettings;
-        if ((settings.providers as any).claudeAgent?.enabled === false) {
-          return;
+  const stream = new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder();
+      const onEvent = (e: { event: { type: string; content?: string } }) => {
+        if (e.event.type === "token" && typeof (e.event as { content?: string }).content === "string") {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta: (e.event as { content: string }).content })}\n\n`));
         }
-        yield* Effect.sync(() =>
-          startClaudeCredentialKeepalive({
-            binaryPath: (settings.providers as any).claudeAgent?.binaryPath,
-            homeDir: config.homeDir,
-            log: (message) => Effect.runFork(Effect.logInfo(message)),
-          }),
-        );
-      }),
-    );
-
-    yield* Effect.logInfo("Caide running", makeServerStartupLogData(config));
-    if (startupPairingUrl) {
-      if (config.allowInsecureRemote && !config.publicUrl) {
-        yield* Effect.logWarning(
-          "INSECURE REMOTE ACCESS ENABLED: credentials and session traffic are unencrypted",
-          {
-            pairingUrl: startupPairingUrl,
-            hint: "Use only on a trusted LAN. Configure CAIDE_PUBLIC_URL behind HTTPS for protected remote access.",
-          },
-        );
+      };
+      const off = runner.onEvent(onEvent as unknown as (e: CaideEvent) => void);
+      try {
+        await runner.streamProvider({ threadId, turnId, model, prompt, baseUrl, apiKey });
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`));
+      } finally {
+        off();
+        controller.close();
       }
-      yield* Effect.logInfo(
-        config.publicUrl
-          ? "Remote access requires an authenticated owner session"
-          : "Insecure remote pairing link created",
-        {
-          pairingUrl: startupPairingUrl,
-          hint:
-            isWildcardHost(config.host) && !config.publicUrl
-              ? "Replace localhost in this one-time URL with the server's reachable hostname or IP."
-              : "Open this one-time URL to establish the first owner session.",
-        },
-      );
+    },
+  });
+
+  return new Response(stream, {
+    headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" },
+  });
+}
+
+async function handleVerify(req: Request): Promise<Response> {
+  const body = await req.json().catch(() => ({})) as { threadId?: string; turnId?: string; sliceSpec?: string; screenshotBase64?: string | null };
+  const res = await handleVerifySlice({
+    threadId: body.threadId ?? "thread-test",
+    turnId: body.turnId ?? `turn-${Date.now()}`,
+    sliceSpec: body.sliceSpec ?? "preview:screenshot",
+    screenshotBase64: body.screenshotBase64 ?? null,
+  });
+  return new Response(JSON.stringify(res), { headers: { "Content-Type": "application/json" } });
+}
+
+const server = Bun.serve({
+  port: PORT,
+  hostname: HOST,
+  fetch(req: Request) {
+    const url = new URL(req.url);
+    if (url.pathname === "/health" && req.method === "GET") {
+      return new Response(JSON.stringify({ status: "ok", harness: "pure-caide" }), { headers: { "Content-Type": "application/json" } });
     }
-
-    if (!config.noBrowser) {
-      const target = startupPairingUrl ?? config.devUrl?.toString() ?? bindUrl;
-      yield* openDeps.openBrowser(target).pipe(
-        Effect.catch(() =>
-          Effect.logInfo("browser auto-open unavailable", {
-            hint: `Open ${target} in your browser.`,
-          }),
-        ),
-      );
+    if (url.pathname === "/api/harness/stream" && req.method === "POST") {
+      return handleStream(req);
     }
-
-    return yield* stopSignal;
-  }).pipe(Effect.scoped, Effect.provide(LayerLive(input)));
-
-/**
- * These flags mirrors the environment variables and the config shape.
- */
-
-const modeFlag = Flag.choice("mode", ["web", "desktop"]).pipe(
-  Flag.withDescription("Runtime mode. `desktop` keeps loopback defaults unless overridden."),
-  Flag.optional,
-);
-const portFlag = Flag.integer("port").pipe(
-  Flag.withSchema(Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 65535 }))),
-  Flag.withDescription("Port for the HTTP/WebSocket server."),
-  Flag.optional,
-);
-const hostFlag = Flag.string("host").pipe(
-  Flag.withDescription("Host/interface to bind (for example 127.0.0.1, 0.0.0.0, or a Tailnet IP)."),
-  Flag.optional,
-);
-const caideHomeFlag = Flag.string("home-dir").pipe(
-  Flag.withDescription("Base directory for all Caide data (equivalent to CAIDE_HOME)."),
-  Flag.optional,
-);
-const devUrlFlag = Flag.string("dev-url").pipe(
-  Flag.withSchema(Schema.URLFromString),
-  Flag.withDescription("Dev web URL to proxy/redirect to (equivalent to VITE_DEV_SERVER_URL)."),
-  Flag.optional,
-);
-const publicUrlFlag = Flag.string("public-url").pipe(
-  Flag.withSchema(Schema.URLFromString),
-  Flag.withDescription(
-    "HTTPS public root origin provided by a TLS-terminating reverse proxy (equivalent to CAIDE_PUBLIC_URL).",
-  ),
-  Flag.optional,
-);
-const allowInsecureRemoteFlag = optionalBooleanFlag("allow-insecure-remote", {
-  description:
-    "Explicitly allow unencrypted authenticated remote access on a trusted LAN (equivalent to CAIDE_ALLOW_INSECURE_REMOTE).",
-});
-const noBrowserFlag = optionalBooleanFlag("no-browser", {
-  description: "Disable automatic browser opening.",
-  negativeName: "browser",
-  negativeDescription: "Enable automatic browser opening.",
-});
-const authTokenFlag = Flag.string("auth-token").pipe(
-  Flag.withDescription("Auth token required for WebSocket connections."),
-  Flag.withAlias("token"),
-  Flag.optional,
-);
-const autoBootstrapProjectFromCwdFlag = optionalBooleanFlag("auto-bootstrap-project-from-cwd", {
-  description: "Create a project for the current working directory on startup when missing.",
-});
-const logProviderEventsFlag = optionalBooleanFlag("log-provider-events", {
-  description:
-    "Emit native/canonical provider NDJSON logs for debugging (equivalent to CAIDE_LOG_PROVIDER_EVENTS).",
-});
-const logWebSocketEventsFlag = optionalBooleanFlag("log-websocket-events", {
-  description:
-    "Emit server-side logs for outbound WebSocket push traffic (equivalent to CAIDE_LOG_WS_EVENTS).",
-  aliases: ["log-ws-events"],
-});
-
-const mcpIntegrationFlag = Flag.string("integration").pipe(
-  Flag.withDescription(
-    "Paired integration id to serve (required only when more than one is stored).",
-  ),
-  Flag.optional,
-);
-
-// Base `caide` command defined before the MCP subcommands so they can yield
-// its parsed input (notably `--home-dir` / `caideHome`) via Effect's command
-// context. This avoids a duplicate `--home-dir` flag between the root command
-// and its MCP subcommands, which the Effect CLI assigns to the parent and
-// leaves the subcommand flag unset.
-const baseServerCommand = Command.make("caide", {
-  mode: modeFlag,
-  port: portFlag,
-  host: hostFlag,
-  caideHome: caideHomeFlag,
-  devUrl: devUrlFlag,
-  publicUrl: publicUrlFlag,
-  allowInsecureRemote: allowInsecureRemoteFlag,
-  noBrowser: noBrowserFlag,
-  authToken: authTokenFlag,
-  autoBootstrapProjectFromCwd: autoBootstrapProjectFromCwdFlag,
-  logProviderEvents: logProviderEventsFlag,
-  logWebSocketEvents: logWebSocketEventsFlag,
-}).pipe(Command.withDescription("Run the Caide server."));
-
-const mcpServeCommand = Command.make(
-  "serve",
-  { integration: mcpIntegrationFlag },
-  ({ integration }) =>
-    Effect.gen(function* () {
-      const parent = yield* baseServerCommand;
-      const baseDir = resolveExternalMcpBaseDir(Option.getOrUndefined(parent.caideHome));
-      yield* Effect.tryPromise({
-        try: () =>
-          serveExternalMcpStdio({
-            baseDir,
-            ...(Option.isSome(integration) ? { integrationId: integration.value } : {}),
-          }),
-        catch: (cause) =>
-          new StartupError({ message: "External MCP stdio bridge stopped.", cause }),
-      });
-    }),
-).pipe(
-  Command.withDescription(
-    "Serve the paired Caide external MCP integration over stdio for Codex, Claude, and other MCP clients.",
-  ),
-);
-
-const mcpPairCommand = Command.make(
-  "pair",
-  {
-    code: Flag.string("code").pipe(
-      Flag.withDescription("Short-lived pairing code issued by Caide Settings."),
-    ),
+    if (url.pathname === "/api/harness/verify" && req.method === "POST") {
+      return handleVerify(req);
+    }
+    return new Response("Not Found", { status: 404 });
   },
-  ({ code }) =>
-    Effect.gen(function* () {
-      const parent = yield* baseServerCommand;
-      const baseDir = resolveExternalMcpBaseDir(Option.getOrUndefined(parent.caideHome));
-      const paired = yield* Effect.tryPromise({
-        try: () =>
-          pairExternalMcpClient({
-            baseDir,
-            pairingCode: code,
-          }),
-        catch: (cause) => new StartupError({ message: "External MCP pairing failed.", cause }),
-      });
-      process.stdout.write(
-        `Paired Caide external MCP integration "${paired.paired.name}".\nCredential stored privately at ${paired.storePath}.\nConfigure the MCP client command as: ${externalMcpShellCommand(externalMcpLauncher(["mcp", "serve", "--integration", paired.paired.integrationId, "--home-dir", baseDir]))}\n`,
-      );
-      if (process.platform === "win32") {
-        process.stdout.write(
-          "Windows note: Caide stores this credential under your user profile, but Windows does not expose POSIX 0600 permission checks. Protect the profile and its Caide data directory.\n",
-        );
-      }
-    }),
-).pipe(Command.withDescription("Pair this CLI with a user-approved Caide MCP integration."));
+});
 
-const mcpCommand = Command.make("mcp").pipe(
-  Command.withDescription("Manage Caide's loopback external MCP bridge."),
-  Command.withSubcommands([mcpServeCommand, mcpPairCommand]),
-);
-
-const serverCommand = baseServerCommand.pipe(
-  Command.withHandler((input) => makeServerProgram(input)),
-  Command.withSubcommands([mcpCommand]),
-);
-
-export const caideCli = serverCommand;
+console.log(`Pure Caide server running at http://${server.hostname}:${server.port}`);
+console.log(`  GET  /health`);
+console.log(`  POST /api/harness/stream  (SSE typed {token})`);
+console.log(`  POST /api/harness/verify  (JSON handleVerifySlice)`);

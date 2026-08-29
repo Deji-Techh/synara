@@ -1,34 +1,13 @@
-import { CommandId, MessageId, ProjectId, SpaceId, ThreadId } from "@caide/contracts";
-import { type CxOptions, cx } from "class-variance-authority";
-import { twMerge } from "tailwind-merge";
-import * as Random from "effect/Random";
-import * as Effect from "effect/Effect";
-
-export function cn(...inputs: CxOptions) {
-  return twMerge(cx(inputs));
+export function cn(...classes: (string | undefined | false | null)[]): string {
+  return classes.filter(Boolean).join(" ");
 }
 
 export function isMacPlatform(platform: string): boolean {
-  return /mac|darwin|iphone|ipad|ipod/i.test(platform);
-}
-
-export function isWindowsPlatform(platform: string): boolean {
-  return /^win(dows)?/i.test(platform);
+  return /mac|darwin/i.test(platform);
 }
 
 export function randomUUID(): string {
-  if (typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return Effect.runSync(Random.nextUUIDv4);
+  return crypto.randomUUID();
 }
 
-export const newCommandId = (): CommandId => CommandId.makeUnsafe(randomUUID());
-
-export const newProjectId = (): ProjectId => ProjectId.makeUnsafe(randomUUID());
-
-export const newSpaceId = (): SpaceId => SpaceId.makeUnsafe(randomUUID());
-
-export const newThreadId = (): ThreadId => ThreadId.makeUnsafe(randomUUID());
-
-export const newMessageId = (): MessageId => MessageId.makeUnsafe(randomUUID());
+export const isMac = typeof navigator !== "undefined" && isMacPlatform(navigator.platform);

@@ -1,6 +1,4 @@
-// CheckpointCard — human gate pure Caide (M13 + M19 live diff + Taste)
-// RequiresResponse checkpoint from caideRunner — Approve / Request change / View diff
-
+// apps/web/src/components/chat/CheckpointCard.tsx — Pure Caide human gate (M13/M19)
 interface CheckpointCardProps {
   reason: string;
   confidence: number;
@@ -24,15 +22,9 @@ export function CheckpointCard({ reason, confidence, tasteScore, diffSummary, on
       <p className="mt-2 text-xs text-muted-foreground">{reason}</p>
       {diffSummary && <p className="mt-1 rounded bg-muted px-2 py-1 font-mono text-[11px]">{diffSummary}</p>}
       <div className="mt-3 flex gap-2">
-        <button type="button" onClick={onApprove} className="rounded-full bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90">
-          Approve
-        </button>
-        <button type="button" onClick={() => onRequestChange(prompt("What to change?") ?? "")} className="rounded-full border border-border px-3 py-1.5 text-xs hover:bg-accent">
-          Request change
-        </button>
-        <button type="button" onClick={onViewDiff} className="ml-auto rounded-full border border-border px-3 py-1.5 text-xs hover:bg-accent">
-          View diff
-        </button>
+        <button type="button" onClick={onApprove} className="rounded-full bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90">Approve</button>
+        <button type="button" onClick={() => onRequestChange(prompt("What to change?") ?? "")} className="rounded-full border border-border px-3 py-1.5 text-xs hover:bg-[var(--secondary)]">Request change</button>
+        <button type="button" onClick={onViewDiff} className="ml-auto rounded-full border border-border px-3 py-1.5 text-xs hover:bg-[var(--secondary)]">View diff</button>
       </div>
     </div>
   );
