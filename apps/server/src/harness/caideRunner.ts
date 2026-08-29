@@ -9,6 +9,18 @@ import type { StreamEvent } from "./stream";
 import { CAIDE_TOOLS, canRunToolInMode, isReadOnlyTool } from "./tools";
 import { shouldCompact } from "./compaction";
 
+// M26 real provider streaming — per-model endpointForModel (opencode docs) lives here now that provider/Layers/ApiAdapter was shell-reset
+function endpointForModel(baseUrl: string, model: string): string {
+  const normalized = model.toLowerCase();
+  const base = baseUrl.replace(/\/+$/, "");
+  const responsesHints = ["grok", "gpt-5", "gpt-5.6", "muse-spark", "grok-4", "hy4", "hy3-free"];
+  const messagesHints = ["minimax", "qwen", "qwen3", "claude", "sonnet", "opus", "haiku", "anthropic"];
+  if (responsesHints.some((h) => normalized.includes(h))) return `${base}/responses`;
+  if (messagesHints.some((h) => normalized.includes(h)) && (base.includes("opencode.ai") || base.includes("anthropic"))) return `${base}/messages`;
+  if (normalized.includes("gemini")) return `${base}/models/${encodeURIComponent(model)}`;
+  return `${base}/chat/completions`;
+}
+
 export interface CaideRunnerEvent {
   readonly threadId: string;
   readonly turnId: string;
@@ -100,5 +112,41 @@ export class CaideRunner {
 
   status(turnId: string): TurnStatus | undefined {
     return this.machine.get(turnId)?.status;
+  }
+
+  // M26 real provider streaming — replaces ChatView local echo setInterval
+  async streamProvider(input: { threadId: string; turnId: string; model: string; prompt: string; baseUrl: string; apiKey: string; systemPrompt?: string }): Promise<void> {
+    const endpoint = endpointForModel(input.baseUrl, input.model);
+    const isResponses = endpoint.endsWith("/responses");
+    const isMessages = endpoint.endsWith("/messages");
+    const body = isResponses
+      ? { model: input.model, input: [{ role: "user", content: [{ type: "input_text", text: input.prompt }] }], stream: true }
+      : isMessages
+        ? { model: input.model, ...(input.systemPrompt ? { system: input.systemPrompt } : {}), messages: [{ role: "user", content: input.prompt }], stream: true }
+        : { model: input.model, messages: [...(input.systemPrompt ? [{ role: "system", content: input.systemPrompt }] : []), { role: "user", content: input.prompt }], stream: true };
+
+    const res = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${input.apiKey}` }, body: JSON.stringify(body) });
+    if (!res.ok || !res.body) throw new Error(`Provider ${res.status} from ${endpoint}`);
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop() ?? "";
+      for (const line of lines) {
+        const t = line.trim();
+        if (!t || !t.startsWith("data:")) continue;
+        const d = t.slice(5).trim();
+        if (d === "[DONE]") return;
+        try {
+          const p = JSON.parse(d);
+          const delta = p.choices?.[0]?.delta?.content ?? p.delta?.text ?? p.output_text?.delta ?? (typeof p.text === "string" ? p.text : undefined);
+          if (typeof delta === "string" && delta.length > 0) this.emit(input.threadId, input.turnId, { type: "token", content: delta });
+        } catch {}
+      }
+    }
   }
 }
