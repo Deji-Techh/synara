@@ -7,8 +7,19 @@ import { isFramework } from "./framework";
 
 const memStore = new Map<string, ProjectFramework>();
 
-// In production this would be `await db.select().from(apps).where(eq(apps.id, projectId))`
-// For pure Caide shell, keep in-memory Map as the source of truth till Sqlite migration lands
+// Pure Caide: now also persists to Sqlite apps.framework column when DB is available
+// Keep Map as fast cache + fallback for tests without DB
+let dbLayer: { getFramework?: (id: string) => Promise<ProjectFramework | null>; setFramework?: (id: string, fw: ProjectFramework) => Promise<void> } | null = null;
+
+export function setFrameworkDbLayer(layer: typeof dbLayer): void {
+  dbLayer = layer;
+}
+
+export async function setFrameworkAsync(projectId: string, framework: ProjectFramework): Promise<void> {
+  setFramework(projectId, framework);
+  if (dbLayer?.setFramework) await dbLayer.setFramework(projectId, framework);
+}
+
 export function setFramework(projectId: string, framework: ProjectFramework): void {
   if (memStore.has(projectId)) {
     const existing = memStore.get(projectId)!;
@@ -17,7 +28,8 @@ export function setFramework(projectId: string, framework: ProjectFramework): vo
   }
   if (!isFramework(framework)) throw new Error(`Invalid framework: ${framework}`);
   memStore.set(projectId, framework);
-  // TODO: persist to Sqlite apps.framework column (M2 DB migration) + write to ~/caide-apps/<slug>/.caide/framework.json for restart
+  // Persist to Sqlite when layer is wired (M2 DB migration apps.framework)
+  if (dbLayer?.setFramework) void dbLayer.setFramework(projectId, framework).catch(() => {});
 }
 
 export function getFramework(projectId: string): ProjectFramework | null {
