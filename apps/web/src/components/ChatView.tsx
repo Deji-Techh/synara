@@ -32,13 +32,27 @@ export default function ChatView({ threadId: threadIdProp, onOpenSettings, onOpe
     setSending(true);
     setEvents((prev) => [...prev, { kind: "tool", name: "router.route", status: "started", args: trimmed.slice(0, 80) }]);
 
+    // Read API key from localStorage settings
+    let apiKey = "";
+    let model = "deepseek-v4-flash";
+    let baseUrl = "https://opencode.ai/zen/v1";
+    try {
+      const saved = JSON.parse(localStorage.getItem("caide:settings") ?? "{}");
+      if (saved.apiKey) apiKey = saved.apiKey;
+      if (saved.model) model = saved.model;
+      if (saved.baseUrl) baseUrl = saved.baseUrl;
+    } catch {}
+
     try {
       const res = await fetch("/api/harness/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ threadId, turnId: `turn-${Date.now()}`, prompt: trimmed, model: "deepseek-v4-flash", baseUrl: "https://opencode.ai/zen/v1", apiKey: "" }),
+        body: JSON.stringify({ threadId, turnId: `turn-${Date.now()}`, prompt: trimmed, model, baseUrl, apiKey }),
       });
-      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok || !res.body) {
+        const errBody = await res.text().catch(() => "");
+        throw new Error(`HTTP ${res.status}: ${errBody.slice(0, 200)}`);
+      }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buf = "";
@@ -58,6 +72,7 @@ export default function ChatView({ threadId: threadIdProp, onOpenSettings, onOpe
           }
           try {
             const p = JSON.parse(d);
+            if (p.error) { setEvents((prev) => [...prev, { kind: "tool", name: "router.route", status: "failed", args: p.error.slice(0, 120) }]); break; }
             const delta = p.delta ?? p.choices?.[0]?.delta?.content;
             if (typeof delta === "string" && delta.length > 0) {
               setEvents((prev) => { const last = prev[prev.length - 1]; if (last?.kind === "token") return [...prev.slice(0, -1), { kind: "token", text: `${last.text}${delta}` }]; return [...prev, { kind: "token", text: delta }]; });
@@ -67,7 +82,8 @@ export default function ChatView({ threadId: threadIdProp, onOpenSettings, onOpe
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      setEvents((prev) => [...prev, { kind: "tool", name: "router.route", status: "failed", args: msg.slice(0, 120) }]);
+      const isNetwork = msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("ECONNREFUSED");
+      setEvents((prev) => [...prev, { kind: "tool", name: "router.route", status: "failed", args: isNetwork ? "Network error — check connection and try again" : msg.slice(0, 120) }]);
     } finally { setSending(false); }
   }, [input, sending, threadId]);
 
@@ -93,6 +109,10 @@ export default function ChatView({ threadId: threadIdProp, onOpenSettings, onOpe
                     <h1 className="text-2xl font-bold tracking-tight">New Caide shell</h1>
                     <p className="max-w-md text-sm text-muted-foreground">Type below to describe what you want to build. Real provider streaming via /api/harness/stream.</p>
                     <p className="max-w-md text-xs text-muted-foreground">Create a project first (+ Project) or type directly below.</p>
+                    <div className="w-full max-w-md rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-left">
+                      <p className="text-xs font-medium text-amber-700 dark:text-amber-300">Provider setup</p>
+                      <p className="text-[10px] text-amber-700/70 dark:text-amber-300/70 mt-1">Enter your OpenCode API key in Settings to enable real provider streaming.</p>
+                    </div>
                   </div>
                 )}
                 {events.map((e, i) => (
