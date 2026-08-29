@@ -1,39 +1,12 @@
-// FILE: tsdown.config.ts
-// Purpose: Builds Electron main/preload code and controls diagnostic source maps.
-// Layer: Desktop build config
-// Depends on: tsdown.
-
+// Simplified Electron build config
 import { defineConfig } from "tsdown";
-
-const sourcemapEnv = process.env.CAIDE_DESKTOP_SOURCEMAP?.trim().toLowerCase();
-const buildSourcemap = sourcemapEnv === "1" || sourcemapEnv === "true";
-const windowsUpdaterPublisher = process.env.AZURE_TRUSTED_SIGNING_SUBJECT_DN?.trim() ?? "";
-
-const shared = {
-  format: "cjs" as const,
-  outDir: "dist-electron",
-  sourcemap: buildSourcemap,
-  outExtensions: () => ({ js: ".js" }),
-};
 
 export default defineConfig([
   {
-    ...shared,
+    format: "cjs",
+    outDir: "dist-electron",
     entry: ["src/main.ts"],
-    // Electron exposes this builtin only at runtime; keeping it external avoids
-    // asking Rolldown to resolve a package that intentionally does not exist.
-    external: ["original-fs"],
-    define: {
-      __CAIDE_WINDOWS_UPDATER_PUBLISHER__: JSON.stringify(windowsUpdaterPublisher),
-    },
-    noExternal: (id) => id.startsWith("@caide/"),
-  },
-  {
-    ...shared,
-    entry: ["src/preload.ts"],
-  },
-  {
-    ...shared,
-    entry: ["src/browserAnnotations/guestPreload.ts"],
+    external: ["original-fs", "electron"],
+    outExtensions: () => ({ js: ".js" }),
   },
 ]);

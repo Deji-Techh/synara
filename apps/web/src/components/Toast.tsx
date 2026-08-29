@@ -22,7 +22,7 @@ function dismiss(id: string) {
   listeners.forEach((fn) => fn(toasts));
 }
 
-export function toast = { success: (m: string) => notify(m, "success"), error: (m: string) => notify(m, "error"), info: (m: string) => notify(m, "info"), dismiss };
+export const toast = { success: (m: string) => notify(m, "success"), error: (m: string) => notify(m, "error"), info: (m: string) => notify(m, "info"), dismiss };
 
 export function ToastContainer() {
   const [items, setItems] = useState<Toast[]>([]);
