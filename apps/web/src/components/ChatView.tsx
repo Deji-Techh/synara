@@ -91,19 +91,19 @@ export default function ChatView({ threadId: threadIdProp, onOpenSettings, onOpe
     <div className="flex h-dvh min-h-0 w-full flex-1 overflow-hidden">
       <div className="flex min-h-0 flex-1 flex-col bg-[var(--color-background-surface)]">
         {/* Header */}
-        <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border bg-card px-3">
+        <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border bg-card px-3" role="banner">
           <span className="text-xs font-semibold">Caide</span>
-          <span className="size-1.5 rounded-full bg-emerald-500" />
+          <span className="size-1.5 rounded-full bg-emerald-500" aria-label="Connected" />
           <span className="text-[10px] text-muted-foreground">Pure Caide harness · token vs event separate</span>
           <span className="flex-1" />
-          <button type="button" onClick={onOpenCreateProject} className="rounded-full bg-foreground px-2 py-1 text-[10px] font-medium text-background hover:opacity-90">+ Project</button>
-          <button type="button" onClick={onOpenSettings} className="rounded-full border border-border px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground">Settings</button>
+          <button type="button" onClick={onOpenCreateProject} aria-label="Create new project" className="rounded-full bg-foreground px-2 py-1 text-[10px] font-medium text-background hover:opacity-90">+ Project</button>
+          <button type="button" onClick={onOpenSettings} aria-label="Open settings" className="rounded-full border border-border px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground">Settings</button>
         </div>
         {/* Main content */}
         <div className="flex min-h-0 flex-1">
           <div className="flex min-h-0 flex-1 flex-col">
-            <div ref={listRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
-              <div className="mx-auto flex w-full max-w-[46rem] flex-col gap-3">
+                <div ref={listRef} role="log" aria-live="polite" aria-label="Chat messages" className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
+                  <div className="mx-auto flex w-full max-w-[46rem] flex-col gap-3">
                 {events.length === 0 && (
                   <div className="flex flex-col items-center gap-3 py-12 text-center">
                     <h1 className="text-2xl font-bold tracking-tight">New Caide shell</h1>
@@ -133,8 +133,8 @@ export default function ChatView({ threadId: threadIdProp, onOpenSettings, onOpe
           <div className="rounded-[1.35rem] border border-[color:color-mix(in_srgb,var(--color-border-heavy)_95%,var(--foreground)_5%)] bg-[var(--composer-surface)] backdrop-blur-xl backdrop-saturate-150 transition-all duration-200">
             <div className="relative pl-3 pr-3 pt-3 pb-2">
               <div className="flex items-center gap-2">
-                <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} disabled={sending} placeholder="Describe what you want to build — e.g. 'Login screen with empty state' (contextual, not generic)" className="flex-1 bg-transparent text-[13px] tracking-[-0.01em] leading-[1.65] font-sans outline-none placeholder:text-muted-foreground/45 disabled:opacity-50" />
-                <button type="button" onClick={send} disabled={sending} className="rounded-full bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90 disabled:opacity-50">{sending ? "Building..." : "Send"}</button>
+                <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} disabled={sending} aria-label="Describe what you want to build" placeholder="Describe what you want to build — e.g. 'Login screen with empty state' (contextual, not generic)" className="flex-1 bg-transparent text-[13px] tracking-[-0.01em] leading-[1.65] font-sans outline-none placeholder:text-muted-foreground/45 disabled:opacity-50" />
+                <button type="button" onClick={send} disabled={sending} aria-label="Send message" className="rounded-full bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90 disabled:opacity-50">{sending ? "Building..." : "Send"}</button>
               </div>
             </div>
           </div>
