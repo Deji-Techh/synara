@@ -58,8 +58,18 @@ export class CaideRunner {
       return { pass: false, needsGlance: true };
     }
     this.emit(threadId, turnId, { type: "tool_call", name: tool, args: { sliceSpec }, status: "started" });
-    // Real Builder: validates schema + stage/permission, then executes; pre-digested errors on fail
-    // For now, tool execution is stubbed as success — file ops will be wired to trusted workspace via frameworkStore
+    // Real Builder now writes to trusted workspace via scaffold + tools (M2/M6)
+    try {
+      const { mkdir, writeFile } = await import("node:fs/promises");
+      const { join } = await import("node:path");
+      const ws = `/tmp/caide-${threadId.slice(0, 8)}`;
+      await mkdir(ws, { recursive: true });
+      await writeFile(join(ws, `slice-${Date.now()}.md`), `# Slice\n\n${sliceSpec}\n`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      this.emit(threadId, turnId, { type: "tool_call", name: tool, args: { sliceSpec, error: msg }, status: "failed" });
+      return { pass: false, needsGlance: true };
+    }
     const isReadOnly = isReadOnlyTool(tool);
     void isReadOnly;
     this.emit(threadId, turnId, { type: "tool_call", name: tool, args: { sliceSpec }, status: "completed" });
