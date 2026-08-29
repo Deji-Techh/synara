@@ -21,3 +21,9 @@ export function emitToken(threadId: string, turnId: string, content: string): vo
     content,
   });
 }
+
+// WS RPC for PreviewStage → Verifier fresh ctx (M11)
+export async function handleVerifySlice(input: { threadId: string; turnId: string; sliceSpec: string; screenshotBase64: string | null }): Promise<{ pass: boolean; confidence: number }> {
+  const res = await runner.runSlice(input.threadId, input.turnId, input.sliceSpec, input.screenshotBase64);
+  return { pass: res.pass, confidence: res.needsGlance ? 0.76 : 0.95 };
+}
