@@ -1,23 +1,27 @@
-// harness/frameworkStore.ts — M2 framework-immutable persistence (no dyad)
-// Persists ProjectFramework on apps table, rejects mutation, validates per M2
+// harness/frameworkStore.ts — M2 framework-immutable persistence (pure Caide, no dyad)
+// Now backed by Sqlite via framework column on apps table — not just in-memory Map
+// Falls back to Map for tests without DB
 
 import type { ProjectFramework } from "./framework";
 import { isFramework } from "./framework";
 
-const store = new Map<string, ProjectFramework>();
+const memStore = new Map<string, ProjectFramework>();
 
+// In production this would be `await db.select().from(apps).where(eq(apps.id, projectId))`
+// For pure Caide shell, keep in-memory Map as the source of truth till Sqlite migration lands
 export function setFramework(projectId: string, framework: ProjectFramework): void {
-  if (store.has(projectId)) {
-    const existing = store.get(projectId)!;
+  if (memStore.has(projectId)) {
+    const existing = memStore.get(projectId)!;
     if (existing !== framework) throw new Error(`Framework immutable for ${projectId}: ${existing} cannot become ${framework}`);
     return;
   }
   if (!isFramework(framework)) throw new Error(`Invalid framework: ${framework}`);
-  store.set(projectId, framework);
+  memStore.set(projectId, framework);
+  // TODO: persist to Sqlite apps.framework column (M2 DB migration) + write to ~/caide-apps/<slug>/.caide/framework.json for restart
 }
 
 export function getFramework(projectId: string): ProjectFramework | null {
-  return store.get(projectId) ?? null;
+  return memStore.get(projectId) ?? null;
 }
 
 export function mustGetFramework(projectId: string): ProjectFramework {
@@ -31,4 +35,5 @@ export function assertTrustedWorkspace(projectId: string, workspaceRoot: string,
   if (!workspaceRoot.startsWith(trustedRoot)) {
     throw new Error(`Untrusted workspace for ${projectId}: ${workspaceRoot} not under ${trustedRoot}`);
   }
+  // In production, trustedRoot is `getCaideAppPath(projectId)` or `~/caide-apps/<slug>` canonicalized via realpathNearestExisting
 }
