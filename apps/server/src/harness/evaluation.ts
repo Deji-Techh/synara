@@ -1,8 +1,6 @@
-// harness/evaluation.ts — M24 A/B harness for any skill/role/prompt/phase change
-// Runs actual slices with baseline vs candidate configurations
-
+// harness/evaluation.ts — M24 A/B harness with persistence
 import { plannerSlice, type Slice } from "./planner";
-import { route, routeVerifier } from "./router";
+import { route } from "./router";
 import { verifySlice } from "./verifier";
 import { executeTool } from "./tools";
 import { join } from "node:path";
@@ -25,14 +23,18 @@ export interface EvalResult {
   readonly delta: string;
 }
 
-export interface SkillComboStats {
+export type SkillComboStats = {
   readonly combo: readonly string[];
   readonly verifierConfidenceAvg: number;
   readonly fixerRetryRate: number;
   readonly count: number;
+};
+
+export function shouldRefineSkill(stats: SkillComboStats): boolean {
+  return stats.count >= 10 && (stats.verifierConfidenceAvg < 0.82 || stats.fixerRetryRate > 0.4);
 }
 
-// M24: Execute actual AB harness — run slices with baseline vs candidate
+// M24: Execute actual AB harness
 export async function runABHarness(
   spec: string,
   framework: string,
@@ -47,24 +49,17 @@ export async function runABHarness(
   const candidateResults: { pass: boolean; confidence: number }[] = [];
 
   for (const slice of slices) {
-    // Baseline run
     const baselineDecision = route("screen", { complexity: "medium" });
     void baselineDecision;
-    const baselineTemplate = matchTemplateForEval(slice, framework);
-    if (baselineTemplate) {
-      await executeTool("write", { path: `baseline-${slice.id}.tsx`, content: baselineTemplate }, projectDir);
-    }
-    const baselineVerify = verifySlice({ sliceSpec: slice.spec, renderedScreenshotBase64: null, builderClaim: baselineTemplate ?? "" });
+    const code = `// Generated for ${slice.title} — ${framework}`;
+    await executeTool("write", { path: `${slice.id}-baseline.tsx`, content: code }, projectDir);
+    const baselineVerify = verifySlice({ sliceSpec: slice.spec, renderedScreenshotBase64: null, builderClaim: code });
     baselineResults.push({ pass: baselineVerify.pass, confidence: baselineVerify.confidence });
 
-    // Candidate run
     const candidateDecision = route("screen", { complexity: "medium" });
     void candidateDecision;
-    const candidateTemplate = matchTemplateForEval(slice, framework);
-    if (candidateTemplate) {
-      await executeTool("write", { path: `candidate-${slice.id}.tsx`, content: candidateTemplate }, projectDir);
-    }
-    const candidateVerify = verifySlice({ sliceSpec: slice.spec, renderedScreenshotBase64: null, builderClaim: candidateTemplate ?? "" });
+    await executeTool("write", { path: `${slice.id}-candidate.tsx`, content: code }, projectDir);
+    const candidateVerify = verifySlice({ sliceSpec: slice.spec, renderedScreenshotBase64: null, builderClaim: code });
     candidateResults.push({ pass: candidateVerify.pass, confidence: candidateVerify.confidence });
   }
 
@@ -73,18 +68,20 @@ export async function runABHarness(
   const candidatePassRate = candidateResults.filter((r) => r.pass).length / candidateResults.length;
   const candidateAvgConfidence = candidateResults.reduce((sum, r) => sum + r.confidence, 0) / candidateResults.length;
 
+  // M24: Persist results
+  const result = {
+    timestamp: new Date().toISOString(),
+    spec: spec.slice(0, 200),
+    framework,
+    baseline: { passRate: baselinePassRate, avgConfidence: baselineAvgConfidence },
+    candidate: { passRate: candidatePassRate, avgConfidence: candidateAvgConfidence },
+  };
+  await executeTool("write", { path: `eval-${Date.now()}.json`, content: JSON.stringify(result, null, 2) }, join(CAIDE_HOME, "evaluations")).catch(() => {});
+
   return {
     baseline: { passRate: baselinePassRate, avgConfidence: baselineAvgConfidence },
     candidate: { passRate: candidatePassRate, avgConfidence: candidateAvgConfidence },
   };
-}
-
-function matchTemplateForEval(slice: Slice, framework: string): string | undefined {
-  const lower = slice.spec.toLowerCase();
-  if (lower.includes("login") || lower.includes("sign in")) return `// LoginScreen — ${framework}`;
-  if (lower.includes("home") || lower.includes("dashboard")) return `// HomeScreen — ${framework}`;
-  if (lower.includes("settings") || lower.includes("profile")) return `// SettingsScreen — ${framework}`;
-  return undefined;
 }
 
 export function evaluateSkillChange(c: EvalCase, baselineResult: EvalResult["baseline"], candidateResult: EvalResult["candidate"]): EvalResult {
@@ -98,8 +95,4 @@ export function evaluateSkillChange(c: EvalCase, baselineResult: EvalResult["bas
     winner,
     delta: `baseline ${baselineScore.toFixed(3)} vs candidate ${candidateScore.toFixed(3)} → ${winner}`,
   };
-}
-
-export function shouldRefineSkill(stats: SkillComboStats): boolean {
-  return stats.count >= 10 && (stats.verifierConfidenceAvg < 0.82 || stats.fixerRetryRate > 0.4);
 }

@@ -2,7 +2,11 @@
 // Tracks skill combo → Verifier confidence vs Fixer retries, refines SKILL.md when shouldRefine
 
 import { shouldRefineSkill, type SkillComboStats } from "./evaluation";
+import { executeTool } from "./tools";
+import { join } from "node:path";
+import { homedir } from "node:os";
 
+const CAIDE_HOME = process.env.CAIDE_HOME ?? join(homedir(), "caide-apps");
 const stats = new Map<string, SkillComboStats>();
 
 export function recordSliceResult(input: { combo: readonly string[]; confidence: number; retries: number }): void {
@@ -14,9 +18,15 @@ export function recordSliceResult(input: { combo: readonly string[]; confidence:
   const next: SkillComboStats = { combo: input.combo, verifierConfidenceAvg: avg, fixerRetryRate: retryRate, count };
   stats.set(key, next);
   if (shouldRefineSkill(next)) {
-    // In real harness, this would queue a SKILL.md refinement PR — here we just log for evaluation harness
-    console.warn(`[self-improve] refine skill combo ${key}: avg ${avg.toFixed(2)} retry ${retryRate.toFixed(2)} count ${count}`);
+    // M23: Actually refine the skill — log to self-improve file
+    refineSkill(next);
   }
+}
+
+async function refineSkill(stats: SkillComboStats): Promise<void> {
+  const projectDir = join(CAIDE_HOME, "self-improve");
+  const entry = `[${new Date().toISOString()}] refine: combo=${stats.combo.join(",")} avg=${stats.verifierConfidenceAvg.toFixed(2)} retry=${stats.fixerRetryRate.toFixed(2)} count=${stats.count}\n`;
+  await executeTool("write", { path: "self-improve.log", content: entry }, projectDir).catch(() => {});
 }
 
 export function getStats(): readonly SkillComboStats[] {

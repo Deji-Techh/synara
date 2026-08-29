@@ -1,30 +1,32 @@
-// harness/captureScreenshot.ts — M11: Real screenshot capture via fetch + base64
-// Fetches the URL to verify it's running, returns base64-encoded placeholder
-// TODO: Wire Playwright for real Browser automation when dependency available
+// harness/captureScreenshot.ts — M11: Real screenshot capture via Playwright
+import { chromium, type Browser } from "playwright";
+
+let browser: Browser | null = null;
+
+async function getBrowser(): Promise<Browser> {
+  if (!browser) {
+    browser = await chromium.launch({ headless: true });
+  }
+  return browser;
+}
 
 export async function captureScreenshot(url: string, options?: { width?: number; height?: number }): Promise<string | null> {
   try {
-    // Verify the URL is running
-    const res = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(5000) });
-    if (!res.ok) return null;
+    const b = await getBrowser();
+    const page = await b.newPage({
+      viewport: { width: options?.width ?? 375, height: options?.height ?? 812 },
+    });
 
-    // In production, this would use Playwright to:
-    // 1. Launch browser (chromium.launch())
-    // 2. Create page with viewport (options?.width ?? 375, options?.height ?? 812)
-    // 3. Navigate to url (page.goto(url, { waitUntil: 'networkidle' }))
-    // 4. Take screenshot (page.screenshot({ type: 'png', fullPage: false }))
-    // 5. Return base64 encoded PNG
+    await page.goto(url, { waitUntil: "networkidle", timeout: 10000 });
+    const screenshot = await page.screenshot({ type: "png", fullPage: false });
+    await page.close();
 
-    // For now, return a 1x1 pixel PNG as placeholder
-    // This is enough for the verifier to proceed with visual verification
-    const placeholder = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
-    return placeholder;
+    return screenshot.toString("base64");
   } catch {
     return null;
   }
 }
 
-// M11: Screenshot verification loop — capture → verify → checkpoint
 export async function verifyWithScreenshot(
   url: string,
   sliceSpec: string,
@@ -34,7 +36,12 @@ export async function verifyWithScreenshot(
   if (!screenshot) {
     return { screenshot: null, verified: false, reason: "Screenshot capture failed — preview not running" };
   }
-  // The actual verification happens in verifier.ts
-  // This function just ensures we have a screenshot to pass to it
-  return { screenshot, verified: true, reason: "Screenshot captured" };
+  return { screenshot, verified: true, reason: "Screenshot captured via Playwright" };
+}
+
+export async function closeBrowser(): Promise<void> {
+  if (browser) {
+    await browser.close();
+    browser = null;
+  }
 }
