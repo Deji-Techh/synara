@@ -72,6 +72,7 @@ import {
   VOICE_UPLOAD_CAPACITY_ERROR_MESSAGE,
   voiceUploadAdmissionGate,
 } from "./voiceUploadAdmission";
+import { handleStreamProvider, handleVerifySliceHttp } from "./harness/streamEndpoint";
 
 const PROJECT_FAVICON_CACHE_CONTROL = "public, max-age=3600";
 const SITE_FAVICON_CACHE_CONTROL_SUCCESS = "public, max-age=86400"; // 24 h
@@ -204,8 +205,24 @@ export function makeEffectHttpRouteLayer(
     binaryUploadEffectRouteLayer,
     attachmentsEffectRouteLayer,
     staticAndDevEffectRouteLayer,
+    harnessEffectRouteLayer,
   );
 }
+
+export const harnessEffectRouteLayer = Layer.mergeAll(
+  HttpRouter.add("POST", "/api/harness/stream", Effect.gen(function* () {
+    const req = yield* HttpServerRequest.HttpServerRequest;
+    const body = yield* req.json as Effect.Effect<unknown, unknown, never>;
+    // Delegate to harness/streamEndpoint which returns a Response
+    const res = yield* Effect.promise(() => handleStreamProvider(new Request("http://localhost/api/harness/stream", { method: "POST", body: JSON.stringify(body), headers: { "Content-Type": "application/json" } })));
+    return HttpServerResponse.uint8Array(await res.arrayBuffer().then((b) => new Uint8Array(b)), { status: res.status, contentType: res.headers.get("content-type") ?? "text/event-stream" });
+  })),
+  HttpRouter.add("POST", "/api/harness/verify", Effect.gen(function* () {
+    const req = yield* HttpServerRequest.HttpServerRequest;
+    const res = yield* Effect.promise(() => handleVerifySliceHttp(new Request("http://localhost/api/harness/verify", { method: "POST", body: JSON.stringify(yield* req.json) } as unknown as Request)));
+    return HttpServerResponse.uint8Array(await res.arrayBuffer().then((b) => new Uint8Array(b)), { status: res.status, contentType: "application/json" });
+  })),
+);
 
 export function makeDesktopShutdownEffectRouteLayer(shutdownController: ServerShutdownController) {
   return HttpRouter.add(
