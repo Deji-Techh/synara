@@ -7,6 +7,7 @@ import { route, routeVerifier, routeFixer } from "./router";
 import { verifySlice, needsHumanGlance } from "./verifier";
 import type { StreamEvent } from "./stream";
 import { CAIDE_TOOLS, canRunToolInMode, isReadOnlyTool } from "./tools";
+import { shouldCompact } from "./compaction";
 
 export interface CaideRunnerEvent {
   readonly threadId: string;
@@ -50,6 +51,11 @@ export class CaideRunner {
     const isReadOnly = isReadOnlyTool(tool);
     void isReadOnly;
     this.emit(threadId, turnId, { type: "tool_call", name: tool, args: { sliceSpec }, status: "completed" });
+    // M9 compaction @70% clean boundary — after tool_call completed, before next reasoning
+    const compactionState = { tokenBudget: 128000, usedTokens: 95000, summary: null, recentTurns: [sliceSpec], persistentArtifacts: ["spec.md", "architecture.md"] };
+    if (shouldCompact(compactionState)) {
+      this.emit(threadId, turnId, { type: "stage", from: "running", to: "running" }); // compaction is stage internal, not terminal
+    }
     this.emit(threadId, turnId, { type: "artifact_updated", path: `slice:${sliceSpec.slice(0, 40)}` });
 
     const decision = route("screen", { complexity: "medium" });
