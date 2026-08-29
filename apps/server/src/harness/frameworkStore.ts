@@ -7,8 +7,11 @@ import { isFramework } from "./framework";
 
 const memStore = new Map<string, ProjectFramework>();
 
-// Pure Caide: now also persists to Sqlite apps.framework column when DB is available
-// Keep Map as fast cache + fallback for tests without DB
+// Pure Caide: now also persists to Sqlite apps.framework column when DB is available + file for restart
+import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { homedir } from "node:os";
+
 let dbLayer: { getFramework?: (id: string) => Promise<ProjectFramework | null>; setFramework?: (id: string, fw: ProjectFramework) => Promise<void> } | null = null;
 
 export function setFrameworkDbLayer(layer: typeof dbLayer): void {
@@ -18,6 +21,22 @@ export function setFrameworkDbLayer(layer: typeof dbLayer): void {
 export async function setFrameworkAsync(projectId: string, framework: ProjectFramework): Promise<void> {
   setFramework(projectId, framework);
   if (dbLayer?.setFramework) await dbLayer.setFramework(projectId, framework);
+  // Also write to ~/caide-apps/.caide/framework.json for restart without DB
+  try {
+    const dir = join(homedir(), "caide-apps", projectId, ".caide");
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, "framework.json"), JSON.stringify({ framework }), "utf8");
+  } catch {}
+}
+
+export async function getFrameworkFromFile(projectId: string): Promise<ProjectFramework | null> {
+  try {
+    const data = await readFile(join(homedir(), "caide-apps", projectId, ".caide", "framework.json"), "utf8");
+    const parsed = JSON.parse(data) as { framework?: unknown };
+    return isFramework(parsed.framework) ? parsed.framework : null;
+  } catch {
+    return null;
+  }
 }
 
 export function setFramework(projectId: string, framework: ProjectFramework): void {
