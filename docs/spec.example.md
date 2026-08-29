@@ -1,4 +1,4 @@
-# Spec — Example Caide App (M1 3-5 core flows, not features)
+# Spec — Example Caide App (M1 gate)
 
 ## Who
 Mobile-first users who need to create and share lists quickly.

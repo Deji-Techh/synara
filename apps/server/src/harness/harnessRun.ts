@@ -27,7 +27,7 @@ export class CaideHarness {
     const results: SliceResult[] = [];
 
     for (let i = 0; i < slices.length; i++) {
-      const slice = slices[i];
+      const slice = slices[i] as { id: string; title: string; spec: string; };
       const turnId = `turn-${Date.now()}-${i}`;
       this.runner.startTurn(threadId, turnId, "proj-harness", "builder", `slice: ${slice.title}`, []);
 
