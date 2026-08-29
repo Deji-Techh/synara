@@ -22,6 +22,23 @@ export default function ChatView({ threadId: threadIdProp, onOpenSettings, onOpe
   const listRef = useRef<HTMLDivElement>(null);
   const threadId = threadIdProp ?? `thread-${Date.now()}`;
 
+  // Load chat history on mount
+  useEffect(() => {
+    if (!threadIdProp) return;
+    fetch(`/api/harness/threads/${threadIdProp}/messages`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const history: LiveEvent[] = data.map((m: { role: string; content: string }) => ({
+            kind: "token" as const,
+            text: `[${m.role}] ${m.content}`,
+          }));
+          setEvents(history);
+        }
+      })
+      .catch(() => {});
+  }, [threadIdProp]);
+
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [events]);

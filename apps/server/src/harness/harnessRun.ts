@@ -21,6 +21,7 @@ import { runSecurityPass } from "./security";
 import { runPerformancePass } from "./performance";
 import { runBenchmark } from "./benchmark";
 import { createCancellable, cancelTurn, cleanupTurn } from "./cancel";
+import { applyRtlMirror, isLicenseAllowed } from "./global";
 import {
   sendToProvider,
   buildBuilderPrompt,
@@ -146,6 +147,14 @@ export class CaideHarness {
 
         // Write generated code to workspace
         const writeResult = await executeTool("write", { path: filename, content: code }, projectDir);
+
+        // M25: Apply RTL mirror if locale is RTL (check spec for RTL indicators)
+        const isRtl = spec.toLowerCase().includes("rtl") || spec.toLowerCase().includes("arabic") || spec.toLowerCase().includes("hebrew");
+        if (isRtl) {
+          code = applyRtlMirror(code, "ar");
+          await executeTool("write", { path: filename, content: code }, projectDir);
+        }
+
         allScreens.push(code);
 
         events.push({

@@ -1,11 +1,15 @@
-// apps/server/src/main.ts — Pure Caide server
-import { getCaideRunner, handleVerifySlice } from "./harness/wsCaide";
-import { CaideHarness } from "./harness/harnessRun";
+// apps/server/src/main.ts — Pure Caide server with real Sqlite persistence
+import { handleVerifySlice } from "./harness/wsCaide";
 import { handleStreamProvider, handleVerifySliceHttp } from "./harness/streamEndpoint";
+import {
+  loadProjects, getProject, createProject, deleteProject, updateProject,
+  loadThreads, getThreadsByProject, getThread, createThread, updateThread,
+  getMessagesByThread, createMessage,
+  type Project, type Thread, type Message,
+} from "./db";
 
 const PORT = parseInt(process.env.CAIDE_PORT ?? "58080", 10);
 const HOST = process.env.CAIDE_HOST ?? "127.0.0.1";
-const HOME = process.env.CAIDE_HOME ?? `${process.env.HOME}/caide-apps`;
 
 // ── Filesystem helpers ────────────────────────────────────────────────
 import { mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
@@ -15,24 +19,6 @@ import { homedir } from "node:os";
 const CAIDE_HOME = process.env.CAIDE_HOME ?? join(homedir(), "caide-apps");
 
 async function ensureDir(p: string) { await mkdir(p, { recursive: true }); }
-async function readJson(p: string): Promise<any> { try { return JSON.parse(await readFile(p, "utf8")); } catch { return null; } }
-async function writeJson(p: string, data: unknown) { await writeFile(p, JSON.stringify(data, null, 2), "utf8"); }
-
-// ── Project/Thread store (simple JSON file, no Sqlite yet) ──────────
-interface Project { id: string; name: string; framework: string; workspaceRoot: string; updatedAt: string; threadCount: number }
-interface Thread { id: string; projectId: string; title: string; status: string; createdAt: string }
-interface Message { id: string; threadId: string; role: "user" | "assistant"; content: string; createdAt: string }
-
-const PROJECTS_FILE = join(CAIDE_HOME, "projects.json");
-const THREADS_FILE = join(CAIDE_HOME, "threads.json");
-const MESSAGES_FILE = join(CAIDE_HOME, "messages.json");
-
-async function loadProjects(): Promise<Project[]> { return (await readJson(PROJECTS_FILE)) ?? []; }
-async function saveProjects(projects: Project[]) { await ensureDir(CAIDE_HOME); await writeJson(PROJECTS_FILE, projects); }
-async function loadThreads(): Promise<Thread[]> { return (await readJson(THREADS_FILE)) ?? []; }
-async function saveThreads(threads: Thread[]) { await ensureDir(CAIDE_HOME); await writeJson(THREADS_FILE, threads); }
-async function loadMessages(): Promise<Message[]> { return (await readJson(MESSAGES_FILE)) ?? []; }
-async function saveMessages(messages: Message[]) { await ensureDir(CAIDE_HOME); await writeJson(MESSAGES_FILE, messages); }
 
 function slugify(name: string): string {
   return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || `app-${Date.now().toString(36)}`;
@@ -48,7 +34,7 @@ const server = Bun.serve({
 
     // CORS
     if (method === "OPTIONS") {
-      return new Response(null, { headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET,POST,OPTIONS", "Access-Control-Allow-Headers": "Content-Type" } });
+      return new Response(null, { headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS", "Access-Control-Allow-Headers": "Content-Type" } });
     }
 
     const json = (data: unknown, status = 200) =>
@@ -58,7 +44,7 @@ const server = Bun.serve({
     try {
       // ── Health ──
       if (url.pathname === "/health" && method === "GET") {
-        return json({ status: "ok", harness: "pure-caide", version: "0.1.0" });
+        return json({ status: "ok", harness: "pure-caide", version: "0.1.0", db: "sqlite" });
       }
 
       // ── Harness stream (SSE) — real provider + harness loop ──
@@ -73,8 +59,7 @@ const server = Bun.serve({
 
       // ── GET /api/harness/projects ──
       if (url.pathname === "/api/harness/projects" && method === "GET") {
-        const projects = await loadProjects();
-        return json(projects);
+        return json(loadProjects());
       }
 
       // ── POST /api/harness/project ──
@@ -94,52 +79,77 @@ const server = Bun.serve({
             : JSON.stringify({ name: slug, scripts: { dev: framework === "website" ? "vite" : "expo start" } }, null, 2);
           await writeFile(join(workspaceRoot, pkgName), pkg).catch(() => {});
         }
-        await writeJson(join(workspaceRoot, ".caide"), { framework });
-        const project: Project = { id, name, framework, workspaceRoot, updatedAt: new Date().toISOString(), threadCount: 0 };
-        const projects = await loadProjects(); projects.push(project); await saveProjects(projects);
+        await writeFile(join(workspaceRoot, ".caide"), JSON.stringify({ framework })).catch(() => {});
+        const project: Project = { id, name, framework, workspace_root: workspaceRoot, updated_at: new Date().toISOString(), thread_count: 0 };
+        createProject(project);
         const threadId = `thread-${Date.now().toString(36)}`;
-        const thread: Thread = { id: threadId, projectId: id, title: name, status: "idle", createdAt: new Date().toISOString() };
-        const threads = await loadThreads(); threads.push(thread); await saveThreads(threads);
-        project.threadCount = 1; await saveProjects(projects);
+        const thread: Thread = { id: threadId, project_id: id, title: name, status: "idle", created_at: new Date().toISOString() };
+        createThread(thread);
+        updateProject(id, { thread_count: 1 });
         return json({ projectId: id, threadId, framework, workspaceRoot });
+      }
+
+      // ── DELETE /api/harness/projects/:id ──
+      const delMatch = url.pathname.match(/^\/api\/harness\/projects\/([^/]+)$/);
+      if (delMatch && method === "DELETE") {
+        const projectId = delMatch[1]!;
+        const project = getProject(projectId);
+        if (!project) return json({ error: "Project not found" }, 404);
+        deleteProject(projectId);
+        return json({ deleted: projectId });
       }
 
       // ── POST /api/harness/thread ──
       if (url.pathname === "/api/harness/thread" && method === "POST") {
         const body = await req.json().catch(() => ({})) as { projectId?: string; title?: string };
-        const projectId = body.projectId as string; const title = (body.title as string) ?? "New thread";
+        const projectId = body.projectId as string;
+        const title = (body.title as string) ?? "New thread";
         const threadId = `thread-${Date.now().toString(36)}`;
-        const thread: Thread = { id: threadId, projectId, title, status: "idle", createdAt: new Date().toISOString() };
-        const threads = await loadThreads(); threads.push(thread); await saveThreads(threads);
-        const projects = await loadProjects(); const p = projects.find((x) => x.id === projectId); if (p) { p.threadCount++; p.updatedAt = new Date().toISOString(); await saveProjects(projects); }
+        const thread: Thread = { id: threadId, project_id: projectId, title, status: "idle", created_at: new Date().toISOString() };
+        createThread(thread);
+        const project = getProject(projectId);
+        if (project) {
+          updateProject(projectId, { thread_count: project.thread_count + 1, updated_at: new Date().toISOString() });
+        }
         return json({ threadId, projectId, title });
+      }
+
+      // ── PATCH /api/harness/threads/:id ──
+      const patchMatch = url.pathname.match(/^\/api\/harness\/threads\/([^/]+)$/);
+      if (patchMatch && method === "PATCH") {
+        const threadId = patchMatch[1]!;
+        const body = await req.json().catch(() => ({})) as { status?: string; title?: string };
+        const thread = getThread(threadId);
+        if (!thread) return json({ error: "Thread not found" }, 404);
+        const updates: Partial<Thread> = {};
+        if (body.status) updates.status = body.status;
+        if (body.title) updates.title = body.title;
+        updateThread(threadId, updates);
+        return json(getThread(threadId));
       }
 
       // ── GET /api/harness/projects/:id/threads ──
       const threadMatch = url.pathname.match(/^\/api\/harness\/projects\/([^/]+)\/threads$/);
       if (threadMatch && method === "GET") {
-        const projectId = threadMatch[1];
-        const threads = await loadThreads();
-        return json(threads.filter((t) => t.projectId === projectId));
+        const projectId = threadMatch[1]!;
+        return json(getThreadsByProject(projectId));
       }
 
       // ── GET /api/harness/projects/:id/files ──
       const filesMatch = url.pathname.match(/^\/api\/harness\/projects\/([^/]+)\/files$/);
       if (filesMatch && method === "GET") {
-        const projectId = filesMatch[1];
-        const projects = await loadProjects();
-        const project = projects.find((p) => p.id === projectId);
+        const projectId = filesMatch[1]!;
+        const project = getProject(projectId);
         if (!project) return json({ error: "Project not found" }, 404);
-        const files = await readdir(project.workspaceRoot, { recursive: true }).catch(() => []);
+        const files = await readdir(project.workspace_root, { recursive: true }).catch(() => []);
         return json(files);
       }
 
       // ── GET /api/harness/threads/:id/messages ──
       const msgMatch = url.pathname.match(/^\/api\/harness\/threads\/([^/]+)\/messages$/);
       if (msgMatch && method === "GET") {
-        const threadId = msgMatch[1];
-        const messages = await loadMessages();
-        return json(messages.filter((m) => m.threadId === threadId));
+        const threadId = msgMatch[1]!;
+        return json(getMessagesByThread(threadId));
       }
 
       // ── POST /api/harness/threads/:id/messages ──
@@ -148,49 +158,13 @@ const server = Bun.serve({
         const body = await req.json().catch(() => ({})) as { role?: string; content?: string };
         const message: Message = {
           id: `msg-${Date.now().toString(36)}`,
-          threadId,
-          role: (body.role as "user" | "assistant") ?? "user",
+          thread_id: threadId,
+          role: body.role ?? "user",
           content: body.content ?? "",
-          createdAt: new Date().toISOString(),
+          created_at: new Date().toISOString(),
         };
-        const messages = await loadMessages();
-        messages.push(message);
-        await saveMessages(messages);
+        createMessage(message);
         return json(message);
-      }
-
-      // ── DELETE /api/harness/projects/:id ──
-      const delMatch = url.pathname.match(/^\/api\/harness\/projects\/([^/]+)$/);
-      if (delMatch && method === "DELETE") {
-        const projectId = delMatch[1];
-        const projects = await loadProjects();
-        const idx = projects.findIndex((p) => p.id === projectId);
-        if (idx === -1) return json({ error: "Project not found" }, 404);
-        projects.splice(idx, 1);
-        await saveProjects(projects);
-        // Also delete threads and messages for this project
-        const threads = await loadThreads();
-        const threadIds = threads.filter((t) => t.projectId === projectId).map((t) => t.id);
-        const remainingThreads = threads.filter((t) => t.projectId !== projectId);
-        await saveThreads(remainingThreads);
-        const messages = await loadMessages();
-        const remainingMessages = messages.filter((m) => !threadIds.includes(m.threadId));
-        await saveMessages(remainingMessages);
-        return json({ deleted: projectId });
-      }
-
-      // ── PATCH /api/harness/threads/:id ──
-      const patchMatch = url.pathname.match(/^\/api\/harness\/threads\/([^/]+)$/);
-      if (patchMatch && method === "PATCH") {
-        const threadId = patchMatch[1];
-        const body = await req.json().catch(() => ({})) as { status?: string; title?: string };
-        const threads = await loadThreads();
-        const thread = threads.find((t) => t.id === threadId);
-        if (!thread) return json({ error: "Thread not found" }, 404);
-        if (body.status) thread.status = body.status;
-        if (body.title) thread.title = body.title;
-        await saveThreads(threads);
-        return json(thread);
       }
 
       // ── Static files (built web app) ──
