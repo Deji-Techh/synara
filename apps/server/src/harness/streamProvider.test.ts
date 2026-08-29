@@ -30,7 +30,8 @@ describe("caideRunner.streamProvider — per-model endpointForModel", () => {
       await runner.streamProvider({ threadId: "t1", turnId: "turn1", model: "deepseek-v4-flash", prompt: "hey", baseUrl: "https://api.example.com/v1", apiKey: "test-key" });
       expect(tokens.join("")).toBe("hello world");
       expect(mockFetch).toHaveBeenCalled();
-      const url = (mockFetch.mock.calls[0]?.[0] as string) ?? "";
+      const firstCall = mockFetch.mock.calls[0] as unknown[] | undefined;
+      const url = (firstCall?.[0] as string | undefined) ?? "";
       expect(url).toContain("/chat/completions");
     } finally {
       (globalThis as unknown as { fetch: typeof fetch }).fetch = originalFetch;

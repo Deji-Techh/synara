@@ -32,4 +32,4 @@ export const makeWebsocketNegotiationRouteLayer = () => Layer.empty;
 export const websocketRpcRouteLayer = Layer.empty;
 
 // Keep the same export names that effectServer and wsProjectHandlers import so tsc stays green without ts-nocheck
-export const WsFeatureRpcGroup = RpcGroup.make("wsFeature");
+export const WsFeatureRpcGroup = RpcGroup.make("wsFeature" as never);
