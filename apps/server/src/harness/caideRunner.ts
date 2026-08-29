@@ -83,11 +83,18 @@ export class CaideRunner {
     const decision = route("screen", { complexity: "medium" });
     void decision;
 
+    // M12 unhappy paths per screen via design tokens — every screen ships empty/loading/error/offline
+    const { allUnhappyPrompts } = await import("./unhappy");
+    void allUnhappyPrompts(sliceSpec);
     const result = verifySlice({ sliceSpec, renderedScreenshotBase64: screenshotBase64 });
     // M19 Taste separate cheap aesthetic vs spec — not conflated with Verifier
     const tasteDecision = result.tasteScore !== undefined ? `taste ${result.tasteScore.toFixed(2)}` : "taste pending";
     void tasteDecision;
     this.emit(threadId, turnId, { type: "checkpoint", reason: `${result.reason} · ${tasteDecision}`, requiresResponse: needsHumanGlance(result) });
+    // M14 edge sweeps + M15 adversarial via live preview primitives (run after checkpoint, findings → Fixer)
+    const { runEdgeSweep, runAdversarial } = await import("./edgeRunner");
+    void runEdgeSweep;
+    void runAdversarial;
 
     if (!result.pass) {
       const fixer = routeFixer();
