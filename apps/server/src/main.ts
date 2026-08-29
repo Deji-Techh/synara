@@ -1,6 +1,7 @@
 // apps/server/src/main.ts — Pure Caide server
-import { getCaideRunner } from "./harness/wsCaide";
-import { handleVerifySlice } from "./harness/wsCaide";
+import { getCaideRunner, handleVerifySlice } from "./harness/wsCaide";
+import { CaideHarness } from "./harness/harnessRun";
+import { handleStreamProvider, handleVerifySliceHttp } from "./harness/streamEndpoint";
 
 const PORT = parseInt(process.env.CAIDE_PORT ?? "58080", 10);
 const HOST = process.env.CAIDE_HOST ?? "127.0.0.1";
@@ -56,40 +57,14 @@ const server = Bun.serve({
         return json({ status: "ok", harness: "pure-caide", version: "0.1.0" });
       }
 
-      // ── Harness stream (SSE) ──
+      // ── Harness stream (SSE) — real provider + harness loop ──
       if (url.pathname === "/api/harness/stream" && method === "POST") {
-        const body = await req.json().catch(() => ({})) as Record<string, unknown>;
-        const threadId = (body.threadId as string) ?? `thread-${Date.now()}`;
-        const turnId = (body.turnId as string) ?? `turn-${Date.now()}`;
-        const model = (body.model as string) ?? "deepseek-v4-flash";
-        const prompt = (body.prompt as string) ?? "";
-        const baseUrl = (body.baseUrl as string) ?? process.env.OPENCODE_ZEN_URL ?? "https://opencode.ai/zen/v1";
-        const apiKey = (body.apiKey as string) ?? process.env.OPENCODE_ZEN_API_KEY ?? "";
-        const runner = getCaideRunner();
-        runner.startTurn(threadId, turnId, "proj-default", "builder", "stage", []);
-        const stream = new ReadableStream({
-          async start(controller) {
-            const enc = new TextEncoder();
-            const ev = (e: { event: { type: string; content?: string } }) => {
-              if (e.event.type === "token" && typeof (e.event as any).content === "string")
-                controller.enqueue(enc.encode(`data: ${JSON.stringify({ delta: (e.event as any).content })}\n\n`));
-            };
-            const off = runner.onEvent(ev as any);
-            try {
-              await runner.streamProvider({ threadId, turnId, model, prompt, baseUrl, apiKey });
-              controller.enqueue(enc.encode("data: [DONE]\n\n"));
-            } catch (err) {
-              controller.enqueue(enc.encode(`data: ${JSON.stringify({ error: (err as Error).message })}\n\n`));
-            } finally { off(); controller.close(); }
-          },
-        });
-        return new Response(stream, { headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" } });
+        return handleStreamProvider(req);
       }
 
       // ── Verify slice ──
       if (url.pathname === "/api/harness/verify" && method === "POST") {
-        const body = await req.json().catch(() => ({})) as Record<string, unknown>;
-        return json(await handleVerifySlice({ threadId: (body.threadId as string) ?? "", turnId: (body.turnId as string) ?? "", sliceSpec: (body.sliceSpec as string) ?? "", screenshotBase64: (body.screenshotBase64 as string) ?? null }));
+        return handleVerifySliceHttp(req);
       }
 
       // ── GET /api/harness/projects ──

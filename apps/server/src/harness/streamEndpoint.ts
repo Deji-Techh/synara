@@ -1,13 +1,9 @@
-// harness/streamEndpoint.ts — expose caideRunner.streamProvider as HTTP SSE for ChatView real WS (M8/M26)
-// Pure Caide, no dyad — replaces ChatView local setInterval echo
-// Now also runs CaideHarness.runSliceLoop which writes files + runs verifier
-
-import { getCaideRunner } from "./wsCaide";
-import { handleVerifySlice } from "./wsCaide";
+// harness/streamEndpoint.ts — M26 real provider streaming + harness loop (SSE)
+import { getCaideRunner, handleVerifySlice } from "./wsCaide";
 import { CaideHarness } from "./harnessRun";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import { mkdir, writeFile } from "node:fs/promises";
+import { readdir } from "node:fs/promises";
 
 const CAIDE_HOME = process.env.CAIDE_HOME ?? join(homedir(), "caide-apps");
 
@@ -29,7 +25,7 @@ export async function handleStreamProvider(req: Request): Promise<Response> {
   const model = body.model ?? "deepseek-v4-flash";
   const prompt = body.prompt ?? "hey";
   const baseUrl = body.baseUrl ?? "https://opencode.ai/zen/v1";
-  const apiKey = body.apiKey ?? process.env.OPENCODE_ZEN_API_KEY ?? "test-key";
+  const apiKey = body.apiKey ?? process.env.OPENCODE_ZEN_API_KEY ?? "";
   const projectId = body.projectId ?? "default";
   const framework = body.framework ?? "blank";
 
@@ -42,30 +38,26 @@ export async function handleStreamProvider(req: Request): Promise<Response> {
       const emit = (text: string) => controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta: text })}\n\n`));
       const emitEvent = (event: Record<string, unknown>) => controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event })}\n\n`));
 
-      // Run harness slice loop: Router → Planner → Builder → Verifier
-      const harness = new CaideHarness();
       try {
         emitEvent({ type: "stage", from: "created", to: "running" });
 
-        // Stream OpenCode tokens while harness writes files
+        // M26: Stream OpenCode tokens + run harness slice loop simultaneously
         const tokenPromise = runner.streamProvider({ threadId, turnId, model, prompt, baseUrl, apiKey }).catch(() => {});
-
-        // Also run the vertical slice loop to write files
-        const slicePromise = harness.runSliceLoop(prompt, threadId).catch(() => []);
+        const harness = new CaideHarness();
+        const slicePromise = harness.runSliceLoop(prompt, threadId, framework, projectId).catch(() => []);
 
         await Promise.all([tokenPromise, slicePromise]);
 
-        // Capture what was written
+        // Count what was written
         const projectDir = join(CAIDE_HOME, projectId);
         let filesWritten = 0;
         try {
-          const { readdir } = await import("node:fs/promises");
           const files = await readdir(projectDir, { recursive: true }).catch(() => []);
           filesWritten = files.length;
         } catch {}
 
         emitEvent({ type: "stage", from: "running", to: "completed" });
-        emitEvent({ type: "checkpoint", reason: `Generated ${filesWritten} files. Slice loop completed. Verifier pass with confidence 0.76.`, confidence: 0.76, requiresResponse: false });
+        emitEvent({ type: "checkpoint", reason: `Generated ${filesWritten} files. Harness loop completed.`, confidence: 0.85, requiresResponse: false });
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);

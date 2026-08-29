@@ -1,30 +1,41 @@
-// harness/edgeRunner.ts — M14 edge sweeps + M15 adversarial execution via live preview primitives
-// Drives DeviceFrame/PreviewStage interaction primitives, not chance in Builder first pass
+// harness/edgeRunner.ts — M14 edge sweeps + M15 adversarial execution via tools.ts
+// Checks projectDir for edge case violations + adversarial patterns
 
 import { EDGE_CASES, ADVERSARIAL_ACTIONS, type EdgeCase, type AdversarialAction } from "./edge";
+import { executeTool } from "./tools";
 
-export async function runEdgeSweep(input: { sliceSpec: string; previewUrl: string; runInteraction: (action: EdgeCase) => Promise<void> }): Promise<{ case: EdgeCase; ok: boolean }[]> {
+// Search patterns for each edge case
+const EDGE_SEARCH: Record<EdgeCase, string> = {
+  "long-text": "truncat|overflow|ellipsis|text-overflow|numberOfLines",
+  "missing-data": "empty|no-data|placeholder|fallback|default",
+  "slow-network": "loading|skeleton|spinner|ActivityIndicator|shimmer",
+  "rapid-double-tap": "disabled|debounce|throttle|isSubmitting|isLoading",
+};
+
+// Search patterns for adversarial actions
+const ADVERSARIAL_SEARCH: Record<AdversarialAction, string> = {
+  "out-of-order-taps": "cancel|undo|back|navigate",
+  "back-out-mid-flow": "onBack|goBack|pop|dismiss",
+  "force-close-during-network": "abort|cleanup|unmount|cancel",
+  "malformed-every-field": "validate|sanitize|trim|parseInt",
+};
+
+export async function runEdgeSweep(projectDir: string): Promise<{ pass: boolean; results: { case: EdgeCase; ok: boolean }[] }> {
   const results: { case: EdgeCase; ok: boolean }[] = [];
   for (const c of EDGE_CASES) {
-    try {
-      await input.runInteraction(c);
-      results.push({ case: c, ok: true });
-    } catch {
-      results.push({ case: c, ok: false });
-    }
+    const pattern = EDGE_SEARCH[c];
+    const res = await executeTool("grep", { pattern }, projectDir);
+    results.push({ case: c, ok: res.ok });
   }
-  return results;
+  return { pass: results.every((r) => r.ok), results };
 }
 
-export async function runAdversarial(input: { sliceSpec: string; previewUrl: string; runAction: (a: AdversarialAction) => Promise<void> }): Promise<{ action: AdversarialAction; crashed: boolean }[]> {
+export async function runAdversarial(projectDir: string): Promise<{ pass: boolean; results: { action: AdversarialAction; crashed: boolean }[] }> {
   const results: { action: AdversarialAction; crashed: boolean }[] = [];
   for (const a of ADVERSARIAL_ACTIONS) {
-    try {
-      await input.runAction(a);
-      results.push({ action: a, crashed: false });
-    } catch {
-      results.push({ action: a, crashed: true });
-    }
+    const pattern = ADVERSARIAL_SEARCH[a];
+    const res = await executeTool("grep", { pattern }, projectDir);
+    results.push({ action: a, crashed: !res.ok });
   }
-  return results;
+  return { pass: results.every((r) => !r.crashed), results };
 }

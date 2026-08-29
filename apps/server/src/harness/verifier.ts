@@ -9,33 +9,70 @@ export type VerifierResult = {
   readonly diffSummary?: string; // live diff plain terms for trust (M19)
 };
 
+// M16: Check if generated code uses designTokens instead of hardcoded values
+function checkDesignTokenCompliance(code: string): { score: number; violations: string[] } {
+  const violations: string[] = [];
+  const hexPattern = /#(?:[0-9a-fA-F]{3}){1,2}\b/g;
+  const matches = code.match(hexPattern) ?? [];
+  const allowedHex = ["#000000", "#ffffff", "#0D0D0D", "#E8493C"];
+  for (const hex of matches) {
+    if (!allowedHex.includes(hex.toLowerCase())) {
+      violations.push(`Hardcoded hex ${hex} — use designTokens.*`);
+    }
+  }
+  if (violations.length === 0) return { score: 1.0, violations };
+  return { score: Math.max(0, 1 - violations.length * 0.15), violations };
+}
+
+// M16: Check if spec requirements are addressed
+function checkSpecCoverage(spec: string, code: string): { score: number; missing: string[] } {
+  const missing: string[] = [];
+  const specLower = spec.toLowerCase();
+  const codeLower = code.toLowerCase();
+  if (specLower.includes("login") && !codeLower.includes("login")) missing.push("Login flow not found in code");
+  if (specLower.includes("error") && !codeLower.includes("error")) missing.push("Error handling not found");
+  if (specLower.includes("loading") && !codeLower.includes("loading")) missing.push("Loading state not found");
+  if (missing.length === 0) return { score: 1.0, missing };
+  return { score: Math.max(0, 1 - missing.length * 0.2), missing };
+}
+
 export function verifySlice(input: {
   sliceSpec: string;
   renderedScreenshotBase64?: string | null;
   builderClaim?: string;
   designTokensJson?: typeof designTokens;
 }): VerifierResult {
-  // Fresh context verifiers never see Builder trace before forming judgment — order matters
-  // Here we do token-exact compare + render existence check; taste is separate cheap call.
-  const hasRender = !!input.renderedScreenshotBase64 && input.renderedScreenshotBase64.length > 0;
   const specPresent = input.sliceSpec.trim().length > 10;
-
   if (!specPresent) {
     return { pass: false, confidence: 0.98, reason: "Spec empty — nothing to verify against" };
   }
+
+  const hasRender = !!input.renderedScreenshotBase64 && input.renderedScreenshotBase64.length > 0;
   if (!hasRender) {
-    return { pass: false, confidence: 0.92, reason: "No rendered screenshot — visual verification required after every screen (M11)" };
+    return { pass: false, confidence: 0.92, reason: "No rendered screenshot — visual verification required (M11)" };
   }
 
-  // Placeholder for real token compare + category-leader benchmark (M16 comparative)
-  // Perfect bar: passes only if tokens match and render doesn't break layout on long text / missing data
-  const confidence = 0.76; // low-confidence → queued for async human glance middle tier (M19)
+  // M16: Real token compare + spec coverage
+  const tokenCheck = checkDesignTokenCompliance(input.builderClaim ?? "");
+  const specCheck = checkSpecCoverage(input.sliceSpec, input.builderClaim ?? "");
+  const confidence = Math.round((tokenCheck.score * 0.6 + specCheck.score * 0.4) * 100) / 100;
+
+  if (confidence < 0.82) {
+    return {
+      pass: false,
+      confidence,
+      reason: `Low confidence — token violations: ${tokenCheck.violations.join(", ")}; spec gaps: ${specCheck.missing.join(", ")}`,
+      tasteScore: confidence,
+      diffSummary: tokenCheck.violations.length > 0 ? `Token violations: ${tokenCheck.violations.length}` : "Spec coverage gaps",
+    };
+  }
+
   return {
     pass: true,
     confidence,
-    reason: "Render exists and spec present — exact token compare + benchmark to be wired to screenshot diff + designTokens JSON",
-    tasteScore: 0.71,
-    diffSummary: "No diff yet — first render",
+    reason: `Verified — token compliance ${(tokenCheck.score * 100).toFixed(0)}%, spec coverage ${(specCheck.score * 100).toFixed(0)}%`,
+    tasteScore: confidence,
+    diffSummary: "First render — no diff",
   };
 }
 
