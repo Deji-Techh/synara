@@ -966,13 +966,18 @@ export function PreviewStage(props: {
           const image = (result as { image?: string | null }).image;
           if (!cancelled && typeof image === "string" && image.length > 0) {
             setNativeFrame({ image, capturedAt: Date.now() });
-            // M11 live — real WS: push artifact_updated to Verifier fresh ctx via caideRunner
-            // Pure Caide: no dyad. In production this is `await ensureNativeApi().harness.verifySlice({threadId, sliceSpec, screenshotBase64: image})`
-            // For skeleton, we fire a best-effort fetch to the harness WS if available, else no-op
-            try {
-              const api = (window as unknown as { nativeApi?: { harness?: { verifySlice?: (i: unknown) => Promise<unknown> } } }).nativeApi;
-              void api?.harness?.verifySlice?.({ threadId: props.threadId, sliceSpec: "preview:screenshot", screenshotBase64: image });
-            } catch {}
+            // M11 live — real WS push artifact_updated to Verifier fresh ctx via caideRunner pure Caide
+            fetch("/api/harness/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ threadId: props.threadId, sliceSpec: "preview:screenshot", screenshotBase64: image }),
+            }).catch(() => {
+              // Fallback to window.nativeApi harness if fetch not yet routed
+              try {
+                const api = (window as unknown as { nativeApi?: { harness?: { verifySlice?: (i: unknown) => Promise<unknown> } } }).nativeApi;
+                void api?.harness?.verifySlice?.({ threadId: props.threadId, sliceSpec: "preview:screenshot", screenshotBase64: image });
+              } catch {}
+            });
           }
         })
         .catch(() => {})

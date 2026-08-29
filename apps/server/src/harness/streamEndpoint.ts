@@ -2,6 +2,18 @@
 // Pure Caide, no dyad — replaces ChatView local setInterval echo
 
 import { getCaideRunner } from "./wsCaide";
+import { handleVerifySlice } from "./wsCaide";
+
+export async function handleVerifySliceHttp(req: Request): Promise<Response> {
+  const body = (await req.json().catch(() => ({}))) as { threadId?: string; turnId?: string; sliceSpec?: string; screenshotBase64?: string | null };
+  const res = await handleVerifySlice({
+    threadId: body.threadId ?? "thread-test",
+    turnId: body.turnId ?? `turn-${Date.now()}`,
+    sliceSpec: body.sliceSpec ?? "preview:screenshot",
+    screenshotBase64: body.screenshotBase64 ?? null,
+  });
+  return new Response(JSON.stringify(res), { headers: { "Content-Type": "application/json" } });
+}
 
 export async function handleStreamProvider(req: Request): Promise<Response> {
   const body = (await req.json().catch(() => ({}))) as { threadId?: string; turnId?: string; model?: string; prompt?: string; baseUrl?: string; apiKey?: string };
