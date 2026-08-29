@@ -20,8 +20,7 @@
     "dev": "tsdown src/index.ts --format cjs --watch --clean --no-dts",
     "build": "tsdown src/index.ts --format esm,cjs --clean --no-dts",
     "prepare": "effect-language-service patch",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "effect": "catalog:"
