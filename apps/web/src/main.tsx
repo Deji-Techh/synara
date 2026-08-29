@@ -1,12 +1,14 @@
-// apps/web/src/main.tsx — Pure Caide minimal entry point
+// apps/web/src/main.tsx — Pure Caide entry point
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "@fontsource-variable/jetbrains-mono";
 import "./index.css";
 import ChatView from "./components/ChatView";
+import { Sidebar } from "./components/Sidebar";
+import { CreateAppDialog } from "./components/CreateAppDialog";
+import { SettingsPage } from "./components/SettingsPage";
 import { APP_DISPLAY_NAME } from "./branding";
 
-// Error boundary
 class CaideErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: unknown }> {
   override state = { hasError: false, error: null as unknown };
   static getDerivedStateFromError(error: unknown) { return { hasError: true, error }; }
@@ -26,12 +28,43 @@ class CaideErrorBoundary extends React.Component<{ children: React.ReactNode }, 
   }
 }
 
+function App() {
+  const [selectedThread, setSelectedThread] = React.useState<string | undefined>(undefined);
+  const [showCreateProject, setShowCreateProject] = React.useState(false);
+  const [showSettings, setShowSettings] = React.useState(false);
+  const [projectCreated, setProjectCreated] = React.useState<{ projectId: string; threadId: string } | null>(null);
+
+  return (
+    <div className="flex h-screen bg-background">
+      <Sidebar
+        onSelectThread={setSelectedThread}
+        onOpenSettings={() => setShowSettings(true)}
+        onOpenCreateProject={() => setShowCreateProject(true)}
+        selectedThread={selectedThread}
+      />
+      <main className="flex-1 min-w-0">
+        <ChatView
+          threadId={selectedThread}
+          onOpenSettings={() => setShowSettings(true)}
+          onOpenCreateProject={() => setShowCreateProject(true)}
+        />
+      </main>
+      <CreateAppDialog
+        open={showCreateProject}
+        onClose={() => setShowCreateProject(false)}
+        onCreated={(projectId, threadId) => { setProjectCreated({ projectId, threadId }); setSelectedThread(threadId); setShowCreateProject(false); }}
+      />
+      <SettingsPage open={showSettings} onClose={() => setShowSettings(false)} />
+    </div>
+  );
+}
+
 document.title = APP_DISPLAY_NAME;
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <CaideErrorBoundary>
-      <ChatView />
+      <App />
     </CaideErrorBoundary>
   </React.StrictMode>,
 );

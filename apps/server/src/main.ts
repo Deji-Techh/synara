@@ -1,82 +1,171 @@
-// apps/server/src/main.ts — Pure Caide server (no dyad, no harness engine)
-// Replaces 589-line Effect CLI that imported deleted persistence/orchestration/provider modules
-// Routes: GET /health, POST /api/harness/stream (SSE), POST /api/harness/verify (JSON)
-
+// apps/server/src/main.ts — Pure Caide server
 import { getCaideRunner } from "./harness/wsCaide";
 import { handleVerifySlice } from "./harness/wsCaide";
 
 const PORT = parseInt(process.env.CAIDE_PORT ?? "58080", 10);
 const HOST = process.env.CAIDE_HOST ?? "127.0.0.1";
+const HOME = process.env.CAIDE_HOME ?? `${process.env.HOME}/caide-apps`;
 
-async function handleStream(req: Request): Promise<Response> {
-  const body = await req.json().catch(() => ({})) as { threadId?: string; turnId?: string; prompt?: string; model?: string; baseUrl?: string; apiKey?: string };
-  const threadId = body.threadId ?? `thread-${Date.now()}`;
-  const turnId = body.turnId ?? `turn-${Date.now()}`;
-  const model = body.model ?? "deepseek-v4-flash";
-  const prompt = body.prompt ?? "hey";
-  const baseUrl = body.baseUrl ?? process.env.OPENCODE_ZEN_URL ?? "https://opencode.ai/zen/v1";
-  const apiKey = body.apiKey ?? process.env.OPENCODE_ZEN_API_KEY ?? "";
+// ── Filesystem helpers ────────────────────────────────────────────────
+import { mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
+import { join } from "node:path";
+import { homedir } from "node:os";
 
-  const runner = getCaideRunner();
-  runner.startTurn(threadId, turnId, "proj-default", "builder", "stage", []);
+const CAIDE_HOME = process.env.CAIDE_HOME ?? join(homedir(), "caide-apps");
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      const encoder = new TextEncoder();
-      const onEvent = (e: { event: { type: string; content?: string } }) => {
-        if (e.event.type === "token" && typeof (e.event as { content?: string }).content === "string") {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta: (e.event as { content: string }).content })}\n\n`));
-        }
-      };
-      const off = runner.onEvent(onEvent as unknown as (e: CaideEvent) => void);
-      try {
-        await runner.streamProvider({ threadId, turnId, model, prompt, baseUrl, apiKey });
-        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`));
-      } finally {
-        off();
-        controller.close();
-      }
-    },
-  });
+async function ensureDir(p: string) { await mkdir(p, { recursive: true }); }
+async function readJson(p: string): Promise<any> { try { return JSON.parse(await readFile(p, "utf8")); } catch { return null; } }
+async function writeJson(p: string, data: unknown) { await writeFile(p, JSON.stringify(data, null, 2), "utf8"); }
 
-  return new Response(stream, {
-    headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" },
-  });
+// ── Project/Thread store (simple JSON file, no Sqlite yet) ──────────
+interface Project { id: string; name: string; framework: string; workspaceRoot: string; updatedAt: string; threadCount: number }
+interface Thread { id: string; projectId: string; title: string; status: string; createdAt: string }
+
+const PROJECTS_FILE = join(CAIDE_HOME, "projects.json");
+const THREADS_FILE = join(CAIDE_HOME, "threads.json");
+
+async function loadProjects(): Promise<Project[]> { return (await readJson(PROJECTS_FILE)) ?? []; }
+async function saveProjects(projects: Project[]) { await ensureDir(CAIDE_HOME); await writeJson(PROJECTS_FILE, projects); }
+async function loadThreads(): Promise<Thread[]> { return (await readJson(THREADS_FILE)) ?? []; }
+async function saveThreads(threads: Thread[]) { await ensureDir(CAIDE_HOME); await writeJson(THREADS_FILE, threads); }
+
+function slugify(name: string): string {
+  return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || `app-${Date.now().toString(36)}`;
 }
 
-async function handleVerify(req: Request): Promise<Response> {
-  const body = await req.json().catch(() => ({})) as { threadId?: string; turnId?: string; sliceSpec?: string; screenshotBase64?: string | null };
-  const res = await handleVerifySlice({
-    threadId: body.threadId ?? "thread-test",
-    turnId: body.turnId ?? `turn-${Date.now()}`,
-    sliceSpec: body.sliceSpec ?? "preview:screenshot",
-    screenshotBase64: body.screenshotBase64 ?? null,
-  });
-  return new Response(JSON.stringify(res), { headers: { "Content-Type": "application/json" } });
-}
-
+// ── Server routes ────────────────────────────────────────────────────
 const server = Bun.serve({
   port: PORT,
   hostname: HOST,
-  fetch(req: Request) {
+  async fetch(req: Request) {
     const url = new URL(req.url);
-    if (url.pathname === "/health" && req.method === "GET") {
-      return new Response(JSON.stringify({ status: "ok", harness: "pure-caide" }), { headers: { "Content-Type": "application/json" } });
+    const method = req.method;
+
+    // CORS
+    if (method === "OPTIONS") {
+      return new Response(null, { headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET,POST,OPTIONS", "Access-Control-Allow-Headers": "Content-Type" } });
     }
-    if (url.pathname === "/api/harness/stream" && req.method === "POST") {
-      return handleStream(req);
+
+    const json = (data: unknown, status = 200) =>
+      new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+    const text = (msg: string, status = 200) => new Response(msg, { status, headers: { "Access-Control-Allow-Origin": "*" } });
+
+    try {
+      // ── Health ──
+      if (url.pathname === "/health" && method === "GET") {
+        return json({ status: "ok", harness: "pure-caide", version: "0.1.0" });
+      }
+
+      // ── Harness stream (SSE) ──
+      if (url.pathname === "/api/harness/stream" && method === "POST") {
+        const body = await req.json().catch(() => ({})) as Record<string, unknown>;
+        const threadId = (body.threadId as string) ?? `thread-${Date.now()}`;
+        const turnId = (body.turnId as string) ?? `turn-${Date.now()}`;
+        const model = (body.model as string) ?? "deepseek-v4-flash";
+        const prompt = (body.prompt as string) ?? "";
+        const baseUrl = (body.baseUrl as string) ?? process.env.OPENCODE_ZEN_URL ?? "https://opencode.ai/zen/v1";
+        const apiKey = (body.apiKey as string) ?? process.env.OPENCODE_ZEN_API_KEY ?? "";
+        const runner = getCaideRunner();
+        runner.startTurn(threadId, turnId, "proj-default", "builder", "stage", []);
+        const stream = new ReadableStream({
+          async start(controller) {
+            const enc = new TextEncoder();
+            const ev = (e: { event: { type: string; content?: string } }) => {
+              if (e.event.type === "token" && typeof (e.event as any).content === "string")
+                controller.enqueue(enc.encode(`data: ${JSON.stringify({ delta: (e.event as any).content })}\n\n`));
+            };
+            const off = runner.onEvent(ev as any);
+            try {
+              await runner.streamProvider({ threadId, turnId, model, prompt, baseUrl, apiKey });
+              controller.enqueue(enc.encode("data: [DONE]\n\n"));
+            } catch (err) {
+              controller.enqueue(enc.encode(`data: ${JSON.stringify({ error: (err as Error).message })}\n\n`));
+            } finally { off(); controller.close(); }
+          },
+        });
+        return new Response(stream, { headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" } });
+      }
+
+      // ── Verify slice ──
+      if (url.pathname === "/api/harness/verify" && method === "POST") {
+        const body = await req.json().catch(() => ({})) as Record<string, unknown>;
+        return json(await handleVerifySlice({ threadId: (body.threadId as string) ?? "", turnId: (body.turnId as string) ?? "", sliceSpec: (body.sliceSpec as string) ?? "", screenshotBase64: (body.screenshotBase64 as string) ?? null }));
+      }
+
+      // ── GET /api/harness/projects ──
+      if (url.pathname === "/api/harness/projects" && method === "GET") {
+        const projects = await loadProjects();
+        return json(projects);
+      }
+
+      // ── POST /api/harness/project ──
+      if (url.pathname === "/api/harness/project" && method === "POST") {
+        const body = await req.json().catch(() => ({})) as { name?: string; framework?: string };
+        const name = (body.name as string)?.trim() || "New project";
+        const framework = (body.framework as string) ?? "blank";
+        const id = `project-${Date.now().toString(36)}`;
+        const slug = slugify(name);
+        const workspaceRoot = join(CAIDE_HOME, slug);
+        await ensureDir(workspaceRoot);
+        await writeFile(join(workspaceRoot, "README.md"), `# ${name}\n\nCaide project — ${framework}\n`).catch(() => {});
+        if (framework !== "blank") {
+          const pkgName = framework === "flutter" ? "pubspec.yaml" : "package.json";
+          const pkg = framework === "flutter"
+            ? `name: ${slug.replace(/-/g, "_")}\nflutter:\n  uses-material-design: true\n`
+            : JSON.stringify({ name: slug, scripts: { dev: framework === "website" ? "vite" : "expo start" } }, null, 2);
+          await writeFile(join(workspaceRoot, pkgName), pkg).catch(() => {});
+        }
+        await writeJson(join(workspaceRoot, ".caide"), { framework });
+        const project: Project = { id, name, framework, workspaceRoot, updatedAt: new Date().toISOString(), threadCount: 0 };
+        const projects = await loadProjects(); projects.push(project); await saveProjects(projects);
+        const threadId = `thread-${Date.now().toString(36)}`;
+        const thread: Thread = { id: threadId, projectId: id, title: name, status: "idle", createdAt: new Date().toISOString() };
+        const threads = await loadThreads(); threads.push(thread); await saveThreads(threads);
+        project.threadCount = 1; await saveProjects(projects);
+        return json({ projectId: id, threadId, framework, workspaceRoot });
+      }
+
+      // ── POST /api/harness/thread ──
+      if (url.pathname === "/api/harness/thread" && method === "POST") {
+        const body = await req.json().catch(() => ({})) as { projectId?: string; title?: string };
+        const projectId = body.projectId as string; const title = (body.title as string) ?? "New thread";
+        const threadId = `thread-${Date.now().toString(36)}`;
+        const thread: Thread = { id: threadId, projectId, title, status: "idle", createdAt: new Date().toISOString() };
+        const threads = await loadThreads(); threads.push(thread); await saveThreads(threads);
+        const projects = await loadProjects(); const p = projects.find((x) => x.id === projectId); if (p) { p.threadCount++; p.updatedAt = new Date().toISOString(); await saveProjects(projects); }
+        return json({ threadId, projectId, title });
+      }
+
+      // ── GET /api/harness/projects/:id/threads ──
+      const threadMatch = url.pathname.match(/^\/api\/harness\/projects\/([^/]+)\/threads$/);
+      if (threadMatch && method === "GET") {
+        const projectId = threadMatch[1];
+        const threads = await loadThreads();
+        return json(threads.filter((t) => t.projectId === projectId));
+      }
+
+      // ── Static files (built web app) ──
+      const staticDir = join(import.meta.dir, "../apps/web/dist");
+      const filePath = join(staticDir, url.pathname === "/" ? "index.html" : url.pathname);
+      if (await stat(filePath).then(() => true).catch(() => false)) {
+        const ext = filePath.split(".").pop() ?? "";
+        const types: Record<string, string> = { html: "text/html", css: "text/css", js: "application/javascript", json: "application/json", png: "image/png", ico: "image/x-icon" };
+        return new Response(Bun.file(filePath), { headers: { "Content-Type": types[ext] ?? "application/octet-stream" } });
+      }
+
+      return text("Not Found", 404);
+    } catch (err) {
+      return json({ error: (err as Error).message }, 500);
     }
-    if (url.pathname === "/api/harness/verify" && req.method === "POST") {
-      return handleVerify(req);
-    }
-    return new Response("Not Found", { status: 404 });
   },
 });
 
-console.log(`Pure Caide server running at http://${server.hostname}:${server.port}`);
-console.log(`  GET  /health`);
-console.log(`  POST /api/harness/stream  (SSE typed {token})`);
-console.log(`  POST /api/harness/verify  (JSON handleVerifySlice)`);
+console.log(`\n  ✦ Pure Caide server running at http://${server.hostname}:${server.port}\n`);
+console.log(`    GET  /health`);
+console.log(`    GET  /api/harness/projects`);
+console.log(`    POST /api/harness/project {name, framework}`);
+console.log(`    POST /api/harness/thread  {projectId, title}`);
+console.log(`    GET  /api/harness/projects/:id/threads`);
+console.log(`    POST /api/harness/stream  (SSE typed {token})`);
+console.log(`    POST /api/harness/verify  (JSON handleVerifySlice)`);
+console.log();

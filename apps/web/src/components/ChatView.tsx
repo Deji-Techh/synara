@@ -1,4 +1,4 @@
-// apps/web/src/components/ChatView.tsx — Pure Caide live shell (minimal)
+// apps/web/src/components/ChatView.tsx — Pure Caide live shell
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckpointCard } from "./chat/CheckpointCard";
 
@@ -8,9 +8,13 @@ type LiveEvent =
   | { kind: "stage"; from: string; to: string }
   | { kind: "checkpoint"; reason: string; confidence: number; tasteScore?: number; diffSummary?: string };
 
-interface ChatViewProps { threadId?: string }
+interface ChatViewProps {
+  threadId?: string;
+  onOpenSettings?: () => void;
+  onOpenCreateProject?: () => void;
+}
 
-export default function ChatView({ threadId: threadIdProp }: ChatViewProps) {
+export default function ChatView({ threadId: threadIdProp, onOpenSettings, onOpenCreateProject }: ChatViewProps) {
   const [events, setEvents] = useState<LiveEvent[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -27,6 +31,7 @@ export default function ChatView({ threadId: threadIdProp }: ChatViewProps) {
     setInput("");
     setSending(true);
     setEvents((prev) => [...prev, { kind: "tool", name: "router.route", status: "started", args: trimmed.slice(0, 80) }]);
+
     try {
       const res = await fetch("/api/harness/stream", {
         method: "POST",
@@ -69,21 +74,41 @@ export default function ChatView({ threadId: threadIdProp }: ChatViewProps) {
   return (
     <div className="flex h-dvh min-h-0 w-full flex-1 overflow-hidden">
       <div className="flex min-h-0 flex-1 flex-col bg-[var(--color-background-surface)]">
-        <div className="flex min-h-0 flex-1 flex-col p-4">
-          <div ref={listRef} className="mx-auto flex w-full max-w-[46rem] flex-1 flex-col gap-3 overflow-y-auto">
-            <div className="rounded-xl border border-border bg-card p-3 text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">Caide</span> — Pure Caide. Token vs event separate channels (M8). Real provider streaming via /api/harness/stream.
-            </div>
-            {events.length === 0 && <div className="flex flex-col items-center gap-2 py-12 text-center"><h1 className="text-2xl font-bold tracking-tight">New Caide shell</h1><p className="max-w-md text-sm text-muted-foreground">Type below to describe what you want to build. Real OpenCode streaming.</p></div>}
-            {events.map((e, i) => (
-              <div key={i} className="rounded-xl border border-border bg-card px-3 py-2 text-sm">
-                {e.kind === "token" ? (<span className="whitespace-pre-wrap">{e.text}<span className="streaming-caret ml-0.5 inline-block h-[1em] w-px bg-foreground align-middle" /></span>) : e.kind === "tool" ? (<span className="flex items-center gap-2 text-xs"><span className={`size-1.5 rounded-full ${e.status === "started" ? "bg-amber-500 animate-pulse" : e.status === "completed" ? "bg-emerald-500" : "bg-red-500"}`} />{e.name} · {e.status}{e.args ? ` — ${e.args}` : ""}</span>) : e.kind === "stage" ? (<span className="text-xs text-muted-foreground">stage: {e.from} → {e.to}</span>) : (
-                  <CheckpointCard reason={e.reason} confidence={e.confidence} tasteScore={e.tasteScore} diffSummary={e.diffSummary} onApprove={() => setEvents((p) => [...p, { kind: "stage", from: "waiting", to: "running" }])} onRequestChange={(note: string) => setEvents((p) => [...p, { kind: "tool", name: "fixer.correct", status: "started", args: note }])} onViewDiff={() => alert(e.reason)} />
+        {/* Header */}
+        <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border bg-card px-3">
+          <span className="text-xs font-semibold">Caide</span>
+          <span className="size-1.5 rounded-full bg-emerald-500" />
+          <span className="text-[10px] text-muted-foreground">Pure Caide harness · token vs event separate</span>
+          <span className="flex-1" />
+          <button type="button" onClick={onOpenCreateProject} className="rounded-full bg-foreground px-2 py-1 text-[10px] font-medium text-background hover:opacity-90">+ Project</button>
+          <button type="button" onClick={onOpenSettings} className="rounded-full border border-border px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground">Settings</button>
+        </div>
+        {/* Main content */}
+        <div className="flex min-h-0 flex-1">
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div ref={listRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
+              <div className="mx-auto flex w-full max-w-[46rem] flex-col gap-3">
+                {events.length === 0 && (
+                  <div className="flex flex-col items-center gap-3 py-12 text-center">
+                    <h1 className="text-2xl font-bold tracking-tight">New Caide shell</h1>
+                    <p className="max-w-md text-sm text-muted-foreground">Type below to describe what you want to build. Real provider streaming via /api/harness/stream.</p>
+                    <p className="max-w-md text-xs text-muted-foreground">Create a project first (+ Project) or type directly below.</p>
+                  </div>
                 )}
+                {events.map((e, i) => (
+                  <div key={i} className="rounded-xl border border-border bg-card px-3 py-2 text-sm">
+                    {e.kind === "token" ? (<span className="whitespace-pre-wrap">{e.text}<span className="streaming-caret ml-0.5 inline-block h-[1em] w-px bg-foreground align-middle" /></span>) :
+                     e.kind === "tool" ? (<span className="flex items-center gap-2 text-xs"><span className={`size-1.5 rounded-full ${e.status === "started" ? "bg-amber-500 animate-pulse" : e.status === "completed" ? "bg-emerald-500" : "bg-red-500"}`} />{e.name} · {e.status}{e.args ? ` — ${e.args}` : ""}</span>) :
+                     e.kind === "stage" ? (<span className="text-xs text-muted-foreground">stage: {e.from} → {e.to}</span>) : (
+                      <CheckpointCard reason={e.reason} confidence={e.confidence} tasteScore={e.tasteScore} diffSummary={e.diffSummary} onApprove={() => setEvents((p) => [...p, { kind: "stage", from: "waiting", to: "running" }])} onRequestChange={(note: string) => setEvents((p) => [...p, { kind: "tool", name: "fixer.correct", status: "started", args: note }])} onViewDiff={() => alert(e.reason)} />
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         </div>
+        {/* Composer pill */}
         <div className="relative z-[1] mx-1 sm:mx-0 pb-2">
           <div className="rounded-[1.35rem] border border-[color:color-mix(in_srgb,var(--color-border-heavy)_95%,var(--foreground)_5%)] bg-[var(--composer-surface)] backdrop-blur-xl backdrop-saturate-150 transition-all duration-200">
             <div className="relative pl-3 pr-3 pt-3 pb-2">
