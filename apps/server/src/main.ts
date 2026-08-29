@@ -119,6 +119,17 @@ const server = Bun.serve({
         return json(threads.filter((t) => t.projectId === projectId));
       }
 
+      // ── GET /api/harness/projects/:id/files ──
+      const filesMatch = url.pathname.match(/^\/api\/harness\/projects\/([^/]+)\/files$/);
+      if (filesMatch && method === "GET") {
+        const projectId = filesMatch[1];
+        const projects = await loadProjects();
+        const project = projects.find((p) => p.id === projectId);
+        if (!project) return json({ error: "Project not found" }, 404);
+        const files = await readdir(project.workspaceRoot, { recursive: true }).catch(() => []);
+        return json(files);
+      }
+
       // ── Static files (built web app) ──
       const staticDir = join(import.meta.dir, "../apps/web/dist");
       const filePath = join(staticDir, url.pathname === "/" ? "index.html" : url.pathname);

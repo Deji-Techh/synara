@@ -1,4 +1,4 @@
-// apps/web/src/components/Sidebar.tsx — Pure Caide sidebar (project list + new project + new thread + settings)
+// apps/web/src/components/Sidebar.tsx — Pure Caide sidebar (project list + threads + files)
 import { useCallback, useEffect, useState } from "react";
 
 interface Project { id: string; name: string; framework: string; workspaceRoot: string; updatedAt: string; threadCount: number }
@@ -14,6 +14,7 @@ interface SidebarProps {
 export function Sidebar({ onSelectThread, onOpenSettings, onOpenCreateProject, selectedThread }: SidebarProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [threads, setThreads] = useState<Record<string, Thread[]>>({});
+  const [files, setFiles] = useState<Record<string, string[]>>({});
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
 
   const refreshProjects = useCallback(() => {
@@ -28,6 +29,9 @@ export function Sidebar({ onSelectThread, onOpenSettings, onOpenCreateProject, s
     for (const proj of projects) {
       fetch(`/api/harness/projects/${proj.id}/threads`).then((r) => r.json()).then((data) => {
         if (Array.isArray(data)) setThreads((prev) => ({ ...prev, [proj.id]: data }));
+      }).catch(() => {});
+      fetch(`/api/harness/projects/${proj.id}/files`).then((r) => r.json()).then((data) => {
+        if (Array.isArray(data)) setFiles((prev) => ({ ...prev, [proj.id]: data }));
       }).catch(() => {});
     }
   }, [projects]);
@@ -45,6 +49,14 @@ export function Sidebar({ onSelectThread, onOpenSettings, onOpenCreateProject, s
       onSelectThread?.(data.threadId);
       refreshProjects();
     }
+  };
+
+  const getFileIcon = (name: string) => {
+    if (name.endsWith(".tsx") || name.endsWith(".ts")) return "bg-blue-500";
+    if (name.endsWith(".dart")) return "bg-cyan-500";
+    if (name.endsWith(".css") || name.endsWith(".json")) return "bg-green-500";
+    if (name.endsWith(".md")) return "bg-gray-400";
+    return "bg-gray-300";
   };
 
   return (
@@ -76,17 +88,37 @@ export function Sidebar({ onSelectThread, onOpenSettings, onOpenCreateProject, s
                   </button>
                   <button type="button" onClick={() => newThread(proj.id)} className="shrink-0 rounded-full border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground hover:bg-accent" title="New thread">+</button>
                 </div>
-                {expandedProject === proj.id && (threads[proj.id] ?? []).map((thread) => (
-                  <button
-                    key={thread.id}
-                    type="button"
-                    onClick={() => onSelectThread?.(thread.id)}
-                    className={`flex w-full items-center gap-2 rounded-lg pl-6 pr-2 py-1 text-left text-xs hover:bg-accent ${selectedThread === thread.id ? "bg-accent text-foreground" : "text-muted-foreground"}`}
-                  >
-                    <span className="truncate">{thread.title}</span>
-                    <span className={`ml-auto size-1.5 rounded-full ${thread.status === "idle" ? "bg-gray-400" : thread.status === "running" ? "bg-amber-500" : thread.status === "completed" ? "bg-emerald-500" : "bg-red-500"}`} />
-                  </button>
-                ))}
+                {expandedProject === proj.id && (
+                  <>
+                    {/* Threads */}
+                    {(threads[proj.id] ?? []).map((thread) => (
+                      <button
+                        key={thread.id}
+                        type="button"
+                        onClick={() => onSelectThread?.(thread.id)}
+                        className={`flex w-full items-center gap-2 rounded-lg pl-6 pr-2 py-1 text-left text-xs hover:bg-accent ${selectedThread === thread.id ? "bg-accent text-foreground" : "text-muted-foreground"}`}
+                      >
+                        <span className="truncate">{thread.title}</span>
+                        <span className={`ml-auto size-1.5 rounded-full ${thread.status === "idle" ? "bg-gray-400" : thread.status === "running" ? "bg-amber-500" : thread.status === "completed" ? "bg-emerald-500" : "bg-red-500"}`} />
+                      </button>
+                    ))}
+                    {/* Files */}
+                    {(files[proj.id] ?? []).length > 0 && (
+                      <div className="pl-6 pt-1">
+                        <p className="text-[10px] font-medium text-muted-foreground/60 px-2 mb-0.5">Files</p>
+                        {(files[proj.id] ?? []).slice(0, 10).map((f) => (
+                          <div key={f} className="flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] text-muted-foreground">
+                            <span className={`size-1 rounded-sm ${getFileIcon(f)}`} />
+                            <span className="truncate">{f}</span>
+                          </div>
+                        ))}
+                        {(files[proj.id] ?? []).length > 10 && (
+                          <p className="text-[10px] text-muted-foreground/40 px-2">+{(files[proj.id] ?? []).length - 10} more</p>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             ))}
           </div>
