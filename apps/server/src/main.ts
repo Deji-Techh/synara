@@ -21,14 +21,18 @@ async function writeJson(p: string, data: unknown) { await writeFile(p, JSON.str
 // ── Project/Thread store (simple JSON file, no Sqlite yet) ──────────
 interface Project { id: string; name: string; framework: string; workspaceRoot: string; updatedAt: string; threadCount: number }
 interface Thread { id: string; projectId: string; title: string; status: string; createdAt: string }
+interface Message { id: string; threadId: string; role: "user" | "assistant"; content: string; createdAt: string }
 
 const PROJECTS_FILE = join(CAIDE_HOME, "projects.json");
 const THREADS_FILE = join(CAIDE_HOME, "threads.json");
+const MESSAGES_FILE = join(CAIDE_HOME, "messages.json");
 
 async function loadProjects(): Promise<Project[]> { return (await readJson(PROJECTS_FILE)) ?? []; }
 async function saveProjects(projects: Project[]) { await ensureDir(CAIDE_HOME); await writeJson(PROJECTS_FILE, projects); }
 async function loadThreads(): Promise<Thread[]> { return (await readJson(THREADS_FILE)) ?? []; }
 async function saveThreads(threads: Thread[]) { await ensureDir(CAIDE_HOME); await writeJson(THREADS_FILE, threads); }
+async function loadMessages(): Promise<Message[]> { return (await readJson(MESSAGES_FILE)) ?? []; }
+async function saveMessages(messages: Message[]) { await ensureDir(CAIDE_HOME); await writeJson(MESSAGES_FILE, messages); }
 
 function slugify(name: string): string {
   return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || `app-${Date.now().toString(36)}`;
@@ -130,6 +134,65 @@ const server = Bun.serve({
         return json(files);
       }
 
+      // ── GET /api/harness/threads/:id/messages ──
+      const msgMatch = url.pathname.match(/^\/api\/harness\/threads\/([^/]+)\/messages$/);
+      if (msgMatch && method === "GET") {
+        const threadId = msgMatch[1];
+        const messages = await loadMessages();
+        return json(messages.filter((m) => m.threadId === threadId));
+      }
+
+      // ── POST /api/harness/threads/:id/messages ──
+      if (msgMatch && method === "POST") {
+        const threadId = msgMatch[1]!;
+        const body = await req.json().catch(() => ({})) as { role?: string; content?: string };
+        const message: Message = {
+          id: `msg-${Date.now().toString(36)}`,
+          threadId,
+          role: (body.role as "user" | "assistant") ?? "user",
+          content: body.content ?? "",
+          createdAt: new Date().toISOString(),
+        };
+        const messages = await loadMessages();
+        messages.push(message);
+        await saveMessages(messages);
+        return json(message);
+      }
+
+      // ── DELETE /api/harness/projects/:id ──
+      const delMatch = url.pathname.match(/^\/api\/harness\/projects\/([^/]+)$/);
+      if (delMatch && method === "DELETE") {
+        const projectId = delMatch[1];
+        const projects = await loadProjects();
+        const idx = projects.findIndex((p) => p.id === projectId);
+        if (idx === -1) return json({ error: "Project not found" }, 404);
+        projects.splice(idx, 1);
+        await saveProjects(projects);
+        // Also delete threads and messages for this project
+        const threads = await loadThreads();
+        const threadIds = threads.filter((t) => t.projectId === projectId).map((t) => t.id);
+        const remainingThreads = threads.filter((t) => t.projectId !== projectId);
+        await saveThreads(remainingThreads);
+        const messages = await loadMessages();
+        const remainingMessages = messages.filter((m) => !threadIds.includes(m.threadId));
+        await saveMessages(remainingMessages);
+        return json({ deleted: projectId });
+      }
+
+      // ── PATCH /api/harness/threads/:id ──
+      const patchMatch = url.pathname.match(/^\/api\/harness\/threads\/([^/]+)$/);
+      if (patchMatch && method === "PATCH") {
+        const threadId = patchMatch[1];
+        const body = await req.json().catch(() => ({})) as { status?: string; title?: string };
+        const threads = await loadThreads();
+        const thread = threads.find((t) => t.id === threadId);
+        if (!thread) return json({ error: "Thread not found" }, 404);
+        if (body.status) thread.status = body.status;
+        if (body.title) thread.title = body.title;
+        await saveThreads(threads);
+        return json(thread);
+      }
+
       // ── Static files (built web app) ──
       const staticDir = join(import.meta.dir, "../apps/web/dist");
       const filePath = join(staticDir, url.pathname === "/" ? "index.html" : url.pathname);
@@ -147,11 +210,16 @@ const server = Bun.serve({
 });
 
 console.log(`\n  ✦ Pure Caide server running at http://${server.hostname}:${server.port}\n`);
-console.log(`    GET  /health`);
-console.log(`    GET  /api/harness/projects`);
-console.log(`    POST /api/harness/project {name, framework}`);
-console.log(`    POST /api/harness/thread  {projectId, title}`);
-console.log(`    GET  /api/harness/projects/:id/threads`);
-console.log(`    POST /api/harness/stream  (SSE typed {token})`);
-console.log(`    POST /api/harness/verify  (JSON handleVerifySlice)`);
+console.log(`    GET    /health`);
+console.log(`    GET    /api/harness/projects`);
+console.log(`    POST   /api/harness/project {name, framework}`);
+console.log(`    DELETE /api/harness/projects/:id`);
+console.log(`    GET    /api/harness/projects/:id/threads`);
+console.log(`    GET    /api/harness/projects/:id/files`);
+console.log(`    POST   /api/harness/thread {projectId, title}`);
+console.log(`    PATCH  /api/harness/threads/:id {status, title}`);
+console.log(`    GET    /api/harness/threads/:id/messages`);
+console.log(`    POST   /api/harness/threads/:id/messages {role, content}`);
+console.log(`    POST   /api/harness/stream (SSE typed {token})`);
+console.log(`    POST   /api/harness/verify (JSON handleVerifySlice)`);
 console.log();
