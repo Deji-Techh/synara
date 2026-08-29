@@ -1,4 +1,4 @@
-// harness/layers.ts — M5 layered prompt architecture (agent-system-spec.md:11)
+// harness/layers.ts — M5 layered prompt architecture + real provider send
 // L0 Identity Core ~300-500tok always + L1 Role swapped per Router|Planner|Builder|Verifier|Fixer
 // + L2 Stage Context injected by harness/state + L3 Resolved Skills atomic — L0+L1 cached
 
@@ -19,23 +19,46 @@ export const L1_ROLE_PROMPTS: Record<AgentRole, string> = {
 export interface LayeredPrompt {
   readonly L0: string;
   readonly L1: string;
-  readonly L2: string; // stage context
-  readonly L3: readonly string[]; // resolved skill bodies
-  readonly cachedKey: string; // L0+L1 cached at provider level
+  readonly L2: string;
+  readonly L3: readonly string[];
+  readonly cachedKey: string;
 }
 
 export function composePrompt(role: AgentRole, stageContext: string, resolvedSkills: readonly string[]): LayeredPrompt {
   const L0 = L0_IDENTITY_CORE;
   const L1 = L1_ROLE_PROMPTS[role];
-  return {
-    L0,
-    L1,
-    L2: stageContext,
-    L3: resolvedSkills,
-    cachedKey: `${L0}||${L1}`, // mark L0+L1 as cacheable block per provider
-  };
+  return { L0, L1, L2: stageContext, L3: resolvedSkills, cachedKey: `${L0}||${L1}` };
 }
 
 export function renderPrompt(p: LayeredPrompt): string {
   return [p.L0, p.L1, p.L2, ...p.L3].filter(Boolean).join("\n\n---\n\n");
+}
+
+// M5: Send composed prompt to real provider — returns streamed response text
+export async function sendToProvider(
+  prompt: LayeredPrompt,
+  input: { model: string; baseUrl: string; apiKey: string },
+): Promise<{ text: string; tokensUsed: number }> {
+  const fullPrompt = renderPrompt(prompt);
+  const endpoint = `${input.baseUrl.replace(/\/+$/, "")}/chat/completions`;
+
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${input.apiKey}` },
+    body: JSON.stringify({
+      model: input.model,
+      messages: [
+        { role: "system", content: prompt.L0 },
+        { role: "user", content: [prompt.L1, prompt.L2, ...prompt.L3].filter(Boolean).join("\n\n") },
+      ],
+      stream: false,
+    }),
+  });
+
+  if (!res.ok) throw new Error(`Provider ${res.status}`);
+  const data = await res.json() as { choices?: { message?: { content?: string } }[]; usage?: { total_tokens?: number } };
+  return {
+    text: data.choices?.[0]?.message?.content ?? "",
+    tokensUsed: data.usage?.total_tokens ?? 0,
+  };
 }
