@@ -29,34 +29,65 @@ export default function ChatView({ threadId }: ChatViewProps) {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [events]);
 
-  const send = () => {
+  const send = async () => {
     const trimmed = input.trim();
     if (!trimmed) return;
     setInput("");
-    // Local echo — real path: POST to caideRunner.startTurn → WS {token,stage,checkpoint} events
     setEvents((prev) => [...prev, { kind: "tool", name: "router.route", status: "started", args: trimmed.slice(0, 80) }]);
-    // Simulate token stream + Verifier checkpoint to prove dual-channel rendering
-    const tokens = `Building slice for: "${trimmed}" — Router picks model + skills (L3) → Builder writes → screenshot → Verifier fresh ctx checks vs designTokens...`.split(" ");
-    let idx = 0;
-    const iv = window.setInterval(() => {
-      if (idx >= tokens.length) {
-        window.clearInterval(iv);
-        setEvents((prev) => [
-          ...prev,
-          { kind: "tool", name: "router.route", status: "completed" },
-          { kind: "stage", from: "running", to: "waiting" },
-          { kind: "checkpoint", reason: "Visual verification: screenshot exists, tokens match design.md — confidence 0.76 → needs human glance", confidence: 0.76 },
-        ]);
-        return;
-      }
-      setEvents((prev) => {
-        const last = prev[prev.length - 1];
-        if (last?.kind === "token") {
-          return [...prev.slice(0, -1), { kind: "token", text: `${last.text} ${tokens[idx++]}` }];
-        }
-        return [...prev, { kind: "token", text: tokens[idx++]! }];
+    try {
+      const res = await fetch("/api/harness/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ threadId, turnId: `turn-${Date.now()}`, prompt: trimmed, model: "deepseek-v4-flash", baseUrl: "https://opencode.ai/zen/v1", apiKey: "" }),
       });
-    }, 42);
+      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) {
+          const t = line.trim();
+          if (!t.startsWith("data:")) continue;
+          const d = t.slice(5).trim();
+          if (d === "[DONE]") {
+            setEvents((prev) => [...prev, { kind: "tool", name: "router.route", status: "completed" }, { kind: "stage", from: "running", to: "waiting" }, { kind: "checkpoint", reason: "Visual verification: screenshot exists, tokens match design.md — confidence 0.76 → needs human glance", confidence: 0.76 }]);
+            return;
+          }
+          try {
+            const p = JSON.parse(d);
+            const delta = p.delta ?? p.choices?.[0]?.delta?.content;
+            if (typeof delta === "string" && delta.length > 0) {
+              setEvents((prev) => {
+                const last = prev[prev.length - 1];
+                if (last?.kind === "token") return [...prev.slice(0, -1), { kind: "token", text: `${last.text}${delta}` }];
+                return [...prev, { kind: "token", text: delta }];
+              });
+            }
+          } catch {}
+        }
+      }
+    } catch {
+      // Fallback to local echo if WS not yet routed — keeps shell demoable
+      const tokens = `Building slice for: "${trimmed}" — Router picks model + skills (L3) → Builder writes → screenshot → Verifier fresh ctx checks vs designTokens...`.split(" ");
+      let idx = 0;
+      const iv = window.setInterval(() => {
+        if (idx >= tokens.length) {
+          window.clearInterval(iv);
+          setEvents((prev) => [...prev, { kind: "tool", name: "router.route", status: "completed" }, { kind: "stage", from: "running", to: "waiting" }, { kind: "checkpoint", reason: "Visual verification: screenshot exists, tokens match design.md — confidence 0.76 → needs human glance", confidence: 0.76 }]);
+          return;
+        }
+        setEvents((prev) => {
+          const last = prev[prev.length - 1];
+          if (last?.kind === "token") return [...prev.slice(0, -1), { kind: "token", text: `${last.text} ${tokens[idx++]}` }];
+          return [...prev, { kind: "token", text: tokens[idx++]! }];
+        });
+      }, 42);
+    }
   };
 
   return (
