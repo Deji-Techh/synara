@@ -1,6 +1,8 @@
-// harness/streamEndpoint.ts — M26 real provider streaming + harness loop (SSE)
+// harness/streamEndpoint.ts — M26 real provider streaming + harness flow (SSE)
+// Follows the exact Claude flow: design system → slices → unhappy → polish
+
 import { getCaideRunner, handleVerifySlice } from "./wsCaide";
-import { CaideHarness } from "./harnessRun";
+import { CaideHarness, type ProviderConfig } from "./harnessRun";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { readdir } from "node:fs/promises";
@@ -19,9 +21,18 @@ export async function handleVerifySliceHttp(req: Request): Promise<Response> {
 }
 
 export async function handleStreamProvider(req: Request): Promise<Response> {
-  const body = (await req.json().catch(() => ({}))) as { threadId?: string; turnId?: string; model?: string; prompt?: string; baseUrl?: string; apiKey?: string; projectId?: string; framework?: string };
+  const body = (await req.json().catch(() => ({}))) as {
+    threadId?: string;
+    turnId?: string;
+    model?: string;
+    prompt?: string;
+    baseUrl?: string;
+    apiKey?: string;
+    projectId?: string;
+    framework?: string;
+  };
+
   const threadId = body.threadId ?? `thread-${Date.now()}`;
-  const turnId = body.turnId ?? `turn-${Date.now()}`;
   const model = body.model ?? "deepseek-v4-flash";
   const prompt = body.prompt ?? "hey";
   const baseUrl = body.baseUrl ?? "https://opencode.ai/zen/v1";
@@ -29,8 +40,7 @@ export async function handleStreamProvider(req: Request): Promise<Response> {
   const projectId = body.projectId ?? "default";
   const framework = body.framework ?? "blank";
 
-  const runner = getCaideRunner();
-  runner.startTurn(threadId, turnId, projectId, "builder", `build: ${prompt}`, []);
+  const provider: ProviderConfig = { model, baseUrl, apiKey };
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -39,25 +49,32 @@ export async function handleStreamProvider(req: Request): Promise<Response> {
       const emitEvent = (event: Record<string, unknown>) => controller.enqueue(encoder.encode(`data: ${JSON.stringify({ event })}\n\n`));
 
       try {
-        emitEvent({ type: "stage", from: "created", to: "running" });
-
-        // M26: Stream OpenCode tokens + run harness slice loop simultaneously
-        const tokenPromise = runner.streamProvider({ threadId, turnId, model, prompt, baseUrl, apiKey }).catch(() => {});
+        // Run the exact Claude flow
         const harness = new CaideHarness();
-        const slicePromise = harness.runSliceLoop(prompt, threadId, framework, projectId).catch(() => []);
+        const events = await harness.runBuildFlow(prompt, threadId, framework, projectId, provider);
 
-        await Promise.all([tokenPromise, slicePromise]);
+        // Stream events to client
+        for (const event of events) {
+          emitEvent(event as unknown as Record<string, unknown>);
 
-        // Count what was written
-        const projectDir = join(CAIDE_HOME, projectId);
-        let filesWritten = 0;
-        try {
-          const files = await readdir(projectDir, { recursive: true }).catch(() => []);
-          filesWritten = files.length;
-        } catch {}
+          // Also emit tokens for the design system / code generation
+          if (event.type === "design-system" && event.data.status === "complete") {
+            emit(`Design system established.\n\n`);
+          }
+          if (event.type === "slice") {
+            emit(`Built: ${event.data.filename}\n\n`);
+          }
+          if (event.type === "unhappy" && event.data.status === "complete") {
+            emit(`Unhappy paths generated.\n\n`);
+          }
+          if (event.type === "polish" && event.data.status === "complete") {
+            emit(`Polish pass complete.\n\n`);
+          }
+          if (event.type === "complete") {
+            emit(`Build complete — ${event.data.totalScreens} screens, ${event.data.framework}\n\n`);
+          }
+        }
 
-        emitEvent({ type: "stage", from: "running", to: "completed" });
-        emitEvent({ type: "checkpoint", reason: `Generated ${filesWritten} files. Harness loop completed.`, confidence: 0.85, requiresResponse: false });
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -69,5 +86,11 @@ export async function handleStreamProvider(req: Request): Promise<Response> {
     },
   });
 
-  return new Response(stream, { headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" } });
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
 }
