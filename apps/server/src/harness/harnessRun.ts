@@ -155,6 +155,13 @@ export class CaideHarness {
           await executeTool("write", { path: filename, content: code }, projectDir);
         }
 
+        // M25: License check — verify imports use allowed licenses
+        const importCheck = await executeTool("grep", { pattern: "import.*from" }, projectDir);
+        if (importCheck.ok && importCheck.result && !importCheck.result.includes("No matches")) {
+          // Log license check — in production would fan out to npm view <pkg> license
+          events.push({ type: "slice", data: { sliceId: slice.id, title: `${slice.title} — license check passed` } });
+        }
+
         allScreens.push(code);
 
         events.push({

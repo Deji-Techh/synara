@@ -1,42 +1,48 @@
-// apps/web/src/components/Toast.tsx — M51: Real notification system
-// toastManager for build/preview/rate-limit/provider errors
+// apps/web/src/components/Toast.tsx — Notification system with auto-dismiss
+import { useEffect, useState, useCallback } from "react";
 
-type ToastKind = "success" | "error" | "info";
-interface Toast { id: number; message: string; kind: ToastKind; visible: boolean }
+interface Toast { id: string; message: string; type: "success" | "error" | "info"; }
 
 let toastId = 0;
-let currentToast: Toast | null = null;
-let listeners = new Set<() => void>();
+const listeners = new Set<(toasts: Toast[]) => void>();
+let toasts: Toast[] = [];
 
-export function showToast(message: string, kind: ToastKind = "info") {
-  currentToast = { id: ++toastId, message, kind, visible: true };
-  listeners.forEach((fn) => fn());
-  setTimeout(() => { if (currentToast && currentToast.id === toastId) { currentToast.visible = false; listeners.forEach((fn) => fn()); } }, kind === "error" ? 10000 : 5000);
+function notify(message: string, type: Toast["type"] = "info") {
+  const id = `toast-${++toastId}`;
+  toasts = [...toasts, { id, message, type }];
+  listeners.forEach((fn) => fn(toasts));
+  // Auto-dismiss success after 5s
+  if (type === "success") {
+    setTimeout(() => dismiss(id), 5000);
+  }
 }
 
-export function useToast() {
-  const [, forceRender] = React.useState(0);
-  React.useEffect(() => {
-    const unsub = () => { forceRender((n) => n + 1); };
-    listeners.add(unsub);
-    return () => listeners.delete(unsub);
-  }, []);
-  return currentToast;
+function dismiss(id: string) {
+  toasts = toasts.filter((t) => t.id !== id);
+  listeners.forEach((fn) => fn(toasts));
 }
 
-import React from "react";
+export function toast = { success: (m: string) => notify(m, "success"), error: (m: string) => notify(m, "error"), info: (m: string) => notify(m, "info"), dismiss };
 
 export function ToastContainer() {
-  const toast = useToast();
-  if (!toast?.visible) return null;
-  const colors: Record<ToastKind, string> = {
-    success: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
-    error: "bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/30",
-    info: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30",
-  };
+  const [items, setItems] = useState<Toast[]>([]);
+
+  useEffect(() => {
+    listeners.add(setItems);
+    return () => { listeners.delete(setItems); };
+  }, []);
+
+  if (items.length === 0) return null;
+
   return (
-    <div className="fixed bottom-4 right-4 z-50 rounded-xl border px-4 py-2 shadow-lg text-sm animate-in fade-in slide-in-from-bottom-2" style={{ background: "var(--card)" }}>
-      <span className={colors[toast.kind]}>{toast.message}</span>
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+      {items.map((t) => (
+        <div key={t.id} className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs shadow-lg ${t.type === "error" ? "border-red-500/30 bg-red-500/10 text-red-500" : t.type === "success" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500" : "border-border bg-card"}`}>
+          <span className={`size-1.5 rounded-full ${t.type === "error" ? "bg-red-500" : t.type === "success" ? "bg-emerald-500" : "bg-blue-500"}`} />
+          <span className="flex-1">{t.message}</span>
+          <button type="button" onClick={() => dismiss(t.id)} className="text-muted-foreground hover:text-foreground">×</button>
+        </div>
+      ))}
     </div>
   );
 }
