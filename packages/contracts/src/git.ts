@@ -6,8 +6,7 @@ import {
   ThreadId,
   TrimmedNonEmptyString,
 } from "./baseSchemas";
-import { DEFAULT_GIT_TEXT_GENERATION_MODEL } from "./model";
-import { ModelSelection, ProviderStartOptions } from "./orchestration";
+import { DEFAULT_GIT_TEXT_GENERATION_MODEL, ModelSelection, ProviderStartOptions } from "./model";
 
 const TrimmedNonEmptyStringSchema = TrimmedNonEmptyString;
 

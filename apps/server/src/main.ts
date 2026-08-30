@@ -32,25 +32,11 @@ import { fixPath, resolveBaseDir } from "./os-jank";
 import { Open } from "./open";
 import { ServerAuth } from "./auth/Services/ServerAuth";
 import * as SqlitePersistence from "./persistence/Layers/Sqlite";
-import { ProviderRuntimeEventRepositoryLive } from "./persistence/Layers/ProviderRuntimeEvents";
 import { makeServerApplicationLayers } from "./serverLayers";
-import { startServerMemoryDiagnostics } from "./memoryDiagnostics";
-import { startClaudeCredentialKeepalive } from "./provider/claudeCredentialKeepalive";
-import { ProjectionSnapshotQuery } from "./orchestration/Services/ProjectionSnapshotQuery";
-import { ProviderSessionReaperLive } from "./provider/Layers/ProviderSessionReaper";
-import { ProviderRuntimeReconcilerLive } from "./provider/Layers/ProviderRuntimeReconciler";
 import { Server } from "./effectServer";
 import { ServerLoggerLive } from "./serverLogger";
 import { ServerSettingsService } from "./serverSettings";
 import { formatHostForUrl, isLoopbackHost, isWildcardHost } from "./startupAccess";
-import { OrchestrationEngineService } from "./orchestration/Services/OrchestrationEngine";
-import { startThreadRetentionJob } from "./threadRetention";
-import {
-  pairExternalMcpClient,
-  resolveExternalMcpBaseDir,
-  serveExternalMcpStdio,
-} from "./externalMcp/bridge";
-import { externalMcpLauncher, externalMcpShellCommand } from "./externalMcp/launcher";
 
 export class StartupError extends Data.TaggedError("StartupError")<{
   readonly message: string;
@@ -292,24 +278,10 @@ const ServerConfigLive = (input: CliInput) =>
   );
 
 const LayerLive = (input: CliInput) => {
-  const { runtimeServicesLayer, providerLayer } = makeServerApplicationLayers();
-  const providerSessionReaperLayer = ProviderSessionReaperLive.pipe(
-    // The reaper coordinates orchestration state with live provider sessions,
-    // so it belongs at the top level where both layers are available.
-    Layer.provideMerge(runtimeServicesLayer),
-    Layer.provideMerge(providerLayer),
-  );
-  const providerRuntimeReconcilerLayer = ProviderRuntimeReconcilerLive.pipe(
-    Layer.provide(ProviderRuntimeEventRepositoryLive),
-    Layer.provideMerge(runtimeServicesLayer),
-    Layer.provideMerge(providerLayer),
-  );
+  const { runtimeServicesLayer } = makeServerApplicationLayers();
 
   return Layer.empty.pipe(
     Layer.provideMerge(runtimeServicesLayer),
-    Layer.provideMerge(providerLayer),
-    Layer.provideMerge(providerSessionReaperLayer),
-    Layer.provideMerge(providerRuntimeReconcilerLayer),
     Layer.provideMerge(SqlitePersistence.layerConfig),
     Layer.provideMerge(ServerLoggerLive),
     Layer.provideMerge(ServerConfigLive(input)),
@@ -335,11 +307,9 @@ const makeServerProgram = (input: CliInput) =>
     const { start, stopSignal } = yield* Server;
     const openDeps = yield* Open;
     const serverAuth = yield* ServerAuth;
-    const serverSettings = yield* ServerSettingsService;
     yield* cliConfig.fixPath;
 
     const config = yield* ServerConfig;
-    yield* Effect.sync(() => startServerMemoryDiagnostics({ mode: config.mode }));
 
     if (!config.devUrl && !config.staticDir) {
       yield* Effect.logWarning(
@@ -370,30 +340,6 @@ const makeServerProgram = (input: CliInput) =>
             ),
           )
         : undefined;
-
-    const orchestrationEngine = yield* OrchestrationEngineService;
-    const projectionSnapshotQuery = yield* ProjectionSnapshotQuery;
-    // Start the retention loop after the server is live so startup can serve
-    // existing history first, then hide inactive threads from the app in the background.
-    yield* startThreadRetentionJob(orchestrationEngine, projectionSnapshotQuery);
-    // Optional Claude OAuth keepalive. Disabled by default because it touches
-    // Claude Code auth data in the background; users can opt in with
-    // CAIDE_CLAUDE_KEEPALIVE=1.
-    yield* Effect.forkChild(
-      Effect.gen(function* () {
-        const settings = yield* serverSettings.getSettings;
-        if ((settings.providers as any).claudeAgent?.enabled === false) {
-          return;
-        }
-        yield* Effect.sync(() =>
-          startClaudeCredentialKeepalive({
-            binaryPath: (settings.providers as any).claudeAgent?.binaryPath,
-            homeDir: config.homeDir,
-            log: (message) => Effect.runFork(Effect.logInfo(message)),
-          }),
-        );
-      }),
-    );
 
     yield* Effect.logInfo("Caide running", makeServerStartupLogData(config));
     if (startupPairingUrl) {

@@ -44,7 +44,6 @@
   },
   "devDependencies": {
     "@caide/contracts": "workspace:*",
-    "@caide/engine": "workspace:*",
     "@caide/shared": "workspace:*",
     "@caide/web": "workspace:*",
     "@effect/language-service": "catalog:",

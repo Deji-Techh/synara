@@ -1,6 +1,6 @@
 import { Schema } from "effect";
 import { ProjectId, ThreadId, TrimmedNonEmptyString } from "./baseSchemas";
-import { ModelSelection } from "./orchestration";
+import { ModelSelection } from "./model";
 import { ProjectFramework } from "./projectFramework";
 
 // FILE: caideApps.ts

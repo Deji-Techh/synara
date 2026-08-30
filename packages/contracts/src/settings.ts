@@ -1,7 +1,9 @@
 import { Schema } from "effect";
-import { TrimmedString } from "./baseSchemas";
-import { DEFAULT_GIT_TEXT_GENERATION_MODEL } from "./model";
-import { ModelSelection, ProviderKind, ThreadEnvironmentMode } from "./orchestration";
+import { ProviderKind, TrimmedString } from "./baseSchemas";
+import { DEFAULT_GIT_TEXT_GENERATION_MODEL, ModelSelection } from "./model";
+
+export const ThreadEnvironmentMode = Schema.Literals(["local", "worktree"]);
+export type ThreadEnvironmentMode = typeof ThreadEnvironmentMode.Type;
 
 const StringSetting = TrimmedString.check(Schema.isMaxLength(4096));
 const CustomModels = Schema.Array(Schema.String.check(Schema.isMaxLength(256))).pipe(
