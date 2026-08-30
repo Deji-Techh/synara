@@ -159,8 +159,10 @@ export class Builder {
       }
     }
 
+    const sliceId = slice.id || slice.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
     return {
-      sliceId: slice.id,
+      sliceId,
       success: buildSucceeded,
       artifactsCreated: Array.from(new Set(artifactsCreated)),
       selfPatchAttempts: patchAttempt,

@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { HarnessEvent } from "@caide/contracts";
+import type { HarnessEvent, ProjectFramework } from "@caide/contracts";
 import {
   validateSpec,
   type SpecDoc,
@@ -14,6 +14,64 @@ import { colorTokens, typeScale, componentRules, radius } from "../../design/tok
 export * from "./specValidator.ts";
 
 export class Planner {
+  /**
+   * Generates a fully validated specDoc and creates Human Checkpoint Gate 1.
+   */
+  async generatePlan(
+    appName: string,
+    framework: ProjectFramework,
+    userContext = "",
+  ): Promise<{ specDoc: SpecDoc; checkpointEvent: HarnessEvent }> {
+    const specDoc: SpecDoc = {
+      appName,
+      targetUser: "Active User",
+      userContext: userContext || "Personal tracking and workflow productivity.",
+      framework,
+      flows: [
+        { name: "Primary Flow", steps: ["Open app", "View dashboard", "Log new entry", "Save"] },
+        { name: "Analytics & History", steps: ["View historical logs", "Inspect trends", "Filter by date"] },
+        { name: "Settings & Preferences", steps: ["Open settings", "Adjust theme and notifications", "Save"] },
+      ],
+      v1Scope: ["Core dashboard", "Data logging", "Summary analytics", "Preferences"],
+      v1OutOfScope: ["Cloud sync", "Social multi-user sharing", "Third-party extensions"],
+      screens: [
+        {
+          name: "HomeScreen",
+          path: "src/screens/HomeScreen.tsx",
+          components: ["DashboardHeader", "SummaryCard", "ActionButton"],
+          hasEmptyState: true,
+          hasLoadingState: true,
+          hasErrorState: true,
+        },
+        {
+          name: "HistoryScreen",
+          path: "src/screens/HistoryScreen.tsx",
+          components: ["HistoryList", "FilterBar"],
+          hasEmptyState: true,
+          hasLoadingState: true,
+          hasErrorState: true,
+        },
+      ],
+      slices: [
+        {
+          name: "Slice 1 — Foundation & HomeScreen",
+          description: "Scaffold layout and home screen dashboard with tokens",
+          files: ["src/screens/HomeScreen.tsx"],
+          acceptanceCriteria: ["HomeScreen renders with 44px tap targets", "Empty and loading states handled"],
+        },
+        {
+          name: "Slice 2 — History & Analytics",
+          description: "Historical data list and filtering",
+          files: ["src/screens/HistoryScreen.tsx"],
+          acceptanceCriteria: ["History list renders with empty state"],
+        },
+      ],
+    };
+
+    const checkpointEvent = Planner.createPlanCheckpointEvent("chk-gate-1-plan", specDoc);
+    return { specDoc, checkpointEvent };
+  }
+
   /**
    * Validates a spec document and, if valid, writes all spec and design token artifacts
    * (.caide/spec.md, architecture.md, .caide/design-spec.json, .caide/motion-spec.json).
@@ -121,40 +179,34 @@ export class Planner {
 ## 2. Core User Flows
 ${flowsSection}
 
-## 3. Screen Breakdown
+## 3. Scope Boundaries
+### v1 In Scope
+${spec.v1Scope.map((s) => `- ${s}`).join("\n")}
+
+### Out of Scope for v1
+${spec.v1OutOfScope.map((s) => `- ${s}`).join("\n")}
+
+## 4. Screens & Mandatory States
 ${screensSection}
 
-## 4. Implementation Slices
+## 5. Implementation Slices
 ${slicesSection}
-
-## 5. Scope Boundaries
-### v1 Scope
-${spec.v1Scope.map((item) => `- ${item}`).join("\n")}
-
-### v1 Out of Scope
-${spec.v1OutOfScope.map((item) => `- ${item}`).join("\n")}
 `;
   }
 
   static formatArchitectureMarkdown(spec: SpecDoc): string {
-    return `# Architecture: ${spec.appName}
+    return `# Architecture & Technical Design: ${spec.appName}
 
-## Technology Stack
 - **Framework**: ${spec.framework}
-- **Design System**: Caide Design Tokens (strict adherence to \`.caide/design-spec.json\`)
-- **Motion System**: Physics-grounded springs (\`.caide/motion-spec.json\`)
+- **Design Tokens**: Standardized via \`.caide/design-spec.json\`
+- **Motion Spec**: Standardized via \`.caide/motion-spec.json\`
 
-## Module Hierarchy
-${spec.screens.map((s) => `- \`${s.path}\` → ${s.name} (${s.components.join(", ")})`).join("\n")}
-
-## State & Data Flow
-- Unidirectional state management
-- Error boundaries on all asynchronous data boundaries
-- Dedicated loading skeleton and empty state components per screen
+## Slices Hierarchy
+${spec.slices.map((s, i) => `${i + 1}. **${s.name}** -> ${s.files.join(", ")}`).join("\n")}
 `;
   }
 
-  static generateDesignSpec(spec: SpecDoc): Record<string, unknown> {
+  static generateDesignSpec(spec: SpecDoc) {
     return {
       appName: spec.appName,
       framework: spec.framework,
@@ -166,9 +218,10 @@ ${spec.screens.map((s) => `- \`${s.path}\` → ${s.name} (${s.components.join(",
     };
   }
 
-  static generateMotionSpec(spec: SpecDoc): Record<string, unknown> {
+  static generateMotionSpec(spec: SpecDoc) {
     return {
       appName: spec.appName,
+      framework: spec.framework,
       spring: {
         stiffness: 400,
         damping: 30,
@@ -177,10 +230,8 @@ ${spec.screens.map((s) => `- \`${s.path}\` → ${s.name} (${s.components.join(",
       durations: {
         micro: "150ms",
         standard: "220ms",
-        modal: "280ms",
+        screenTransition: "300ms",
       },
-      easing: "ease-out",
-      prefersReducedMotion: "prefers-reduced-motion: 0ms",
     };
   }
 }
