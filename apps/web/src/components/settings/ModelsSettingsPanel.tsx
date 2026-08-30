@@ -1,401 +1,144 @@
-// FILE: ModelsSettingsPanel.tsx
-// Purpose: Own model-setting discovery, selection, and custom-model editing workflows.
-// Layer: Settings panel
+import React, { useState } from "react";
+import { SettingsSection, SettingsRow } from "./SettingsPanelPrimitives";
+import { SettingsSelectControl, SettingResetButton } from "./SettingControls";
+import { SelectItem } from "../ui/select";
 
-import {
-  DEFAULT_GIT_TEXT_GENERATION_MODEL,
-  PROVIDER_DISPLAY_NAMES,
-  type ProviderKind,
-} from "@caide/contracts";
-import { getModelOptions, normalizeModelSlug } from "@caide/shared/model";
-import { useQuery } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
-
-import {
-  CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS,
-  type AppSettingsBinding,
-  MAX_CUSTOM_MODEL_LENGTH,
-  getCustomModelsForProvider,
-  getDefaultCustomModelsForProvider,
-  getGitTextGenerationModelOptions,
-  isGitTextGenerationSettingsDirty,
-  patchCustomModels,
-} from "~/appSettings";
-import { useProviderModelCatalog } from "~/hooks/useProviderModelCatalog";
-import { PlusIcon, XIcon } from "~/lib/icons";
-import { resolveProviderDiscoveryCwd } from "~/lib/providerDiscovery";
-import { serverConfigQueryOptions } from "~/lib/serverReactQuery";
-import { cn } from "~/lib/utils";
-import {
-  SETTINGS_CARD_ROW_DIVIDER_CLASS_NAME,
-  SETTINGS_INSET_LIST_CLASS_NAME,
-} from "~/settingsPanelStyles";
-
-import { Button } from "../ui/button";
-import { DisclosureRegion } from "../ui/DisclosureRegion";
-import { Input } from "../ui/input";
-import { Select, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import {
-  SettingResetButton,
-  SettingsSelectControl,
-  useSettingsRestoreSignal,
-} from "./SettingControls";
-import { SettingsRow, SettingsSection, SettingsSelectPopup } from "./SettingsPanelPrimitives";
-
-type CustomModelValidationResult =
-  | { readonly model: string; readonly error?: never }
-  | { readonly model?: never; readonly error: string };
-
-const GIT_WRITING_DISCOVERY_PROVIDERS = ["groq"] as const;
-
-export function validateCustomModelInput(input: {
-  readonly provider: ProviderKind;
-  readonly value: string;
-  readonly savedModels: readonly string[];
-}): CustomModelValidationResult {
-  const normalized = normalizeModelSlug(input.value, input.provider);
-  if (!normalized) {
-    return { error: "Enter a model slug." };
-  }
-  if (getModelOptions(input.provider).some((option) => option.slug === normalized)) {
-    return { error: "That model is already built in." };
-  }
-  if (normalized.length > MAX_CUSTOM_MODEL_LENGTH) {
-    return { error: `Model slugs must be ${MAX_CUSTOM_MODEL_LENGTH} characters or less.` };
-  }
-  if (input.savedModels.includes(normalized)) {
-    return { error: "That custom model is already saved." };
-  }
-  return { model: normalized };
+export interface HarnessModelConfig {
+  plannerModel: string;
+  builderModel: string;
+  verifierModel: string;
+  tasteModel: string;
 }
 
-function isCustomModelEditorProvider(value: string | null): value is ProviderKind {
-  return CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS.some((config) => config.provider === value);
-}
+const DEFAULT_MODELS: HarnessModelConfig = {
+  plannerModel: "sonnet-5",
+  builderModel: "gpt-5.6-sol",
+  verifierModel: "opus-4.8",
+  tasteModel: "fable-5",
+};
 
-export function ModelsSettingsPanel({
-  settings,
-  defaults,
-  updateSettings,
-  resetEpoch,
-  active,
-}: AppSettingsBinding & { readonly resetEpoch: number; readonly active: boolean }) {
-  const serverConfigQuery = useQuery(serverConfigQueryOptions());
-  const [selectedCustomModelProvider, setSelectedCustomModelProvider] =
-    useState<ProviderKind>("groq");
-  const [customModelInputByProvider, setCustomModelInputByProvider] = useState<
-    Partial<Record<ProviderKind, string>>
-  >({});
-  const [customModelErrorByProvider, setCustomModelErrorByProvider] = useState<
-    Partial<Record<ProviderKind, string | null>>
-  >({});
-  const [showAllCustomModels, setShowAllCustomModels] = useState(false);
+const MODEL_CHOICES = [
+  { value: "gpt-5.6-sol", label: "GPT 5.6 Sol (Fast / Bulk / Free)" },
+  { value: "sonnet-5", label: "Claude 3.7 Sonnet (Smart / Balanced)" },
+  { value: "opus-4.8", label: "Claude 3.8 Opus (High Intelligence / Taste)" },
+  { value: "fable-5", label: "Fable 5 (Max Intelligence / Max Taste)" },
+  { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro (Large Context)" },
+  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Ultra Fast)" },
+];
 
-  useSettingsRestoreSignal(resetEpoch, () => {
-    setSelectedCustomModelProvider("groq");
-    setCustomModelInputByProvider({});
-    setCustomModelErrorByProvider({});
-    setShowAllCustomModels(false);
+export function ModelsSettingsPanel() {
+  const [models, setModels] = useState<HarnessModelConfig>(() => {
+    try {
+      const saved = localStorage.getItem("caide:harness_models");
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // ignore
+    }
+    return DEFAULT_MODELS;
   });
 
-  const { customGroqModels, textGenerationModel, textGenerationProvider } = settings;
-  const currentGitTextGenerationProvider = textGenerationProvider ?? "groq";
-  const currentGitTextGenerationModel = textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL;
-  const gitWritingModelHintByProvider = useMemo<Partial<Record<ProviderKind, string | null>>>(
-    () => ({ [currentGitTextGenerationProvider]: currentGitTextGenerationModel }),
-    [currentGitTextGenerationModel, currentGitTextGenerationProvider],
-  );
-  const providerModelDiscoveryCwd = resolveProviderDiscoveryCwd({
-    activeThreadWorktreePath: null,
-    activeProjectCwd: null,
-    serverCwd: serverConfigQuery.data?.cwd ?? null,
-  });
-  const { modelOptionsByProvider: gitWritingCatalogOptionsByProvider } = useProviderModelCatalog({
-    selectedProvider: currentGitTextGenerationProvider,
-    discoveryEnabled: active,
-    cwd: providerModelDiscoveryCwd,
-    modelHintByProvider: gitWritingModelHintByProvider,
-    prefetchProviders: GIT_WRITING_DISCOVERY_PROVIDERS,
-  });
-  const gitTextGenerationModelOptions = useMemo(
-    () =>
-      getGitTextGenerationModelOptions(
-        {
-          customGroqModels,
-          textGenerationModel,
-          textGenerationProvider,
-        },
-        {
-          groq: gitWritingCatalogOptionsByProvider.groq,
-        },
-      ),
-    [
-      customGroqModels,
-      gitWritingCatalogOptionsByProvider.groq,
-      textGenerationModel,
-      textGenerationProvider,
-    ],
-  );
-  const currentGitTextGenerationValue = `${currentGitTextGenerationProvider}:${currentGitTextGenerationModel}`;
-  const isGitTextGenerationModelDirty = isGitTextGenerationSettingsDirty(settings, defaults);
-  const selectedGitTextGenerationModelLabel =
-    gitTextGenerationModelOptions.find(
-      (option) =>
-        option.provider === currentGitTextGenerationProvider &&
-        option.slug === currentGitTextGenerationModel,
-    )?.name ?? currentGitTextGenerationModel;
-  const selectedCustomModelProviderSettings =
-    CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS.find(
-      (config) => config.provider === selectedCustomModelProvider,
-    ) ??
-    CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS.find((config) => config.provider === "groq") ??
-    CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS[0]!;
-  const selectedCustomModelInput = customModelInputByProvider[selectedCustomModelProvider] ?? "";
-  const selectedCustomModelError = customModelErrorByProvider[selectedCustomModelProvider] ?? null;
-  const savedCustomModelRows = useMemo(
-    () =>
-      CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS.flatMap((config) =>
-        getCustomModelsForProvider(settings, config.provider).map((slug) => ({
-          key: `${config.provider}:${slug}`,
-          provider: config.provider,
-          providerTitle: config.title,
-          slug,
-        })),
-      ),
-    [settings],
-  );
-  const visibleCustomModelRows = savedCustomModelRows.slice(0, 5);
-  const overflowCustomModelRows = savedCustomModelRows.slice(5);
+  const updateModel = (key: keyof HarnessModelConfig, value: string) => {
+    const updated = { ...models, [key]: value };
+    setModels(updated);
+    try {
+      localStorage.setItem("caide:harness_models", JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+  };
 
-  const addCustomModel = useCallback(
-    (provider: ProviderKind) => {
-      const customModels = getCustomModelsForProvider(settings, provider);
-      const result = validateCustomModelInput({
-        provider,
-        value: customModelInputByProvider[provider] ?? "",
-        savedModels: customModels,
-      });
-      if ("error" in result) {
-        setCustomModelErrorByProvider((existing) => ({
-          ...existing,
-          [provider]: result.error,
-        }));
-        return;
-      }
+  const resetAll = () => {
+    setModels(DEFAULT_MODELS);
+    localStorage.removeItem("caide:harness_models");
+  };
 
-      updateSettings(patchCustomModels(provider, [...customModels, result.model]));
-      setCustomModelInputByProvider((existing) => ({ ...existing, [provider]: "" }));
-      setCustomModelErrorByProvider((existing) => ({ ...existing, [provider]: null }));
-    },
-    [customModelInputByProvider, settings, updateSettings],
-  );
-
-  const removeCustomModel = useCallback(
-    (provider: ProviderKind, slug: string) => {
-      const customModels = getCustomModelsForProvider(settings, provider);
-      updateSettings(
-        patchCustomModels(
-          provider,
-          customModels.filter((model) => model !== slug),
-        ),
-      );
-      setCustomModelErrorByProvider((existing) => ({ ...existing, [provider]: null }));
-    },
-    [settings, updateSettings],
-  );
-
-  const resetCustomModels = useCallback(() => {
-    const patch = Object.assign(
-      {},
-      ...CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS.map((config) =>
-        patchCustomModels(config.provider, [
-          ...getDefaultCustomModelsForProvider(defaults, config.provider),
-        ]),
-      ),
-    );
-    updateSettings(patch);
-    setCustomModelErrorByProvider({});
-    setShowAllCustomModels(false);
-  }, [defaults, updateSettings]);
-
-  const renderCustomModelRow = (
-    row: (typeof savedCustomModelRows)[number],
-    removeFirstBorder: boolean,
-  ) => (
-    <div
-      key={row.key}
-      className={cn(
-        "group grid grid-cols-[minmax(5rem,6rem)_minmax(0,1fr)_auto] items-center gap-3 border-t border-[color:var(--color-border)] px-4 py-2",
-        removeFirstBorder && "first:border-t-0",
-      )}
-    >
-      <span className="truncate text-xs text-muted-foreground">{row.providerTitle}</span>
-      <code className="min-w-0 truncate text-sm text-foreground">{row.slug}</code>
-      <button
-        type="button"
-        className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 hover:opacity-100"
-        aria-label={`Remove ${row.slug}`}
-        onClick={() => removeCustomModel(row.provider, row.slug)}
-      >
-        <XIcon className="size-3.5 text-muted-foreground hover:text-foreground" />
-      </button>
-    </div>
-  );
-
-  if (!active) return null;
+  const getLabel = (val: string) => MODEL_CHOICES.find((m) => m.value === val)?.label ?? val;
 
   return (
     <div className="space-y-6">
-      <SettingsSection title="Generation defaults">
+      <SettingsSection
+        title="Harness Model Configuration"
+        action={
+          JSON.stringify(models) !== JSON.stringify(DEFAULT_MODELS) ? (
+            <SettingResetButton label="models" onClick={resetAll} />
+          ) : null
+        }
+      >
         <SettingsRow
-          title="Git writing model"
-          description="Used for generated commit messages, PR titles, and branch names."
-          resetAction={
-            isGitTextGenerationModelDirty ? (
-              <SettingResetButton
-                label="git writing model"
-                onClick={() =>
-                  updateSettings({
-                    textGenerationProvider: defaults.textGenerationProvider,
-                    textGenerationModel: defaults.textGenerationModel,
-                  })
-                }
-              />
-            ) : null
-          }
+          title="Planning model"
+          description="Model used by the Planner to construct user flows, specifications, and architecture."
           control={
             <SettingsSelectControl
-              value={currentGitTextGenerationValue}
-              onValueChange={(value) => {
-                if (!value) return;
-                const separatorIndex = value.indexOf(":");
-                const provider = value.slice(0, separatorIndex) as ProviderKind;
-                const model = value.slice(separatorIndex + 1);
-                if (!provider || !model) return;
-                updateSettings({
-                  textGenerationProvider: provider,
-                  textGenerationModel: model,
-                });
-              }}
-              ariaLabel="Git text generation model"
-              triggerClassName="w-full sm:w-52"
-              valueContent={selectedGitTextGenerationModelLabel}
+              value={models.plannerModel}
+              onValueChange={(val) => updateModel("plannerModel", val)}
+              ariaLabel="Planning model"
+              valueContent={getLabel(models.plannerModel)}
             >
-              {gitTextGenerationModelOptions.map((option) => (
-                <SelectItem
-                  hideIndicator
-                  key={`${option.provider}:${option.slug}`}
-                  value={`${option.provider}:${option.slug}`}
-                >
-                  {PROVIDER_DISPLAY_NAMES[option.provider]} / {option.name}
+              {MODEL_CHOICES.map((m) => (
+                <SelectItem hideIndicator key={m.value} value={m.value}>
+                  {m.label}
                 </SelectItem>
               ))}
             </SettingsSelectControl>
           }
         />
-      </SettingsSection>
 
-      <SettingsSection title="Custom models">
         <SettingsRow
-          title="Saved model slugs"
-          description="Add custom model slugs for supported providers."
-          resetAction={
-            savedCustomModelRows.length > 0 ? (
-              <SettingResetButton label="custom models" onClick={resetCustomModels} />
-            ) : null
+          title="Building model"
+          description="Model used by the Builder to write application source code, components, and state."
+          control={
+            <SettingsSelectControl
+              value={models.builderModel}
+              onValueChange={(val) => updateModel("builderModel", val)}
+              ariaLabel="Building model"
+              valueContent={getLabel(models.builderModel)}
+            >
+              {MODEL_CHOICES.map((m) => (
+                <SelectItem hideIndicator key={m.value} value={m.value}>
+                  {m.label}
+                </SelectItem>
+              ))}
+            </SettingsSelectControl>
           }
-        >
-          <div className={cn("mt-4 pt-4", SETTINGS_CARD_ROW_DIVIDER_CLASS_NAME)}>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <Select
-                value={selectedCustomModelProvider}
-                onValueChange={(value) => {
-                  if (isCustomModelEditorProvider(value)) {
-                    setSelectedCustomModelProvider(value);
-                  }
-                }}
-              >
-                <SelectTrigger
-                  size="sm"
-                  className="w-full sm:w-40"
-                  aria-label="Custom model provider"
-                >
-                  <SelectValue>{selectedCustomModelProviderSettings.title}</SelectValue>
-                </SelectTrigger>
-                <SettingsSelectPopup align="start">
-                  {CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS.map((config) => (
-                    <SelectItem hideIndicator key={config.provider} value={config.provider}>
-                      {config.title}
-                    </SelectItem>
-                  ))}
-                </SettingsSelectPopup>
-              </Select>
-              <Input
-                id="custom-model-slug"
-                size="sm"
-                variant="soft"
-                value={selectedCustomModelInput}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setCustomModelInputByProvider((existing) => ({
-                    ...existing,
-                    [selectedCustomModelProvider]: value,
-                  }));
-                  if (selectedCustomModelError) {
-                    setCustomModelErrorByProvider((existing) => ({
-                      ...existing,
-                      [selectedCustomModelProvider]: null,
-                    }));
-                  }
-                }}
-                onKeyDown={(event) => {
-                  if (event.key !== "Enter") return;
-                  event.preventDefault();
-                  addCustomModel(selectedCustomModelProvider);
-                }}
-                placeholder={selectedCustomModelProviderSettings.example}
-                spellCheck={false}
-              />
-              <Button
-                className="shrink-0"
-                variant="outline"
-                onClick={() => addCustomModel(selectedCustomModelProvider)}
-              >
-                <PlusIcon className="size-3.5" />
-                Add
-              </Button>
-            </div>
+        />
 
-            {selectedCustomModelError ? (
-              <p className="mt-2 text-xs text-destructive">{selectedCustomModelError}</p>
-            ) : null}
+        <SettingsRow
+          title="Verification model"
+          description="Model used by the Verifier for exact design token audits, layout compliance, and screenshot review."
+          control={
+            <SettingsSelectControl
+              value={models.verifierModel}
+              onValueChange={(val) => updateModel("verifierModel", val)}
+              ariaLabel="Verification model"
+              valueContent={getLabel(models.verifierModel)}
+            >
+              {MODEL_CHOICES.map((m) => (
+                <SelectItem hideIndicator key={m.value} value={m.value}>
+                  {m.label}
+                </SelectItem>
+              ))}
+            </SettingsSelectControl>
+          }
+        />
 
-            {savedCustomModelRows.length > 0 ? (
-              <div className={cn("mt-3", SETTINGS_INSET_LIST_CLASS_NAME)}>
-                {visibleCustomModelRows.map((row) => renderCustomModelRow(row, true))}
-                {overflowCustomModelRows.length > 0 ? (
-                  <>
-                    <DisclosureRegion open={showAllCustomModels}>
-                      <div>
-                        {overflowCustomModelRows.map((row) => renderCustomModelRow(row, false))}
-                      </div>
-                    </DisclosureRegion>
-                    <button
-                      type="button"
-                      className="mt-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                      aria-expanded={showAllCustomModels}
-                      onClick={() => setShowAllCustomModels((value) => !value)}
-                    >
-                      {showAllCustomModels
-                        ? "Show less"
-                        : `Show more (${overflowCustomModelRows.length})`}
-                    </button>
-                  </>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-        </SettingsRow>
+        <SettingsRow
+          title="Taste model"
+          description="Model used for aesthetic polish, anti-AI slop evaluation, and motion physics assessment."
+          control={
+            <SettingsSelectControl
+              value={models.tasteModel}
+              onValueChange={(val) => updateModel("tasteModel", val)}
+              ariaLabel="Taste model"
+              valueContent={getLabel(models.tasteModel)}
+            >
+              {MODEL_CHOICES.map((m) => (
+                <SelectItem hideIndicator key={m.value} value={m.value}>
+                  {m.label}
+                </SelectItem>
+              ))}
+            </SettingsSelectControl>
+          }
+        />
       </SettingsSection>
     </div>
   );

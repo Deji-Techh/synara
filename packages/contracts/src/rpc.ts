@@ -772,10 +772,8 @@ export const WsFeatureRpcGroup = RpcGroup.make(
   WsSubscribeServerConfigRpc,
 );
 
-export const WsRpcGroup = RpcGroup.merge(
-  WsBootstrapRpcGroup,
-  WsFeatureRpcGroup,
-  WsDeviceRpcGroup,
-  WsPreviewRpcGroup,
-  WsArtifactsRpcGroup,
-);
+export const WsRpcGroup = WsBootstrapRpcGroup
+  .merge(WsFeatureRpcGroup)
+  .merge(WsDeviceRpcGroup)
+  .merge(WsPreviewRpcGroup)
+  .merge(WsArtifactsRpcGroup);
