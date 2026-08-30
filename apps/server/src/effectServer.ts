@@ -52,6 +52,7 @@ export class ServerLifecycleError extends Schema.TaggedErrorClass<ServerLifecycl
 
 export const createEffectServer = Effect.fn(function* (
   shutdownController: ServerShutdownController,
+  appLayer: Layer.Layer<any>,
 ) {
   const config = yield* ServerConfig;
   const remotePolicyError = remoteAccessPolicyError(config);
@@ -95,7 +96,8 @@ export const createEffectServer = Effect.fn(function* (
     makeEffectHttpRouteLayer(readiness, shutdownController),
     websocketRpcRouteLayer,
   );
-  const httpApp = yield* HttpRouter.toHttpEffect(routesLayer);
+  const fullRoutesLayer = Layer.provideMerge(routesLayer, appLayer);
+  const httpApp = yield* Effect.scoped(HttpRouter.toHttpEffect(fullRoutesLayer));
   yield* httpServer
     .serve(httpApp)
     .pipe(
@@ -119,6 +121,8 @@ export const createEffectServer = Effect.fn(function* (
   );
   yield* Effect.addFinalizer(() => clearPersistedServerRuntimeState(config.serverRuntimeStatePath));
   yield* readiness.markHttpListening;
+  yield* readiness.markTerminalSubscriptionsReady;
+  yield* readiness.markOrchestrationSubscriptionsReady;
 
   yield* runtimeStartup.markCommandReady;
 

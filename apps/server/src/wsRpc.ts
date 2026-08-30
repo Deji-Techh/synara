@@ -119,8 +119,13 @@ import {
   getProviderUsageSnapshot,
   ExternalMcpService,
   ProfileStatsQuery,
+  ProviderAdapterRegistry,
+  ProviderDiscoveryService,
+  ProviderHealth,
+  ProviderService,
   redactSensitiveProcessArgs,
 } from "./harnessCompat";
+import { ArtifactRegistry } from "./persistence/Services/ArtifactRegistry";
 import { ServerEnvironment } from "./environment/Services/ServerEnvironment";
 import { ToolchainDoctor } from "./toolchain/Services/ToolchainDoctor";
 import { ServerLifecycleEvents } from "./serverLifecycleEvents";
@@ -373,6 +378,41 @@ function parseCommitLogRows(stdout: string, maxRows: number): ProjectActivityIte
     });
   }
   return rows;
+}
+function makeWsArtifactsHandlers(artifactRegistry: any) {
+  return {
+    "artifacts.list": (input: any) =>
+      rpcEffect(artifactRegistry.list(input.projectId), "Failed to list artifacts"),
+    "artifacts.rename": (input: any) =>
+      rpcEffect(artifactRegistry.rename(input), "Failed to rename artifact"),
+    "artifacts.delete": (input: any) =>
+      rpcEffect(artifactRegistry.delete(input.artifactId), "Failed to delete artifact"),
+    "artifacts.shareUrl": (input: any) =>
+      rpcEffect(artifactRegistry.shareUrl(input.artifactId), "Failed to get artifact share url"),
+  };
+}
+
+function makeWsPreviewHandlers(_providerAdapterRegistry: any, _options: any) {
+  return {
+    "preview.start": (_input: any) => Effect.succeed({} as any),
+    "preview.stop": (_input: any) => Effect.succeed(undefined),
+    "preview.reload": (_input: any) => Effect.succeed(undefined),
+    "preview.getState": (_input: any) => Effect.succeed({} as any),
+    "preview.analyze": (_input: any) => Effect.succeed({} as any),
+    "preview.test": (_input: any) => Effect.succeed({} as any),
+    "preview.buildStart": (_input: any) => Effect.succeed({} as any),
+    "preview.buildState": (_input: any) => Effect.succeed({} as any),
+    "preview.screenshot": (_input: any) => Effect.succeed({} as any),
+    "preview.devices": (_input: any) => Effect.succeed({} as any),
+    "preview.flutterToolchainStatus": (_input: any) => Effect.succeed({} as any),
+    "preview.flutterToolchainInstall": (_input: any) => Effect.succeed({} as any),
+  };
+}
+
+function makeWsDatabaseHandlers(_providerAdapterRegistry: any, _options: any) {
+  return {
+    "database.invoke": (_input: any) => Effect.succeed({} as any),
+  };
 }
 
 const makeWsRpcHandlersLayer = () =>

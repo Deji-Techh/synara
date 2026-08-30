@@ -7,6 +7,7 @@
  * @module CliConfig
  */
 import OS from "node:os";
+import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Config, Data, Effect, FileSystem, Layer, Option, Path, Schema, ServiceMap } from "effect";
 import { Command, Flag } from "effect/unstable/cli";
 import { NetService } from "@caide/shared/Net";
@@ -29,11 +30,12 @@ import {
   type ServerConfigShape,
 } from "./config";
 import { fixPath, resolveBaseDir } from "./os-jank";
-import { Open } from "./open";
+import { Open, OpenLive } from "./open";
 import { ServerAuth } from "./auth/Services/ServerAuth";
 import * as SqlitePersistence from "./persistence/Layers/Sqlite";
 import { makeServerApplicationLayers } from "./serverLayers";
-import { Server } from "./effectServer";
+import { createEffectServer } from "./effectServer";
+import { makeServerShutdownController } from "./serverShutdown";
 import { ServerLoggerLive } from "./serverLogger";
 import { ServerSettingsService } from "./serverSettings";
 import { formatHostForUrl, isLoopbackHost, isWildcardHost } from "./startupAccess";
@@ -152,141 +154,120 @@ const CliEnvConfig = Config.all({
   logWebSocketEvents: optionalBooleanEnvironmentConfig("CAIDE_LOG_WS_EVENTS"),
 });
 
-const ServerConfigLive = (input: CliInput) =>
-  Layer.effect(
-    ServerConfig,
-    Effect.gen(function* () {
-      const cliConfig = yield* CliConfig;
-      const { findAvailablePort } = yield* NetService;
-      const env = yield* CliEnvConfig.asEffect().pipe(
-        Effect.mapError(
-          (cause) =>
-            new StartupError({ message: "Failed to read environment configuration", cause }),
-        ),
-      );
-      const liveProcessDesktopShutdownToken = yield* Effect.sync(
-        consumeDesktopShutdownTokenFromProcessEnvironment,
-      );
+const resolveServerConfig = (input: CliInput) =>
+  Effect.gen(function* () {
+    const cliConfig = yield* CliConfig;
+    const { findAvailablePort } = yield* NetService;
+    const env = yield* CliEnvConfig.asEffect().pipe(
+      Effect.mapError(
+        (cause) =>
+          new StartupError({ message: "Failed to read environment configuration", cause }),
+      ),
+    );
+    const liveProcessDesktopShutdownToken = yield* Effect.sync(
+      consumeDesktopShutdownTokenFromProcessEnvironment,
+    );
 
-      const mode = Option.getOrElse(input.mode, () => env.mode);
+    const mode = Option.getOrElse(input.mode, () => env.mode);
 
-      const port = yield* Option.match(input.port, {
-        onSome: (value) => Effect.succeed(value),
-        onNone: () => {
-          if (env.port) {
-            return Effect.succeed(env.port);
-          }
-          if (mode === "desktop") {
-            return Effect.succeed(DEFAULT_PORT);
-          }
-          return findAvailablePort(DEFAULT_PORT);
-        },
+    const port = yield* Option.match(input.port, {
+      onSome: (value) => Effect.succeed(value),
+      onNone: () => {
+        if (env.port) {
+          return Effect.succeed(env.port);
+        }
+        if (mode === "desktop") {
+          return Effect.succeed(DEFAULT_PORT);
+        }
+        return findAvailablePort(DEFAULT_PORT);
+      },
+    });
+
+    const devUrl = Option.getOrElse(input.devUrl, () => env.devUrl);
+    const configuredPublicUrl = Option.getOrUndefined(input.publicUrl) ?? env.publicUrl;
+    const publicUrl = configuredPublicUrl
+      ? (normalizeHttpsPublicOrigin(configuredPublicUrl) ?? undefined)
+      : undefined;
+    if (configuredPublicUrl && publicUrl === undefined) {
+      return yield* new StartupError({
+        message:
+          "CAIDE_PUBLIC_URL/--public-url must be an HTTPS root origin without credentials, path, query, or fragment (for example https://caide.example.com).",
       });
-
-      const devUrl = Option.getOrElse(input.devUrl, () => env.devUrl);
-      const configuredPublicUrl = Option.getOrUndefined(input.publicUrl) ?? env.publicUrl;
-      const publicUrl = configuredPublicUrl
-        ? (normalizeHttpsPublicOrigin(configuredPublicUrl) ?? undefined)
-        : undefined;
-      if (configuredPublicUrl && publicUrl === undefined) {
-        return yield* new StartupError({
-          message:
-            "CAIDE_PUBLIC_URL/--public-url must be an HTTPS root origin without credentials, path, query, or fragment (for example https://caide.example.com).",
-        });
-      }
-      const allowInsecureRemote = resolveBooleanConfig(
-        input.allowInsecureRemote,
-        env.allowInsecureRemote,
-        false,
-      );
-      const configuredHome = Option.getOrUndefined(input.caideHome) ?? env.caideHome;
-      const baseDir = yield* resolveBaseDir(configuredHome);
-      const userHomeDir = OS.homedir();
-      const derivedPaths = yield* deriveServerPaths(baseDir, devUrl);
-      yield* Effect.try({
-        try: () => preparePrivateServerPaths(derivedPaths),
-        catch: (cause) =>
-          new StartupError({ message: "Failed to secure Caide's local state directory", cause }),
+    }
+    const allowInsecureRemote = resolveBooleanConfig(
+      input.allowInsecureRemote,
+      env.allowInsecureRemote,
+      false,
+    );
+    const configuredHome = Option.getOrUndefined(input.caideHome) ?? env.caideHome;
+    const baseDir = yield* resolveBaseDir(configuredHome);
+    const userHomeDir = OS.homedir();
+    const derivedPaths = yield* deriveServerPaths(baseDir, devUrl);
+    yield* Effect.try({
+      try: () => preparePrivateServerPaths(derivedPaths),
+      catch: (cause) =>
+        new StartupError({ message: "Failed to secure Caide's local state directory", cause }),
+    });
+    const noBrowser = resolveBooleanConfig(input.noBrowser, env.noBrowser, mode === "desktop");
+    const authToken = Option.getOrUndefined(input.authToken) ?? env.authToken;
+    const desktopShutdownToken = env.desktopShutdownToken ?? liveProcessDesktopShutdownToken;
+    const autoBootstrapProjectFromCwd = resolveBooleanConfig(
+      input.autoBootstrapProjectFromCwd,
+      env.autoBootstrapProjectFromCwd,
+      mode === "web",
+    );
+    const logProviderEvents = resolveBooleanConfig(
+      input.logProviderEvents,
+      env.logProviderEvents,
+      false,
+    );
+    const logWebSocketEvents = resolveBooleanConfig(
+      input.logWebSocketEvents,
+      env.logWebSocketEvents,
+      false,
+    );
+    const staticDir = devUrl ? undefined : yield* cliConfig.resolveStaticDir;
+    const host = Option.getOrUndefined(input.host) ?? env.host ?? "127.0.0.1";
+    const remotePolicyError = remoteAccessPolicyError({
+      host,
+      authToken,
+      devUrl,
+      publicUrl,
+      allowInsecureRemote,
+    });
+    if (remotePolicyError) {
+      return yield* new StartupError({
+        message: remotePolicyError,
       });
-      const noBrowser = resolveBooleanConfig(input.noBrowser, env.noBrowser, mode === "desktop");
-      const authToken = Option.getOrUndefined(input.authToken) ?? env.authToken;
-      const desktopShutdownToken = env.desktopShutdownToken ?? liveProcessDesktopShutdownToken;
-      const autoBootstrapProjectFromCwd = resolveBooleanConfig(
-        input.autoBootstrapProjectFromCwd,
-        env.autoBootstrapProjectFromCwd,
-        mode === "web",
-      );
-      // Provider event NDJSON logging is helpful for debugging, but it is too
-      // expensive to keep enabled on the streaming hot path by default.
-      const logProviderEvents = resolveBooleanConfig(
-        input.logProviderEvents,
-        env.logProviderEvents,
-        false,
-      );
-      // Keep websocket payload logging opt-in in dev. Terminal/TUI traffic is
-      // high-volume enough that automatic logging adds noticeable CPU and I/O.
-      const logWebSocketEvents = resolveBooleanConfig(
-        input.logWebSocketEvents,
-        env.logWebSocketEvents,
-        false,
-      );
-      const staticDir = devUrl ? undefined : yield* cliConfig.resolveStaticDir;
-      // Omitting Node's host listens on an unspecified address, which exposes
-      // the server beyond the local machine on common platforms. Keep every
-      // mode loopback-only unless remote access is explicit and authenticated.
-      const host = Option.getOrUndefined(input.host) ?? env.host ?? "127.0.0.1";
-      const remotePolicyError = remoteAccessPolicyError({
-        host,
-        authToken,
-        devUrl,
-        publicUrl,
-        allowInsecureRemote,
-      });
-      if (remotePolicyError) {
-        return yield* new StartupError({
-          message: remotePolicyError,
-        });
-      }
+    }
 
-      const { homeDir, chatWorkspaceRoot } = yield* resolveCanonicalWorkspaceRoots({
-        homeDir: userHomeDir,
-      });
+    const { homeDir, chatWorkspaceRoot } = yield* resolveCanonicalWorkspaceRoots({
+      homeDir: userHomeDir,
+    });
 
-      const config: ServerConfigShape = {
-        mode,
-        port,
-        cwd: cliConfig.cwd,
-        homeDir,
-        chatWorkspaceRoot,
-        host,
-        baseDir,
-        ...derivedPaths,
-        staticDir,
-        devUrl,
-        publicUrl,
-        allowInsecureRemote,
-        noBrowser,
-        authToken,
-        desktopShutdownToken,
-        autoBootstrapProjectFromCwd,
-        logProviderEvents,
-        logWebSocketEvents,
-      } satisfies ServerConfigShape;
+    const config: ServerConfigShape = {
+      mode,
+      port,
+      cwd: cliConfig.cwd,
+      homeDir,
+      chatWorkspaceRoot,
+      host,
+      baseDir,
+      ...derivedPaths,
+      staticDir,
+      devUrl,
+      publicUrl,
+      allowInsecureRemote,
+      noBrowser,
+      authToken,
+      desktopShutdownToken,
+      autoBootstrapProjectFromCwd,
+      logProviderEvents,
+      logWebSocketEvents,
+    } satisfies ServerConfigShape;
 
-      return config;
-    }),
-  );
-
-const LayerLive = (input: CliInput) => {
-  const { runtimeServicesLayer } = makeServerApplicationLayers();
-
-  return Layer.empty.pipe(
-    Layer.provideMerge(runtimeServicesLayer),
-    Layer.provideMerge(SqlitePersistence.layerConfig),
-    Layer.provideMerge(ServerLoggerLive),
-    Layer.provideMerge(ServerConfigLive(input)),
-  );
-};
+    return config;
+  });
 
 export function makeServerStartupLogData(config: ServerConfigShape): Record<string, unknown> {
   const safeConfig: Record<string, unknown> = { ...config };
@@ -304,12 +285,9 @@ export function makeServerStartupLogData(config: ServerConfigShape): Record<stri
 const makeServerProgram = (input: CliInput) =>
   Effect.gen(function* () {
     const cliConfig = yield* CliConfig;
-    const { start, stopSignal } = yield* Server;
-    const openDeps = yield* Open;
-    const serverAuth = yield* ServerAuth;
     yield* cliConfig.fixPath;
 
-    const config = yield* ServerConfig;
+    const config = yield* resolveServerConfig(input);
 
     if (!config.devUrl && !config.staticDir) {
       yield* Effect.logWarning(
@@ -320,65 +298,85 @@ const makeServerProgram = (input: CliInput) =>
       );
     }
 
-    yield* start;
+    const configLayer = Layer.succeed(ServerConfig, config);
+    const sqliteLayer = SqlitePersistence.makeSqlitePersistenceLive(config.dbPath).pipe(
+      Layer.provide(NodeServices.layer),
+    );
+    const { runtimeServicesLayer } = makeServerApplicationLayers(configLayer, sqliteLayer);
+    const appLayer = runtimeServicesLayer.pipe(Layer.provideMerge(OpenLive));
 
-    const localUrl = `http://localhost:${config.port}`;
-    const bindUrl =
-      config.host && !isWildcardHost(config.host)
-        ? `http://${formatHostForUrl(config.host)}:${config.port}`
-        : localUrl;
-    const pairingBaseUrl = config.publicUrl?.origin ?? bindUrl;
-    const startupPairingUrl =
-      config.publicUrl || !isLoopbackHost(config.host)
-        ? yield* serverAuth.issueStartupPairingUrl(pairingBaseUrl).pipe(
-            Effect.mapError(
-              (cause) =>
-                new StartupError({
-                  message: "Failed to create the remote-access startup pairing link.",
-                  cause,
-                }),
-            ),
-          )
-        : undefined;
+    const shutdownController = yield* makeServerShutdownController();
+    const serverEffect = Effect.gen(function* () {
+      const serverAuth = yield* ServerAuth;
+      const openDeps = yield* Open;
 
-    yield* Effect.logInfo("Caide running", makeServerStartupLogData(config));
-    if (startupPairingUrl) {
-      if (config.allowInsecureRemote && !config.publicUrl) {
-        yield* Effect.logWarning(
-          "INSECURE REMOTE ACCESS ENABLED: credentials and session traffic are unencrypted",
+      yield* createEffectServer(shutdownController, appLayer);
+
+      const localUrl = `http://localhost:${config.port}`;
+      const bindUrl =
+        config.host && !isWildcardHost(config.host)
+          ? `http://${formatHostForUrl(config.host)}:${config.port}`
+          : localUrl;
+      const pairingBaseUrl = config.publicUrl?.origin ?? bindUrl;
+      const startupPairingUrl =
+        config.publicUrl || !isLoopbackHost(config.host)
+          ? yield* serverAuth.issueStartupPairingUrl(pairingBaseUrl).pipe(
+              Effect.mapError(
+                (cause) =>
+                  new StartupError({
+                    message: "Failed to create the remote-access startup pairing link.",
+                    cause,
+                  }),
+              ),
+            )
+          : undefined;
+
+      yield* Effect.logInfo("Caide running", makeServerStartupLogData(config));
+      if (startupPairingUrl) {
+        if (config.allowInsecureRemote && !config.publicUrl) {
+          yield* Effect.logWarning(
+            "INSECURE REMOTE ACCESS ENABLED: credentials and session traffic are unencrypted",
+            {
+              pairingUrl: startupPairingUrl,
+              hint: "Use only on a trusted LAN. Configure CAIDE_PUBLIC_URL behind HTTPS for protected remote access.",
+            },
+          );
+        }
+        yield* Effect.logInfo(
+          config.publicUrl
+            ? "Remote access requires an authenticated owner session"
+            : "Insecure remote pairing link created",
           {
             pairingUrl: startupPairingUrl,
-            hint: "Use only on a trusted LAN. Configure CAIDE_PUBLIC_URL behind HTTPS for protected remote access.",
+            hint:
+              isWildcardHost(config.host) && !config.publicUrl
+                ? "Replace localhost in this one-time URL with the server's reachable hostname or IP."
+                : "Open this one-time URL to establish the first owner session.",
           },
         );
       }
-      yield* Effect.logInfo(
-        config.publicUrl
-          ? "Remote access requires an authenticated owner session"
-          : "Insecure remote pairing link created",
-        {
-          pairingUrl: startupPairingUrl,
-          hint:
-            isWildcardHost(config.host) && !config.publicUrl
-              ? "Replace localhost in this one-time URL with the server's reachable hostname or IP."
-              : "Open this one-time URL to establish the first owner session.",
-        },
-      );
-    }
 
-    if (!config.noBrowser) {
-      const target = startupPairingUrl ?? config.devUrl?.toString() ?? bindUrl;
-      yield* openDeps.openBrowser(target).pipe(
-        Effect.catch(() =>
-          Effect.logInfo("browser auto-open unavailable", {
-            hint: `Open ${target} in your browser.`,
-          }),
-        ),
-      );
-    }
+      if (!config.noBrowser) {
+        const target = startupPairingUrl ?? config.devUrl?.toString() ?? bindUrl;
+        yield* openDeps.openBrowser(target).pipe(
+          Effect.catch(() =>
+            Effect.logInfo("browser auto-open unavailable", {
+              hint: `Open ${target} in your browser.`,
+            }),
+          ),
+        );
+      }
 
-    return yield* stopSignal;
-  }).pipe(Effect.scoped, Effect.provide(LayerLive(input)));
+      return yield* shutdownController.stopSignal;
+    }).pipe(
+      Effect.provide(appLayer),
+      Effect.tapCause((cause) =>
+        Effect.sync(() => console.error("STARTUP ERROR CAUSE:", cause)),
+      ),
+    );
+
+    return yield* serverEffect;
+  }).pipe(Effect.scoped);
 
 /**
  * These flags mirrors the environment variables and the config shape.

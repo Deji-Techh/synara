@@ -18,7 +18,7 @@ import {
   type GitHubCliShape,
   type GitHubPullRequestListItem,
 } from "../../git/Services/GitHubCli";
-import { ProjectionSnapshotQuery } from "../../orchestration/Services/ProjectionSnapshotQuery";
+import { ProjectionSnapshotQuery } from "../../harnessCompat";
 import {
   ProjectPullRequestPins,
   type ProjectPullRequestPinsShape,

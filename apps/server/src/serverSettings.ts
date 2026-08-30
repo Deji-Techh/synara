@@ -482,6 +482,4 @@ const makeServerSettings = Effect.gen(function* () {
   } satisfies ServerSettingsShape;
 });
 
-export const ServerSettingsLive = Layer.effect(ServerSettingsService, makeServerSettings).pipe(
-  Layer.provide(ProviderCredentialsLive),
-);
+export const ServerSettingsLive = Layer.effect(ServerSettingsService, makeServerSettings);

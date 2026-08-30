@@ -114,8 +114,21 @@ const requireAuthenticatedRequest = Effect.gen(function* () {
 
 export const readinessEffectRouteLayer = (readiness: ServerReadiness) =>
   Layer.mergeAll(
-    HttpRouter.add("GET", "/ready", readiness.readyHttpEffect),
-    HttpRouter.add("GET", "/health", readiness.healthHttpEffect),
+    HttpRouter.add(
+      "GET",
+      "/ready",
+      Effect.gen(function* () {
+        const snapshot = yield* readiness.getSnapshot;
+        return HttpServerResponse.jsonUnsafe(snapshot, {
+          status: snapshot.startupReady ? 200 : 503,
+        });
+      }),
+    ),
+    HttpRouter.add(
+      "GET",
+      "/health",
+      Effect.sync(() => HttpServerResponse.jsonUnsafe({ ok: true }, { status: 200 })),
+    ),
   );
 
 export const desktopShutdownEffectRouteLayer = (shutdownController: ServerShutdownController) =>

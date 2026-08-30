@@ -13,8 +13,6 @@ import { FetchHttpClient } from "effect/unstable/http";
 
 const RuntimeLayer = Layer.empty.pipe(
   Layer.provideMerge(CliConfig.layer),
-  Layer.provideMerge(ServerLive),
-  Layer.provideMerge(OpenLive),
   Layer.provideMerge(NetService.layer),
   Layer.provideMerge(NodeServices.layer),
   Layer.provideMerge(FetchHttpClient.layer),
