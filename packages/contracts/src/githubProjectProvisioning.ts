@@ -1,7 +1,7 @@
 import { Schema } from "effect";
 
 import { CommandId, IsoDateTime, ProjectId, SpaceId, TrimmedNonEmptyString } from "./baseSchemas";
-import { ModelSelection } from "./model";
+import { ModelSelection } from "./orchestration";
 
 const BoundedRepositoryInput = TrimmedNonEmptyString.check(Schema.isMaxLength(512));
 const BoundedPath = TrimmedNonEmptyString.check(Schema.isMaxLength(4_096));

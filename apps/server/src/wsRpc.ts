@@ -60,7 +60,6 @@ import {
   RpcServer,
 } from "effect/unstable/rpc";
 
-import { AutomationService } from "./automation/Services/AutomationService";
 import { authErrorResponse, makeEffectAuthRequest } from "./auth/effectHttp";
 import {
   ServerAuth,
@@ -70,8 +69,6 @@ import {
   type ServerAuthShape,
 } from "./auth/Services/ServerAuth";
 import { SessionCredentialService } from "./auth/Services/SessionCredentialService";
-import { CheckpointDiffQuery } from "./checkpointing/Services/CheckpointDiffQuery";
-import { resolveThreadWorkspaceCwd } from "./checkpointing/Utils";
 import { ServerConfig, type ServerConfigShape } from "./config";
 import { realpathNearestExisting } from "./realpathNearestExisting";
 import { workspaceRootsEqual } from "@caide/shared/threadWorkspace";
@@ -108,29 +105,24 @@ import {
   LOCAL_LOOPBACK_ATTACHMENT_PRINCIPAL,
 } from "./managedAttachmentPrincipal";
 import { Open, resolveAvailableEditors } from "./open";
-import { makeDispatchCommandNormalizer } from "./orchestration/dispatchCommandNormalization";
-import { makeImportThreadHandler } from "./orchestration/importThreadRoute";
-import { OrchestrationEngineService } from "./orchestration/Services/OrchestrationEngine";
-import { ProviderCommandReactor } from "./orchestration/Services/ProviderCommandReactor";
-import { ProjectionSnapshotQuery } from "./orchestration/Services/ProjectionSnapshotQuery";
-import { shouldPublishThreadShellForEvent } from "./orchestration/threadShellEvents";
-import { ProviderDiscoveryService } from "./provider/Services/ProviderDiscoveryService";
-import { discoverSkillsCatalog, caideSkillsDir } from "./provider/skillsCatalog";
-import { recoverUnregisteredGitHubCheckout } from "./project/githubProjectRegistration";
-import { ProviderAdapterRegistry } from "./provider/Services/ProviderAdapterRegistry";
-import { makeWsPreviewHandlers } from "./provider/wsPreviewHandlers";
-import { makeWsArtifactsHandlers } from "./provider/wsArtifactsHandlers";
-import { ArtifactRegistry } from "./persistence/Services/ArtifactRegistry";
-import { makeWsDatabaseHandlers } from "./provider/wsDatabaseHandlers";
-import { ProviderHealth } from "./provider/Services/ProviderHealth";
-import { ProviderService } from "./provider/Services/ProviderService";
-import { listProviderUsage } from "./providerUsage";
-import { getProviderUsageSnapshot } from "./providerUsageSnapshot";
-import { ProfileStatsQuery } from "./profileStats";
-import { redactSensitiveProcessArgs } from "./processArgumentRedaction";
+import {
+  AutomationService,
+  CheckpointDiffQuery,
+  resolveThreadWorkspaceCwd,
+  makeDispatchCommandNormalizer,
+  makeImportThreadHandler,
+  OrchestrationEngineService,
+  ProviderCommandReactor,
+  ProjectionSnapshotQuery,
+  shouldPublishThreadShellForEvent,
+  listProviderUsage,
+  getProviderUsageSnapshot,
+  ExternalMcpService,
+  ProfileStatsQuery,
+  redactSensitiveProcessArgs,
+} from "./harnessCompat";
 import { ServerEnvironment } from "./environment/Services/ServerEnvironment";
 import { ToolchainDoctor } from "./toolchain/Services/ToolchainDoctor";
-import { ExternalMcpService } from "./externalMcp/Services/ExternalMcpService";
 import { ServerLifecycleEvents } from "./serverLifecycleEvents";
 import { ServerRuntimeStartup } from "./serverRuntimeStartup";
 import { ServerSettingsService } from "./serverSettings";

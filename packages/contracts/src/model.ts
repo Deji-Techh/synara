@@ -1,5 +1,6 @@
 import { Schema } from "effect";
-import { ProviderKind, TrimmedNonEmptyString } from "./baseSchemas";
+import { TrimmedNonEmptyString } from "./baseSchemas";
+import type { ProviderKind } from "./orchestration";
 
 export const CODEX_REASONING_EFFORT_OPTIONS = ["low", "medium", "high", "xhigh"] as const;
 // Codex app-server can add model-specific efforts through runtime discovery.
@@ -158,19 +159,6 @@ export const ApiModelOptions = Schema.Struct({
   thinking: Schema.optional(Schema.Boolean),
 });
 export type ApiModelOptions = typeof ApiModelOptions.Type;
-
-export const ModelSelection = Schema.Struct({
-  provider: Schema.optional(ProviderKind),
-  model: Schema.optional(Schema.String),
-  effort: Schema.optional(Schema.String),
-});
-export type ModelSelection = typeof ModelSelection.Type;
-
-export const ProviderStartOptions = Schema.Struct({
-  model: Schema.optional(Schema.String),
-  effort: Schema.optional(Schema.String),
-});
-export type ProviderStartOptions = typeof ProviderStartOptions.Type;
 
 export const ProviderModelOptions = Schema.Struct({
   engine: Schema.optional(EngineModelOptions),
@@ -890,7 +878,18 @@ export const MODEL_SLUG_ALIASES_BY_PROVIDER: Record<ProviderKind, Record<string,
   opencodeGo: {},
 };
 
-
+// ── Agent mention aliases ─────────────────────────────────────────────
+// Re-exported from agentMentions.ts for backward compatibility
+export {
+  AGENT_MENTION_ALIASES,
+  getAgentMentionAutocompleteAliases,
+  getAgentMentionAliases,
+  resolveAgentAlias,
+  isValidAgentAlias,
+  getAgentAliasNames,
+  type AgentAliasDefinition,
+  type ResolvedAgentAlias,
+} from "./agentMentions";
 
 // ── Model capabilities index ──────────────────────────────────────────
 

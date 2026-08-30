@@ -5,7 +5,7 @@ import * as Random from "effect/Random";
 import * as Effect from "effect/Effect";
 
 export function cn(...inputs: CxOptions) {
-  return twMerge(cx(...inputs));
+  return twMerge(cx(inputs));
 }
 
 export function isMacPlatform(platform: string): boolean {

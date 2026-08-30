@@ -142,15 +142,18 @@ const buildCmd = Command.make(
         })`bun run build`,
       );
 
-      yield* Effect.log("[cli] Building embedded dyad runtime...");
-      yield* runCommand(
-        ChildProcess.make({
-          cwd: engineDir,
-          stdout: config.verbose ? "inherit" : "ignore",
-          stderr: "inherit",
-          shell: process.platform === "win32",
-        })`bun tsdown --config embedded-tsdown.config.ts`,
-      );
+      const engineExists = yield* fs.exists(engineDir);
+      if (engineExists) {
+        yield* Effect.log("[cli] Building embedded dyad runtime...");
+        yield* runCommand(
+          ChildProcess.make({
+            cwd: engineDir,
+            stdout: config.verbose ? "inherit" : "ignore",
+            stderr: "inherit",
+            shell: process.platform === "win32",
+          })`bun tsdown --config embedded-tsdown.config.ts`,
+        );
+      }
 
       yield* Effect.log("[cli] Running tsdown...");
       yield* runCommand(
@@ -163,10 +166,12 @@ const buildCmd = Command.make(
         })`bun tsdown`,
       );
 
-      const embeddedRuntimeTarget = path.join(serverDir, "dist/dyad-engine");
-      yield* fs.copy(path.join(engineDir, "dist-single"), embeddedRuntimeTarget);
-      yield* fs.copy(path.join(engineDir, "drizzle"), path.join(embeddedRuntimeTarget, "drizzle"));
-      yield* Effect.log("[cli] Bundled embedded dyad runtime into server dist");
+      if (engineExists) {
+        const embeddedRuntimeTarget = path.join(serverDir, "dist/dyad-engine");
+        yield* fs.copy(path.join(engineDir, "dist-single"), embeddedRuntimeTarget);
+        yield* fs.copy(path.join(engineDir, "drizzle"), path.join(embeddedRuntimeTarget, "drizzle"));
+        yield* Effect.log("[cli] Bundled embedded dyad runtime into server dist");
+      }
 
       // The device backend compiles this helper against the user's installed
       // Xcode on first attach. tsdown bundles JavaScript only, and desktop/CLI

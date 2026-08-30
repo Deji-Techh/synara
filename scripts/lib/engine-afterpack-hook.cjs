@@ -39,8 +39,8 @@ exports.default = async function afterPack(context) {
   const payloadNodeModules = process.env.CAIDE_ENGINE_PAYLOAD_DIR
     ? path.join(process.env.CAIDE_ENGINE_PAYLOAD_DIR, "node_modules")
     : null;
-  if (!payloadNodeModules) {
-    // Non-engine build; nothing to inject.
+  if (!payloadNodeModules || !fs.existsSync(payloadNodeModules)) {
+    // Non-engine build or integrated pure harness runtime; nothing to inject.
     return;
   }
 

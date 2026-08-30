@@ -1,48 +1,75 @@
+// FILE: providerCredentials.ts
+// Purpose: Owns server-only API key credentials used to connect to external providers.
+// Layer: Server provider security boundary
+
+import type { ProviderKind } from "@caide/contracts";
 import { Effect, Layer, ServiceMap } from "effect";
-import { ProviderKind } from "@caide/contracts";
-import { ServerSecretStore } from "./auth/Services/ServerSecretStore";
+
+import { ServerSecretStoreLive } from "./auth/Layers/ServerSecretStore";
+import { ServerSecretStore, type SecretStoreError } from "./auth/Services/ServerSecretStore";
+
+const apiKeySecretName = (provider: ProviderKind): string => `provider-${provider}-api-key`;
 
 export interface ProviderCredentialsShape {
-  readonly isApiKeyConfigured: (provider: ProviderKind) => Effect.Effect<boolean>;
-  readonly getApiKey: (provider: ProviderKind) => Effect.Effect<string | null>;
-  readonly replaceApiKey: (provider: ProviderKind, apiKey: string | null) => Effect.Effect<void>;
+  readonly getApiKey: (provider: ProviderKind) => Effect.Effect<string | null, SecretStoreError>;
+  readonly replaceApiKey: (
+    provider: ProviderKind,
+    apiKey: string | null,
+  ) => Effect.Effect<void, SecretStoreError>;
+  readonly isApiKeyConfigured: (provider: ProviderKind) => Effect.Effect<boolean, SecretStoreError>;
 }
 
-export class ProviderCredentials extends ServiceMap.Tag("ProviderCredentials")<
+export class ProviderCredentials extends ServiceMap.Service<
   ProviderCredentials,
   ProviderCredentialsShape
->() {}
+>()("caide/providerCredentials/ProviderCredentials") {}
 
-export const makeProviderCredentials = Effect.gen(function* () {
-  const secretStore = yield* ServerSecretStore;
+export const resolveProviderApiKey = (provider: ProviderKind) =>
+  Effect.gen(function* () {
+    const credentials = yield* ProviderCredentials;
+    return (yield* credentials.getApiKey(provider)) ?? undefined;
+  }).pipe(Effect.orDie);
 
-  const secretKey = (provider: ProviderKind) => `provider-api-key:${provider}`;
-
-  const isApiKeyConfigured = (provider: ProviderKind) =>
-    secretStore.get(secretKey(provider)).pipe(
-      Effect.map((secret) => secret !== null && secret.length > 0),
-      Effect.orElseSucceed(() => false),
+export const makeProviderApiKeyResolver =
+  (credentials: ProviderCredentialsShape) =>
+  (provider: ProviderKind): Effect.Effect<string | undefined> =>
+    credentials.getApiKey(provider).pipe(
+      Effect.map((key) => key ?? undefined),
+      Effect.orDie,
     );
 
-  const getApiKey = (provider: ProviderKind) =>
-    secretStore.get(secretKey(provider)).pipe(
-      Effect.map((bytes) => (bytes ? new TextDecoder().decode(bytes) : null)),
-      Effect.orElseSucceed(() => null),
+const makeProviderCredentials = Effect.gen(function* () {
+  const secrets = yield* ServerSecretStore;
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder("utf-8", { fatal: true });
+
+  const getApiKey: ProviderCredentialsShape["getApiKey"] = (provider) =>
+    secrets.get(apiKeySecretName(provider)).pipe(
+      Effect.map((value) => {
+        if (!value || value.byteLength === 0) return null;
+        const key = decoder.decode(value);
+        return key.length > 0 ? key : null;
+      }),
     );
 
-  const replaceApiKey = (provider: ProviderKind, apiKey: string | null) =>
-    apiKey && apiKey.length > 0
-      ? secretStore.set(secretKey(provider), apiKey).pipe(Effect.asVoid)
-      : secretStore.set(secretKey(provider), "").pipe(Effect.asVoid);
+  const replaceApiKey: ProviderCredentialsShape["replaceApiKey"] = (provider, apiKey) => {
+    const normalized = apiKey?.trim() ?? "";
+    return normalized.length > 0
+      ? secrets.set(apiKeySecretName(provider), encoder.encode(normalized))
+      : secrets.remove(apiKeySecretName(provider));
+  };
+
+  const isApiKeyConfigured: ProviderCredentialsShape["isApiKeyConfigured"] = (provider) =>
+    getApiKey(provider).pipe(Effect.map((key) => key !== null));
 
   return {
-    isApiKeyConfigured,
     getApiKey,
     replaceApiKey,
-  };
+    isApiKeyConfigured,
+  } satisfies ProviderCredentialsShape;
 });
 
 export const ProviderCredentialsLive = Layer.effect(
   ProviderCredentials,
   makeProviderCredentials,
-);
+).pipe(Layer.provide(ServerSecretStoreLive));

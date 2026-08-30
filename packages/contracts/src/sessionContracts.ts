@@ -1,12 +1,6 @@
 import { Schema } from "effect";
-import { IsoDateTime, TrimmedNonEmptyString } from "./baseSchemas";
+import { IsoDateTime, SessionId, ThreadId, TurnId } from "./baseSchemas";
 import { TurnStatus } from "./harnessEvents";
-
-export const SessionId = TrimmedNonEmptyString.pipe(Schema.brand("SessionId"));
-export type SessionId = typeof SessionId.Type;
-
-export const TurnId = TrimmedNonEmptyString.pipe(Schema.brand("TurnId"));
-export type TurnId = typeof TurnId.Type;
 
 export const Turn = Schema.Struct({
   turnId: TurnId,

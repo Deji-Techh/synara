@@ -8,7 +8,6 @@ export const RELEASE_WORKSPACE_MANIFEST_PATHS = [
   "apps/desktop/package.json",
   "apps/web/package.json",
   "apps/marketing/package.json",
-  "apps/engine/package.json",
   "packages/contracts/package.json",
   "packages/shared/package.json",
   "packages/pg-schema-classifier/package.json",
