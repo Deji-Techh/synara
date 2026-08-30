@@ -1,91 +1,142 @@
-/**
- * ToolScheduler — conflict graph, steal kimi-code loop/tool-scheduler.ts + claude-code StreamingToolExecutor.
- * Parallelize read-only non-conflicting, serialize writes.
- */
-import type { ToolDefinition } from "./defineTool.ts";
+import type { ToolDef, ToolContext } from "./defineTool.ts";
 
-export type ToolCall = { id: string; tool: string; input: Record<string, unknown> };
+export interface ScheduledToolCall {
+  id: string;
+  name: string;
+  args: unknown;
+}
+
+export interface ToolSchedulerOptions {
+  siblingAbortOnFailure?: boolean;
+}
 
 export class ToolScheduler {
-  private running = new Set<string>();
+  private siblingAbortOnFailure: boolean;
 
-  isConcurrencySafe(def: ToolDefinition, input: Record<string, unknown>): boolean {
-    try {
-      return def.isConcurrencySafe(input);
-    } catch {
-      return false;
+  constructor(options: ToolSchedulerOptions = {}) {
+    this.siblingAbortOnFailure = options.siblingAbortOnFailure ?? true;
+  }
+
+  isConcurrencySafe(toolA: ToolDef, toolB?: ToolDef): boolean {
+    if (!toolB) {
+      return toolA.readOnly;
     }
+    return toolA.readOnly && toolB.readOnly;
   }
 
-  canRun(def: ToolDefinition, input: Record<string, unknown>): boolean {
-    if (this.running.size === 0) return true;
-    if (!this.isConcurrencySafe(def, input)) return false;
-    // if all running are concurrency-safe, allow parallel
-    return true;
-  }
-
-  async runBatch(
-    calls: ToolCall[],
-    registry: Map<string, ToolDefinition>,
-    ctx: { signal: AbortSignal; appPath: string },
-  ): Promise<Map<string, unknown>> {
-    const results = new Map<string, unknown>();
-    const batches: ToolCall[][] = [];
-    let current: ToolCall[] = [];
-    let hasWrite = false;
+  /**
+   * Partitions a list of tool calls into execution batches:
+   * Consecutive readOnly tools are batched together for parallel execution,
+   * while modifying tools are isolated in sequential single-item batches.
+   */
+  partitionBatches(
+    calls: ScheduledToolCall[],
+    registry: Map<string, ToolDef>,
+  ): ScheduledToolCall[][] {
+    const batches: ScheduledToolCall[][] = [];
+    let currentReadOnlyBatch: ScheduledToolCall[] = [];
 
     for (const call of calls) {
-      const def = registry.get(call.tool);
-      if (!def) {
-        results.set(call.id, { error: `unknown tool ${call.tool}` });
-        continue;
-      }
-      const safe = this.isConcurrencySafe(def, call.input);
-      if (!safe) {
-        if (current.length) batches.push(current);
-        batches.push([call]);
-        current = [];
-        hasWrite = false;
+      const toolDef = registry.get(call.name);
+      const isReadOnly = toolDef ? toolDef.readOnly : false;
+
+      if (isReadOnly) {
+        currentReadOnlyBatch.push(call);
       } else {
-        if (hasWrite) {
-          batches.push(current);
-          current = [call];
-          hasWrite = false;
-        } else {
-          current.push(call);
+        if (currentReadOnlyBatch.length > 0) {
+          batches.push(currentReadOnlyBatch);
+          currentReadOnlyBatch = [];
         }
+        batches.push([call]);
       }
     }
-    if (current.length) batches.push(current);
 
-    void hasWrite;
+    if (currentReadOnlyBatch.length > 0) {
+      batches.push(currentReadOnlyBatch);
+    }
+
+    return batches;
+  }
+
+  /**
+   * Executes a batch of tool calls with concurrency safety and sibling abort support.
+   */
+  async runCalls(
+    calls: ScheduledToolCall[],
+    registry: Map<string, ToolDef>,
+    baseCtx: Omit<ToolContext, "toolId">,
+    executor: (toolDef: ToolDef, call: ScheduledToolCall, ctx: ToolContext) => Promise<unknown>,
+  ): Promise<Map<string, { status: "completed" | "failed"; result?: unknown; error?: unknown }>> {
+    const results = new Map<
+      string,
+      { status: "completed" | "failed"; result?: unknown; error?: unknown }
+    >();
+
+    const batches = this.partitionBatches(calls, registry);
 
     for (const batch of batches) {
-      if (ctx.signal.aborted) break;
-      if (batch.length === 1 && !this.isConcurrencySafe(registry.get(batch[0]!.tool)!, batch[0]!.input)) {
-        const c = batch[0]!;
-        const def = registry.get(c.tool)!;
+      if (baseCtx.signal.aborted) break;
+
+      if (batch.length === 1) {
+        const call = batch[0];
+        const def = registry.get(call.name);
+        if (!def) {
+          results.set(call.id, {
+            status: "failed",
+            error: new Error(`Unknown tool '${call.name}'`),
+          });
+          continue;
+        }
+
+        const toolCtx: ToolContext = {
+          ...baseCtx,
+          toolId: call.id,
+        };
+
         try {
-          const out = await def.execute(c.input, ctx);
-          results.set(c.id, out);
-        } catch (e) {
-          results.set(c.id, { error: String(e) });
+          const out = await executor(def, call, toolCtx);
+          results.set(call.id, { status: "completed", result: out });
+        } catch (err) {
+          results.set(call.id, { status: "failed", error: err });
         }
       } else {
-        // parallel safe batch
-        await Promise.all(
-          batch.map(async (c) => {
-            const def = registry.get(c.tool)!;
-            try {
-              const out = await def.execute(c.input, ctx);
-              results.set(c.id, out);
-            } catch (e) {
-              results.set(c.id, { error: String(e) });
+        // Parallel execution for concurrency-safe readOnly batch
+        const siblingController = new AbortController();
+        const onParentAbort = () => siblingController.abort("Parent signal aborted");
+        baseCtx.signal.addEventListener("abort", onParentAbort, { once: true });
+
+        const batchPromises = batch.map(async (call) => {
+          const def = registry.get(call.name);
+          if (!def) {
+            results.set(call.id, {
+              status: "failed",
+              error: new Error(`Unknown tool '${call.name}'`),
+            });
+            return;
+          }
+
+          const toolCtx: ToolContext = {
+            ...baseCtx,
+            signal: siblingController.signal,
+            toolId: call.id,
+          };
+
+          try {
+            const out = await executor(def, call, toolCtx);
+            results.set(call.id, { status: "completed", result: out });
+          } catch (err) {
+            results.set(call.id, { status: "failed", error: err });
+            if (this.siblingAbortOnFailure) {
+              siblingController.abort(`Sibling tool '${call.name}' failed`);
             }
-          }),
-        );
+          }
+        });
+
+        await Promise.allSettled(batchPromises);
+        baseCtx.signal.removeEventListener("abort", onParentAbort);
       }
     }
+
     return results;
   }
 }
