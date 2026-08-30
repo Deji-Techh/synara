@@ -2,18 +2,15 @@
 
 ## Permanent Session Rules (user requirements — do not forget)
 
-1. **After EVERY compaction, re-read this AGENTS.md and `plans/004-caide-pure-harness.md`** (the ACTIVE plan) before continuing work. Do not assume context survived.
+1. **After EVERY compaction, re-read this AGENTS.md and `plans/005-master-build-plan.md`** (the ACTIVE plan) before continuing work. Do not assume context survived. `004-caide-pure-harness.md` is superseded — ignore it.
 2. **Commit after EVERY major change.** Major change = any milestone step, any new tool/feature, any significant refactor, any plan/AGENTS.md update. Commit even if the change is unpolished. Never leave the working tree dirty across sessions for structural work.
 3. The product mission (see next section) overrides any codebase-local convention that conflicts with it.
-4. **New product = "new caide".** The end state is Caide's current UI/UX backed by the **pure Caide harness** (`apps/server/src/harness/*` Router→Planner→Builder→Verifier→Fixer→Taste + `apps/server/src/design/tokens.ts`) rebuilt from scratch per `plans/004-caide-pure-harness.md`, with **Electron desktop kept as window shell** and immutable Blank, React Native, Flutter, and Website project frameworks.
-5. **Autonomy mandate (user directive).** Execute the active pure harness plan without stopping for permission. Build the complete Caide runtime into the integrated server (keep `apps/desktop` window shell), preserve Caide's UI, and commit after every milestone. If truly blocked, document the blocker and leave the tree in a safe committable state.
+4. **New product = "new caide" — the world's best AI app builder.** The web UI shell (ChatView, Sidebar, Profile, settings, all components) is KEPT. The old backend engine (Codex process manager, orchestration, agentGateway) is STRIPPED. The new Caide harness (`apps/server/src/harness/*` Router→Planner→Builder→Verifier→Fixer→Taste + `apps/server/src/design/tokens.ts`) is built from scratch per `plans/005-master-build-plan.md`. Electron desktop kept as window shell. Frameworks: Blank, React Native, Flutter, Website — immutable per project.
+5. **Autonomy mandate (user directive).** Execute the active plan without stopping for permission. Build the complete Caide runtime into the integrated server (keep `apps/desktop` window shell), keep the web UI, and commit after every milestone. If truly blocked, document the blocker and leave the tree in a safe committable state.
 
-## Project Mission (Multi-framework Caide Builder)
+## Project Mission (World's Best AI App Builder)
 
-Caide's current desktop shell (Electron window only) and web UI remain the product surface. The
-pure **Caide harness** (`apps/server/src/harness/*` + `apps/server/src/design/*`) is rebuilt from scratch per `plans/004-caide-pure-harness.md`. Projects are immutable
-Blank, React Native, Flutter, or Website projects; the framework controls
-prompts, tools, preview, build, and artifacts. There is no dyad transplant — harness is pure Caide.
+Build the best AI app builder ever made — better than Lovable, Bolt, v0, Cursor, Replit Agent. The web UI shell stays. The old Codex-based backend engine is stripped. The new pure Caide harness (`apps/server/src/harness/*` + `apps/server/src/design/*`) is built from scratch per `plans/005-master-build-plan.md`. Projects are immutable Blank, React Native, Flutter, or Website; the framework controls scaffold, prompts, tools, preview, build, and artifacts. The harness is pure Caide — not a Dyad/Codex transplant.
 
 ## Task Completion Requirements
 
