@@ -38,6 +38,24 @@ export function makeImportThreadHandler(..._args: any[]): any {
   return () => Effect.void;
 }
 
+// Returns schema-valid empty read model (snapshotSequence + updatedAt required by contracts)
+const emptyReadModel = () => ({
+  snapshotSequence: 0,
+  spaces: [],
+  projects: [],
+  threads: [],
+  updatedAt: new Date().toISOString(),
+});
+
+// Returns schema-valid empty shell snapshot (same required fields)
+const emptyShellSnapshot = () => ({
+  snapshotSequence: 0,
+  spaces: [],
+  projects: [],
+  threads: [],
+  updatedAt: new Date().toISOString(),
+});
+
 export class OrchestrationEngineService extends ServiceMap.Service<
   OrchestrationEngineService,
   any
@@ -45,8 +63,8 @@ export class OrchestrationEngineService extends ServiceMap.Service<
   static readonly layer = Layer.succeed(this, {
     getEventHighWaterSequence: Effect.succeed(0),
     dispatch: () => Effect.succeed({} as any),
-    getReadModel: () => Effect.succeed({} as any),
-    repairState: () => Effect.succeed(undefined),
+    getReadModel: () => Effect.succeed(emptyReadModel()),
+    repairState: () => Effect.succeed(emptyReadModel()),
     readEvents: () => Stream.empty,
     readThreadEvents: () => Stream.empty,
     subscribeDomainEvents: Stream.empty,
@@ -70,8 +88,8 @@ export class ProjectionSnapshotQuery extends ServiceMap.Service<ProjectionSnapsh
     getThreadDetailSnapshotById: () => Effect.succeed(undefined),
     getSpaceShellById: () => Effect.succeed(Option.none()),
     getProjectShellById: () => Effect.succeed(Option.none()),
-    getShellSnapshot: () => Effect.succeed({ spaces: [], projects: [], threads: [] }),
-    getSnapshot: () => Effect.succeed({ spaces: [], projects: [], threads: [] }),
+    getShellSnapshot: () => Effect.succeed(emptyShellSnapshot()),
+    getSnapshot: () => Effect.succeed(emptyReadModel()),
     getThreadShellById: () => Effect.succeed(Option.none()),
     getSnapshotSequence: () => Effect.succeed(0),
     getCounts: () => Effect.succeed({ spaces: 0, projects: 0, threads: 0 }),

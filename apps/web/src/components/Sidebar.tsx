@@ -5436,32 +5436,7 @@ export default function Sidebar() {
                 />
               </div>
             </div>
-            {/* T3-style search field */}
-            <div className="px-1.5 pb-2">
-              <button
-                type="button"
-                onClick={() => setSearchPaletteOpen(true)}
-                className="flex w-full items-center gap-2 rounded-lg border border-border/60 bg-muted/20 px-2.5 py-1.5 text-left text-xs text-muted-foreground/60 transition-colors hover:border-border hover:bg-muted/40 hover:text-muted-foreground"
-              >
-                <SearchIcon className="size-3.5 shrink-0 opacity-60" />
-                <span className="flex-1 truncate">Search</span>
-                {searchShortcutLabel ? (
-                  <span className="shrink-0 rounded border border-border/40 bg-background px-1 py-0.5 font-mono text-[10px] leading-none text-muted-foreground/50">
-                    {searchShortcutLabel}
-                  </span>
-                ) : null}
-              </button>
-            </div>
-            {/* T3-style All projects row */}
-            <div className="flex items-center gap-1 px-1.5 pb-1">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-                <FolderOpenIcon className="size-3.5 opacity-60" />
-                All projects
-              </span>
-              <span className="ml-auto text-[10px] tabular-nums text-muted-foreground/40">
-                {standardProjects.length}
-              </span>
-            </div>
+
             {/* The keyed content remounts with a short enter animation. */}
             <div
               key={activityViewEnabled ? "activity" : "threads"}
