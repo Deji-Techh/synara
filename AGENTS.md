@@ -2,20 +2,18 @@
 
 ## Permanent Session Rules (user requirements — do not forget)
 
-1. **After EVERY compaction, re-read this AGENTS.md and `plans/001-dyad-backend-rebuild.md`** (the ACTIVE plan) before continuing work. Do not assume context survived.
+1. **After EVERY compaction, re-read this AGENTS.md and `plans/004-caide-pure-harness.md`** (the ACTIVE plan) before continuing work. Do not assume context survived.
 2. **Commit after EVERY major change.** Major change = any milestone step, any new tool/feature, any significant refactor, any plan/AGENTS.md update. Commit even if the change is unpolished. Never leave the working tree dirty across sessions for structural work.
 3. The product mission (see next section) overrides any codebase-local convention that conflicts with it.
-4. **New product = "new caide".** The end state is Caide's current UI/UX backed by the complete dyad×caide runtime, with immutable Blank, React Native, Flutter, and Website project frameworks and reliable chat, tools, modes, streaming, previews, and builds.
-5. **Autonomy mandate (user directive).** Execute the active dyad backend rebuild plan without stopping for permission. Port the complete dyad×caide runtime into the integrated server, preserve Caide's UI, and commit after every milestone. If truly blocked, document the blocker and leave the tree in a safe committable state.
+4. **New product = "new caide".** The end state is Caide's current UI/UX backed by the **pure Caide harness** (`apps/server/src/harness/*` Router→Planner→Builder→Verifier→Fixer→Taste + `apps/server/src/design/tokens.ts`) rebuilt from scratch per `plans/004-caide-pure-harness.md`, with **Electron desktop kept as window shell** and immutable Blank, React Native, Flutter, and Website project frameworks.
+5. **Autonomy mandate (user directive).** Execute the active pure harness plan without stopping for permission. Build the complete Caide runtime into the integrated server (keep `apps/desktop` window shell), preserve Caide's UI, and commit after every milestone. If truly blocked, document the blocker and leave the tree in a safe committable state.
 
 ## Project Mission (Multi-framework Caide Builder)
 
-Caide's current desktop shell and web UI remain the product surface. The
-unstable child-engine/adapter path is being replaced by the complete
-dyad×caide backend integrated into `apps/server`. Projects are immutable
+Caide's current desktop shell (Electron window only) and web UI remain the product surface. The
+pure **Caide harness** (`apps/server/src/harness/*` + `apps/server/src/design/*`) is rebuilt from scratch per `plans/004-caide-pure-harness.md`. Projects are immutable
 Blank, React Native, Flutter, or Website projects; the framework controls
-prompts, tools, preview, build, and artifacts. Full details are in
-`plans/001-dyad-backend-rebuild.md`.
+prompts, tools, preview, build, and artifacts. There is no dyad transplant — harness is pure Caide.
 
 ## Task Completion Requirements
 
@@ -106,11 +104,12 @@ Reference usage: opening/closing a project and the sidebar sections in `apps/web
 
 ## Package Roles
 
-- `apps/engine`: **NEW — the Flutter Builder engine.** Standalone Node process (JSON-RPC over stdio, codex-app-server pattern) containing the agent loop (rebuilt from dyad×caide `local_agent_handler.ts`), Flutter tooling, preview runtime, and its own SQLite. Owns workspace/app files, pub dependencies, flutter toolchain. Talks to `apps/server` via the engine adapter.
-- `apps/server`: Node.js WebSocket server. Wraps Codex app-server (JSON-RPC over stdio), serves the React web app, and manages provider sessions.
-- `apps/web`: React/Vite UI. Owns session UX, conversation/event rendering, and client-side state. Connects to the server via WebSocket.
-- `packages/contracts`: Shared effect/Schema schemas and TypeScript contracts for provider events, WebSocket protocol, and model/session types. Keep this package schema-only — no runtime logic.
-- `packages/shared`: Shared runtime utilities consumed by both server and web. Uses explicit subpath exports (e.g. `@caide/shared/git`) — no barrel index.
+- `apps/server`: Node.js WebSocket server + **Caide harness** (`src/harness/*` Router→Planner→Builder→Verifier→Fixer + `src/design/tokens.ts`). Single lifecycle owner `created→running→waiting→terminal`. Wraps provider sessions (OpenCode Zen/Go via `provider/Layers/ApiAdapter`) and streams typed events `{token,tool_call,stage,checkpoint,artifact_updated}` to web + Electron.
+- `apps/web`: React/Vite UI — dumb shell (`ui/*` + `disclosureMotion` + `PreviewStage 672px` + pill composer). Owns session UX, connects via WebSocket typed events.
+- `apps/desktop`: Electron shell (window only — `main.ts`, `preload.ts`, `windowState`, `ipcChannels`, `desktopWsBridge`). No harness — kept intact.
+- `packages/contracts`: Shared effect/Schema schemas and TypeScript contracts. Keep schema-only — no runtime logic.
+- `packages/shared`: Shared runtime utilities (`@caide/shared/*` subpath exports — no barrel).
+- `apps/engine`: **DELETED in pure harness reset.** Former dyad builder path removed; `apps/server/src/harness` is the only runtime now (archived at `backup/dyad-engine-transplant`).
 
 ## Local Dev Instance Isolation
 
@@ -121,20 +120,13 @@ Reference usage: opening/closing a project and the sidebar sections in `apps/web
 - Check both server and web ports with `lsof -nP -iTCP:<port> -sTCP:LISTEN`. A desktop app can bind `127.0.0.1:<port>` while the dev server binds IPv6 `*:<port>`, and `localhost` may still hit the wrong process.
 - If the UI shows no threads, verify the server path before changing SQL: inspect the isolated `state.sqlite`, then probe `orchestration.getSnapshot` over WebSocket. A healthy snapshot with projects/threads means the issue is client connection/hydration, not empty history.
 
-## Codex App Server (Important)
+## Provider Runtime (Important)
 
-Caide is currently Codex-first. The server starts `codex app-server` (JSON-RPC over stdio) per provider session, then streams structured events to the browser through WebSocket push messages.
+Caide's harness wraps provider sessions (OpenCode Zen/Go as primary) via `apps/server/src/provider/Layers/ApiAdapter` (per-model routing `responses|chat/completions|messages`). The server streams typed events `{token,tool_call,stage,checkpoint,artifact_updated}` to web+Electron via WebSocket. See `plans/004-caide-pure-harness.md` §2 for harness layers (`L0-L3` prompts, `TurnFlow`, dual `token vs event` streams with `SIGTERM`).
 
-How we use it in this codebase:
+Provider docs:
 
-- Session startup/resume and turn lifecycle are brokered in `apps/server/src/codexAppServerManager.ts`.
-- Provider dispatch and thread event logging are coordinated in `apps/server/src/providerManager.ts`.
-- WebSocket server routes NativeApi methods in `apps/server/src/wsServer.ts`.
-- Web app consumes orchestration domain events via WebSocket push on channel `orchestration.domainEvent` (provider runtime activity is projected into orchestration events server-side).
-
-Docs:
-
-- Codex App Server docs: https://developers.openai.com/codex/sdk/#app-server
+- OpenCode Zen/Go endpoints: `https://opencode.ai/zen/v1/*` and `https://opencode.ai/zen/go/v1/*` (per-model: `responses` for `grok/gpt/muse-spark`, `messages` for `minimax/qwen`, `chat/completions` fallback)
 
 ## Reference Repos
 
