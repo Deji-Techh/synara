@@ -65,25 +65,31 @@ const emptyShellSnapshot = () => ({
 // Returns schema-valid thread detail snapshot
 const emptyThreadDetailSnapshot = (threadId: string) => {
   const existing = inMemoryThreads.find((t) => t.id === threadId);
+  const now = new Date().toISOString();
   return {
     snapshotSequence: 0,
     thread: {
       id: threadId,
       projectId: existing?.projectId ?? "default",
       title: existing?.title ?? "New Chat",
-      modelSelection: { provider: "opencode", model: "default" },
-      runtimeMode: "full-access",
-      interactionMode: "default",
-      branch: null,
-      worktreePath: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      lastVisitedAt: new Date().toISOString(),
-      turns: [],
-      messages: [],
-      activities: [],
-      proposedPlans: [],
-      turnDiffSummaries: [],
+      modelSelection: existing?.modelSelection ?? { provider: "opencode", model: "default" },
+      runtimeMode: existing?.runtimeMode ?? "full-access",
+      interactionMode: existing?.interactionMode ?? "default",
+      branch: existing?.branch ?? null,
+      worktreePath: existing?.worktreePath ?? null,
+      workingDirectory: existing?.workingDirectory ?? null,
+      associatedWorktreePath: existing?.associatedWorktreePath ?? null,
+      associatedWorktreeBranch: existing?.associatedWorktreeBranch ?? null,
+      associatedWorktreeRef: existing?.associatedWorktreeRef ?? null,
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: existing?.updatedAt ?? now,
+      lastVisitedAt: existing?.lastVisitedAt ?? now,
+      archivedAt: null,
+      turns: existing?.turns ?? [],
+      messages: existing?.messages ?? [],
+      activities: existing?.activities ?? [],
+      proposedPlans: existing?.proposedPlans ?? [],
+      turnDiffSummaries: existing?.turnDiffSummaries ?? [],
     },
   };
 };
@@ -94,9 +100,58 @@ export class OrchestrationEngineService extends ServiceMap.Service<
 >()("caide/OrchestrationEngineService") {
   static readonly layer = Layer.succeed(this, {
     getEventHighWaterSequence: Effect.succeed(0),
-    dispatch: () => Effect.succeed({} as any),
-    getReadModel: () => Effect.succeed(emptyReadModel()),
-    repairState: () => Effect.succeed(emptyReadModel()),
+    dispatch: (command: any) =>
+      Effect.sync(() => {
+        const now = new Date().toISOString();
+        if (command?.type === "project.create") {
+          const existing = inMemoryProjects.find((p) => p.id === command.projectId);
+          if (!existing) {
+            inMemoryProjects.push({
+              id: command.projectId,
+              title: command.title,
+              kind: command.kind ?? "project",
+              workspaceRoot: command.workspaceRoot,
+              framework: command.framework ?? "blank",
+              scripts: [],
+              defaultModelSelection: command.defaultModelSelection ?? null,
+              createdAt: command.createdAt ?? now,
+              updatedAt: command.createdAt ?? now,
+              archivedAt: null,
+              spaceId: command.spaceId ?? null,
+            });
+          }
+        } else if (command?.type === "thread.create") {
+          const existing = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (!existing) {
+            inMemoryThreads.push({
+              id: command.threadId,
+              projectId: command.projectId,
+              title: command.title,
+              modelSelection: command.modelSelection ?? { provider: "opencode", model: "default" },
+              runtimeMode: command.runtimeMode ?? "full-access",
+              interactionMode: command.interactionMode ?? "default",
+              branch: command.branch ?? null,
+              worktreePath: command.worktreePath ?? null,
+              workingDirectory: command.workingDirectory ?? null,
+              associatedWorktreePath: command.associatedWorktreePath ?? null,
+              associatedWorktreeBranch: command.associatedWorktreeBranch ?? null,
+              associatedWorktreeRef: command.associatedWorktreeRef ?? null,
+              createdAt: command.createdAt ?? now,
+              updatedAt: command.createdAt ?? now,
+              lastVisitedAt: command.createdAt ?? now,
+              archivedAt: null,
+              turns: [],
+              messages: [],
+              activities: [],
+              proposedPlans: [],
+              turnDiffSummaries: [],
+            });
+          }
+        }
+        return {} as any;
+      }),
+    getReadModel: () => Effect.sync(() => emptyReadModel()),
+    repairState: () => Effect.sync(() => emptyReadModel()),
     readEvents: () => Stream.never,
     readEventsThrough: () => Stream.never,
     readThreadEvents: () => Stream.never,
@@ -120,14 +175,27 @@ export class ProjectionSnapshotQuery extends ServiceMap.Service<ProjectionSnapsh
 ) {
   static readonly layer = Layer.succeed(this, {
     getThreadDetailSnapshotById: (threadId: string) =>
-      Effect.succeed(Option.some(emptyThreadDetailSnapshot(threadId))),
+      Effect.sync(() => Option.some(emptyThreadDetailSnapshot(threadId))),
     getSpaceShellById: () => Effect.succeed(Option.none()),
-    getProjectShellById: () => Effect.succeed(Option.none()),
-    getShellSnapshot: () => Effect.succeed(emptyShellSnapshot()),
-    getSnapshot: () => Effect.succeed(emptyReadModel()),
-    getThreadShellById: () => Effect.succeed(Option.none()),
+    getProjectShellById: (projectId: string) =>
+      Effect.sync(() => {
+        const p = inMemoryProjects.find((entry) => entry.id === projectId);
+        return p ? Option.some(p) : Option.none();
+      }),
+    getShellSnapshot: () => Effect.sync(() => emptyShellSnapshot()),
+    getSnapshot: () => Effect.sync(() => emptyReadModel()),
+    getThreadShellById: (threadId: string) =>
+      Effect.sync(() => {
+        const t = inMemoryThreads.find((entry) => entry.id === threadId);
+        return t ? Option.some(t) : Option.none();
+      }),
     getSnapshotSequence: () => Effect.succeed(0),
-    getCounts: () => Effect.succeed({ spaces: 0, projects: 0, threads: 0 }),
+    getCounts: () =>
+      Effect.sync(() => ({
+        spaces: 0,
+        projects: inMemoryProjects.length,
+        threads: inMemoryThreads.length,
+      })),
     listArchivedWorktreeAssociations: () => Effect.succeed([]),
   } as any);
 }
@@ -273,7 +341,16 @@ export class ProviderAdapterRegistry extends ServiceMap.Service<ProviderAdapterR
           create: () => Effect.succeed({}),
           list: () => Effect.succeed([]),
           get: () => Effect.succeed(Option.none()),
+          getActive: () => Effect.succeed(Option.none()),
+          listActivity: () => Effect.succeed([]),
+          listRuns: () => Effect.succeed([]),
+          pause: () => Effect.succeed(undefined),
+          resume: () => Effect.succeed(undefined),
           cancel: () => Effect.succeed(undefined),
+          edit: () => Effect.succeed(undefined),
+          steer: () => Effect.succeed(undefined),
+          retry: () => Effect.succeed(undefined),
+          verify: () => Effect.succeed({}),
         },
         subagents: {
           getActive: () => Effect.succeed([]),
@@ -282,6 +359,8 @@ export class ProviderAdapterRegistry extends ServiceMap.Service<ProviderAdapterR
         },
         hasSession: () => Effect.succeed(false),
         startPreviewSession: () => Effect.succeed(undefined),
+        streamGoalDomainEvents: Stream.never,
+        streamSubagentEvents: Stream.never,
         subscribeGoalEvents: () => Stream.never,
         subscribeSubagentEvents: () => Stream.never,
       }),

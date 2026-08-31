@@ -2026,7 +2026,8 @@ const makeWsRpcHandlersLayer = () =>
             providerHealth.refresh.pipe(Effect.map((providers) => ({ providers }))),
             "Failed to refresh providers",
           ),
-        [WS_METHODS.serverUpdateProvider]: (input) => providerHealth.updateProvider(input),
+        [WS_METHODS.serverUpdateProvider]: (input) =>
+          rpcEffect(providerHealth.updateProvider(input), "Failed to update provider"),
         [WS_METHODS.serverListExternalMcpIntegrations]: () =>
           rpcEffect(
             requireOwner.pipe(Effect.andThen(externalMcp.listIntegrations())),

@@ -282,6 +282,45 @@ export const projectFaviconRouteLayer = HttpRouter.add(
   }),
 );
 
+export const editorIconRouteLayer = HttpRouter.add(
+  "GET",
+  "/api/editor-icon",
+  Effect.gen(function* () {
+    const request = yield* HttpServerRequest.HttpServerRequest;
+    const url = HttpServerRequest.toURL(request);
+    if (!url) return HttpServerResponse.text("Bad Request", { status: 400 });
+
+    const editorId = url.searchParams.get("id")?.trim() ?? "";
+    if (!editorId) return HttpServerResponse.text("id is required", { status: 400 });
+
+    const config = yield* ServerConfig;
+    const { resolveCachedEditorIcon } = yield* Effect.promise(() => import("./editorAppIcons"));
+    const icon = yield* Effect.promise(() =>
+      resolveCachedEditorIcon({
+        editorId,
+        cacheDir: config.baseDir,
+      }),
+    );
+    if (!icon) {
+      return HttpServerResponse.text("Not Found", { status: 404 });
+    }
+
+    const fileSystem = yield* FileSystem.FileSystem;
+    const bytes = yield* fileSystem.readFile(icon.path).pipe(Effect.catch(() => Effect.succeed(null)));
+    if (!bytes) {
+      return HttpServerResponse.text("Not Found", { status: 404 });
+    }
+
+    return HttpServerResponse.uint8Array(bytes, {
+      status: 200,
+      contentType: icon.contentType,
+      headers: {
+        "Cache-Control": "private, max-age=3600",
+      },
+    });
+  }),
+);
+
 export const makeEffectHttpRouteLayer = (
   readiness: ServerReadiness,
   shutdownController: ServerShutdownController,
@@ -290,5 +329,6 @@ export const makeEffectHttpRouteLayer = (
     readinessEffectRouteLayer(readiness),
     desktopShutdownEffectRouteLayer(shutdownController),
     projectFaviconRouteLayer,
+    editorIconRouteLayer,
     staticAndDevEffectRouteLayer,
   );
