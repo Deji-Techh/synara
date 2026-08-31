@@ -1,6 +1,8 @@
 // FILE: _chat.index.tsx
-// Purpose: Restores last chat route or shows Flutter-first dashboard when nothing to restore.
+// Purpose: Restores the last chat route on app launch, falling back to a fresh home-chat draft.
+//          Also the landing for a Space that has nothing to open.
 // Layer: Routing
+// Depends on: the shared restore/create route surface plus the home-chat new-chat handler.
 
 import { SpaceId, type ProjectId } from "@caide/contracts";
 import { createFileRoute } from "@tanstack/react-router";
@@ -9,7 +11,6 @@ import {
   RestoreOrCreateChatRoute,
   type RestoreRouteResolver,
 } from "../components/RestoreOrCreateChatRoute";
-import { HomeDashboard } from "../components/home/HomeDashboard";
 import { readSidebarUiState } from "../components/Sidebar.uiState";
 import { useComposerDraftStore } from "../composerDraftStore";
 import { useHandleNewChat } from "../hooks/useHandleNewChat";
@@ -28,11 +29,11 @@ function ChatIndexRouteView() {
   const landingSpaceKey = Route.useSearch({ select: (search) => search.space });
   const threadIds = useStore((state) => state.threadIds ?? EMPTY_THREAD_IDS);
   const projects = useStore((state) => state.projects);
-  const threadsHydrated = useStore((state) => state.threadsHydrated);
   const sidebarThreadSummaryById = useStore((state) => state.sidebarThreadSummaryById);
   const draftThreadsByThreadId = useComposerDraftStore((state) => state.draftThreadsByThreadId);
   const homeDir = useWorkspacePathsStore((state) => state.homeDir);
   const chatWorkspaceRoot = useWorkspacePathsStore((state) => state.chatWorkspaceRoot);
+
   const createFreshChat = () =>
     landingSpaceKey === undefined ? handleNewChat({ fresh: true }) : handleNewChat();
 
@@ -70,23 +71,6 @@ function ChatIndexRouteView() {
       landingSpace,
     });
   };
-
-  // Flutter-first: when hydrated and there is no thread to restore, show the dashboard
-  // instead of auto-minting a blank chat that litters the Chats container.
-  const hasRestoreTarget = (() => {
-    try {
-      const r = resolveRestoreRoute({
-        availableSplitViewIds: new Set(Object.keys(useSplitViewStore.getState().splitViewsById)),
-      });
-      return r !== null;
-    } catch {
-      return false;
-    }
-  })();
-
-  if (threadsHydrated && !hasRestoreTarget && landingSpaceKey === undefined) {
-    return <HomeDashboard />;
-  }
 
   return (
     <RestoreOrCreateChatRoute
