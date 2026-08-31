@@ -97,7 +97,7 @@ export const createEffectServer = Effect.fn(function* (
     makeEffectHttpRouteLayer(readiness, shutdownController),
   );
   const fullRoutesLayer = Layer.provideMerge(routesLayer, appLayer);
-  const httpApp = yield* Effect.scoped(HttpRouter.toHttpEffect(fullRoutesLayer));
+  const httpApp = yield* HttpRouter.toHttpEffect(fullRoutesLayer);
   yield* httpServer
     .serve(httpApp)
     .pipe(

@@ -141,28 +141,39 @@ export function getProviderUsageSnapshot(..._args: any[]): any {
   return {};
 }
 
-const emptyProfileStats = () => ({
+const emptyProfileStats = (utcOffsetMinutes = 0) => ({
   generatedAt: new Date().toISOString(),
-  timezone: "UTC",
+  timezone: {
+    utcOffsetMinutes,
+    today: new Date().toISOString().slice(0, 10),
+  },
   identity: {
-    handle: "Developer",
-    displayName: "Caide Developer",
-    avatarUrl: null,
+    homeDirBasename: "DejiTech",
+    initials: "CD",
+    defaultHandle: "Developer",
   },
   activity: {
-    totalSessions: 0,
-    totalTurns: 0,
-    activeDays: 0,
     currentStreakDays: 0,
     longestStreakDays: 0,
+    totalPromptsSent: 0,
+    totalThreads: 0,
+    promptsToday: 0,
+    heatmapMetric: "prompts" as const,
+    heatmap: [],
   },
   activeHours: {
-    hours: [],
-    peakHour: null,
+    startHour: null,
+    endHour: null,
+    turnCount: 0,
+    label: null,
   },
   insights: {
-    summary: "Welcome to Caide! Build your first AI application.",
-    strengths: [],
+    topProvider: null,
+    topProviderPercent: null,
+    topReasoning: null,
+    topReasoningPercent: null,
+    skillsExplored: 0,
+    totalSkillsUsed: 0,
   },
   providerModels: [],
   skills: [],
@@ -171,22 +182,35 @@ const emptyProfileStats = () => ({
   frameworks: [],
   mostUsedFramework: null,
   quota: {
-    used: 0,
-    limit: null,
+    status: "unavailable" as const,
+    provider: null,
+    window: null,
+    usedPercent: null,
+    resetsAt: null,
+    planName: null,
   },
 });
 
 const emptyProfileTokenStats = () => ({
   available: true,
   lifetimeTotalTokens: 0,
-  breakdown: [],
+  peakDayTokens: null,
+  peakDay: null,
+  providers: [],
+  unavailableProviders: [],
+  topProvider: null,
+  topProviderPercent: null,
+  models: [],
+  heatmapMetric: "tokens" as const,
+  heatmap: [],
 });
 
 export class ProfileStatsQuery extends ServiceMap.Service<ProfileStatsQuery, any>()(
   "caide/ProfileStatsQuery",
 ) {
   static readonly layer = Layer.succeed(this, {
-    getProfileStats: () => Effect.succeed(emptyProfileStats()),
+    getProfileStats: (input?: { utcOffsetMinutes?: number }) =>
+      Effect.succeed(emptyProfileStats(input?.utcOffsetMinutes ?? 0)),
     getProfileTokenStats: () => Effect.succeed(emptyProfileTokenStats()),
   } as any);
 }

@@ -2308,19 +2308,7 @@ const makeWsRpcHandlersLayer = () =>
           rpcEffect(providerDiscoveryService.listSkills(input), "Failed to list skills"),
         [WS_METHODS.providerListSkillsCatalog]: (input) =>
           rpcEffect(
-            Effect.tryPromise(() =>
-              discoverSkillsCatalog({
-                cwd: input.cwd ?? null,
-                homeDir: config.homeDir,
-                caideBaseDir: config.baseDir,
-                includeDuplicateOrigins: true,
-              }),
-            ).pipe(
-              Effect.map((skills) => ({
-                skills,
-                caideSkillsDir: caideSkillsDir(config.baseDir),
-              })),
-            ),
+            providerDiscoveryService.listSkillsCatalog(input),
             "Failed to list the skills catalog",
           ),
         [WS_METHODS.providerListPlugins]: (input) =>
