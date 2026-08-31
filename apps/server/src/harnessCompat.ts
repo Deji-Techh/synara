@@ -1056,7 +1056,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
             }
           })();
         }
-        return {} as any;
+        return { sequence: globalSnapshotSequence } as any;
       }),
     getReadModel: () => Effect.sync(() => emptyReadModel()),
     repairState: () => Effect.sync(() => emptyReadModel()),
