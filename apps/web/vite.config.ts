@@ -242,10 +242,11 @@ export default defineConfig({
     rolldownOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes("effect")) {
-            return "vendor-effect";
-          }
-          if (id.includes("packages/contracts") || id.includes("packages/shared")) {
+          if (
+            id.includes("effect") ||
+            id.includes("packages/contracts") ||
+            id.includes("packages/shared")
+          ) {
             return "vendor-contracts";
           }
           if (id.includes("react") || id.includes("@tanstack")) {

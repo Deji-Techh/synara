@@ -255,31 +255,59 @@ export const staticAndDevEffectRouteLayer = HttpRouter.add(
   }),
 );
 
-export const projectFaviconRouteLayer = HttpRouter.add(
-  "GET",
-  "/project/favicon",
-  Effect.gen(function* () {
-    const request = yield* HttpServerRequest.HttpServerRequest;
-    const url = HttpServerRequest.toURL(request);
-    if (!url) return HttpServerResponse.text("Bad Request", { status: 400 });
+export const projectFaviconRouteLayer = Layer.merge(
+  HttpRouter.add(
+    "GET",
+    "/project/favicon",
+    Effect.gen(function* () {
+      const request = yield* HttpServerRequest.HttpServerRequest;
+      const url = HttpServerRequest.toURL(request);
+      if (!url) return HttpServerResponse.text("Bad Request", { status: 400 });
 
-    const cwd = url.searchParams.get("cwd")?.trim() ?? "";
-    if (!cwd) return HttpServerResponse.text("cwd is required", { status: 400 });
+      const cwd = url.searchParams.get("cwd")?.trim() ?? "";
+      if (!cwd) return HttpServerResponse.text("cwd is required", { status: 400 });
 
-    const resolver = yield* ProjectFaviconResolver;
-    const favicon = yield* resolver.resolveFavicon(cwd);
-    if (Option.isNone(favicon)) {
-      return HttpServerResponse.text("Not Found", { status: 404 });
-    }
+      const resolver = yield* ProjectFaviconResolver;
+      const favicon = yield* resolver.resolveFavicon(cwd);
+      if (Option.isNone(favicon)) {
+        return HttpServerResponse.text("Not Found", { status: 404 });
+      }
 
-    return HttpServerResponse.uint8Array(favicon.value.bytes, {
-      status: 200,
-      contentType: favicon.value.contentType,
-      headers: {
-        "Cache-Control": "private, max-age=300",
-      },
-    });
-  }),
+      return HttpServerResponse.uint8Array(favicon.value.bytes, {
+        status: 200,
+        contentType: favicon.value.contentType,
+        headers: {
+          "Cache-Control": "private, max-age=300",
+        },
+      });
+    }),
+  ),
+  HttpRouter.add(
+    "GET",
+    "/api/project-favicon",
+    Effect.gen(function* () {
+      const request = yield* HttpServerRequest.HttpServerRequest;
+      const url = HttpServerRequest.toURL(request);
+      if (!url) return HttpServerResponse.text("Bad Request", { status: 400 });
+
+      const cwd = url.searchParams.get("cwd")?.trim() ?? "";
+      if (!cwd) return HttpServerResponse.text("cwd is required", { status: 400 });
+
+      const resolver = yield* ProjectFaviconResolver;
+      const favicon = yield* resolver.resolveFavicon(cwd);
+      if (Option.isNone(favicon)) {
+        return HttpServerResponse.text("Not Found", { status: 404 });
+      }
+
+      return HttpServerResponse.uint8Array(favicon.value.bytes, {
+        status: 200,
+        contentType: favicon.value.contentType,
+        headers: {
+          "Cache-Control": "private, max-age=300",
+        },
+      });
+    }),
+  ),
 );
 
 export const editorIconRouteLayer = HttpRouter.add(
