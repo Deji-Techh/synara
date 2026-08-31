@@ -14,7 +14,7 @@ export class AutomationService extends ServiceMap.Service<AutomationService, any
     markRunRead: () => Effect.succeed(undefined),
     archiveRun: () => Effect.succeed(undefined),
     resolveProposal: () => Effect.succeed(undefined),
-    streamEvents: Stream.empty,
+    streamEvents: Stream.never,
   } as any);
 }
 
@@ -94,10 +94,10 @@ export class OrchestrationEngineService extends ServiceMap.Service<
     dispatch: () => Effect.succeed({} as any),
     getReadModel: () => Effect.succeed(emptyReadModel()),
     repairState: () => Effect.succeed(emptyReadModel()),
-    readEvents: () => Stream.empty,
-    readEventsThrough: () => Stream.empty,
-    readThreadEvents: () => Stream.empty,
-    readThreadEventsThrough: () => Stream.empty,
+    readEvents: () => Stream.never,
+    readEventsThrough: () => Stream.never,
+    readThreadEvents: () => Stream.never,
+    readThreadEventsThrough: () => Stream.never,
     subscribeDomainEvents: Effect.succeed(Stream.never),
     streamDomainEvents: Stream.never,
   } as any);

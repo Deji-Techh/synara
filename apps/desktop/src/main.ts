@@ -479,6 +479,16 @@ function safeConsoleError(...args: Parameters<typeof console.error>): void {
   }
 }
 
+function safeConsoleLog(...args: Parameters<typeof console.log>): void {
+  try {
+    console.log(...args);
+  } catch (error: unknown) {
+    if (!isBrokenPipeError(error)) {
+      throw error;
+    }
+  }
+}
+
 function formatErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -3958,6 +3968,11 @@ function createWindow(): BrowserWindow {
   attachDesktopZoomFactorSync(window);
   attachRendererCrashRecovery(window);
   attachDesktopPhysicalZoomShortcuts(window);
+
+  window.webContents.on("console-message", (_event, level, message, line, sourceId) => {
+    const levelName = level === 3 ? "ERROR" : level === 2 ? "WARN" : level === 1 ? "LOG" : "DEBUG";
+    safeConsoleLog(`[renderer:${levelName}] ${message} (${sourceId}:${line})`);
+  });
 
   window.webContents.on("will-attach-webview", (event, webPreferences, params) => {
     const partition = params.partition;
