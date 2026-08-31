@@ -798,7 +798,7 @@ function artifactDownloadLabel(outputPath: string): string {
 }
 
 function ReleasePanel(props: {
-  build: PreviewBuildState;
+  build?: PreviewBuildState;
   onBuild: (options: {
     target: "apk" | "appbundle" | "ipa" | "web";
     channel: "debug" | "profile" | "release";
@@ -812,14 +812,14 @@ function ReleasePanel(props: {
   /** Thread workspace root; artifact downloads resolve against it. */
   workspaceRoot: string | null;
 }) {
-  const [target, setTarget] = useState(props.build.target);
-  const [channel, setChannel] = useState(props.build.channel);
+  const [target, setTarget] = useState(props.build?.target ?? "apk");
+  const [channel, setChannel] = useState(props.build?.channel ?? "release");
   const [showSigning, setShowSigning] = useState(false);
   const [keystorePath, setKeystorePath] = useState("");
   const [keyAlias, setKeyAlias] = useState("");
   const [storePassword, setStorePassword] = useState("");
   const [keyPassword, setKeyPassword] = useState("");
-  const isRunning = props.build.running;
+  const isRunning = props.build?.running ?? false;
   const needsSigning = (target === "apk" || target === "appbundle") && channel === "release";
   const canBuild =
     !isRunning &&

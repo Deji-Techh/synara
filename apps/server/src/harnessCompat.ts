@@ -273,6 +273,7 @@ export class ProviderAdapterRegistry extends ServiceMap.Service<ProviderAdapterR
           cancel: () => Effect.succeed(undefined),
         },
         subagents: {
+          getActive: () => Effect.succeed([]),
           list: () => Effect.succeed([]),
           stop: () => Effect.succeed(undefined),
         },
@@ -358,7 +359,7 @@ const DEFAULT_MODELS_BY_PROVIDER: Record<string, any[]> = {
   opencodeZen: [
     {
       slug: "gpt-5.6-sol",
-      name: "gpt-5.6-sol",
+      name: "GPT-5.6 Sol",
       description: "Fast reasoning and high performance code generation",
       supportsFastMode: true,
       supportedReasoningEfforts: [
@@ -367,6 +368,42 @@ const DEFAULT_MODELS_BY_PROVIDER: Record<string, any[]> = {
         { value: "high", label: "High" },
       ],
       defaultReasoningEffort: "medium",
+    },
+    {
+      slug: "sonnet-5",
+      name: "Claude Sonnet 5",
+      description: "High intelligence and balanced aesthetic taste",
+      supportsFastMode: true,
+    },
+    {
+      slug: "opus-4.8",
+      name: "Claude Opus 4.8",
+      description: "Exceptional architecture, complex refactors, and design taste",
+      supportsFastMode: true,
+    },
+    {
+      slug: "fable-5",
+      name: "Fable 5",
+      description: "Top-tier intelligence and supreme product UI/UX taste",
+      supportsFastMode: true,
+    },
+    {
+      slug: "claude-3-7-sonnet-latest",
+      name: "Claude 3.7 Sonnet",
+      description: "Hybrid reasoning and coding model",
+      supportsFastMode: true,
+      supportedReasoningEfforts: [
+        { value: "low", label: "Low" },
+        { value: "medium", label: "Medium" },
+        { value: "high", label: "High" },
+      ],
+      defaultReasoningEffort: "medium",
+    },
+    {
+      slug: "claude-3-5-sonnet-latest",
+      name: "Claude 3.5 Sonnet",
+      description: "Industry standard coding model",
+      supportsFastMode: true,
     },
     {
       slug: "zen-pro",
@@ -380,11 +417,23 @@ const DEFAULT_MODELS_BY_PROVIDER: Record<string, any[]> = {
       description: "Lightweight, ultra-fast responses",
       supportsFastMode: true,
     },
+    {
+      slug: "deepseek-r1",
+      name: "DeepSeek R1",
+      description: "Full reasoning and math model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "deepseek-v3",
+      name: "DeepSeek V3",
+      description: "High-throughput general assistant",
+      supportsFastMode: true,
+    },
   ],
   opencodeGo: [
     {
       slug: "gpt-5.6-sol",
-      name: "gpt-5.6-sol",
+      name: "GPT-5.6 Sol",
       description: "Fast reasoning and high performance code generation",
       supportsFastMode: true,
       supportedReasoningEfforts: [
@@ -395,23 +444,33 @@ const DEFAULT_MODELS_BY_PROVIDER: Record<string, any[]> = {
       defaultReasoningEffort: "medium",
     },
     {
+      slug: "sonnet-5",
+      name: "Claude Sonnet 5",
+      description: "High intelligence and balanced aesthetic taste",
+      supportsFastMode: true,
+    },
+    {
+      slug: "opus-4.8",
+      name: "Claude Opus 4.8",
+      description: "Exceptional architecture, complex refactors, and design taste",
+      supportsFastMode: true,
+    },
+    {
+      slug: "fable-5",
+      name: "Fable 5",
+      description: "Top-tier intelligence and supreme product UI/UX taste",
+      supportsFastMode: true,
+    },
+    {
       slug: "go-standard",
       name: "Go Standard",
-      description: "Direct OpenCode Go model",
-      supportsFastMode: true,
-    },
-  ],
-  groq: [
-    {
-      slug: "llama-3.3-70b-versatile",
-      name: "Llama 3.3 70B",
-      description: "Versatile open-weights model on Groq",
+      description: "Direct OpenCode Go standard model",
       supportsFastMode: true,
     },
     {
-      slug: "llama-3.1-8b-instant",
-      name: "Llama 3.1 8B",
-      description: "Instant response model on Groq",
+      slug: "go-fast",
+      name: "Go Fast",
+      description: "Ultra-fast low-latency OpenCode Go model",
       supportsFastMode: true,
     },
   ],
@@ -434,12 +493,30 @@ const DEFAULT_MODELS_BY_PROVIDER: Record<string, any[]> = {
       description: "Industry standard coding model",
       supportsFastMode: true,
     },
+    {
+      slug: "claude-3-5-haiku-latest",
+      name: "Claude 3.5 Haiku",
+      description: "Fast, responsive light model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "claude-3-opus-latest",
+      name: "Claude 3 Opus",
+      description: "Complex reasoning and creative generation",
+      supportsFastMode: true,
+    },
   ],
   openai: [
     {
       slug: "gpt-4o",
       name: "GPT-4o",
       description: "Omni-modal flagship model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "gpt-4o-mini",
+      name: "GPT-4o Mini",
+      description: "Fast, cost-efficient model",
       supportsFastMode: true,
     },
     {
@@ -454,6 +531,58 @@ const DEFAULT_MODELS_BY_PROVIDER: Record<string, any[]> = {
       ],
       defaultReasoningEffort: "medium",
     },
+    {
+      slug: "o1",
+      name: "o1",
+      description: "Full depth reasoning model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "gpt-4.5-preview",
+      name: "GPT-4.5 Preview",
+      description: "Next-gen flagship preview model",
+      supportsFastMode: true,
+    },
+  ],
+  google: [
+    {
+      slug: "gemini-2.5-pro",
+      name: "Gemini 2.5 Pro",
+      description: "State-of-the-art coding and complex multimodal reasoning",
+      supportsFastMode: true,
+    },
+    {
+      slug: "gemini-2.5-flash",
+      name: "Gemini 2.5 Flash",
+      description: "High-speed multimodal coding and inference",
+      supportsFastMode: true,
+    },
+    {
+      slug: "gemini-2.0-flash",
+      name: "Gemini 2.0 Flash",
+      description: "Fast next-gen multimodel",
+      supportsFastMode: true,
+    },
+  ],
+  groq: [
+    {
+      slug: "llama-3.3-70b-versatile",
+      name: "Llama 3.3 70B",
+      description: "Versatile open-weights model on Groq",
+      supportsFastMode: true,
+    },
+    {
+      slug: "llama-3.1-8b-instant",
+      name: "Llama 3.1 8B",
+      description: "Instant response model on Groq",
+      supportsFastMode: true,
+    },
+    {
+      slug: "deepseek-r1-distill-llama-70b",
+      name: "DeepSeek R1 Distill 70B",
+      description: "Reasoning distilled onto Llama architecture on Groq",
+      supportsFastMode: true,
+    },
   ],
   engine: [
     {
@@ -465,6 +594,103 @@ const DEFAULT_MODELS_BY_PROVIDER: Record<string, any[]> = {
   ],
 };
 
+const OPENCODE_MODELS_CACHE: Record<string, { models: any[]; expiresAt: number }> = {};
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
+function formatModelName(id: string): string {
+  if (id === "gpt-5.6-sol") return "GPT-5.6 Sol";
+  if (id === "gpt-5.6-terra") return "GPT-5.6 Terra";
+  if (id === "gpt-5.6-luna") return "GPT-5.6 Luna";
+  if (id === "claude-fable-5") return "Claude Fable 5";
+  if (id === "claude-opus-5") return "Claude Opus 5";
+  if (id === "claude-sonnet-5") return "Claude Sonnet 5";
+  if (id === "claude-opus-4-8") return "Claude Opus 4.8";
+  if (id === "claude-opus-4-7") return "Claude Opus 4.7";
+  if (id === "claude-opus-4-6") return "Claude Opus 4.6";
+  if (id === "claude-opus-4-5") return "Claude Opus 4.5";
+  if (id === "claude-sonnet-4-6") return "Claude Sonnet 4.6";
+  if (id === "claude-sonnet-4-5") return "Claude Sonnet 4.5";
+  if (id === "claude-3-7-sonnet-latest" || id === "claude-3.7-sonnet") return "Claude 3.7 Sonnet";
+  if (id === "claude-3-5-sonnet-latest" || id === "claude-3.5-sonnet") return "Claude 3.5 Sonnet";
+  if (id === "deepseek-r1") return "DeepSeek R1";
+  if (id === "deepseek-v3") return "DeepSeek V3";
+  if (id === "deepseek-v4-pro") return "DeepSeek V4 Pro";
+  if (id === "deepseek-v4-flash") return "DeepSeek V4 Flash";
+  if (id === "qwen3.7-max") return "Qwen 3.7 Max";
+  if (id === "qwen3.8-max") return "Qwen 3.8 Max";
+  if (id === "minimax-m3") return "MiniMax M3";
+  if (id === "minimax-m2.7") return "MiniMax M2.7";
+  if (id === "kimi-k3") return "Kimi K3";
+  if (id === "kimi-k2.7-code") return "Kimi K2.7 Code";
+
+  return id
+    .split("-")
+    .map((part) => (part.length > 0 ? part.charAt(0).toUpperCase() + part.slice(1) : part))
+    .join(" ");
+}
+
+function modelToDescriptor(id: string): any {
+  const supportsReasoning =
+    id.includes("3-7") ||
+    id.includes("3.7") ||
+    id.includes("o3") ||
+    id.includes("o1") ||
+    id.includes("r1") ||
+    id.includes("sol") ||
+    id.includes("fable") ||
+    id.includes("reasoning");
+
+  return {
+    slug: id,
+    name: formatModelName(id),
+    description: `OpenCode live model (${id})`,
+    supportsFastMode: true,
+    ...(supportsReasoning
+      ? {
+          supportedReasoningEfforts: [
+            { value: "low", label: "Low" },
+            { value: "medium", label: "Medium" },
+            { value: "high", label: "High" },
+          ],
+          defaultReasoningEffort: "medium",
+        }
+      : {}),
+  };
+}
+
+async function getDynamicOpenCodeModels(url: string, fallbackModels: any[]): Promise<any[]> {
+  const now = Date.now();
+  const cached = OPENCODE_MODELS_CACHE[url];
+  if (cached && cached.expiresAt > now) {
+    return cached.models;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3500);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = (await res.json()) as { data?: Array<{ id: string }> };
+    if (Array.isArray(json.data) && json.data.length > 0) {
+      const dynamicList = json.data.map((m) => modelToDescriptor(m.id));
+      const dynamicIds = new Set(dynamicList.map((m) => m.slug));
+      const combined = [
+        ...fallbackModels.filter((m) => dynamicIds.has(m.slug)),
+        ...dynamicList.filter((m) => !fallbackModels.some((f) => f.slug === m.slug)),
+        ...fallbackModels.filter((m) => !dynamicIds.has(m.slug)),
+      ];
+      OPENCODE_MODELS_CACHE[url] = { models: combined, expiresAt: now + CACHE_TTL_MS };
+      return combined;
+    }
+  } catch (err) {
+    console.warn(`[harness] Failed to fetch dynamic models from ${url}, using fallback:`, err);
+  }
+
+  return fallbackModels;
+}
+
 export class ProviderDiscoveryService extends ServiceMap.Service<ProviderDiscoveryService, any>()(
   "caide/ProviderDiscoveryService",
 ) {
@@ -475,8 +701,24 @@ export class ProviderDiscoveryService extends ServiceMap.Service<ProviderDiscove
     listCommands: () => Effect.succeed({ commands: [], source: "empty", cached: true }),
     listModels: (input?: { provider?: string }) => {
       const provider = input?.provider ?? "opencodeZen";
-      const models = DEFAULT_MODELS_BY_PROVIDER[provider] ?? DEFAULT_MODELS_BY_PROVIDER.opencodeZen;
-      return Effect.succeed({ models, source: "harness", cached: true });
+      const fallback = DEFAULT_MODELS_BY_PROVIDER[provider] ?? DEFAULT_MODELS_BY_PROVIDER.opencodeZen;
+      if (provider === "opencodeZen") {
+        return Effect.tryPromise({
+          try: () => getDynamicOpenCodeModels("https://opencode.ai/zen/v1/models", fallback),
+          catch: () => fallback,
+        }).pipe(
+          Effect.map((models) => ({ models, source: "live-opencode-zen", cached: true })),
+        );
+      }
+      if (provider === "opencodeGo") {
+        return Effect.tryPromise({
+          try: () => getDynamicOpenCodeModels("https://opencode.ai/zen/go/v1/models", fallback),
+          catch: () => fallback,
+        }).pipe(
+          Effect.map((models) => ({ models, source: "live-opencode-go", cached: true })),
+        );
+      }
+      return Effect.succeed({ models: fallback, source: "harness", cached: true });
     },
     listAgents: () => Effect.succeed({ agents: [], source: "empty", cached: true }),
     listPlugins: () =>
