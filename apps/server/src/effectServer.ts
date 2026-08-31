@@ -121,6 +121,7 @@ export const createEffectServer = Effect.fn(function* (
   );
   yield* Effect.addFinalizer(() => clearPersistedServerRuntimeState(config.serverRuntimeStatePath));
   yield* readiness.markHttpListening;
+  process.stdout.write(`Listening on http://${config.host ?? "127.0.0.1"}:${listeningPort}\n`);
   yield* readiness.markTerminalSubscriptionsReady;
   yield* readiness.markOrchestrationSubscriptionsReady;
 

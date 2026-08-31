@@ -56,6 +56,29 @@ const emptyShellSnapshot = () => ({
   updatedAt: new Date().toISOString(),
 });
 
+// Returns schema-valid thread detail snapshot
+const emptyThreadDetailSnapshot = (threadId: string) => ({
+  snapshotSequence: 0,
+  thread: {
+    id: threadId,
+    projectId: "default",
+    title: "New Chat",
+    modelSelection: { provider: "opencode", model: "default" },
+    runtimeMode: "full-access",
+    interactionMode: "default",
+    branch: null,
+    worktreePath: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    lastVisitedAt: new Date().toISOString(),
+    turns: [],
+    messages: [],
+    activities: [],
+    proposedPlans: [],
+    turnDiffSummaries: [],
+  },
+});
+
 export class OrchestrationEngineService extends ServiceMap.Service<
   OrchestrationEngineService,
   any
@@ -66,7 +89,9 @@ export class OrchestrationEngineService extends ServiceMap.Service<
     getReadModel: () => Effect.succeed(emptyReadModel()),
     repairState: () => Effect.succeed(emptyReadModel()),
     readEvents: () => Stream.empty,
+    readEventsThrough: () => Stream.empty,
     readThreadEvents: () => Stream.empty,
+    readThreadEventsThrough: () => Stream.empty,
     subscribeDomainEvents: Stream.empty,
     streamDomainEvents: Stream.empty,
   } as any);
@@ -85,7 +110,8 @@ export class ProjectionSnapshotQuery extends ServiceMap.Service<ProjectionSnapsh
   "caide/ProjectionSnapshotQuery",
 ) {
   static readonly layer = Layer.succeed(this, {
-    getThreadDetailSnapshotById: () => Effect.succeed(undefined),
+    getThreadDetailSnapshotById: (threadId: string) =>
+      Effect.succeed(Option.some(emptyThreadDetailSnapshot(threadId))),
     getSpaceShellById: () => Effect.succeed(Option.none()),
     getProjectShellById: () => Effect.succeed(Option.none()),
     getShellSnapshot: () => Effect.succeed(emptyShellSnapshot()),
@@ -109,12 +135,53 @@ export function getProviderUsageSnapshot(..._args: any[]): any {
   return {};
 }
 
+const emptyProfileStats = () => ({
+  generatedAt: new Date().toISOString(),
+  timezone: "UTC",
+  identity: {
+    handle: "Developer",
+    displayName: "Caide Developer",
+    avatarUrl: null,
+  },
+  activity: {
+    totalSessions: 0,
+    totalTurns: 0,
+    activeDays: 0,
+    currentStreakDays: 0,
+    longestStreakDays: 0,
+  },
+  activeHours: {
+    hours: [],
+    peakHour: null,
+  },
+  insights: {
+    summary: "Welcome to Caide! Build your first AI application.",
+    strengths: [],
+  },
+  providerModels: [],
+  skills: [],
+  mostUsedSkill: null,
+  mostWorkedProject: null,
+  frameworks: [],
+  mostUsedFramework: null,
+  quota: {
+    used: 0,
+    limit: null,
+  },
+});
+
+const emptyProfileTokenStats = () => ({
+  available: true,
+  lifetimeTotalTokens: 0,
+  breakdown: [],
+});
+
 export class ProfileStatsQuery extends ServiceMap.Service<ProfileStatsQuery, any>()(
   "caide/ProfileStatsQuery",
 ) {
   static readonly layer = Layer.succeed(this, {
-    getProfileStats: () => Effect.succeed({}),
-    getProfileTokenStats: () => Effect.succeed({}),
+    getProfileStats: () => Effect.succeed(emptyProfileStats()),
+    getProfileTokenStats: () => Effect.succeed(emptyProfileTokenStats()),
   } as any);
 }
 
@@ -134,6 +201,19 @@ export class ProviderAdapterRegistry extends ServiceMap.Service<ProviderAdapterR
     getAdapter: () => Option.none(),
     getByProvider: () =>
       Effect.succeed({
+        createApp: (input: { name: string; framework?: any }) =>
+          Effect.promise(async () => {
+            const { getCaideAppPath } = await import("./paths/caideApps.ts");
+            const { getFrameworkConfig } = await import("./harness/framework/registry.ts");
+            const appPath = getCaideAppPath(input.name);
+            const config = getFrameworkConfig(input.framework ?? "blank");
+            await config.scaffold(appPath, input.name);
+            return {
+              appId: 1,
+              chatId: 1,
+              appPath,
+            };
+          }),
         goals: {
           create: () => Effect.succeed({}),
           list: () => Effect.succeed([]),
@@ -153,19 +233,164 @@ export class ProviderAdapterRegistry extends ServiceMap.Service<ProviderAdapterR
   } as any);
 }
 
+const HARNESS_SKILLS = [
+  {
+    name: "ui-ux-mastery",
+    description: "Product archetypes, design system, component contracts, a11y, anti-slop, and motion direction",
+    path: "harness/skills/ui-ux-mastery.md",
+    enabled: true,
+    scope: "caide",
+    interface: {
+      displayName: "UI/UX Mastery",
+      shortDescription: "Design tokens, styling, tap targets, empty/loading/error states",
+    },
+  },
+  {
+    name: "motion-interaction",
+    description: "Spring physics, timing curves, gesture choreography, and haptics",
+    path: "harness/skills/motion-interaction.md",
+    enabled: true,
+    scope: "caide",
+    interface: {
+      displayName: "Motion & Interaction",
+      shortDescription: "Platform springs, 220ms transitions, reduced-motion fallbacks",
+    },
+  },
+  {
+    name: "product-flow",
+    description: "spec.md construction, user flows, and state machine validation",
+    path: "harness/skills/product-flow.md",
+    enabled: true,
+    scope: "caide",
+    interface: {
+      displayName: "Product Flow & Spec",
+      shortDescription: "Spec gate, flow definitions, core slices",
+    },
+  },
+  {
+    name: "anti-ai-slop",
+    description: "Prevents generic AI templates, gradient abuse, and placeholder text",
+    path: "harness/skills/anti-ai-slop.md",
+    enabled: true,
+    scope: "caide",
+    interface: {
+      displayName: "Anti-AI Slop",
+      shortDescription: "Clean, intentional styling without AI stereotypes",
+    },
+  },
+  {
+    name: "backend-production",
+    description: "Security, schema validation, data model correctness, and API contracts",
+    path: "harness/skills/backend-production.md",
+    enabled: true,
+    scope: "caide",
+    interface: {
+      displayName: "Backend Production",
+      shortDescription: "Secure storage, error handling, strict types",
+    },
+  },
+  {
+    name: "platform-patterns",
+    description: "iOS SF Symbols, Android Material, and cross-platform native patterns",
+    path: "harness/skills/platform-patterns.md",
+    enabled: true,
+    scope: "caide",
+    interface: {
+      displayName: "Platform Patterns",
+      shortDescription: "Native platform conventions for React Native, Flutter, Web",
+    },
+  },
+];
+
 export class ProviderDiscoveryService extends ServiceMap.Service<ProviderDiscoveryService, any>()(
   "caide/ProviderDiscoveryService",
 ) {
   static readonly layer = Layer.succeed(this, {
     discover: () => Effect.succeed([]),
+    listSkills: () => Effect.succeed({ skills: HARNESS_SKILLS, source: "caide-harness", cached: true }),
+    listSkillsCatalog: () => Effect.succeed({ skills: HARNESS_SKILLS, caideSkillsDir: "~/.caide/skills" }),
+    listCommands: () => Effect.succeed({ commands: [], source: "empty", cached: true }),
+    listModels: () => Effect.succeed({ models: [], source: "empty", cached: true }),
+    listAgents: () => Effect.succeed({ agents: [], source: "empty", cached: true }),
+    listPlugins: () =>
+      Effect.succeed({
+        marketplaces: [],
+        marketplaceLoadErrors: [],
+        remoteSyncError: null,
+        featuredPluginIds: [],
+        source: "empty",
+        cached: true,
+      }),
+    getComposerCapabilities: () =>
+      Effect.succeed({
+        provider: "opencode",
+        supportsSkillMentions: true,
+        supportsSkillDiscovery: true,
+        supportsNativeSlashCommandDiscovery: false,
+        supportsPluginMentions: false,
+        supportsPluginDiscovery: false,
+        supportsRuntimeModelList: true,
+      }),
   } as any);
 }
+
+const DEFAULT_PROVIDER_STATUSES = [
+  {
+    provider: "engine",
+    status: "ready",
+    available: true,
+    authStatus: "authenticated",
+    version: "1.0.0",
+    checkedAt: new Date().toISOString(),
+    message: "Caide Pure Harness ready",
+  },
+  {
+    provider: "opencode-zen",
+    status: "ready",
+    available: true,
+    authStatus: "authenticated",
+    version: "1.0.0",
+    checkedAt: new Date().toISOString(),
+    message: "OpenCode Zen connected",
+  },
+  {
+    provider: "opencode-go",
+    status: "ready",
+    available: true,
+    authStatus: "authenticated",
+    version: "1.0.0",
+    checkedAt: new Date().toISOString(),
+    message: "OpenCode Go connected",
+  },
+  {
+    provider: "groq",
+    status: "ready",
+    available: true,
+    authStatus: "authenticated",
+    version: "1.0.0",
+    checkedAt: new Date().toISOString(),
+    message: "Groq ready",
+  },
+  {
+    provider: "claude",
+    status: "ready",
+    available: true,
+    authStatus: "authenticated",
+    version: "1.0.0",
+    checkedAt: new Date().toISOString(),
+    message: "Claude ready",
+  },
+];
 
 export class ProviderHealth extends ServiceMap.Service<ProviderHealth, any>()(
   "caide/ProviderHealth",
 ) {
   static readonly layer = Layer.succeed(this, {
     checkHealth: () => Effect.succeed({}),
+    getStatuses: Effect.succeed(DEFAULT_PROVIDER_STATUSES),
+    refresh: Effect.succeed(DEFAULT_PROVIDER_STATUSES),
+    updateProvider: () => Effect.succeed({ providers: DEFAULT_PROVIDER_STATUSES }),
+    streamChanges: Stream.empty,
   } as any);
 }
 
