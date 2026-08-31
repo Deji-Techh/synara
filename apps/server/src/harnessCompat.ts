@@ -140,9 +140,13 @@ function loadPersistedState() {
         if (entry.isDirectory()) {
           const appName = entry.name;
           const appPath = path.join(CAIDE_APPS_DIR, appName);
-          const existingProject = inMemoryProjects.find(
+          let existingProject = inMemoryProjects.find(
             (p) => p.workspaceRoot === appPath || p.name === appName || p.title === appName,
           );
+          const pid = existingProject ? existingProject.id : `project-${appName}`;
+          const tid = `thread-${appName}`;
+          const now = new Date().toISOString();
+
           if (!existingProject) {
             let framework = "blank";
             if (fs.existsSync(path.join(appPath, "pubspec.yaml"))) {
@@ -155,10 +159,7 @@ function loadPersistedState() {
             } else if (fs.existsSync(path.join(appPath, "index.html"))) {
               framework = "website";
             }
-            const pid = `project-${appName}`;
-            const tid = `thread-${appName}`;
-            const now = new Date().toISOString();
-            inMemoryProjects.push({
+            existingProject = {
               id: pid,
               title: appName,
               name: appName,
@@ -173,7 +174,11 @@ function loadPersistedState() {
               createdAt: now,
               updatedAt: now,
               deletedAt: null,
-            });
+            };
+            inMemoryProjects.push(existingProject);
+          }
+
+          if (!inMemoryThreads.some((t) => t.projectId === pid || t.id === tid)) {
             inMemoryThreads.push({
               id: tid,
               projectId: pid,
@@ -201,6 +206,29 @@ function loadPersistedState() {
           }
         }
       }
+    }
+
+    const homeDir = process.env.HOME || "/home/DejiTech";
+    const hasHomeProject = inMemoryProjects.some(
+      (p) => p.kind === "chat" || p.id === "default" || p.workspaceRoot === homeDir,
+    );
+    if (!hasHomeProject) {
+      inMemoryProjects.unshift({
+        id: "default",
+        title: "Home",
+        name: "Home",
+        kind: "chat",
+        workspaceRoot: homeDir,
+        cwd: homeDir,
+        framework: "blank",
+        scripts: [],
+        defaultModelSelection: null,
+        isPinned: false,
+        spaceId: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deletedAt: null,
+      });
     }
   } catch (err) {
     console.error("[harnessCompat] Failed to load persisted state", err);
@@ -241,24 +269,53 @@ const emptyShellSnapshot = () => ({
 
 // Returns schema-valid thread detail snapshot
 const emptyThreadDetailSnapshot = (threadId: string) => {
-  const existing = inMemoryThreads.find((t) => t.id === threadId);
+  let existing = inMemoryThreads.find((t) => t.id === threadId);
   const now = new Date().toISOString();
+  if (!existing) {
+    existing = {
+      id: threadId,
+      projectId: "default",
+      title: "New Chat",
+      modelSelection: { provider: "opencodeZen", model: "default" },
+      runtimeMode: "full-access",
+      interactionMode: "default",
+      envMode: "local",
+      branch: null,
+      worktreePath: null,
+      workingDirectory: null,
+      associatedWorktreePath: null,
+      associatedWorktreeBranch: null,
+      associatedWorktreeRef: null,
+      createdAt: now,
+      updatedAt: now,
+      lastVisitedAt: now,
+      archivedAt: null,
+      turns: [],
+      messages: [],
+      activities: [],
+      proposedPlans: [],
+      turnDiffSummaries: [],
+    };
+    inMemoryThreads.push(existing);
+    globalSnapshotSequence += 1;
+    savePersistedState();
+  }
   return {
     snapshotSequence: globalSnapshotSequence,
     thread: {
       id: threadId,
-      projectId: existing?.projectId ?? "default",
-      title: existing?.title ?? "New Chat",
-      modelSelection: existing?.modelSelection ?? { provider: "opencodeZen", model: "default" },
-      runtimeMode: existing?.runtimeMode ?? "full-access",
-      interactionMode: existing?.interactionMode ?? "default",
-      envMode: existing?.envMode ?? "local",
-      branch: existing?.branch ?? null,
-      worktreePath: existing?.worktreePath ?? null,
-      workingDirectory: existing?.workingDirectory ?? null,
-      associatedWorktreePath: existing?.associatedWorktreePath ?? null,
-      associatedWorktreeBranch: existing?.associatedWorktreeBranch ?? null,
-      associatedWorktreeRef: existing?.associatedWorktreeRef ?? null,
+      projectId: existing.projectId ?? "default",
+      title: existing.title ?? "New Chat",
+      modelSelection: existing.modelSelection ?? { provider: "opencodeZen", model: "default" },
+      runtimeMode: existing.runtimeMode ?? "full-access",
+      interactionMode: existing.interactionMode ?? "default",
+      envMode: existing.envMode ?? "local",
+      branch: existing.branch ?? null,
+      worktreePath: existing.worktreePath ?? null,
+      workingDirectory: existing.workingDirectory ?? null,
+      associatedWorktreePath: existing.associatedWorktreePath ?? null,
+      associatedWorktreeBranch: existing.associatedWorktreeBranch ?? null,
+      associatedWorktreeRef: existing.associatedWorktreeRef ?? null,
       createBranchFlowCompleted: false,
       isPinned: false,
       parentThreadId: null,
@@ -273,24 +330,24 @@ const emptyThreadDetailSnapshot = (threadId: string) => {
       forkSourceThreadId: null,
       sidechatSourceThreadId: null,
       lastKnownPr: null,
-      latestTurn: existing?.latestTurn ?? null,
-      latestUserMessageAt: existing?.latestUserMessageAt ?? null,
+      latestTurn: existing.latestTurn ?? null,
+      latestUserMessageAt: existing.latestUserMessageAt ?? null,
       hasPendingApprovals: false,
       hasPendingUserInput: false,
       hasActionableProposedPlan: false,
-      createdAt: existing?.createdAt ?? now,
-      updatedAt: existing?.updatedAt ?? now,
-      lastVisitedAt: existing?.lastVisitedAt ?? now,
-      archivedAt: existing?.archivedAt ?? null,
+      createdAt: existing.createdAt ?? now,
+      updatedAt: existing.updatedAt ?? now,
+      lastVisitedAt: existing.lastVisitedAt ?? now,
+      archivedAt: existing.archivedAt ?? null,
       settledAt: null,
       deletedAt: null,
       handoff: null,
       pinnedMessages: [],
-      turns: existing?.turns ?? [],
-      messages: existing?.messages ?? [],
-      activities: existing?.activities ?? [],
-      proposedPlans: existing?.proposedPlans ?? [],
-      turnDiffSummaries: existing?.turnDiffSummaries ?? [],
+      turns: existing.turns ?? [],
+      messages: existing.messages ?? [],
+      activities: existing.activities ?? [],
+      proposedPlans: existing.proposedPlans ?? [],
+      turnDiffSummaries: existing.turnDiffSummaries ?? [],
     },
   };
 };
@@ -300,7 +357,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
   any
 >()("caide/OrchestrationEngineService") {
   static readonly layer = Layer.succeed(this, {
-    getEventHighWaterSequence: Effect.succeed(0),
+    getEventHighWaterSequence: Effect.sync(() => globalSnapshotSequence),
     dispatch: (command: any) =>
       Effect.sync(() => {
         const now = new Date().toISOString();

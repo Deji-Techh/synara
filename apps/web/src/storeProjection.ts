@@ -991,6 +991,9 @@ function retireDeletionTombstones<TId extends string>(
  * already confirmed gone", so the whole stale payload has to be rejected before it is merged.
  */
 function isStaleSnapshot(state: AppState, snapshotSequence: number): boolean {
+  if (!state.threadsHydrated) {
+    return false;
+  }
   return snapshotSequence < (state.shellSnapshotSequence ?? 0);
 }
 
@@ -1006,6 +1009,9 @@ function retireConfirmedDeletionTombstones(
   presentThreadIds: ReadonlySet<string>,
   presentProjectIds: ReadonlySet<string>,
 ): AppState {
+  if (!state.threadsHydrated) {
+    return state;
+  }
   if (snapshotSequence < (state.shellSnapshotSequence ?? 0)) {
     return state;
   }
