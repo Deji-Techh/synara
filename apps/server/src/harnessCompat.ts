@@ -34,11 +34,12 @@ export function resolveThreadWorkspaceCwd(..._args: any[]): string {
 }
 
 export function makeDispatchCommandNormalizer(..._args: any[]): any {
-  return () => Effect.void;
+  return ({ command }: { command: any }) =>
+    Effect.succeed({ command, prepareWorkspaceRoot: undefined });
 }
 
 export function makeImportThreadHandler(..._args: any[]): any {
-  return () => Effect.void;
+  return () => Effect.succeed({});
 }
 
 const inMemoryProjects: any[] = [];
@@ -108,9 +109,11 @@ export class OrchestrationEngineService extends ServiceMap.Service<
           if (!existing) {
             inMemoryProjects.push({
               id: command.projectId,
-              title: command.title,
+              title: command.title ?? "Home",
+              name: command.title ?? "Home",
               kind: command.kind ?? "project",
               workspaceRoot: command.workspaceRoot,
+              cwd: command.workspaceRoot,
               framework: command.framework ?? "blank",
               scripts: [],
               defaultModelSelection: command.defaultModelSelection ?? null,
@@ -120,13 +123,26 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               spaceId: command.spaceId ?? null,
             });
           }
+        } else if (command?.type === "project.meta.update") {
+          const existing = inMemoryProjects.find((p) => p.id === command.projectId);
+          if (existing) {
+            if (command.title !== undefined) {
+              existing.title = command.title;
+              existing.name = command.title;
+            }
+            if (command.kind !== undefined) existing.kind = command.kind;
+            existing.updatedAt = now;
+          }
+        } else if (command?.type === "project.delete") {
+          const index = inMemoryProjects.findIndex((p) => p.id === command.projectId);
+          if (index !== -1) inMemoryProjects.splice(index, 1);
         } else if (command?.type === "thread.create") {
           const existing = inMemoryThreads.find((t) => t.id === command.threadId);
           if (!existing) {
             inMemoryThreads.push({
               id: command.threadId,
               projectId: command.projectId,
-              title: command.title,
+              title: command.title ?? "New Chat",
               modelSelection: command.modelSelection ?? { provider: "opencode", model: "default" },
               runtimeMode: command.runtimeMode ?? "full-access",
               interactionMode: command.interactionMode ?? "default",
@@ -147,6 +163,18 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               turnDiffSummaries: [],
             });
           }
+        } else if (command?.type === "thread.meta.update") {
+          const existing = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (existing) {
+            if (command.title !== undefined) existing.title = command.title;
+            existing.updatedAt = now;
+          }
+        } else if (command?.type === "thread.archive") {
+          const existing = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (existing) existing.archivedAt = now;
+        } else if (command?.type === "thread.delete") {
+          const index = inMemoryThreads.findIndex((t) => t.id === command.threadId);
+          if (index !== -1) inMemoryThreads.splice(index, 1);
         }
         return {} as any;
       }),
