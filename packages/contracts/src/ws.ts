@@ -140,6 +140,7 @@ import {
   ProviderReadPluginInput,
   ProviderListSkillsInput,
   ProviderSkillsCatalogInput,
+  ProviderCreateCustomSkillInput,
 } from "./providerDiscovery";
 import { ProviderCompactThreadInput } from "./provider";
 import {

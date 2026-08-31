@@ -322,8 +322,8 @@ export function mergeBuildState(
       running: !isTerminal,
       buildId: snapshot.buildId,
       status: snapshot.status,
-      target: state.build.target,
-      channel: state.build.channel,
+      target: state.build?.target ?? "apk",
+      channel: state.build?.channel ?? "release",
       exitCode: snapshot.exitCode ?? null,
       outputPath: snapshot.outputPath ?? null,
       sha256,
@@ -336,6 +336,19 @@ export function mergeBuildState(
 export function buildFailed(state: PreviewPanelState, error: string): PreviewPanelState {
   return {
     ...state,
-    build: { ...state.build, running: false, status: "failed", error },
+    build: {
+      ...(state.build ?? {
+        running: false,
+        buildId: null,
+        target: "apk" as const,
+        channel: "release" as const,
+        exitCode: null,
+        outputPath: null,
+        logs: [],
+      }),
+      running: false,
+      status: "failed",
+      error,
+    },
   };
 }
