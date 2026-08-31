@@ -2,10 +2,6 @@ import { BlockAssembler, LLMStreamTiming, type CompleteToolCall } from "./stream
 
 export type ApiEndpoint = "responses" | "chat/completions" | "messages" | "gemini";
 
-const RESPONSES_MODELS = new Set(["grok", "gpt", "muse-spark", "o1", "o3"]);
-const MESSAGES_MODELS = new Set(["minimax", "qwen", "claude", "sonnet", "opus", "fable"]);
-const GEMINI_MODELS = new Set(["gemini"]);
-
 export interface ProviderErrorDetails {
   status: number;
   code: string;
@@ -20,17 +16,30 @@ export class ProviderApiError extends Error {
   }
 }
 
-export function endpointForModel(modelId: string): ApiEndpoint {
+export function endpointForModel(modelId: string, baseUrl?: string): ApiEndpoint {
   const lower = modelId.toLowerCase();
-  if (Array.from(GEMINI_MODELS).some((m) => lower.includes(m))) return "gemini";
-  if (Array.from(RESPONSES_MODELS).some((m) => lower.includes(m))) return "responses";
-  if (Array.from(MESSAGES_MODELS).some((m) => lower.includes(m))) return "messages";
+  if (lower.startsWith("gemini-")) return "gemini";
+  if (
+    lower.startsWith("gpt-") ||
+    lower.startsWith("grok-") ||
+    lower.startsWith("muse-spark") ||
+    lower.startsWith("o1") ||
+    lower.startsWith("o3")
+  ) {
+    return "responses";
+  }
+  if (lower.startsWith("claude-") || lower.startsWith("qwen")) {
+    return "messages";
+  }
+  if (lower.startsWith("minimax") && baseUrl && baseUrl.includes("/go/")) {
+    return "messages";
+  }
   return "chat/completions";
 }
 
 export function buildProviderUrl(baseUrl: string, modelId: string): string {
   const cleanBase = baseUrl.replace(/\/+$/, "");
-  const endpoint = endpointForModel(modelId);
+  const endpoint = endpointForModel(modelId, baseUrl);
   if (endpoint === "gemini") return `${cleanBase}/models/${modelId}:streamGenerateContent`;
   if (endpoint === "responses") return `${cleanBase}/responses`;
   if (endpoint === "messages") return `${cleanBase}/messages`;
@@ -56,25 +65,60 @@ export async function* streamProvider(
 ): AsyncGenerator<ProviderChunk, void, unknown> {
   const { modelId, baseUrl, apiKey, messages, tools, signal, onTiming } = options;
   const url = buildProviderUrl(baseUrl, modelId);
+  const endpoint = endpointForModel(modelId, baseUrl);
   const timing = new LLMStreamTiming();
   const assembler = new BlockAssembler();
 
   timing.start();
 
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+  let requestBody: any;
+
+  if (endpoint === "messages") {
+    headers["x-api-key"] = apiKey;
+    headers["anthropic-version"] = "2023-06-01";
+    requestBody = {
+      model: modelId,
+      messages: (messages as any[]).map((m: any) => ({
+        role: m.role === "assistant" ? "assistant" : "user",
+        content: typeof m.content === "string" ? m.content : JSON.stringify(m.content ?? ""),
+      })),
+      max_tokens: 4096,
+      stream: true,
+      ...(tools && tools.length > 0 ? { tools } : {}),
+    };
+  } else if (endpoint === "responses") {
+    requestBody = {
+      model: modelId,
+      input: messages,
+      stream: true,
+      ...(tools && tools.length > 0 ? { tools } : {}),
+    };
+  } else if (endpoint === "gemini") {
+    requestBody = {
+      contents: (messages as any[]).map((m: any) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: typeof m.content === "string" ? m.content : JSON.stringify(m.content ?? "") }],
+      })),
+    };
+  } else {
+    requestBody = {
+      model: modelId,
+      messages,
+      stream: true,
+      ...(tools && tools.length > 0 ? { tools } : {}),
+    };
+  }
+
   let response: Response;
   try {
     response = await fetch(url, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: modelId,
-        messages,
-        tools: tools && tools.length > 0 ? tools : undefined,
-        stream: true,
-      }),
+      headers,
+      body: JSON.stringify(requestBody),
       signal,
     });
   } catch (err: any) {
@@ -164,12 +208,23 @@ export async function* streamProvider(
           try {
             const json = JSON.parse(dataStr);
 
-            // 1. Text token extraction
-            const token =
-              json.choices?.[0]?.delta?.content ??
-              json.content ??
-              json.delta?.text ??
-              json.candidates?.[0]?.content?.parts?.[0]?.text;
+            // 1. Text token extraction across OpenAI, Anthropic, Responses, and Gemini schemas
+            let token: string | undefined;
+            if (typeof json.choices?.[0]?.delta?.content === "string") {
+              token = json.choices[0].delta.content;
+            } else if (typeof json.delta?.text === "string") {
+              token = json.delta.text;
+            } else if (typeof json.delta === "string") {
+              token = json.delta;
+            } else if (typeof json.text === "string") {
+              token = json.text;
+            } else if (typeof json.content === "string") {
+              token = json.content;
+            } else if (typeof json.candidates?.[0]?.content?.parts?.[0]?.text === "string") {
+              token = json.candidates[0].content.parts[0].text;
+            } else if (typeof json.response?.output_item?.content === "string") {
+              token = json.response.output_item.content;
+            }
 
             if (token) {
               timing.recordToken();

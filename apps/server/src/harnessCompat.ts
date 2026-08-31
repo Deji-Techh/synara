@@ -666,21 +666,50 @@ export class OrchestrationEngineService extends ServiceMap.Service<
             try {
               const { streamProvider } = await import("./harness/provider/apiAdapter.ts");
               const modelSelection = command.modelSelection || thread.modelSelection || { provider: "opencodeZen", model: "gpt-5.6-sol" };
-              const provider = modelSelection.provider || "opencodeZen";
+              let provider = modelSelection.provider || "opencodeZen";
               const modelId = modelSelection.model && modelSelection.model !== "default" ? modelSelection.model : "gpt-5.6-sol";
 
+              const GO_MODELS = new Set([
+                "grok-4.6",
+                "gpt-5.6-luna",
+                "glm-5.3-flash",
+                "glm-5.3",
+                "glm-5.2",
+                "glm-5.1",
+                "kimi-k3",
+                "kimi-k2.7-code",
+                "kimi-k2.6",
+                "longcat-2.0",
+                "deepseek-v4-pro",
+                "deepseek-v4-flash",
+                "deepseek-v4-flash-vision-exp",
+                "mimo-v2.5",
+                "mimo-v2.5-pro",
+                "minimax-m3",
+                "minimax-m2.7",
+                "minimax-m2.5",
+                "muse-spark-1.2-contributor",
+                "qwen3.8-max",
+                "qwen3.8-flash",
+                "qwen3.7-max",
+                "qwen3.7-plus",
+                "qwen3.6-plus",
+                "hy4-preview",
+                "hy3",
+              ]);
+
               let baseUrl = "https://opencode.ai/zen/v1";
-              if (provider === "opencodeGo") {
+              if (provider === "opencodeGo" || (provider !== "groq" && GO_MODELS.has(modelId))) {
                 baseUrl = "https://opencode.ai/zen/go/v1";
+                provider = "opencodeGo";
               } else if (provider === "groq") {
                 baseUrl = "https://api.groq.com/openai/v1";
               }
 
               let apiKey = getProviderApiKeyDirect(provider);
-              if (!apiKey && provider !== "opencodeZen") {
+              if (!apiKey && provider === "opencodeGo") {
                 apiKey = getProviderApiKeyDirect("opencodeZen");
-              }
-              if (!apiKey) {
+              } else if (!apiKey && provider === "opencodeZen") {
                 apiKey = getProviderApiKeyDirect("opencodeGo");
               }
 

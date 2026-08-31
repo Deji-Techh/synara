@@ -1203,16 +1203,15 @@ const makeWsRpcHandlersLayer = () =>
       const createCaideApp = (input: AppCreateInput) =>
         Effect.gen(function* () {
           const trimmedName = input.name.trim();
-          const slug = slugifyCaideAppName(trimmedName);
-          const appPath = getCaideAppPath(slug);
+          let slug = slugifyCaideAppName(trimmedName);
+          let appPath = getCaideAppPath(slug);
           if (existsSync(appPath)) {
-            return yield* Effect.fail(
-              new WsRpcError({ message: `App already exists at: ${appPath}` }),
-            );
+            slug = `${slug}-${Date.now().toString(36).slice(-4)}`;
+            appPath = getCaideAppPath(slug);
           }
           // Seed the app with the composer's picked provider/model so a Home
           // first send does not silently fall back to the engine default.
-          const modelSelection = input.modelSelection ?? { provider: "engine", model: "default" };
+          const modelSelection = input.modelSelection ?? { provider: "opencodeGo", model: "muse-spark-1.2-contributor" };
           const framework = input.framework ?? "blank";
           const created = yield* engineAdapterEffect.pipe(
             Effect.flatMap((adapter) => adapter.createApp({ name: slug, framework })),
