@@ -35,7 +35,7 @@
     "start:marketing": "turbo run preview --filter=@caide/marketing",
     "build": "turbo run build",
     "build:marketing": "turbo run build --filter=@caide/marketing",
-    "build:desktop": "turbo run build --filter=@caide/desktop --filter=@caide/cli",
+    "build:desktop": "turbo run build --filter=@caide/desktop --filter=@caide/cli --filter=@caide/web",
     "typecheck": "turbo run typecheck",
     "lint": "oxlint --report-unused-disable-directives",
     "test": "turbo run test",

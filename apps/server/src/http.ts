@@ -127,7 +127,9 @@ export const readinessEffectRouteLayer = (readiness: ServerReadiness) =>
     HttpRouter.add(
       "GET",
       "/health",
-      Effect.sync(() => HttpServerResponse.jsonUnsafe({ ok: true }, { status: 200 })),
+      Effect.sync(() =>
+        HttpServerResponse.jsonUnsafe({ ok: true, startupReady: true }, { status: 200 }),
+      ),
     ),
   );
 

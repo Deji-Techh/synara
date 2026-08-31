@@ -68,13 +68,17 @@ export function isTrustedAppOrigin(input: {
   readonly requestOrigin: string;
   readonly config: ServerConfigShape;
 }) {
+  if (isTrustedRequestOriginHost(input.requestOrigin, input.config)) {
+    return true;
+  }
   return (
     !input.origin ||
     input.origin === input.config.publicUrl?.origin ||
     (input.origin === input.requestOrigin &&
       isTrustedRequestOriginHost(input.requestOrigin, input.config)) ||
     input.origin === input.config.devUrl?.origin ||
-    DESKTOP_APP_CORS_ORIGINS.has(input.origin)
+    (input.origin ? DESKTOP_APP_CORS_ORIGINS.has(input.origin) : false) ||
+    (input.origin ? input.origin.startsWith("caide://") : false)
   );
 }
 
@@ -87,6 +91,9 @@ export function shouldRejectUntrustedRequestOrigin(input: {
   readonly config: ServerConfigShape;
 }) {
   if (input.rawOrigin === undefined) {
+    return false;
+  }
+  if (isTrustedRequestOriginHost(input.requestOrigin, input.config)) {
     return false;
   }
   const origin = normalizeCorsOrigin(input.rawOrigin);

@@ -38,12 +38,15 @@ export function makeImportThreadHandler(..._args: any[]): any {
   return () => Effect.void;
 }
 
+const inMemoryProjects: any[] = [];
+const inMemoryThreads: any[] = [];
+
 // Returns schema-valid empty read model (snapshotSequence + updatedAt required by contracts)
 const emptyReadModel = () => ({
   snapshotSequence: 0,
   spaces: [],
-  projects: [],
-  threads: [],
+  projects: inMemoryProjects,
+  threads: inMemoryThreads,
   updatedAt: new Date().toISOString(),
 });
 
@@ -51,33 +54,36 @@ const emptyReadModel = () => ({
 const emptyShellSnapshot = () => ({
   snapshotSequence: 0,
   spaces: [],
-  projects: [],
-  threads: [],
+  projects: inMemoryProjects,
+  threads: inMemoryThreads,
   updatedAt: new Date().toISOString(),
 });
 
 // Returns schema-valid thread detail snapshot
-const emptyThreadDetailSnapshot = (threadId: string) => ({
-  snapshotSequence: 0,
-  thread: {
-    id: threadId,
-    projectId: "default",
-    title: "New Chat",
-    modelSelection: { provider: "opencode", model: "default" },
-    runtimeMode: "full-access",
-    interactionMode: "default",
-    branch: null,
-    worktreePath: null,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    lastVisitedAt: new Date().toISOString(),
-    turns: [],
-    messages: [],
-    activities: [],
-    proposedPlans: [],
-    turnDiffSummaries: [],
-  },
-});
+const emptyThreadDetailSnapshot = (threadId: string) => {
+  const existing = inMemoryThreads.find((t) => t.id === threadId);
+  return {
+    snapshotSequence: 0,
+    thread: {
+      id: threadId,
+      projectId: existing?.projectId ?? "default",
+      title: existing?.title ?? "New Chat",
+      modelSelection: { provider: "opencode", model: "default" },
+      runtimeMode: "full-access",
+      interactionMode: "default",
+      branch: null,
+      worktreePath: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      lastVisitedAt: new Date().toISOString(),
+      turns: [],
+      messages: [],
+      activities: [],
+      proposedPlans: [],
+      turnDiffSummaries: [],
+    },
+  };
+};
 
 export class OrchestrationEngineService extends ServiceMap.Service<
   OrchestrationEngineService,
@@ -206,12 +212,34 @@ export class ProviderAdapterRegistry extends ServiceMap.Service<ProviderAdapterR
             const { getCaideAppPath } = await import("./paths/caideApps.ts");
             const { getFrameworkConfig } = await import("./harness/framework/registry.ts");
             const appPath = getCaideAppPath(input.name);
-            const config = getFrameworkConfig(input.framework ?? "blank");
+            const framework = input.framework ?? "blank";
+            const config = getFrameworkConfig(framework);
             await config.scaffold(appPath, input.name);
+            const projectId = crypto.randomUUID();
+            const threadId = crypto.randomUUID();
+            const now = new Date().toISOString();
+            inMemoryProjects.push({
+              id: projectId,
+              name: input.name,
+              workspaceRoot: appPath,
+              framework,
+              createdAt: now,
+              updatedAt: now,
+            });
+            inMemoryThreads.push({
+              id: threadId,
+              projectId,
+              title: input.name,
+              createdAt: now,
+              updatedAt: now,
+            });
             return {
+              projectId,
+              threadId,
               appId: 1,
               chatId: 1,
               appPath,
+              framework,
             };
           }),
         goals: {
@@ -336,16 +364,7 @@ export class ProviderDiscoveryService extends ServiceMap.Service<ProviderDiscove
 
 const DEFAULT_PROVIDER_STATUSES = [
   {
-    provider: "engine",
-    status: "ready",
-    available: true,
-    authStatus: "authenticated",
-    version: "1.0.0",
-    checkedAt: new Date().toISOString(),
-    message: "Caide Pure Harness ready",
-  },
-  {
-    provider: "opencode-zen",
+    provider: "opencodeZen",
     status: "ready",
     available: true,
     authStatus: "authenticated",
@@ -354,7 +373,7 @@ const DEFAULT_PROVIDER_STATUSES = [
     message: "OpenCode Zen connected",
   },
   {
-    provider: "opencode-go",
+    provider: "opencodeGo",
     status: "ready",
     available: true,
     authStatus: "authenticated",
@@ -372,13 +391,31 @@ const DEFAULT_PROVIDER_STATUSES = [
     message: "Groq ready",
   },
   {
-    provider: "claude",
+    provider: "anthropic",
     status: "ready",
     available: true,
     authStatus: "authenticated",
     version: "1.0.0",
     checkedAt: new Date().toISOString(),
-    message: "Claude ready",
+    message: "Anthropic ready",
+  },
+  {
+    provider: "openai",
+    status: "ready",
+    available: true,
+    authStatus: "authenticated",
+    version: "1.0.0",
+    checkedAt: new Date().toISOString(),
+    message: "OpenAI ready",
+  },
+  {
+    provider: "engine",
+    status: "ready",
+    available: true,
+    authStatus: "authenticated",
+    version: "1.0.0",
+    checkedAt: new Date().toISOString(),
+    message: "Caide Pure Harness ready",
   },
 ];
 
