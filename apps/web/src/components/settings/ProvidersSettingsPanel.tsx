@@ -232,8 +232,8 @@ function createProviderInstallDisclosureState(
       config.provider,
       config.fields.some((field) =>
         field.kind === "password"
-          ? settings[field.configuredKey]
-          : Boolean(settings[field.settingsKey]),
+          ? Boolean(settings?.[field.configuredKey])
+          : Boolean(settings?.[field.settingsKey]),
       ),
     ]),
   ) as Record<ProviderKind, boolean>;
