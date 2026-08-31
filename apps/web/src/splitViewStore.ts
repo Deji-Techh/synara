@@ -388,7 +388,7 @@ export function resolvePreferredSplitViewIdForThread(input: {
 export const useSplitViewStore = create<SplitViewStore>()(
   persist(
     (set, get) => ({
-      hasHydrated: false,
+      hasHydrated: true,
       splitViewsById: {},
       splitViewIdBySourceThreadId: {},
       setHasHydrated: (hasHydrated) => set({ hasHydrated }),

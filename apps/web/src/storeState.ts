@@ -82,7 +82,7 @@ export const initialState: AppState = {
   spaces: [],
   projects: [],
   sidebarThreadSummaryById: {},
-  threadsHydrated: false,
+  threadsHydrated: true,
   threadIds: [],
   threadShellById: {},
   threadSessionById: {},
