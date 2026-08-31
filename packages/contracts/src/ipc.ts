@@ -280,6 +280,8 @@ import type {
   ProviderListSkillsResult,
   ProviderSkillsCatalogInput,
   ProviderSkillsCatalogResult,
+  ProviderCreateCustomSkillInput,
+  ProviderCreateCustomSkillResult,
   ProviderReadPluginInput,
   ProviderReadPluginResult,
 } from "./providerDiscovery";
@@ -750,6 +752,9 @@ export interface NativeApi {
     listCommands: (input: ProviderListCommandsInput) => Promise<ProviderListCommandsResult>;
     listSkills: (input: ProviderListSkillsInput) => Promise<ProviderListSkillsResult>;
     listSkillsCatalog: (input: ProviderSkillsCatalogInput) => Promise<ProviderSkillsCatalogResult>;
+    createCustomSkill: (
+      input: ProviderCreateCustomSkillInput,
+    ) => Promise<ProviderCreateCustomSkillResult>;
     listPlugins: (input: ProviderListPluginsInput) => Promise<ProviderListPluginsResult>;
     readPlugin: (input: ProviderReadPluginInput) => Promise<ProviderReadPluginResult>;
     listModels: (input: ProviderListModelsInput) => Promise<ProviderListModelsResult>;

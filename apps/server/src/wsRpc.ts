@@ -2311,6 +2311,11 @@ const makeWsRpcHandlersLayer = () =>
             providerDiscoveryService.listSkillsCatalog(input),
             "Failed to list the skills catalog",
           ),
+        [WS_METHODS.providerCreateCustomSkill]: (input) =>
+          rpcEffect(
+            providerDiscoveryService.createCustomSkill(input),
+            "Failed to create custom skill",
+          ),
         [WS_METHODS.providerListPlugins]: (input) =>
           rpcEffect(providerDiscoveryService.listPlugins(input), "Failed to list plugins"),
         [WS_METHODS.providerReadPlugin]: (input) =>

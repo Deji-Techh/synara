@@ -1,3 +1,6 @@
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import { Effect, Layer, Option, ServiceMap, Stream } from "effect";
 
 export class AutomationService extends ServiceMap.Service<AutomationService, any>()(
@@ -286,13 +289,147 @@ export class ProviderAdapterRegistry extends ServiceMap.Service<ProviderAdapterR
   } as any);
 }
 
+function getCaideSkillsDir(): string {
+  const home = os.homedir();
+  return path.join(home, ".caide", "skills");
+}
+
+function parseSkillMarkdown(fallbackName: string, filePath: string, raw: string): any {
+  let name = fallbackName;
+  let description = "";
+  let displayName = formatModelName(fallbackName);
+  let shortDescription = "";
+
+  const fmMatch = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (fmMatch) {
+    const lines = fmMatch[1].split(/\r?\n/);
+    for (const line of lines) {
+      const kv = line.match(/^([a-zA-Z0-9_-]+):\s*(.*)$/);
+      if (kv) {
+        const key = kv[1].trim().toLowerCase();
+        let val = kv[2].trim();
+        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+          val = val.slice(1, -1);
+        }
+        if (key === "name") name = val;
+        else if (key === "description") description = val;
+        else if (key === "displayname" || key === "display_name") displayName = val;
+        else if (key === "shortdescription" || key === "short_description") shortDescription = val;
+      }
+    }
+  }
+
+  if (!description) {
+    const body = raw.replace(/^---\r?\n[\s\S]*?\r?\n---/, "").trim();
+    const lines = body.split(/\r?\n/).filter((l) => l.trim() && !l.startsWith("#"));
+    description = lines[0]?.slice(0, 140) ?? "";
+  }
+
+  return {
+    name,
+    description: description || `Custom skill: ${displayName}`,
+    path: filePath,
+    enabled: true,
+    scope: "custom",
+    interface: {
+      displayName: displayName || name,
+      shortDescription: shortDescription || description.slice(0, 80),
+    },
+  };
+}
+
+function loadCustomSkills(): any[] {
+  const skillsDir = getCaideSkillsDir();
+  try {
+    if (!fs.existsSync(skillsDir)) {
+      fs.mkdirSync(skillsDir, { recursive: true });
+      return [];
+    }
+    const entries = fs.readdirSync(skillsDir, { withFileTypes: true });
+    const customSkills: any[] = [];
+    for (const entry of entries) {
+      try {
+        if (entry.isDirectory()) {
+          const skillFilePath = path.join(skillsDir, entry.name, "SKILL.md");
+          const fallbackPath = path.join(skillsDir, entry.name, "skill.md");
+          const target = fs.existsSync(skillFilePath)
+            ? skillFilePath
+            : fs.existsSync(fallbackPath)
+              ? fallbackPath
+              : null;
+          if (target) {
+            const content = fs.readFileSync(target, "utf-8");
+            customSkills.push(parseSkillMarkdown(entry.name, target, content));
+          }
+        } else if (entry.isFile() && entry.name.endsWith(".md")) {
+          const name = entry.name.replace(/\.md$/, "");
+          const target = path.join(skillsDir, entry.name);
+          const content = fs.readFileSync(target, "utf-8");
+          customSkills.push(parseSkillMarkdown(name, target, content));
+        }
+      } catch (e) {
+        console.warn(`[harness] Failed to load custom skill ${entry.name}:`, e);
+      }
+    }
+    return customSkills;
+  } catch (err) {
+    console.warn("[harness] Failed to scan ~/.caide/skills:", err);
+    return [];
+  }
+}
+
+function saveCustomSkill(input: {
+  name: string;
+  displayName?: string;
+  description?: string;
+  content: string;
+}): any {
+  const skillsDir = getCaideSkillsDir();
+  const slug = input.name.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-");
+  const skillFolder = path.join(skillsDir, slug);
+  fs.mkdirSync(skillFolder, { recursive: true });
+  const skillFilePath = path.join(skillFolder, "SKILL.md");
+
+  const displayName = input.displayName?.trim() || formatModelName(slug);
+  const description = input.description?.trim() || "";
+
+  let finalContent = input.content.trim();
+  if (!finalContent.startsWith("---")) {
+    finalContent = [
+      "---",
+      `name: ${slug}`,
+      `displayName: "${displayName}"`,
+      description ? `description: "${description}"` : null,
+      "---",
+      "",
+      finalContent,
+    ]
+      .filter((x) => x !== null)
+      .join("\n");
+  }
+
+  fs.writeFileSync(skillFilePath, finalContent, "utf-8");
+
+  return {
+    name: slug,
+    description: description || `Custom skill: ${displayName}`,
+    path: skillFilePath,
+    enabled: true,
+    scope: "custom",
+    interface: {
+      displayName,
+      shortDescription: description.slice(0, 80),
+    },
+  };
+}
+
 const HARNESS_SKILLS = [
   {
     name: "ui-ux-mastery",
     description: "Product archetypes, design system, component contracts, a11y, anti-slop, and motion direction",
     path: "harness/skills/ui-ux-mastery.md",
     enabled: true,
-    scope: "caide",
+    scope: "system",
     interface: {
       displayName: "UI/UX Mastery",
       shortDescription: "Design tokens, styling, tap targets, empty/loading/error states",
@@ -303,7 +440,7 @@ const HARNESS_SKILLS = [
     description: "Spring physics, timing curves, gesture choreography, and haptics",
     path: "harness/skills/motion-interaction.md",
     enabled: true,
-    scope: "caide",
+    scope: "system",
     interface: {
       displayName: "Motion & Interaction",
       shortDescription: "Platform springs, 220ms transitions, reduced-motion fallbacks",
@@ -314,7 +451,7 @@ const HARNESS_SKILLS = [
     description: "spec.md construction, user flows, and state machine validation",
     path: "harness/skills/product-flow.md",
     enabled: true,
-    scope: "caide",
+    scope: "system",
     interface: {
       displayName: "Product Flow & Spec",
       shortDescription: "Spec gate, flow definitions, core slices",
@@ -325,7 +462,7 @@ const HARNESS_SKILLS = [
     description: "Prevents generic AI templates, gradient abuse, and placeholder text",
     path: "harness/skills/anti-ai-slop.md",
     enabled: true,
-    scope: "caide",
+    scope: "system",
     interface: {
       displayName: "Anti-AI Slop",
       shortDescription: "Clean, intentional styling without AI stereotypes",
@@ -336,7 +473,7 @@ const HARNESS_SKILLS = [
     description: "Security, schema validation, data model correctness, and API contracts",
     path: "harness/skills/backend-production.md",
     enabled: true,
-    scope: "caide",
+    scope: "system",
     interface: {
       displayName: "Backend Production",
       shortDescription: "Secure storage, error handling, strict types",
@@ -347,7 +484,7 @@ const HARNESS_SKILLS = [
     description: "iOS SF Symbols, Android Material, and cross-platform native patterns",
     path: "harness/skills/platform-patterns.md",
     enabled: true,
-    scope: "caide",
+    scope: "system",
     interface: {
       displayName: "Platform Patterns",
       shortDescription: "Native platform conventions for React Native, Flutter, Web",
@@ -696,8 +833,22 @@ export class ProviderDiscoveryService extends ServiceMap.Service<ProviderDiscove
 ) {
   static readonly layer = Layer.succeed(this, {
     discover: () => Effect.succeed([]),
-    listSkills: () => Effect.succeed({ skills: HARNESS_SKILLS, source: "caide-harness", cached: true }),
-    listSkillsCatalog: () => Effect.succeed({ skills: HARNESS_SKILLS, caideSkillsDir: "~/.caide/skills" }),
+    listSkills: () =>
+      Effect.sync(() => ({
+        skills: [...HARNESS_SKILLS, ...loadCustomSkills()],
+        source: "caide-harness",
+        cached: false,
+      })),
+    listSkillsCatalog: () =>
+      Effect.sync(() => ({
+        skills: [...HARNESS_SKILLS, ...loadCustomSkills()],
+        caideSkillsDir: getCaideSkillsDir(),
+      })),
+    createCustomSkill: (input: any) =>
+      Effect.try({
+        try: () => ({ skill: saveCustomSkill(input) }),
+        catch: (err) => new Error(String(err)),
+      }),
     listCommands: () => Effect.succeed({ commands: [], source: "empty", cached: true }),
     listModels: (input?: { provider?: string }) => {
       const provider = input?.provider ?? "opencodeZen";
@@ -735,7 +886,7 @@ export class ProviderDiscoveryService extends ServiceMap.Service<ProviderDiscove
         provider: input?.provider ?? "opencodeZen",
         supportsSkillMentions: true,
         supportsSkillDiscovery: true,
-        supportsNativeSlashCommandDiscovery: false,
+        supportsNativeSlashCommandDiscovery: true,
         supportsPluginMentions: false,
         supportsPluginDiscovery: false,
         supportsRuntimeModelList: true,
@@ -806,7 +957,12 @@ export class ProviderHealth extends ServiceMap.Service<ProviderHealth, any>()(
   static readonly layer = Layer.succeed(this, {
     checkHealth: () => Effect.succeed({}),
     getStatuses: Effect.succeed(DEFAULT_PROVIDER_STATUSES),
-    refresh: Effect.succeed(DEFAULT_PROVIDER_STATUSES),
+    refresh: Effect.sync(() => {
+      for (const k in OPENCODE_MODELS_CACHE) {
+        delete OPENCODE_MODELS_CACHE[k];
+      }
+      return DEFAULT_PROVIDER_STATUSES;
+    }),
     updateProvider: () => Effect.succeed({ providers: DEFAULT_PROVIDER_STATUSES }),
     streamChanges: Stream.never,
   } as any);

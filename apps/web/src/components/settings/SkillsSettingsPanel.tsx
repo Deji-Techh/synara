@@ -1,16 +1,17 @@
 // FILE: SkillsSettingsPanel.tsx
 // Purpose: Settings → Skills panel. Lists every skill from the unified cross-provider
-// catalog (~/.caide/skills plus each provider's skills folder), shows which provider
-// a skill comes from, and lets the user enable/disable each one. Disabled skills are
-// hidden from the composer skill picker on every provider.
+// catalog (~/.caide/skills plus system harness skills), allows adding custom skills,
+// and manages toggles (system skills are always active, custom skills can be toggled).
 
+import { useState } from "react";
 import type { ProviderKind, ServerSettings } from "@caide/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ProviderIcon } from "~/components/ProviderIcon";
 import { SettingsRow, SettingsSection } from "~/components/settings/SettingsPanelPrimitives";
 import { Switch } from "~/components/ui/switch";
-import { SkillCubeIcon } from "~/lib/icons";
+import { Button } from "~/components/ui/button";
+import { PlusIcon, SkillCubeIcon } from "~/lib/icons";
 import { ensureNativeApi } from "~/nativeApi";
 import {
   providerDiscoveryQueryKeys,
@@ -23,6 +24,7 @@ import {
   providerDisplayName,
   settingsSkillNameKey,
 } from "./skillsSettingsModel";
+import { AddSkillDialog } from "./AddSkillDialog";
 
 function SkillProviderStack({ providers }: { providers: ReadonlyArray<ProviderKind> }) {
   if (providers.length === 0) {
@@ -53,6 +55,7 @@ export function SkillsSettingsPanel() {
   const queryClient = useQueryClient();
   const catalogQuery = useQuery(skillsCatalogQueryOptions());
   const serverSettingsQuery = useQuery(serverSettingsQueryOptions());
+  const [isAddSkillOpen, setIsAddSkillOpen] = useState(false);
 
   const disabledSkillNames = new Set(
     (serverSettingsQuery.data?.skills.disabled ?? []).map((name) => settingsSkillNameKey(name)),
@@ -61,9 +64,13 @@ export function SkillsSettingsPanel() {
   const skillGroups = buildSettingsSkillGroups(catalogQuery.data?.skills ?? []);
   const skillSections = buildSettingsSkillSections(catalogQuery.data?.skills ?? []);
 
+  const isSystemGroup = (group: (typeof skillGroups)[number]) =>
+    group.sources.some((s) => s.origin === "system" || s.origin === "caide");
+
+  const customSkillGroups = skillGroups.filter((group) => !isSystemGroup(group));
+  const systemSkillGroups = skillGroups.filter((group) => isSystemGroup(group));
+
   const setSkillEnabled = (skillName: string, enabled: boolean) => {
-    // Read through the query cache (not the render closure) so rapid toggles
-    // build on each other instead of clobbering the previous patch.
     const latestSettings = queryClient.getQueryData<ServerSettings>(serverQueryKeys.settings());
     const currentDisabled = latestSettings?.skills.disabled ?? [...disabledSkillNames];
     const key = settingsSkillNameKey(skillName);
@@ -75,7 +82,6 @@ export function SkillsSettingsPanel() {
     }
     const disabled = [...next].sort();
     if (latestSettings) {
-      // Optimistic flip; a failed patch invalidates back to the server state.
       queryClient.setQueryData(serverQueryKeys.settings(), {
         ...latestSettings,
         skills: { disabled },
@@ -85,7 +91,6 @@ export function SkillsSettingsPanel() {
       .server.updateSettings({ skills: { disabled } })
       .then((nextSettings) => {
         queryClient.setQueryData(serverQueryKeys.settings(), nextSettings);
-        // Composer skill pickers are served filtered by these toggles.
         void queryClient.invalidateQueries({ queryKey: providerDiscoveryQueryKeys.all });
       })
       .catch(() => {
@@ -93,20 +98,22 @@ export function SkillsSettingsPanel() {
       });
   };
 
-  const setAllSkillsEnabled = (enabled: boolean) => {
+  const setAllCustomSkillsEnabled = (enabled: boolean) => {
     const latestSettings = queryClient.getQueryData<ServerSettings>(serverQueryKeys.settings());
     const next = new Set(
       (latestSettings?.skills.disabled ?? [...disabledSkillNames]).map((name) =>
         settingsSkillNameKey(name),
       ),
     );
-    const allSkillNames = skillGroups.map((group) => settingsSkillNameKey(group.primarySkill.name));
+    const customNames = customSkillGroups.map((group) =>
+      settingsSkillNameKey(group.primarySkill.name),
+    );
     if (enabled) {
-      for (const key of allSkillNames) {
+      for (const key of customNames) {
         next.delete(key);
       }
     } else {
-      for (const key of allSkillNames) {
+      for (const key of customNames) {
         next.add(key);
       }
     }
@@ -129,28 +136,49 @@ export function SkillsSettingsPanel() {
   };
 
   const totalSkills = skillGroups.length;
-  const enabledSkills = skillGroups.filter((group) => !disabledSkillNames.has(group.key)).length;
-  const allSkillsDisabled = totalSkills > 0 && enabledSkills === 0;
+  const totalCustomSkills = customSkillGroups.length;
+  const enabledCustomSkills = customSkillGroups.filter(
+    (group) => !disabledSkillNames.has(group.key),
+  ).length;
+  const allCustomSkillsDisabled = totalCustomSkills > 0 && enabledCustomSkills === 0;
   const caideSkillsDir = catalogQuery.data?.caideSkillsDir;
 
   return (
     <div className="space-y-8">
-      <SettingsSection title="Portable skills">
+      <SettingsSection
+        title="Portable skills"
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1.5 px-2.5 text-xs"
+            onClick={() => setIsAddSkillOpen(true)}
+          >
+            <PlusIcon className="size-3.5" />
+            <span>Add skill</span>
+          </Button>
+        }
+      >
         <SettingsRow
-          title="Disable all skills"
-          description="Turn every skill off at once across all providers. Skills stay installed; flip this back on to re-enable them all."
+          title="Disable all custom skills"
+          description="Turn every custom skill off at once. Built-in system skills are always active."
           status={
             <span className="text-xs font-medium text-muted-foreground">
               {catalogQuery.isLoading
                 ? "Scanning…"
-                : `${enabledSkills} of ${totalSkills} skill${totalSkills === 1 ? "" : "s"} enabled`}
+                : totalCustomSkills === 0
+                  ? `${systemSkillGroups.length} system skills active`
+                  : `${enabledCustomSkills} of ${totalCustomSkills} custom skill${totalCustomSkills === 1 ? "" : "s"} enabled`}
             </span>
           }
           control={
             <Switch
-              checked={allSkillsDisabled}
-              onCheckedChange={(checked) => setAllSkillsEnabled(!Boolean(checked))}
-              aria-label={allSkillsDisabled ? "Enable all skills" : "Disable all skills"}
+              checked={allCustomSkillsDisabled}
+              disabled={totalCustomSkills === 0}
+              onCheckedChange={(checked) => setAllCustomSkillsEnabled(!Boolean(checked))}
+              aria-label={
+                allCustomSkillsDisabled ? "Enable all custom skills" : "Disable all custom skills"
+              }
             />
           }
         />
@@ -178,7 +206,7 @@ export function SkillsSettingsPanel() {
         <SettingsSection title="Skills">
           <SettingsRow
             title="No skills found"
-            description="Add a skill folder containing a SKILL.md to the Caide skills folder above, or install skills for any supported provider."
+            description="Click 'Add skill' above to create custom skills, or place markdown skill folders into ~/.caide/skills."
           />
         </SettingsSection>
       ) : null}
@@ -187,7 +215,8 @@ export function SkillsSettingsPanel() {
         return (
           <SettingsSection key={section.key} title={section.title}>
             {section.groups.map((group) => {
-              const enabled = !disabledSkillNames.has(group.key);
+              const isSystem = isSystemGroup(group);
+              const enabled = isSystem ? true : !disabledSkillNames.has(group.key);
               return (
                 <SettingsRow
                   key={group.key}
@@ -198,6 +227,11 @@ export function SkillsSettingsPanel() {
                         className="size-3.5 shrink-0 text-muted-foreground"
                       />
                       <span className="truncate">{group.displayName}</span>
+                      {isSystem ? (
+                        <span className="rounded bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                          System
+                        </span>
+                      ) : null}
                     </span>
                   }
                   description={group.description}
@@ -222,10 +256,15 @@ export function SkillsSettingsPanel() {
                   control={
                     <Switch
                       checked={enabled}
+                      disabled={isSystem}
                       onCheckedChange={(checked) =>
                         setSkillEnabled(group.primarySkill.name, Boolean(checked))
                       }
-                      aria-label={`Enable the ${group.displayName} skill`}
+                      aria-label={
+                        isSystem
+                          ? `${group.displayName} is a system skill and is always enabled`
+                          : `Enable the ${group.displayName} skill`
+                      }
                     />
                   }
                 />
@@ -234,6 +273,14 @@ export function SkillsSettingsPanel() {
           </SettingsSection>
         );
       })}
+
+      <AddSkillDialog
+        open={isAddSkillOpen}
+        onOpenChange={setIsAddSkillOpen}
+        onCreated={() => {
+          void queryClient.invalidateQueries({ queryKey: providerDiscoveryQueryKeys.all });
+        }}
+      />
     </div>
   );
 }

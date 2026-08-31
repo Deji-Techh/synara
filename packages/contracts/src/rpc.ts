@@ -191,6 +191,8 @@ import {
   ProviderListSkillsResult,
   ProviderSkillsCatalogInput,
   ProviderSkillsCatalogResult,
+  ProviderCreateCustomSkillInput,
+  ProviderCreateCustomSkillResult,
   ProviderReadPluginInput,
   ProviderReadPluginResult,
 } from "./providerDiscovery";
@@ -1292,6 +1294,12 @@ export const WsProviderListSkillsCatalogRpc = Rpc.make(WS_METHODS.providerListSk
   error: WsRpcError,
 });
 
+export const WsProviderCreateCustomSkillRpc = Rpc.make(WS_METHODS.providerCreateCustomSkill, {
+  payload: ProviderCreateCustomSkillInput,
+  success: ProviderCreateCustomSkillResult,
+  error: WsRpcError,
+});
+
 export const WsProviderListPluginsRpc = Rpc.make(WS_METHODS.providerListPlugins, {
   payload: ProviderListPluginsInput,
   success: ProviderListPluginsResult,
@@ -1491,6 +1499,7 @@ export const WsFeatureRpcGroup = RpcGroup.make(
   WsProviderListCommandsRpc,
   WsProviderListSkillsRpc,
   WsProviderListSkillsCatalogRpc,
+  WsProviderCreateCustomSkillRpc,
   WsProviderListPluginsRpc,
   WsProviderReadPluginRpc,
   WsProviderListModelsRpc,

@@ -1053,7 +1053,7 @@ export function useComposerSlashCommands(input: {
             });
         } else {
           const buildArgs = parseBuildSlashCommandArgs(slashInvocation.args);
-          if (buildArgs.invalid || buildArgs.target === null || buildArgs.channel === null) {
+          if (!buildArgs || buildArgs.invalid || buildArgs.target === null || buildArgs.channel === null) {
             toastManager.add({
               type: "warning",
               title: "Invalid /build command",
@@ -1478,7 +1478,7 @@ export function useComposerSlashCommands(input: {
             });
         } else {
           const buildArgs = parseBuildSlashCommandArgs("");
-          if (buildArgs.invalid || buildArgs.target === null || buildArgs.channel === null) {
+          if (!buildArgs || buildArgs.invalid || buildArgs.target === null || buildArgs.channel === null) {
             return;
           }
           const buildTarget = buildArgs.target;

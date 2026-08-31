@@ -85,6 +85,19 @@ export const ProviderSkillsCatalogResult = Schema.Struct({
 });
 export type ProviderSkillsCatalogResult = typeof ProviderSkillsCatalogResult.Type;
 
+export const ProviderCreateCustomSkillInput = Schema.Struct({
+  name: TrimmedNonEmptyString,
+  displayName: Schema.optional(TrimmedNonEmptyString),
+  description: Schema.optional(TrimmedNonEmptyString),
+  content: TrimmedNonEmptyString,
+});
+export type ProviderCreateCustomSkillInput = typeof ProviderCreateCustomSkillInput.Type;
+
+export const ProviderCreateCustomSkillResult = Schema.Struct({
+  skill: ProviderSkillDescriptor,
+});
+export type ProviderCreateCustomSkillResult = typeof ProviderCreateCustomSkillResult.Type;
+
 export const ProviderNativeCommandDescriptor = Schema.Struct({
   name: TrimmedNonEmptyString,
   description: Schema.optional(TrimmedNonEmptyString),

@@ -59,8 +59,12 @@ export const ORIGIN_SECTION_ORDER = [
 
 export function skillOriginInfo(scope: string | undefined): SkillOriginInfo {
   switch (scope) {
+    case "system":
     case "caide":
-      return { label: "Caide", provider: null };
+      return { label: "System skills", provider: null };
+    case "custom":
+    case "personal":
+      return { label: "Custom skills", provider: null };
     case "engine":
     case "openai":
     case "anthropic":
@@ -82,7 +86,7 @@ export function skillOriginInfo(scope: string | undefined): SkillOriginInfo {
     case "project":
       return { label: "Project", provider: null };
     default:
-      return { label: scope ?? "Personal", provider: null };
+      return { label: scope ?? "Custom skills", provider: null };
   }
 }
 
@@ -119,6 +123,12 @@ function sourceSortKey(source: SettingsSkillSource): string {
 }
 
 function sectionTitle(section: string): string {
+  if (section === "system" || section === "caide") {
+    return "System skills";
+  }
+  if (section === "custom" || section === "personal") {
+    return "Custom skills";
+  }
   if (section === SHARED_SKILLS_SECTION) {
     return "Shared skills";
   }
@@ -126,10 +136,16 @@ function sectionTitle(section: string): string {
 }
 
 function sectionRank(section: string): number {
-  if (section === SHARED_SKILLS_SECTION) {
+  if (section === "system" || section === "caide") {
+    return -2;
+  }
+  if (section === "custom" || section === "personal") {
     return -1;
   }
-  return originRank(section);
+  if (section === SHARED_SKILLS_SECTION) {
+    return 0;
+  }
+  return originRank(section) + 1;
 }
 
 // Creates one canonical row per normalized skill name. Duplicate provider copies

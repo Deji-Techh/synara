@@ -23,9 +23,13 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { type MouseEvent, type ReactNode, useCallback, useMemo, useState } from "react";
 
+import { useQueryClient } from "@tanstack/react-query";
+import { ensureNativeApi } from "~/nativeApi";
+import { providerDiscoveryQueryKeys } from "~/lib/providerDiscoveryReactQuery";
+import { toastManager } from "~/components/ui/toast";
 import type { AppSettings, AppSettingsBinding } from "~/appSettings";
 import { CentralIcon } from "~/lib/central-icons";
-import { ExternalLinkIcon } from "~/lib/icons";
+import { ExternalLinkIcon, RefreshCwIcon } from "~/lib/icons";
 import { cn } from "~/lib/utils";
 import { sameProviderOrder } from "~/providerOrdering";
 import {
@@ -467,6 +471,31 @@ export function ProvidersSettingsPanel({
     setOpenInstallProviders(createClosedProviderInstallDisclosureState());
   });
 
+  const queryClient = useQueryClient();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefreshModels = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const api = ensureNativeApi();
+      await api.server.refreshProviders();
+      await queryClient.invalidateQueries({ queryKey: providerDiscoveryQueryKeys.all });
+      toastManager.add({
+        type: "success",
+        title: "Models refreshed",
+        description: "Successfully fetched live models from OpenCode Zen and OpenCode Go endpoints.",
+      });
+    } catch (err) {
+      toastManager.add({
+        type: "error",
+        title: "Failed to refresh models",
+        description: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [queryClient]);
+
   const handleProviderOrderDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
@@ -482,7 +511,21 @@ export function ProvidersSettingsPanel({
 
   return (
     <div className="space-y-6">
-      <SettingsSection title="Provider picker">
+      <SettingsSection
+        title="Provider picker"
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1.5 px-2.5 text-xs"
+            onClick={handleRefreshModels}
+            disabled={isRefreshing}
+          >
+            <RefreshCwIcon className={cn("size-3.5", isRefreshing && "animate-spin")} />
+            <span>{isRefreshing ? "Refreshing..." : "Refresh models"}</span>
+          </Button>
+        }
+      >
         <SettingsRow
           title="Visible providers"
           description="Drag providers into your preferred picker order and hide the ones you don't use. The provider you're currently using on a thread always stays visible."
