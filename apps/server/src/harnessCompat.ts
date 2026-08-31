@@ -42,12 +42,188 @@ export function makeImportThreadHandler(..._args: any[]): any {
   return () => Effect.succeed({});
 }
 
+const CAIDE_APPS_DIR = path.join(process.env.HOME || "/home/DejiTech", "caide-apps");
+const PROJECTS_JSON_FILE = path.join(CAIDE_APPS_DIR, "projects.json");
+const THREADS_JSON_FILE = path.join(CAIDE_APPS_DIR, "threads.json");
+
+let globalSnapshotSequence = 1;
 const inMemoryProjects: any[] = [];
 const inMemoryThreads: any[] = [];
 
+function getProviderApiKeyDirect(providerName: string): string {
+  const home = process.env.HOME || "/home/DejiTech";
+  const secretFileNames = [
+    `provider-${providerName}-api-key.bin`,
+    `provider-${providerName.toLowerCase()}-api-key.bin`,
+  ];
+  for (const fn of secretFileNames) {
+    const secretPath = path.join(home, ".caide/userdata/secrets", fn);
+    if (fs.existsSync(secretPath)) {
+      try {
+        const key = fs.readFileSync(secretPath, "utf-8").trim();
+        if (key) return key;
+      } catch {
+        // ignore
+      }
+    }
+  }
+  return "";
+}
+
+function loadPersistedState() {
+  try {
+    if (!fs.existsSync(CAIDE_APPS_DIR)) {
+      fs.mkdirSync(CAIDE_APPS_DIR, { recursive: true });
+    }
+    if (fs.existsSync(PROJECTS_JSON_FILE)) {
+      const raw = JSON.parse(fs.readFileSync(PROJECTS_JSON_FILE, "utf-8"));
+      if (Array.isArray(raw)) {
+        for (const p of raw) {
+          if (!inMemoryProjects.some((existing) => existing.id === p.id)) {
+            inMemoryProjects.push({
+              id: p.id,
+              title: p.name || p.title || "Project",
+              name: p.name || p.title || "Project",
+              kind: p.kind || "project",
+              workspaceRoot: p.workspaceRoot || path.join(CAIDE_APPS_DIR, p.id),
+              cwd: p.workspaceRoot || path.join(CAIDE_APPS_DIR, p.id),
+              framework: p.framework || "blank",
+              scripts: p.scripts || [],
+              defaultModelSelection: p.defaultModelSelection || null,
+              isPinned: Boolean(p.isPinned),
+              spaceId: p.spaceId || null,
+              createdAt: p.createdAt || new Date().toISOString(),
+              updatedAt: p.updatedAt || new Date().toISOString(),
+              deletedAt: null,
+            });
+          }
+        }
+      }
+    }
+    if (fs.existsSync(THREADS_JSON_FILE)) {
+      const raw = JSON.parse(fs.readFileSync(THREADS_JSON_FILE, "utf-8"));
+      if (Array.isArray(raw)) {
+        for (const t of raw) {
+          if (!inMemoryThreads.some((existing) => existing.id === t.id)) {
+            inMemoryThreads.push({
+              id: t.id,
+              projectId: t.projectId || "default",
+              title: t.title || "Chat",
+              modelSelection: t.modelSelection || { provider: "opencodeZen", model: "default" },
+              runtimeMode: t.runtimeMode || "full-access",
+              interactionMode: t.interactionMode || "default",
+              envMode: t.envMode || "local",
+              branch: t.branch || null,
+              worktreePath: t.worktreePath || null,
+              workingDirectory: t.workingDirectory || null,
+              associatedWorktreePath: t.associatedWorktreePath || null,
+              associatedWorktreeBranch: t.associatedWorktreeBranch || null,
+              associatedWorktreeRef: t.associatedWorktreeRef || null,
+              createdAt: t.createdAt || new Date().toISOString(),
+              updatedAt: t.updatedAt || new Date().toISOString(),
+              lastVisitedAt: t.lastVisitedAt || new Date().toISOString(),
+              archivedAt: t.archivedAt || null,
+              turns: t.turns || [],
+              messages: t.messages || [],
+              activities: t.activities || [],
+              proposedPlans: t.proposedPlans || [],
+              turnDiffSummaries: t.turnDiffSummaries || [],
+            });
+          }
+        }
+      }
+    }
+
+    if (fs.existsSync(CAIDE_APPS_DIR)) {
+      const entries = fs.readdirSync(CAIDE_APPS_DIR, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const appName = entry.name;
+          const appPath = path.join(CAIDE_APPS_DIR, appName);
+          const existingProject = inMemoryProjects.find(
+            (p) => p.workspaceRoot === appPath || p.name === appName || p.title === appName,
+          );
+          if (!existingProject) {
+            let framework = "blank";
+            if (fs.existsSync(path.join(appPath, "pubspec.yaml"))) {
+              framework = "flutter";
+            } else if (
+              fs.existsSync(path.join(appPath, "app.json")) ||
+              fs.existsSync(path.join(appPath, "App.tsx"))
+            ) {
+              framework = "react-native";
+            } else if (fs.existsSync(path.join(appPath, "index.html"))) {
+              framework = "website";
+            }
+            const pid = `project-${appName}`;
+            const tid = `thread-${appName}`;
+            const now = new Date().toISOString();
+            inMemoryProjects.push({
+              id: pid,
+              title: appName,
+              name: appName,
+              kind: "project",
+              workspaceRoot: appPath,
+              cwd: appPath,
+              framework,
+              scripts: [],
+              defaultModelSelection: null,
+              isPinned: false,
+              spaceId: null,
+              createdAt: now,
+              updatedAt: now,
+              deletedAt: null,
+            });
+            inMemoryThreads.push({
+              id: tid,
+              projectId: pid,
+              title: appName,
+              modelSelection: { provider: "opencodeZen", model: "default" },
+              runtimeMode: "full-access",
+              interactionMode: "default",
+              envMode: "local",
+              branch: null,
+              worktreePath: null,
+              workingDirectory: null,
+              associatedWorktreePath: null,
+              associatedWorktreeBranch: null,
+              associatedWorktreeRef: null,
+              createdAt: now,
+              updatedAt: now,
+              lastVisitedAt: now,
+              archivedAt: null,
+              turns: [],
+              messages: [],
+              activities: [],
+              proposedPlans: [],
+              turnDiffSummaries: [],
+            });
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[harnessCompat] Failed to load persisted state", err);
+  }
+}
+
+function savePersistedState() {
+  try {
+    if (!fs.existsSync(CAIDE_APPS_DIR)) {
+      fs.mkdirSync(CAIDE_APPS_DIR, { recursive: true });
+    }
+    fs.writeFileSync(PROJECTS_JSON_FILE, JSON.stringify(inMemoryProjects, null, 2), "utf-8");
+    fs.writeFileSync(THREADS_JSON_FILE, JSON.stringify(inMemoryThreads, null, 2), "utf-8");
+  } catch (err) {
+    console.error("[harnessCompat] Failed to save persisted state", err);
+  }
+}
+
+loadPersistedState();
+
 // Returns schema-valid empty read model (snapshotSequence + updatedAt required by contracts)
 const emptyReadModel = () => ({
-  snapshotSequence: 0,
+  snapshotSequence: globalSnapshotSequence,
   spaces: [],
   projects: inMemoryProjects,
   threads: inMemoryThreads,
@@ -56,7 +232,7 @@ const emptyReadModel = () => ({
 
 // Returns schema-valid empty shell snapshot (same required fields)
 const emptyShellSnapshot = () => ({
-  snapshotSequence: 0,
+  snapshotSequence: globalSnapshotSequence,
   spaces: [],
   projects: inMemoryProjects,
   threads: inMemoryThreads,
@@ -68,24 +244,48 @@ const emptyThreadDetailSnapshot = (threadId: string) => {
   const existing = inMemoryThreads.find((t) => t.id === threadId);
   const now = new Date().toISOString();
   return {
-    snapshotSequence: 0,
+    snapshotSequence: globalSnapshotSequence,
     thread: {
       id: threadId,
       projectId: existing?.projectId ?? "default",
       title: existing?.title ?? "New Chat",
-      modelSelection: existing?.modelSelection ?? { provider: "opencode", model: "default" },
+      modelSelection: existing?.modelSelection ?? { provider: "opencodeZen", model: "default" },
       runtimeMode: existing?.runtimeMode ?? "full-access",
       interactionMode: existing?.interactionMode ?? "default",
+      envMode: existing?.envMode ?? "local",
       branch: existing?.branch ?? null,
       worktreePath: existing?.worktreePath ?? null,
       workingDirectory: existing?.workingDirectory ?? null,
       associatedWorktreePath: existing?.associatedWorktreePath ?? null,
       associatedWorktreeBranch: existing?.associatedWorktreeBranch ?? null,
       associatedWorktreeRef: existing?.associatedWorktreeRef ?? null,
+      createBranchFlowCompleted: false,
+      isPinned: false,
+      parentThreadId: null,
+      creationSource: null,
+      sourceThreadId: null,
+      sourceTurnId: null,
+      gatewayOperationId: null,
+      gatewayOperationIndex: null,
+      subagentAgentId: null,
+      subagentNickname: null,
+      subagentRole: null,
+      forkSourceThreadId: null,
+      sidechatSourceThreadId: null,
+      lastKnownPr: null,
+      latestTurn: existing?.latestTurn ?? null,
+      latestUserMessageAt: existing?.latestUserMessageAt ?? null,
+      hasPendingApprovals: false,
+      hasPendingUserInput: false,
+      hasActionableProposedPlan: false,
       createdAt: existing?.createdAt ?? now,
       updatedAt: existing?.updatedAt ?? now,
       lastVisitedAt: existing?.lastVisitedAt ?? now,
-      archivedAt: null,
+      archivedAt: existing?.archivedAt ?? null,
+      settledAt: null,
+      deletedAt: null,
+      handoff: null,
+      pinnedMessages: [],
       turns: existing?.turns ?? [],
       messages: existing?.messages ?? [],
       activities: existing?.activities ?? [],
@@ -117,11 +317,14 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               framework: command.framework ?? "blank",
               scripts: [],
               defaultModelSelection: command.defaultModelSelection ?? null,
+              isPinned: false,
+              spaceId: command.spaceId ?? null,
               createdAt: command.createdAt ?? now,
               updatedAt: command.createdAt ?? now,
-              archivedAt: null,
-              spaceId: command.spaceId ?? null,
+              deletedAt: null,
             });
+            globalSnapshotSequence += 1;
+            savePersistedState();
           }
         } else if (command?.type === "project.meta.update") {
           const existing = inMemoryProjects.find((p) => p.id === command.projectId);
@@ -132,10 +335,16 @@ export class OrchestrationEngineService extends ServiceMap.Service<
             }
             if (command.kind !== undefined) existing.kind = command.kind;
             existing.updatedAt = now;
+            globalSnapshotSequence += 1;
+            savePersistedState();
           }
         } else if (command?.type === "project.delete") {
           const index = inMemoryProjects.findIndex((p) => p.id === command.projectId);
-          if (index !== -1) inMemoryProjects.splice(index, 1);
+          if (index !== -1) {
+            inMemoryProjects.splice(index, 1);
+            globalSnapshotSequence += 1;
+            savePersistedState();
+          }
         } else if (command?.type === "thread.create") {
           const existing = inMemoryThreads.find((t) => t.id === command.threadId);
           if (!existing) {
@@ -143,9 +352,10 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               id: command.threadId,
               projectId: command.projectId,
               title: command.title ?? "New Chat",
-              modelSelection: command.modelSelection ?? { provider: "opencode", model: "default" },
+              modelSelection: command.modelSelection ?? { provider: "opencodeZen", model: "default" },
               runtimeMode: command.runtimeMode ?? "full-access",
               interactionMode: command.interactionMode ?? "default",
+              envMode: "local",
               branch: command.branch ?? null,
               worktreePath: command.worktreePath ?? null,
               workingDirectory: command.workingDirectory ?? null,
@@ -162,19 +372,190 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               proposedPlans: [],
               turnDiffSummaries: [],
             });
+            globalSnapshotSequence += 1;
+            savePersistedState();
           }
         } else if (command?.type === "thread.meta.update") {
           const existing = inMemoryThreads.find((t) => t.id === command.threadId);
           if (existing) {
             if (command.title !== undefined) existing.title = command.title;
             existing.updatedAt = now;
+            globalSnapshotSequence += 1;
+            savePersistedState();
           }
         } else if (command?.type === "thread.archive") {
           const existing = inMemoryThreads.find((t) => t.id === command.threadId);
-          if (existing) existing.archivedAt = now;
+          if (existing) {
+            existing.archivedAt = now;
+            globalSnapshotSequence += 1;
+            savePersistedState();
+          }
         } else if (command?.type === "thread.delete") {
           const index = inMemoryThreads.findIndex((t) => t.id === command.threadId);
-          if (index !== -1) inMemoryThreads.splice(index, 1);
+          if (index !== -1) {
+            inMemoryThreads.splice(index, 1);
+            globalSnapshotSequence += 1;
+            savePersistedState();
+          }
+        } else if (command?.type === "thread.turn.start") {
+          let thread = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (!thread) {
+            thread = {
+              id: command.threadId,
+              projectId: command.projectId ?? "default",
+              title: "New Chat",
+              modelSelection: command.modelSelection ?? { provider: "opencodeZen", model: "default" },
+              runtimeMode: command.runtimeMode ?? "full-access",
+              interactionMode: command.interactionMode ?? "default",
+              envMode: "local",
+              branch: null,
+              worktreePath: null,
+              workingDirectory: null,
+              associatedWorktreePath: null,
+              associatedWorktreeBranch: null,
+              associatedWorktreeRef: null,
+              createdAt: now,
+              updatedAt: now,
+              lastVisitedAt: now,
+              archivedAt: null,
+              turns: [],
+              messages: [],
+              activities: [],
+              proposedPlans: [],
+              turnDiffSummaries: [],
+            };
+            inMemoryThreads.push(thread);
+          }
+
+          const turnId = `turn-${Date.now().toString(36)}`;
+          const userMsgId = command.message?.messageId || `msg-${Date.now().toString(36)}`;
+          const userMsg = {
+            id: userMsgId,
+            role: "user",
+            text: command.message?.text || "",
+            attachments: command.message?.attachments ?? [],
+            skills: command.message?.skills ?? [],
+            mentions: command.message?.mentions ?? [],
+            dispatchMode: command.dispatchMode ?? "prompt",
+            turnId,
+            streaming: false,
+            source: "native",
+            createdAt: command.createdAt ?? now,
+            updatedAt: command.createdAt ?? now,
+          };
+          thread.messages.push(userMsg);
+
+          const turn = {
+            id: turnId,
+            status: "running",
+            userMessageId: userMsgId,
+            createdAt: now,
+            updatedAt: now,
+          };
+          thread.turns.push(turn);
+          thread.latestTurn = {
+            turnId,
+            state: "running",
+            status: "running",
+            startedAt: now,
+            completedAt: null,
+          };
+          thread.latestUserMessageAt = now;
+          thread.updatedAt = now;
+
+          if ((thread.title === "New Chat" || thread.title === "Home") && userMsg.text) {
+            thread.title = userMsg.text.slice(0, 36).trim();
+          }
+
+          const assistantMsgId = `msg-asst-${Date.now().toString(36)}`;
+          const assistantMsg = {
+            id: assistantMsgId,
+            role: "assistant",
+            text: "",
+            streaming: true,
+            turnId,
+            source: "native",
+            createdAt: now,
+            updatedAt: now,
+          };
+          thread.messages.push(assistantMsg);
+          globalSnapshotSequence += 1;
+          savePersistedState();
+
+          // Spawn background LLM streaming execution
+          void (async () => {
+            try {
+              const { streamProvider } = await import("./harness/provider/apiAdapter.ts");
+              const modelSelection = command.modelSelection || thread.modelSelection || { provider: "opencodeZen", model: "gpt-5.6-sol" };
+              const provider = modelSelection.provider || "opencodeZen";
+              const modelId = modelSelection.model && modelSelection.model !== "default" ? modelSelection.model : "gpt-5.6-sol";
+
+              let baseUrl = "https://opencode.ai/zen/v1";
+              if (provider === "opencodeGo") {
+                baseUrl = "https://opencode.ai/zen/go/v1";
+              } else if (provider === "groq") {
+                baseUrl = "https://api.groq.com/openai/v1";
+              }
+
+              let apiKey = getProviderApiKeyDirect(provider);
+              if (!apiKey && provider !== "opencodeZen") {
+                apiKey = getProviderApiKeyDirect("opencodeZen");
+              }
+              if (!apiKey) {
+                apiKey = getProviderApiKeyDirect("opencodeGo");
+              }
+
+              const chatHistory = thread.messages
+                .filter((m: any) => m.id !== assistantMsgId && m.text)
+                .map((m: any) => ({
+                  role: m.role === "assistant" ? "assistant" : "user",
+                  content: m.text,
+                }));
+
+              const stream = streamProvider({
+                modelId,
+                baseUrl,
+                apiKey: apiKey || "dummy-key",
+                messages: chatHistory,
+              });
+
+              for await (const chunk of stream) {
+                if (chunk.type === "token" && chunk.content) {
+                  assistantMsg.text += chunk.content;
+                  assistantMsg.updatedAt = new Date().toISOString();
+                  globalSnapshotSequence += 1;
+                }
+              }
+
+              assistantMsg.streaming = false;
+              turn.status = "completed";
+              thread.latestTurn = {
+                turnId,
+                state: "completed",
+                status: "completed",
+                startedAt: now,
+                completedAt: new Date().toISOString(),
+              };
+              globalSnapshotSequence += 1;
+              savePersistedState();
+            } catch (err: any) {
+              console.error("[harnessCompat] LLM turn error", err);
+              assistantMsg.streaming = false;
+              if (!assistantMsg.text) {
+                assistantMsg.text = `Error: ${err?.message || "Failed to generate response."}`;
+              }
+              turn.status = "failed";
+              thread.latestTurn = {
+                turnId,
+                state: "failed",
+                status: "failed",
+                startedAt: now,
+                completedAt: new Date().toISOString(),
+              };
+              globalSnapshotSequence += 1;
+              savePersistedState();
+            }
+          })();
         }
         return {} as any;
       }),
@@ -217,7 +598,7 @@ export class ProjectionSnapshotQuery extends ServiceMap.Service<ProjectionSnapsh
         const t = inMemoryThreads.find((entry) => entry.id === threadId);
         return t ? Option.some(t) : Option.none();
       }),
-    getSnapshotSequence: () => Effect.succeed(0),
+    getSnapshotSequence: () => Effect.succeed({ snapshotSequence: globalSnapshotSequence }),
     getCounts: () =>
       Effect.sync(() => ({
         spaces: 0,
@@ -260,6 +641,18 @@ const emptyProfileStats = (utcOffsetMinutes = 0) => ({
     heatmapMetric: "prompts" as const,
     heatmap: [],
   },
+  summary: {
+    tokensPerDayAvg: 0,
+    peakDayTokens: null,
+    totalTokensFormatted: "0",
+    topModel: null,
+    topProvider: null,
+  },
+  lifetimeTotalTokens: 0,
+  peakDayTokens: null,
+  peakDay: null,
+  providers: [],
+  unavailableProviders: [],
   activeHours: {
     startHour: null,
     endHour: null,
@@ -338,27 +731,7 @@ export class ProviderAdapterRegistry extends ServiceMap.Service<ProviderAdapterR
             const framework = input.framework ?? "blank";
             const config = getFrameworkConfig(framework);
             await config.scaffold(appPath, input.name);
-            const projectId = crypto.randomUUID();
-            const threadId = crypto.randomUUID();
-            const now = new Date().toISOString();
-            inMemoryProjects.push({
-              id: projectId,
-              name: input.name,
-              workspaceRoot: appPath,
-              framework,
-              createdAt: now,
-              updatedAt: now,
-            });
-            inMemoryThreads.push({
-              id: threadId,
-              projectId,
-              title: input.name,
-              createdAt: now,
-              updatedAt: now,
-            });
             return {
-              projectId,
-              threadId,
               appId: 1,
               chatId: 1,
               appPath,
@@ -378,7 +751,7 @@ export class ProviderAdapterRegistry extends ServiceMap.Service<ProviderAdapterR
           edit: () => Effect.succeed(undefined),
           steer: () => Effect.succeed(undefined),
           retry: () => Effect.succeed(undefined),
-          verify: () => Effect.succeed({}),
+          verify: () => Effect.succeed(undefined),
         },
         subagents: {
           getActive: () => Effect.succeed([]),

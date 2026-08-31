@@ -302,13 +302,21 @@ export const editorIconRouteLayer = HttpRouter.add(
       }),
     );
     if (!icon) {
-      return HttpServerResponse.text("Not Found", { status: 404 });
+      return HttpServerResponse.text('<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>', {
+        status: 200,
+        contentType: "image/svg+xml",
+        headers: { "Cache-Control": "private, max-age=3600" },
+      });
     }
 
     const fileSystem = yield* FileSystem.FileSystem;
     const bytes = yield* fileSystem.readFile(icon.path).pipe(Effect.catch(() => Effect.succeed(null)));
     if (!bytes) {
-      return HttpServerResponse.text("Not Found", { status: 404 });
+      return HttpServerResponse.text('<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>', {
+        status: 200,
+        contentType: "image/svg+xml",
+        headers: { "Cache-Control": "private, max-age=3600" },
+      });
     }
 
     return HttpServerResponse.uint8Array(bytes, {

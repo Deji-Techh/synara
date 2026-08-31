@@ -45,6 +45,9 @@ import {
   type FavoriteModelProvider,
 } from "../../lib/modelFavorites";
 import { Skeleton } from "../ui/skeleton";
+import { useQueryClient } from "@tanstack/react-query";
+import { providerDiscoveryQueryKeys } from "~/lib/providerDiscoveryReactQuery";
+import { RefreshCwIcon } from "~/lib/icons";
 
 function isAvailableProviderOption(option: (typeof PROVIDER_OPTIONS)[number]): option is {
   value: ProviderKind;
@@ -191,7 +194,20 @@ export const ProviderModelMenuItems = function ProviderModelMenuItems(
   props: ProviderModelMenuItemsProps,
 ) {
   const { onAfterSelection } = props;
+  const queryClient = useQueryClient();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [modelSearchQuery, setModelSearchQuery] = useState("");
+
+  const handleRefreshModels = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsRefreshing(true);
+    try {
+      await queryClient.invalidateQueries({ queryKey: providerDiscoveryQueryKeys.all });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
   const [engineFavoriteModelSlugs, setEngineFavoriteModelSlugs] = useLocalStorage(
     FAVORITE_MODEL_STORAGE_KEYS.engine,
     EMPTY_FAVORITE_MODEL_SLUGS,
@@ -385,6 +401,20 @@ export const ProviderModelMenuItems = function ProviderModelMenuItems(
 
   return (
     <>
+      <div className="flex items-center justify-between px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+        <span>Providers</span>
+        <button
+          type="button"
+          onClick={handleRefreshModels}
+          disabled={isRefreshing}
+          className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          title="Refresh models from provider APIs"
+        >
+          <RefreshCwIcon className={cn("size-3", isRefreshing && "animate-spin")} />
+          <span>{isRefreshing ? "Refreshing…" : "Refresh"}</span>
+        </button>
+      </div>
+      <MenuSeparator />
       {visibleAvailableProviderOptions.map((option) => {
         const OptionIcon = PROVIDER_ICON_COMPONENT_BY_PROVIDER[option.value];
         const liveProvider = props.providers?.find((entry) => entry.provider === option.value);
