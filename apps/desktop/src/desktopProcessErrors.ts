@@ -7,5 +7,6 @@ export function isBrokenPipeError(error: unknown): boolean {
     return false;
   }
 
-  return (error as NodeJS.ErrnoException).code === "EPIPE";
+  const code = (error as NodeJS.ErrnoException).code;
+  return code === "EPIPE" || code === "ECONNRESET";
 }
