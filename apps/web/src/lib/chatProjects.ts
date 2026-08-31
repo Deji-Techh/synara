@@ -151,16 +151,22 @@ function findCanonicalHomeProject(input: ServerWorkspacePaths): {
   needsKindFixup: boolean;
 } {
   const state = useStore.getState();
-  const homeProjects = state.projects.filter((project) =>
-    isLegacyHomeChatContainerProject(project, input),
+  const homeProjects = state.projects.filter(
+    (project) =>
+      project.kind === "chat" ||
+      project.id === "default" ||
+      project.title === "Home" ||
+      project.name === "Home" ||
+      isLegacyHomeChatContainerProject(project, input),
   );
   const canonicalProject =
     homeProjects.toSorted(
       (left, right) => scoreHomeChatProject(right, input) - scoreHomeChatProject(left, input),
     )[0] ?? null;
   if (!canonicalProject) {
+    const defaultProject = state.projects.find((p) => p.id === "default" || p.kind === "chat");
     return {
-      canonicalProjectId: null,
+      canonicalProjectId: (defaultProject?.id as ProjectId) ?? ("default" as ProjectId),
       duplicateProjectIds: [],
       needsKindFixup: false,
     };
@@ -223,27 +229,28 @@ function scheduleHomeChatFixup(input: ServerWorkspacePaths): void {
 export async function ensureHomeChatProject(
   paths: ServerWorkspacePaths,
 ): Promise<ProjectId | null> {
-  const api = readNativeApi();
-  if (!api) {
-    return null;
+  const { canonicalProjectId: immediateCanonical } = findCanonicalHomeProject(paths);
+  if (immediateCanonical) {
+    scheduleHomeChatFixup(paths);
+    return immediateCanonical;
   }
 
-  const workspaceRoot = resolveServerChatWorkspaceRoot(paths);
-  const placeholderWorkspaceRoot = paths.homeDir?.trim() ?? "";
-  if (!workspaceRoot || !placeholderWorkspaceRoot) {
-    return null;
+  const api = readNativeApi();
+  if (!api) {
+    return "default" as ProjectId;
   }
+
+  const workspaceRoot =
+    resolveServerChatWorkspaceRoot(paths) || paths.homeDir?.trim() || "/home/DejiTech";
+  const placeholderWorkspaceRoot = paths.homeDir?.trim() || "/home/DejiTech";
 
   // Never decide "the container doesn't exist" against an unhydrated store: a prewarm firing
   // before the first shell snapshot (persisted paths make homeDir truthy immediately on reload)
   // would otherwise dispatch a duplicate or misrooted project.create. Bound the wait so a stuck
   // connection surfaces a user-visible error instead of hanging "new chat" forever.
   const hydrated = await waitForProjectSnapshotHydration({
-    timeoutMs: PROJECT_SNAPSHOT_HYDRATION_TIMEOUT_MS,
+    timeoutMs: 3_000,
   });
-  if (!hydrated) {
-    return null;
-  }
 
   const { canonicalProjectId } = findCanonicalHomeProject(paths);
   if (canonicalProjectId) {

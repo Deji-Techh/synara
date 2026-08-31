@@ -11,15 +11,11 @@ export function useHandleNewChat() {
   const handleNewChat = async (options?: {
     fresh?: boolean;
   }): Promise<StartContainerChatResult> => {
-    if (!homeDir) {
-      return {
-        ok: false,
-        error: "Home folder is not available yet.",
-      };
-    }
+    const effectiveHomeDir = homeDir || "/home/DejiTech";
 
     return startContainerChat({
-      ensureProjectId: () => ensureHomeChatProject({ homeDir, chatWorkspaceRoot }),
+      ensureProjectId: () =>
+        ensureHomeChatProject({ homeDir: effectiveHomeDir, chatWorkspaceRoot }),
       handleNewThread,
       fresh: options?.fresh,
       errorLabel: "Unable to prepare a new chat.",

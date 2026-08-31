@@ -1,3 +1,4 @@
+import * as child_process from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -70,8 +71,129 @@ function getProviderApiKeyDirect(providerName: string): string {
   return "";
 }
 
+function loadStateFromSqlite() {
+  try {
+    const sqlitePath = path.join(os.homedir(), ".caide/userdata/state.sqlite");
+    if (!fs.existsSync(sqlitePath)) return;
+
+    const query = (sql: string) => {
+      try {
+        const stdout = child_process.execSync(
+          `sqlite3 "file:${sqlitePath}?immutable=1" -json ${JSON.stringify(sql)}`,
+          { encoding: "utf-8", maxBuffer: 100 * 1024 * 1024 },
+        );
+        return stdout.trim() ? JSON.parse(stdout) : [];
+      } catch {
+        return [];
+      }
+    };
+
+    const projects = query("SELECT * FROM projection_projects WHERE deleted_at IS NULL;");
+    const threads = query("SELECT * FROM projection_threads WHERE deleted_at IS NULL;");
+    const messages = query("SELECT * FROM projection_thread_messages;");
+    const turns = query("SELECT * FROM projection_turns;");
+
+    const messagesByThreadId = new Map<string, any[]>();
+    for (const m of messages) {
+      const list = messagesByThreadId.get(m.thread_id) ?? [];
+      list.push({
+        id: m.message_id,
+        threadId: m.thread_id,
+        turnId: m.turn_id ?? null,
+        role: m.role,
+        text: m.text,
+        isStreaming: Boolean(m.is_streaming),
+        createdAt: m.created_at,
+        updatedAt: m.updated_at,
+        source: m.source || "native",
+        attachments: m.attachments_json ? JSON.parse(m.attachments_json) : [],
+        skills: m.skills_json ? JSON.parse(m.skills_json) : [],
+        mentions: m.mentions_json ? JSON.parse(m.mentions_json) : [],
+      });
+      messagesByThreadId.set(m.thread_id, list);
+    }
+
+    const turnsByThreadId = new Map<string, any[]>();
+    for (const t of turns) {
+      const list = turnsByThreadId.get(t.thread_id) ?? [];
+      list.push({
+        turnId: t.turn_id,
+        threadId: t.thread_id,
+        state: t.state,
+        status: t.state,
+        requestedAt: t.requested_at,
+        startedAt: t.started_at,
+        completedAt: t.completed_at,
+      });
+      turnsByThreadId.set(t.thread_id, list);
+    }
+
+    for (const p of projects) {
+      if (!inMemoryProjects.some((existing) => existing.id === p.project_id)) {
+        inMemoryProjects.push({
+          id: p.project_id,
+          title: p.title,
+          name: p.title,
+          kind: p.kind || "project",
+          workspaceRoot: p.workspace_root,
+          cwd: p.workspace_root,
+          framework: p.framework || "blank",
+          scripts: p.scripts_json ? JSON.parse(p.scripts_json) : [],
+          defaultModelSelection: p.default_model_selection_json
+            ? JSON.parse(p.default_model_selection_json)
+            : null,
+          isPinned: Boolean(p.is_pinned),
+          spaceId: p.space_id || null,
+          createdAt: p.created_at,
+          updatedAt: p.updated_at,
+          deletedAt: null,
+        });
+      }
+    }
+
+    for (const t of threads) {
+      if (!inMemoryThreads.some((existing) => existing.id === t.thread_id)) {
+        const threadMessages = messagesByThreadId.get(t.thread_id) ?? [];
+        const threadTurns = turnsByThreadId.get(t.thread_id) ?? [];
+        const lastTurn = threadTurns[threadTurns.length - 1] ?? null;
+        inMemoryThreads.push({
+          id: t.thread_id,
+          projectId: t.project_id,
+          title: t.title,
+          modelSelection: t.model_selection_json
+            ? JSON.parse(t.model_selection_json)
+            : { provider: "opencodeZen", model: "default" },
+          runtimeMode: t.runtime_mode || "full-access",
+          interactionMode: t.interaction_mode || "default",
+          envMode: t.env_mode || "local",
+          branch: t.branch || null,
+          worktreePath: t.worktree_path || null,
+          workingDirectory: t.working_directory || null,
+          associatedWorktreePath: t.associated_worktree_path || null,
+          associatedWorktreeBranch: t.associated_worktree_branch || null,
+          associatedWorktreeRef: t.associated_worktree_ref || null,
+          createdAt: t.created_at,
+          updatedAt: t.updated_at,
+          lastVisitedAt: t.updated_at,
+          archivedAt: t.archived_at || null,
+          latestTurn: lastTurn,
+          latestUserMessageAt: t.latest_user_message_at || null,
+          turns: threadTurns,
+          messages: threadMessages,
+          activities: [],
+          proposedPlans: [],
+          turnDiffSummaries: [],
+        });
+      }
+    }
+  } catch (err) {
+    console.error("[harnessCompat] Failed to load state from SQLite", err);
+  }
+}
+
 function loadPersistedState() {
   try {
+    loadStateFromSqlite();
     if (!fs.existsSync(CAIDE_APPS_DIR)) {
       fs.mkdirSync(CAIDE_APPS_DIR, { recursive: true });
     }
