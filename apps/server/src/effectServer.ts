@@ -93,8 +93,8 @@ export const createEffectServer = Effect.fn(function* (
   );
 
   const routesLayer = Layer.mergeAll(
-    makeEffectHttpRouteLayer(readiness, shutdownController),
     websocketRpcRouteLayer,
+    makeEffectHttpRouteLayer(readiness, shutdownController),
   );
   const fullRoutesLayer = Layer.provideMerge(routesLayer, appLayer);
   const httpApp = yield* Effect.scoped(HttpRouter.toHttpEffect(fullRoutesLayer));

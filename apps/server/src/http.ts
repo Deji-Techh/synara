@@ -195,6 +195,16 @@ export const staticAndDevEffectRouteLayer = HttpRouter.add(
     const path = yield* Path.Path;
     const staticRoot = path.resolve(config.staticDir);
     const requestPath = url.pathname === "/" ? "/index.html" : url.pathname;
+    if (
+      requestPath.startsWith("/api/") ||
+      requestPath.startsWith("/ws/") ||
+      requestPath === "/ws" ||
+      requestPath.startsWith("/health") ||
+      requestPath.startsWith("/ready") ||
+      requestPath.startsWith("/project/")
+    ) {
+      return HttpServerResponse.text("Not Found", { status: 404 });
+    }
     const rawRelativePath = requestPath.replace(/^[/\\]+/, "");
     const relativePath = path.normalize(rawRelativePath).replace(/^[/\\]+/, "");
     if (
