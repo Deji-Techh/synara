@@ -10814,10 +10814,7 @@ export default function ChatView({
   const renderComposerLeadingControls = (options: { iconOnly: boolean }) => (
     <>
       {!options.iconOnly ? (
-        <div className="flex items-center gap-2">
-          <ChatModeSelector mode={chatMode} onChatModeChange={handleChatModeChange} />
-          <ChatModeBadge mode={chatMode} />
-        </div>
+        <ChatModeSelector mode={chatMode} onChatModeChange={handleChatModeChange} />
       ) : null}
       <ComposerExtrasMenu
         interactionMode={interactionMode}
