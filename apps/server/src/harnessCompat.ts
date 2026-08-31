@@ -98,8 +98,8 @@ export class OrchestrationEngineService extends ServiceMap.Service<
     readEventsThrough: () => Stream.empty,
     readThreadEvents: () => Stream.empty,
     readThreadEventsThrough: () => Stream.empty,
-    subscribeDomainEvents: Stream.empty,
-    streamDomainEvents: Stream.empty,
+    subscribeDomainEvents: Effect.succeed(Stream.never),
+    streamDomainEvents: Stream.never,
   } as any);
 }
 
@@ -196,7 +196,7 @@ export class ExternalMcpService extends ServiceMap.Service<ExternalMcpService, a
 ) {
   static readonly layer = Layer.succeed(this, {
     listIntegrations: () => Effect.succeed([]),
-    streamEvents: Stream.empty,
+    streamEvents: Stream.never,
   } as any);
 }
 
@@ -254,8 +254,8 @@ export class ProviderAdapterRegistry extends ServiceMap.Service<ProviderAdapterR
         },
         hasSession: () => Effect.succeed(false),
         startPreviewSession: () => Effect.succeed(undefined),
-        subscribeGoalEvents: () => Stream.empty,
-        subscribeSubagentEvents: () => Stream.empty,
+        subscribeGoalEvents: () => Stream.never,
+        subscribeSubagentEvents: () => Stream.never,
       }),
     listAdapters: () => [],
   } as any);
@@ -330,6 +330,117 @@ const HARNESS_SKILLS = [
   },
 ];
 
+const DEFAULT_MODELS_BY_PROVIDER: Record<string, any[]> = {
+  opencodeZen: [
+    {
+      slug: "gpt-5.6-sol",
+      name: "gpt-5.6-sol",
+      description: "Fast reasoning and high performance code generation",
+      supportsFastMode: true,
+      supportedReasoningEfforts: [
+        { value: "low", label: "Low" },
+        { value: "medium", label: "Medium" },
+        { value: "high", label: "High" },
+      ],
+      defaultReasoningEffort: "medium",
+    },
+    {
+      slug: "zen-pro",
+      name: "Zen Pro",
+      description: "High intelligence reasoning model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "zen-flash",
+      name: "Zen Flash",
+      description: "Lightweight, ultra-fast responses",
+      supportsFastMode: true,
+    },
+  ],
+  opencodeGo: [
+    {
+      slug: "gpt-5.6-sol",
+      name: "gpt-5.6-sol",
+      description: "Fast reasoning and high performance code generation",
+      supportsFastMode: true,
+      supportedReasoningEfforts: [
+        { value: "low", label: "Low" },
+        { value: "medium", label: "Medium" },
+        { value: "high", label: "High" },
+      ],
+      defaultReasoningEffort: "medium",
+    },
+    {
+      slug: "go-standard",
+      name: "Go Standard",
+      description: "Direct OpenCode Go model",
+      supportsFastMode: true,
+    },
+  ],
+  groq: [
+    {
+      slug: "llama-3.3-70b-versatile",
+      name: "Llama 3.3 70B",
+      description: "Versatile open-weights model on Groq",
+      supportsFastMode: true,
+    },
+    {
+      slug: "llama-3.1-8b-instant",
+      name: "Llama 3.1 8B",
+      description: "Instant response model on Groq",
+      supportsFastMode: true,
+    },
+  ],
+  anthropic: [
+    {
+      slug: "claude-3-7-sonnet-latest",
+      name: "Claude 3.7 Sonnet",
+      description: "Hybrid reasoning and coding model",
+      supportsFastMode: true,
+      supportedReasoningEfforts: [
+        { value: "low", label: "Low" },
+        { value: "medium", label: "Medium" },
+        { value: "high", label: "High" },
+      ],
+      defaultReasoningEffort: "medium",
+    },
+    {
+      slug: "claude-3-5-sonnet-latest",
+      name: "Claude 3.5 Sonnet",
+      description: "Industry standard coding model",
+      supportsFastMode: true,
+    },
+  ],
+  openai: [
+    {
+      slug: "gpt-4o",
+      name: "GPT-4o",
+      description: "Omni-modal flagship model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "o3-mini",
+      name: "o3-mini",
+      description: "High-reasoning math and coding model",
+      supportsFastMode: true,
+      supportedReasoningEfforts: [
+        { value: "low", label: "Low" },
+        { value: "medium", label: "Medium" },
+        { value: "high", label: "High" },
+      ],
+      defaultReasoningEffort: "medium",
+    },
+  ],
+  engine: [
+    {
+      slug: "caide-pure",
+      name: "Caide Pure Engine",
+      description: "Autonomous pure harness agent runtime",
+      supportsFastMode: true,
+    },
+  ],
+};
+
 export class ProviderDiscoveryService extends ServiceMap.Service<ProviderDiscoveryService, any>()(
   "caide/ProviderDiscoveryService",
 ) {
@@ -338,7 +449,11 @@ export class ProviderDiscoveryService extends ServiceMap.Service<ProviderDiscove
     listSkills: () => Effect.succeed({ skills: HARNESS_SKILLS, source: "caide-harness", cached: true }),
     listSkillsCatalog: () => Effect.succeed({ skills: HARNESS_SKILLS, caideSkillsDir: "~/.caide/skills" }),
     listCommands: () => Effect.succeed({ commands: [], source: "empty", cached: true }),
-    listModels: () => Effect.succeed({ models: [], source: "empty", cached: true }),
+    listModels: (input?: { provider?: string }) => {
+      const provider = input?.provider ?? "opencodeZen";
+      const models = DEFAULT_MODELS_BY_PROVIDER[provider] ?? DEFAULT_MODELS_BY_PROVIDER.opencodeZen;
+      return Effect.succeed({ models, source: "harness", cached: true });
+    },
     listAgents: () => Effect.succeed({ agents: [], source: "empty", cached: true }),
     listPlugins: () =>
       Effect.succeed({
@@ -349,9 +464,9 @@ export class ProviderDiscoveryService extends ServiceMap.Service<ProviderDiscove
         source: "empty",
         cached: true,
       }),
-    getComposerCapabilities: () =>
+    getComposerCapabilities: (input?: { provider?: string }) =>
       Effect.succeed({
-        provider: "opencode",
+        provider: input?.provider ?? "opencodeZen",
         supportsSkillMentions: true,
         supportsSkillDiscovery: true,
         supportsNativeSlashCommandDiscovery: false,
@@ -427,7 +542,7 @@ export class ProviderHealth extends ServiceMap.Service<ProviderHealth, any>()(
     getStatuses: Effect.succeed(DEFAULT_PROVIDER_STATUSES),
     refresh: Effect.succeed(DEFAULT_PROVIDER_STATUSES),
     updateProvider: () => Effect.succeed({ providers: DEFAULT_PROVIDER_STATUSES }),
-    streamChanges: Stream.empty,
+    streamChanges: Stream.never,
   } as any);
 }
 
