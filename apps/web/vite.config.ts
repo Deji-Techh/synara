@@ -217,7 +217,13 @@ export default defineConfig({
     "import.meta.env.VITE_WS_URL": JSON.stringify(process.env.VITE_WS_URL ?? ""),
     "import.meta.env.APP_VERSION": JSON.stringify(pkg.version),
   },
+  ssr: {
+    noExternal: ["@caide/contracts", "@caide/shared"],
+  },
   resolve: {
+    alias: {
+      "~": path.resolve(import.meta.dirname, "./src"),
+    },
     tsconfigPaths: true,
     dedupe: ["effect", "@effect/platform", "@effect/platform-node", "@caide/contracts", "@caide/shared"],
   },
@@ -241,6 +247,7 @@ export default defineConfig({
     // terminal runtime code, and the chat route—not initial-load bundles.
     chunkSizeWarningLimit: 850,
     rolldownOptions: {
+      external: [],
       checks: {
         // React Compiler is expected to dominate transform time in this app.
         pluginTimings: false,

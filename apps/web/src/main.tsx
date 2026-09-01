@@ -1,12 +1,6 @@
-import * as Pipeable from "effect/Pipeable";
-
-if (typeof Error !== "undefined" && !("pipe" in Error.prototype)) {
-  Object.defineProperty(Error.prototype, "pipe", {
-    value: Pipeable.Prototype.pipe,
-    writable: true,
-    configurable: true,
-  });
-}
+import "./polyfills";
+import { __polyfillLoaded } from "./polyfills";
+void __polyfillLoaded;
 
 import React from "react";
 import ReactDOM from "react-dom/client";

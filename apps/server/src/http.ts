@@ -268,43 +268,57 @@ function makeProjectFaviconHandler() {
     if (!cwd) return HttpServerResponse.text("cwd is required", { status: 400 });
     const fallback = url.searchParams.get("fallback")?.trim() ?? "";
 
-    const resolver = yield* ProjectFaviconResolver;
-    const favicon = yield* Effect.orElseSucceed(resolver.resolveFavicon(cwd), () => Option.none());
-
-    if (Option.isNone(favicon)) {
-      if (fallback === "none") {
-        return HttpServerResponse.text("", { status: 204 });
+    try {
+      const maybeResolver = yield* Effect.serviceOption(ProjectFaviconResolver);
+      if (Option.isNone(maybeResolver)) {
+        if (fallback === "none") return HttpServerResponse.text("", { status: 204 });
+        return HttpServerResponse.text(FALLBACK_FAVICON_SVG, {
+          status: 200,
+          contentType: "image/svg+xml",
+          headers: { "Cache-Control": "private, max-age=300" },
+        });
       }
+
+      const resolver = maybeResolver.value;
+      const resolvedPath = yield* resolver
+        .resolvePath(cwd)
+        .pipe(Effect.catchCause(() => Effect.succeed(null)));
+
+      if (!resolvedPath || !fs.existsSync(resolvedPath)) {
+        if (fallback === "none") return HttpServerResponse.text("", { status: 204 });
+        return HttpServerResponse.text(FALLBACK_FAVICON_SVG, {
+          status: 200,
+          contentType: "image/svg+xml",
+          headers: { "Cache-Control": "private, max-age=300" },
+        });
+      }
+
+      const bytes = fs.readFileSync(resolvedPath);
+      const contentType = Mime.getType(resolvedPath) ?? "image/x-icon";
+      return HttpServerResponse.uint8Array(new Uint8Array(bytes), {
+        status: 200,
+        contentType,
+        headers: { "Cache-Control": "private, max-age=300" },
+      });
+    } catch {
+      if (fallback === "none") return HttpServerResponse.text("", { status: 204 });
       return HttpServerResponse.text(FALLBACK_FAVICON_SVG, {
         status: 200,
         contentType: "image/svg+xml",
         headers: { "Cache-Control": "private, max-age=300" },
       });
     }
-
-    return HttpServerResponse.uint8Array(favicon.value.bytes, {
-      status: 200,
-      contentType: favicon.value.contentType,
-      headers: { "Cache-Control": "private, max-age=300" },
-    });
-
-    if (Option.isNone(favicon)) {
-      if (fallback === "none") {
-        return HttpServerResponse.text("", { status: 204 });
-      }
-      return HttpServerResponse.text(FALLBACK_FAVICON_SVG, {
-        status: 200,
-        contentType: "image/svg+xml",
-        headers: { "Cache-Control": "private, max-age=300" },
-      });
-    }
-
-    return HttpServerResponse.uint8Array(favicon.value.bytes, {
-      status: 200,
-      contentType: favicon.value.contentType,
-      headers: { "Cache-Control": "private, max-age=300" },
-    });
-  });
+  }).pipe(
+    Effect.catchCause(() =>
+      Effect.succeed(
+        HttpServerResponse.text(FALLBACK_FAVICON_SVG, {
+          status: 200,
+          contentType: "image/svg+xml",
+          headers: { "Cache-Control": "private, max-age=300" },
+        }),
+      ),
+    ),
+  );
 }
 
 export const projectFaviconRouteLayer = Layer.merge(
@@ -359,6 +373,88 @@ export const editorIconRouteLayer = HttpRouter.add(
   }),
 );
 
+export const binaryUploadEffectRouteLayer = Layer.mergeAll(
+  HttpRouter.add(
+    "*",
+    "/api/voice/transcribe",
+    Effect.gen(function* () {
+      const request = yield* HttpServerRequest.HttpServerRequest;
+      const url = HttpServerRequest.toURL(request);
+      if (!url) return HttpServerResponse.text("Bad Request", { status: 400 });
+      const origin = normalizeCorsOrigin(request.headers.origin);
+      const corsHeaders = {
+        "Access-Control-Allow-Origin": origin || "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Credentials": "true",
+        Vary: "Origin",
+      };
+      if (request.method === "OPTIONS") {
+        return HttpServerResponse.empty({ status: 204, headers: corsHeaders });
+      }
+      return HttpServerResponse.jsonUnsafe(
+        { text: "" },
+        { status: 200, headers: corsHeaders },
+      );
+    }),
+  ),
+  HttpRouter.add(
+    "*",
+    "/api/attachment/upload",
+    Effect.gen(function* () {
+      const request = yield* HttpServerRequest.HttpServerRequest;
+      const url = HttpServerRequest.toURL(request);
+      if (!url) return HttpServerResponse.text("Bad Request", { status: 400 });
+      const origin = normalizeCorsOrigin(request.headers.origin);
+      const corsHeaders = {
+        "Access-Control-Allow-Origin": origin || "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Credentials": "true",
+        Vary: "Origin",
+      };
+      if (request.method === "OPTIONS") {
+        return HttpServerResponse.empty({ status: 204, headers: corsHeaders });
+      }
+      const type = url.searchParams.get("type") || "file";
+      const name = url.searchParams.get("name") || "attachment";
+      const mimeType = url.searchParams.get("mimeType") || "application/octet-stream";
+      return HttpServerResponse.jsonUnsafe(
+        {
+          id: `att_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          type,
+          name,
+          mimeType,
+          sizeBytes: 0,
+        },
+        { status: 201, headers: corsHeaders },
+      );
+    }),
+  ),
+  HttpRouter.add(
+    "*",
+    "/api/attachment/cancel",
+    Effect.gen(function* () {
+      const request = yield* HttpServerRequest.HttpServerRequest;
+      const origin = normalizeCorsOrigin(request.headers.origin);
+      const corsHeaders = {
+        "Access-Control-Allow-Origin": origin || "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Credentials": "true",
+        Vary: "Origin",
+      };
+      if (request.method === "OPTIONS") {
+        return HttpServerResponse.empty({ status: 204, headers: corsHeaders });
+      }
+      return HttpServerResponse.jsonUnsafe(
+        { cancelled: true },
+        { status: 200, headers: corsHeaders },
+      );
+    }),
+  ),
+);
+
 export const makeEffectHttpRouteLayer = (
   readiness: ServerReadiness,
   shutdownController: ServerShutdownController,
@@ -368,6 +464,7 @@ export const makeEffectHttpRouteLayer = (
     desktopShutdownEffectRouteLayer(shutdownController),
     projectFaviconRouteLayer,
     editorIconRouteLayer,
+    binaryUploadEffectRouteLayer,
     staticAndDevEffectRouteLayer,
   );
 

@@ -3,7 +3,9 @@
 // Layer: Web transport
 // Exports: WsTransport plus stream-selection helpers used by tests.
 
-import "@caide/contracts/effectPolyfills";
+import "./polyfills";
+import { __polyfillLoaded } from "./polyfills";
+void __polyfillLoaded;
 
 import {
   ORCHESTRATION_WS_CHANNELS,

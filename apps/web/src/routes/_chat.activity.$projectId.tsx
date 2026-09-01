@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-
-import { ProjectActivityView } from "~/components/activity/ProjectActivityView";
+import { ProjectActivityView } from "../components/activity/ProjectActivityView";
 
 import { ProjectId } from "@caide/contracts";
 

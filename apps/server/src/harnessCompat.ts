@@ -765,6 +765,8 @@ const emptyThreadDetailSnapshot = (threadId: string) => {
 };
 
 const domainEventsPubSub = Effect.runSync(PubSub.unbounded<any>());
+const goalEventsPubSub = Effect.runSync(PubSub.unbounded<any>());
+const subagentEventsPubSub = Effect.runSync(PubSub.unbounded<any>());
 const eventLog: any[] = [];
 
 export function publishDomainEvent(event: any) {
@@ -930,6 +932,287 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               aggregateId: command.threadId,
               type: "thread.deleted",
               payload: { threadId: command.threadId },
+              createdAt: now,
+            });
+          }
+        } else if (command?.type === "thread.pinned-message.add") {
+          const thread = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (thread) {
+            if (!thread.pinnedMessages) thread.pinnedMessages = [];
+            const pin = {
+              messageId: command.messageId,
+              label: null,
+              done: false,
+              pinnedAt: now,
+            };
+            const existingPinIdx = thread.pinnedMessages.findIndex((p: any) => p.messageId === command.messageId);
+            if (existingPinIdx >= 0) {
+              thread.pinnedMessages[existingPinIdx] = pin;
+            } else {
+              thread.pinnedMessages.push(pin);
+            }
+            thread.updatedAt = now;
+            globalSnapshotSequence += 1;
+            savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.pinned-message-added",
+              payload: {
+                threadId: command.threadId,
+                pin,
+              },
+              createdAt: now,
+            });
+          }
+        } else if (command?.type === "thread.pinned-message.remove") {
+          const thread = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (thread && thread.pinnedMessages) {
+            thread.pinnedMessages = thread.pinnedMessages.filter((p: any) => p.messageId !== command.messageId);
+            thread.updatedAt = now;
+            globalSnapshotSequence += 1;
+            savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.pinned-message-removed",
+              payload: {
+                threadId: command.threadId,
+                messageId: command.messageId,
+              },
+              createdAt: now,
+            });
+          }
+        } else if (command?.type === "thread.pinned-message.done.set") {
+          const thread = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (thread && thread.pinnedMessages) {
+            const pin = thread.pinnedMessages.find((p: any) => p.messageId === command.messageId);
+            if (pin) pin.done = Boolean(command.done);
+            thread.updatedAt = now;
+            globalSnapshotSequence += 1;
+            savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.pinned-message-done-set",
+              payload: {
+                threadId: command.threadId,
+                messageId: command.messageId,
+                done: Boolean(command.done),
+              },
+              createdAt: now,
+            });
+          }
+        } else if (command?.type === "thread.pinned-message.label.set") {
+          const thread = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (thread && thread.pinnedMessages) {
+            const pin = thread.pinnedMessages.find((p: any) => p.messageId === command.messageId);
+            if (pin) pin.label = command.label ?? null;
+            thread.updatedAt = now;
+            globalSnapshotSequence += 1;
+            savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.pinned-message-label-set",
+              payload: {
+                threadId: command.threadId,
+                messageId: command.messageId,
+                label: command.label ?? null,
+              },
+              createdAt: now,
+            });
+          }
+        } else if (command?.type === "thread.marker.add") {
+          const thread = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (thread) {
+            if (!thread.threadMarkers) thread.threadMarkers = [];
+            const marker = {
+              markerId: command.markerId,
+              messageId: command.messageId,
+              startOffset: command.startOffset,
+              endOffset: command.endOffset,
+              selectedText: command.selectedText,
+              style: command.style,
+              color: command.color,
+              done: false,
+              label: null,
+              createdAt: now,
+            };
+            thread.threadMarkers.push(marker);
+            thread.updatedAt = now;
+            globalSnapshotSequence += 1;
+            savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.marker-added",
+              payload: {
+                threadId: command.threadId,
+                marker,
+              },
+              createdAt: now,
+            });
+          }
+        } else if (command?.type === "thread.marker.remove") {
+          const thread = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (thread && thread.threadMarkers) {
+            thread.threadMarkers = thread.threadMarkers.filter((m: any) => m.markerId !== command.markerId);
+            thread.updatedAt = now;
+            globalSnapshotSequence += 1;
+            savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.marker-removed",
+              payload: {
+                threadId: command.threadId,
+                markerId: command.markerId,
+              },
+              createdAt: now,
+            });
+          }
+        } else if (command?.type === "thread.marker.done.set") {
+          const thread = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (thread && thread.threadMarkers) {
+            const marker = thread.threadMarkers.find((m: any) => m.markerId === command.markerId);
+            if (marker) marker.done = Boolean(command.done);
+            thread.updatedAt = now;
+            globalSnapshotSequence += 1;
+            savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.marker-done-set",
+              payload: {
+                threadId: command.threadId,
+                markerId: command.markerId,
+                done: Boolean(command.done),
+              },
+              createdAt: now,
+            });
+          }
+        } else if (command?.type === "thread.marker.label.set") {
+          const thread = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (thread && thread.threadMarkers) {
+            const marker = thread.threadMarkers.find((m: any) => m.markerId === command.markerId);
+            if (marker) marker.label = command.label ?? null;
+            thread.updatedAt = now;
+            globalSnapshotSequence += 1;
+            savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.marker-label-set",
+              payload: {
+                threadId: command.threadId,
+                markerId: command.markerId,
+                label: command.label ?? null,
+              },
+              createdAt: now,
+            });
+          }
+        } else if (command?.type === "thread.runtime-mode.set") {
+          const thread = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (thread) {
+            thread.runtimeMode = command.runtimeMode;
+            thread.updatedAt = now;
+            globalSnapshotSequence += 1;
+            savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.runtime-mode-set",
+              payload: {
+                threadId: command.threadId,
+                runtimeMode: command.runtimeMode,
+              },
+              createdAt: now,
+            });
+          }
+        } else if (command?.type === "thread.interaction-mode.set") {
+          const thread = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (thread) {
+            thread.interactionMode = command.interactionMode;
+            thread.updatedAt = now;
+            globalSnapshotSequence += 1;
+            savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.interaction-mode-set",
+              payload: {
+                threadId: command.threadId,
+                interactionMode: command.interactionMode,
+              },
+              createdAt: now,
+            });
+          }
+        } else if (command?.type === "thread.turn.interrupt") {
+          const thread = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (thread) {
+            if (thread.latestTurn) {
+              thread.latestTurn.state = "interrupted";
+              thread.latestTurn.status = "interrupted";
+            }
+            thread.updatedAt = now;
+            globalSnapshotSequence += 1;
+            savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.turn-interrupt-requested",
+              payload: {
+                threadId: command.threadId,
+                turnId: command.turnId ?? thread.latestTurn?.turnId,
+              },
+              createdAt: now,
+            });
+          }
+        } else if (command?.type === "thread.session.stop") {
+          const thread = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (thread) {
+            thread.session = null;
+            thread.updatedAt = now;
+            globalSnapshotSequence += 1;
+            savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.session-stop-requested",
+              payload: {
+                threadId: command.threadId,
+              },
+              createdAt: now,
+            });
+          }
+        } else if (command?.type === "thread.unarchive") {
+          const thread = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (thread) {
+            thread.archivedAt = null;
+            thread.updatedAt = now;
+            globalSnapshotSequence += 1;
+            savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.unarchived",
+              payload: {
+                threadId: command.threadId,
+              },
               createdAt: now,
             });
           }
@@ -1423,10 +1706,10 @@ export class ProviderAdapterRegistry extends ServiceMap.Service<ProviderAdapterR
         },
         hasSession: () => Effect.succeed(false),
         startPreviewSession: () => Effect.succeed(undefined),
-        streamGoalDomainEvents: Stream.never,
-        streamSubagentEvents: Stream.never,
-        subscribeGoalEvents: () => Stream.never,
-        subscribeSubagentEvents: () => Stream.never,
+        streamGoalDomainEvents: Stream.fromPubSub(goalEventsPubSub),
+        streamSubagentEvents: Stream.fromPubSub(subagentEventsPubSub),
+        subscribeGoalEvents: () => Stream.fromPubSub(goalEventsPubSub),
+        subscribeSubagentEvents: () => Stream.fromPubSub(subagentEventsPubSub),
       }),
     listAdapters: () => [],
   } as any);

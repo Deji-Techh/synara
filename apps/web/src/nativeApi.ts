@@ -1,3 +1,4 @@
+import "./polyfills";
 import { WS_GITHUB_PROJECT_PROVISIONING_CAPABILITY, type NativeApi } from "@caide/contracts";
 
 import {

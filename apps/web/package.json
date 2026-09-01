@@ -2,6 +2,9 @@
   "name": "@caide/web",
   "version": "0.0.1",
   "private": true,
+  "sideEffects": [
+    "src/polyfills.ts"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",

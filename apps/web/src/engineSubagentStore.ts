@@ -5,7 +5,7 @@
 // goals panel Subagents tab) that the transcript alone cannot provide.
 // Layer: Web UI state store (zustand v5, no persistence — the engine's
 // in-memory task map is the source of truth).
-
+import "./polyfills";
 import type { EngineActiveSubagent, EngineSubagentEvent } from "@caide/contracts";
 import { create } from "zustand";
 
