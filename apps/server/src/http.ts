@@ -255,63 +255,61 @@ export const staticAndDevEffectRouteLayer = HttpRouter.add(
   }),
 );
 
+const FALLBACK_FAVICON_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#e5e7eb"/><path d="M9 9h14v14H9z" fill="#9ca3af"/></svg>';
+
+function makeProjectFaviconHandler() {
+  return Effect.gen(function* () {
+    const request = yield* HttpServerRequest.HttpServerRequest;
+    const url = HttpServerRequest.toURL(request);
+    if (!url) return HttpServerResponse.text("Bad Request", { status: 400 });
+
+    const cwd = url.searchParams.get("cwd")?.trim() ?? "";
+    if (!cwd) return HttpServerResponse.text("cwd is required", { status: 400 });
+    const fallback = url.searchParams.get("fallback")?.trim() ?? "";
+
+    const resolver = yield* ProjectFaviconResolver;
+    const favicon = yield* Effect.orElseSucceed(resolver.resolveFavicon(cwd), () => Option.none());
+
+    if (Option.isNone(favicon)) {
+      if (fallback === "none") {
+        return HttpServerResponse.text("", { status: 204 });
+      }
+      return HttpServerResponse.text(FALLBACK_FAVICON_SVG, {
+        status: 200,
+        contentType: "image/svg+xml",
+        headers: { "Cache-Control": "private, max-age=300" },
+      });
+    }
+
+    return HttpServerResponse.uint8Array(favicon.value.bytes, {
+      status: 200,
+      contentType: favicon.value.contentType,
+      headers: { "Cache-Control": "private, max-age=300" },
+    });
+
+    if (Option.isNone(favicon)) {
+      if (fallback === "none") {
+        return HttpServerResponse.text("", { status: 204 });
+      }
+      return HttpServerResponse.text(FALLBACK_FAVICON_SVG, {
+        status: 200,
+        contentType: "image/svg+xml",
+        headers: { "Cache-Control": "private, max-age=300" },
+      });
+    }
+
+    return HttpServerResponse.uint8Array(favicon.value.bytes, {
+      status: 200,
+      contentType: favicon.value.contentType,
+      headers: { "Cache-Control": "private, max-age=300" },
+    });
+  });
+}
+
 export const projectFaviconRouteLayer = Layer.merge(
-  HttpRouter.add(
-    "GET",
-    "/project/favicon",
-    Effect.gen(function* () {
-      const request = yield* HttpServerRequest.HttpServerRequest;
-      const url = HttpServerRequest.toURL(request);
-      if (!url) return HttpServerResponse.text("Bad Request", { status: 400 });
-
-      const cwd = url.searchParams.get("cwd")?.trim() ?? "";
-      if (!cwd) return HttpServerResponse.text("cwd is required", { status: 400 });
-
-      const resolver = yield* ProjectFaviconResolver;
-      const favicon = yield* resolver
-        .resolveFavicon(cwd)
-        .pipe(Effect.catchAllCause(() => Effect.succeed(Option.none())));
-      if (Option.isNone(favicon)) {
-        return HttpServerResponse.text("Not Found", { status: 404 });
-      }
-
-      return HttpServerResponse.uint8Array(favicon.value.bytes, {
-        status: 200,
-        contentType: favicon.value.contentType,
-        headers: {
-          "Cache-Control": "private, max-age=300",
-        },
-      });
-    }),
-  ),
-  HttpRouter.add(
-    "GET",
-    "/api/project-favicon",
-    Effect.gen(function* () {
-      const request = yield* HttpServerRequest.HttpServerRequest;
-      const url = HttpServerRequest.toURL(request);
-      if (!url) return HttpServerResponse.text("Bad Request", { status: 400 });
-
-      const cwd = url.searchParams.get("cwd")?.trim() ?? "";
-      if (!cwd) return HttpServerResponse.text("cwd is required", { status: 400 });
-
-      const resolver = yield* ProjectFaviconResolver;
-      const favicon = yield* resolver
-        .resolveFavicon(cwd)
-        .pipe(Effect.catchAllCause(() => Effect.succeed(Option.none())));
-      if (Option.isNone(favicon)) {
-        return HttpServerResponse.text("Not Found", { status: 404 });
-      }
-
-      return HttpServerResponse.uint8Array(favicon.value.bytes, {
-        status: 200,
-        contentType: favicon.value.contentType,
-        headers: {
-          "Cache-Control": "private, max-age=300",
-        },
-      });
-    }),
-  ),
+  HttpRouter.add("GET", "/project/favicon", makeProjectFaviconHandler()),
+  HttpRouter.add("GET", "/api/project-favicon", makeProjectFaviconHandler()),
 );
 
 export const editorIconRouteLayer = HttpRouter.add(
@@ -323,7 +321,7 @@ export const editorIconRouteLayer = HttpRouter.add(
     if (!url) return HttpServerResponse.text("Bad Request", { status: 400 });
 
     const editorId = url.searchParams.get("id")?.trim() ?? "";
-    if (!editorId) return HttpServerResponse.text("id is required", { status: 400 });
+    if (!editorId) return HttpServerResponse.text("Missing id parameter", { status: 400 });
 
     const config = yield* ServerConfig;
     const { resolveCachedEditorIcon } = yield* Effect.promise(() => import("./editorAppIcons"));
@@ -372,3 +370,9 @@ export const makeEffectHttpRouteLayer = (
     editorIconRouteLayer,
     staticAndDevEffectRouteLayer,
   );
+
+// Back-compat aliases for older test imports
+export const projectFaviconEffectRouteLayer = projectFaviconRouteLayer;
+export const editorIconEffectRouteLayer = editorIconRouteLayer;
+export const makeHealthEffectRouteLayer = readinessEffectRouteLayer;
+export const makeDesktopShutdownEffectRouteLayer = desktopShutdownEffectRouteLayer;

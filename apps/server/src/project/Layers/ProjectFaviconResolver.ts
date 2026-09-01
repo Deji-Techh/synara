@@ -1,4 +1,5 @@
-import { Effect, FileSystem, Layer, Path } from "effect";
+import Mime from "@effect/platform-node/Mime";
+import { Effect, FileSystem, Layer, Option, Path } from "effect";
 
 import {
   ProjectFaviconResolver,
@@ -112,7 +113,18 @@ export const makeProjectFaviconResolver = Effect.gen(function* () {
     return null;
   });
 
-  return { resolvePath } satisfies ProjectFaviconResolverShape;
+  const resolveFavicon: ProjectFaviconResolverShape["resolveFavicon"] = Effect.fn(function* (cwd) {
+    const resolvedPath = yield* resolvePath(cwd);
+    if (!resolvedPath) return Option.none();
+    const bytes = yield* fileSystem.readFile(resolvedPath).pipe(
+      Effect.catchAllCause(() => Effect.succeed(null)),
+    );
+    if (!bytes) return Option.none();
+    const contentType = Mime.getType(resolvedPath) ?? "application/octet-stream";
+    return Option.some({ bytes, contentType });
+  });
+
+  return { resolvePath, resolveFavicon } satisfies ProjectFaviconResolverShape;
 });
 
 export const ProjectFaviconResolverLive = Layer.effect(

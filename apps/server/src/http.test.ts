@@ -5,7 +5,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 
 import * as NodeHttpServer from "@effect/platform-node/NodeHttpServer";
-import { Effect, Exit, Layer, Scope } from "effect";
+import { Effect, Exit, Layer, Option, Scope } from "effect";
 import { HttpRouter } from "effect/unstable/http";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -102,6 +102,7 @@ const serverAuth = {
 
 const projectFaviconResolver: ProjectFaviconResolverShape = {
   resolvePath: () => Effect.succeed(null),
+  resolveFavicon: () => Effect.succeed(Option.none()),
 };
 
 type TestedRoute =

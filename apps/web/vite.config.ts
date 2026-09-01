@@ -219,6 +219,7 @@ export default defineConfig({
   },
   resolve: {
     tsconfigPaths: true,
+    dedupe: ["effect", "@effect/platform", "@effect/platform-node", "@caide/contracts", "@caide/shared"],
   },
   server: {
     port,
