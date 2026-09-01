@@ -1,6 +1,7 @@
 import "./polyfills";
 import { __polyfillLoaded } from "./polyfills";
 void __polyfillLoaded;
+import "./storageOriginMigration";
 
 import React from "react";
 import ReactDOM from "react-dom/client";
