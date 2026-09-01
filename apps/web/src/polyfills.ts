@@ -1,19 +1,23 @@
 import * as Pipeable from "effect/Pipeable";
 
-if (typeof Error !== "undefined" && !("pipe" in Error.prototype)) {
-  Object.defineProperty(Error.prototype, "pipe", {
-    value: Pipeable.Prototype.pipe,
-    writable: true,
-    configurable: true,
-  });
-}
+const pipeFn = Pipeable.Prototype.pipe;
 
-if (typeof Object !== "undefined" && !("pipe" in Object.prototype)) {
-  Object.defineProperty(Object.prototype, "pipe", {
-    value: Pipeable.Prototype.pipe,
-    writable: true,
-    configurable: true,
-  });
+for (const target of [
+  typeof Object !== "undefined" ? Object.prototype : null,
+  typeof Error !== "undefined" ? Error.prototype : null,
+  typeof Function !== "undefined" ? Function.prototype : null,
+  typeof Array !== "undefined" ? Array.prototype : null,
+]) {
+  if (target && !("pipe" in target)) {
+    try {
+      Object.defineProperty(target, "pipe", {
+        value: pipeFn,
+        writable: true,
+        configurable: true,
+        enumerable: false,
+      });
+    } catch {}
+  }
 }
 
 if (typeof window !== "undefined") {

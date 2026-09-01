@@ -231,6 +231,16 @@ export default defineConfig({
     port,
     strictPort: true,
     host: "127.0.0.1",
+    proxy: {
+      "/api": {
+        target: process.env.CAIDE_PORT ? `http://127.0.0.1:${process.env.CAIDE_PORT}` : "http://127.0.0.1:3773",
+        changeOrigin: true,
+      },
+      "/ws": {
+        target: process.env.CAIDE_PORT ? `ws://127.0.0.1:${process.env.CAIDE_PORT}` : "ws://127.0.0.1:3773",
+        ws: true,
+      },
+    },
     hmr: {
       // Explicit config so Vite's HMR WebSocket connects reliably
       // inside Electron's BrowserWindow. Vite 8 uses console.debug for
