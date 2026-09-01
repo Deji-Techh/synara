@@ -270,7 +270,7 @@ export const projectFaviconRouteLayer = Layer.merge(
       const resolver = yield* ProjectFaviconResolver;
       const favicon = yield* resolver
         .resolveFavicon(cwd)
-        .pipe(Effect.catchAll(() => Effect.succeed(Option.none())));
+        .pipe(Effect.catchAllCause(() => Effect.succeed(Option.none())));
       if (Option.isNone(favicon)) {
         return HttpServerResponse.text("Not Found", { status: 404 });
       }
@@ -298,7 +298,7 @@ export const projectFaviconRouteLayer = Layer.merge(
       const resolver = yield* ProjectFaviconResolver;
       const favicon = yield* resolver
         .resolveFavicon(cwd)
-        .pipe(Effect.catchAll(() => Effect.succeed(Option.none())));
+        .pipe(Effect.catchAllCause(() => Effect.succeed(Option.none())));
       if (Option.isNone(favicon)) {
         return HttpServerResponse.text("Not Found", { status: 404 });
       }
