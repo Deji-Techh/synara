@@ -46,7 +46,7 @@ export class ServerLifecycleError extends Schema.TaggedErrorClass<ServerLifecycl
   "ServerLifecycleError",
   {
     operation: Schema.String,
-    cause: Schema.optional(Schema.Defect),
+    cause: Schema.optional(Schema.Unknown),
   },
 ) {}
 

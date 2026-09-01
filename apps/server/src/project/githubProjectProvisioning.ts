@@ -42,7 +42,7 @@ export class GitHubProjectProvisioningError extends Schema.TaggedErrorClass<GitH
     code: GitHubProjectProvisioningErrorCode,
     message: Schema.String,
     retryable: Schema.Boolean,
-    cause: Schema.optional(Schema.Defect),
+    cause: Schema.optional(Schema.Unknown),
   },
 ) {}
 

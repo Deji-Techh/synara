@@ -26,7 +26,7 @@ import type { TerminalHistoryBuffer } from "../terminalHistory";
 
 export class TerminalError extends Schema.TaggedErrorClass<TerminalError>()("TerminalError", {
   message: Schema.String,
-  cause: Schema.optional(Schema.Defect),
+  cause: Schema.optional(Schema.Unknown),
 }) {}
 
 export interface TerminalSessionState {
