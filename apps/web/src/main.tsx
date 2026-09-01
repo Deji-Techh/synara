@@ -24,6 +24,18 @@ if (typeof window !== "undefined") {
     event.preventDefault();
   });
   window.addEventListener("unhandledrejection", (event) => {
+    const reason = event.reason;
+    if (
+      reason?.name === "AbortError" ||
+      reason?.code === "WS_REQUEST_ABORTED" ||
+      reason?._tag === "WsTransportRequestInterruptedError" ||
+      /interrupted without error/i.test(reason?.message ?? "") ||
+      /interrupted/i.test(reason?.name ?? "")
+    ) {
+      // Normal cancellation/abort during component unmount or debounce - suppress noisy warning
+      event.preventDefault();
+      return;
+    }
     // eslint-disable-next-line no-console
     console.error("[caide] unhandledrejection", event.reason);
     event.preventDefault();
