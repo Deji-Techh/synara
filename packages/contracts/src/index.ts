@@ -1,3 +1,5 @@
+import "./effectPolyfills";
+export * from "./effectPolyfills";
 export * from "./auth";
 export * from "./automation";
 export * from "./baseSchemas";

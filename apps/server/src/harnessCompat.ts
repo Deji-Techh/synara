@@ -1403,8 +1403,8 @@ export class ProviderAdapterRegistry extends ServiceMap.Service<ProviderAdapterR
         goals: {
           create: () => Effect.succeed({}),
           list: () => Effect.succeed([]),
-          get: () => Effect.succeed(Option.none()),
-          getActive: () => Effect.succeed(Option.none()),
+          get: () => Effect.succeed(null),
+          getActive: () => Effect.succeed(null),
           listActivity: () => Effect.succeed([]),
           listRuns: () => Effect.succeed([]),
           pause: () => Effect.succeed(undefined),
