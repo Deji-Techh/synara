@@ -2,7 +2,7 @@ import * as child_process from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { Effect, Layer, Option, ServiceMap, Stream } from "effect";
+import { Effect, Layer, Option, PubSub, ServiceMap, Stream } from "effect";
 
 export class AutomationService extends ServiceMap.Service<AutomationService, any>()(
   "caide/AutomationService",
@@ -763,6 +763,17 @@ const emptyThreadDetailSnapshot = (threadId: string) => {
   };
 };
 
+const domainEventsPubSub = Effect.runSync(PubSub.unbounded<any>());
+const eventLog: any[] = [];
+
+export function publishDomainEvent(event: any) {
+  eventLog.push(event);
+  if (eventLog.length > 5000) {
+    eventLog.splice(0, eventLog.length - 5000);
+  }
+  Effect.runSync(PubSub.publish(domainEventsPubSub, event));
+}
+
 export class OrchestrationEngineService extends ServiceMap.Service<
   OrchestrationEngineService,
   any
@@ -793,6 +804,14 @@ export class OrchestrationEngineService extends ServiceMap.Service<
             });
             globalSnapshotSequence += 1;
             savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "project",
+              aggregateId: command.projectId,
+              type: "project.created",
+              payload: { projectId: command.projectId },
+              createdAt: now,
+            });
           }
         } else if (command?.type === "project.meta.update") {
           const existing = inMemoryProjects.find((p) => p.id === command.projectId);
@@ -805,6 +824,14 @@ export class OrchestrationEngineService extends ServiceMap.Service<
             existing.updatedAt = now;
             globalSnapshotSequence += 1;
             savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "project",
+              aggregateId: command.projectId,
+              type: "project.meta-updated",
+              payload: { projectId: command.projectId },
+              createdAt: now,
+            });
           }
         } else if (command?.type === "project.delete") {
           const index = inMemoryProjects.findIndex((p) => p.id === command.projectId);
@@ -812,6 +839,14 @@ export class OrchestrationEngineService extends ServiceMap.Service<
             inMemoryProjects.splice(index, 1);
             globalSnapshotSequence += 1;
             savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "project",
+              aggregateId: command.projectId,
+              type: "project.deleted",
+              payload: { projectId: command.projectId },
+              createdAt: now,
+            });
           }
         } else if (command?.type === "thread.create") {
           const existing = inMemoryThreads.find((t) => t.id === command.threadId);
@@ -842,6 +877,14 @@ export class OrchestrationEngineService extends ServiceMap.Service<
             });
             globalSnapshotSequence += 1;
             savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.meta-updated",
+              payload: { threadId: command.threadId, projectId: command.projectId },
+              createdAt: now,
+            });
           }
         } else if (command?.type === "thread.meta.update") {
           const existing = inMemoryThreads.find((t) => t.id === command.threadId);
@@ -850,6 +893,14 @@ export class OrchestrationEngineService extends ServiceMap.Service<
             existing.updatedAt = now;
             globalSnapshotSequence += 1;
             savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.meta-updated",
+              payload: { threadId: command.threadId },
+              createdAt: now,
+            });
           }
         } else if (command?.type === "thread.archive") {
           const existing = inMemoryThreads.find((t) => t.id === command.threadId);
@@ -857,6 +908,14 @@ export class OrchestrationEngineService extends ServiceMap.Service<
             existing.archivedAt = now;
             globalSnapshotSequence += 1;
             savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.archived",
+              payload: { threadId: command.threadId, archivedAt: now },
+              createdAt: now,
+            });
           }
         } else if (command?.type === "thread.delete") {
           const index = inMemoryThreads.findIndex((t) => t.id === command.threadId);
@@ -864,6 +923,14 @@ export class OrchestrationEngineService extends ServiceMap.Service<
             inMemoryThreads.splice(index, 1);
             globalSnapshotSequence += 1;
             savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.deleted",
+              payload: { threadId: command.threadId },
+              createdAt: now,
+            });
           }
         } else if (command?.type === "thread.turn.start") {
           let thread = inMemoryThreads.find((t) => t.id === command.threadId);
@@ -950,6 +1017,30 @@ export class OrchestrationEngineService extends ServiceMap.Service<
           globalSnapshotSequence += 1;
           savePersistedState();
 
+          publishDomainEvent({
+            sequence: globalSnapshotSequence,
+            aggregateKind: "thread",
+            aggregateId: command.threadId,
+            type: "thread.message-sent",
+            payload: {
+              threadId: command.threadId,
+              message: userMsg,
+            },
+            createdAt: now,
+          });
+
+          publishDomainEvent({
+            sequence: globalSnapshotSequence,
+            aggregateKind: "thread",
+            aggregateId: command.threadId,
+            type: "thread.message-sent",
+            payload: {
+              threadId: command.threadId,
+              message: assistantMsg,
+            },
+            createdAt: now,
+          });
+
           // Spawn background LLM streaming execution
           void (async () => {
             try {
@@ -1021,6 +1112,17 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                   assistantMsg.text += chunk.content;
                   assistantMsg.updatedAt = new Date().toISOString();
                   globalSnapshotSequence += 1;
+                  publishDomainEvent({
+                    sequence: globalSnapshotSequence,
+                    aggregateKind: "thread",
+                    aggregateId: command.threadId,
+                    type: "thread.message-sent",
+                    payload: {
+                      threadId: command.threadId,
+                      message: { ...assistantMsg },
+                    },
+                    createdAt: new Date().toISOString(),
+                  });
                 }
               }
 
@@ -1036,6 +1138,29 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               };
               globalSnapshotSequence += 1;
               savePersistedState();
+
+              publishDomainEvent({
+                sequence: globalSnapshotSequence,
+                aggregateKind: "thread",
+                aggregateId: command.threadId,
+                type: "thread.message-sent",
+                payload: {
+                  threadId: command.threadId,
+                  message: { ...assistantMsg },
+                },
+                createdAt: new Date().toISOString(),
+              });
+              publishDomainEvent({
+                sequence: globalSnapshotSequence,
+                aggregateKind: "thread",
+                aggregateId: command.threadId,
+                type: "thread.turn-diff-completed",
+                payload: {
+                  threadId: command.threadId,
+                  turnId,
+                },
+                createdAt: new Date().toISOString(),
+              });
             } catch (err: any) {
               console.error("[harnessCompat] LLM turn error", err);
               assistantMsg.streaming = false;
@@ -1053,6 +1178,29 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               };
               globalSnapshotSequence += 1;
               savePersistedState();
+
+              publishDomainEvent({
+                sequence: globalSnapshotSequence,
+                aggregateKind: "thread",
+                aggregateId: command.threadId,
+                type: "thread.message-sent",
+                payload: {
+                  threadId: command.threadId,
+                  message: { ...assistantMsg },
+                },
+                createdAt: new Date().toISOString(),
+              });
+              publishDomainEvent({
+                sequence: globalSnapshotSequence,
+                aggregateKind: "thread",
+                aggregateId: command.threadId,
+                type: "thread.turn-diff-completed",
+                payload: {
+                  threadId: command.threadId,
+                  turnId,
+                },
+                createdAt: new Date().toISOString(),
+              });
             }
           })();
         }
@@ -1060,12 +1208,27 @@ export class OrchestrationEngineService extends ServiceMap.Service<
       }),
     getReadModel: () => Effect.sync(() => emptyReadModel()),
     repairState: () => Effect.sync(() => emptyReadModel()),
-    readEvents: () => Stream.never,
-    readEventsThrough: () => Stream.never,
-    readThreadEvents: () => Stream.never,
-    readThreadEventsThrough: () => Stream.never,
-    subscribeDomainEvents: Effect.succeed(Stream.never),
-    streamDomainEvents: Stream.never,
+    readEvents: () => Stream.fromIterable(eventLog),
+    readEventsThrough: (from: number, through: number) =>
+      Stream.fromIterable(
+        eventLog.filter((e) => e.sequence > from && e.sequence <= through),
+      ),
+    readThreadEvents: (threadId: string) =>
+      Stream.fromIterable(
+        eventLog.filter((e) => e.aggregateKind === "thread" && e.aggregateId === threadId),
+      ),
+    readThreadEventsThrough: (threadId: string, from: number, through: number) =>
+      Stream.fromIterable(
+        eventLog.filter(
+          (e) =>
+            e.aggregateKind === "thread" &&
+            e.aggregateId === threadId &&
+            e.sequence > from &&
+            e.sequence <= through,
+        ),
+      ),
+    subscribeDomainEvents: Effect.succeed(Stream.fromPubSub(domainEventsPubSub)),
+    streamDomainEvents: Stream.fromPubSub(domainEventsPubSub),
   } as any);
 }
 

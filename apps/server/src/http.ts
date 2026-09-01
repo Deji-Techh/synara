@@ -268,7 +268,9 @@ export const projectFaviconRouteLayer = Layer.merge(
       if (!cwd) return HttpServerResponse.text("cwd is required", { status: 400 });
 
       const resolver = yield* ProjectFaviconResolver;
-      const favicon = yield* resolver.resolveFavicon(cwd);
+      const favicon = yield* resolver
+        .resolveFavicon(cwd)
+        .pipe(Effect.catchAll(() => Effect.succeed(Option.none())));
       if (Option.isNone(favicon)) {
         return HttpServerResponse.text("Not Found", { status: 404 });
       }
@@ -294,7 +296,9 @@ export const projectFaviconRouteLayer = Layer.merge(
       if (!cwd) return HttpServerResponse.text("cwd is required", { status: 400 });
 
       const resolver = yield* ProjectFaviconResolver;
-      const favicon = yield* resolver.resolveFavicon(cwd);
+      const favicon = yield* resolver
+        .resolveFavicon(cwd)
+        .pipe(Effect.catchAll(() => Effect.succeed(Option.none())));
       if (Option.isNone(favicon)) {
         return HttpServerResponse.text("Not Found", { status: 404 });
       }
