@@ -38,10 +38,10 @@ export const readFileTool = defineTool({
 export const writeFileTool = defineTool({
   name: "write_file",
   description:
-    "Writes content to a file in the project workspace, creating parent directories if needed.",
+    "Writes content to a file in the project workspace, creating parent directories if needed. Use relative paths like src/App.tsx, src/components/Card.tsx, src/pages/Home.tsx — never empty, never absolute, never the workspace root itself. Example: write_file({\"path\":\"src/App.tsx\",\"content\":\"full file\"})",
   schema: z.object({
-    path: z.string().describe("Relative path to the file"),
-    content: z.string().describe("Full content to write"),
+    path: z.string().min(1).describe("Relative path to the file, e.g. src/App.tsx or src/components/Button.tsx"),
+    content: z.string().min(1).describe("Full file content to write — must be complete, no placeholders"),
   }),
   readOnly: false,
   modifiesState: true,
