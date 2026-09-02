@@ -83,11 +83,30 @@ export function createStreamProviderAdapter(
       options?: { tools?: ToolDefinition[]; signal?: AbortSignal },
     ) {
       const chat = messages
-        .filter((m) => m.role !== "system") // system rides the `system` option
-        .map((m) => ({
-          role: m.role === "assistant" ? "assistant" : "user",
-          content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
-        }));
+        .filter((m: any) => m.role !== "system") // system rides the `system` option
+        .map((m: any) => {
+          // Preserve structured tool history for chat/completions: assistant with
+          // tool_calls and tool role messages. For responses/messages, fall back
+          // to role/content strings.
+          if (m.role === "assistant" && m.tool_calls) {
+            return {
+              role: "assistant",
+              content: m.content ?? null,
+              tool_calls: m.tool_calls,
+            };
+          }
+          if (m.role === "tool") {
+            return {
+              role: "tool",
+              tool_call_id: m.tool_call_id,
+              content: typeof m.content === "string" ? m.content : JSON.stringify(m.content ?? ""),
+            };
+          }
+          return {
+            role: m.role === "assistant" ? "assistant" : "user",
+            content: typeof m.content === "string" ? m.content : JSON.stringify(m.content ?? ""),
+          };
+        });
 
       const providerOpts: Record<string, unknown> = {
         modelId: opts.modelId,

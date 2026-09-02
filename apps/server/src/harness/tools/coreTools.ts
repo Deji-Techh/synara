@@ -38,11 +38,19 @@ export const readFileTool = defineTool({
 export const writeFileTool = defineTool({
   name: "write_file",
   description:
-    "Writes content to a file in the project workspace, creating parent directories if needed. Use relative paths like src/App.tsx, src/components/Card.tsx, src/pages/Home.tsx — never empty, never absolute, never the workspace root itself. Example: write_file({\"path\":\"src/App.tsx\",\"content\":\"full file\"})",
-  schema: z.object({
-    path: z.string().min(1).describe("Relative path to the file, e.g. src/App.tsx or src/components/Button.tsx"),
-    content: z.string().min(1).describe("Full file content to write — must be complete, no placeholders"),
-  }),
+    "Writes content to a file in the project workspace, creating parent directories if needed. Use relative paths like src/App.tsx, src/components/Card.tsx, src/pages/Home.tsx — never empty, never '.' or '/' or absolute, never the workspace root itself. Example: write_file({\"path\":\"src/App.tsx\",\"content\":\"full file\"})",
+  schema: z
+    .object({
+      path: z
+        .string()
+        .min(2)
+        .refine((p) => p !== "." && p !== "/" && !p.startsWith("/") && p.includes("."), {
+          message: "path must be a valid relative file path like src/App.tsx, not '.' or '/' or empty",
+        })
+        .describe("Relative file path, e.g. src/App.tsx or src/components/Button.tsx"),
+      content: z.string().min(1).describe("Full file content to write — must be complete, no placeholders"),
+    })
+    .strict(),
   readOnly: false,
   modifiesState: true,
   execute: async ({ path: filePath, content }, ctx) => {

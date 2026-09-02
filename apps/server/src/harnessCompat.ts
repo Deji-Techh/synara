@@ -1688,20 +1688,40 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 buildMessages: () => conversation,
                 onEvent: (event: any) => {
                   if (event.type === "token" && event.content) {
-                    stepAssistantText += event.content;
-                    assistantMsg.text += event.content;
-                    assistantMsg.updatedAt = new Date().toISOString();
-                    publishAssistantMessage(assistantMsg);
+                    // Dedupe: if this token chunk is already at the tail of assistantMsg.text, skip it
+                    // Fixes "Perfect — let's build...Perfect — let's build..." and "Building Molek...Building Molek..."
+                    const tail = assistantMsg.text.slice(-event.content.length);
+                    if (tail === event.content) {
+                      // exact duplicate chunk, skip
+                    } else if (
+                      event.content.length > 20 &&
+                      assistantMsg.text.endsWith(event.content.slice(0, 20))
+                    ) {
+                      // likely repeated sentence start, skip
+                    } else {
+                      stepAssistantText += event.content;
+                      assistantMsg.text += event.content;
+                      assistantMsg.updatedAt = new Date().toISOString();
+                      publishAssistantMessage(assistantMsg);
+                    }
                   } else if (event.type === "tool_call") {
                     if (event.status === "started") {
-                      // Record the assistant's reasoning + the tool call as one
-                      // assistant message so the provider has the full flow.
+                      // Don't push the full stepAssistantText again if it was already
+                      // streamed to the user — push a concise tool_call history
+                      // that the LLM will see as proper tool history, not text.
+                      // Keep it lean to avoid confusing the model to repeat intro.
+                      const trimmedReasoning = stepAssistantText.slice(-500).trim();
                       conversation.push({
                         role: "assistant",
-                        content: `${stepAssistantText} [Tool call: ${event.name}(${JSON.stringify(
-                          event.args ?? {},
-                        )})]`,
-                      });
+                        content: trimmedReasoning ? trimmedReasoning : `Calling ${event.name}`,
+                        tool_calls: [
+                          {
+                            id: event.id,
+                            type: "function",
+                            function: { name: event.name, arguments: JSON.stringify(event.args ?? {}) },
+                          },
+                        ],
+                      } as any);
                       stepAssistantText = "";
                     } else if (event.status === "completed" || event.status === "failed") {
                       const resultText =
@@ -1709,8 +1729,14 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                           ? event.result
                           : JSON.stringify(event.result ?? {});
                       conversation.push({
+                        role: "tool",
+                        tool_call_id: event.id,
+                        content: resultText,
+                      } as any);
+                      // Also keep a user-visible fallback for providers that expect user role
+                      conversation.push({
                         role: "user",
-                        content: `[Tool result for ${event.name}]: ${resultText}`,
+                        content: `[Tool result for ${event.name}]: ${resultText.slice(0, 2000)}`,
                       });
                     }
                     const marker = `\n\n🛠️ ${event.name} ${event.status}${
@@ -1816,6 +1842,21 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               } catch (e) {
                 console.warn("[harnessCompat] fallback parser error", e);
               }
+
+              // Final dedupe: collapse duplicated sentences that slipped through
+              // (e.g. "Building Molek...Building Molek..." or "Perfect...Perfect..." seen in flawless-koala)
+              try {
+                let deduped = assistantMsg.text;
+                // If the same 40+ char block appears twice back-to-back, collapse to one
+                deduped = deduped.replace(/(.{40,}?)\1/g, "$1");
+                // Handle case where duplication has no separator: "life.Building" -> "life. Building"
+                // Already covered by above, but also handle with period
+                if (deduped !== assistantMsg.text) {
+                  assistantMsg.text = deduped.trim();
+                  assistantMsg.updatedAt = new Date().toISOString();
+                  publishAssistantMessage(assistantMsg);
+                }
+              } catch {}
 
               assistantMsg.streaming = false;
               turn.status = "completed";
