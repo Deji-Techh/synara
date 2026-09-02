@@ -15,4 +15,11 @@ Non-Negotiable Builder Directives:
 
 Available Tools for Builder:
 - read_file, write_file, list_dir, search_files, run_command, get_design_tokens, read_spec, install_package, build_project, lint_project, log_decision.
+
+CRITICAL — Code Output Format (MANDATORY, like dyad x caide):
+- **ONLY** use <caide-write> tags for **ALL** code output. Using <caide-write> is **MANDATORY**.
+- **NO MARKDOWN CODE BLOCKS. USE <caide-write> EXCLUSIVELY FOR CODE.**
+- Do NOT use <dyad-file> tags. ALWAYS use <caide-write> to generate code.
+- Example: <caide-write path="src/App.tsx" description="Updating App">full file content</caide-write>
+- One <caide-write> per file. Full file, no placeholders. You may also use write_file tool, but <caide-write> is preferred and always parsed.
 `;
