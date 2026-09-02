@@ -1,12 +1,13 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { execFile } from "node:child_process";
+import { exec, execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { z } from "zod";
 import { defineTool, type ToolDef } from "./defineTool.ts";
 import { designTokens, type DesignTokens } from "../../design/tokens.ts";
 
 const execFileAsync = promisify(execFile);
+const execAsync = promisify(exec);
 
 function resolveSafePath(userPath: string, appPath: string): string {
   const resolved = path.resolve(appPath, userPath);
@@ -124,15 +125,25 @@ export const runCommandTool = defineTool({
   name: "run_command",
   description: "Executes a shell command inside workspace root. Modifies state, SIGTERM killable.",
   schema: z.object({
-    cmd: z.string().describe("Command binary name"),
+    command: z.string().optional().describe("Full shell command string to execute, e.g. 'bun add expo-router'"),
+    cmd: z.string().optional().describe("Command binary name or full command"),
     args: z.array(z.string()).default([]).describe("Command arguments"),
     cwd: z.string().optional().describe("Working directory relative to project root"),
   }),
   readOnly: false,
   modifiesState: true,
-  execute: async ({ cmd, args, cwd }, ctx) => {
+  execute: async ({ command, cmd, args, cwd }, ctx) => {
     const workDir = cwd ? resolveSafePath(cwd, ctx.appPath) : ctx.appPath;
-    const { stdout, stderr } = await execFileAsync(cmd, args, {
+    const rawCmd = (command || cmd || "").trim();
+    if (!rawCmd) {
+      throw new Error("Missing command string in run_command");
+    }
+    const commandToRun =
+      args && args.length > 0 && !rawCmd.includes(" ")
+        ? `${rawCmd} ${args.map((a) => (a.includes(" ") ? JSON.stringify(a) : a)).join(" ")}`
+        : rawCmd;
+
+    const { stdout, stderr } = await execAsync(commandToRun, {
       cwd: workDir,
       signal: ctx.signal,
       maxBuffer: 10 * 1024 * 1024,

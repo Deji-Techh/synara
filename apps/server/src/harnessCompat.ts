@@ -973,13 +973,13 @@ async function buildSystemPrompt(
   const frameworkShort = FRAMEWORK_SHORT[framework] ?? FRAMEWORK_SHORT.blank;
   const slashHelp = `User slash commands (client-side, you don't call them): /clear (new thread), /plan (plan mode), /default (build mode), /debug, /model, /compact, /status, /export, /fork, /side, /review, /doctor, /test, /analyze, /build, /preview, /theme, /goal, /spawn, /init, /btw, /learn, /commands, /help — they are handled by the UI. If user typed /plan, you are already in PLAN; if they typed /clear, context is fresh.`;
   const greetingRule = `For casual greetings like "hey", "hi", "hello" without a build request, respond with a friendly short greeting and ask what they would like to build — do not call tools.`;
-  const buildRule = `When the user requests a build, immediately start building: call list_dir to inspect workspace, call write_file to create or update files with complete code, run_command for dependency installs, and build_project to verify. Never use empty path "" or "." for write_file. Always provide complete code without placeholders.`;
+  const buildRule = `When the user requests a build, work proactively: inspect the workspace with list_dir, then immediately proceed to creating or updating files with write_file and installing packages with run_command. Do not get stuck repeatedly inspecting files. Always provide complete working code without placeholders.`;
   const modeDirective =
     normalizedMode === "ask"
       ? `You are in ASK mode for ${framework} (${frameworkShort}). Answer for THIS framework only — if asked "what can you build?" list only ${framework} capabilities, not all frameworks. You have READ-ONLY tools available (read_file, list_dir, search_files, read_url, get_design_tokens, read_spec, get_preview_url, screenshot, lint_project, test_project, spawn_subagent) — use them if you need to inspect files to answer. Do NOT write code or modify files unless the user explicitly asks.\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}`
       : normalizedMode === "plan"
         ? `You are in PLAN mode for ${framework} (${frameworkShort}). Create a plan/spec before writing application code for THIS framework only. You have full tools — use write_spec, write_design_spec, write_motion_spec, checkpoint, log_decision, plus read tools to inspect workspace.\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}`
-        : `You are in BUILD mode for ${framework} (${frameworkShort}). ${greetingRule} ${buildRule}\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}\n\nTool rules: always read before write; call write_file for code, run_command for installs/builds, get_preview_url to get preview URL, screenshot to verify, spawn_subagent for heavy parallel subtasks.`;
+        : `You are in BUILD mode for ${framework} (${frameworkShort}). ${greetingRule} ${buildRule}\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}\n\nTool rules: work efficiently; call write_file to produce code, run_command for installs/builds, get_preview_url to get preview URL, screenshot to verify.`;
   return `${rolePrompt}\n\n${modeDirective}`.trim();
 }
 
@@ -1682,7 +1682,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               const loop = runLoop({
                 sessionId: thread.id,
                 turnId,
-                maxSteps: 10,
+                maxSteps: 100,
                 llm: adapter,
                 tools: loopToolDefinitions,
                 buildMessages: () => conversation,
@@ -1775,31 +1775,26 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                           .replace(/\{\s*"path"\s*:\s*"[^"]*"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g, "")
                           .trim();
                       }
-                      // Also strip completed <caide-write> tags from display text (dyad does this — tags are not shown, only the "Applied" marker)
-                      if (/<\/(?:caide|dyad)-write>/i.test(assistantMsg.text)) {
-                        const stripped = assistantMsg.text
-                          .replace(/<(?:caide|dyad)-write[^>]*>[\s\S]*?<\/(?:caide|dyad)-write>/gi, "")
-                          .replace(/\n{3,}/g, "\n\n")
-                          .trim();
-                        if (stripped !== assistantMsg.text) {
-                          const lastTagPath = (() => {
-                            const re = /<(?:caide|dyad)-write[^>]*path="([^"]+)"[^>]*>/gi;
-                            let last = "";
-                            let mm: RegExpExecArray | null;
-                            while ((mm = re.exec(assistantMsg.text)) !== null) last = mm[1] ?? "";
-                            return last;
-                          })();
-                          assistantMsg.text = stripped + (lastTagPath ? `\n\n✅ Wrote ${lastTagPath}` : "");
-                        }
-                      }
                       publishAssistantMessage(assistantMsg);
                     }
                   } else if (event.type === "tool_call") {
+                    const toolArgs =
+                      event.args && typeof event.args === "object"
+                        ? (event.args as Record<string, any>)
+                        : {};
+                    const targetAttr = toolArgs.path
+                      ? ` path="${String(toolArgs.path).replace(/"/g, "&quot;")}"`
+                      : toolArgs.command
+                        ? ` command="${String(toolArgs.command).replace(/"/g, "&quot;")}"`
+                        : toolArgs.cmd
+                          ? ` command="${String(toolArgs.cmd).replace(/"/g, "&quot;")}"`
+                          : toolArgs.url
+                            ? ` url="${String(toolArgs.url).replace(/"/g, "&quot;")}"`
+                            : toolArgs.query
+                              ? ` query="${String(toolArgs.query).replace(/"/g, "&quot;")}"`
+                              : "";
+
                     if (event.status === "started") {
-                      // Don't push the full stepAssistantText again if it was already
-                      // streamed to the user — push a concise tool_call history
-                      // that the LLM will see as proper tool history, not text.
-                      // Keep it lean to avoid confusing the model to repeat intro.
                       const trimmedReasoning = stepAssistantText.slice(-500).trim();
                       conversation.push({
                         role: "assistant",
@@ -1808,32 +1803,48 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                           {
                             id: event.id,
                             type: "function",
-                            function: { name: event.name, arguments: JSON.stringify(event.args ?? {}) },
+                            function: {
+                              name: event.name,
+                              arguments: JSON.stringify(event.args ?? {}),
+                            },
                           },
                         ],
                       } as any);
                       stepAssistantText = "";
+
+                      const inputSnippet =
+                        Object.keys(toolArgs).length > 0
+                          ? JSON.stringify(toolArgs, null, 2)
+                          : "";
+                      const startTag = `\n\n<caide-tool id="${event.id}" name="${event.name}" status="running"${targetAttr}>\n${inputSnippet}\n</caide-tool>\n\n`;
+                      assistantMsg.text += startTag;
+                      assistantMsg.updatedAt = new Date().toISOString();
+                      publishAssistantMessage(assistantMsg);
                     } else if (event.status === "completed" || event.status === "failed") {
                       const resultText =
                         typeof event.result === "string"
                           ? event.result
-                          : JSON.stringify(event.result ?? {});
+                          : JSON.stringify(event.result ?? {}, null, 2);
                       conversation.push({
                         role: "tool",
                         tool_call_id: event.id,
                         content: resultText,
                       } as any);
+
+                      const statusStr = event.status === "completed" ? "complete" : "error";
+                      const updatedTag = `\n\n<caide-tool id="${event.id}" name="${event.name}" status="${statusStr}"${targetAttr}>\n${resultText}\n</caide-tool>\n\n`;
+                      const existingTagRe = new RegExp(
+                        `\\n*<caide-tool[^>]*id="${event.id}"[^>]*>[\\s\\S]*?<\\/caide-tool>\\n*`,
+                        "g",
+                      );
+                      if (existingTagRe.test(assistantMsg.text)) {
+                        assistantMsg.text = assistantMsg.text.replace(existingTagRe, updatedTag);
+                      } else {
+                        assistantMsg.text += updatedTag;
+                      }
+                      assistantMsg.updatedAt = new Date().toISOString();
+                      publishAssistantMessage(assistantMsg);
                     }
-                    const marker = `\n\n🛠️ ${event.name} ${event.status}${
-                      event.result && event.status === "completed"
-                        ? ` — ${JSON.stringify(event.result).slice(0, 200)}`
-                        : event.status === "failed"
-                          ? ` — failed`
-                          : ""
-                    }`;
-                    assistantMsg.text += marker;
-                    assistantMsg.updatedAt = new Date().toISOString();
-                    publishAssistantMessage(assistantMsg);
                   }
                 },
               });

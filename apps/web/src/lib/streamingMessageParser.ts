@@ -81,6 +81,7 @@ const RAW_TAG_NAMES = [
   "dyad-app-blueprint",
   "dyad-security-finding",
   "dyad-generate-test",
+  "dyad-tool",
 ];
 
 const DYAD_CUSTOM_TAG_NAMES = [
@@ -218,6 +219,23 @@ function commitOpenMarkdown(state: ParserState): void {
   }
 }
 
+export function normalizeLegacyToolMarkers(text: string): string {
+  if (!text.includes("🛠️")) return text;
+  const cleaned = text.replace(
+    /🛠️\s*([\w_-]+)\s+started(?=[\s\S]*?🛠️\s*\1\s+(?:completed|failed))/g,
+    "",
+  );
+  return cleaned.replace(
+    /🛠️\s*([\w_-]+)\s+(started|completed|failed)(?:\s*—\s*([\s\S]*?))?(?=\n+🛠️|\n+<(?:caide|dyad)-|\n+[A-Z]|$)/g,
+    (_, name, status, result) => {
+      const normStatus =
+        status === "completed" ? "complete" : status === "failed" ? "error" : "running";
+      const cleanResult = (result || "").trim();
+      return `\n\n<caide-tool name="${name}" status="${normStatus}">\n${cleanResult}\n</caide-tool>\n\n`;
+    },
+  );
+}
+
 /**
  * Advance the parser through `content` starting from state.cursor.
  * If `content` is shorter than state.cursor (a rewrite/resync), the parser
@@ -228,7 +246,8 @@ function commitOpenMarkdown(state: ParserState): void {
  * gets a new ref only when a block closes during this advance. The open
  * block is rebuilt only when its content changes.
  */
-export function advanceParser(prev: ParserState, content: string): ParserState {
+export function advanceParser(prev: ParserState, rawContent: string): ParserState {
+  const content = rawContent.includes("🛠️") ? normalizeLegacyToolMarkers(rawContent) : rawContent;
   let state: ParserState;
   if (content.length < prev.cursor) {
     state = initialParserState();

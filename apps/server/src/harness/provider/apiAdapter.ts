@@ -184,6 +184,7 @@ export async function* streamProvider(
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  let inThinking = false;
 
   try {
     while (true) {
@@ -221,6 +222,10 @@ export async function* streamProvider(
         if (trimmed.startsWith("data:")) {
           const dataStr = trimmed.slice(5).trim();
           if (dataStr === "[DONE]") {
+            if (inThinking) {
+              inThinking = false;
+              yield { type: "token", content: "</think>\n\n" };
+            }
             for (const complete of assembler.flushAll()) {
               yield { type: "tool_call", toolCall: complete };
             }
@@ -230,6 +235,33 @@ export async function* streamProvider(
 
           try {
             const json = JSON.parse(dataStr);
+
+            // 0. Reasoning / Thinking token extraction (DeepSeek R1, Kimi, Anthropic thinking)
+            let reasoningToken: string | undefined;
+            if (typeof json.choices?.[0]?.delta?.reasoning_content === "string") {
+              reasoningToken = json.choices[0].delta.reasoning_content;
+            } else if (
+              json.type === "content_block_delta" &&
+              json.delta?.type === "thinking_delta" &&
+              typeof json.delta?.thinking === "string"
+            ) {
+              reasoningToken = json.delta.thinking;
+            }
+
+            if (reasoningToken) {
+              if (!inThinking) {
+                inThinking = true;
+                yield { type: "token", content: "<think>" };
+              }
+              yield { type: "token", content: reasoningToken };
+            }
+
+            if (json.type === "content_block_start" && json.content_block?.type === "thinking") {
+              if (!inThinking) {
+                inThinking = true;
+                yield { type: "token", content: "<think>" };
+              }
+            }
 
             // 1. Text token extraction across OpenAI, Anthropic, Responses, and Gemini schemas
             let token: string | undefined;
@@ -257,6 +289,10 @@ export async function* streamProvider(
             }
 
             if (token) {
+              if (inThinking) {
+                inThinking = false;
+                yield { type: "token", content: "</think>\n\n" };
+              }
               timing.recordToken();
               yield { type: "token", content: token };
             }
@@ -386,6 +422,10 @@ export async function* streamProvider(
       reader.releaseLock();
     } catch {
       // ignore
+    }
+    if (inThinking) {
+      inThinking = false;
+      yield { type: "token", content: "</think>\n\n" };
     }
     for (const complete of assembler.flushAll()) {
       yield { type: "tool_call", toolCall: complete };

@@ -75,7 +75,7 @@ import { CaideAppBlueprintCard } from "./chat/CaideAppBlueprintCard";
 import { CaideQuestionnaireCard } from "./chat/CaideQuestionnaireCard";
 import { CaideCommandButton } from "./chat/CaideCommandButton";
 import { CaideThinkCard } from "./chat/CaideThinkCard";
-import { CaideGenericToolCard } from "./chat/CaideGenericToolCard";
+import { CaideClaudeToolCard } from "./chat/CaideClaudeToolCard";
 
 const EXTERNAL_HTTP_HREF_PATTERN = /^https?:\/\//i;
 // Trailing `:line` / `:line:col` position suffix on a resolved file link. Kept on
@@ -1437,12 +1437,12 @@ function ChatMarkdown({
           }
 
           return (
-            <CaideGenericToolCard
+            <CaideClaudeToolCard
               key={`tag-${block.id}`}
-              toolName={block.tag}
+              toolName={block.attributes.name || block.tag}
               attributes={block.attributes}
               content={block.content}
-              state={block.complete ? "complete" : "pending"}
+              state={block.attributes.status || (block.complete ? "complete" : "running")}
             />
           );
         }
