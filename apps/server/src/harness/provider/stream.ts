@@ -14,30 +14,33 @@ export class BlockAssembler {
   private activeCalls = new Map<string, PartialToolCall>();
 
   /**
-   * Appends a chunk delta to a tool call block and attempts to parse it when complete.
+   * Appends a chunk delta to a tool call block.
    */
-  appendDelta(id: string, delta: { name?: string; argsDelta?: string }): CompleteToolCall | null {
-    let call = this.activeCalls.get(id);
+  appendDelta(
+    key: string,
+    delta: { id?: string; name?: string; argsDelta?: string },
+  ): CompleteToolCall | null {
+    let call = this.activeCalls.get(key);
     if (!call) {
-      call = { id, name: delta.name ?? "", argsString: "" };
-      this.activeCalls.set(id, call);
+      call = { id: delta.id || key, name: delta.name ?? "", argsString: "" };
+      this.activeCalls.set(key, call);
     }
 
+    if (delta.id && (!call.id || call.id === key)) {
+      call.id = delta.id;
+    }
     if (delta.name && !call.name) {
       call.name = delta.name;
     }
-
     if (delta.argsDelta) {
       call.argsString += delta.argsDelta;
     }
 
-    // Try parsing JSON args
     const trimmed = call.argsString.trim();
     if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
       try {
         const parsed = JSON.parse(trimmed);
         if (typeof parsed === "object" && parsed !== null) {
-          this.activeCalls.delete(id);
           return {
             id: call.id,
             name: call.name,
@@ -52,25 +55,43 @@ export class BlockAssembler {
     return null;
   }
 
-  finalize(id: string): CompleteToolCall | null {
-    const call = this.activeCalls.get(id);
+  finalize(key: string): CompleteToolCall | null {
+    const call = this.activeCalls.get(key);
     if (!call) return null;
 
-    this.activeCalls.delete(id);
-    try {
-      const parsed = JSON.parse(call.argsString || "{}");
-      return {
-        id: call.id,
-        name: call.name,
-        args: parsed,
-      };
-    } catch {
-      return {
-        id: call.id,
-        name: call.name,
-        args: { raw: call.argsString },
-      };
+    this.activeCalls.delete(key);
+    const trimmed = call.argsString.trim();
+    let parsed: Record<string, unknown> = {};
+
+    if (trimmed) {
+      try {
+        parsed = JSON.parse(trimmed);
+      } catch {
+        try {
+          const match = trimmed.match(/\{[\s\S]*\}/);
+          parsed = match ? JSON.parse(match[0]) : { raw: trimmed };
+        } catch {
+          parsed = { raw: trimmed };
+        }
+      }
     }
+
+    return {
+      id: call.id,
+      name: call.name,
+      args: typeof parsed === "object" && parsed !== null ? parsed : { value: parsed },
+    };
+  }
+
+  flushAll(): CompleteToolCall[] {
+    const results: CompleteToolCall[] = [];
+    for (const key of Array.from(this.activeCalls.keys())) {
+      const res = this.finalize(key);
+      if (res && res.name && res.name.trim().length > 0) {
+        results.push(res);
+      }
+    }
+    return results;
   }
 
   reset(): void {

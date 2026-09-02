@@ -32,9 +32,11 @@ export function endpointForModel(modelId: string, baseUrl?: string): ApiEndpoint
   if (lower.startsWith("claude-") || lower.startsWith("qwen")) {
     return "messages";
   }
-  // minimax is /messages on Go, /chat/completions on Zen — check baseUrl
+  // minimax is /messages on Go (and default), /chat/completions on Zen v1
   if (lower.startsWith("minimax")) {
-    return baseUrl && baseUrl.includes("/go/") ? "messages" : "chat/completions";
+    return baseUrl && baseUrl.includes("/zen/v1") && !baseUrl.includes("/go/")
+      ? "chat/completions"
+      : "messages";
   }
   // glm, kimi, longcat, deepseek, mimo, hy, big-pickle, ling, nemotron, laguna are all chat/completions on both per tables
   return "chat/completions";
@@ -93,10 +95,12 @@ export async function* streamProvider(
       // messages. Strip system entries from the message list so they don't get
       // coerced into user turns.
       ...(system ? { system } : {}),
-      messages: (messages as any[]).map((m: any) => ({
-        role: m.role === "assistant" ? "assistant" : m.role === "system" ? "user" : "user",
-        content: typeof m.content === "string" ? m.content : JSON.stringify(m.content ?? ""),
-      })),
+      messages: (messages as any[])
+        .filter((m: any) => m.role !== "system")
+        .map((m: any) => ({
+          role: m.role === "assistant" ? "assistant" : "user",
+          content: m.content,
+        })),
       max_tokens: 4096,
       stream: true,
       ...(tools && tools.length > 0 ? { tools } : {}),
@@ -114,10 +118,11 @@ export async function* streamProvider(
       ...(system ? { system_instruction: { parts: [{ text: system }] } } : {}),
       contents: (messages as any[]).map((m: any) => ({
         role: m.role === "assistant" ? "model" : "user",
-        parts: [
-          { text: typeof m.content === "string" ? m.content : JSON.stringify(m.content ?? "") },
-        ],
+        parts: Array.isArray(m.parts)
+          ? m.parts
+          : [{ text: typeof m.content === "string" ? m.content : JSON.stringify(m.content ?? "") }],
       })),
+      ...(tools && tools.length > 0 ? { tools: [{ function_declarations: tools }] } : {}),
     };
   } else {
     requestBody = {
@@ -216,6 +221,9 @@ export async function* streamProvider(
         if (trimmed.startsWith("data:")) {
           const dataStr = trimmed.slice(5).trim();
           if (dataStr === "[DONE]") {
+            for (const complete of assembler.flushAll()) {
+              yield { type: "tool_call", toolCall: complete };
+            }
             if (onTiming) onTiming(timing.finish());
             return;
           }
@@ -227,18 +235,25 @@ export async function* streamProvider(
             let token: string | undefined;
             if (typeof json.choices?.[0]?.delta?.content === "string") {
               token = json.choices[0].delta.content;
-            } else if (typeof json.delta?.text === "string") {
+            } else if (
+              json.type === "content_block_delta" &&
+              json.delta?.type === "text_delta" &&
+              typeof json.delta?.text === "string"
+            ) {
               token = json.delta.text;
-            } else if (typeof json.delta === "string") {
+            } else if (
+              (json.type === "response.output_text.delta" || json.type === "response.text.delta") &&
+              typeof json.delta === "string"
+            ) {
               token = json.delta;
-            } else if (typeof json.text === "string") {
+            } else if (!json.type && typeof json.delta?.text === "string") {
+              token = json.delta.text;
+            } else if (typeof json.text === "string" && !json.type) {
               token = json.text;
-            } else if (typeof json.content === "string") {
+            } else if (typeof json.content === "string" && !json.type) {
               token = json.content;
             } else if (typeof json.candidates?.[0]?.content?.parts?.[0]?.text === "string") {
               token = json.candidates[0].content.parts[0].text;
-            } else if (typeof json.response?.output_item?.content === "string") {
-              token = json.response.output_item.content;
             }
 
             if (token) {
@@ -246,28 +261,49 @@ export async function* streamProvider(
               yield { type: "token", content: token };
             }
 
-            // 2. Tool call delta extraction (chat/completions dialect)
+            // 2a. Tool call delta extraction (chat/completions dialect)
             const toolCallDeltas = json.choices?.[0]?.delta?.tool_calls ?? json.tool_calls;
             if (Array.isArray(toolCallDeltas)) {
               for (const delta of toolCallDeltas) {
-                const completeCall = assembler.appendDelta(delta.id || `call-${delta.index ?? 0}`, {
+                const key = `chat-${delta.index ?? 0}`;
+                assembler.appendDelta(key, {
+                  id: delta.id,
                   name: delta.function?.name,
                   argsDelta: delta.function?.arguments,
                 });
-                if (completeCall) {
-                  yield { type: "tool_call", toolCall: completeCall };
+              }
+            }
+            const finishReason = json.choices?.[0]?.finish_reason;
+            if (finishReason === "tool_calls" || finishReason === "function_call") {
+              for (const complete of assembler.flushAll()) {
+                yield { type: "tool_call", toolCall: complete };
+              }
+            }
+            const fullCalls = json.choices?.[0]?.message?.tool_calls;
+            if (Array.isArray(fullCalls)) {
+              for (const fc of fullCalls) {
+                let parsed: Record<string, unknown> = {};
+                try {
+                  parsed = JSON.parse(fc.function?.arguments || "{}");
+                } catch {
+                  parsed = { raw: fc.function?.arguments };
                 }
+                yield {
+                  type: "tool_call",
+                  toolCall: {
+                    id: fc.id || `call-${Date.now()}`,
+                    name: fc.function?.name || "",
+                    args: parsed,
+                  },
+                };
               }
             }
 
-            // 2b. Tool call extraction (OpenAI Responses dialect): output items
-            // stream as response.output_item.added / function_call_arguments.delta /
-            // function_call_arguments.done / output_item.done events. The
-            // consistent key across all of them is the item `id` (`fc_...`),
-            // NOT `call_id` — using call_id drops the argument deltas.
+            // 2b. Tool call extraction (OpenAI Responses dialect)
             const respEvent = json.type as string | undefined;
             if (respEvent === "response.output_item.added" && json.item?.type === "function_call") {
               assembler.appendDelta(json.item.id, {
+                id: json.item.call_id || json.item.id,
                 name: json.item.name,
                 argsDelta: typeof json.item.arguments === "string" ? json.item.arguments : "",
               });
@@ -276,18 +312,68 @@ export async function* streamProvider(
               typeof json.delta === "string"
             ) {
               assembler.appendDelta(json.item_id, { argsDelta: json.delta });
-            } else if (
-              respEvent === "response.function_call_arguments.done" &&
-              typeof json.arguments === "string"
-            ) {
+            } else if (respEvent === "response.function_call_arguments.done") {
               const complete = assembler.finalize(json.item_id);
-              if (complete) yield { type: "tool_call", toolCall: complete };
+              if (complete && complete.name) {
+                if (typeof json.arguments === "string") {
+                  try {
+                    complete.args = JSON.parse(json.arguments);
+                  } catch {}
+                }
+                yield { type: "tool_call", toolCall: complete };
+              }
             } else if (
               respEvent === "response.output_item.done" &&
               json.item?.type === "function_call"
             ) {
               const complete = assembler.finalize(json.item.id);
-              if (complete) yield { type: "tool_call", toolCall: complete };
+              if (complete && complete.name) {
+                yield { type: "tool_call", toolCall: complete };
+              }
+            }
+
+            // 2c. Tool call extraction (Anthropic messages dialect)
+            if (json.type === "content_block_start" && json.content_block?.type === "tool_use") {
+              assembler.appendDelta(`anthropic-${json.index ?? 0}`, {
+                id: json.content_block.id,
+                name: json.content_block.name,
+                argsDelta: "",
+              });
+            } else if (
+              json.type === "content_block_delta" &&
+              json.delta?.type === "input_json_delta" &&
+              typeof json.delta?.partial_json === "string"
+            ) {
+              assembler.appendDelta(`anthropic-${json.index ?? 0}`, {
+                argsDelta: json.delta.partial_json,
+              });
+            } else if (json.type === "content_block_stop") {
+              const complete = assembler.finalize(`anthropic-${json.index ?? 0}`);
+              if (complete && complete.name) {
+                yield { type: "tool_call", toolCall: complete };
+              }
+            }
+
+            // 2d. Tool call extraction (Gemini dialect)
+            const candidates = json.candidates;
+            if (Array.isArray(candidates)) {
+              for (const candidate of candidates) {
+                const parts = candidate.content?.parts;
+                if (Array.isArray(parts)) {
+                  for (const part of parts) {
+                    if (part.functionCall) {
+                      yield {
+                        type: "tool_call",
+                        toolCall: {
+                          id: `gemini-${part.functionCall.name}-${Date.now()}`,
+                          name: part.functionCall.name,
+                          args: part.functionCall.args ?? {},
+                        },
+                      };
+                    }
+                  }
+                }
+              }
             }
           } catch {
             // ignore malformed SSE line
@@ -300,6 +386,9 @@ export async function* streamProvider(
       reader.releaseLock();
     } catch {
       // ignore
+    }
+    for (const complete of assembler.flushAll()) {
+      yield { type: "tool_call", toolCall: complete };
     }
     if (onTiming) onTiming(timing.finish());
   }

@@ -972,14 +972,14 @@ async function buildSystemPrompt(
   }
   const frameworkShort = FRAMEWORK_SHORT[framework] ?? FRAMEWORK_SHORT.blank;
   const slashHelp = `User slash commands (client-side, you don't call them): /clear (new thread), /plan (plan mode), /default (build mode), /debug, /model, /compact, /status, /export, /fork, /side, /review, /doctor, /test, /analyze, /build, /preview, /theme, /goal, /spawn, /init, /btw, /learn, /commands, /help — they are handled by the UI. If user typed /plan, you are already in PLAN; if they typed /clear, context is fresh.`;
-  const greetingRule = `For casual greetings like "hey", "hi", "hello" without a build request, just respond with a friendly short greeting and ask what they'd like to build — do NOT say "booting up your React Native build", do NOT call tools, do NOT output JSON or {}.`;
-  const buildRule = `When the user DOES request a build (e.g. "build a social media app for UNIOSUN"), immediately start building: first list_dir to see workspace, then emit EVERY file as <caide-write path="src/App.tsx" description="...">full content</caide-write> — this is **MANDATORY, ONLY use <caide-write> for ALL code output, NO markdown code blocks**. Never use empty path "" or "." — always use a full relative path like src/App.tsx, src/components/Card.tsx, src/screens/HomeScreen.tsx. Do NOT repeat the intro twice, do NOT output {"path":""} JSON. After each file, the harness will write it; then call build_project to verify.`;
+  const greetingRule = `For casual greetings like "hey", "hi", "hello" without a build request, respond with a friendly short greeting and ask what they would like to build — do not call tools.`;
+  const buildRule = `When the user requests a build, immediately start building: call list_dir to inspect workspace, call write_file to create or update files with complete code, run_command for dependency installs, and build_project to verify. Never use empty path "" or "." for write_file. Always provide complete code without placeholders.`;
   const modeDirective =
     normalizedMode === "ask"
       ? `You are in ASK mode for ${framework} (${frameworkShort}). Answer for THIS framework only — if asked "what can you build?" list only ${framework} capabilities, not all frameworks. You have READ-ONLY tools available (read_file, list_dir, search_files, read_url, get_design_tokens, read_spec, get_preview_url, screenshot, lint_project, test_project, spawn_subagent) — use them if you need to inspect files to answer. Do NOT write code or modify files unless the user explicitly asks.\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}`
       : normalizedMode === "plan"
         ? `You are in PLAN mode for ${framework} (${frameworkShort}). Create a plan/spec before writing application code for THIS framework only. You have full tools — use write_spec, write_design_spec, write_motion_spec, checkpoint, log_decision, plus read tools to inspect workspace.\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}`
-        : `You are in BUILD mode for ${framework} (${frameworkShort}). ${greetingRule} ${buildRule}\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}\n\nTool rules: always read before write; prefer write_file for code, run_command for installs/builds, get_preview_url to get preview URL, screenshot to verify, spawn_subagent for heavy parallel subtasks. Do NOT repeat the same paragraph twice in one response.`;
+        : `You are in BUILD mode for ${framework} (${frameworkShort}). ${greetingRule} ${buildRule}\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}\n\nTool rules: always read before write; call write_file for code, run_command for installs/builds, get_preview_url to get preview URL, screenshot to verify, spawn_subagent for heavy parallel subtasks.`;
   return `${rolePrompt}\n\n${modeDirective}`.trim();
 }
 
@@ -1688,8 +1688,74 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 buildMessages: () => conversation,
                 onEvent: (event: any) => {
                   if (event.type === "token" && event.content) {
-                    // Dedupe: if this token chunk is already at the tail of assistantMsg.text, skip it
-                    // Fixes "Perfect — let's build...Perfect — let's build..." and "Building Molek...Building Molek..."
+                    // If this token completes a <caide-write> tag, execute it immediately (dyad-style)
+                    // so tools work even when structured function_call is missed (seen as {"path":""} leak)
+                    const tentativeText = assistantMsg.text + event.content;
+                    const hasCompleteTag = /<\/(?:caide|dyad)-write>/i.test(tentativeText);
+                    const hasLeakedJson = /\{\s*"path"\s*:\s*".*?"\s*(?:,\s*"content")?/.test(tentativeText);
+                    if (hasCompleteTag || hasLeakedJson) {
+                      // Try to extract and execute any complete <caide-write> tags now, not just after loop
+                      try {
+                        const tagRe2 = /<(?:caide|dyad)-write[^>]*path="([^"]+)"[^>]*>([\s\S]*?)<\/(?:caide|dyad)-write>/gi;
+                        let m2: RegExpExecArray | null;
+                        const alreadyExecuted = new Set<string>();
+                        // Collect already executed paths from conversation to avoid double-write
+                        for (const msg of conversation) {
+                          if (typeof msg.content === "string" && msg.content.includes("[Tool call:")) {
+                            const pm = /\[Tool call: write_file\((.*?)\)\]/.exec(msg.content);
+                            if (pm) {
+                              try {
+                                const args = JSON.parse(pm[1] ?? "{}");
+                                if (args.path) alreadyExecuted.add(args.path);
+                              } catch {}
+                            }
+                          }
+                        }
+                        while ((m2 = tagRe2.exec(tentativeText)) !== null) {
+                          const p = (m2[1] ?? "").trim();
+                          let c = m2[2] ?? "";
+                          const lines = c.split("\n");
+                          if (lines[0]?.trim().startsWith("```")) lines.shift();
+                          if (lines[lines.length - 1]?.trim().startsWith("```")) lines.pop();
+                          c = lines.join("\n").trim();
+                          if (p && c && !alreadyExecuted.has(p) && p !== "." && p !== "/" && p !== "") {
+                            alreadyExecuted.add(p);
+                            // Fire-and-forget write, but also push to conversation so next LLM turn sees it
+                            import("./harness/tools/coreTools.ts").then(({ writeFileTool }) => {
+                              writeFileTool
+                                .execute(
+                                  { path: p, content: c },
+                                  {
+                                    signal: new AbortController().signal,
+                                    appPath,
+                                    sessionId: thread.id,
+                                    toolId: `tag-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                                  } as any,
+                                )
+                                .catch(() => {});
+                            });
+                            // Also push to conversation as if it were a tool call, so model knows it succeeded
+                            conversation.push({
+                              role: "assistant",
+                              content: `Wrote ${p} via <caide-write>`,
+                              tool_calls: [
+                                {
+                                  id: `tag-${p}`,
+                                  type: "function",
+                                  function: { name: "write_file", arguments: JSON.stringify({ path: p, content: c.slice(0, 200) + "..." }) },
+                                },
+                              ],
+                            } as any);
+                            conversation.push({
+                              role: "tool",
+                              tool_call_id: `tag-${p}`,
+                              content: JSON.stringify({ path: p, bytesWritten: c.length }),
+                            } as any);
+                          }
+                        }
+                      } catch {}
+                    }
+                    // Dedupe: if this token chunk is already at the tail, skip it
                     const tail = assistantMsg.text.slice(-event.content.length);
                     if (tail === event.content) {
                       // exact duplicate chunk, skip
@@ -1702,6 +1768,30 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                       stepAssistantText += event.content;
                       assistantMsg.text += event.content;
                       assistantMsg.updatedAt = new Date().toISOString();
+                      // Strip leaked {"path":""} immediately so user never sees it (like dyad strips tags from display)
+                      if (/\{\s*"path"\s*:\s*"\.?"\s*(?:,\s*"content")?/.test(assistantMsg.text)) {
+                        assistantMsg.text = assistantMsg.text
+                          .replace(/\{\s*"path"\s*:\s*"\.?"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g, "")
+                          .replace(/\{\s*"path"\s*:\s*"[^"]*"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g, "")
+                          .trim();
+                      }
+                      // Also strip completed <caide-write> tags from display text (dyad does this — tags are not shown, only the "Applied" marker)
+                      if (/<\/(?:caide|dyad)-write>/i.test(assistantMsg.text)) {
+                        const stripped = assistantMsg.text
+                          .replace(/<(?:caide|dyad)-write[^>]*>[\s\S]*?<\/(?:caide|dyad)-write>/gi, "")
+                          .replace(/\n{3,}/g, "\n\n")
+                          .trim();
+                        if (stripped !== assistantMsg.text) {
+                          const lastTagPath = (() => {
+                            const re = /<(?:caide|dyad)-write[^>]*path="([^"]+)"[^>]*>/gi;
+                            let last = "";
+                            let mm: RegExpExecArray | null;
+                            while ((mm = re.exec(assistantMsg.text)) !== null) last = mm[1] ?? "";
+                            return last;
+                          })();
+                          assistantMsg.text = stripped + (lastTagPath ? `\n\n✅ Wrote ${lastTagPath}` : "");
+                        }
+                      }
                       publishAssistantMessage(assistantMsg);
                     }
                   } else if (event.type === "tool_call") {
@@ -1733,11 +1823,6 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                         tool_call_id: event.id,
                         content: resultText,
                       } as any);
-                      // Also keep a user-visible fallback for providers that expect user role
-                      conversation.push({
-                        role: "user",
-                        content: `[Tool result for ${event.name}]: ${resultText.slice(0, 2000)}`,
-                      });
                     }
                     const marker = `\n\n🛠️ ${event.name} ${event.status}${
                       event.result && event.status === "completed"
@@ -1769,9 +1854,17 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 const fallbackWrites: Array<{ path: string; content: string }> = [];
                 const text = assistantMsg.text ?? "";
                 // 1) XML tags: <caide-write path="src/App.tsx">content</caide-write> and <dyad-write>
-                const tagWrites = getCaideWriteTags(text);
-                for (const t of tagWrites) {
-                  if (t.path && t.content) fallbackWrites.push({ path: t.path, content: t.content });
+                // Use inline regex to avoid async import in this context (already handled above via tagRe2)
+                const tagReFallback = /<(?:caide|dyad)-write[^>]*path="([^"]+)"[^>]*>([\s\S]*?)<\/(?:caide|dyad)-write>/gi;
+                let tm: RegExpExecArray | null;
+                while ((tm = tagReFallback.exec(text)) !== null) {
+                  const p = (tm[1] ?? "").trim();
+                  let c = tm[2] ?? "";
+                  const lines = c.split("\n");
+                  if (lines[0]?.trim().startsWith("```")) lines.shift();
+                  if (lines[lines.length - 1]?.trim().startsWith("```")) lines.pop();
+                  c = lines.join("\n").trim();
+                  if (p && c && p !== "." && p !== "/" && p !== "") fallbackWrites.push({ path: p, content: c });
                 }
                 // 2) JSON-ish: {"path":"src/App.tsx","content":"..."} or {"path":".","content":...}
                 // Only if no XML tags were found to avoid double-executing
@@ -1820,20 +1913,17 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                     }
                   }
                   // Strip the leaked tag/JSON from displayed text to avoid duplication + {"path":"."}
-                  const { stripCaideTags: stripTags } = await import(
-                    "./harness/utils/caideTagParser.ts"
-                  );
-                  // Use the dyad-compatible stripper for tags + JSON
-                  assistantMsg.text = stripTags(assistantMsg.text)
+                  assistantMsg.text = assistantMsg.text
+                    .replace(/<(?:caide|dyad)-write[^>]*>[\s\S]*?<\/(?:caide|dyad)-write>/gi, "")
+                    .replace(/\{\s*"path"\s*:\s*"[^"]*"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g, "")
                     .replace(/\n{3,}/g, "\n\n")
                     .trim();
                   publishAssistantMessage(assistantMsg);
                 } else if (/\{\s*"path"\s*:\s*"\.?"\s*(?:,\s*"content")?/.test(text)) {
                   // Leaked JSON with invalid path like {"path":"."} or {"path":""} — strip it so user doesn't see it
-                  const { stripCaideTags: strip } = await import(
-                    "./harness/utils/caideTagParser.ts"
-                  );
-                  assistantMsg.text = strip(assistantMsg.text)
+                  assistantMsg.text = assistantMsg.text
+                    .replace(/\{\s*"path"\s*:\s*"\.?"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g, "")
+                    .replace(/\{\s*"path"\s*:\s*"[^"]*"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g, "")
                     .replace(/\n{3,}/g, "\n\n")
                     .trim();
                   publishAssistantMessage(assistantMsg);

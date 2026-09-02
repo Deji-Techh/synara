@@ -231,7 +231,7 @@ export const writeDesignSpecTool = defineTool({
   name: "write_design_spec",
   description: "Writes the compiled design tokens into .caide/design-spec.json.",
   schema: z.object({
-    tokens: z.record(z.unknown()).describe("JSON design token specification"),
+    tokens: z.record(z.string(), z.unknown()).describe("JSON design token specification"),
   }),
   readOnly: false,
   modifiesState: true,
@@ -252,7 +252,7 @@ export const writeMotionSpecTool = defineTool({
   name: "write_motion_spec",
   description: "Writes the motion tokens into .caide/motion-spec.json.",
   schema: z.object({
-    motion: z.record(z.unknown()).describe("Spring, duration, and curve motion tokens"),
+    motion: z.record(z.string(), z.unknown()).describe("Spring, duration, and curve motion tokens"),
   }),
   readOnly: false,
   modifiesState: true,
