@@ -930,14 +930,11 @@ const CORE_TOOLS_TEXT = [
   "spawn_subagent(task, context?) [readOnly]",
 ].join("\n- ");
 
-const FRAMEWORK_PROMPTS: Record<string, string> = {
-  "react-native": `You are building a React Native (Expo) app. Stack: Expo + NativeWind + React Navigation + Zustand + React Query + react-native-web (for web preview).
-Rules: bottom tab bar with 2+ tabs, screen-based nav, 44px touch targets, SafeArea, no top navbar/sidebar as primary, no fake phone bezel (preview provides device-frame 672px), fill available frame (width:100% min-h:100dvh), tablet-adaptive (recompose columns, not centered phone column). Dev: npx expo start --web -> http://localhost:8081. Build: npx expo export.`,
-  website: `You are building a Website (Vite + React) app. Stack: Vite + React + Tailwind v4 + TanStack Router + Zustand.
-Rules: responsive at 320/640/1024/1440, desktop-first, top navbar/sidebar (NO bottom tab bar), mouse+keyboard+touch parity, use desktop space (multi-column, sidebars, tables), proper <title>/meta/viewport/landmarks, no stretched phone column. Dev: bun run dev -> http://localhost:5173. Build: bun run build.`,
-  flutter: `You are building a Flutter app. Stack: Flutter + Riverpod + GoRouter + Dio.
-Rules: Material 3, bottom nav, screen-based, 44px, SafeArea, no top navbar as primary, adaptive for tablet. Dev: flutter run -d web-server -> http(s) URL. Build: flutter build apk.`,
-  blank: `You are building a Blank app. No framework, no preview (explicit: Preview not available for Blank projects). Just files in workspace. Don't invent RN/Flutter deps. Dev: no command. Build: none.`,
+const FRAMEWORK_SHORT: Record<string, string> = {
+  "react-native": "react-native (Expo + NativeWind, device-frame preview via npx expo start --web)",
+  website: "website (Vite + React + Tailwind, browser preview via bun run dev)",
+  flutter: "flutter (Riverpod + GoRouter, device-frame via flutter run -d web-server)",
+  blank: "blank (no preview)",
 };
 
 /**
@@ -973,14 +970,15 @@ async function buildSystemPrompt(
       rolePrompt = `You are Caide's ${normalizedMode === "plan" ? "planner" : "builder"} for a ${framework} app.`;
     }
   }
-  const frameworkPrompt = FRAMEWORK_PROMPTS[framework] ?? FRAMEWORK_PROMPTS.blank;
+  const frameworkShort = FRAMEWORK_SHORT[framework] ?? FRAMEWORK_SHORT.blank;
   const slashHelp = `User slash commands (client-side, you don't call them): /clear (new thread), /plan (plan mode), /default (build mode), /debug, /model, /compact, /status, /export, /fork, /side, /review, /doctor, /test, /analyze, /build, /preview, /theme, /goal, /spawn, /init, /btw, /learn, /commands, /help — they are handled by the UI. If user typed /plan, you are already in PLAN; if they typed /clear, context is fresh.`;
+  const greetingRule = `For casual greetings like "hey", "hi", "hello" without a build request, just respond with a friendly short greeting and ask what they'd like to build — do NOT say "booting up your React Native build", do NOT call tools, do NOT output JSON or {}.`;
   const modeDirective =
     normalizedMode === "ask"
-      ? `You are in ASK mode for ${framework}. Answer directly and concisely. You have READ-ONLY tools available (read_file, list_dir, search_files, read_url, get_design_tokens, read_spec, get_preview_url, screenshot, lint_project, test_project, spawn_subagent) — use them if you need to inspect files to answer. Do NOT write code or modify files unless the user explicitly asks.\nFramework: ${frameworkPrompt}\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}`
+      ? `You are in ASK mode for ${framework} (${frameworkShort}). Answer directly and concisely. You have READ-ONLY tools available (read_file, list_dir, search_files, read_url, get_design_tokens, read_spec, get_preview_url, screenshot, lint_project, test_project, spawn_subagent) — use them if you need to inspect files to answer. Do NOT write code or modify files unless the user explicitly asks.\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}`
       : normalizedMode === "plan"
-        ? `You are in PLAN mode for ${framework}. Create a plan/spec before writing application code. You have full tools — use write_spec, write_design_spec, write_motion_spec, checkpoint, log_decision, plus read tools to inspect workspace.\nFramework: ${frameworkPrompt}\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}`
-        : `You are in BUILD mode for ${framework}. You have access to the following tools and SHOULD use them to build the app.\nFramework: ${frameworkPrompt}\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}\n\nTool rules: always read before write; prefer write_file for code, run_command for installs/builds, get_preview_url to get preview URL, screenshot to verify, spawn_subagent for heavy parallel subtasks.`;
+        ? `You are in PLAN mode for ${framework} (${frameworkShort}). Create a plan/spec before writing application code. You have full tools — use write_spec, write_design_spec, write_motion_spec, checkpoint, log_decision, plus read tools to inspect workspace.\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}`
+        : `You are in BUILD mode for ${framework} (${frameworkShort}). ${greetingRule} Otherwise you have access to tools and SHOULD use them to build the app when the user requests a build.\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}\n\nTool rules: always read before write; prefer write_file for code, run_command for installs/builds, get_preview_url to get preview URL, screenshot to verify, spawn_subagent for heavy parallel subtasks.`;
   return `${rolePrompt}\n\n${modeDirective}`.trim();
 }
 
