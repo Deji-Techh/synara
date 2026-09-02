@@ -908,12 +908,13 @@ async function buildSystemPrompt(
     }
   }
   const frameworkPrompt = FRAMEWORK_PROMPTS[framework] ?? FRAMEWORK_PROMPTS.blank;
+  const slashHelp = `User slash commands (client-side, you don't call them): /clear (new thread), /plan (plan mode), /default (build mode), /debug, /model, /compact, /status, /export, /fork, /side, /review, /doctor, /test, /analyze, /build, /preview, /theme, /goal, /spawn, /init, /btw, /learn, /commands, /help — they are handled by the UI. If user typed /plan, you are already in PLAN; if they typed /clear, context is fresh.`;
   const modeDirective =
     normalizedMode === "ask"
-      ? `You are in ASK mode for ${framework}. Answer directly and concisely. You have READ-ONLY tools available (read_file, list_dir, search_files, read_url, get_design_tokens, read_spec, get_preview_url, screenshot, lint_project, spawn_subagent) — use them if you need to inspect files to answer. Do NOT write code or modify files unless the user explicitly asks.\nFramework: ${frameworkPrompt}\nTools:\n- ${CORE_TOOLS_TEXT}`
+      ? `You are in ASK mode for ${framework}. Answer directly and concisely. You have READ-ONLY tools available (read_file, list_dir, search_files, read_url, get_design_tokens, read_spec, get_preview_url, screenshot, lint_project, test_project, spawn_subagent) — use them if you need to inspect files to answer. Do NOT write code or modify files unless the user explicitly asks.\nFramework: ${frameworkPrompt}\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}`
       : normalizedMode === "plan"
-        ? `You are in PLAN mode for ${framework}. Create a plan/spec before writing application code. You have full tools — use write_spec, write_design_spec, write_motion_spec, checkpoint, log_decision, plus read tools to inspect workspace.\nFramework: ${frameworkPrompt}\nTools:\n- ${CORE_TOOLS_TEXT}`
-        : `You are in BUILD mode for ${framework}. You have access to the following tools and SHOULD use them to build the app.\nFramework: ${frameworkPrompt}\nTools:\n- ${CORE_TOOLS_TEXT}\n\nTool rules: always read before write; prefer write_file for code, run_command for installs/builds, get_preview_url to get preview URL, screenshot to verify, spawn_subagent for heavy parallel subtasks.`;
+        ? `You are in PLAN mode for ${framework}. Create a plan/spec before writing application code. You have full tools — use write_spec, write_design_spec, write_motion_spec, checkpoint, log_decision, plus read tools to inspect workspace.\nFramework: ${frameworkPrompt}\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}`
+        : `You are in BUILD mode for ${framework}. You have access to the following tools and SHOULD use them to build the app.\nFramework: ${frameworkPrompt}\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}\n\nTool rules: always read before write; prefer write_file for code, run_command for installs/builds, get_preview_url to get preview URL, screenshot to verify, spawn_subagent for heavy parallel subtasks.`;
   return `${rolePrompt}\n\n${modeDirective}`.trim();
 }
 

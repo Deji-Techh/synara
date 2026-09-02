@@ -1017,38 +1017,38 @@ export function useComposerSlashCommands(input: {
         if (slashInvocation.command === "test") {
           void ensureNativeApi()
             .preview.test({ threadId })
-            .then((result) => {
+            .then((result: any) => {
+              const passed = result.passed ?? result.output?.includes("pass");
               toastManager.add({
-                type: "success",
-                title: "Flutter tests finished",
-                description: `${result.passed} passed, ${result.failed} failed, ${result.skipped} skipped`,
+                type: result.passed ? "success" : "warning",
+                title: "Tests finished",
+                description: result.output?.slice(0, 200) ?? `${passed ? "Passed" : "Check output"}`,
               });
             })
             .catch((error: unknown) => {
               toastManager.add({
                 type: "error",
-                title: "Flutter test failed",
+                title: "Test failed",
                 description: error instanceof Error ? error.message : "Could not run tests.",
               });
             });
         } else if (slashInvocation.command === "analyze") {
           void ensureNativeApi()
             .preview.analyze({ threadId })
-            .then((result) => {
+            .then((result: any) => {
+              const clean = result.clean ?? result.passed ?? (result.issues?.length === 0);
               toastManager.add({
-                type: result.clean ? "success" : "warning",
-                title: "Flutter analyze finished",
-                description: result.clean
-                  ? "No analyzer issues found"
-                  : `${result.issues.length} issue(s) found`,
+                type: clean ? "success" : "warning",
+                title: "Analyze finished",
+                description: clean ? "No issues found" : `${result.issues?.length ?? "?"} issue(s) found`,
               });
             })
             .catch((error: unknown) => {
               toastManager.add({
                 type: "error",
-                title: "Flutter analyze failed",
+                title: "Analyze failed",
                 description:
-                  error instanceof Error ? error.message : "Could not run flutter analyze.",
+                  error instanceof Error ? error.message : "Could not run analyze.",
               });
             });
         } else {

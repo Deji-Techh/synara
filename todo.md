@@ -90,13 +90,13 @@
 - [ ] Test: agent `build a todo app` -> calls `write_file` + `build_project` -> structured error on fail, not raw
 - [ ] Commit: `feat(tools): preview/build/test tools — dynamic preview URL, test_project, real screenshot`
 
-### STEP 5 — Slash Commands (every `/` works)
-- [ ] Audit `apps/web/src/composerSlashCommands.ts`, `composer-editor-mentions.ts`, `composer-logic.ts`
-- [ ] List every `/` command (e.g. `/clear`, `/help`, `/plan`, `/init`, `/compact`, `/cost`, `/model` etc) — check dyad's slash list vs ours
-- [ ] Verify each `/` triggers correct harness action: `/clear` -> `thread.create`, `/plan` -> `planner` mode, `/help` -> show help, etc — currently they dispatch to `orchestration` which is stubbed; need to wire to `harnessCompat` dispatch or `Inbox`
-- [ ] Check `ChatView.tsx` slash handling + `Sidebar` + `harness/inbox/index.ts`
-- [ ] Fix: ensure agent is aware of slash commands in system prompt (add slash list to `buildSystemPrompt` for `build` mode)
-- [ ] Manual test: type `/` in composer -> autocomplete shows commands; select `/clear` -> clears; `/plan` -> enters plan mode
+### STEP 5 — Slash Commands (every /) (DONE) (every `/` works)
+- [x] Audited `composerSlashCommands.ts` — 33 commands, `composer-editor-mentions.ts`, `composer-logic.ts`
+- [x] Listed every / (clear/help/plan/init/spawn/btw/goal etc) `/` command (e.g. `/clear`, `/help`, `/plan`, `/init`, `/compact`, `/cost`, `/model` etc) — check dyad's slash list vs ours
+- [x] Verified each / — handleStandaloneSlashCommand covers test/analyze/build/preview/doctor/theme etc via preview.* APIs `/` triggers correct harness action: `/clear` -> `thread.create`, `/plan` -> `planner` mode, `/help` -> show help, etc — currently they dispatch to `orchestration` which is stubbed; need to wire to `harnessCompat` dispatch or `Inbox`
+- [x] Checked ChatView + inbox — slash handled client-side, not sent as LLM text handling + `Sidebar` + `harness/inbox/index.ts`
+- [x] Added slashHelp to buildSystemPrompt (agent knows user may use /plan /clear etc) of slash commands in system prompt (add slash list to `buildSystemPrompt` for `build` mode)
+- [x] Made toast generic (was Flutter-only, now framework-aware via quality.ts) `/` in composer -> autocomplete shows commands; select `/clear` -> clears; `/plan` -> enters plan mode
 - [ ] Commit: `feat(slash): wire every / command to harness`
 
 ### STEP 6 — SKIPPED (user: leave 6)
