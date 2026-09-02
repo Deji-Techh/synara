@@ -973,7 +973,7 @@ async function buildSystemPrompt(
   const frameworkShort = FRAMEWORK_SHORT[framework] ?? FRAMEWORK_SHORT.blank;
   const slashHelp = `User slash commands (client-side, you don't call them): /clear (new thread), /plan (plan mode), /default (build mode), /debug, /model, /compact, /status, /export, /fork, /side, /review, /doctor, /test, /analyze, /build, /preview, /theme, /goal, /spawn, /init, /btw, /learn, /commands, /help — they are handled by the UI. If user typed /plan, you are already in PLAN; if they typed /clear, context is fresh.`;
   const greetingRule = `For casual greetings like "hey", "hi", "hello" without a build request, just respond with a friendly short greeting and ask what they'd like to build — do NOT say "booting up your React Native build", do NOT call tools, do NOT output JSON or {}.`;
-  const buildRule = `When the user DOES request a build (e.g. "build a social media app"), immediately start building: first list_dir to see workspace, then write files with write_file using valid relative paths like src/App.tsx — never use empty path "". Do NOT repeat the intro twice, do NOT output tool JSON as text, always use the tool. After each file, call build_project to verify.`;
+  const buildRule = `When the user DOES request a build (e.g. "build a social media app"), immediately start building: first list_dir to see workspace, then write files. Use EITHER the write_file tool ({"path":"src/App.tsx","content":"..."}) OR the tag <caide-write path="src/App.tsx">content</caide-write> — both are parsed, but the tool is preferred. Never use empty path "" or "." — always use a full relative path like src/App.tsx, src/components/Card.tsx. Do NOT repeat the intro twice, do NOT output tool JSON as plain text without calling the tool. After each file, call build_project to verify.`;
   const modeDirective =
     normalizedMode === "ask"
       ? `You are in ASK mode for ${framework} (${frameworkShort}). Answer for THIS framework only — if asked "what can you build?" list only ${framework} capabilities, not all frameworks. You have READ-ONLY tools available (read_file, list_dir, search_files, read_url, get_design_tokens, read_spec, get_preview_url, screenshot, lint_project, test_project, spawn_subagent) — use them if you need to inspect files to answer. Do NOT write code or modify files unless the user explicitly asks.\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}`
@@ -1729,6 +1729,92 @@ export class OrchestrationEngineService extends ServiceMap.Service<
 
               for await (const _loopEvent of loop) {
                 // onEvent handles all publishing
+              }
+
+              // Fallback: if model leaked a file write as text (e.g. {"path":"."} or
+              // <caide-write>/<dyad-write>), parse and execute it so the build
+              // still succeeds even when structured tool_call was missed. This
+              // makes tool calling work for every model, not just muse-spark.
+              try {
+                const fallbackWrites: Array<{ path: string; content: string }> = [];
+                const text = assistantMsg.text ?? "";
+                // 1) XML tags: <caide-write path="src/App.tsx">content</caide-write> and <dyad-write>
+                const tagRe =
+                  /<(?:caide|dyad)-write[^>]*path="([^"]+)"[^>]*>([\s\S]*?)<\/(?:caide|dyad)-write>/gi;
+                let m: RegExpExecArray | null;
+                while ((m = tagRe.exec(text)) !== null) {
+                  const p = (m[1] ?? "").trim();
+                  let c = m[2] ?? "";
+                  // Strip markdown fences if present
+                  const lines = c.split("\n");
+                  if (lines[0]?.trim().startsWith("```")) lines.shift();
+                  if (lines[lines.length - 1]?.trim().startsWith("```")) lines.pop();
+                  c = lines.join("\n").trim();
+                  if (p && c) fallbackWrites.push({ path: p, content: c });
+                }
+                // 2) JSON-ish: {"path":"src/App.tsx","content":"..."} or {"path":".","content":...}
+                // Only if no XML tags were found to avoid double-executing
+                if (fallbackWrites.length === 0) {
+                  const jsonRe = /\{\s*"path"\s*:\s*"([^"]+)"\s*(?:,\s*"content"\s*:\s*"([\s\S]*?)"\s*)?\}/g;
+                  while ((m = jsonRe.exec(text)) !== null) {
+                    const p = (m[1] ?? "").trim();
+                    // content may be JSON-escaped; try to unescape
+                    let c = m[2] ?? "";
+                    try {
+                      // If content was JSON-stringified, it may contain \n and \" escapes
+                      c = JSON.parse(`"${c.replace(/"/g, '\\"')}"`);
+                    } catch {
+                      // leave as-is
+                    }
+                    if (p && p !== "." && p !== "/" && p !== "" && c) {
+                      fallbackWrites.push({ path: p, content: c });
+                    } else if (p && (p === "." || p === "/" || p === "")) {
+                      // Invalid path leaked as {"path":"."} — infer a sensible default for RN
+                      // Don't execute with "."; instead log and let the model retry.
+                      // We still want to avoid showing the raw JSON to the user.
+                    }
+                  }
+                }
+                if (fallbackWrites.length > 0) {
+                  // Execute each inferred write via the same write_file tool so
+                  // path validation and directory creation are consistent.
+                  const { writeFileTool } = await import("./harness/tools/coreTools.ts");
+                  for (const w of fallbackWrites) {
+                    try {
+                      await writeFileTool.execute(
+                        { path: w.path, content: w.content },
+                        {
+                          signal: new AbortController().signal,
+                          appPath,
+                          sessionId: thread.id,
+                          toolId: `fallback-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                        } as any,
+                      );
+                      assistantMsg.text += `\n\n✅ Applied ${w.path} via fallback parser`;
+                      assistantMsg.updatedAt = new Date().toISOString();
+                      publishAssistantMessage(assistantMsg);
+                    } catch (e: any) {
+                      assistantMsg.text += `\n\n⚠️ Fallback write failed for ${w.path}: ${e?.message ?? String(e)}`;
+                      publishAssistantMessage(assistantMsg);
+                    }
+                  }
+                  // Strip the leaked tag/JSON from displayed text to avoid duplication + {"path":"."}
+                  assistantMsg.text = assistantMsg.text
+                    .replace(/<(?:caide|dyad)-write[^>]*>[\s\S]*?<\/(?:caide|dyad)-write>/gi, "")
+                    .replace(/\{\s*"path"\s*:\s*"[^"]+"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g, "")
+                    .replace(/\n{3,}/g, "\n\n")
+                    .trim();
+                  publishAssistantMessage(assistantMsg);
+                } else if (/\{\s*"path"\s*:\s*"\.?"\s*(?:,\s*"content")?/.test(text)) {
+                  // Leaked JSON with invalid path like {"path":"."} — strip it so user doesn't see it
+                  assistantMsg.text = assistantMsg.text
+                    .replace(/\{\s*"path"\s*:\s*"\.?"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g, "")
+                    .replace(/\n{3,}/g, "\n\n")
+                    .trim();
+                  publishAssistantMessage(assistantMsg);
+                }
+              } catch (e) {
+                console.warn("[harnessCompat] fallback parser error", e);
               }
 
               assistantMsg.streaming = false;

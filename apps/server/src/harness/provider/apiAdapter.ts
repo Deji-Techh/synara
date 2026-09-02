@@ -22,11 +22,17 @@ export function endpointForModel(modelId: string, baseUrl?: string): ApiEndpoint
   if (
     lower.startsWith("gpt-") ||
     lower.startsWith("grok-") ||
-    lower.startsWith("muse-spark") ||
     lower.startsWith("o1") ||
     lower.startsWith("o3")
   ) {
     return "responses";
+  }
+  // muse-spark via Zen previously used responses, but tool calling is more
+  // reliable via chat/completions for this model (dyad-style text tags also
+  // work, but structured tools need the chat endpoint). Keep responses only for
+  // gpt/grok/o1/o3 which are verified there.
+  if (lower.startsWith("muse-spark")) {
+    return "chat/completions";
   }
   if (lower.startsWith("claude-") || lower.startsWith("qwen")) {
     return "messages";
