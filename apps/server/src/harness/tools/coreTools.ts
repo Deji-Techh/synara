@@ -277,35 +277,88 @@ export const installPackageTool = defineTool({
   },
 });
 
-// 14. build_project
+// 14. build_project — framework-aware (website: bun run build, RN: npx expo export, flutter: flutter build apk, blank: no-op)
 export const buildProjectTool = defineTool({
   name: "build_project",
-  description: "Executes project build / compilation check.",
+  description: "Executes project build using the framework's buildSteps (website: bun run build, RN: npx expo export, flutter: flutter build apk). Returns structured { success, stdout, stderr, exitCode } — not raw compiler dump.",
   schema: z.object({}),
   readOnly: false,
   modifiesState: true,
   execute: async (_, ctx) => {
-    const { stdout, stderr } = await execFileAsync("bun", ["run", "build"], {
-      cwd: ctx.appPath,
-      signal: ctx.signal,
-    });
-    return { success: true, stdout, stderr };
+    const framework = (() => {
+      try {
+        const fj = `${ctx.appPath}/.caide/framework.json`;
+        if (fs.existsSync(fj)) return String((JSON.parse(fs.readFileSync(fj, "utf-8")) as Record<string, unknown>).framework ?? "blank");
+        if (fs.existsSync(`${ctx.appPath}/pubspec.yaml`)) return "flutter";
+        if (fs.existsSync(`${ctx.appPath}/package.json`)) {
+          const pkg = JSON.parse(fs.readFileSync(`${ctx.appPath}/package.json`, "utf-8")) as Record<string, unknown>;
+          const deps = { ...((pkg.dependencies ?? {}) as Record<string, unknown>), ...((pkg.devDependencies ?? {}) as Record<string, unknown>) };
+          if (deps.expo || deps["react-native"]) return "react-native";
+          return "website";
+        }
+      } catch {}
+      return "blank";
+    })();
+    const buildSteps: string[] =
+      framework === "react-native"
+        ? ["npx expo export"]
+        : framework === "flutter"
+          ? ["flutter build apk"]
+          : framework === "website"
+            ? ["bun run build"]
+            : [];
+    if (buildSteps.length === 0) return { success: true, stdout: "No build step for blank", stderr: "", framework };
+    // Run first step (most frameworks have one); if multiple, run sequentially
+    let stdout = "";
+    let stderr = "";
+    for (const step of buildSteps) {
+      const [cmd, ...args] = step.split(" ");
+      const result = await execFileAsync(cmd, args, { cwd: ctx.appPath, signal: ctx.signal, maxBuffer: 10 * 1024 * 1024 }).catch((e: any) => {
+        throw new Error(`Build step '${step}' failed: ${e.message ?? String(e)}\nstdout: ${e.stdout ?? ""}\nstderr: ${e.stderr ?? ""}`);
+      });
+      stdout += result.stdout;
+      stderr += result.stderr;
+    }
+    return { success: true, stdout: stdout.slice(0, 20000), stderr: stderr.slice(0, 20000), framework };
   },
 });
 
-// 15. lint_project
+// 15. lint_project — framework-aware
 export const lintProjectTool = defineTool({
   name: "lint_project",
-  description: "Runs linting/typechecking on workspace files.",
+  description: "Runs linting/typechecking (website/RN: bun typecheck, flutter: flutter analyze). Returns { clean, stdout, stderr }.",
   schema: z.object({}),
   readOnly: true,
   modifiesState: false,
   execute: async (_, ctx) => {
-    const { stdout, stderr } = await execFileAsync("bun", ["typecheck"], {
-      cwd: ctx.appPath,
-      signal: ctx.signal,
-    });
-    return { clean: true, stdout, stderr };
+    const isFlutter = fs.existsSync(`${ctx.appPath}/pubspec.yaml`);
+    const cmd = isFlutter ? "flutter" : "bun";
+    const args = isFlutter ? ["analyze"] : ["typecheck"];
+    const { stdout, stderr } = await execFileAsync(cmd, args, { cwd: ctx.appPath, signal: ctx.signal, maxBuffer: 10 * 1024 * 1024 });
+    return { clean: true, stdout: stdout.slice(0, 20000), stderr: stderr.slice(0, 20000) };
+  },
+});
+
+// 15b. test_project — runs tests (bun run test / flutter test)
+export const testProjectTool = defineTool({
+  name: "test_project",
+  description: "Runs project tests (website/RN: bun run test, flutter: flutter test). Returns structured { passed, stdout, stderr }.",
+  schema: z.object({}),
+  readOnly: true,
+  modifiesState: false,
+  execute: async (_, ctx) => {
+    const isFlutter = fs.existsSync(`${ctx.appPath}/pubspec.yaml`);
+    const cmd = isFlutter ? "flutter" : "bun";
+    const args = isFlutter ? ["test"] : ["run", "test"];
+    try {
+      const { stdout, stderr } = await execFileAsync(cmd, args, { cwd: ctx.appPath, signal: ctx.signal, maxBuffer: 10 * 1024 * 1024, timeout: 120_000 });
+      const output = `${stdout}\n${stderr}`.slice(0, 20000);
+      const failed = /fail|error|✘|not ok/i.test(output);
+      return { passed: !failed, stdout: stdout.slice(0, 20000), stderr: stderr.slice(0, 20000) };
+    } catch (e: any) {
+      const msg = e.message ?? String(e);
+      return { passed: false, stdout: e.stdout?.slice(0, 20000) ?? "", stderr: (e.stderr ?? msg).slice(0, 20000) };
+    }
   },
 });
 
@@ -451,6 +504,7 @@ export const ALL_CORE_TOOLS: ToolDef[] = [
   installPackageTool,
   buildProjectTool,
   lintProjectTool,
+  testProjectTool,
   getPreviewUrlTool,
   checkpointTool,
   logDecisionTool,

@@ -855,6 +855,7 @@ const CORE_TOOLS_TEXT = [
   "install_package(name) [write]",
   "build_project() [write]",
   "lint_project() [readOnly]",
+  "test_project() [readOnly]",
   "get_preview_url() [readOnly]",
   "checkpoint(reason, diff) [write]",
   "log_decision(decision, reason) [write]",

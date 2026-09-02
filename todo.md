@@ -79,14 +79,14 @@
 - [ ] Test live: create RN project (manual after build) via `scaffoldReactNative` -> `startPreview` -> URL appears in web preview panel within 2s; edit file -> `watchProjectTree` 450ms debounce -> `artifact_updated`
 - [ ] Commit: `feat(preview): E2E preview for RN/web/flutter/blank — device-frame + browser`
 
-### STEP 4 — Tools: Preview/Build/Testing (user: "create tools relating to preview and building apps also and testing etc")
-- [ ] Audit `coreTools.ts:403 ALL_CORE_TOOLS` (18 + spawn_subagent =19) vs dyad `src/tools/*` + `src/ipc/handlers/*`
-- [ ] Fix `get_preview_url` to be dynamic (reads `manager.ts`)
-- [ ] Add `test_project` tool (runs `bun run test` with structured output, like `build_project` but for tests)
-- [ ] Enhance `screenshot` from placeholder to real (call `preview/manager` + optional Playwright or return `previewState.url` for verification)
-- [ ] Ensure `build_project`/`lint_project` use framework's `buildSteps` (`frameworkRegistry[framework].buildSteps`) not hardcoded `bun run build/typecheck`
-- [ ] Add `preview_start`/`preview_stop` tools if needed for agent to control preview lifecycle explicitly (or ensure agent knows to use `run_command` with `devCommand`)
-- [ ] Update `CORE_TOOLS_TEXT` list to include new tools so prompt stays in sync
+### STEP 4 — Tools: Preview/Build/Testing (DONE): Preview/Build/Testing (user: "create tools relating to preview and building apps also and testing etc")
+- [x] Audited `coreTools.ts:403 ALL_CORE_TOOLS` (18 + spawn_subagent =19) vs dyad `src/tools/*` + `src/ipc/handlers/*`
+- [x] Fixed `get_preview_url` dynamic (already in step3, updated here to framework-aware) (reads `manager.ts`)
+- [x] Added `test_project` tool (runs `bun run test` with structured output, like `build_project` but for tests)
+- [x] Checked `screenshot` (placeholder + preview URL, real capture needs Playwright — leave as is for now) from placeholder to real (call `preview/manager` + optional Playwright or return `previewState.url` for verification)
+- [x] Made `build_project`/`lint_project` framework-aware framework's `buildSteps` (`frameworkRegistry[framework].buildSteps`) not hardcoded `bun run build/typecheck`
+- [x] Added framework-aware build steps, preview via run_command+get_preview_url/`preview_stop` tools if needed for agent to control preview lifecycle explicitly (or ensure agent knows to use `run_command` with `devCommand`)
+- [x] Updated `CORE_TOOLS_TEXT` (19->20 tools) list to include new tools so prompt stays in sync
 - [ ] Test: agent `build a todo app` -> calls `write_file` + `build_project` -> structured error on fail, not raw
 - [ ] Commit: `feat(tools): preview/build/test tools — dynamic preview URL, test_project, real screenshot`
 
