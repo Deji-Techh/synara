@@ -1761,22 +1761,17 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               // <caide-write>/<dyad-write>), parse and execute it so the build
               // still succeeds even when structured tool_call was missed. This
               // makes tool calling work for every model, not just muse-spark.
+              // Uses the dyad-compatible parser so <caide-write> tags are handled exactly like dyad x caide.
               try {
+                const { getCaideWriteTags, stripCaideTags } = await import(
+                  "./harness/utils/caideTagParser.ts"
+                );
                 const fallbackWrites: Array<{ path: string; content: string }> = [];
                 const text = assistantMsg.text ?? "";
                 // 1) XML tags: <caide-write path="src/App.tsx">content</caide-write> and <dyad-write>
-                const tagRe =
-                  /<(?:caide|dyad)-write[^>]*path="([^"]+)"[^>]*>([\s\S]*?)<\/(?:caide|dyad)-write>/gi;
-                let m: RegExpExecArray | null;
-                while ((m = tagRe.exec(text)) !== null) {
-                  const p = (m[1] ?? "").trim();
-                  let c = m[2] ?? "";
-                  // Strip markdown fences if present
-                  const lines = c.split("\n");
-                  if (lines[0]?.trim().startsWith("```")) lines.shift();
-                  if (lines[lines.length - 1]?.trim().startsWith("```")) lines.pop();
-                  c = lines.join("\n").trim();
-                  if (p && c) fallbackWrites.push({ path: p, content: c });
+                const tagWrites = getCaideWriteTags(text);
+                for (const t of tagWrites) {
+                  if (t.path && t.content) fallbackWrites.push({ path: t.path, content: t.content });
                 }
                 // 2) JSON-ish: {"path":"src/App.tsx","content":"..."} or {"path":".","content":...}
                 // Only if no XML tags were found to avoid double-executing
@@ -1825,16 +1820,20 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                     }
                   }
                   // Strip the leaked tag/JSON from displayed text to avoid duplication + {"path":"."}
-                  assistantMsg.text = assistantMsg.text
-                    .replace(/<(?:caide|dyad)-write[^>]*>[\s\S]*?<\/(?:caide|dyad)-write>/gi, "")
-                    .replace(/\{\s*"path"\s*:\s*"[^"]+"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g, "")
+                  const { stripCaideTags: stripTags } = await import(
+                    "./harness/utils/caideTagParser.ts"
+                  );
+                  // Use the dyad-compatible stripper for tags + JSON
+                  assistantMsg.text = stripTags(assistantMsg.text)
                     .replace(/\n{3,}/g, "\n\n")
                     .trim();
                   publishAssistantMessage(assistantMsg);
                 } else if (/\{\s*"path"\s*:\s*"\.?"\s*(?:,\s*"content")?/.test(text)) {
-                  // Leaked JSON with invalid path like {"path":"."} — strip it so user doesn't see it
-                  assistantMsg.text = assistantMsg.text
-                    .replace(/\{\s*"path"\s*:\s*"\.?"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g, "")
+                  // Leaked JSON with invalid path like {"path":"."} or {"path":""} — strip it so user doesn't see it
+                  const { stripCaideTags: strip } = await import(
+                    "./harness/utils/caideTagParser.ts"
+                  );
+                  assistantMsg.text = strip(assistantMsg.text)
                     .replace(/\n{3,}/g, "\n\n")
                     .trim();
                   publishAssistantMessage(assistantMsg);
