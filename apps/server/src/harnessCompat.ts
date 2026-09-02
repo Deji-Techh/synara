@@ -2059,7 +2059,65 @@ export class ProfileStatsQuery extends ServiceMap.Service<ProfileStatsQuery, any
 ) {
   static readonly layer = Layer.succeed(this, {
     getProfileStats: (input?: { utcOffsetMinutes?: number }) =>
-      Effect.succeed(emptyProfileStats(input?.utcOffsetMinutes ?? 0)),
+      Effect.succeed(
+        (() => {
+          const base = emptyProfileStats(input?.utcOffsetMinutes ?? 0);
+          // Derive live counts from in-memory harness state so the dashboard
+          // reflects actual usage even though the real DB projections are
+          // bypassed by the in-memory OrchestrationEngineService shim.
+          const totalThreads = inMemoryThreads.length;
+          const totalPromptsSent = inMemoryThreads.reduce(
+            (acc, t: any) => acc + (t.messages ?? []).filter((m: any) => m.role === "user").length,
+            0,
+          );
+          const frameworkCounts = new Map<string, number>();
+          for (const p of inMemoryProjects) {
+            const fw = p.framework ?? "blank";
+            frameworkCounts.set(fw, (frameworkCounts.get(fw) ?? 0) + 1);
+          }
+          const frameworks = Array.from(frameworkCounts.entries()).map(([framework, count]) => ({
+            framework,
+            count,
+            percent: inMemoryProjects.length > 0 ? Math.round((count / inMemoryProjects.length) * 100) : 0,
+          }));
+          const mostUsedFramework =
+            frameworks.length > 0
+              ? frameworks.reduce((a, b) => (a.count >= b.count ? a : b)).framework
+              : null;
+          // Simple heatmap: one cell per day with promptsToday bucket
+          const today = new Date().toISOString().slice(0, 10);
+          const promptsToday = inMemoryThreads.reduce(
+            (acc, t: any) =>
+              acc +
+              (t.messages ?? []).filter(
+                (m: any) => m.role === "user" && (m.createdAt ?? "").slice(0, 10) === today,
+              ).length,
+            0,
+          );
+          return {
+            ...base,
+            activity: {
+              ...base.activity,
+              totalThreads,
+              totalPromptsSent,
+              promptsToday,
+              heatmap:
+                promptsToday > 0
+                  ? [{ date: today, count: promptsToday, level: Math.min(4, promptsToday) } as any]
+                  : [],
+            },
+            frameworks,
+            mostUsedFramework,
+            insights: {
+              ...base.insights,
+              totalSkillsUsed: inMemoryThreads.reduce(
+                (acc, t: any) => acc + (t.messages ?? []).flatMap((m: any) => m.skills ?? []).length,
+                0,
+              ),
+            },
+          };
+        })(),
+      ),
     getProfileTokenStats: () => Effect.succeed(emptyProfileTokenStats()),
   } as any);
 }
