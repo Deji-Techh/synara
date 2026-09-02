@@ -55,10 +55,10 @@
 - [ ] Commit: `feat(harness): wire system prompts, tool loop, preview, skills, subagents — M5/M11/M16`
 - [ ] Verify `bun typecheck` passes (skipLibCheck) / `bun run build` dry-run
 
-### STEP 2 — System Prompts Per-Framework (HIGH PRIORITY)
+### STEP 2 — System Prompts Per-Framework (DONE) Per-Framework (HIGH PRIORITY)
 - Source: `dyad x caide/src/prompts/system_prompt.ts`, `local_agent_prompt.ts`, `platform_contracts.ts`, `mobile_ui_skill_pack.ts`, `web_ui_skill_pack.ts`, `plan_mode_prompt.ts`
-- [ ] Read dyad's `BUILD_SYSTEM_PREFIX`, `THINKING_PROMPT`, `ROLE_BLOCK`, `PLATFORM_UI_SKILL_PACK_BLOCK`
-- [ ] Update `prompts/roles/builder.ts:1` to include framework addendum (switch on `framework` param in `buildSystemPrompt`)
+- [x] Read dyad's `BUILD_SYSTEM_PREFIX`, `THINKING_PROMPT`, `ROLE_BLOCK`, `PLATFORM_UI_SKILL_PACK_BLOCK`
+# Updated:1` to include framework addendum (switch on `framework` param in `buildSystemPrompt`)
   - `react-native`: Expo web runtime but mobile app packaging, bottom tabs, SF Symbols, haptics, 44px
   - `website`: responsive web, top nav/sidebar, desktop-first 1440px -> 390px, Tailwind v4
   - `flutter`: Material 3, Riverpod, GoRouter, web-server preview

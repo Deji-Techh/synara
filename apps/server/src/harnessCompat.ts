@@ -836,28 +836,40 @@ function threadMetaUpdatedPayload(
   };
 }
 
-// The 18 core harness tools the builder agent can call. Kept in the system
+// The core harness tools the builder agent can call. Kept in the system
 // prompt so the model actually knows it has tools (the user's core complaint).
+// Includes readOnly vs modifiesState hint so the model knows ASK can still READ.
 const CORE_TOOLS_TEXT = [
-  "read_file(path)",
-  "write_file(path, content)",
-  "list_dir(path)",
-  "search_files(pattern, dir)",
-  "run_command(cmd, args, cwd)",
-  "read_url(url)",
-  "screenshot(selector?)",
-  "get_design_tokens()",
-  "read_spec()",
-  "write_spec(spec)",
-  "write_design_spec(spec)",
-  "write_motion_spec(spec)",
-  "install_package(name)",
-  "build_project()",
-  "lint_project()",
-  "get_preview_url()",
-  "checkpoint(reason, diff)",
-  "log_decision(decision, reason)",
+  "read_file(path) [readOnly]",
+  "write_file(path, content) [write]",
+  "list_dir(path) [readOnly]",
+  "search_files(pattern, dir) [readOnly]",
+  "run_command(cmd, args, cwd) [write]",
+  "read_url(url) [readOnly]",
+  "screenshot(selector?) [readOnly]",
+  "get_design_tokens() [readOnly]",
+  "read_spec() [readOnly]",
+  "write_spec(spec) [write]",
+  "write_design_spec(spec) [write]",
+  "write_motion_spec(spec) [write]",
+  "install_package(name) [write]",
+  "build_project() [write]",
+  "lint_project() [readOnly]",
+  "get_preview_url() [readOnly]",
+  "checkpoint(reason, diff) [write]",
+  "log_decision(decision, reason) [write]",
+  "spawn_subagent(task, context?) [readOnly]",
 ].join("\n- ");
+
+const FRAMEWORK_PROMPTS: Record<string, string> = {
+  "react-native": `You are building a React Native (Expo) app. Stack: Expo + NativeWind + React Navigation + Zustand + React Query + react-native-web (for web preview).
+Rules: bottom tab bar with 2+ tabs, screen-based nav, 44px touch targets, SafeArea, no top navbar/sidebar as primary, no fake phone bezel (preview provides device-frame 672px), fill available frame (width:100% min-h:100dvh), tablet-adaptive (recompose columns, not centered phone column). Dev: npx expo start --web -> http://localhost:8081. Build: npx expo export.`,
+  website: `You are building a Website (Vite + React) app. Stack: Vite + React + Tailwind v4 + TanStack Router + Zustand.
+Rules: responsive at 320/640/1024/1440, desktop-first, top navbar/sidebar (NO bottom tab bar), mouse+keyboard+touch parity, use desktop space (multi-column, sidebars, tables), proper <title>/meta/viewport/landmarks, no stretched phone column. Dev: bun run dev -> http://localhost:5173. Build: bun run build.`,
+  flutter: `You are building a Flutter app. Stack: Flutter + Riverpod + GoRouter + Dio.
+Rules: Material 3, bottom nav, screen-based, 44px, SafeArea, no top navbar as primary, adaptive for tablet. Dev: flutter run -d web-server -> http(s) URL. Build: flutter build apk.`,
+  blank: `You are building a Blank app. No framework, no preview (explicit: Preview not available for Blank projects). Just files in workspace. Don't invent RN/Flutter deps. Dev: no command. Build: none.`,
+};
 
 /**
  * Builds the agent's system prompt for a turn. Mode-aware (ask/plan/build) and
@@ -894,12 +906,13 @@ async function buildSystemPrompt(
       rolePrompt = `You are Caide's ${normalizedMode === "plan" ? "planner" : "builder"} for a ${framework} app.`;
     }
   }
+  const frameworkPrompt = FRAMEWORK_PROMPTS[framework] ?? FRAMEWORK_PROMPTS.blank;
   const modeDirective =
     normalizedMode === "ask"
-      ? `You are in ASK mode. Answer the user's question directly and concisely. Do NOT write code or modify files unless the user explicitly asks. Framework: ${framework}.`
+      ? `You are in ASK mode for ${framework}. Answer directly and concisely. You have READ-ONLY tools available (read_file, list_dir, search_files, read_url, get_design_tokens, read_spec, get_preview_url, screenshot, lint_project, spawn_subagent) — use them if you need to inspect files to answer. Do NOT write code or modify files unless the user explicitly asks.\nFramework: ${frameworkPrompt}\nTools:\n- ${CORE_TOOLS_TEXT}`
       : normalizedMode === "plan"
-        ? `You are in PLAN mode for a ${framework} app. Create a plan/spec before writing application code.`
-        : `You are in BUILD mode for a ${framework} app. You have access to the following tools and SHOULD use them to build the app:\n- ${CORE_TOOLS_TEXT}`;
+        ? `You are in PLAN mode for ${framework}. Create a plan/spec before writing application code. You have full tools — use write_spec, write_design_spec, write_motion_spec, checkpoint, log_decision, plus read tools to inspect workspace.\nFramework: ${frameworkPrompt}\nTools:\n- ${CORE_TOOLS_TEXT}`
+        : `You are in BUILD mode for ${framework}. You have access to the following tools and SHOULD use them to build the app.\nFramework: ${frameworkPrompt}\nTools:\n- ${CORE_TOOLS_TEXT}\n\nTool rules: always read before write; prefer write_file for code, run_command for installs/builds, get_preview_url to get preview URL, screenshot to verify, spawn_subagent for heavy parallel subtasks.`;
   return `${rolePrompt}\n\n${modeDirective}`.trim();
 }
 
