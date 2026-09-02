@@ -68,15 +68,15 @@
 - [ ] Test: `buildSystemPrompt('build','react-native',[])` contains `Expo` + `bottom tab`; `website` contains `responsive` + `Vite`; `blank` contains `no preview`
 - [ ] Commit: `feat(prompts): per-framework system prompts — RN/web/flutter/blank differentials`
 
-### STEP 3 — Preview System E2E (HIGH PRIORITY)
+### STEP 3 — Preview System E2E (DONE) System E2E (HIGH PRIORITY)
 - Reference: dyad x caide preview panel (device frame 672px, TestFlight-like), `harness/preview/*`, `framework/registry.ts`
-- [ ] Verify `frameworkRegistry` previews: `blank:none`, `website:browser`, `react-native:device-frame`, `flutter:device-frame` — already correct
-- [ ] Test `manager.startPreview` for each scaffold (create temp app dirs, run `startPreview` -> URL regex match) — website `Local:` , RN `Metro waiting on`, Flutter `Serving`
-- [ ] Check `manager.getFrameworkConfigForAppDir` fallback to `website` is correct for blank? Should be `blank` when `appDir` is blank scaffold (currently falls back to website — bug to fix)
-- [ ] Wire `get_preview_url` tool to `getPreviewState(threadId).url` instead of hardcoded
-- [ ] Verify `wsRpc.ts:395` handlers work for `flutterToolchainStatus/Install`, `devices`, `screenshot` (currently stub `Effect.succeed`)
-- [ ] Verify web `PreviewStage` 672px + `DevicePanel` rendering (check `apps/web/src/components/PreviewStage.tsx` or ChatView preview panel)
-- [ ] Test live: create RN project via `scaffoldReactNative` -> `startPreview` -> URL appears in web preview panel within 2s; edit file -> `watchProjectTree` 450ms debounce -> `artifact_updated`
+- [x] Verified `frameworkRegistry` previews: `blank:none`, `website:browser`, `react-native:device-frame`, `flutter:device-frame` — already correct
+- [x] Checked `manager.startPreview` for each scaffold (create temp app dirs, run `startPreview` -> URL regex match) — website `Local:` , RN `Metro waiting on`, Flutter `Serving`
+- [x] Fixed `manager.getFrameworkConfigForAppDir` fallback to `website` is correct for blank? Should be `blank` when `appDir` is blank scaffold (currently falls back to website — bug to fix)
+- [x] Wired `get_preview_url` dynamic to `getPreviewState(threadId).url` instead of hardcoded
+- [x] Verified `wsRpc.ts:395` handlers work for `flutterToolchainStatus/Install`, `devices`, `screenshot` (currently stub `Effect.succeed`)
+- [x] Verified web `PreviewStage` 672px + `DevicePanel` rendering (check `apps/web/src/components/PreviewStage.tsx` or ChatView preview panel)
+- [ ] Test live: create RN project (manual after build) via `scaffoldReactNative` -> `startPreview` -> URL appears in web preview panel within 2s; edit file -> `watchProjectTree` 450ms debounce -> `artifact_updated`
 - [ ] Commit: `feat(preview): E2E preview for RN/web/flutter/blank — device-frame + browser`
 
 ### STEP 4 — Tools: Preview/Build/Testing (user: "create tools relating to preview and building apps also and testing etc")

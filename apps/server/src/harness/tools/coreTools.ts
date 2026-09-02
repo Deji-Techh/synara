@@ -309,15 +309,50 @@ export const lintProjectTool = defineTool({
   },
 });
 
-// 16. get_preview_url
+// 16. get_preview_url — dynamic: reads live preview session (device-frame 672px or browser)
 export const getPreviewUrlTool = defineTool({
   name: "get_preview_url",
-  description: "Returns the local dev server preview URL.",
+  description: "Returns the live preview URL for this thread's app (device-frame for RN/Flutter, browser for Website). If no preview is running, returns null and the dev command to start it.",
   schema: z.object({}),
   readOnly: true,
   modifiesState: false,
-  execute: async () => {
-    return { url: "http://localhost:5173" };
+  execute: async (_, ctx) => {
+    try {
+      const { getPreviewState } = await import("../preview/manager.ts");
+      const state = getPreviewState(ctx.sessionId);
+      if (state.running && state.url) {
+        return { url: state.url, running: true, kind: state.kind ?? "web", logs: state.logs.slice(-20) };
+      }
+      // Not running — hint the dev command for this framework
+      const framework = (() => {
+        try {
+          const fj = `${ctx.appPath}/.caide/framework.json`;
+          if (fs.existsSync(fj)) {
+            const p = JSON.parse(fs.readFileSync(fj, "utf-8")) as Record<string, unknown>;
+            return String(p.framework ?? "blank");
+          }
+          if (fs.existsSync(`${ctx.appPath}/pubspec.yaml`)) return "flutter";
+          if (fs.existsSync(`${ctx.appPath}/package.json`)) {
+            const pkg = JSON.parse(fs.readFileSync(`${ctx.appPath}/package.json`, "utf-8")) as Record<string, unknown>;
+            const deps = { ...((pkg.dependencies ?? {}) as Record<string, unknown>), ...((pkg.devDependencies ?? {}) as Record<string, unknown>) };
+            if (deps.expo || deps["react-native"]) return "react-native";
+            return "website";
+          }
+        } catch {}
+        return "blank";
+      })();
+      const hint =
+        framework === "blank"
+          ? "Preview not available for Blank projects"
+          : framework === "react-native"
+            ? "npx expo start --web"
+            : framework === "flutter"
+              ? "flutter run -d web-server"
+              : "bun run dev";
+      return { url: null, running: false, framework, hint: `Run: ${hint} or call preview.start` };
+    } catch {
+      return { url: null, running: false, error: "Failed to read preview state" };
+    }
   },
 });
 

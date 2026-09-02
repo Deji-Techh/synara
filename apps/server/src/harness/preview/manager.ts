@@ -144,23 +144,34 @@ export function reloadPreview(threadId: string): boolean {
 
 function getFrameworkConfigForAppDir(appDir?: string) {
   // Detects the framework from the workspace files when not explicitly known.
-  // Falls back to a "website" default so preview still starts.
+  // Priority: .caide/framework.json (written by scaffold) -> pubspec.yaml -> package.json deps -> blank.
+  // For blank framework devCommand is "" and startPreview will throw explicitly (M16: "Preview not available").
   if (!appDir) return getFrameworkConfig("website");
   try {
+    const frameworkJsonPath = `${appDir}/.caide/framework.json`;
+    if (fs.existsSync(frameworkJsonPath)) {
+      const parsed = JSON.parse(fs.readFileSync(frameworkJsonPath, "utf-8")) as Record<string, unknown>;
+      const fw = String(parsed.framework ?? "").toLowerCase();
+      if (fw === "react-native" || fw === "flutter" || fw === "website" || fw === "blank") {
+        return getFrameworkConfig(fw as any);
+      }
+    }
     if (fs.existsSync(`${appDir}/pubspec.yaml`)) return getFrameworkConfig("flutter");
-    const pkg = JSON.parse(fs.readFileSync(`${appDir}/package.json`, "utf-8")) as Record<
-      string,
-      unknown
-    >;
-    const deps = {
-      ...((pkg.dependencies ?? {}) as Record<string, unknown>),
-      ...((pkg.devDependencies ?? {}) as Record<string, unknown>),
-    };
-    if (deps.expo || deps["react-native"] || deps["expo-status-bar"]) {
-      return getFrameworkConfig("react-native");
+    const pkgPath = `${appDir}/package.json`;
+    if (fs.existsSync(pkgPath)) {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8")) as Record<string, unknown>;
+      const deps = {
+        ...((pkg.dependencies ?? {}) as Record<string, unknown>),
+        ...((pkg.devDependencies ?? {}) as Record<string, unknown>),
+      };
+      if (deps.expo || deps["react-native"] || deps["expo-status-bar"]) {
+        return getFrameworkConfig("react-native");
+      }
+      // Any package.json without RN deps is treated as website (Vite+React)
+      return getFrameworkConfig("website");
     }
   } catch {
-    // ignore
+    // ignore — fall through to blank
   }
-  return getFrameworkConfig("website");
+  return getFrameworkConfig("blank");
 }
