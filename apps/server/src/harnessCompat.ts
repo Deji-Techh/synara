@@ -2756,17 +2756,29 @@ export class ProviderDiscoveryService extends ServiceMap.Service<ProviderDiscove
       const provider = input?.provider ?? "opencodeZen";
       const fallback =
         DEFAULT_MODELS_BY_PROVIDER[provider] ?? DEFAULT_MODELS_BY_PROVIDER.opencodeZen;
-      if (provider === "opencodeZen") {
+      // For opencode providers, fetch BOTH Zen and Go and merge so the picker
+      // shows all 60+ Zen + 30+ Go models (per https://opencode.ai/zen/v1/models and /go/v1/models tables).
+      // This fixes "app isnt registering all the models" — previously Zen only saw Zen, Go only saw Go.
+      if (provider === "opencodeZen" || provider === "opencodeGo") {
         return Effect.tryPromise({
-          try: () => getDynamicOpenCodeModels("https://opencode.ai/zen/v1/models", fallback),
+          try: async () => {
+            const [zenModels, goModels] = await Promise.all([
+              getDynamicOpenCodeModels("https://opencode.ai/zen/v1/models", DEFAULT_MODELS_BY_PROVIDER.opencodeZen).catch(() => DEFAULT_MODELS_BY_PROVIDER.opencodeZen),
+              getDynamicOpenCodeModels("https://opencode.ai/zen/go/v1/models", DEFAULT_MODELS_BY_PROVIDER.opencodeGo).catch(() => DEFAULT_MODELS_BY_PROVIDER.opencodeGo),
+            ]);
+            // Merge and dedupe by slug, preserving live descriptors
+            const seen = new Set<string>();
+            const merged: any[] = [];
+            for (const m of [...zenModels, ...goModels]) {
+              if (!seen.has(m.slug)) {
+                seen.add(m.slug);
+                merged.push(m);
+              }
+            }
+            return merged;
+          },
           catch: () => fallback,
-        }).pipe(Effect.map((models) => ({ models, source: "live-opencode-zen", cached: true })));
-      }
-      if (provider === "opencodeGo") {
-        return Effect.tryPromise({
-          try: () => getDynamicOpenCodeModels("https://opencode.ai/zen/go/v1/models", fallback),
-          catch: () => fallback,
-        }).pipe(Effect.map((models) => ({ models, source: "live-opencode-go", cached: true })));
+        }).pipe(Effect.map((models) => ({ models, source: "live-opencode-unified", cached: true })));
       }
       return Effect.succeed({ models: fallback, source: "harness", cached: true });
     },

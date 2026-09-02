@@ -19,27 +19,24 @@ export class ProviderApiError extends Error {
 export function endpointForModel(modelId: string, baseUrl?: string): ApiEndpoint {
   const lower = modelId.toLowerCase();
   if (lower.startsWith("gemini-")) return "gemini";
+  // Per user-provided endpoint tables (2026-09-02): responses for gpt/grok/muse-spark across both Zen and Go
   if (
     lower.startsWith("gpt-") ||
     lower.startsWith("grok-") ||
+    lower.startsWith("muse-spark") ||
     lower.startsWith("o1") ||
     lower.startsWith("o3")
   ) {
     return "responses";
   }
-  // muse-spark via Zen previously used responses, but tool calling is more
-  // reliable via chat/completions for this model (dyad-style text tags also
-  // work, but structured tools need the chat endpoint). Keep responses only for
-  // gpt/grok/o1/o3 which are verified there.
-  if (lower.startsWith("muse-spark")) {
-    return "chat/completions";
-  }
   if (lower.startsWith("claude-") || lower.startsWith("qwen")) {
     return "messages";
   }
-  if (lower.startsWith("minimax") && baseUrl && baseUrl.includes("/go/")) {
-    return "messages";
+  // minimax is /messages on Go, /chat/completions on Zen — check baseUrl
+  if (lower.startsWith("minimax")) {
+    return baseUrl && baseUrl.includes("/go/") ? "messages" : "chat/completions";
   }
+  // glm, kimi, longcat, deepseek, mimo, hy, big-pickle, ling, nemotron, laguna are all chat/completions on both per tables
   return "chat/completions";
 }
 
