@@ -11,7 +11,7 @@ import {
   IconFolder,
   IconPackage,
   IconSearch,
-  IconWrench,
+  IconTool,
   IconCheck,
   IconX,
   IconCopy,
@@ -126,7 +126,7 @@ function getToolMeta(name: string, attrs: Record<string, string>): ToolMeta {
   return {
     verb: clean.charAt(0).toUpperCase() + clean.slice(1),
     target: attrs.path || attrs.target || attrs.name || "",
-    icon: <IconWrench size={14} className="text-muted-foreground" />,
+    icon: <IconTool size={14} className="text-muted-foreground" />,
     accent: "neutral",
   };
 }
