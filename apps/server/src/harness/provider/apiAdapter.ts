@@ -51,6 +51,10 @@ export interface StreamProviderOptions {
   baseUrl: string;
   apiKey: string;
   messages: unknown[];
+  /** Optional system prompt. Placed per-provider (OpenAI `instructions` /
+   *  prepended system message, Anthropic top-level `system`, Gemini
+   *  `system_instruction`). */
+  system?: string;
   tools?: unknown[];
   signal?: AbortSignal;
   onTiming?: (timing: ReturnType<LLMStreamTiming["finish"]>) => void;
@@ -63,7 +67,7 @@ export type ProviderChunk =
 export async function* streamProvider(
   options: StreamProviderOptions,
 ): AsyncGenerator<ProviderChunk, void, unknown> {
-  const { modelId, baseUrl, apiKey, messages, tools, signal, onTiming } = options;
+  const { modelId, baseUrl, apiKey, messages, tools, system, signal, onTiming } = options;
   const url = buildProviderUrl(baseUrl, modelId);
   const endpoint = endpointForModel(modelId, baseUrl);
   const timing = new LLMStreamTiming();
@@ -82,8 +86,12 @@ export async function* streamProvider(
     headers["anthropic-version"] = "2023-06-01";
     requestBody = {
       model: modelId,
+      // Anthropic carries the system prompt as a top-level field, never inside
+      // messages. Strip system entries from the message list so they don't get
+      // coerced into user turns.
+      ...(system ? { system } : {}),
       messages: (messages as any[]).map((m: any) => ({
-        role: m.role === "assistant" ? "assistant" : "user",
+        role: m.role === "assistant" ? "assistant" : m.role === "system" ? "user" : "user",
         content: typeof m.content === "string" ? m.content : JSON.stringify(m.content ?? ""),
       })),
       max_tokens: 4096,
@@ -93,12 +101,16 @@ export async function* streamProvider(
   } else if (endpoint === "responses") {
     requestBody = {
       model: modelId,
+      ...(system ? { instructions: system } : {}),
       input: messages,
       stream: true,
       ...(tools && tools.length > 0 ? { tools } : {}),
     };
   } else if (endpoint === "gemini") {
     requestBody = {
+      ...(system
+        ? { system_instruction: { parts: [{ text: system }] } }
+        : {}),
       contents: (messages as any[]).map((m: any) => ({
         role: m.role === "assistant" ? "model" : "user",
         parts: [{ text: typeof m.content === "string" ? m.content : JSON.stringify(m.content ?? "") }],
@@ -107,7 +119,10 @@ export async function* streamProvider(
   } else {
     requestBody = {
       model: modelId,
-      messages,
+      messages: [
+        ...(system ? [{ role: "system", content: system }] : []),
+        ...(messages as any[]),
+      ],
       stream: true,
       ...(tools && tools.length > 0 ? { tools } : {}),
     };
@@ -231,7 +246,7 @@ export async function* streamProvider(
               yield { type: "token", content: token };
             }
 
-            // 2. Tool call delta extraction
+            // 2. Tool call delta extraction (chat/completions dialect)
             const toolCallDeltas = json.choices?.[0]?.delta?.tool_calls ?? json.tool_calls;
             if (Array.isArray(toolCallDeltas)) {
               for (const delta of toolCallDeltas) {
@@ -243,6 +258,33 @@ export async function* streamProvider(
                   yield { type: "tool_call", toolCall: completeCall };
                 }
               }
+            }
+
+            // 2b. Tool call extraction (OpenAI Responses dialect): output items
+            // stream as response.output_item.added / function_call_arguments.delta /
+            // function_call_arguments.done / output_item.done events. The
+            // consistent key across all of them is the item `id` (`fc_...`),
+            // NOT `call_id` — using call_id drops the argument deltas.
+            const respEvent = json.type as string | undefined;
+            if (respEvent === "response.output_item.added" && json.item?.type === "function_call") {
+              assembler.appendDelta(json.item.id, {
+                name: json.item.name,
+                argsDelta: typeof json.item.arguments === "string" ? json.item.arguments : "",
+              });
+            } else if (
+              respEvent === "response.function_call_arguments.delta" &&
+              typeof json.delta === "string"
+            ) {
+              assembler.appendDelta(json.item_id, { argsDelta: json.delta });
+            } else if (
+              respEvent === "response.function_call_arguments.done" &&
+              typeof json.arguments === "string"
+            ) {
+              const complete = assembler.finalize(json.item_id);
+              if (complete) yield { type: "tool_call", toolCall: complete };
+            } else if (respEvent === "response.output_item.done" && json.item?.type === "function_call") {
+              const complete = assembler.finalize(json.item.id);
+              if (complete) yield { type: "tool_call", toolCall: complete };
             }
           } catch {
             // ignore malformed SSE line

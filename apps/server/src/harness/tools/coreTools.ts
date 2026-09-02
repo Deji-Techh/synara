@@ -360,6 +360,46 @@ export const logDecisionTool = defineTool({
   },
 });
 
+// 19. spawn_subagent
+// Runs a focused delegated task in a separate LLM call (a sub-agent) and
+// returns its result. Useful for isolated reviews, research, or specialized
+// skill work without bloating the main context. Requires ctx.provider.
+export const spawnSubagentTool = defineTool({
+  name: "spawn_subagent",
+  description:
+    "Spawns a focused sub-agent to complete a delegated task (e.g. a specialized review or a self-contained subtask) and returns its result text. Prefer this for isolated work instead of doing it inline.",
+  schema: z.object({
+    task: z.string().describe("The focused task for the sub-agent"),
+    context: z.string().optional().describe("Additional context to give the sub-agent"),
+  }),
+  readOnly: true,
+  modifiesState: false,
+  execute: async ({ task, context }, ctx) => {
+    if (!ctx.provider) {
+      return { result: "Sub-agent provider not configured." };
+    }
+    const { streamProvider } = await import("../provider/apiAdapter.ts");
+    const system =
+      ctx.provider.system ??
+      "You are a focused sub-agent. Complete the delegated task and return a concise, complete result.";
+    const prompt = context ? `${context}\n\nTASK: ${task}` : task;
+    const stream = streamProvider({
+      modelId: ctx.provider.modelId,
+      baseUrl: ctx.provider.baseUrl,
+      apiKey: ctx.provider.apiKey,
+      system,
+      messages: [{ role: "user", content: prompt }],
+      signal: ctx.signal,
+    });
+    let result = "";
+    for await (const chunk of stream) {
+      if (chunk.type === "token" && chunk.content) result += chunk.content;
+    }
+    return { result };
+  },
+  presentCall: ({ task }) => `Spawn sub-agent: ${task.slice(0, 80)}`,
+});
+
 export const ALL_CORE_TOOLS: ToolDef[] = [
   readFileTool,
   writeFileTool,
@@ -379,4 +419,5 @@ export const ALL_CORE_TOOLS: ToolDef[] = [
   getPreviewUrlTool,
   checkpointTool,
   logDecisionTool,
+  spawnSubagentTool,
 ];

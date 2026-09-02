@@ -1,5 +1,8 @@
 // FILE: initialBackendWindowOpen.test.ts
-// Purpose: Locks desktop startup behavior so packaged windows appear before backend readiness.
+// Purpose: Locks desktop startup behavior so packaged windows appear only after
+// backend readiness — the renderer connects on load, so surfacing the window
+// during the backend-bind window would hit a refused connection and churn
+// through a reconnect storm.
 
 import { describe, expect, it, vi } from "vitest";
 
@@ -34,7 +37,7 @@ function createOptions(
 }
 
 describe("openInitialBackendWindow", () => {
-  it("creates the packaged window before backend readiness resolves", async () => {
+  it("creates the packaged window only after backend readiness resolves", async () => {
     const order: string[] = [];
     let resolveBackendReady!: () => void;
     const backendReady = new Promise<"listening">((resolve) => {
@@ -57,18 +60,24 @@ describe("openInitialBackendWindow", () => {
     const setReadinessInFlight = vi.mocked(options.setReadinessInFlight);
     const watchedPromise = setReadinessInFlight.mock.calls[0]?.[0];
 
-    expect(order).toEqual(["create-window", "wait-backend"]);
+    // The window must not be surfaced before the backend answers.
+    expect(order).toEqual(["wait-backend"]);
+    expect(options.createWindow).not.toHaveBeenCalled();
+    expect(options.writeLog).not.toHaveBeenCalledWith("bootstrap main window created");
     expect(watchedPromise).toBeInstanceOf(Promise);
-    expect(options.writeLog).toHaveBeenCalledWith("bootstrap main window created");
+
     if (!watchedPromise) {
       throw new Error("Expected startup readiness watcher to be registered.");
     }
 
     resolveBackendReady();
     await expect(watchedPromise).resolves.toBeUndefined();
+
+    expect(order).toEqual(["wait-backend", "create-window"]);
+    expect(options.writeLog).toHaveBeenCalledWith("bootstrap main window created");
   });
 
-  it("still opens a missing window without duplicating an active readiness watch", () => {
+  it("returns without creating a duplicate window while a readiness watch is in flight", () => {
     const activeWatch = Promise.resolve();
     const options = createOptions({
       getReadinessInFlight: vi.fn(() => activeWatch),
@@ -76,7 +85,7 @@ describe("openInitialBackendWindow", () => {
 
     openInitialBackendWindow(options);
 
-    expect(options.createWindow).toHaveBeenCalledTimes(1);
+    expect(options.createWindow).not.toHaveBeenCalled();
     expect(options.waitForBackendWindowReady).not.toHaveBeenCalled();
     expect(options.setReadinessInFlight).not.toHaveBeenCalled();
   });

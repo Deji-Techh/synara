@@ -1,4 +1,5 @@
 import * as child_process from "node:child_process";
+import { randomUUID as nodeRandomUUID } from "node:crypto";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -8,8 +9,8 @@ export class AutomationService extends ServiceMap.Service<AutomationService, any
   "caide/AutomationService",
 ) {
   static readonly layer = Layer.succeed(this, {
-    list: () => Effect.succeed({ automations: [] }),
-    getMemory: () => Effect.succeed({}),
+    list: () => Effect.succeed({ definitions: [], runs: [], memories: [] }),
+    getMemory: () => Effect.succeed(null),
     create: () => Effect.succeed({}),
     update: () => Effect.succeed({}),
     delete: () => Effect.succeed(undefined),
@@ -770,11 +771,136 @@ const subagentEventsPubSub = Effect.runSync(PubSub.unbounded<any>());
 const eventLog: any[] = [];
 
 export function publishDomainEvent(event: any) {
-  eventLog.push(event);
+  // The renderer decodes every domain event against the OrchestrationEvent
+  // contract (EventBaseFields: eventId, occurredAt, commandId, causationEventId,
+  // correlationId, metadata). The stub used to emit only {sequence, aggregateKind,
+  // aggregateId, type, payload, createdAt}, which failed to decode with "Missing
+  // key" on the shell/thread streams — killing the connection and causing a
+  // reconnect churn. Fill the required base fields here so every emitted event
+  // is schema-valid.
+  const now = new Date().toISOString();
+  const fullEvent = {
+    sequence: event.sequence,
+    eventId: event.eventId ?? nodeRandomUUID(),
+    aggregateKind: event.aggregateKind,
+    aggregateId: event.aggregateId,
+    occurredAt: event.occurredAt ?? event.createdAt ?? now,
+    commandId: event.commandId ?? null,
+    causationEventId: event.causationEventId ?? null,
+    correlationId: event.correlationId ?? null,
+    metadata: event.metadata ?? {},
+    type: event.type,
+    payload: event.payload,
+  };
+  eventLog.push(fullEvent);
   if (eventLog.length > 5000) {
     eventLog.splice(0, eventLog.length - 5000);
   }
-  Effect.runSync(PubSub.publish(domainEventsPubSub, event));
+  Effect.runSync(PubSub.publish(domainEventsPubSub, fullEvent));
+}
+
+// Build a schema-valid `thread.message-sent` payload. The stub's in-memory
+// message objects carry the id as `id` and nest fields, but the contract's
+// ThreadMessageSentPayload expects them flat at the top level.
+function messageSentPayload(threadId: string, msg: any): any {
+  const now = new Date().toISOString();
+  return {
+    threadId,
+    messageId: msg.id,
+    role: msg.role,
+    text: msg.text ?? "",
+    ...(msg.attachments !== undefined ? { attachments: msg.attachments } : {}),
+    ...(msg.skills !== undefined ? { skills: msg.skills } : {}),
+    ...(msg.mentions !== undefined ? { mentions: msg.mentions } : {}),
+    ...(msg.dispatchMode !== undefined ? { dispatchMode: msg.dispatchMode } : {}),
+    turnId: msg.turnId ?? null,
+    streaming: Boolean(msg.streaming),
+    source: msg.source ?? "native",
+    createdAt: msg.createdAt ?? now,
+    updatedAt: msg.updatedAt ?? now,
+  };
+}
+
+// Build a schema-valid `thread.meta-updated` payload.
+function threadMetaUpdatedPayload(
+  threadId: string,
+  fields: { title?: string; runtimeMode?: string; interactionMode?: string } = {},
+): any {
+  const now = new Date().toISOString();
+  return {
+    threadId,
+    ...(fields.title !== undefined ? { title: fields.title } : {}),
+    ...(fields.runtimeMode !== undefined ? { runtimeMode: fields.runtimeMode } : {}),
+    ...(fields.interactionMode !== undefined ? { interactionMode: fields.interactionMode } : {}),
+    updatedAt: now,
+  };
+}
+
+// The 18 core harness tools the builder agent can call. Kept in the system
+// prompt so the model actually knows it has tools (the user's core complaint).
+const CORE_TOOLS_TEXT = [
+  "read_file(path)",
+  "write_file(path, content)",
+  "list_dir(path)",
+  "search_files(pattern, dir)",
+  "run_command(cmd, args, cwd)",
+  "read_url(url)",
+  "screenshot(selector?)",
+  "get_design_tokens()",
+  "read_spec()",
+  "write_spec(spec)",
+  "write_design_spec(spec)",
+  "write_motion_spec(spec)",
+  "install_package(name)",
+  "build_project()",
+  "lint_project()",
+  "get_preview_url()",
+  "checkpoint(reason, diff)",
+  "log_decision(decision, reason)",
+].join("\n- ");
+
+/**
+ * Builds the agent's system prompt for a turn. Mode-aware (ask/plan/build) and
+ * framework-aware (rn/web/flutter/blank), and it tells the agent which tools it
+ * has. Uses the harness prompt assembler (L0 identity + L1 role + L2 stage +
+ * L3 skills) when available, with a safe fallback.
+ */
+async function buildSystemPrompt(
+  mode: string | undefined,
+  framework: string,
+  skills: string[],
+): Promise<string> {
+  const normalizedMode = mode === "plan" ? "plan" : mode === "ask" ? "ask" : "build";
+  let rolePrompt = "";
+  if (normalizedMode !== "ask") {
+    try {
+      const { assemblePrompt, loadSkillContent } = await import(
+        "./harness/prompts/assembler.ts"
+      );
+      // Load the actual skill content so the guidance reaches the model, not
+      // just the pack names. Fall back to the name if content is unavailable.
+      const skillContents = skills.map((name) => {
+        const content = loadSkillContent(name);
+        return content && content.length > 0 ? `## Skill Pack: ${name}\n\n${content}` : name;
+      });
+      rolePrompt = assemblePrompt({
+        role: normalizedMode === "plan" ? "planner" : "builder",
+        stage: "generating",
+        framework,
+        skills: skillContents,
+        vars: {},
+      });
+    } catch {
+      rolePrompt = `You are Caide's ${normalizedMode === "plan" ? "planner" : "builder"} for a ${framework} app.`;
+    }
+  }
+  const modeDirective =
+    normalizedMode === "ask"
+      ? `You are in ASK mode. Answer the user's question directly and concisely. Do NOT write code or modify files unless the user explicitly asks. Framework: ${framework}.`
+      : normalizedMode === "plan"
+        ? `You are in PLAN mode for a ${framework} app. Create a plan/spec before writing application code.`
+        : `You are in BUILD mode for a ${framework} app. You have access to the following tools and SHOULD use them to build the app:\n- ${CORE_TOOLS_TEXT}`;
+  return `${rolePrompt}\n\n${modeDirective}`.trim();
 }
 
 export class OrchestrationEngineService extends ServiceMap.Service<
@@ -812,7 +938,17 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               aggregateKind: "project",
               aggregateId: command.projectId,
               type: "project.created",
-              payload: { projectId: command.projectId },
+              payload: {
+                projectId: command.projectId,
+                title: command.title ?? "Home",
+                workspaceRoot: command.workspaceRoot ?? "",
+                defaultModelSelection: command.defaultModelSelection ?? null,
+                scripts: command.scripts ?? [],
+                isPinned: false,
+                spaceId: command.spaceId ?? null,
+                createdAt: now,
+                updatedAt: now,
+              },
               createdAt: now,
             });
           }
@@ -832,7 +968,11 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               aggregateKind: "project",
               aggregateId: command.projectId,
               type: "project.meta-updated",
-              payload: { projectId: command.projectId },
+              payload: {
+                projectId: command.projectId,
+                ...(command.title !== undefined ? { title: command.title } : {}),
+                updatedAt: now,
+              },
               createdAt: now,
             });
           }
@@ -847,7 +987,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               aggregateKind: "project",
               aggregateId: command.projectId,
               type: "project.deleted",
-              payload: { projectId: command.projectId },
+              payload: { projectId: command.projectId, deletedAt: now },
               createdAt: now,
             });
           }
@@ -885,7 +1025,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               aggregateKind: "thread",
               aggregateId: command.threadId,
               type: "thread.meta-updated",
-              payload: { threadId: command.threadId, projectId: command.projectId },
+              payload: threadMetaUpdatedPayload(command.threadId, { title: command.title }),
               createdAt: now,
             });
           }
@@ -901,7 +1041,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               aggregateKind: "thread",
               aggregateId: command.threadId,
               type: "thread.meta-updated",
-              payload: { threadId: command.threadId },
+              payload: threadMetaUpdatedPayload(command.threadId, { title: command.title }),
               createdAt: now,
             });
           }
@@ -916,7 +1056,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               aggregateKind: "thread",
               aggregateId: command.threadId,
               type: "thread.archived",
-              payload: { threadId: command.threadId, archivedAt: now },
+              payload: { threadId: command.threadId, archivedAt: now, updatedAt: now },
               createdAt: now,
             });
           }
@@ -931,7 +1071,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               aggregateKind: "thread",
               aggregateId: command.threadId,
               type: "thread.deleted",
-              payload: { threadId: command.threadId },
+              payload: { threadId: command.threadId, deletedAt: now },
               createdAt: now,
             });
           }
@@ -962,6 +1102,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               payload: {
                 threadId: command.threadId,
                 pin,
+                updatedAt: now,
               },
               createdAt: now,
             });
@@ -981,6 +1122,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               payload: {
                 threadId: command.threadId,
                 messageId: command.messageId,
+                updatedAt: now,
               },
               createdAt: now,
             });
@@ -1002,6 +1144,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 threadId: command.threadId,
                 messageId: command.messageId,
                 done: Boolean(command.done),
+                updatedAt: now,
               },
               createdAt: now,
             });
@@ -1023,6 +1166,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 threadId: command.threadId,
                 messageId: command.messageId,
                 label: command.label ?? null,
+                updatedAt: now,
               },
               createdAt: now,
             });
@@ -1032,17 +1176,18 @@ export class OrchestrationEngineService extends ServiceMap.Service<
           if (thread) {
             if (!thread.threadMarkers) thread.threadMarkers = [];
             const marker = {
-              markerId: command.markerId,
+              id: command.markerId,
               messageId: command.messageId,
               startOffset: command.startOffset,
               endOffset: command.endOffset,
               selectedText: command.selectedText,
-              style: command.style,
-              color: command.color,
+              style: command.style ?? "highlight",
+              color: command.color ?? "yellow",
               done: false,
               label: null,
               createdAt: now,
-            };
+              updatedAt: now,
+          };
             thread.threadMarkers.push(marker);
             thread.updatedAt = now;
             globalSnapshotSequence += 1;
@@ -1055,6 +1200,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               payload: {
                 threadId: command.threadId,
                 marker,
+                updatedAt: now,
               },
               createdAt: now,
             });
@@ -1074,6 +1220,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               payload: {
                 threadId: command.threadId,
                 markerId: command.markerId,
+                updatedAt: now,
               },
               createdAt: now,
             });
@@ -1095,6 +1242,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 threadId: command.threadId,
                 markerId: command.markerId,
                 done: Boolean(command.done),
+                updatedAt: now,
               },
               createdAt: now,
             });
@@ -1116,6 +1264,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 threadId: command.threadId,
                 markerId: command.markerId,
                 label: command.label ?? null,
+                updatedAt: now,
               },
               createdAt: now,
             });
@@ -1210,9 +1359,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               aggregateKind: "thread",
               aggregateId: command.threadId,
               type: "thread.unarchived",
-              payload: {
-                threadId: command.threadId,
-              },
+              payload: { threadId: command.threadId, unarchivedAt: now, updatedAt: now },
               createdAt: now,
             });
           }
@@ -1306,10 +1453,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
             aggregateKind: "thread",
             aggregateId: command.threadId,
             type: "thread.message-sent",
-            payload: {
-              threadId: command.threadId,
-              message: userMsg,
-            },
+            payload: messageSentPayload(command.threadId, userMsg),
             createdAt: now,
           });
 
@@ -1318,10 +1462,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
             aggregateKind: "thread",
             aggregateId: command.threadId,
             type: "thread.message-sent",
-            payload: {
-              threadId: command.threadId,
-              message: assistantMsg,
-            },
+            payload: messageSentPayload(command.threadId, assistantMsg),
             createdAt: now,
           });
 
@@ -1384,30 +1525,115 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                   content: m.text,
                 }));
 
-              const stream = streamProvider({
-                modelId,
-                baseUrl,
-                apiKey: apiKey || "dummy-key",
-                messages: chatHistory,
+              const project = inMemoryProjects.find((p: any) => p.id === thread.projectId);
+              const framework = project?.framework ?? "blank";
+              let skills: string[] = [];
+              try {
+                const { getFrameworkConfig } = await import("./harness/framework/registry.ts");
+                skills = getFrameworkConfig(framework)?.skills ?? [];
+              } catch {
+                // framework registry unavailable — build without skills
+              }
+              const system = await buildSystemPrompt(command.mode, framework, skills);
+
+              const appPath = project?.workspaceRoot ?? process.cwd();
+
+              // Conversation for the harness loop. The system prompt rides the
+              // adapter's `system` option; the rest is the real history.
+              const conversation = [
+                { role: "system", content: system },
+                ...chatHistory.map((m: any) => ({ role: m.role, content: m.content })),
+              ];
+
+              const { createStreamProviderAdapter } = await import(
+                "./harness/provider/streamProviderAdapter.ts"
+              );
+              const { ALL_CORE_TOOLS } = await import("./harness/tools/coreTools.ts");
+              const { runLoop } = await import("./harness/loop/loop.ts");
+
+              const adapter = createStreamProviderAdapter(
+                { modelId, baseUrl, apiKey: apiKey || "dummy-key", system, appPath },
+                ALL_CORE_TOOLS,
+              );
+
+              const loopToolDefinitions = ALL_CORE_TOOLS.map((t) => ({
+                name: t.name,
+                description: t.description,
+                readOnly: t.readOnly,
+                execute: (args: any, ctx: any) =>
+                  t.execute(args, {
+                    signal: ctx.signal,
+                    appPath,
+                    sessionId: ctx.sessionId,
+                    toolId: ctx.toolId,
+                    provider: { modelId, baseUrl, apiKey: apiKey || "dummy-key", system },
+                  }),
+              }));
+
+              const publishAssistantMessage = (msg: any) => {
+                globalSnapshotSequence += 1;
+                publishDomainEvent({
+                  sequence: globalSnapshotSequence,
+                  aggregateKind: "thread",
+                  aggregateId: command.threadId,
+                  type: "thread.message-sent",
+                  payload: messageSentPayload(command.threadId, msg),
+                  createdAt: new Date().toISOString(),
+                });
+              };
+
+              let stepAssistantText = "";
+
+              const loop = runLoop({
+                sessionId: thread.id,
+                turnId,
+                maxSteps: 10,
+                llm: adapter,
+                tools: loopToolDefinitions,
+                buildMessages: () => conversation,
+                onEvent: (event: any) => {
+                  if (event.type === "token" && event.content) {
+                    stepAssistantText += event.content;
+                    assistantMsg.text += event.content;
+                    assistantMsg.updatedAt = new Date().toISOString();
+                    publishAssistantMessage(assistantMsg);
+                  } else if (event.type === "tool_call") {
+                    if (event.status === "started") {
+                      // Record the assistant's reasoning + the tool call as one
+                      // assistant message so the provider has the full flow.
+                      conversation.push({
+                        role: "assistant",
+                        content: `${stepAssistantText} [Tool call: ${event.name}(${JSON.stringify(
+                          event.args ?? {},
+                        )})]`,
+                      });
+                      stepAssistantText = "";
+                    } else if (event.status === "completed" || event.status === "failed") {
+                      const resultText =
+                        typeof event.result === "string"
+                          ? event.result
+                          : JSON.stringify(event.result ?? {});
+                      conversation.push({
+                        role: "user",
+                        content: `[Tool result for ${event.name}]: ${resultText}`,
+                      });
+                    }
+                    const marker = `\n\n🛠️ ${event.name} ${event.status}${
+                      event.result && event.status === "completed"
+                        ? ` — ${JSON.stringify(event.result).slice(0, 200)}`
+                        : event.status === "failed"
+                          ? ` — failed`
+                          : ""
+                    }`;
+                    assistantMsg.text += marker;
+                    assistantMsg.updatedAt = new Date().toISOString();
+                    publishAssistantMessage(assistantMsg);
+                  }
+                },
               });
 
-              for await (const chunk of stream) {
-                if (chunk.type === "token" && chunk.content) {
-                  assistantMsg.text += chunk.content;
-                  assistantMsg.updatedAt = new Date().toISOString();
-                  globalSnapshotSequence += 1;
-                  publishDomainEvent({
-                    sequence: globalSnapshotSequence,
-                    aggregateKind: "thread",
-                    aggregateId: command.threadId,
-                    type: "thread.message-sent",
-                    payload: {
-                      threadId: command.threadId,
-                      message: { ...assistantMsg },
-                    },
-                    createdAt: new Date().toISOString(),
-                  });
-                }
+              for await (const _loopEvent of loop) {
+                // onEvent handles all publishing
               }
 
               assistantMsg.streaming = false;
@@ -1428,10 +1654,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 aggregateKind: "thread",
                 aggregateId: command.threadId,
                 type: "thread.message-sent",
-                payload: {
-                  threadId: command.threadId,
-                  message: { ...assistantMsg },
-                },
+                payload: messageSentPayload(command.threadId, assistantMsg),
                 createdAt: new Date().toISOString(),
               });
               publishDomainEvent({
@@ -1442,6 +1665,12 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 payload: {
                   threadId: command.threadId,
                   turnId,
+                  checkpointTurnCount: 1,
+                  checkpointRef: turnId,
+                  status: "ready",
+                  files: [],
+                  assistantMessageId: null,
+                  completedAt: new Date().toISOString(),
                 },
                 createdAt: new Date().toISOString(),
               });
@@ -1468,10 +1697,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 aggregateKind: "thread",
                 aggregateId: command.threadId,
                 type: "thread.message-sent",
-                payload: {
-                  threadId: command.threadId,
-                  message: { ...assistantMsg },
-                },
+                payload: messageSentPayload(command.threadId, assistantMsg),
                 createdAt: new Date().toISOString(),
               });
               publishDomainEvent({
@@ -1482,6 +1708,12 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 payload: {
                   threadId: command.threadId,
                   turnId,
+                  checkpointTurnCount: 1,
+                  checkpointRef: turnId,
+                  status: "ready",
+                  files: [],
+                  assistantMessageId: null,
+                  completedAt: new Date().toISOString(),
                 },
                 createdAt: new Date().toISOString(),
               });

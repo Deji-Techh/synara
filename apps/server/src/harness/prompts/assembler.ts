@@ -37,14 +37,27 @@ export function renderTemplateStrict(template: string, vars: Record<string, stri
  * Loads skill files from harness/skills/ directory.
  */
 export function loadSkillContent(skillName: string, skillsDir?: string): string {
-  const dir = skillsDir ?? path.join(__dirname, "..", "skills");
   const fileName = skillName.endsWith(".md") ? skillName : `${skillName}.md`;
-  const filePath = path.join(dir, fileName);
+  const base = skillsDir ?? "";
+  // Candidate locations: explicit dir, bundled dist/skills, source harness/skills.
+  const candidates = skillsDir
+    ? [skillsDir]
+    : [
+        path.join(import.meta.dirname ?? __dirname ?? "", "skills"),
+        path.join(import.meta.dirname ?? __dirname ?? "", "..", "skills"),
+        path.join(process.cwd(), "apps/server/src/harness/skills"),
+      ];
 
-  if (fs.existsSync(filePath)) {
-    const raw = fs.readFileSync(filePath, "utf-8");
-    // Strip YAML frontmatter
-    return raw.replace(/^---[\s\S]*?---\n*/, "").trim();
+  for (const dir of candidates) {
+    const filePath = path.join(dir, fileName);
+    try {
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, "utf-8");
+        return raw.replace(/^---[\s\S]*?---\n*/, "").trim();
+      }
+    } catch {
+      // ignore and try next candidate
+    }
   }
 
   return "";

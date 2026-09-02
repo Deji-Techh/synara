@@ -193,6 +193,15 @@ const buildCmd = Command.make(
       } else {
         yield* Effect.logWarning("[cli] Web dist not found — skipping client bundle.");
       }
+
+      // Copy the harness skill packs so the prompt assembler's loadSkillContent
+      // can read them at runtime from the bundled dist.
+      const skillsSource = path.join(serverDir, "src/harness/skills");
+      const skillsTarget = path.join(serverDir, "dist/skills");
+      if (yield* fs.exists(skillsSource)) {
+        yield* fs.copy(skillsSource, skillsTarget);
+        yield* Effect.log("[cli] Bundled harness skill packs into dist/skills");
+      }
     }),
 ).pipe(Command.withDescription("Build the server package (tsdown + bundle web client)."));
 

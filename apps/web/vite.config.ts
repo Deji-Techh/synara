@@ -223,9 +223,24 @@ export default defineConfig({
   resolve: {
     alias: {
       "~": path.resolve(import.meta.dirname, "./src"),
+      // Resolve @caide/contracts to source in both dev and build so Vite never
+      // depends on (or races with) its tsdown `dist/` output. This build's Vite
+      // does not honor the `$` exact-match suffix, so use a plain prefix key —
+      // safe here because the web app has no @caide/contracts/* subpath imports.
+      // @caide/shared needs no alias: its subpath exports point at source.
+      "@caide/contracts": path.resolve(
+        import.meta.dirname,
+        "../../packages/contracts/src/index.ts",
+      ),
     },
     tsconfigPaths: true,
-    dedupe: ["effect", "@effect/platform", "@effect/platform-node", "@caide/contracts", "@caide/shared"],
+    dedupe: [
+      "effect",
+      "@effect/platform",
+      "@effect/platform-node",
+      "@caide/contracts",
+      "@caide/shared",
+    ],
   },
   server: {
     port,
@@ -233,11 +248,15 @@ export default defineConfig({
     host: "127.0.0.1",
     proxy: {
       "/api": {
-        target: process.env.CAIDE_PORT ? `http://127.0.0.1:${process.env.CAIDE_PORT}` : "http://127.0.0.1:3773",
+        target: process.env.CAIDE_PORT
+          ? `http://127.0.0.1:${process.env.CAIDE_PORT}`
+          : "http://127.0.0.1:3773",
         changeOrigin: true,
       },
       "/ws": {
-        target: process.env.CAIDE_PORT ? `ws://127.0.0.1:${process.env.CAIDE_PORT}` : "ws://127.0.0.1:3773",
+        target: process.env.CAIDE_PORT
+          ? `ws://127.0.0.1:${process.env.CAIDE_PORT}`
+          : "ws://127.0.0.1:3773",
         ws: true,
       },
     },

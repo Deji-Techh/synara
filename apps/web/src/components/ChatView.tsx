@@ -3389,13 +3389,14 @@ export default function ChatView({
             messageId,
             role: "user",
             text,
+            attachments: [],
           },
           modelSelection: activeThread.modelSelection,
           runtimeMode: activeThread.runtimeMode,
           interactionMode: activeThread.interactionMode,
           mode: "local-agent",
           createdAt,
-        } as unknown as Parameters<typeof api.orchestration.dispatchCommand>[0]);
+        });
       } catch {
         // Fallback: put text in composer draft if direct dispatch fails
         try {

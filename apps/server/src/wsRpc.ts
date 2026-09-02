@@ -393,19 +393,68 @@ function makeWsArtifactsHandlers(artifactRegistry: any) {
 }
 
 function makeWsPreviewHandlers(_providerAdapterRegistry: any, _options: any) {
+  const tryPromise = <A>(p: Promise<A>) => Effect.tryPromise(() => p);
   return {
-    "preview.start": (_input: any) => Effect.succeed({} as any),
-    "preview.stop": (_input: any) => Effect.succeed(undefined),
-    "preview.reload": (_input: any) => Effect.succeed(undefined),
-    "preview.getState": (_input: any) => Effect.succeed({} as any),
-    "preview.analyze": (_input: any) => Effect.succeed({} as any),
-    "preview.test": (_input: any) => Effect.succeed({} as any),
-    "preview.buildStart": (_input: any) => Effect.succeed({} as any),
-    "preview.buildState": (_input: any) => Effect.succeed({} as any),
-    "preview.screenshot": (_input: any) => Effect.succeed({} as any),
-    "preview.devices": (_input: any) => Effect.succeed({} as any),
-    "preview.flutterToolchainStatus": (_input: any) => Effect.succeed({} as any),
-    "preview.flutterToolchainInstall": (_input: any) => Effect.succeed({} as any),
+    "preview.start": (input: any) =>
+      tryPromise(
+        import("./harness/preview/manager.ts").then((m) =>
+          m.startPreview({
+            threadId: input.threadId,
+            appDir: input.appDir,
+            port: input.port,
+            hostname: input.hostname,
+            device: input.device,
+          }),
+        ),
+      ),
+    "preview.stop": (input: any) =>
+      tryPromise(
+        import("./harness/preview/manager.ts").then(async (m) => ({
+          stopped: await m.stopPreview(input.threadId),
+        })),
+      ),
+    "preview.reload": (input: any) =>
+      tryPromise(
+        import("./harness/preview/manager.ts").then((m) => ({
+          reloaded: m.reloadPreview(input.threadId),
+        })),
+      ),
+    "preview.getState": (input: any) =>
+      tryPromise(import("./harness/preview/manager.ts").then((m) => m.getPreviewState(input.threadId))),
+    "preview.analyze": (input: any) =>
+      tryPromise(
+        import("./harness/preview/quality.ts").then((m) =>
+          m.runQualityCommand(input.threadId, "analyze", input.appDir),
+        ),
+      ),
+    "preview.test": (input: any) =>
+      tryPromise(
+        import("./harness/preview/quality.ts").then((m) =>
+          m.runQualityCommand(input.threadId, "test", input.appDir),
+        ),
+      ),
+    "preview.buildStart": (input: any) =>
+      tryPromise(
+        import("./harness/preview/quality.ts").then((m) =>
+          m.runQualityCommand(input.threadId, "build", input.appDir),
+        ),
+      ),
+    "preview.buildState": (_input: any) => tryPromise(Promise.resolve({})),
+    "preview.screenshot": (_input: any) => tryPromise(Promise.resolve({ image: null })),
+    "preview.devices": (_input: any) =>
+      tryPromise(
+        Promise.resolve({
+          devices: [
+            { id: "web", label: "Web Browser", kind: "web" },
+            { id: "simulator", label: "iOS Simulator", kind: "simulator" },
+            { id: "emulator", label: "Android Emulator", kind: "emulator" },
+          ],
+        }),
+      ),
+    "preview.flutterToolchainStatus": (_input: any) =>
+      tryPromise(Promise.resolve({ installed: true })),
+    "preview.flutterToolchainInstall": (_input: any) =>
+      tryPromise(Promise.resolve({ installed: true })),
   };
 }
 

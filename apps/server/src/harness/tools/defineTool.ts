@@ -7,6 +7,8 @@ export interface ToolContext {
   toolId: string;
   stage?: string;
   role?: string;
+  /** Provider config the tool can use to spawn its own LLM calls (e.g. sub-agents). */
+  provider?: { modelId: string; baseUrl: string; apiKey: string; system?: string };
 }
 
 export interface ToolDef<I = any, O = any> {

@@ -34,6 +34,11 @@ export async function scaffoldReactNative(root: string, appName = "MyReactNative
       "expo-status-bar": "~2.0.0",
       react: "18.3.1",
       "react-native": "0.76.0",
+      // Web rendering support so `expo start --web` serves a browser preview
+      // (rendered inside the device frame).
+      "react-native-web": "^0.19.0",
+      "react-dom": "18.3.1",
+      "@expo/metro-runtime": "~4.0.0",
       "@react-navigation/native": "^7.0.0",
       "@react-navigation/native-stack": "^7.0.0",
       zustand: "^5.0.0",

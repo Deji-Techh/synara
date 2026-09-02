@@ -66,8 +66,15 @@ function protectClientSocket(socket: Socket): void {
  * `ws` already defaults `concurrencyLimit` to 10 and creates its limiter
  * once per process on the first PerMessageDeflate instance, so passing it
  * here would pin the default rather than bound anything new.
+ *
+ * NOTE: disabled. The feature socket negotiated per-message deflate and the
+ * server then emitted RSV1-compressed frames that the packaged Electron
+ * renderer rejects with Chrome's "Invalid frame header" (reserved bit set on a
+ * connection where it is not accepted), killing every connection on boot. The
+ * RPC stream is small JSON; the ~80% wire savings are not worth a broken
+ * socket. Frames are now sent uncompressed, which every client accepts.
  */
-const PER_MESSAGE_DEFLATE_OPTIONS = true;
+const PER_MESSAGE_DEFLATE_OPTIONS = false;
 
 /**
  * The one upgrade route allowed to negotiate compression (post-auth). Shared

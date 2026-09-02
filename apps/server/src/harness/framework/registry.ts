@@ -30,7 +30,9 @@ export const frameworkRegistry: Record<ProjectFramework, FrameworkConfig> = {
     id: "react-native",
     name: "React Native (Expo)",
     preview: "device-frame",
-    devCommand: "npx expo start",
+    // --web serves a browser build (react-native-web) that renders in the
+    // device frame; expo prints `http://localhost:8081` for the web bundle.
+    devCommand: "npx expo start --web",
     buildSteps: ["npx expo export"],
     allowedTools: ["read_file", "write_file", "list_dir", "search_files", "run_command", "install_package", "build_project", "lint_project"],
     skills: ["ui-ux-mastery", "platform-patterns", "motion-interaction", "product-flow", "anti-ai-slop"],

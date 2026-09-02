@@ -158,7 +158,9 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
       const pendingToolCalls: Array<{ id: string; name: string; args: unknown }> = [];
 
       // Stream LLM response
-      const stream = options.llm.stream(messages, { tools: toolList, signal });
+      const streamOpts: { tools: ToolDefinition[]; signal?: AbortSignal } = { tools: toolList };
+      if (signal) streamOpts.signal = signal;
+      const stream = options.llm.stream(messages, streamOpts);
 
       for await (const chunk of stream) {
         if (signal?.aborted) break;
@@ -218,11 +220,26 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
         }
 
         try {
-          const result = await toolDef.execute(call.args, {
-            signal,
+          // Bound tool execution so a hung tool (network, missing dir) can't
+          // block the turn forever. 30s per tool is generous for file ops and
+          // builds while still guaranteeing forward progress.
+          const executeCtx: { signal?: AbortSignal; sessionId: string; toolId: string } = {
             sessionId,
             toolId: call.id,
-          });
+          };
+          if (signal) executeCtx.signal = signal;
+          const result = await Promise.race([
+            toolDef.execute(call.args, executeCtx),
+            new Promise<never>((_, reject) =>
+              setTimeout(
+                () =>
+                  reject(
+                    new Error(`Tool '${call.name}' timed out after 30000ms`),
+                  ),
+                30_000,
+              ),
+            ),
+          ]);
 
           yield emit({
             type: "tool_call",
