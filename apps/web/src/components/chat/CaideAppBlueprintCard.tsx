@@ -36,7 +36,8 @@ export const CaideAppBlueprintCard: React.FC<CaideAppBlueprintCardProps> = ({
       ? (liveBlueprint.designDirection as string)
       : designDirection;
   const displayPrimaryColor =
-    typeof liveBlueprint?.primaryColor === "string" && COLOR_RE.test(liveBlueprint.primaryColor as string)
+    typeof liveBlueprint?.primaryColor === "string" &&
+    COLOR_RE.test(liveBlueprint.primaryColor as string)
       ? (liveBlueprint.primaryColor as string)
       : primaryColor;
   const color = COLOR_RE.test(displayPrimaryColor) ? displayPrimaryColor : "#0284c7";
@@ -61,7 +62,9 @@ export const CaideAppBlueprintCard: React.FC<CaideAppBlueprintCardProps> = ({
             <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               App Blueprint
             </div>
-            <div className="truncate text-[13px] font-semibold text-foreground">{displayAppName}</div>
+            <div className="truncate text-[13px] font-semibold text-foreground">
+              {displayAppName}
+            </div>
           </div>
           <div className="flex shrink-0 items-center gap-1.5 rounded-md border border-border/40 bg-muted/40 px-2 py-1">
             <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
@@ -102,7 +105,8 @@ export const CaideAppBlueprintCard: React.FC<CaideAppBlueprintCardProps> = ({
             </p>
           ) : pending ? (
             <p className="text-[11px] text-muted-foreground">
-              Review and edit the blueprint in the composer below. Approve there to apply your changes — the agent will use your edited values.
+              Review and edit the blueprint in the composer below. Approve there to apply your
+              changes — the agent will use your edited values.
             </p>
           ) : (
             <p className="text-[11px] text-muted-foreground">

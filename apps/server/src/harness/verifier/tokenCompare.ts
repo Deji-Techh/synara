@@ -28,9 +28,7 @@ export function auditFileTokens(filePath: string, content: string): TokenViolati
   // 1. Mandatory States Audit (for screen files)
   if (isScreenFile) {
     // Strip comments to prevent false positives from code comments
-    const codeWithoutComments = content
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .replace(/\/\/.*$/gm, "");
+    const codeWithoutComments = content.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
 
     const hasEmptyState =
       /\b(empty|no items|no data|not found|EmptyState|no products|no results|emptyState)\b/i.test(
@@ -156,7 +154,9 @@ export function auditProjectTokens(files: Record<string, string>): TokenAuditRes
   }
 
   const issues = allViolations.map((v) =>
-    v.line ? `[${v.filePath}:${v.line}] ${v.message} (Fix: ${v.suggestedFix})` : `[${v.filePath}] ${v.message} (Fix: ${v.suggestedFix})`,
+    v.line
+      ? `[${v.filePath}:${v.line}] ${v.message} (Fix: ${v.suggestedFix})`
+      : `[${v.filePath}] ${v.message} (Fix: ${v.suggestedFix})`,
   );
 
   const passed = allViolations.length === 0;

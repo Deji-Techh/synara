@@ -27,9 +27,7 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = () 
     setAnswers((prev) => {
       if (isMulti) {
         const current = (prev[qKey] as string[]) || [];
-        const next = current.includes(opt)
-          ? current.filter((x) => x !== opt)
-          : [...current, opt];
+        const next = current.includes(opt) ? current.filter((x) => x !== opt) : [...current, opt];
         return { ...prev, [qKey]: next };
       }
       return { ...prev, [qKey]: opt };

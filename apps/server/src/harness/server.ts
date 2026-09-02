@@ -5,7 +5,10 @@
 import { CaideRunner } from "./turn/runner.ts";
 import { streamProvider } from "./provider/apiAdapter.ts";
 
-export function createHarnessServer(): { runner: CaideRunner; handleStream: typeof streamProvider } {
+export function createHarnessServer(): {
+  runner: CaideRunner;
+  handleStream: typeof streamProvider;
+} {
   const runner = new CaideRunner();
   return { runner, handleStream: streamProvider };
 }

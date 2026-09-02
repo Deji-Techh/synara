@@ -1,4 +1,5 @@
 # 005 — Caide Master Build Plan
+
 ## The World's Best AI App Builder
 
 > **This is the single source of truth. Supersedes `004-caide-pure-harness.md`.**
@@ -22,20 +23,20 @@ The web UI stays **almost entirely as-is**. It is the shell. We are NOT deleting
 
 What we strip is the **backend engine** that powers the shell:
 
-| Keep (UI Shell) | Strip (Old Engine) |
-|---|---|
-| `ChatView.tsx` and all its variants | `codexAppServerManager.ts` (4331 lines) |
-| `Sidebar.tsx` and all logic | `orchestration/` entire directory |
-| All settings panels incl. Profile | `agentGateway/` entire directory |
-| All routes | `checkpointing/` entire directory |
-| All components/ui | `automation/` entire directory |
-| `ProfileSettingsPanel.tsx` | `browserAutomation/` entire directory |
-| `FrameworkIcon`, `CaideLogo`, `Icons` | `wsTransport.ts` (68K — old event model) |
-| `lib/disclosureMotion.ts` | `wsNativeApi.ts` (47K — old native API) |
-| `theme/`, `lib/` | `storeEventReducer.ts` (65K — Codex events) |
-| `Electron desktop (all 24 core files)` | `storeProjection.ts` (56K — Codex events) |
-| Profile feature | `storeNormalization.ts` (71K — Codex events) |
-| Git, terminal, auth, device infra on server | `workLog.ts` (72K — old agent events) |
+| Keep (UI Shell)                             | Strip (Old Engine)                           |
+| ------------------------------------------- | -------------------------------------------- |
+| `ChatView.tsx` and all its variants         | `codexAppServerManager.ts` (4331 lines)      |
+| `Sidebar.tsx` and all logic                 | `orchestration/` entire directory            |
+| All settings panels incl. Profile           | `agentGateway/` entire directory             |
+| All routes                                  | `checkpointing/` entire directory            |
+| All components/ui                           | `automation/` entire directory               |
+| `ProfileSettingsPanel.tsx`                  | `browserAutomation/` entire directory        |
+| `FrameworkIcon`, `CaideLogo`, `Icons`       | `wsTransport.ts` (68K — old event model)     |
+| `lib/disclosureMotion.ts`                   | `wsNativeApi.ts` (47K — old native API)      |
+| `theme/`, `lib/`                            | `storeEventReducer.ts` (65K — Codex events)  |
+| `Electron desktop (all 24 core files)`      | `storeProjection.ts` (56K — Codex events)    |
+| Profile feature                             | `storeNormalization.ts` (71K — Codex events) |
+| Git, terminal, auth, device infra on server | `workLog.ts` (72K — old agent events)        |
 
 **The UI stays. The engine goes. We rebuild the engine. We rewire the UI to the new engine via typed WS events.**
 
@@ -145,7 +146,11 @@ Every generated app has a `.caide/design-spec.json` (stolen from dyad x caide pa
     "primaryButton": "white pill, dark text, full-width, 44px min tap",
     "searchBar": "pill floating with padding, contextual placeholder"
   },
-  "motion": { "spring": "stiffness:400 damping:30", "default": "200ms ease-out", "reduced": "prefers-reduced-motion:0ms" },
+  "motion": {
+    "spring": "stiffness:400 damping:30",
+    "default": "200ms ease-out",
+    "reduced": "prefers-reduced-motion:0ms"
+  },
   "iconPack": "phosphor-duotone",
   "spacingUnit": 4
 }
@@ -160,6 +165,7 @@ The Verifier does **exact token comparison** against this file, not aesthetic ju
 **Every milestone has explicit pass criteria. Nothing proceeds until criteria are met.**
 
 Notation used below:
+
 - `✓ BUILD` — `bun build` (or framework equivalent) passes with zero errors
 - `✓ TYPE` — `bun typecheck` passes
 - `✓ TEST` — `bun run test` passes for affected files
@@ -176,6 +182,7 @@ Notation used below:
 ## M0.1 — Strip Server Engine
 
 **Actions:**
+
 1. Delete these server directories entirely:
    - `apps/server/src/orchestration/`
    - `apps/server/src/agentGateway/`
@@ -244,6 +251,7 @@ Notation used below:
 ## M0.2 — Strip Web Old Engine Layer
 
 **Actions — only touch the coupling layer, NOT the UI components:**
+
 1. Delete these web files (old engine coupling, not UI):
    - `wsTransport.ts` + `.test.ts` — old 68K transport
    - `wsNativeApi.ts` + `.test.ts` — old 47K native API
@@ -320,6 +328,7 @@ Notation used below:
 ## M0.3 — Strip Desktop Engine
 
 **Actions:**
+
 1. Delete `apps/desktop/src/browserAutomation/` (28 files)
 2. Delete `apps/desktop/src/browserAnnotations/` (11 files)
 3. Delete `apps/desktop/src/updateMachine.ts`
@@ -329,6 +338,7 @@ Notation used below:
 ## M0.4 — Strip Packages/Contracts
 
 **Actions:**
+
 1. In `packages/contracts/src/`:
    - Delete `orchestration.ts` + `.test.ts`
    - Delete `automation.ts`
@@ -338,6 +348,7 @@ Notation used below:
 ## M0.5 — Strip Root Junk
 
 **Actions:**
+
 1. Delete from repo root:
    - `fix_dyad_refs.ts`, `make_agnostic.ts`, `inline-raw.ts`
    - `patch_engine.cjs`, `patch_engine2.cjs`, `patch_engine3.cjs`, `patch_engine_test.cjs`
@@ -370,23 +381,54 @@ Notation used below:
 **Goal:** Define the single contract that the new harness uses to speak to the web UI. Every event that crosses the WS boundary has a schema. No raw strings.
 
 **Files to create:**
+
 - `packages/contracts/src/harnessEvents.ts`
 - `packages/contracts/src/sessionContracts.ts`
 - `packages/contracts/src/projectContracts.ts`
 
 **`harnessEvents.ts` must define:**
+
 ```typescript
 type HarnessEvent =
-  | { type: 'token';          sessionId: string; content: string }
-  | { type: 'tool_call';      sessionId: string; id: string; name: string; args: unknown; status: 'started'|'completed'|'failed'; result?: unknown; durationMs?: number }
-  | { type: 'stage';          sessionId: string; from: string; to: string; meta?: Record<string,unknown> }
-  | { type: 'checkpoint';     sessionId: string; id: string; reason: string; requiresResponse: boolean; diff?: string }
-  | { type: 'artifact_updated'; sessionId: string; path: string; framework: ProjectFramework; sizeBytes: number }
-  | { type: 'turn_start';     sessionId: string; turnId: string; prompt: string }
-  | { type: 'turn_end';       sessionId: string; turnId: string; status: TurnStatus }
-  | { type: 'verifier_result'; sessionId: string; passed: boolean; confidence: number; tasteScore: number; issues: string[] }
-  | { type: 'compaction';     sessionId: string; reason: string; summaryLength: number }
-  | { type: 'error';          sessionId: string; code: string; message: string; recoverable: boolean }
+  | { type: "token"; sessionId: string; content: string }
+  | {
+      type: "tool_call";
+      sessionId: string;
+      id: string;
+      name: string;
+      args: unknown;
+      status: "started" | "completed" | "failed";
+      result?: unknown;
+      durationMs?: number;
+    }
+  | { type: "stage"; sessionId: string; from: string; to: string; meta?: Record<string, unknown> }
+  | {
+      type: "checkpoint";
+      sessionId: string;
+      id: string;
+      reason: string;
+      requiresResponse: boolean;
+      diff?: string;
+    }
+  | {
+      type: "artifact_updated";
+      sessionId: string;
+      path: string;
+      framework: ProjectFramework;
+      sizeBytes: number;
+    }
+  | { type: "turn_start"; sessionId: string; turnId: string; prompt: string }
+  | { type: "turn_end"; sessionId: string; turnId: string; status: TurnStatus }
+  | {
+      type: "verifier_result";
+      sessionId: string;
+      passed: boolean;
+      confidence: number;
+      tasteScore: number;
+      issues: string[];
+    }
+  | { type: "compaction"; sessionId: string; reason: string; summaryLength: number }
+  | { type: "error"; sessionId: string; code: string; message: string; recoverable: boolean };
 ```
 
 **`sessionContracts.ts` must define:** `Session`, `Turn`, `TurnStatus`, `SessionEvent`, `SessionId`, `TurnId`
@@ -394,6 +436,7 @@ type HarnessEvent =
 **`projectContracts.ts` must define:** `Project`, `Thread`, `ProjectId`, `ThreadId`, `ProjectFramework` (import from baseSchemas)
 
 **M1 Verification Gate:**
+
 ```
 ✓ TYPE: packages/contracts bun typecheck passes
 ✓ TEST: all contracts have at least one type-level test (use satisfies operator)
@@ -407,10 +450,12 @@ type HarnessEvent =
 **Reference:** claude-code `sessionStorage.ts:1416` pattern
 
 **Files to create:**
+
 - `apps/server/src/harness/session/storage.ts`
 - `apps/server/src/harness/session/buildChain.ts`
 
 **`storage.ts` must:**
+
 - Write events as JSONL to `~/.caide/sessions/<sessionId>.jsonl`
 - Each line: `{ type, seq, time, parentUuid, sessionId, data }`
 - 100ms debounce write queue — never blocks hot path
@@ -418,11 +463,13 @@ type HarnessEvent =
 - `recordTranscript` prefix filter — only user/assistant messages visible to model
 
 **`buildChain.ts` must:**
+
 - `buildConversationChain(sessionId)` → `Message[]` from JSONL
 - Handles fork: follow `parentUuid` chain without loading siblings
 - `buildMessages()` → filtered for role (Builder gets slice context, Verifier gets fresh)
 
 **M2 Verification Gate:**
+
 ```
 ✓ TEST: write 100 events, crash, resume — chain is intact and ordered
 ✓ TEST: fork session — both chains are independent
@@ -437,12 +484,14 @@ type HarnessEvent =
 **Reference:** kimi-code `loop/run-turn.ts`, deepseek Inbox pattern
 
 **Files to create/update:**
+
 - `apps/server/src/harness/loop/loop.ts` (already exists, expand)
 - `apps/server/src/harness/loop/retry.ts`
 - `apps/server/src/harness/loop/events.ts`
 - `apps/server/src/harness/inbox/index.ts` (already exists as stub, implement)
 
 **`loop.ts` must:**
+
 - `runLoop(options: LoopOptions): AsyncGenerator<HarnessEvent>`
 - `LoopOptions`: `{ maxSteps, signal, llm, buildMessages, tools, onEvent, role }`
 - `while (steps < maxSteps && !signal.aborted)` guard
@@ -452,17 +501,20 @@ type HarnessEvent =
 - `retry.ts`: exponential backoff 1s→2s→4s→8s, max 3 attempts, only on recoverable errors
 
 **`events.ts` must:**
+
 - `LoopRecordedEvent` — durable (token, tool_call completed, stage, checkpoint)
 - `LoopLiveOnlyEvent` — ephemeral (token delta, tool progress)
 - `safeEmitLive(event)` — never throws, never breaks turn execution
 
 **`inbox/index.ts` must:**
+
 - `Inbox` class with `next-turn` queue and `next-step` queue
 - Methods: `steer(prompt)`, `inject(event)`, `cancel(cause)`, `whenIdle(cb)`
 - `pre-step` waterfall: each registered handler can `reject | enter | pass`
 - `followup` queue drains after turn completes
 
 **M3 Verification Gate:**
+
 ```
 ✓ TEST: run 10 steps with fake LLM → events are emitted in order
 ✓ TEST: signal.abort() mid-step → loop stops cleanly, no dangling state
@@ -483,6 +535,7 @@ type HarnessEvent =
 **Reference:** claude-code `StreamingToolExecutor.ts`, `defineTool` DSL, `ToolScheduler`
 
 **Files to create:**
+
 - `apps/server/src/harness/tools/defineTool.ts`
 - `apps/server/src/harness/tools/toolScheduler.ts`
 - `apps/server/src/harness/tools/executor.ts`
@@ -490,31 +543,35 @@ type HarnessEvent =
 - `apps/server/src/harness/tools/coreTools.ts` (18 core tools)
 
 **`defineTool.ts` must:**
+
 ```typescript
 function defineTool<I, O>(def: {
-  name: string
-  description: string          // written for model, includes explicit failure modes
-  schema: ZodSchema<I>
-  readOnly: boolean            // true = can parallelize
-  modifiesState: boolean
-  execute(input: I, ctx: ToolContext): Promise<O>
-  presentCall(input: I): string    // human-readable tool call card
-  presentResult(output: O): string // human-readable result card
-}): ToolDef<I, O>
+  name: string;
+  description: string; // written for model, includes explicit failure modes
+  schema: ZodSchema<I>;
+  readOnly: boolean; // true = can parallelize
+  modifiesState: boolean;
+  execute(input: I, ctx: ToolContext): Promise<O>;
+  presentCall(input: I): string; // human-readable tool call card
+  presentResult(output: O): string; // human-readable result card
+}): ToolDef<I, O>;
 ```
 
 **`toolScheduler.ts` must:**
+
 - Build conflict graph from tool metadata
 - `isConcurrencySafe(toolA, toolB)` — `readOnly && readOnly = safe`
 - Parallel execution for safe pairs, sequential for unsafe
 - `AbortController` hierarchy: `tool ← sibling ← query` (sibling abort on failure)
 
 **`executor.ts` must:**
+
 - Schema validation before execution (reject malformed)
 - Stage/permission validation (reject legal-schema-but-wrong-timing with structured reason)
 - Structured error formatting back to model
 
 **18 Core Tools for `coreTools.ts`:**
+
 ```
 read_file(path)                 → string           readOnly:true
 write_file(path, content)       → void             readOnly:false
@@ -537,6 +594,7 @@ log_decision(decision, reason)  → void             readOnly:false
 ```
 
 **M4 Verification Gate:**
+
 ```
 ✓ TEST: defineTool registers correctly, schema validation rejects bad input
 ✓ TEST: two readOnly tools run in parallel, write tools run sequential
@@ -552,6 +610,7 @@ log_decision(decision, reason)  → void             readOnly:false
 **Reference:** deepseek `system-prompt/src/index.ts` section/context/variable/tools pattern
 
 **Files to create:**
+
 - `apps/server/src/harness/prompts/registry.ts` (already exists, expand)
 - `apps/server/src/harness/prompts/layers.ts`
 - `apps/server/src/harness/prompts/assembler.ts`
@@ -559,6 +618,7 @@ log_decision(decision, reason)  → void             readOnly:false
 - `apps/server/src/harness/skills/` (skill pack directory)
 
 **`assembler.ts` must:**
+
 - `assemble(opts: { role, stage, skills, vars, framework })` → `Message[]`
 - Strict `{{var}}` rendering — throw if variable missing, not silently skip
 - `L0 + L1` always loaded from cache
@@ -567,6 +627,7 @@ log_decision(decision, reason)  → void             readOnly:false
 - Token budget check — if assembled prompt > 90% of model context limit, log warning
 
 **`roles/builder.ts` must include:**
+
 - "You write code, never judge it complete. Only Verifier can pass a slice."
 - "Per-slice fresh context — you do not see the history of previous slices."
 - "Every screen you output must include empty state, loading state, and error state."
@@ -574,6 +635,7 @@ log_decision(decision, reason)  → void             readOnly:false
 - "Use `.caide/motion-spec.json` for every animation — no improvising timing."
 
 **`roles/verifier.ts` must include:**
+
 - "You never see the Builder's reasoning trace. Fresh context only."
 - "Compare output files against `.caide/design-spec.json` exact token values."
 - "Check every screen has: empty state, loading state, error state."
@@ -581,6 +643,7 @@ log_decision(decision, reason)  → void             readOnly:false
 - "Output structured `VerifyResult { passed, confidence, tasteScore, issues[] }`."
 
 **`roles/router.ts` must classify:**
+
 - `ask` → answer only, no code, cheap model
 - `plan` → spec.md creation, medium model
 - `build` → code generation, strong model
@@ -590,6 +653,7 @@ log_decision(decision, reason)  → void             readOnly:false
 
 **Skills in `harness/skills/`:**
 Each skill is a `.md` file with YAML frontmatter `{ name, triggers, companions }`:
+
 - `ui-ux-mastery.md` — product archetypes, design system, component contracts, a11y, anti-slop, quality rubric, motion direction
 - `motion-interaction.md` — spring physics, gesture choreography, haptics mapping, timing curves
 - `product-flow.md` — spec.md construction, empty/loading/error states, user flow validation
@@ -598,6 +662,7 @@ Each skill is a `.md` file with YAML frontmatter `{ name, triggers, companions }
 - `platform-patterns.md` — iOS SF Symbols, Android Material, cross-platform native feel
 
 **M5 Verification Gate:**
+
 ```
 ✓ TEST: assemble() with all 6 roles produces non-empty prompt, no missing {{vars}}
 ✓ TEST: missing {{var}} throws, not silently skips
@@ -617,6 +682,7 @@ Each skill is a `.md` file with YAML frontmatter `{ name, triggers, companions }
 **Update:** `apps/server/src/harness/router/index.ts` (already exists, expand)
 
 **Router must:**
+
 - Use the **cheapest model** (not strong model — speed matters here)
 - Classify in a single non-streaming call (<500ms target)
 - Output `RouterDecision { intent, model, skills, tier, framework, confidence }`
@@ -624,6 +690,7 @@ Each skill is a `.md` file with YAML frontmatter `{ name, triggers, companions }
 - Router never calls tools, never writes files
 
 **Intent → Model mapping:**
+
 ```
 ask    → cheap model (gpt-5.6-sol or equivalent)
 plan   → medium model (sonnet equivalent)
@@ -633,6 +700,7 @@ fix    → medium model
 ```
 
 **M6 Verification Gate:**
+
 ```
 ✓ TEST: 20 prompt samples → each classifies to correct intent
 ✓ TEST: ambiguous prompt → confidence < 0.7, defaults to build
@@ -645,10 +713,12 @@ fix    → medium model
 **Goal:** Force a real spec before any code. `spec.md` is the source of truth.
 
 **Files to create:**
+
 - `apps/server/src/harness/planner/index.ts` (stub exists, implement)
 - `apps/server/src/harness/planner/specValidator.ts`
 
 **Planner must:**
+
 1. On first message for a new project: enter Plan mode
 2. Ask (or infer) the required spec fields:
    - Primary user and their context
@@ -661,6 +731,7 @@ fix    → medium model
 6. Only after user approves: transition to Builder
 
 **`specValidator.ts` must:**
+
 - Validate spec has all required fields
 - Validate 3-5 flows (not just feature list)
 - Validate platform is one of the 4 framework types
@@ -668,6 +739,7 @@ fix    → medium model
 - Return `{ valid, missing, warnings }`
 
 **Plan mode UI card (sent as checkpoint event):**
+
 ```
 📋 App Plan: [App Name]
 User: [who they are]
@@ -681,6 +753,7 @@ Framework: React Native
 ```
 
 **M7 Verification Gate:**
+
 ```
 ✓ TEST: first message for new project → Plan mode entered, not Builder
 ✓ TEST: plan approval → spec.md created with all required fields
@@ -699,10 +772,12 @@ Framework: React Native
 **Goal:** One complete flow at a time. Each slice gets a fresh context. Never accumulate across slices.
 
 **Files to create:**
+
 - `apps/server/src/harness/builder/index.ts` (stub exists, implement)
 - `apps/server/src/harness/slice/index.ts` (stub exists, implement)
 
 **Builder must:**
+
 1. Read `spec.md`, `architecture.md`, `.caide/design-spec.json`, `.caide/motion-spec.json`
 2. Identify the current slice (one complete flow: UI + state + data + edge cases)
 3. Create **fresh context** for this slice — does NOT inherit Builder history from previous slices
@@ -719,6 +794,7 @@ Framework: React Native
 9. Pass to Verifier when slice is built
 
 **Anti-patterns that MUST be prevented:**
+
 - No lorem ipsum or placeholder data
 - No `// TODO: implement` in generated code
 - No `console.log` left in production code
@@ -726,12 +802,14 @@ Framework: React Native
 - No generic "AI-slop" aesthetic (gradient text, glassmorphism by default)
 
 **`slice/index.ts` must:**
+
 - Track which slices are complete, which are pending
 - `getNextSlice(spec)` → returns the highest-priority incomplete slice
 - Slice isolation: each slice gets its own context window
 - After Verifier passes: mark slice complete, persist to session log
 
 **M8 Verification Gate:**
+
 ```
 ✓ TEST: builder builds a screen with all required states (empty, loading, error)
 ✓ TEST: builder follows design tokens exactly (color, type, spacing)
@@ -749,6 +827,7 @@ Framework: React Native
 **Add:** `apps/server/src/harness/verifier/tokenCompare.ts`
 
 **Verifier must:**
+
 1. Load `.caide/design-spec.json` and `.caide/motion-spec.json`
 2. Read built files (no access to Builder's reasoning context)
 3. **Token comparison checks:**
@@ -767,6 +846,7 @@ Framework: React Native
    - `passed: false` → send to Fixer with `issues[]`
 
 **M9 Verification Gate:**
+
 ```
 ✓ TEST: file with wrong color token → verifier catches it, issues[] contains specific token
 ✓ TEST: missing empty state → verifier catches it
@@ -780,9 +860,11 @@ Framework: React Native
 **Goal:** Receive Verifier issues, patch surgically, never re-generate entire files.
 
 **Files to create:**
+
 - `apps/server/src/harness/fixer/index.ts` (stub exists, implement)
 
 **Fixer must:**
+
 - Receive `VerifyResult.issues[]` — specific, actionable items only
 - Generate minimal targeted patches (not whole-file rewrites)
 - Max 3 fix attempts per issue before escalating to human checkpoint
@@ -791,6 +873,7 @@ Framework: React Native
 - Emit `stage { from: 'fixing', to: 'verifying' }` event
 
 **M10 Verification Gate:**
+
 ```
 ✓ TEST: wrong token → fixer patches exactly that line, not surrounding code
 ✓ TEST: 3 failed fix attempts → checkpoint event emitted for human review
@@ -811,6 +894,7 @@ Framework: React Native
 **Add:** `apps/server/src/harness/provider/models.ts`
 
 **`apiAdapter.ts` must:**
+
 - Route by model prefix: `grok/gpt/o1/o3` → `/zen/v1/responses`, `claude/minimax/qwen` → `/zen/v1/messages`, fallback → `/zen/go/v1/chat/completions`
 - Handle SSE streaming for all endpoints
 - Parse `data: {...}` lines, extract delta tokens per endpoint format
@@ -818,16 +902,19 @@ Framework: React Native
 - Structured error: on non-2xx, extract `{ code, message, retryable }` not raw HTTP error
 
 **`stream.ts` must:**
+
 - `streamProvider(opts): AsyncGenerator<string>` → yields token strings
 - `BlockAssembler` — assembles partial tool call JSON across chunks
 - `LLMStreamTiming` — tracks TTFT (time to first token), reports in `stage` event
 
 **`models.ts` must:**
+
 - Define available models with their endpoint, context window, cost tier
 - `getModel(intent, tier)` → resolves the correct model per Router decision
 - Model fallback chain: if primary fails, downgrade to next tier
 
 **M11 Verification Gate:**
+
 ```
 ✓ TEST: mock HTTP server → streamProvider yields tokens in order
 ✓ TEST: SIGTERM mid-stream → generator stops, reader cancelled, no memory leak
@@ -842,11 +929,13 @@ Framework: React Native
 **Goal:** Two separate channels to the UI. Token stream for perceived speed. Event stream for UI state.
 
 **Files to create:**
+
 - `apps/server/src/harness/ws/server.ts` (replaces stub ws/ directory)
 - `apps/web/src/wsTransport.ts` (NEW — replaces deleted old one, lean)
 - `apps/web/src/harnessStore.ts` (NEW — lean store for harness events)
 
 **Server `ws/server.ts` must:**
+
 - Accept WS connection, authenticate (reuse existing auth middleware)
 - Register session with `CaideRunner`
 - Forward `HarnessEvent` to connected client — typed, not raw strings
@@ -854,6 +943,7 @@ Framework: React Native
 - Reconnect handling: on reconnect, replay last N events from JSONL log
 
 **Client `wsTransport.ts` must:**
+
 - Lean — handles ONLY `HarnessEvent` types from `@caide/contracts`
 - `connect(url)` → `EventEmitter<HarnessEvent>`
 - Auto-reconnect with exponential backoff
@@ -862,6 +952,7 @@ Framework: React Native
 - No orchestration concepts, no old event types
 
 **Client `harnessStore.ts` must:**
+
 - `useHarnessStore()` → Zustand/Jotai store driven by `HarnessEvent` stream
 - State shape: `{ sessions: Map<SessionId, SessionState>, activeSessionId }`
 - `SessionState { tokens: string[], turns: Turn[], stage: string, checkpoint?: Checkpoint, verifierResult?: VerifyResult, artifacts: ArtifactEntry[] }`
@@ -869,6 +960,7 @@ Framework: React Native
 - All existing UI components that reference old orchestration store → migrate to `useHarnessStore()`
 
 **M12 Verification Gate:**
+
 ```
 ✓ BOOT: server starts, web connects, WS handshake succeeds
 ✓ MANUAL: send a prompt → token events appear in ChatView in real time
@@ -889,17 +981,20 @@ Framework: React Native
 **Reference:** kimi-code `ContextMemory`, `projector.ts` media ladder
 
 **Files to create:**
+
 - `apps/server/src/harness/context/index.ts` (stub exists, implement)
 - `apps/server/src/harness/context/projector.ts`
 - `apps/server/src/harness/context/memory.ts`
 
 **`memory.ts` must track:**
+
 - `pendingToolResultIds` — tool calls sent, results not yet received
 - `openSteps` — steps started but not completed
 - `deferredMessages` — messages queued for next step
 - Invariant: `model-visible ↔ logged` — every event in JSONL is in context or explicitly excluded
 
 **`projector.ts` must implement projection ladder:**
+
 ```
 Normal      → full messages, all attachments
 Media-degraded → drop image attachments, keep text
@@ -909,12 +1004,14 @@ Emergency   → only last N turns + spec.md + current slice spec
 ```
 
 **Context budget tracking:**
+
 - Count tokens before each call (use model's tokenizer or character estimate)
 - At 70%: prepare compaction
 - At 85%: execute compaction
 - At 95%: emergency — switch to Emergency projection
 
 **M13 Verification Gate:**
+
 ```
 ✓ TEST: context at 71% → compaction prepared (not yet executed)
 ✓ TEST: context at 86% → compaction executed, summary injected, old messages removed
@@ -928,31 +1025,37 @@ Emergency   → only last N turns + spec.md + current slice spec
 **Goal:** Proactive, not reactive. Happens at clean boundaries. Uses cheap model.
 
 **Files to create:**
+
 - `apps/server/src/harness/compaction/index.ts` (stub exists, implement)
 - `apps/server/src/harness/compaction/summarizer.ts`
 
 **`compaction/index.ts` must:**
+
 - Trigger at 70% context budget (not 100% — proactive)
 - Always trigger at clean boundary (end of tool call, not mid-reasoning)
 - `isCompacting` latch — only one compaction at a time
 - Emit `{ type: 'compaction', reason, summaryLength }` event to UI
 
 **`summarizer.ts` must:**
+
 - Call cheap model with: "Summarize what was built, decisions made, what's pending"
 - Output: `{ builtSummary, pendingSlices, keyDecisions, artifactList }`
 - Store summary in JSONL as a special `compaction_summary` event
 - After compaction: context contains summary + last 3 turns + always-persistent (spec.md, design-spec.json, current slice)
 
 **Artifact-over-conversation principle:**
+
 - `spec.md`, `architecture.md`, `.caide/design-spec.json`, `.caide/motion-spec.json` are always present — never compacted
 - Conversation doesn't re-derive what's in these files — it references them
 
 **Per-slice isolation:**
+
 - Each new slice starts with: `L0 + L1 + L2(stage) + L3(skills) + spec.md + slice-spec`
 - Does NOT inherit the previous slice's conversation history
 - Prevents cross-slice confusion/drift
 
 **M14 Verification Gate:**
+
 ```
 ✓ TEST: compaction triggers at 70%, not 100%
 ✓ TEST: compaction happens at end of tool call, not mid-token
@@ -971,10 +1074,12 @@ Emergency   → only last N turns + spec.md + current slice spec
 
 **Update:** `apps/server/src/harness/framework/registry.ts` (already exists, expand)
 **Files to create:**
+
 - `apps/server/src/harness/scaffold/index.ts` (stub exists, implement)
 - `apps/server/src/harness/scaffold/templates/` (4 framework templates)
 
 **Framework registry must define for each of `blank|react-native|flutter|website`:**
+
 ```typescript
 {
   scaffold: () => Promise<void>  // creates project skeleton
@@ -988,12 +1093,14 @@ Emergency   → only last N turns + spec.md + current slice spec
 ```
 
 **Scaffold templates must create:**
+
 - `react-native`: Expo + NativeWind + React Navigation + Zustand + React Query
 - `flutter`: Flutter + Riverpod + GoRouter + Dio
 - `website`: Vite + React + Tailwind v4 + TanStack Router + Zustand
 - `blank`: Empty `src/` with `README.md`
 
 **Each template must include:**
+
 - `.caide/design-spec.json` (populated from design tokens)
 - `.caide/motion-spec.json` (populated with platform defaults)
 - `.caide/spec.md` (empty template)
@@ -1001,6 +1108,7 @@ Emergency   → only last N turns + spec.md + current slice spec
 - Package.json / pubspec.yaml with correct dependencies
 
 **M15 Verification Gate:**
+
 ```
 ✓ TEST: scaffold('react-native') → creates valid Expo project structure
 ✓ TEST: scaffold('flutter') → creates valid Flutter project structure
@@ -1014,22 +1122,26 @@ Emergency   → only last N turns + spec.md + current slice spec
 **Goal:** Every framework has a real preview. Build pipeline is end-to-end verified.
 
 **Files to create:**
+
 - `apps/server/src/harness/preview/index.ts`
 - `apps/server/src/harness/preview/fingerprintFiles.ts`
 - `apps/server/src/harness/preview/watchProjectTree.ts`
 - `apps/server/src/harness/preview/buildRunner.ts`
 
 **`fingerprintFiles.ts` must:**
+
 - SHA256 hash of every relevant file in project
 - `fingerprint(dir, extensions)` → `Map<path, hash>`
 - `diff(before, after)` → `{ added, modified, deleted }`
 
 **`watchProjectTree.ts` must:**
+
 - 450ms debounce on file changes (not immediate — batch changes)
 - Emit `artifact_updated` events for each changed file
 - Stop watching when session ends
 
 **`buildRunner.ts` must handle per framework:**
+
 - `react-native`: `expo start --no-dev` → device frame preview URL
 - `flutter`: `flutter run -d web-server` → browser preview
 - `website`: `vite dev` → browser preview URL
@@ -1037,11 +1149,13 @@ Emergency   → only last N turns + spec.md + current slice spec
 - Build failures: structured error with file:line, not raw compiler output
 
 **Preview panel in web (672px):**
+
 - `DevicePanel` for mobile frameworks: shows iOS/Android device frame
 - Browser iframe for website framework
 - Empty state with explanation for blank framework
 
 **M16 Verification Gate:**
+
 ```
 ✓ TEST: fingerprintFiles detects added, modified, deleted files correctly
 ✓ TEST: watchProjectTree debounces — 10 rapid changes = 1 artifact_updated event
@@ -1060,10 +1174,12 @@ Emergency   → only last N turns + spec.md + current slice spec
 **Goal:** Hard gates after design system and after first slice. Non-skippable.
 
 **Files to create/update:**
+
 - `apps/web/src/components/CheckpointCard.tsx` (NEW component)
 - Update `ChatView.tsx` to render `CheckpointCard` on `checkpoint` events
 
 **CheckpointCard must show:**
+
 ```
 ┌─────────────────────────────────────┐
 │  🔍 Review Required                 │
@@ -1078,6 +1194,7 @@ Emergency   → only last N turns + spec.md + current slice spec
 ```
 
 **Gate triggers (mandatory, cannot be skipped):**
+
 1. After Planner creates `spec.md` and `design-spec.json` (Gate 1)
 2. After first slice is verified (Gate 2)
 3. Any Verifier `confidence < 0.75` (async glance queue)
@@ -1085,11 +1202,13 @@ Emergency   → only last N turns + spec.md + current slice spec
 5. Security/performance issues found by quality pass
 
 **`Request Change` flow:**
+
 - User types change request in text area
 - Sent back to Planner or Builder as `inject` event in Inbox
 - Turn resumes from appropriate stage
 
 **M17 Verification Gate:**
+
 ```
 ✓ MANUAL: create project → plan card appears → must approve before building starts
 ✓ MANUAL: first slice done → checkpoint card appears → must approve before slice 2
@@ -1103,9 +1222,11 @@ Emergency   → only last N turns + spec.md + current slice spec
 **Goal:** Aesthetic quality pass. Anti-slop. Motion quality. Separate from functional Verifier.
 
 **Files to create:**
+
 - `apps/server/src/harness/taste/index.ts` (stub exists, implement)
 
 **Taste role must:**
+
 - Never fix functional bugs — only aesthetic/motion/UX issues
 - Run after Verifier passes (not instead of it)
 - Score against these criteria:
@@ -1120,6 +1241,7 @@ Emergency   → only last N turns + spec.md + current slice spec
 - `score >= 0.8` → pass, proceed
 
 **Anti-slop checklist (every generated app must fail these or be flagged):**
+
 - No gradient text as default polish
 - No glassmorphism as default card style
 - No lorem ipsum anywhere
@@ -1129,6 +1251,7 @@ Emergency   → only last N turns + spec.md + current slice spec
 - No "Created with AI" watermarks or branding injected
 
 **M18 Verification Gate:**
+
 ```
 ✓ TEST: generic-looking output → taste score < 0.7, improvements[] populated
 ✓ TEST: premium-feeling output → taste score > 0.85
@@ -1145,11 +1268,13 @@ Emergency   → only last N turns + spec.md + current slice spec
 **Goal:** Settings panels reflect the new harness. Profile stays. MCP gone for v1.
 
 **Files to update/create:**
+
 - `apps/web/src/components/settings/ModelsSettingsPanel.tsx` — rebuild for harness
 - `apps/web/src/components/settings/ProvidersSettingsPanel.tsx` — rebuild as unified provider config
 - `apps/web/src/components/settings/ProfileSettingsPanel.tsx` — keep, minimal changes
 
 **New `ModelsSettingsPanel` must show:**
+
 ```
 Model Configuration
 ─────────────────────
@@ -1160,6 +1285,7 @@ Taste model:       [dropdown: opus-4.8 / fable-5]
 ```
 
 **New `ProvidersSettingsPanel` must show:**
+
 ```
 Provider Configuration
 ──────────────────────
@@ -1174,6 +1300,7 @@ Connection status: ● Connected  (or error state)
 **No keyboard shortcuts panel for v1** — remove.
 
 **M19 Verification Gate:**
+
 ```
 ✓ MANUAL: settings → Models tab → change planning model → saved
 ✓ MANUAL: settings → Provider tab → enter API key → Test Connection → shows success
@@ -1191,9 +1318,11 @@ Connection status: ● Connected  (or error state)
 **Goal:** Every slice gets systematic edge case testing before marking complete.
 
 **Files to create:**
+
 - `apps/server/src/harness/edge/sweep.ts`
 
 **Edge cases to check per screen:**
+
 - Very long text (50+ char name, 500+ char description) — does it truncate gracefully?
 - Missing data (no image, no price, no description) — does it render sensibly?
 - Empty collection (0 items) — correct empty state shown?
@@ -1203,6 +1332,7 @@ Connection status: ● Connected  (or error state)
 - Portrait and landscape (mobile) — layout holds?
 
 **M20 Verification Gate:**
+
 ```
 ✓ TEST: sweep runs for a sample screen, catches at least long-text truncation
 ✓ TEST: all 7 edge case checks defined and runnable
@@ -1214,9 +1344,11 @@ Connection status: ● Connected  (or error state)
 **Goal:** Hostile user role. Tries to break the built app.
 
 **Files to create:**
+
 - `apps/server/src/harness/quality/adversarial.ts`
 
 **Adversarial role must try:**
+
 - Tapping things out of expected order
 - Backing out mid-flow at every step
 - Force-closing during a network call (simulate)
@@ -1227,6 +1359,7 @@ Connection status: ● Connected  (or error state)
 **On finding a breakage:** Generate issue report → send to Fixer → re-verify
 
 **M21 Verification Gate:**
+
 ```
 ✓ TEST: adversarial role generates at least 5 test scenarios for a sample screen
 ✓ TEST: a breakage found → issue report format is actionable for Fixer
@@ -1238,9 +1371,11 @@ Connection status: ● Connected  (or error state)
 **Goal:** Per-slice verification can pass 20 times individually while aggregate feels inconsistent. This catches it.
 
 **Files to create:**
+
 - `apps/server/src/harness/quality/coherence.ts`
 
 **Coherence checks:**
+
 - Spacing rhythm identical screen-to-screen (measure actual pixel values from screenshots)
 - Dark/light mode applied identically everywhere
 - Empty state pattern identical everywhere it appears
@@ -1250,6 +1385,7 @@ Connection status: ● Connected  (or error state)
 - Icon set used consistently (no mixing phosphor-duotone with heroicons)
 
 **M22 Verification Gate:**
+
 ```
 ✓ TEST: coherence check catches inconsistent spacing between two screens
 ✓ TEST: coherence check catches mixed icon sets
@@ -1259,10 +1395,12 @@ Connection status: ● Connected  (or error state)
 ## M23 — Security + Performance Pass
 
 **Files to create:**
+
 - `apps/server/src/harness/quality/security.ts`
 - `apps/server/src/harness/quality/performance.ts`
 
 **Security checks (before any preview/build):**
+
 - No hardcoded API keys or secrets in generated code
 - No `eval()` or `Function()` constructor
 - No `dangerouslySetInnerHTML` without sanitization
@@ -1271,12 +1409,14 @@ Connection status: ● Connected  (or error state)
 - HTTPS-only API calls (no `http://` in production code)
 
 **Performance checks:**
+
 - Bundle size analysis after build — flag if > 2MB initial bundle
 - Image optimization — flag unoptimized images > 100KB
 - List virtualization — flag unvirtualized lists with > 50 items
 - React re-render check — flag components that re-render on every keystroke without memo
 
 **M23 Verification Gate:**
+
 ```
 ✓ TEST: hardcoded API key in generated code → security pass catches it
 ✓ TEST: unvirtualized list with 200 items → performance pass flags it
@@ -1288,9 +1428,11 @@ Connection status: ● Connected  (or error state)
 **Goal:** Motion is not a polish afterthought. It's a generation target from the start.
 
 **Files to create:**
+
 - `apps/server/src/harness/motion/index.ts` (stub exists, implement)
 
 **Motion role must:**
+
 - Read `.caide/motion-spec.json` (character: playful|calm|energetic|minimal)
 - Generate motion for: screen transitions, element entrances, interaction feedback
 - Platform-appropriate: iOS springs (stiffness:400 damping:30), Android ease-out (200ms), Web custom spring
@@ -1299,6 +1441,7 @@ Connection status: ● Connected  (or error state)
 - Test: rapid repeated input — animation must interrupt cleanly, not queue
 
 **M24 Verification Gate:**
+
 ```
 ✓ TEST: motion spec generated for new project has all required fields
 ✓ TEST: reduced-motion alternative exists for every defined animation
@@ -1311,9 +1454,11 @@ Connection status: ● Connected  (or error state)
 **Goal:** Push past "meets spec" into "genuinely excellent."
 
 **Files to create:**
+
 - `apps/server/src/harness/quality/benchmark.ts`
 
 **Benchmark pass must:**
+
 - For each framework (RN, Flutter, Website), define 3 reference apps per category
 - After build completes, compare against reference screenshots via Taste model
 - Score: `benchmarkScore 0.0–1.0` (how does this compare to category leaders?)
@@ -1321,6 +1466,7 @@ Connection status: ● Connected  (or error state)
 - Track improvements across projects (does score improve over time?)
 
 **M25 Verification Gate:**
+
 ```
 ✓ TEST: benchmark produces a score with specific improvement areas
 ✓ TEST: improvement areas are actionable (not "make it look better")
@@ -1336,10 +1482,12 @@ Connection status: ● Connected  (or error state)
 **Goal:** The harness gets better with every project it builds.
 
 **Files to create:**
+
 - `apps/server/src/harness/selfImprove/index.ts` (stub exists, implement)
 - `apps/server/src/harness/selfImprove/projectLog.ts`
 
 **Self-improve loop must:**
+
 - After every project: record `{ skills, verifierPassRate, fixerRetryCount, tasteScore, benchmarkScore, edgeCasesFound }`
 - Identify patterns: which skill combos produce high Verifier pass rates?
 - Identify recurring failures: if "long text truncation" breaks 3+ projects → strengthen skill file
@@ -1347,6 +1495,7 @@ Connection status: ● Connected  (or error state)
 - `A/B logging`: when skill file is updated → log old vs new performance
 
 **M26 Verification Gate:**
+
 ```
 ✓ TEST: project log written correctly after project completion
 ✓ TEST: recurring failure detection identifies a pattern across 3 mock projects
@@ -1362,6 +1511,7 @@ Connection status: ● Connected  (or error state)
 **Every item must pass before v1 is considered shippable.**
 
 ### Functional Acceptance
+
 ```
 ✓ Clean boot (no prior state) → server starts, web loads, no console errors
 ✓ Create Blank project → no error, no preview (correct)
@@ -1385,6 +1535,7 @@ Connection status: ● Connected  (or error state)
 ```
 
 ### Quality Acceptance
+
 ```
 ✓ Generated React Native app: taste score > 0.8
 ✓ Generated app: no anti-slop flags (gradient text, glassmorphism defaults)
@@ -1397,6 +1548,7 @@ Connection status: ● Connected  (or error state)
 ```
 
 ### UX Acceptance
+
 ```
 ✓ Profile settings: works, saves correctly
 ✓ Provider settings: API key + URL saves, Test Connection works
@@ -1439,12 +1591,12 @@ Connection status: ● Connected  (or error state)
 
 ## Reference Repos to Steal From
 
-| Pattern | Steal From |
-|---------|-----------|
-| Stateless loop, TurnFlow, ContextMemory | `/home/DejiTech/dev/kimi-code/apps/kimi-code/src/` |
-| System prompt registry, Inbox, SessionEventMap | `/home/DejiTech/Downloads/deepseek-harness-master/cli/src/` |
-| JSONL storage, defineTool, ToolScheduler, StreamingToolExecutor | `/home/DejiTech/claude-code/` (OpenAI Codex repo) |
-| Checkpoint chain, skill packs, design engine contract, preview runtime | `/home/DejiTech/dev/personal projects/dyad x caide/src/` |
+| Pattern                                                                | Steal From                                                  |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Stateless loop, TurnFlow, ContextMemory                                | `/home/DejiTech/dev/kimi-code/apps/kimi-code/src/`          |
+| System prompt registry, Inbox, SessionEventMap                         | `/home/DejiTech/Downloads/deepseek-harness-master/cli/src/` |
+| JSONL storage, defineTool, ToolScheduler, StreamingToolExecutor        | `/home/DejiTech/claude-code/` (OpenAI Codex repo)           |
+| Checkpoint chain, skill packs, design engine contract, preview runtime | `/home/DejiTech/dev/personal projects/dyad x caide/src/`    |
 
 ---
 
@@ -1458,4 +1610,4 @@ Connection status: ● Connected  (or error state)
 
 ---
 
-*Last updated: 2026-08-30. Next milestone: M0 — Strip.*
+_Last updated: 2026-08-30. Next milestone: M0 — Strip._

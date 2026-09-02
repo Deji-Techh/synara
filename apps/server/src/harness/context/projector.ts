@@ -1,12 +1,20 @@
 import type { ContextMessage } from "./memory.ts";
 
-export type ProjectionMode = "normal" | "media-degraded" | "media-stripped" | "strict" | "emergency";
+export type ProjectionMode =
+  | "normal"
+  | "media-degraded"
+  | "media-stripped"
+  | "strict"
+  | "emergency";
 
 export class Projector {
   /**
    * Projects context messages through the degradation ladder.
    */
-  static project(messages: readonly ContextMessage[], mode: ProjectionMode = "normal"): ContextMessage[] {
+  static project(
+    messages: readonly ContextMessage[],
+    mode: ProjectionMode = "normal",
+  ): ContextMessage[] {
     switch (mode) {
       case "normal":
         return [...messages];

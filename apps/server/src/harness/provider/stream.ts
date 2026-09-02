@@ -16,10 +16,7 @@ export class BlockAssembler {
   /**
    * Appends a chunk delta to a tool call block and attempts to parse it when complete.
    */
-  appendDelta(
-    id: string,
-    delta: { name?: string; argsDelta?: string },
-  ): CompleteToolCall | null {
+  appendDelta(id: string, delta: { name?: string; argsDelta?: string }): CompleteToolCall | null {
     let call = this.activeCalls.get(id);
     if (!call) {
       call = { id, name: delta.name ?? "", argsString: "" };

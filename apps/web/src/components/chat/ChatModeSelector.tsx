@@ -91,9 +91,7 @@ export function ChatModeSelector({ mode, onChatModeChange }: ChatModeSelectorPro
                   <div className="flex items-center gap-1.5">
                     <MIcon
                       size={14}
-                      className={
-                        m === "plan" ? "text-blue-500" : "text-muted-foreground"
-                      }
+                      className={m === "plan" ? "text-blue-500" : "text-muted-foreground"}
                     />
                     <span className="font-medium">{mMeta.name}</span>
                   </div>

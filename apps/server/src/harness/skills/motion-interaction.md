@@ -7,6 +7,7 @@ companions: ["ui-ux-mastery"]
 # Motion & Interaction Skill Pack
 
 ## Motion System
+
 1. **Spring Physics**: Use natural physics over linear tweens (`stiffness: 400`, `damping: 30`).
 2. **Speed**: Micro-interactions finish in `<180ms`; modal transitions finish in `<240ms`.
 3. **Gesture Choreography**: Swipe-to-dismiss, pull-to-refresh, and drag interactions follow finger 1:1 with elastic resistance.

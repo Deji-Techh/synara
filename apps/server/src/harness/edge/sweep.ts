@@ -29,7 +29,8 @@ export const EDGE_CHECKS: readonly EdgeCaseCheck[] = [
   {
     id: "long_text",
     title: "Long Text Truncation",
-    description: "Ensures text elements gracefully truncate or wrap with numberOfLines or truncate CSS.",
+    description:
+      "Ensures text elements gracefully truncate or wrap with numberOfLines or truncate CSS.",
     verify: (code: string) => {
       // Look for text handling: numberOfLines, truncate, line-clamp, text-overflow, or flex-wrap
       const hasHandling =
@@ -62,7 +63,8 @@ export const EDGE_CHECKS: readonly EdgeCaseCheck[] = [
       if (!hasFallbacks) {
         return {
           passed: false,
-          reason: "Component lacks optional chaining (?.) or nullish coalescing (??) fallbacks for missing data.",
+          reason:
+            "Component lacks optional chaining (?.) or nullish coalescing (??) fallbacks for missing data.",
         };
       }
       return { passed: true };
@@ -92,7 +94,8 @@ export const EDGE_CHECKS: readonly EdgeCaseCheck[] = [
   {
     id: "slow_network",
     title: "Slow Network & Loading State",
-    description: "Ensures loading indicators or skeleton screens appear during async network operations.",
+    description:
+      "Ensures loading indicators or skeleton screens appear during async network operations.",
     verify: (code: string) => {
       const hasLoading =
         code.includes("loading") ||
@@ -113,7 +116,8 @@ export const EDGE_CHECKS: readonly EdgeCaseCheck[] = [
   {
     id: "rapid_tap",
     title: "Rapid Double-Tap Prevention",
-    description: "Ensures submit buttons disable or debounce on tap to prevent duplicate transactions.",
+    description:
+      "Ensures submit buttons disable or debounce on tap to prevent duplicate transactions.",
     verify: (code: string) => {
       const hasDebounceOrDisable =
         code.includes("disabled=") ||
@@ -124,7 +128,8 @@ export const EDGE_CHECKS: readonly EdgeCaseCheck[] = [
       if (!hasDebounceOrDisable) {
         return {
           passed: false,
-          reason: "Action buttons do not disable while processing, allowing rapid double-tap submission.",
+          reason:
+            "Action buttons do not disable while processing, allowing rapid double-tap submission.",
         };
       }
       return { passed: true };

@@ -78,7 +78,10 @@ export class ProjectLogStore {
     }
 
     // Analyze skill combinations
-    const comboMap = new Map<string, { count: number; totalPassRate: number; totalTasteScore: number; skills: string[] }>();
+    const comboMap = new Map<
+      string,
+      { count: number; totalPassRate: number; totalTasteScore: number; skills: string[] }
+    >();
     for (const log of logs) {
       const key = [...log.skills].sort().join("+");
       const existing = comboMap.get(key) || {
@@ -99,7 +102,10 @@ export class ProjectLogStore {
         averagePassRate: Math.round((c.totalPassRate / c.count) * 100) / 100,
         averageTasteScore: Math.round((c.totalTasteScore / c.count) * 100) / 100,
       }))
-      .sort((a, b) => b.averagePassRate + b.averageTasteScore - (a.averagePassRate + a.averageTasteScore));
+      .sort(
+        (a, b) =>
+          b.averagePassRate + b.averageTasteScore - (a.averagePassRate + a.averageTasteScore),
+      );
 
     return {
       recurringFailures,

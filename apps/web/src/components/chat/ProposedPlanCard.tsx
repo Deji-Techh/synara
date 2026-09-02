@@ -36,9 +36,11 @@ export const ProposedPlanCard = function ProposedPlanCard({
     ? buildCollapsedProposedPlanPreviewMarkdown(planMarkdown, { maxLines: 10 })
     : null;
   const { copyToClipboard } = useCopyToClipboard<void>({
-    onCopy: () => toastManager.add({ type: "success", title: "Approval text copied — paste and send" }),
+    onCopy: () =>
+      toastManager.add({ type: "success", title: "Approval text copied — paste and send" }),
   });
-  const approvalText = "Approved — proceed to build. Please call exit_plan with confirmation:true and start implementation.";
+  const approvalText =
+    "Approved — proceed to build. Please call exit_plan with confirmation:true and start implementation.";
   const handleApprove = () => {
     if (onApprovePlan) {
       onApprovePlan(approvalText);
@@ -65,10 +67,20 @@ export const ProposedPlanCard = function ProposedPlanCard({
         <ProposedPlanActions planMarkdown={planMarkdown} workspaceRoot={workspaceRoot} />
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        <Button size="sm" data-scroll-anchor-ignore onClick={handleApprove} className="bg-blue-600 text-white hover:bg-blue-700">
+        <Button
+          size="sm"
+          data-scroll-anchor-ignore
+          onClick={handleApprove}
+          className="bg-blue-600 text-white hover:bg-blue-700"
+        >
           Approve & Build
         </Button>
-        <Button size="sm" variant="outline" data-scroll-anchor-ignore onClick={handleRequestChanges}>
+        <Button
+          size="sm"
+          variant="outline"
+          data-scroll-anchor-ignore
+          onClick={handleRequestChanges}
+        >
           Request changes
         </Button>
       </div>

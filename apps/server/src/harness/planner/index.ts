@@ -29,8 +29,14 @@ export class Planner {
       framework,
       flows: [
         { name: "Primary Flow", steps: ["Open app", "View dashboard", "Log new entry", "Save"] },
-        { name: "Analytics & History", steps: ["View historical logs", "Inspect trends", "Filter by date"] },
-        { name: "Settings & Preferences", steps: ["Open settings", "Adjust theme and notifications", "Save"] },
+        {
+          name: "Analytics & History",
+          steps: ["View historical logs", "Inspect trends", "Filter by date"],
+        },
+        {
+          name: "Settings & Preferences",
+          steps: ["Open settings", "Adjust theme and notifications", "Save"],
+        },
       ],
       v1Scope: ["Core dashboard", "Data logging", "Summary analytics", "Preferences"],
       v1OutOfScope: ["Cloud sync", "Social multi-user sharing", "Third-party extensions"],
@@ -57,7 +63,10 @@ export class Planner {
           name: "Slice 1 — Foundation & HomeScreen",
           description: "Scaffold layout and home screen dashboard with tokens",
           files: ["src/screens/HomeScreen.tsx"],
-          acceptanceCriteria: ["HomeScreen renders with 44px tap targets", "Empty and loading states handled"],
+          acceptanceCriteria: [
+            "HomeScreen renders with 44px tap targets",
+            "Empty and loading states handled",
+          ],
         },
         {
           name: "Slice 2 — History & Analytics",
@@ -121,7 +130,9 @@ export class Planner {
       .join("\n");
 
     const outOfScopeText = spec.v1OutOfScope.map((item) => `  - ${item}`).join("\n");
-    const slicesText = spec.slices.map((s, i) => `  - Slice ${i + 1}: **${s.name}** (${s.files.join(", ")})`).join("\n");
+    const slicesText = spec.slices
+      .map((s, i) => `  - Slice ${i + 1}: **${s.name}** (${s.files.join(", ")})`)
+      .join("\n");
 
     return [
       `📋 **App Plan: ${spec.appName}**`,
@@ -151,7 +162,8 @@ export class Planner {
   static formatSpecMarkdown(spec: SpecDoc): string {
     const flowsSection = spec.flows
       .map(
-        (f, i) => `### Flow ${i + 1}: ${f.name}\n${f.steps.map((s, si) => `${si + 1}. ${s}`).join("\n")}`,
+        (f, i) =>
+          `### Flow ${i + 1}: ${f.name}\n${f.steps.map((s, si) => `${si + 1}. ${s}`).join("\n")}`,
       )
       .join("\n\n");
 

@@ -129,7 +129,12 @@ export class Builder {
 
       const session = new Session(`${sessionId}-${slice.id}-attempt-${patchAttempt}`);
       await session.append("system/prompt", systemPrompt);
-      await session.append("user/message", patchAttempt === 0 ? initialUserPrompt : `Self-Patch Attempt ${patchAttempt}: Please resolve the following build/type issue:\n${lastError}`);
+      await session.append(
+        "user/message",
+        patchAttempt === 0
+          ? initialUserPrompt
+          : `Self-Patch Attempt ${patchAttempt}: Please resolve the following build/type issue:\n${lastError}`,
+      );
 
       const loop = runLoop({
         sessionId,

@@ -160,8 +160,7 @@ const resolveServerConfig = (input: CliInput) =>
     const { findAvailablePort } = yield* NetService;
     const env = yield* CliEnvConfig.asEffect().pipe(
       Effect.mapError(
-        (cause) =>
-          new StartupError({ message: "Failed to read environment configuration", cause }),
+        (cause) => new StartupError({ message: "Failed to read environment configuration", cause }),
       ),
     );
     const liveProcessDesktopShutdownToken = yield* Effect.sync(
@@ -370,9 +369,7 @@ const makeServerProgram = (input: CliInput) =>
       return yield* shutdownController.stopSignal;
     }).pipe(
       Effect.provide(appLayer),
-      Effect.tapCause((cause) =>
-        Effect.sync(() => console.error("STARTUP ERROR CAUSE:", cause)),
-      ),
+      Effect.tapCause((cause) => Effect.sync(() => console.error("STARTUP ERROR CAUSE:", cause))),
     );
 
     return yield* serverEffect;

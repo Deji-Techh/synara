@@ -3,8 +3,7 @@ import { Badge } from "../ui/badge";
 import ChatMarkdown from "../ChatMarkdown";
 
 export function ChatModeBadge({ mode }: { mode: string }) {
-  const label =
-    mode === "plan" ? "Plan · Read-only" : "Agent";
+  const label = mode === "plan" ? "Plan · Read-only" : "Agent";
   const variant = mode === "plan" ? "secondary" : "default";
   const cls =
     mode === "plan"

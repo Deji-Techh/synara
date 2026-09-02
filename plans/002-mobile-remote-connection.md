@@ -27,17 +27,17 @@ Constraints from `AGENTS.md:3-5` and `001:91-143`:
 
 ### 2.1 Caide today
 
-| Area | Caide (`Caide-final`) | Location |
-|---|---|---|
-| Server | Node WebSocket (dual `ws` servers, bespoke RPC) | `apps/server/src/nodeHttpServer.ts:76,114-221`, `apps/server/src/wsRpc.ts:197-237`, `apps/server/src/config.ts:43-67` |
-| Orchestration | Event-sourced (decider + projector + receipts, 80+ migrations) | `apps/server/src/orchestration/Services/OrchestrationEngine.ts`, `persistence/Migrations/` |
-| Runtime | dyad embedded `createEmbeddedEngine` fresh DB, `EngineAdapter` thin wrapper | `apps/server/src/dyadRuntime/embeddedRuntime.ts:17`, `apps/server/src/provider/Services/EngineAdapter.ts:40-271`, `apps/engine/src/embedded.ts` |
-| Auth/remote | `--host`/`--auth-token` + loopback default + `REMOTE.md:27-65` + one-time pairing link → cookie | `apps/server/src/auth/Services/ServerAuth.ts`, `http.ts:407-465`, `trustedOrigins.ts:66-120` |
-| Web | React 19 + Vite 8 + Zustand + Lexical + Tailwind 4, 130+ components | `apps/web/src/components/ChatView.tsx`, `composer*.ts`, `BrowserPanel.tsx` |
-| Desktop | Electron 40 wrapper | `apps/desktop/src/main.ts`, `dist-electron/main.js` |
-| Mobile | **none** | — |
-| Contracts | `ProjectFramework`, `OrchestrationProject/Thread/Session`, `WsCompatibility` | `packages/contracts/src/projectFramework.ts`, `orchestration.ts:498-1350` |
-| Shared | 52 subpath exports, no `client-runtime` | `packages/shared/package.json:6-275` |
+| Area          | Caide (`Caide-final`)                                                                           | Location                                                                                                                                        |
+| ------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Server        | Node WebSocket (dual `ws` servers, bespoke RPC)                                                 | `apps/server/src/nodeHttpServer.ts:76,114-221`, `apps/server/src/wsRpc.ts:197-237`, `apps/server/src/config.ts:43-67`                           |
+| Orchestration | Event-sourced (decider + projector + receipts, 80+ migrations)                                  | `apps/server/src/orchestration/Services/OrchestrationEngine.ts`, `persistence/Migrations/`                                                      |
+| Runtime       | dyad embedded `createEmbeddedEngine` fresh DB, `EngineAdapter` thin wrapper                     | `apps/server/src/dyadRuntime/embeddedRuntime.ts:17`, `apps/server/src/provider/Services/EngineAdapter.ts:40-271`, `apps/engine/src/embedded.ts` |
+| Auth/remote   | `--host`/`--auth-token` + loopback default + `REMOTE.md:27-65` + one-time pairing link → cookie | `apps/server/src/auth/Services/ServerAuth.ts`, `http.ts:407-465`, `trustedOrigins.ts:66-120`                                                    |
+| Web           | React 19 + Vite 8 + Zustand + Lexical + Tailwind 4, 130+ components                             | `apps/web/src/components/ChatView.tsx`, `composer*.ts`, `BrowserPanel.tsx`                                                                      |
+| Desktop       | Electron 40 wrapper                                                                             | `apps/desktop/src/main.ts`, `dist-electron/main.js`                                                                                             |
+| Mobile        | **none**                                                                                        | —                                                                                                                                               |
+| Contracts     | `ProjectFramework`, `OrchestrationProject/Thread/Session`, `WsCompatibility`                    | `packages/contracts/src/projectFramework.ts`, `orchestration.ts:498-1350`                                                                       |
+| Shared        | 52 subpath exports, no `client-runtime`                                                         | `packages/shared/package.json:6-275`                                                                                                            |
 
 Hard limits for a phone today (`001:598-611` context, `REMOTE.md`):
 
@@ -49,15 +49,15 @@ Hard limits for a phone today (`001:598-611` context, `REMOTE.md`):
 
 ### 2.2 T3 what we steal
 
-| T3 piece | Why it matters | Source |
-|---|---|---|
-| `packages/client-runtime` (connection supervisor + RPC session + Atom state) | 1 codebase powers web+mobile, React never builds transports | `packages/client-runtime/src/connection/{supervisor.ts,session.ts,model.ts}`, `docs/internals/overview.md:51-59` |
-| 4 targets `Primary|Bearer|Relay|Ssh` + `AdvertisedEndpoint` hints | remote is a connection-layer choice, not a second runtime | `packages/client-runtime/src/connection/model.ts:51-58`, `docs/internals/remote.md:44-89` |
-| Ticketed WS auth (`POST /api/auth/websocket-ticket` → 5min `wsTicket`) | long-lived bearer never in URL, HTTPS page can still reach `wss://` | `apps/server/src/auth/SessionStore.ts:DEFAULT_WEBSOCKET_TOKEN_TTL`, `docs/internals/remote.md:198-209` |
-| `npx t3 pair [--tailscale]` QR | demo that sells remote; mints one-time owner token | `docs/user/remote-access.md:7-23`, `apps/server/src/bin.ts` |
-| Tailscale endpoint provider (`ensureTailscaleServe`) | private HTTPS without opening ports | `packages/tailscale/src/tailscale.ts`, `apps/desktop/src/backend/tailscaleEndpointProvider.ts` |
-| Hosted pairing `https://app.t3.codes/pair?host=...#token=` | browser exchanges token directly, strips hash | `packages/shared/src/remote.ts`, `apps/web/src/hostedPairing.ts` |
-| Expo mobile: 3 variants, OTA fingerprint, `react-navigation`, widgets, share extension | shipped to App Store/Play Store without forking logic | `apps/mobile/app.config.ts:59-373`, `apps/mobile/src/Stack.tsx:446-657` |
+| T3 piece                                                                               | Why it matters                                                      | Source                                                                                                           |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `packages/client-runtime` (connection supervisor + RPC session + Atom state)           | 1 codebase powers web+mobile, React never builds transports         | `packages/client-runtime/src/connection/{supervisor.ts,session.ts,model.ts}`, `docs/internals/overview.md:51-59` |
+| 4 targets `Primary                                                                     | Bearer                                                              | Relay                                                                                                            | Ssh`+`AdvertisedEndpoint` hints | remote is a connection-layer choice, not a second runtime | `packages/client-runtime/src/connection/model.ts:51-58`, `docs/internals/remote.md:44-89` |
+| Ticketed WS auth (`POST /api/auth/websocket-ticket` → 5min `wsTicket`)                 | long-lived bearer never in URL, HTTPS page can still reach `wss://` | `apps/server/src/auth/SessionStore.ts:DEFAULT_WEBSOCKET_TOKEN_TTL`, `docs/internals/remote.md:198-209`           |
+| `npx t3 pair [--tailscale]` QR                                                         | demo that sells remote; mints one-time owner token                  | `docs/user/remote-access.md:7-23`, `apps/server/src/bin.ts`                                                      |
+| Tailscale endpoint provider (`ensureTailscaleServe`)                                   | private HTTPS without opening ports                                 | `packages/tailscale/src/tailscale.ts`, `apps/desktop/src/backend/tailscaleEndpointProvider.ts`                   |
+| Hosted pairing `https://app.t3.codes/pair?host=...#token=`                             | browser exchanges token directly, strips hash                       | `packages/shared/src/remote.ts`, `apps/web/src/hostedPairing.ts`                                                 |
+| Expo mobile: 3 variants, OTA fingerprint, `react-navigation`, widgets, share extension | shipped to App Store/Play Store without forking logic               | `apps/mobile/app.config.ts:59-373`, `apps/mobile/src/Stack.tsx:446-657`                                          |
 
 ---
 

@@ -16,7 +16,7 @@ export function stageEnginePayload(
   mkdirSync(payloadDir, { recursive: true });
   mkdirSync(join(payloadDir, "dist"), { recursive: true });
   mkdirSync(join(payloadDir, "drizzle"), { recursive: true });
-  
+
   writeFileSync(
     join(payloadDir, "dist", "index.mjs"),
     "// Pure Caide Harness Runtime\nexport {};\n",

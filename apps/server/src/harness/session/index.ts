@@ -30,11 +30,7 @@ export class Session {
     this.storage = storage ?? new SessionStorage();
   }
 
-  async append(
-    type: string,
-    data: unknown,
-    parentUuid?: string | null,
-  ): Promise<SessionLogEntry> {
+  async append(type: string, data: unknown, parentUuid?: string | null): Promise<SessionLogEntry> {
     const effectiveParent = parentUuid !== undefined ? parentUuid : this.currentParentUuid;
     const entry = await this.storage.append(this.sessionId, type, data, effectiveParent);
     this.currentParentUuid = entry.id;

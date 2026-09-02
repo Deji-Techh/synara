@@ -8,10 +8,7 @@ import type { ThreadId } from "@caide/contracts";
 
 export function useChatThreadActions(threadId: ThreadId) {
   const { createThreadHandoff } = useThreadHandoff();
-  const rename = useCallback(
-    (title: string) => dispatchThreadRename(threadId, title),
-    [threadId],
-  );
+  const rename = useCallback((title: string) => dispatchThreadRename(threadId, title), [threadId]);
   const handoff = useCallback(
     (targetProvider: string) => createThreadHandoff(threadId, targetProvider as never),
     [createThreadHandoff, threadId],

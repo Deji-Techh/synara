@@ -56,10 +56,7 @@ Contract: no framework assumptions, just files; don't invent RN/Flutter deps.`,
 export function buildL2StageContext(input: StageContextInput): string {
   const normalizedFramework = (input.framework || "blank").toLowerCase();
   const frameworkContract = FRAMEWORK_CONTRACTS[normalizedFramework] ?? FRAMEWORK_CONTRACTS.blank;
-  const parts = [
-    `## Stage Context (Stage: ${input.stageName})`,
-    `- ${frameworkContract}`,
-  ];
+  const parts = [`## Stage Context (Stage: ${input.stageName})`, `- ${frameworkContract}`];
 
   if (input.sliceIndex !== undefined && input.totalSlices !== undefined) {
     parts.push(`- Slice: ${input.sliceIndex + 1} of ${input.totalSlices}`);

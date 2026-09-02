@@ -21,16 +21,31 @@ export function UnifiedComposerPalette(props: {
   // Delegates to existing menus — unified trigger, preserves existing logic.
   // Future: single fuzzy list with preview pane.
   if (kind === "commands") {
-    return <ComposerCommandMenu threadId={props.threadId} query={props.query} onSelect={props.onSelect} onClose={props.onClose} />;
+    return (
+      <ComposerCommandMenu
+        threadId={props.threadId}
+        query={props.query}
+        onSelect={props.onSelect}
+        onClose={props.onClose}
+      />
+    );
   }
   return null;
 }
 
-export function detectUnifiedPaletteTrigger(text: string, cursor: number): UnifiedPaletteKind | null {
+export function detectUnifiedPaletteTrigger(
+  text: string,
+  cursor: number,
+): UnifiedPaletteKind | null {
   const before = text.slice(0, cursor);
   const lastSlash = before.lastIndexOf("/");
   const lastAt = before.lastIndexOf("@");
-  if (lastSlash >= 0 && (lastAt < 0 || lastSlash > lastAt) && /\/\w*$/.test(before.slice(lastSlash))) return "commands";
+  if (
+    lastSlash >= 0 &&
+    (lastAt < 0 || lastSlash > lastAt) &&
+    /\/\w*$/.test(before.slice(lastSlash))
+  )
+    return "commands";
   if (lastAt >= 0 && (lastSlash < 0 || lastAt > lastSlash)) return "mentions";
   return null;
 }

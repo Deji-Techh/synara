@@ -232,10 +232,7 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
             toolDef.execute(call.args, executeCtx),
             new Promise<never>((_, reject) =>
               setTimeout(
-                () =>
-                  reject(
-                    new Error(`Tool '${call.name}' timed out after 30000ms`),
-                  ),
+                () => reject(new Error(`Tool '${call.name}' timed out after 30000ms`)),
                 30_000,
               ),
             ),

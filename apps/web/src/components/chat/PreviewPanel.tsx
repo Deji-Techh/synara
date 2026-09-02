@@ -190,7 +190,11 @@ function isDeviceNotFoundError(message: string): boolean {
   );
 }
 
-function isTransientStartingErrorState(state: { status: string; error: string | null; logs: readonly string[] }): boolean {
+function isTransientStartingErrorState(state: {
+  status: string;
+  error: string | null;
+  logs: readonly string[];
+}): boolean {
   if (state.status !== "failed" || !state.error) return false;
   const msg = state.error.toLowerCase();
   const transientPhrase =
@@ -1620,13 +1624,16 @@ export function PreviewPanel(props: {
                   landscape={landscape}
                 >
                   <div className="flex h-full w-full flex-col items-center justify-center bg-black text-center">
-                    {panelState.status === "starting" || isTransientStartingErrorState(panelState) ? (
+                    {panelState.status === "starting" ||
+                    isTransientStartingErrorState(panelState) ? (
                       <div className="flex flex-col items-center gap-3 px-[12%] text-center">
                         <p className="text-[11px] font-medium text-white/90">Starting preview…</p>
                         <span className="flex items-center gap-1.5 text-[10px] text-white/45">
                           <LoaderIcon className="size-3 animate-spin" /> Compiling bundle
                         </span>
-                        <span className="text-[10px] text-white/30">This can take a few minutes on first run.</span>
+                        <span className="text-[10px] text-white/30">
+                          This can take a few minutes on first run.
+                        </span>
                       </div>
                     ) : panelState.status === "failed" ? (
                       (() => {

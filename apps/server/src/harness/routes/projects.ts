@@ -3,4 +3,6 @@
  * Batch of 10 per user rule — real wiring (not stub).
  */
 import { frameworkRegistry, type ProjectFramework } from "../framework/registry.ts";
-export function handleProjects() { void frameworkRegistry; }
+export function handleProjects() {
+  void frameworkRegistry;
+}

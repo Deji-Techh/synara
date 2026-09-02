@@ -53,7 +53,13 @@ export function FrameworkIcon({ framework, className, size }: FrameworkIconProps
   const label = frameworkDisplayName(framework);
   const dim = size ?? 12;
   if (!src) {
-    return <FiBox className={cn("shrink-0", className)} style={{ width: dim, height: dim }} aria-label={label} />;
+    return (
+      <FiBox
+        className={cn("shrink-0", className)}
+        style={{ width: dim, height: dim }}
+        aria-label={label}
+      />
+    );
   }
   return (
     <img

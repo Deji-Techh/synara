@@ -26,12 +26,17 @@ export function parseCommitLogRows(stdout: string, maxRows: number): ProjectActi
     const at = Number(authorAtSeconds) * 1000;
     if (!Number.isFinite(at)) continue;
     const subject = (subjectParts.join("\x1f") || "(no message)").trim();
-    const detail = author !== undefined && author !== "" ? `${author} <${authorEmail ?? ""}>`.trim() : null;
+    const detail =
+      author !== undefined && author !== "" ? `${author} <${authorEmail ?? ""}>`.trim() : null;
     rows.push({ id: `commit:${hash}`, kind: "commit", at, summary: subject, detail, status: null });
   }
   return rows;
 }
 
 export const slugifyCaideAppName = (name: string): string =>
-  name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) ||
-  `app-${Date.now().toString(36)}`;
+  name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40) || `app-${Date.now().toString(36)}`;

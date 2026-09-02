@@ -49,7 +49,10 @@ export function AddSkillDialog({ open, onOpenChange, onCreated }: AddSkillDialog
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanName = name.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-");
+    const cleanName = name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, "-");
     if (!cleanName) {
       setError("Please provide a valid skill identifier.");
       return;
@@ -125,7 +128,16 @@ export function AddSkillDialog({ open, onOpenChange, onCreated }: AddSkillDialog
                 required
               />
               <p className="text-[11px] text-muted-foreground">
-                Command used to invoke the skill: <code className="text-foreground">/{name ? name.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-") : "identifier"}</code>
+                Command used to invoke the skill:{" "}
+                <code className="text-foreground">
+                  /
+                  {name
+                    ? name
+                        .trim()
+                        .toLowerCase()
+                        .replace(/[^a-z0-9_-]+/g, "-")
+                    : "identifier"}
+                </code>
               </p>
             </div>
 

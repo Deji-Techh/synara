@@ -420,7 +420,9 @@ function makeWsPreviewHandlers(_providerAdapterRegistry: any, _options: any) {
         })),
       ),
     "preview.getState": (input: any) =>
-      tryPromise(import("./harness/preview/manager.ts").then((m) => m.getPreviewState(input.threadId))),
+      tryPromise(
+        import("./harness/preview/manager.ts").then((m) => m.getPreviewState(input.threadId)),
+      ),
     "preview.analyze": (input: any) =>
       tryPromise(
         import("./harness/preview/quality.ts").then((m) =>
@@ -1260,7 +1262,10 @@ const makeWsRpcHandlersLayer = () =>
           }
           // Seed the app with the composer's picked provider/model so a Home
           // first send does not silently fall back to the engine default.
-          const modelSelection = input.modelSelection ?? { provider: "opencodeGo", model: "muse-spark-1.2-contributor" };
+          const modelSelection = input.modelSelection ?? {
+            provider: "opencodeGo",
+            model: "muse-spark-1.2-contributor",
+          };
           const framework = input.framework ?? "blank";
           const created = yield* engineAdapterEffect.pipe(
             Effect.flatMap((adapter) => adapter.createApp({ name: slug, framework })),

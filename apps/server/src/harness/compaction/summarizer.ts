@@ -68,7 +68,8 @@ export async function summarizeHistory(
   return {
     builtSummary,
     pendingSlices,
-    keyDecisions: decisions.length > 0 ? decisions : ["Strict adherence to .caide/design-spec.json tokens"],
+    keyDecisions:
+      decisions.length > 0 ? decisions : ["Strict adherence to .caide/design-spec.json tokens"],
     artifactList: Array.from(artifacts),
     timestamp: Date.now(),
   };

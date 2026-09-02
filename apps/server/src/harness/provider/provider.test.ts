@@ -38,9 +38,17 @@ describe("Milestone M11 — Provider Streaming, SIGTERM & Block Assembly", () =>
         Connection: "keep-alive",
       });
 
-      res.write("data: " + JSON.stringify({ choices: [{ delta: { content: "Hello " } }] }) + "\n\n");
-      res.write("data: " + JSON.stringify({ choices: [{ delta: { content: "world! " } }] }) + "\n\n");
-      res.write("data: " + JSON.stringify({ choices: [{ delta: { content: "Streaming works." } }] }) + "\n\n");
+      res.write(
+        "data: " + JSON.stringify({ choices: [{ delta: { content: "Hello " } }] }) + "\n\n",
+      );
+      res.write(
+        "data: " + JSON.stringify({ choices: [{ delta: { content: "world! " } }] }) + "\n\n",
+      );
+      res.write(
+        "data: " +
+          JSON.stringify({ choices: [{ delta: { content: "Streaming works." } }] }) +
+          "\n\n",
+      );
       res.write("data: [DONE]\n\n");
       res.end();
     });
@@ -72,11 +80,15 @@ describe("Milestone M11 — Provider Streaming, SIGTERM & Block Assembly", () =>
         Connection: "keep-alive",
       });
 
-      res.write("data: " + JSON.stringify({ choices: [{ delta: { content: "Token 1" } }] }) + "\n\n");
+      res.write(
+        "data: " + JSON.stringify({ choices: [{ delta: { content: "Token 1" } }] }) + "\n\n",
+      );
       // Delayed tokens that should not be received
       setTimeout(() => {
         try {
-          res.write("data: " + JSON.stringify({ choices: [{ delta: { content: "Token 2" } }] }) + "\n\n");
+          res.write(
+            "data: " + JSON.stringify({ choices: [{ delta: { content: "Token 2" } }] }) + "\n\n",
+          );
           res.end();
         } catch {
           // stream closed
@@ -191,7 +203,9 @@ describe("Milestone M11 — Provider Streaming, SIGTERM & Block Assembly", () =>
     expect(buildProviderUrl("https://api.anthropic.com/v1", "claude-3-7-sonnet")).toBe(
       "https://api.anthropic.com/v1/messages",
     );
-    expect(buildProviderUrl("https://generativelanguage.googleapis.com/v1beta", "gemini-2.5-flash")).toBe(
+    expect(
+      buildProviderUrl("https://generativelanguage.googleapis.com/v1beta", "gemini-2.5-flash"),
+    ).toBe(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent",
     );
   });

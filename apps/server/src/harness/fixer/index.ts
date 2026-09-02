@@ -95,7 +95,8 @@ export class Fixer {
           stageName: `fixing_attempt_${attempt}`,
           framework,
           availableArtifacts: targetFiles,
-          exitGate: "All Verifier token/state/accessibility issues resolved with minimal surgical diff.",
+          exitGate:
+            "All Verifier token/state/accessibility issues resolved with minimal surgical diff.",
         },
         framework,
       });

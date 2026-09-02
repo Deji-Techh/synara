@@ -2,7 +2,10 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { colorTokens, typeScale, componentRules, radius } from "../../design/tokens.ts";
 
-export async function scaffoldReactNative(root: string, appName = "MyReactNativeApp"): Promise<string[]> {
+export async function scaffoldReactNative(
+  root: string,
+  appName = "MyReactNativeApp",
+): Promise<string[]> {
   const createdFiles: string[] = [];
 
   const dirs = [
@@ -149,7 +152,10 @@ const styles = StyleSheet.create({
       2,
     ),
   );
-  await write(".caide/spec.md", `# Specification: ${appName}\n\n*Pending specification planning.*\n`);
+  await write(
+    ".caide/spec.md",
+    `# Specification: ${appName}\n\n*Pending specification planning.*\n`,
+  );
 
   // 6. .gitignore
   await write(

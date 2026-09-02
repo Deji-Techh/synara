@@ -1,7 +1,4 @@
-import {
-  type ApprovalRequestId,
-  type ProviderApprovalDecision,
-} from "@caide/contracts";
+import { type ApprovalRequestId, type ProviderApprovalDecision } from "@caide/contracts";
 import { type PendingApproval } from "../../pendingInteractionDerivation";
 import { cn } from "~/lib/utils";
 import { Button } from "../ui/button";
@@ -36,7 +33,11 @@ const TEXT_FIELDS: ReadonlyArray<{
   placeholder: string;
 }> = [
   { key: "appName", label: "App name", placeholder: "My app" },
-  { key: "designDirection", label: "Design direction", placeholder: "Clean, minimal, campus-friendly" },
+  {
+    key: "designDirection",
+    label: "Design direction",
+    placeholder: "Clean, minimal, campus-friendly",
+  },
   { key: "templateId", label: "Template", placeholder: "Default template" },
   { key: "themeId", label: "Theme", placeholder: "Default theme" },
 ];
@@ -51,7 +52,9 @@ function readFields(blueprint: Record<string, unknown> | undefined): BlueprintFi
     themeId: (typeof b.themeId === "string" ? b.themeId : "").trim(),
     designDirection: (typeof b.designDirection === "string" ? b.designDirection : "").trim(),
     primaryColor:
-      typeof b.primaryColor === "string" && COLOR_RE.test(b.primaryColor) ? b.primaryColor : "#0284c7",
+      typeof b.primaryColor === "string" && COLOR_RE.test(b.primaryColor)
+        ? b.primaryColor
+        : "#0284c7",
   };
 }
 

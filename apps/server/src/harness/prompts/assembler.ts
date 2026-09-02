@@ -1,6 +1,11 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { L0_IDENTITY_CORE, L1_ROLE_PROMPTS, buildL2StageContext, type StageContextInput } from "./layers.ts";
+import {
+  L0_IDENTITY_CORE,
+  L1_ROLE_PROMPTS,
+  buildL2StageContext,
+  type StageContextInput,
+} from "./layers.ts";
 import type { HarnessRole } from "../session/buildChain.ts";
 
 export class MissingPromptVariableError extends Error {
@@ -136,17 +141,14 @@ export function assemblePrompt(options: AssemblePromptOptions): string {
       : buildL2StageContext({ ...stage, framework });
 
   // L3: Resolved Skills
-  const l3Resolved = skills.length > 0 ? skills : resolveSkills(role, typeof stage === "string" ? stage : stage.stageName, framework);
-  const l3 = l3Resolved.length > 0 ? `## Relevant Skill Packs\n\n${l3Resolved.join("\n\n---\n\n")}` : "";
+  const l3Resolved =
+    skills.length > 0
+      ? skills
+      : resolveSkills(role, typeof stage === "string" ? stage : stage.stageName, framework);
+  const l3 =
+    l3Resolved.length > 0 ? `## Relevant Skill Packs\n\n${l3Resolved.join("\n\n---\n\n")}` : "";
 
-  const assembledRaw = [
-    l0,
-    "---",
-    l1,
-    "---",
-    l2,
-    ...(l3 ? ["---", l3] : []),
-  ].join("\n\n");
+  const assembledRaw = [l0, "---", l1, "---", l2, ...(l3 ? ["---", l3] : [])].join("\n\n");
 
   // Perform strict {{var}} rendering on the assembled prompt
   const finalPrompt = renderTemplateStrict(assembledRaw, vars);

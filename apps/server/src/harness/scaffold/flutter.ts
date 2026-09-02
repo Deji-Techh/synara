@@ -131,7 +131,10 @@ class CaideApp extends StatelessWidget {
       2,
     ),
   );
-  await write(".caide/spec.md", `# Specification: ${appName}\n\n*Pending specification planning.*\n`);
+  await write(
+    ".caide/spec.md",
+    `# Specification: ${appName}\n\n*Pending specification planning.*\n`,
+  );
 
   // 5. .gitignore
   await write(

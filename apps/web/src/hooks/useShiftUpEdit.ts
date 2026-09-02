@@ -13,7 +13,10 @@ function isComposerFocused(): boolean {
   return el instanceof HTMLElement && el.closest("[data-composer-editor]") !== null;
 }
 
-export function useShiftUpEdit(threadId: ThreadId, onEdit: (messageId: string, text: string) => void) {
+export function useShiftUpEdit(
+  threadId: ThreadId,
+  onEdit: (messageId: string, text: string) => void,
+) {
   const thread = useStore(createThreadSelector(threadId));
   const draft = useComposerThreadDraft(threadId);
   const handleKeyDown = useCallback(

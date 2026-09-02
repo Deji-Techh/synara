@@ -35,7 +35,8 @@ export const radius = {
 } as const;
 
 export const componentRules = {
-  emptyState: "illustration grayscale soft + bold headline + one muted subtext + optional single white pill CTA",
+  emptyState:
+    "illustration grayscale soft + bold headline + one muted subtext + optional single white pill CTA",
   primaryButton: "white pill, dark text (#0D0D0D), full-width or near-full-width, 44px min tap",
   searchBar: "pill rounded-full floating with padding, contextual placeholder not generic",
   bottomNav: "icon+label, active accent, inactive muted, FAB offset outside tab row",

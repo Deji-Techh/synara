@@ -169,7 +169,10 @@ const buildCmd = Command.make(
       if (engineExists) {
         const embeddedRuntimeTarget = path.join(serverDir, "dist/dyad-engine");
         yield* fs.copy(path.join(engineDir, "dist-single"), embeddedRuntimeTarget);
-        yield* fs.copy(path.join(engineDir, "drizzle"), path.join(embeddedRuntimeTarget, "drizzle"));
+        yield* fs.copy(
+          path.join(engineDir, "drizzle"),
+          path.join(embeddedRuntimeTarget, "drizzle"),
+        );
         yield* Effect.log("[cli] Bundled embedded dyad runtime into server dist");
       }
 

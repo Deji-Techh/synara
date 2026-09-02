@@ -26,22 +26,30 @@ export function evaluateAntiSlop(files: Record<string, string>): AntiSlopCheckRe
       (content.includes("gradient") || content.includes("bg-gradient"))
     ) {
       violations.push(`[${filePath}] Generic AI gradient text detected.`);
-      improvements.push(`Replace gradient text in ${filePath} with clean #FFFFFF textPrimary styling.`);
+      improvements.push(
+        `Replace gradient text in ${filePath} with clean #FFFFFF textPrimary styling.`,
+      );
     }
 
     // 2. Glassmorphism as card default
     if (
       (content.includes("backdrop-blur") || content.includes("backdrop-filter")) &&
-      (content.includes("bg-white/10") || content.includes("bg-white/5") || content.includes("rgba(255"))
+      (content.includes("bg-white/10") ||
+        content.includes("bg-white/5") ||
+        content.includes("rgba(255"))
     ) {
       violations.push(`[${filePath}] Glassmorphism / blurred card background detected.`);
-      improvements.push(`Use solid surface #1A1A1A or #262626 from design tokens instead of frosted glass.`);
+      improvements.push(
+        `Use solid surface #1A1A1A or #262626 from design tokens instead of frosted glass.`,
+      );
     }
 
     // 3. Lorem Ipsum
     if (lower.includes("lorem ipsum") || lower.includes("dolor sit amet")) {
       violations.push(`[${filePath}] Placeholder 'Lorem ipsum' text detected.`);
-      improvements.push(`Replace dummy placeholder text in ${filePath} with realistic, domain-specific copy.`);
+      improvements.push(
+        `Replace dummy placeholder text in ${filePath} with realistic, domain-specific copy.`,
+      );
     }
 
     // 4. Placeholder image domains
@@ -51,7 +59,9 @@ export function evaluateAntiSlop(files: Record<string, string>): AntiSlopCheckRe
       content.includes("placekitten.com")
     ) {
       violations.push(`[${filePath}] Generic placeholder image URL detected.`);
-      improvements.push(`Use an explicit illustrated empty state or bundled vector asset in ${filePath}.`);
+      improvements.push(
+        `Use an explicit illustrated empty state or bundled vector asset in ${filePath}.`,
+      );
     }
 
     // 5. Watermarks / AI copy
@@ -60,7 +70,9 @@ export function evaluateAntiSlop(files: Record<string, string>): AntiSlopCheckRe
       lower.includes("generated with ai") ||
       lower.includes("created with caide")
     ) {
-      violations.push(`[${filePath}] Unsolicited AI branding or watermark detected in user interface.`);
+      violations.push(
+        `[${filePath}] Unsolicited AI branding or watermark detected in user interface.`,
+      );
       improvements.push(`Remove artificial AI watermarks from ${filePath}.`);
     }
   }
@@ -92,7 +104,9 @@ export function evaluateTaste(files: Record<string, string>): TasteResult {
   const hasTokens = fileList.some((c) => c.includes("colorTokens") || c.includes("typeScale"));
   if (!hasTokens) {
     visualHierarchyScore = 0.6;
-    antiSlop.improvements.push("Ensure components use typeScale tokens for clear typographic hierarchy.");
+    antiSlop.improvements.push(
+      "Ensure components use typeScale tokens for clear typographic hierarchy.",
+    );
   }
 
   // Compute composite taste score

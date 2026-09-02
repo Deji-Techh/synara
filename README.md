@@ -45,13 +45,13 @@ Caide-final/
 
 ### Package roles
 
-| Package | Role |
-|---|---|
-| `apps/engine` | Standalone Node process. Agent loop rebuilt from `local_agent_handler.ts`, Flutter tooling, preview runtime, SQLite. Owns workspace files via `EmbeddedEngineClient`. |
-| `apps/server` | Wraps `codex app-server` (JSON-RPC over stdio), manages provider sessions in `codexAppServerManager.ts` / `providerManager.ts`, routes WebSocket `NativeApi` in `wsServer.ts`. |
-| `apps/web` | Consumes `orchestration.domainEvent` over WebSocket, renders transcript, composer, blueprint/questionnaire cards, preview. |
-| `packages/contracts` | Schema-only. No runtime logic. |
-| `packages/shared` | Runtime helpers consumed by server and web. |
+| Package              | Role                                                                                                                                                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `apps/engine`        | Standalone Node process. Agent loop rebuilt from `local_agent_handler.ts`, Flutter tooling, preview runtime, SQLite. Owns workspace files via `EmbeddedEngineClient`.          |
+| `apps/server`        | Wraps `codex app-server` (JSON-RPC over stdio), manages provider sessions in `codexAppServerManager.ts` / `providerManager.ts`, routes WebSocket `NativeApi` in `wsServer.ts`. |
+| `apps/web`           | Consumes `orchestration.domainEvent` over WebSocket, renders transcript, composer, blueprint/questionnaire cards, preview.                                                     |
+| `packages/contracts` | Schema-only. No runtime logic.                                                                                                                                                 |
+| `packages/shared`    | Runtime helpers consumed by server and web.                                                                                                                                    |
 
 ### Framework registry
 
@@ -136,14 +136,14 @@ Reference implementations:
 
 ## Scripts
 
-| Script | Purpose |
-|---|---|
-| `bun run dev` | Start server + web |
-| `bun run typecheck` | Turbo typecheck across workspaces |
-| `bun run lint` | Oxlint |
-| `bun run fmt` | Oxfmt |
-| `bun run test` | Vitest (never `bun test`) |
-| `node scripts/build-desktop-artifact.ts` | Build desktop artifact |
+| Script                                   | Purpose                           |
+| ---------------------------------------- | --------------------------------- |
+| `bun run dev`                            | Start server + web                |
+| `bun run typecheck`                      | Turbo typecheck across workspaces |
+| `bun run lint`                           | Oxlint                            |
+| `bun run fmt`                            | Oxfmt                             |
+| `bun run test`                           | Vitest (never `bun test`)         |
+| `node scripts/build-desktop-artifact.ts` | Build desktop artifact            |
 
 Do not run `bun fmt`, `bun lint`, or `bun typecheck` unless explicitly requested. When they are required, run them together as a single final verification pass.
 

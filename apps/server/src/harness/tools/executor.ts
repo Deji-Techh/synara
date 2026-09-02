@@ -114,11 +114,7 @@ export async function executeTool<I, O>(
     };
   } catch (err) {
     const message =
-      err instanceof Error
-        ? err.message
-        : typeof err === "string"
-          ? err
-          : JSON.stringify(err);
+      err instanceof Error ? err.message : typeof err === "string" ? err : JSON.stringify(err);
 
     const isTimeout = message.includes("timed out");
 

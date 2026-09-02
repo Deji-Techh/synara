@@ -7,7 +7,10 @@ export type PermissionResult = { behavior: "allow" | "deny" | "ask"; message?: s
 
 export type PermissionPolicy = (tool: string, input: unknown) => Promise<PermissionResult>;
 
-export function createPermissionChain(mode: PermissionMode, policies: PermissionPolicy[]): PermissionPolicy {
+export function createPermissionChain(
+  mode: PermissionMode,
+  policies: PermissionPolicy[],
+): PermissionPolicy {
   return async (tool, input) => {
     if (mode === "yolo") return { behavior: "allow" };
     for (const policy of policies) {

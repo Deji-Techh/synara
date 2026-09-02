@@ -93,8 +93,7 @@ export async function startPreview(input: {
         if (m && m[1] && !resolvedUrl) {
           const url = m[1];
           resolvedUrl = url;
-          const isNative =
-            url.startsWith("exp://") || /flutter|emulator|simulator/i.test(line);
+          const isNative = url.startsWith("exp://") || /flutter|emulator|simulator/i.test(line);
           session.kind = isNative ? "native" : "web";
           session.url = url;
           clearTimeout(timeout);
@@ -150,7 +149,10 @@ function getFrameworkConfigForAppDir(appDir?: string) {
   try {
     const frameworkJsonPath = `${appDir}/.caide/framework.json`;
     if (fs.existsSync(frameworkJsonPath)) {
-      const parsed = JSON.parse(fs.readFileSync(frameworkJsonPath, "utf-8")) as Record<string, unknown>;
+      const parsed = JSON.parse(fs.readFileSync(frameworkJsonPath, "utf-8")) as Record<
+        string,
+        unknown
+      >;
       const fw = String(parsed.framework ?? "").toLowerCase();
       if (fw === "react-native" || fw === "flutter" || fw === "website" || fw === "blank") {
         return getFrameworkConfig(fw as any);

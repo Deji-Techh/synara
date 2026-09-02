@@ -2,7 +2,14 @@
  * TurnFlow — steal kimi-code agent/turn + deepseek agent-loop inbox.
  * Single owner created→running→waiting→terminal, steerBuffer, compaction latch.
  */
-export type TurnStatus = "created" | "running" | "waiting" | "completed" | "failed" | "cancelled" | "aborted";
+export type TurnStatus =
+  | "created"
+  | "running"
+  | "waiting"
+  | "completed"
+  | "failed"
+  | "cancelled"
+  | "aborted";
 export type Turn = { id: string; status: TurnStatus; inbox: unknown[] };
 
 export class TurnFlow {

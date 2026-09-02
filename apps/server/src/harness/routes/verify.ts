@@ -3,4 +3,6 @@
  * Batch of 10 per user rule — real wiring (not stub).
  */
 import { frameworkRegistry, type ProjectFramework } from "../framework/registry.ts";
-export function handleVerify() { void frameworkRegistry; }
+export function handleVerify() {
+  void frameworkRegistry;
+}

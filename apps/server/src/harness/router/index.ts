@@ -116,7 +116,8 @@ export function classifyIntentSync(prompt: string, context: RouterContext = {}):
     /^(summarize|describe|what does)\b/i,
   ];
   const isQuestion = askPatterns.some((pattern) => pattern.test(lower));
-  const hasCodeKeywords = /\b(create|build|implement|write|add|generate|modify|fix|refactor|change|make)\b/i.test(lower);
+  const hasCodeKeywords =
+    /\b(create|build|implement|write|add|generate|modify|fix|refactor|change|make)\b/i.test(lower);
 
   if (isQuestion && !hasCodeKeywords) {
     return {
@@ -131,7 +132,8 @@ export function classifyIntentSync(prompt: string, context: RouterContext = {}):
   }
 
   // 3. Verify / Quality audit pattern matching
-  const verifyPatterns = /\b(verify|audit|review ui|check design|token check|compare screenshot|a11y check|inspect)\b/i;
+  const verifyPatterns =
+    /\b(verify|audit|review ui|check design|token check|compare screenshot|a11y check|inspect)\b/i;
   if (verifyPatterns.test(lower)) {
     return {
       intent: "verify",
@@ -145,7 +147,8 @@ export function classifyIntentSync(prompt: string, context: RouterContext = {}):
   }
 
   // 4. Fix / Repair pattern matching
-  const fixPatterns = /\b(fix|error|broken|failing|bug|crash|patch|repair|resolve issue|type error)\b/i;
+  const fixPatterns =
+    /\b(fix|error|broken|failing|bug|crash|patch|repair|resolve issue|type error)\b/i;
   if (fixPatterns.test(lower)) {
     return {
       intent: "fix",
@@ -159,7 +162,8 @@ export function classifyIntentSync(prompt: string, context: RouterContext = {}):
   }
 
   // 5. Plan / Spec pattern matching
-  const planPatterns = /\b(plan|spec|roadmap|architecture|user flows|specification|scope out|design flows)\b/i;
+  const planPatterns =
+    /\b(plan|spec|roadmap|architecture|user flows|specification|scope out|design flows)\b/i;
   if (planPatterns.test(lower)) {
     return {
       intent: "plan",
@@ -173,7 +177,8 @@ export function classifyIntentSync(prompt: string, context: RouterContext = {}):
   }
 
   // 6. Build / Code generation pattern matching
-  const buildPatterns = /\b(create|build|implement|add|scaffold|generate|code|develop|make|integrate|wire|setup|style|render)\b/i;
+  const buildPatterns =
+    /\b(create|build|implement|add|scaffold|generate|code|develop|make|integrate|wire|setup|style|render)\b/i;
   if (buildPatterns.test(lower)) {
     return {
       intent: "build",
@@ -195,7 +200,8 @@ export function classifyIntentSync(prompt: string, context: RouterContext = {}):
     tier: "manual",
     framework,
     confidence: 0.5,
-    reasoning: "Ambiguous prompt with confidence < 0.7; defaults to build with manual checkpoint confirmation.",
+    reasoning:
+      "Ambiguous prompt with confidence < 0.7; defaults to build with manual checkpoint confirmation.",
   };
 }
 

@@ -1465,9 +1465,7 @@ const ThreadApprovalRespondCommand = Schema.Struct({
   requestId: ApprovalRequestId,
   lifecycleGeneration: Schema.optional(TrimmedNonEmptyString),
   decision: ProviderApprovalDecision,
-  blueprintEdits: Schema.optional(
-    Schema.Record(Schema.String, Schema.Unknown),
-  ),
+  blueprintEdits: Schema.optional(Schema.Record(Schema.String, Schema.Unknown)),
   createdAt: IsoDateTime,
 });
 
@@ -2060,9 +2058,7 @@ export const ThreadApprovalResponseRequestedPayload = Schema.Struct({
   requestId: ApprovalRequestId,
   lifecycleGeneration: Schema.optional(TrimmedNonEmptyString),
   decision: ProviderApprovalDecision,
-  blueprintEdits: Schema.optional(
-    Schema.Record(Schema.String, Schema.Unknown),
-  ),
+  blueprintEdits: Schema.optional(Schema.Record(Schema.String, Schema.Unknown)),
   createdAt: IsoDateTime,
 });
 

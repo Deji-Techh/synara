@@ -622,8 +622,7 @@ function normalizePersistedQueuedTurns(
           ? candidate.interactionMode
           : null;
       const mode =
-        candidate.mode === "local-agent" ||
-        candidate.mode === "plan"
+        candidate.mode === "local-agent" || candidate.mode === "plan"
           ? candidate.mode
           : candidate.mode === "build" || candidate.mode === "ask" || candidate.mode === "agent"
             ? "local-agent"
@@ -670,8 +669,7 @@ function normalizePersistedQueuedTurns(
           ? candidate.interactionMode
           : null;
       const mode =
-        candidate.mode === "local-agent" ||
-        candidate.mode === "plan"
+        candidate.mode === "local-agent" || candidate.mode === "plan"
           ? candidate.mode
           : candidate.mode === "build" || candidate.mode === "ask" || candidate.mode === "agent"
             ? "local-agent"
@@ -899,7 +897,10 @@ function normalizePersistedDraftsByThreadId(
         ? draftCandidate.interactionMode
         : null;
     const mode =
-      draftCandidate.mode === "local-agent" || draftCandidate.mode === "plan" || draftCandidate.mode === "ask" || draftCandidate.mode === "build"
+      draftCandidate.mode === "local-agent" ||
+      draftCandidate.mode === "plan" ||
+      draftCandidate.mode === "ask" ||
+      draftCandidate.mode === "build"
         ? draftCandidate.mode
         : draftCandidate.mode === "build" ||
             draftCandidate.mode === "ask" ||
@@ -1345,8 +1346,7 @@ export function normalizeCurrentPersistedComposerDraftStoreState(
     stickyActiveProvider = normalizeProviderKind(normalizedPersistedState.stickyProvider);
   }
 
-  const rawStickyChatMode: string | null | undefined =
-    normalizedPersistedState.stickyChatMode;
+  const rawStickyChatMode: string | null | undefined = normalizedPersistedState.stickyChatMode;
   const stickyChatMode =
     rawStickyChatMode === "local-agent" ||
     rawStickyChatMode === "plan" ||

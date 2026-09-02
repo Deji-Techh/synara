@@ -19,7 +19,8 @@ function resolveSafePath(userPath: string, appPath: string): string {
 // 1. read_file
 export const readFileTool = defineTool({
   name: "read_file",
-  description: "Reads file content from the project workspace. Fails if the path is outside the workspace root.",
+  description:
+    "Reads file content from the project workspace. Fails if the path is outside the workspace root.",
   schema: z.object({
     path: z.string().describe("Relative path to the file inside workspace"),
   }),
@@ -36,7 +37,8 @@ export const readFileTool = defineTool({
 // 2. write_file
 export const writeFileTool = defineTool({
   name: "write_file",
-  description: "Writes content to a file in the project workspace, creating parent directories if needed.",
+  description:
+    "Writes content to a file in the project workspace, creating parent directories if needed.",
   schema: z.object({
     path: z.string().describe("Relative path to the file"),
     content: z.string().describe("Full content to write"),
@@ -170,7 +172,8 @@ export const screenshotTool = defineTool({
 // 8. get_design_tokens
 export const getDesignTokensTool = defineTool({
   name: "get_design_tokens",
-  description: "Returns the authoritative project design tokens (colors, type scale, component rules, motion).",
+  description:
+    "Returns the authoritative project design tokens (colors, type scale, component rules, motion).",
   schema: z.object({}),
   readOnly: true,
   modifiesState: false,
@@ -199,7 +202,8 @@ export const readSpecTool = defineTool({
 // 10. write_spec
 export const writeSpecTool = defineTool({
   name: "write_spec",
-  description: "Writes the specification document (.caide/spec.md) defining flows, scope, and screens.",
+  description:
+    "Writes the specification document (.caide/spec.md) defining flows, scope, and screens.",
   schema: z.object({
     specContent: z.string().describe("Markdown content of the project specification"),
   }),
@@ -280,7 +284,8 @@ export const installPackageTool = defineTool({
 // 14. build_project — framework-aware (website: bun run build, RN: npx expo export, flutter: flutter build apk, blank: no-op)
 export const buildProjectTool = defineTool({
   name: "build_project",
-  description: "Executes project build using the framework's buildSteps (website: bun run build, RN: npx expo export, flutter: flutter build apk). Returns structured { success, stdout, stderr, exitCode } — not raw compiler dump.",
+  description:
+    "Executes project build using the framework's buildSteps (website: bun run build, RN: npx expo export, flutter: flutter build apk). Returns structured { success, stdout, stderr, exitCode } — not raw compiler dump.",
   schema: z.object({}),
   readOnly: false,
   modifiesState: true,
@@ -288,11 +293,21 @@ export const buildProjectTool = defineTool({
     const framework = (() => {
       try {
         const fj = `${ctx.appPath}/.caide/framework.json`;
-        if (fs.existsSync(fj)) return String((JSON.parse(fs.readFileSync(fj, "utf-8")) as Record<string, unknown>).framework ?? "blank");
+        if (fs.existsSync(fj))
+          return String(
+            (JSON.parse(fs.readFileSync(fj, "utf-8")) as Record<string, unknown>).framework ??
+              "blank",
+          );
         if (fs.existsSync(`${ctx.appPath}/pubspec.yaml`)) return "flutter";
         if (fs.existsSync(`${ctx.appPath}/package.json`)) {
-          const pkg = JSON.parse(fs.readFileSync(`${ctx.appPath}/package.json`, "utf-8")) as Record<string, unknown>;
-          const deps = { ...((pkg.dependencies ?? {}) as Record<string, unknown>), ...((pkg.devDependencies ?? {}) as Record<string, unknown>) };
+          const pkg = JSON.parse(fs.readFileSync(`${ctx.appPath}/package.json`, "utf-8")) as Record<
+            string,
+            unknown
+          >;
+          const deps = {
+            ...((pkg.dependencies ?? {}) as Record<string, unknown>),
+            ...((pkg.devDependencies ?? {}) as Record<string, unknown>),
+          };
           if (deps.expo || deps["react-native"]) return "react-native";
           return "website";
         }
@@ -307,26 +322,39 @@ export const buildProjectTool = defineTool({
           : framework === "website"
             ? ["bun run build"]
             : [];
-    if (buildSteps.length === 0) return { success: true, stdout: "No build step for blank", stderr: "", framework };
+    if (buildSteps.length === 0)
+      return { success: true, stdout: "No build step for blank", stderr: "", framework };
     // Run first step (most frameworks have one); if multiple, run sequentially
     let stdout = "";
     let stderr = "";
     for (const step of buildSteps) {
       const [cmd, ...args] = step.split(" ");
-      const result = await execFileAsync(cmd, args, { cwd: ctx.appPath, signal: ctx.signal, maxBuffer: 10 * 1024 * 1024 }).catch((e: any) => {
-        throw new Error(`Build step '${step}' failed: ${e.message ?? String(e)}\nstdout: ${e.stdout ?? ""}\nstderr: ${e.stderr ?? ""}`);
+      const result = await execFileAsync(cmd, args, {
+        cwd: ctx.appPath,
+        signal: ctx.signal,
+        maxBuffer: 10 * 1024 * 1024,
+      }).catch((e: any) => {
+        throw new Error(
+          `Build step '${step}' failed: ${e.message ?? String(e)}\nstdout: ${e.stdout ?? ""}\nstderr: ${e.stderr ?? ""}`,
+        );
       });
       stdout += result.stdout;
       stderr += result.stderr;
     }
-    return { success: true, stdout: stdout.slice(0, 20000), stderr: stderr.slice(0, 20000), framework };
+    return {
+      success: true,
+      stdout: stdout.slice(0, 20000),
+      stderr: stderr.slice(0, 20000),
+      framework,
+    };
   },
 });
 
 // 15. lint_project — framework-aware
 export const lintProjectTool = defineTool({
   name: "lint_project",
-  description: "Runs linting/typechecking (website/RN: bun typecheck, flutter: flutter analyze). Returns { clean, stdout, stderr }.",
+  description:
+    "Runs linting/typechecking (website/RN: bun typecheck, flutter: flutter analyze). Returns { clean, stdout, stderr }.",
   schema: z.object({}),
   readOnly: true,
   modifiesState: false,
@@ -334,7 +362,11 @@ export const lintProjectTool = defineTool({
     const isFlutter = fs.existsSync(`${ctx.appPath}/pubspec.yaml`);
     const cmd = isFlutter ? "flutter" : "bun";
     const args = isFlutter ? ["analyze"] : ["typecheck"];
-    const { stdout, stderr } = await execFileAsync(cmd, args, { cwd: ctx.appPath, signal: ctx.signal, maxBuffer: 10 * 1024 * 1024 });
+    const { stdout, stderr } = await execFileAsync(cmd, args, {
+      cwd: ctx.appPath,
+      signal: ctx.signal,
+      maxBuffer: 10 * 1024 * 1024,
+    });
     return { clean: true, stdout: stdout.slice(0, 20000), stderr: stderr.slice(0, 20000) };
   },
 });
@@ -342,7 +374,8 @@ export const lintProjectTool = defineTool({
 // 15b. test_project — runs tests (bun run test / flutter test)
 export const testProjectTool = defineTool({
   name: "test_project",
-  description: "Runs project tests (website/RN: bun run test, flutter: flutter test). Returns structured { passed, stdout, stderr }.",
+  description:
+    "Runs project tests (website/RN: bun run test, flutter: flutter test). Returns structured { passed, stdout, stderr }.",
   schema: z.object({}),
   readOnly: true,
   modifiesState: false,
@@ -351,13 +384,22 @@ export const testProjectTool = defineTool({
     const cmd = isFlutter ? "flutter" : "bun";
     const args = isFlutter ? ["test"] : ["run", "test"];
     try {
-      const { stdout, stderr } = await execFileAsync(cmd, args, { cwd: ctx.appPath, signal: ctx.signal, maxBuffer: 10 * 1024 * 1024, timeout: 120_000 });
+      const { stdout, stderr } = await execFileAsync(cmd, args, {
+        cwd: ctx.appPath,
+        signal: ctx.signal,
+        maxBuffer: 10 * 1024 * 1024,
+        timeout: 120_000,
+      });
       const output = `${stdout}\n${stderr}`.slice(0, 20000);
       const failed = /fail|error|✘|not ok/i.test(output);
       return { passed: !failed, stdout: stdout.slice(0, 20000), stderr: stderr.slice(0, 20000) };
     } catch (e: any) {
       const msg = e.message ?? String(e);
-      return { passed: false, stdout: e.stdout?.slice(0, 20000) ?? "", stderr: (e.stderr ?? msg).slice(0, 20000) };
+      return {
+        passed: false,
+        stdout: e.stdout?.slice(0, 20000) ?? "",
+        stderr: (e.stderr ?? msg).slice(0, 20000),
+      };
     }
   },
 });
@@ -365,7 +407,8 @@ export const testProjectTool = defineTool({
 // 16. get_preview_url — dynamic: reads live preview session (device-frame 672px or browser)
 export const getPreviewUrlTool = defineTool({
   name: "get_preview_url",
-  description: "Returns the live preview URL for this thread's app (device-frame for RN/Flutter, browser for Website). If no preview is running, returns null and the dev command to start it.",
+  description:
+    "Returns the live preview URL for this thread's app (device-frame for RN/Flutter, browser for Website). If no preview is running, returns null and the dev command to start it.",
   schema: z.object({}),
   readOnly: true,
   modifiesState: false,
@@ -374,7 +417,12 @@ export const getPreviewUrlTool = defineTool({
       const { getPreviewState } = await import("../preview/manager.ts");
       const state = getPreviewState(ctx.sessionId);
       if (state.running && state.url) {
-        return { url: state.url, running: true, kind: state.kind ?? "web", logs: state.logs.slice(-20) };
+        return {
+          url: state.url,
+          running: true,
+          kind: state.kind ?? "web",
+          logs: state.logs.slice(-20),
+        };
       }
       // Not running — hint the dev command for this framework
       const framework = (() => {
@@ -386,8 +434,13 @@ export const getPreviewUrlTool = defineTool({
           }
           if (fs.existsSync(`${ctx.appPath}/pubspec.yaml`)) return "flutter";
           if (fs.existsSync(`${ctx.appPath}/package.json`)) {
-            const pkg = JSON.parse(fs.readFileSync(`${ctx.appPath}/package.json`, "utf-8")) as Record<string, unknown>;
-            const deps = { ...((pkg.dependencies ?? {}) as Record<string, unknown>), ...((pkg.devDependencies ?? {}) as Record<string, unknown>) };
+            const pkg = JSON.parse(
+              fs.readFileSync(`${ctx.appPath}/package.json`, "utf-8"),
+            ) as Record<string, unknown>;
+            const deps = {
+              ...((pkg.dependencies ?? {}) as Record<string, unknown>),
+              ...((pkg.devDependencies ?? {}) as Record<string, unknown>),
+            };
             if (deps.expo || deps["react-native"]) return "react-native";
             return "website";
           }

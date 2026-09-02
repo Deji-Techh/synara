@@ -77,7 +77,9 @@ export function validateSpec(spec: Partial<SpecDoc>): SpecValidationResult {
         missing.push(`flows[${i}].name (Flow name missing)`);
       }
       if (!flow.steps || !Array.isArray(flow.steps) || flow.steps.length < 2) {
-        missing.push(`flows[${i}].steps (Flow '${flow.name || i}' must define at least 2 interaction steps)`);
+        missing.push(
+          `flows[${i}].steps (Flow '${flow.name || i}' must define at least 2 interaction steps)`,
+        );
       }
     }
   }
@@ -86,12 +88,16 @@ export function validateSpec(spec: Partial<SpecDoc>): SpecValidationResult {
   if (!spec.v1Scope || !Array.isArray(spec.v1Scope) || spec.v1Scope.length === 0) {
     missing.push("v1Scope (Explicit v1 scope list is required)");
   } else if (spec.v1Scope.length > 10) {
-    missing.push(`v1Scope (Scope creep guard: v1 cannot exceed 10 features, found ${spec.v1Scope.length})`);
+    missing.push(
+      `v1Scope (Scope creep guard: v1 cannot exceed 10 features, found ${spec.v1Scope.length})`,
+    );
   }
 
   // 5. Out of Scope Explicit List
   if (!spec.v1OutOfScope || !Array.isArray(spec.v1OutOfScope) || spec.v1OutOfScope.length === 0) {
-    missing.push("v1OutOfScope (Explicit list of features excluded from v1 is required to prevent scope drift)");
+    missing.push(
+      "v1OutOfScope (Explicit list of features excluded from v1 is required to prevent scope drift)",
+    );
   }
 
   // 6. Screens & Mandatory States
@@ -101,8 +107,14 @@ export function validateSpec(spec: Partial<SpecDoc>): SpecValidationResult {
     for (let i = 0; i < spec.screens.length; i++) {
       const scr = spec.screens[i];
       if (!scr.name) missing.push(`screens[${i}].name is required`);
-      if (scr.hasEmptyState === undefined || scr.hasLoadingState === undefined || scr.hasErrorState === undefined) {
-        missing.push(`screens[${i}] ('${scr.name || i}') must explicitly declare hasEmptyState, hasLoadingState, and hasErrorState`);
+      if (
+        scr.hasEmptyState === undefined ||
+        scr.hasLoadingState === undefined ||
+        scr.hasErrorState === undefined
+      ) {
+        missing.push(
+          `screens[${i}] ('${scr.name || i}') must explicitly declare hasEmptyState, hasLoadingState, and hasErrorState`,
+        );
       }
     }
   }

@@ -112,7 +112,9 @@ export function auditMotionCode(files: Record<string, string>): MotionAuditResul
     issues.push("No prefers-reduced-motion or accessibility motion reduction fallback provided.");
   }
   if (!hasPhysicsSprings) {
-    issues.push("No physics-based spring parameters (stiffness/damping) defined for interactive components.");
+    issues.push(
+      "No physics-based spring parameters (stiffness/damping) defined for interactive components.",
+    );
   }
 
   return {

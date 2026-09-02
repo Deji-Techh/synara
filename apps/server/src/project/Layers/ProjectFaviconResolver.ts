@@ -116,9 +116,9 @@ export const makeProjectFaviconResolver = Effect.gen(function* () {
   const resolveFavicon: ProjectFaviconResolverShape["resolveFavicon"] = Effect.fn(function* (cwd) {
     const resolvedPath = yield* resolvePath(cwd);
     if (!resolvedPath) return Option.none();
-    const bytes = yield* fileSystem.readFile(resolvedPath).pipe(
-      Effect.catchAllCause(() => Effect.succeed(null)),
-    );
+    const bytes = yield* fileSystem
+      .readFile(resolvedPath)
+      .pipe(Effect.catchAllCause(() => Effect.succeed(null)));
     if (!bytes) return Option.none();
     const contentType = Mime.getType(resolvedPath) ?? "application/octet-stream";
     return Option.some({ bytes, contentType });

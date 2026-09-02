@@ -1022,7 +1022,8 @@ export function useComposerSlashCommands(input: {
               toastManager.add({
                 type: result.passed ? "success" : "warning",
                 title: "Tests finished",
-                description: result.output?.slice(0, 200) ?? `${passed ? "Passed" : "Check output"}`,
+                description:
+                  result.output?.slice(0, 200) ?? `${passed ? "Passed" : "Check output"}`,
               });
             })
             .catch((error: unknown) => {
@@ -1036,24 +1037,30 @@ export function useComposerSlashCommands(input: {
           void ensureNativeApi()
             .preview.analyze({ threadId })
             .then((result: any) => {
-              const clean = result.clean ?? result.passed ?? (result.issues?.length === 0);
+              const clean = result.clean ?? result.passed ?? result.issues?.length === 0;
               toastManager.add({
                 type: clean ? "success" : "warning",
                 title: "Analyze finished",
-                description: clean ? "No issues found" : `${result.issues?.length ?? "?"} issue(s) found`,
+                description: clean
+                  ? "No issues found"
+                  : `${result.issues?.length ?? "?"} issue(s) found`,
               });
             })
             .catch((error: unknown) => {
               toastManager.add({
                 type: "error",
                 title: "Analyze failed",
-                description:
-                  error instanceof Error ? error.message : "Could not run analyze.",
+                description: error instanceof Error ? error.message : "Could not run analyze.",
               });
             });
         } else {
           const buildArgs = parseBuildSlashCommandArgs(slashInvocation.args);
-          if (!buildArgs || buildArgs.invalid || buildArgs.target === null || buildArgs.channel === null) {
+          if (
+            !buildArgs ||
+            buildArgs.invalid ||
+            buildArgs.target === null ||
+            buildArgs.channel === null
+          ) {
             toastManager.add({
               type: "warning",
               title: "Invalid /build command",
@@ -1478,7 +1485,12 @@ export function useComposerSlashCommands(input: {
             });
         } else {
           const buildArgs = parseBuildSlashCommandArgs("");
-          if (!buildArgs || buildArgs.invalid || buildArgs.target === null || buildArgs.channel === null) {
+          if (
+            !buildArgs ||
+            buildArgs.invalid ||
+            buildArgs.target === null ||
+            buildArgs.channel === null
+          ) {
             return;
           }
           const buildTarget = buildArgs.target;

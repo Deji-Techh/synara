@@ -12,7 +12,7 @@ Strip ~30k tokens of always-on prompt injection down to ~3–4k. Move
 platform-contract long prose into **on-demand skills** loaded via
 `read_ui_reference` / `read_guide` / `execute_fork_skill`.
 
-Core prompt becomes: role + 5 hard constraints + platform-contract *checklist*
+Core prompt becomes: role + 5 hard constraints + platform-contract _checklist_
 (7 bullets, 120 words) + `read_ui_reference` index + tool-use rules + workflow.
 Everything else is fetched only after the system classifies the task.
 
@@ -30,11 +30,11 @@ transcript → ~12 tool steps / 1 compaction / ~2 min wall time.
 `bouncy-koala` requested: “build a fully functional calculator application, ios style”.
 Result: correct calculator (~923 lines across 7 files), but:
 
-* Core prompt always injected `CAIDE_MOBILE_UI_SKILL_PACK` (`apps/engine/src/prompts/mobile_ui_skill_pack.ts:43`): `DESIGN_ENGINE_CONTRACT` (259 lines, 6-stage pipeline, quality gates ≥94/94/92/95/98, 3 review passes) + full `ui-ux-mastery/SKILL.md:1` (2380 lines) + `motion-interaction`, `product-flow`, `backend-production`, `anti-ai-slop` — ~25–35k input tokens per turn.
-* `MOBILE_PRODUCT_CONTRACT` (`apps/engine/src/prompts/platform_contracts.ts:12`) forces bottom tab bar (≥2 tabs) and 5-viewport verification even for single-screen utilities — added `HistoryScreen` (168 lines) + `HistoryToken` not requested.
-* `DEFAULT_MAX_TOOL_CALL_STEPS = 100` (`apps/engine/src/constants/settings_constants.ts:2`) + `SUBAGENT_MAX_TOOL_CALLS = 50` (`tools/explore_code_subagent.ts:61`) permits 100 sequential writes for a task needing 7.
-* `tool_definitions.ts:565` `assertAppBlueprintApproved` blocks any `write_file` until `write_app_blueprint` + user approval — one extra LLM turn + human wait for a 5-word prompt.
-* System generated `design-spec.json` + `motion-spec.json` + `ui-audit/latest-report.json` (162KB compaction, 83 `caide-write`) and rewrote `theme.js` 3× to satisfy linter, not user need.
+- Core prompt always injected `CAIDE_MOBILE_UI_SKILL_PACK` (`apps/engine/src/prompts/mobile_ui_skill_pack.ts:43`): `DESIGN_ENGINE_CONTRACT` (259 lines, 6-stage pipeline, quality gates ≥94/94/92/95/98, 3 review passes) + full `ui-ux-mastery/SKILL.md:1` (2380 lines) + `motion-interaction`, `product-flow`, `backend-production`, `anti-ai-slop` — ~25–35k input tokens per turn.
+- `MOBILE_PRODUCT_CONTRACT` (`apps/engine/src/prompts/platform_contracts.ts:12`) forces bottom tab bar (≥2 tabs) and 5-viewport verification even for single-screen utilities — added `HistoryScreen` (168 lines) + `HistoryToken` not requested.
+- `DEFAULT_MAX_TOOL_CALL_STEPS = 100` (`apps/engine/src/constants/settings_constants.ts:2`) + `SUBAGENT_MAX_TOOL_CALLS = 50` (`tools/explore_code_subagent.ts:61`) permits 100 sequential writes for a task needing 7.
+- `tool_definitions.ts:565` `assertAppBlueprintApproved` blocks any `write_file` until `write_app_blueprint` + user approval — one extra LLM turn + human wait for a 5-word prompt.
+- System generated `design-spec.json` + `motion-spec.json` + `ui-audit/latest-report.json` (162KB compaction, 83 `caide-write`) and rewrote `theme.js` 3× to satisfy linter, not user need.
 
 This is not isolated — every trivial app pays the same tax.
 
@@ -50,25 +50,25 @@ This is not isolated — every trivial app pays the same tax.
 
 ## 3. Non-Goals
 
-* Rewrite business logic of `local_agent_handler.ts` turn lifecycle.
-* Change framework registry (`blank`/`react-native`/`flutter`/`website`).
-* Migrate existing conversations.
+- Rewrite business logic of `local_agent_handler.ts` turn lifecycle.
+- Change framework registry (`blank`/`react-native`/`flutter`/`website`).
+- Migrate existing conversations.
 
 ---
 
 ## 4. Current State (Measured)
 
-| File | Tokens (approx) | Always-on? | Needed for calculator? |
-|------|-----------------|------------|------------------------|
-| `system_prompt.ts:BUILD_SYSTEM_PREFIX/POSTFIX` | ~2k | yes | yes (trimmed) |
-| `local_agent_prompt.ts:ROLE_BLOCK+COMMON_GUIDELINES+TOOL_CALLING` | ~3k | yes | yes |
-| `mobile_ui_skill_pack.ts:CAIDE_MOBILE_UI_SKILL_PACK` | ~8k (contract) + 2380 lines skill body | yes | no (should be on-demand) |
-| `ui-ux-mastery/SKILL.md` | ~18k | yes (inlined via skillBody) | no |
-| `motion-interaction`, `product-flow`, `backend-production`, `anti-ai-slop` | ~4k each | yes (companionSkills) | no |
-| `platform_contracts.ts:MOBILE_PRODUCT_CONTRACT` | ~0.5k | yes (full prose) | checklist only |
-| `ai_rules.ts:DEFAULT_AI_RULES_*` | ~0.8k | yes | yes (keep, but trim) |
-| `turbo_edits_v2_prompt.ts` | ~0.7k | conditional | yes |
-| `read_ui_reference.ts:UI_LIBRARY` (14 docs, 110KB) | 0 (on-demand) | no | yes (pattern) |
+| File                                                                       | Tokens (approx)                        | Always-on?                  | Needed for calculator?   |
+| -------------------------------------------------------------------------- | -------------------------------------- | --------------------------- | ------------------------ |
+| `system_prompt.ts:BUILD_SYSTEM_PREFIX/POSTFIX`                             | ~2k                                    | yes                         | yes (trimmed)            |
+| `local_agent_prompt.ts:ROLE_BLOCK+COMMON_GUIDELINES+TOOL_CALLING`          | ~3k                                    | yes                         | yes                      |
+| `mobile_ui_skill_pack.ts:CAIDE_MOBILE_UI_SKILL_PACK`                       | ~8k (contract) + 2380 lines skill body | yes                         | no (should be on-demand) |
+| `ui-ux-mastery/SKILL.md`                                                   | ~18k                                   | yes (inlined via skillBody) | no                       |
+| `motion-interaction`, `product-flow`, `backend-production`, `anti-ai-slop` | ~4k each                               | yes (companionSkills)       | no                       |
+| `platform_contracts.ts:MOBILE_PRODUCT_CONTRACT`                            | ~0.5k                                  | yes (full prose)            | checklist only           |
+| `ai_rules.ts:DEFAULT_AI_RULES_*`                                           | ~0.8k                                  | yes                         | yes (keep, but trim)     |
+| `turbo_edits_v2_prompt.ts`                                                 | ~0.7k                                  | conditional                 | yes                      |
+| `read_ui_reference.ts:UI_LIBRARY` (14 docs, 110KB)                         | 0 (on-demand)                          | no                          | yes (pattern)            |
 
 Core without skill pack: ~6k. With pack: ~32k. That 26k delta is the over-engineering budget.
 
@@ -94,12 +94,13 @@ DEFERRED_TOOLS_BLOCK
 ```
 
 Delete from core:
-* `DESIGN_ENGINE_CONTRACT` full prose
-* `skillBody` inlined mastery text
-* `companionSkills` inlined bodies
-* Full platform contract paragraph (`buildPlatformPrompt` full text) — keep checklist only
-* Duplicated `COMMON_GUIDELINES` + `GENERAL_GUIDELINES_BLOCK` overlap
-* Verbose `CODE_EXPLORATION_GUIDANCE` (keep 1-line pointer to `explore_code`)
+
+- `DESIGN_ENGINE_CONTRACT` full prose
+- `skillBody` inlined mastery text
+- `companionSkills` inlined bodies
+- Full platform contract paragraph (`buildPlatformPrompt` full text) — keep checklist only
+- Duplicated `COMMON_GUIDELINES` + `GENERAL_GUIDELINES_BLOCK` overlap
+- Verbose `CODE_EXPLORATION_GUIDANCE` (keep 1-line pointer to `explore_code`)
 
 ### 5.2 Skill Index Block (New, ~300 tokens)
 
@@ -128,13 +129,13 @@ Implementation: new file `apps/engine/src/prompts/skill_index.ts` exported and i
 
 Split `mobile_ui_skill_pack.ts` + `skills/` into discrete skill files under `apps/engine/src/prompts/skills/` with frontmatter:
 
-* `ui-foundation/SKILL.md` — extracted from `ui-ux-mastery` sections 4–6 + `design-system.md` reference
-* `ux-flow/SKILL.md` — from `product-flow/SKILL.md` + `screen-spec` template
-* `motion/SKILL.md` — from `motion-interaction/SKILL.md` + `motion-direction` + `DESIGN_ENGINE_CONTRACT` motion rules subset
-* `platform-tabs/SKILL.md` — from `platform-patterns.md` + `MOBILE_PRODUCT_CONTRACT` bullets 1/5/6 expanded
-* `anti-slop/SKILL.md` — already exists, keep
-* `backend/SKILL.md` — from `backend-production/SKILL.md`
-* `review/SKILL.md` — from `quality-rubric` + `design-audit` + `REVIEW_GATE` (`design_engine_contract.ts:22`)
+- `ui-foundation/SKILL.md` — extracted from `ui-ux-mastery` sections 4–6 + `design-system.md` reference
+- `ux-flow/SKILL.md` — from `product-flow/SKILL.md` + `screen-spec` template
+- `motion/SKILL.md` — from `motion-interaction/SKILL.md` + `motion-direction` + `DESIGN_ENGINE_CONTRACT` motion rules subset
+- `platform-tabs/SKILL.md` — from `platform-patterns.md` + `MOBILE_PRODUCT_CONTRACT` bullets 1/5/6 expanded
+- `anti-slop/SKILL.md` — already exists, keep
+- `backend/SKILL.md` — from `backend-production/SKILL.md`
+- `review/SKILL.md` — from `quality-rubric` + `design-audit` + `REVIEW_GATE` (`design_engine_contract.ts:22`)
 
 Each skill is `rawAsset` + registered in `read_ui_reference.ts:references/templates` or `read_guide.ts:GUIDES` so `read_ui_reference` / `read_guide` already serves them — no new tool needed. Add `read_skill` alias if we want explicit name, but reuse existing tools to avoid prompt bloat.
 
@@ -142,13 +143,13 @@ Each skill is `rawAsset` + registered in `read_ui_reference.ts:references/templa
 
 Move decisions out of “model must remember to audit” into code that injects skill content only when needed:
 
-| Decision | Where | Current (model) | Proposed (system) |
-|----------|-------|-----------------|-------------------|
-| Needs bottom tabs? | `framework_utils.ts` + task classifier | `MOBILE_PRODUCT_CONTRACT` says always ≥2 tabs | System classifies: `utility` single-screen (calculator, timer) → 1 tab allowed; `multi-screen` → inject `platform-tabs` skill |
-| Needs `design-spec.json` / `motion-spec.json`? | `checkpoint_chain.ts` | `PERSISTENT_SPECS_STAGE` says always before substantial UI | Gate on `screenCount>1` or `archetype != utility` or `files>5`; trivial app skips |
-| Needs 5-viewport audit? | `platform_contracts.ts` | Always in skill pack | System injects review skill only when `design-spec` exists |
-| Needs anti-slop? | always | Always | Always, but via 10-bullet checklist in core, full skill only on demand |
-| Needs motion detail? | always | Always | Only if task mentions animation/transition or screenCount>2 |
+| Decision                                       | Where                                  | Current (model)                                            | Proposed (system)                                                                                                             |
+| ---------------------------------------------- | -------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Needs bottom tabs?                             | `framework_utils.ts` + task classifier | `MOBILE_PRODUCT_CONTRACT` says always ≥2 tabs              | System classifies: `utility` single-screen (calculator, timer) → 1 tab allowed; `multi-screen` → inject `platform-tabs` skill |
+| Needs `design-spec.json` / `motion-spec.json`? | `checkpoint_chain.ts`                  | `PERSISTENT_SPECS_STAGE` says always before substantial UI | Gate on `screenCount>1` or `archetype != utility` or `files>5`; trivial app skips                                             |
+| Needs 5-viewport audit?                        | `platform_contracts.ts`                | Always in skill pack                                       | System injects review skill only when `design-spec` exists                                                                    |
+| Needs anti-slop?                               | always                                 | Always                                                     | Always, but via 10-bullet checklist in core, full skill only on demand                                                        |
+| Needs motion detail?                           | always                                 | Always                                                     | Only if task mentions animation/transition or screenCount>2                                                                   |
 
 Classifier: lightweight heuristic in `constructLocalAgentPrompt` (frameworkType + `aiRules` + prompt keywords like “calculator”, “single screen”, “quick”) or a 50-token LLM classifier call before prompt construction. Start with heuristic, upgrade to classifier if misfires.
 
@@ -156,8 +157,8 @@ Classifier: lightweight heuristic in `constructLocalAgentPrompt` (frameworkType 
 
 Change `DESIGN_ENGINE_CONTRACT` stage 6:
 
-* Delete per-file “inspect 5 viewports + light/dark before finishing any screen”.
-* Replace with: `After you declare build complete, read the 'review' skill (quality-rubric) and perform ONE audit. Fix critical/major issues in a single repair pass. Do not re-audit after each file.`
+- Delete per-file “inspect 5 viewports + light/dark before finishing any screen”.
+- Replace with: `After you declare build complete, read the 'review' skill (quality-rubric) and perform ONE audit. Fix critical/major issues in a single repair pass. Do not re-audit after each file.`
 
 Implementation: add a turn-phase flag `buildComplete` in `local_agent_handler.ts`. On `hasIncompleteTodos()==false` + no pending writes, system injects via `prepare_step_utils.ts:prepareStepMessages` a one-shot `InjectedMessage: "Run single review: read_ui_reference name='quality-rubric'"`. Model cannot skip, but also cannot loop.
 
@@ -180,10 +181,12 @@ Cap review at 1 repair pass for trivial apps, 2 for multi-screen.
 ## 6. Detailed Work Checklist
 
 ### Phase 0 — Baseline (1 day)
+
 - [ ] Measure current prompt sizes per mode (build/mobile/flutter/web/ask) via `constructLocalAgentPrompt` unit test that asserts token count (use `tiktoken` or char/4 estimate). Commit baseline.
 - [ ] Snapshot `bouncy-koala` timings: tool calls, turns, compaction size.
 
 ### Phase 1 — Extract Skill Index (2 days)
+
 - [ ] Create `apps/engine/src/prompts/skill_index.ts` with index block.
 - [ ] Modify `local_agent_prompt.ts:buildLocalAgentSystemPrompt` to inject `skill_index` instead of `CAIDE_MOBILE_UI_SKILL_PACK` body.
 - [ ] Modify `system_prompt.ts:getSystemPromptForChatMode` similarly for build mode.
@@ -192,6 +195,7 @@ Cap review at 1 repair pass for trivial apps, 2 for multi-screen.
 - [ ] Test: trivial calculator prompt still builds, but core prompt <5k.
 
 ### Phase 2 — Conditional Injection (3 days)
+
 - [ ] Add classifier heuristic in `constructLocalAgentPrompt` (`frameworkType`, `appTarget`, prompt length/keywords).
 - [ ] Gate `design-spec.json`/`motion-spec.json` creation on `isSubstantialApp` (screenCount, archetype, file count).
 - [ ] Gate bottom-tab requirement: single-screen utility allowed 1 tab; inject `platform-tabs` skill only when needed.
@@ -199,12 +203,14 @@ Cap review at 1 repair pass for trivial apps, 2 for multi-screen.
 - [ ] Adaptive `maxToolCallSteps` per task tier.
 
 ### Phase 3 — Single Final Review (2 days)
+
 - [ ] Remove per-file viewport audit language from `DESIGN_ENGINE_CONTRACT` stages 5/6.
 - [ ] Add `review` skill (`review/SKILL.md`) with single-audit rubric.
 - [ ] Add `buildComplete` injection in `prepare_step_utils.ts` / `local_agent_handler.ts` after todos empty + no pending writes.
 - [ ] Cap repair passes (1 for trivial, 2–3 for multi-screen).
 
 ### Phase 4 — Cleanup + Telemetry (1 day)
+
 - [ ] Deduplicate `COMMON_GUIDELINES`/`GENERAL_GUIDELINES`/`THINKING_PROMPT`.
 - [ ] Trim `AI_RULES` shared tone.
 - [ ] Add prompt-size telemetry + test that asserts trivial prompt <6k tokens.
@@ -214,35 +220,35 @@ Cap review at 1 repair pass for trivial apps, 2 for multi-screen.
 
 ## 7. File-Level Changes (No Code Yet — Inventory)
 
-* `apps/engine/src/prompts/skill_index.ts` — NEW
-* `apps/engine/src/prompts/mobile_ui_skill_pack.ts:43` — TRIM to registry only
-* `apps/engine/src/prompts/local_agent_prompt.ts:36` — REPLACE `PLATFORM_UI_SKILL_PACK_BLOCK` with `SKILL_INDEX_BLOCK`
-* `apps/engine/src/prompts/system_prompt.ts:313` — SAME replacement for build mode
-* `apps/engine/src/prompts/platform_contracts.ts:12` — EXPORT `MOBILE_PRODUCT_CONTRACT_CHECKLIST` (7 bullets) separate from full `MOBILE_PRODUCT_CONTRACT`
-* `apps/engine/src/prompts/design_engine_contract.ts:22` — SPLIT `PERSISTENT_SPECS_STAGE`, `REVIEW_GATE`, `MOTION_PURPOSE_RULE` into skill files; core contract keeps 3-line pointers
-* `apps/engine/src/pro/main/ipc/handlers/local_agent/local_agent_handler.ts:451` — ADAPTIVE maxSteps via classifier
-* `apps/engine/src/pro/main/ipc/handlers/local_agent/prepare_step_utils.ts:1` — ADD build-complete injection hook for single review
-* `apps/engine/src/prompts/skills/*/SKILL.md` — NEW split skills (ui-foundation, ux-flow, motion, platform-tabs, review)
-* `apps/engine/src/pro/main/ipc/handlers/local_agent/tools/read_ui_reference.ts:6` — REGISTER new references
-* `apps/engine/src/prompts/ai_rules.ts:142` — DEDUP shared tone
+- `apps/engine/src/prompts/skill_index.ts` — NEW
+- `apps/engine/src/prompts/mobile_ui_skill_pack.ts:43` — TRIM to registry only
+- `apps/engine/src/prompts/local_agent_prompt.ts:36` — REPLACE `PLATFORM_UI_SKILL_PACK_BLOCK` with `SKILL_INDEX_BLOCK`
+- `apps/engine/src/prompts/system_prompt.ts:313` — SAME replacement for build mode
+- `apps/engine/src/prompts/platform_contracts.ts:12` — EXPORT `MOBILE_PRODUCT_CONTRACT_CHECKLIST` (7 bullets) separate from full `MOBILE_PRODUCT_CONTRACT`
+- `apps/engine/src/prompts/design_engine_contract.ts:22` — SPLIT `PERSISTENT_SPECS_STAGE`, `REVIEW_GATE`, `MOTION_PURPOSE_RULE` into skill files; core contract keeps 3-line pointers
+- `apps/engine/src/pro/main/ipc/handlers/local_agent/local_agent_handler.ts:451` — ADAPTIVE maxSteps via classifier
+- `apps/engine/src/pro/main/ipc/handlers/local_agent/prepare_step_utils.ts:1` — ADD build-complete injection hook for single review
+- `apps/engine/src/prompts/skills/*/SKILL.md` — NEW split skills (ui-foundation, ux-flow, motion, platform-tabs, review)
+- `apps/engine/src/pro/main/ipc/handlers/local_agent/tools/read_ui_reference.ts:6` — REGISTER new references
+- `apps/engine/src/prompts/ai_rules.ts:142` — DEDUP shared tone
 
 ---
 
 ## 8. Risks & Mitigations
 
-* **Skill not read when needed** → System injection (classifier) guarantees critical skills; fallback: if model writes code missing required pattern (e.g., no `SafeArea`), injected linter message prompts skill read.
-* **Review skipped** → `buildComplete` injection is system-enforced, not model-optional.
-* **Blueprint auto-approve feels risky** → Only for high-specificity prompts; vague prompts still go through questionnaire gate.
-* **Prompt too slim** → Keep `anti-slop` checklist (10 bullets) in core; full distinctiveness skill still on-demand.
+- **Skill not read when needed** → System injection (classifier) guarantees critical skills; fallback: if model writes code missing required pattern (e.g., no `SafeArea`), injected linter message prompts skill read.
+- **Review skipped** → `buildComplete` injection is system-enforced, not model-optional.
+- **Blueprint auto-approve feels risky** → Only for high-specificity prompts; vague prompts still go through questionnaire gate.
+- **Prompt too slim** → Keep `anti-slop` checklist (10 bullets) in core; full distinctiveness skill still on-demand.
 
 ---
 
 ## 9. Verification
 
-* **Prompt size test**: `constructLocalAgentPrompt({frameworkType:'react-native', appTarget:'mobile'})` for trivial prompt → assert <6k chars.
-* **Calculator smoke**: “build a calculator, ios style” → ≤15 tool calls, ≤3 min, 1 tab allowed, no `design-spec.json` required, single review pass.
-* **Multi-screen smoke**: “build a 4-tab social app” → still generates `design-spec.json` + `platform-tabs` skill + 5-viewport review.
-* **Existing tests**: `apps/engine` prompt snapshot tests updated to expect index, not inlined bodies.
+- **Prompt size test**: `constructLocalAgentPrompt({frameworkType:'react-native', appTarget:'mobile'})` for trivial prompt → assert <6k chars.
+- **Calculator smoke**: “build a calculator, ios style” → ≤15 tool calls, ≤3 min, 1 tab allowed, no `design-spec.json` required, single review pass.
+- **Multi-screen smoke**: “build a 4-tab social app” → still generates `design-spec.json` + `platform-tabs` skill + 5-viewport review.
+- **Existing tests**: `apps/engine` prompt snapshot tests updated to expect index, not inlined bodies.
 
 ---
 

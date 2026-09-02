@@ -339,11 +339,21 @@ function PreviewConsoleDialog(props: {
         <DialogHeader className="pb-1">
           <DialogTitle className="flex items-center gap-2 text-base">
             <TerminalIcon aria-hidden="true" className="size-4 text-muted-foreground" />
-            Console — {props.framework === "website" ? "dev server" : props.framework === "react-native" ? "Expo" : "flutter run"}
+            Console —{" "}
+            {props.framework === "website"
+              ? "dev server"
+              : props.framework === "react-native"
+                ? "Expo"
+                : "flutter run"}
           </DialogTitle>
           <DialogDescription className="text-xs">
-            Live {props.framework === "website" ? "`npm run dev`" : props.framework === "react-native" ? "Expo" : "`flutter run`"} output.{" "}
-            {logs.length > 0 ? `${logs.length} lines` : "No output yet."}
+            Live{" "}
+            {props.framework === "website"
+              ? "`npm run dev`"
+              : props.framework === "react-native"
+                ? "Expo"
+                : "`flutter run`"}{" "}
+            output. {logs.length > 0 ? `${logs.length} lines` : "No output yet."}
           </DialogDescription>
         </DialogHeader>
         <div className="flex min-h-0 flex-col gap-2 px-4 pb-4">
@@ -1191,7 +1201,12 @@ export function PreviewStage(props: {
           <div className="flex h-full min-h-[240px] flex-col">
             <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
               <span className="text-xs font-medium">
-                Console — {framework === "website" ? "dev server" : framework === "react-native" ? "Expo" : "flutter run"}
+                Console —{" "}
+                {framework === "website"
+                  ? "dev server"
+                  : framework === "react-native"
+                    ? "Expo"
+                    : "flutter run"}
               </span>
               <Button
                 variant="ghost"
@@ -1205,7 +1220,13 @@ export function PreviewStage(props: {
             <div className="min-h-[200px] flex-1 overflow-y-auto bg-muted/30 px-3 py-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
               {panelState.logs.length === 0 ? (
                 <p>
-                  Waiting for {framework === "website" ? "`npm run dev`" : framework === "react-native" ? "Expo" : "`flutter run`"} output…
+                  Waiting for{" "}
+                  {framework === "website"
+                    ? "`npm run dev`"
+                    : framework === "react-native"
+                      ? "Expo"
+                      : "`flutter run`"}{" "}
+                  output…
                 </p>
               ) : (
                 panelState.logs.slice(-80).map((l, i) => (
@@ -1637,7 +1658,9 @@ export function PreviewStage(props: {
                   <span className="flex items-center gap-1.5 text-[10px] text-white/45">
                     <LoaderIcon className="size-3 animate-spin" /> Compiling bundle
                   </span>
-                  <span className="text-[10px] text-white/30">This can take a few minutes on first run.</span>
+                  <span className="text-[10px] text-white/30">
+                    This can take a few minutes on first run.
+                  </span>
                 </div>
               ) : panelState.status === "failed" ? (
                 <div className="flex flex-col items-center gap-3 px-[12%] text-center">

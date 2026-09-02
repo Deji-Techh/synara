@@ -83,10 +83,7 @@ describe("Milestone M7 — Planner (Spec Gate & Human Checkpoint)", () => {
         name: "Slice 2 — Workout Logger",
         description: "Implements exercise selection and set/rep logging form.",
         files: ["src/screens/LogWorkoutScreen.tsx", "src/state/workoutStore.ts"],
-        acceptanceCriteria: [
-          "Can add exercises and record sets",
-          "Persists workouts locally",
-        ],
+        acceptanceCriteria: ["Can add exercises and record sets", "Persists workouts locally"],
       },
     ],
   };
@@ -148,8 +145,16 @@ describe("Milestone M7 — Planner (Spec Gate & Human Checkpoint)", () => {
     const bloatedSpec: SpecDoc = {
       ...validSampleSpec,
       v1Scope: [
-        "F1", "F2", "F3", "F4", "F5",
-        "F6", "F7", "F8", "F9", "F10",
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8",
+        "F9",
+        "F10",
         "F11 - Over limit feature",
       ],
     };

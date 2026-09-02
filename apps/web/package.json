@@ -2,10 +2,10 @@
   "name": "@caide/web",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "sideEffects": [
     "src/polyfills.ts"
   ],
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "NODE_OPTIONS=\"--max-old-space-size=8192\" vite build",

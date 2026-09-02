@@ -21,9 +21,12 @@ export function checkCrossAppCoherence(files: Record<string, string>): Coherence
 
   for (const [file, content] of entries) {
     const packs: string[] = [];
-    if (content.includes("lucide-react") || content.includes("lucide-react-native")) packs.push("lucide");
-    if (content.includes("@heroicons/react") || content.includes("react-native-heroicons")) packs.push("heroicons");
-    if (content.includes("phosphor-react") || content.includes("phosphor_flutter")) packs.push("phosphor");
+    if (content.includes("lucide-react") || content.includes("lucide-react-native"))
+      packs.push("lucide");
+    if (content.includes("@heroicons/react") || content.includes("react-native-heroicons"))
+      packs.push("heroicons");
+    if (content.includes("phosphor-react") || content.includes("phosphor_flutter"))
+      packs.push("phosphor");
     if (content.includes("@tabler/icons-react")) packs.push("tabler");
     if (content.includes("@expo/vector-icons")) packs.push("expo-vector");
 
@@ -45,7 +48,11 @@ export function checkCrossAppCoherence(files: Record<string, string>): Coherence
   // 2. Check Spacing Rhythm Consistency
   const screenPaddings = new Map<string, string>();
   for (const [file, content] of entries) {
-    if (content.includes("padding: 23") || content.includes("p-[23px]") || content.includes("p-[17px]")) {
+    if (
+      content.includes("padding: 23") ||
+      content.includes("p-[23px]") ||
+      content.includes("p-[17px]")
+    ) {
       violations.push({
         category: "spacing",
         screens: [file],
@@ -58,7 +65,10 @@ export function checkCrossAppCoherence(files: Record<string, string>): Coherence
   // 3. Check Theming Consistency
   const darkBackgrounds = new Set<string>();
   for (const [file, content] of entries) {
-    if (content.includes("backgroundColor: '#ff0000'") || content.includes("bg-red-500 min-h-screen")) {
+    if (
+      content.includes("backgroundColor: '#ff0000'") ||
+      content.includes("bg-red-500 min-h-screen")
+    ) {
       violations.push({
         category: "theming",
         screens: [file],
@@ -69,8 +79,12 @@ export function checkCrossAppCoherence(files: Record<string, string>): Coherence
   }
 
   // 4. Navigation Model Consistency
-  const usesTabBar = entries.some(([_, c]) => c.includes("createBottomTabNavigator") || c.includes("Tabs.List"));
-  const usesDrawer = entries.some(([_, c]) => c.includes("createDrawerNavigator") || c.includes("Drawer.Navigator"));
+  const usesTabBar = entries.some(
+    ([_, c]) => c.includes("createBottomTabNavigator") || c.includes("Tabs.List"),
+  );
+  const usesDrawer = entries.some(
+    ([_, c]) => c.includes("createDrawerNavigator") || c.includes("Drawer.Navigator"),
+  );
   if (usesTabBar && usesDrawer) {
     violations.push({
       category: "navigation",

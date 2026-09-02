@@ -17,21 +17,39 @@ describe("Milestone M6 — Router (Fast Intent Classification)", () => {
 
     // 4 Build Prompts
     { prompt: "Create a modern login screen with email and Google auth", expectedIntent: "build" },
-    { prompt: "Implement the product card component with price and rating", expectedIntent: "build" },
+    {
+      prompt: "Implement the product card component with price and rating",
+      expectedIntent: "build",
+    },
     { prompt: "Add a bottom navigation tab bar with home and search", expectedIntent: "build" },
     { prompt: "Build the checkout payment sheet with card input", expectedIntent: "build" },
 
     // 4 Verify Prompts
-    { prompt: "Verify the UI against the design tokens in design-spec.json", expectedIntent: "verify" },
-    { prompt: "/verify audit the accessibility and tap targets of the screen", expectedIntent: "verify" },
-    { prompt: "Review UI and compare screenshots with the theme specification", expectedIntent: "verify" },
-    { prompt: "Check design contrast and layout for any token violations", expectedIntent: "verify" },
+    {
+      prompt: "Verify the UI against the design tokens in design-spec.json",
+      expectedIntent: "verify",
+    },
+    {
+      prompt: "/verify audit the accessibility and tap targets of the screen",
+      expectedIntent: "verify",
+    },
+    {
+      prompt: "Review UI and compare screenshots with the theme specification",
+      expectedIntent: "verify",
+    },
+    {
+      prompt: "Check design contrast and layout for any token violations",
+      expectedIntent: "verify",
+    },
 
     // 4 Fix Prompts
     { prompt: "Fix the TypeError in the profile screen render loop", expectedIntent: "fix" },
     { prompt: "/fix the broken submit button that crashes on tap", expectedIntent: "fix" },
     { prompt: "Repair the compile error: Cannot find module './types'", expectedIntent: "fix" },
-    { prompt: "Resolve failing verifier report regarding missing empty state", expectedIntent: "fix" },
+    {
+      prompt: "Resolve failing verifier report regarding missing empty state",
+      expectedIntent: "fix",
+    },
   ];
 
   it("correctly classifies all 20 diverse prompt samples to their intended role intent", () => {
@@ -47,13 +65,7 @@ describe("Milestone M6 — Router (Fast Intent Classification)", () => {
   });
 
   it("handles ambiguous or underspecified prompts with low confidence (< 0.7) defaulting to build with manual tier", () => {
-    const ambiguousPrompts = [
-      "hmm okay",
-      "test",
-      "...",
-      "something else",
-      "maybe later",
-    ];
+    const ambiguousPrompts = ["hmm okay", "test", "...", "something else", "maybe later"];
 
     for (const prompt of ambiguousPrompts) {
       const decision = classifyIntentSync(prompt);

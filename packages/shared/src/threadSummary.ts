@@ -23,7 +23,12 @@ export interface PendingThreadRequestIds {
 }
 
 export type PendingThreadRequestKind = "approval" | "user-input";
-export type ApprovalRequestKind = "command" | "file-read" | "file-change" | "permissions" | "blueprint";
+export type ApprovalRequestKind =
+  | "command"
+  | "file-read"
+  | "file-change"
+  | "permissions"
+  | "blueprint";
 
 export function pendingRequestInstanceKey(requestId: string, lifecycleGeneration?: string): string {
   return `${requestId}\u0000${lifecycleGeneration ?? "legacy"}`;

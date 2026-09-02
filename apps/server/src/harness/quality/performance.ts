@@ -26,7 +26,8 @@ export function auditPerformance(files: Record<string, string>): PerformanceAudi
           rule: "list_virtualization",
           severity: "high",
           message: `Unvirtualized list rendering ${count} items directly with .map().`,
-          suggestedFix: "Use FlatList, FlashList, or @tanstack/react-virtual to virtualize large datasets.",
+          suggestedFix:
+            "Use FlatList, FlashList, or @tanstack/react-virtual to virtualize large datasets.",
         });
       }
     }
@@ -34,7 +35,7 @@ export function auditPerformance(files: Record<string, string>): PerformanceAudi
     // 2. Unoptimized Image Check (look for raw un-sized external images)
     if (
       content.includes("<img") &&
-      !content.includes("loading=\"lazy\"") &&
+      !content.includes('loading="lazy"') &&
       !content.includes("loading='lazy'") &&
       !content.includes("width=")
     ) {

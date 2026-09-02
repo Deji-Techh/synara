@@ -108,21 +108,18 @@ export async function* streamProvider(
     };
   } else if (endpoint === "gemini") {
     requestBody = {
-      ...(system
-        ? { system_instruction: { parts: [{ text: system }] } }
-        : {}),
+      ...(system ? { system_instruction: { parts: [{ text: system }] } } : {}),
       contents: (messages as any[]).map((m: any) => ({
         role: m.role === "assistant" ? "model" : "user",
-        parts: [{ text: typeof m.content === "string" ? m.content : JSON.stringify(m.content ?? "") }],
+        parts: [
+          { text: typeof m.content === "string" ? m.content : JSON.stringify(m.content ?? "") },
+        ],
       })),
     };
   } else {
     requestBody = {
       model: modelId,
-      messages: [
-        ...(system ? [{ role: "system", content: system }] : []),
-        ...(messages as any[]),
-      ],
+      messages: [...(system ? [{ role: "system", content: system }] : []), ...(messages as any[])],
       stream: true,
       ...(tools && tools.length > 0 ? { tools } : {}),
     };
@@ -282,7 +279,10 @@ export async function* streamProvider(
             ) {
               const complete = assembler.finalize(json.item_id);
               if (complete) yield { type: "tool_call", toolCall: complete };
-            } else if (respEvent === "response.output_item.done" && json.item?.type === "function_call") {
+            } else if (
+              respEvent === "response.output_item.done" &&
+              json.item?.type === "function_call"
+            ) {
               const complete = assembler.finalize(json.item.id);
               if (complete) yield { type: "tool_call", toolCall: complete };
             }

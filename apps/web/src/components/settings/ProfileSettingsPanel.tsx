@@ -99,7 +99,9 @@ function ProfileContent({
   const mostUsedFrameworkLabel = (() => {
     if (!mostUsedFramework) return "—";
     const entry = frameworks.find((f) => f.framework === mostUsedFramework);
-    const suffix = entry ? ` · ${entry.percent}% · ${formatNumber(entry.count)} project${entry.count === 1 ? "" : "s"}` : "";
+    const suffix = entry
+      ? ` · ${entry.percent}% · ${formatNumber(entry.count)} project${entry.count === 1 ? "" : "s"}`
+      : "";
     return `${frameworkDisplayName(mostUsedFramework)}${suffix}`;
   })();
 

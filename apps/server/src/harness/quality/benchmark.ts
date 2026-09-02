@@ -20,23 +20,53 @@ export interface BenchmarkResult {
 export const CATEGORY_ARCHETYPES = {
   fintech: {
     reference: "Mercury / Stripe Dashboard",
-    expectedFeatures: ["tabular data", "micro-charts", "monospaced figures", "status chips", "restrained palette"],
+    expectedFeatures: [
+      "tabular data",
+      "micro-charts",
+      "monospaced figures",
+      "status chips",
+      "restrained palette",
+    ],
   },
   fitness: {
     reference: "Apple Fitness / Strava",
-    expectedFeatures: ["bold typography", "metric rings", "high contrast accents", "activity log", "haptic feedback"],
+    expectedFeatures: [
+      "bold typography",
+      "metric rings",
+      "high contrast accents",
+      "activity log",
+      "haptic feedback",
+    ],
   },
   productivity: {
     reference: "Linear / Things 3",
-    expectedFeatures: ["keyboard shortcuts", "fast filter lists", "subtle borders", "compact density", "smooth animations"],
+    expectedFeatures: [
+      "keyboard shortcuts",
+      "fast filter lists",
+      "subtle borders",
+      "compact density",
+      "smooth animations",
+    ],
   },
   social: {
     reference: "BeReal / Threads",
-    expectedFeatures: ["avatar clusters", "media cards", "pull to refresh", "fluid transitions", "reactions"],
+    expectedFeatures: [
+      "avatar clusters",
+      "media cards",
+      "pull to refresh",
+      "fluid transitions",
+      "reactions",
+    ],
   },
   ecommerce: {
     reference: "Shopify / Airbnb",
-    expectedFeatures: ["product cards", "sticky checkout CTA", "gallery carousel", "price hierarchy", "ratings"],
+    expectedFeatures: [
+      "product cards",
+      "sticky checkout CTA",
+      "gallery carousel",
+      "price hierarchy",
+      "ratings",
+    ],
   },
 } as const;
 
@@ -56,7 +86,11 @@ export class ComparativeBenchmark {
 
     // 1. Visual Polish
     let visualPolish = 0.7;
-    if (code.includes("colorTokens.") || code.includes("bg-[#1A1A1A]") || code.includes("rounded-2xl")) {
+    if (
+      code.includes("colorTokens.") ||
+      code.includes("bg-[#1A1A1A]") ||
+      code.includes("rounded-2xl")
+    ) {
       visualPolish += 0.2;
     }
     if (code.includes("shadow-") || code.includes("elevation")) {
@@ -65,23 +99,42 @@ export class ComparativeBenchmark {
 
     // 2. Typography Hierarchy
     let typographyHierarchy = 0.65;
-    if (code.includes("text-xs") && code.includes("text-xl") && (code.includes("font-bold") || code.includes("font-semibold"))) {
+    if (
+      code.includes("text-xs") &&
+      code.includes("text-xl") &&
+      (code.includes("font-bold") || code.includes("font-semibold"))
+    ) {
       typographyHierarchy += 0.25;
     } else {
-      improvements.push("Increase typographic scale contrast between section titles, body text, and micro metadata.");
+      improvements.push(
+        "Increase typographic scale contrast between section titles, body text, and micro metadata.",
+      );
     }
 
     // 3. Interaction Delight
     let interactionDelight = 0.6;
-    if (code.includes("stiffness") || code.includes("whileTap") || code.includes("Animated.") || code.includes("Haptics")) {
+    if (
+      code.includes("stiffness") ||
+      code.includes("whileTap") ||
+      code.includes("Animated.") ||
+      code.includes("Haptics")
+    ) {
       interactionDelight += 0.3;
     } else {
-      improvements.push("Add tactile micro-interactions (e.g. spring scale on press or haptic feedback) matching " + archetype.reference + ".");
+      improvements.push(
+        "Add tactile micro-interactions (e.g. spring scale on press or haptic feedback) matching " +
+          archetype.reference +
+          ".",
+      );
     }
 
     // 4. Data Density & Expected Features
     let dataDensity = 0.7;
-    const hasStatusChips = code.includes("badge") || code.includes("chip") || code.includes("pill") || code.includes("rounded-full");
+    const hasStatusChips =
+      code.includes("badge") ||
+      code.includes("chip") ||
+      code.includes("pill") ||
+      code.includes("rounded-full");
     if (hasStatusChips) {
       dataDensity += 0.2;
     } else {

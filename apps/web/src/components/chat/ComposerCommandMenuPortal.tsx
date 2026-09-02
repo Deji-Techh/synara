@@ -15,7 +15,9 @@ type Position = {
 };
 
 function positionsEqual(a: Position, b: Position): boolean {
-  return a.bottom === b.bottom && a.left === b.left && a.maxHeight === b.maxHeight && a.width === b.width;
+  return (
+    a.bottom === b.bottom && a.left === b.left && a.maxHeight === b.maxHeight && a.width === b.width
+  );
 }
 
 export function ComposerCommandMenuPortal({
@@ -35,9 +37,12 @@ export function ComposerCommandMenuPortal({
 
     const updatePosition = () => {
       const form = anchor.closest<HTMLElement>('[data-chat-composer-form="true"]');
-      const mainSurface = form?.querySelector<HTMLElement>('[data-chat-composer-main-surface="true"]');
+      const mainSurface = form?.querySelector<HTMLElement>(
+        '[data-chat-composer-main-surface="true"]',
+      );
       const rect = (mainSurface ?? form ?? anchor).getBoundingClientRect();
-      const rootFontSizePx = Number.parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
+      const rootFontSizePx =
+        Number.parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
       // Caide uses --composer-radius, not --chat-composer-drawer-inset; fall back to 0 for inset
       const drawerInsetRem =
         Number.parseFloat(
@@ -58,7 +63,8 @@ export function ComposerCommandMenuPortal({
     window.addEventListener("resize", updatePosition);
     window.addEventListener("scroll", updatePosition, true);
 
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updatePosition);
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updatePosition);
     if (observer) {
       observer.observe(anchor);
       for (let element = anchor.parentElement; element; element = element.parentElement) {

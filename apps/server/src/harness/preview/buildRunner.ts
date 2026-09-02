@@ -29,7 +29,8 @@ export function parseBuildErrors(stderr: string, stdout = ""): StructuredBuildEr
   const errors: StructuredBuildError[] = [];
 
   // Match TypeScript / Vite error patterns: src/App.tsx(10,5): error TS2322: ...
-  const tsErrorRegex = /([a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]+)\s*[:(](\d+)(?:,(\d+))?[):]\s*(?:error\s*[A-Z0-9]*:\s*)?(.*)/g;
+  const tsErrorRegex =
+    /([a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]+)\s*[:(](\d+)(?:,(\d+))?[):]\s*(?:error\s*[A-Z0-9]*:\s*)?(.*)/g;
   let match: RegExpExecArray | null;
 
   while ((match = tsErrorRegex.exec(combined)) !== null) {
@@ -41,7 +42,10 @@ export function parseBuildErrors(stderr: string, stdout = ""): StructuredBuildEr
     });
   }
 
-  if (errors.length === 0 && (stderr.trim().length > 0 || combined.includes("ERR") || combined.includes("Failed"))) {
+  if (
+    errors.length === 0 &&
+    (stderr.trim().length > 0 || combined.includes("ERR") || combined.includes("Failed"))
+  ) {
     errors.push({
       message: stderr.trim() || "Build process exited with non-zero code.",
       rawError: combined.slice(0, 1000),

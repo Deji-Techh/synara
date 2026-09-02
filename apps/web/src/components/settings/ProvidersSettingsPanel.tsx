@@ -483,7 +483,8 @@ export function ProvidersSettingsPanel({
       toastManager.add({
         type: "success",
         title: "Models refreshed",
-        description: "Successfully fetched live models from OpenCode Zen and OpenCode Go endpoints.",
+        description:
+          "Successfully fetched live models from OpenCode Zen and OpenCode Go endpoints.",
       });
     } catch (err) {
       toastManager.add({

@@ -2,4 +2,6 @@
  * Handler 2 — real wiring for scaffold + previewBuild trusted workspace per 004 M39.
  * Batch of 10 per user rule.
  */
-export function handler2() { return "handler 2"; }
+export function handler2() {
+  return "handler 2";
+}

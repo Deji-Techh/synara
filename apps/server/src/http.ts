@@ -38,10 +38,7 @@ import {
 const trustedMutationCorsHeaders = (input: {
   readonly request: HttpServerRequest.HttpServerRequest;
   readonly url: URL;
-  readonly config: Pick<
-    ServerConfigShape,
-    "mode" | "publicUrl" | "allowInsecureRemote" | "devUrl"
-  >;
+  readonly config: Pick<ServerConfigShape, "mode" | "publicUrl" | "allowInsecureRemote" | "devUrl">;
 }): Record<string, string> | null => {
   const originHeader = input.request.headers.origin;
   const origin = originHeader ? normalizeCorsOrigin(originHeader) : null;
@@ -100,7 +97,8 @@ const decodeEffectJson = <A, I>(
     Effect.flatMap((json) =>
       Schema.decodeUnknownEffect(schema)(json).pipe(
         Effect.mapError(
-          (issue) => new Error(`Payload validation failed: ${Schema.TreeFormatter.formatIssue(issue)}`),
+          (issue) =>
+            new Error(`Payload validation failed: ${Schema.TreeFormatter.formatIssue(issue)}`),
         ),
       ),
     ),
@@ -165,10 +163,7 @@ export const desktopShutdownEffectRouteLayer = (shutdownController: ServerShutdo
       }
 
       yield* shutdownController.requestShutdown;
-      return HttpServerResponse.jsonUnsafe(
-        { ok: true },
-        { status: 200, headers: corsHeaders },
-      );
+      return HttpServerResponse.jsonUnsafe({ ok: true }, { status: 200, headers: corsHeaders });
     }),
   );
 
@@ -242,7 +237,9 @@ export const staticAndDevEffectRouteLayer = HttpRouter.add(
     const baseContentType = Mime.getType(targetPath) ?? "application/octet-stream";
     const contentType =
       baseContentType === "text/html" ? "text/html; charset=utf-8" : baseContentType;
-    const data = yield* fileSystem.readFile(targetPath).pipe(Effect.catch(() => Effect.succeed(null)));
+    const data = yield* fileSystem
+      .readFile(targetPath)
+      .pipe(Effect.catch(() => Effect.succeed(null)));
     if (!data) return HttpServerResponse.text("Not Found", { status: 404 });
 
     return HttpServerResponse.uint8Array(data, {
@@ -346,21 +343,29 @@ export const editorIconRouteLayer = HttpRouter.add(
       }),
     );
     if (!icon) {
-      return HttpServerResponse.text('<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>', {
-        status: 200,
-        contentType: "image/svg+xml",
-        headers: { "Cache-Control": "private, max-age=3600" },
-      });
+      return HttpServerResponse.text(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>',
+        {
+          status: 200,
+          contentType: "image/svg+xml",
+          headers: { "Cache-Control": "private, max-age=3600" },
+        },
+      );
     }
 
     const fileSystem = yield* FileSystem.FileSystem;
-    const bytes = yield* fileSystem.readFile(icon.path).pipe(Effect.catch(() => Effect.succeed(null)));
+    const bytes = yield* fileSystem
+      .readFile(icon.path)
+      .pipe(Effect.catch(() => Effect.succeed(null)));
     if (!bytes) {
-      return HttpServerResponse.text('<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>', {
-        status: 200,
-        contentType: "image/svg+xml",
-        headers: { "Cache-Control": "private, max-age=3600" },
-      });
+      return HttpServerResponse.text(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>',
+        {
+          status: 200,
+          contentType: "image/svg+xml",
+          headers: { "Cache-Control": "private, max-age=3600" },
+        },
+      );
     }
 
     return HttpServerResponse.uint8Array(bytes, {
@@ -392,10 +397,7 @@ export const binaryUploadEffectRouteLayer = Layer.mergeAll(
       if (request.method === "OPTIONS") {
         return HttpServerResponse.empty({ status: 204, headers: corsHeaders });
       }
-      return HttpServerResponse.jsonUnsafe(
-        { text: "" },
-        { status: 200, headers: corsHeaders },
-      );
+      return HttpServerResponse.jsonUnsafe({ text: "" }, { status: 200, headers: corsHeaders });
     }),
   ),
   HttpRouter.add(

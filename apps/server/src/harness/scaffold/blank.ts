@@ -50,7 +50,10 @@ export async function scaffoldBlank(root: string, appName = "MyBlankProject"): P
       2,
     ),
   );
-  await write(".caide/spec.md", `# Specification: ${appName}\n\n*Pending specification planning.*\n`);
+  await write(
+    ".caide/spec.md",
+    `# Specification: ${appName}\n\n*Pending specification planning.*\n`,
+  );
 
   // 4. .gitignore
   await write(".gitignore", `node_modules/\ndist/\n`);

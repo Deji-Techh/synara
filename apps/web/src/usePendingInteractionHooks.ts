@@ -1,8 +1,5 @@
 import { useMemo } from "react";
-import {
-  derivePendingApprovals,
-  derivePendingUserInputs,
-} from "./pendingInteractionDerivation";
+import { derivePendingApprovals, derivePendingUserInputs } from "./pendingInteractionDerivation";
 import { getThreadFromState } from "./threadDerivation";
 import { useStore } from "./store";
 import type { PendingApproval, PendingUserInput } from "./pendingInteractionDerivation";

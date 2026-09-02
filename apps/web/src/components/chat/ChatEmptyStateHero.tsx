@@ -20,11 +20,19 @@ export const ChatEmptyStateHero = function ChatEmptyStateHero({
   return (
     <div className="flex flex-col items-center gap-6 select-none">
       <div className="flex flex-col items-center gap-3">
-        {framework ? <FrameworkIcon framework={framework} className="size-10 opacity-80" /> : <CaideLogo aria-label="Caide logo" className="size-10" />}
+        {framework ? (
+          <FrameworkIcon framework={framework} className="size-10 opacity-80" />
+        ) : (
+          <CaideLogo aria-label="Caide logo" className="size-10" />
+        )}
         <div className="flex flex-col items-center gap-0.5">
           <h1 className="text-2xl font-semibold text-foreground/90">Let's build</h1>
           {projectName && <span className="text-lg text-muted-foreground/40">{projectName}</span>}
-          {framework && <span className="text-xs uppercase tracking-widest text-muted-foreground/50">{framework}</span>}
+          {framework && (
+            <span className="text-xs uppercase tracking-widest text-muted-foreground/50">
+              {framework}
+            </span>
+          )}
         </div>
       </div>
       <div className="flex flex-col gap-2 w-full max-w-sm">

@@ -1,7 +1,13 @@
 export interface AdversarialScenario {
   id: string;
   name: string;
-  category: "malformed_input" | "out_of_order" | "mid_flow_back" | "rapid_tab_switch" | "parallel_ops" | "abrupt_abort";
+  category:
+    | "malformed_input"
+    | "out_of_order"
+    | "mid_flow_back"
+    | "rapid_tab_switch"
+    | "parallel_ops"
+    | "abrupt_abort";
   payload?: string;
   description: string;
 }
@@ -112,7 +118,8 @@ export class AdversarialRunner {
           screen: screenName,
           scenario: "Out of Order Action Sequence",
           severity: "high",
-          vulnerability: "Action triggers without input/state validation, allowing empty or malformed requests.",
+          vulnerability:
+            "Action triggers without input/state validation, allowing empty or malformed requests.",
           reproductionSteps: [
             `1. Open screen ${screenName}`,
             "2. Click submit button immediately without filling inputs",
@@ -124,7 +131,8 @@ export class AdversarialRunner {
 
     // 3. Check for unhandled async error states
     if (code.includes("fetch(") || code.includes("api.") || code.includes("axios.")) {
-      const hasCatch = code.includes("catch") || code.includes("onError") || code.includes("isError");
+      const hasCatch =
+        code.includes("catch") || code.includes("onError") || code.includes("isError");
       if (!hasCatch) {
         issues.push({
           screen: screenName,
@@ -135,7 +143,8 @@ export class AdversarialRunner {
             `1. Open screen ${screenName}`,
             "2. Trigger async action while network is offline or aborted",
           ],
-          suggestedFix: "Wrap async network calls in try/catch or use React Query onError/error boundary.",
+          suggestedFix:
+            "Wrap async network calls in try/catch or use React Query onError/error boundary.",
         });
       }
     }

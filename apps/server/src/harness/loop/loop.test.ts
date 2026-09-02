@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
-import { runLoop, type LLMAdapter, type ToolDefinition, formatStructuredToolError } from "./loop.ts";
+import {
+  runLoop,
+  type LLMAdapter,
+  type ToolDefinition,
+  formatStructuredToolError,
+} from "./loop.ts";
 import { withRetry, isRecoverableError } from "./retry.ts";
 import { Inbox } from "../inbox/index.ts";
 import type { HarnessEvent } from "@caide/contracts";
@@ -93,7 +98,9 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
     }
 
     // Should stop cleanly after abort
-    expect(emittedEvents.some((e) => e.type === "token" && (e as any).content.includes("Beginning"))).toBe(true);
+    expect(
+      emittedEvents.some((e) => e.type === "token" && (e as any).content.includes("Beginning")),
+    ).toBe(true);
     expect(emittedEvents.filter((e) => e.type === "stage").length).toBe(1);
   });
   it("formats structured tool errors back to model rather than throwing raw unformatted stack traces", async () => {

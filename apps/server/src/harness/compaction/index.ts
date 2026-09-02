@@ -1,6 +1,11 @@
 import type { ContextMemory, ContextMessage } from "../context/memory.ts";
 import type { SpecDoc } from "../planner/specValidator.ts";
-import { summarizeHistory, formatSummaryMessage, type SummarizerAdapter, type CompactionSummary } from "./summarizer.ts";
+import {
+  summarizeHistory,
+  formatSummaryMessage,
+  type SummarizerAdapter,
+  type CompactionSummary,
+} from "./summarizer.ts";
 
 export * from "./summarizer.ts";
 
@@ -46,11 +51,7 @@ export class RollingCompactor {
         timestamp: Date.now(),
       };
 
-      const newHistory: ContextMessage[] = [
-        ...systemMessages,
-        summaryMessage,
-        ...recentMessages,
-      ];
+      const newHistory: ContextMessage[] = [...systemMessages, summaryMessage, ...recentMessages];
 
       memory.replaceHistory(newHistory);
 

@@ -8871,14 +8871,18 @@ export default function ChatView({
             for (const q of activePendingUserInput.questions) {
               const ans = pendingDraftAnswers[q.id];
               const resolved = ans
-                ? (q.multiSelect
-                    ? (ans.selectedOptionLabels?.length ? ans.selectedOptionLabels : null)
-                    : (ans.selectedOptionLabels?.[0] ??
-                      (ans.customAnswer?.trim() || null)))
+                ? q.multiSelect
+                  ? ans.selectedOptionLabels?.length
+                    ? ans.selectedOptionLabels
+                    : null
+                  : (ans.selectedOptionLabels?.[0] ?? (ans.customAnswer?.trim() || null))
                 : null;
               if (resolved) {
                 const val = Array.isArray(resolved) ? resolved : String(resolved).trim();
-                if ((Array.isArray(val) && val.length > 0) || (typeof val === "string" && val !== "")) {
+                if (
+                  (Array.isArray(val) && val.length > 0) ||
+                  (typeof val === "string" && val !== "")
+                ) {
                   partial[q.id] = Array.isArray(resolved) ? resolved : String(resolved).trim();
                   hasAny = true;
                 }
@@ -11252,7 +11256,13 @@ export default function ChatView({
                   ) : null}
                   {/* fallback absolute wrapper for first paint before portal positions */}
                   {composerMenuOpen && !isComposerApprovalState ? (
-                    <div className={COMPOSER_COMMAND_MENU_FLOATING_WRAPPER_CLASS_NAME + " pointer-events-none opacity-0"} aria-hidden>
+                    <div
+                      className={
+                        COMPOSER_COMMAND_MENU_FLOATING_WRAPPER_CLASS_NAME +
+                        " pointer-events-none opacity-0"
+                      }
+                      aria-hidden
+                    >
                       <div className="h-1" />
                     </div>
                   ) : null}
@@ -11449,9 +11459,7 @@ export default function ChatView({
                           type="submit"
                           size="sm"
                           className="rounded-full px-4"
-                          disabled={
-                            activePendingIsResponding || !activePendingProgress.canAdvance
-                          }
+                          disabled={activePendingIsResponding || !activePendingProgress.canAdvance}
                         >
                           {activePendingIsResponding
                             ? "Submitting..."
@@ -11894,11 +11902,15 @@ export default function ChatView({
                     workspaceRoot={threadArtifactWorkspaceRoot ?? undefined}
                     emptyStateContent={transcriptEmptyStateContent}
                     emptyStateProjectName={activeProjectDisplayName}
-                    emptyStateFramework={(activeProject as unknown as { framework?: string | null })?.framework ?? null}
+                    emptyStateFramework={
+                      (activeProject as unknown as { framework?: string | null })?.framework ?? null
+                    }
                     onEmptyStatePickPrompt={(prompt: string) => {
                       setComposerDraftPrompt(activeThread.id, prompt);
                       setTimeout(() => {
-                        const el = document.querySelector("[data-composer-editor]") as HTMLElement | null;
+                        const el = document.querySelector(
+                          "[data-composer-editor]",
+                        ) as HTMLElement | null;
                         el?.focus();
                       }, 0);
                     }}

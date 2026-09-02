@@ -74,12 +74,33 @@ function getProviderApiKeyDirect(providerName: string): string {
 
 function sanitizeModelSelection(raw: any) {
   if (!raw) return null;
-  let parsed = typeof raw === "string" ? (() => { try { return JSON.parse(raw); } catch { return null; } })() : raw;
+  let parsed =
+    typeof raw === "string"
+      ? (() => {
+          try {
+            return JSON.parse(raw);
+          } catch {
+            return null;
+          }
+        })()
+      : raw;
   if (!parsed || typeof parsed !== "object") return null;
   const validProviders = new Set([
-    "engine", "openai", "anthropic", "google", "openrouter", "ollama",
-    "deepseek", "groq", "mistral", "together", "cohere", "xai",
-    "fireworks", "opencodeZen", "opencodeGo"
+    "engine",
+    "openai",
+    "anthropic",
+    "google",
+    "openrouter",
+    "ollama",
+    "deepseek",
+    "groq",
+    "mistral",
+    "together",
+    "cohere",
+    "xai",
+    "fireworks",
+    "opencodeZen",
+    "opencodeGo",
   ]);
   let provider = parsed.provider;
   if (!validProviders.has(provider)) {
@@ -146,9 +167,33 @@ function loadStateFromSqlite() {
         createdAt: m.created_at || new Date().toISOString(),
         updatedAt: m.updated_at || new Date().toISOString(),
         source: m.source || "native",
-        attachments: m.attachments_json ? (() => { try { return JSON.parse(m.attachments_json); } catch { return []; } })() : [],
-        skills: m.skills_json ? (() => { try { return JSON.parse(m.skills_json); } catch { return []; } })() : [],
-        mentions: m.mentions_json ? (() => { try { return JSON.parse(m.mentions_json); } catch { return []; } })() : [],
+        attachments: m.attachments_json
+          ? (() => {
+              try {
+                return JSON.parse(m.attachments_json);
+              } catch {
+                return [];
+              }
+            })()
+          : [],
+        skills: m.skills_json
+          ? (() => {
+              try {
+                return JSON.parse(m.skills_json);
+              } catch {
+                return [];
+              }
+            })()
+          : [],
+        mentions: m.mentions_json
+          ? (() => {
+              try {
+                return JSON.parse(m.mentions_json);
+              } catch {
+                return [];
+              }
+            })()
+          : [],
       });
       messagesByThreadId.set(m.thread_id, list);
     }
@@ -179,7 +224,15 @@ function loadStateFromSqlite() {
           workspaceRoot: p.workspace_root,
           cwd: p.workspace_root,
           framework: p.framework || "blank",
-          scripts: p.scripts_json ? (() => { try { return JSON.parse(p.scripts_json); } catch { return []; } })() : [],
+          scripts: p.scripts_json
+            ? (() => {
+                try {
+                  return JSON.parse(p.scripts_json);
+                } catch {
+                  return [];
+                }
+              })()
+            : [],
           defaultModelSelection: sanitizeModelSelection(p.default_model_selection_json),
           isPinned: Boolean(p.is_pinned),
           spaceId: p.space_id || null,
@@ -199,7 +252,10 @@ function loadStateFromSqlite() {
           id: t.thread_id,
           projectId: t.project_id,
           title: t.title || "Chat",
-          modelSelection: sanitizeModelSelection(t.model_selection_json) || { provider: "opencodeZen", model: "default" },
+          modelSelection: sanitizeModelSelection(t.model_selection_json) || {
+            provider: "opencodeZen",
+            model: "default",
+          },
           runtimeMode: t.runtime_mode || "full-access",
           interactionMode: t.interaction_mode || "default",
           envMode: t.env_mode || "local",
@@ -293,7 +349,10 @@ function loadPersistedState() {
               id: t.id,
               projectId: t.projectId || "default",
               title: t.title || "Chat",
-              modelSelection: sanitizeModelSelection(t.modelSelection) || { provider: "opencodeZen", model: "default" },
+              modelSelection: sanitizeModelSelection(t.modelSelection) || {
+                provider: "opencodeZen",
+                model: "default",
+              },
               runtimeMode: t.runtimeMode || "full-access",
               interactionMode: t.interactionMode || "default",
               envMode: t.envMode || "local",
@@ -510,7 +569,10 @@ const emptyReadModel = () => ({
     id: t.id,
     projectId: t.projectId,
     title: t.title || "Chat",
-    modelSelection: sanitizeModelSelection(t.modelSelection) || { provider: "opencodeZen", model: "default" },
+    modelSelection: sanitizeModelSelection(t.modelSelection) || {
+      provider: "opencodeZen",
+      model: "default",
+    },
     runtimeMode: t.runtimeMode || "full-access",
     interactionMode: t.interactionMode || "default",
     envMode: t.envMode || "local",
@@ -595,7 +657,10 @@ const emptyShellSnapshot = () => ({
     id: t.id,
     projectId: t.projectId,
     title: t.title || "Chat",
-    modelSelection: sanitizeModelSelection(t.modelSelection) || { provider: "opencodeZen", model: "default" },
+    modelSelection: sanitizeModelSelection(t.modelSelection) || {
+      provider: "opencodeZen",
+      model: "default",
+    },
     runtimeMode: t.runtimeMode || "full-access",
     interactionMode: t.interactionMode || "default",
     envMode: t.envMode || "local",
@@ -703,7 +768,10 @@ const emptyThreadDetailSnapshot = (threadId: string) => {
       id: threadId,
       projectId: existing.projectId ?? "default",
       title: existing.title ?? "New Chat",
-      modelSelection: sanitizeModelSelection(existing.modelSelection) ?? { provider: "opencodeZen", model: "default" },
+      modelSelection: sanitizeModelSelection(existing.modelSelection) ?? {
+        provider: "opencodeZen",
+        model: "default",
+      },
       runtimeMode: existing.runtimeMode ?? "full-access",
       interactionMode: existing.interactionMode ?? "default",
       envMode: existing.envMode ?? "local",
@@ -887,9 +955,7 @@ async function buildSystemPrompt(
   let rolePrompt = "";
   if (normalizedMode !== "ask") {
     try {
-      const { assemblePrompt, loadSkillContent } = await import(
-        "./harness/prompts/assembler.ts"
-      );
+      const { assemblePrompt, loadSkillContent } = await import("./harness/prompts/assembler.ts");
       // Load the actual skill content so the guidance reaches the model, not
       // just the pack names. Fall back to the name if content is unavailable.
       const skillContents = skills.map((name) => {
@@ -1013,7 +1079,10 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               id: command.threadId,
               projectId: command.projectId,
               title: command.title ?? "New Chat",
-              modelSelection: command.modelSelection ?? { provider: "opencodeZen", model: "default" },
+              modelSelection: command.modelSelection ?? {
+                provider: "opencodeZen",
+                model: "default",
+              },
               runtimeMode: command.runtimeMode ?? "full-access",
               interactionMode: command.interactionMode ?? "default",
               envMode: "local",
@@ -1100,7 +1169,9 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               done: false,
               pinnedAt: now,
             };
-            const existingPinIdx = thread.pinnedMessages.findIndex((p: any) => p.messageId === command.messageId);
+            const existingPinIdx = thread.pinnedMessages.findIndex(
+              (p: any) => p.messageId === command.messageId,
+            );
             if (existingPinIdx >= 0) {
               thread.pinnedMessages[existingPinIdx] = pin;
             } else {
@@ -1125,7 +1196,9 @@ export class OrchestrationEngineService extends ServiceMap.Service<
         } else if (command?.type === "thread.pinned-message.remove") {
           const thread = inMemoryThreads.find((t) => t.id === command.threadId);
           if (thread && thread.pinnedMessages) {
-            thread.pinnedMessages = thread.pinnedMessages.filter((p: any) => p.messageId !== command.messageId);
+            thread.pinnedMessages = thread.pinnedMessages.filter(
+              (p: any) => p.messageId !== command.messageId,
+            );
             thread.updatedAt = now;
             globalSnapshotSequence += 1;
             savePersistedState();
@@ -1202,7 +1275,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               label: null,
               createdAt: now,
               updatedAt: now,
-          };
+            };
             thread.threadMarkers.push(marker);
             thread.updatedAt = now;
             globalSnapshotSequence += 1;
@@ -1223,7 +1296,9 @@ export class OrchestrationEngineService extends ServiceMap.Service<
         } else if (command?.type === "thread.marker.remove") {
           const thread = inMemoryThreads.find((t) => t.id === command.threadId);
           if (thread && thread.threadMarkers) {
-            thread.threadMarkers = thread.threadMarkers.filter((m: any) => m.markerId !== command.markerId);
+            thread.threadMarkers = thread.threadMarkers.filter(
+              (m: any) => m.markerId !== command.markerId,
+            );
             thread.updatedAt = now;
             globalSnapshotSequence += 1;
             savePersistedState();
@@ -1385,7 +1460,10 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               id: command.threadId,
               projectId: command.projectId ?? "default",
               title: "New Chat",
-              modelSelection: command.modelSelection ?? { provider: "opencodeZen", model: "default" },
+              modelSelection: command.modelSelection ?? {
+                provider: "opencodeZen",
+                model: "default",
+              },
               runtimeMode: command.runtimeMode ?? "full-access",
               interactionMode: command.interactionMode ?? "default",
               envMode: "local",
@@ -1485,9 +1563,13 @@ export class OrchestrationEngineService extends ServiceMap.Service<
           void (async () => {
             try {
               const { streamProvider } = await import("./harness/provider/apiAdapter.ts");
-              const modelSelection = command.modelSelection || thread.modelSelection || { provider: "opencodeZen", model: "gpt-5.6-sol" };
+              const modelSelection = command.modelSelection ||
+                thread.modelSelection || { provider: "opencodeZen", model: "gpt-5.6-sol" };
               let provider = modelSelection.provider || "opencodeZen";
-              const modelId = modelSelection.model && modelSelection.model !== "default" ? modelSelection.model : "gpt-5.6-sol";
+              const modelId =
+                modelSelection.model && modelSelection.model !== "default"
+                  ? modelSelection.model
+                  : "gpt-5.6-sol";
 
               const GO_MODELS = new Set([
                 "grok-4.6",
@@ -1560,9 +1642,8 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 ...chatHistory.map((m: any) => ({ role: m.role, content: m.content })),
               ];
 
-              const { createStreamProviderAdapter } = await import(
-                "./harness/provider/streamProviderAdapter.ts"
-              );
+              const { createStreamProviderAdapter } =
+                await import("./harness/provider/streamProviderAdapter.ts");
               const { ALL_CORE_TOOLS } = await import("./harness/tools/coreTools.ts");
               const { runLoop } = await import("./harness/loop/loop.ts");
 
@@ -1741,9 +1822,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
     repairState: () => Effect.sync(() => emptyReadModel()),
     readEvents: () => Stream.fromIterable(eventLog),
     readEventsThrough: (from: number, through: number) =>
-      Stream.fromIterable(
-        eventLog.filter((e) => e.sequence > from && e.sequence <= through),
-      ),
+      Stream.fromIterable(eventLog.filter((e) => e.sequence > from && e.sequence <= through)),
     readThreadEvents: (threadId: string) =>
       Stream.fromIterable(
         eventLog.filter((e) => e.aggregateKind === "thread" && e.aggregateId === threadId),
@@ -1981,7 +2060,10 @@ function parseSkillMarkdown(fallbackName: string, filePath: string, raw: string)
       if (kv) {
         const key = kv[1].trim().toLowerCase();
         let val = kv[2].trim();
-        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+        if (
+          (val.startsWith('"') && val.endsWith('"')) ||
+          (val.startsWith("'") && val.endsWith("'"))
+        ) {
           val = val.slice(1, -1);
         }
         if (key === "name") name = val;
@@ -2058,7 +2140,10 @@ function saveCustomSkill(input: {
   content: string;
 }): any {
   const skillsDir = getCaideSkillsDir();
-  const slug = input.name.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-");
+  const slug = input.name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-");
   const skillFolder = path.join(skillsDir, slug);
   fs.mkdirSync(skillFolder, { recursive: true });
   const skillFilePath = path.join(skillFolder, "SKILL.md");
@@ -2099,7 +2184,8 @@ function saveCustomSkill(input: {
 const HARNESS_SKILLS = [
   {
     name: "ui-ux-mastery",
-    description: "Product archetypes, design system, component contracts, a11y, anti-slop, and motion direction",
+    description:
+      "Product archetypes, design system, component contracts, a11y, anti-slop, and motion direction",
     path: "harness/skills/ui-ux-mastery.md",
     enabled: true,
     scope: "system",
@@ -2525,22 +2611,19 @@ export class ProviderDiscoveryService extends ServiceMap.Service<ProviderDiscove
     listCommands: () => Effect.succeed({ commands: [], source: "empty", cached: true }),
     listModels: (input?: { provider?: string }) => {
       const provider = input?.provider ?? "opencodeZen";
-      const fallback = DEFAULT_MODELS_BY_PROVIDER[provider] ?? DEFAULT_MODELS_BY_PROVIDER.opencodeZen;
+      const fallback =
+        DEFAULT_MODELS_BY_PROVIDER[provider] ?? DEFAULT_MODELS_BY_PROVIDER.opencodeZen;
       if (provider === "opencodeZen") {
         return Effect.tryPromise({
           try: () => getDynamicOpenCodeModels("https://opencode.ai/zen/v1/models", fallback),
           catch: () => fallback,
-        }).pipe(
-          Effect.map((models) => ({ models, source: "live-opencode-zen", cached: true })),
-        );
+        }).pipe(Effect.map((models) => ({ models, source: "live-opencode-zen", cached: true })));
       }
       if (provider === "opencodeGo") {
         return Effect.tryPromise({
           try: () => getDynamicOpenCodeModels("https://opencode.ai/zen/go/v1/models", fallback),
           catch: () => fallback,
-        }).pipe(
-          Effect.map((models) => ({ models, source: "live-opencode-go", cached: true })),
-        );
+        }).pipe(Effect.map((models) => ({ models, source: "live-opencode-go", cached: true })));
       }
       return Effect.succeed({ models: fallback, source: "harness", cached: true });
     },

@@ -18,7 +18,10 @@ export function auditSecurity(files: Record<string, string>): SecurityAuditResul
     { name: "OpenAI/Provider API Key", regex: /sk-[a-zA-Z0-9_\-]{20,}/g },
     { name: "GitHub Token", regex: /ghp_[a-zA-Z0-9]{20,}/g },
     { name: "AWS Access Key", regex: /AKIA[0-9A-Z]{16}/g },
-    { name: "Hardcoded Secret Variable", regex: /const\s+(?:SECRET|PASSWORD|API_KEY|AUTH_TOKEN)\s*=\s*['"][a-zA-Z0-9_\-]{10,}['"]/i },
+    {
+      name: "Hardcoded Secret Variable",
+      regex: /const\s+(?:SECRET|PASSWORD|API_KEY|AUTH_TOKEN)\s*=\s*['"][a-zA-Z0-9_\-]{10,}['"]/i,
+    },
   ];
 
   for (const [file, content] of Object.entries(files)) {
@@ -45,7 +48,11 @@ export function auditSecurity(files: Record<string, string>): SecurityAuditResul
     }
 
     // 3. Unsanitized HTML Injection
-    if (content.includes("dangerouslySetInnerHTML") && !content.includes("sanitize") && !content.includes("DOMPurify")) {
+    if (
+      content.includes("dangerouslySetInnerHTML") &&
+      !content.includes("sanitize") &&
+      !content.includes("DOMPurify")
+    ) {
       violations.push({
         file,
         rule: "no_unsanitized_html",

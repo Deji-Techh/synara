@@ -17,7 +17,9 @@ export function ComposerBranchBar({
   className?: string;
 }) {
   const displayBranch = branch?.trim() || null;
-  const displayCwd = cwd ? cwd.replace(/^\/Users\/[^/]+\//, "~/").replace(/^\/home\/[^/]+\//, "~/") : null;
+  const displayCwd = cwd
+    ? cwd.replace(/^\/Users\/[^/]+\//, "~/").replace(/^\/home\/[^/]+\//, "~/")
+    : null;
   // T3 shows "Local checkout" when cwd is local; we always show it for Caide (all projects are local)
   // If no branch, show cwd short
   if (!displayBranch && !displayCwd) return null;

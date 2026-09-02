@@ -25,10 +25,9 @@ describe("Milestone M2 — JSONL Session Storage & parentUuid Chain", () => {
 
     const createdIds: string[] = [];
     for (let i = 0; i < 100; i++) {
-      const entry = await session1.append(
-        i % 2 === 0 ? "user/message" : "assistant/message",
-        { text: `Message index ${i}` },
-      );
+      const entry = await session1.append(i % 2 === 0 ? "user/message" : "assistant/message", {
+        text: `Message index ${i}`,
+      });
       createdIds.push(entry.id);
     }
     await session1.flush();
@@ -68,11 +67,19 @@ describe("Milestone M2 — JSONL Session Storage & parentUuid Chain", () => {
     const step1 = await session.append("assistant/message", "Initial response", root.id);
 
     // Branch A (e.g. attempt 1)
-    const branchA1 = await session.append("assistant/tool_use", { name: "writeFile", args: { path: "a.ts" } }, step1.id);
+    const branchA1 = await session.append(
+      "assistant/tool_use",
+      { name: "writeFile", args: { path: "a.ts" } },
+      step1.id,
+    );
     const branchA2 = await session.append("user/tool_result", { result: "ok" }, branchA1.id);
 
     // Branch B (e.g. fork from step1)
-    const branchB1 = await session.append("assistant/tool_use", { name: "readFile", args: { path: "b.ts" } }, step1.id);
+    const branchB1 = await session.append(
+      "assistant/tool_use",
+      { name: "readFile", args: { path: "b.ts" } },
+      step1.id,
+    );
     const branchB2 = await session.append("user/tool_result", { result: "b content" }, branchB1.id);
 
     await session.flush();
@@ -97,9 +104,15 @@ describe("Milestone M2 — JSONL Session Storage & parentUuid Chain", () => {
     const userPrompt = await session.append("user/message", "Create a modern auth screen");
     const spec = await session.append("spec/plan", { name: "Auth Screen", screens: ["Login"] });
     const scratch = await session.append("builder/scratchpad", "Thinking about responsive layout");
-    const toolUse = await session.append("assistant/tool_use", { name: "writeComponent", args: { code: "export default..." } });
+    const toolUse = await session.append("assistant/tool_use", {
+      name: "writeComponent",
+      args: { code: "export default..." },
+    });
     const toolResult = await session.append("user/tool_result", { result: "File written" });
-    const artifact = await session.append("artifact/snapshot", { path: "src/Login.tsx", content: "<Login />" });
+    const artifact = await session.append("artifact/snapshot", {
+      path: "src/Login.tsx",
+      content: "<Login />",
+    });
 
     await session.flush();
 
@@ -107,9 +120,17 @@ describe("Milestone M2 — JSONL Session Storage & parentUuid Chain", () => {
 
     // Builder messages: contains prompt, spec, scratchpad, tool_use, tool_result, artifact
     const builderMessages = buildMessages(chain, { role: "builder" });
-    expect(builderMessages.some((m) => typeof m.content === "string" && m.content.includes("Scratchpad"))).toBe(true);
-    expect(builderMessages.some((m) => Array.isArray(m.content) && m.content[0].type === "tool_use")).toBe(true);
-    expect(builderMessages.some((m) => Array.isArray(m.content) && m.content[0].type === "tool_result")).toBe(true);
+    expect(
+      builderMessages.some(
+        (m) => typeof m.content === "string" && m.content.includes("Scratchpad"),
+      ),
+    ).toBe(true);
+    expect(
+      builderMessages.some((m) => Array.isArray(m.content) && m.content[0].type === "tool_use"),
+    ).toBe(true);
+    expect(
+      builderMessages.some((m) => Array.isArray(m.content) && m.content[0].type === "tool_result"),
+    ).toBe(true);
 
     // Verifier messages: must NEVER contain builder scratchpad or tool_use / tool_result
     const verifierMessages = buildMessages(chain, { role: "verifier" });
@@ -127,9 +148,21 @@ describe("Milestone M2 — JSONL Session Storage & parentUuid Chain", () => {
     }
 
     // Verifier should see the user prompt, the approved spec, and the artifact snapshot
-    expect(verifierMessages.some((m) => typeof m.content === "string" && m.content.includes("Create a modern auth screen"))).toBe(true);
-    expect(verifierMessages.some((m) => typeof m.content === "string" && m.content.includes("[Approved Specification]"))).toBe(true);
-    expect(verifierMessages.some((m) => typeof m.content === "string" && m.content.includes("[Artifact src/Login.tsx]"))).toBe(true);
+    expect(
+      verifierMessages.some(
+        (m) => typeof m.content === "string" && m.content.includes("Create a modern auth screen"),
+      ),
+    ).toBe(true);
+    expect(
+      verifierMessages.some(
+        (m) => typeof m.content === "string" && m.content.includes("[Approved Specification]"),
+      ),
+    ).toBe(true);
+    expect(
+      verifierMessages.some(
+        (m) => typeof m.content === "string" && m.content.includes("[Artifact src/Login.tsx]"),
+      ),
+    ).toBe(true);
   });
 
   it("handles debounce queue properly and records transcripts", async () => {

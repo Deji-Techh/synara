@@ -56,7 +56,11 @@ export function StreamingCaret({ containerRef, revision }: StreamingCaretProps) 
       let targetNode: Text | null = null;
       let targetElement: Element | null = null;
 
-      if (lastBlock && !lastBlock.hasAttribute("data-caret-anchor") && !lastBlock.querySelector("[data-caret-anchor]")) {
+      if (
+        lastBlock &&
+        !lastBlock.hasAttribute("data-caret-anchor") &&
+        !lastBlock.querySelector("[data-caret-anchor]")
+      ) {
         // Last block is the streamed markdown block (p, pre, etc.) — walk only it.
         if (!lastBlock.closest(EXCLUDED_SELECTOR)) {
           targetNode = findLastTextNodeInElement(lastBlock);
@@ -80,7 +84,9 @@ export function StreamingCaret({ containerRef, revision }: StreamingCaretProps) 
         return;
       }
       const containerRect = container.getBoundingClientRect();
-      const lineHeightPx = targetElement ? parseFloat(getComputedStyle(targetElement).lineHeight) : 0;
+      const lineHeightPx = targetElement
+        ? parseFloat(getComputedStyle(targetElement).lineHeight)
+        : 0;
       const h = Number.isFinite(lineHeightPx) && lineHeightPx > 0 ? lineHeightPx * 0.75 : undefined;
 
       caret.style.opacity = "";
@@ -150,8 +156,11 @@ export function StreamingCaret({ containerRef, revision }: StreamingCaretProps) 
           return;
         }
         const containerRect = container.getBoundingClientRect();
-        const lineHeightPx = targetElement ? parseFloat(getComputedStyle(targetElement).lineHeight) : 0;
-        const h = Number.isFinite(lineHeightPx) && lineHeightPx > 0 ? lineHeightPx * 0.75 : undefined;
+        const lineHeightPx = targetElement
+          ? parseFloat(getComputedStyle(targetElement).lineHeight)
+          : 0;
+        const h =
+          Number.isFinite(lineHeightPx) && lineHeightPx > 0 ? lineHeightPx * 0.75 : undefined;
         caret.style.opacity = "";
         caret.style.transform = `translate(${Math.round(rect.left - containerRect.left)}px, ${Math.round(rect.top - containerRect.top)}px)`;
         if (h !== undefined) {

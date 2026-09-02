@@ -13,10 +13,7 @@ export type AnyLoopEvent = LoopRecordedEvent | LoopLiveOnlyEvent;
  * Safely emits an event to a listener, catching and isolating any defect or error
  * so that a faulty UI handler or logging failure never breaks the active agent turn execution.
  */
-export function safeEmitLive(
-  emitter?: (event: AnyLoopEvent) => void,
-  event?: AnyLoopEvent,
-): void {
+export function safeEmitLive(emitter?: (event: AnyLoopEvent) => void, event?: AnyLoopEvent): void {
   if (!emitter || !event) return;
   try {
     emitter(event);

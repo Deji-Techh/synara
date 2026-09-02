@@ -7,9 +7,15 @@ function ctx(): AudioContext | null {
   if (typeof window === "undefined") return null;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return null;
   try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    if (!audioCtx)
+      audioCtx = new (
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+      )();
     return audioCtx;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 function beep(freq: number, ms: number, gain = 0.06) {
@@ -26,10 +32,16 @@ function beep(freq: number, ms: number, gain = 0.06) {
   o.stop(c.currentTime + ms / 1000);
 }
 
-export function soundSendPop() { beep(880, 90, 0.05); }
-export function soundToolTick() { beep(1200, 60, 0.04); }
+export function soundSendPop() {
+  beep(880, 90, 0.05);
+}
+export function soundToolTick() {
+  beep(1200, 60, 0.04);
+}
 export function hapticTick() {
   if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-    try { navigator.vibrate(10); } catch {}
+    try {
+      navigator.vibrate(10);
+    } catch {}
   }
 }

@@ -31,7 +31,9 @@ export function CheckpointCard({
       {diff && (
         <div className="mb-4">
           <div className="bg-[#121212] rounded-xl p-3 border border-[#262626] font-mono text-xs text-neutral-300 overflow-x-auto whitespace-pre-wrap max-h-72">
-            {showFullDiff ? diff : diff.slice(0, 400) + (diff.length > 400 ? "\n\n... (truncated)" : "")}
+            {showFullDiff
+              ? diff
+              : diff.slice(0, 400) + (diff.length > 400 ? "\n\n... (truncated)" : "")}
           </div>
 
           {diff.length > 400 && (

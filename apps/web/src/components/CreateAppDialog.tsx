@@ -37,8 +37,18 @@ const FRAMEWORKS: Array<{
     description: "Expo / React Native mobile app",
     hint: "Browser preview · APK build",
   },
-  { id: "flutter", label: "Flutter", description: "Flutter mobile app", hint: "Device preview · APK/AAB" },
-  { id: "website", label: "Website", description: "Browser-first web application", hint: "Browser preview · Web build" },
+  {
+    id: "flutter",
+    label: "Flutter",
+    description: "Flutter mobile app",
+    hint: "Device preview · APK/AAB",
+  },
+  {
+    id: "website",
+    label: "Website",
+    description: "Browser-first web application",
+    hint: "Browser preview · Web build",
+  },
 ];
 
 export function CreateAppDialog(props: {
@@ -180,18 +190,36 @@ export function CreateAppDialog(props: {
                       >
                         <FrameworkIcon framework={item.id} size={18} />
                       </span>
-                      <span className={cn("text-[13px] font-medium", selected && "text-primary-foreground")}>
+                      <span
+                        className={cn(
+                          "text-[13px] font-medium",
+                          selected && "text-primary-foreground",
+                        )}
+                      >
                         {item.label}
                       </span>
                     </span>
-                    <span className={cn("text-xs font-normal leading-snug", selected ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                    <span
+                      className={cn(
+                        "text-xs font-normal leading-snug",
+                        selected ? "text-primary-foreground/80" : "text-muted-foreground",
+                      )}
+                    >
                       {item.description}
                     </span>
-                    <span className={cn("text-[10px] font-medium tabular-nums", selected ? "text-primary-foreground/60" : "text-muted-foreground/60")}>
+                    <span
+                      className={cn(
+                        "text-[10px] font-medium tabular-nums",
+                        selected ? "text-primary-foreground/60" : "text-muted-foreground/60",
+                      )}
+                    >
                       {item.hint}
                     </span>
                     {selected ? (
-                      <span className="absolute right-2 top-2 size-2 rounded-full bg-primary-foreground" aria-hidden />
+                      <span
+                        className="absolute right-2 top-2 size-2 rounded-full bg-primary-foreground"
+                        aria-hidden
+                      />
                     ) : null}
                   </button>
                 );

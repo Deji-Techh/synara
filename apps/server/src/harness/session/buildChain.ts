@@ -90,7 +90,10 @@ export function buildMessages(
   for (const entry of chain) {
     switch (entry.type) {
       case "user/message": {
-        const text = typeof entry.data === "string" ? entry.data : String((entry.data as any)?.content ?? JSON.stringify(entry.data));
+        const text =
+          typeof entry.data === "string"
+            ? entry.data
+            : String((entry.data as any)?.content ?? JSON.stringify(entry.data));
         messages.push({
           role: "user",
           content: text,
@@ -101,7 +104,10 @@ export function buildMessages(
 
       case "assistant/message": {
         // If role is verifier, we exclude raw assistant chat reasoning that isn't final output
-        const text = typeof entry.data === "string" ? entry.data : String((entry.data as any)?.content ?? JSON.stringify(entry.data));
+        const text =
+          typeof entry.data === "string"
+            ? entry.data
+            : String((entry.data as any)?.content ?? JSON.stringify(entry.data));
         messages.push({
           role: "assistant",
           content: text,
@@ -145,7 +151,10 @@ export function buildMessages(
             {
               type: "tool_result",
               tool_use_id: data.toolUseId ?? entry.id,
-              content: typeof data.result === "string" ? data.result : JSON.stringify(data.result ?? data.error ?? ""),
+              content:
+                typeof data.result === "string"
+                  ? data.result
+                  : JSON.stringify(data.result ?? data.error ?? ""),
               is_error: Boolean(data.error),
             },
           ],
@@ -169,7 +178,8 @@ export function buildMessages(
 
       case "spec/plan": {
         // Spec is visible to all roles (Planner, Builder, Verifier, Fixer, Taste)
-        const planText = typeof entry.data === "string" ? entry.data : JSON.stringify(entry.data, null, 2);
+        const planText =
+          typeof entry.data === "string" ? entry.data : JSON.stringify(entry.data, null, 2);
         messages.push({
           role: "user",
           content: `[Approved Specification]:\n${planText}`,
@@ -204,7 +214,10 @@ export function buildMessages(
 
       case "system/prompt": {
         if (options.includeSystem) {
-          const text = typeof entry.data === "string" ? entry.data : String((entry.data as any)?.content ?? JSON.stringify(entry.data));
+          const text =
+            typeof entry.data === "string"
+              ? entry.data
+              : String((entry.data as any)?.content ?? JSON.stringify(entry.data));
           messages.push({
             role: "system",
             content: text,

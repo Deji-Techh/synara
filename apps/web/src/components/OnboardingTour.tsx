@@ -20,7 +20,9 @@ export function useOnboardingTour() {
     setStep(1);
   }, []);
   const dismiss = () => {
-    try { window.localStorage.setItem(KEY, "seen"); } catch {}
+    try {
+      window.localStorage.setItem(KEY, "seen");
+    } catch {}
     setStep(null);
   };
   const next = () => setStep((s) => (s !== null && s < 4 ? s + 1 : null));
@@ -31,7 +33,13 @@ export function OnboardingTourBanner({ onDismiss }: { onDismiss: () => void }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 text-sm shadow-sm">
       <span className="text-muted-foreground">Tip: try the 3 prompts below or type your own.</span>
-      <button type="button" onClick={onDismiss} className="ml-auto text-xs text-muted-foreground hover:text-foreground">Dismiss</button>
+      <button
+        type="button"
+        onClick={onDismiss}
+        className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+      >
+        Dismiss
+      </button>
     </div>
   );
 }

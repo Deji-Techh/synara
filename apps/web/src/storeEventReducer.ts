@@ -772,9 +772,15 @@ function applyThreadMessageSentEvent(thread: Thread, event: ThreadMessageSentEve
             : previousTurn?.state === "error"
               ? "error"
               : "completed",
-        requestedAt: sameTurn ? (previousTurn?.requestedAt ?? payload.createdAt) : payload.createdAt,
+        requestedAt: sameTurn
+          ? (previousTurn?.requestedAt ?? payload.createdAt)
+          : payload.createdAt,
         startedAt: sameTurn ? (previousTurn?.startedAt ?? payload.createdAt) : payload.createdAt,
-        completedAt: payload.streaming ? (sameTurn ? previousTurn?.completedAt ?? null : null) : payload.updatedAt,
+        completedAt: payload.streaming
+          ? sameTurn
+            ? (previousTurn?.completedAt ?? null)
+            : null
+          : payload.updatedAt,
         assistantMessageId: payload.messageId,
         sourceProposedPlan: thread.pendingSourceProposedPlan,
       });

@@ -158,7 +158,10 @@ export default function App() {
       2,
     ),
   );
-  await write(".caide/spec.md", `# Specification: ${appName}\n\n*Pending specification planning.*\n`);
+  await write(
+    ".caide/spec.md",
+    `# Specification: ${appName}\n\n*Pending specification planning.*\n`,
+  );
 
   // 8. .gitignore
   await write(

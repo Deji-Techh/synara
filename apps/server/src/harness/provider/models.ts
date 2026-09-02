@@ -83,9 +83,13 @@ export function getModelForIntentAndTier(intent: RouterIntent, tier: ModelTier):
     case "medium":
       return MODEL_CATALOG["sonnet-5"] ?? MODEL_CATALOG["gemini-2.5-flash"];
     case "taste":
-      return MODEL_CATALOG["opus-4.8"] ?? MODEL_CATALOG["fable-5"] ?? MODEL_CATALOG["gemini-2.5-pro"];
+      return (
+        MODEL_CATALOG["opus-4.8"] ?? MODEL_CATALOG["fable-5"] ?? MODEL_CATALOG["gemini-2.5-pro"]
+      );
     case "strong":
-      return MODEL_CATALOG["gemini-2.5-pro"] ?? MODEL_CATALOG["sonnet-5"] ?? MODEL_CATALOG["gpt-5.6-sol"];
+      return (
+        MODEL_CATALOG["gemini-2.5-pro"] ?? MODEL_CATALOG["sonnet-5"] ?? MODEL_CATALOG["gpt-5.6-sol"]
+      );
     default:
       return MODEL_CATALOG["gpt-5.6-sol"];
   }
