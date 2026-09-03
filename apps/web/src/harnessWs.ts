@@ -23,6 +23,33 @@ function isHarnessEvent(value: unknown): value is HarnessEvent {
   );
 }
 
+/** Socket URL for the harness endpoint (same origin rules as the RPC socket). */
+export function makeHarnessUrl(explicitUrl: string | null): string {
+  const bridgeUrl = typeof window !== "undefined" ? window.desktopBridge?.getWsUrl() : undefined;
+  const envUrl =
+    typeof import.meta !== "undefined"
+      ? ((import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_WS_URL as
+          | string
+          | undefined)
+      : undefined;
+  const raw =
+    explicitUrl && explicitUrl.length > 0
+      ? explicitUrl
+      : bridgeUrl && bridgeUrl.length > 0
+        ? bridgeUrl
+        : envUrl && envUrl.length > 0
+          ? envUrl
+          : typeof window !== "undefined"
+            ? `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.hostname}:${window.location.port}`
+            : "ws://127.0.0.1:0";
+  const url = new URL(raw);
+  const token = url.searchParams.get("token");
+  url.pathname = "/harness";
+  url.search = "";
+  if (token) url.searchParams.set("token", token);
+  return url.toString();
+}
+
 export function connectHarnessWs(options: HarnessWsOptions): HarnessWsHandle {
   const heartbeatMs = options.heartbeatMs ?? 15_000;
   const maxBackoffMs = options.maxBackoffMs ?? 10_000;

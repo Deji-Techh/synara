@@ -17,6 +17,7 @@ import {
 } from "react";
 
 import { useAppSettings } from "../../appSettings";
+import { HarnessSessionHost } from "../harness/HarnessSessionHost";
 import { useComposerDraftStore } from "../../composerDraftStore";
 import { selectPreviewStageState, usePreviewStageStore } from "../../previewStageStore";
 import type { DiffRouteSearch } from "../../diffRouteSearch";
@@ -1120,6 +1121,7 @@ export function SingleChatSurface(props: {
           className="flex h-full min-h-0 min-w-0 flex-1"
         >
           <RouteInsetSurface surfaceClassName={CHAT_BACKGROUND_CLASS_NAME}>
+            <HarnessSessionHost threadId={props.threadId} projectId={props.projectId} />
             <DeferredChatView
               threadId={props.threadId}
               paneScopeId={SINGLE_CHAT_PANE_SCOPE_ID}

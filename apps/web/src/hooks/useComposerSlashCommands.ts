@@ -16,6 +16,8 @@ import { ensureNativeApi, readNativeApi } from "../nativeApi";
 import type { Project, Thread } from "../types";
 import type { ComposerTrigger } from "../composer-logic";
 import { extendReplacementRangeForTrailingSpace } from "../composerTriggerInsertion";
+import { getHarnessSession } from "../harnessSessionRegistry";
+import { startHarnessTurn } from "../harnessWs";
 import {
   buildBtwPrompt,
   buildGoalCreateTitle,
@@ -1232,6 +1234,24 @@ export function useComposerSlashCommands(input: {
           fix: buildFixPrompt,
           mcp: buildMcpPrompt,
         } as const;
+        // Harness send path: with a live harness session for this thread,
+        // start a real harness turn instead of inserting text for the old engine.
+        const harness = activeThread ? getHarnessSession(activeThread.id) : undefined;
+        if (harness) {
+          const replacement = builders[item.command as keyof typeof builders]("");
+          startHarnessTurn(harness.send, activeThread.id, {
+            appPath: harness.appPath,
+            prompt: replacement,
+            mode: item.command === "ask" ? "ask" : "agent",
+            ...(harness.framework ? { framework: harness.framework } : {}),
+          });
+          const applied = clearSlashCommandFromComposer();
+          if (wasPromptReplacementApplied(applied)) {
+            editorActions.setComposerHighlightedItemId(null);
+          }
+          editorActions.scheduleComposerFocus();
+          return;
+        }
         const replacement = builders[item.command as keyof typeof builders]("");
         const applied = editorActions.applyPromptReplacement(
           trigger.rangeStart,
