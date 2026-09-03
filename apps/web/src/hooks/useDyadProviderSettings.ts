@@ -46,6 +46,7 @@ export function knownDyadProviders(): readonly string[] {
 
 export function useDyadProviderSettings(): DyadProvidersState & {
   save: (providerId: string, entry: { apiKey?: string; apiBaseUrl?: string; resourceName?: string }) => void;
+  saveDefaults: (providerId?: string, modelId?: string) => void;
   test: (providerId: string) => void;
   refresh: () => void;
 } {
@@ -132,5 +133,19 @@ export function useDyadProviderSettings(): DyadProvidersState & {
     [send],
   );
 
-  return { ...state, save, test, refresh };
+  const saveDefaults = useCallback(
+    (providerId?: string, modelId?: string) => {
+      send({
+        type: "provider_settings_set",
+        sessionId: "settings",
+        requestId: `defaults-${++requestCounter}`,
+        provider: { id: "auto" },
+        providerEntry: {},
+        defaults: { providerId: providerId ?? "", modelId: modelId ?? "" },
+      });
+    },
+    [send],
+  );
+
+  return { ...state, save, saveDefaults, test, refresh };
 }

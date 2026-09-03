@@ -74,8 +74,15 @@ export class ProviderSecretsStore {
 
   setDefaults(defaultProviderId?: string, defaultModelId?: string): ProviderSecretsFile {
     const current = readFile(this.filePath);
-    if (defaultProviderId !== undefined) current.defaultProviderId = defaultProviderId;
-    if (defaultModelId !== undefined) current.defaultModelId = defaultModelId;
+    // Empty string clears back to Auto.
+    if (defaultProviderId !== undefined) {
+      if (defaultProviderId.trim()) current.defaultProviderId = defaultProviderId.trim();
+      else delete current.defaultProviderId;
+    }
+    if (defaultModelId !== undefined) {
+      if (defaultModelId.trim()) current.defaultModelId = defaultModelId.trim();
+      else delete current.defaultModelId;
+    }
     this.write(current);
     return current;
   }

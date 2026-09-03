@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { Switch } from "~/components/ui/switch";
+import { toastManager } from "~/components/ui/toast";
 import { cn } from "~/lib/utils";
 import { knownDyadProviders, useDyadProviderSettings } from "~/hooks/useDyadProviderSettings";
 import { SettingsListRow, SettingsRow, SettingsSection } from "./SettingsPanelPrimitives";
@@ -14,13 +14,17 @@ import { SettingsListRow, SettingsRow, SettingsSection } from "./SettingsPanelPr
 const KEYLESS = new Set(["ollama", "lmstudio", "auto"]);
 
 export function DyadProviderKeysSection() {
-  const { providers, tests, connected, save, test } = useDyadProviderSettings();
+  const { providers, tests, connected, defaultProviderId, defaultModelId, save, saveDefaults, test } =
+    useDyadProviderSettings();
   const [keys, setKeys] = useState<Record<string, string>>({});
   const [bases, setBases] = useState<Record<string, string>>({});
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [savedFlash, setSavedFlash] = useState<Record<string, number>>({});
+  const [defaultProvider, setDefaultProvider] = useState("");
+  const [defaultModel, setDefaultModel] = useState("");
 
   const configuredById = new Map(providers.map((p) => [p.id, p]));
+  const configuredCount = providers.filter((p) => p.configured).length;
 
   const saveKey = (id: string) => {
     const key = (keys[id] ?? "").trim();
@@ -29,6 +33,12 @@ export function DyadProviderKeysSection() {
     save(id, { ...(key ? { apiKey: key } : {}), ...(base ? { apiBaseUrl: base } : {}) });
     setKeys((prev) => ({ ...prev, [id]: "" }));
     setSavedFlash((prev) => ({ ...prev, [id]: Date.now() }));
+    toastManager.add({ type: "success", title: `"${id}" saved — turns use it automatically` });
+  };
+
+  const saveDefaultProvider = () => {
+    saveDefaults(defaultProvider || undefined, defaultModel.trim() || undefined);
+    toastManager.add({ type: "success", title: "Default harness provider saved" });
   };
 
   return (
@@ -43,7 +53,47 @@ export function DyadProviderKeysSection() {
       <SettingsRow
         title="How this works"
         description="Keys save to the server (user-only file, never echoed back). Turns use them automatically; per-turn provider/model overrides still win. Local runtimes need no key."
-        control={null}
+        control={
+          <span className="text-[11px] text-muted-foreground">
+            {configuredCount} of {knownDyadProviders().length} configured
+          </span>
+        }
+      />
+      <SettingsRow
+        title="Default harness provider"
+        description="Turns without an explicit provider use this. Empty provider falls back to the first configured key; empty model uses the provider default."
+        control={
+          <div className="flex items-center gap-1.5">
+            <select
+              aria-label="Default harness provider"
+              className="h-7 rounded-md border border-border/70 bg-background px-2 text-xs"
+              value={defaultProvider || defaultProviderId || ""}
+              onChange={(e) => setDefaultProvider(e.target.value)}
+            >
+              <option value="">Auto (first configured key)</option>
+              {knownDyadProviders().map((id) => (
+                <option key={id} value={id}>
+                  {id}
+                </option>
+              ))}
+            </select>
+            <Input
+              className="h-7 w-40 font-mono text-[11px]"
+              placeholder={defaultModelId || "Model (optional)"}
+              aria-label="Default harness model"
+              value={defaultModel}
+              onChange={(e) => setDefaultModel(e.target.value)}
+            />
+            <Button
+              size="xs"
+              variant="outline"
+              disabled={!connected}
+              onClick={saveDefaultProvider}
+            >
+              Save
+            </Button>
+          </div>
+        }
       />
       {knownDyadProviders().map((id) => {
         const status = configuredById.get(id);
@@ -89,11 +139,16 @@ export function DyadProviderKeysSection() {
               <Button size="xs" variant="ghost" disabled={!connected} onClick={() => test(id)}>
                 Test
               </Button>
-              <Switch
-                checked={showing}
-                onCheckedChange={(value) => setShowKeys((prev) => ({ ...prev, [id]: value }))}
-                aria-label={`Show ${id} key while typing`}
-              />
+              <Button
+                size="xs"
+                variant="ghost"
+                aria-pressed={showing}
+                aria-label={showing ? `Hide ${id} key` : `Show ${id} key`}
+                title={showing ? "Hide key" : "Show key"}
+                onClick={() => setShowKeys((prev) => ({ ...prev, [id]: !showing }))}
+              >
+                {showing ? "Hide" : "Show"}
+              </Button>
             </div>
             {(testResult || flashed) && (
               <div

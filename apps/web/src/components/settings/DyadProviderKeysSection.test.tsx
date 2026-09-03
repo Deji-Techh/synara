@@ -17,4 +17,12 @@ describe("DyadProviderKeysSection", () => {
     expect(markup).toContain("chatgpt");
     expect(markup).toContain("OAuth");
   });
+
+  it("renders defaults controls and key visibility as buttons, not toggles", () => {
+    const markup = renderToStaticMarkup(<DyadProviderKeysSection />);
+    expect(markup).toContain("Default harness provider");
+    expect(markup).toContain("Auto (first configured key)");
+    expect(markup).toContain("Show");
+    expect(markup).not.toContain('role="switch"');
+  });
 });

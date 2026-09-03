@@ -66,7 +66,10 @@ export class TurnGateway {  private runner = new CaideRunner();
     });
     server.onProviderSettingsSet((sessionId, providerId, entry, defaults, requestId) => {
       const secrets = sharedProviderSecrets();
-      secrets.setProvider(providerId, entry);
+      // Empty entries (defaults-only saves) must not clobber stored keys.
+      if (entry.apiKey || entry.apiBaseUrl || entry.resourceName) {
+        secrets.setProvider(providerId, entry);
+      }
       if (defaults && (defaults.providerId !== undefined || defaults.modelId !== undefined)) {
         secrets.setDefaults(defaults.providerId, defaults.modelId);
       }
@@ -196,9 +199,13 @@ export function resolveTurnProviders(request: GatewayTurnRequest): {
   settings: SettingsLike;
 } {
   const stored = sharedProviderSecrets().read();
+  const clean = (value: string | undefined): string | undefined => {
+    const trimmed = value?.trim();
+    return trimmed ? trimmed : undefined;
+  };
   return {
-    providerId: request.providerId ?? stored.defaultProviderId,
-    modelId: request.modelId ?? stored.defaultModelId,
+    providerId: clean(request.providerId) ?? clean(stored.defaultProviderId),
+    modelId: clean(request.modelId) ?? clean(stored.defaultModelId),
     settings: request.settings ?? sharedProviderSecrets().toSettings(),
   };
 }
