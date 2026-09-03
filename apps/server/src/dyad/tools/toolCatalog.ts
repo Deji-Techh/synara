@@ -106,15 +106,15 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "copy_reference", category: "history", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/misc" },
   // subagents
   { name: "spawn_background_task", category: "subagents", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "spawn_subagent" },
-  { name: "check_task_status", category: "subagents", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "missing" },
+  { name: "check_task_status", category: "subagents", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/sandbox" },
   { name: "spawn_subagent", category: "subagents", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "spawn_subagent" },
-  { name: "check_subagent_status", category: "subagents", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "missing" },
-  { name: "execute_fork_skill", category: "subagents", defaultConsent: "ask", modifiesState: false, readOnly: true, deferred: true, caideMapping: "missing" },
+  { name: "check_subagent_status", category: "subagents", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/sandbox" },
+  { name: "execute_fork_skill", category: "subagents", defaultConsent: "ask", modifiesState: false, readOnly: true, deferred: true, caideMapping: "caide-native", caideTool: "dyad/sandbox (runner wired in M3)" },
   // mcp
   { name: "search_mcp_tools", category: "mcp", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/mcp" },
   { name: "get_mcp_tool_schema", category: "mcp", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/mcp" },
   // sandbox
-  { name: "execute_sandbox_script", category: "file-edit", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "missing" },
+  { name: "execute_sandbox_script", category: "file-edit", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/sandbox (read-only hosts; write host + worker in M3/M4)" },
   // goals (donor goal system is out of scope for Caide v1 — see plan §5 slash decision)
   { name: "update_goal_state", category: "plan-memory", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "out-of-scope" },
 ];
