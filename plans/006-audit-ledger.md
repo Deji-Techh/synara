@@ -38,7 +38,7 @@
 | `src/prompts/plan_mode_prompt.ts`, `compaction/supabase/neon/security/summarize` | `dyad/prompts/` | M1–M2 |
 | `src/ipc/shared/language_model_constants.ts` + `get_model_client.ts` + `llm_engine_provider.ts` + `secret_storage.ts` | `dyad/providers/` | LANDED catalog + registry + routing + key validation (M1, 6 tests green). FREE-ENTIRELY: gateway/`gatewayPrefix`/`DYAD_ENGINE_URL` dropped, `auto/free-pro` quota entry removed, `auto` resolves by local key presence, vertex(OAuth)/bedrock(SigV4)/chatgpt(OAuth, not ported) flagged `needs-work` with custom-provider workaround. M3 wires into harness apiAdapter. |
 | `src/lib/schemas.ts` provider/model/AppTarget parts | `packages/contracts` ext + `dyad/` | M1 |
-| `local_agent/tool_definitions.ts` + `tools/*.ts` + subagents | `dyad/tools/` (adapt to `defineTool` DSL) | M2 |
+| `local_agent/tool_definitions.ts` + `tools/*.ts` + subagents | `dyad/tools/` (adapt to `defineTool` DSL) | LANDED catalog+permissions (M2, 7 tests green): 50-tool inventory w/ donor consent defaults, plan/build/readOnly/deferred/blueprint gating, SQL auto-approve, session consent round-trip. Pro/engine gates removed. Tool *implementations* batch next (M2b). |
 | `chat_stream/` protocol + `chat_stream_handlers.ts` + `local_agent_handler.ts` | `dyad/stream/` adaptor to Caide WS | M2–M3 |
 | `src/db/schema.ts` drizzle + `supabase/neon/mcp/version` handlers | `dyad/db/` + handlers | M4 |
 | `scaffold/` Caide layer, `scaffold-web3/`, `scaffold-api/` | `dyad/scaffolds/` | M2 |
