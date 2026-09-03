@@ -15,7 +15,7 @@
   - Dyad x Caide Caide-layer: `platform_contracts`, mobile/web skill packs, design engine, web3 vertical, scaffolds, share + preview-control-plane services, device presets, AppTarget plumbing.
   - Preview: Dyad x Caide preview ported for Web + React Native, Flutter preview made to work — all inside Caide-final styling (672px `PreviewStage`, `DeviceScreen`, no fake bezels).
 * UI mapping:
-  - Left `Sidebar.tsx`: keep shell/rows/sections/motion, strip `project.create` / `thread.create` dispatch paths (lines ~1856, 2065, 2545, 2575), rewire to Dyad `ipc.app.createApp({templateId})` + `chat:stream`. KEEP `CreateAppDialog.tsx` framework selector (blank|react-native|flutter|website immutable).
+  - Left `Sidebar.tsx`: keep shell/rows/sections/motion, strip `project.create` / `thread.create` dispatch paths (lines ~1856, 2065, 2545, 2575), rewire to Dyad `ipc.app.createApp({templateId})` + `chat:stream`. KEEP `CreateAppDialog.tsx` framework selector (blank|react-native|flutter|website immutable). Sidebar goes Dyad two-level (`M3`): level 1 lists PROJECTS ONLY (favorites, collections, other apps + search, per donor `AppList.tsx`); selecting a project drills into its CHATS (Today/Yesterday/This week/Older groups, per donor `ChatList.tsx`, with back-to-projects, new-chat, rename/delete per chat). Chats never render expanded under every project at once. Caide styling + `disclosureMotion` throughout. Plan flow ends with a continue gate (`M3`): after plan approval / `exit_plan`, the UI asks "Continue in Agent mode?" — Approve starts the agent turn on the approved plan, Request change returns to the planner. Never silently auto-builds.
   - Right dock (`DevicePanel`, `BrowserPanel`, `DiffPanel`, `PreviewStage`): host Dyad preview/console/version outputs. Keep Caide styling.
   - Settings (`ProfileSettingsPanel`, `ModelsSettingsPanel`, `ProvidersSettingsPanel`, `ThemeModePicker`, `PaletteSwatchPicker`): rebuild provider/model panels on Dyad `language_model_constants` + `providerSettings` + `secret_storage`; keep Profile + theme. Use settings side to surface Supabase/Neon/MCP/blockchain backends.
 * Continuous audit rule: every milestone re-greps for leftover `orchestration/|agentGateway|codexAppServer|harnessCompat|stub=true|partN` + missing Dyad donor files. No milestone closes with thrash remaining in its scope.
@@ -49,6 +49,40 @@ Desktop: keep window shell (`main.ts`, `preload.ts`, `windowState`, `ipcChannels
 * M4 — DB + Supabase/Neon end-to-end: drizzle migration incl. `blockchain_networks`, `app_identity`, share provenance cols; Supabase/Neon connect → prompt injection → `execute_sql` gating → `scaffold-api` provision guide. Gate: connect test handlers + `execute_sql` approval specs pass.
 * M5 — Preview + build per framework: `fingerprintFiles`, `watchProjectTree 450ms`, `buildRunner` (RN `expo start`, flutter `flutter run -d web-server`, website `vite dev`, blank explicit none) behind Caide `PreviewStage/DeviceScreen` styling. Gate: fingerprint/debounce tests + manual preview per framework <2s update, structured build errors.
 * Follow-ons (from 005, rescoped): human gates (`CheckpointCard`), taste/anti-slop, edge/adversarial/coherence/security/perf, motion role, benchmark, self-improve, acceptance M27.
+
+## 5. MCP system (user directive 2026-09-03)
+
+Dyad's MCP stack is ported whole and surfaced in Settings + chat — no Pro gate:
+
+* Server layer (`M4`): `mcp_manager.ts` (lifecycle) + `mcp_shutdown.ts` + `mcp_oauth_flow/provider.ts` + `mcp_handlers.ts` + `ipc/types/mcp.ts` + `mcp_error_classifiers.ts` → `dyad/mcp/`. Secrets via existing secret storage (encrypt at rest like donor `encryptStoredMcpSecrets`).
+* Agent tools (`M2`): `search_mcp_tools` + `get_mcp_tool_schema` (+`mcp_type_defs`, BM25) adapted to `defineTool`; MCP tools callable in normal chat through search-then-call.
+* Consent (`M2`): `mcp_consent.ts` + `mcp_auto_consent.ts` + `mcp_consent_context.ts` + `mcp_consent_policy.ts` (classifier prompt, cheap model) → donor policy verbatim (allow read-only/sandbox/in-scope-reversible/authorized/inbound-fetch/recoverable-delete; always ask exfiltration/comms/shared-state/access-control/sensitive-read/out-of-scope/blast-radius/real-world/deferred/unknown). Free-entirely: no Pro-gated auto-approve; user toggles rule.
+* Settings UI (`M3`, Caide styling — `ExternalMcpSettingsPanel` is REBUILT, not deleted): server list (add/remove/enable), OAuth connect, per-tool consent (ask/always/never), `autoApproveSafeMcpTools` toggle, connection status. Usable two ways:
+  1. Normal chat — agent searches + calls MCP tools with consent cards.
+  2. `/` commands — composer slash menu lists MCP servers/tools (`/mcp <server> <tool>` style) alongside mode commands (`/plan`, `/ask`, `/build`, `/verify`, `/fix`); donor `BUILTIN_SLASH_COMMANDS` goal-set is NOT carried (goal system out of scope), Caide intent commands + MCP commands are.
+* Card: MCP calls render in the themed tool-card set (server chip + tool chip + auto-approved chip + Input/Result panes, per `DyadMcpToolCall` pattern).
+
+## 6. Other-systems sweep (settings vs right dock)
+
+Everything below is ported; nothing important stays behind. Placement rule: credentials/config → settings side; live run state → right dock.
+
+Settings side (Caide styling, `M3–M4`):
+1. Providers/models (Dyad catalog — `M1` landed, UI in `M3`).
+2. MCP servers + tool consents (§5).
+3. Supabase + Neon connections (`M4`, incl. `provision-backend.md` flow).
+4. Blockchain networks (web3 RPC manager — `blockchain_handlers` + `blockchain_networks` table, `M4`).
+5. Agent tool approvals (per-tool ask/always/never + safe-SQL/MCP auto-approve switches).
+6. Project skills (`appSkillPack` — `SkillsSettingsPanel` REBUILT as project-skill assignment, not deleted).
+7. Chat mode defaults + framework selector (kept).
+
+Right dock (`M3`, `M5`):
+1. Preview console + device/browser preview (`PreviewStage`/`DevicePanel`/`BrowserPanel`).
+2. Problems/diagnostics (tsc output).
+3. Versions timeline (commit restore via `version_handlers`).
+4. Tests panel (Playwright specs run).
+5. Background tasks + subagents (spawn/wait/cancel + `BackgroundTasksDialog` pattern).
+6. Review workbench (reviewer-subagent findings).
+7. Context/compaction status (budget banner).
 
 ## 4. Verification + audit discipline
 
