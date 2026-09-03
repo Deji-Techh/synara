@@ -4,13 +4,16 @@ import { WebSocketServer, WebSocket } from "ws";
 import type { HarnessEvent } from "@caide/contracts";
 
 export interface ClientInboundMessage {
-  type: "subscribe" | "steer" | "cancel" | "checkpoint_response" | "ping";
+  type: "subscribe" | "steer" | "cancel" | "checkpoint_response" | "ping" | "prompt_answer" | "consent_answer";
   sessionId?: string;
   token?: string;
   prompt?: string;
   checkpointId?: string;
   approved?: boolean;
   feedback?: string;
+  requestId?: string;
+  answers?: Record<string, string>;
+  decision?: "accept-once" | "accept-always" | "decline";
 }
 
 export type SessionCancelHandler = (sessionId: string, reason?: string) => void;
@@ -21,6 +24,11 @@ export type CheckpointResponseHandler = (
   approved: boolean,
   feedback?: string,
 ) => void;
+export type PromptAnswerHandler = (requestId: string, answers: Record<string, string> | null) => void;
+export type ConsentAnswerHandler = (
+  requestId: string,
+  decision: "accept-once" | "accept-always" | "decline",
+) => void;
 
 export class HarnessWebSocketServer {
   private wss: WebSocketServer;
@@ -28,6 +36,8 @@ export class HarnessWebSocketServer {
   private onCancelHandler?: SessionCancelHandler;
   private onSteerHandler?: SessionSteerHandler;
   private onCheckpointHandler?: CheckpointResponseHandler;
+  private onPromptAnswerHandler?: PromptAnswerHandler;
+  private onConsentAnswerHandler?: ConsentAnswerHandler;
 
   constructor() {
     this.wss = new WebSocketServer({ noServer: true });
@@ -84,6 +94,20 @@ export class HarnessWebSocketServer {
             }
             return;
           }
+
+          if (msg.type === "prompt_answer" && msg.requestId) {
+            if (this.onPromptAnswerHandler) {
+              this.onPromptAnswerHandler(msg.requestId, msg.answers ?? null);
+            }
+            return;
+          }
+
+          if (msg.type === "consent_answer" && msg.requestId) {
+            if (this.onConsentAnswerHandler) {
+              this.onConsentAnswerHandler(msg.requestId, msg.decision ?? "decline");
+            }
+            return;
+          }
         } catch {
           // ignore malformed client message
         }
@@ -131,6 +155,14 @@ export class HarnessWebSocketServer {
 
   onCheckpointResponse(handler: CheckpointResponseHandler): void {
     this.onCheckpointHandler = handler;
+  }
+
+  onPromptAnswer(handler: PromptAnswerHandler): void {
+    this.onPromptAnswerHandler = handler;
+  }
+
+  onConsentAnswer(handler: ConsentAnswerHandler): void {
+    this.onConsentAnswerHandler = handler;
   }
 
   close(): Promise<void> {

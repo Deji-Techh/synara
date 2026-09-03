@@ -79,4 +79,38 @@ describe("Harness Contracts", () => {
     const decoded = Schema.decodeUnknownSync(HarnessEvent)(event);
     expect(decoded.type).toBe("verifier_result");
   });
+
+  it("validates ui interaction harness events", () => {
+    const prompt: HarnessEventType = {
+      type: "ui_prompt",
+      sessionId: "s-123",
+      requestId: "r-1",
+      kind: "questionnaire",
+      payload: { questions: [] },
+    };
+    expect(Schema.decodeUnknownSync(HarnessEvent)(prompt).type).toBe("ui_prompt");
+
+    const reveal: HarnessEventType = {
+      type: "ui_reveal",
+      sessionId: "s-123",
+      pane: "database",
+      reason: "execute_sql",
+    };
+    expect(Schema.decodeUnknownSync(HarnessEvent)(reveal).type).toBe("ui_reveal");
+
+    const update: HarnessEventType = {
+      type: "plan_update",
+      sessionId: "s-123",
+      title: "Auth",
+      summary: "Login",
+      plan: "## Overview",
+    };
+    expect(Schema.decodeUnknownSync(HarnessEvent)(update).type).toBe("plan_update");
+
+    const exit: HarnessEventType = {
+      type: "plan_exit",
+      sessionId: "s-123",
+    };
+    expect(Schema.decodeUnknownSync(HarnessEvent)(exit).type).toBe("plan_exit");
+  });
 });

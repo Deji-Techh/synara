@@ -23,6 +23,25 @@ export interface ArtifactEntry {
   sizeBytes: number;
 }
 
+export interface UiPromptEntry {
+  requestId: string;
+  kind: "questionnaire" | "env-vars" | "integration" | "tool-consent" | "mcp-consent";
+  payload: unknown;
+}
+
+export interface UiRevealEntry {
+  pane: "database" | "preview";
+  reason: string;
+  at: number;
+}
+
+export interface PlanEntry {
+  title: string;
+  summary: string;
+  plan: string;
+  exited: boolean;
+}
+
 export interface SessionState {
   id: string;
   stage: string;
@@ -31,6 +50,9 @@ export interface SessionState {
   checkpoint?: CheckpointEntry;
   artifacts: ArtifactEntry[];
   errors: Array<{ code: string; message: string }>;
+  prompts: UiPromptEntry[];
+  reveals: UiRevealEntry[];
+  plan?: PlanEntry;
 }
 
 export interface HarnessStoreState {
@@ -62,6 +84,8 @@ function getOrCreateSession(sessionId: string): SessionState {
         toolCalls: {},
         artifacts: [],
         errors: [],
+        prompts: [],
+        reveals: [],
       },
     };
   }
@@ -131,8 +155,49 @@ export const harnessStore = {
         };
         break;
       }
+      case "ui_prompt": {
+        const prompts = session.prompts.some((p) => p.requestId === event.requestId)
+          ? session.prompts
+          : [
+              ...session.prompts,
+              { requestId: event.requestId, kind: event.kind, payload: event.payload },
+            ];
+        state.sessions[event.sessionId] = { ...session, prompts };
+        break;
+      }
+      case "ui_reveal": {
+        state.sessions[event.sessionId] = {
+          ...session,
+          reveals: [...session.reveals, { pane: event.pane, reason: event.reason, at: Date.now() }],
+        };
+        break;
+      }
+      case "plan_update": {
+        state.sessions[event.sessionId] = {
+          ...session,
+          plan: { title: event.title, summary: event.summary, plan: event.plan, exited: false },
+        };
+        break;
+      }
+      case "plan_exit": {
+        state.sessions[event.sessionId] = session.plan
+          ? { ...session, plan: { ...session.plan, exited: true } }
+          : session;
+        break;
+      }
     }
 
+    notify();
+  },
+
+  /** Remove a delivered prompt (answered/dismissed in UI). */
+  resolvePrompt: (sessionId: string, requestId: string): void => {
+    const session = state.sessions[sessionId];
+    if (!session) return;
+    state.sessions[sessionId] = {
+      ...session,
+      prompts: session.prompts.filter((p) => p.requestId !== requestId),
+    };
     notify();
   },
 
