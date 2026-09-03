@@ -4,6 +4,16 @@
 
 ## A. Strip list — Caide-final old engine (status)
 
+### M0 verdict (audited, importer-verified)
+- STRIPPED: server part-filler (116), stub dirs/tests, 13 codex* files (M0a); agentGateway contract + test (M0b).
+- STAYS until migrations (all live-imported, deletion breaks boot/UI):
+  - `harnessCompat` + orchestration/agentGateway/checkpointing/automation dirs → orchestration-read migration (turn/session stores replace projection queries).
+  - `orchestration/automation/externalMcp/browserAutomation` contracts → same migration.
+  - Web store/transport chain (`store`, reducer, projection, normalization, `wsTransport`, `wsNativeApi`, `workLog`) + routes/stores/panels → store migration + chat send-path rewire.
+  - Desktop `browserAutomation/` (29) + `browserAnnotations/` (10) → imported by main/browserManager; preview replacement must land first.
+  - Root junk → already absent.
+
+
 M0b LANDED (contracts): agentGateway.ts + test deleted (zero users; 211 contracts tests green). orchestration/automation/externalMcp/browserAutomation contracts STAY — load-bearing for live persistence/RPC/UI until the orchestration-read migration. M0a LANDED (server filler): 116 part*.ts + stub testN/stub dirs + scaffold filler + 13 codex* files deleted (151 paths). harnessCompat/serverLayers/wsRpc stay — load-bearing for the live Effect server until the orchestration-read migration. One failing suite (`harness/prompts/prompts.test.ts` L0-L3) verified PRE-EXISTING on clean HEAD.
 
 | Item | Location | Status |
