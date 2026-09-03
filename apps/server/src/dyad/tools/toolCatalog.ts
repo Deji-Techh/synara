@@ -96,10 +96,10 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "capture_evidence", category: "verify", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "missing" },
   { name: "capture_screenshot", category: "verify", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "screenshot" },
   // git
-  { name: "git_status", category: "git", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "missing" },
-  { name: "git_diff", category: "git", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "missing" },
-  { name: "git_log", category: "git", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "missing" },
-  { name: "git_commit", category: "git", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "missing" },
+  { name: "git_status", category: "git", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/vcs" },
+  { name: "git_diff", category: "git", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/vcs" },
+  { name: "git_log", category: "git", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/vcs" },
+  { name: "git_commit", category: "git", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/vcs" },
   // history
   { name: "summarize_context", category: "history", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "missing" },
   { name: "read_guide", category: "history", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "read_guide (dyad/guides on disk)" },
