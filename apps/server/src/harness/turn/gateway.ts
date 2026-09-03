@@ -108,6 +108,7 @@ export class TurnGateway {
       ...request,
       inbox,
       requestConsent: extra?.requestConsent ?? this.requestConsent ?? undefined,
+      requestMcpConsent: extra?.requestMcpConsent ?? this.requestMcpConsent ?? undefined,
       onEvent: broadcast,
       ...extra,
       // extra.onEvent already invoked above; keep broadcast as the sink.

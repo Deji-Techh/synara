@@ -79,6 +79,8 @@ export interface TurnContextInput {
   options?: ToolSetOptions;
   requestConsent?: ConsentRequestFn;
   autoApproveNonSchemaSql?: boolean;
+  /** MCP consent round-trip for sandbox host calls (gateway bridge). */
+  requestMcpConsent?: import("../../dyad/mcp/mcpConsent.ts").McpConsentRequestFn;
 }
 
 export interface TurnContext {
@@ -199,6 +201,7 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
         appPath: input.appPath,
         sessionId: input.sessionId,
         toolId,
+        ...(input.requestMcpConsent ? { requestMcpConsent: input.requestMcpConsent } : {}),
       });
     },
     routeToolEvent(toolName: string): { revealDatabase: boolean } {

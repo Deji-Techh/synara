@@ -89,7 +89,9 @@ describe("dyad sandbox transplant (m2b)", () => {
       { script: "result = 1;", execution_thread: "worker" },
       dir,
     );
-    expect(worker).toContain("worker thread lands in M4");
+    // Worker runs off-thread when available, else honest main-thread fallback.
+    expect(worker).toMatch(/Sandbox script finished in \d+ms/);
+    expect(worker).toContain("result: 1");
 
     const big = await executeSandboxScript({ script: "result = 'y'.repeat(100000);" }, dir);
     expect(big).toContain("Output truncated");

@@ -44,12 +44,13 @@ const executeSandboxScriptSchema = z.object({
     ),
 });
 
-const SANDBOX_BASE_DESCRIPTION = `Execute a sandboxed JavaScript snippet with read-only workspace hosts (read_file, list_files, grep).
+const SANDBOX_BASE_DESCRIPTION = `Execute a sandboxed JavaScript snippet with workspace hosts: read_file, list_files, grep (read-only), write_file (writes inside the project), plus MCP host functions for connected servers.
 
 - The script has no ambient authority: no require/process/fetch/globals. It can only act through the host functions.
 - Assign the outcome to \`result\`; use console.log for progress lines.
-- Main-thread execution with a 60s timeout. The 'worker' thread and MCP host functions land in M4 — scripts requesting them run on main and say so.
-- The write_file host is capability-gated (donor blueprint rule) and lands with M3 consent wiring; scripts cannot write files yet.`;
+- Main-thread execution with a 60s timeout; 'worker' runs compute-heavy work off-thread (falls back to main when unavailable).
+- MCP host functions call through the normal MCP consent flow (stored "always" runs free, otherwise the user is asked).
+- Writes via write_file are workspace-jailed like the write_file tool.`;
 
 export const executeSandboxScriptTool = defineTool({
   name: "execute_sandbox_script",
@@ -58,38 +59,86 @@ export const executeSandboxScriptTool = defineTool({
   readOnly: false,
   modifiesState: true,
   execute: async (args, ctx) =>
-    executeSandboxScript(executeSandboxScriptSchema.parse(args), ctx.appPath, ctx.signal),
+    executeSandboxScript(executeSandboxScriptSchema.parse(args), ctx.appPath, ctx.signal, ctx),
   presentCall: (args: any) => args.description ?? "Run sandbox script",
 });
+
+export interface SandboxHostContext {
+  sessionId: string;
+  requestMcpConsent?: import("../../harness/tools/defineTool.ts").ToolContext["requestMcpConsent"];
+}
 
 export async function executeSandboxScript(
   input: z.infer<typeof executeSandboxScriptSchema>,
   appPath: string,
   signal?: AbortSignal,
+  hostCtx?: SandboxHostContext,
 ): Promise<string> {
   const parsed = executeSandboxScriptSchema.parse(input);
   if (signal?.aborted) throw new SandboxValidationError("Operation aborted");
-  const hosts = createFsHosts(appPath);
   const started = Date.now();
-  const { result, logs } = await runInVm(
-    parsed.script,
-    {
-      read_file: hosts.read_file,
-      list_files: hosts.list_files,
-      grep: hosts.grep,
+  const baseHosts = createFsHosts(appPath);
+  const hosts: Record<string, (...args: any[]) => Promise<unknown>> = {
+    read_file: baseHosts.read_file,
+    list_files: baseHosts.list_files,
+    grep: baseHosts.grep,
+    write_file: async (path: string, content: string) => {
+      const { safeJoinAppPath } = await import("../editing/safePath.ts");
+      const full = safeJoinAppPath(appPath, path);
+      const { promises: fs } = await import("node:fs");
+      const { default: nodePath } = await import("node:path");
+      await fs.mkdir(nodePath.dirname(full), { recursive: true });
+      await fs.writeFile(full, content, "utf8");
+      return `Wrote ${path} (${content.length} chars)`;
     },
-    clampSandboxTimeoutMs(undefined),
-  );
+  };
+  // MCP host functions from the live discovery registry (consent-gated).
+  if (hostCtx) {
+    const { getMcpToolRegistry } = await import("../mcp/mcpTools.ts");
+    const { getOrCreateSessionStores } = await import("../../harness/turn/sessionStores.ts");
+    const { requireMcpToolConsent } = await import("../mcp/mcpConsent.ts");
+    const { sharedMcpManager } = await import("../mcp/manager.ts");
+    const defs = getMcpToolRegistry()?.listTools() ?? [];
+    const stores = getOrCreateSessionStores(hostCtx.sessionId);
+    for (const def of defs) {
+      const jsName = def.jsName;
+      if (hosts[jsName]) continue;
+      hosts[jsName] = async (args: Record<string, unknown> = {}) => {
+        const { allowed } = await requireMcpToolConsent({
+          sessionId: hostCtx.sessionId,
+          serverId: def.serverId,
+          serverName: def.serverName,
+          toolName: def.toolName,
+          inputPreview: JSON.stringify(args).slice(0, 500),
+          store: stores.mcp,
+          requestConsent:
+            hostCtx.requestMcpConsent ??
+            (async () => "decline" as const),
+        });
+        if (!allowed) throw new Error(`MCP call declined: ${def.toolKey}`);
+        return sharedMcpManager().callTool(String(def.serverId), def.toolName, args);
+      };
+    }
+  }
+  let result: { result: unknown; logs: string[] };
+  let threadNote = "";
+  if (parsed.execution_thread === "worker") {
+    // Worker builds its own read-only hosts; write/MCP hosts stay main-only.
+    const { runWorkerSandbox } = await import("./workerRunner.ts");
+    const out = await runWorkerSandbox(parsed.script, appPath);
+    result = out.result;
+    if (out.ranOn === "main") threadNote = " (worker thread unavailable; ran on main)";
+  } else {
+    const { runInVm } = await import("./vmRunner.ts");
+    const { clampSandboxTimeoutMs } = await import("./limits.ts");
+    result = await runInVm(parsed.script, hosts, clampSandboxTimeoutMs(undefined));
+  }
   const executionMs = Date.now() - started;
   const body = [
-    ...logs,
-    `result: ${typeof result === "string" ? result : JSON.stringify(result)}`,
+    ...result.logs,
+    `result: ${typeof result.result === "string" ? result.result : JSON.stringify(result.result)}`,
   ].join("\n");
   const truncated = body.length > MAX_RESULT_CHARS;
-  const threadNote =
-    parsed.execution_thread === "worker"
-      ? " (worker thread lands in M4; ran on main)"
-      : "";
   const output = truncated ? body.slice(-MAX_RESULT_CHARS) : body;
   return [
     `Sandbox script finished in ${executionMs}ms${threadNote}.`,

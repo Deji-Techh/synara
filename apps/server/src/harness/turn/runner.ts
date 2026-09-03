@@ -45,6 +45,8 @@ export interface StartTurnInput {
   llmOverride?: LLMAdapter;
   /** Per-session inbox for steering a running turn (gateway-owned). */
   inbox?: Inbox;
+  /** MCP consent round-trip for sandbox host calls (gateway bridge). */
+  requestMcpConsent?: import("../../dyad/mcp/mcpConsent.ts").McpConsentRequestFn;
 }
 
 function chatModeFor(mode: ChatMode): "build" | "ask" | "local-agent" | "plan" {
@@ -135,6 +137,7 @@ export class CaideRunner {
         requestConsent: input.requestConsent,
         autoApproveNonSchemaSql: input.autoApproveNonSchemaSql ?? sessionStores.safeSql,
         store: sessionStores.consent,
+        requestMcpConsent: input.requestMcpConsent,
       });
       const chatMode = chatModeFor(input.mode ?? "agent");
       const system = constructSystemPrompt({

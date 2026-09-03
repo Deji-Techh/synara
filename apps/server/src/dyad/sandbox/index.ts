@@ -36,7 +36,9 @@ export {
   setSkillRunner,
   SandboxValidationError,
   type SkillRunner,
+  type SandboxHostContext,
 } from "./sandboxTools.ts";
+export { runWorkerSandbox, WORKER_WALL_TIMEOUT_MS } from "./workerRunner.ts";
 export {
   runSubagentLoop,
   spawnSubagentTask,

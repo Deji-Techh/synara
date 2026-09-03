@@ -125,15 +125,6 @@ export const codeSearchTool = defineTool({
 
 // --- symbol lookup (grep-based definitions; full LSP lands in M4) ---
 
-const DEFINITION_PATTERNS: Array<{ lang: string; re: RegExp }> = [
-  { lang: "ts", re: /^\s*(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/ },
-  { lang: "ts", re: /^\s*export\s+(?:default\s+)?(?:class|interface|enum|type)\s+([A-Za-z_$][\w$]*)/ },
-  { lang: "ts", re: /^\s*(?:export\s+)?const\s+([A-Za-z_$][\w$]*)\s*=\s*(?:\(|async|[^;]*=>)/ },
-  { lang: "dart", re: /^\s*(?:class|mixin|extension|enum)\s+([A-Za-z_$][\w$]*)/ },
-  { lang: "dart", re: /^\s*(?:[\w<>?]+\s+)+([a-zA-Z_$][\w$]*)\s*\(/ },
-  { lang: "py", re: /^\s*(?:def|class)\s+([A-Za-z_][\w]*)/ },
-];
-
 export interface SymbolHit {
   path: string;
   line: number;
@@ -145,46 +136,13 @@ export async function lookupSymbol(appPath: string, symbol: string, limit = 10):
   const root = safeJoinAppPath(appPath, ".");
   const files: string[] = [];
   await walkCodeFiles(root, files);
-  const hits: SymbolHit[] = [];
-  const needle = symbol.toLowerCase();
-  for (const file of files) {
-    if (hits.length >= limit) break;
-    let lines: string[];
-    try {
-      lines = (await fs.promises.readFile(file, "utf8")).split("\n");
-    } catch {
-      continue;
-    }
-    lines.forEach((line, i) => {
-      if (hits.length >= limit) return;
-      if (!line.toLowerCase().includes(needle)) return;
-      for (const { re } of DEFINITION_PATTERNS) {
-        const m = re.exec(line);
-        if (m && m[1] && m[1].toLowerCase() === needle) {
-          hits.push({ path: path.relative(root, file), line: i + 1, name: m[1], kind: "definition" });
-          break;
-        }
-      }
-    });
+  const { buildWorkspaceIndex, queryIndex } = await import("./symbolIndex.ts");
+  buildWorkspaceIndex(root, files);
+  const hits = queryIndex(root, symbol, limit);
+  if (hits.length > 0) {
+    return hits.map((h) => ({ path: h.path, line: h.line, name: h.name, kind: h.kind }));
   }
-  // Fallback: plain references when no definition matched.
-  if (hits.length === 0) {
-    for (const file of files) {
-      if (hits.length >= limit) break;
-      let text: string;
-      try {
-        text = await fs.promises.readFile(file, "utf8");
-      } catch {
-        continue;
-      }
-      const idx = text.toLowerCase().indexOf(needle);
-      if (idx !== -1) {
-        const line = text.slice(0, idx).split("\n").length;
-        hits.push({ path: path.relative(root, file), line, name: symbol, kind: "reference" });
-      }
-    }
-  }
-  return hits;
+  return [];
 }
 
 const lspSchema = z.object({
@@ -195,7 +153,7 @@ const lspSchema = z.object({
 export const lspSymbolLookupTool = defineTool({
   name: "lsp_symbol_lookup",
   description:
-    "Find where a symbol (class, function, variable) is defined or referenced. Token-efficient: returns file paths with line numbers. A full language-server index lands in M4; this uses definition-pattern search until then.",
+    "Find where a symbol (class, function, variable) is defined or referenced. Served from a workspace symbol index (mtime-invalidated): definitions first, then cross-file references. Token-efficient: file paths with line numbers.",
   schema: lspSchema,
   readOnly: true,
   modifiesState: false,

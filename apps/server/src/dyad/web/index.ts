@@ -43,3 +43,10 @@ export {
   type SymbolHit,
   type ExplorerRunner,
 } from "./codeSearch.ts";
+export {
+  buildWorkspaceIndex,
+  queryIndex,
+  indexStats,
+  clearSymbolIndexes,
+  type IndexedSymbol,
+} from "./symbolIndex.ts";

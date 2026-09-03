@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { McpConsentRequestFn } from "../../dyad/mcp/mcpConsent.ts";
 
 export interface ToolContext {
   signal: AbortSignal;
@@ -9,6 +10,8 @@ export interface ToolContext {
   role?: string;
   /** Provider config the tool can use to spawn its own LLM calls (e.g. sub-agents). */
   provider?: { modelId: string; baseUrl: string; apiKey: string; system?: string };
+  /** MCP consent round-trip (sandbox host calls); absent → stored-consent only. */
+  requestMcpConsent?: McpConsentRequestFn;
 }
 
 export interface ToolDef<I = any, O = any> {
