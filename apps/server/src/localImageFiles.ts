@@ -2,7 +2,7 @@
 // Purpose: Resolves local preview-file (image/PDF) requests without exposing arbitrary files.
 // Layer: Server HTTP utility
 // Exports: local image route constants and allowlisted path resolver
-// Depends on: fs realpath/stat, Codex generated image roots, safe preview extensions
+// Depends on: fs realpath/stat, generated-image allowlist roots, safe preview extensions
 
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
@@ -16,9 +16,24 @@ import {
 } from "@caide/shared/localPreviewFiles";
 import { SCRATCH_WORKSPACES_DIRNAME } from "@caide/shared/threadWorkspace";
 
-import { resolveCodexGeneratedImagesRoots } from "./codexGeneratedImages.ts";
-
 export { LOCAL_IMAGE_ROUTE_PATH };
+
+/**
+ * Allowlist roots for agent-generated images, mirroring the removed Codex
+ * home resolution: the Codex home (explicit, CODEX_HOME, or ~/.codex) plus
+ * the Caide overlay home when distinct, each with its generated_images dir.
+ * Kept so images from earlier sessions stay serveable.
+ */
+function resolveGeneratedImagesRoots(homePath?: string): readonly string[] {
+  const source =
+    homePath?.trim() || process.env.CODEX_HOME?.trim() || path.join(os.homedir(), ".codex");
+  const runtimeHome = process.env.CAIDE_HOME?.trim();
+  const overlayRoot = runtimeHome || path.join(path.dirname(source), ".caide", "runtime");
+  const overlay = path.join(overlayRoot, "codex-home-overlay");
+  const homes =
+    path.resolve(source) === path.resolve(overlay) ? [source] : [source, overlay];
+  return homes.map((home) => path.join(home, "generated_images"));
+}
 
 export interface ResolvedLocalPreviewFile {
   readonly path: string;
@@ -190,7 +205,7 @@ export async function resolveAllowedLocalPreviewFile(input: {
     return null;
   }
   const generatedImagesRoots = await Promise.all(
-    resolveCodexGeneratedImagesRoots(input.codexHomePath).map(realpathOrNull),
+    resolveGeneratedImagesRoots(input.codexHomePath).map(realpathOrNull),
   ).then((roots) => roots.filter((root): root is string => root !== null));
   const allowed =
     generatedImagesRoots.some((root) => isPathInside(realFilePath, root)) ||
