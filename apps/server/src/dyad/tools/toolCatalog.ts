@@ -125,6 +125,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   // goals (donor goal system is out of scope for Caide v1 — see plan §5 slash decision)
   { name: "update_goal_state", category: "plan-memory", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/goals" },
   { name: "goal_status", category: "plan-memory", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/goals" },
+  { name: "verify_goal", category: "plan-memory", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/goals" },
 ];
 
 /** Donor plan-mode gating sets, kept verbatim in meaning. */

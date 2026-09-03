@@ -59,7 +59,6 @@ export const updateGoalStateTool = defineTool({
 const goalStatusSchema = z.object({
   goalId: z.string().describe("The ID of the Goal to inspect"),
 });
-
 export const goalStatusTool = defineTool({
   name: "goal_status",
   description:
@@ -89,4 +88,22 @@ export const goalStatusTool = defineTool({
   presentCall: (args: any) => `Goal status: ${args.goalId}`,
 });
 
-export const ALL_GOAL_TOOLS: ToolDef[] = [updateGoalStateTool, goalStatusTool];
+const verifyGoalSchema = z.object({
+  goalId: z.string().describe("The ID of the Goal to verify"),
+});
+
+export const verifyGoalTool = defineTool({
+  name: "verify_goal",
+  description:
+    "Run an independent verification pass over a goal: checks required tasks' linked passing evidence at the current revision, marks verified tasks, rebuilds criteria, and completes the goal when the predicate holds. Use after capturing evidence for goal work.",
+  schema: verifyGoalSchema,
+  readOnly: false,
+  modifiesState: true,
+  execute: async (args, ctx) => {
+    const { verifyGoal } = await import("./goalScheduler.ts");
+    return verifyGoal(ctx.appPath, verifyGoalSchema.parse(args).goalId);
+  },
+  presentCall: (args: any) => `Verify goal: ${args.goalId}`,
+});
+
+export const ALL_GOAL_TOOLS: ToolDef[] = [updateGoalStateTool, goalStatusTool, verifyGoalTool];

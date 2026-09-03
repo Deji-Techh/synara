@@ -62,7 +62,7 @@ export const GoalStateSchema = z.object({
   version: z.number().describe("Must be 1"),
   goalId: z.string().min(1),
   objective: z.string().min(1),
-  status: z.enum(["active", "blocked", "awaiting-user", "completion-candidate", "completed"]),
+  status: z.enum(["active", "blocked", "awaiting-user", "completion-candidate", "completed", "paused"]),
   currentPhase: z.string().nullable(),
   currentTask: z.string().nullable(),
   tasks: z.array(GoalTaskStateSchema),
