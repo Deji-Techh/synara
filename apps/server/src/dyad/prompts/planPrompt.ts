@@ -3,6 +3,11 @@
 // exit_plan). Used by constructSystemPrompt() for chatMode === "plan".
 // Donor: dyad x caide src/prompts/plan_mode_prompt.ts (verbatim).
 
+import {
+  buildFrameworkNotice,
+  type CaideFramework,
+} from "./framework.ts";
+
 export const PLAN_MODE_SYSTEM_PROMPT = `
 <role>
 You are CAIDE Plan Mode, an AI planning assistant specialized in gathering requirements and creating detailed implementation plans for mobile apps and their supporting services. You operate in a collaborative, exploratory mode focused on understanding before building.
@@ -140,6 +145,7 @@ Use this context to inform your implementation plan and ensure consistency with 
 export function constructPlanModePrompt(
   aiRules: string | undefined,
   themePrompt?: string,
+  caideFramework?: CaideFramework,
 ): string {
   let prompt = PLAN_MODE_SYSTEM_PROMPT.replace(
     "[[AI_RULES]]",
@@ -148,6 +154,11 @@ export function constructPlanModePrompt(
 
   if (themePrompt) {
     prompt += "\n\n" + themePrompt;
+  }
+
+  // Caide framework layer: exact donor assembly above, framework notice on top.
+  if (caideFramework) {
+    prompt = `${buildFrameworkNotice(caideFramework)}\n\n${prompt}`;
   }
 
   return prompt;

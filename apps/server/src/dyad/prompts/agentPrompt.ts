@@ -16,6 +16,14 @@ import {
 } from "./skillPacks.ts";
 import { WEB3_SKILL_FRONTMATTERS } from "./skillPacks.ts";
 import { DEFAULT_AI_RULES } from "./aiRules.ts";
+import {
+  appTargetForFramework,
+  applyFrameworkCommandTerms,
+  applyFrameworkPathTerms,
+  buildFrameworkNotice,
+  defaultAiRulesForFramework,
+  type CaideFramework,
+} from "./framework.ts";
 
 // ============================================================================
 // Shared Prompt Blocks (used by both Pro and Basic Agent modes)
@@ -475,6 +483,12 @@ export function constructLocalAgentPrompt(
      * contract and UI skill pack. Defaults to "mobile".
      */
     appTarget?: AppTarget;
+    /**
+     * Caide product framework (blank | react-native | flutter | website).
+     * Prepends a `<caide_framework>` notice so the model knows the stack,
+     * layout, commands, and preview it builds for. Donor text untouched.
+     */
+    caideFramework?: CaideFramework;
   },
 ): string {
   const enableAppBlueprint = options?.enableAppBlueprint !== false;
@@ -511,18 +525,33 @@ export function constructLocalAgentPrompt(
   // Use replacer functions so `$`-sequences in user-controlled content
   // (AI_RULES.md, which the model itself can edit) are inserted literally and
   // cannot splice the rest of the prompt via `$'`, `$&`, etc.
-  const target: AppTarget = options?.appTarget ?? "mobile";
+  // Framework isolation: target derives from the Caide framework when the
+  // caller only knows the framework; rules fall back to the framework's own
+  // stack rules so donor React-isms never leak into Flutter (and vice versa).
+  const target: AppTarget =
+    options?.appTarget ?? appTargetForFramework(options?.caideFramework) ?? "mobile";
+  const resolvedRules =
+    aiRules ??
+    defaultAiRulesForFramework(options?.caideFramework, DEFAULT_AI_RULES) ??
+    DEFAULT_AI_RULES;
   const uiSkillPack =
     target === "web" ? CAIDE_WEB_UI_SKILL_PACK : CAIDE_MOBILE_UI_SKILL_PACK;
   let prompt = basePrompt
     .replace("[[PLATFORM_UI_SKILL_PACK]]", () => uiSkillPack)
     .replace("[[PLATFORM_CONTRACT]]", () => buildPlatformPrompt(target))
     .replace("[[SERVER_LAYER]]", () => serverLayer)
-    .replace("[[AI_RULES]]", () => aiRules ?? DEFAULT_AI_RULES);
+    .replace("[[AI_RULES]]", () => resolvedRules);
 
   // Append theme prompt if provided
   if (themePrompt) {
     prompt += "\n\n" + themePrompt;
+  }
+
+  // Caide framework layer: exact donor assembly above, framework notice on top.
+  if (options?.caideFramework) {
+    prompt = applyFrameworkCommandTerms(prompt, options.caideFramework);
+    prompt = applyFrameworkPathTerms(prompt, options.caideFramework);
+    prompt = `${buildFrameworkNotice(options.caideFramework)}\n\n${prompt}`;
   }
 
   return prompt;

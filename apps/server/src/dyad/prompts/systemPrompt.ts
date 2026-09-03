@@ -19,6 +19,15 @@ import { buildPlatformPrompt } from "./platformContracts.ts";
 import type { AppTarget } from "./appTarget.ts";
 import { WEB3_SKILL_PACK } from "./skillPacks.ts";
 import { TEST_WRITING_GUIDANCE } from "./testGuidance.ts";
+import {
+  appTargetForFramework,
+  applyFrameworkBuildExamples,
+  applyFrameworkCommandTerms,
+  applyFrameworkPathTerms,
+  buildFrameworkNotice,
+  defaultAiRulesForFramework,
+  type CaideFramework,
+} from "./framework.ts";
 
 export const THINKING_PROMPT = `
 # Thinking Process
@@ -454,6 +463,7 @@ export const constructSystemPrompt = ({
   isWeb3App,
   appSkillPack,
   appTarget,
+  caideFramework,
 }: {
   aiRules: string | undefined;
   chatMode?: "build" | "ask" | "local-agent" | "plan";
@@ -484,10 +494,16 @@ export const constructSystemPrompt = ({
    * "mobile" to preserve current app-building behavior.
    */
   appTarget?: AppTarget;
+  /**
+   * Caide product framework (blank | react-native | flutter | website).
+   * Prepends a `<caide_framework>` notice so every mode knows the stack it
+   * builds for. Donor text untouched.
+   */
+  caideFramework?: CaideFramework;
 }) => {
   void enableTurboEditsV2;
   if (chatMode === "plan") {
-    return constructPlanModePrompt(aiRules, themePrompt);
+    return constructPlanModePrompt(aiRules, themePrompt, caideFramework);
   }
 
   if (chatMode === "local-agent") {
@@ -501,6 +517,7 @@ export const constructSystemPrompt = ({
       codeExplorerAvailable,
       testingEnabled,
       appTarget,
+      caideFramework,
     });
   }
 
@@ -509,7 +526,7 @@ export const constructSystemPrompt = ({
     frameworkType,
     hasSupabaseProject,
     testingEnabled,
-    appTarget,
+    appTarget: appTarget ?? appTargetForFramework(caideFramework),
   });
 
   // Inject web3 skill pack for multi-chain dApps
@@ -518,13 +535,28 @@ export const constructSystemPrompt = ({
   // Inject per-project assigned skills
   const appSkillSuffix = appSkillPack ? `\n\n${appSkillPack}` : "";
 
+  // Framework isolation: an explicit AI_RULES.md always wins; otherwise the
+  // framework's own stack rules apply so donor React-isms never leak across.
+  const resolvedRules =
+    aiRules ??
+    defaultAiRulesForFramework(caideFramework, DEFAULT_AI_RULES) ??
+    DEFAULT_AI_RULES;
+
   systemPrompt = systemPrompt.replace(
     "[[AI_RULES]]",
-    (aiRules ?? DEFAULT_AI_RULES) + web3Suffix + appSkillSuffix,
+    resolvedRules + web3Suffix + appSkillSuffix,
   );
 
   if (themePrompt) {
     systemPrompt += "\n\n" + themePrompt;
+  }
+
+  // Caide framework layer: exact donor assembly above, framework notice on top.
+  if (caideFramework) {
+    systemPrompt = applyFrameworkCommandTerms(systemPrompt, caideFramework);
+    systemPrompt = applyFrameworkPathTerms(systemPrompt, caideFramework);
+    systemPrompt = applyFrameworkBuildExamples(systemPrompt, caideFramework);
+    systemPrompt = `${buildFrameworkNotice(caideFramework)}\n\n${systemPrompt}`;
   }
 
   return systemPrompt;

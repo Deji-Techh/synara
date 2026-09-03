@@ -44,6 +44,18 @@ export {
 } from "./testGuidance.ts";
 export { PLAN_MODE_SYSTEM_PROMPT, constructPlanModePrompt } from "./planPrompt.ts";
 export {
+  CAIDE_FRAMEWORKS,
+  CAIDE_FRAMEWORK_BRIEFS,
+  buildFrameworkNotice,
+  normalizeCaideFramework,
+  defaultAiRulesForFramework,
+  appTargetForFramework,
+  applyFrameworkCommandTerms,
+  applyFrameworkPathTerms,
+  applyFrameworkBuildExamples,
+  type CaideFramework,
+} from "./framework.ts";
+export {
   LOCAL_AGENT_ASK_SYSTEM_PROMPT,
   constructLocalAgentPrompt,
 } from "./agentPrompt.ts";

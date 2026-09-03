@@ -3,6 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  buildFrameworkNotice,
   buildPlatformPrompt,
   buildUiSkillPack,
   CAIDE_MOBILE_UI_SKILL_PACK,
@@ -107,5 +108,115 @@ describe("dyad prompt transplant (m1)", () => {
 
     const planDirect = constructPlanModePrompt(undefined);
     expect(planDirect).toContain("Tech Stack Context");
+  });
+
+  it("prepends the caide framework notice in every mode, donor text untouched", () => {
+    const notice = buildFrameworkNotice("flutter");
+    expect(notice).toContain("<caide_framework>");
+    expect(notice).toContain("flutter pub");
+    expect(buildFrameworkNotice("react-native")).toContain("Expo");
+    expect(buildFrameworkNotice("website")).toContain("Vite dev server");
+    expect(buildFrameworkNotice("blank")).toContain("no preview");
+
+    for (const mode of ["build", "ask", "local-agent", "plan"] as const) {
+      const prompt = constructSystemPrompt({
+        aiRules: undefined,
+        chatMode: mode,
+        enableTurboEditsV2: false,
+        caideFramework: "react-native",
+      });
+      expect(prompt.startsWith("<caide_framework>")).toBe(true);
+      expect(prompt).toContain("Expo");
+    }
+
+    // No framework → donor-exact output, no Caide block.
+    const plain = constructSystemPrompt({
+      aiRules: undefined,
+      chatMode: "build",
+      enableTurboEditsV2: false,
+    });
+    expect(plain).not.toContain("<caide_framework>");
+    expect(plain.startsWith("\n<role>")).toBe(true);
+  });
+
+  it("isolates frameworks: no stack leaks across RN/flutter/website", () => {
+    const base = {
+      aiRules: undefined,
+      enableTurboEditsV2: false,
+    } as const;
+
+    const flutter = constructSystemPrompt({
+      ...base,
+      chatMode: "local-agent",
+      caideFramework: "flutter",
+    });
+    expect(flutter).toContain("Dart");
+    expect(flutter).toContain("flutter pub");
+    expect(flutter).toContain("Bottom tab bar"); // mobile target contract
+    for (const leak of ["shadcn", "React Router", "Vite", "npm", "sonner", "src/pages", "Tailwind"]) {
+      expect(flutter, `flutter leak: ${leak}`).not.toContain(leak);
+    }
+
+    const website = constructSystemPrompt({
+      ...base,
+      chatMode: "local-agent",
+      caideFramework: "website",
+    });
+    expect(website).toContain("Vite");
+    expect(website).not.toContain("Bottom tab bar");
+    for (const leak of ["Expo", "Dart", "flutter pub", "NativeWind", "Riverpod", "GoRouter"]) {
+      expect(website, `website leak: ${leak}`).not.toContain(leak);
+    }
+
+    const rn = constructSystemPrompt({
+      ...base,
+      chatMode: "local-agent",
+      caideFramework: "react-native",
+    });
+    expect(rn).toContain("Expo");
+    expect(rn).toContain("Bottom tab bar");
+    for (const leak of ["Dart", "flutter pub", "Vite", "shadcn", "GoRouter", "Riverpod"]) {
+      expect(rn, `rn leak: ${leak}`).not.toContain(leak);
+    }
+  });
+
+  it("perfects build mode per framework: Dart examples for flutter, corrected paths for RN", () => {
+    const base = {
+      aiRules: undefined,
+      enableTurboEditsV2: false,
+    } as const;
+
+    const flutterBuild = constructSystemPrompt({
+      ...base,
+      chatMode: "build",
+      caideFramework: "flutter",
+    });
+    expect(flutterBuild).toContain("lib/widgets/app_button.dart");
+    expect(flutterBuild).toContain("ScaffoldMessenger");
+    expect(flutterBuild).toContain("Material");
+    for (const leak of ["Sonner", "sonner", "src/pages", "Tailwind", "shadcn", "Vite", "npm"]) {
+      expect(flutterBuild, `flutter build leak: ${leak}`).not.toContain(leak);
+    }
+
+    const rnBuild = constructSystemPrompt({
+      ...base,
+      chatMode: "build",
+      caideFramework: "react-native",
+    });
+    expect(rnBuild).toContain("app/src/screens/");
+    expect(rnBuild).not.toContain("src/pages");
+    expect(rnBuild).not.toContain("Sonner");
+    for (const leak of ["Dart", "flutter pub", "Vite", "shadcn"]) {
+      expect(rnBuild, `rn build leak: ${leak}`).not.toContain(leak);
+    }
+
+    // Website build stays donor-exact (React examples + Sonner).
+    const webBuild = constructSystemPrompt({
+      ...base,
+      chatMode: "build",
+      caideFramework: "website",
+    });
+    expect(webBuild).toContain("src/pages/Dashboard.tsx");
+    expect(webBuild).toContain("Sonner");
   });
 });
