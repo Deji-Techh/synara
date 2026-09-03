@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { HarnessEvent } from "@caide/contracts";
 import type { LLMAdapter } from "../loop/loop.ts";
 import { TurnGateway, resolveTurnProviders } from "./gateway.ts";
-import { HarnessWebSocketServer } from "../ws/server.ts";
+import { HarnessHub } from "../ws/hub.ts";
 
 function fakeLlm(chunks: Array<{ type: "token"; content: string }>): LLMAdapter {
   return {
@@ -34,11 +34,9 @@ describe("turn gateway (m3h)", () => {
   it("starts a turn and broadcasts events to subscribers", async () => {
     const gateway = new TurnGateway();
     const seen: HarnessEvent[] = [];
-    const server = new HarnessWebSocketServer();
-    gateway.attachWs(server);
+    const hub = new HarnessHub();
+    gateway.attachWs(hub);
     try {
-      const orig = server.broadcastToSession.bind(server);
-      void orig;
       const turnId = await gateway.startTurn(
         {
           sessionId: "s-gw",
@@ -162,7 +160,7 @@ describe("turn gateway (m3h)", () => {
       onProviderSettingsTest: (h: (...args: never[]) => void) => {
         handlers.psTest = h;
       },
-    } as unknown as HarnessWebSocketServer;
+    } as unknown as HarnessHub;
     gateway.attachWs(server);
     try {
       const get = handlers.psGet as (sid: string, req?: string) => void;

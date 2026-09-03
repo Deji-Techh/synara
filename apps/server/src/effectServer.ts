@@ -21,7 +21,9 @@ import { makeServerReadiness } from "./server/readiness";
 import { makeServerShutdownController, type ServerShutdownController } from "./serverShutdown";
 import { makeBoundedNodeHttpServer } from "./nodeHttpServer";
 import { websocketRpcRouteLayer } from "./wsRpc";
-import { mountHarnessGateway } from "./harness/harnessGatewayMount";
+import { makeHarnessRouteLayer } from "./harness/harnessRouteLayer";
+import { sharedTurnGateway } from "./harness/turn/gateway";
+import { sharedHarnessHub } from "./harness/ws/hub";
 
 export interface ServerShape {
   readonly start: Effect.Effect<
@@ -95,6 +97,7 @@ export const createEffectServer = Effect.fn(function* (
 
   const routesLayer = Layer.mergeAll(
     websocketRpcRouteLayer,
+    makeHarnessRouteLayer,
     makeEffectHttpRouteLayer(readiness, shutdownController),
   );
   const fullRoutesLayer = Layer.provideMerge(routesLayer, appLayer);
@@ -110,10 +113,10 @@ export const createEffectServer = Effect.fn(function* (
     config.port,
   );
   if (nodeServer) {
-    const harnessMount = mountHarnessGateway(nodeServer, { authToken: config.authToken ?? null });
+    sharedTurnGateway().attachWs(sharedHarnessHub());
     yield* Effect.addFinalizer(() =>
       Effect.sync(() => {
-        harnessMount.close();
+        sharedTurnGateway().detachWs();
       }),
     );
   }

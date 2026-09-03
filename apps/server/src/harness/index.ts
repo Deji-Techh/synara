@@ -27,6 +27,7 @@ export * from "./provider/apiAdapter.ts";
 export * from "./provider/models.ts";
 export * from "./provider/stream.ts";
 export * from "./ws/server.ts";
+export * from "./ws/hub.ts";
 export * from "./edge/index.ts";
 export * from "./quality/index.ts";
 export * from "./motion/index.ts";

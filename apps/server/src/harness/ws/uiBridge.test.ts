@@ -10,7 +10,7 @@ import { resolveUserInput, waitForUserInput } from "../../dyad/plan/userPrompt.t
 import { resolveConsent, waitForConsent } from "../../dyad/tools/permissions.ts";
 import { attachUiBridge } from "./uiBridge.ts";
 import { clearSessionStores, getOrCreateSessionStores } from "../turn/sessionStores.ts";
-import type { HarnessWebSocketServer } from "./server.ts";
+import type { HarnessHub } from "./hub.ts";
 
 function fakeServer() {
   const sent: HarnessEvent[] = [];
@@ -29,7 +29,7 @@ function fakeServer() {
     onSettingsSync: (h: (...args: never[]) => void) => {
       handlers.settings = h;
     },
-  } as unknown as HarnessWebSocketServer;
+  } as unknown as HarnessHub;
   return { sent, handlers, server };
 }
 

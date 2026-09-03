@@ -1,6 +1,6 @@
 // FILE: gateway.ts
 // Purpose: M3h — server-side turn gateway. Owns one CaideRunner plus a
-// per-session Inbox map, and binds a HarnessWebSocketServer to them:
+// per-session Inbox map, and binds a HarnessHub to them:
 // subscribe (handled by the server) → startHarnessTurn on first client steer
 // or explicit start; steer → inbox.steer (picked up at the next loop step);
 // cancel → runner.cancel. All turn events fan out to session subscribers.
@@ -9,7 +9,7 @@
 
 import type { HarnessEvent } from "@caide/contracts";
 import { Inbox } from "../inbox/index.ts";
-import { HarnessWebSocketServer } from "../ws/server.ts";
+import { HarnessHub } from "../ws/hub.ts";
 import { attachUiBridge } from "../ws/uiBridge.ts";
 import { approveBlueprint, type AppBlueprint } from "../../dyad/plan/blueprintStore.ts";
 import { sharedProviderSecrets } from "../../dyad/providers/secrets.ts";
@@ -33,13 +33,13 @@ export interface GatewayTurnRequest {
 
 export class TurnGateway {  private runner = new CaideRunner();
   private inboxes = new Map<string, Inbox>();
-  private ws: HarnessWebSocketServer | null = null;
+  private ws: HarnessHub | null = null;
   private uiDetach: (() => void) | null = null;
   private requestConsent: ConsentRequestFn | null = null;
   private requestMcpConsent: McpConsentRequestFn | null = null;
 
   /** Attach a WS server: bridge UI transports + steer/cancel bindings. */
-  attachWs(server: HarnessWebSocketServer): void {
+  attachWs(server: HarnessHub): void {
     this.ws = server;
     const bridge = attachUiBridge(server);
     this.requestConsent = bridge.requestConsent;
@@ -152,7 +152,7 @@ export class TurnGateway {  private runner = new CaideRunner();
   }
 
   private sendProviderState(
-    server: HarnessWebSocketServer,
+    server: HarnessHub,
     sessionId: string,
     requestId?: string,
     tests?: Record<string, { ok: boolean; message: string }>,

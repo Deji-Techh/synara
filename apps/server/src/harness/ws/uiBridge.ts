@@ -25,9 +25,9 @@ import {
   type SettingsSyncPayload,
 } from "../turn/sessionStores.ts";
 import { setBlockchainNetworks, type BlockchainNetwork } from "../../dyad/web3/networks.ts";
-import type { HarnessWebSocketServer } from "./server.ts";
+import type { HarnessHub } from "./hub.ts";
 
-function send(server: HarnessWebSocketServer, sessionId: string, event: HarnessEvent): void {
+function send(server: HarnessHub, sessionId: string, event: HarnessEvent): void {
   server.broadcastToSession(sessionId, event);
 }
 
@@ -36,7 +36,7 @@ function send(server: HarnessWebSocketServer, sessionId: string, event: HarnessE
  * factories turn contexts use (they emit ui_prompt and await the answer
  * via the matching waiter — no transport-specific code at call sites).
  */
-export function attachUiBridge(server: HarnessWebSocketServer): {
+export function attachUiBridge(server: HarnessHub): {
   requestConsent: ConsentRequestFn;
   requestMcpConsent: McpConsentRequestFn;
   detach: () => void;

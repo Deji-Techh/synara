@@ -1,225 +1,73 @@
+// FILE: server.ts
+// Purpose: Raw-ws HarnessWebSocketServer — thin adapter over HarnessHub for
+// tests and standalone embedding. Production traffic rides the Effect route
+// (harnessRouteLayer) on the same upgrade pipeline as RPC/device-frame.
+
 import type { IncomingMessage } from "node:http";
 import type { Duplex } from "node:stream";
 import { WebSocketServer, WebSocket } from "ws";
-import type { HarnessEvent } from "@caide/contracts";
+import { HarnessHub, type HarnessClientSender } from "./hub.ts";
 
-export interface ClientInboundMessage {
-  type: "subscribe" | "steer" | "cancel" | "checkpoint_response" | "ping" | "prompt_answer" | "consent_answer" | "settings_sync" | "blueprint_response" | "turn_start" | "provider_settings_get" | "provider_settings_set" | "provider_settings_test";
-  sessionId?: string;
-  token?: string;
-  prompt?: string;
-  checkpointId?: string;
-  approved?: boolean;
-  feedback?: string;
-  requestId?: string;
-  answers?: Record<string, string>;
-  decision?: "accept-once" | "accept-always" | "decline";
-  settings?: Record<string, unknown>;
-  blueprint?: Record<string, unknown>;
-  turn?: TurnStartPayload;
-  provider?: { id?: string; apiKey?: string; apiBaseUrl?: string; resourceName?: string };
-  providerEntry?: { apiKey?: string; apiBaseUrl?: string; resourceName?: string };
-  defaults?: { providerId?: string; modelId?: string };
-}
-
-export interface TurnStartPayload {
-  appPath: string;
-  prompt: string;
-  mode?: "build" | "ask" | "agent" | "plan";
-  framework?: "blank" | "react-native" | "flutter" | "website";
-  providerId?: string;
-  modelId?: string;
-  maxSteps?: number;
-  providerSettings?: Record<string, { apiKey?: { value?: string | null } | string | null; apiBaseUrl?: string | null; baseUrl?: string | null; resourceName?: string | null }>;
-}
-
-export type SessionCancelHandler = (sessionId: string, reason?: string) => void;
-export type SessionSteerHandler = (sessionId: string, prompt: string) => void;
-export type CheckpointResponseHandler = (
-  sessionId: string,
-  checkpointId: string,
-  approved: boolean,
-  feedback?: string,
-) => void;
-export type PromptAnswerHandler = (requestId: string, answers: Record<string, string> | null) => void;
-export type ConsentAnswerHandler = (
-  requestId: string,
-  decision: "accept-once" | "accept-always" | "decline",
-) => void;
-export type SettingsSyncHandler = (sessionId: string, settings: Record<string, unknown>) => void;
-export type BlueprintResponseHandler = (
-  sessionId: string,
-  approved: boolean,
-  blueprint?: Record<string, unknown>,
-  feedback?: string,
-) => void;
-export type TurnStartHandler = (sessionId: string, turn: TurnStartPayload) => void;
-export type ProviderSettingsGetHandler = (sessionId: string, requestId?: string) => void;
-export type ProviderSettingsSetHandler = (
-  sessionId: string,
-  providerId: string,
-  entry: { apiKey?: string; apiBaseUrl?: string; resourceName?: string },
-  defaults?: { providerId?: string; modelId?: string },
-  requestId?: string,
-) => void;
-export type ProviderSettingsTestHandler = (
-  sessionId: string,
-  providerId: string,
-  requestId?: string,
-) => void;
+export type {
+  ClientInboundMessage,
+  TurnStartPayload,
+  SessionCancelHandler,
+  SessionSteerHandler,
+  CheckpointResponseHandler,
+  PromptAnswerHandler,
+  ConsentAnswerHandler,
+  SettingsSyncHandler,
+  BlueprintResponseHandler,
+  TurnStartHandler,
+  ProviderSettingsGetHandler,
+  ProviderSettingsSetHandler,
+  ProviderSettingsTestHandler,
+} from "./hub.ts";
 
 export class HarnessWebSocketServer {
   private wss: WebSocketServer;
-  private sessionClients = new Map<string, Set<WebSocket>>();
-  private onCancelHandler?: SessionCancelHandler;
-  private onSteerHandler?: SessionSteerHandler;
-  private onCheckpointHandler?: CheckpointResponseHandler;
-  private onPromptAnswerHandler?: PromptAnswerHandler;
-  private onConsentAnswerHandler?: ConsentAnswerHandler;
-  private onSettingsSyncHandler?: SettingsSyncHandler;
-  private onBlueprintResponseHandler?: BlueprintResponseHandler;
-  private onTurnStartHandler?: TurnStartHandler;
-  private onProviderSettingsGetHandler?: ProviderSettingsGetHandler;
-  private onProviderSettingsSetHandler?: ProviderSettingsSetHandler;
-  private onProviderSettingsTestHandler?: ProviderSettingsTestHandler;
+  private hub: HarnessHub;
 
-  constructor() {
+  constructor(hub?: HarnessHub) {
+    this.hub = hub ?? new HarnessHub();
     this.wss = new WebSocketServer({ noServer: true });
     this.setupWss();
   }
 
+  /** The underlying hub (gateway binds here in embedded use). */
+  getHub(): HarnessHub {
+    return this.hub;
+  }
+
   private setupWss(): void {
     this.wss.on("connection", (ws: WebSocket) => {
-      let currentSessionId: string | null = null;
+      let release: (() => void) | null = null;
+      const sender: HarnessClientSender = {
+        sendText: (text: string) => {
+          if (ws.readyState === WebSocket.OPEN) ws.send(text);
+        },
+        isOpen: () => ws.readyState === WebSocket.OPEN,
+      };
 
       ws.on("message", (raw: string) => {
+        // Subscribe registers (ack + replay live in the hub); everything
+        // else routes through hub dispatch exactly once.
         try {
-          const msg = JSON.parse(raw.toString()) as ClientInboundMessage;
-
-          if (msg.type === "ping") {
-            ws.send(JSON.stringify({ type: "pong", time: Date.now() }));
-            return;
-          }
-
+          const msg = JSON.parse(raw.toString()) as { type?: string; sessionId?: string };
           if (msg.type === "subscribe" && msg.sessionId) {
-            currentSessionId = msg.sessionId;
-            let clients = this.sessionClients.get(msg.sessionId);
-            if (!clients) {
-              clients = new Set();
-              this.sessionClients.set(msg.sessionId, clients);
-            }
-            clients.add(ws);
-            ws.send(JSON.stringify({ type: "subscribed", sessionId: msg.sessionId }));
-            // Reconnect replay: rebuild UI state from the durable event log.
-            void this.replaySession(msg.sessionId, ws).catch(() => {});
-            return;
-          }
-
-          if (msg.type === "steer" && msg.sessionId && msg.prompt) {
-            if (this.onSteerHandler) {
-              this.onSteerHandler(msg.sessionId, msg.prompt);
-            }
-            return;
-          }
-
-          if (msg.type === "cancel" && msg.sessionId) {
-            if (this.onCancelHandler) {
-              this.onCancelHandler(msg.sessionId, "User cancelled from web client");
-            }
-            return;
-          }
-
-          if (msg.type === "checkpoint_response" && msg.sessionId && msg.checkpointId) {
-            if (this.onCheckpointHandler) {
-              this.onCheckpointHandler(
-                msg.sessionId,
-                msg.checkpointId,
-                msg.approved ?? true,
-                msg.feedback,
-              );
-            }
-            return;
-          }
-
-          if (msg.type === "prompt_answer" && msg.requestId) {
-            if (this.onPromptAnswerHandler) {
-              this.onPromptAnswerHandler(msg.requestId, msg.answers ?? null);
-            }
-            return;
-          }
-
-          if (msg.type === "consent_answer" && msg.requestId) {
-            if (this.onConsentAnswerHandler) {
-              this.onConsentAnswerHandler(msg.requestId, msg.decision ?? "decline");
-            }
-            return;
-          }
-
-          if (msg.type === "settings_sync" && msg.sessionId) {
-            if (this.onSettingsSyncHandler) {
-              this.onSettingsSyncHandler(msg.sessionId, msg.settings ?? {});
-            }
-            return;
-          }
-
-          if (msg.type === "blueprint_response" && msg.sessionId) {
-            if (this.onBlueprintResponseHandler) {
-              this.onBlueprintResponseHandler(
-                msg.sessionId,
-                msg.approved ?? false,
-                msg.blueprint,
-                msg.feedback,
-              );
-            }
-            return;
-          }
-
-          if (msg.type === "turn_start" && msg.sessionId && msg.turn) {
-            if (this.onTurnStartHandler) {
-              this.onTurnStartHandler(msg.sessionId, msg.turn);
-            }
-            return;
-          }
-
-          if (msg.type === "provider_settings_get" && msg.sessionId) {
-            this.onProviderSettingsGetHandler?.(msg.sessionId, msg.requestId);
-            return;
-          }
-
-          if (msg.type === "provider_settings_set" && msg.sessionId && msg.provider?.id) {
-            this.onProviderSettingsSetHandler?.(
-              msg.sessionId,
-              msg.provider.id,
-              {
-                apiKey: msg.providerEntry?.apiKey,
-                apiBaseUrl: msg.providerEntry?.apiBaseUrl,
-                resourceName: msg.providerEntry?.resourceName,
-              },
-              msg.defaults,
-              msg.requestId,
-            );
-            return;
-          }
-
-          if (msg.type === "provider_settings_test" && msg.sessionId && msg.provider?.id) {
-            this.onProviderSettingsTestHandler?.(msg.sessionId, msg.provider.id, msg.requestId);
+            release?.();
+            release = this.hub.addClient(msg.sessionId, sender);
             return;
           }
         } catch {
-          // ignore malformed client message
+          // fall through to hub dispatch (handles malformed safely)
         }
+        this.hub.handleText(sender, raw.toString());
       });
 
       ws.on("close", () => {
-        if (currentSessionId) {
-          const clients = this.sessionClients.get(currentSessionId);
-          if (clients) {
-            clients.delete(ws);
-            if (clients.size === 0) {
-              this.sessionClients.delete(currentSessionId);
-            }
-          }
-        }
+        release?.();
+        release = null;
       });
     });
   }
@@ -230,72 +78,55 @@ export class HarnessWebSocketServer {
     });
   }
 
-  broadcastToSession(sessionId: string, event: HarnessEvent): void {
-    const clients = this.sessionClients.get(sessionId);
-    if (!clients || clients.size === 0) return;
-
-    const payload = JSON.stringify(event);
-    for (const ws of clients) {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(payload);
-      }
-    }
+  broadcastToSession(
+    sessionId: string,
+    event: Parameters<HarnessHub["broadcastToSession"]>[1],
+  ): void {
+    this.hub.broadcastToSession(sessionId, event);
   }
 
-  /** Send the durable event tail to a (re)subscribing socket. */
-  private async replaySession(sessionId: string, ws: WebSocket): Promise<void> {
-    const { readHarnessEvents } = await import("../turn/eventLog.ts");
-    const events = await readHarnessEvents(sessionId);
-    for (const event of events) {
-      if (ws.readyState !== WebSocket.OPEN) return;
-      const clients = this.sessionClients.get(sessionId);
-      if (!clients?.has(ws)) return;
-      ws.send(JSON.stringify(event));
-    }
+  onCancel(handler: Parameters<HarnessHub["onCancel"]>[0]): void {
+    this.hub.onCancel(handler);
   }
 
-  onCancel(handler: SessionCancelHandler): void {
-    this.onCancelHandler = handler;
+  onSteer(handler: Parameters<HarnessHub["onSteer"]>[0]): void {
+    this.hub.onSteer(handler);
   }
 
-  onSteer(handler: SessionSteerHandler): void {
-    this.onSteerHandler = handler;
+  onCheckpointResponse(handler: Parameters<HarnessHub["onCheckpointResponse"]>[0]): void {
+    this.hub.onCheckpointResponse(handler);
   }
 
-  onCheckpointResponse(handler: CheckpointResponseHandler): void {
-    this.onCheckpointHandler = handler;
+  onPromptAnswer(handler: Parameters<HarnessHub["onPromptAnswer"]>[0]): void {
+    this.hub.onPromptAnswer(handler);
   }
 
-  onPromptAnswer(handler: PromptAnswerHandler): void {
-    this.onPromptAnswerHandler = handler;
+  onConsentAnswer(handler: Parameters<HarnessHub["onConsentAnswer"]>[0]): void {
+    this.hub.onConsentAnswer(handler);
   }
 
-  onConsentAnswer(handler: ConsentAnswerHandler): void {
-    this.onConsentAnswerHandler = handler;
+  onSettingsSync(handler: Parameters<HarnessHub["onSettingsSync"]>[0]): void {
+    this.hub.onSettingsSync(handler);
   }
 
-  onSettingsSync(handler: SettingsSyncHandler): void {
-    this.onSettingsSyncHandler = handler;
+  onBlueprintResponse(handler: Parameters<HarnessHub["onBlueprintResponse"]>[0]): void {
+    this.hub.onBlueprintResponse(handler);
   }
 
-  onBlueprintResponse(handler: BlueprintResponseHandler): void {
-    this.onBlueprintResponseHandler = handler;
+  onTurnStart(handler: Parameters<HarnessHub["onTurnStart"]>[0]): void {
+    this.hub.onTurnStart(handler);
   }
 
-  onTurnStart(handler: TurnStartHandler): void {
-    this.onTurnStartHandler = handler;
+  onProviderSettingsGet(handler: Parameters<HarnessHub["onProviderSettingsGet"]>[0]): void {
+    this.hub.onProviderSettingsGet(handler);
   }
 
-  onProviderSettingsGet(handler: ProviderSettingsGetHandler): void {
-    this.onProviderSettingsGetHandler = handler;
+  onProviderSettingsSet(handler: Parameters<HarnessHub["onProviderSettingsSet"]>[0]): void {
+    this.hub.onProviderSettingsSet(handler);
   }
 
-  onProviderSettingsSet(handler: ProviderSettingsSetHandler): void {
-    this.onProviderSettingsSetHandler = handler;
-  }
-
-  onProviderSettingsTest(handler: ProviderSettingsTestHandler): void {
-    this.onProviderSettingsTestHandler = handler;
+  onProviderSettingsTest(handler: Parameters<HarnessHub["onProviderSettingsTest"]>[0]): void {
+    this.hub.onProviderSettingsTest(handler);
   }
 
   close(): Promise<void> {
