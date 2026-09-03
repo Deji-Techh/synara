@@ -28,12 +28,12 @@ export {
   setDbDriver,
   setIntegrationTransport,
   DbToolError,
-  DbNotConnectedError,
   type DbDriver,
   type ResolvedDatabase,
   type SqlConsentInfo,
   type IntegrationTransport,
 } from "./dbTools.ts";
+export { DbNotConnectedError } from "./connections.ts";
 export { checkSqlDanger, classifySql, splitStatements } from "./sqlSafety.ts";
 export {
   NEON_API_BASE_URL,
