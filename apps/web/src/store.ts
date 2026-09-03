@@ -141,6 +141,27 @@ export function collapseProjectsExcept(
   return changed ? { ...state, projects } : state;
 }
 
+/**
+ * Dyad-style drill: expanding a project collapses every other one, so chats
+ * only ever show under a single drilled project. Collapsing the drilled
+ * project returns to the projects-only level.
+ */
+export function drillProject(state: AppState, projectId: Project["id"]): AppState {
+  const target = state.projects.find((p) => p.id === projectId);
+  if (!target) return state;
+  if (target.expanded) {
+    return setProjectExpanded(state, projectId, false);
+  }
+  let changed = false;
+  const projects = state.projects.map((project) => {
+    const nextExpanded = project.id === projectId;
+    if (project.expanded === nextExpanded) return project;
+    changed = true;
+    return { ...project, expanded: nextExpanded };
+  });
+  return changed ? { ...state, projects } : state;
+}
+
 export function reorderProjects(
   state: AppState,
   draggedProjectId: Project["id"],
@@ -278,6 +299,7 @@ interface AppStore extends AppState {
   markThreadVisited: (threadId: ThreadId, visitedAt?: string) => void;
   markThreadUnread: (threadId: ThreadId) => void;
   toggleProject: (projectId: Project["id"]) => void;
+  drillProject: (projectId: Project["id"]) => void;
   setProjectExpanded: (projectId: Project["id"], expanded: boolean) => void;
   setAllProjectsExpanded: (expanded: boolean) => void;
   collapseProjectsExcept: (activeProjectId: Project["id"] | null) => void;
@@ -328,6 +350,7 @@ export const useStore = create<AppStore>((set) => ({
     set((state) => markThreadVisited(state, threadId, visitedAt)),
   markThreadUnread: (threadId) => set((state) => markThreadUnread(state, threadId)),
   toggleProject: (projectId) => set((state) => toggleProject(state, projectId)),
+  drillProject: (projectId) => set((state) => drillProject(state, projectId)),
   setProjectExpanded: (projectId, expanded) =>
     set((state) => setProjectExpanded(state, projectId, expanded)),
   setAllProjectsExpanded: (expanded) => set((state) => setAllProjectsExpanded(state, expanded)),

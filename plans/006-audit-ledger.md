@@ -18,7 +18,7 @@
 | Old settings panels (`KeyboardShortcuts|AppIcon|Advanced|ConversationStorage|Desktop`, rebuild `ProvidersSettings`) | `apps/web/src/components/settings/` | PENDING |
 | `ExternalMcpSettingsPanel` + `SkillsSettingsPanel` | `apps/web/src/components/settings/` | REBUILD in Caide styling (MCP servers/consents §5, project skills §6) — NOT deleted |
 | MCP stack (`mcp_manager/shutdown/oauth/handlers/types/error_classifiers`, `search_mcp_tools`, `get_mcp_tool_schema`, `mcp_consent*`, `mcp_consent_policy`) + slash commands (`slash_commands.ts` pattern, Caide intent set + `/mcp`) | `dyad/mcp/` + composer | NEXT (M2 tools, M3 settings/chat) |
-| Sidebar creation logic (`project.create` ~L2065, `thread.create` ~L2545/2575 in `Sidebar.tsx`) | `apps/web/src/components/Sidebar.tsx` | REWRITE Dyad two-level (M3): projects-only level 1, per-project chats level 2; keep framework selector in `CreateAppDialog.tsx` |
+| Sidebar creation logic (`project.create` ~L2065, `thread.create` ~L2545/2575 in `Sidebar.tsx`) | `apps/web/src/components/Sidebar.tsx` | LANDED single-drill (M3c): expanding a project collapses the rest; mount normalizes multi-expanded trees to projects-only. Framework selector untouched. Creation-flow rewire (`createApp`/`chat:stream`) rides M3d loop integration. |
 | Plan continue gate (approved plan → "Continue in Agent mode?" checkpoint) | planner + `CheckpointCard` | NEXT (M3) |
 | Old contracts (`orchestration.ts`, `automation.ts`, `agentGateway*`, `checkpointing.ts`) | `packages/contracts/src/` | PENDING |
 | Desktop `browserAutomation/` (28) + `browserAnnotations/` (11) | `apps/desktop/src/` | PENDING (verify Dyad preview replaces first) |

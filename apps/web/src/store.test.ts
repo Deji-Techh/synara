@@ -13,6 +13,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   applySpaceOrder,
   collapseProjectsExcept,
+  drillProject,
   markThreadUnread,
   renameProjectLocally,
   reorderProjects,
@@ -313,6 +314,47 @@ describe("store facade", () => {
     expect(next.projects.map(({ id, expanded }) => ({ id, expanded }))).toEqual([
       { id: project1, expanded: false },
       { id: project2, expanded: true },
+    ]);
+  });
+
+  it("drills a single project: expanding one collapses the rest", () => {
+    const project1 = ProjectId.makeUnsafe("project-1");
+    const project2 = ProjectId.makeUnsafe("project-2");
+    const state: AppState = {
+      ...makeState(makeThread()),
+      spaces: [],
+      projects: [
+        makeProject({
+          id: project1,
+          name: "Project 1",
+          remoteName: "Project 1",
+          folderName: "project-1",
+          cwd: "/tmp/project-1",
+          expanded: false,
+        }),
+        makeProject({
+          id: project2,
+          name: "Project 2",
+          remoteName: "Project 2",
+          folderName: "project-2",
+          cwd: "/tmp/project-2",
+          expanded: false,
+        }),
+      ],
+      sidebarThreadSummaryById: {},
+      threadsHydrated: true,
+    };
+
+    const drilled = drillProject(state, project2);
+    expect(drilled.projects.map(({ id, expanded }) => ({ id, expanded }))).toEqual([
+      { id: project1, expanded: false },
+      { id: project2, expanded: true },
+    ]);
+
+    const collapsed = drillProject(drilled, project2);
+    expect(collapsed.projects.map(({ id, expanded }) => ({ id, expanded }))).toEqual([
+      { id: project1, expanded: false },
+      { id: project2, expanded: false },
     ]);
   });
 

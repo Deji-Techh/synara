@@ -1314,11 +1314,22 @@ export default function Sidebar() {
   const markThreadVisited = useStore((store) => store.markThreadVisited);
   const markThreadUnread = useStore((store) => store.markThreadUnread);
   const toggleProject = useStore((store) => store.toggleProject);
+  const drillProject = useStore((store) => store.drillProject);
   const setProjectExpanded = useStore((store) => store.setProjectExpanded);
   const setAllProjectsExpanded = useStore((store) => store.setAllProjectsExpanded);
   const collapseProjectsExcept = useStore((store) => store.collapseProjectsExcept);
   const reorderProjects = useStore((store) => store.reorderProjects);
   const renameProjectLocally = useStore((store) => store.renameProjectLocally);
+  // Dyad-style single drill: start projects-only when several are expanded.
+  const projectsOnlyNormalizedRef = useRef(false);
+  useEffect(() => {
+    if (projectsOnlyNormalizedRef.current) return;
+    if (!threadsHydrated) return;
+    projectsOnlyNormalizedRef.current = true;
+    if (projects.filter((p) => p.expanded).length > 1) {
+      collapseProjectsExcept(null);
+    }
+  }, [threadsHydrated, projects, collapseProjectsExcept]);
   const removeDeletedProjectFromClientState = useStore(
     (store) => store.removeDeletedProjectFromClientState,
   );
@@ -4631,9 +4642,9 @@ export default function Sidebar() {
       if (selectedThreadIds.size > 0) {
         clearSelection();
       }
-      toggleProject(projectId);
+      drillProject(projectId);
     },
-    [clearSelection, selectedThreadIds.size, toggleProject],
+    [clearSelection, selectedThreadIds.size, drillProject],
   );
 
   const handleProjectTitleKeyDown = useCallback(
@@ -4643,9 +4654,9 @@ export default function Sidebar() {
       if (dragInProgressRef.current) {
         return;
       }
-      toggleProject(projectId);
+      drillProject(projectId);
     },
-    [toggleProject],
+    [drillProject],
   );
 
   useEffect(() => {
