@@ -25,6 +25,7 @@ import { ALL_MCP_TOOLS, setMcpToolRegistry, type McpToolRegistry } from "../../d
 import { ALL_MISC_TOOLS } from "../../dyad/misc/index.ts";
 import { ALL_SANDBOX_TOOLS } from "../../dyad/sandbox/index.ts";
 import { ALL_WEB_FETCH_TOOLS, ALL_WEB_SEARCH_TOOLS, ALL_IMAGE_TOOLS, ALL_CODE_TOOLS } from "../../dyad/web/index.ts";
+import { ALL_WEB3_TOOLS } from "../../dyad/web3/index.ts";
 import { ALL_DB_TOOLS, linkDatabase, type DbLink } from "../../dyad/db/index.ts";
 import {
   MemoryConsentStore,
@@ -42,6 +43,10 @@ import {
 import { setContextSummarizer } from "../../dyad/misc/index.ts";
 import { setSkillRunner } from "../../dyad/sandbox/index.ts";
 import { setExplorerRunner as setCodeExplorerRunner } from "../../dyad/web/index.ts";
+import { setImageProvider } from "../../dyad/web/generateImage.ts";
+import { setWebSearchProvider } from "../../dyad/web/webSearch.ts";
+import { autoImageProvider } from "../../dyad/web/keyedImages.ts";
+import { autoWebSearchProvider } from "../../dyad/web/keyedSearch.ts";
 import { streamProvider } from "../provider/apiAdapter.ts";
 import type { CaideFramework } from "../../dyad/prompts/index.ts";
 import { detectFrameworkFromDisk } from "../../dyad/prompts/frameworkDetect.ts";
@@ -108,6 +113,7 @@ const UNIFIED_DEFS: ToolDef[] = [
   ...ALL_WEB_SEARCH_TOOLS,
   ...ALL_IMAGE_TOOLS,
   ...ALL_CODE_TOOLS,
+  ...ALL_WEB3_TOOLS,
   ...ALL_DB_TOOLS,
 ];
 
@@ -145,6 +151,10 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
   setContextSummarizer(async ({ system, prompt }) => synthesize(system, prompt));
   setCodeExplorerRunner(async ({ system, prompt }) => synthesize(system, prompt));
   setSkillRunner(async ({ system, prompt }) => synthesize(system, prompt));
+  // Keyed web providers resolve from server env (Tavily > Brave > DDG;
+  // OpenAI Images > Pollinations). Env-global so idempotent across turns.
+  setWebSearchProvider(autoWebSearchProvider());
+  setImageProvider(autoImageProvider());
 
   if (input.mcpRegistry !== undefined) setMcpToolRegistry(input.mcpRegistry);
   if (input.dbLink) linkDatabase(input.sessionId, input.dbLink);

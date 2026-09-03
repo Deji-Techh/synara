@@ -24,6 +24,7 @@ import {
   applySettingsSync,
   type SettingsSyncPayload,
 } from "../turn/sessionStores.ts";
+import { setBlockchainNetworks, type BlockchainNetwork } from "../../dyad/web3/networks.ts";
 import type { HarnessWebSocketServer } from "./server.ts";
 
 function send(server: HarnessWebSocketServer, sessionId: string, event: HarnessEvent): void {
@@ -113,8 +114,13 @@ export function attachUiBridge(server: HarnessWebSocketServer): {
     resolveMcpConsent(requestId, decision);
   });
   server.onSettingsSync((sessionId, settings) => {
-    const payload = settings as SettingsSyncPayload;
+    const payload = settings as SettingsSyncPayload & { blockchainNetworks?: BlockchainNetwork[] };
     applySettingsSync(sessionId, payload);
+    if (payload.blockchainNetworks && payload.blockchainNetworks.length > 0) {
+      setBlockchainNetworks(
+        payload.blockchainNetworks.filter((n) => n.id && n.rpcUrl),
+      );
+    }
     // Settings UI → live tools: sync manager connections (stdio/SSE only;
     // OAuth stays needs-work) and republish the discovery registry.
     if (payload.mcpServers && payload.mcpServers.length > 0) {

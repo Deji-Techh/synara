@@ -244,6 +244,17 @@ export function syncHarnessSettings(
       defaultConsent?: "ask" | "always" | "never";
     }>
   >("caide.mcp-servers.v1", []);
+  const blockchainNetworks = readJson<
+    Array<{
+      id: string;
+      chainKind: string;
+      chainId: string;
+      name: string;
+      rpcUrl: string;
+      explorerUrl?: string;
+      isActive: boolean;
+    }>
+  >("caide.blockchain-networks.v1", []);
   const dbLinks = connections
     .filter((c) => c.enabled && typeof c.databaseUrl === "string" && c.databaseUrl.length > 0)
     .slice(0, 1)
@@ -261,6 +272,7 @@ export function syncHarnessSettings(
       mcpAutoApproveSafe: mcpPrefs.autoApproveSafe !== false,
       dbLinks,
       mcpServers,
+      blockchainNetworks,
     },
   });
 }
