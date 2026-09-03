@@ -61,4 +61,46 @@ describe("harnessStore ui events (m3)", () => {
     expect(blueprint?.approved).toBe(false);
     harnessStore.clearSession("s-ui");
   });
+
+  it("keeps an ordered timeline of tokens, tools, checkpoints, and errors", () => {
+    harnessStore.clearSession("s-ui");
+    harnessStore.handleEvent({ type: "token", sessionId: "s-ui", content: "Hi" });
+    harnessStore.handleEvent({
+      type: "tool_call",
+      sessionId: "s-ui",
+      id: "c1",
+      name: "read_file",
+      args: {},
+      status: "started",
+    });
+    harnessStore.handleEvent({ type: "token", sessionId: "s-ui", content: "there" });
+    harnessStore.handleEvent({
+      type: "tool_call",
+      sessionId: "s-ui",
+      id: "c1",
+      name: "read_file",
+      args: {},
+      status: "completed",
+      result: "ok",
+    });
+    harnessStore.handleEvent({
+      type: "checkpoint",
+      sessionId: "s-ui",
+      id: "k1",
+      reason: "Review",
+      requiresResponse: true,
+    });
+    harnessStore.handleEvent({
+      type: "error",
+      sessionId: "s-ui",
+      code: "E",
+      message: "boom",
+      recoverable: true,
+    });
+    const timeline = harnessStore.getState().sessions["s-ui"]?.timeline ?? [];
+    // completed tool_call updates in place — only the started call is timelined.
+    expect(timeline.map((e) => e.kind)).toEqual(["token", "tool", "token", "checkpoint", "error"]);
+    expect(timeline.map((e) => e.seq)).toEqual([1, 2, 3, 4, 5]);
+    harnessStore.clearSession("s-ui");
+  });
 });

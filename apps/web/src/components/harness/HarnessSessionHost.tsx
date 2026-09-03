@@ -11,6 +11,7 @@ import { HarnessBlueprintCard } from "./HarnessBlueprintCard";
 import { HarnessPlanCard } from "./HarnessPlanCard";
 import { HarnessPrompts } from "./HarnessPrompts";
 import { HarnessReveals } from "./HarnessReveals";
+import { HarnessTranscript } from "./HarnessTranscript";
 
 export function HarnessSessionHost(props: { threadId: ThreadId; projectId: ProjectId | null }) {
   const project = useStore((store) =>
@@ -26,6 +27,7 @@ export function HarnessSessionHost(props: { threadId: ThreadId; projectId: Proje
     <>
       <HarnessReveals threadId={props.threadId} sessionId={props.threadId} />
       <div className="px-3">
+        <HarnessTranscript sessionId={props.threadId} send={send} />
         <HarnessPrompts sessionId={props.threadId} send={send} />
         <HarnessPlanCard sessionId={props.threadId} send={send} />
         <HarnessBlueprintCard sessionId={props.threadId} send={send} />

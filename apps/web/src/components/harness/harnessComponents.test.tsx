@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { harnessStore } from "~/harnessStore";
 import { HarnessBlueprintCard } from "./HarnessBlueprintCard";
 import { HarnessPlanCard } from "./HarnessPlanCard";
+import { HarnessTranscript } from "./HarnessTranscript";
 import { HarnessPrompts } from "./HarnessPrompts";
 
 const send = () => {};
@@ -100,6 +101,50 @@ describe("harness components (m3)", () => {
     expect(markup).toContain("FreshBite");
     expect(markup).toContain("Approve blueprint");
     expect(markup).toContain("Request changes");
+    harnessStore.clearSession("s-hc");
+  });
+
+  it("renders the transcript in order: text, tool card, checkpoint, error", () => {
+    harnessStore.clearSession("s-hc");
+    harnessStore.handleEvent({ type: "token", sessionId: "s-hc", content: "Working on it" });
+    harnessStore.handleEvent({
+      type: "tool_call",
+      sessionId: "s-hc",
+      id: "c9",
+      name: "read_file",
+      args: { path: "a.ts" },
+      status: "started",
+    });
+    harnessStore.handleEvent({
+      type: "tool_call",
+      sessionId: "s-hc",
+      id: "c9",
+      name: "read_file",
+      args: { path: "a.ts" },
+      status: "completed",
+      result: "content here",
+    });
+    harnessStore.handleEvent({
+      type: "checkpoint",
+      sessionId: "s-hc",
+      id: "k9",
+      reason: "Gate review",
+      requiresResponse: true,
+      diff: "diff text",
+    });
+    harnessStore.handleEvent({
+      type: "error",
+      sessionId: "s-hc",
+      code: "E",
+      message: "kaput",
+      recoverable: true,
+    });
+    const markup = renderToStaticMarkup(<HarnessTranscript sessionId="s-hc" send={send} />);
+    expect(markup).toContain("Working on it");
+    expect(markup).toContain("Read");
+    expect(markup).toContain("a.ts");
+    expect(markup).toContain("Gate review");
+    expect(markup).toContain("kaput");
     harnessStore.clearSession("s-hc");
   });
 });

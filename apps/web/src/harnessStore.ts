@@ -52,6 +52,13 @@ export interface BlueprintEntry {
   approved: boolean;
 }
 
+export interface TimelineEntry {
+  seq: number;
+  kind: "token" | "tool" | "stage" | "checkpoint" | "error" | "artifact";
+  id?: string;
+  content?: string;
+}
+
 export interface SessionState {
   id: string;
   stage: string;
@@ -64,6 +71,17 @@ export interface SessionState {
   reveals: UiRevealEntry[];
   plan?: PlanEntry;
   blueprint?: BlueprintEntry;
+  timeline: TimelineEntry[];
+}
+
+let timelineSeq = 0;
+const TIMELINE_CAP = 2000;
+
+function pushTimeline(session: SessionState, entry: Omit<TimelineEntry, "seq">): void {
+  session.timeline.push({ ...entry, seq: ++timelineSeq });
+  if (session.timeline.length > TIMELINE_CAP) {
+    session.timeline.splice(0, session.timeline.length - TIMELINE_CAP);
+  }
 }
 
 export interface HarnessStoreState {
@@ -97,6 +115,7 @@ function getOrCreateSession(sessionId: string): SessionState {
         errors: [],
         prompts: [],
         reveals: [],
+        timeline: [],
       },
     };
   }
@@ -118,6 +137,7 @@ export const harnessStore = {
       case "token": {
         const updatedTokens = [...session.tokens, event.content];
         state.sessions[event.sessionId] = { ...session, tokens: updatedTokens };
+        pushTimeline(state.sessions[event.sessionId], { kind: "token", content: event.content });
         break;
       }
       case "stage": {
@@ -137,6 +157,9 @@ export const harnessStore = {
           },
         };
         state.sessions[event.sessionId] = { ...session, toolCalls: updatedToolCalls };
+        if (event.status === "started") {
+          pushTimeline(state.sessions[event.sessionId], { kind: "tool", id: event.id });
+        }
         break;
       }
       case "checkpoint": {
@@ -149,6 +172,7 @@ export const harnessStore = {
             diff: event.diff,
           },
         };
+        pushTimeline(state.sessions[event.sessionId], { kind: "checkpoint", id: event.id });
         break;
       }
       case "artifact_updated": {
@@ -164,6 +188,7 @@ export const harnessStore = {
           ...session,
           errors: [...session.errors, { code: event.code, message: event.message }],
         };
+        pushTimeline(state.sessions[event.sessionId], { kind: "error", content: event.message });
         break;
       }
       case "ui_prompt": {
