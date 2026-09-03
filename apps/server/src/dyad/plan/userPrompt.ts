@@ -9,7 +9,7 @@
 export interface PendingPrompt {
   requestId: string;
   sessionId: string;
-  kind: "questionnaire" | "env-vars";
+  kind: "questionnaire" | "env-vars" | "integration";
   resolve: (value: Record<string, string> | null) => void;
 }
 
