@@ -111,8 +111,8 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "check_subagent_status", category: "subagents", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "missing" },
   { name: "execute_fork_skill", category: "subagents", defaultConsent: "ask", modifiesState: false, readOnly: true, deferred: true, caideMapping: "missing" },
   // mcp
-  { name: "search_mcp_tools", category: "mcp", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "missing" },
-  { name: "get_mcp_tool_schema", category: "mcp", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "missing" },
+  { name: "search_mcp_tools", category: "mcp", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/mcp" },
+  { name: "get_mcp_tool_schema", category: "mcp", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/mcp" },
   // sandbox
   { name: "execute_sandbox_script", category: "file-edit", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "missing" },
   // goals (donor goal system is out of scope for Caide v1 — see plan §5 slash decision)
