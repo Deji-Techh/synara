@@ -70,11 +70,12 @@ class ColorTokens {
 `,
   );
 
-  // 3. lib/main.dart
+  // 3. lib/main.dart + router + tabbed home (mobile contract: bottom tabs)
   await write(
     "lib/main.dart",
     `import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'router.dart';
 import 'theme/tokens.dart';
 
 void main() {
@@ -86,28 +87,151 @@ class CaideApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: '${appName}',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: ColorTokens.background,
-      ),
-      home: Scaffold(
-        body: Center(
-          child: Text(
-            'Welcome to ${appName}',
-            style: const TextStyle(
-              color: ColorTokens.textPrimary,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+      theme: buildCaideTheme(),
+      routerConfig: caideRouter,
+    );
+  }
+}
+`,
+  );
+
+  // 3b. lib/router.dart — bottom-tab shell with 2+ tabs (mobile contract)
+  await write(
+    "lib/router.dart",
+    `import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'screens/home_screen.dart';
+import 'screens/settings_screen.dart';
+
+final caideRouter = GoRouter(
+  initialLocation: '/home',
+  routes: [
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) {
+        return ScaffoldWithTabs(navigationShell: navigationShell);
+      },
+      branches: [
+        StatefulShellBranch(
+          routes: [GoRoute(path: '/home', builder: (context, state) => const HomeScreen())],
         ),
+        StatefulShellBranch(
+          routes: [GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen())],
+        ),
+      ],
+    ),
+  ],
+);
+
+class ScaffoldWithTabs extends StatelessWidget {
+  const ScaffoldWithTabs({super.key, required this.navigationShell});
+
+  final StatefulNavigationShell navigationShell;
+
+  void _goBranch(int index) {
+    navigationShell.goBranch(index, initialLocation: index == navigationShell.currentIndex);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: navigationShell,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: navigationShell.currentIndex,
+        onDestinationSelected: _goBranch,
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
+          NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
+        ],
       ),
     );
   }
 }
+`,
+  );
+
+  // 3c. sample screens with empty-state-ready structure
+  await write(
+    "lib/screens/home_screen.dart",
+    `import 'package:flutter/material.dart';
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('${appName}')),
+      body: const Center(
+        child: Text('No items yet — create your first one to get started.'),
+      ),
+    );
+  }
+}
+`,
+  );
+  await write(
+    "lib/screens/settings_screen.dart",
+    `import 'package:flutter/material.dart';
+
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Settings')),
+      body: ListView(
+        children: const [
+          ListTile(leading: Icon(Icons.palette_outlined), title: Text('Appearance')),
+          ListTile(leading: Icon(Icons.info_outlined), title: Text('About')),
+        ],
+      ),
+    );
+  }
+}
+`,
+  );
+
+  // 3d. theme wiring off the token file
+  await write(
+    "lib/theme/app_theme.dart",
+    `import 'package:flutter/material.dart';
+import 'tokens.dart';
+
+ThemeData buildCaideTheme() {
+  final scheme = ColorScheme.fromSeed(
+    seedColor: ColorTokens.accent,
+    brightness: Brightness.dark,
+  );
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: scheme,
+    scaffoldBackgroundColor: ColorTokens.background,
+    appBarTheme: const AppBarTheme(
+      backgroundColor: ColorTokens.background,
+      foregroundColor: ColorTokens.textPrimary,
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: ColorTokens.surface,
+      indicatorColor: ColorTokens.accent.withValues(alpha: 0.24),
+    ),
+  );
+}
+`,
+  );
+
+  // 3e. analysis options (lints on from day one)
+  await write(
+    "analysis_options.yaml",
+    `include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    prefer_single_quotes: true
+    require_trailing_commas: true
 `,
   );
 
