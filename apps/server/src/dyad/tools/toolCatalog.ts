@@ -87,7 +87,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "ask_env_vars", category: "plan-memory", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/plan" },
   { name: "write_plan", category: "plan-memory", defaultConsent: "ask", modifiesState: true, readOnly: false, planOnly: true, planningSpecific: true, caideMapping: "caide-native", caideTool: "dyad/plan" },
   { name: "exit_plan", category: "plan-memory", defaultConsent: "always", modifiesState: true, readOnly: false, planOnly: true, planningSpecific: true, caideMapping: "caide-native", caideTool: "dyad/plan" },
-  { name: "write_app_blueprint", category: "plan-memory", defaultConsent: "ask", modifiesState: true, readOnly: false, blueprint: true, caideMapping: "missing" },
+  { name: "write_app_blueprint", category: "plan-memory", defaultConsent: "ask", modifiesState: true, readOnly: false, blueprint: true, caideMapping: "caide-native", caideTool: "dyad/plan" },
   // verify (+ Caide preview tools live in harness/tools/previewTools.ts)
   { name: "run_type_checks", category: "verify", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "lint_project" },
   { name: "run_command", category: "verify", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "run_command" },

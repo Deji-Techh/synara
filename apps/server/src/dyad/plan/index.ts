@@ -39,3 +39,25 @@ export {
   type QuestionnaireItem,
   type EnvVarRequest,
 } from "./planTools.ts";
+export {
+  ALL_BLUEPRINT_TOOLS,
+  writeAppBlueprintTool,
+  executeWriteAppBlueprint,
+  setBlueprintTransport,
+  getBlueprintTransport,
+  BlueprintValidationError,
+  type BlueprintTransport,
+} from "./blueprintTools.ts";
+export {
+  setBlueprintRequired,
+  isBlueprintRequired,
+  presentBlueprint,
+  approveBlueprint,
+  getBlueprint,
+  isBlueprintApproved,
+  clearBlueprint,
+  assertAppBlueprintApproved,
+  BlueprintNotApprovedError,
+  type AppBlueprint,
+  type BlueprintVisual,
+} from "./blueprintStore.ts";

@@ -43,4 +43,22 @@ describe("harnessStore ui events (m3)", () => {
     expect(harnessStore.getState().sessions["s-ui"]?.plan?.exited).toBe(true);
     harnessStore.clearSession("s-ui");
   });
+
+  it("records blueprint updates", () => {
+    harnessStore.clearSession("s-ui");
+    harnessStore.handleEvent({
+      type: "blueprint_update",
+      sessionId: "s-ui",
+      appName: "FreshBite",
+      userPrompt: "Build me a restaurant website",
+      framework: "website",
+      designDirection: "Warm and inviting",
+      primaryColor: "#E85D04",
+      visuals: [{ type: "logo", description: "Header logo", prompt: "Minimalist logo" }],
+    });
+    const blueprint = harnessStore.getState().sessions["s-ui"]?.blueprint;
+    expect(blueprint?.appName).toBe("FreshBite");
+    expect(blueprint?.approved).toBe(false);
+    harnessStore.clearSession("s-ui");
+  });
 });

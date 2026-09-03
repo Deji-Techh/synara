@@ -113,4 +113,18 @@ describe("Harness Contracts", () => {
     };
     expect(Schema.decodeUnknownSync(HarnessEvent)(exit).type).toBe("plan_exit");
   });
+
+  it("validates blueprint_update harness event", () => {
+    const event: HarnessEventType = {
+      type: "blueprint_update",
+      sessionId: "s-123",
+      appName: "FreshBite",
+      userPrompt: "Build me a restaurant website",
+      framework: "website",
+      designDirection: "Warm and inviting",
+      primaryColor: "#E85D04",
+      visuals: [{ type: "logo", description: "Header logo", prompt: "Minimalist logo" }],
+    };
+    expect(Schema.decodeUnknownSync(HarnessEvent)(event).type).toBe("blueprint_update");
+  });
 });

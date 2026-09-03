@@ -5,6 +5,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { harnessStore } from "~/harnessStore";
+import { HarnessBlueprintCard } from "./HarnessBlueprintCard";
 import { HarnessPlanCard } from "./HarnessPlanCard";
 import { HarnessPrompts } from "./HarnessPrompts";
 
@@ -80,6 +81,25 @@ describe("harness components (m3)", () => {
     const after = renderToStaticMarkup(<HarnessPlanCard sessionId="s-hc" send={send} />);
     expect(after).toContain("Continue in Agent mode");
     expect(after).toContain("Start building");
+    harnessStore.clearSession("s-hc");
+  });
+
+  it("renders the blueprint card with approval actions", () => {
+    harnessStore.clearSession("s-hc");
+    harnessStore.handleEvent({
+      type: "blueprint_update",
+      sessionId: "s-hc",
+      appName: "FreshBite",
+      userPrompt: "Build me a restaurant website",
+      framework: "website",
+      designDirection: "Warm and inviting",
+      primaryColor: "#E85D04",
+      visuals: [{ type: "logo", description: "Header logo", prompt: "Minimalist logo" }],
+    });
+    const markup = renderToStaticMarkup(<HarnessBlueprintCard sessionId="s-hc" send={send} />);
+    expect(markup).toContain("FreshBite");
+    expect(markup).toContain("Approve blueprint");
+    expect(markup).toContain("Request changes");
     harnessStore.clearSession("s-hc");
   });
 });

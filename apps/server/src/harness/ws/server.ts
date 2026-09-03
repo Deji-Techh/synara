@@ -4,7 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import type { HarnessEvent } from "@caide/contracts";
 
 export interface ClientInboundMessage {
-  type: "subscribe" | "steer" | "cancel" | "checkpoint_response" | "ping" | "prompt_answer" | "consent_answer" | "settings_sync";
+  type: "subscribe" | "steer" | "cancel" | "checkpoint_response" | "ping" | "prompt_answer" | "consent_answer" | "settings_sync" | "blueprint_response";
   sessionId?: string;
   token?: string;
   prompt?: string;
@@ -15,6 +15,7 @@ export interface ClientInboundMessage {
   answers?: Record<string, string>;
   decision?: "accept-once" | "accept-always" | "decline";
   settings?: Record<string, unknown>;
+  blueprint?: Record<string, unknown>;
 }
 
 export type SessionCancelHandler = (sessionId: string, reason?: string) => void;
@@ -31,6 +32,12 @@ export type ConsentAnswerHandler = (
   decision: "accept-once" | "accept-always" | "decline",
 ) => void;
 export type SettingsSyncHandler = (sessionId: string, settings: Record<string, unknown>) => void;
+export type BlueprintResponseHandler = (
+  sessionId: string,
+  approved: boolean,
+  blueprint?: Record<string, unknown>,
+  feedback?: string,
+) => void;
 
 export class HarnessWebSocketServer {
   private wss: WebSocketServer;
@@ -41,6 +48,7 @@ export class HarnessWebSocketServer {
   private onPromptAnswerHandler?: PromptAnswerHandler;
   private onConsentAnswerHandler?: ConsentAnswerHandler;
   private onSettingsSyncHandler?: SettingsSyncHandler;
+  private onBlueprintResponseHandler?: BlueprintResponseHandler;
 
   constructor() {
     this.wss = new WebSocketServer({ noServer: true });
@@ -118,6 +126,18 @@ export class HarnessWebSocketServer {
             }
             return;
           }
+
+          if (msg.type === "blueprint_response" && msg.sessionId) {
+            if (this.onBlueprintResponseHandler) {
+              this.onBlueprintResponseHandler(
+                msg.sessionId,
+                msg.approved ?? false,
+                msg.blueprint,
+                msg.feedback,
+              );
+            }
+            return;
+          }
         } catch {
           // ignore malformed client message
         }
@@ -177,6 +197,10 @@ export class HarnessWebSocketServer {
 
   onSettingsSync(handler: SettingsSyncHandler): void {
     this.onSettingsSyncHandler = handler;
+  }
+
+  onBlueprintResponse(handler: BlueprintResponseHandler): void {
+    this.onBlueprintResponseHandler = handler;
   }
 
   close(): Promise<void> {

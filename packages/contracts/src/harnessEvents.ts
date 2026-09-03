@@ -150,6 +150,26 @@ export const PlanExitHarnessEvent = Schema.Struct({
 });
 export type PlanExitHarnessEvent = typeof PlanExitHarnessEvent.Type;
 
+export const BlueprintVisualSchema = Schema.Struct({
+  type: Schema.Literals(["logo", "photo", "illustration", "icon", "background", "other"]),
+  description: Schema.String,
+  prompt: Schema.String,
+});
+export type BlueprintVisualSchema = typeof BlueprintVisualSchema.Type;
+
+/** write_app_blueprint presentation (approve/request-change on the card). */
+export const BlueprintUpdateHarnessEvent = Schema.Struct({
+  type: Schema.Literal("blueprint_update"),
+  sessionId: Schema.String,
+  appName: Schema.String,
+  userPrompt: Schema.String,
+  framework: Schema.optional(Schema.String),
+  designDirection: Schema.String,
+  primaryColor: Schema.String,
+  visuals: Schema.Array(BlueprintVisualSchema),
+});
+export type BlueprintUpdateHarnessEvent = typeof BlueprintUpdateHarnessEvent.Type;
+
 export const HarnessEvent = Schema.Union([
   TokenHarnessEvent,
   ToolCallHarnessEvent,
@@ -165,5 +185,6 @@ export const HarnessEvent = Schema.Union([
   UiRevealHarnessEvent,
   PlanUpdateHarnessEvent,
   PlanExitHarnessEvent,
+  BlueprintUpdateHarnessEvent,
 ]);
 export type HarnessEvent = typeof HarnessEvent.Type;

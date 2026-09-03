@@ -15,6 +15,12 @@ import { ALL_DB_PANEL_TOOLS, shouldRevealDatabasePanel } from "../../dyad/db/dbP
 import { ALL_FILE_EDIT_TOOLS } from "../../dyad/editing/index.ts";
 import { ALL_GIT_TOOLS } from "../../dyad/vcs/index.ts";
 import { ALL_PLAN_TOOLS } from "../../dyad/plan/index.ts";
+import { ALL_BLUEPRINT_TOOLS } from "../../dyad/plan/blueprintTools.ts";
+import { assertAppBlueprintApproved } from "../../dyad/plan/blueprintStore.ts";
+import {
+  CAPABILITY_GATED_BLUEPRINT_TOOLS,
+  PLANNING_SPECIFIC_TOOLS,
+} from "../../dyad/tools/toolCatalog.ts";
 import { ALL_MCP_TOOLS, setMcpToolRegistry, type McpToolRegistry } from "../../dyad/mcp/index.ts";
 import { ALL_MISC_TOOLS } from "../../dyad/misc/index.ts";
 import { ALL_SANDBOX_TOOLS } from "../../dyad/sandbox/index.ts";
@@ -38,7 +44,7 @@ import { setSkillRunner } from "../../dyad/sandbox/index.ts";
 import { setExplorerRunner as setCodeExplorerRunner } from "../../dyad/web/index.ts";
 import { streamProvider } from "../provider/apiAdapter.ts";
 import type { CaideFramework } from "../../dyad/prompts/index.ts";
-import { normalizeCaideFramework } from "../../dyad/prompts/index.ts";
+import { detectFrameworkFromDisk } from "../../dyad/prompts/frameworkDetect.ts";
 
 export interface TurnFramework {
   framework: CaideFramework | undefined;
@@ -84,30 +90,8 @@ export interface TurnContext {
   cleanup(): void;
 }
 
-export async function detectFrameworkFromDisk(appPath: string): Promise<CaideFramework | undefined> {
-  const fs = await import("node:fs");
-  try {
-    const raw = fs.readFileSync(`${appPath}/.caide/framework.json`, "utf8");
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
-    const fw = normalizeCaideFramework(String(parsed.framework ?? "").toLowerCase());
-    if (fw) return fw;
-  } catch {
-    // fall through to heuristics
-  }
-  try {
-    if (fs.existsSync(`${appPath}/pubspec.yaml`)) return "flutter";
-    const pkgRaw = fs.readFileSync(`${appPath}/package.json`, "utf8");
-    const pkg = JSON.parse(pkgRaw) as Record<string, unknown>;
-    const deps = {
-      ...((pkg.dependencies ?? {}) as Record<string, unknown>),
-      ...((pkg.devDependencies ?? {}) as Record<string, unknown>),
-    };
-    if (deps.expo || deps["react-native"] || deps["expo-status-bar"]) return "react-native";
-    return "website";
-  } catch {
-    return undefined;
-  }
-}
+/** Framework detection from workspace files — re-exported here for compatibility. */
+export { detectFrameworkFromDisk } from "../../dyad/prompts/frameworkDetect.ts";
 
 const UNIFIED_DEFS: ToolDef[] = [
   ...ALL_CORE_TOOLS,
@@ -116,6 +100,7 @@ const UNIFIED_DEFS: ToolDef[] = [
   ...ALL_FILE_EDIT_TOOLS,
   ...ALL_GIT_TOOLS,
   ...ALL_PLAN_TOOLS,
+  ...ALL_BLUEPRINT_TOOLS,
   ...ALL_MCP_TOOLS,
   ...ALL_MISC_TOOLS,
   ...ALL_SANDBOX_TOOLS,
@@ -186,6 +171,11 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
     async executeWithConsent(toolName: string, args: unknown, toolId: string): Promise<unknown> {
       const def = included.find((d) => d.name === toolName);
       if (!def) throw new Error(`Tool not available this turn: ${toolName}`);
+      assertAppBlueprintApproved(input.sessionId, toolName, !def.readOnly, {
+        planningSpecific:
+          PLANNING_SPECIFIC_TOOLS.has(toolName) || ALL_PLAN_TOOLS.some((t) => t.name === toolName),
+        capabilityGated: CAPABILITY_GATED_BLUEPRINT_TOOLS.has(toolName),
+      });
       const allowed = await requireAgentToolConsent({
         sessionId: input.sessionId,
         toolName,

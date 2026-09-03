@@ -11,6 +11,7 @@ import type { HarnessEvent } from "@caide/contracts";
 import { Inbox } from "../inbox/index.ts";
 import { HarnessWebSocketServer } from "../ws/server.ts";
 import { attachUiBridge } from "../ws/uiBridge.ts";
+import { approveBlueprint, type AppBlueprint } from "../../dyad/plan/blueprintStore.ts";
 import { CaideRunner, type StartTurnInput } from "./runner.ts";
 
 export interface GatewayTurnRequest {
@@ -42,6 +43,19 @@ export class TurnGateway {
     });
     server.onCancel((sessionId, reason) => {
       this.runner.cancel(sessionId, reason ?? "cancelled");
+    });
+    server.onBlueprintResponse((sessionId, approved, blueprint, feedback) => {
+      if (approved) {
+        const stored = approveBlueprint(sessionId, (blueprint ?? undefined) as AppBlueprint | undefined);
+        const name = stored?.appName ?? "the app";
+        this.getInbox(sessionId).steer(
+          `The app blueprint for "${name}" has been approved. Proceed with implementation using it to guide file creation, design tokens, and visual assets.`,
+        );
+      } else {
+        this.getInbox(sessionId).steer(
+          `The user requested changes to the app blueprint: ${feedback?.trim() || "no details given"}. Update the blueprint with write_app_blueprint and wait for approval again.`,
+        );
+      }
     });
   }
 

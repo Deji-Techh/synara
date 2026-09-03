@@ -17,6 +17,7 @@ import {
   type McpConsentRequestFn,
 } from "../../dyad/mcp/mcpConsent.ts";
 import { setPlanTransport } from "../../dyad/plan/planTools.ts";
+import { setBlueprintTransport } from "../../dyad/plan/blueprintTools.ts";
 import { dismissUserInput, resolveUserInput } from "../../dyad/plan/userPrompt.ts";
 import {
   applySettingsSync,
@@ -51,6 +52,11 @@ export function attachUiBridge(server: HarnessWebSocketServer): {
   setDbPanelTransport({
     revealDatabase: (sessionId, reason) =>
       send(server, sessionId, { type: "ui_reveal", sessionId, pane: "database", reason }),
+  });
+
+  setBlueprintTransport({
+    sendBlueprintUpdate: (sessionId, blueprint) =>
+      send(server, sessionId, { type: "blueprint_update", sessionId, ...blueprint }),
   });
 
   setIntegrationTransport({
@@ -115,6 +121,7 @@ export function attachUiBridge(server: HarnessWebSocketServer): {
     detach: () => {
       setPlanTransport(null);
       setDbPanelTransport(null);
+      setBlueprintTransport(null);
       setIntegrationTransport(null);
       server.onPromptAnswer(() => {});
       server.onConsentAnswer(() => {});

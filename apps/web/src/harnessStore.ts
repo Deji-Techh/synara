@@ -42,6 +42,16 @@ export interface PlanEntry {
   exited: boolean;
 }
 
+export interface BlueprintEntry {
+  appName: string;
+  userPrompt: string;
+  framework?: string;
+  designDirection: string;
+  primaryColor: string;
+  visuals: Array<{ type: string; description: string; prompt: string }>;
+  approved: boolean;
+}
+
 export interface SessionState {
   id: string;
   stage: string;
@@ -53,6 +63,7 @@ export interface SessionState {
   prompts: UiPromptEntry[];
   reveals: UiRevealEntry[];
   plan?: PlanEntry;
+  blueprint?: BlueprintEntry;
 }
 
 export interface HarnessStoreState {
@@ -183,6 +194,21 @@ export const harnessStore = {
         state.sessions[event.sessionId] = session.plan
           ? { ...session, plan: { ...session.plan, exited: true } }
           : session;
+        break;
+      }
+      case "blueprint_update": {
+        state.sessions[event.sessionId] = {
+          ...session,
+          blueprint: {
+            appName: event.appName,
+            userPrompt: event.userPrompt,
+            framework: event.framework,
+            designDirection: event.designDirection,
+            primaryColor: event.primaryColor,
+            visuals: event.visuals,
+            approved: false,
+          },
+        };
         break;
       }
     }
