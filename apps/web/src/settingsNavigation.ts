@@ -4,6 +4,7 @@
 // Exports: section ids, nav items, and search normalization helper
 
 export const SETTINGS_SECTION_IDS = [
+  "database",
   "general",
   "profile",
   "appearance",
@@ -105,10 +106,18 @@ export const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
   {
     id: "integrations",
     group: "integrations",
-    label: "MCP connections",
-    description: "Give Codex, Claude, and other local agents scoped access to Caide tasks.",
+    label: "MCP servers",
+    description: "Connect tools your agent can call, with per-tool consent.",
     icon: "plugin-1",
-    eyebrow: "External agents",
+    eyebrow: "Agent tools",
+  },
+  {
+    id: "database",
+    group: "integrations",
+    label: "Database",
+    description: "Supabase and Neon connections plus blockchain RPC networks.",
+    icon: "database",
+    eyebrow: "Data backends",
   },
   {
     id: "providers",

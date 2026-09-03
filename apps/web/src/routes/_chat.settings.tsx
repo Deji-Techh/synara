@@ -40,6 +40,8 @@ import { ProviderOptionLabel } from "../components/ProviderIcon";
 import { KeyboardShortcutsSettingsPanel } from "../components/settings/KeyboardShortcutsSettingsPanel";
 import { ProfileSettingsPanel } from "../components/settings/ProfileSettingsPanel";
 import { McpServersSettingsPanel } from "../components/settings/McpServersSettingsPanel";
+import { DatabaseSettingsPanel } from "../components/settings/DatabaseSettingsPanel";
+import { ToolApprovalsSection } from "../components/settings/ToolApprovalsSection";
 import {
   SettingResetButton,
   SettingsSegmentedControl,
@@ -1007,6 +1009,8 @@ function SettingsRouteView() {
           ariaLabel: "Confirm terminal tab close",
         })}
       </SettingsSection>
+
+      <ToolApprovalsSection />
     </div>
   );
 
@@ -1118,6 +1122,7 @@ function SettingsRouteView() {
                   resetEpoch={resetEpoch}
                 />
                 <McpServersSettingsPanel active={activeSection === "integrations"} />
+                <DatabaseSettingsPanel active={activeSection === "database"} />
                 <AdvancedSettingsPanel
                   active={activeSection === "advanced"}
                   resetEpoch={resetEpoch}
