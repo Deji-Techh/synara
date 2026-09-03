@@ -15,6 +15,11 @@ import type { CaideFramework } from "../../dyad/prompts/index.ts";
 import type { SettingsLike } from "../../dyad/providers/index.ts";
 import type { ConsentRequestFn } from "../../dyad/tools/index.ts";
 import { createTurnContext } from "./turnContext.ts";
+import {
+  getOrCreateSessionStores,
+  restoreSessionState,
+  snapshotSessionState,
+} from "./sessionStores.ts";
 import { TurnFlow, type TurnStatus } from "./index.ts";
 
 export type RunnerStatus = TurnStatus;
@@ -92,6 +97,9 @@ export class CaideRunner {
     input.signal?.addEventListener("abort", onAbort, { once: true });
 
     try {
+      const storage = new SessionStorage();
+      await restoreSessionState(input.sessionId, storage).catch(() => {});
+      const sessionStores = getOrCreateSessionStores(input.sessionId);
       const ctx = createTurnContext({
         sessionId: input.sessionId,
         appPath: input.appPath,
@@ -100,7 +108,8 @@ export class CaideRunner {
         providerId: input.providerId,
         modelId: input.modelId,
         requestConsent: input.requestConsent,
-        autoApproveNonSchemaSql: input.autoApproveNonSchemaSql,
+        autoApproveNonSchemaSql: input.autoApproveNonSchemaSql ?? sessionStores.safeSql,
+        store: sessionStores.consent,
       });
       const chatMode = chatModeFor(input.mode ?? "agent");
       const system = constructSystemPrompt({
@@ -109,7 +118,6 @@ export class CaideRunner {
         enableTurboEditsV2: false,
         caideFramework: input.framework,
       });
-      const storage = new SessionStorage();
       const llm =
         input.llmOverride ??
         createStreamProviderAdapter(
@@ -142,6 +150,7 @@ export class CaideRunner {
           name: t.name,
           description: t.description,
           readOnly: t.readOnly,
+          timeoutMs: t.timeoutMs,
           execute: (args, c) =>
             ctx.executeWithConsent(t.name, args, c.toolId) as Promise<unknown>,
         })),
@@ -159,6 +168,7 @@ export class CaideRunner {
         this.status = "completed";
         forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "completed" });
       }
+      await snapshotSessionState(input.sessionId, storage).catch(() => {});
       ctx.cleanup();
     } catch (err) {
       this.status = "failed";

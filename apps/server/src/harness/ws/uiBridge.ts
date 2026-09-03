@@ -18,6 +18,10 @@ import {
 } from "../../dyad/mcp/mcpConsent.ts";
 import { setPlanTransport } from "../../dyad/plan/planTools.ts";
 import { dismissUserInput, resolveUserInput } from "../../dyad/plan/userPrompt.ts";
+import {
+  applySettingsSync,
+  type SettingsSyncPayload,
+} from "../turn/sessionStores.ts";
 import type { HarnessWebSocketServer } from "./server.ts";
 
 function send(server: HarnessWebSocketServer, sessionId: string, event: HarnessEvent): void {
@@ -101,6 +105,9 @@ export function attachUiBridge(server: HarnessWebSocketServer): {
     resolveConsent(requestId, decision);
     resolveMcpConsent(requestId, decision);
   });
+  server.onSettingsSync((sessionId, settings) => {
+    applySettingsSync(sessionId, settings as SettingsSyncPayload);
+  });
 
   return {
     requestConsent,
@@ -111,6 +118,7 @@ export function attachUiBridge(server: HarnessWebSocketServer): {
       setIntegrationTransport(null);
       server.onPromptAnswer(() => {});
       server.onConsentAnswer(() => {});
+      server.onSettingsSync(() => {});
     },
   };
 }

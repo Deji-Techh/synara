@@ -9,6 +9,7 @@ import { getPlanTransport, setPlanTransport } from "../../dyad/plan/planTools.ts
 import { resolveUserInput, waitForUserInput } from "../../dyad/plan/userPrompt.ts";
 import { resolveConsent, waitForConsent } from "../../dyad/tools/permissions.ts";
 import { attachUiBridge } from "./uiBridge.ts";
+import { clearSessionStores, getOrCreateSessionStores } from "../turn/sessionStores.ts";
 import type { HarnessWebSocketServer } from "./server.ts";
 
 function fakeServer() {
@@ -24,6 +25,9 @@ function fakeServer() {
     },
     onConsentAnswer: (h: (...args: never[]) => void) => {
       handlers.consent = h;
+    },
+    onSettingsSync: (h: (...args: never[]) => void) => {
+      handlers.settings = h;
     },
   } as unknown as HarnessWebSocketServer;
   return { sent, handlers, server };
@@ -88,6 +92,22 @@ describe("ui bridge delivery (m3)", () => {
       await expect(tool).resolves.toBe("accept-once");
       void resolveConsent;
     } finally {
+      bridge.detach();
+    }
+  });
+
+  it("applies settings sync payloads to session stores", () => {
+    const { handlers, server } = fakeServer();
+    const bridge = attachUiBridge(server);
+    try {
+      (handlers.settings as (sid: string, settings: Record<string, unknown>) => void)("s-sync", {
+        toolConsents: { run_command: "never" },
+        safeSql: false,
+      });
+      expect(getOrCreateSessionStores("s-sync").consent.get("run_command")).toBe("never");
+      expect(getOrCreateSessionStores("s-sync").safeSql).toBe(false);
+    } finally {
+      clearSessionStores("s-sync");
       bridge.detach();
     }
   });

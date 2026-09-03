@@ -71,6 +71,12 @@ export function connectHarnessWs(options: HarnessWsOptions): HarnessWsHandle {
     socket.onopen = () => {
       backoffMs = 500;
       socket.send(JSON.stringify({ type: "subscribe", sessionId: options.sessionId }));
+      syncHarnessSettings(
+        (message) => {
+          if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message));
+        },
+        options.sessionId,
+      );
       heartbeat = setInterval(() => {
         if (socket.readyState === WebSocket.OPEN) {
           socket.send(JSON.stringify({ type: "ping" }));
@@ -138,4 +144,61 @@ export function answerConsent(
   decision: "accept-once" | "accept-always" | "decline",
 ): void {
   send({ type: "consent_answer", requestId, decision });
+}
+
+function readJson<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Push client settings to the server session stores (M3g). Reads the same
+ * localStorage keys the settings panels write: tool approvals, safe-SQL,
+ * MCP prefs/servers, DB connections. Call on socket open and whenever the
+ * user saves settings.
+ */
+export function syncHarnessSettings(
+  send: (message: Record<string, unknown>) => void,
+  sessionId: string,
+): void {
+  const toolConsents = readJson<Record<string, string>>("caide.tool-approvals.v1", {});
+  const safeSql = (() => {
+    try {
+      return localStorage.getItem("caide.tool-approvals.safe-sql.v1") !== "false";
+    } catch {
+      return true;
+    }
+  })();
+  const mcpPrefs = readJson<{ autoApproveSafe?: boolean }>("caide.mcp-prefs.v1", {});
+  const connections = readJson<
+    Array<{
+      provider: string;
+      databaseUrl: string;
+      projectId?: string;
+      enabled: boolean;
+    }>
+  >("caide.db-connections.v1", []);
+  const dbLinks = connections
+    .filter((c) => c.enabled && typeof c.databaseUrl === "string" && c.databaseUrl.length > 0)
+    .slice(0, 1)
+    .map((c) => ({
+      provider: c.provider === "neon" ? "neon" : "supabase",
+      databaseUrl: c.databaseUrl,
+      projectId: c.projectId,
+    }));
+  send({
+    type: "settings_sync",
+    sessionId,
+    settings: {
+      toolConsents,
+      safeSql,
+      mcpAutoApproveSafe: mcpPrefs.autoApproveSafe !== false,
+      dbLinks,
+    },
+  });
 }

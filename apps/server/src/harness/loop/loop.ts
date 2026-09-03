@@ -7,6 +7,8 @@ export interface ToolDefinition {
   name: string;
   description: string;
   readOnly?: boolean;
+  /** Per-tool execution budget; defaults to 30s when omitted. */
+  timeoutMs?: number;
   execute: (
     args: unknown,
     context: { signal?: AbortSignal; sessionId: string; toolId: string },
@@ -221,19 +223,23 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
 
         try {
           // Bound tool execution so a hung tool (network, missing dir) can't
-          // block the turn forever. 30s per tool is generous for file ops and
-          // builds while still guaranteeing forward progress.
+          // block the turn forever. Default 30s; long tools (preview start,
+          // APK builds) declare their own timeoutMs on the ToolDef.
           const executeCtx: { signal?: AbortSignal; sessionId: string; toolId: string } = {
             sessionId,
             toolId: call.id,
           };
           if (signal) executeCtx.signal = signal;
+          const budgetMs =
+            toolDef.timeoutMs && Number.isFinite(toolDef.timeoutMs) && toolDef.timeoutMs > 0
+              ? Math.floor(toolDef.timeoutMs)
+              : 30_000;
           const result = await Promise.race([
             toolDef.execute(call.args, executeCtx),
             new Promise<never>((_, reject) =>
               setTimeout(
-                () => reject(new Error(`Tool '${call.name}' timed out after 30000ms`)),
-                30_000,
+                () => reject(new Error(`Tool '${call.name}' timed out after ${budgetMs}ms`)),
+                budgetMs,
               ),
             ),
           ]);

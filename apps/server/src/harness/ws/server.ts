@@ -4,7 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import type { HarnessEvent } from "@caide/contracts";
 
 export interface ClientInboundMessage {
-  type: "subscribe" | "steer" | "cancel" | "checkpoint_response" | "ping" | "prompt_answer" | "consent_answer";
+  type: "subscribe" | "steer" | "cancel" | "checkpoint_response" | "ping" | "prompt_answer" | "consent_answer" | "settings_sync";
   sessionId?: string;
   token?: string;
   prompt?: string;
@@ -14,6 +14,7 @@ export interface ClientInboundMessage {
   requestId?: string;
   answers?: Record<string, string>;
   decision?: "accept-once" | "accept-always" | "decline";
+  settings?: Record<string, unknown>;
 }
 
 export type SessionCancelHandler = (sessionId: string, reason?: string) => void;
@@ -29,6 +30,7 @@ export type ConsentAnswerHandler = (
   requestId: string,
   decision: "accept-once" | "accept-always" | "decline",
 ) => void;
+export type SettingsSyncHandler = (sessionId: string, settings: Record<string, unknown>) => void;
 
 export class HarnessWebSocketServer {
   private wss: WebSocketServer;
@@ -38,6 +40,7 @@ export class HarnessWebSocketServer {
   private onCheckpointHandler?: CheckpointResponseHandler;
   private onPromptAnswerHandler?: PromptAnswerHandler;
   private onConsentAnswerHandler?: ConsentAnswerHandler;
+  private onSettingsSyncHandler?: SettingsSyncHandler;
 
   constructor() {
     this.wss = new WebSocketServer({ noServer: true });
@@ -108,6 +111,13 @@ export class HarnessWebSocketServer {
             }
             return;
           }
+
+          if (msg.type === "settings_sync" && msg.sessionId) {
+            if (this.onSettingsSyncHandler) {
+              this.onSettingsSyncHandler(msg.sessionId, msg.settings ?? {});
+            }
+            return;
+          }
         } catch {
           // ignore malformed client message
         }
@@ -163,6 +173,10 @@ export class HarnessWebSocketServer {
 
   onConsentAnswer(handler: ConsentAnswerHandler): void {
     this.onConsentAnswerHandler = handler;
+  }
+
+  onSettingsSync(handler: SettingsSyncHandler): void {
+    this.onSettingsSyncHandler = handler;
   }
 
   close(): Promise<void> {
