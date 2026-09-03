@@ -230,6 +230,20 @@ export function syncHarnessSettings(
       enabled: boolean;
     }>
   >("caide.db-connections.v1", []);
+  const mcpServers = readJson<
+    Array<{
+      id: string;
+      name: string;
+      transport: string;
+      enabled: boolean;
+      command?: string;
+      args?: string[];
+      env?: Record<string, string>;
+      url?: string;
+      headers?: Record<string, string>;
+      defaultConsent?: "ask" | "always" | "never";
+    }>
+  >("caide.mcp-servers.v1", []);
   const dbLinks = connections
     .filter((c) => c.enabled && typeof c.databaseUrl === "string" && c.databaseUrl.length > 0)
     .slice(0, 1)
@@ -246,6 +260,7 @@ export function syncHarnessSettings(
       safeSql,
       mcpAutoApproveSafe: mcpPrefs.autoApproveSafe !== false,
       dbLinks,
+      mcpServers,
     },
   });
 }

@@ -21,6 +21,19 @@ export interface SettingsSyncPayload {
   mcpConsents?: Array<{ serverId: string | number; toolName: string; consent: McpConsent }>;
   mcpAutoApproveSafe?: boolean;
   dbLinks?: DbLink[];
+  /** Client MCP server configs (web settings shape); manager syncs + feeds the registry. */
+  mcpServers?: Array<{
+    id: string;
+    name: string;
+    transport: "stdio" | "sse" | "oauth";
+    enabled: boolean;
+    command?: string;
+    args?: string[];
+    env?: Record<string, string>;
+    url?: string;
+    headers?: Record<string, string>;
+    defaultConsent?: "ask" | "always" | "never";
+  }>;
 }
 
 export interface SessionStores {

@@ -41,3 +41,15 @@ export {
   type McpToolRegistry,
   type JsonSchema,
 } from "./mcpTools.ts";
+export {
+  McpConnection,
+  McpManager,
+  sharedMcpManager,
+  McpError,
+  MCP_RPC_TIMEOUT_MS,
+  MCP_PROTOCOL_VERSION,
+  type ManagedMcpServer,
+  type McpTransportConfig,
+  type McpStdioConfig,
+  type McpSseConfig,
+} from "./manager.ts";

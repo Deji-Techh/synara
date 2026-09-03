@@ -8,6 +8,7 @@
 import type { HarnessEvent } from "@caide/contracts";
 import { setDbPanelTransport } from "../../dyad/db/dbPanel.ts";
 import { setIntegrationTransport } from "../../dyad/db/dbTools.ts";
+import { sharedMcpManager, type ManagedMcpServer } from "../../dyad/mcp/manager.ts";
 import {
   resolveConsent,
   type ConsentRequestFn,
@@ -112,7 +113,37 @@ export function attachUiBridge(server: HarnessWebSocketServer): {
     resolveMcpConsent(requestId, decision);
   });
   server.onSettingsSync((sessionId, settings) => {
-    applySettingsSync(sessionId, settings as SettingsSyncPayload);
+    const payload = settings as SettingsSyncPayload;
+    applySettingsSync(sessionId, payload);
+    // Settings UI → live tools: sync manager connections (stdio/SSE only;
+    // OAuth stays needs-work) and republish the discovery registry.
+    if (payload.mcpServers && payload.mcpServers.length > 0) {
+      const servers: ManagedMcpServer[] = payload.mcpServers
+        .filter((s) => s.transport === "stdio" || s.transport === "sse")
+        .map((s) => ({
+          id: s.id,
+          name: s.name,
+          enabled: s.enabled !== false,
+          defaultConsent: s.defaultConsent,
+          config: (s.transport === "sse"
+            ? { transport: "sse" as const, url: s.url ?? "", headers: s.headers }
+            : {
+                transport: "stdio" as const,
+                command: s.command ?? "",
+                args: s.args,
+                env: s.env,
+              }) as ManagedMcpServer["config"],
+        }))
+        .filter((s) =>
+          s.config.transport === "sse" ? s.config.url.length > 0 : s.config.command.length > 0,
+        );
+      if (servers.length > 0) {
+        void sharedMcpManager()
+          .sync(servers)
+          .then(() => sharedMcpManager().syncRegistry())
+          .catch(() => {});
+      }
+    }
   });
 
   return {
