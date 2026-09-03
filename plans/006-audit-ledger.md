@@ -4,7 +4,7 @@
 
 ## A. Strip list — Caide-final old engine (status)
 
-M0a LANDED (server filler): 116 part*.ts + stub testN/stub dirs + scaffold filler + 13 codex* files deleted (151 paths). harnessCompat/serverLayers/wsRpc stay — load-bearing for the live Effect server until the orchestration-read migration. One failing suite (`harness/prompts/prompts.test.ts` L0-L3) verified PRE-EXISTING on clean HEAD.
+M0b LANDED (contracts): agentGateway.ts + test deleted (zero users; 211 contracts tests green). orchestration/automation/externalMcp/browserAutomation contracts STAY — load-bearing for live persistence/RPC/UI until the orchestration-read migration. M0a LANDED (server filler): 116 part*.ts + stub testN/stub dirs + scaffold filler + 13 codex* files deleted (151 paths). harnessCompat/serverLayers/wsRpc stay — load-bearing for the live Effect server until the orchestration-read migration. One failing suite (`harness/prompts/prompts.test.ts` L0-L3) verified PRE-EXISTING on clean HEAD.
 
 | Item | Location | Status |
 |---|---|---|
