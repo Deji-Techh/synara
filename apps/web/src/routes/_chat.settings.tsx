@@ -39,7 +39,7 @@ import {
 import { ProviderOptionLabel } from "../components/ProviderIcon";
 import { KeyboardShortcutsSettingsPanel } from "../components/settings/KeyboardShortcutsSettingsPanel";
 import { ProfileSettingsPanel } from "../components/settings/ProfileSettingsPanel";
-import { ExternalMcpSettingsPanel } from "../components/settings/ExternalMcpSettingsPanel";
+import { McpServersSettingsPanel } from "../components/settings/McpServersSettingsPanel";
 import {
   SettingResetButton,
   SettingsSegmentedControl,
@@ -1117,7 +1117,7 @@ function SettingsRouteView() {
                   updateSettings={updateSettings}
                   resetEpoch={resetEpoch}
                 />
-                <ExternalMcpSettingsPanel active={activeSection === "integrations"} />
+                <McpServersSettingsPanel active={activeSection === "integrations"} />
                 <AdvancedSettingsPanel
                   active={activeSection === "advanced"}
                   resetEpoch={resetEpoch}

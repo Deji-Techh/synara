@@ -27,13 +27,6 @@ export {
   sqlConsentInfo,
   setDbDriver,
   setIntegrationTransport,
-  linkDatabase,
-  unlinkDatabase,
-  getDatabaseLink,
-  resolveDatabaseUrl,
-  checkSqlDanger,
-  classifySql,
-  splitStatements,
   DbToolError,
   DbNotConnectedError,
   type DbDriver,
@@ -41,6 +34,7 @@ export {
   type SqlConsentInfo,
   type IntegrationTransport,
 } from "./dbTools.ts";
+export { checkSqlDanger, classifySql, splitStatements } from "./sqlSafety.ts";
 export {
   linkDatabase,
   unlinkDatabase,
