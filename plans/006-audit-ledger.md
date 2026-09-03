@@ -29,7 +29,7 @@
 | `src/prompts/design_engine_contract.ts` + `design_reference_index.ts` | `dyad/prompts/` | LANDED (M1) |
 | `src/prompts/web3_skill_pack.ts` | `dyad/prompts/web3SkillPack.ts` | LANDED (M1) |
 | `src/prompts/skills/**` + `skills-web3/**` (.md) | `dyad/skills/` (fs-loaded, no `?raw`) | LANDED (M1, 46 files) |
-| `src/prompts/system_prompt.ts:510-659` + `local_agent_prompt.ts:460-527` wiring | `dyad/prompts/assembleDyadPrompt.ts` | M1 |
+| `src/prompts/system_prompt.ts:510-659` + `local_agent_prompt.ts:460-527` wiring | `dyad/prompts/assembleDyadPrompt.ts` | LANDED as `systemPrompt.ts` + `agentPrompt.ts` + `planPrompt.ts` + `aiRules.ts` + `testGuidance.ts` + `frameworkType.ts` (M1, 6 tests green) |
 | `src/prompts/guides/**` + `filter_guide_by_framework.ts` | `dyad/guides/` | M2 |
 | `src/prompts/plan_mode_prompt.ts`, `compaction/supabase/neon/security/summarize` | `dyad/prompts/` | M1–M2 |
 | `src/ipc/shared/language_model_constants.ts` + `get_model_client.ts` + `llm_engine_provider.ts` + `secret_storage.ts` | `dyad/providers/` | M1 |

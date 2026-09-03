@@ -7,7 +7,11 @@ import {
   buildUiSkillPack,
   CAIDE_MOBILE_UI_SKILL_PACK,
   CAIDE_WEB_UI_SKILL_PACK,
+  constructLocalAgentPrompt,
+  constructPlanModePrompt,
+  constructSystemPrompt,
   DESIGN_ENGINE_CONTRACT,
+  getSystemPromptForChatMode,
   MOBILE_PRODUCT_CONTRACT,
   WEB3_SKILL_PACK,
   WEB_PRODUCT_CONTRACT,
@@ -55,5 +59,53 @@ describe("dyad prompt transplant (m1)", () => {
   it("provision-backend guide is on disk for the read_guide path", () => {
     const guide = readGuide("provision-backend");
     expect(guide.length).toBeGreaterThan(500);
+  });
+
+  it("dispatcher routes plan/local-agent/build/ask with no leftover placeholders", () => {
+    const plan = constructSystemPrompt({
+      aiRules: undefined,
+      chatMode: "plan",
+      enableTurboEditsV2: false,
+    });
+    expect(plan).toContain("exit_plan");
+    expect(plan).not.toContain("[[AI_RULES]]");
+
+    const agent = constructSystemPrompt({
+      aiRules: "# custom rules",
+      chatMode: "local-agent",
+      enableTurboEditsV2: false,
+      appTarget: "mobile",
+    });
+    expect(agent).toContain("# custom rules");
+    expect(agent).toContain("MOBILE APP");
+    expect(agent).not.toContain("[[PLATFORM_CONTRACT]]");
+    expect(agent).not.toContain("[[PLATFORM_UI_SKILL_PACK]]");
+
+    const agentWeb = constructLocalAgentPrompt(undefined, undefined, {
+      appTarget: "web",
+    });
+    expect(agentWeb).toContain("responsive web app");
+
+    const build = getSystemPromptForChatMode({
+      chatMode: "build",
+      frameworkType: "vite",
+    });
+    expect(build).toContain("Server-side Code in Vite Apps");
+    const buildSupabase = getSystemPromptForChatMode({
+      chatMode: "build",
+      frameworkType: "vite",
+      hasSupabaseProject: true,
+    });
+    expect(buildSupabase).not.toContain("Server-side Code in Vite Apps");
+
+    const ask = constructSystemPrompt({
+      aiRules: undefined,
+      chatMode: "ask",
+      enableTurboEditsV2: false,
+    });
+    expect(ask).toContain("EXPLAIN, DON'T BUILD");
+
+    const planDirect = constructPlanModePrompt(undefined);
+    expect(planDirect).toContain("Tech Stack Context");
   });
 });
