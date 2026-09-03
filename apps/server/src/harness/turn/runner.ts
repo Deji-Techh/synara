@@ -8,10 +8,12 @@
 import type { HarnessEvent } from "@caide/contracts";
 import { createStreamProviderAdapter } from "../provider/streamProviderAdapter.ts";
 import { runLoop, type LLMAdapter } from "../loop/loop.ts";
+import { Inbox } from "../inbox/index.ts";
 import { buildConversationChain, buildMessages } from "../session/buildChain.ts";
 import { SessionStorage } from "../session/storage.ts";
 import { constructSystemPrompt } from "../../dyad/prompts/index.ts";
 import type { CaideFramework } from "../../dyad/prompts/index.ts";
+import { shouldRevealDatabasePanel } from "../../dyad/db/dbPanel.ts";
 import type { SettingsLike } from "../../dyad/providers/index.ts";
 import type { ConsentRequestFn } from "../../dyad/tools/index.ts";
 import { createTurnContext } from "./turnContext.ts";
@@ -41,6 +43,8 @@ export interface StartTurnInput {
   onEvent?: (event: HarnessEvent) => void;
   /** Test seam: bypass provider streaming. */
   llmOverride?: LLMAdapter;
+  /** Per-session inbox for steering a running turn (gateway-owned). */
+  inbox?: Inbox;
 }
 
 function chatModeFor(mode: ChatMode): "build" | "ask" | "local-agent" | "plan" {
@@ -85,6 +89,27 @@ export class CaideRunner {
           name: event.name,
           status: event.status === "started" ? "started" : event.status === "failed" ? "failed" : "completed",
         });
+        // Autonomous pane control: DB work reveals the database pane, preview
+        // tools reveal the preview pane — the agent never asks the user to open them.
+        if (event.status === "started") {
+          if (shouldRevealDatabasePanel(event.name)) {
+            const reveal: HarnessEvent = {
+              type: "ui_reveal",
+              sessionId: input.sessionId,
+              pane: "database",
+              reason: event.name,
+            };
+            input.onEvent?.(reveal);
+          } else if (event.name === "open_preview" || event.name === "restart_preview") {
+            const reveal: HarnessEvent = {
+              type: "ui_reveal",
+              sessionId: input.sessionId,
+              pane: "preview",
+              reason: event.name,
+            };
+            input.onEvent?.(reveal);
+          }
+        }
       } else if (event.type === "stage") this.emit({ type: "stage", from: event.from, to: event.to });
       else if (event.type === "checkpoint") this.emit({ type: "checkpoint", requiresResponse: event.requiresResponse });
       else if (event.type === "artifact_updated") this.emit({ type: "artifact_updated", path: event.path });
@@ -136,6 +161,7 @@ export class CaideRunner {
         turnId,
         maxSteps: input.maxSteps ?? 25,
         signal: controller.signal,
+        inbox: input.inbox,
         llm,
         buildMessages: async () => {
           const chain = await buildConversationChain(input.sessionId, undefined, storage);
