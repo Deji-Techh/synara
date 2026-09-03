@@ -11,6 +11,13 @@ export default mergeConfig(
       // is running under CI load.
       testTimeout: 90_000,
       hookTimeout: 90_000,
+      // Template sources copied verbatim for scaffolding carry their own
+      // tests + node_modules expectations — never run them in our suite.
+      exclude: [
+        ...(baseConfig.test?.exclude ?? []),
+        "src/dyad/scaffolds/web3-template/**",
+        "src/dyad/scaffolds/api-template/**",
+      ],
     },
   }),
 );
