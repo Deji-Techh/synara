@@ -2,15 +2,15 @@
 
 ## Permanent Session Rules (user requirements — do not forget)
 
-1. **After EVERY compaction, re-read this AGENTS.md and `plans/005-master-build-plan.md`** (the ACTIVE plan) before continuing work. Do not assume context survived. `004-caide-pure-harness.md` is superseded — ignore it.
+1. **After EVERY compaction, re-read this AGENTS.md and `plans/006-dyad-transplant-plan.md`** (the ACTIVE plan) before continuing work. Do not assume context survived. `005-master-build-plan.md` is harness reference only; `004-caide-pure-harness.md` is superseded — ignore it.
 2. **Commit after EVERY major change.** Major change = any milestone step, any new tool/feature, any significant refactor, any plan/AGENTS.md update. Commit even if the change is unpolished. Never leave the working tree dirty across sessions for structural work.
 3. The product mission (see next section) overrides any codebase-local convention that conflicts with it.
-4. **New product = "new caide" — the world's best AI app builder.** The web UI shell (ChatView, Sidebar, Profile, settings, all components) is KEPT. The old backend engine (Codex process manager, orchestration, agentGateway) is STRIPPED. The new Caide harness (`apps/server/src/harness/*` Router→Planner→Builder→Verifier→Fixer→Taste + `apps/server/src/design/tokens.ts`) is built from scratch per `plans/005-master-build-plan.md`. Electron desktop kept as window shell. Frameworks: Blank, React Native, Flutter, Website — immutable per project.
+4. **New product = "new caide" — the world's best AI app builder.** The web UI shell (ChatView, Sidebar, Profile, settings, all components) is KEPT with Caide-final design styling. The old backend engine (Codex process manager, orchestration, agentGateway, stub harness — system prompts, streaming, models/providers, tool calling, EVERYTHING agent-related) is STRIPPED. The Dyad + Dyad x Caide backend (prompts, local-agent tool loop, streaming, providers/models, tools, IPC, DB incl. Supabase/Neon, preview/build) is transplanted into `apps/server/src/dyad/*` with Caide overlay per `plans/006-dyad-transplant-plan.md`. Electron desktop kept as window shell. Frameworks: Blank, React Native, Flutter, Website — immutable per project. Continuous audit every milestone so nothing is missed.
 5. **Autonomy mandate (user directive).** Execute the active plan without stopping for permission. Build the complete Caide runtime into the integrated server (keep `apps/desktop` window shell), keep the web UI, and commit after every milestone. If truly blocked, document the blocker and leave the tree in a safe committable state.
 
 ## Project Mission (World's Best AI App Builder)
 
-Build the best AI app builder ever made — better than Lovable, Bolt, v0, Cursor, Replit Agent. The web UI shell stays. The old Codex-based backend engine is stripped. The new pure Caide harness (`apps/server/src/harness/*` + `apps/server/src/design/*`) is built from scratch per `plans/005-master-build-plan.md`. Projects are immutable Blank, React Native, Flutter, or Website; the framework controls scaffold, prompts, tools, preview, build, and artifacts. The harness is pure Caide — not a Dyad/Codex transplant.
+Build the best AI app builder ever made — better than Lovable, Bolt, v0, Cursor, Replit Agent. The web UI shell stays with Caide-final styling. The old Codex-based backend engine is stripped entirely (system prompts, streaming, models/providers, tool calling, everything). The Dyad + Dyad x Caide backend (local-agent tool loop, prompts, streaming, providers, tools, IPC, DB incl. Supabase/Neon, preview/build, share services) is transplanted per `plans/006-dyad-transplant-plan.md`. Projects are immutable Blank, React Native, Flutter, or Website; the framework controls scaffold, prompts, tools, preview, build, and artifacts. Left sidebar chat/project creation logic is replaced by Dyad flows (framework selector kept); right sidebar + settings side host ported backends; Web/RN/Flutter previews use Dyad x Caide runtime inside Caide styling.
 
 ## Task Completion Requirements
 
@@ -101,12 +101,12 @@ Reference usage: opening/closing a project and the sidebar sections in `apps/web
 
 ## Package Roles
 
-- `apps/server`: Node.js WebSocket server + **Caide harness** (`src/harness/*` Router→Planner→Builder→Verifier→Fixer + `src/design/tokens.ts`). Single lifecycle owner `created→running→waiting→terminal`. Wraps provider sessions (OpenCode Zen/Go via `provider/Layers/ApiAdapter`) and streams typed events `{token,tool_call,stage,checkpoint,artifact_updated}` to web + Electron.
-- `apps/web`: React/Vite UI — dumb shell (`ui/*` + `disclosureMotion` + `PreviewStage 672px` + pill composer). Owns session UX, connects via WebSocket typed events.
-- `apps/desktop`: Electron shell (window only — `main.ts`, `preload.ts`, `windowState`, `ipcChannels`, `desktopWsBridge`). No harness — kept intact.
-- `packages/contracts`: Shared effect/Schema schemas and TypeScript contracts. Keep schema-only — no runtime logic.
+- `apps/server`: Node.js WebSocket server + **Dyad transplant engine** (`src/dyad/*` prompts, local-agent tool loop, streaming, providers/models, tools, IPC, DB incl. Supabase/Neon, preview/build) with Caide overlay (`src/harness/*` adaptors + `src/design/tokens.ts`). Streams typed events to web + Electron.
+- `apps/web`: React/Vite UI — dumb shell in Caide-final styling (`ui/*` + `disclosureMotion` + `PreviewStage 672px` + pill composer + left Sidebar + right dock + settings side). Owns session UX, connects via WebSocket typed events. Framework selector (`CreateAppDialog`) kept; sidebar creation logic rewired to Dyad flows.
+- `apps/desktop`: Electron shell (window only — `main.ts`, `preload.ts`, `windowState`, `ipcChannels`, `desktopWsBridge`). No engine — kept intact.
+- `packages/contracts`: Shared effect/Schema schemas and TypeScript contracts. Keep schema-only — no runtime logic. Extend with Dyad `ChatMode/ProviderSetting/ModelSelection/blockchain` contracts.
 - `packages/shared`: Shared runtime utilities (`@caide/shared/*` subpath exports — no barrel).
-- `apps/engine`: **DELETED in pure harness reset.** Former dyad builder path removed; `apps/server/src/harness` is the only runtime now (archived at `backup/dyad-engine-transplant`).
+- `apps/engine`: **DELETED.** Former builder path removed (archived at `backup/dyad-engine-transplant`).
 
 ## Local Dev Instance Isolation
 
@@ -119,7 +119,7 @@ Reference usage: opening/closing a project and the sidebar sections in `apps/web
 
 ## Provider Runtime (Important)
 
-Caide's harness wraps provider sessions (OpenCode Zen/Go as primary) via `apps/server/src/provider/Layers/ApiAdapter` (per-model routing `responses|chat/completions|messages`). The server streams typed events `{token,tool_call,stage,checkpoint,artifact_updated}` to web+Electron via WebSocket. See `plans/004-caide-pure-harness.md` §2 for harness layers (`L0-L3` prompts, `TurnFlow`, dual `token vs event` streams with `SIGTERM`).
+Caide's server wraps Dyad provider sessions via `apps/server/src/dyad/get_model_client.ts` (`getModelClient`, per-model routing `responses|chat/completions|messages`, Dyad Pro gateway via `llm_engine_provider.ts`) plus `language_model_constants.ts` catalog and `secret_storage.ts` keys. OpenCode Zen/Go remain supported endpoints within that router. The server streams typed events to web+Electron via WebSocket. See `plans/006-dyad-transplant-plan.md` §1 for engine layers.
 
 Provider docs:
 
@@ -127,6 +127,8 @@ Provider docs:
 
 ## Reference Repos
 
+- Dyad donor: `/home/DejiTech/dev/dyad` (`src/prompts/`, `src/pro/main/ipc/handlers/local_agent/`, `src/ipc/handlers/`, `src/db/schema.ts`, `src/chat_stream/`)
+- Dyad x Caide donor: `/home/DejiTech/dev/personal projects/dyad x caide` (`platform_contracts`, skill packs, scaffolds, `services/share-service` + `preview-control-plane`, `devicePresets.ts`)
 - Open-source Codex repo: https://github.com/openai/codex
 - Codex-Monitor (Tauri, feature-complete, strong reference implementation): https://github.com/Dimillian/CodexMonitor
 
