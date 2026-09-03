@@ -181,11 +181,12 @@ function IntegrationCard(props: { sessionId: string; entry: UiPromptEntry; send:
   );
   const [databaseUrl, setDatabaseUrl] = useState("");
   const [projectId, setProjectId] = useState("");
+  const [managementToken, setManagementToken] = useState("");
   const [done, setDone] = useState(false);
   if (done) return null;
 
   const submit = () => {
-    answerUiPrompt(props.send, props.entry.requestId, { provider, databaseUrl, projectId });
+    answerUiPrompt(props.send, props.entry.requestId, { provider, databaseUrl, projectId, managementToken });
     harnessStore.resolvePrompt(props.sessionId, props.entry.requestId);
     setDone(true);
   };
@@ -224,6 +225,12 @@ function IntegrationCard(props: { sessionId: string; entry: UiPromptEntry; send:
           placeholder="Project ID (optional)"
           value={projectId}
           onChange={(e) => setProjectId(e.target.value)}
+        />
+        <Input
+          type="password"
+          placeholder="API token (optional — enables project listing)"
+          value={managementToken}
+          onChange={(e) => setManagementToken(e.target.value)}
         />
         <div className="flex justify-end gap-2">
           <Button size="xs" variant="ghost" onClick={dismiss}>

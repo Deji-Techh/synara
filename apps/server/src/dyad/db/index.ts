@@ -36,6 +36,23 @@ export {
 } from "./dbTools.ts";
 export { checkSqlDanger, classifySql, splitStatements } from "./sqlSafety.ts";
 export {
+  NEON_API_BASE_URL,
+  listNeonProjects,
+  listNeonBranches,
+  NeonApiError,
+  type NeonProject,
+  type NeonBranch,
+} from "./neonApi.ts";
+export {
+  SUPABASE_API_BASE_URL,
+  listSupabaseOrganizations,
+  listSupabaseProjects,
+  SupabaseApiError,
+  type SupabaseOrganization,
+  type SupabaseProject,
+} from "./supabaseApi.ts";
+export { slugifyMigrationName, writeMigrationFile } from "./migrations.ts";
+export {
   linkDatabase,
   unlinkDatabase,
   getDatabaseLink,

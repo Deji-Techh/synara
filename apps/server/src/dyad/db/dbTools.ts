@@ -19,6 +19,9 @@ import {
   type DbProvider,
 } from "./connections.ts";
 import { checkSqlDanger, classifySql, splitStatements } from "./sqlSafety.ts";
+import { writeMigrationFile } from "./migrations.ts";
+import { listSupabaseProjects } from "./supabaseApi.ts";
+import { listNeonBranches, listNeonProjects } from "./neonApi.ts";
 
 export class DbToolError extends Error {
   constructor(message: string) {
@@ -115,7 +118,19 @@ export async function executeSql(
   const { rows } = await getDriver().then((d) => d.query(databaseUrl, statements[0], signal));
   const rendered = rows.length === 0 ? "(no rows)" : JSON.stringify(rows.slice(0, 100), null, 2);
   const more = rows.length > 100 ? `\n… ${rows.length - 100} more row(s) omitted` : "";
-  return `Successfully executed SQL query.\n\nSQL result:\n${rendered}${more}`;
+  // Donor behavior: Supabase schema changes also land a migration file so
+  // history survives. Best-effort — never fails the tool call.
+  let migrationNote = "";
+  try {
+    const link = getDatabaseLink(sessionId);
+    if (link?.provider === "supabase" && classifySql(parsed.query).mutatesSchema) {
+      const file = await writeMigrationFile(appPath, parsed.description ?? "schema change", statements[0]);
+      if (file) migrationNote = `\n\nMigration recorded: ${file}`;
+    }
+  } catch {
+    // ignore — execution already succeeded
+  }
+  return `Successfully executed SQL query.\n\nSQL result:\n${rendered}${more}${migrationNote}`;
 }
 
 /** Consent metadata for shouldAutoApproveAgentTool (donor rule). */
@@ -184,11 +199,24 @@ export const getSupabaseProjectInfoTool = defineTool({
     if (!link || link.provider !== "supabase") {
       throw new DbNotConnectedError();
     }
-    return [
+    const lines = [
       `Supabase project linked${link.projectId ? `: ${link.projectId}` : "."}`,
       `Database URL source: ${resolveDatabaseUrl(ctx.appPath, ctx.sessionId).source}.`,
       "Use get_database_table_schema to inspect tables and execute_sql for queries.",
-    ].join("\n");
+    ];
+    if (link.managementToken) {
+      try {
+        const projects = await listSupabaseProjects({ token: link.managementToken });
+        lines.push(
+          "",
+          `Remote projects (${projects.length}):`,
+          ...projects.slice(0, 20).map((p) => `- ${p.name} (${p.id})${p.region ? ` [${p.region}]` : ""}`),
+        );
+      } catch (err) {
+        lines.push("", `Remote listing failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+    return lines.join("\n");
   },
   presentCall: () => "Supabase project info",
 });
@@ -205,11 +233,33 @@ export const getNeonProjectInfoTool = defineTool({
     if (!link || link.provider !== "neon") {
       throw new DbNotConnectedError();
     }
-    return [
+    const lines = [
       `Neon project linked${link.projectId ? `: ${link.projectId}` : ""}${link.branchId ? ` (branch ${link.branchId})` : "."}`,
       `Database URL source: ${resolveDatabaseUrl(ctx.appPath, ctx.sessionId).source}.`,
       "Use get_database_table_schema to inspect tables and execute_sql for queries.",
-    ].join("\n");
+    ];
+    if (link.managementToken) {
+      try {
+        const projects = await listNeonProjects({ apiKey: link.managementToken });
+        lines.push("", `Remote projects (${projects.length}):`);
+        for (const p of projects.slice(0, 10)) {
+          lines.push(`- ${p.name} (${p.id})`);
+          if (link.projectId && p.id === link.projectId) {
+            try {
+              const branches = await listNeonBranches({ apiKey: link.managementToken as string, projectId: p.id });
+              for (const b of branches.slice(0, 10)) {
+                lines.push(`    branch: ${b.name} (${b.id})${b.primary ? " [primary]" : ""}`);
+              }
+            } catch {
+              // branches optional
+            }
+          }
+        }
+      } catch (err) {
+        lines.push("", `Remote listing failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+    return lines.join("\n");
   },
   presentCall: () => "Neon project info",
 });
@@ -270,6 +320,7 @@ export async function executeAddIntegration(
     provider: picked,
     databaseUrl: databaseUrl || undefined,
     projectId: answers.projectId,
+    managementToken: answers.managementToken || answers.management_token || undefined,
   });
   return `User completed the ${picked} integration. You can now continue with the next step.`;
 }

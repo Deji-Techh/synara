@@ -15,6 +15,8 @@ export interface DbLink {
   projectId?: string;
   organizationSlug?: string | null;
   branchId?: string | null;
+  /** Management API token (memory-only; powers project/branch listing). */
+  managementToken?: string;
 }
 
 const sessionLinks = new Map<string, DbLink>();
