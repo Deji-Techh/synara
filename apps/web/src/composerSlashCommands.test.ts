@@ -44,6 +44,7 @@ describe("composerSlashCommands", () => {
       "review",
       "preview",
       "teamwork-preview",
+      "verify",
     ]);
     expect(filterComposerSlashCommands("fast").map((entry) => entry.command)).toEqual(["fast"]);
     expect(filterComposerSlashCommands("auto").map((entry) => entry.command)).toEqual([
@@ -335,7 +336,7 @@ describe("composerSlashCommands", () => {
 
   it("keeps app-level /review available for codex even when native review exists", () => {
     const availableCommands = getAvailableComposerSlashCommands({
-      provider: "openai",
+      provider: "opencodeGo",
       supportsFastSlashCommand: true,
       canOfferCompactCommand: true,
       canOfferReviewCommand: true,
@@ -346,11 +347,11 @@ describe("composerSlashCommands", () => {
     });
 
     expect(availableCommands).toContain("review");
-    expect(shouldHideProviderNativeCommandFromComposerMenu("openai", "review")).toBe(true);
+    expect(shouldHideProviderNativeCommandFromComposerMenu("opencodeGo", "review")).toBe(true);
   });
 
   it("keeps app-level /review for opencode and does not treat review as text-native", () => {
-    expect(providerSupportsTextNativeReviewCommand("openai", ["review"])).toBe(false);
+    expect(providerSupportsTextNativeReviewCommand("opencodeGo", ["review"])).toBe(false);
     expect(providerSupportsTextNativeReviewCommand("anthropic", ["review"])).toBe(true);
   });
 
