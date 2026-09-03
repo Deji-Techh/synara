@@ -147,7 +147,7 @@ export const CaideLazyContent: React.FC<{ open: boolean; children: ReactNode }> 
   open,
   children,
 }) => {
-  const [hasOpened, setHasOpened] = useState(false);
+  const [hasOpened, setHasOpened] = useState(open);
   useEffect(() => {
     if (open && !hasOpened) setHasOpened(true);
   }, [open, hasOpened]);
