@@ -288,6 +288,7 @@ describe("Milestone M4 — Tool DSL, Scheduler, Executor & Core Tools", () => {
       "preview_status",
       "stop_preview",
       "build_apk",
+      "open_database_panel",
     ];
 
     for (const name of expectedNames) {

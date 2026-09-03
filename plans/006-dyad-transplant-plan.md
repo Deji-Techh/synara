@@ -84,6 +84,8 @@ Right dock (`M3`, `M5`):
 6. Review workbench (reviewer-subagent findings).
 7. Context/compaction status (budget banner).
 
+Database auto-open rule (`M3` WS): any DB `tool_call` event (`execute_sql`, Supabase/Neon info, schema, `add_integration`, `enable_nitro`) or DBFoo talk (database/Supabase/Neon/SQL/provision) auto-reveals the right-dock `database` pane; the agent also drives it directly via `open_database_panel`. Full autonomous control — never manual.
+
 ## 4. Verification + audit discipline
 
 * Per milestone: `grep -rn "orchestration/|agentGateway|codexAppServer|harnessCompat|export const stub" apps/server/src` must shrink (M0→M1) then hit zero in touched scope; donor-file checklist diffed against `src/prompts/`, `local_agent/tools/`, `ipc/handlers/`, `db/schema.ts`.

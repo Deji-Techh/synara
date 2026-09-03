@@ -1,6 +1,7 @@
 import type { ToolDef } from "./defineTool.ts";
 import { ALL_CORE_TOOLS } from "./coreTools.ts";
 import { ALL_PREVIEW_TOOLS } from "./previewTools.ts";
+import { ALL_DB_PANEL_TOOLS } from "../../dyad/db/dbPanel.ts";
 
 export class ToolRegistry {
   private tools = new Map<string, ToolDef>();
@@ -48,5 +49,7 @@ export class ToolRegistry {
 }
 
 export function createDefaultRegistry(): ToolRegistry {
-  return new ToolRegistry([...ALL_CORE_TOOLS, ...ALL_PREVIEW_TOOLS]);
+  // NOTE (M3 unification): dyad/* tool defs ride the same registry until the
+  // transplant merges harness/tools and dyad/* into one tool layer.
+  return new ToolRegistry([...ALL_CORE_TOOLS, ...ALL_PREVIEW_TOOLS, ...ALL_DB_PANEL_TOOLS]);
 }
