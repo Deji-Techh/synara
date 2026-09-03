@@ -54,11 +54,11 @@ export interface ToolMeta {
 export const TOOL_CATALOG: readonly ToolMeta[] = [
   // file-edit
   { name: "write_file", category: "file-edit", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "write_file" },
-  { name: "search_replace", category: "file-edit", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "missing" },
-  { name: "multi_replace", category: "file-edit", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "missing" },
-  { name: "copy_file", category: "file-edit", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "missing" },
-  { name: "delete_file", category: "file-edit", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "missing" },
-  { name: "rename_file", category: "file-edit", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "missing" },
+  { name: "search_replace", category: "file-edit", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/editing" },
+  { name: "multi_replace", category: "file-edit", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/editing" },
+  { name: "copy_file", category: "file-edit", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/editing" },
+  { name: "delete_file", category: "file-edit", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/editing" },
+  { name: "rename_file", category: "file-edit", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/editing" },
   { name: "add_dependency", category: "file-edit", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "install_package" },
   { name: "execute_sql", category: "db-infra", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "missing" },
   // read-search
