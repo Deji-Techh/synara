@@ -34,6 +34,7 @@ The project framework is REACT NATIVE (Expo): a native-feel mobile app.
 - Install packages with the JS package manager (Expo-compatible packages only; never another platform's toolchain or language packages).
 - Preview runs via \`npx expo start\` inside the phone/tablet device frame; the app must fill the frame (100% width, no fake bezels).
 - Touch targets ≥ 44px; respect safe areas; tablet-adaptive layouts.
+- Drive the preview yourself with the open_preview / restart_preview / preview_status tools and verify on-screen before finishing — never ask the user to open it manually.
 `.trim();
 
 const FLUTTER_BRIEF = `
@@ -43,6 +44,7 @@ The project framework is FLUTTER: a native-feel mobile app written in Dart.
 - Manage packages with \`flutter pub add\` / \`flutter pub get\`; format with \`dart format\`; analyze with \`flutter analyze\`.
 - Preview runs via \`flutter run -d web-server\` inside the phone/tablet device frame; Material 3 widgets, adaptive for tablets.
 - Touch targets ≥ 48px on Android profiles (44px iOS); respect safe areas (SafeArea).
+- Drive the preview yourself with the open_preview / restart_preview / preview_status tools and verify on-screen before finishing — never ask the user to open it manually.
 `.trim();
 
 const WEBSITE_BRIEF = `
@@ -51,6 +53,7 @@ The project framework is WEBSITE (Vite + React): a responsive web app.
 - Source lives in src/ (pages/routes, components); style with Tailwind utilities, not stylesheets per component.
 - Preview runs via the Vite dev server in a browser iframe; layouts must reflow at mobile (<640px), tablet (640–1024px), desktop (>1024px).
 - Desktop-first canvas: top navbar or sidebar navigation (never a bottom tab bar); full mouse + keyboard + touch parity with visible focus states.
+- Drive the preview yourself with the open_preview / restart_preview / preview_status tools and verify on-screen before finishing — never ask the user to open it manually.
 `.trim();
 
 export const CAIDE_FRAMEWORK_BRIEFS: Record<CaideFramework, string> = {

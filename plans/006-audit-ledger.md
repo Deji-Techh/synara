@@ -33,6 +33,7 @@
 | `src/prompts/web3_skill_pack.ts` | `dyad/prompts/web3SkillPack.ts` | LANDED (M1) |
 | `src/prompts/skills/**` + `skills-web3/**` (.md) | `dyad/skills/` (fs-loaded, no `?raw`) | LANDED (M1, 46 files) |
 | `src/prompts/system_prompt.ts:510-659` + `local_agent_prompt.ts:460-527` wiring | `dyad/prompts/assembleDyadPrompt.ts` | LANDED as `systemPrompt.ts` + `agentPrompt.ts` + `planPrompt.ts` + `aiRules.ts` + `testGuidance.ts` + `frameworkType.ts` (M1, 6 tests green) |
+| Agent preview control (`open/restart/status/stop_preview`, `build_apk` debug-only) wrapping `harness/preview/manager` | `harness/tools/previewTools.ts` (registered in default registry) | LANDED (M2, 4 tests green). `build_project` flutter step fixed to `--debug`. Framework briefs order the agent to drive preview itself. |
 | `src/prompts/guides/**` + `filter_guide_by_framework.ts` | `dyad/guides/` | M2 |
 | `src/prompts/plan_mode_prompt.ts`, `compaction/supabase/neon/security/summarize` | `dyad/prompts/` | M1–M2 |
 | `src/ipc/shared/language_model_constants.ts` + `get_model_client.ts` + `llm_engine_provider.ts` + `secret_storage.ts` | `dyad/providers/` | LANDED catalog + registry + routing + key validation (M1, 6 tests green). FREE-ENTIRELY: gateway/`gatewayPrefix`/`DYAD_ENGINE_URL` dropped, `auto/free-pro` quota entry removed, `auto` resolves by local key presence, vertex(OAuth)/bedrock(SigV4)/chatgpt(OAuth, not ported) flagged `needs-work` with custom-provider workaround. M3 wires into harness apiAdapter. |

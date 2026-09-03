@@ -1,5 +1,6 @@
 import type { ToolDef } from "./defineTool.ts";
 import { ALL_CORE_TOOLS } from "./coreTools.ts";
+import { ALL_PREVIEW_TOOLS } from "./previewTools.ts";
 
 export class ToolRegistry {
   private tools = new Map<string, ToolDef>();
@@ -47,5 +48,5 @@ export class ToolRegistry {
 }
 
 export function createDefaultRegistry(): ToolRegistry {
-  return new ToolRegistry(ALL_CORE_TOOLS);
+  return new ToolRegistry([...ALL_CORE_TOOLS, ...ALL_PREVIEW_TOOLS]);
 }

@@ -300,11 +300,12 @@ export const installPackageTool = defineTool({
   },
 });
 
-// 14. build_project — framework-aware (website: bun run build, RN: npx expo export, flutter: flutter build apk, blank: no-op)
+// 14. build_project — framework-aware (website: bun run build, RN: npx expo export, flutter: flutter build apk --debug, blank: no-op)
+// NOTE: flutter uses --debug (no signing config needed); release signing stays human-gated — see build_apk.
 export const buildProjectTool = defineTool({
   name: "build_project",
   description:
-    "Executes project build using the framework's buildSteps (website: bun run build, RN: npx expo export, flutter: flutter build apk). Returns structured { success, stdout, stderr, exitCode } — not raw compiler dump.",
+    "Executes project build using the framework's buildSteps (website: bun run build, RN: npx expo export, flutter: flutter build apk --debug). Returns structured { success, stdout, stderr, exitCode } — not raw compiler dump.",
   schema: z.object({}),
   readOnly: false,
   modifiesState: true,
@@ -337,7 +338,7 @@ export const buildProjectTool = defineTool({
       framework === "react-native"
         ? ["npx expo export"]
         : framework === "flutter"
-          ? ["flutter build apk"]
+          ? ["flutter build apk --debug"]
           : framework === "website"
             ? ["bun run build"]
             : [];

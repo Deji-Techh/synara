@@ -258,9 +258,9 @@ describe("Milestone M4 — Tool DSL, Scheduler, Executor & Core Tools", () => {
     }
   });
 
-  it("verifies all 18 core tools are registered in the default registry and can be looked up", () => {
+  it("verifies all core + preview tools are registered in the default registry and can be looked up", () => {
     const registry = createDefaultRegistry();
-    expect(ALL_CORE_TOOLS.length).toBe(18);
+    expect(ALL_CORE_TOOLS.length).toBe(20);
 
     const expectedNames = [
       "read_file",
@@ -278,9 +278,16 @@ describe("Milestone M4 — Tool DSL, Scheduler, Executor & Core Tools", () => {
       "install_package",
       "build_project",
       "lint_project",
+      "test_project",
       "get_preview_url",
       "checkpoint",
       "log_decision",
+      "spawn_subagent",
+      "open_preview",
+      "restart_preview",
+      "preview_status",
+      "stop_preview",
+      "build_apk",
     ];
 
     for (const name of expectedNames) {
