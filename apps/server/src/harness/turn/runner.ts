@@ -9,6 +9,7 @@ import type { HarnessEvent } from "@caide/contracts";
 import { createStreamProviderAdapter } from "../provider/streamProviderAdapter.ts";
 import { runLoop, type LLMAdapter } from "../loop/loop.ts";
 import { Inbox } from "../inbox/index.ts";
+import { appendHarnessEvent, flushTurnTokens } from "./eventLog.ts";
 import { buildConversationChain, buildMessages } from "../session/buildChain.ts";
 import { SessionStorage } from "../session/storage.ts";
 import { constructSystemPrompt } from "../../dyad/prompts/index.ts";
@@ -84,6 +85,7 @@ export class CaideRunner {
     this.status = "running";
     const forward = (event: HarnessEvent): void => {
       input.onEvent?.(event);
+      void appendHarnessEvent(event);
       if (event.type === "token") this.emit({ type: "token", content: event.content });
       else if (event.type === "tool_call") {
         this.emit({
@@ -192,15 +194,18 @@ export class CaideRunner {
 
       if (controller.signal.aborted) {
         this.status = "cancelled";
+        await flushTurnTokens(input.sessionId);
         forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "cancelled" });
       } else {
         this.status = "completed";
+        await flushTurnTokens(input.sessionId);
         forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "completed" });
       }
       await snapshotSessionState(input.sessionId, storage).catch(() => {});
       ctx.cleanup();
     } catch (err) {
       this.status = "failed";
+      await flushTurnTokens(input.sessionId);
       forward({
         type: "error",
         sessionId: input.sessionId,

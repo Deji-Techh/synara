@@ -91,6 +91,8 @@ export class HarnessWebSocketServer {
             }
             clients.add(ws);
             ws.send(JSON.stringify({ type: "subscribed", sessionId: msg.sessionId }));
+            // Reconnect replay: rebuild UI state from the durable event log.
+            void this.replaySession(msg.sessionId, ws).catch(() => {});
             return;
           }
 
@@ -193,6 +195,18 @@ export class HarnessWebSocketServer {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(payload);
       }
+    }
+  }
+
+  /** Send the durable event tail to a (re)subscribing socket. */
+  private async replaySession(sessionId: string, ws: WebSocket): Promise<void> {
+    const { readHarnessEvents } = await import("../turn/eventLog.ts");
+    const events = await readHarnessEvents(sessionId);
+    for (const event of events) {
+      if (ws.readyState !== WebSocket.OPEN) return;
+      const clients = this.sessionClients.get(sessionId);
+      if (!clients?.has(ws)) return;
+      ws.send(JSON.stringify(event));
     }
   }
 
