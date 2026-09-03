@@ -32,7 +32,7 @@
 | `src/prompts/system_prompt.ts:510-659` + `local_agent_prompt.ts:460-527` wiring | `dyad/prompts/assembleDyadPrompt.ts` | LANDED as `systemPrompt.ts` + `agentPrompt.ts` + `planPrompt.ts` + `aiRules.ts` + `testGuidance.ts` + `frameworkType.ts` (M1, 6 tests green) |
 | `src/prompts/guides/**` + `filter_guide_by_framework.ts` | `dyad/guides/` | M2 |
 | `src/prompts/plan_mode_prompt.ts`, `compaction/supabase/neon/security/summarize` | `dyad/prompts/` | M1–M2 |
-| `src/ipc/shared/language_model_constants.ts` + `get_model_client.ts` + `llm_engine_provider.ts` + `secret_storage.ts` | `dyad/providers/` | M1 |
+| `src/ipc/shared/language_model_constants.ts` + `get_model_client.ts` + `llm_engine_provider.ts` + `secret_storage.ts` | `dyad/providers/` | LANDED catalog + registry + routing + key validation (M1, 6 tests green). FREE-ENTIRELY: gateway/`gatewayPrefix`/`DYAD_ENGINE_URL` dropped, `auto/free-pro` quota entry removed, `auto` resolves by local key presence, vertex(OAuth)/bedrock(SigV4)/chatgpt(OAuth, not ported) flagged `needs-work` with custom-provider workaround. M3 wires into harness apiAdapter. |
 | `src/lib/schemas.ts` provider/model/AppTarget parts | `packages/contracts` ext + `dyad/` | M1 |
 | `local_agent/tool_definitions.ts` + `tools/*.ts` + subagents | `dyad/tools/` (adapt to `defineTool` DSL) | M2 |
 | `chat_stream/` protocol + `chat_stream_handlers.ts` + `local_agent_handler.ts` | `dyad/stream/` adaptor to Caide WS | M2–M3 |
