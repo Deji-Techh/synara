@@ -12,6 +12,8 @@ import { Inbox } from "../inbox/index.ts";
 import { HarnessWebSocketServer } from "../ws/server.ts";
 import { attachUiBridge } from "../ws/uiBridge.ts";
 import { approveBlueprint, type AppBlueprint } from "../../dyad/plan/blueprintStore.ts";
+import type { ConsentRequestFn } from "../../dyad/tools/permissions.ts";
+import type { McpConsentRequestFn } from "../../dyad/mcp/mcpConsent.ts";
 import { CaideRunner, type StartTurnInput } from "./runner.ts";
 
 export interface GatewayTurnRequest {
@@ -31,13 +33,29 @@ export class TurnGateway {
   private inboxes = new Map<string, Inbox>();
   private ws: HarnessWebSocketServer | null = null;
   private uiDetach: (() => void) | null = null;
+  private requestConsent: ConsentRequestFn | null = null;
+  private requestMcpConsent: McpConsentRequestFn | null = null;
 
   /** Attach a WS server: bridge UI transports + steer/cancel bindings. */
   attachWs(server: HarnessWebSocketServer): void {
     this.ws = server;
     const bridge = attachUiBridge(server);
-    void bridge;
+    this.requestConsent = bridge.requestConsent;
+    this.requestMcpConsent = bridge.requestMcpConsent;
     this.uiDetach = bridge.detach;
+    server.onTurnStart((sessionId, turn) => {
+      void this.startTurn({
+        sessionId,
+        appPath: turn.appPath,
+        prompt: turn.prompt,
+        mode: turn.mode,
+        framework: turn.framework,
+        providerId: turn.providerId,
+        modelId: turn.modelId,
+        maxSteps: turn.maxSteps,
+        settings: turn.providerSettings ? { providerSettings: turn.providerSettings } : undefined,
+      }).catch(() => {});
+    });
     server.onSteer((sessionId, prompt) => {
       this.getInbox(sessionId).steer(prompt);
     });
@@ -63,6 +81,8 @@ export class TurnGateway {
     this.uiDetach?.();
     this.uiDetach = null;
     this.ws = null;
+    this.requestConsent = null;
+    this.requestMcpConsent = null;
   }
 
   getInbox(sessionId: string): Inbox {
@@ -87,6 +107,7 @@ export class TurnGateway {
     return this.runner.startTurn({
       ...request,
       inbox,
+      requestConsent: extra?.requestConsent ?? this.requestConsent ?? undefined,
       onEvent: broadcast,
       ...extra,
       // extra.onEvent already invoked above; keep broadcast as the sink.

@@ -21,6 +21,7 @@ import { makeServerReadiness } from "./server/readiness";
 import { makeServerShutdownController, type ServerShutdownController } from "./serverShutdown";
 import { makeBoundedNodeHttpServer } from "./nodeHttpServer";
 import { websocketRpcRouteLayer } from "./wsRpc";
+import { mountHarnessGateway } from "./harness/harnessGatewayMount";
 
 export interface ServerShape {
   readonly start: Effect.Effect<
@@ -108,6 +109,14 @@ export const createEffectServer = Effect.fn(function* (
     (nodeServer as http.Server | null)?.address() ?? null,
     config.port,
   );
+  if (nodeServer) {
+    const harnessMount = mountHarnessGateway(nodeServer, { authToken: config.authToken ?? null });
+    yield* Effect.addFinalizer(() =>
+      Effect.sync(() => {
+        harnessMount.close();
+      }),
+    );
+  }
   yield* persistServerRuntimeState({
     path: config.serverRuntimeStatePath,
     state: makePersistedServerRuntimeState({

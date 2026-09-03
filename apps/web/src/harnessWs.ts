@@ -146,6 +146,26 @@ export function answerConsent(
   send({ type: "consent_answer", requestId, decision });
 }
 
+export interface HarnessTurnStart {
+  appPath: string;
+  prompt: string;
+  mode?: "build" | "ask" | "agent" | "plan";
+  framework?: "blank" | "react-native" | "flutter" | "website";
+  providerId?: string;
+  modelId?: string;
+  maxSteps?: number;
+  providerSettings?: Record<string, unknown>;
+}
+
+/** Ask the server gateway to start a harness turn on this session. */
+export function startHarnessTurn(
+  send: (message: Record<string, unknown>) => void,
+  sessionId: string,
+  turn: HarnessTurnStart,
+): void {
+  send({ type: "turn_start", sessionId, turn });
+}
+
 function readJson<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);

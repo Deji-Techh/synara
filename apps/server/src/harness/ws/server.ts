@@ -4,7 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import type { HarnessEvent } from "@caide/contracts";
 
 export interface ClientInboundMessage {
-  type: "subscribe" | "steer" | "cancel" | "checkpoint_response" | "ping" | "prompt_answer" | "consent_answer" | "settings_sync" | "blueprint_response";
+  type: "subscribe" | "steer" | "cancel" | "checkpoint_response" | "ping" | "prompt_answer" | "consent_answer" | "settings_sync" | "blueprint_response" | "turn_start";
   sessionId?: string;
   token?: string;
   prompt?: string;
@@ -16,6 +16,18 @@ export interface ClientInboundMessage {
   decision?: "accept-once" | "accept-always" | "decline";
   settings?: Record<string, unknown>;
   blueprint?: Record<string, unknown>;
+  turn?: TurnStartPayload;
+}
+
+export interface TurnStartPayload {
+  appPath: string;
+  prompt: string;
+  mode?: "build" | "ask" | "agent" | "plan";
+  framework?: "blank" | "react-native" | "flutter" | "website";
+  providerId?: string;
+  modelId?: string;
+  maxSteps?: number;
+  providerSettings?: Record<string, { apiKey?: { value?: string | null } | string | null; apiBaseUrl?: string | null; baseUrl?: string | null; resourceName?: string | null }>;
 }
 
 export type SessionCancelHandler = (sessionId: string, reason?: string) => void;
@@ -38,6 +50,7 @@ export type BlueprintResponseHandler = (
   blueprint?: Record<string, unknown>,
   feedback?: string,
 ) => void;
+export type TurnStartHandler = (sessionId: string, turn: TurnStartPayload) => void;
 
 export class HarnessWebSocketServer {
   private wss: WebSocketServer;
@@ -49,6 +62,7 @@ export class HarnessWebSocketServer {
   private onConsentAnswerHandler?: ConsentAnswerHandler;
   private onSettingsSyncHandler?: SettingsSyncHandler;
   private onBlueprintResponseHandler?: BlueprintResponseHandler;
+  private onTurnStartHandler?: TurnStartHandler;
 
   constructor() {
     this.wss = new WebSocketServer({ noServer: true });
@@ -138,6 +152,13 @@ export class HarnessWebSocketServer {
             }
             return;
           }
+
+          if (msg.type === "turn_start" && msg.sessionId && msg.turn) {
+            if (this.onTurnStartHandler) {
+              this.onTurnStartHandler(msg.sessionId, msg.turn);
+            }
+            return;
+          }
         } catch {
           // ignore malformed client message
         }
@@ -201,6 +222,10 @@ export class HarnessWebSocketServer {
 
   onBlueprintResponse(handler: BlueprintResponseHandler): void {
     this.onBlueprintResponseHandler = handler;
+  }
+
+  onTurnStart(handler: TurnStartHandler): void {
+    this.onTurnStartHandler = handler;
   }
 
   close(): Promise<void> {
