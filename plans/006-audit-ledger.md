@@ -24,11 +24,11 @@
 
 | Donor file | Target | Status |
 |---|---|---|
-| `src/prompts/platform_contracts.ts` | `dyad/prompts/platformContracts.ts` | NEXT (M1) |
-| `src/prompts/mobile_ui_skill_pack.ts` + `web_ui_skill_pack.ts` | `dyad/prompts/*SkillPack.ts` | NEXT (M1) |
-| `src/prompts/design_engine_contract.ts` + `design_reference_index.ts` | `dyad/prompts/` | NEXT (M1) |
-| `src/prompts/web3_skill_pack.ts` | `dyad/prompts/web3SkillPack.ts` | NEXT (M1) |
-| `src/prompts/skills/**` + `skills-web3/**` (.md) | `dyad/skills/` (fs-loaded, no `?raw`) | NEXT (M1) |
+| `src/prompts/platform_contracts.ts` | `dyad/prompts/platformContracts.ts` | LANDED (M1) |
+| `src/prompts/mobile_ui_skill_pack.ts` + `web_ui_skill_pack.ts` | `dyad/prompts/*SkillPack.ts` | LANDED (M1) |
+| `src/prompts/design_engine_contract.ts` + `design_reference_index.ts` | `dyad/prompts/` | LANDED (M1) |
+| `src/prompts/web3_skill_pack.ts` | `dyad/prompts/web3SkillPack.ts` | LANDED (M1) |
+| `src/prompts/skills/**` + `skills-web3/**` (.md) | `dyad/skills/` (fs-loaded, no `?raw`) | LANDED (M1, 46 files) |
 | `src/prompts/system_prompt.ts:510-659` + `local_agent_prompt.ts:460-527` wiring | `dyad/prompts/assembleDyadPrompt.ts` | M1 |
 | `src/prompts/guides/**` + `filter_guide_by_framework.ts` | `dyad/guides/` | M2 |
 | `src/prompts/plan_mode_prompt.ts`, `compaction/supabase/neon/security/summarize` | `dyad/prompts/` | M1–M2 |
