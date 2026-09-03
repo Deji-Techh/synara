@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 import type { HarnessEvent } from "@caide/contracts";
 import type { LLMAdapter } from "../loop/loop.ts";
-import { TurnGateway } from "./gateway.ts";
+import { TurnGateway, resolveTurnProviders } from "./gateway.ts";
 import { HarnessWebSocketServer } from "../ws/server.ts";
 
 function fakeLlm(chunks: Array<{ type: "token"; content: string }>): LLMAdapter {
@@ -103,5 +103,75 @@ describe("turn gateway (m3h)", () => {
     gateway.cancelTurn("s-steer");
     gateway.dropSession("s-steer");
     expect(gateway.getInbox("s-steer")).not.toBe(inbox);
+  });
+
+  it("resolves turn providers: explicit wins, else stored defaults", () => {
+    const explicit = resolveTurnProviders({
+      sessionId: "s",
+      appPath: "/tmp/x",
+      prompt: "hi",
+      providerId: "openai",
+      modelId: "gpt-5",
+      settings: { providerSettings: { openai: { apiKey: "sk-x" } } },
+    });
+    expect(explicit.providerId).toBe("openai");
+    expect(explicit.modelId).toBe("gpt-5");
+
+    const fallback = resolveTurnProviders({ sessionId: "s", appPath: "/tmp/x", prompt: "hi" });
+    expect(fallback.settings).toBeDefined();
+    // undefined defaults are fine — the turn context auto-resolves by key.
+    expect(fallback.providerId).toBeUndefined();
+  });
+
+  it("answers provider settings get/set over the socket handlers", async () => {
+    const gateway = new TurnGateway();
+    const sent: HarnessEvent[] = [];
+    const handlers: Record<string, (...args: never[]) => void> = {};
+    const server = {
+      broadcastToSession: (sessionId: string, event: HarnessEvent) => {
+        void sessionId;
+        sent.push(event);
+      },
+      onPromptAnswer: (h: (...args: never[]) => void) => {
+        handlers.prompt = h;
+      },
+      onConsentAnswer: (h: (...args: never[]) => void) => {
+        handlers.consent = h;
+      },
+      onSettingsSync: (h: (...args: never[]) => void) => {
+        handlers.settings = h;
+      },
+      onSteer: (h: (...args: never[]) => void) => {
+        handlers.steer = h;
+      },
+      onCancel: (h: (...args: never[]) => void) => {
+        handlers.cancel = h;
+      },
+      onBlueprintResponse: (h: (...args: never[]) => void) => {
+        handlers.blueprint = h;
+      },
+      onTurnStart: (h: (...args: never[]) => void) => {
+        handlers.turn = h;
+      },
+      onProviderSettingsGet: (h: (...args: never[]) => void) => {
+        handlers.psGet = h;
+      },
+      onProviderSettingsSet: (h: (...args: never[]) => void) => {
+        handlers.psSet = h;
+      },
+      onProviderSettingsTest: (h: (...args: never[]) => void) => {
+        handlers.psTest = h;
+      },
+    } as unknown as HarnessWebSocketServer;
+    gateway.attachWs(server);
+    try {
+      const get = handlers.psGet as (sid: string, req?: string) => void;
+      get("s-ps", "r1");
+      const state = sent.find((e) => e.type === "provider_settings_state");
+      expect(state).toMatchObject({ sessionId: "s-ps", requestId: "r1" });
+      expect(Array.isArray((state as unknown as { providers: unknown[] }).providers)).toBe(true);
+    } finally {
+      gateway.detachWs();
+    }
   });
 });

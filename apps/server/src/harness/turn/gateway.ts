@@ -12,6 +12,9 @@ import { Inbox } from "../inbox/index.ts";
 import { HarnessWebSocketServer } from "../ws/server.ts";
 import { attachUiBridge } from "../ws/uiBridge.ts";
 import { approveBlueprint, type AppBlueprint } from "../../dyad/plan/blueprintStore.ts";
+import { sharedProviderSecrets } from "../../dyad/providers/secrets.ts";
+import { testProviderConnection } from "../../dyad/providers/testConnection.ts";
+import type { SettingsLike } from "../../dyad/providers/index.ts";
 import type { ConsentRequestFn } from "../../dyad/tools/permissions.ts";
 import type { McpConsentRequestFn } from "../../dyad/mcp/mcpConsent.ts";
 import { CaideRunner, type StartTurnInput } from "./runner.ts";
@@ -28,8 +31,7 @@ export interface GatewayTurnRequest {
   maxSteps?: number;
 }
 
-export class TurnGateway {
-  private runner = new CaideRunner();
+export class TurnGateway {  private runner = new CaideRunner();
   private inboxes = new Map<string, Inbox>();
   private ws: HarnessWebSocketServer | null = null;
   private uiDetach: (() => void) | null = null;
@@ -58,6 +60,32 @@ export class TurnGateway {
     });
     server.onSteer((sessionId, prompt) => {
       this.getInbox(sessionId).steer(prompt);
+    });
+    server.onProviderSettingsGet((sessionId, requestId) => {
+      this.sendProviderState(server, sessionId, requestId);
+    });
+    server.onProviderSettingsSet((sessionId, providerId, entry, defaults, requestId) => {
+      const secrets = sharedProviderSecrets();
+      secrets.setProvider(providerId, entry);
+      if (defaults && (defaults.providerId !== undefined || defaults.modelId !== undefined)) {
+        secrets.setDefaults(defaults.providerId, defaults.modelId);
+      }
+      this.sendProviderState(server, sessionId, requestId);
+    });
+    server.onProviderSettingsTest((sessionId, providerId, requestId) => {
+      void (async () => {
+        const secrets = sharedProviderSecrets();
+        const stored = secrets.read().providers[providerId] ?? {};
+        const result = await testProviderConnection({
+          providerId,
+          apiKey: stored.apiKey,
+          baseUrl: stored.apiBaseUrl,
+        }).catch((err) => ({
+          ok: false,
+          message: err instanceof Error ? err.message : String(err),
+        }));
+        this.sendProviderState(server, sessionId, requestId, { [providerId]: result });
+      })();
     });
     server.onCancel((sessionId, reason) => {
       this.runner.cancel(sessionId, reason ?? "cancelled");
@@ -99,6 +127,7 @@ export class TurnGateway {
     request: GatewayTurnRequest,
     extra?: Partial<StartTurnInput>,
   ): Promise<string> {
+    const resolved = resolveTurnProviders(request);
     const inbox = this.getInbox(request.sessionId);
     const broadcast = (event: HarnessEvent): void => {
       extra?.onEvent?.(event);
@@ -106,7 +135,9 @@ export class TurnGateway {
     };
     return this.runner.startTurn({
       ...request,
-      inbox,
+      providerId: resolved.providerId,
+      modelId: resolved.modelId,
+      settings: resolved.settings,
       requestConsent: extra?.requestConsent ?? this.requestConsent ?? undefined,
       requestMcpConsent: extra?.requestMcpConsent ?? this.requestMcpConsent ?? undefined,
       onEvent: broadcast,
@@ -118,6 +149,24 @@ export class TurnGateway {
 
   cancelTurn(sessionId: string, cause?: string): void {
     this.runner.cancel(sessionId, cause);
+  }
+
+  private sendProviderState(
+    server: HarnessWebSocketServer,
+    sessionId: string,
+    requestId?: string,
+    tests?: Record<string, { ok: boolean; message: string }>,
+  ): void {
+    const view = sharedProviderSecrets().publicView();
+    server.broadcastToSession(sessionId, {
+      type: "provider_settings_state",
+      sessionId,
+      ...(requestId ? { requestId } : {}),
+      providers: view.providers,
+      ...(view.defaultProviderId ? { defaultProviderId: view.defaultProviderId } : {}),
+      ...(view.defaultModelId ? { defaultModelId: view.defaultModelId } : {}),
+      ...(tests ? { tests } : {}),
+    });
   }
 
   dropSession(sessionId: string): void {
@@ -134,4 +183,22 @@ let shared: TurnGateway | null = null;
 export function sharedTurnGateway(): TurnGateway {
   if (!shared) shared = new TurnGateway();
   return shared;
+}
+
+/**
+ * Provider resolution for a turn: explicit request wins, else the server's
+ * stored provider settings (settings UI), else key-based auto in the turn
+ * context. Extracted for tests.
+ */
+export function resolveTurnProviders(request: GatewayTurnRequest): {
+  providerId: string | undefined;
+  modelId: string | undefined;
+  settings: SettingsLike;
+} {
+  const stored = sharedProviderSecrets().read();
+  return {
+    providerId: request.providerId ?? stored.defaultProviderId,
+    modelId: request.modelId ?? stored.defaultModelId,
+    settings: request.settings ?? sharedProviderSecrets().toSettings(),
+  };
 }

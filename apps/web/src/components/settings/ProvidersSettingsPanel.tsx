@@ -4,6 +4,7 @@
 
 import { PROVIDER_DISPLAY_NAMES, type ProviderKind } from "@caide/contracts";
 import { PROVIDER_DESCRIPTORS } from "@caide/shared/providerMetadata";
+import { DyadProviderKeysSection } from "./DyadProviderKeysSection";
 import { pluralize } from "@caide/shared/text";
 import {
   closestCenter,
@@ -512,6 +513,7 @@ export function ProvidersSettingsPanel({
 
   return (
     <div className="space-y-6">
+      <DyadProviderKeysSection />
       <SettingsSection
         title="Provider picker"
         action={

@@ -157,6 +157,29 @@ export const BlueprintVisualSchema = Schema.Struct({
 });
 export type BlueprintVisualSchema = typeof BlueprintVisualSchema.Type;
 
+/** Provider settings state (keys never cross the wire — flags only). */
+export const ProviderSettingsStateHarnessEvent = Schema.Struct({
+  type: Schema.Literal("provider_settings_state"),
+  sessionId: Schema.String,
+  requestId: Schema.optional(Schema.String),
+  providers: Schema.Array(
+    Schema.Struct({
+      id: Schema.String,
+      configured: Schema.Boolean,
+      hasBaseUrl: Schema.Boolean,
+    }),
+  ),
+  defaultProviderId: Schema.optional(Schema.String),
+  defaultModelId: Schema.optional(Schema.String),
+  tests: Schema.optional(
+    Schema.Record(
+      Schema.String,
+      Schema.Struct({ ok: Schema.Boolean, message: Schema.String }),
+    ),
+  ),
+});
+export type ProviderSettingsStateHarnessEvent = typeof ProviderSettingsStateHarnessEvent.Type;
+
 /** write_app_blueprint presentation (approve/request-change on the card). */
 export const BlueprintUpdateHarnessEvent = Schema.Struct({
   type: Schema.Literal("blueprint_update"),
@@ -186,5 +209,6 @@ export const HarnessEvent = Schema.Union([
   PlanUpdateHarnessEvent,
   PlanExitHarnessEvent,
   BlueprintUpdateHarnessEvent,
+  ProviderSettingsStateHarnessEvent,
 ]);
 export type HarnessEvent = typeof HarnessEvent.Type;

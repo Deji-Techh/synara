@@ -26,6 +26,17 @@ export {
   formatInvalidProviderApiKeyMessage,
 } from "./apiKey.ts";
 export {
+  ProviderSecretsStore,
+  sharedProviderSecrets,
+  defaultSecretsPath,
+  type StoredProviderEntry,
+  type ProviderSecretsFile,
+} from "./secrets.ts";
+export {
+  testProviderConnection,
+  type ConnectionTestResult,
+} from "./testConnection.ts";
+export {
   resolveConnection,
   resolveAutoProvider,
   hasProviderKey,

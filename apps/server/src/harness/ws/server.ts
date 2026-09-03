@@ -4,7 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import type { HarnessEvent } from "@caide/contracts";
 
 export interface ClientInboundMessage {
-  type: "subscribe" | "steer" | "cancel" | "checkpoint_response" | "ping" | "prompt_answer" | "consent_answer" | "settings_sync" | "blueprint_response" | "turn_start";
+  type: "subscribe" | "steer" | "cancel" | "checkpoint_response" | "ping" | "prompt_answer" | "consent_answer" | "settings_sync" | "blueprint_response" | "turn_start" | "provider_settings_get" | "provider_settings_set" | "provider_settings_test";
   sessionId?: string;
   token?: string;
   prompt?: string;
@@ -17,6 +17,9 @@ export interface ClientInboundMessage {
   settings?: Record<string, unknown>;
   blueprint?: Record<string, unknown>;
   turn?: TurnStartPayload;
+  provider?: { id?: string; apiKey?: string; apiBaseUrl?: string; resourceName?: string };
+  providerEntry?: { apiKey?: string; apiBaseUrl?: string; resourceName?: string };
+  defaults?: { providerId?: string; modelId?: string };
 }
 
 export interface TurnStartPayload {
@@ -51,6 +54,19 @@ export type BlueprintResponseHandler = (
   feedback?: string,
 ) => void;
 export type TurnStartHandler = (sessionId: string, turn: TurnStartPayload) => void;
+export type ProviderSettingsGetHandler = (sessionId: string, requestId?: string) => void;
+export type ProviderSettingsSetHandler = (
+  sessionId: string,
+  providerId: string,
+  entry: { apiKey?: string; apiBaseUrl?: string; resourceName?: string },
+  defaults?: { providerId?: string; modelId?: string },
+  requestId?: string,
+) => void;
+export type ProviderSettingsTestHandler = (
+  sessionId: string,
+  providerId: string,
+  requestId?: string,
+) => void;
 
 export class HarnessWebSocketServer {
   private wss: WebSocketServer;
@@ -63,6 +79,9 @@ export class HarnessWebSocketServer {
   private onSettingsSyncHandler?: SettingsSyncHandler;
   private onBlueprintResponseHandler?: BlueprintResponseHandler;
   private onTurnStartHandler?: TurnStartHandler;
+  private onProviderSettingsGetHandler?: ProviderSettingsGetHandler;
+  private onProviderSettingsSetHandler?: ProviderSettingsSetHandler;
+  private onProviderSettingsTestHandler?: ProviderSettingsTestHandler;
 
   constructor() {
     this.wss = new WebSocketServer({ noServer: true });
@@ -161,6 +180,31 @@ export class HarnessWebSocketServer {
             }
             return;
           }
+
+          if (msg.type === "provider_settings_get" && msg.sessionId) {
+            this.onProviderSettingsGetHandler?.(msg.sessionId, msg.requestId);
+            return;
+          }
+
+          if (msg.type === "provider_settings_set" && msg.sessionId && msg.provider?.id) {
+            this.onProviderSettingsSetHandler?.(
+              msg.sessionId,
+              msg.provider.id,
+              {
+                apiKey: msg.providerEntry?.apiKey,
+                apiBaseUrl: msg.providerEntry?.apiBaseUrl,
+                resourceName: msg.providerEntry?.resourceName,
+              },
+              msg.defaults,
+              msg.requestId,
+            );
+            return;
+          }
+
+          if (msg.type === "provider_settings_test" && msg.sessionId && msg.provider?.id) {
+            this.onProviderSettingsTestHandler?.(msg.sessionId, msg.provider.id, msg.requestId);
+            return;
+          }
         } catch {
           // ignore malformed client message
         }
@@ -240,6 +284,18 @@ export class HarnessWebSocketServer {
 
   onTurnStart(handler: TurnStartHandler): void {
     this.onTurnStartHandler = handler;
+  }
+
+  onProviderSettingsGet(handler: ProviderSettingsGetHandler): void {
+    this.onProviderSettingsGetHandler = handler;
+  }
+
+  onProviderSettingsSet(handler: ProviderSettingsSetHandler): void {
+    this.onProviderSettingsSetHandler = handler;
+  }
+
+  onProviderSettingsTest(handler: ProviderSettingsTestHandler): void {
+    this.onProviderSettingsTestHandler = handler;
   }
 
   close(): Promise<void> {

@@ -78,3 +78,7 @@ grep -rln "?raw\|@/" apps/server/src/dyad | head
 ls apps/server/src/dyad/prompts apps/server/src/dyad/skills 2>/dev/null
 grep -n "dispatchCommand" apps/web/src/components/Sidebar.tsx | head
 ```
+
+## F. Verification status
+
+Providers-from-donor LANDED (`dyad/providers/secrets.ts` 0600 file store, `testConnection.ts` live probes, gateway defaults, provider_settings_* WS messages + contract event, settings keys UI with Test buttons; chatgpt OAuth documented as not portable. F triage: full-suite 237 failures characterized — mass web failures are a missing babel-plugin-react-compiler env issue under the server runner; server failures audited file-by-file (zero imports of transplant code); fixed slash review providers, migration journals 092-094, compiler spread. Pre-existing failures evidenced at main + branch cut. Full-suite re-run pending as final gate. 

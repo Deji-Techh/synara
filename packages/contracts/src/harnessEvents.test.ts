@@ -114,8 +114,7 @@ describe("Harness Contracts", () => {
     expect(Schema.decodeUnknownSync(HarnessEvent)(exit).type).toBe("plan_exit");
   });
 
-  it("validates blueprint_update harness event", () => {
-    const event: HarnessEventType = {
+  it("validates blueprint_update harness event", () => {    const event: HarnessEventType = {
       type: "blueprint_update",
       sessionId: "s-123",
       appName: "FreshBite",
@@ -126,5 +125,17 @@ describe("Harness Contracts", () => {
       visuals: [{ type: "logo", description: "Header logo", prompt: "Minimalist logo" }],
     };
     expect(Schema.decodeUnknownSync(HarnessEvent)(event).type).toBe("blueprint_update");
+  });
+
+  it("validates provider_settings_state harness event", () => {
+    const event: HarnessEventType = {
+      type: "provider_settings_state",
+      sessionId: "s-123",
+      requestId: "r-1",
+      providers: [{ id: "openai", configured: true, hasBaseUrl: false }],
+      defaultProviderId: "openai",
+      tests: { openai: { ok: true, message: "Connected." } },
+    };
+    expect(Schema.decodeUnknownSync(HarnessEvent)(event).type).toBe("provider_settings_state");
   });
 });
