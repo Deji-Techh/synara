@@ -1239,12 +1239,13 @@ export function useComposerSlashCommands(input: {
         const harness = activeThread ? getHarnessSession(activeThread.id) : undefined;
         if (harness) {
           const replacement = builders[item.command as keyof typeof builders]("");
-          startHarnessTurn(harness.send, activeThread.id, {
+          const turn: Parameters<typeof startHarnessTurn>[2] = {
             appPath: harness.appPath,
             prompt: replacement,
             mode: item.command === "ask" ? "ask" : "agent",
-            ...(harness.framework ? { framework: harness.framework } : {}),
-          });
+          };
+          if (harness.framework) turn.framework = harness.framework;
+          startHarnessTurn(harness.send, activeThread.id, turn);
           const applied = clearSlashCommandFromComposer();
           if (wasPromptReplacementApplied(applied)) {
             editorActions.setComposerHighlightedItemId(null);
