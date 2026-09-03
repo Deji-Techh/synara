@@ -67,7 +67,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "grep", category: "read-search", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "search_files" },
   { name: "code_search", category: "read-search", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/web (local scorer)" },
   { name: "explore_code", category: "read-search", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/web (digest + runner seam)" },
-  { name: "lsp_symbol_lookup", category: "read-search", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/web (pattern index; LSP M4)" },
+  { name: "lsp_symbol_lookup", category: "read-search", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/web (mtime symbol index)" },
   // db-infra
   { name: "get_supabase_project_info", category: "db-infra", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/db" },
   { name: "get_neon_project_info", category: "db-infra", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/db" },
@@ -114,7 +114,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "search_mcp_tools", category: "mcp", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/mcp" },
   { name: "get_mcp_tool_schema", category: "mcp", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/mcp" },
   // sandbox
-  { name: "execute_sandbox_script", category: "file-edit", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/sandbox (read-only hosts; write host + worker in M3/M4)" },
+  { name: "execute_sandbox_script", category: "file-edit", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/sandbox (read/write/MCP hosts + worker)" },
   // Caide additions (agent autonomy surface; consent matches donor norms)
   { name: "open_preview", category: "preview", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "harness/tools" },
   { name: "restart_preview", category: "preview", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "harness/tools" },
