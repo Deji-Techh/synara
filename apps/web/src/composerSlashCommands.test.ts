@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildAskPrompt,
+  buildFixPrompt,
   buildInitPrompt,
+  buildMcpPrompt,
   buildReviewPrompt,
   buildSlashReviewComposerPrompt,
   buildSpawnPrompt,
   buildSubagentsPrompt,
+  buildVerifyPrompt,
   canOfferForkSlashCommand,
   canOfferReviewSlashCommand,
   canOfferSideSlashCommand,
@@ -291,6 +295,11 @@ describe("composerSlashCommands", () => {
     expect(buildInitPrompt("Prefix")).toContain("Prefix\n\nInitialize an AGENTS.md file");
     expect(buildSpawnPrompt("")).toContain("Spawn subagents in parallel");
     expect(buildSpawnPrompt("Prefix")).toContain("Prefix\n\nSpawn subagents in parallel");
+    expect(buildAskPrompt("")).toContain("without changing any code");
+    expect(buildAskPrompt("Q?")).toContain("Q?\n\nAnswer the following");
+    expect(buildVerifyPrompt("")).toContain("design tokens");
+    expect(buildFixPrompt("")).toContain("targeted patches");
+    expect(buildMcpPrompt("")).toContain("<server>__<tool>");
     expect(buildReviewPrompt({ target: "changes" })).toContain(
       "Focus on the current uncommitted changes.",
     );

@@ -333,6 +333,30 @@ const COMPOSER_SLASH_COMMAND_DEFINITIONS: Record<
     description: "Create a scheduled automation from this prompt",
     source: "app",
   },
+  ask: {
+    command: "ask",
+    label: "/ask",
+    description: "Ask a question without changing code (read-only answers)",
+    source: "app",
+  },
+  verify: {
+    command: "verify",
+    label: "/verify",
+    description: "Verify the last slice against design tokens (fresh review)",
+    source: "app",
+  },
+  fix: {
+    command: "fix",
+    label: "/fix",
+    description: "Fix verifier findings with a targeted patch",
+    source: "app",
+  },
+  mcp: {
+    command: "mcp",
+    label: "/mcp",
+    description: "Call an MCP tool: /mcp <server> <tool>",
+    source: "app",
+  },
 };
 
 export function isBuiltInComposerSlashCommand(value: string): value is ComposerSlashCommand {
@@ -454,6 +478,33 @@ export function buildSpawnPrompt(existingPrompt: string): string {
     "Spawn subagents in parallel to handle the current tasks concurrently. Delegate distinct subtasks across subagents and synthesize all findings and code changes.";
   const trimmedPrompt = existingPrompt.trim();
   return trimmedPrompt.length > 0 ? `${trimmedPrompt}\n\n${cannedPrompt}` : cannedPrompt;
+}
+
+export function buildAskPrompt(existingPrompt: string): string {
+  const cannedPrompt =
+    "Answer the following without changing any code (read-only): explain, locate, and reference exact files and lines.";
+  const trimmedPrompt = existingPrompt.trim();
+  return trimmedPrompt.length > 0 ? `${trimmedPrompt}\n\n${cannedPrompt}` : cannedPrompt;
+}
+
+export function buildVerifyPrompt(existingPrompt: string): string {
+  const cannedPrompt =
+    "Verify the last built slice against the design tokens with fresh eyes: exact token values, empty/loading/error states, 44px tap targets, and motion spec. Report VerifyResult-style findings, do not rebuild.";
+  const trimmedPrompt = existingPrompt.trim();
+  return trimmedPrompt.length > 0 ? `${trimmedPrompt}\n\n${cannedPrompt}` : cannedPrompt;
+}
+
+export function buildFixPrompt(existingPrompt: string): string {
+  const cannedPrompt =
+    "Fix the verification findings with targeted patches (no whole-file rewrites). Re-verify after each fix, max 3 attempts per issue, then escalate.";
+  const trimmedPrompt = existingPrompt.trim();
+  return trimmedPrompt.length > 0 ? `${trimmedPrompt}\n\n${cannedPrompt}` : cannedPrompt;
+}
+
+export function buildMcpPrompt(existingPrompt: string): string {
+  const trimmedPrompt = existingPrompt.trim();
+  const template = "Use MCP tool <server>__<tool> with args {…} (replace with the real server, tool, and JSON args).";
+  return trimmedPrompt.length > 0 ? `${trimmedPrompt}\n\n${template}` : template;
 }
 
 /**

@@ -22,6 +22,10 @@ import {
   buildGrillMePrompt,
   buildInitPrompt,
   buildLearnPrompt,
+  buildAskPrompt,
+  buildVerifyPrompt,
+  buildFixPrompt,
+  buildMcpPrompt,
   buildReviewPrompt,
   buildSlashReviewComposerPrompt,
   buildSpawnPrompt,
@@ -1204,6 +1208,31 @@ export function useComposerSlashCommands(input: {
 
       if (item.command === "spawn" || item.command === "subagents") {
         const replacement = buildSpawnPrompt("");
+        const applied = editorActions.applyPromptReplacement(
+          trigger.rangeStart,
+          trigger.rangeEnd,
+          replacement,
+          { expectedText: snapshot.value.slice(trigger.rangeStart, trigger.rangeEnd) },
+        );
+        if (wasPromptReplacementApplied(applied)) {
+          editorActions.setComposerHighlightedItemId(null);
+        }
+        return;
+      }
+
+      if (
+        item.command === "ask" ||
+        item.command === "verify" ||
+        item.command === "fix" ||
+        item.command === "mcp"
+      ) {
+        const builders = {
+          ask: buildAskPrompt,
+          verify: buildVerifyPrompt,
+          fix: buildFixPrompt,
+          mcp: buildMcpPrompt,
+        } as const;
+        const replacement = builders[item.command as keyof typeof builders]("");
         const applied = editorActions.applyPromptReplacement(
           trigger.rangeStart,
           trigger.rangeEnd,

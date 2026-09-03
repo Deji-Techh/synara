@@ -42,6 +42,10 @@ export const BUILT_IN_COMPOSER_SLASH_COMMANDS = [
   "goals",
   "commands",
   "help",
+  "ask",
+  "verify",
+  "fix",
+  "mcp",
 ] as const;
 
 export type BuiltInComposerSlashCommand = (typeof BUILT_IN_COMPOSER_SLASH_COMMANDS)[number];
