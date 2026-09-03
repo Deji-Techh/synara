@@ -82,11 +82,11 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "web_fetch", category: "web-media", defaultConsent: "always", modifiesState: false, readOnly: true, needsBackend: "direct fetch path", caideMapping: "needs-backend" },
   { name: "generate_image", category: "web-media", defaultConsent: "always", modifiesState: true, readOnly: false, needsBackend: "direct image provider", caideMapping: "needs-backend" },
   // plan-memory
-  { name: "update_todos", category: "plan-memory", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "missing" },
-  { name: "planning_questionnaire", category: "plan-memory", defaultConsent: "always", modifiesState: true, readOnly: false, planningSpecific: true, caideMapping: "missing" },
-  { name: "ask_env_vars", category: "plan-memory", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "missing" },
-  { name: "write_plan", category: "plan-memory", defaultConsent: "ask", modifiesState: true, readOnly: false, planOnly: true, planningSpecific: true, caideMapping: "missing" },
-  { name: "exit_plan", category: "plan-memory", defaultConsent: "always", modifiesState: true, readOnly: false, planOnly: true, planningSpecific: true, caideMapping: "missing" },
+  { name: "update_todos", category: "plan-memory", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/plan" },
+  { name: "planning_questionnaire", category: "plan-memory", defaultConsent: "always", modifiesState: true, readOnly: false, planningSpecific: true, caideMapping: "caide-native", caideTool: "dyad/plan" },
+  { name: "ask_env_vars", category: "plan-memory", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/plan" },
+  { name: "write_plan", category: "plan-memory", defaultConsent: "ask", modifiesState: true, readOnly: false, planOnly: true, planningSpecific: true, caideMapping: "caide-native", caideTool: "dyad/plan" },
+  { name: "exit_plan", category: "plan-memory", defaultConsent: "always", modifiesState: true, readOnly: false, planOnly: true, planningSpecific: true, caideMapping: "caide-native", caideTool: "dyad/plan" },
   { name: "write_app_blueprint", category: "plan-memory", defaultConsent: "ask", modifiesState: true, readOnly: false, blueprint: true, caideMapping: "missing" },
   // verify (+ Caide preview tools live in harness/tools/previewTools.ts)
   { name: "run_type_checks", category: "verify", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "lint_project" },
