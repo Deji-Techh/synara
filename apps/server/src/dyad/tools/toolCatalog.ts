@@ -123,7 +123,8 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "build_apk", category: "preview", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "harness/tools" },
   { name: "open_database_panel", category: "db-infra", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/db" },
   // goals (donor goal system is out of scope for Caide v1 — see plan §5 slash decision)
-  { name: "update_goal_state", category: "plan-memory", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "out-of-scope" },
+  { name: "update_goal_state", category: "plan-memory", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/goals" },
+  { name: "goal_status", category: "plan-memory", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/goals" },
 ];
 
 /** Donor plan-mode gating sets, kept verbatim in meaning. */

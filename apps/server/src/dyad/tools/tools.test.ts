@@ -47,7 +47,8 @@ describe("dyad tool catalog (m2)", () => {
     expect(getDefaultConsent("add_dependency")).toBe("ask");
     expect(getDefaultConsent("read_file")).toBe("always");
     expect(getDefaultConsent("unknown_tool")).toBe("ask");
-    expect(getToolMeta("update_goal_state")?.caideMapping).toBe("out-of-scope");
+    expect(getToolMeta("update_goal_state")?.caideMapping).toBe("caide-native");
+    expect(getToolMeta("goal_status")?.caideMapping).toBe("caide-native");
   });
 
   it("carries zero Pro/engine gating", () => {

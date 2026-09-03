@@ -37,3 +37,10 @@ export {
   SandboxValidationError,
   type SkillRunner,
 } from "./sandboxTools.ts";
+export {
+  runSubagentLoop,
+  spawnSubagentTask,
+  type SubagentLoopDeps,
+  type SubagentLoopResult,
+  type SpawnSubagentDeps,
+} from "./subagentLoop.ts";
