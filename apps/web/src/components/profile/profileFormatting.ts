@@ -33,6 +33,30 @@ export function formatNumber(value: number | null | undefined): string {
   return WHOLE_NUMBER_FORMATTER.format(value);
 }
 
+/** Quota line for the profile insights ("Pro · 42% used · resets Jun 3"). */
+export function formatQuotaLabel(quota: {
+  status: string;
+  planName: string | null;
+  usedPercent: number | null;
+  resetsAt: string | null;
+}): string {
+  if (quota.status !== "available") return "Unavailable";
+  const bits: string[] = [];
+  if (quota.planName) bits.push(quota.planName);
+  if (quota.usedPercent !== null && Number.isFinite(quota.usedPercent)) {
+    bits.push(`${Math.round(quota.usedPercent)}% used`);
+  }
+  if (quota.resetsAt) {
+    const date = new Date(quota.resetsAt);
+    if (!Number.isNaN(date.getTime())) {
+      bits.push(
+        `resets ${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`,
+      );
+    }
+  }
+  return bits.length > 0 ? bits.join(" · ") : "Available";
+}
+
 export function formatDays(value: number): string {
   return `${formatNumber(value)} ${value === 1 ? "day" : "days"}`;
 }

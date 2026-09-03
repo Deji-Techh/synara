@@ -13,9 +13,10 @@ import { ActivityHeatmap, CARD_HEATMAP_INTENSITY_CLASSES } from "./ActivityHeatm
 import { ProfileAvatar } from "./ProfileAvatar";
 import { formatCompact, formatDays } from "./profileFormatting";
 import { selectProfileHeatmap, selectProfileTopProvider } from "./profileSelectors";
+import { frameworkDisplayName } from "~/components/FrameworkIcon";
 
 export const SHARE_CARD_WIDTH = 860;
-export const SHARE_CARD_HEIGHT = 440;
+export const SHARE_CARD_HEIGHT = 528;
 
 // The in-app panel shows a longer window; the share card trims to the most recent ~6 months
 // so the grid stays large and legible inside the fixed card width.
@@ -40,11 +41,27 @@ interface Tile {
   readonly label: string;
 }
 
+function frameworkLabel(framework: string | null | undefined): string {
+  if (!framework) return "—";
+  try {
+    return frameworkDisplayName(framework as never);
+  } catch {
+    return String(framework);
+  }
+}
+
 export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(function ShareCard(
   { stats, tokenStats, displayName, handle, avatarColor, avatarImage },
   ref,
 ) {
   const topProvider = selectProfileTopProvider(stats, tokenStats);
+  const topModel =
+    tokenStats?.available && tokenStats.models.length > 0
+      ? tokenStats.models[0].model
+      : (stats.providerModels[0]?.model ?? null);
+  const topFramework = stats.mostUsedFramework ?? stats.frameworks?.[0]?.framework ?? null;
+  const project = stats.mostWorkedProject;
+  const activeHours = stats.activeHours.label;
 
   const tiles: Tile[] = [
     {
@@ -57,6 +74,11 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(function Sha
       label: "lifetime tokens",
     },
     {
+      key: "prompts",
+      value: <span className={VALUE_CLASS}>{formatCompact(stats.activity.totalPromptsSent)}</span>,
+      label: "prompts sent",
+    },
+    {
       key: "peak",
       value: (
         <span className={VALUE_CLASS}>{formatCompact(tokenStats?.peakDayTokens ?? null)}</span>
@@ -66,12 +88,7 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(function Sha
     {
       key: "current",
       value: <span className={VALUE_CLASS}>{formatDays(stats.activity.currentStreakDays)}</span>,
-      label: "current streak",
-    },
-    {
-      key: "longest",
-      value: <span className={VALUE_CLASS}>{formatDays(stats.activity.longestStreakDays)}</span>,
-      label: "longest streak",
+      label: "day streak",
     },
     {
       key: "provider",
@@ -92,16 +109,31 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(function Sha
       ),
       label: "top provider",
     },
+    {
+      key: "framework",
+      value: (
+        <span className="truncate text-xl font-normal leading-none tracking-tight">
+          {frameworkLabel(topFramework)}
+        </span>
+      ),
+      label: "top stack",
+    },
   ];
 
   // Same tokens-first series as the profile page so the exported card matches the app.
   const heatmapCells = selectProfileHeatmap(stats, tokenStats).cells.slice(-CARD_HEATMAP_DAYS);
 
+  const footerBits = [
+    topModel ? `Top model ${topModel}` : null,
+    `${stats.activity.totalThreads} threads`,
+    activeHours ? `most active ${activeHours}` : null,
+  ].filter(Boolean);
+
   return (
     <div
       ref={ref}
       style={{ width: `${SHARE_CARD_WIDTH}px`, height: `${SHARE_CARD_HEIGHT}px` }}
-      className="flex flex-col justify-center gap-7 overflow-hidden bg-white px-12 font-sans text-slate-900"
+      className="flex flex-col justify-center gap-6 overflow-hidden bg-white px-12 font-sans text-slate-900"
     >
       {/* Header: user-edited identity truncates before it can collide with the fixed brand. */}
       <div className="flex min-w-0 items-center justify-between gap-6">
@@ -126,6 +158,18 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(function Sha
         </div>
       </div>
 
+      {/* Spotlight: what the user is actually building right now. */}
+      {project ? (
+        <div className="truncate text-sm font-normal text-slate-500">
+          Building <span className="font-medium text-slate-700">{project.title}</span>
+          <span className="text-slate-400">
+            {"  ·  "}
+            {project.promptCount} prompts · {project.threadCount} threads · {project.activeDays}d
+            active
+          </span>
+        </div>
+      ) : null}
+
       {/* Heatmap — recent ~6 months; cells sized so the grid fills the card width */}
       <ActivityHeatmap
         cells={heatmapCells}
@@ -138,12 +182,17 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(function Sha
       {/* Stat tiles — left-aligned columns, no dividers (reference style) */}
       <div className="flex items-stretch">
         {tiles.map((tile) => (
-          <div key={tile.key} className="flex flex-1 flex-col items-start gap-1">
+          <div key={tile.key} className="flex min-w-0 flex-1 flex-col items-start gap-1">
             {tile.value}
             <span className="text-sm font-normal text-slate-400">{tile.label}</span>
           </div>
         ))}
       </div>
+
+      {/* Footer: model + volume + rhythm in one quiet line */}
+      {footerBits.length > 0 ? (
+        <div className="truncate text-xs font-normal text-slate-400">{footerBits.join("  ·  ")}</div>
+      ) : null}
     </div>
   );
 });

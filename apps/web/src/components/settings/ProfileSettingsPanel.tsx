@@ -40,6 +40,7 @@ import {
   formatCompact,
   formatDays,
   formatNumber,
+  formatQuotaLabel,
   toDisplayName,
 } from "../profile/profileFormatting";
 
@@ -213,6 +214,16 @@ function ProfileContent({
             />
             <InsightRow label="Total threads" value={formatNumber(stats.activity.totalThreads)} />
             <InsightRow label="Most used framework" value={mostUsedFrameworkLabel} />
+            <InsightRow label="Prompts today" value={formatNumber(stats.activity.promptsToday)} />
+            <InsightRow
+              label="Peak day"
+              value={
+                tokenStats?.peakDay
+                  ? `${tokenStats.peakDay} · ${formatCompact(tokenStats.peakDayTokens)}`
+                  : "—"
+              }
+            />
+            <InsightRow label="Plan quota" value={formatQuotaLabel(stats.quota)} />
           </dl>
         </section>
 
