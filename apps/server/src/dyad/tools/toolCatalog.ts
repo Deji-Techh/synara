@@ -72,7 +72,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "get_supabase_project_info", category: "db-infra", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "missing" },
   { name: "get_neon_project_info", category: "db-infra", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "missing" },
   { name: "get_database_table_schema", category: "db-infra", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "missing" },
-  { name: "set_chat_summary", category: "plan-memory", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "missing" },
+  { name: "set_chat_summary", category: "plan-memory", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/misc" },
   { name: "add_integration", category: "db-infra", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "missing" },
   { name: "enable_nitro", category: "db-infra", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "missing" },
   { name: "read_logs", category: "read-search", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "preview_status" },
@@ -93,7 +93,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "run_command", category: "verify", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "run_command" },
   { name: "run_tests", category: "verify", defaultConsent: "ask", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "test_project" },
   { name: "run_lint", category: "verify", defaultConsent: "ask", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "lint_project" },
-  { name: "capture_evidence", category: "verify", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "missing" },
+  { name: "capture_evidence", category: "verify", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/misc" },
   { name: "capture_screenshot", category: "verify", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "screenshot" },
   // git
   { name: "git_status", category: "git", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/vcs" },
@@ -101,9 +101,9 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "git_log", category: "git", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/vcs" },
   { name: "git_commit", category: "git", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/vcs" },
   // history
-  { name: "summarize_context", category: "history", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "missing" },
-  { name: "read_guide", category: "history", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "read_guide (dyad/guides on disk)" },
-  { name: "copy_reference", category: "history", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "missing" },
+  { name: "summarize_context", category: "history", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/misc" },
+  { name: "read_guide", category: "history", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/misc" },
+  { name: "copy_reference", category: "history", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/misc" },
   // subagents
   { name: "spawn_background_task", category: "subagents", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "spawn_subagent" },
   { name: "check_task_status", category: "subagents", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "missing" },

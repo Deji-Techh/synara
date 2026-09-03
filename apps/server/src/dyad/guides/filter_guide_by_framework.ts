@@ -1,4 +1,4 @@
-import type { AppFrameworkType } from "@/lib/framework_constants";
+import type { AppFrameworkType } from "../prompts/frameworkType.ts";
 
 // Tags must occupy their own line — guide bodies mention the literal strings
 // `<nextjs-only>` / `<vite-nitro-only>` inline (e.g. "Follow the `<nextjs-only>`
