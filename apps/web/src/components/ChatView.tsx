@@ -527,6 +527,9 @@ import {
 } from "./chat/WorkflowRunCard.logic";
 import { ComposerColumnFrame } from "./chat/ComposerColumnFrame";
 import { ComposerBranchBar } from "./chat/ComposerBranchBar";
+import { DraftHeroHeadline } from "./chat/DraftHeroHeadline";
+import { CreateAppDialog } from "./CreateAppDialog";
+import { LuPaperclip } from "react-icons/lu";
 import { ComposerCommandMenuPortal } from "./chat/ComposerCommandMenuPortal";
 import { useTranscriptAssistantSelectionAction } from "./chat/useTranscriptAssistantSelectionAction";
 import {
@@ -1584,6 +1587,7 @@ export default function ChatView({
   const composerEditorRef = useRef<ComposerPromptEditorHandle>(null);
   const composerFormRef = useRef<HTMLFormElement>(null);
   const composerMenuAnchorRef = useRef<HTMLDivElement | null>(null);
+  const attachmentFileInputRef = useRef<HTMLInputElement | null>(null);
   // Set by whichever mounted GitActionsControl instance (header quick-action or the
   // Environment panel row) last registered — either performs the identical commit &
   // push mutation for this thread's repo, so it doesn't matter which one is "current".
@@ -4728,8 +4732,8 @@ export default function ChatView({
     activeThreadAssociatedWorktree,
     isServerThread,
     stopActiveThreadSession,
-    runProjectScript,
   });
+  const [createAppDialogOpen, setCreateAppDialogOpen] = useState(false);
   const persistProjectScripts = useCallback(
     async (input: {
       projectId: ProjectId;
@@ -10782,14 +10786,6 @@ export default function ChatView({
           hideLabel={options.iconOnly}
         />
       ) : null}
-      <ComposerExtrasMenu
-        interactionMode={interactionMode}
-        supportsFastMode={composerTraitSelection.caps.supportsFastMode}
-        fastModeEnabled={composerTraitSelection.fastModeEnabled}
-        onAddAttachments={addComposerAttachments}
-        onToggleFastMode={toggleFastMode}
-        onInteractionModeChange={handleInteractionModeChange}
-      />
     </div>
   );
   const branchToolbarProps = {
@@ -11490,11 +11486,38 @@ export default function ChatView({
                                 onClick={toggleComposerVoiceRecording}
                               />
                             ) : null}
-                            <Button
+                            <input
+                              ref={attachmentFileInputRef}
+                              type="file"
+                              multiple
+                              className="hidden"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files.length > 0) {
+                                  addComposerAttachments(Array.from(e.target.files));
+                                  e.target.value = "";
+                                }
+                              }}
+                            />
+                            <Tooltip>
+                              <TooltipTrigger
+                                render={
+                                  <button
+                                    type="button"
+                                    onClick={() => attachmentFileInputRef.current?.click()}
+                                    className="flex size-7 items-center justify-center rounded-md text-muted-foreground/70 hover:text-foreground hover:bg-white/5 transition-colors cursor-pointer"
+                                    aria-label="Attach file or image"
+                                  >
+                                    <LuPaperclip className="size-4" />
+                                  </button>
+                                }
+                              />
+                              <TooltipPopup side="top">Attach file or image</TooltipPopup>
+                            </Tooltip>
+                            <button
                               type="submit"
-                              variant="prominent"
-                              size="icon-xs"
-                              className="size-7 rounded-full bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 sm:size-7"
+                              className={cn(
+                                "flex size-7.5 sm:size-8 items-center justify-center rounded-full bg-[#5b5bd6] text-white hover:bg-[#6868e8] transition-all duration-150 disabled:opacity-30 disabled:pointer-events-none shadow-xs hover:scale-105 active:scale-95 cursor-pointer",
+                              )}
                               disabled={
                                 isSendBusy ||
                                 isConnecting ||
@@ -11536,26 +11559,32 @@ export default function ChatView({
                                   />
                                 </svg>
                               ) : (
-                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="size-3.5 shrink-0 stroke-[2.25]">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                                   <path
-                                    d="M8 3L8 13M8 3L4 7M8 3L12 7"
+                                    d="M7 11.5V2.5M7 2.5L3 6.5M7 2.5L11 6.5"
                                     stroke="currentColor"
+                                    strokeWidth="1.8"
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
                                   />
                                 </svg>
                               )}
-                            </Button>
+                            </button>
                           </>
                         )
                       ) : null}
                     </div>
                   </div>
                 )}
-                {/* T3-style bottom bar: local checkout + branch, glued to composer bottom */}
-                <ComposerBranchBar cwd={gitCwd} branch={activeThread?.branch ?? null} />
               </div>
             </div>
+            {/* T3-style bottom bar: local checkout + branch, glued to composer bottom */}
+            <ComposerBranchBar
+              cwd={gitCwd}
+              branch={activeThread?.branch ?? null}
+              envMode={activeThread?.envMode === "worktree" ? "worktree" : "local"}
+              onEnvModeChange={onEnvModeChange}
+            />
           </ComposerColumnFrame>
         </form>
         {emptyLandingControls}
@@ -11768,36 +11797,16 @@ export default function ChatView({
                     view instead of the composer being centered with the list hanging
                     below it. */}
                 <div className="flex w-full flex-col justify-center">
-                  <div
-                    className={cn(
-                      "flex flex-col items-center gap-4 px-6 pb-5 text-center select-none",
-                      CHAT_COLUMN_FRAME_CLASS_NAME,
-                    )}
-                  >
-                    <CaideLogo aria-label="Caide logo" className="size-10" />
-                    <h2
-                      data-testid="empty-landing-heading"
-                      className="text-[26px] font-normal leading-[1.15] tracking-[-0.015em] text-foreground/95 sm:text-[30px]"
-                    >
-                      What should we build today?
-                    </h2>
-                  </div>
+                  <DraftHeroHeadline
+                    projectName={activeProject?.name ?? null}
+                    projects={composerThreadProjects}
+                    activeProjectId={activeProject?.id ?? null}
+                    onSelectProject={(selectedProjId) => {
+                      void handleNewThread(selectedProjId);
+                    }}
+                    onCreateProject={() => setCreateAppDialogOpen(true)}
+                  />
                   {composerSection}
-                  {(isGitRepo && !environmentEnabled && !isCenteredEmptyLanding) ||
-                  relocateComposerLeadingControls ? (
-                    <div className={COMPOSER_COLUMN_FRAME_CLASS_NAME}>
-                      <div className="flex w-full items-center gap-1">
-                        {relocateComposerLeadingControls ? (
-                          <div className="flex shrink-0 items-center gap-1 pl-1">
-                            {renderComposerLeadingControls({ iconOnly: true })}
-                          </div>
-                        ) : null}
-                        {isGitRepo && !environmentEnabled && !isCenteredEmptyLanding ? (
-                          <BranchToolbar {...branchToolbarProps} className="min-w-0 flex-1" />
-                        ) : null}
-                      </div>
-                    </div>
-                  ) : null}
                 </div>
               </div>
             ) : null}
@@ -11939,25 +11948,8 @@ export default function ChatView({
                   {/* A trailing BranchToolbar only renders for legacy git threads; otherwise the
                       composer is the last element, so give it a comfortable bottom margin. */}
                   <div
-                    className={cn(isGitRepo && !environmentEnabled ? "pt-0.5" : "pt-3 sm:pt-4")}
+                    className="pt-3 sm:pt-4"
                   />
-                  {secondaryChromeReady &&
-                  ((isGitRepo && !environmentEnabled) || relocateComposerLeadingControls) ? (
-                    <div className={CHAT_COLUMN_GUTTER_CLASS_NAME}>
-                      <div className={COMPOSER_COLUMN_FRAME_CLASS_NAME}>
-                        <div className="flex w-full items-center gap-1">
-                          {relocateComposerLeadingControls ? (
-                            <div className="flex shrink-0 items-center gap-1 pl-1">
-                              {renderComposerLeadingControls({ iconOnly: true })}
-                            </div>
-                          ) : null}
-                          {isGitRepo && !environmentEnabled ? (
-                            <BranchToolbar {...branchToolbarProps} className="min-w-0 flex-1" />
-                          ) : null}
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
                 </div>
               </div>
             ) : null}
@@ -12086,6 +12078,13 @@ export default function ChatView({
         expandedImage={expandedImage}
         onClose={closeExpandedImage}
         onNavigate={navigateExpandedImage}
+      />
+      <CreateAppDialog
+        open={createAppDialogOpen}
+        onOpenChange={setCreateAppDialogOpen}
+        onCreated={async (result) => {
+          await navigate({ to: "/$threadId", params: { threadId: result.threadId } });
+        }}
       />
     </div>
   );

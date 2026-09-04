@@ -41,9 +41,6 @@ import {
   LuFolder,
   LuCheck,
   LuUndo2,
-  LuSlidersHorizontal,
-  LuChartNoAxesColumn,
-  LuDownload,
   LuTerminal,
   LuPin,
 } from "react-icons/lu";
@@ -4444,11 +4441,9 @@ export default function Sidebar() {
     const effectiveProjectName =
       projectName ??
       projectById.get(thread.projectId)?.name ??
-      activeProject?.name ??
       "Project";
     const branchName =
       thread.branch ??
-      (effectiveProjectName === activeProject?.name ? activeThreadBranch : null) ??
       "main";
 
     return (
@@ -5559,7 +5554,7 @@ export default function Sidebar() {
                       <button
                         type="button"
                         onClick={() => {
-                          const targetProjId = scopedProjectId ?? activeProject?.id ?? projects[0]?.id;
+                          const targetProjId = scopedProjectId ?? focusedProjectId ?? projects[0]?.id;
                           if (targetProjId) {
                             prefetchModelsForProjectNewThread(targetProjId, { includeDroid: true });
                             void handleNewThread(targetProjId, {
@@ -5711,7 +5706,7 @@ export default function Sidebar() {
                       size="xs"
                       variant="outline"
                       onClick={() => {
-                        const targetProjId = scopedProjectId ?? activeProject?.id ?? projects[0]?.id;
+                        const targetProjId = scopedProjectId ?? focusedProjectId ?? projects[0]?.id;
                         if (targetProjId) {
                           prefetchModelsForProjectNewThread(targetProjId, { includeDroid: true });
                           void handleNewThread(targetProjId, {
@@ -5745,80 +5740,20 @@ export default function Sidebar() {
                 </Suspense>
               ) : null}
               <div className="flex items-center justify-between w-full px-1">
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <button
-                          type="button"
-                          onClick={() => void navigate({ to: "/settings" })}
-                          className="flex size-7 items-center justify-center rounded-md hover:bg-muted/50 hover:text-foreground transition-colors"
-                          aria-label="Settings"
-                        >
-                          <SettingsIcon className="size-4" />
-                        </button>
-                      }
-                    />
-                    <TooltipPopup side="top">Settings</TooltipPopup>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <button
-                          type="button"
-                          onClick={() =>
-                            void navigate({
-                              to: "/settings",
-                              search: (prev: any) => ({ ...prev, section: "features" }),
-                            })
-                          }
-                          className="flex size-7 items-center justify-center rounded-md hover:bg-muted/50 hover:text-foreground transition-colors"
-                          aria-label="Configuration"
-                        >
-                          <LuSlidersHorizontal className="size-4" />
-                        </button>
-                      }
-                    />
-                    <TooltipPopup side="top">Configuration</TooltipPopup>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <button
-                          type="button"
-                          onClick={() =>
-                            void navigate({
-                              to: "/settings",
-                              search: (prev: any) => ({ ...prev, section: "models" }),
-                            })
-                          }
-                          className="flex size-7 items-center justify-center rounded-md hover:bg-muted/50 hover:text-foreground transition-colors"
-                          aria-label="Usage & Activity"
-                        >
-                          <LuChartNoAxesColumn className="size-4" />
-                        </button>
-                      }
-                    />
-                    <TooltipPopup side="top">Usage & Activity</TooltipPopup>
-                  </Tooltip>
-                </div>
-
                 <Tooltip>
                   <TooltipTrigger
                     render={
                       <button
                         type="button"
-                        onClick={handleDesktopUpdateButtonClick}
-                        className="flex size-7 items-center justify-center rounded-full bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 transition-colors"
-                        aria-label="Check for updates"
+                        onClick={() => void navigate({ to: "/settings" })}
+                        className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+                        aria-label="Settings"
                       >
-                        <LuDownload className="size-3.5" />
+                        <SettingsIcon className="size-4" />
                       </button>
                     }
                   />
-                  <TooltipPopup side="top">Check for updates</TooltipPopup>
+                  <TooltipPopup side="top">Settings</TooltipPopup>
                 </Tooltip>
               </div>
             </div>
