@@ -32,6 +32,9 @@ export interface ChromeTheme {
   opaqueWindows: boolean;
   semanticColors: ThemeSemanticColors;
   surface: string;
+  leftSidebarSurface?: string;
+  rightSidebarSurface?: string;
+  sidebarBlur?: number;
 }
 
 export interface ThemePack {
@@ -118,7 +121,17 @@ export interface ResolvedThemeTokens {
 }
 
 type ChromeThemeSeedPatch = Partial<
-  Pick<ChromeTheme, "accent" | "contrast" | "ink" | "opaqueWindows" | "surface">
+  Pick<
+    ChromeTheme,
+    | "accent"
+    | "contrast"
+    | "ink"
+    | "opaqueWindows"
+    | "surface"
+    | "leftSidebarSurface"
+    | "rightSidebarSurface"
+    | "sidebarBlur"
+  >
 > & {
   fonts?: Partial<ThemeFonts>;
   semanticColors?: Partial<ThemeSemanticColors>;
@@ -251,6 +264,9 @@ export const DEFAULT_CHROME_THEME_BY_VARIANT: Record<ThemeVariant, ChromeTheme> 
       skill: "#ad7bf9",
     },
     surface: "#181818",
+    leftSidebarSurface: "#0f0f10",
+    rightSidebarSurface: "#121213",
+    sidebarBlur: 16,
   },
   light: {
     accent: "#339cff",
@@ -264,6 +280,9 @@ export const DEFAULT_CHROME_THEME_BY_VARIANT: Record<ThemeVariant, ChromeTheme> 
       skill: "#924ff7",
     },
     surface: "#ffffff",
+    leftSidebarSurface: "#f6f7f9",
+    rightSidebarSurface: "#f8f9fa",
+    sidebarBlur: 16,
   },
 };
 
@@ -349,6 +368,12 @@ export function normalizeChromeTheme(value: unknown, variant: ThemeVariant): Chr
         : fallback.opaqueWindows,
     semanticColors: normalizeSemanticColors(theme.semanticColors, fallback.semanticColors),
     surface: normalizeHexColor(theme.surface) ?? fallback.surface,
+    leftSidebarSurface: normalizeHexColor(theme.leftSidebarSurface) ?? fallback.leftSidebarSurface,
+    rightSidebarSurface: normalizeHexColor(theme.rightSidebarSurface) ?? fallback.rightSidebarSurface,
+    sidebarBlur:
+      typeof theme.sidebarBlur === "number" && !Number.isNaN(theme.sidebarBlur)
+        ? Math.max(0, Math.min(64, theme.sidebarBlur))
+        : fallback.sidebarBlur,
   };
 }
 
@@ -688,7 +713,10 @@ export function areThemePacksEqual(left: ThemePack, right: ThemePack): boolean {
     left.theme.semanticColors.diffAdded === right.theme.semanticColors.diffAdded &&
     left.theme.semanticColors.diffRemoved === right.theme.semanticColors.diffRemoved &&
     left.theme.semanticColors.skill === right.theme.semanticColors.skill &&
-    left.theme.surface === right.theme.surface
+    left.theme.surface === right.theme.surface &&
+    left.theme.leftSidebarSurface === right.theme.leftSidebarSurface &&
+    left.theme.rightSidebarSurface === right.theme.rightSidebarSurface &&
+    left.theme.sidebarBlur === right.theme.sidebarBlur
   );
 }
 
@@ -742,6 +770,26 @@ export function buildThemeCssVariables(
   // read as the same "input/source" affordance inside the transcript. Sourced
   // from the user-message token so code blocks pick up the bubble's color.
   const chatCodeSurface = readCodexVariable("--color-background-user-message");
+  const rawLeftSidebar = pack.theme.leftSidebarSurface ?? sidebarSurface;
+  const rawRightSidebar = pack.theme.rightSidebarSurface ?? sidebarSurface;
+  const leftSidebarColor =
+    material === "translucent"
+      ? variant === "dark"
+        ? `color-mix(in srgb, ${rawLeftSidebar} 56%, transparent)`
+        : `color-mix(in srgb, ${rawLeftSidebar} 48%, transparent)`
+      : rawLeftSidebar;
+  const rightSidebarColor =
+    material === "translucent"
+      ? variant === "dark"
+        ? `color-mix(in srgb, ${rawRightSidebar} 56%, transparent)`
+        : `color-mix(in srgb, ${rawRightSidebar} 48%, transparent)`
+      : rawRightSidebar;
+  const blurValue = pack.theme.sidebarBlur ?? (material === "translucent" ? 8 : 0);
+  const sidebarBackdropFilter =
+    material === "translucent" || blurValue > 0
+      ? `blur(${blurValue}px) saturate(135%)`
+      : "none";
+
   const appVariables: Record<string, string> = {
     "--accent": readCodexVariable("--color-background-accent"),
     "--accent-foreground": readCodexVariable("--color-text-foreground"),
@@ -761,8 +809,8 @@ export function buildThemeCssVariables(
     "--app-composer-picker-surface": composerPickerMenuSurface,
     "--app-chat-code-surface": chatCodeSurface,
     "--app-user-message-background": chatCodeSurface,
-    "--app-sidebar-backdrop-filter":
-      material === "translucent" ? "blur(8px) saturate(135%)" : "none",
+    "--app-sidebar-backdrop-filter": sidebarBackdropFilter,
+    "--sidebar-blur": `${blurValue}px`,
     // Settings mirrors the chat surface (opaque --color-background-surface) so every
     // settings element reads as outline-only. With an opaque page there is nothing to
     // frost, so we skip the backdrop blur (and its compositing cost) entirely.
@@ -775,12 +823,11 @@ export function buildThemeCssVariables(
         : variant === "dark"
           ? "inset 0 1px 0 rgba(255,255,255,0.025)"
           : "inset 0 1px 0 rgba(0,0,0,0.03)",
-    "--app-sidebar-surface":
-      material === "translucent"
-        ? variant === "dark"
-          ? `color-mix(in srgb, ${sidebarSurface} 56%, transparent)`
-          : `color-mix(in srgb, ${sidebarSurface} 48%, transparent)`
-        : sidebarSurface,
+    "--app-sidebar-surface": leftSidebarColor,
+    "--left-sidebar-surface": leftSidebarColor,
+    "--right-sidebar-surface": rightSidebarColor,
+    "--app-left-sidebar-surface": leftSidebarColor,
+    "--app-right-sidebar-surface": rightSidebarColor,
     // Always opaque so the settings page background matches the chat surface exactly,
     // regardless of window material.
     "--app-settings-surface": settingsSurface,
@@ -1277,6 +1324,18 @@ function parseStrictChromeTheme(value: unknown): ChromeTheme {
     opaqueWindows: parseRequiredBoolean(value.opaqueWindows, "Theme opaqueWindows"),
     semanticColors: parseStrictSemanticColors(value.semanticColors),
     surface: parseRequiredHexColor(value.surface, "Theme surface"),
+    leftSidebarSurface:
+      typeof value.leftSidebarSurface === "string"
+        ? (normalizeHexColor(value.leftSidebarSurface) ?? undefined)
+        : undefined,
+    rightSidebarSurface:
+      typeof value.rightSidebarSurface === "string"
+        ? (normalizeHexColor(value.rightSidebarSurface) ?? undefined)
+        : undefined,
+    sidebarBlur:
+      typeof value.sidebarBlur === "number" && !Number.isNaN(value.sidebarBlur)
+        ? Math.max(0, Math.min(64, value.sidebarBlur))
+        : undefined,
   };
 }
 

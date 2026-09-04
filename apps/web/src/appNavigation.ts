@@ -20,7 +20,7 @@ type HistorySubscriberAction = HistorySubscriberEvent["action"];
 const HISTORY_STATE_INDEX_KEY = "__TSR_index";
 
 function createAppHistory(): RouterHistory {
-  if (typeof window === "undefined") {
+  if (typeof window === "undefined" || !window.history) {
     return createMemoryHistory({ initialEntries: ["/"] });
   }
   // Electron loads the app from a file-backed shell, so hash history avoids path resolution issues.

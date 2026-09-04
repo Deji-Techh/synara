@@ -8,10 +8,12 @@ import {
   ArchiveIcon,
   BookIcon,
   ChatBubbleIcon,
+  ChevronDownIcon,
   CircleQuestionIcon,
   ClockIcon,
   CopyIcon,
   ExternalLinkIcon,
+  FolderIcon,
   FolderOpenIcon,
   GiftIcon,
   HistoryIcon,
@@ -33,6 +35,19 @@ import {
   WorktreeIcon,
   XIcon,
 } from "~/lib/icons";
+import {
+  LuSquarePen,
+  LuFolderPlus,
+  LuFolder,
+  LuCheck,
+  LuUndo2,
+  LuSlidersHorizontal,
+  LuChartNoAxesColumn,
+  LuDownload,
+  LuTerminal,
+  LuPin,
+} from "react-icons/lu";
+import { SidebarStageBackdrop } from "~/components/SidebarStageBackdrop";
 import { CaideLogo } from "~/components/CaideLogo";
 import { FrameworkIcon } from "~/components/FrameworkIcon";
 import { createCentralIconComponent } from "~/lib/central-icons";
@@ -2735,6 +2750,7 @@ export default function Sidebar() {
             sourceProvider: thread.modelSelection.provider,
             providerSettings: serverSettingsQuery.data?.providers,
             providerStatuses,
+            allowAllConfigured: true,
           })
         : [];
       const handoffItems = handoffTargets.map((provider, index) => ({
@@ -3571,47 +3587,66 @@ export default function Sidebar() {
     return projectSidebarData?.orderedProjectThreadIds ?? [];
   }, [drilledProject, surfaceProjectSidebarDataById]);
 
-  const chatGroups = useMemo(() => {
-    if (!drilledProject || drilledProjectThreads.length === 0) return [];
-    const favorites: SidebarThreadSummary[] = [];
-    const today: SidebarThreadSummary[] = [];
-    const yesterday: SidebarThreadSummary[] = [];
-    const thisWeek: SidebarThreadSummary[] = [];
-    const older: SidebarThreadSummary[] = [];
+  const [scopedProjectId, setScopedProjectId] = useState<string | null>(null);
+  const [searchFilterQuery, setSearchFilterQuery] = useState("");
+  const [projectFilterMenuOpen, setProjectFilterMenuOpen] = useState(false);
+  const [settledShelfExpanded, setSettledShelfExpanded] = useState(false);
+
+  const { activeCards, settledCards } = useMemo(() => {
+    const targetThreads = scopedProjectId
+      ? sidebarThreads.filter((t) => t.projectId === scopedProjectId)
+      : sidebarThreads;
+
+    const filtered = searchFilterQuery.trim()
+      ? targetThreads.filter((t) =>
+          t.title.toLowerCase().includes(searchFilterQuery.trim().toLowerCase()),
+        )
+      : targetThreads;
+
+    const active: SidebarThreadSummary[] = [];
+    const settled: SidebarThreadSummary[] = [];
+
     const nowMs = Date.now();
-
-    const startOfToday = new Date(nowMs);
-    startOfToday.setHours(0, 0, 0, 0);
-    const startOfYesterday = new Date(startOfToday);
-    startOfYesterday.setDate(startOfYesterday.getDate() - 1);
-    const startOfThisWeek = new Date(startOfToday);
+    const startOfThisWeek = new Date(nowMs);
     startOfThisWeek.setDate(startOfThisWeek.getDate() - 6);
+    const activeCutoffMs = startOfThisWeek.getTime();
 
-    for (const thread of drilledProjectThreads) {
-      if (pinnedThreadIdSet.has(thread.id)) {
-        favorites.push(thread);
+    for (let i = 0; i < filtered.length; i++) {
+      const thread = filtered[i];
+      if (thread.archivedAt != null) {
+        settled.push(thread);
+        continue;
+      }
+      const isSettledOverride = settledOverrideByThreadId[thread.id];
+      if (isSettledOverride === true) {
+        settled.push(thread);
+        continue;
+      }
+      if (isSettledOverride === false) {
+        active.push(thread);
+        continue;
+      }
+      if (pinnedThreadIdSet.has(thread.id) || thread.id === visualActiveSidebarThreadId) {
+        active.push(thread);
         continue;
       }
       const recencyMs = resolveActivityRecencyMs(thread);
-      if (recencyMs >= startOfToday.getTime()) {
-        today.push(thread);
-      } else if (recencyMs >= startOfYesterday.getTime()) {
-        yesterday.push(thread);
-      } else if (recencyMs >= startOfThisWeek.getTime()) {
-        thisWeek.push(thread);
+      if (recencyMs >= activeCutoffMs) {
+        active.push(thread);
       } else {
-        older.push(thread);
+        settled.push(thread);
       }
     }
 
-    return [
-      { key: "favorites", label: "Favorites", threads: favorites },
-      { key: "today", label: "Today", threads: today },
-      { key: "yesterday", label: "Yesterday", threads: yesterday },
-      { key: "thisWeek", label: "This week", threads: thisWeek },
-      { key: "older", label: "Older", threads: older },
-    ].filter((group) => group.threads.length > 0);
-  }, [drilledProject, drilledProjectThreads, pinnedThreadIdSet]);
+    return { activeCards: active, settledCards: settled };
+  }, [
+    scopedProjectId,
+    sidebarThreads,
+    searchFilterQuery,
+    settledOverrideByThreadId,
+    pinnedThreadIdSet,
+    visualActiveSidebarThreadId,
+  ]);
 
   const favoriteProjects = useMemo(
     () => standardProjects.filter((project) => pinnedProjectIdSet.has(project.id)),
@@ -4402,6 +4437,130 @@ export default function Sidebar() {
     );
   }
 
+  function renderThreadCard(thread: SidebarThreadSummary, projectName?: string) {
+    const isActive = visualActiveSidebarThreadId === thread.id;
+    const isPinned = pinnedThreadIdSet.has(thread.id);
+    const timeAgo = formatRelativeTime(thread.updatedAt ?? thread.createdAt);
+    const effectiveProjectName =
+      projectName ??
+      projectById.get(thread.projectId)?.name ??
+      activeProject?.name ??
+      "Project";
+    const branchName =
+      thread.branch ??
+      (effectiveProjectName === activeProject?.name ? activeThreadBranch : null) ??
+      "main";
+
+    return (
+      <div
+        key={thread.id}
+        role="button"
+        tabIndex={0}
+        onClick={() => activateThreadFromSidebarIntent(thread.id)}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          void handleThreadContextMenu(thread.id, {
+            x: event.clientX,
+            y: event.clientY,
+          });
+        }}
+        onDoubleClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          openRenameThreadDialog(thread.id);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            activateThreadFromSidebarIntent(thread.id);
+          }
+        }}
+        className={cn(
+          "group/thread-card mx-1 mb-1.5 cursor-pointer rounded-lg border p-2.5 transition-all text-left select-none outline-none focus-visible:ring-1 focus-visible:ring-ring relative",
+          isActive
+            ? "border-primary/50 bg-[var(--color-background-elevated-primary-opaque,var(--card))] shadow-sm"
+            : "border-border/30 bg-muted/20 hover:border-border/60 hover:bg-muted/40",
+        )}
+      >
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <FolderIcon className="size-3.5 shrink-0 text-muted-foreground/75" />
+          <span className="font-medium text-foreground/90 truncate max-w-[55%]">{effectiveProjectName}</span>
+          {isPinned && <PinStatusIcon pinned={true} className="size-3 shrink-0 text-muted-foreground/60" />}
+          <div className="ml-auto relative flex items-center h-4 shrink-0 justify-end">
+            <span className="text-[11px] text-muted-foreground/50 tabular-nums shrink-0 transition-opacity group-hover/thread-card:opacity-0">
+              {timeAgo}
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setThreadSettledWithToast(thread.id, true);
+              }}
+              aria-label="Settle thread"
+              title="Settle thread"
+              className="pointer-events-none absolute right-0 inset-y-0 flex items-center gap-1 rounded px-1 text-[11px] font-medium text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover/thread-card:pointer-events-auto group-hover/thread-card:opacity-100"
+            >
+              <LuCheck className="size-3.5 text-muted-foreground hover:text-foreground" />
+              <span className="text-[10px]">Settle</span>
+            </button>
+          </div>
+        </div>
+        <div className="mt-1 line-clamp-1 text-xs font-normal text-foreground/90">
+          {thread.title}
+        </div>
+        <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground/60">
+          <span className="truncate max-w-[85%] font-mono text-[10.5px]">{branchName}</span>
+          <TerminalIcon className="size-3 shrink-0 text-muted-foreground/50" />
+        </div>
+      </div>
+    );
+  }
+
+  function renderSettledSlimRow(thread: SidebarThreadSummary) {
+    const isActive = visualActiveSidebarThreadId === thread.id;
+    const timeAgo = formatRelativeTime(thread.updatedAt ?? thread.createdAt);
+
+    return (
+      <div
+        key={thread.id}
+        role="button"
+        tabIndex={0}
+        onClick={() => activateThreadFromSidebarIntent(thread.id)}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          void handleThreadContextMenu(thread.id, {
+            x: event.clientX,
+            y: event.clientY,
+          });
+        }}
+        className={cn(
+          "group/settled-row relative flex h-7 items-center gap-2 rounded-md px-2 text-left text-xs transition-colors cursor-pointer select-none",
+          isActive
+            ? "bg-accent text-accent-foreground font-medium"
+            : "text-muted-foreground/75 hover:bg-muted/40 hover:text-foreground",
+        )}
+      >
+        <FolderIcon className="size-3.5 shrink-0 opacity-40 group-hover/settled-row:opacity-80" />
+        <span className="truncate flex-1 min-w-0 text-xs text-foreground/80">{thread.title}</span>
+        <span className="text-[10px] tabular-nums text-muted-foreground/50 shrink-0 group-hover/settled-row:opacity-0 transition-opacity">
+          {timeAgo}
+        </span>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setThreadSettledWithToast(thread.id, false);
+          }}
+          aria-label="Un-settle thread"
+          title="Un-settle thread"
+          className="pointer-events-none absolute right-1.5 inset-y-0 flex items-center text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover/settled-row:pointer-events-auto group-hover/settled-row:opacity-100"
+        >
+          <LuUndo2 className="size-3" />
+        </button>
+      </div>
+    );
+  }
+
   function renderProjectItem(
     project: (typeof sortedProjects)[number],
     dragHandleProps: SortableProjectHandleProps | null,
@@ -4563,83 +4722,6 @@ export default function Sidebar() {
             >
               <PinStatusIcon pinned={isProjectPinned} className="size-3.5" />
             </button>
-            <SidebarSectionToolbar placement="overlay" revealOnHover>
-              <SidebarIconButton
-                icon={HistoryIcon}
-                label={`View activity for ${project.name}`}
-                tooltip="Activity"
-                tooltipSide="top"
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  void navigate({
-                    to: "/activity/$projectId",
-                    params: { projectId: project.id },
-                  });
-                }}
-              />
-              <SidebarIconButton
-                icon={IoIosGitCompare}
-                label={`View pull requests for ${project.name}`}
-                tooltip="Pull requests"
-                tooltipSide="top"
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  // Opens the in-app pull requests view scoped to this project (selecting a
-                  // row there opens the right-dock detail panel) instead of leaving for GitHub.
-                  void navigate({
-                    to: "/pull-requests",
-                    search: { involvement: "all", state: "open", projectId: project.id },
-                  });
-                }}
-              />
-              <SidebarIconButton
-                icon={TerminalIcon}
-                label={`Create new terminal thread in ${project.name}`}
-                tooltip={
-                  newTerminalThreadShortcutLabel
-                    ? `New terminal thread (${newTerminalThreadShortcutLabel})`
-                    : "New terminal thread"
-                }
-                tooltipSide="top"
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  void handleNewThread(project.id, {
-                    envMode: resolveSidebarNewThreadEnvMode({
-                      defaultEnvMode: appSettings.defaultThreadEnvMode,
-                    }),
-                    entryPoint: "terminal",
-                  });
-                }}
-              />
-              <SidebarIconButton
-                icon={NewThreadIcon}
-                label={`Create new thread in ${project.name}`}
-                tooltip={
-                  newThreadShortcutLabel ? `New thread (${newThreadShortcutLabel})` : "New thread"
-                }
-                tooltipSide="top"
-                data-testid="new-thread-button"
-                onMouseEnter={() => {
-                  prefetchModelsForProjectNewThread(project.id, { includeDroid: true });
-                }}
-                onFocus={() => {
-                  prefetchModelsForProjectNewThread(project.id, { includeDroid: true });
-                }}
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  prefetchModelsForProjectNewThread(project.id, { includeDroid: true });
-                  void handleNewThread(project.id, {
-                    envMode: resolveSidebarNewThreadEnvMode({
-                      defaultEnvMode: appSettings.defaultThreadEnvMode,
-                    }),
-                  });
-                }}
-              />
-            </SidebarSectionToolbar>
           </PreviewCardTrigger>
         </PreviewCard>
       </div>
@@ -5381,22 +5463,26 @@ export default function Sidebar() {
         <>
           <SidebarHeader
             className={cn(
-              "drag-region flex-row items-center gap-2 py-0 ps-4 pe-3 font-system-ui",
+              "relative drag-region flex-row items-center gap-2 py-0 ps-4 pe-3 font-system-ui overflow-hidden",
               CHAT_SURFACE_HEADER_HEIGHT_CLASS,
               isMacDesktop && DESKTOP_TOP_BAR_TRAFFIC_LIGHT_GUTTER_CLASS,
             )}
           >
-            {titlebarControls}
+            <SidebarStageBackdrop />
+            <div className="relative z-10 flex w-full items-center gap-2">
+              <CaideLogo className="size-4 text-white" />
+              <span className="text-sm font-semibold tracking-tight text-white">Caide</span>
+              {titlebarControls}
+            </div>
           </SidebarHeader>
         </>
       ) : (
-        <SidebarHeader className="relative gap-3 overflow-hidden px-3 py-2.5 font-system-ui sm:gap-2.5 sm:px-4 sm:py-3">
-          {/* T3-style stage backdrop — subtle starry gradient */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-gradient-to-br from-indigo-600/15 via-purple-500/10 to-transparent dark:from-indigo-500/20 dark:via-purple-500/15"
-          />
-          <div className="relative z-10 flex w-full items-center gap-3">{wordmark}</div>
+        <SidebarHeader className="relative h-10 shrink-0 flex-row items-center px-3 py-0 overflow-hidden font-system-ui border-b border-border/10">
+          <SidebarStageBackdrop />
+          <div className="relative z-10 flex w-full items-center gap-2">
+            <CaideLogo className="size-4 text-white" />
+            <span className="text-sm font-semibold tracking-tight text-white">Caide</span>
+          </div>
         </SidebarHeader>
       )}
 
@@ -5443,366 +5529,211 @@ export default function Sidebar() {
               }}
             />
           </SidebarGroup>
-        ) : drilledProject ? (
+        ) : (
           <>
-            <div className="flex items-center gap-1.5 pt-0 pb-1 pr-2.5 pl-1.5">
-              <SidebarIconButton
-                icon={ArrowLeftIcon}
-                label="All apps"
-                glyph="leading"
-                size="header"
-                tooltip="All apps"
-                tooltipSide="bottom"
-                onClick={() => {
-                  setViewingAllApps(true);
-                  collapseProjectsExcept(null);
-                }}
-              />
-              <div className="flex min-w-0 flex-1 items-center gap-1.5 px-1">
-                <div className="shrink-0">
-                  {drilledProject.framework && drilledProject.framework !== "blank" ? (
-                    <FrameworkIcon
-                      framework={drilledProject.framework}
-                      size={14}
-                      className="size-3.5"
-                    />
-                  ) : (
-                    <ProjectSidebarIcon cwd={drilledProject.cwd} expanded={true} />
+            <div className="relative z-[1] flex flex-col gap-1 px-2.5 pt-2 pb-1">
+              {/* Search row */}
+              <div className="flex items-center gap-1">
+                <div className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-md bg-muted/20 border border-border/30 px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted/35 focus-within:border-border/60 focus-within:bg-muted/40">
+                  <SearchIcon className="size-3.5 shrink-0 text-muted-foreground/70" />
+                  <input
+                    type="search"
+                    value={searchFilterQuery}
+                    onChange={(e) => setSearchFilterQuery(e.target.value)}
+                    placeholder="Search"
+                    aria-label="Search threads"
+                    className="min-w-0 flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/60 outline-none"
+                  />
+                  {searchFilterQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchFilterQuery("")}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <XIcon className="size-3" />
+                    </button>
                   )}
                 </div>
-                <span className="truncate font-system-ui text-[length:var(--app-font-size-ui,12px)] font-medium text-foreground">
-                  {drilledProject.name}
-                </span>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const targetProjId = scopedProjectId ?? activeProject?.id ?? projects[0]?.id;
+                          if (targetProjId) {
+                            prefetchModelsForProjectNewThread(targetProjId, { includeDroid: true });
+                            void handleNewThread(targetProjId, {
+                              envMode: resolveSidebarNewThreadEnvMode({
+                                defaultEnvMode: appSettings.defaultThreadEnvMode,
+                              }),
+                            });
+                          } else {
+                            void handleCreateHomeChat();
+                          }
+                        }}
+                        className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+                        aria-label="New thread"
+                      >
+                        <LuSquarePen className="size-4" />
+                      </button>
+                    }
+                  />
+                  <TooltipPopup side="right">New thread</TooltipPopup>
+                </Tooltip>
               </div>
-              <div className="ml-auto flex items-center gap-1.5">
-                <SidebarIconButton
-                  icon={SearchIcon}
-                  label="Search"
-                  glyph="leading"
-                  size="header"
-                  tooltip={searchShortcutLabel ? `Search (${searchShortcutLabel})` : "Search"}
-                  tooltipSide="bottom"
-                  onClick={() => {
-                    setSearchPaletteOpen(true);
-                  }}
-                />
-              </div>
+
+              {/* Project filter row */}
+              {projects.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <Menu open={projectFilterMenuOpen} onOpenChange={setProjectFilterMenuOpen}>
+                    <MenuTrigger
+                      render={
+                        <button
+                          type="button"
+                          className="flex h-7 min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 text-xs font-medium text-foreground hover:bg-muted/40 transition-colors"
+                        >
+                          <FolderIcon className="size-3.5 shrink-0 text-muted-foreground/80" />
+                          <span className="min-w-0 flex-1 truncate text-left">
+                            {scopedProjectId
+                              ? (projectById.get(scopedProjectId)?.name ?? "Selected project")
+                              : "All projects"}
+                          </span>
+                          <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground/60" />
+                        </button>
+                      }
+                    />
+                    <MenuPopup align="start" className="w-56">
+                      <MenuRadioGroup
+                        value={scopedProjectId ?? "all"}
+                        onValueChange={(val) => setScopedProjectId(val === "all" ? null : (val as string))}
+                      >
+                        <MenuRadioItem value="all" className="flex items-center gap-2 text-xs py-1.5 cursor-pointer">
+                          <FolderIcon className="size-3.5 shrink-0" />
+                          <span className="truncate">All projects</span>
+                        </MenuRadioItem>
+                        {projects.map((proj) => (
+                          <MenuRadioItem key={proj.id} value={proj.id} className="flex items-center gap-2 text-xs py-1.5 cursor-pointer">
+                            {proj.framework && proj.framework !== "blank" ? (
+                              <FrameworkIcon framework={proj.framework} size={14} className="size-3.5 shrink-0" />
+                            ) : (
+                              <FolderIcon className="size-3.5 shrink-0" />
+                            )}
+                            <span className="truncate">{proj.name}</span>
+                          </MenuRadioItem>
+                        ))}
+                      </MenuRadioGroup>
+                    </MenuPopup>
+                  </Menu>
+
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <button
+                          type="button"
+                          onClick={handleStartAddProject}
+                          className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+                          aria-label="New project"
+                        >
+                          <LuFolderPlus className="size-4" />
+                        </button>
+                      }
+                    />
+                    <TooltipPopup side="right">New project</TooltipPopup>
+                  </Tooltip>
+                </div>
+              )}
             </div>
 
-            <div key={drilledProject.id} className="sidebar-surface-enter">
-              <SidebarGroup className="px-1.5 pt-1 pb-1.5">
-                <SidebarMenu className="gap-0.5">
-                  <SidebarPrimaryAction
-                    icon={AddPlusIcon}
-                    iconClassName="size-3.5"
-                    label="New chat"
-                    onClick={() => {
-                      prefetchModelsForProjectNewThread(drilledProject.id, { includeDroid: true });
-                      void handleNewThread(drilledProject.id, {
-                        envMode: resolveSidebarNewThreadEnvMode({
-                          defaultEnvMode: appSettings.defaultThreadEnvMode,
-                        }),
-                      });
-                    }}
-                    onMouseEnter={() => prefetchModelsForProjectNewThread(drilledProject.id)}
-                    onFocus={() => prefetchModelsForProjectNewThread(drilledProject.id)}
-                  />
-                </SidebarMenu>
-              </SidebarGroup>
-
-              <SidebarGroup className="px-1.5 py-1.5">
-                {chatGroups.length > 0 ? (
-                  chatGroups.map((group) => (
-                    <div key={group.key} className="mb-3 last:mb-0">
-                      <div className="px-2 py-1 text-[11px] font-medium text-muted-foreground/60 select-none">
-                        {group.label}
-                      </div>
-                      <SidebarMenu className="gap-0.5">
-                        {group.threads.map((thread) =>
-                          renderThreadRow(thread, drilledOrderedProjectThreadIds, 0, true),
-                        )}
-                      </SidebarMenu>
+            {/* Main Cards List */}
+            <SidebarGroup className="px-1.5 py-1">
+              {activeCards.length > 0 ? (
+                <div className="space-y-0.5">
+                  {activeCards.map((thread) => renderThreadCard(thread))}
+                  {settledCards.length > 0 && (
+                    <div className="mt-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setSettledShelfExpanded((prev) => !prev)}
+                        aria-expanded={settledShelfExpanded}
+                        className="mb-1.5 flex w-full cursor-pointer items-center gap-2 px-2 text-left select-none group"
+                      >
+                        <span className="text-[11px] font-medium text-muted-foreground/50 group-hover:text-muted-foreground/80">
+                          {settledShelfExpanded ? "Settled" : `Settled (${settledCards.length})`}
+                        </span>
+                        <span className="h-px flex-1 bg-border/40" />
+                        <ChevronDownIcon
+                          className={cn(
+                            "size-3 text-muted-foreground/50 transition-transform duration-200",
+                            settledShelfExpanded && "rotate-180",
+                          )}
+                        />
+                      </button>
+                      {settledShelfExpanded && (
+                        <div className="space-y-0.5 px-0.5">
+                          {settledCards.map((thread) => renderSettledSlimRow(thread))}
+                        </div>
+                      )}
                     </div>
-                  ))
-                ) : (
-                  <div className="space-y-2 px-3 py-6 text-center">
-                    <p className="text-[length:var(--app-font-size-ui,12px)] text-muted-foreground/60">
-                      No chats yet
-                    </p>
+                  )}
+                </div>
+              ) : settledCards.length > 0 ? (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setSettledShelfExpanded((prev) => !prev)}
+                    aria-expanded={settledShelfExpanded}
+                    className="mb-1.5 flex w-full cursor-pointer items-center gap-2 px-2 text-left select-none group"
+                  >
+                    <span className="text-[11px] font-medium text-muted-foreground/50 group-hover:text-muted-foreground/80">
+                      {settledShelfExpanded ? "Settled" : `Settled (${settledCards.length})`}
+                    </span>
+                    <span className="h-px flex-1 bg-border/40" />
+                    <ChevronDownIcon
+                      className={cn(
+                        "size-3 text-muted-foreground/50 transition-transform duration-200",
+                        settledShelfExpanded && "rotate-180",
+                      )}
+                    />
+                  </button>
+                  {settledShelfExpanded && (
+                    <div className="space-y-0.5 px-0.5">
+                      {settledCards.map((thread) => renderSettledSlimRow(thread))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2 px-3 py-6 text-center">
+                  <p className="text-xs text-muted-foreground/60">
+                    {searchFilterQuery ? "No matching threads" : "No threads yet"}
+                  </p>
+                  {!searchFilterQuery && (
                     <Button
                       size="xs"
                       variant="outline"
                       onClick={() => {
-                        prefetchModelsForProjectNewThread(drilledProject.id, { includeDroid: true });
-                        void handleNewThread(drilledProject.id, {
-                          envMode: resolveSidebarNewThreadEnvMode({
-                            defaultEnvMode: appSettings.defaultThreadEnvMode,
-                          }),
-                        });
+                        const targetProjId = scopedProjectId ?? activeProject?.id ?? projects[0]?.id;
+                        if (targetProjId) {
+                          prefetchModelsForProjectNewThread(targetProjId, { includeDroid: true });
+                          void handleNewThread(targetProjId, {
+                            envMode: resolveSidebarNewThreadEnvMode({
+                              defaultEnvMode: appSettings.defaultThreadEnvMode,
+                            }),
+                          });
+                        } else {
+                          void handleCreateHomeChat();
+                        }
                       }}
-                      className="text-[length:var(--app-font-size-ui,12px)]"
+                      className="text-xs"
                     >
-                      Start a chat
+                      Start a thread
                     </Button>
-                  </div>
-                )}
-              </SidebarGroup>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="flex items-center gap-1 pt-0 pb-1 pr-2.5 pl-1.5">
-              <SidebarSurfacePicker
-                onOpenArtifacts={() => setArtifactsOpen(true)}
-                onOpenHistory={() => setProjectHistoryOpen(true)}
-              />
-              <div className="ml-auto flex items-center gap-1.5">
-                <SidebarIconButton
-                  icon={SearchIcon}
-                  label="Search"
-                  glyph="leading"
-                  size="header"
-                  tooltip={searchShortcutLabel ? `Search (${searchShortcutLabel})` : "Search"}
-                  tooltipSide="bottom"
-                  onClick={() => {
-                    setSearchPaletteOpen(true);
-                  }}
-                />
-              </div>
-            </div>
-
-            <div key="all-apps" className="sidebar-surface-enter">
-              <SidebarGroup className="px-1.5 pt-1 pb-1.5">
-                <SidebarMenu className="gap-0.5">
-                  <SidebarPrimaryAction
-                    icon={AddPlusIcon}
-                    iconClassName="size-3.5"
-                    label="New app"
-                    onClick={handleStartAddProject}
-                  />
-                </SidebarMenu>
-              </SidebarGroup>
-
-              <SidebarGroup className="px-1.5 py-1.5">
-                {favoriteProjects.length > 0 && (
-                  <div className="mb-3">
-                    {renderListSectionHeader("Favorites", null)}
-                    <SidebarMenu className="gap-1">
-                      {favoriteProjects.map((project) => (
-                        <SidebarMenuItem key={project.id} className="rounded-md">
-                          {renderProjectItem(project, null)}
-                        </SidebarMenuItem>
-                      ))}
-                    </SidebarMenu>
-                  </div>
-                )}
-
-                {otherProjects.length > 0 && (
-                  <div>
-                    {renderListSectionHeader(
-                      favoriteProjects.length > 0 ? "Apps" : "Projects",
-                      <>
-                        <ProjectSortMenu
-                          projectSortOrder={appSettings.sidebarProjectSortOrder}
-                          threadSortOrder={appSettings.sidebarThreadSortOrder}
-                          onProjectSortOrderChange={(sortOrder) => {
-                            updateSettings({ sidebarProjectSortOrder: sortOrder });
-                          }}
-                          onThreadSortOrderChange={(sortOrder) => {
-                            updateSettings({ sidebarThreadSortOrder: sortOrder });
-                          }}
-                        />
-                        <SidebarIconButton
-                          icon={AddPlusIcon}
-                          label="Add app"
-                          onClick={handleStartAddProject}
-                          tooltip="Add app"
-                          tooltipSide="right"
-                        />
-                      </>,
-                    )}
-                    {isManualProjectSorting ? (
-                      <DndContext
-                        sensors={projectDnDSensors}
-                        collisionDetection={projectCollisionDetection}
-                        modifiers={[restrictToVerticalAxis, restrictToFirstScrollableAncestor]}
-                        onDragStart={handleProjectDragStart}
-                        onDragEnd={handleProjectDragEnd}
-                        onDragCancel={handleProjectDragCancel}
-                      >
-                        <SidebarMenu className="gap-1">
-                          <SortableContext
-                            items={otherProjects.map((project) => project.id)}
-                            strategy={verticalListSortingStrategy}
-                          >
-                            {otherProjects.map((project) => (
-                              <SortableProjectItem key={project.id} projectId={project.id}>
-                                {(dragHandleProps) => renderProjectItem(project, dragHandleProps)}
-                              </SortableProjectItem>
-                            ))}
-                          </SortableContext>
-                        </SidebarMenu>
-                      </DndContext>
-                    ) : (
-                      <SidebarMenu ref={attachProjectListAutoAnimateRef} className="gap-1">
-                        {otherProjects.map((project) => (
-                          <SidebarMenuItem key={project.id} className="rounded-md">
-                            {renderProjectItem(project, null)}
-                          </SidebarMenuItem>
-                        ))}
-                      </SidebarMenu>
-                    )}
-                  </div>
-                )}
-
-                {projectEmptyState === "loading" && (
-                  <div
-                    className="space-y-2 px-2 pt-4"
-                    aria-live="polite"
-                    aria-label="Loading projects"
-                  >
-                    <div className="text-center text-[length:var(--app-font-size-ui,12px)] text-muted-foreground/58">
-                      Loading projects...
-                    </div>
-                    <div className="mx-auto grid w-full max-w-42 gap-1.5 opacity-70">
-                      <div className="h-2 rounded-full bg-muted/55 animate-pulse" />
-                      <div className="mx-auto h-2 w-4/5 rounded-full bg-muted/40 animate-pulse" />
-                      <div className="mx-auto h-2 w-3/5 rounded-full bg-muted/30 animate-pulse" />
-                    </div>
-                  </div>
-                )}
-
-                {projectEmptyState === "empty" && (
-                  <SpaceEmptyState
-                    space={activeSpace}
-                    hasProjectsElsewhere={allStandardProjectsBase.length > 0}
-                    onMoveProjects={() => {
-                      if (activeSpace) openSpaceProjectPicker(activeSpace.id);
-                    }}
-                  />
-                )}
-              </SidebarGroup>
-            </div>
+                  )}
+                </div>
+              )}
+            </SidebarGroup>
           </>
         )}
-        {false ? (
-          // sidebar-surface-enter: kept for parity with the keyed surface wrapper above.
-          // Flattened: Chats section removed per M4a — per-project chats only.
-          <SidebarGroup className="sidebar-surface-enter px-1.5 pt-1 pb-2">
-            <div className="group/collapsible">
-              <div className="group/project-header relative">
-                <SidebarMenuButton
-                  size="sm"
-                  aria-expanded={chatSectionExpanded}
-                  className={cn(
-                    SIDEBAR_HEADER_ROW_CLASS_NAME,
-                    SIDEBAR_ROW_IDLE_TEXT_CLASS_NAME,
-                    SIDEBAR_ROW_HOVER_CLASS_NAME,
-                    "cursor-pointer",
-                  )}
-                  onClick={() => setChatSectionExpanded((current) => !current)}
-                  onKeyDown={(event) => {
-                    if (event.key !== "Enter" && event.key !== " ") return;
-                    event.preventDefault();
-                    setChatSectionExpanded((current) => !current);
-                  }}
-                >
-                  <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
-                    <span className="truncate font-system-ui text-[length:var(--app-font-size-ui,12px)] font-normal text-muted-foreground/79">
-                      Chats
-                    </span>
-                    <DisclosureChevron
-                      open={chatSectionExpanded}
-                      className="text-muted-foreground/79"
-                    />
-                  </div>
-                </SidebarMenuButton>
-                <SidebarSectionToolbar placement="overlay" revealOnHover>
-                  <ChatSortMenu
-                    threadSortOrder={appSettings.sidebarThreadSortOrder}
-                    onThreadSortOrderChange={(sortOrder) => {
-                      updateSettings({ sidebarThreadSortOrder: sortOrder });
-                    }}
-                  />
-                  <SidebarIconButton
-                    icon={NewThreadIcon}
-                    label="Open new chat home"
-                    onClick={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      void handleCreateHomeChat();
-                    }}
-                    tooltip={
-                      newChatShortcutLabel ? `New chat (${newChatShortcutLabel})` : "New chat"
-                    }
-                    tooltipSide="top"
-                  />
-                </SidebarSectionToolbar>
-              </div>
-
-              <div className={cn(disclosureShellClassName(chatSectionExpanded), "pt-1")}>
-                <div className={DISCLOSURE_INNER_CLASS}>
-                  <SidebarMenu
-                    className={cn("gap-1", disclosureContentClassName(chatSectionExpanded))}
-                  >
-                    {visibleChatThreadRows.length > 0 ? (
-                      renderedChatEntries.map((entry) =>
-                        renderThreadRow(
-                          entry.row.thread,
-                          visibleChatThreadIds,
-                          entry.row.depth,
-                          true,
-                        ),
-                      )
-                    ) : (
-                      <div className="px-2 py-2 text-[length:var(--app-font-size-ui,12px)] text-muted-foreground/48">
-                        No chats yet
-                      </div>
-                    )}
-                    {canShowMoreChatThreads || canShowLessChatThreads ? (
-                      <SidebarMenuItem className="w-full">
-                        <div className="flex w-full items-center gap-1">
-                          {canShowMoreChatThreads ? (
-                            <SidebarMenuButton
-                              size="sm"
-                              className="h-7 flex-1 justify-start rounded-lg pr-2 pl-8 text-left text-[length:var(--app-font-size-ui,12px)] font-normal text-muted-foreground/79 hover:bg-transparent hover:text-foreground active:bg-transparent active:text-foreground"
-                              onMouseDown={preventFocusOnMouseDown}
-                              onClick={() =>
-                                setChatThreadListExtraPages(chatThreadListEffectiveExtraPages + 1)
-                              }
-                            >
-                              <span>Show more</span>
-                            </SidebarMenuButton>
-                          ) : null}
-                          {canShowLessChatThreads ? (
-                            <SidebarMenuButton
-                              size="sm"
-                              className={cn(
-                                "h-7 justify-start rounded-lg text-left text-[length:var(--app-font-size-ui,12px)] font-normal text-muted-foreground/79 hover:bg-transparent hover:text-foreground active:bg-transparent active:text-foreground",
-                                // Keep the left indent when "Show less" is the only affordance left.
-                                canShowMoreChatThreads
-                                  ? "w-auto flex-none px-2"
-                                  : "flex-1 pr-2 pl-8",
-                              )}
-                              onMouseDown={preventFocusOnMouseDown}
-                              onClick={() =>
-                                setChatThreadListExtraPages(
-                                  Math.max(0, chatThreadListEffectiveExtraPages - 1),
-                                )
-                              }
-                            >
-                              <span>Show less</span>
-                            </SidebarMenuButton>
-                          ) : null}
-                        </div>
-                      </SidebarMenuItem>
-                    ) : null}
-                  </SidebarMenu>
-                </div>
-              </div>
-            </div>
-          </SidebarGroup>
-        ) : null}
       </SidebarContent>
 
       <SidebarFooter className="gap-2 border-sidebar-border border-t p-2 font-system-ui">
@@ -5814,57 +5745,82 @@ export default function Sidebar() {
                   <DebugFeatureFlagsMenu />
                 </Suspense>
               ) : null}
-              <div className="flex items-center gap-2">
-                {!isOnSettings && (
-                  <SidebarMenuButton
-                    size="sm"
-                    className={cn(
-                      SIDEBAR_HEADER_ROW_CLASS_NAME,
-                      SIDEBAR_ROW_IDLE_TEXT_CLASS_NAME,
-                      SIDEBAR_ROW_HOVER_CLASS_NAME,
-                      "flex-1",
-                    )}
-                    onClick={() => void navigate({ to: "/settings" })}
-                  >
-                    <SidebarLeadingIcon size="sm" tone={SIDEBAR_ROW_LABEL_TEXT_CLASS_NAME}>
-                      <SidebarGlyph icon={SettingsIcon} variant="leading" />
-                    </SidebarLeadingIcon>
-                    <span>Settings</span>
-                  </SidebarMenuButton>
-                )}
-                {showDesktopUpdateButton ? (
+              <div className="flex items-center justify-between w-full px-1">
+                <div className="flex items-center gap-1 text-muted-foreground">
                   <Tooltip>
                     <TooltipTrigger
                       render={
                         <button
                           type="button"
-                          aria-label={desktopUpdateTooltip}
-                          aria-disabled={desktopUpdateButtonDisabled || undefined}
-                          disabled={desktopUpdateButtonDisabled}
-                          className={desktopUpdateRowButtonClasses}
-                          onClick={handleDesktopUpdateButtonClick}
+                          onClick={() => void navigate({ to: "/settings" })}
+                          className="flex size-7 items-center justify-center rounded-md hover:bg-muted/50 hover:text-foreground transition-colors"
+                          aria-label="Settings"
                         >
-                          <span className="flex min-w-0 flex-1 items-center justify-between gap-1.5 leading-tight">
-                            <span className="min-w-0 truncate text-center">
-                              {desktopUpdateButtonPresentation.label}
-                            </span>
-                            {desktopUpdateButtonPresentation.secondaryLabel ? (
-                              <span className="min-w-0 truncate text-center text-[length:var(--app-font-size-ui-xs,10px)] text-white/80">
-                                {desktopUpdateButtonPresentation.secondaryLabel}
-                              </span>
-                            ) : null}
-                          </span>
-                          {desktopUpdateDownloadPercent !== null ? (
-                            <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] font-semibold tabular-nums text-white/95">
-                              {desktopUpdateDownloadPercent}%
-                            </span>
-                          ) : null}
+                          <SettingsIcon className="size-4" />
                         </button>
                       }
                     />
-                    <TooltipPopup side="top">{desktopUpdateTooltip}</TooltipPopup>
+                    <TooltipPopup side="top">Settings</TooltipPopup>
                   </Tooltip>
-                ) : null}
+
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void navigate({
+                              to: "/settings",
+                              search: (prev: any) => ({ ...prev, section: "features" }),
+                            })
+                          }
+                          className="flex size-7 items-center justify-center rounded-md hover:bg-muted/50 hover:text-foreground transition-colors"
+                          aria-label="Configuration"
+                        >
+                          <LuSlidersHorizontal className="size-4" />
+                        </button>
+                      }
+                    />
+                    <TooltipPopup side="top">Configuration</TooltipPopup>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void navigate({
+                              to: "/settings",
+                              search: (prev: any) => ({ ...prev, section: "models" }),
+                            })
+                          }
+                          className="flex size-7 items-center justify-center rounded-md hover:bg-muted/50 hover:text-foreground transition-colors"
+                          aria-label="Usage & Activity"
+                        >
+                          <LuChartNoAxesColumn className="size-4" />
+                        </button>
+                      }
+                    />
+                    <TooltipPopup side="top">Usage & Activity</TooltipPopup>
+                  </Tooltip>
+                </div>
+
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <button
+                        type="button"
+                        onClick={handleDesktopUpdateButtonClick}
+                        className="flex size-7 items-center justify-center rounded-full bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 transition-colors"
+                        aria-label="Check for updates"
+                      >
+                        <LuDownload className="size-3.5" />
+                      </button>
+                    }
+                  />
+                  <TooltipPopup side="top">Check for updates</TooltipPopup>
+                </Tooltip>
               </div>
             </div>
           </SidebarMenuItem>

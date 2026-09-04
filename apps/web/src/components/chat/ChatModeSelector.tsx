@@ -9,6 +9,7 @@ import {
   LightBulbIcon as Lightbulb,
   AskIcon,
   HammerIcon as Hammer,
+  ChevronDownIcon,
 } from "~/lib/icons";
 
 export const CHAT_MODE_ORDER: ChatMode[] = ["local-agent", "plan", "build", "ask"];
@@ -46,12 +47,14 @@ export function getChatModeDisplayName(mode: ChatMode): string {
 interface ChatModeSelectorProps {
   mode: ChatMode;
   onChatModeChange: (mode: ChatMode) => void;
+  effort?: string | null;
   iconOnly?: boolean;
 }
 
-export function ChatModeSelector({ mode, onChatModeChange, iconOnly = false }: ChatModeSelectorProps) {
+export function ChatModeSelector({ mode, onChatModeChange, effort, iconOnly = false }: ChatModeSelectorProps) {
   const meta = CHAT_MODE_META[mode] || CHAT_MODE_META["local-agent"];
   const Icon = meta.Icon;
+  const label = effort ? `${effort} · ${meta.name}` : meta.name;
 
   return (
     <div className="flex items-center gap-1.5 shrink-0">
@@ -61,35 +64,37 @@ export function ChatModeSelector({ mode, onChatModeChange, iconOnly = false }: C
             render={
               <SelectPrimitive.Trigger
                 data-testid="chat-mode-selector"
-                aria-label={`Chat mode: ${meta.name}`}
+                aria-label={`Chat mode: ${label}`}
                 className={cn(
-                  "cursor-pointer inline-flex items-center transition-all duration-150 outline-none select-none",
+                  "cursor-pointer inline-flex items-center transition-all duration-150 outline-none select-none rounded-md",
                   iconOnly
-                    ? "h-7 w-7 justify-center p-0 rounded-lg border border-border/50 bg-background/50 hover:bg-muted/60"
-                    : "h-7 px-2.5 py-0 text-xs font-medium gap-1.5 rounded-lg border border-border/50 bg-background/50 shadow-2xs hover:bg-muted/60",
-                  mode === "local-agent"
-                    ? "text-foreground/80 hover:text-foreground"
-                    : mode === "plan"
-                      ? "bg-blue-500/10 text-blue-600 border-blue-500/25 hover:bg-blue-500/15 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/30 dark:hover:bg-blue-500/20"
-                      : mode === "ask"
-                        ? "bg-amber-500/10 text-amber-600 border-amber-500/25 hover:bg-amber-500/15 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30"
-                        : "text-foreground/80 hover:text-foreground",
+                    ? "h-7 w-7 justify-center p-0 hover:bg-white/5"
+                    : "h-7 min-h-7 px-2 py-0 text-xs font-normal gap-1.5 hover:bg-white/5 border-0 shadow-none bg-transparent text-muted-foreground/90 hover:text-foreground",
+                  mode === "plan" && "text-blue-400 hover:text-blue-300",
+                  mode === "ask" && "text-amber-400 hover:text-amber-300",
                 )}
               />
             }
           >
             <SelectValue>
               <span className="flex items-center gap-1.5">
-                <Icon size={14} className={mode === "plan" ? "text-blue-500" : mode === "ask" ? "text-amber-500" : undefined} />
-                {!iconOnly && <span>{meta.name}</span>}
+                <Icon size={14} className={mode === "plan" ? "text-blue-400" : mode === "ask" ? "text-amber-400" : "opacity-80"} />
+                {!iconOnly && <span>{label}</span>}
+                <ChevronDownIcon className="size-3 opacity-50 ml-0.5" />
               </span>
             </SelectValue>
           </TooltipTrigger>
           <TooltipPopup>
-            {iconOnly ? `Mode: ${meta.name} (Ctrl + . to toggle)` : "Open mode menu (Ctrl + . to toggle)"}
+            {iconOnly ? `Mode: ${label} (Ctrl + . to toggle)` : "Open mode menu (Ctrl + . to toggle)"}
           </TooltipPopup>
         </Tooltip>
-        <SelectPopup surface="composer" align="start">
+        <SelectPopup
+          surface="composer"
+          side="top"
+          align="start"
+          sideOffset={6}
+          alignItemWithTrigger={false}
+        >
           {CHAT_MODE_ORDER.map((m) => {
             const mMeta = CHAT_MODE_META[m];
             const MIcon = mMeta.Icon;

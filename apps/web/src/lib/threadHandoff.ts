@@ -58,15 +58,23 @@ export function isEligibleHandoffTargetProvider(input: {
 
 export function resolveAvailableHandoffTargetProviders(input: {
   readonly sourceProvider: string;
-  readonly providerSettings: ServerSettingsView["providers"] | null | undefined;
-  readonly providerStatuses: readonly ServerProviderStatus[];
+  readonly providerSettings?: ServerSettingsView["providers"] | null | undefined;
+  readonly providerStatuses?: readonly ServerProviderStatus[];
+  readonly allowAllConfigured?: boolean;
 }): ReadonlyArray<ProviderKind> {
+  if (input.allowAllConfigured) {
+    return DEFAULT_PROVIDER_ORDER.filter(
+      (targetProvider) => targetProvider !== (input.sourceProvider as ProviderKind),
+    );
+  }
   return DEFAULT_PROVIDER_ORDER.filter((targetProvider) =>
     isEligibleHandoffTargetProvider({
       sourceProvider: input.sourceProvider,
       targetProvider,
       targetProviderEnabled: (input.providerSettings as any)?.[targetProvider]?.enabled,
-      targetProviderStatus: findProviderStatus(input.providerStatuses, targetProvider),
+      targetProviderStatus: input.providerStatuses
+        ? findProviderStatus(input.providerStatuses, targetProvider)
+        : undefined,
     }),
   );
 }

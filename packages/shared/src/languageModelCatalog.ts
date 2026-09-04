@@ -105,6 +105,24 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
   ],
   google: [
     {
+      name: "gemini-3.8-flash",
+      displayName: "Gemini 3.8 Flash",
+      description: "Google's ultra-fast, high-throughput frontier Flash model",
+      maxOutputTokens: 65_536,
+      contextWindow: 1_048_576,
+      temperature: 1.0,
+      dollarSigns: 2,
+    },
+    {
+      name: "gemini-3.7-flash",
+      displayName: "Gemini 3.7 Flash",
+      description: "Google's hybrid reasoning Flash model with verified speed and quality",
+      maxOutputTokens: 65_536,
+      contextWindow: 1_048_576,
+      temperature: 1.0,
+      dollarSigns: 2,
+    },
+    {
       name: "gemini-3.1-pro-preview",
       displayName: "Gemini 3.1 Pro (Preview)",
       description: "Google's most capable Gemini model",
@@ -297,24 +315,206 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
   ],
   "opencode-zen": [
     {
-      name: "opencode/zen-coder",
-      displayName: "Zen Coder",
-      description: "OpenCode Zen coding model",
-      contextWindow: 200_000,
-      maxOutputTokens: 16_000,
-      temperature: 0.2,
-      dollarSigns: 2,
+      name: "deepseek-v4-flash-free",
+      displayName: "DeepSeek V4 Flash (Free)",
+      description: "Fast free model through OpenCode Zen; high speed reasoning and coding",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "mimo-v2.5-free",
+      displayName: "MiMo V2.5 (Free)",
+      description: "Fast conversational and reasoning model through OpenCode Zen",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "laguna-s-2.1-free",
+      displayName: "Laguna S 2.1 (Free)",
+      description: "High-throughput coding model through OpenCode Zen",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "north-mini-code-free",
+      displayName: "North Mini Code (Free)",
+      description: "Compact coding model through OpenCode Zen",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "nemotron-3-ultra-free",
+      displayName: "Nemotron 3 Ultra (Free)",
+      description: "NVIDIA 120B MoE free endpoint through OpenCode Zen",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "big-pickle",
+      displayName: "Big Pickle (Free)",
+      description: "Stealth coding model through OpenCode Zen",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "ling-3.0-flash-fin-free",
+      displayName: "Ling 3.0 Flash Fin (Free)",
+      description: "High-accuracy quantitative and coding model",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "muse-spark-1.2-contributor-free",
+      displayName: "Muse Spark 1.2 Contributor (Free)",
+      description: "Fast contributor coding model",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "muse-spark-1.3-contributor-free",
+      displayName: "Muse Spark 1.3 Contributor (Free)",
+      description: "Enhanced contributor coding model",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "nemotron-3.5-lightning-free",
+      displayName: "Nemotron 3.5 Lightning (Free)",
+      description: "Ultra-low-latency NVIDIA inference",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
     },
   ],
   opencodeZen: [
     {
-      name: "opencode/zen-coder",
-      displayName: "Zen Coder",
-      description: "OpenCode Zen coding model",
-      contextWindow: 200_000,
-      maxOutputTokens: 16_000,
-      temperature: 0.2,
-      dollarSigns: 2,
+      name: "deepseek-v4-flash-free",
+      displayName: "DeepSeek V4 Flash (Free)",
+      description: "Fast free model through OpenCode Zen; high speed reasoning and coding",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "mimo-v2.5-free",
+      displayName: "MiMo V2.5 (Free)",
+      description: "Fast conversational and reasoning model through OpenCode Zen",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "laguna-s-2.1-free",
+      displayName: "Laguna S 2.1 (Free)",
+      description: "High-throughput coding model through OpenCode Zen",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "north-mini-code-free",
+      displayName: "North Mini Code (Free)",
+      description: "Compact coding model through OpenCode Zen",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "nemotron-3-ultra-free",
+      displayName: "Nemotron 3 Ultra (Free)",
+      description: "NVIDIA 120B MoE free endpoint through OpenCode Zen",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "big-pickle",
+      displayName: "Big Pickle (Free)",
+      description: "Stealth coding model through OpenCode Zen",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "ling-3.0-flash-fin-free",
+      displayName: "Ling 3.0 Flash Fin (Free)",
+      description: "High-accuracy quantitative and coding model",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "muse-spark-1.2-contributor-free",
+      displayName: "Muse Spark 1.2 Contributor (Free)",
+      description: "Fast contributor coding model",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "muse-spark-1.3-contributor-free",
+      displayName: "Muse Spark 1.3 Contributor (Free)",
+      description: "Enhanced contributor coding model",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "nemotron-3.5-lightning-free",
+      displayName: "Nemotron 3.5 Lightning (Free)",
+      description: "Ultra-low-latency NVIDIA inference",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
     },
   ],
   opencodeGo: [
@@ -384,7 +584,7 @@ export function getBuiltInModelsForProvider(providerId: string): ModelOption[] {
 }
 
 /**
- * Format context window nicely (e.g. 1048576 -> 1M, 200000 -> 200k).
+ * Format context window nicely (e.g. 1048576 -> 1.0M, 200000 -> 200k).
  */
 export function formatContextWindow(tokens?: number): string {
   if (!tokens) return "";
@@ -396,4 +596,68 @@ export function formatContextWindow(tokens?: number): string {
     return `${Math.round(tokens / 1_000)}k`;
   }
   return String(tokens);
+}
+
+/**
+ * Format max output tokens nicely (e.g. 65536 -> 66k, 8192 -> 8k).
+ */
+export function formatOutputTokens(tokens?: number): string {
+  if (!tokens) return "";
+  if (tokens >= 1_000_000) {
+    const m = tokens / 1_000_000;
+    return `${m % 1 === 0 ? m.toFixed(0) : m.toFixed(1)}M`;
+  }
+  if (tokens >= 1_000) {
+    return `${Math.round(tokens / 1_000)}k`;
+  }
+  return String(tokens);
+}
+
+export const OPENCODE_ZEN_MODELS_URL = "https://opencode.ai/zen/v1/models";
+
+/**
+ * Fetch live dynamic models with fallback to built-ins.
+ */
+export async function fetchRemoteCatalogModels(
+  providerId: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<ModelOption[]> {
+  const norm = providerId.toLowerCase().replace(/_/g, "-");
+  if (norm === "opencode-zen" || norm === "opencodezen") {
+    try {
+      const res = await fetchImpl(OPENCODE_ZEN_MODELS_URL, {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(6000),
+      });
+      if (res.ok) {
+        const payload = (await res.json()) as { data?: Array<{ id?: string }> };
+        if (Array.isArray(payload.data) && payload.data.length > 0) {
+          const builtins = getBuiltInModelsForProvider("opencodeZen");
+          return payload.data
+            .filter((item): item is { id: string } => typeof item?.id === "string")
+            .map((item) => {
+              const matched = builtins.find((b) => b.name === item.id);
+              if (matched) return matched;
+              return {
+                name: item.id,
+                displayName: item.id
+                  .replace(/-free$/, "")
+                  .replace(/[-_]/g, " ")
+                  .replace(/\b\w/g, (c) => c.toUpperCase()),
+                description: "Discovered free model through OpenCode Zen",
+                contextWindow: 128_000,
+                maxOutputTokens: 32_000,
+                dollarSigns: 0,
+                tag: "Free",
+                tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+                type: "builtin" as const,
+              };
+            });
+        }
+      }
+    } catch {
+      // Return fallback
+    }
+  }
+  return getBuiltInModelsForProvider(providerId);
 }

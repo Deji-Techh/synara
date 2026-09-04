@@ -28,12 +28,11 @@ export function PickerTriggerButton(
     <Button
       {...buttonProps}
       size="sm"
-      variant="chrome"
+      variant="ghost"
       {...(hideLabel && typeof label === "string" ? { title: label } : {})}
       className={cn(
-        "min-w-0 justify-start overflow-hidden whitespace-nowrap px-1.5 text-[var(--color-text-foreground)] [&_svg]:mx-0",
-        COMPOSER_PICKER_TRIGGER_TEXT_CLASS_NAME,
-        compact ? "max-w-52 shrink-0" : "max-w-56 shrink sm:max-w-64 sm:px-1.5",
+        "h-7 min-h-7 justify-start overflow-hidden whitespace-nowrap rounded-md px-2 text-xs font-normal text-muted-foreground/90 hover:text-foreground hover:bg-white/5 border-0 shadow-none bg-transparent transition-colors [&_svg]:mx-0",
+        compact ? "max-w-52 shrink-0" : "max-w-56 shrink sm:max-w-64",
         className,
       )}
     >
@@ -50,7 +49,7 @@ export function PickerTriggerButton(
           <span className="min-w-0 flex-1 truncate">{label}</span>
         )}
         {hideChevron ? null : (
-          <ChevronDownIcon aria-hidden="true" className="size-3 shrink-0 opacity-60" />
+          <ChevronDownIcon aria-hidden="true" className="size-3 shrink-0 opacity-50" />
         )}
       </span>
     </Button>

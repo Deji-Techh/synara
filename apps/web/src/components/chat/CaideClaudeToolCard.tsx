@@ -22,6 +22,7 @@ import {
   IconPencil,
 } from "@tabler/icons-react";
 import { DisclosureChevron } from "~/components/ui/DisclosureChevron";
+import { DisclosureRegion } from "~/components/ui/DisclosureRegion";
 import {
   CaideCard,
   CaideCardHeader,
@@ -146,32 +147,28 @@ export const CaideClaudeToolCard: React.FC<CaideClaudeToolCardProps> = ({
   const formattedContent = formatContent(content);
 
   return (
-    <div className="my-0.5 select-none">
-      <CaideCard
-        state={cardState}
-        accent={meta.accent}
+    <div className="my-0.5 select-none text-left">
+      <button
+        type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        isExpanded={isExpanded}
+        className="group inline-flex items-center gap-1.5 py-0.5 px-1 rounded hover:bg-muted/30 transition-colors duration-150 cursor-pointer text-left text-[12px]"
       >
-        <CaideCardHeader icon={meta.icon} accent={meta.accent}>
-          <div className="flex min-w-0 flex-1 items-center gap-1.5 truncate text-[12px]">
-            <CaideBadge accent={meta.accent}>{meta.verb}</CaideBadge>
-            {meta.target && (
-              <span className="truncate font-mono text-[11.5px] text-muted-foreground transition-colors group-hover:text-foreground">
-                {meta.target}
-              </span>
-            )}
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <CaideStateIndicator state={cardState} />
-            <DisclosureChevron
-              open={isExpanded}
-              className="h-3 w-3 text-muted-foreground/40 transition-colors group-hover:text-foreground"
-            />
-          </div>
-        </CaideCardHeader>
+        <span className="text-muted-foreground/80 font-normal">{meta.verb}</span>
+        {meta.target && (
+          <code className="font-mono text-[11px] text-foreground/90 group-hover:text-foreground">
+            {meta.target}
+          </code>
+        )}
+        {cardState === "pending" && (
+          <span className="size-1.5 rounded-full bg-blue-500 animate-pulse inline-block" />
+        )}
+        <DisclosureChevron
+          open={isExpanded}
+          className="size-2.5 text-muted-foreground/40 group-hover:text-foreground/60 transition-transform"
+        />
+      </button>
 
-        <CaideLazyContent open={isExpanded}>
+      <DisclosureRegion open={isExpanded}>
           {formattedContent ? (
             <div className="overflow-hidden rounded-lg border border-border/40 bg-black/60 dark:bg-black/80 my-1">
               <div className="flex items-center justify-between border-b border-border/30 bg-muted/20 px-3 py-1 text-[10.5px] text-muted-foreground/80 font-mono">
@@ -187,8 +184,7 @@ export const CaideClaudeToolCard: React.FC<CaideClaudeToolCardProps> = ({
               No output recorded
             </div>
           )}
-        </CaideLazyContent>
-      </CaideCard>
+      </DisclosureRegion>
     </div>
   );
 };

@@ -3972,6 +3972,7 @@ export default function ChatView({
             sourceProvider: activeThread.modelSelection.provider,
             providerSettings: serverSettingsQuery.data?.providers,
             providerStatuses,
+            allowAllConfigured: true,
           })
         : [],
     [activeThread, providerStatuses, serverSettingsQuery.data?.providers],
@@ -9623,61 +9624,15 @@ export default function ChatView({
     [handleModelPickerOpenChange],
   );
   const composerPickerControls = showComposerModelBootstrapSkeleton ? (
-    useSplitComposerPickerControls ? (
-      <>
-        {selectedProviderRuntimeModelDiscoveryPending ? (
-          <ComposerModelLoadingControl widthClassName={composerModelPickerWidthClassName} />
-        ) : (
-          <ComposerControlSkeleton widthClassName={composerModelPickerWidthClassName} />
-        )}
-        <ComposerControlSkeleton widthClassName={composerOptionsPickerWidthClassName} />
-      </>
-    ) : selectedProviderRuntimeModelDiscoveryPending ? (
-      <ComposerModelLoadingControl widthClassName={composerModelEffortPickerWidthClassName} />
+    selectedProviderRuntimeModelDiscoveryPending ? (
+      <ComposerModelLoadingControl widthClassName={composerModelPickerWidthClassName} />
     ) : (
-      <ComposerControlSkeleton widthClassName={composerModelEffortPickerWidthClassName} />
+      <ComposerControlSkeleton widthClassName={composerModelPickerWidthClassName} />
     )
-  ) : useSplitComposerPickerControls ? (
-    <>
-      <ProviderModelPicker
-        compact={isComposerFooterCompact}
-        hideLabel={!composerFooterControlsPlan.showModelLabel}
-        provider={selectedProvider}
-        model={selectedModelForPickerWithCustomFallback}
-        lockedProvider={lockedProvider}
-        providers={providerStatuses}
-        modelOptionsByProvider={modelOptionsByProvider}
-        loadingModelProviders={loadingModelProviders}
-        hiddenProviders={settings.hiddenProviders}
-        providerOrder={settings.providerOrder}
-        onProviderModelChange={onProviderModelSelect}
-        onSelectionCommitted={scheduleComposerFocus}
-        open={isModelPickerOpen}
-        onOpenChange={handleModelPickerOpenChange}
-        shortcutLabel={modelPickerShortcutLabel}
-      />
-      <TraitsPicker
-        provider={selectedProvider}
-        threadId={threadId}
-        model={selectedModelForPickerWithCustomFallback}
-        runtimeModel={selectedRuntimeModel}
-        runtimeModels={runtimeModelsByProvider[selectedProvider]}
-        runtimeAgents={dynamicAgents}
-        modelOptions={selectedProviderModelOptions}
-        prompt={prompt}
-        onPromptChange={setPromptFromTraits}
-        open={isTraitsPickerOpen}
-        onOpenChange={handleTraitsPickerOpenChange}
-        onSelectionCommitted={scheduleComposerFocus}
-        shortcutLabel={traitsPickerShortcutLabel}
-        hideLabel={!composerFooterControlsPlan.showTraitsLabel}
-      />
-    </>
   ) : (
-    <ComposerModelEffortPicker
+    <ProviderModelPicker
       compact={isComposerFooterCompact}
-      hideModelLabel={!composerFooterControlsPlan.showModelLabel}
-      hideStatusLabel={!composerFooterControlsPlan.showTraitsLabel}
+      hideLabel={!composerFooterControlsPlan.showModelLabel}
       provider={selectedProvider}
       model={selectedModelForPickerWithCustomFallback}
       lockedProvider={lockedProvider}
@@ -9686,17 +9641,10 @@ export default function ChatView({
       loadingModelProviders={loadingModelProviders}
       hiddenProviders={settings.hiddenProviders}
       providerOrder={settings.providerOrder}
-      threadId={threadId}
-      runtimeModel={selectedRuntimeModel}
-      runtimeModels={runtimeModelsByProvider[selectedProvider]}
-      runtimeAgents={dynamicAgents}
-      modelOptions={selectedProviderModelOptions}
-      prompt={prompt}
-      onPromptChange={setPromptFromTraits}
       onProviderModelChange={onProviderModelSelect}
       onSelectionCommitted={scheduleComposerFocus}
-      open={isComposerModelEffortPickerOpen}
-      onOpenChange={handleComposerModelEffortPickerOpenChange}
+      open={isModelPickerOpen}
+      onOpenChange={handleModelPickerOpenChange}
       shortcutLabel={modelPickerShortcutLabel}
     />
   );
@@ -10817,12 +10765,23 @@ export default function ChatView({
   // relocated variant is icon-only since relocation means space is minimal.
   const relocateComposerLeadingControls = composerFooterControlsPlan.relocateLeadingControls;
   const renderComposerLeadingControls = (options: { iconOnly: boolean }) => (
-    <>
+    <div className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {!isVoiceRecording && !isVoiceTranscribing ? composerPickerControls : null}
+      <span className="mx-0.5 h-3.5 w-px shrink-0 bg-border/40" />
       <ChatModeSelector
         mode={chatMode}
         onChatModeChange={handleChatModeChange}
+        effort={composerTraitSelection.activeStatusLabel}
         iconOnly={options.iconOnly}
       />
+      <span className="mx-0.5 h-3.5 w-px shrink-0 bg-border/40" />
+      {!isVoiceRecording && !isVoiceTranscribing ? (
+        <RuntimeUsageControls
+          {...runtimeUsageControlsProps}
+          className="shrink-0"
+          hideLabel={options.iconOnly}
+        />
+      ) : null}
       <ComposerExtrasMenu
         interactionMode={interactionMode}
         supportsFastMode={composerTraitSelection.caps.supportsFastMode}
@@ -10831,14 +10790,7 @@ export default function ChatView({
         onToggleFastMode={toggleFastMode}
         onInteractionModeChange={handleInteractionModeChange}
       />
-      {!isVoiceRecording && !isVoiceTranscribing ? (
-        <RuntimeUsageControls
-          {...runtimeUsageControlsProps}
-          className="shrink-0"
-          hideLabel={options.iconOnly}
-        />
-      ) : null}
-    </>
+    </div>
   );
   const branchToolbarProps = {
     threadId: activeThread.id,
@@ -11337,13 +11289,9 @@ export default function ChatView({
                             : "Type your own answer, or leave this blank to use the selected option"
                           : showPlanFollowUpPrompt && activeProposedPlan
                             ? "Add feedback to refine the plan, or leave this blank to implement it"
-                            : activeThread?.parentThreadId
-                              ? "Message this subagent while it works"
-                              : hasLiveTurn
-                                ? "Ask for follow-up changes"
-                                : phase === "disconnected"
-                                  ? "Ask for follow-up changes or attach images"
-                                  : "Ask anything, @tag files/folders, or use / to show available commands"
+                            : activeThread?.parentThreadId || hasLiveTurn
+                              ? "Ask for follow-up changes"
+                              : "Ask for changes, send follow-ups, or attach images"
                     }
                     disabled={isComposerEditorDisabled}
                   />
@@ -11437,12 +11385,11 @@ export default function ChatView({
                           {...(contextWindowSelectionStatus.pendingSelectedLabel !== undefined
                             ? {
                                 pendingWindowLabel:
-                                  contextWindowSelectionStatus.pendingSelectedLabel,
+                                   contextWindowSelectionStatus.pendingSelectedLabel,
                               }
                             : {})}
                         />
                       ) : null}
-                      {!isVoiceRecording && !isVoiceTranscribing ? composerPickerControls : null}
                       {showVoiceNotesControl && (isVoiceRecording || isVoiceTranscribing) ? (
                         <ComposerVoiceRecorderBar
                           disabled={isComposerApprovalState || isConnecting || isSendBusy}
@@ -11589,10 +11536,14 @@ export default function ChatView({
                                   />
                                 </svg>
                               ) : (
-                                <ComposerSendArrowIcon
-                                  aria-hidden="true"
-                                  className="size-5 shrink-0 translate-y-px"
-                                />
+                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="size-3.5 shrink-0 stroke-[2.25]">
+                                  <path
+                                    d="M8 3L8 13M8 3L4 7M8 3L12 7"
+                                    stroke="currentColor"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
                               )}
                             </Button>
                           </>

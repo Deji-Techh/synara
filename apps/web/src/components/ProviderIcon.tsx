@@ -29,7 +29,17 @@ export const PROVIDER_ICON_COMPONENT_BY_PROVIDER: Record<ProviderKind, Icon> = {
   fireworks: GlobeIcon,
   opencodeZen: GlobeIcon,
   opencodeGo: GlobeIcon,
+  custom: HammerIcon,
+  azure: GlobeIcon,
+  bedrock: GlobeIcon,
+  minimax: GlobeIcon,
+  lmstudio: TerminalSquareIcon,
 };
+
+export function getProviderIconComponent(provider: ProviderKind | string | null | undefined): Icon {
+  if (!provider) return GlobeIcon;
+  return (PROVIDER_ICON_COMPONENT_BY_PROVIDER as Record<string, Icon>)[provider] ?? GlobeIcon;
+}
 
 export function providerIconToneClassName(
   _provider: ProviderKind | null | undefined,
@@ -59,12 +69,9 @@ export function ProviderIcon({
     return fallback;
   }
 
-  const Icon =
-    (PROVIDER_ICON_COMPONENT_BY_PROVIDER as Record<string, Icon | undefined>)[provider] ??
-    HammerIcon;
-  if (!Icon) return fallback;
+  const IconComponent = getProviderIconComponent(provider);
   return (
-    <Icon
+    <IconComponent
       aria-hidden={ariaHidden}
       {...svgProps}
       className={cn(providerIconToneClassName(provider, tone), className)}

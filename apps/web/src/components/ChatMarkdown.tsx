@@ -76,6 +76,7 @@ import { CaideQuestionnaireCard } from "./chat/CaideQuestionnaireCard";
 import { CaideCommandButton } from "./chat/CaideCommandButton";
 import { CaideThinkCard } from "./chat/CaideThinkCard";
 import { CaideClaudeToolCard } from "./chat/CaideClaudeToolCard";
+import { AntigravityToolGroup, type AntigravityToolItem } from "./chat/AntigravityToolGroup";
 
 const EXTERNAL_HTTP_HREF_PATTERN = /^https?:\/\//i;
 // Trailing `:line` / `:line:col` position suffix on a resolved file link. Kept on
@@ -1027,6 +1028,105 @@ function UncachedShikiCodeBlock({
   );
 }
 
+function blockToAntigravityItem(block: any): AntigravityToolItem {
+  const tag = (block.tag || "").toLowerCase();
+  if (tag === "think") {
+    let durationSec: number | undefined;
+    if (block.attributes?.duration) {
+      durationSec = Math.round(parseFloat(block.attributes.duration));
+    }
+    return {
+      id: `think-${block.id}`,
+      type: "think",
+      verb: "Thought",
+      durationSec,
+      content: block.content,
+      state: block.complete ? "complete" : "running",
+      isStreaming: !block.complete,
+    };
+  }
+
+  const attrs = block.attributes || {};
+  const rawName = attrs.name || block.tag || "tool";
+  const clean = rawName.toLowerCase().replace(/^(?:caide|dyad)[-_]/, "").replace(/[-_]/g, " ");
+  const path = attrs.path || attrs.file || attrs.target || "";
+  const cmd = attrs.command || attrs.cmd || "";
+  const query = attrs.query || attrs.pattern || "";
+
+  let resultBadge: string | undefined = attrs.resultCount ? `${attrs.resultCount} results` : undefined;
+  if (!resultBadge && block.content) {
+    const match = block.content.match(/(?:found|returned|results?)\s*(\d+)/i);
+    if (match) {
+      resultBadge = `${match[1]} results`;
+    }
+  }
+
+  let lineRange: string | undefined;
+  if (attrs.startLine && attrs.endLine) {
+    lineRange = `#L${attrs.startLine}-${attrs.endLine}`;
+  } else if (attrs.start_line) {
+    lineRange = `#L${attrs.start_line}-${attrs.end_line || attrs.start_line}`;
+  } else if (attrs.range) {
+    lineRange = `#L${attrs.range}`;
+  }
+
+  if (clean.includes("read") || clean.includes("view") || clean.includes("file")) {
+    return {
+      id: `tool-${block.id}`,
+      type: "read",
+      verb: "Analyzed",
+      target: path || "file",
+      lineRange,
+      content: block.content,
+      state: block.complete ? "complete" : "running",
+    };
+  }
+
+  if (clean.includes("search") || clean.includes("grep") || clean.includes("find")) {
+    return {
+      id: `tool-${block.id}`,
+      type: "search",
+      verb: "Searched",
+      target: query || path,
+      resultBadge,
+      content: block.content,
+      state: block.complete ? "complete" : "running",
+    };
+  }
+
+  if (clean.includes("edit") || clean.includes("write") || clean.includes("replace") || clean.includes("patch")) {
+    return {
+      id: `tool-${block.id}`,
+      type: "edit",
+      verb: "Analyzed",
+      target: path || "file",
+      lineRange,
+      content: block.content,
+      state: block.complete ? "complete" : "running",
+    };
+  }
+
+  if (clean.includes("run") || clean.includes("command") || clean.includes("bash") || clean.includes("exec")) {
+    return {
+      id: `tool-${block.id}`,
+      type: "command",
+      verb: "Ran",
+      target: cmd || path || clean,
+      content: block.content,
+      state: block.complete ? "complete" : "running",
+    };
+  }
+
+  return {
+    id: `tool-${block.id}`,
+    type: "other",
+    verb: "Analyzed",
+    target: path || cmd || query || clean,
+    content: block.content,
+    state: block.complete ? "complete" : "running",
+  };
+}
+
 function ChatMarkdown({
   text,
   cwd,
@@ -1310,14 +1410,88 @@ function ChatMarkdown({
     return blocks;
   }, [isUserVariant, renderedText]);
 
+  type RenderUnit =
+    | { kind: "markdown"; block: Block }
+    | { kind: "blueprint"; block: Block }
+    | { kind: "questionnaire"; block: Block }
+    | { kind: "command"; block: Block }
+    | { kind: "write"; block: Block }
+    | { kind: "tool-group"; id: string; items: AntigravityToolItem[] };
+
+  const renderUnits = useMemo<RenderUnit[]>(() => {
+    const units: RenderUnit[] = [];
+    let currentToolGroup: AntigravityToolItem[] | null = null;
+    let currentToolGroupId = "";
+
+    const flushToolGroup = () => {
+      if (currentToolGroup && currentToolGroup.length > 0) {
+        units.push({
+          kind: "tool-group",
+          id: currentToolGroupId,
+          items: currentToolGroup,
+        });
+        currentToolGroup = null;
+        currentToolGroupId = "";
+      }
+    };
+
+    for (const block of parsedBlocks) {
+      if (block.kind === "markdown") {
+        flushToolGroup();
+        units.push({ kind: "markdown", block });
+      } else if (block.kind === "custom-tag") {
+        const tag = block.tag.toLowerCase();
+        if (tag === "caide-write" || tag === "dyad-write") {
+          flushToolGroup();
+          units.push({ kind: "write", block });
+        } else if (tag === "caide-app-blueprint" || tag === "dyad-app-blueprint") {
+          flushToolGroup();
+          units.push({ kind: "blueprint", block });
+        } else if (tag === "caide-questionnaire" || tag === "dyad-questionnaire") {
+          flushToolGroup();
+          units.push({ kind: "questionnaire", block });
+        } else if (tag === "caide-command" || tag === "dyad-command") {
+          flushToolGroup();
+          units.push({ kind: "command", block });
+        } else if (tag === "caide-chat-summary" || tag === "dyad-chat-summary") {
+          // ignore
+        } else {
+          // Tool or think tag -> fold into currentToolGroup
+          const item = blockToAntigravityItem(block);
+          if (!currentToolGroup) {
+            currentToolGroup = [item];
+            currentToolGroupId = `tg-${block.id}`;
+          } else {
+            currentToolGroup.push(item);
+          }
+        }
+      }
+    }
+    flushToolGroup();
+    return units;
+  }, [parsedBlocks]);
+
   return (
     <div
       ref={containerRef}
       className={`chat-markdown ${isUserVariant ? "chat-markdown--user " : ""}w-full min-w-0 relative ${className} text-foreground space-y-2`}
       style={style}
     >
-      {parsedBlocks.map((block) => {
-        if (block.kind === "markdown") {
+      {renderUnits.map((unit) => {
+        if (unit.kind === "tool-group") {
+          return (
+            <AntigravityToolGroup
+              key={unit.id}
+              items={unit.items}
+              isStreaming={isStreaming}
+              defaultExpanded={false}
+            />
+          );
+        }
+
+        const block = unit.block;
+
+        if (unit.kind === "markdown") {
           if (!block.content || block.content.trim().length === 0) return null;
 
           // Check if raw tool call JSON leaked in text
@@ -1381,68 +1555,46 @@ function ChatMarkdown({
           );
         }
 
-        if (block.kind === "custom-tag") {
-          const tag = block.tag.toLowerCase();
-          if (tag === "caide-write" || tag === "dyad-write") {
-            return (
-              <CaideWriteCard
-                key={`tag-${block.id}`}
-                path={block.attributes.path ?? ""}
-                description={block.attributes.description ?? ""}
-                content={block.content}
-                state={block.complete ? "complete" : "pending"}
-              />
-            );
-          }
-          if (tag === "caide-app-blueprint" || tag === "dyad-app-blueprint") {
-            return (
-              <CaideAppBlueprintCard
-                key={`tag-${block.id}`}
-                appName={block.attributes["app-name"] ?? block.attributes.name ?? "Flutter App"}
-                theme={block.attributes.theme ?? "default"}
-                primaryColor={block.attributes["primary-color"] ?? "#0284c7"}
-                designDirection={block.attributes["design-direction"] ?? ""}
-                description={block.content}
-              />
-            );
-          }
-          if (tag === "caide-questionnaire" || tag === "dyad-questionnaire") {
-            let questions: any[] = [];
-            try {
-              questions = JSON.parse(block.content);
-            } catch {
-              questions = [{ question: block.content }];
-            }
-            return <CaideQuestionnaireCard key={`tag-${block.id}`} questions={questions} />;
-          }
-          if (tag === "caide-command" || tag === "dyad-command") {
-            return (
-              <CaideCommandButton
-                key={`tag-${block.id}`}
-                type={block.attributes.type ?? "restart"}
-              />
-            );
-          }
-          if (tag === "think") {
-            return (
-              <CaideThinkCard
-                key={`tag-${block.id}`}
-                content={block.content}
-                isStreaming={!block.complete && isStreaming}
-              />
-            );
-          }
-          if (tag === "caide-chat-summary" || tag === "dyad-chat-summary") {
-            return null;
-          }
-
+        if (unit.kind === "write") {
           return (
-            <CaideClaudeToolCard
+            <CaideWriteCard
               key={`tag-${block.id}`}
-              toolName={block.attributes.name || block.tag}
-              attributes={block.attributes}
+              path={block.attributes.path ?? ""}
+              description={block.attributes.description ?? ""}
               content={block.content}
-              state={block.attributes.status || (block.complete ? "complete" : "running")}
+              state={block.complete ? "complete" : "pending"}
+            />
+          );
+        }
+
+        if (unit.kind === "blueprint") {
+          return (
+            <CaideAppBlueprintCard
+              key={`tag-${block.id}`}
+              appName={block.attributes["app-name"] ?? block.attributes.name ?? "Flutter App"}
+              theme={block.attributes.theme ?? "default"}
+              primaryColor={block.attributes["primary-color"] ?? "#0284c7"}
+              designDirection={block.attributes["design-direction"] ?? ""}
+              description={block.content}
+            />
+          );
+        }
+
+        if (unit.kind === "questionnaire") {
+          let questions: any[] = [];
+          try {
+            questions = JSON.parse(block.content);
+          } catch {
+            questions = [{ question: block.content }];
+          }
+          return <CaideQuestionnaireCard key={`tag-${block.id}`} questions={questions} />;
+        }
+
+        if (unit.kind === "command") {
+          return (
+            <CaideCommandButton
+              key={`tag-${block.id}`}
+              type={block.attributes.type ?? "restart"}
             />
           );
         }

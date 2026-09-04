@@ -2,10 +2,11 @@
 // Purpose: Display available routing targets, context windows, and output tokens
 // for a provider with custom model additions (Dyad x Caide parity in Caide styling).
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   getBuiltInModelsForProvider,
   formatContextWindow,
+  fetchRemoteCatalogModels,
   type ModelOption,
 } from "@caide/shared/languageModelCatalog";
 import { Button } from "~/components/ui/button";
@@ -44,6 +45,7 @@ interface ModelsSectionProps {
 }
 
 export function ModelsSection({ providerId, allowCustomModels = true }: ModelsSectionProps) {
+  const [remoteModels, setRemoteModels] = useState<ModelOption[]>([]);
   const [customModels, setCustomModels] = useState<ModelOption[]>(() =>
     loadCustomModelsForProvider(providerId),
   );
@@ -53,8 +55,23 @@ export function ModelsSection({ providerId, allowCustomModels = true }: ModelsSe
   const [customContext, setCustomContext] = useState("128000");
   const [customOutput, setCustomOutput] = useState("8192");
 
+  useEffect(() => {
+    let active = true;
+    fetchRemoteCatalogModels(providerId).then((live) => {
+      if (active && live && live.length > 0) {
+        setRemoteModels(live);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [providerId]);
+
   // Re-sync if providerId changes
-  const builtInModels = useMemo(() => getBuiltInModelsForProvider(providerId), [providerId]);
+  const builtInModels = useMemo(() => {
+    if (remoteModels.length > 0) return remoteModels;
+    return getBuiltInModelsForProvider(providerId);
+  }, [providerId, remoteModels]);
   const loadedCustomModels = useMemo(
     () => loadCustomModelsForProvider(providerId),
     [providerId],

@@ -91,7 +91,7 @@ export const useVoidSpaceStore = create<VoidSpaceState>((set, get) => ({
   },
 }));
 
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
   // Renaming in one window has to reach the others: every window renders this label in its
   // sidebar, and `storage` only fires in the windows that did not write.
   window.addEventListener("storage", (event) => {

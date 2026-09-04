@@ -256,11 +256,51 @@ export function ThemePackEditor({
           </div>
         </ThemeRow>
 
+        <ThemeRow label="Left sidebar">
+          <ColorPill
+            color={theme.leftSidebarSurface ?? theme.surface}
+            ariaLabel={`${titleLabel} left sidebar color`}
+            onChange={(next) => updateThemePack(variant, { leftSidebarSurface: next })}
+            onReset={
+              theme.leftSidebarSurface !== defaultTheme.leftSidebarSurface
+                ? () =>
+                    updateThemePack(variant, {
+                      leftSidebarSurface: defaultTheme.leftSidebarSurface,
+                    })
+                : undefined
+            }
+          />
+        </ThemeRow>
+
+        <ThemeRow label="Right sidebar">
+          <ColorPill
+            color={theme.rightSidebarSurface ?? theme.surface}
+            ariaLabel={`${titleLabel} right sidebar color`}
+            onChange={(next) => updateThemePack(variant, { rightSidebarSurface: next })}
+            onReset={
+              theme.rightSidebarSurface !== defaultTheme.rightSidebarSurface
+                ? () =>
+                    updateThemePack(variant, {
+                      rightSidebarSurface: defaultTheme.rightSidebarSurface,
+                    })
+                : undefined
+            }
+          />
+        </ThemeRow>
+
         <ThemeRow label="Translucent sidebar">
           <Switch
             checked={!theme.opaqueWindows}
             onCheckedChange={(checked) => updateThemePack(variant, { opaqueWindows: !checked })}
             aria-label={`${titleLabel} translucent sidebar`}
+          />
+        </ThemeRow>
+
+        <ThemeRow label="Sidebar blur">
+          <ContrastSlider
+            value={theme.sidebarBlur ?? 0}
+            onChange={(next) => updateThemePack(variant, { sidebarBlur: next })}
+            ariaLabel={`${titleLabel} sidebar blur`}
           />
         </ThemeRow>
 

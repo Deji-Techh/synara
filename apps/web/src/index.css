@@ -102,7 +102,14 @@
   /* Let the renderer switch between Codex-style translucent and opaque shells
      without duplicating sidebar markup or class strings. */
   .app-sidebar-surface {
-    background: var(--app-sidebar-surface, var(--card));
+    background: var(--left-sidebar-surface, var(--app-sidebar-surface, var(--card)));
+    box-shadow: var(--app-sidebar-shadow, none);
+    -webkit-backdrop-filter: var(--app-sidebar-backdrop-filter, none);
+    backdrop-filter: var(--app-sidebar-backdrop-filter, none);
+  }
+
+  .app-right-sidebar-surface {
+    background: var(--right-sidebar-surface, var(--app-sidebar-surface, var(--card)));
     box-shadow: var(--app-sidebar-shadow, none);
     -webkit-backdrop-filter: var(--app-sidebar-backdrop-filter, none);
     backdrop-filter: var(--app-sidebar-backdrop-filter, none);
@@ -2657,6 +2664,48 @@ diffs-container {
   );
 }
 
+/* T3 Code Chat Composer Main Surface & Attached Context Strip */
+[data-chat-composer-main-surface="true"] {
+  position: relative;
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--composer-glass-surface, #161618) 88%, transparent);
+  border: 1px solid var(--chat-composer-outline, rgb(255 255 255 / 8%));
+  box-shadow: 0 14px 36px -12px rgb(0 0 0 / 55%);
+  -webkit-backdrop-filter: blur(28px) saturate(140%);
+  backdrop-filter: blur(28px) saturate(140%);
+  transition: background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+
+[data-chat-composer-main-surface="true"]:focus-within {
+  border-color: color-mix(in srgb, var(--primary, #6366f1) 40%, rgba(255, 255, 255, 0.12));
+  box-shadow: 0 16px 40px -12px rgb(0 0 0 / 65%), 0 0 0 1px color-mix(in srgb, var(--primary, #6366f1) 30%, transparent);
+}
+
+.chat-composer-context-strip {
+  position: relative;
+  isolation: isolate;
+}
+
+.chat-composer-context-strip::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border: 1px solid var(--chat-composer-outline, rgb(255 255 255 / 7%));
+  border-radius: 0 0 16px 16px;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0 1rem, black 1rem);
+  mask-image: linear-gradient(to bottom, transparent 0 1rem, black 1rem);
+  box-shadow: 0 14px 32px -18px rgb(0 0 0 / 75%);
+  background:
+    linear-gradient(
+      to bottom,
+      transparent 0 1rem,
+      rgb(0 0 0 / 18%) 1rem,
+      transparent calc(1rem + 10px)
+    ),
+    rgb(255 255 255 / 2%);
+  content: "";
+}
+
 /* Recessed track: a hairline border + faint inner shadow read the base as a sunken
    well, so the raised selected thumb appears to protrude out of it (macOS style). */
 .sidebar-segmented-picker {
@@ -2966,4 +3015,44 @@ diffs-container {
   background-clip: text;
   -webkit-background-clip: text;
   animation: ultrathink-rainbow 10s linear infinite;
+}
+
+/* Sidebar stage backdrop cosmic night effect */
+:root {
+  --stage-night-base-top: #2d214f;
+  --stage-night-base-mid: #221c3b;
+  --stage-night-base-bottom: #1a162b;
+  --stage-night-top: var(--stage-night-base-top);
+  --stage-night-mid: var(--stage-night-base-mid);
+  --stage-night-bottom: var(--stage-night-base-bottom);
+  --stage-night-highlight: #9980fa;
+  --stage-night-secondary: #7555e8;
+  --stage-night-tertiary: #5f3dc4;
+  --stage-night-line: #ffffff;
+  --stage-night-glow-highlight: #7c5ce8;
+  --stage-night-glow-secondary: #43337a;
+  --stage-night-sparkle: #dcd6f7;
+}
+
+.sidebar-stage-backdrop {
+  --stage-fade: var(--sidebar-stage-fade, var(--app-chrome-background, #0e0e10));
+  mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 92%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 92%);
+}
+
+.sidebar-stage-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 28%,
+    color-mix(in srgb, var(--stage-fade) 10%, transparent) 40%,
+    color-mix(in srgb, var(--stage-fade) 30%, transparent) 52%,
+    color-mix(in srgb, var(--stage-fade) 58%, transparent) 64%,
+    color-mix(in srgb, var(--stage-fade) 82%, transparent) 75%,
+    color-mix(in srgb, var(--stage-fade) 96%, transparent) 85%,
+    var(--stage-fade) 93%
+  );
 }

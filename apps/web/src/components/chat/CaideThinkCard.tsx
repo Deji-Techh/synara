@@ -21,38 +21,15 @@ export const CaideThinkCard: React.FC<CaideThinkCardProps> = ({ content, isStrea
     <div className="my-1 select-none">
       <div
         onClick={() => setIsExpanded(!isExpanded)}
-        className="group flex items-center justify-between gap-2 px-1.5 py-1 rounded-md hover:bg-muted/35 transition-colors duration-150 cursor-pointer"
+        className="group inline-flex items-center gap-1.5 py-0.5 px-1 rounded hover:bg-muted/35 transition-colors duration-150 cursor-pointer text-left"
       >
-        <div className="flex items-center gap-2 min-w-0">
-          <IconSparkles
-            size={13}
-            className={`${
-              isStreaming
-                ? "text-amber-500 dark:text-amber-400 animate-spin"
-                : "text-muted-foreground/60 group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors"
-            }`}
-          />
-          <span className="text-[12px] text-muted-foreground group-hover:text-foreground transition-colors">
-            {isStreaming ? (
-              <span className="inline-flex items-center gap-1">
-                <span>Thinking</span>
-                <span className="animate-pulse">...</span>
-              </span>
-            ) : (
-              "Thinking process"
-            )}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] text-muted-foreground/50 group-hover:text-muted-foreground font-mono">
-            {isExpanded ? "hide" : "show"}
-          </span>
-          <DisclosureChevron
-            open={isExpanded}
-            className="w-3 h-3 text-muted-foreground/40 group-hover:text-foreground transition-colors"
-          />
-        </div>
+        <span className="text-[12px] font-medium text-muted-foreground group-hover:text-foreground/90 transition-colors">
+          {isStreaming ? "Thinking..." : "Thought"}
+        </span>
+        <DisclosureChevron
+          open={isExpanded}
+          className="size-2.5 text-muted-foreground/50 group-hover:text-foreground/70 transition-transform"
+        />
       </div>
 
       <DisclosureRegion open={isExpanded}>

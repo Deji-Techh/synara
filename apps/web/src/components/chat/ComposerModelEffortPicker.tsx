@@ -22,7 +22,7 @@ import { Button } from "../ui/button";
 import { Menu, MenuSeparator, MenuSub, MenuSubTrigger, MenuTrigger } from "../ui/menu";
 import { ShortcutKbd } from "../ui/shortcut-kbd";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { PROVIDER_ICON_COMPONENT_BY_PROVIDER } from "../ProviderIcon";
+import { getProviderIconComponent, PROVIDER_ICON_COMPONENT_BY_PROVIDER } from "../ProviderIcon";
 import {
   COMPOSER_MUTED_ACCENT_TEXT_CLASS_NAME,
   COMPOSER_PICKER_MODEL_SUBMENU_HEIGHT_CLASS_NAME,
@@ -93,7 +93,7 @@ export function ComposerModelEffortPicker(props: ComposerModelEffortPickerProps)
   };
 
   const activeProvider = props.lockedProvider ?? props.provider;
-  const ProviderIcon = PROVIDER_ICON_COMPONENT_BY_PROVIDER[activeProvider];
+  const ProviderIcon = getProviderIconComponent(activeProvider);
   const modelLabel = resolveProviderModelLabel({
     provider: props.provider,
     lockedProvider: props.lockedProvider,

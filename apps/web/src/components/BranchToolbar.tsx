@@ -10,6 +10,7 @@ import type {
 } from "@caide/contracts";
 import { CheckIcon, ChevronDownIcon, HandoffIcon, WorktreeIcon } from "~/lib/icons";
 import { HiOutlineHandRaised } from "react-icons/hi2";
+import { LuLock, LuLockOpen, LuSparkles } from "react-icons/lu";
 import { CentralIcon } from "~/lib/central-icons";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useAppSettings } from "~/appSettings";
@@ -210,10 +211,9 @@ export function RuntimeUsageControls({
             render={
               <Button
                 size="sm"
-                variant="chrome"
+                variant="ghost"
                 className={cn(
-                  "min-w-0 shrink-0 justify-start gap-1.5 whitespace-nowrap px-2 [&_svg]:mx-0 sm:px-2.5",
-                  COMPOSER_PICKER_TRIGGER_TEXT_CLASS_NAME,
+                  "h-7 min-h-7 min-w-0 shrink-0 justify-start gap-1.5 whitespace-nowrap rounded-md px-2 text-xs font-normal text-muted-foreground/90 hover:text-foreground hover:bg-white/5 border-0 shadow-none bg-transparent transition-colors [&_svg]:mx-0",
                   runtimeMode === "auto" && RUNTIME_AUTO_ACCENT_CLASS_NAME,
                   runtimeMode === "full-access" && RUNTIME_FULL_ACCESS_ACCENT_CLASS_NAME,
                 )}
@@ -223,19 +223,19 @@ export function RuntimeUsageControls({
           >
             <span className="inline-flex items-center gap-1.5">
               {runtimeMode === "full-access" ? (
-                <CentralIcon name="shield-access" className="size-3.5 shrink-0" />
+                <LuLockOpen className="size-3.5 shrink-0 opacity-80" />
               ) : runtimeMode === "auto" ? (
-                <CentralIcon name="shield-code" className="size-3.5 shrink-0" />
+                <LuSparkles className="size-3.5 shrink-0 opacity-80" />
               ) : (
-                <HiOutlineHandRaised className="size-3.5 shrink-0" />
+                <LuLock className="size-3.5 shrink-0 opacity-80" />
               )}
-              <span className={cn("truncate", hideLabel ? "sr-only" : "@max-[480px]:sr-only")}>
+              <span className={cn("truncate", hideLabel ? "sr-only" : undefined)}>
                 {runtimePresentation.label}
               </span>
               <ChevronDownIcon
                 className={cn(
-                  "size-3 shrink-0 opacity-70",
-                  hideLabel ? "hidden" : "@max-[480px]:hidden",
+                  "size-3 shrink-0 opacity-50 ml-0.5",
+                  hideLabel ? "hidden" : undefined,
                 )}
               />
             </span>

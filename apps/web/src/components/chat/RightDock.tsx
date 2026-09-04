@@ -260,7 +260,7 @@ export function RightDock(props: RightDockProps) {
           "border-l border-[var(--app-surface-divider)] text-foreground",
           chromeMotionClass,
         )}
-        innerClassName={CHAT_BACKGROUND_CLASS_NAME}
+        innerClassName={cn(CHAT_BACKGROUND_CLASS_NAME, "app-right-sidebar-surface")}
         gapClassName={chromeMotionClass}
         transparentSurface
         resizable={{
