@@ -10771,14 +10771,12 @@ export default function ChatView({
   const renderComposerLeadingControls = (options: { iconOnly: boolean }) => (
     <div className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {!isVoiceRecording && !isVoiceTranscribing ? composerPickerControls : null}
-      <span className="mx-0.5 h-3.5 w-px shrink-0 bg-border/40" />
       <ChatModeSelector
         mode={chatMode}
         onChatModeChange={handleChatModeChange}
         effort={composerTraitSelection.activeStatusLabel}
         iconOnly={options.iconOnly}
       />
-      <span className="mx-0.5 h-3.5 w-px shrink-0 bg-border/40" />
       {!isVoiceRecording && !isVoiceTranscribing ? (
         <RuntimeUsageControls
           {...runtimeUsageControlsProps}

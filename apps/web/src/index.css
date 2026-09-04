@@ -3036,8 +3036,8 @@ diffs-container {
 
 .sidebar-stage-backdrop {
   --stage-fade: var(--sidebar-stage-fade, #0f0f10);
-  mask-image: linear-gradient(to bottom, black 0%, black 30%, transparent 92%);
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 30%, transparent 92%);
+  mask-image: linear-gradient(to bottom, black 0%, black 35%, transparent 96%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 35%, transparent 96%);
 }
 
 .light .sidebar-stage-backdrop {
@@ -3053,11 +3053,11 @@ diffs-container {
     to bottom,
     transparent 0%,
     transparent 20%,
-    color-mix(in srgb, var(--stage-fade) 12%, transparent) 34%,
-    color-mix(in srgb, var(--stage-fade) 32%, transparent) 48%,
-    color-mix(in srgb, var(--stage-fade) 60%, transparent) 62%,
-    color-mix(in srgb, var(--stage-fade) 84%, transparent) 76%,
-    color-mix(in srgb, var(--stage-fade) 96%, transparent) 88%,
-    var(--stage-fade) 96%
+    color-mix(in srgb, var(--stage-fade) 10%, transparent) 35%,
+    color-mix(in srgb, var(--stage-fade) 28%, transparent) 50%,
+    color-mix(in srgb, var(--stage-fade) 55%, transparent) 65%,
+    color-mix(in srgb, var(--stage-fade) 80%, transparent) 78%,
+    color-mix(in srgb, var(--stage-fade) 94%, transparent) 90%,
+    var(--stage-fade) 98%
   );
 }

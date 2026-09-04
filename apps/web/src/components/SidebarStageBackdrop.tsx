@@ -2,7 +2,7 @@ import { useId } from "react";
 import { cn } from "~/lib/utils";
 import { useSidebarBackdropStore } from "~/sidebarBackdropStore";
 
-const STAGE_BACKDROP_VIEW_BOX = "0 0 8192 192";
+const STAGE_BACKDROP_VIEW_BOX = "0 0 8192 256";
 
 const NIGHTLY_STARS: ReadonlyArray<{
   cx: number;
@@ -38,6 +38,8 @@ const NIGHTLY_STARS: ReadonlyArray<{
   { cx: 72, cy: 92, r: 0.35, opacity: 0.25 },
   { cx: 162, cy: 98, r: 0.4, opacity: 0.25 },
   { cx: 252, cy: 90, r: 0.35, opacity: 0.25 },
+  { cx: 80, cy: 130, r: 0.35, opacity: 0.2 },
+  { cx: 190, cy: 145, r: 0.4, opacity: 0.2 },
 ];
 
 const NIGHTLY_SPARKLES: ReadonlyArray<{ x: number; y: number }> = [
@@ -62,7 +64,7 @@ export function NightlySkyArt({ compact = false }: { compact?: boolean }) {
       className="stage-art stage-nightly h-full w-full"
       fill="none"
       preserveAspectRatio="xMinYMin slice"
-      viewBox={compact ? "96 0 8192 192" : STAGE_BACKDROP_VIEW_BOX}
+      viewBox={compact ? "96 0 8192 256" : STAGE_BACKDROP_VIEW_BOX}
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
@@ -71,7 +73,7 @@ export function NightlySkyArt({ compact = false }: { compact?: boolean }) {
           x1="24"
           y1="0"
           x2="264"
-          y2="192"
+          y2="256"
           gradientUnits="userSpaceOnUse"
           spreadMethod="reflect"
         >
@@ -96,7 +98,7 @@ export function NightlySkyArt({ compact = false }: { compact?: boolean }) {
           />
           <stop offset="1" style={{ stopColor: "var(--stage-night-bottom, #1a162b)" }} stopOpacity="0" />
         </radialGradient>
-        <linearGradient id={cloudId} x1="0" y1="40" x2="288" y2="192" gradientUnits="userSpaceOnUse">
+        <linearGradient id={cloudId} x1="0" y1="40" x2="288" y2="256" gradientUnits="userSpaceOnUse">
           <stop style={{ stopColor: "var(--stage-night-highlight, #9980fa)" }} stopOpacity="0.5" />
           <stop
             offset="0.48"
@@ -105,10 +107,10 @@ export function NightlySkyArt({ compact = false }: { compact?: boolean }) {
           />
           <stop offset="1" style={{ stopColor: "var(--stage-night-tertiary, #5f3dc4)" }} stopOpacity="0" />
         </linearGradient>
-        <filter id={softId} x="-24" y="-24" width="336" height="240" filterUnits="userSpaceOnUse">
+        <filter id={softId} x="-24" y="-24" width="336" height="300" filterUnits="userSpaceOnUse">
           <feGaussianBlur stdDeviation="5" />
         </filter>
-        <pattern id={starsId} width="288" height="192" patternUnits="userSpaceOnUse">
+        <pattern id={starsId} width="288" height="256" patternUnits="userSpaceOnUse">
           <g style={{ fill: "var(--stage-night-line, #ffffff)" }}>
             {NIGHTLY_STARS.map((star) => (
               <circle
@@ -134,14 +136,14 @@ export function NightlySkyArt({ compact = false }: { compact?: boolean }) {
             ))}
           </g>
         </pattern>
-        <pattern id={glowsId} width="640" height="192" patternUnits="userSpaceOnUse">
-          <rect width="640" height="192" fill={`url(#${glowId})`} />
+        <pattern id={glowsId} width="640" height="256" patternUnits="userSpaceOnUse">
+          <rect width="640" height="256" fill={`url(#${glowId})`} />
         </pattern>
       </defs>
 
-      <rect width="100%" height="192" fill={`url(#${skyId})`} />
-      <rect width="100%" height="192" fill={`url(#${glowsId})`} />
-      <rect width="100%" height="192" fill={`url(#${starsId})`} />
+      <rect width="100%" height="100%" fill={`url(#${skyId})`} />
+      <rect width="100%" height="100%" fill={`url(#${glowsId})`} />
+      <rect width="100%" height="100%" fill={`url(#${starsId})`} />
     </svg>
   );
 }
@@ -153,7 +155,7 @@ export function SidebarStageBackdrop({ className }: { className?: string }) {
     <div
       aria-hidden
       className={cn(
-        "sidebar-stage-backdrop pointer-events-none absolute inset-x-0 top-0 z-0 h-36 select-none overflow-hidden",
+        "sidebar-stage-backdrop pointer-events-none absolute inset-x-0 top-0 z-0 h-64 select-none overflow-hidden",
         className,
       )}
     >
