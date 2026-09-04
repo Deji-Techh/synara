@@ -10818,9 +10818,11 @@ export default function ChatView({
   const relocateComposerLeadingControls = composerFooterControlsPlan.relocateLeadingControls;
   const renderComposerLeadingControls = (options: { iconOnly: boolean }) => (
     <>
-      {!options.iconOnly ? (
-        <ChatModeSelector mode={chatMode} onChatModeChange={handleChatModeChange} />
-      ) : null}
+      <ChatModeSelector
+        mode={chatMode}
+        onChatModeChange={handleChatModeChange}
+        iconOnly={options.iconOnly}
+      />
       <ComposerExtrasMenu
         interactionMode={interactionMode}
         supportsFastMode={composerTraitSelection.caps.supportsFastMode}

@@ -31,7 +31,6 @@ import {
   WorktreesSettingsPanel,
 } from "~/components/settings/ConversationStorageSettingsPanels";
 import { NotificationsSettingsPanel } from "~/components/settings/DesktopSettingsPanels";
-import { ModelsSettingsPanel } from "~/components/settings/ModelsSettingsPanel";
 import {
   isProviderInstallSettingsDirty,
   ProvidersSettingsPanel,
@@ -487,100 +486,6 @@ function SettingsRouteView() {
           }
         />
       </SettingsSection>
-
-      {/* showChatsSection removed in Flutter-first flatten — standalone Chats footer is retired. */}
-
-      <div id={SETTINGS_TARGETS.environmentPanel} className="space-y-6">
-        <SettingsSection title="Context panel">
-          {renderBooleanSettingRow({
-            settingKey: "environmentPanelDefaultOpen",
-            title: "Open by default",
-            description:
-              "Open the chat Context panel automatically on normal threads. When off, the panel stays closed until you open it. Your last open/close also updates this preference.",
-            resetLabel: "context panel default open",
-            ariaLabel: "Open the Context panel by default on normal threads",
-          })}
-        </SettingsSection>
-
-        <SettingsSection title="Code and status">
-          {renderBooleanSettingRow({
-            settingKey: "showEnvironmentUsage",
-            title: "Usage",
-            description: "Show the provider usage row in the chat Context panel.",
-            resetLabel: "usage section",
-            ariaLabel: "Show the Usage section in the Context panel",
-          })}
-
-          {renderBooleanSettingRow({
-            settingKey: "showEnvironmentRepository",
-            title: "Repository",
-            description:
-              "Show the GitHub repository link in the chat Context panel. The git block (Changes, Worktree, branch, Commit and Push) always stays visible.",
-            resetLabel: "repository section",
-            ariaLabel: "Show the Repository section in the Context panel",
-          })}
-
-          {renderBooleanSettingRow({
-            settingKey: "showEnvironmentPullRequest",
-            title: "Pull request",
-            description:
-              "Show the open pull request (CI checks and review comments) for the current branch in the chat Context panel.",
-            resetLabel: "pull request section",
-            ariaLabel: "Show the Pull request section in the Context panel",
-          })}
-
-          {renderBooleanSettingRow({
-            settingKey: "showEnvironmentEditor",
-            title: "Editor",
-            description:
-              "Show the Editor section (in-app editor view and Open in editor picker) in the chat Context panel.",
-            resetLabel: "editor section",
-            ariaLabel: "Show the Editor section in the Context panel",
-          })}
-        </SettingsSection>
-
-        <SettingsSection title="Context and notes">
-          {renderBooleanSettingRow({
-            settingKey: "showEnvironmentRecap",
-            title: "Recap",
-            description: "Show the auto-generated chat recap in the Context panel.",
-            resetLabel: "recap section",
-            ariaLabel: "Show the Recap section in the Context panel",
-          })}
-
-          {renderBooleanSettingRow({
-            settingKey: "showEnvironmentPinned",
-            title: "Pinned messages",
-            description: "Show the pinned-messages checklist in the Context panel.",
-            resetLabel: "pinned messages section",
-            ariaLabel: "Show the Pinned messages section in the Context panel",
-          })}
-
-          {renderBooleanSettingRow({
-            settingKey: "showEnvironmentMarkers",
-            title: "Text markers",
-            description: "Show highlighted and underlined transcript text in the Context panel.",
-            resetLabel: "text markers section",
-            ariaLabel: "Show the Text markers section in the Context panel",
-          })}
-
-          {renderBooleanSettingRow({
-            settingKey: "showEnvironmentInstructions",
-            title: "Project instructions",
-            description: "Show project-level instructions in the Context panel.",
-            resetLabel: "project instructions section",
-            ariaLabel: "Show the Project instructions section in the Context panel",
-          })}
-
-          {renderBooleanSettingRow({
-            settingKey: "showEnvironmentNotepad",
-            title: "Notepad",
-            description: "Show the per-thread notepad in the Context panel.",
-            resetLabel: "notepad section",
-            ariaLabel: "Show the Notepad section in the Context panel",
-          })}
-        </SettingsSection>
-      </div>
     </div>
   );
 
@@ -1107,13 +1012,6 @@ function SettingsRouteView() {
                 />
                 <WorktreesSettingsPanel active={activeSection === "worktrees"} />
                 <ArchivedSettingsPanel active={activeSection === "archived"} />
-                <ModelsSettingsPanel
-                  active={activeSection === "models"}
-                  settings={settings}
-                  defaults={defaults}
-                  updateSettings={updateSettings}
-                  resetEpoch={resetEpoch}
-                />
                 <ProvidersSettingsPanel
                   active={activeSection === "providers"}
                   settings={settings}

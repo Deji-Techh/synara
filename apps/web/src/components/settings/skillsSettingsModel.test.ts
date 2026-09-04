@@ -83,7 +83,7 @@ describe("buildSettingsSkillSections", () => {
       skill({
         name: "cursor-only",
         path: "/Users/test/.cursor/skills/cursor-only/SKILL.md",
-        scope: "openai",
+        scope: "cursor",
       }),
     ]);
 

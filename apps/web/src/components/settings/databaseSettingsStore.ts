@@ -4,6 +4,8 @@
 // reads these via the session connection store once the WS layer bridges
 // them (same shape as dyad/db linkDatabase).
 
+import { syncAllActiveHarnessSettings } from "~/harnessWs";
+
 export type DbProviderKind = "supabase" | "neon";
 
 export interface DbConnection {
@@ -60,6 +62,7 @@ export function loadConnections(): DbConnection[] {
 
 export function saveConnections(connections: DbConnection[]): void {
   localStorage.setItem(CONNECTIONS_KEY, JSON.stringify(connections));
+  syncAllActiveHarnessSettings();
 }
 
 export function loadNetworks(): BlockchainNetwork[] {
@@ -68,6 +71,7 @@ export function loadNetworks(): BlockchainNetwork[] {
 
 export function saveNetworks(networks: BlockchainNetwork[]): void {
   localStorage.setItem(NETWORKS_KEY, JSON.stringify(networks));
+  syncAllActiveHarnessSettings();
 }
 
 export function validateConnection(

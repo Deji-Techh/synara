@@ -1,0 +1,399 @@
+// FILE: languageModelCatalog.ts
+// Purpose: Full model catalog for Dyad providers (context windows, tokens, display names).
+// Shared between web and server.
+
+export interface ModelOption {
+  name: string;
+  displayName: string;
+  description: string;
+  dollarSigns?: number;
+  temperature?: number;
+  tag?: string;
+  tagColor?: string;
+  maxOutputTokens?: number;
+  contextWindow?: number;
+  type?: "builtin" | "custom";
+}
+
+export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
+  openai: [
+    {
+      name: "gpt-5.6-luna",
+      displayName: "GPT 5.6 Luna",
+      description: "Fast agentic coding model used by Dyad Explorer and Implementer",
+      contextWindow: 372_000,
+      temperature: 1,
+      dollarSigns: 6,
+    },
+    {
+      name: "gpt-5.6-sol",
+      displayName: "GPT 5.6 Sol",
+      description: "Frontier agentic coding model used by Dyad Reviewer",
+      contextWindow: 372_000,
+      temperature: 1,
+      dollarSigns: 6,
+    },
+    {
+      name: "gpt-5.5",
+      displayName: "GPT 5.5",
+      description: "OpenAI's most capable coding model",
+      contextWindow: 1_000_000,
+      temperature: 1,
+      dollarSigns: 6,
+    },
+    {
+      name: "gpt-5.2",
+      displayName: "GPT 5.2",
+      description: "OpenAI's frontier release",
+      contextWindow: 400_000,
+      temperature: 1,
+      dollarSigns: 3,
+    },
+    {
+      name: "gpt-5.1",
+      displayName: "GPT 5.1",
+      description: "OpenAI's flagship model — fast and conversational",
+      contextWindow: 400_000,
+      temperature: 1,
+      dollarSigns: 3,
+    },
+    {
+      name: "gpt-5.1-codex",
+      displayName: "GPT 5.1 Codex",
+      description: "OpenAI's advanced coding workflows",
+      contextWindow: 400_000,
+      temperature: 1,
+      dollarSigns: 3,
+    },
+    {
+      name: "gpt-5.1-codex-mini",
+      displayName: "GPT 5.1 Codex Mini",
+      description: "Compact and efficient coding model",
+      contextWindow: 400_000,
+      temperature: 1,
+      dollarSigns: 2,
+    },
+  ],
+  anthropic: [
+    {
+      name: "claude-opus-4-8",
+      displayName: "Claude Opus 4.8",
+      description: "Anthropic's most capable frontier model",
+      maxOutputTokens: 64_000,
+      contextWindow: 1_000_000,
+      temperature: 1,
+      dollarSigns: 6,
+    },
+    {
+      name: "claude-opus-4-6",
+      displayName: "Claude Opus 4.6",
+      description: "Anthropic's frontier model for complex coding",
+      maxOutputTokens: 32_000,
+      contextWindow: 1_000_000,
+      temperature: 1,
+      dollarSigns: 6,
+    },
+    {
+      name: "claude-sonnet-4-6",
+      displayName: "Claude Sonnet 4.6",
+      description: "Anthropic's fast, balanced agentic model",
+      maxOutputTokens: 32_000,
+      contextWindow: 1_000_000,
+      temperature: 1,
+      dollarSigns: 5,
+    },
+  ],
+  google: [
+    {
+      name: "gemini-3.1-pro-preview",
+      displayName: "Gemini 3.1 Pro (Preview)",
+      description: "Google's most capable Gemini model",
+      maxOutputTokens: 65_535,
+      contextWindow: 1_048_576,
+      temperature: 1.0,
+      dollarSigns: 4,
+    },
+    {
+      name: "gemini-3.5-flash",
+      displayName: "Gemini 3.5 Flash",
+      description: "Google's high-quality, high-throughput Flash model",
+      maxOutputTokens: 65_535,
+      contextWindow: 1_048_576,
+      temperature: 1.0,
+      dollarSigns: 3,
+    },
+    {
+      name: "gemini-3-flash-preview",
+      displayName: "Gemini 3 Flash (Preview)",
+      description: "Powerful coding model with strong reasoning",
+      maxOutputTokens: 65_535,
+      contextWindow: 1_048_576,
+      temperature: 1.0,
+      dollarSigns: 2,
+    },
+    {
+      name: "gemini-2.5-pro",
+      displayName: "Gemini 2.5 Pro",
+      description: "Google's Gemini 2.5 Pro model with 1M context",
+      maxOutputTokens: 65_535,
+      contextWindow: 1_048_576,
+      temperature: 0,
+      dollarSigns: 3,
+    },
+    {
+      name: "gemini-flash-latest",
+      displayName: "Gemini 2.5 Flash",
+      description: "Google's Gemini 2.5 Flash model (free tier available)",
+      maxOutputTokens: 65_535,
+      contextWindow: 1_048_576,
+      temperature: 0,
+      dollarSigns: 2,
+    },
+  ],
+  openrouter: [
+    {
+      name: "openrouter/free",
+      displayName: "Free (OpenRouter)",
+      description: "Auto-routes to the best free OpenRouter model",
+      maxOutputTokens: 32_000,
+      contextWindow: 200_000,
+      temperature: 0,
+      dollarSigns: 0,
+    },
+    {
+      name: "nvidia/nemotron-3-super-120b-a12b:free",
+      displayName: "Nemotron 3 Super (Free)",
+      description: "NVIDIA 120B MoE model with a 1M context window",
+      maxOutputTokens: 32_000,
+      contextWindow: 1_000_000,
+      temperature: 0,
+      dollarSigns: 0,
+    },
+    {
+      name: "moonshotai/kimi-k2.5",
+      displayName: "Kimi K2.5",
+      description: "Moonshot AI's capable coding model",
+      maxOutputTokens: 32_000,
+      contextWindow: 256_000,
+      temperature: 1.0,
+      dollarSigns: 2,
+    },
+    {
+      name: "minimax/minimax-m2.7",
+      displayName: "MiniMax M2.7",
+      description: "Enhanced reasoning and code generation",
+      maxOutputTokens: 32_000,
+      contextWindow: 204_800,
+      temperature: 0,
+      dollarSigns: 1,
+    },
+    {
+      name: "qwen/qwen3-coder",
+      displayName: "Qwen3 Coder",
+      description: "Qwen's flagship coding model",
+      maxOutputTokens: 32_000,
+      contextWindow: 262_000,
+      temperature: 0,
+      dollarSigns: 2,
+    },
+    {
+      name: "deepseek/deepseek-chat-v3.1",
+      displayName: "DeepSeek v3.1",
+      description: "Cost-effective model with strong reasoning",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      temperature: 0,
+      dollarSigns: 2,
+    },
+  ],
+  deepseek: [
+    {
+      name: "deepseek-chat",
+      displayName: "DeepSeek Chat (V3)",
+      description: "General-purpose chat and coding model",
+      contextWindow: 64_000,
+      maxOutputTokens: 8_000,
+      temperature: 1.0,
+      dollarSigns: 1,
+    },
+    {
+      name: "deepseek-reasoner",
+      displayName: "DeepSeek Reasoner (R1)",
+      description: "DeepSeek reasoning model with chain-of-thought",
+      contextWindow: 64_000,
+      maxOutputTokens: 8_000,
+      temperature: 0.6,
+      dollarSigns: 2,
+    },
+  ],
+  groq: [
+    {
+      name: "llama-3.3-70b-versatile",
+      displayName: "Llama 3.3 70B",
+      description: "High-speed inference on Groq LPUs",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_768,
+      temperature: 0.7,
+      dollarSigns: 1,
+    },
+    {
+      name: "llama-3.1-8b-instant",
+      displayName: "Llama 3.1 8B Instant",
+      description: "Ultra-fast low-latency small model",
+      contextWindow: 128_000,
+      maxOutputTokens: 8_192,
+      temperature: 0.7,
+      dollarSigns: 1,
+    },
+    {
+      name: "qwen-qwq-32b",
+      displayName: "Qwen QwQ 32B (Preview)",
+      description: "Reasoning-focused open weights model",
+      contextWindow: 128_000,
+      maxOutputTokens: 16_384,
+      temperature: 0.6,
+      dollarSigns: 1,
+    },
+  ],
+  xai: [
+    {
+      name: "grok-code-fast-1",
+      displayName: "Grok Code Fast",
+      description: "Fast, specialized coding model",
+      maxOutputTokens: 32_000,
+      contextWindow: 256_000,
+      temperature: 0,
+      dollarSigns: 1,
+    },
+    {
+      name: "grok-4",
+      displayName: "Grok 4",
+      description: "xAI's flagship intelligence model",
+      maxOutputTokens: 32_000,
+      contextWindow: 256_000,
+      temperature: 0,
+      dollarSigns: 4,
+    },
+  ],
+  minimax: [
+    {
+      name: "MiniMax-M2.7",
+      displayName: "MiniMax M2.7",
+      description: "Flagship model with enhanced reasoning and coding",
+      maxOutputTokens: 32_000,
+      contextWindow: 204_800,
+      temperature: 1.0,
+      dollarSigns: 1,
+    },
+    {
+      name: "MiniMax-M2.5",
+      displayName: "MiniMax M2.5",
+      description: "High performance, fast and agile",
+      maxOutputTokens: 32_000,
+      contextWindow: 204_800,
+      temperature: 1.0,
+      dollarSigns: 1,
+    },
+  ],
+  "opencode-zen": [
+    {
+      name: "opencode/zen-coder",
+      displayName: "Zen Coder",
+      description: "OpenCode Zen coding model",
+      contextWindow: 200_000,
+      maxOutputTokens: 16_000,
+      temperature: 0.2,
+      dollarSigns: 2,
+    },
+  ],
+  opencodeZen: [
+    {
+      name: "opencode/zen-coder",
+      displayName: "Zen Coder",
+      description: "OpenCode Zen coding model",
+      contextWindow: 200_000,
+      maxOutputTokens: 16_000,
+      temperature: 0.2,
+      dollarSigns: 2,
+    },
+  ],
+  opencodeGo: [
+    {
+      name: "opencode/go-coder",
+      displayName: "Go Coder",
+      description: "OpenCode Go lightweight fast model",
+      contextWindow: 128_000,
+      maxOutputTokens: 16_000,
+      temperature: 0.2,
+      dollarSigns: 1,
+    },
+  ],
+  ollama: [
+    {
+      name: "qwen2.5-coder:latest",
+      displayName: "Qwen 2.5 Coder",
+      description: "Local Ollama model",
+      contextWindow: 32_000,
+      maxOutputTokens: 8_000,
+      temperature: 0.2,
+      dollarSigns: 0,
+    },
+    {
+      name: "llama3.3:latest",
+      displayName: "Llama 3.3",
+      description: "Local Ollama model",
+      contextWindow: 32_000,
+      maxOutputTokens: 8_000,
+      temperature: 0.7,
+      dollarSigns: 0,
+    },
+  ],
+  lmstudio: [
+    {
+      name: "default",
+      displayName: "Loaded Model",
+      description: "The model currently active in LM Studio",
+      contextWindow: 32_000,
+      maxOutputTokens: 8_000,
+      temperature: 0.7,
+      dollarSigns: 0,
+    },
+  ],
+  custom: [
+    {
+      name: "custom-model",
+      displayName: "Custom Model",
+      description: "Model provided by your OpenAI-compatible endpoint",
+      contextWindow: 128_000,
+      maxOutputTokens: 8_000,
+      temperature: 0.7,
+      dollarSigns: 0,
+    },
+  ],
+};
+
+/**
+ * Get built-in models for a provider.
+ */
+export function getBuiltInModelsForProvider(providerId: string): ModelOption[] {
+  const norm = providerId.toLowerCase().replace(/_/g, "-");
+  return (MODEL_OPTIONS[providerId] ?? MODEL_OPTIONS[norm] ?? []).map((m) => ({
+    ...m,
+    type: "builtin" as const,
+  }));
+}
+
+/**
+ * Format context window nicely (e.g. 1048576 -> 1M, 200000 -> 200k).
+ */
+export function formatContextWindow(tokens?: number): string {
+  if (!tokens) return "";
+  if (tokens >= 1_000_000) {
+    const m = tokens / 1_000_000;
+    return `${m % 1 === 0 ? m.toFixed(0) : m.toFixed(1)}M`;
+  }
+  if (tokens >= 1_000) {
+    return `${Math.round(tokens / 1_000)}k`;
+  }
+  return String(tokens);
+}

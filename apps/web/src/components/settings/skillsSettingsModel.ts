@@ -81,6 +81,10 @@ export function skillOriginInfo(scope: string | undefined): SkillOriginInfo {
     case "opencodeZen":
     case "opencodeGo":
       return { label: PROVIDER_DISPLAY_NAMES[scope], provider: scope };
+    case "claude":
+      return { label: PROVIDER_DISPLAY_NAMES.anthropic, provider: "anthropic" };
+    case "cursor":
+      return { label: "Cursor", provider: null };
     case "agents":
       return { label: "Shared (.agents)", provider: null };
     case "project":

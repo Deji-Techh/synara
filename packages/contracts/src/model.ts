@@ -829,6 +829,41 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
       capabilities: API_MODEL_CAPABILITIES,
     },
   ],
+  custom: [
+    {
+      slug: "custom-model",
+      name: "Custom Model",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
+  azure: [
+    {
+      slug: "gpt-5.5",
+      name: "GPT-5.5 (Azure)",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
+  bedrock: [
+    {
+      slug: "claude-sonnet-5",
+      name: "Claude Sonnet 5 (Bedrock)",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
+  minimax: [
+    {
+      slug: "MiniMax-M2.7",
+      name: "MiniMax M2.7",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
+  lmstudio: [
+    {
+      slug: "default",
+      name: "Loaded Model",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+  ],
 } as const satisfies Record<ProviderKind, readonly ModelDefinition[]>;
 export type ModelOptionsByProvider = typeof MODEL_OPTIONS_BY_PROVIDER;
 
@@ -852,6 +887,11 @@ export const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderWithDefaultModel, ModelSl
   fireworks: "accounts/fireworks/models/llama-v3-70b-instruct",
   opencodeZen: "deepseek-v4-flash-free",
   opencodeGo: "deepseek-v4-flash-free",
+  custom: "custom-model",
+  azure: "gpt-5.5",
+  bedrock: "claude-sonnet-5",
+  minimax: "MiniMax-M2.7",
+  lmstudio: "default",
 };
 
 // Backward compatibility for existing Codex-only call sites.
@@ -876,6 +916,11 @@ export const MODEL_SLUG_ALIASES_BY_PROVIDER: Record<ProviderKind, Record<string,
   fireworks: {},
   opencodeZen: {},
   opencodeGo: {},
+  custom: {},
+  azure: {},
+  bedrock: {},
+  minimax: {},
+  lmstudio: {},
 };
 
 // ── Agent mention aliases ─────────────────────────────────────────────
@@ -902,8 +947,9 @@ export const MODEL_CAPABILITIES_INDEX = Object.fromEntries(
 
 // ── Provider display names ────────────────────────────────────────────
 
-export const PROVIDER_DISPLAY_NAMES: Record<ProviderKind, string> = {
-  engine: "Builder",
+export type DisplayableProviderKind = Exclude<ProviderKind, "engine">;
+
+export const PROVIDER_DISPLAY_NAMES: Record<DisplayableProviderKind, string> & Partial<Record<ProviderKind, string>> = {
   openai: "OpenAI",
   anthropic: "Anthropic",
   google: "Google",
@@ -918,4 +964,9 @@ export const PROVIDER_DISPLAY_NAMES: Record<ProviderKind, string> = {
   fireworks: "Fireworks",
   opencodeZen: "OpenCode Zen",
   opencodeGo: "OpenCode Go",
+  custom: "Custom (OpenAI-compatible)",
+  azure: "Azure OpenAI",
+  bedrock: "AWS Bedrock",
+  minimax: "MiniMax",
+  lmstudio: "LM Studio",
 };

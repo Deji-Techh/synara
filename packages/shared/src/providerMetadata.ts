@@ -23,15 +23,50 @@ export interface ProviderDescriptor {
 
 export const PROVIDER_DESCRIPTORS = [
   {
-    kind: "engine",
-    displayName: PROVIDER_DISPLAY_NAMES.engine,
-    available: false,
+    kind: "openai",
+    displayName: PROVIDER_DISPLAY_NAMES.openai,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "anthropic",
+    displayName: PROVIDER_DISPLAY_NAMES.anthropic,
+    available: true,
     supportsNativeTurnSteering: true,
+    usage: null,
+  },
+  {
+    kind: "google",
+    displayName: PROVIDER_DISPLAY_NAMES.google,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "openrouter",
+    displayName: PROVIDER_DISPLAY_NAMES.openrouter,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "deepseek",
+    displayName: PROVIDER_DISPLAY_NAMES.deepseek,
+    available: true,
+    supportsNativeTurnSteering: false,
     usage: null,
   },
   {
     kind: "groq",
     displayName: PROVIDER_DISPLAY_NAMES.groq,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "xai",
+    displayName: PROVIDER_DISPLAY_NAMES.xai,
     available: true,
     supportsNativeTurnSteering: false,
     usage: null,
@@ -50,11 +85,74 @@ export const PROVIDER_DESCRIPTORS = [
     supportsNativeTurnSteering: false,
     usage: null,
   },
+  {
+    kind: "ollama",
+    displayName: PROVIDER_DISPLAY_NAMES.ollama,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "mistral",
+    displayName: PROVIDER_DISPLAY_NAMES.mistral,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "together",
+    displayName: PROVIDER_DISPLAY_NAMES.together,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "cohere",
+    displayName: PROVIDER_DISPLAY_NAMES.cohere,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "minimax",
+    displayName: PROVIDER_DISPLAY_NAMES.minimax,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "lmstudio",
+    displayName: PROVIDER_DISPLAY_NAMES.lmstudio,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "custom",
+    displayName: PROVIDER_DISPLAY_NAMES.custom,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "azure",
+    displayName: PROVIDER_DISPLAY_NAMES.azure,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
+  {
+    kind: "bedrock",
+    displayName: PROVIDER_DISPLAY_NAMES.bedrock,
+    available: true,
+    supportsNativeTurnSteering: false,
+    usage: null,
+  },
 ] as const satisfies readonly ProviderDescriptor[];
 
 export const PROVIDER_DESCRIPTOR_BY_KIND = Object.fromEntries(
   PROVIDER_DESCRIPTORS.map((descriptor) => [descriptor.kind, descriptor]),
-) as Record<ProviderKind, (typeof PROVIDER_DESCRIPTORS)[number]>;
+) as Partial<Record<ProviderKind, (typeof PROVIDER_DESCRIPTORS)[number]>>;
 
 // Accepts plain strings so projection-sourced provider names can be checked
 // without casts; unknown providers are simply not steerable.

@@ -1,10 +1,10 @@
 // FILE: ProvidersSettingsPanel.tsx
-// Purpose: Own provider picker, update, and CLI installation settings workflows.
+// Purpose: Unified provider picker, key management, live connection testing,
+// and available model inspection (Dyad x Caide parity in Caide styling).
 // Layer: Settings panel
 
 import { PROVIDER_DISPLAY_NAMES, type ProviderKind } from "@caide/contracts";
 import { PROVIDER_DESCRIPTORS } from "@caide/shared/providerMetadata";
-import { DyadProviderKeysSection } from "./DyadProviderKeysSection";
 import { pluralize } from "@caide/shared/text";
 import {
   closestCenter,
@@ -22,7 +22,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { type MouseEvent, type ReactNode, useCallback, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useMemo, useState } from "react";
 
 import { useQueryClient } from "@tanstack/react-query";
 import { ensureNativeApi } from "~/nativeApi";
@@ -30,7 +30,12 @@ import { providerDiscoveryQueryKeys } from "~/lib/providerDiscoveryReactQuery";
 import { toastManager } from "~/components/ui/toast";
 import type { AppSettings, AppSettingsBinding } from "~/appSettings";
 import { CentralIcon } from "~/lib/central-icons";
-import { ExternalLinkIcon, RefreshCwIcon } from "~/lib/icons";
+import {
+  ExternalLinkIcon,
+  RefreshCwIcon,
+  Trash2,
+  TriangleAlertIcon,
+} from "~/lib/icons";
 import { cn } from "~/lib/utils";
 import { sameProviderOrder } from "~/providerOrdering";
 import {
@@ -43,50 +48,41 @@ import { ELEVATED_HOVER_SURFACE_RAISED_TEXT_CLASS_NAME } from "~/surfaceStyles";
 import { Button } from "../ui/button";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
 import { DisclosureChevron } from "../ui/DisclosureChevron";
+import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
-import { DebouncedSettingTextInput } from "./DebouncedSettingTextInput";
-import { SettingResetButton, useSettingsRestoreSignal } from "./SettingControls";
+import { SettingResetButton } from "./SettingControls";
 import { SettingsRow, SettingsSection } from "./SettingsPanelPrimitives";
+import { ModelsSection } from "./ModelsSection";
+import { useDyadProviderSettings } from "~/hooks/useDyadProviderSettings";
 
-type ProviderInstallTextKey =
-  | "engineBaseUrl"
-  | "engineModelId"
-  | "engineFlutterSdkBin"
-  | "groqBaseUrl"
-  | "opencodeZenBaseUrl"
-  | "opencodeGoBaseUrl";
-type ProviderInstallPasswordKey =
-  | "engineApiKey"
-  | "groqApiKey"
-  | "opencodeZenApiKey"
-  | "opencodeGoApiKey";
-type ProviderInstallPasswordConfiguredKey =
-  | "engineApiKeyConfigured"
-  | "groqApiKeyConfigured"
-  | "opencodeZenApiKeyConfigured"
-  | "opencodeGoApiKeyConfigured";
+const KEYLESS_PROVIDERS = new Set<string>(["ollama", "lmstudio"]);
+const CUSTOM_PROVIDERS = new Set<string>(["custom"]);
 
-type ProviderInstallTextField = {
-  readonly kind: "text";
-  readonly settingsKey: ProviderInstallTextKey;
-  readonly label: string;
-  readonly placeholder: string;
-  readonly description: ReactNode;
+const PROVIDER_WEBSITE_URLS: Record<string, string> = {
+  openai: "https://platform.openai.com/api-keys",
+  anthropic: "https://console.anthropic.com/settings/keys",
+  google: "https://aistudio.google.com/api-keys",
+  openrouter: "https://openrouter.ai/settings/keys",
+  deepseek: "https://platform.deepseek.com/api_keys",
+  groq: "https://console.groq.com/keys",
+  xai: "https://console.xai.com/",
+  minimax: "https://platform.minimax.io/",
+  opencodeZen: "https://opencode.ai/zen",
+  opencodeGo: "https://opencode.ai/zen",
+  azure: "https://portal.azure.com/",
+  bedrock: "https://console.aws.amazon.com/bedrock/",
+  mistral: "https://console.mistral.ai/api-keys",
+  together: "https://api.together.xyz/settings/api-keys",
+  cohere: "https://dashboard.cohere.com/api-keys",
+  fireworks: "https://fireworks.ai/account/api-keys",
 };
-type ProviderInstallPasswordField = {
-  readonly kind: "password";
-  readonly settingsKey: ProviderInstallPasswordKey;
-  readonly configuredKey: ProviderInstallPasswordConfiguredKey;
-  readonly label: string;
-  readonly placeholder: string;
-  readonly description: ReactNode;
-};
-type ProviderInstallField = ProviderInstallTextField | ProviderInstallPasswordField;
-type ProviderInstallSettings = {
-  readonly provider: ProviderKind;
-  readonly docs: ReadonlyArray<{ readonly label: string; readonly href: string }>;
-  readonly fields: readonly ProviderInstallField[];
-};
+
+const PROVIDER_FREE_TIERS = new Set<string>([
+  "google",
+  "openrouter",
+  "ollama",
+  "lmstudio",
+]);
 
 const PROVIDER_VISIBILITY_OPTIONS: ReadonlyArray<{ provider: ProviderKind; title: string }> =
   PROVIDER_DESCRIPTORS.map((descriptor) => ({
@@ -94,168 +90,29 @@ const PROVIDER_VISIBILITY_OPTIONS: ReadonlyArray<{ provider: ProviderKind; title
     title: descriptor.displayName,
   }));
 
-const PROVIDER_INSTALL_SETTINGS: readonly ProviderInstallSettings[] = [
-  {
-    provider: "engine",
-    docs: [],
-    fields: [
-      {
-        kind: "password",
-        settingsKey: "engineApiKey",
-        configuredKey: "engineApiKeyConfigured",
-        label: "Builder API key",
-        placeholder: "API Key",
-        description: "API key the Builder engine uses for its OpenAI-compatible endpoint.",
-      },
-      {
-        kind: "text",
-        settingsKey: "engineBaseUrl",
-        label: "Builder base URL",
-        placeholder: "https://api.openai.com/v1",
-        description: "OpenAI-compatible chat endpoint the Builder engine talks to.",
-      },
-      {
-        kind: "text",
-        settingsKey: "engineModelId",
-        label: "Builder model ID",
-        placeholder: "gpt-5.6-sol",
-        description: "Model slug requested from the endpoint for agent turns.",
-      },
-      {
-        kind: "text",
-        settingsKey: "engineFlutterSdkBin",
-        label: "Flutter SDK binary",
-        placeholder: "/opt/flutter/bin/flutter",
-        description:
-          "Optional absolute path to the flutter binary. Overrides FLUTTER_SDK_BIN/PATH resolution.",
-      },
-    ],
-  },
-  {
-    provider: "groq",
-    docs: [{ label: "API Keys", href: "https://console.groq.com/keys" }],
-    fields: [
-      {
-        kind: "password",
-        settingsKey: "groqApiKey",
-        configuredKey: "groqApiKeyConfigured",
-        label: "Groq API key",
-        placeholder: "API Key",
-        description: "Your Groq API key.",
-      },
-      {
-        kind: "text",
-        settingsKey: "groqBaseUrl",
-        label: "Groq base URL",
-        placeholder: "https://api.groq.com/openai/v1",
-        description: "Optional custom Groq endpoint override.",
-      },
-    ],
-  },
-  {
-    provider: "opencodeZen",
-    docs: [
-      { label: "Docs", href: "https://opencode.ai/docs/zen" },
-      { label: "Models", href: "https://opencode.ai/zen/v1/models" },
-    ],
-    fields: [
-      {
-        kind: "password",
-        settingsKey: "opencodeZenApiKey",
-        configuredKey: "opencodeZenApiKeyConfigured",
-        label: "OpenCode Zen API key",
-        placeholder: "API Key",
-        description:
-          "Your OpenCode Zen API key. The API provider is separate from the OpenCode CLI provider.",
-      },
-      {
-        kind: "text",
-        settingsKey: "opencodeZenBaseUrl",
-        label: "OpenCode Zen base URL",
-        placeholder: "https://opencode.ai/zen/v1",
-        description: "Optional custom OpenCode Zen endpoint override.",
-      },
-    ],
-  },
-  {
-    provider: "opencodeGo",
-    docs: [
-      { label: "Docs", href: "https://opencode.ai/docs/zen" },
-      { label: "Models", href: "https://opencode.ai/zen/v1/models" },
-    ],
-    fields: [
-      {
-        kind: "password",
-        settingsKey: "opencodeGoApiKey",
-        configuredKey: "opencodeGoApiKeyConfigured",
-        label: "OpenCode Go API key",
-        placeholder: "API Key",
-        description: "Your OpenCode Go API key.",
-      },
-      {
-        kind: "text",
-        settingsKey: "opencodeGoBaseUrl",
-        label: "OpenCode Go base URL",
-        placeholder: "https://opencode.ai/zen/v1",
-        description: "Optional custom OpenCode Go endpoint override.",
-      },
-    ],
-  },
-];
-function isProviderInstallFieldDirty(
-  field: ProviderInstallField,
-  settings: AppSettings,
-  defaults: AppSettings,
-): boolean {
-  return field.kind === "password"
-    ? settings[field.configuredKey] !== defaults[field.configuredKey]
-    : settings[field.settingsKey] !== defaults[field.settingsKey];
-}
-
-function isProviderInstallConfigDirty(
-  config: ProviderInstallSettings,
-  settings: AppSettings,
-  defaults: AppSettings,
-): boolean {
-  return config.fields.some((field) => isProviderInstallFieldDirty(field, settings, defaults));
-}
-
 export function isProviderInstallSettingsDirty(
   settings: AppSettings,
   defaults: AppSettings,
 ): boolean {
-  return PROVIDER_INSTALL_SETTINGS.some((config) =>
-    isProviderInstallConfigDirty(config, settings, defaults),
+  return (
+    settings.groqApiKeyConfigured !== defaults.groqApiKeyConfigured ||
+    settings.opencodeZenApiKeyConfigured !== defaults.opencodeZenApiKeyConfigured ||
+    settings.opencodeGoApiKeyConfigured !== defaults.opencodeGoApiKeyConfigured ||
+    settings.groqBaseUrl !== defaults.groqBaseUrl ||
+    settings.opencodeZenBaseUrl !== defaults.opencodeZenBaseUrl ||
+    settings.opencodeGoBaseUrl !== defaults.opencodeGoBaseUrl
   );
 }
 
-function createProviderInstallDisclosureState(
-  settings: AppSettings,
-): Record<ProviderKind, boolean> {
-  return Object.fromEntries(
-    PROVIDER_INSTALL_SETTINGS.map((config) => [
-      config.provider,
-      config.fields.some((field) =>
-        field.kind === "password"
-          ? Boolean(settings?.[field.configuredKey])
-          : Boolean(settings?.[field.settingsKey]),
-      ),
-    ]),
-  ) as Record<ProviderKind, boolean>;
-}
-
-function createClosedProviderInstallDisclosureState(): Record<ProviderKind, boolean> {
-  return Object.fromEntries(
-    PROVIDER_INSTALL_SETTINGS.map((config) => [config.provider, false]),
-  ) as Record<ProviderKind, boolean>;
-}
-
 export function createProviderInstallResetPatch(defaults: AppSettings): Partial<AppSettings> {
-  return Object.fromEntries(
-    PROVIDER_INSTALL_SETTINGS.flatMap((config) =>
-      config.fields.map((field) => [field.settingsKey, defaults[field.settingsKey]]),
-    ),
-  ) as Partial<AppSettings>;
+  return {
+    groqApiKey: defaults.groqApiKey,
+    groqBaseUrl: defaults.groqBaseUrl,
+    opencodeZenApiKey: defaults.opencodeZenApiKey,
+    opencodeZenBaseUrl: defaults.opencodeZenBaseUrl,
+    opencodeGoApiKey: defaults.opencodeGoApiKey,
+    opencodeGoBaseUrl: defaults.opencodeGoBaseUrl,
+  };
 }
 
 function setProviderHidden(
@@ -270,6 +127,7 @@ function setProviderHidden(
 function SortableProviderVisibilityRow(props: {
   option: { provider: ProviderKind; title: string };
   isHidden: boolean;
+  isConfigured: boolean;
   onHiddenChange: (hidden: boolean) => void;
 }) {
   const {
@@ -308,6 +166,11 @@ function SortableProviderVisibilityRow(props: {
           <CentralIcon name="dot-grid-2x3" className="size-4" />
         </button>
         <span className="min-w-0 text-sm text-foreground">{props.option.title}</span>
+        {props.isConfigured ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+            Ready
+          </span>
+        ) : null}
       </div>
       <Switch
         checked={!props.isHidden}
@@ -318,111 +181,264 @@ function SortableProviderVisibilityRow(props: {
   );
 }
 
-function ProviderDocsLinks({ docs }: { docs: ProviderInstallSettings["docs"] }) {
-  if (docs.length === 0) {
-    return null;
-  }
-  return (
-    <div className={cn(SETTINGS_OUTLINED_SURFACE_CLASS_NAME, "px-3 py-2.5")}>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <span className="text-xs font-medium text-foreground">CLI docs</span>
-        <div className="flex flex-wrap gap-2">
-          {docs.map((doc) => (
-            <Button
-              key={`${doc.label}:${doc.href}`}
-              variant="outline"
-              size="sm"
-              render={<a href={doc.href} target="_blank" rel="noreferrer" />}
-            >
-              <span>{doc.label}</span>
-              <ExternalLinkIcon className="size-3" />
-            </Button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+interface ProviderCardProps {
+  providerId: ProviderKind;
+  displayName: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  configured: boolean;
+  testResult?: { ok: boolean; message: string };
+  connected: boolean;
+  onSaveKey: (id: string, entry: { apiKey?: string; apiBaseUrl?: string }) => void;
+  onTestKey: (id: string) => void;
 }
 
-function ProviderInstallFieldControl(props: {
-  field: ProviderInstallField;
-  settings: AppSettings;
-  updateSettings: (patch: Partial<AppSettings>) => void;
-}) {
-  const id = `provider-install-${props.field.settingsKey}`;
+function ProviderCard({
+  providerId,
+  displayName,
+  isOpen,
+  onToggle,
+  configured,
+  testResult,
+  connected,
+  onSaveKey,
+  onTestKey,
+}: ProviderCardProps) {
+  const [apiKeyInput, setApiKeyInput] = useState("");
+  const [baseUrlInput, setBaseUrlInput] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
 
-  const configured =
-    props.field.kind === "password" ? props.settings[props.field.configuredKey] : false;
-  const isPassword = props.field.kind === "password";
+  const isKeyless = KEYLESS_PROVIDERS.has(providerId);
+  const isCustom = CUSTOM_PROVIDERS.has(providerId);
+  const websiteUrl = PROVIDER_WEBSITE_URLS[providerId];
+  const hasFreeTier = PROVIDER_FREE_TIERS.has(providerId);
+
+  const handleSave = () => {
+    const key = apiKeyInput.trim();
+    const base = baseUrlInput.trim();
+    onSaveKey(providerId, {
+      ...(key ? { apiKey: key } : {}),
+      ...(base ? { apiBaseUrl: base } : {}),
+    });
+    setApiKeyInput("");
+    toastManager.add({
+      type: "success",
+      title: `${displayName} settings saved`,
+      description: "Credentials stored securely on this device.",
+    });
+  };
+
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        setApiKeyInput(text.trim());
+        toastManager.add({ type: "success", title: "Pasted API key from clipboard" });
+      }
+    } catch {
+      toastManager.add({ type: "error", title: "Could not access clipboard" });
+    }
+  };
+
+  const handleClear = () => {
+    onSaveKey(providerId, { apiKey: "" });
+    setApiKeyInput("");
+    toastManager.add({ type: "success", title: `${displayName} credentials cleared` });
+  };
+
+  const handleRunTest = () => {
+    setIsTesting(true);
+    onTestKey(providerId);
+    setTimeout(() => setIsTesting(false), 2000);
+  };
+
   return (
-    <label htmlFor={id} className="block">
-      <span className="block text-xs font-medium text-foreground">{props.field.label}</span>
-      <DebouncedSettingTextInput
-        id={id}
-        size="sm"
-        variant="soft"
-        className="mt-1"
-        value={isPassword ? "" : props.settings[props.field.settingsKey]}
-        onCommit={(nextValue) =>
-          props.updateSettings({ [props.field.settingsKey]: nextValue } as Partial<AppSettings>)
-        }
-        placeholder={
-          isPassword && configured
-            ? "Configured — enter a replacement or leave blank"
-            : props.field.placeholder
-        }
-        type={isPassword ? "password" : undefined}
-        autoComplete={isPassword ? "new-password" : undefined}
-        spellCheck={false}
-      />
-      <span className="mt-1 block text-xs text-muted-foreground">{props.field.description}</span>
-    </label>
-  );
-}
-
-function ProviderToolRow(props: {
-  config: ProviderInstallSettings;
-  open: boolean;
-  settings: AppSettings;
-  defaults: AppSettings;
-  onOpenChange: (open: boolean) => void;
-  updateSettings: (patch: Partial<AppSettings>) => void;
-}) {
-  const title = PROVIDER_DISPLAY_NAMES[props.config.provider];
-  const isDirty = isProviderInstallConfigDirty(props.config, props.settings, props.defaults);
-
-  return (
-    <Collapsible open={props.open} onOpenChange={props.onOpenChange}>
+    <Collapsible open={isOpen} onOpenChange={onToggle}>
       <div className="border-t border-border/70 first:border-t-0">
-        <div className="flex min-h-11 items-center gap-2 px-3 py-2">
+        <div className="flex min-h-12 items-center justify-between gap-3 px-3 py-2.5 transition-colors hover:bg-muted/30">
           <CollapsibleTrigger
             type="button"
-            className="flex min-w-0 flex-1 items-center gap-2 text-left"
+            className="flex min-w-0 flex-1 items-center gap-3 text-left outline-none"
           >
-            <span className="min-w-0 flex-1 text-sm font-medium text-foreground">{title}</span>
-            {isDirty ? (
-              <span className="shrink-0 text-[11px] text-muted-foreground">Custom</span>
-            ) : null}
-            <DisclosureChevron
-              open={props.open}
-              className="size-4 shrink-0 text-muted-foreground"
-            />
+            <DisclosureChevron open={isOpen} className="size-4 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 flex-1 font-medium text-sm text-foreground">
+              {displayName}
+            </span>
+            <div className="flex items-center gap-2">
+              {configured ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  Ready
+                </span>
+              ) : isKeyless ? (
+                <span className="rounded-full bg-muted/80 px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
+                  Local
+                </span>
+              ) : hasFreeTier ? (
+                <span className="rounded-full bg-blue-500/10 px-2 py-0.5 font-mono text-[10px] text-blue-600 dark:text-blue-400">
+                  Free tier available
+                </span>
+              ) : (
+                <span className="rounded-full bg-muted/60 px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
+                  Needs key
+                </span>
+              )}
+            </div>
           </CollapsibleTrigger>
+          {websiteUrl ? (
+            <Button
+              variant="ghost"
+              size="xs"
+              className="h-7 shrink-0 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+              render={<a href={websiteUrl} target="_blank" rel="noreferrer" />}
+            >
+              <span>Get API key</span>
+              <ExternalLinkIcon className="size-3" />
+            </Button>
+          ) : null}
         </div>
 
         <CollapsiblePanel>
-          <div className="border-t border-border/70 bg-muted/20 px-3 py-3">
-            <div className="space-y-3">
-              <ProviderDocsLinks docs={props.config.docs} />
-              {props.config.fields.map((field) => (
-                <ProviderInstallFieldControl
-                  key={field.settingsKey}
-                  field={field}
-                  settings={props.settings}
-                  updateSettings={props.updateSettings}
-                />
-              ))}
-            </div>
+          <div className="border-t border-border/60 bg-muted/15 px-4 py-4 space-y-4">
+            {isKeyless ? (
+              <div className="rounded-lg border border-border/50 bg-card/50 p-3">
+                <p className="text-xs text-muted-foreground">
+                  {displayName} runs locally on your machine. No account, API key, or billing is required.
+                </p>
+                <div className="mt-3 flex items-center gap-2">
+                  <Input
+                    className="h-8 max-w-sm font-mono text-xs"
+                    placeholder={
+                      providerId === "ollama" ? "http://localhost:11434/v1" : "http://localhost:1234/v1"
+                    }
+                    value={baseUrlInput}
+                    onChange={(e) => setBaseUrlInput(e.target.value)}
+                  />
+                  <Button size="xs" variant="outline" onClick={handleSave}>
+                    Save endpoint
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    disabled={!connected || isTesting}
+                    onClick={handleRunTest}
+                  >
+                    {isTesting ? "Testing..." : "Test"}
+                  </Button>
+                </div>
+              </div>
+            ) : isCustom ? (
+              <div className="rounded-lg border border-border/50 bg-card/50 p-3 space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Connect to any self-hosted, cloud gateway, or OpenAI-compatible inference endpoint.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-mono uppercase text-muted-foreground block mb-1">
+                      API Base URL (required)
+                    </label>
+                    <Input
+                      className="h-8 font-mono text-xs"
+                      placeholder="https://api.openai.com/v1"
+                      value={baseUrlInput}
+                      onChange={(e) => setBaseUrlInput(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-mono uppercase text-muted-foreground block mb-1">
+                      API Key (optional)
+                    </label>
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      className="h-8 font-mono text-xs"
+                      placeholder={configured ? "•••••••• (saved)" : "API key"}
+                      value={apiKeyInput}
+                      onChange={(e) => setApiKeyInput(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <Button size="xs" onClick={handleSave} disabled={!baseUrlInput.trim()}>
+                    Save endpoint
+                  </Button>
+                  <Button size="xs" variant="outline" onClick={handleRunTest} disabled={!connected || isTesting}>
+                    {isTesting ? "Testing..." : "Test"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-foreground block mb-1">
+                    API Key
+                  </label>
+                  <div className="flex items-center gap-2 max-w-xl">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      className="h-8 font-mono text-xs flex-1"
+                      placeholder={configured ? "•••••••••••••••• (saved)" : "Enter API key"}
+                      value={apiKeyInput}
+                      onChange={(e) => setApiKeyInput(e.target.value)}
+                    />
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      className="text-xs"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </Button>
+                    <Button size="xs" variant="outline" className="text-xs" onClick={handlePaste}>
+                      Paste
+                    </Button>
+                    <Button
+                      size="xs"
+                      className="text-xs"
+                      onClick={handleSave}
+                      disabled={!apiKeyInput.trim()}
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      className="text-xs"
+                      disabled={!connected || isTesting}
+                      onClick={handleRunTest}
+                    >
+                      {isTesting ? "Testing..." : "Test"}
+                    </Button>
+                    {configured ? (
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                        title="Clear API key"
+                        onClick={handleClear}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {testResult ? (
+              <div
+                className={cn(
+                  "flex items-center gap-2 rounded-md p-2 text-xs",
+                  testResult.ok
+                    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"
+                    : "bg-destructive/10 text-destructive border border-destructive/20",
+                )}
+              >
+                {!testResult.ok && <TriangleAlertIcon className="size-3.5 shrink-0" />}
+                <span>{testResult.message}</span>
+              </div>
+            ) : null}
+
+            <ModelsSection providerId={providerId} allowCustomModels={!isKeyless} />
           </div>
         </CollapsiblePanel>
       </div>
@@ -440,20 +456,21 @@ export function ProvidersSettingsPanel({
   defaults,
   updateSettings,
   active,
-  resetEpoch,
 }: ProvidersSettingsPanelProps) {
-  const [openInstallProviders, setOpenInstallProviders] = useState<Record<ProviderKind, boolean>>(
-    () => createProviderInstallDisclosureState(settings),
-  );
+  const { providers, tests, connected, save, test } = useDyadProviderSettings();
+  const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
+
   const hiddenProviderSet = useMemo(
     () => new Set<ProviderKind>(settings.hiddenProviders),
     [settings.hiddenProviders],
   );
   const hiddenProviderCount = hiddenProviderSet.size;
+
   const providerVisibilityOptionsByProvider = useMemo(
     () => new Map(PROVIDER_VISIBILITY_OPTIONS.map((option) => [option.provider, option])),
     [],
   );
+
   const orderedProviderVisibilityOptions = useMemo(
     () =>
       settings.providerOrder.flatMap((provider) => {
@@ -462,15 +479,11 @@ export function ProvidersSettingsPanel({
       }),
     [providerVisibilityOptionsByProvider, settings.providerOrder],
   );
+
   const providerVisibilitySensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
   );
   const isProviderOrderDirty = !sameProviderOrder(settings.providerOrder, defaults.providerOrder);
-  const installSettingsDirty = isProviderInstallSettingsDirty(settings, defaults);
-
-  useSettingsRestoreSignal(resetEpoch, () => {
-    setOpenInstallProviders(createClosedProviderInstallDisclosureState());
-  });
 
   const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -484,8 +497,7 @@ export function ProvidersSettingsPanel({
       toastManager.add({
         type: "success",
         title: "Models refreshed",
-        description:
-          "Successfully fetched live models from OpenCode Zen and OpenCode Go endpoints.",
+        description: "Successfully updated available model catalog from provider endpoints.",
       });
     } catch (err) {
       toastManager.add({
@@ -509,11 +521,19 @@ export function ProvidersSettingsPanel({
     },
     [settings.providerOrder, updateSettings],
   );
+
+  const configuredMap = useMemo(() => {
+    const map = new Map<string, boolean>();
+    for (const p of providers) {
+      map.set(p.id, p.configured);
+    }
+    return map;
+  }, [providers]);
+
   if (!active) return null;
 
   return (
     <div className="space-y-6">
-      <DyadProviderKeysSection />
       <SettingsSection
         title="Provider picker"
         action={
@@ -568,6 +588,7 @@ export function ProvidersSettingsPanel({
                   <SortableProviderVisibilityRow
                     key={option.provider}
                     option={option}
+                    isConfigured={Boolean(configuredMap.get(option.provider))}
                     isHidden={hiddenProviderSet.has(option.provider)}
                     onHiddenChange={(hidden) =>
                       updateSettings({
@@ -586,46 +607,44 @@ export function ProvidersSettingsPanel({
         </SettingsRow>
       </SettingsSection>
 
-      <div>
-        <SettingsSection title="Provider tools">
-          <SettingsRow
-            title="API providers"
-            description="Configure API keys and base URLs for each provider. Open a row to edit its credentials."
-            resetAction={
-              installSettingsDirty ? (
-                <SettingResetButton
-                  label="provider tools"
-                  onClick={() => {
-                    updateSettings(createProviderInstallResetPatch(defaults));
-                    setOpenInstallProviders(createClosedProviderInstallDisclosureState());
-                  }}
+      <SettingsSection
+        title="Provider credentials & tools"
+        action={
+          <span className={cn("text-[11px]", connected ? "text-muted-foreground" : "text-destructive")}>
+            {connected ? "Harness connected" : "Harness offline"}
+          </span>
+        }
+      >
+        <SettingsRow
+          title="API credentials & available models"
+          description="Configure API keys, verify connectivity with live test pings, and inspect context windows and tokens for each provider."
+        >
+          <div className="mt-4">
+            <div className={SETTINGS_INSET_LIST_CLASS_NAME}>
+              {orderedProviderVisibilityOptions.map((option) => (
+                <ProviderCard
+                  key={option.provider}
+                  providerId={option.provider}
+                  displayName={option.title}
+                  isOpen={Boolean(openCards[option.provider])}
+                  onToggle={() =>
+                    setOpenCards((prev) => ({
+                      ...prev,
+                      [option.provider]: !prev[option.provider],
+                    }))
+                  }
+                  configured={Boolean(configuredMap.get(option.provider))}
+                  testResult={tests[option.provider]}
+                  connected={connected}
+                  onSaveKey={save}
+                  onTestKey={test}
                 />
-              ) : null
-            }
-          >
-            <div className="mt-4">
-              <div className={SETTINGS_INSET_LIST_CLASS_NAME}>
-                {PROVIDER_INSTALL_SETTINGS.map((config) => (
-                  <ProviderToolRow
-                    key={config.provider}
-                    config={config}
-                    open={openInstallProviders[config.provider]}
-                    settings={settings}
-                    defaults={defaults}
-                    onOpenChange={(open) =>
-                      setOpenInstallProviders((existing) => ({
-                        ...existing,
-                        [config.provider]: open,
-                      }))
-                    }
-                    updateSettings={updateSettings}
-                  />
-                ))}
-              </div>
+              ))}
             </div>
-          </SettingsRow>
-        </SettingsSection>
-      </div>
+          </div>
+        </SettingsRow>
+      </SettingsSection>
     </div>
   );
 }
+

@@ -46,14 +46,15 @@ export function getChatModeDisplayName(mode: ChatMode): string {
 interface ChatModeSelectorProps {
   mode: ChatMode;
   onChatModeChange: (mode: ChatMode) => void;
+  iconOnly?: boolean;
 }
 
-export function ChatModeSelector({ mode, onChatModeChange }: ChatModeSelectorProps) {
+export function ChatModeSelector({ mode, onChatModeChange, iconOnly = false }: ChatModeSelectorProps) {
   const meta = CHAT_MODE_META[mode] || CHAT_MODE_META["local-agent"];
   const Icon = meta.Icon;
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5 shrink-0">
       <Select value={mode} onValueChange={(v) => v && onChatModeChange(v as ChatMode)}>
         <Tooltip>
           <TooltipTrigger
@@ -62,24 +63,31 @@ export function ChatModeSelector({ mode, onChatModeChange }: ChatModeSelectorPro
                 data-testid="chat-mode-selector"
                 aria-label={`Chat mode: ${meta.name}`}
                 className={cn(
-                  "cursor-pointer inline-flex items-center w-fit px-2 py-0 h-7 text-xs font-medium border-none shadow-none gap-1 rounded-lg transition-colors outline-none",
+                  "cursor-pointer inline-flex items-center transition-all duration-150 outline-none select-none",
+                  iconOnly
+                    ? "h-7 w-7 justify-center p-0 rounded-lg border border-border/50 bg-background/50 hover:bg-muted/60"
+                    : "h-7 px-2.5 py-0 text-xs font-medium gap-1.5 rounded-lg border border-border/50 bg-background/50 shadow-2xs hover:bg-muted/60",
                   mode === "local-agent"
-                    ? "text-foreground/80 hover:text-foreground hover:bg-muted/60"
+                    ? "text-foreground/80 hover:text-foreground"
                     : mode === "plan"
-                      ? "bg-blue-500/10 text-blue-600 hover:bg-blue-500/15 dark:bg-blue-500/15 dark:text-blue-400 dark:hover:bg-blue-500/20"
-                      : "text-foreground/80 hover:text-foreground hover:bg-muted/60",
+                      ? "bg-blue-500/10 text-blue-600 border-blue-500/25 hover:bg-blue-500/15 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/30 dark:hover:bg-blue-500/20"
+                      : mode === "ask"
+                        ? "bg-amber-500/10 text-amber-600 border-amber-500/25 hover:bg-amber-500/15 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30"
+                        : "text-foreground/80 hover:text-foreground",
                 )}
               />
             }
           >
             <SelectValue>
               <span className="flex items-center gap-1.5">
-                <Icon size={14} />
-                {meta.name}
+                <Icon size={14} className={mode === "plan" ? "text-blue-500" : mode === "ask" ? "text-amber-500" : undefined} />
+                {!iconOnly && <span>{meta.name}</span>}
               </span>
             </SelectValue>
           </TooltipTrigger>
-          <TooltipPopup>Open mode menu (Ctrl + . to toggle)</TooltipPopup>
+          <TooltipPopup>
+            {iconOnly ? `Mode: ${meta.name} (Ctrl + . to toggle)` : "Open mode menu (Ctrl + . to toggle)"}
+          </TooltipPopup>
         </Tooltip>
         <SelectPopup surface="composer" align="start">
           {CHAT_MODE_ORDER.map((m) => {
@@ -87,15 +95,21 @@ export function ChatModeSelector({ mode, onChatModeChange }: ChatModeSelectorPro
             const MIcon = mMeta.Icon;
             return (
               <SelectItem key={m} value={m}>
-                <div className="flex flex-col items-start">
-                  <div className="flex items-center gap-1.5">
+                <div className="flex flex-col items-start py-0.5">
+                  <div className="flex items-center gap-2">
                     <MIcon
                       size={14}
-                      className={m === "plan" ? "text-blue-500" : "text-muted-foreground"}
+                      className={
+                        m === "plan"
+                          ? "text-blue-500"
+                          : m === "ask"
+                            ? "text-amber-500"
+                            : "text-muted-foreground"
+                      }
                     />
-                    <span className="font-medium">{mMeta.name}</span>
+                    <span className="font-medium text-xs text-foreground">{mMeta.name}</span>
                   </div>
-                  <span className="text-xs text-muted-foreground ml-[22px]">
+                  <span className="text-[11px] text-muted-foreground ml-[22px]">
                     {mMeta.description}
                   </span>
                 </div>

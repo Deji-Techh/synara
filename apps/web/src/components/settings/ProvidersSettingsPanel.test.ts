@@ -12,9 +12,6 @@ const defaults = AppSettingsSchema.makeUnsafe({});
 describe("isProviderInstallSettingsDirty", () => {
   it("covers every provider install text and boolean field", () => {
     const dirtyPatches = [
-      { engineBaseUrl: "https://engine.example" },
-      { engineModelId: "gpt-5.6-sol" },
-      { engineFlutterSdkBin: "/opt/flutter/bin/flutter" },
       { groqBaseUrl: "https://groq.example" },
       { opencodeZenBaseUrl: "https://zen.example" },
       { opencodeGoBaseUrl: "https://go.example" },
@@ -27,12 +24,6 @@ describe("isProviderInstallSettingsDirty", () => {
   });
 
   it("uses configured flags instead of unreadable password values", () => {
-    expect(isProviderInstallSettingsDirty({ ...defaults, engineApiKey: "secret" }, defaults)).toBe(
-      false,
-    );
-    expect(
-      isProviderInstallSettingsDirty({ ...defaults, engineApiKeyConfigured: true }, defaults),
-    ).toBe(true);
     expect(
       isProviderInstallSettingsDirty({ ...defaults, groqApiKeyConfigured: true }, defaults),
     ).toBe(true);
@@ -49,16 +40,11 @@ describe("createProviderInstallResetPatch", () => {
   it("resets every configured field and writes password values so configured flags clear", () => {
     const patch = createProviderInstallResetPatch({
       ...defaults,
-      engineApiKey: "",
       groqApiKey: "",
     });
 
     expect(Object.keys(patch).sort()).toEqual(
       [
-        "engineApiKey",
-        "engineBaseUrl",
-        "engineFlutterSdkBin",
-        "engineModelId",
         "groqApiKey",
         "groqBaseUrl",
         "opencodeZenApiKey",
@@ -67,8 +53,7 @@ describe("createProviderInstallResetPatch", () => {
         "opencodeGoBaseUrl",
       ].sort(),
     );
-    expect(patch.engineApiKey).toBe("");
     expect(patch.groqApiKey).toBe("");
-    expect(patch.engineBaseUrl).toBe("");
+    expect(patch.groqBaseUrl).toBe("");
   });
 });

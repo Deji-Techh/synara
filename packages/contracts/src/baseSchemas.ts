@@ -85,6 +85,11 @@ export const ProviderKind = Schema.Literals([
   "fireworks",
   "opencodeZen",
   "opencodeGo",
+  "custom",
+  "azure",
+  "bedrock",
+  "minimax",
+  "lmstudio",
 ]);
 export const PROVIDER_KINDS = ProviderKind.literals;
 export type ProviderKind = typeof ProviderKind.Type;

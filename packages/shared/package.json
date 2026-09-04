@@ -4,6 +4,10 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./languageModelCatalog": {
+      "types": "./src/languageModelCatalog.ts",
+      "import": "./src/languageModelCatalog.ts"
+    },
     "./model": {
       "types": "./src/model.ts",
       "import": "./src/model.ts"

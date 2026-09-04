@@ -4,6 +4,8 @@
 // defaults (dyad/tools toolCatalog); the turn layer consumes overrides via
 // MemoryConsentStore in M3g persistence. Local-first until then.
 
+import { syncAllActiveHarnessSettings } from "~/harnessWs";
+
 export type ApprovalConsent = "ask" | "always" | "never";
 
 export interface AskDefaultTool {
@@ -48,6 +50,7 @@ export function loadApprovalOverrides(): Record<string, ApprovalConsent> {
 
 export function saveApprovalOverrides(overrides: Record<string, ApprovalConsent>): void {
   localStorage.setItem(OVERRIDES_KEY, JSON.stringify(overrides));
+  syncAllActiveHarnessSettings();
 }
 
 export function loadSafeSql(): boolean {
@@ -60,4 +63,5 @@ export function loadSafeSql(): boolean {
 
 export function saveSafeSql(value: boolean): void {
   localStorage.setItem(SAFESQL_KEY, String(value));
+  syncAllActiveHarnessSettings();
 }

@@ -83,11 +83,16 @@ export function getDefaultModel(provider: ProviderKind = "openai"): ModelSlug | 
     : null;
 }
 
-const MODEL_NAME_BY_SLUG = new Map(
-  Object.values(MODEL_OPTIONS_BY_PROVIDER)
-    .flat()
-    .map((option) => [option.slug.toLowerCase(), option.name] as const),
-);
+const MODEL_NAME_BY_SLUG = (() => {
+  const map = new Map<string, string>();
+  for (const option of Object.values(MODEL_OPTIONS_BY_PROVIDER).flat()) {
+    const key = option.slug.toLowerCase();
+    if (!map.has(key)) {
+      map.set(key, option.name);
+    }
+  }
+  return map;
+})();
 
 // Turns a raw model slug into a readable label when no built-in name exists.
 // GPT slugs keep their canonical "GPT-x" casing; provider-scoped custom ids

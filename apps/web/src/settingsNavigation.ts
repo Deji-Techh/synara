@@ -13,7 +13,6 @@ export const SETTINGS_SECTION_IDS = [
   "shortcuts",
   "worktrees",
   "archived",
-  "models",
   "providers",
   "skills",
   "integrations",
@@ -126,14 +125,6 @@ export const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
     description: "Choose visible coding agents and manage their installed CLI tools.",
     icon: "puzzle",
     eyebrow: "Coding agents",
-  },
-  {
-    id: "models",
-    group: "coding",
-    label: "Models & writing",
-    description: "Choose the model used for Git writing and add custom model slugs.",
-    icon: "brain",
-    eyebrow: "Model configuration",
   },
   {
     id: "skills",

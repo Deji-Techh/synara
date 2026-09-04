@@ -24,3 +24,7 @@ export function unregisterHarnessSession(threadId: string): void {
 export function getHarnessSession(threadId: string): HarnessSessionHandle | undefined {
   return handles.get(threadId);
 }
+
+export function getAllHarnessSessions(): Array<{ threadId: string; handle: HarnessSessionHandle }> {
+  return Array.from(handles.entries()).map(([threadId, handle]) => ({ threadId, handle }));
+}

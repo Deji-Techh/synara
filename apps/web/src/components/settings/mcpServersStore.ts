@@ -4,6 +4,8 @@
 // (M4 manager) can take over listing/testing later via McpServersTransport.
 // Replaces the old outbound-pairing model (ExternalMcpSettingsPanel).
 
+import { syncAllActiveHarnessSettings } from "~/harnessWs";
+
 export type McpTransportKind = "stdio" | "sse" | "oauth";
 
 export interface McpServerConfig {
@@ -58,6 +60,7 @@ export function loadServers(): McpServerConfig[] {
 
 export function saveServers(servers: McpServerConfig[]): void {
   localStorage.setItem(SERVERS_KEY, JSON.stringify(servers));
+  syncAllActiveHarnessSettings();
 }
 
 export function loadPrefs(): McpPrefs {
@@ -73,6 +76,7 @@ export function loadPrefs(): McpPrefs {
 
 export function savePrefs(prefs: McpPrefs): void {
   localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+  syncAllActiveHarnessSettings();
 }
 
 /** Config validation — returns human-readable problems (empty = valid). */

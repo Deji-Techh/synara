@@ -5,6 +5,7 @@
 // HarnessEvent envelopes.
 
 import type { HarnessEvent } from "@caide/contracts";
+import { getAllHarnessSessions } from "./harnessSessionRegistry";
 import { harnessStore } from "./harnessStore";
 
 export interface HarnessWsOptions {
@@ -275,4 +276,14 @@ export function syncHarnessSettings(
       blockchainNetworks,
     },
   });
+}
+
+/**
+ * Broadcast current client settings to all active harness WebSocket sessions.
+ * Safe to call whenever settings change anywhere in the UI.
+ */
+export function syncAllActiveHarnessSettings(): void {
+  for (const { threadId, handle } of getAllHarnessSessions()) {
+    syncHarnessSettings(handle.send, threadId);
+  }
 }

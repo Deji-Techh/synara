@@ -69,6 +69,10 @@ export const STATIC_KEYBINDING_COMMANDS = [
   "chat.visible.previous",
   "editor.openFavorite",
   "git.commitAndPush",
+  "chat.mode.next",
+  "app.new",
+  "preview.toggle",
+  "database.toggle",
 ] as const;
 
 // Shared list of numbered thread-jump commands used by the web shortcut UI.

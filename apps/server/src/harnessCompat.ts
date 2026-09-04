@@ -2212,8 +2212,9 @@ export class ProfileStatsQuery extends ServiceMap.Service<ProfileStatsQuery, any
             0,
           );
           const frameworkCounts = new Map<string, number>();
+          const VALID_FWS = new Set(["blank", "react-native", "flutter", "website"]);
           for (const p of inMemoryProjects) {
-            const fw = p.framework ?? "blank";
+            const fw = VALID_FWS.has(p.framework) ? p.framework : "blank";
             frameworkCounts.set(fw, (frameworkCounts.get(fw) ?? 0) + 1);
           }
           const frameworks = Array.from(frameworkCounts.entries()).map(([framework, count]) => ({
@@ -2244,7 +2245,14 @@ export class ProfileStatsQuery extends ServiceMap.Service<ProfileStatsQuery, any
               promptsToday,
               heatmap:
                 promptsToday > 0
-                  ? [{ date: today, count: promptsToday, level: Math.min(4, promptsToday) } as any]
+                  ? [
+                      {
+                        day: today,
+                        count: promptsToday,
+                        weekday: new Date().getDay(),
+                        intensity: Math.min(4, promptsToday),
+                      },
+                    ]
                   : [],
             },
             frameworks,
