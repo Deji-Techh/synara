@@ -5459,17 +5459,17 @@ export default function Sidebar() {
 
   return (
     <>
+      <SidebarStageBackdrop />
       {isElectron ? (
         <>
           <SidebarHeader
             className={cn(
-              "relative drag-region flex-row items-center gap-2 py-0 ps-4 pe-3 font-system-ui overflow-hidden",
+              "relative z-10 drag-region flex-row items-center gap-2 py-0 ps-4 pe-3 font-system-ui bg-transparent border-0",
               CHAT_SURFACE_HEADER_HEIGHT_CLASS,
               isMacDesktop && DESKTOP_TOP_BAR_TRAFFIC_LIGHT_GUTTER_CLASS,
             )}
           >
-            <SidebarStageBackdrop />
-            <div className="relative z-10 flex w-full items-center gap-2">
+            <div className="flex w-full items-center gap-2">
               <CaideLogo className="size-4 text-white" />
               <span className="text-sm font-semibold tracking-tight text-white">Caide</span>
               {titlebarControls}
@@ -5477,16 +5477,15 @@ export default function Sidebar() {
           </SidebarHeader>
         </>
       ) : (
-        <SidebarHeader className="relative h-10 shrink-0 flex-row items-center px-3 py-0 overflow-hidden font-system-ui border-b border-border/10">
-          <SidebarStageBackdrop />
-          <div className="relative z-10 flex w-full items-center gap-2">
+        <SidebarHeader className="relative z-10 h-10 shrink-0 flex-row items-center px-3 py-0 font-system-ui bg-transparent border-0">
+          <div className="flex w-full items-center gap-2">
             <CaideLogo className="size-4 text-white" />
             <span className="text-sm font-semibold tracking-tight text-white">Caide</span>
           </div>
         </SidebarHeader>
       )}
 
-      <SidebarContent className="gap-0 font-system-ui">
+      <SidebarContent className="relative z-10 gap-0 font-system-ui bg-transparent">
         {showArm64IntelBuildWarning && arm64IntelBuildWarningDescription ? (
           <SidebarGroup className="px-2 pt-2 pb-0">
             <Alert variant="warning" className="rounded-2xl border-warning/40 bg-warning/8">
@@ -5603,7 +5602,7 @@ export default function Sidebar() {
                         </button>
                       }
                     />
-                    <MenuPopup align="start" className="w-56">
+                    <ComposerPickerMenuPopup align="start" className="w-56">
                       <MenuRadioGroup
                         value={scopedProjectId ?? "all"}
                         onValueChange={(val) => setScopedProjectId(val === "all" ? null : (val as string))}
@@ -5623,7 +5622,7 @@ export default function Sidebar() {
                           </MenuRadioItem>
                         ))}
                       </MenuRadioGroup>
-                    </MenuPopup>
+                    </ComposerPickerMenuPopup>
                   </Menu>
 
                   <Tooltip>

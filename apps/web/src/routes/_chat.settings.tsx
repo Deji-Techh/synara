@@ -54,6 +54,7 @@ import {
 import { SkillsSettingsPanel } from "../components/settings/SkillsSettingsPanel";
 import { ThemeModePicker } from "../components/settings/ThemeModePicker";
 import { PaletteSwatchPicker } from "../components/settings/PaletteSwatchPicker";
+import { SidebarBackdropSettings } from "../components/settings/SidebarBackdropSettings";
 import { PALETTE_THEMES, type PaletteThemeId } from "../theme/paletteThemes";
 import { ThemePackEditor } from "../components/ThemePackEditor";
 import {
@@ -557,6 +558,10 @@ function SettingsRouteView() {
           ))}
         </div>
       </SettingsSectionShell>
+
+      <SettingsSection title="Sidebar Backdrop">
+        <SidebarBackdropSettings />
+      </SettingsSection>
 
       {isElectron ? (
         <SettingsSection title="App">
