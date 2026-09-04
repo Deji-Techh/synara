@@ -391,10 +391,12 @@ useStore.subscribe((state) => {
 
 // Flush pending writes synchronously before page unload to prevent data loss.
 // Also via visibilitychange for mobile/desktop backgrounding (more reliable than beforeunload alone).
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
   window.addEventListener("beforeunload", () => {
     persistAppStateNow();
   });
+}
+if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") persistAppStateNow();
   });

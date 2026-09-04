@@ -30,7 +30,7 @@ export const CaideWriteCard: React.FC<CaideWriteCardProps> = ({
   const lineCount = content ? content.split("\n").length : 0;
 
   return (
-    <div className="my-2 select-none">
+    <div className="my-0.5 select-none">
       <CaideCard
         state={state}
         accent="success"
@@ -38,22 +38,22 @@ export const CaideWriteCard: React.FC<CaideWriteCardProps> = ({
         isExpanded={isExpanded}
       >
         <CaideCardHeader icon={<IconFileCode size={14} />} accent="success">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 truncate text-[12px]">
             <CaideBadge accent="success">Write</CaideBadge>
-            <span className="truncate text-[12px] font-semibold tracking-tight text-foreground">
+            <span className="truncate font-mono text-[11.5px] text-muted-foreground transition-colors group-hover:text-foreground">
               {fileName}
             </span>
             {lineCount > 0 && (
-              <span className="shrink-0 rounded bg-muted/50 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/60">
+              <span className="shrink-0 font-mono text-[10.5px] text-muted-foreground/60">
                 {lineCount} lines
               </span>
             )}
           </div>
-          <div className="flex shrink-0 items-center gap-2.5">
+          <div className="flex shrink-0 items-center gap-2">
             <CaideStateIndicator state={state} pendingLabel="Writing..." />
             <DisclosureChevron
               open={isExpanded}
-              className="h-3.5 w-3.5 text-muted-foreground/70 transition-colors group-hover:text-foreground"
+              className="h-3 w-3 text-muted-foreground/40 transition-colors group-hover:text-foreground"
             />
           </div>
         </CaideCardHeader>
@@ -61,13 +61,13 @@ export const CaideWriteCard: React.FC<CaideWriteCardProps> = ({
         {description && <CaideDescription>{description}</CaideDescription>}
         <CaideLazyContent open={isExpanded}>
           {content ? (
-            <div className="overflow-hidden rounded-lg border border-border/50 bg-muted/30">
-              <pre className="max-h-72 overflow-x-auto overflow-y-auto p-2.5 font-mono text-[11px] text-foreground/90 select-text">
+            <div className="overflow-hidden rounded-lg border border-border/40 bg-black/60 dark:bg-black/80 my-1">
+              <pre className="max-h-72 overflow-x-auto overflow-y-auto p-2.5 font-mono text-[11px] leading-relaxed break-all whitespace-pre-wrap text-foreground/90 select-text">
                 {content}
               </pre>
             </div>
           ) : (
-            <div className="py-2 text-center text-[11px] text-muted-foreground italic">
+            <div className="py-1.5 text-left text-[11px] text-muted-foreground/60 italic px-2">
               No content recorded
             </div>
           )}

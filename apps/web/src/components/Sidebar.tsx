@@ -4,6 +4,7 @@
 
 import {
   AddPlusIcon,
+  ArrowLeftIcon,
   ArchiveIcon,
   BookIcon,
   ChatBubbleIcon,
@@ -186,8 +187,10 @@ import {
   createThreadHoverCardAnchor,
 } from "./sidebarHoverCardAnchors";
 import { PreviewCard, PreviewCardPopup, PreviewCardTrigger } from "./ui/preview-card";
-import { hasUnreadActivity as hasUnreadActivityOutsideActiveThread } from "./SidebarActivityView.logic";
-import { SidebarActivityView } from "./SidebarActivityView";
+import {
+  hasUnreadActivity as hasUnreadActivityOutsideActiveThread,
+  resolveActivityRecencyMs,
+} from "./SidebarActivityView.logic";
 import { SidebarIconButton, sidebarIconButtonSlotClass } from "./SidebarIconButton";
 import { SidebarLeadingIcon } from "./SidebarLeadingIcon";
 import { SidebarMetaChipStack } from "./SidebarMetaChip";
@@ -2176,6 +2179,8 @@ export default function Sidebar() {
   const handleOpenProjectFromSearch = useCallback(
     (projectId: string) => {
       const typedProjectId = ProjectId.makeUnsafe(projectId);
+      drillProject(typedProjectId);
+      setViewingAllApps(false);
       const hasProjectThread = sidebarThreads.some((thread) => thread.projectId === typedProjectId);
       if (hasProjectThread) {
         focusMostRecentThreadForProject(typedProjectId);
@@ -2190,6 +2195,7 @@ export default function Sidebar() {
     },
     [
       appSettings.defaultThreadEnvMode,
+      drillProject,
       focusMostRecentThreadForProject,
       handleNewThread,
       sidebarThreads,
@@ -2400,9 +2406,11 @@ export default function Sidebar() {
       if (snapshot) {
         syncServerShellSnapshot(snapshot);
       }
+      drillProject(result.projectId);
+      setViewingAllApps(false);
       await navigate({ to: "/$threadId", params: { threadId: result.threadId } });
     },
-    [navigate, syncServerShellSnapshot],
+    [drillProject, navigate, syncServerShellSnapshot],
   );
 
   // Flattened: new-thread targets consider all projects, not just active Space.
@@ -3539,6 +3547,82 @@ export default function Sidebar() {
     [standardProjects],
   );
 
+  const [viewingAllApps, setViewingAllApps] = useState(false);
+
+  const drilledProject = useMemo(() => {
+    if (viewingAllApps) return null;
+    const expanded = standardProjects.find((p) => p.expanded);
+    if (expanded) return expanded;
+    if (focusedProjectId) {
+      const active = standardProjects.find((p) => p.id === focusedProjectId);
+      if (active) return active;
+    }
+    return null;
+  }, [viewingAllApps, standardProjects, focusedProjectId]);
+
+  const drilledProjectThreads = useMemo(() => {
+    if (!drilledProject) return [];
+    return sidebarThreads.filter((t) => t.projectId === drilledProject.id);
+  }, [drilledProject, sidebarThreads]);
+
+  const drilledOrderedProjectThreadIds = useMemo(() => {
+    if (!drilledProject) return [];
+    const projectSidebarData = surfaceProjectSidebarDataById.get(drilledProject.id);
+    return projectSidebarData?.orderedProjectThreadIds ?? [];
+  }, [drilledProject, surfaceProjectSidebarDataById]);
+
+  const chatGroups = useMemo(() => {
+    if (!drilledProject || drilledProjectThreads.length === 0) return [];
+    const favorites: SidebarThreadSummary[] = [];
+    const today: SidebarThreadSummary[] = [];
+    const yesterday: SidebarThreadSummary[] = [];
+    const thisWeek: SidebarThreadSummary[] = [];
+    const older: SidebarThreadSummary[] = [];
+    const nowMs = Date.now();
+
+    const startOfToday = new Date(nowMs);
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfYesterday = new Date(startOfToday);
+    startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+    const startOfThisWeek = new Date(startOfToday);
+    startOfThisWeek.setDate(startOfThisWeek.getDate() - 6);
+
+    for (const thread of drilledProjectThreads) {
+      if (pinnedThreadIdSet.has(thread.id)) {
+        favorites.push(thread);
+        continue;
+      }
+      const recencyMs = resolveActivityRecencyMs(thread);
+      if (recencyMs >= startOfToday.getTime()) {
+        today.push(thread);
+      } else if (recencyMs >= startOfYesterday.getTime()) {
+        yesterday.push(thread);
+      } else if (recencyMs >= startOfThisWeek.getTime()) {
+        thisWeek.push(thread);
+      } else {
+        older.push(thread);
+      }
+    }
+
+    return [
+      { key: "favorites", label: "Favorites", threads: favorites },
+      { key: "today", label: "Today", threads: today },
+      { key: "yesterday", label: "Yesterday", threads: yesterday },
+      { key: "thisWeek", label: "This week", threads: thisWeek },
+      { key: "older", label: "Older", threads: older },
+    ].filter((group) => group.threads.length > 0);
+  }, [drilledProject, drilledProjectThreads, pinnedThreadIdSet]);
+
+  const favoriteProjects = useMemo(
+    () => standardProjects.filter((project) => pinnedProjectIdSet.has(project.id)),
+    [standardProjects, pinnedProjectIdSet],
+  );
+
+  const otherProjects = useMemo(
+    () => standardProjects.filter((project) => !pinnedProjectIdSet.has(project.id)),
+    [standardProjects, pinnedProjectIdSet],
+  );
+
   // Reset per-project preview paging when a folder closes so reopening starts at five rows again.
   useEffect(() => {
     const settle = window.setTimeout(() => {
@@ -3670,17 +3754,15 @@ export default function Sidebar() {
 
     return [...visibleThreadIdSet];
   }, [pinnedThreads, surfaceProjectSidebarDataById, surfaceProjects]);
-  const visibleSidebarThreadIds = activityViewEnabled
-    ? activityVisibleThreadIds
-    : classicVisibleSidebarThreadIds;
+  const visibleSidebarThreadIds = useMemo(() => {
+    if (drilledProject) {
+      return drilledProjectThreads.map((t) => t.id);
+    }
+    return [];
+  }, [drilledProject, drilledProjectThreads]);
   const visibleSidebarThreadIdSet = useMemo(
-    () =>
-      new Set(
-        activityViewEnabled
-          ? visibleSidebarThreadIds
-          : [...visibleSidebarThreadIds, ...visibleChatThreadIds],
-      ),
-    [activityViewEnabled, visibleChatThreadIds, visibleSidebarThreadIds],
+    () => new Set(visibleSidebarThreadIds),
+    [visibleSidebarThreadIds],
   );
   const visibleSidebarThreads = useMemo(
     // Tree source so an active subagent row also gets PR badges and git targets.
@@ -4559,68 +4641,7 @@ export default function Sidebar() {
               />
             </SidebarSectionToolbar>
           </PreviewCardTrigger>
-          {renderProjectHoverCardPopup(project, allProjectThreadCount)}
         </PreviewCard>
-
-        <div
-          className={cn(
-            disclosureShellClassName(project.expanded),
-            SIDEBAR_NESTED_LIST_OFFSET_CLASS_NAME,
-          )}
-        >
-          <div className={DISCLOSURE_INNER_CLASS}>
-            <SidebarMenuSub
-              className={cn(
-                "mx-0 my-0 w-full translate-x-0 border-l-0 px-0 py-0",
-                SIDEBAR_NESTED_LIST_GAP_CLASS_NAME,
-                disclosureContentClassName(project.expanded),
-              )}
-            >
-              {visibleEntries.map((entry) =>
-                renderThreadRow(entry.thread, orderedProjectThreadIds, entry.depth),
-              )}
-
-              {(canShowMoreThreads || canShowLessThreads) && (
-                <SidebarMenuSubItem className="w-full">
-                  <div className="flex w-full items-center gap-1">
-                    {canShowMoreThreads && (
-                      <SidebarMenuSubButton
-                        render={<button type="button" />}
-                        data-thread-selection-safe
-                        size="sm"
-                        className="h-7 flex-1 translate-x-0 justify-start rounded-lg pr-2 pl-8 text-left text-[length:var(--app-font-size-ui,12px)] text-muted-foreground/79 hover:bg-transparent hover:text-foreground active:bg-transparent active:text-foreground"
-                        onMouseDown={preventFocusOnMouseDown}
-                        onClick={() => {
-                          showMoreThreadsForProject(project.cwd, threadListExtraPages);
-                        }}
-                      >
-                        <span>Show more</span>
-                      </SidebarMenuSubButton>
-                    )}
-                    {canShowLessThreads && (
-                      <SidebarMenuSubButton
-                        render={<button type="button" />}
-                        data-thread-selection-safe
-                        size="sm"
-                        className={cn(
-                          "h-7 translate-x-0 justify-start rounded-lg text-left text-[length:var(--app-font-size-ui,12px)] text-muted-foreground/79 hover:bg-transparent hover:text-foreground active:bg-transparent active:text-foreground",
-                          // Keep the left indent when "Show less" is the only affordance left.
-                          canShowMoreThreads ? "w-auto flex-none px-2" : "flex-1 pr-2 pl-8",
-                        )}
-                        onMouseDown={preventFocusOnMouseDown}
-                        onClick={() => {
-                          showLessThreadsForProject(project.cwd, threadListExtraPages);
-                        }}
-                      >
-                        <span>Show less</span>
-                      </SidebarMenuSubButton>
-                    )}
-                  </div>
-                </SidebarMenuSubItem>
-              )}
-            </SidebarMenuSub>
-          </div>
-        </div>
       </div>
     );
   }
@@ -4643,6 +4664,7 @@ export default function Sidebar() {
         clearSelection();
       }
       drillProject(projectId);
+      setViewingAllApps(false);
     },
     [clearSelection, selectedThreadIds.size, drillProject],
   );
@@ -4655,6 +4677,7 @@ export default function Sidebar() {
         return;
       }
       drillProject(projectId);
+      setViewingAllApps(false);
     },
     [drillProject],
   );
@@ -5420,6 +5443,112 @@ export default function Sidebar() {
               }}
             />
           </SidebarGroup>
+        ) : drilledProject ? (
+          <>
+            <div className="flex items-center gap-1.5 pt-0 pb-1 pr-2.5 pl-1.5">
+              <SidebarIconButton
+                icon={ArrowLeftIcon}
+                label="All apps"
+                glyph="leading"
+                size="header"
+                tooltip="All apps"
+                tooltipSide="bottom"
+                onClick={() => {
+                  setViewingAllApps(true);
+                  collapseProjectsExcept(null);
+                }}
+              />
+              <div className="flex min-w-0 flex-1 items-center gap-1.5 px-1">
+                <div className="shrink-0">
+                  {drilledProject.framework && drilledProject.framework !== "blank" ? (
+                    <FrameworkIcon
+                      framework={drilledProject.framework}
+                      size={14}
+                      className="size-3.5"
+                    />
+                  ) : (
+                    <ProjectSidebarIcon cwd={drilledProject.cwd} expanded={true} />
+                  )}
+                </div>
+                <span className="truncate font-system-ui text-[length:var(--app-font-size-ui,12px)] font-medium text-foreground">
+                  {drilledProject.name}
+                </span>
+              </div>
+              <div className="ml-auto flex items-center gap-1.5">
+                <SidebarIconButton
+                  icon={SearchIcon}
+                  label="Search"
+                  glyph="leading"
+                  size="header"
+                  tooltip={searchShortcutLabel ? `Search (${searchShortcutLabel})` : "Search"}
+                  tooltipSide="bottom"
+                  onClick={() => {
+                    setSearchPaletteOpen(true);
+                  }}
+                />
+              </div>
+            </div>
+
+            <div key={drilledProject.id} className="sidebar-surface-enter">
+              <SidebarGroup className="px-1.5 pt-1 pb-1.5">
+                <SidebarMenu className="gap-0.5">
+                  <SidebarPrimaryAction
+                    icon={AddPlusIcon}
+                    iconClassName="size-3.5"
+                    label="New chat"
+                    onClick={() => {
+                      prefetchModelsForProjectNewThread(drilledProject.id, { includeDroid: true });
+                      void handleNewThread(drilledProject.id, {
+                        envMode: resolveSidebarNewThreadEnvMode({
+                          defaultEnvMode: appSettings.defaultThreadEnvMode,
+                        }),
+                      });
+                    }}
+                    onMouseEnter={() => prefetchModelsForProjectNewThread(drilledProject.id)}
+                    onFocus={() => prefetchModelsForProjectNewThread(drilledProject.id)}
+                  />
+                </SidebarMenu>
+              </SidebarGroup>
+
+              <SidebarGroup className="px-1.5 py-1.5">
+                {chatGroups.length > 0 ? (
+                  chatGroups.map((group) => (
+                    <div key={group.key} className="mb-3 last:mb-0">
+                      <div className="px-2 py-1 text-[11px] font-medium text-muted-foreground/60 select-none">
+                        {group.label}
+                      </div>
+                      <SidebarMenu className="gap-0.5">
+                        {group.threads.map((thread) =>
+                          renderThreadRow(thread, drilledOrderedProjectThreadIds, 0, true),
+                        )}
+                      </SidebarMenu>
+                    </div>
+                  ))
+                ) : (
+                  <div className="space-y-2 px-3 py-6 text-center">
+                    <p className="text-[length:var(--app-font-size-ui,12px)] text-muted-foreground/60">
+                      No chats yet
+                    </p>
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      onClick={() => {
+                        prefetchModelsForProjectNewThread(drilledProject.id, { includeDroid: true });
+                        void handleNewThread(drilledProject.id, {
+                          envMode: resolveSidebarNewThreadEnvMode({
+                            defaultEnvMode: appSettings.defaultThreadEnvMode,
+                          }),
+                        });
+                      }}
+                      className="text-[length:var(--app-font-size-ui,12px)]"
+                    >
+                      Start a chat
+                    </Button>
+                  </div>
+                )}
+              </SidebarGroup>
+            </div>
+          </>
         ) : (
           <>
             <div className="flex items-center gap-1 pt-0 pb-1 pr-2.5 pl-1.5">
@@ -5439,189 +5568,120 @@ export default function Sidebar() {
                     setSearchPaletteOpen(true);
                   }}
                 />
-                <SidebarActivityBellButton
-                  active={activityViewEnabled}
-                  showUnreadDot={hasUnreadActivity}
-                  shortcutLabel={activityShortcutLabel}
-                  onClick={() => setActivityViewEnabledSmoothly(!activityViewEnabled)}
-                />
               </div>
             </div>
 
-            {/* The keyed content remounts with a short enter animation. */}
-            <div
-              key={activityViewEnabled ? "activity" : "threads"}
-              className="sidebar-surface-enter"
-            >
-              {/* Primary sidebar actions stay limited to features we currently ship. */}
+            <div key="all-apps" className="sidebar-surface-enter">
               <SidebarGroup className="px-1.5 pt-1 pb-1.5">
                 <SidebarMenu className="gap-0.5">
                   <SidebarPrimaryAction
-                    icon={NewThreadIcon}
+                    icon={AddPlusIcon}
                     iconClassName="size-3.5"
-                    label="New thread"
-                    onClick={handlePrimaryNewThread}
-                    onMouseEnter={prefetchModelsForPrimaryNewThread}
-                    onFocus={prefetchModelsForPrimaryNewThread}
+                    label="New app"
+                    onClick={handleStartAddProject}
                   />
                 </SidebarMenu>
               </SidebarGroup>
 
-              {activityViewEnabled ? (
-                <SidebarGroup className="px-1.5 py-1.5">
-                  <SidebarActivityView
-                    threads={sidebarThreads}
-                    projectById={projectById}
-                    activeThreadId={visualActiveSidebarThreadId}
-                    pinnedThreadIdSet={pinnedThreadIdSet}
-                    settledOverrideByThreadId={settledOverrideByThreadId}
-                    threadsHydrated={threadsHydrated}
-                    resolveThreadStatus={resolveThreadStatusForSidebar}
-                    onOpenThread={activateThreadFromSidebarIntent}
-                    onSetThreadSettled={setThreadSettledWithToast}
-                    onToggleThreadPinned={toggleThreadPinned}
-                    onArchiveThread={(threadId) => void archiveThreadWithUndo(threadId)}
-                    onMarkThreadRead={markThreadVisited}
-                    onRenameThread={openRenameThreadDialog}
-                    onThreadRenamePointerUp={handleThreadRenamePointerUp}
-                    onThreadContextMenu={(threadId, position) => {
-                      void handleThreadContextMenu(threadId, position);
-                    }}
-                    onProjectContextMenu={handleProjectContextMenu}
-                    prByThreadId={prByThreadId}
-                    onVisibleThreadIdsChange={handleActivityVisibleThreadIdsChange}
-                    renderThreadHoverCard={(thread, anchorId) =>
-                      renderThreadHoverCardPopup(
-                        thread,
-                        anchorId,
-                        visualActiveSidebarThreadId === thread.id,
-                      )
-                    }
-                    onCreateChat={handlePrimaryNewThread}
-                    onAddProject={handleStartAddProject}
-                  />
-                </SidebarGroup>
-              ) : (
-                <SidebarGroup className="px-1.5 py-1.5">
-                  {renderListSectionHeader(
-                    "Projects",
-                    <>
-                      {standardProjects.length > 0 ? (
-                        <SidebarIconButton
-                          icon={allProjectsExpanded ? CollapseAllIcon : ExpandAllIcon}
-                          label={
-                            allProjectsExpanded
-                              ? focusedProjectId
-                                ? "Collapse all projects except the active project"
-                                : "Collapse all projects"
-                              : "Expand all projects"
-                          }
-                          className="disabled:cursor-default disabled:opacity-45"
-                          onClick={handleToggleProjects}
-                          tooltip={
-                            allProjectsExpanded
-                              ? focusedProjectId
-                                ? "Collapse all projects except the active chat's project"
-                                : "Collapse all projects"
-                              : "Expand all projects"
-                          }
-                          tooltipSide="bottom"
-                        />
-                      ) : null}
-                      <ProjectSortMenu
-                        projectSortOrder={appSettings.sidebarProjectSortOrder}
-                        threadSortOrder={appSettings.sidebarThreadSortOrder}
-                        onProjectSortOrderChange={(sortOrder) => {
-                          updateSettings({ sidebarProjectSortOrder: sortOrder });
-                        }}
-                        onThreadSortOrderChange={(sortOrder) => {
-                          updateSettings({ sidebarThreadSortOrder: sortOrder });
-                        }}
-                      />
-                      <SidebarIconButton
-                        icon={AddPlusIcon}
-                        label="Add project"
-                        onClick={handleStartAddProject}
-                        tooltip="Add project"
-                        tooltipSide="right"
-                      />
-                    </>,
-                  )}
-
-                  {isManualProjectSorting ? (
-                    <DndContext
-                      sensors={projectDnDSensors}
-                      collisionDetection={projectCollisionDetection}
-                      modifiers={[restrictToVerticalAxis, restrictToFirstScrollableAncestor]}
-                      onDragStart={handleProjectDragStart}
-                      onDragEnd={handleProjectDragEnd}
-                      onDragCancel={handleProjectDragCancel}
-                    >
-                      <SidebarMenu className="gap-3">
-                        <SortableContext
-                          items={visibleProjects.map((project) => project.id)}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          {visibleProjects.map((project) => (
-                            <SortableProjectItem key={project.id} projectId={project.id}>
-                              {(dragHandleProps) => renderProjectItem(project, dragHandleProps)}
-                            </SortableProjectItem>
-                          ))}
-                        </SortableContext>
-                      </SidebarMenu>
-                    </DndContext>
-                  ) : (
-                    <SidebarMenu ref={attachProjectListAutoAnimateRef} className="gap-3">
-                      {visibleProjects.map((project) => (
+              <SidebarGroup className="px-1.5 py-1.5">
+                {favoriteProjects.length > 0 && (
+                  <div className="mb-3">
+                    {renderListSectionHeader("Favorites", null)}
+                    <SidebarMenu className="gap-1">
+                      {favoriteProjects.map((project) => (
                         <SidebarMenuItem key={project.id} className="rounded-md">
                           {renderProjectItem(project, null)}
                         </SidebarMenuItem>
                       ))}
                     </SidebarMenu>
-                  )}
+                  </div>
+                )}
 
-                  {hasMoreVisibleProjects && (
-                    <SidebarMenuItem className="rounded-md">
-                      <SidebarMenuButton
-                        size="sm"
-                        data-thread-selection-safe
-                        className="h-7 w-full cursor-pointer justify-start rounded-lg text-left text-[length:var(--app-font-size-ui,12px)] text-muted-foreground/79 hover:bg-transparent hover:text-foreground active:bg-transparent active:text-foreground"
-                        onMouseDown={preventFocusOnMouseDown}
-                        onClick={showMoreVisibleProjects}
+                {otherProjects.length > 0 && (
+                  <div>
+                    {renderListSectionHeader(
+                      favoriteProjects.length > 0 ? "Apps" : "Projects",
+                      <>
+                        <ProjectSortMenu
+                          projectSortOrder={appSettings.sidebarProjectSortOrder}
+                          threadSortOrder={appSettings.sidebarThreadSortOrder}
+                          onProjectSortOrderChange={(sortOrder) => {
+                            updateSettings({ sidebarProjectSortOrder: sortOrder });
+                          }}
+                          onThreadSortOrderChange={(sortOrder) => {
+                            updateSettings({ sidebarThreadSortOrder: sortOrder });
+                          }}
+                        />
+                        <SidebarIconButton
+                          icon={AddPlusIcon}
+                          label="Add app"
+                          onClick={handleStartAddProject}
+                          tooltip="Add app"
+                          tooltipSide="right"
+                        />
+                      </>,
+                    )}
+                    {isManualProjectSorting ? (
+                      <DndContext
+                        sensors={projectDnDSensors}
+                        collisionDetection={projectCollisionDetection}
+                        modifiers={[restrictToVerticalAxis, restrictToFirstScrollableAncestor]}
+                        onDragStart={handleProjectDragStart}
+                        onDragEnd={handleProjectDragEnd}
+                        onDragCancel={handleProjectDragCancel}
                       >
-                        <span className="truncate pl-6">See more</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
+                        <SidebarMenu className="gap-1">
+                          <SortableContext
+                            items={otherProjects.map((project) => project.id)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            {otherProjects.map((project) => (
+                              <SortableProjectItem key={project.id} projectId={project.id}>
+                                {(dragHandleProps) => renderProjectItem(project, dragHandleProps)}
+                              </SortableProjectItem>
+                            ))}
+                          </SortableContext>
+                        </SidebarMenu>
+                      </DndContext>
+                    ) : (
+                      <SidebarMenu ref={attachProjectListAutoAnimateRef} className="gap-1">
+                        {otherProjects.map((project) => (
+                          <SidebarMenuItem key={project.id} className="rounded-md">
+                            {renderProjectItem(project, null)}
+                          </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
+                    )}
+                  </div>
+                )}
 
-                  {projectEmptyState === "loading" && (
-                    <div
-                      className="space-y-2 px-2 pt-4"
-                      aria-live="polite"
-                      aria-label="Loading projects"
-                    >
-                      <div className="text-center text-[length:var(--app-font-size-ui,12px)] text-muted-foreground/58">
-                        Loading projects...
-                      </div>
-                      <div className="mx-auto grid w-full max-w-42 gap-1.5 opacity-70">
-                        <div className="h-2 rounded-full bg-muted/55 animate-pulse" />
-                        <div className="mx-auto h-2 w-4/5 rounded-full bg-muted/40 animate-pulse" />
-                        <div className="mx-auto h-2 w-3/5 rounded-full bg-muted/30 animate-pulse" />
-                      </div>
+                {projectEmptyState === "loading" && (
+                  <div
+                    className="space-y-2 px-2 pt-4"
+                    aria-live="polite"
+                    aria-label="Loading projects"
+                  >
+                    <div className="text-center text-[length:var(--app-font-size-ui,12px)] text-muted-foreground/58">
+                      Loading projects...
                     </div>
-                  )}
+                    <div className="mx-auto grid w-full max-w-42 gap-1.5 opacity-70">
+                      <div className="h-2 rounded-full bg-muted/55 animate-pulse" />
+                      <div className="mx-auto h-2 w-4/5 rounded-full bg-muted/40 animate-pulse" />
+                      <div className="mx-auto h-2 w-3/5 rounded-full bg-muted/30 animate-pulse" />
+                    </div>
+                  </div>
+                )}
 
-                  {projectEmptyState === "empty" && (
-                    <SpaceEmptyState
-                      space={activeSpace}
-                      hasProjectsElsewhere={allStandardProjectsBase.length > 0}
-                      onMoveProjects={() => {
-                        if (activeSpace) openSpaceProjectPicker(activeSpace.id);
-                      }}
-                    />
-                  )}
-                </SidebarGroup>
-              )}
+                {projectEmptyState === "empty" && (
+                  <SpaceEmptyState
+                    space={activeSpace}
+                    hasProjectsElsewhere={allStandardProjectsBase.length > 0}
+                    onMoveProjects={() => {
+                      if (activeSpace) openSpaceProjectPicker(activeSpace.id);
+                    }}
+                  />
+                )}
+              </SidebarGroup>
             </div>
           </>
         )}
@@ -6201,6 +6261,7 @@ export default function Sidebar() {
           onOpenProject={handleOpenProjectFromSearch}
           onImportThread={handleImportThread}
           onOpenThread={(threadId) => {
+            setViewingAllApps(false);
             activateThreadFromSidebarIntent(ThreadId.makeUnsafe(threadId));
           }}
         />

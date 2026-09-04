@@ -146,7 +146,7 @@ export const CaideClaudeToolCard: React.FC<CaideClaudeToolCardProps> = ({
   const formattedContent = formatContent(content);
 
   return (
-    <div className="my-2 select-none">
+    <div className="my-0.5 select-none">
       <CaideCard
         state={cardState}
         accent={meta.accent}
@@ -154,36 +154,36 @@ export const CaideClaudeToolCard: React.FC<CaideClaudeToolCardProps> = ({
         isExpanded={isExpanded}
       >
         <CaideCardHeader icon={meta.icon} accent={meta.accent}>
-          <div className="flex min-w-0 flex-1 items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 truncate text-[12px]">
             <CaideBadge accent={meta.accent}>{meta.verb}</CaideBadge>
             {meta.target && (
-              <span className="max-w-[320px] truncate rounded border border-border/40 bg-muted/80 px-1.5 py-0.5 font-mono text-[11px] text-foreground/90 sm:max-w-[420px]">
+              <span className="truncate font-mono text-[11.5px] text-muted-foreground transition-colors group-hover:text-foreground">
                 {meta.target}
               </span>
             )}
           </div>
-          <div className="flex shrink-0 items-center gap-2.5">
+          <div className="flex shrink-0 items-center gap-2">
             <CaideStateIndicator state={cardState} />
             <DisclosureChevron
               open={isExpanded}
-              className="h-3.5 w-3.5 text-muted-foreground/70 transition-colors group-hover:text-foreground"
+              className="h-3 w-3 text-muted-foreground/40 transition-colors group-hover:text-foreground"
             />
           </div>
         </CaideCardHeader>
 
         <CaideLazyContent open={isExpanded}>
           {formattedContent ? (
-            <div className="overflow-hidden rounded-lg border border-border/50 bg-muted/30">
-              <div className="flex items-center justify-between border-b border-border/40 bg-muted/40 px-3 py-1.5 text-[10.5px] text-muted-foreground">
-                <span className="font-medium">Output</span>
+            <div className="overflow-hidden rounded-lg border border-border/40 bg-black/60 dark:bg-black/80 my-1">
+              <div className="flex items-center justify-between border-b border-border/30 bg-muted/20 px-3 py-1 text-[10.5px] text-muted-foreground/80 font-mono">
+                <span>{meta.verb === "Bash" ? "Terminal output" : "Output"}</span>
                 <CaideCopyButton text={content} />
               </div>
-              <pre className="max-h-72 overflow-y-auto p-3 font-mono text-[11px] leading-relaxed break-all whitespace-pre-wrap text-foreground/90 select-text">
+              <pre className="max-h-72 overflow-y-auto p-2.5 font-mono text-[11px] leading-relaxed break-all whitespace-pre-wrap text-foreground/90 select-text">
                 {formattedContent}
               </pre>
             </div>
           ) : (
-            <div className="py-2 text-center text-[11px] text-muted-foreground italic">
+            <div className="py-1.5 text-left text-[11px] text-muted-foreground/60 italic px-2">
               No output recorded
             </div>
           )}

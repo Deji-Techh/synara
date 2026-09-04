@@ -70,10 +70,10 @@ export const CaideCard: React.FC<CaideCardProps> = ({
             }
           : undefined
       }
-      className={`my-2 min-w-0 overflow-hidden rounded-xl border border-border/70 bg-card/40 shadow-xs transition-[background-color,border-color,box-shadow] duration-150 hover:bg-card/70 ${
-        onClick ? "cursor-pointer" : ""
+      className={`group my-0.5 min-w-0 rounded-md transition-colors duration-150 ${
+        onClick ? "cursor-pointer hover:bg-muted/35" : ""
       } ${className}`}
-      style={railVar ? { borderLeft: `3px solid ${railVar}` } : undefined}
+      style={railVar ? { borderLeft: `2px solid ${railVar}`, paddingLeft: "6px" } : undefined}
     >
       {children}
     </div>
@@ -86,7 +86,7 @@ interface CaideCardHeaderProps {
   accent?: CardAccent;
 }
 
-/** Header row with a theme-tinted icon medallion and flexible content. */
+/** Header row with a subtle icon and clean typography. */
 export const CaideCardHeader: React.FC<CaideCardHeaderProps> = ({
   children,
   icon,
@@ -94,35 +94,26 @@ export const CaideCardHeader: React.FC<CaideCardHeaderProps> = ({
 }) => {
   const v = ACCENT_VAR[accent];
   return (
-    <div className="flex min-h-12 min-w-0 items-center gap-2.5 px-3 py-2.5 text-xs font-medium text-foreground/90 select-none">
+    <div className="flex min-h-7 min-w-0 items-center gap-2 px-1.5 py-0.5 text-xs text-muted-foreground select-none">
       {icon && (
         <div
-          className="flex size-7 shrink-0 items-center justify-center rounded-lg"
-          style={{ backgroundColor: tint(v, 12), color: v }}
+          className="flex size-4 shrink-0 items-center justify-center opacity-75 transition-opacity group-hover:opacity-100"
+          style={{ color: v }}
         >
           {icon}
         </div>
       )}
-      <div className="flex min-w-0 flex-1 items-center gap-2">{children}</div>
+      <div className="flex min-w-0 flex-1 items-center gap-1.5">{children}</div>
     </div>
   );
 };
 
-/** Small ring pill for labeling card kinds (tool verbs, SQL, plan…). */
+/** Minimal text badge for tool verbs. */
 export const CaideBadge: React.FC<{ children: ReactNode; accent?: CardAccent }> = ({
   children,
-  accent = "neutral",
 }) => {
-  const v = ACCENT_VAR[accent];
   return (
-    <span
-      className="inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset"
-      style={{
-        backgroundColor: tint(v, 10),
-        color: accent === "neutral" ? undefined : v,
-        ["--tw-ring-color" as string]: tint(v, 30),
-      }}
-    >
+    <span className="shrink-0 font-medium text-foreground/90">
       {children}
     </span>
   );
@@ -133,7 +124,7 @@ export const CaideCardContent: React.FC<{ children: ReactNode; className?: strin
   className = "",
 }) => {
   return (
-    <div className={`border-t border-border/40 px-3.5 pt-1 pb-3 text-xs ${className}`}>
+    <div className={`mt-1 text-xs ${className}`}>
       {children}
     </div>
   );
@@ -154,7 +145,7 @@ export const CaideLazyContent: React.FC<{ open: boolean; children: ReactNode }> 
 
   return (
     <DisclosureRegion open={open}>
-      <div className="mt-1.5 px-1 pt-1">{hasOpened ? children : null}</div>
+      <div className="mt-1 px-1 pb-1">{hasOpened ? children : null}</div>
     </DisclosureRegion>
   );
 };
@@ -167,12 +158,8 @@ export const CaideStateIndicator: React.FC<{
   if (state === "pending") {
     return (
       <span
-        className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-medium"
-        style={{
-          color: ACCENT_VAR.info,
-          backgroundColor: tint(ACCENT_VAR.info, 10),
-          borderColor: tint(ACCENT_VAR.info, 25),
-        }}
+        className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium opacity-80"
+        style={{ color: ACCENT_VAR.info }}
       >
         <IconLoader2 size={11} className="animate-spin" />
         {pendingLabel}
@@ -182,14 +169,9 @@ export const CaideStateIndicator: React.FC<{
   if (state === "complete") {
     return (
       <span
-        className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-medium"
-        style={{
-          color: ACCENT_VAR.success,
-          backgroundColor: tint(ACCENT_VAR.success, 10),
-          borderColor: tint(ACCENT_VAR.success, 25),
-        }}
+        className="inline-flex shrink-0 items-center gap-0.5 text-[11px] text-muted-foreground/50 transition-opacity group-hover:text-muted-foreground"
       >
-        <IconCheck size={11} strokeWidth={2.5} />
+        <IconCheck size={11} strokeWidth={2} className="opacity-70" />
         Done
       </span>
     );
@@ -197,12 +179,8 @@ export const CaideStateIndicator: React.FC<{
   if (state === "aborted") {
     return (
       <span
-        className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-medium"
-        style={{
-          color: ACCENT_VAR.warning,
-          backgroundColor: tint(ACCENT_VAR.warning, 10),
-          borderColor: tint(ACCENT_VAR.warning, 25),
-        }}
+        className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium"
+        style={{ color: ACCENT_VAR.warning }}
       >
         <IconBan size={11} />
         {abortedLabel}
@@ -211,14 +189,10 @@ export const CaideStateIndicator: React.FC<{
   }
   return (
     <span
-      className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-medium"
-      style={{
-        color: ACCENT_VAR.danger,
-        backgroundColor: tint(ACCENT_VAR.danger, 10),
-        borderColor: tint(ACCENT_VAR.danger, 25),
-      }}
+      className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium"
+      style={{ color: ACCENT_VAR.danger }}
     >
-      <IconX size={11} strokeWidth={2.5} />
+      <IconX size={11} strokeWidth={2} />
       Failed
     </span>
   );
