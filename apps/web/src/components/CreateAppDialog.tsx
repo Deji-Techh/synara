@@ -5,7 +5,9 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 
-import type { AppCreateResult, ProjectFramework } from "@caide/contracts";
+import { DEFAULT_MODEL_BY_PROVIDER, type AppCreateResult, type ProjectFramework } from "@caide/contracts";
+import { useAppSettings } from "../appSettings";
+import { useComposerDraftStore } from "../composerDraftStore";
 
 import { Button } from "./ui/button";
 import {
@@ -89,6 +91,9 @@ export function CreateAppDialog(props: {
         ? "App name must be 64 characters or fewer."
         : null;
 
+  const { settings } = useAppSettings();
+  const stickyActiveProvider = useComposerDraftStore((state) => state.stickyActiveProvider);
+
   const handleSubmit = useCallback(async () => {
     if (nameError) {
       setError(nameError);
@@ -103,7 +108,13 @@ export function CreateAppDialog(props: {
     setSubmitting(true);
     setError(null);
     try {
-      const result = await api.app.createApp({ name: trimmed, framework });
+      const activeProvider = stickyActiveProvider ?? settings.defaultProvider;
+      const defaultModel = DEFAULT_MODEL_BY_PROVIDER[activeProvider] ?? "default";
+      const result = await api.app.createApp({
+        name: trimmed,
+        framework,
+        modelSelection: { provider: activeProvider, model: defaultModel },
+      });
       props.onCreated?.(result);
       props.onOpenChange(false);
     } catch (e) {
@@ -111,7 +122,7 @@ export function CreateAppDialog(props: {
     } finally {
       setSubmitting(false);
     }
-  }, [name, nameError, framework, props]);
+  }, [name, nameError, framework, props, settings.defaultProvider, stickyActiveProvider]);
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>

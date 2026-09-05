@@ -90,6 +90,26 @@ export const UiDensity = Schema.Literals(UI_DENSITY_MODES);
 export type UiDensity = typeof UiDensity.Type;
 export { DEFAULT_UI_DENSITY };
 
+export const ChatLineHeight = Schema.Literals(["compact", "normal", "relaxed", "loose"]);
+export type ChatLineHeight = typeof ChatLineHeight.Type;
+export const DEFAULT_CHAT_LINE_HEIGHT: ChatLineHeight = "relaxed";
+
+export const ChatWordSpacing = Schema.Literals(["tight", "normal", "wide"]);
+export type ChatWordSpacing = typeof ChatWordSpacing.Type;
+export const DEFAULT_CHAT_WORD_SPACING: ChatWordSpacing = "normal";
+
+export const ChatLetterSpacing = Schema.Literals(["tight", "normal", "wide"]);
+export type ChatLetterSpacing = typeof ChatLetterSpacing.Type;
+export const DEFAULT_CHAT_LETTER_SPACING: ChatLetterSpacing = "normal";
+
+export const ChatFontWeight = Schema.Literals(["normal", "medium", "bolder"]);
+export type ChatFontWeight = typeof ChatFontWeight.Type;
+export const DEFAULT_CHAT_FONT_WEIGHT: ChatFontWeight = "medium";
+
+export const ChatHighlightColor = Schema.Literals(["amber", "emerald", "sky", "violet", "rose"]);
+export type ChatHighlightColor = typeof ChatHighlightColor.Type;
+export const DEFAULT_CHAT_HIGHLIGHT_COLOR: ChatHighlightColor = "amber";
+
 export function getDefaultNativeFontSmoothing(platform = globalThis.navigator?.platform ?? "") {
   return /mac|iphone|ipad|ipod/i.test(platform);
 }
@@ -239,6 +259,12 @@ export const AppSettingsSchema = Schema.Struct({
       slug: Schema.String,
     }),
   ).pipe(withDefaults(() => [])),
+  // Chat typography & formatting customizations
+  chatLineHeight: ChatLineHeight.pipe(withDefaults(() => DEFAULT_CHAT_LINE_HEIGHT)),
+  chatWordSpacing: ChatWordSpacing.pipe(withDefaults(() => DEFAULT_CHAT_WORD_SPACING)),
+  chatLetterSpacing: ChatLetterSpacing.pipe(withDefaults(() => DEFAULT_CHAT_LETTER_SPACING)),
+  chatFontWeight: ChatFontWeight.pipe(withDefaults(() => DEFAULT_CHAT_FONT_WEIGHT)),
+  chatHighlightColor: ChatHighlightColor.pipe(withDefaults(() => DEFAULT_CHAT_HIGHLIGHT_COLOR)),
 });
 export type AppSettings = typeof AppSettingsSchema.Type;
 

@@ -183,6 +183,7 @@ function sanitizeModelSelection(raw: any) {
   return {
     provider,
     model: parsed.model || "default",
+    ...(parsed.options ? { options: parsed.options } : {}),
     ...(parsed.customModelName ? { customModelName: parsed.customModelName } : {}),
   };
 }
@@ -966,7 +967,12 @@ function messageSentPayload(threadId: string, msg: any): any {
 // Build a schema-valid `thread.meta-updated` payload.
 function threadMetaUpdatedPayload(
   threadId: string,
-  fields: { title?: string; runtimeMode?: string; interactionMode?: string } = {},
+  fields: {
+    title?: string;
+    runtimeMode?: string;
+    interactionMode?: string;
+    modelSelection?: any;
+  } = {},
 ): any {
   const now = new Date().toISOString();
   return {
@@ -974,6 +980,7 @@ function threadMetaUpdatedPayload(
     ...(fields.title !== undefined ? { title: fields.title } : {}),
     ...(fields.runtimeMode !== undefined ? { runtimeMode: fields.runtimeMode } : {}),
     ...(fields.interactionMode !== undefined ? { interactionMode: fields.interactionMode } : {}),
+    ...(fields.modelSelection !== undefined ? { modelSelection: fields.modelSelection } : {}),
     updatedAt: now,
   };
 }
@@ -1273,6 +1280,10 @@ export class OrchestrationEngineService extends ServiceMap.Service<
           const existing = inMemoryThreads.find((t) => t.id === command.threadId);
           if (existing) {
             if (command.title !== undefined) existing.title = command.title;
+            if (command.modelSelection !== undefined) {
+              existing.modelSelection =
+                sanitizeModelSelection(command.modelSelection) || command.modelSelection;
+            }
             existing.updatedAt = now;
             globalSnapshotSequence += 1;
             savePersistedState();
@@ -1281,7 +1292,10 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               aggregateKind: "thread",
               aggregateId: command.threadId,
               type: "thread.meta-updated",
-              payload: threadMetaUpdatedPayload(command.threadId, { title: command.title }),
+              payload: threadMetaUpdatedPayload(command.threadId, {
+                title: command.title,
+                modelSelection: existing.modelSelection,
+              }),
               createdAt: now,
             });
           }
@@ -1640,6 +1654,11 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               turnDiffSummaries: [],
             };
             inMemoryThreads.push(thread);
+          } else {
+            if (command.modelSelection) {
+              thread.modelSelection =
+                sanitizeModelSelection(command.modelSelection) || command.modelSelection;
+            }
           }
 
           const turnId = `turn-${Date.now().toString(36)}`;

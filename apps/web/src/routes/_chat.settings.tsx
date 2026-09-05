@@ -54,6 +54,20 @@ import {
 import { SkillsSettingsPanel } from "../components/settings/SkillsSettingsPanel";
 import { ThemeModePicker } from "../components/settings/ThemeModePicker";
 import { PaletteSwatchPicker } from "../components/settings/PaletteSwatchPicker";
+import { ChatHighlightColorPicker } from "../components/settings/ChatHighlightColorPicker";
+import {
+  CHAT_FONT_WEIGHT_OPTIONS,
+  CHAT_LETTER_SPACING_OPTIONS,
+  CHAT_LINE_HEIGHT_OPTIONS,
+  CHAT_WORD_SPACING_OPTIONS,
+  resolveChatTypographyCssProperties,
+} from "../lib/chatTypography";
+import type {
+  ChatFontWeight,
+  ChatLetterSpacing,
+  ChatLineHeight,
+  ChatWordSpacing,
+} from "../appSettings";
 import { SidebarBackdropSettings } from "../components/settings/SidebarBackdropSettings";
 import { PALETTE_THEMES, type PaletteThemeId } from "../theme/paletteThemes";
 import { ThemePackEditor } from "../components/ThemePackEditor";
@@ -674,6 +688,156 @@ function SettingsRouteView() {
             </div>
           }
         />
+
+        <SettingsRow
+          title="Chat text boldness"
+          description="Control the weight of assistant and user chat messages. Medium and Extra Bold provide richer contrast and punchier bold text."
+          resetAction={
+            settings.chatFontWeight !== defaults.chatFontWeight ? (
+              <SettingResetButton
+                label="chat text boldness"
+                onClick={() =>
+                  updateSettings({
+                    chatFontWeight: defaults.chatFontWeight,
+                  })
+                }
+              />
+            ) : null
+          }
+          control={
+            <SettingsSegmentedControl
+              value={settings.chatFontWeight}
+              onValueChange={(value) => {
+                updateSettings({ chatFontWeight: value as ChatFontWeight });
+              }}
+              ariaLabel="Chat text boldness"
+              options={CHAT_FONT_WEIGHT_OPTIONS}
+            />
+          }
+        />
+
+        <SettingsRow
+          title="Line spacing"
+          description="Set the vertical line spacing for transcript messages. Relaxed gives optimal breathing room for long responses."
+          resetAction={
+            settings.chatLineHeight !== defaults.chatLineHeight ? (
+              <SettingResetButton
+                label="line spacing"
+                onClick={() =>
+                  updateSettings({
+                    chatLineHeight: defaults.chatLineHeight,
+                  })
+                }
+              />
+            ) : null
+          }
+          control={
+            <SettingsSegmentedControl
+              value={settings.chatLineHeight}
+              onValueChange={(value) => {
+                updateSettings({ chatLineHeight: value as ChatLineHeight });
+              }}
+              ariaLabel="Line spacing"
+              options={CHAT_LINE_HEIGHT_OPTIONS}
+            />
+          }
+        />
+
+        <SettingsRow
+          title="Word spacing"
+          description="Adjust space between words in chat messages for improved readability."
+          resetAction={
+            settings.chatWordSpacing !== defaults.chatWordSpacing ? (
+              <SettingResetButton
+                label="word spacing"
+                onClick={() =>
+                  updateSettings({
+                    chatWordSpacing: defaults.chatWordSpacing,
+                  })
+                }
+              />
+            ) : null
+          }
+          control={
+            <SettingsSegmentedControl
+              value={settings.chatWordSpacing}
+              onValueChange={(value) => {
+                updateSettings({ chatWordSpacing: value as ChatWordSpacing });
+              }}
+              ariaLabel="Word spacing"
+              options={CHAT_WORD_SPACING_OPTIONS}
+            />
+          }
+        />
+
+        <SettingsRow
+          title="Letter spacing"
+          description="Fine-tune character tracking for chat headings and message body text."
+          resetAction={
+            settings.chatLetterSpacing !== defaults.chatLetterSpacing ? (
+              <SettingResetButton
+                label="letter spacing"
+                onClick={() =>
+                  updateSettings({
+                    chatLetterSpacing: defaults.chatLetterSpacing,
+                  })
+                }
+              />
+            ) : null
+          }
+          control={
+            <SettingsSegmentedControl
+              value={settings.chatLetterSpacing}
+              onValueChange={(value) => {
+                updateSettings({ chatLetterSpacing: value as ChatLetterSpacing });
+              }}
+              ariaLabel="Letter spacing"
+              options={CHAT_LETTER_SPACING_OPTIONS}
+            />
+          }
+        />
+
+        <SettingsRow
+          title="Highlight accent color"
+          description="Choose the color used for key takeaways, inline highlights, and marker annotations."
+          resetAction={
+            settings.chatHighlightColor !== defaults.chatHighlightColor ? (
+              <SettingResetButton
+                label="highlight color"
+                onClick={() =>
+                  updateSettings({
+                    chatHighlightColor: defaults.chatHighlightColor,
+                  })
+                }
+              />
+            ) : null
+          }
+          control={
+            <ChatHighlightColorPicker
+              value={settings.chatHighlightColor}
+              onValueChange={(value) => updateSettings({ chatHighlightColor: value })}
+              ariaLabel="Highlight accent color"
+            />
+          }
+        />
+
+        <div className="rounded-xl border border-border/70 bg-card/60 p-4 space-y-2.5">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="font-medium text-foreground/80">Typography & Spacing Live Preview</span>
+            <span>Real-time preview</span>
+          </div>
+          <div
+            className="chat-markdown rounded-lg border border-border/50 bg-background/80 p-3.5 shadow-2xs transition-all"
+            style={resolveChatTypographyCssProperties(settings, resolvedTheme === "dark")}
+          >
+            <p className="text-foreground">
+              Here is how assistant messages render. <strong>Key concepts and solutions appear punchier with bolder emphasis.</strong>
+            </p>
+            <p className="text-foreground">
+              Important alerts use your chosen accent like <mark className="chat-highlight">critical notice</mark> for effortless scanning.
+            </p>
+          </div>
+        </div>
 
         <SettingsRow
           title="Terminal font size"

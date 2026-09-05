@@ -66,6 +66,7 @@ import {
   SPAWN_SUBAGENT_ROLE_ATTRIBUTE,
   remarkSpawnSubagentChip,
 } from "../lib/remarkSpawnSubagentChip";
+import { remarkChatHighlight } from "../lib/remarkChatHighlight";
 import { BotIcon } from "~/lib/icons";
 import { IconButton } from "./ui/icon-button";
 import { parseFullMessage, type Block } from "../lib/streamingMessageParser";
@@ -173,11 +174,16 @@ const MARKDOWN_REMARK_PLUGINS: MarkdownRemarkPlugins = [
   remarkGfm,
   [remarkMath, { singleDollarTextMath: true }],
   remarkSpawnSubagentChip,
+  remarkChatHighlight,
 ];
 // User prompts are casual typing, not authored markdown: hard-break single
 // newlines and skip math entirely (the composer chip plugin is appended per
 // render because it closes over the message's mention references).
-const USER_MARKDOWN_REMARK_PLUGINS: MarkdownRemarkPlugins = [remarkGfm, remarkBreaks];
+const USER_MARKDOWN_REMARK_PLUGINS: MarkdownRemarkPlugins = [
+  remarkGfm,
+  remarkBreaks,
+  remarkChatHighlight,
+];
 const USER_MARKDOWN_REHYPE_PLUGINS: MarkdownRehypePlugins = [];
 const LITERAL_DOLLAR_PLACEHOLDER = "\uE000";
 // `\$` is two source characters that render as a single `$`. Collapsing it to one placeholder used
@@ -194,6 +200,14 @@ function restoreLiteralDollarPlaceholders(value: string): string {
     .replaceAll(LITERAL_DOLLAR_PLACEHOLDER, "$")
     .replaceAll(encodeURIComponent(ESCAPED_DOLLAR_PLACEHOLDER), "$")
     .replaceAll(encodeURIComponent(LITERAL_DOLLAR_PLACEHOLDER), "$");
+}
+
+function tryParseJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
 }
 
 function markdownUrlTransform(href: string): string {
@@ -1343,6 +1357,13 @@ function ChatMarkdown({
         }
         return <input {...props} />;
       },
+      mark({ node: _node, children, ...props }) {
+        return (
+          <mark className="chat-highlight" {...props}>
+            {children}
+          </mark>
+        );
+      },
       // Custom elements emitted by the composer-chips remark plugin (user
       // variant only; they never appear in assistant markdown). `Components`
       // only models intrinsic tags, so these entries are typed on their own
@@ -1498,33 +1519,29 @@ function ChatMarkdown({
           if (block.content.includes("planning_questionnaire")) {
             const jsonMatch = block.content.match(/\[\s*\{[\s\S]*\}\s*\]/);
             if (jsonMatch) {
-              try {
-                const parsed = JSON.parse(jsonMatch[0]);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                  return <CaideQuestionnaireCard key={`raw-q-${block.id}`} questions={parsed} />;
-                }
-              } catch {}
+              const parsed = tryParseJson(jsonMatch[0]);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                return <CaideQuestionnaireCard key={`raw-q-${block.id}`} questions={parsed} />;
+              }
             }
           }
 
           if (block.content.includes("write_app_blueprint")) {
             const jsonMatch = block.content.match(/\{\s*"[\s\S]*"\s*:\s*[\s\S]*\}/);
             if (jsonMatch) {
-              try {
-                const parsed = JSON.parse(jsonMatch[0]);
-                if (parsed && typeof parsed === "object") {
-                  return (
-                    <CaideAppBlueprintCard
-                      key={`raw-bp-${block.id}`}
-                      appName={parsed.app_name || parsed.appName}
-                      primaryColor={parsed.primary_color || parsed.primaryColor}
-                      designDirection={parsed.design_direction || parsed.designDirection}
-                      description={parsed.description}
-                      features={parsed.features}
-                    />
-                  );
-                }
-              } catch {}
+              const parsed = tryParseJson(jsonMatch[0]) as Record<string, any> | null;
+              if (parsed && typeof parsed === "object") {
+                return (
+                  <CaideAppBlueprintCard
+                    key={`raw-bp-${block.id}`}
+                    appName={parsed.app_name || parsed.appName}
+                    primaryColor={parsed.primary_color || parsed.primaryColor}
+                    designDirection={parsed.design_direction || parsed.designDirection}
+                    description={parsed.description}
+                    features={parsed.features}
+                  />
+                );
+              }
             }
           }
 
@@ -1581,12 +1598,11 @@ function ChatMarkdown({
         }
 
         if (unit.kind === "questionnaire") {
-          let questions: any[] = [];
-          try {
-            questions = JSON.parse(block.content);
-          } catch {
-            questions = [{ question: block.content }];
-          }
+          const parsedQuestions = tryParseJson(block.content);
+          const questions =
+            Array.isArray(parsedQuestions) && parsedQuestions.length > 0
+              ? parsedQuestions
+              : [{ question: block.content }];
           return <CaideQuestionnaireCard key={`tag-${block.id}`} questions={questions} />;
         }
 

@@ -351,4 +351,16 @@ describe("ChatMarkdown user variant", () => {
     expect(markup).toContain("chat-markdown-codeblock");
     expect(markup).toContain("const value = 1;");
   });
+
+  it("renders ==highlighted text== as styled mark element", async () => {
+    const markup = await renderMarkdown("Here is ==an important highlight== in the response.");
+
+    expect(markup).toContain('<mark class="chat-highlight">an important highlight</mark>');
+  });
+
+  it("renders ==highlighted text== in user messages as well", async () => {
+    const markup = await renderUserMarkdown("Please focus on ==this specific bug==");
+
+    expect(markup).toContain('<mark class="chat-highlight">this specific bug</mark>');
+  });
 });

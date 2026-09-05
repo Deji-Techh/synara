@@ -19,7 +19,11 @@ export function resolveWsHttpUrl(rawPath: string): string {
       : typeof envWsUrl === "string" && envWsUrl.length > 0
         ? envWsUrl
         : null;
-  if (!wsCandidate) return new URL(rawPath, window.location.origin).toString();
+  const origin =
+    typeof window.location !== "undefined" && window.location?.origin
+      ? window.location.origin
+      : "http://localhost";
+  if (!wsCandidate) return new URL(rawPath, origin).toString();
   try {
     const wsUrl = new URL(wsCandidate);
     const protocol =

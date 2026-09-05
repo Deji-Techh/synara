@@ -2209,21 +2209,21 @@ export default function ChatView({
   const stickyActiveProvider = useComposerDraftStore((state) => state.stickyActiveProvider);
   const threadProvider =
     activeThread?.modelSelection.provider ?? activeProject?.defaultModelSelection?.provider ?? null;
-  const hasThreadStarted = Boolean(
+  const isTurnInFlight = Boolean(
     activeThread &&
-    (activeThread.latestTurn !== null ||
-      activeThread.messages.length > 0 ||
-      activeThread.session !== null),
+      (activeThread.latestTurn?.status === "running" ||
+        activeThread.session?.status === "running"),
   );
-  const lockedProvider: ProviderKind | null = hasThreadStarted
-    ? (threadProvider ?? sessionProvider ?? null)
+  const lockedProvider: ProviderKind | null = isTurnInFlight
+    ? (sessionProvider ?? threadProvider ?? null)
     : null;
   const selectedProvider: ProviderKind =
     lockedProvider ??
     selectedProviderByThreadId ??
+    threadProvider ??
     (isLocalDraftThread
       ? settings.defaultProvider
-      : (stickyActiveProvider ?? threadProvider ?? settings.defaultProvider));
+      : (stickyActiveProvider ?? settings.defaultProvider));
   const previousSelectedProviderRef = useRef<{
     threadId: ThreadId;
     provider: ProviderKind;
@@ -6229,6 +6229,19 @@ export default function ChatView({
             persistSticky: true,
             model: resolvedModel,
           });
+          if (isServerThread) {
+            const api = readNativeApi();
+            if (api) {
+              void api.orchestration
+                .dispatchCommand({
+                  type: "thread.meta.update",
+                  commandId: newCommandId(),
+                  threadId: targetThreadId,
+                  modelSelection: nextModelSelection,
+                })
+                .catch(() => undefined);
+            }
+          }
         },
       });
       if (!didCommitSelection) {
@@ -6241,6 +6254,7 @@ export default function ChatView({
       activeThread,
       threadId,
       customModelsByProvider,
+      isServerThread,
       lockedProvider,
       modelOptionsByProvider,
       persistRuntimeModeChange,

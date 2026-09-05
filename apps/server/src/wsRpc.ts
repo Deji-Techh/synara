@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 
 import {
   CommandId,
+  DEFAULT_MODEL_BY_PROVIDER,
   DEFAULT_TERMINAL_ID,
   DEVICE_WS_METHODS,
   GOALS_WS_METHODS,
@@ -78,6 +79,7 @@ import {
 } from "@caide/shared/threadDetailEvents";
 import { prepareCaideAppWorkspaceRoot } from "./caideAppScaffold";
 import { getCaideAppPath } from "./paths/caideApps";
+import { sharedProviderSecrets } from "./dyad/providers/secrets.ts";
 import { DevServerManager, findProjectDevServerForLocalServer } from "./devServerManager";
 import { DeviceService } from "./device/Services/DeviceService";
 import { makeWsDeviceHandlers } from "./device/wsDeviceHandlers";
@@ -1251,6 +1253,25 @@ const makeWsRpcHandlersLayer = () =>
           .replace(/^-+|-+$/g, "")
           .slice(0, 40) || `app-${Date.now().toString(36)}`;
 
+      const resolveDefaultAppModelSelection = (): ModelSelection => {
+        try {
+          const secrets = sharedProviderSecrets().read();
+          if (secrets?.providers) {
+            for (const [provider, cfg] of Object.entries(secrets.providers)) {
+              if (cfg?.apiKey && cfg.apiKey.trim().length > 0) {
+                const model =
+                  (DEFAULT_MODEL_BY_PROVIDER as Record<string, string>)[provider] ?? "default";
+                return { provider: provider as any, model };
+              }
+            }
+          }
+        } catch {}
+        return {
+          provider: "openrouter",
+          model: DEFAULT_MODEL_BY_PROVIDER.openrouter ?? "openai/gpt-5.5",
+        };
+      };
+
       const createCaideApp = (input: AppCreateInput) =>
         Effect.gen(function* () {
           const trimmedName = input.name.trim();
@@ -1260,12 +1281,8 @@ const makeWsRpcHandlersLayer = () =>
             slug = `${slug}-${Date.now().toString(36).slice(-4)}`;
             appPath = getCaideAppPath(slug);
           }
-          // Seed the app with the composer's picked provider/model so a Home
-          // first send does not silently fall back to the engine default.
-          const modelSelection = input.modelSelection ?? {
-            provider: "opencodeGo",
-            model: "muse-spark-1.2-contributor",
-          };
+          // Seed the app with the composer's picked provider/model or user's configured provider.
+          const modelSelection = input.modelSelection ?? resolveDefaultAppModelSelection();
           const framework = input.framework ?? "blank";
           const created = yield* engineAdapterEffect.pipe(
             Effect.flatMap((adapter) => adapter.createApp({ name: slug, framework })),

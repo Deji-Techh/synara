@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { resolveTerminalFontFamilyStack, useAppSettings } from "../appSettings";
 import { getAppTypographyScale } from "../lib/appTypography";
+import { resolveChatTypographyCssProperties } from "../lib/chatTypography";
+import { useTheme } from "./useTheme";
 
 const TERMINAL_FONT_FAMILY_CSS_VARIABLE = "--terminal-font-family";
 
@@ -22,6 +24,7 @@ const TYPOGRAPHY_CSS_VARIABLES = [
 
 export function useAppTypography() {
   const { settings } = useAppSettings();
+  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     const scale = getAppTypographyScale(settings.chatFontSizePx);
@@ -46,6 +49,16 @@ export function useAppTypography() {
       rootStyle.setProperty(cssVariable, variableValues[cssVariable]);
     }
 
+    const chatTypographyVars = resolveChatTypographyCssProperties(
+      settings,
+      resolvedTheme === "dark",
+    );
+    for (const [key, val] of Object.entries(chatTypographyVars)) {
+      if (key.startsWith("--") && typeof val === "string") {
+        rootStyle.setProperty(key, val);
+      }
+    }
+
     // Terminal font family overrides the bundled default only when a non-default
     // font is chosen; otherwise leave the index.css value in place. The terminal
     // runtime observes inline `style` mutations and re-applies the font live.
@@ -60,7 +73,22 @@ export function useAppTypography() {
       for (const cssVariable of TYPOGRAPHY_CSS_VARIABLES) {
         rootStyle.removeProperty(cssVariable);
       }
+      for (const key of Object.keys(chatTypographyVars)) {
+        if (key.startsWith("--")) {
+          rootStyle.removeProperty(key);
+        }
+      }
       rootStyle.removeProperty(TERMINAL_FONT_FAMILY_CSS_VARIABLE);
     };
-  }, [settings.chatFontSizePx, settings.terminalFontSizePx, settings.terminalFontFamily]);
+  }, [
+    settings.chatFontSizePx,
+    settings.terminalFontSizePx,
+    settings.terminalFontFamily,
+    settings.chatLineHeight,
+    settings.chatWordSpacing,
+    settings.chatLetterSpacing,
+    settings.chatFontWeight,
+    settings.chatHighlightColor,
+    resolvedTheme,
+  ]);
 }
