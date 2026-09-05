@@ -27,6 +27,7 @@ import { type ReactNode, useCallback, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ensureNativeApi } from "~/nativeApi";
 import { providerDiscoveryQueryKeys } from "~/lib/providerDiscoveryReactQuery";
+import { reconcileServerProviderStatuses } from "~/lib/serverReactQuery";
 import { toastManager } from "~/components/ui/toast";
 import type { AppSettings, AppSettingsBinding } from "~/appSettings";
 import { CentralIcon } from "~/lib/central-icons";
@@ -190,7 +191,10 @@ interface ProviderCardProps {
   testResult?: { ok: boolean; message: string };
   connected: boolean;
   onSaveKey: (id: string, entry: { apiKey?: string; apiBaseUrl?: string }) => void;
-  onTestKey: (id: string) => void;
+  onTestKey: (
+    id: string,
+    candidate?: { apiKey?: string; apiBaseUrl?: string },
+  ) => Promise<{ ok: boolean; message: string }>;
 }
 
 function ProviderCard({
@@ -204,17 +208,20 @@ function ProviderCard({
   onSaveKey,
   onTestKey,
 }: ProviderCardProps) {
+  const queryClient = useQueryClient();
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [baseUrlInput, setBaseUrlInput] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [localTestResult, setLocalTestResult] = useState<{ ok: boolean; message: string } | null>(null);
 
   const isKeyless = KEYLESS_PROVIDERS.has(providerId);
   const isCustom = CUSTOM_PROVIDERS.has(providerId);
   const websiteUrl = PROVIDER_WEBSITE_URLS[providerId];
   const hasFreeTier = PROVIDER_FREE_TIERS.has(providerId);
+  const effectiveTestResult = localTestResult ?? testResult;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const key = apiKeyInput.trim();
     const base = baseUrlInput.trim();
     onSaveKey(providerId, {
@@ -227,6 +234,15 @@ function ProviderCard({
       title: `${displayName} settings saved`,
       description: "Credentials stored securely on this device.",
     });
+
+    try {
+      const api = ensureNativeApi();
+      const res = await api.server.refreshProviders();
+      await reconcileServerProviderStatuses(queryClient, res.providers);
+      await queryClient.invalidateQueries({ queryKey: providerDiscoveryQueryKeys.all });
+    } catch {
+      // ignore
+    }
   };
 
   const handlePaste = async () => {
@@ -241,16 +257,61 @@ function ProviderCard({
     }
   };
 
-  const handleClear = () => {
+  const handleClear = async () => {
     onSaveKey(providerId, { apiKey: "" });
     setApiKeyInput("");
+    setLocalTestResult(null);
     toastManager.add({ type: "success", title: `${displayName} credentials cleared` });
+
+    try {
+      const api = ensureNativeApi();
+      const res = await api.server.refreshProviders();
+      await reconcileServerProviderStatuses(queryClient, res.providers);
+      await queryClient.invalidateQueries({ queryKey: providerDiscoveryQueryKeys.all });
+    } catch {
+      // ignore
+    }
   };
 
-  const handleRunTest = () => {
+  const handleRunTest = async () => {
     setIsTesting(true);
-    onTestKey(providerId);
-    setTimeout(() => setIsTesting(false), 2000);
+    toastManager.add({
+      type: "info",
+      title: `Testing ${displayName} connection...`,
+      description: "Pinging provider endpoint to verify credentials.",
+    });
+    try {
+      const candidateKey = apiKeyInput.trim();
+      const candidateBase = baseUrlInput.trim();
+      const result = await onTestKey(providerId, {
+        ...(candidateKey ? { apiKey: candidateKey } : {}),
+        ...(candidateBase ? { apiBaseUrl: candidateBase } : {}),
+      });
+      setLocalTestResult(result);
+      if (result.ok) {
+        toastManager.add({
+          type: "success",
+          title: `${displayName} connected`,
+          description: result.message,
+        });
+      } else {
+        toastManager.add({
+          type: "error",
+          title: `${displayName} test failed`,
+          description: result.message,
+        });
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      setLocalTestResult({ ok: false, message: errorMsg });
+      toastManager.add({
+        type: "error",
+        title: `${displayName} test error`,
+        description: errorMsg,
+      });
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   return (
@@ -424,17 +485,17 @@ function ProviderCard({
               </div>
             )}
 
-            {testResult ? (
+            {effectiveTestResult ? (
               <div
                 className={cn(
                   "flex items-center gap-2 rounded-md p-2 text-xs",
-                  testResult.ok
+                  effectiveTestResult.ok
                     ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"
                     : "bg-destructive/10 text-destructive border border-destructive/20",
                 )}
               >
-                {!testResult.ok && <TriangleAlertIcon className="size-3.5 shrink-0" />}
-                <span>{testResult.message}</span>
+                {!effectiveTestResult.ok && <TriangleAlertIcon className="size-3.5 shrink-0" />}
+                <span>{effectiveTestResult.message}</span>
               </div>
             ) : null}
 

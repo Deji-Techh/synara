@@ -533,6 +533,16 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
   engine: [],
   openai: [
     {
+      slug: "gpt-5.6-luna",
+      name: "GPT 5.6 Luna",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "gpt-5.6-sol",
+      name: "GPT 5.6 Sol",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
       slug: "gpt-5.5",
       name: "GPT-5.5",
       capabilities: API_MODEL_CAPABILITIES,
@@ -542,8 +552,43 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
       name: "GPT-5.5 Mini",
       capabilities: API_MODEL_CAPABILITIES,
     },
+    {
+      slug: "gpt-5.2",
+      name: "GPT 5.2",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "gpt-5.1",
+      name: "GPT 5.1",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "gpt-5.1-codex",
+      name: "GPT 5.1 Codex",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "gpt-5.1-codex-mini",
+      name: "GPT 5.1 Codex Mini",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
   ],
   anthropic: [
+    {
+      slug: "claude-opus-4-8",
+      name: "Claude Opus 4.8",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "claude-opus-4-6",
+      name: "Claude Opus 4.6",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "claude-sonnet-4-6",
+      name: "Claude Sonnet 4.6",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
     {
       slug: "claude-opus-5",
       name: "Claude Opus 5",
@@ -562,8 +607,38 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
   ],
   google: [
     {
+      slug: "gemini-3.8-flash",
+      name: "Gemini 3.8 Flash",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "gemini-3.7-flash",
+      name: "Gemini 3.7 Flash",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "gemini-3.1-pro-preview",
+      name: "Gemini 3.1 Pro (Preview)",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "gemini-3.5-flash",
+      name: "Gemini 3.5 Flash",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "gemini-3-flash-preview",
+      name: "Gemini 3 Flash (Preview)",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
       slug: "gemini-2.5-pro",
       name: "Gemini 2.5 Pro",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "gemini-flash-latest",
+      name: "Gemini 2.5 Flash",
       capabilities: API_MODEL_CAPABILITIES,
     },
     {
@@ -588,6 +663,36 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
     },
   ],
   openrouter: [
+    {
+      slug: "openrouter/free",
+      name: "Free (OpenRouter)",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "nvidia/nemotron-3-super-120b-a12b:free",
+      name: "Nemotron 3 Super (Free)",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "moonshotai/kimi-k2.5",
+      name: "Kimi K2.5",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "minimax/minimax-m2.7",
+      name: "MiniMax M2.7",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "qwen/qwen3-coder",
+      name: "Qwen3 Coder",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "deepseek/deepseek-chat-v3.1",
+      name: "DeepSeek v3.1",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
     {
       slug: "openai/gpt-5.5",
       name: "GPT-5.5 (OpenRouter)",
@@ -718,13 +823,28 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
   ],
   xai: [
     {
-      slug: "grok-2",
-      name: "Grok 2",
+      slug: "grok-3",
+      name: "Grok 3",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "grok-3-mini",
+      name: "Grok 3 Mini",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "grok-2-1212",
+      name: "Grok 2 (1212)",
       capabilities: API_MODEL_CAPABILITIES,
     },
     {
       slug: "grok-2-vision-1212",
       name: "Grok 2 Vision",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "grok-2",
+      name: "Grok 2",
       capabilities: API_MODEL_CAPABILITIES,
     },
     {
@@ -867,6 +987,21 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
   ],
   minimax: [
     {
+      slug: "minimax-m2.7",
+      name: "MiniMax M2.7",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "minimax-m2.5",
+      name: "MiniMax M2.5",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "minimax-m2",
+      name: "MiniMax M2",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
       slug: "MiniMax-M2.7",
       name: "MiniMax M2.7",
       capabilities: API_MODEL_CAPABILITIES,
@@ -891,21 +1026,21 @@ export const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderWithDefaultModel, ModelSl
   openai: "gpt-5.5",
   anthropic: "claude-sonnet-5",
   google: "gemini-2.5-flash",
-  openrouter: "openai/gpt-5.5",
+  openrouter: "openrouter/free",
   ollama: "llama3.3",
   deepseek: "deepseek-chat",
   groq: "llama-3.3-70b-versatile",
   mistral: "mistral-large-latest",
   together: "meta-llama/Llama-3-70b-chat-hf",
   cohere: "command-r-plus",
-  xai: "grok-2",
+  xai: "grok-3",
   fireworks: "accounts/fireworks/models/llama-v3-70b-instruct",
   opencodeZen: "deepseek-v4-flash-free",
   opencodeGo: "deepseek-v4-flash",
   custom: "custom-model",
   azure: "gpt-5.5",
   bedrock: "claude-sonnet-5",
-  minimax: "MiniMax-M2.7",
+  minimax: "minimax-m2.7",
   lmstudio: "default",
 };
 

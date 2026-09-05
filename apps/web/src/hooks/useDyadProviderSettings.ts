@@ -54,7 +54,10 @@ export function knownDyadProviders(): readonly string[] {
 export function useDyadProviderSettings(): DyadProvidersState & {
   save: (providerId: string, entry: { apiKey?: string; apiBaseUrl?: string; resourceName?: string }) => void;
   saveDefaults: (providerId?: string, modelId?: string) => void;
-  test: (providerId: string) => void;
+  test: (
+    providerId: string,
+    candidate?: { apiKey?: string; apiBaseUrl?: string },
+  ) => Promise<{ ok: boolean; message: string }>;
   refresh: () => void;
 } {
   const [state, setState] = useState<DyadProvidersState>({
@@ -129,12 +132,34 @@ export function useDyadProviderSettings(): DyadProvidersState & {
   );
 
   const test = useCallback(
-    (providerId: string) => {
-      send({
-        type: "provider_settings_test",
-        sessionId: "settings",
-        requestId: `test-${++requestCounter}`,
-        provider: { id: providerId },
+    (
+      providerId: string,
+      candidate?: { apiKey?: string; apiBaseUrl?: string },
+    ): Promise<{ ok: boolean; message: string }> => {
+      return new Promise((resolve) => {
+        const reqId = `test-${++requestCounter}`;
+        const timer = setTimeout(() => {
+          pendingRef.current.delete(reqId);
+          resolve({ ok: false, message: "Connection test timed out after 15s." });
+        }, 15_000);
+
+        pendingRef.current.set(reqId, (event) => {
+          clearTimeout(timer);
+          pendingRef.current.delete(reqId);
+          const e = event as unknown as {
+            tests?: Record<string, { ok: boolean; message: string }>;
+          };
+          const res = e.tests?.[providerId] ?? { ok: true, message: "Provider check complete." };
+          resolve(res);
+        });
+
+        send({
+          type: "provider_settings_test",
+          sessionId: "settings",
+          requestId: reqId,
+          provider: { id: providerId },
+          ...(candidate ? { providerEntry: candidate } : {}),
+        });
       });
     },
     [send],

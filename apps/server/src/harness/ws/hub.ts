@@ -71,6 +71,7 @@ export type ProviderSettingsTestHandler = (
   sessionId: string,
   providerId: string,
   requestId?: string,
+  candidate?: { apiKey?: string; apiBaseUrl?: string; baseUrl?: string },
 ) => void;
 
 /** Outbound sender for one connected client (any transport). */
@@ -187,7 +188,9 @@ export class HarnessHub {
       return;
     }
     if (msg.type === "provider_settings_test" && msg.sessionId && msg.provider?.id) {
-      this.onProviderSettingsTestHandler?.(msg.sessionId, msg.provider.id, msg.requestId);
+      const candidate = (msg.providerEntry as { apiKey?: string; apiBaseUrl?: string }) ??
+        (msg.apiKey ? { apiKey: String(msg.apiKey), apiBaseUrl: msg.baseUrl ? String(msg.baseUrl) : undefined } : undefined);
+      this.onProviderSettingsTestHandler?.(msg.sessionId, msg.provider.id, msg.requestId, candidate);
       return;
     }
   }

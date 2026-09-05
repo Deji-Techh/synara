@@ -259,6 +259,12 @@ export default defineConfig({
           : "ws://127.0.0.1:3773",
         ws: true,
       },
+      "/harness": {
+        target: process.env.CAIDE_PORT
+          ? `ws://127.0.0.1:${process.env.CAIDE_PORT}`
+          : "ws://127.0.0.1:3773",
+        ws: true,
+      },
     },
     hmr: {
       // Explicit config so Vite's HMR WebSocket connects reliably

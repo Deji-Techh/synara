@@ -75,14 +75,16 @@ export class TurnGateway {  private runner = new CaideRunner();
       }
       this.sendProviderState(server, sessionId, requestId);
     });
-    server.onProviderSettingsTest((sessionId, providerId, requestId) => {
+    server.onProviderSettingsTest((sessionId, providerId, requestId, candidate) => {
       void (async () => {
         const secrets = sharedProviderSecrets();
         const stored = secrets.read().providers[providerId] ?? {};
+        const apiKey = candidate?.apiKey?.trim() || stored.apiKey;
+        const baseUrl = candidate?.apiBaseUrl?.trim() || candidate?.baseUrl?.trim() || stored.apiBaseUrl;
         const result = await testProviderConnection({
           providerId,
-          apiKey: stored.apiKey,
-          baseUrl: stored.apiBaseUrl,
+          apiKey,
+          baseUrl,
         }).catch((err) => ({
           ok: false,
           message: err instanceof Error ? err.message : String(err),
