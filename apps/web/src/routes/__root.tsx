@@ -864,7 +864,11 @@ function coalesceOrchestrationUiEvents(
           text:
             !event.payload.streaming && event.payload.text.length > 0
               ? event.payload.text
-              : previous.payload.text + event.payload.text,
+              : event.payload.text.startsWith(previous.payload.text)
+                ? event.payload.text
+                : previous.payload.text.endsWith(event.payload.text)
+                  ? previous.payload.text
+                  : previous.payload.text + event.payload.text,
         },
       };
       continue;

@@ -32,7 +32,9 @@ if (typeof window !== "undefined") {
     const reason = event.reason;
     if (
       reason?.name === "AbortError" ||
+      reason?.name === "TimeoutError" ||
       reason?.code === "WS_REQUEST_ABORTED" ||
+      reason?.code === "WS_REQUEST_TIMEOUT" ||
       reason?._tag === "WsTransportRequestInterruptedError" ||
       /interrupted without error/i.test(reason?.message ?? "") ||
       /interrupted/i.test(reason?.name ?? "")

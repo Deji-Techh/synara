@@ -115,7 +115,10 @@ export function providerSkillsQueryOptions(input: {
       });
     },
     enabled: (input.enabled ?? true) && input.cwd !== null,
-    staleTime: 30_000,
+    staleTime: 5 * 60_000,
+    gcTime: 24 * 60 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     placeholderData: (previous) => previous ?? EMPTY_SKILLS_RESULT,
   });
 }
@@ -132,8 +135,11 @@ export function skillsCatalogQueryOptions(input?: { cwd?: string | null; enabled
       return api.provider.listSkillsCatalog(cwd ? { cwd } : {});
     },
     enabled: input?.enabled ?? true,
-    staleTime: 30_000,
+    staleTime: 5 * 60_000,
+    gcTime: 24 * 60 * 60_000,
     placeholderData: (previous) => previous,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 3000),
   });

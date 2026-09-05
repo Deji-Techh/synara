@@ -562,6 +562,21 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
   ],
   google: [
     {
+      slug: "gemini-2.5-pro",
+      name: "Gemini 2.5 Pro",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "gemini-2.5-flash",
+      name: "Gemini 2.5 Flash",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "gemini-2.0-flash",
+      name: "Gemini 2.0 Flash",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
       slug: "gemini-3-pro",
       name: "Gemini 3 Pro",
       capabilities: API_MODEL_CAPABILITIES,
@@ -875,7 +890,7 @@ export type ProviderWithDefaultModel = Exclude<ProviderKind, "engine">;
 export const DEFAULT_MODEL_BY_PROVIDER: Record<ProviderWithDefaultModel, ModelSlug> = {
   openai: "gpt-5.5",
   anthropic: "claude-sonnet-5",
-  google: "gemini-3-flash",
+  google: "gemini-2.5-flash",
   openrouter: "openai/gpt-5.5",
   ollama: "llama3.3",
   deepseek: "deepseek-chat",

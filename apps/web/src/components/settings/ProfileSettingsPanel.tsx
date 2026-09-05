@@ -48,10 +48,10 @@ export function ProfileSettingsPanel() {
   const coreQuery = useQuery(serverProfileStatsQueryOptions());
   const tokenQuery = useQuery(serverProfileTokenStatsQueryOptions());
 
-  if (coreQuery.isPending) {
+  if (coreQuery.isPending && !coreQuery.data) {
     return <ProfileSkeleton />;
   }
-  if (coreQuery.isError || !coreQuery.data) {
+  if (!coreQuery.data) {
     return (
       <div className="flex flex-col items-center gap-3 py-24 text-center">
         <p className="text-sm text-muted-foreground">Couldn’t load your local stats.</p>

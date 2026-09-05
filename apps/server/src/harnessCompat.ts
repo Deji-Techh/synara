@@ -4,6 +4,8 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { Effect, Layer, Option, PubSub, ServiceMap, Stream } from "effect";
+import { PROVIDER_KINDS } from "@caide/contracts";
+import { sharedProviderSecrets } from "./dyad/providers/secrets.ts";
 
 export class AutomationService extends ServiceMap.Service<AutomationService, any>()(
   "caide/AutomationService",
@@ -52,7 +54,51 @@ let globalSnapshotSequence = 1;
 const inMemoryProjects: any[] = [];
 const inMemoryThreads: any[] = [];
 
+const PROVIDER_TO_ENV_VAR: Record<string, string[]> = {
+  google: ["GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GENERATIVE_AI_API_KEY"],
+  openai: ["OPENAI_API_KEY"],
+  anthropic: ["ANTHROPIC_API_KEY"],
+  deepseek: ["DEEPSEEK_API_KEY"],
+  openrouter: ["OPENROUTER_API_KEY"],
+  groq: ["GROQ_API_KEY"],
+  xai: ["XAI_API_KEY"],
+  mistral: ["MISTRAL_API_KEY"],
+  together: ["TOGETHER_API_KEY"],
+  cohere: ["COHERE_API_KEY"],
+  fireworks: ["FIREWORKS_API_KEY"],
+  opencodeZen: ["OPENCODE_ZEN_API_KEY", "OPENCODE_API_KEY"],
+  opencodeGo: ["OPENCODE_GO_API_KEY", "OPENCODE_API_KEY"],
+  azure: ["AZURE_API_KEY"],
+  minimax: ["MINIMAX_API_KEY"],
+};
+
 function getProviderApiKeyDirect(providerName: string): string {
+  // 1. Check sharedProviderSecrets() from ~/.caide/dyad-providers.json
+  try {
+    const secrets = sharedProviderSecrets().read();
+    if (secrets && secrets.providers) {
+      if (secrets.providers[providerName]?.apiKey?.trim()) {
+        return secrets.providers[providerName].apiKey!.trim();
+      }
+      if (providerName === "opencodeZen" && secrets.providers["opencode-zen"]?.apiKey?.trim()) {
+        return secrets.providers["opencode-zen"].apiKey!.trim();
+      }
+      if (providerName === "opencode-zen" && secrets.providers["opencodeZen"]?.apiKey?.trim()) {
+        return secrets.providers["opencodeZen"].apiKey!.trim();
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  // 2. Check process.env
+  const envVars = PROVIDER_TO_ENV_VAR[providerName] || [];
+  for (const envVar of envVars) {
+    const val = process.env[envVar]?.trim();
+    if (val) return val;
+  }
+
+  // 3. Check legacy ~/.caide/userdata/secrets
   const home = process.env.HOME || "/home/DejiTech";
   const secretFileNames = [
     `provider-${providerName}-api-key.bin`,
@@ -70,6 +116,34 @@ function getProviderApiKeyDirect(providerName: string): string {
     }
   }
   return "";
+}
+
+const KEYLESS_PROVIDERS = new Set(["ollama", "lmstudio", "engine"]);
+const ALWAYS_AVAILABLE_PROVIDERS = new Set([
+  "opencodeZen",
+  "opencodeGo",
+  "groq",
+  "anthropic",
+  "openai",
+  "engine",
+]);
+
+function computeAllProviderStatuses(): any[] {
+  const now = new Date().toISOString();
+  return PROVIDER_KINDS.map((p) => {
+    const apiKey = getProviderApiKeyDirect(p);
+    const isConfigured =
+      Boolean(apiKey) || KEYLESS_PROVIDERS.has(p) || ALWAYS_AVAILABLE_PROVIDERS.has(p);
+    return {
+      provider: p,
+      status: isConfigured ? "ready" : "warning",
+      available: isConfigured,
+      authStatus: isConfigured ? "authenticated" : "unauthenticated",
+      version: "1.0.0",
+      checkedAt: now,
+      message: isConfigured ? `${p} ready` : `${p} not configured`,
+    };
+  });
 }
 
 function sanitizeModelSelection(raw: any) {
@@ -1112,6 +1186,89 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               createdAt: now,
             });
           }
+        } else if (
+          command?.type === "thread.handoff.create" ||
+          command?.type === "thread.fork.create"
+        ) {
+          const existing = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (!existing) {
+            const sourceThread = inMemoryThreads.find((t) => t.id === command.sourceThreadId);
+            const sourceProvider =
+              (command as any).sourceProvider ??
+              sourceThread?.modelSelection?.provider ??
+              "unknown";
+            const targetProvider = command.modelSelection?.provider ?? "google";
+            inMemoryThreads.push({
+              id: command.threadId,
+              projectId: command.projectId,
+              title: command.title ?? (command.type === "thread.handoff.create" ? "Handoff" : "Fork"),
+              modelSelection: command.modelSelection ?? {
+                provider: targetProvider,
+                model: "default",
+              },
+              runtimeMode: command.runtimeMode ?? sourceThread?.runtimeMode ?? "full-access",
+              interactionMode: command.interactionMode ?? sourceThread?.interactionMode ?? "default",
+              envMode: command.envMode ?? sourceThread?.envMode ?? "local",
+              branch: command.branch ?? null,
+              worktreePath: command.worktreePath ?? null,
+              workingDirectory: command.workingDirectory ?? null,
+              associatedWorktreePath: command.associatedWorktreePath ?? null,
+              associatedWorktreeBranch: command.associatedWorktreeBranch ?? null,
+              associatedWorktreeRef: command.associatedWorktreeRef ?? null,
+              createBranchFlowCompleted: Boolean(command.createBranchFlowCompleted),
+              ...(command.type === "thread.handoff.create"
+                ? {
+                    handoff: {
+                      sourceThreadId: command.sourceThreadId,
+                      sourceProvider,
+                      targetProvider,
+                    },
+                  }
+                : {}),
+              createdAt: command.createdAt ?? now,
+              updatedAt: command.createdAt ?? now,
+              lastVisitedAt: command.createdAt ?? now,
+              archivedAt: null,
+              turns: [],
+              messages: Array.isArray(command.importedMessages) ? [...command.importedMessages] : [],
+              activities: [],
+              pinnedMessages: [],
+              threadMarkers: [],
+              proposedPlans: [],
+              turnDiffSummaries: [],
+            });
+            globalSnapshotSequence += 1;
+            savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.meta-updated",
+              payload: threadMetaUpdatedPayload(command.threadId, { title: command.title }),
+              createdAt: now,
+            });
+          }
+        } else if (command?.type === "thread.activity.append") {
+          const existing = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (existing && command.activity) {
+            if (!existing.activities) existing.activities = [];
+            existing.activities.push(command.activity);
+            existing.updatedAt = now;
+            globalSnapshotSequence += 1;
+            savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.activity-appended",
+              payload: {
+                threadId: command.threadId,
+                activity: command.activity,
+                createdAt: command.createdAt ?? now,
+              },
+              createdAt: now,
+            });
+          }
         } else if (command?.type === "thread.meta.update") {
           const existing = inMemoryThreads.find((t) => t.id === command.threadId);
           if (existing) {
@@ -1562,13 +1719,49 @@ export class OrchestrationEngineService extends ServiceMap.Service<
           void (async () => {
             try {
               const { streamProvider } = await import("./harness/provider/apiAdapter.ts");
+              const DEFAULT_PROVIDER_MODELS: Record<string, string> = {
+                google: "gemini-2.5-flash",
+                openai: "gpt-5.5",
+                anthropic: "claude-sonnet-5",
+                deepseek: "deepseek-chat",
+                groq: "llama-3.3-70b-versatile",
+                openrouter: "openai/gpt-5.5",
+                opencodeZen: "gpt-5.6-sol",
+                opencodeGo: "gpt-5.6-sol",
+                xai: "grok-2",
+                mistral: "mistral-large-latest",
+                together: "meta-llama/Llama-3-70b-chat-hf",
+                cohere: "command-r-plus",
+                ollama: "llama3.3",
+                lmstudio: "default",
+                engine: "gpt-5.6-sol",
+              };
+
+              const PROVIDER_BASE_URLS: Record<string, string> = {
+                opencodeZen: "https://opencode.ai/zen/v1",
+                opencodeGo: "https://opencode.ai/zen/go/v1",
+                google: "https://generativelanguage.googleapis.com/v1beta",
+                groq: "https://api.groq.com/openai/v1",
+                openai: "https://api.openai.com/v1",
+                anthropic: "https://api.anthropic.com/v1",
+                deepseek: "https://api.deepseek.com",
+                openrouter: "https://openrouter.ai/api/v1",
+                xai: "https://api.x.ai/v1",
+                mistral: "https://api.mistral.ai/v1",
+                together: "https://api.together.xyz/v1",
+                cohere: "https://api.cohere.ai/v1",
+                ollama: "http://localhost:11434/v1",
+                lmstudio: "http://localhost:1234/v1",
+                engine: "https://opencode.ai/zen/v1",
+              };
+
               const modelSelection = command.modelSelection ||
                 thread.modelSelection || { provider: "opencodeZen", model: "gpt-5.6-sol" };
               let provider = modelSelection.provider || "opencodeZen";
               const modelId =
                 modelSelection.model && modelSelection.model !== "default"
                   ? modelSelection.model
-                  : "gpt-5.6-sol";
+                  : (DEFAULT_PROVIDER_MODELS[provider] || "gpt-5.6-sol");
 
               const GO_MODELS = new Set([
                 "minimax-m3",
@@ -1608,8 +1801,8 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 "omen-alpha",
               ]);
 
-              let baseUrl = "https://opencode.ai/zen/v1";
-              if (provider === "opencodeGo" || (provider !== "groq" && GO_MODELS.has(modelId))) {
+              let baseUrl = PROVIDER_BASE_URLS[provider] || "https://opencode.ai/zen/v1";
+              if (provider === "opencodeGo" || (provider === "opencodeZen" && GO_MODELS.has(modelId))) {
                 baseUrl = "https://opencode.ai/zen/go/v1";
                 provider = "opencodeGo";
               } else if (provider === "groq") {
@@ -2113,6 +2306,7 @@ export class ProjectionSnapshotQuery extends ServiceMap.Service<ProjectionSnapsh
         threads: inMemoryThreads.length,
       })),
     listArchivedWorktreeAssociations: () => Effect.succeed([]),
+    listManagedWorktreeThreads: () => Effect.succeed([]),
   } as any);
 }
 
@@ -2209,9 +2403,9 @@ export class ProfileStatsQuery extends ServiceMap.Service<ProfileStatsQuery, any
 ) {
   static readonly layer = Layer.succeed(this, {
     getProfileStats: (input?: { utcOffsetMinutes?: number }) =>
-      Effect.succeed(
-        (() => {
-          const base = emptyProfileStats(input?.utcOffsetMinutes ?? 0);
+      Effect.sync(() => {
+        const base = emptyProfileStats(input?.utcOffsetMinutes ?? 0);
+        try {
           // Derive live counts from in-memory harness state so the dashboard
           // reflects actual usage even though the real DB projections are
           // bypassed by the in-memory OrchestrationEngineService shim.
@@ -2274,9 +2468,11 @@ export class ProfileStatsQuery extends ServiceMap.Service<ProfileStatsQuery, any
               ),
             },
           };
-        })(),
-      ),
-    getProfileTokenStats: () => Effect.succeed(emptyProfileTokenStats()),
+        } catch {
+          return base;
+        }
+      }),
+    getProfileTokenStats: () => Effect.sync(() => emptyProfileTokenStats()),
   } as any);
 }
 
@@ -2960,76 +3156,19 @@ export class ProviderDiscoveryService extends ServiceMap.Service<ProviderDiscove
   } as any);
 }
 
-const DEFAULT_PROVIDER_STATUSES = [
-  {
-    provider: "opencodeZen",
-    status: "ready",
-    available: true,
-    authStatus: "authenticated",
-    version: "1.0.0",
-    checkedAt: new Date().toISOString(),
-    message: "OpenCode Zen connected",
-  },
-  {
-    provider: "opencodeGo",
-    status: "ready",
-    available: true,
-    authStatus: "authenticated",
-    version: "1.0.0",
-    checkedAt: new Date().toISOString(),
-    message: "OpenCode Go connected",
-  },
-  {
-    provider: "groq",
-    status: "ready",
-    available: true,
-    authStatus: "authenticated",
-    version: "1.0.0",
-    checkedAt: new Date().toISOString(),
-    message: "Groq ready",
-  },
-  {
-    provider: "anthropic",
-    status: "ready",
-    available: true,
-    authStatus: "authenticated",
-    version: "1.0.0",
-    checkedAt: new Date().toISOString(),
-    message: "Anthropic ready",
-  },
-  {
-    provider: "openai",
-    status: "ready",
-    available: true,
-    authStatus: "authenticated",
-    version: "1.0.0",
-    checkedAt: new Date().toISOString(),
-    message: "OpenAI ready",
-  },
-  {
-    provider: "engine",
-    status: "ready",
-    available: true,
-    authStatus: "authenticated",
-    version: "1.0.0",
-    checkedAt: new Date().toISOString(),
-    message: "Caide Pure Harness ready",
-  },
-];
-
 export class ProviderHealth extends ServiceMap.Service<ProviderHealth, any>()(
   "caide/ProviderHealth",
 ) {
   static readonly layer = Layer.succeed(this, {
     checkHealth: () => Effect.succeed({}),
-    getStatuses: Effect.succeed(DEFAULT_PROVIDER_STATUSES),
+    getStatuses: Effect.sync(() => computeAllProviderStatuses()),
     refresh: Effect.sync(() => {
       for (const k in OPENCODE_MODELS_CACHE) {
         delete OPENCODE_MODELS_CACHE[k];
       }
-      return DEFAULT_PROVIDER_STATUSES;
+      return computeAllProviderStatuses();
     }),
-    updateProvider: () => Effect.succeed({ providers: DEFAULT_PROVIDER_STATUSES }),
+    updateProvider: () => Effect.sync(() => ({ providers: computeAllProviderStatuses() })),
     streamChanges: Stream.never,
   } as any);
 }

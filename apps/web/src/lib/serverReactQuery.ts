@@ -274,8 +274,11 @@ export function serverProfileStatsQueryOptions(input: { enabled?: boolean } = {}
   return queryOptions({
     queryKey: serverQueryKeys.profileStats(utcOffsetMinutes),
     enabled: input.enabled ?? true,
-    staleTime: 60_000,
+    staleTime: 5 * 60_000,
+    gcTime: 24 * 60 * 60_000,
+    placeholderData: (previous) => previous,
     refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 3000),
     queryFn: async () => {
@@ -294,8 +297,11 @@ export function serverProfileTokenStatsQueryOptions(input: { enabled?: boolean }
   return queryOptions({
     queryKey: serverQueryKeys.profileTokenStats(utcOffsetMinutes),
     enabled: input.enabled ?? true,
-    staleTime: 5 * 60_000,
+    staleTime: 15 * 60_000,
+    gcTime: 24 * 60 * 60_000,
+    placeholderData: (previous) => previous,
     refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 3000),
     queryFn: async () => {

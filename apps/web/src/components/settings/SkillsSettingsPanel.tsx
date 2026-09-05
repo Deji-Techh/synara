@@ -193,7 +193,7 @@ export function SkillsSettingsPanel() {
         />
       </SettingsSection>
 
-      {catalogQuery.isError ? (
+      {catalogQuery.isError && (!catalogQuery.data || catalogQuery.data.skills.length === 0) ? (
         <SettingsSection title="Skills">
           <SettingsRow
             title="Skill discovery failed"

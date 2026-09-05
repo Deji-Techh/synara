@@ -18,7 +18,7 @@ export class ProviderApiError extends Error {
 
 export function endpointForModel(modelId: string, baseUrl?: string): ApiEndpoint {
   const lower = modelId.toLowerCase();
-  if (lower.startsWith("gemini-")) return "gemini";
+  if (lower.startsWith("gemini-") || (baseUrl && baseUrl.includes("generativelanguage.googleapis.com"))) return "gemini";
   // Per user-provided endpoint tables (2026-09-02): responses for gpt/grok/muse-spark across both Zen and Go
   if (
     lower.startsWith("gpt-") ||
@@ -45,7 +45,7 @@ export function endpointForModel(modelId: string, baseUrl?: string): ApiEndpoint
 export function buildProviderUrl(baseUrl: string, modelId: string): string {
   const cleanBase = baseUrl.replace(/\/+$/, "");
   const endpoint = endpointForModel(modelId, baseUrl);
-  if (endpoint === "gemini") return `${cleanBase}/models/${modelId}:streamGenerateContent`;
+  if (endpoint === "gemini") return `${cleanBase}/models/${modelId}:streamGenerateContent?alt=sse`;
   if (endpoint === "responses") return `${cleanBase}/responses`;
   if (endpoint === "messages") return `${cleanBase}/messages`;
   return `${cleanBase}/chat/completions`;
@@ -114,6 +114,8 @@ export async function* streamProvider(
       ...(tools && tools.length > 0 ? { tools } : {}),
     };
   } else if (endpoint === "gemini") {
+    headers["x-goog-api-key"] = apiKey;
+    delete headers["Authorization"];
     requestBody = {
       ...(system ? { system_instruction: { parts: [{ text: system }] } } : {}),
       contents: (messages as any[]).map((m: any) => ({
