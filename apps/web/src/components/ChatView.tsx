@@ -560,8 +560,6 @@ import {
 } from "./chat/composerPickerStyles";
 import { getComposerTraitSelection } from "./chat/composerTraits";
 import { resolveRuntimeModelDescriptor } from "./chat/runtimeModelCapabilities";
-import { ProjectPicker } from "./chat/ProjectPicker";
-import { FolderClosed } from "./FolderClosed";
 import { ProviderHealthBanner } from "./chat/ProviderHealthBanner";
 import { useThreadErrorToast } from "./chat/useThreadErrorToast";
 import {
@@ -10814,102 +10812,6 @@ export default function ChatView({
     }
   };
   const isPlanMode = chatMode === "plan";
-  const showEmptyLandingProjectPicker =
-    isCenteredEmptyLanding && isLocalDraftThread && activeProject?.kind === "project";
-  const showContainerChatWorkspacePicker = isEmptyChatLanding && isHomeChatContainer;
-  const emptyLandingProjectChip =
-    !showContainerChatWorkspacePicker &&
-    !showEmptyLandingProjectPicker &&
-    activeProjectDisplayName ? (
-      <span className="inline-flex min-w-0 max-w-56 shrink items-center gap-2 overflow-hidden rounded-md px-2 py-1 text-[length:var(--app-font-size-ui-sm,11px)] font-normal text-[var(--color-text-foreground-secondary)] sm:max-w-64">
-        <FolderClosed className="size-3.5 shrink-0" />
-        <span className="min-w-0 truncate">{activeProjectDisplayName}</span>
-      </span>
-    ) : null;
-  const showEmptyLandingControls =
-    isCenteredEmptyLanding &&
-    (isEmptyChatLanding ||
-      showEmptyLandingProjectPicker ||
-      emptyLandingProjectChip !== null ||
-      showEmptyLandingBranchToolbar);
-  const emptyLandingControls = showEmptyLandingControls ? (
-    <div
-      className={cn(
-        // Full-width tray under the composer that reads as UNITED but not fused: it carries extra
-        // top height (pt-6) and is pulled up by that amount (-mt-5 = 20px, just past the
-        // --composer-radius ~19px corner). That hidden top slice sits BEHIND the composer's rounded
-        // bottom corners (z-0), so its tint fills those corner notches and its straight full-width
-        // top edge stays covered by the composer's solid sides — no gap/poke at the sides. The
-        // composer keeps its own rounded shape; the tray keeps its tint + rounded bottom.
-        "chat-composer-shell relative z-0 -mt-5 flex min-h-8 min-w-0 flex-nowrap items-center gap-x-1.5 overflow-hidden !rounded-t-none !rounded-b-[var(--composer-radius)] bg-[color-mix(in_srgb,var(--color-background-elevated-secondary)_76%,var(--color-background-surface)_24%)] px-2 pb-1.5 pt-6 transition-colors duration-150 ease-out motion-reduce:transition-none sm:min-h-7",
-        COMPOSER_COLUMN_FRAME_CLASS_NAME,
-      )}
-    >
-      {showContainerChatWorkspacePicker ? (
-        <ProjectPicker
-          align="start"
-          side="top"
-          triggerClassName="h-7 py-1"
-          selectionMode="project"
-          selectedProjectId={isHomeChatContainer ? null : (activeProject?.id ?? null)}
-          onSelectProject={handleSelectProjectForEmptyDraft}
-        />
-      ) : showEmptyLandingProjectPicker ? (
-        <ProjectPicker
-          align="start"
-          side="top"
-          triggerClassName="h-7 py-1"
-          selectionMode="project"
-          selectedProjectId={activeProject.id}
-          onSelectProject={handleSelectProjectForEmptyDraft}
-        />
-      ) : (
-        emptyLandingProjectChip
-      )}
-      {/* Reserve the Local/branch slot so project selection fades controls in without resizing. */}
-      <div
-        aria-hidden={showEmptyLandingBranchToolbar ? undefined : true}
-        className={cn(
-          "flex min-w-0 flex-1 items-center transition-[opacity,transform] duration-150 ease-out motion-reduce:transition-none",
-          showEmptyLandingBranchToolbar
-            ? "translate-y-0 opacity-100"
-            : "pointer-events-none opacity-0",
-        )}
-      >
-        {showEmptyLandingBranchToolbar ? (
-          <BranchToolbar
-            {...branchToolbarProps}
-            className="mx-0 min-w-0 flex-1 !justify-start !px-0 !pb-0 !pt-0"
-            showBranchSelector={isGitRepo}
-          />
-        ) : null}
-      </div>
-      {showEmptyLandingBranchToolbar ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          aria-pressed={isThreadTemporary}
-          onClick={toggleDraftTemporary}
-          title={
-            isThreadTemporary
-              ? "Temporary chat — deleted when you leave. Click to keep it."
-              : "Make this a temporary chat (deleted when you leave)"
-          }
-          aria-label="Temporary chat"
-          className={cn(
-            "ml-auto shrink-0 gap-1.5 whitespace-nowrap px-2 text-[length:var(--app-font-size-ui-sm,11px)] font-normal transition-colors sm:px-2.5",
-            isThreadTemporary
-              ? "text-[var(--color-text-accent)] hover:bg-[var(--color-background-button-secondary-hover)] hover:text-[var(--color-text-accent)]"
-              : "text-[var(--color-text-foreground-secondary)] hover:bg-[var(--color-background-button-secondary-hover)] hover:text-[var(--color-text-foreground)]",
-          )}
-        >
-          <TemporaryThreadIcon className="size-3.5" />
-          <span className="sr-only sm:not-sr-only">Temporary</span>
-        </Button>
-      ) : null}
-    </div>
-  ) : null;
 
   const threadAutomationItems = automationsForThread(
     automationData.definitions,
@@ -11586,7 +11488,6 @@ export default function ChatView({
             />
           </ComposerColumnFrame>
         </form>
-        {emptyLandingControls}
       </div>
     ) : (
       <div

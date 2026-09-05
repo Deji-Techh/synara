@@ -80,12 +80,7 @@ export type FireworksServerProviderSettings = typeof FireworksServerProviderSett
 export const OpenCodeZenServerProviderSettings = Schema.Struct(ApiProviderSettingsBase);
 export type OpenCodeZenServerProviderSettings = typeof OpenCodeZenServerProviderSettings.Type;
 
-export const OpenCodeGoServerProviderSettings = Schema.Struct({
-  ...ProviderSettingsBase,
-  apiKey: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
-  apiKeyConfigured: Schema.Boolean.pipe(Schema.withDecodingDefault(() => false)),
-  baseUrl: StringSetting.pipe(Schema.withDecodingDefault(() => "")),
-});
+export const OpenCodeGoServerProviderSettings = Schema.Struct(ApiProviderSettingsBase);
 export type OpenCodeGoServerProviderSettings = typeof OpenCodeGoServerProviderSettings.Type;
 
 const DisabledSkillNames = Schema.Array(Schema.String.check(Schema.isMaxLength(256))).pipe(

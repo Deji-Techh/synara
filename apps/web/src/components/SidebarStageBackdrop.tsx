@@ -155,7 +155,7 @@ export function SidebarStageBackdrop({ className }: { className?: string }) {
     <div
       aria-hidden
       className={cn(
-        "sidebar-stage-backdrop pointer-events-none absolute inset-x-0 top-0 z-0 h-64 select-none overflow-hidden",
+        "sidebar-stage-backdrop pointer-events-none absolute inset-x-0 top-0 z-0 h-[88px] select-none overflow-hidden",
         className,
       )}
     >

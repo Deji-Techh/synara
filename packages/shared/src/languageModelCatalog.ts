@@ -414,6 +414,24 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       tag: "Free",
       tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
     },
+    {
+      name: "deepseek-v4-pro",
+      displayName: "DeepSeek V4 Pro",
+      description: "Frontier coding and reasoning model through OpenCode Zen",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "deepseek-v4-flash",
+      displayName: "DeepSeek V4 Flash",
+      description: "Fast high-speed reasoning and coding model through OpenCode Zen",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
   ],
   opencodeZen: [
     {
@@ -516,15 +534,308 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       tag: "Free",
       tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
     },
+    {
+      name: "deepseek-v4-pro",
+      displayName: "DeepSeek V4 Pro",
+      description: "Frontier coding and reasoning model through OpenCode Zen",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "deepseek-v4-flash",
+      displayName: "DeepSeek V4 Flash",
+      description: "Fast high-speed reasoning and coding model through OpenCode Zen",
+      maxOutputTokens: 32_000,
+      contextWindow: 128_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
   ],
   opencodeGo: [
     {
-      name: "opencode/go-coder",
-      displayName: "Go Coder",
-      description: "OpenCode Go lightweight fast model",
+      name: "minimax-m3",
+      displayName: "MiniMax M3",
+      description: "MiniMax M3 reasoning and coding model",
       contextWindow: 128_000,
-      maxOutputTokens: 16_000,
-      temperature: 0.2,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "minimax-m2.7",
+      displayName: "MiniMax M2.7",
+      description: "MiniMax high-speed reasoning model",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "minimax-m2.5",
+      displayName: "MiniMax M2.5",
+      description: "MiniMax fast coding and conversation",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "kimi-k3",
+      displayName: "Kimi K3",
+      description: "Moonshot Kimi K3 long-context reasoning model",
+      contextWindow: 200_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "kimi-k2.7-code",
+      displayName: "Kimi K2.7 Code",
+      description: "Moonshot Kimi code-specialized model",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "kimi-k2.6",
+      displayName: "Kimi K2.6",
+      description: "Moonshot Kimi K2.6 assistant",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "longcat-2.0",
+      displayName: "LongCat 2.0",
+      description: "LongCat ultra-long context reasoning",
+      contextWindow: 256_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "kimi-k2.5",
+      displayName: "Kimi K2.5",
+      description: "Moonshot Kimi K2.5 fast reasoning",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "glm-5.3",
+      displayName: "GLM 5.3",
+      description: "Zhipu AI flagship GLM 5.3 model",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "glm-5.3-flash",
+      displayName: "GLM 5.3 Flash",
+      description: "Zhipu AI ultra-low-latency GLM 5.3",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "glm-5.2",
+      displayName: "GLM 5.2",
+      description: "Zhipu AI GLM 5.2 general intelligence",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "glm-5.1",
+      displayName: "GLM 5.1",
+      description: "Zhipu AI GLM 5.1 assistant",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "glm-5",
+      displayName: "GLM 5",
+      description: "Zhipu AI foundation GLM 5 model",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "deepseek-v4-pro",
+      displayName: "DeepSeek V4 Pro",
+      description: "DeepSeek next-gen flagship coding and reasoning",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "deepseek-v4-flash",
+      displayName: "DeepSeek V4 Flash",
+      description: "DeepSeek ultra-fast high-throughput reasoning",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "deepseek-v4-flash-vision-exp",
+      displayName: "DeepSeek V4 Flash Vision Exp",
+      description: "Experimental multimodal vision reasoning",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "qwen3.8-max",
+      displayName: "Qwen 3.8 Max",
+      description: "Alibaba Qwen flagship 3.8 coding intelligence",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "qwen3.8-flash",
+      displayName: "Qwen 3.8 Flash",
+      description: "Alibaba Qwen 3.8 low-latency assistant",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "qwen3.7-max",
+      displayName: "Qwen 3.7 Max",
+      description: "Alibaba Qwen 3.7 high-capability model",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "qwen3.7-plus",
+      displayName: "Qwen 3.7 Plus",
+      description: "Alibaba Qwen 3.7 Plus balanced performance",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "qwen3.6-plus",
+      displayName: "Qwen 3.6 Plus",
+      description: "Alibaba Qwen 3.6 Plus reasoning model",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "qwen3.5-plus",
+      displayName: "Qwen 3.5 Plus",
+      description: "Alibaba Qwen 3.5 general assistant",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "mimo-v2.5-pro",
+      displayName: "MiMo V2.5 Pro",
+      description: "MiMo advanced architecture coding model",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "mimo-v2.5",
+      displayName: "MiMo V2.5",
+      description: "MiMo ultra-fast code generation",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 0,
+      tag: "Free",
+      tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      name: "mimo-v2-pro",
+      displayName: "MiMo V2 Pro",
+      description: "MiMo V2 Pro high capability model",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "mimo-v2-omni",
+      displayName: "MiMo V2 Omni",
+      description: "MiMo multimodal omni reasoning",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "hy4-preview",
+      displayName: "HY4 Preview",
+      description: "Tencent Hunyuan 4 Preview next-gen reasoning",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "hy3",
+      displayName: "HY3",
+      description: "Tencent Hunyuan 3 large model",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "hy3-preview",
+      displayName: "HY3 Preview",
+      description: "Tencent Hunyuan 3 Preview",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "gpt-5.6-luna",
+      displayName: "GPT-5.6 Luna",
+      description: "Next-generation fast intelligence model",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "grok-4.6",
+      displayName: "Grok 4.6",
+      description: "xAI Grok 4.6 frontier code and reasoning",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "grok-4.5",
+      displayName: "Grok 4.5",
+      description: "xAI Grok 4.5 assistant",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "muse-spark-1.3-contributor",
+      displayName: "Muse Spark 1.3 Contributor",
+      description: "Muse Spark 1.3 enhanced contributor coding",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "muse-spark-1.2-contributor",
+      displayName: "Muse Spark 1.2 Contributor",
+      description: "Muse Spark 1.2 fast contributor coding",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
+      dollarSigns: 1,
+    },
+    {
+      name: "omen-alpha",
+      displayName: "Omen Alpha",
+      description: "Experimental Omen Alpha coding intelligence",
+      contextWindow: 128_000,
+      maxOutputTokens: 32_000,
       dollarSigns: 1,
     },
   ],
@@ -572,25 +883,35 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
   ],
 };
 
+export const BUILT_IN_CATALOG = MODEL_OPTIONS;
+
 /**
  * Get built-in models for a provider.
  */
 export function getBuiltInModelsForProvider(providerId: string): ModelOption[] {
   const norm = providerId.toLowerCase().replace(/_/g, "-");
-  return (MODEL_OPTIONS[providerId] ?? MODEL_OPTIONS[norm] ?? []).map((m) => ({
-    ...m,
-    type: "builtin" as const,
-  }));
+  if (norm === "openai") return BUILT_IN_CATALOG.openai ?? [];
+  if (norm === "anthropic") return BUILT_IN_CATALOG.anthropic ?? [];
+  if (norm === "google") return BUILT_IN_CATALOG.google ?? [];
+  if (norm === "groq") return BUILT_IN_CATALOG.groq ?? [];
+  if (norm === "xai") return BUILT_IN_CATALOG.xai ?? [];
+  if (norm === "deepseek") return BUILT_IN_CATALOG.deepseek ?? [];
+  if (norm === "openrouter") return BUILT_IN_CATALOG.openrouter ?? [];
+  if (norm === "opencode-zen" || norm === "opencodezen") return BUILT_IN_CATALOG.opencodeZen ?? [];
+  if (norm === "opencode-go" || norm === "opencodego") return BUILT_IN_CATALOG.opencodeGo ?? [];
+  if (norm === "ollama") return BUILT_IN_CATALOG.ollama ?? [];
+  if (norm === "lmstudio") return BUILT_IN_CATALOG.lmstudio ?? [];
+  if (norm === "minimax") return BUILT_IN_CATALOG.minimax ?? [];
+  if (norm === "custom") return BUILT_IN_CATALOG.custom ?? [];
+  return [];
 }
 
 /**
  * Format context window nicely (e.g. 1048576 -> 1.0M, 200000 -> 200k).
  */
-export function formatContextWindow(tokens?: number): string {
-  if (!tokens) return "";
+export function formatContextWindow(tokens: number): string {
   if (tokens >= 1_000_000) {
-    const m = tokens / 1_000_000;
-    return `${m % 1 === 0 ? m.toFixed(0) : m.toFixed(1)}M`;
+    return `${(tokens / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
   }
   if (tokens >= 1_000) {
     return `${Math.round(tokens / 1_000)}k`;
@@ -614,6 +935,7 @@ export function formatOutputTokens(tokens?: number): string {
 }
 
 export const OPENCODE_ZEN_MODELS_URL = "https://opencode.ai/zen/v1/models";
+export const OPENCODE_GO_MODELS_URL = "https://opencode.ai/zen/go/v1/models";
 
 /**
  * Fetch live dynamic models with fallback to built-ins.
@@ -623,16 +945,23 @@ export async function fetchRemoteCatalogModels(
   fetchImpl: typeof fetch = fetch,
 ): Promise<ModelOption[]> {
   const norm = providerId.toLowerCase().replace(/_/g, "-");
-  if (norm === "opencode-zen" || norm === "opencodezen") {
+  const isOpenCodeZen = norm === "opencode-zen" || norm === "opencodezen";
+  const isOpenCodeGo = norm === "opencode-go" || norm === "opencodego";
+
+  if (isOpenCodeZen || isOpenCodeGo) {
+    const url = isOpenCodeGo ? OPENCODE_GO_MODELS_URL : OPENCODE_ZEN_MODELS_URL;
+    const providerKey = isOpenCodeGo ? "opencodeGo" : "opencodeZen";
+    const providerLabel = isOpenCodeGo ? "OpenCode Go" : "OpenCode Zen";
+
     try {
-      const res = await fetchImpl(OPENCODE_ZEN_MODELS_URL, {
+      const res = await fetchImpl(url, {
         headers: { Accept: "application/json" },
         signal: AbortSignal.timeout(6000),
       });
       if (res.ok) {
         const payload = (await res.json()) as { data?: Array<{ id?: string }> };
         if (Array.isArray(payload.data) && payload.data.length > 0) {
-          const builtins = getBuiltInModelsForProvider("opencodeZen");
+          const builtins = getBuiltInModelsForProvider(providerKey);
           return payload.data
             .filter((item): item is { id: string } => typeof item?.id === "string")
             .map((item) => {
@@ -644,12 +973,14 @@ export async function fetchRemoteCatalogModels(
                   .replace(/-free$/, "")
                   .replace(/[-_]/g, " ")
                   .replace(/\b\w/g, (c) => c.toUpperCase()),
-                description: "Discovered free model through OpenCode Zen",
+                description: `Live model through ${providerLabel}`,
                 contextWindow: 128_000,
                 maxOutputTokens: 32_000,
-                dollarSigns: 0,
-                tag: "Free",
-                tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+                dollarSigns: item.id.includes("free") || item.id.includes("flash") ? 0 : 1,
+                tag: item.id.includes("free") ? "Free" : undefined,
+                tagColor: item.id.includes("free")
+                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                  : undefined,
                 type: "builtin" as const,
               };
             });
@@ -658,6 +989,7 @@ export async function fetchRemoteCatalogModels(
     } catch {
       // Return fallback
     }
+    return getBuiltInModelsForProvider(providerKey);
   }
   return getBuiltInModelsForProvider(providerId);
 }

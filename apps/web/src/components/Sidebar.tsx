@@ -4473,7 +4473,7 @@ export default function Sidebar() {
         className={cn(
           "group/thread-card mx-1 mb-1.5 cursor-pointer rounded-lg border p-2.5 transition-all text-left select-none outline-none focus-visible:ring-1 focus-visible:ring-ring relative",
           isActive
-            ? "border-primary/50 bg-[var(--color-background-elevated-primary-opaque,var(--card))] shadow-sm"
+            ? "border-transparent bg-[var(--color-background-elevated-primary-opaque,var(--card))] shadow-sm"
             : "border-border/30 bg-muted/20 hover:border-border/60 hover:bg-muted/40",
         )}
       >

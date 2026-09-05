@@ -817,6 +817,29 @@ export function getAppModelOptions(
     });
   }
 
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(`caide:custom-models:${provider}`);
+      if (raw) {
+        const stored = JSON.parse(raw) as Array<{ name?: string; displayName?: string }>;
+        for (const item of stored) {
+          const slug = item.name?.trim();
+          if (slug && !seen.has(slug)) {
+            seen.add(slug);
+            options.push({
+              provider,
+              slug,
+              name: item.displayName || formatProviderModelOptionName({ provider, slug }),
+              isCustom: true,
+            });
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   const normalizedSelectedModel =
     provider === "groq"
       ? normalizeCursorModelVariantBaseId(selectedModel)

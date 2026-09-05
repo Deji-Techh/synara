@@ -1571,32 +1571,41 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                   : "gpt-5.6-sol";
 
               const GO_MODELS = new Set([
-                "grok-4.6",
-                "gpt-5.6-luna",
-                "glm-5.3-flash",
-                "glm-5.3",
-                "glm-5.2",
-                "glm-5.1",
+                "minimax-m3",
+                "minimax-m2.7",
+                "minimax-m2.5",
                 "kimi-k3",
                 "kimi-k2.7-code",
                 "kimi-k2.6",
                 "longcat-2.0",
+                "kimi-k2.5",
+                "glm-5.3",
+                "glm-5.3-flash",
+                "glm-5.2",
+                "glm-5.1",
+                "glm-5",
                 "deepseek-v4-pro",
                 "deepseek-v4-flash",
                 "deepseek-v4-flash-vision-exp",
-                "mimo-v2.5",
-                "mimo-v2.5-pro",
-                "minimax-m3",
-                "minimax-m2.7",
-                "minimax-m2.5",
-                "muse-spark-1.2-contributor",
                 "qwen3.8-max",
                 "qwen3.8-flash",
                 "qwen3.7-max",
                 "qwen3.7-plus",
                 "qwen3.6-plus",
+                "qwen3.5-plus",
+                "mimo-v2.5-pro",
+                "mimo-v2.5",
+                "mimo-v2-pro",
+                "mimo-v2-omni",
                 "hy4-preview",
                 "hy3",
+                "hy3-preview",
+                "gpt-5.6-luna",
+                "grok-4.6",
+                "grok-4.5",
+                "muse-spark-1.3-contributor",
+                "muse-spark-1.2-contributor",
+                "omen-alpha",
               ]);
 
               let baseUrl = "https://opencode.ai/zen/v1";
@@ -2546,121 +2555,114 @@ const HARNESS_SKILLS = [
 const DEFAULT_MODELS_BY_PROVIDER: Record<string, any[]> = {
   opencodeZen: [
     {
-      slug: "gpt-5.6-sol",
-      name: "GPT-5.6 Sol",
-      description: "Fast reasoning and high performance code generation",
-      supportsFastMode: true,
-      supportedReasoningEfforts: [
-        { value: "low", label: "Low" },
-        { value: "medium", label: "Medium" },
-        { value: "high", label: "High" },
-      ],
-      defaultReasoningEffort: "medium",
-    },
-    {
-      slug: "sonnet-5",
-      name: "Claude Sonnet 5",
-      description: "High intelligence and balanced aesthetic taste",
+      slug: "deepseek-v4-flash-free",
+      name: "DeepSeek V4 Flash (Free)",
+      description: "Fast free model through OpenCode Zen; high speed reasoning and coding",
       supportsFastMode: true,
     },
     {
-      slug: "opus-4.8",
-      name: "Claude Opus 4.8",
-      description: "Exceptional architecture, complex refactors, and design taste",
+      slug: "mimo-v2.5-free",
+      name: "MiMo V2.5 (Free)",
+      description: "Fast conversational and reasoning model through OpenCode Zen",
       supportsFastMode: true,
     },
     {
-      slug: "fable-5",
-      name: "Fable 5",
-      description: "Top-tier intelligence and supreme product UI/UX taste",
+      slug: "laguna-s-2.1-free",
+      name: "Laguna S 2.1 (Free)",
+      description: "High-throughput coding model through OpenCode Zen",
       supportsFastMode: true,
     },
     {
-      slug: "claude-3-7-sonnet-latest",
-      name: "Claude 3.7 Sonnet",
-      description: "Hybrid reasoning and coding model",
-      supportsFastMode: true,
-      supportedReasoningEfforts: [
-        { value: "low", label: "Low" },
-        { value: "medium", label: "Medium" },
-        { value: "high", label: "High" },
-      ],
-      defaultReasoningEffort: "medium",
-    },
-    {
-      slug: "claude-3-5-sonnet-latest",
-      name: "Claude 3.5 Sonnet",
-      description: "Industry standard coding model",
+      slug: "north-mini-code-free",
+      name: "North Mini Code (Free)",
+      description: "Compact coding model through OpenCode Zen",
       supportsFastMode: true,
     },
     {
-      slug: "zen-pro",
-      name: "Zen Pro",
-      description: "High intelligence reasoning model",
+      slug: "nemotron-3-ultra-free",
+      name: "Nemotron 3 Ultra (Free)",
+      description: "NVIDIA 120B MoE free endpoint through OpenCode Zen",
       supportsFastMode: true,
     },
     {
-      slug: "zen-flash",
-      name: "Zen Flash",
-      description: "Lightweight, ultra-fast responses",
+      slug: "big-pickle",
+      name: "Big Pickle (Free)",
+      description: "Stealth coding model through OpenCode Zen",
       supportsFastMode: true,
     },
     {
-      slug: "deepseek-r1",
-      name: "DeepSeek R1",
-      description: "Full reasoning and math model",
+      slug: "ling-3.0-flash-fin-free",
+      name: "Ling 3.0 Flash Fin (Free)",
+      description: "High-accuracy quantitative and coding model",
       supportsFastMode: true,
     },
     {
-      slug: "deepseek-v3",
-      name: "DeepSeek V3",
-      description: "High-throughput general assistant",
+      slug: "muse-spark-1.2-contributor-free",
+      name: "Muse Spark 1.2 Contributor (Free)",
+      description: "Fast contributor coding model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "muse-spark-1.3-contributor-free",
+      name: "Muse Spark 1.3 Contributor (Free)",
+      description: "Enhanced contributor coding model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "nemotron-3.5-lightning-free",
+      name: "Nemotron 3.5 Lightning (Free)",
+      description: "Ultra-low-latency NVIDIA inference",
+      supportsFastMode: true,
+    },
+    {
+      slug: "deepseek-v4-pro",
+      name: "DeepSeek V4 Pro",
+      description: "Frontier coding and reasoning model through OpenCode Zen",
+      supportsFastMode: true,
+    },
+    {
+      slug: "deepseek-v4-flash",
+      name: "DeepSeek V4 Flash",
+      description: "Fast high-speed reasoning and coding model through OpenCode Zen",
       supportsFastMode: true,
     },
   ],
   opencodeGo: [
-    {
-      slug: "gpt-5.6-sol",
-      name: "GPT-5.6 Sol",
-      description: "Fast reasoning and high performance code generation",
-      supportsFastMode: true,
-      supportedReasoningEfforts: [
-        { value: "low", label: "Low" },
-        { value: "medium", label: "Medium" },
-        { value: "high", label: "High" },
-      ],
-      defaultReasoningEffort: "medium",
-    },
-    {
-      slug: "sonnet-5",
-      name: "Claude Sonnet 5",
-      description: "High intelligence and balanced aesthetic taste",
-      supportsFastMode: true,
-    },
-    {
-      slug: "opus-4.8",
-      name: "Claude Opus 4.8",
-      description: "Exceptional architecture, complex refactors, and design taste",
-      supportsFastMode: true,
-    },
-    {
-      slug: "fable-5",
-      name: "Fable 5",
-      description: "Top-tier intelligence and supreme product UI/UX taste",
-      supportsFastMode: true,
-    },
-    {
-      slug: "go-standard",
-      name: "Go Standard",
-      description: "Direct OpenCode Go standard model",
-      supportsFastMode: true,
-    },
-    {
-      slug: "go-fast",
-      name: "Go Fast",
-      description: "Ultra-fast low-latency OpenCode Go model",
-      supportsFastMode: true,
-    },
+    { slug: "minimax-m3", name: "MiniMax M3", description: "MiniMax M3 reasoning and coding model", supportsFastMode: true },
+    { slug: "minimax-m2.7", name: "MiniMax M2.7", description: "MiniMax high-speed reasoning model", supportsFastMode: true },
+    { slug: "minimax-m2.5", name: "MiniMax M2.5", description: "MiniMax fast coding and conversation", supportsFastMode: true },
+    { slug: "kimi-k3", name: "Kimi K3", description: "Moonshot Kimi K3 long-context reasoning model", supportsFastMode: true },
+    { slug: "kimi-k2.7-code", name: "Kimi K2.7 Code", description: "Moonshot Kimi K2.7 Code specialized model", supportsFastMode: true },
+    { slug: "kimi-k2.6", name: "Kimi K2.6", description: "Moonshot Kimi K2.6 agentic workflow model", supportsFastMode: true },
+    { slug: "longcat-2.0", name: "LongCat 2.0", description: "Ultra-long context coding assistant", supportsFastMode: true },
+    { slug: "kimi-k2.5", name: "Kimi K2.5", description: "Moonshot Kimi K2.5 reasoning assistant", supportsFastMode: true },
+    { slug: "glm-5.3", name: "GLM 5.3", description: "Zhipu AI GLM 5.3 flagship model", supportsFastMode: true },
+    { slug: "glm-5.3-flash", name: "GLM 5.3 Flash", description: "Zhipu AI GLM 5.3 Flash low-latency model", supportsFastMode: true },
+    { slug: "glm-5.2", name: "GLM 5.2", description: "Zhipu AI GLM 5.2 frontier model", supportsFastMode: true },
+    { slug: "glm-5.1", name: "GLM 5.1", description: "Zhipu AI GLM 5.1 code assistant", supportsFastMode: true },
+    { slug: "glm-5", name: "GLM 5", description: "Zhipu AI GLM 5 foundational model", supportsFastMode: true },
+    { slug: "deepseek-v4-pro", name: "DeepSeek V4 Pro", description: "DeepSeek V4 Pro frontier reasoning model", supportsFastMode: true },
+    { slug: "deepseek-v4-flash", name: "DeepSeek V4 Flash", description: "DeepSeek V4 Flash ultra-fast model", supportsFastMode: true },
+    { slug: "deepseek-v4-flash-vision-exp", name: "DeepSeek V4 Flash Vision Exp", description: "DeepSeek V4 multimodal vision experimental model", supportsFastMode: true },
+    { slug: "qwen3.8-max", name: "Qwen 3.8 Max", description: "Alibaba Qwen 3.8 Max flagship model", supportsFastMode: true },
+    { slug: "qwen3.8-flash", name: "Qwen 3.8 Flash", description: "Alibaba Qwen 3.8 Flash high-throughput model", supportsFastMode: true },
+    { slug: "qwen3.7-max", name: "Qwen 3.7 Max", description: "Alibaba Qwen 3.7 Max reasoning model", supportsFastMode: true },
+    { slug: "qwen3.7-plus", name: "Qwen 3.7 Plus", description: "Alibaba Qwen 3.7 Plus balanced model", supportsFastMode: true },
+    { slug: "qwen3.6-plus", name: "Qwen 3.6 Plus", description: "Alibaba Qwen 3.6 Plus code generation model", supportsFastMode: true },
+    { slug: "qwen3.5-plus", name: "Qwen 3.5 Plus", description: "Alibaba Qwen 3.5 Plus performant assistant", supportsFastMode: true },
+    { slug: "mimo-v2.5-pro", name: "MiMo V2.5 Pro", description: "Xiaomi MiMo V2.5 Pro advanced reasoning model", supportsFastMode: true },
+    { slug: "mimo-v2.5", name: "MiMo V2.5", description: "Xiaomi MiMo V2.5 high-speed assistant", supportsFastMode: true },
+    { slug: "mimo-v2-pro", name: "MiMo V2 Pro", description: "Xiaomi MiMo V2 Pro reasoning model", supportsFastMode: true },
+    { slug: "mimo-v2-omni", name: "MiMo V2 Omni", description: "Xiaomi MiMo V2 Omni multimodal assistant", supportsFastMode: true },
+    { slug: "hy4-preview", name: "HY4 Preview", description: "Tencent Hunyuan 4 Preview frontier model", supportsFastMode: true },
+    { slug: "hy3", name: "HY3", description: "Tencent Hunyuan 3 general model", supportsFastMode: true },
+    { slug: "hy3-preview", name: "HY3 Preview", description: "Tencent Hunyuan 3 Preview release", supportsFastMode: true },
+    { slug: "gpt-5.6-luna", name: "GPT-5.6 Luna", description: "High-performance coding model", supportsFastMode: true },
+    { slug: "grok-4.6", name: "Grok 4.6", description: "xAI Grok 4.6 reasoning model", supportsFastMode: true },
+    { slug: "grok-4.5", name: "Grok 4.5", description: "xAI Grok 4.5 agentic model", supportsFastMode: true },
+    { slug: "muse-spark-1.3-contributor", name: "Muse Spark 1.3 Contributor", description: "Enhanced contributor coding model", supportsFastMode: true },
+    { slug: "muse-spark-1.2-contributor", name: "Muse Spark 1.2 Contributor", description: "Fast contributor coding model", supportsFastMode: true },
+    { slug: "omen-alpha", name: "Omen Alpha", description: "Experimental reasoning and coding model", supportsFastMode: true },
   ],
   anthropic: [
     {
@@ -2905,29 +2907,33 @@ export class ProviderDiscoveryService extends ServiceMap.Service<ProviderDiscove
       const provider = input?.provider ?? "opencodeZen";
       const fallback =
         DEFAULT_MODELS_BY_PROVIDER[provider] ?? DEFAULT_MODELS_BY_PROVIDER.opencodeZen;
-      // For opencode providers, fetch BOTH Zen and Go and merge so the picker
-      // shows all 60+ Zen + 30+ Go models (per https://opencode.ai/zen/v1/models and /go/v1/models tables).
-      // This fixes "app isnt registering all the models" — previously Zen only saw Zen, Go only saw Go.
-      if (provider === "opencodeZen" || provider === "opencodeGo") {
+      if (provider === "opencodeZen") {
         return Effect.tryPromise({
           try: async () => {
-            const [zenModels, goModels] = await Promise.all([
-              getDynamicOpenCodeModels("https://opencode.ai/zen/v1/models", DEFAULT_MODELS_BY_PROVIDER.opencodeZen).catch(() => DEFAULT_MODELS_BY_PROVIDER.opencodeZen),
-              getDynamicOpenCodeModels("https://opencode.ai/zen/go/v1/models", DEFAULT_MODELS_BY_PROVIDER.opencodeGo).catch(() => DEFAULT_MODELS_BY_PROVIDER.opencodeGo),
-            ]);
-            // Merge and dedupe by slug, preserving live descriptors
-            const seen = new Set<string>();
-            const merged: any[] = [];
-            for (const m of [...zenModels, ...goModels]) {
-              if (!seen.has(m.slug)) {
-                seen.add(m.slug);
-                merged.push(m);
-              }
-            }
-            return merged;
+            const models = await getDynamicOpenCodeModels(
+              "https://opencode.ai/zen/v1/models",
+              DEFAULT_MODELS_BY_PROVIDER.opencodeZen,
+            ).catch(() => DEFAULT_MODELS_BY_PROVIDER.opencodeZen);
+            const allowed = new Set(DEFAULT_MODELS_BY_PROVIDER.opencodeZen.map((m: any) => m.slug));
+            const filtered = models.filter((m: any) => allowed.has(m.slug));
+            return filtered.length > 0 ? filtered : DEFAULT_MODELS_BY_PROVIDER.opencodeZen;
           },
           catch: () => fallback,
-        }).pipe(Effect.map((models) => ({ models, source: "live-opencode-unified", cached: true })));
+        }).pipe(Effect.map((models) => ({ models, source: "live-opencode-zen", cached: true })));
+      }
+      if (provider === "opencodeGo") {
+        return Effect.tryPromise({
+          try: async () => {
+            const models = await getDynamicOpenCodeModels(
+              "https://opencode.ai/zen/go/v1/models",
+              DEFAULT_MODELS_BY_PROVIDER.opencodeGo,
+            ).catch(() => DEFAULT_MODELS_BY_PROVIDER.opencodeGo);
+            const allowed = new Set(DEFAULT_MODELS_BY_PROVIDER.opencodeGo.map((m: any) => m.slug));
+            const filtered = models.filter((m: any) => allowed.has(m.slug));
+            return filtered.length > 0 ? filtered : DEFAULT_MODELS_BY_PROVIDER.opencodeGo;
+          },
+          catch: () => fallback,
+        }).pipe(Effect.map((models) => ({ models, source: "live-opencode-go", cached: true })));
       }
       return Effect.succeed({ models: fallback, source: "harness", cached: true });
     },

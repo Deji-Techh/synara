@@ -68,14 +68,20 @@ export async function testProviderConnection(input: {
     case "xai":
     case "deepseek":
     case "openrouter":
-    case "opencode-zen": {
+    case "opencodeZen":
+    case "opencode-zen":
+    case "opencodeGo":
+    case "opencode-go": {
       if (!key) return { ok: false, message: "API key is required." };
       const defaults: Record<string, string> = {
         openai: "https://api.openai.com/v1",
         xai: "https://api.x.ai/v1",
         deepseek: "https://api.deepseek.com",
         openrouter: "https://openrouter.ai/api/v1",
+        opencodeZen: "https://opencode.ai/zen/v1",
         "opencode-zen": "https://opencode.ai/zen/v1",
+        opencodeGo: "https://opencode.ai/zen/go/v1",
+        "opencode-go": "https://opencode.ai/zen/go/v1",
       };
       const { status, json } = await get(`${base || defaults[providerId]}/models`, { authorization: `Bearer ${key}` }, signal);
       if (status === 200) {

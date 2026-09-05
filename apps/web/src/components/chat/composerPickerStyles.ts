@@ -246,15 +246,15 @@ export const COMPOSER_EDITOR_TYPOGRAPHY_CLASS_NAME = `font-system-ui ${COMPOSER_
 /** Muted empty-state copy for the composer prompt editor. */
 export const COMPOSER_PLACEHOLDER_TEXT_CLASS_NAME = "text-muted-foreground/40";
 export const COMPOSER_EDITOR_MIN_HEIGHT_CLASS_NAME =
-  "min-h-[var(--app-density-composer-editor-min-height,2lh)]";
+  "min-h-[var(--app-density-composer-editor-min-height,76px)]";
 /** Lexical wraps lines in `<p>` nodes; reset default margins so text sits flush above the footer. */
 export const COMPOSER_EDITOR_CONTENT_RESET_CLASS_NAME = "[&_p]:m-0";
 /** Shared padding around the composer prompt editor. */
 export const COMPOSER_EDITOR_PADDING_CLASS_NAME = [
   "relative",
-  "pl-[var(--app-density-composer-editor-padding-x,0.75rem)]",
+  "pl-[var(--app-density-composer-editor-padding-x,0.875rem)]",
   "pr-[var(--app-density-composer-editor-padding-x-end,0.875rem)]",
-  "pt-[var(--app-density-composer-editor-padding-top,0.75rem)]",
+  "pt-[var(--app-density-composer-editor-padding-top,0.875rem)]",
   "pb-[var(--app-density-composer-editor-padding-bottom,0.5rem)]",
 ].join(" ");
 /** Bottom bar row — flush to the composer shell edges. */
