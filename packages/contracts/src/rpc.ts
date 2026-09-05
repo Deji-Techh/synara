@@ -199,6 +199,8 @@ import {
 import {
   ProjectCreateLocalFilePreviewGrantInput,
   ProjectCreateLocalFilePreviewGrantResult,
+  ProjectDetectFrameworkInput,
+  ProjectDetectFrameworkResult,
   ProjectDevServerEvent,
   ProjectDiscoverScriptsInput,
   ProjectDiscoverScriptsResult,
@@ -514,6 +516,12 @@ export const WsProjectsProvisionFromGitHubRpc = Rpc.make(WS_METHODS.projectsProv
   success: GitHubProjectProvisionProgressEvent,
   error: WsRpcError,
   stream: true,
+});
+
+export const WsProjectsDetectFrameworkRpc = Rpc.make(WS_METHODS.projectsDetectFramework, {
+  payload: ProjectDetectFrameworkInput,
+  success: ProjectDetectFrameworkResult,
+  error: WsRpcError,
 });
 
 export const WsFilesystemBrowseRpc = Rpc.make(WS_METHODS.filesystemBrowse, {
@@ -1424,6 +1432,7 @@ export const WsFeatureRpcGroup = RpcGroup.make(
   WsProjectsListDevServersRpc,
   WsSubscribeProjectDevServerEventsRpc,
   WsProjectsProvisionFromGitHubRpc,
+  WsProjectsDetectFrameworkRpc,
   WsFilesystemBrowseRpc,
   WsAppCreateAppRpc,
   WsShellOpenInEditorRpc,

@@ -6,10 +6,91 @@ import type {
   ProviderListModelsResult,
   ProviderListPluginsResult,
   ProviderListSkillsResult,
+  ProviderSkillDescriptor,
   ProviderSkillsCatalogResult,
 } from "@caide/contracts";
 import { queryOptions } from "@tanstack/react-query";
 import { ensureNativeApi } from "~/nativeApi";
+
+export const DEFAULT_SYSTEM_SKILLS: ProviderSkillDescriptor[] = [
+  {
+    name: "ui-ux-mastery",
+    description:
+      "Product archetypes, design system, component contracts, a11y, anti-slop, and motion direction",
+    path: "harness/skills/ui-ux-mastery.md",
+    enabled: true,
+    scope: "system",
+    interface: {
+      displayName: "UI/UX Mastery",
+      shortDescription: "Design tokens, styling, tap targets, empty/loading/error states",
+    },
+  },
+  {
+    name: "motion-interaction",
+    description: "Spring physics, timing curves, gesture choreography, and haptics",
+    path: "harness/skills/motion-interaction.md",
+    enabled: true,
+    scope: "system",
+    interface: {
+      displayName: "Motion & Interaction",
+      shortDescription: "Platform springs, 220ms transitions, reduced-motion fallbacks",
+    },
+  },
+  {
+    name: "product-flow",
+    description: "spec.md construction, user flows, and state machine validation",
+    path: "harness/skills/product-flow.md",
+    enabled: true,
+    scope: "system",
+    interface: {
+      displayName: "Product Flow & Spec",
+      shortDescription: "Spec gate, flow definitions, core slices",
+    },
+  },
+  {
+    name: "anti-ai-slop",
+    description: "Prevents generic AI templates, gradient abuse, and placeholder text",
+    path: "harness/skills/anti-ai-slop.md",
+    enabled: true,
+    scope: "system",
+    interface: {
+      displayName: "Anti-AI Slop",
+      shortDescription: "Clean, intentional styling without AI stereotypes",
+    },
+  },
+  {
+    name: "backend-production",
+    description: "Security, schema validation, data model correctness, and API contracts",
+    path: "harness/skills/backend-production.md",
+    enabled: true,
+    scope: "system",
+    interface: {
+      displayName: "Backend Production",
+      shortDescription: "Secure storage, error handling, strict types",
+    },
+  },
+  {
+    name: "platform-patterns",
+    description: "iOS SF Symbols, Android Material, and cross-platform native patterns",
+    path: "harness/skills/platform-patterns.md",
+    enabled: true,
+    scope: "system",
+    interface: {
+      displayName: "Platform Patterns",
+      shortDescription: "Native platform conventions for React Native, Flutter, Web",
+    },
+  },
+];
+
+export const DEFAULT_SKILLS_RESULT: ProviderListSkillsResult = {
+  skills: DEFAULT_SYSTEM_SKILLS,
+  source: "caide-system",
+  cached: true,
+};
+
+export const DEFAULT_SKILLS_CATALOG_RESULT: ProviderSkillsCatalogResult = {
+  skills: DEFAULT_SYSTEM_SKILLS,
+};
 
 const EMPTY_SKILLS_RESULT: ProviderListSkillsResult = {
   skills: [],
@@ -119,7 +200,7 @@ export function providerSkillsQueryOptions(input: {
     gcTime: 24 * 60 * 60_000,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-    placeholderData: (previous) => previous ?? EMPTY_SKILLS_RESULT,
+    placeholderData: (previous) => previous ?? DEFAULT_SKILLS_RESULT,
   });
 }
 
@@ -137,7 +218,7 @@ export function skillsCatalogQueryOptions(input?: { cwd?: string | null; enabled
     enabled: input?.enabled ?? true,
     staleTime: 5 * 60_000,
     gcTime: 24 * 60 * 60_000,
-    placeholderData: (previous) => previous,
+    placeholderData: (previous) => previous ?? DEFAULT_SKILLS_CATALOG_RESULT,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     retry: 2,

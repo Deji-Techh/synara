@@ -557,6 +557,7 @@ export function createWsNativeApi(): NativeApi {
           timeoutMs: null,
           ...(options?.signal ? { signal: options.signal } : {}),
         }),
+      detectFramework: (input) => transport.request(WS_METHODS.projectsDetectFramework, input),
       onProvisionProgress: projectProvisionProgressListeners.subscribe,
     },
     filesystem: {

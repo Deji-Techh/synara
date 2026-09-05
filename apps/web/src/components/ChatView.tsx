@@ -89,10 +89,12 @@ import {
 } from "~/lib/gitReactQuery";
 import { resolveProviderDiscoveryCwd } from "~/lib/providerDiscovery";
 import {
+  DEFAULT_SYSTEM_SKILLS,
   providerComposerCapabilitiesQueryOptions,
   providerCommandsQueryOptions,
   providerPluginsQueryOptions,
   providerSkillsQueryOptions,
+  skillsCatalogQueryOptions,
   supportsNativeSlashCommandDiscovery,
   supportsPluginDiscovery,
   supportsSkillDiscovery,
@@ -3655,6 +3657,12 @@ export default function ChatView({
     }),
   );
   const canDiscoverProviderSkills = supportsSkillDiscovery(providerComposerCapabilitiesQuery.data);
+  const skillsCatalogQuery = useQuery(
+    skillsCatalogQueryOptions({
+      cwd: composerSkillCwd,
+      enabled: true,
+    }),
+  );
   const providerSkillsQuery = useQuery(
     providerSkillsQueryOptions({
       provider: selectedProvider,
@@ -3734,7 +3742,17 @@ export default function ChatView({
     () => providerSupportsTextNativeReviewCommand(selectedProvider, providerNativeCommands),
     [providerNativeCommands, selectedProvider],
   );
-  const providerSkills = providerSkillsQuery.data?.skills ?? EMPTY_PROVIDER_SKILLS;
+  const providerSkills = useMemo(() => {
+    const listSkills = providerSkillsQuery.data?.skills;
+    if (listSkills && listSkills.length > 0) {
+      return listSkills;
+    }
+    const catalogSkills = skillsCatalogQuery.data?.skills;
+    if (catalogSkills && catalogSkills.length > 0) {
+      return catalogSkills;
+    }
+    return DEFAULT_SYSTEM_SKILLS;
+  }, [providerSkillsQuery.data?.skills, skillsCatalogQuery.data?.skills]);
   const selectedModelCaps = useMemo(
     () => getModelCapabilities(selectedProvider, selectedModel),
     [selectedModel, selectedProvider],
@@ -4001,8 +4019,12 @@ export default function ChatView({
       ? null
       : activeProviderStatus;
   const voiceProviderStatus = useMemo(
-    () => findProviderStatus(providerStatuses, "openai"),
-    [providerStatuses],
+    () =>
+      findProviderStatus(providerStatuses, selectedProvider) ??
+      findProviderStatus(providerStatuses, "google") ??
+      findProviderStatus(providerStatuses, "groq") ??
+      findProviderStatus(providerStatuses, "openai"),
+    [providerStatuses, selectedProvider],
   );
   const refreshProviderStatuses = useRefreshProviderStatusesNow();
   const activeProjectCwd = activeProject?.cwd ?? null;
@@ -10225,13 +10247,13 @@ export default function ChatView({
     (composerTriggerKind === "slash-command" &&
       (providerCommandsQuery.isLoading ||
         providerCommandsQuery.isFetching ||
-        providerSkillsQuery.isLoading ||
-        providerSkillsQuery.isFetching)) ||
+        (providerSkills.length === 0 &&
+          (providerSkillsQuery.isLoading || providerSkillsQuery.isFetching)))) ||
     (composerTriggerKind === "skill" &&
       (providerComposerCapabilitiesQuery.isLoading ||
         providerComposerCapabilitiesQuery.isFetching ||
-        providerSkillsQuery.isLoading ||
-        providerSkillsQuery.isFetching));
+        (providerSkills.length === 0 &&
+          (providerSkillsQuery.isLoading || providerSkillsQuery.isFetching))));
 
   const onPromptChange = useCallback(
     (

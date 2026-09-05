@@ -63,7 +63,7 @@ function WorktreesStatus(props: { children: string; error?: boolean }) {
 
 export function WorktreesSettingsPanel({ active }: { readonly active: boolean }) {
   const queryClient = useQueryClient();
-  const worktreesQuery = useQuery(serverWorktreesQueryOptions());
+  const worktreesQuery = useQuery(serverWorktreesQueryOptions({ enabled: active }));
   const removeWorktreeMutation = useMutation(gitRemoveWorktreeMutationOptions({ queryClient }));
   const removeDeletedThreadFromClientState = useStore(
     (store) => store.removeDeletedThreadFromClientState,
@@ -72,6 +72,7 @@ export function WorktreesSettingsPanel({ active }: { readonly active: boolean })
   const threadShells = useStore(useMemo(() => createThreadShellsSelector(), []));
 
   const worktreesByWorkspaceRoot = useMemo(() => {
+    if (!active) return [];
     type WorktreeGroup = {
       workspaceRoot: string;
       worktrees: Array<{
@@ -276,6 +277,7 @@ export function ArchivedSettingsPanel({ active }: { readonly active: boolean }) 
   const threadShells = useStore(useMemo(() => createThreadShellsSelector(), []));
   const projects = useStore((store) => store.projects);
   const archivedGroups = useMemo(() => {
+    if (!active) return [];
     // Represent each archived subtree once. Normally that is a top-level thread;
     // a child whose parent is still active/missing is also a root and must remain
     // visible so legacy retention state can be recovered.

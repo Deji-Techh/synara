@@ -1287,16 +1287,24 @@ function ChatMarkdown({
 
         return (
           <MarkdownCodeBlock code={code} fence={fence}>
-            <CodeHighlightErrorBoundary fallback={<pre {...props}>{children}</pre>}>
-              <Suspense fallback={<pre {...props}>{children}</pre>}>
-                <SuspenseShikiCodeBlock
-                  language={fence.language}
-                  code={code}
-                  themeName={diffThemeName}
-                  isStreaming={isStreaming}
-                />
-              </Suspense>
-            </CodeHighlightErrorBoundary>
+            {isStreaming ? (
+              <div className="chat-markdown-shiki">
+                <pre {...props}>
+                  <code>{code}</code>
+                </pre>
+              </div>
+            ) : (
+              <CodeHighlightErrorBoundary fallback={<pre {...props}>{children}</pre>}>
+                <Suspense fallback={<pre {...props}>{children}</pre>}>
+                  <SuspenseShikiCodeBlock
+                    language={fence.language}
+                    code={code}
+                    themeName={diffThemeName}
+                    isStreaming={isStreaming}
+                  />
+                </Suspense>
+              </CodeHighlightErrorBoundary>
+            )}
           </MarkdownCodeBlock>
         );
       },

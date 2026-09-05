@@ -77,6 +77,7 @@ import { GoalDomainEvent } from "./goals.js";
 import { EngineSubagentEvent } from "./subagents.js";
 import {
   ProjectCreateLocalFilePreviewGrantInput,
+  ProjectDetectFrameworkInput,
   ProjectDevServerEvent,
   ProjectDiscoverScriptsInput,
   ProjectListDirectoriesInput,
@@ -178,6 +179,7 @@ export const WS_METHODS = {
   projectsListDevServers: "projects.listDevServers",
   subscribeProjectDevServerEvents: "projects.subscribeDevServerEvents",
   projectsProvisionFromGitHub: "projects.provisionFromGitHub",
+  projectsDetectFramework: "projects.detectFramework",
 
   // Filesystem browse methods
   filesystemBrowse: "filesystem.browse",
@@ -367,6 +369,7 @@ const WebSocketRequestBody = Schema.Union([
   tagRequestBody(WS_METHODS.projectsListDevServers, Schema.Struct({})),
   tagRequestBody(WS_METHODS.subscribeProjectDevServerEvents, Schema.Struct({})),
   tagRequestBody(WS_METHODS.projectsProvisionFromGitHub, GitHubProjectProvisionInput),
+  tagRequestBody(WS_METHODS.projectsDetectFramework, ProjectDetectFrameworkInput),
 
   // Filesystem browse
   tagRequestBody(WS_METHODS.filesystemBrowse, FilesystemBrowseInput),

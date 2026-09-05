@@ -15,6 +15,7 @@ import {
   type ProviderKind,
 } from "@caide/contracts";
 import {
+  DEFAULT_PROFILE_STATS_FALLBACK,
   serverProfileStatsQueryOptions,
   serverProfileTokenStatsQueryOptions,
 } from "~/lib/serverReactQuery";
@@ -48,23 +49,11 @@ export function ProfileSettingsPanel() {
   const coreQuery = useQuery(serverProfileStatsQueryOptions());
   const tokenQuery = useQuery(serverProfileTokenStatsQueryOptions());
 
-  if (coreQuery.isPending && !coreQuery.data) {
-    return <ProfileSkeleton />;
-  }
-  if (!coreQuery.data) {
-    return (
-      <div className="flex flex-col items-center gap-3 py-24 text-center">
-        <p className="text-sm text-muted-foreground">Couldn’t load your local stats.</p>
-        <Button variant="outline" size="sm" onClick={() => void coreQuery.refetch()}>
-          Try again
-        </Button>
-      </div>
-    );
-  }
+  const stats = coreQuery.data ?? DEFAULT_PROFILE_STATS_FALLBACK;
 
   return (
     <ProfileContent
-      stats={coreQuery.data}
+      stats={stats}
       tokenStats={tokenQuery.data ?? null}
       tokensPending={tokenQuery.isPending}
     />

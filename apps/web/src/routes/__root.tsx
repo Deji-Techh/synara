@@ -19,16 +19,28 @@ import {
   useParams,
   useRouterState,
 } from "@tanstack/react-router";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Throttler } from "@tanstack/react-pacer";
 
 import { APP_DISPLAY_NAME, APP_VERSION } from "../branding";
 import { DesktopWindowControls } from "../components/DesktopWindowControls";
-import { FeedbackDialog } from "../components/FeedbackDialog";
 import { SETTINGS_TARGETS } from "../settingsNavigation";
-import ShortcutsDialog from "../components/ShortcutsDialog";
-import WhatsNewDialog from "../components/WhatsNewDialog";
+
+const FeedbackDialog = lazy(() =>
+  import("../components/FeedbackDialog").then((mod) => ({ default: mod.FeedbackDialog })),
+);
+const ShortcutsDialog = lazy(() => import("../components/ShortcutsDialog"));
+const WhatsNewDialog = lazy(() => import("../components/WhatsNewDialog"));
 import { useWhatsNew } from "../whatsNew/useWhatsNew";
 import { WhatsNewPopoutCard } from "../whatsNew/WhatsNewPopoutCard";
 import { shouldRenderTerminalWorkspace } from "../components/ChatView.logic";
@@ -687,18 +699,20 @@ function GlobalShortcutsDialog() {
   }, []);
 
   return (
-    <ShortcutsDialog
-      open={open}
-      onOpenChange={setOpen}
-      keybindings={keybindings}
-      projectScripts={activeProject?.kind === "project" ? activeProject.scripts : []}
-      platform={platform}
-      context={{
-        terminalFocus: isTerminalFocused(),
-        terminalOpen,
-        terminalWorkspaceOpen,
-      }}
-    />
+    <Suspense fallback={null}>
+      <ShortcutsDialog
+        open={open}
+        onOpenChange={setOpen}
+        keybindings={keybindings}
+        projectScripts={activeProject?.kind === "project" ? activeProject.scripts : []}
+        platform={platform}
+        context={{
+          terminalFocus: isTerminalFocused(),
+          terminalOpen,
+          terminalWorkspaceOpen,
+        }}
+      />
+    </Suspense>
   );
 }
 
@@ -723,7 +737,11 @@ function GlobalFeedbackDialog() {
     hasThreadError: Boolean(activeThread?.error),
   };
 
-  return <FeedbackDialog open={isOpen} context={context} onOpenChange={setOpen} />;
+  return (
+    <Suspense fallback={null}>
+      <FeedbackDialog open={isOpen} context={context} onOpenChange={setOpen} />
+    </Suspense>
+  );
 }
 
 function GlobalWhatsNewSurface() {
@@ -756,13 +774,15 @@ function GlobalWhatsNewSurface() {
           onDismiss={dismissPopout}
         />
       )}
-      <WhatsNewDialog
-        open={isDialogOpen}
-        onOpenChange={onDialogOpenChange}
-        currentEntry={currentEntry}
-        allEntries={allEntries}
-        currentVersion={currentVersion}
-      />
+      <Suspense fallback={null}>
+        <WhatsNewDialog
+          open={isDialogOpen}
+          onOpenChange={onDialogOpenChange}
+          currentEntry={currentEntry}
+          allEntries={allEntries}
+          currentVersion={currentVersion}
+        />
+      </Suspense>
     </>
   );
 }

@@ -1688,6 +1688,14 @@ const makeWsRpcHandlersLayer = () =>
           rpcEffect(devServerManager.stop(input), "Failed to stop dev server"),
         [WS_METHODS.projectsListDevServers]: () =>
           rpcEffect(devServerManager.list, "Failed to list dev servers"),
+        [WS_METHODS.projectsDetectFramework]: (input) =>
+          rpcEffect(
+            Effect.promise(async () => {
+              const { detectFrameworkForAppDir } = await import("./harness/preview/manager.ts");
+              return detectFrameworkForAppDir(input.cwd);
+            }),
+            "Failed to detect project framework",
+          ),
         [WS_METHODS.subscribeProjectDevServerEvents]: (_, { clientId }) =>
           streamAdmission.guard(
             clientId,
@@ -2183,33 +2191,19 @@ const makeWsRpcHandlersLayer = () =>
               .getByProvider(input.provider)
               .pipe(
                 Effect.flatMap((adapter) =>
-                  adapter.prewarmVoice
-                    ? adapter.prewarmVoice(input)
-                    : Effect.fail(
-                        new Error(
-                          `Voice transcription is unavailable for provider '${input.provider}'.`,
-                        ),
-                      ),
+                  adapter.prewarmVoice ? adapter.prewarmVoice(input) : Effect.succeed({ ok: true }),
                 ),
+                Effect.catchAll(() => Effect.succeed({ ok: true })),
               ),
             "Voice transcription prewarm failed",
           ),
         [WS_METHODS.serverTranscribeVoice]: (input) =>
           rpcEffect(
             voiceUploadAdmissionGate.run(
-              providerAdapterRegistry
-                .getByProvider(input.provider)
-                .pipe(
-                  Effect.flatMap((adapter) =>
-                    adapter.transcribeVoice
-                      ? adapter.transcribeVoice(input)
-                      : Effect.fail(
-                          new Error(
-                            `Voice transcription is unavailable for provider '${input.provider}'.`,
-                          ),
-                        ),
-                  ),
-                ),
+              Effect.promise(async () => {
+                const { transcribeVoiceAudio } = await import("./voice/transcriptionService.ts");
+                return transcribeVoiceAudio(input);
+              }),
             ),
             "Voice transcription failed",
           ),

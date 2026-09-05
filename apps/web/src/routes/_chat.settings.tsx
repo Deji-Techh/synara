@@ -6,7 +6,7 @@
 import { PROVIDER_DISPLAY_NAMES, PROVIDER_KINDS, type ProviderKind } from "@caide/contracts";
 import { PROVIDER_DESCRIPTORS } from "@caide/shared/providerMetadata";
 import { createFileRoute, useSearch } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 
 import {
   type AppSettings,
@@ -70,7 +70,9 @@ import type {
 } from "../appSettings";
 import { SidebarBackdropSettings } from "../components/settings/SidebarBackdropSettings";
 import { PALETTE_THEMES, type PaletteThemeId } from "../theme/paletteThemes";
-import { ThemePackEditor } from "../components/ThemePackEditor";
+const ThemePackEditor = lazy(() =>
+  import("../components/ThemePackEditor").then((mod) => ({ default: mod.ThemePackEditor })),
+);
 import {
   CHAT_CONTENT_CARD_CLASS_NAME,
   CHAT_MAIN_VIEWPORT_SHELL_CLASS_NAME,
@@ -559,17 +561,19 @@ function SettingsRouteView() {
         </div>
 
         <div className="space-y-3">
-          {(resolvedTheme === "dark"
-            ? (["dark", "light"] as const)
-            : (["light", "dark"] as const)
-          ).map((variant) => (
-            <ThemePackEditor
-              key={variant}
-              variant={variant}
-              isActive={resolvedTheme === variant}
-              mode={theme}
-            />
-          ))}
+          <Suspense fallback={null}>
+            {(resolvedTheme === "dark"
+              ? (["dark", "light"] as const)
+              : (["light", "dark"] as const)
+            ).map((variant) => (
+              <ThemePackEditor
+                key={variant}
+                variant={variant}
+                isActive={resolvedTheme === variant}
+                mode={theme}
+              />
+            ))}
+          </Suspense>
         </div>
       </SettingsSectionShell>
 

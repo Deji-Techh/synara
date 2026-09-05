@@ -180,20 +180,18 @@ export function useComposerVoiceController(
   };
 
   const startComposerVoiceRecording = async () => {
-    if (!activeProject) {
-      return;
-    }
+    const effectiveCwd = activeProject?.cwd ?? "";
     if (activeProviderStatus?.authStatus === "unauthenticated") {
       toastManager.add({
         type: "error",
-        title: "Sign in to ChatGPT in Codex before using voice notes.",
+        title: "Please configure a voice-compatible model (Google Gemini, Groq, or OpenAI) in Settings.",
       });
       return;
     }
     if (!canStartVoiceNotes) {
       toastManager.add({
         type: "error",
-        title: "Voice notes require a ChatGPT-authenticated Codex session.",
+        title: "Voice notes require an API key for Google Gemini, Groq, or OpenAI.",
       });
       return;
     }
@@ -211,8 +209,8 @@ export function useComposerVoiceController(
       const api = readNativeApi();
       void api?.server
         .prewarmVoice?.({
-          provider: "openai",
-          cwd: activeProject.cwd,
+          provider: selectedProvider,
+          cwd: effectiveCwd,
           ...(activeThreadId ? { threadId: activeThreadId } : {}),
         })
         .catch(() => undefined);
@@ -229,7 +227,7 @@ export function useComposerVoiceController(
   };
 
   const submitComposerVoiceRecording = (): Promise<void> => {
-    if (!activeProject || !isVoiceRecording) {
+    if (!isVoiceRecording) {
       return Promise.resolve();
     }
     if (!isVoiceActionArmed()) {
@@ -272,8 +270,8 @@ export function useComposerVoiceController(
         }
         return api.server
           .transcribeVoice({
-            provider: "openai",
-            cwd: activeProject.cwd,
+            provider: selectedProvider,
+            cwd: activeProject?.cwd ?? "",
             ...(activeThreadId ? { threadId: activeThreadId } : {}),
             ...payload,
           })

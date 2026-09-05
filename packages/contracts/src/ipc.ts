@@ -107,6 +107,8 @@ import type {
 import type {
   ProjectCreateLocalFilePreviewGrantInput,
   ProjectCreateLocalFilePreviewGrantResult,
+  ProjectDetectFrameworkInput,
+  ProjectDetectFrameworkResult,
   ProjectDevServerEvent,
   ProjectDiscoverScriptsInput,
   ProjectDiscoverScriptsResult,
@@ -603,6 +605,9 @@ export interface NativeApi {
       input: GitHubProjectProvisionInput,
       options?: { readonly signal?: AbortSignal },
     ) => Promise<GitHubProjectProvisionResult>;
+    detectFramework: (
+      input: ProjectDetectFrameworkInput,
+    ) => Promise<ProjectDetectFrameworkResult>;
     onProvisionProgress: (
       callback: (event: GitHubProjectProvisionProgressEvent) => void,
     ) => () => void;

@@ -3,6 +3,8 @@
 // the serve URL, keeps a ring-buffered log per thread, and supports stop/reload.
 import { spawn, type ChildProcess } from "node:child_process";
 import * as fs from "node:fs";
+import * as path from "node:path";
+import type { ProjectFramework } from "@caide/contracts";
 
 import { getFrameworkConfig } from "../framework/registry.ts";
 import { getThreadWorkspaceCwd } from "../../harnessCompat.ts";
@@ -22,8 +24,8 @@ const START_TIMEOUT_MS = 60_000;
 
 const sessions = new Map<string, PreviewSession>();
 
-/** Matches http(s) URLs and exp:// (Expo) URLs in dev-server output. */
-const URL_PATTERN = /(https?:\/\/[a-zA-Z0-9._:\[\]-]+|exp:\/\/[a-zA-Z0-9._:-]+)/;
+/** Matches http(s) URLs in dev-server output. */
+const URL_PATTERN = /(https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|[a-zA-Z0-9._-]+)(?::\d+)?(?:\/[^\s]*)?)/;
 
 function pushLog(session: PreviewSession, line: string) {
   const trimmed = line.slice(0, MAX_LOG_LEN);
@@ -71,8 +73,14 @@ export async function startPreview(input: {
   if (!devCommand) {
     throw new Error(`No dev command configured for this framework`);
   }
-  // env with an optional explicit port
-  const env = { ...process.env };
+  // env with an optional explicit port, suppressing external browser launch
+  const env = {
+    ...process.env,
+    BROWSER: "none",
+    CI: "1",
+    EXPO_NO_BROWSER: "1",
+    NO_COLOR: "1",
+  };
   if (input.port) env.CAIDE_PREVIEW_PORT = String(input.port);
 
   const child = spawn(devCommand, { cwd: appDir, shell: true, env });
@@ -102,7 +110,7 @@ export async function startPreview(input: {
         if (m && m[1] && !resolvedUrl) {
           const url = m[1];
           resolvedUrl = url;
-          const isNative = url.startsWith("exp://") || /flutter|emulator|simulator/i.test(line);
+          const isNative = !url.startsWith("http://") && !url.startsWith("https://");
           session.kind = isNative ? "native" : "web";
           session.url = url;
           clearTimeout(timeout);
@@ -150,13 +158,16 @@ export function reloadPreview(threadId: string): boolean {
   return true;
 }
 
-function getFrameworkConfigForAppDir(appDir?: string) {
-  // Detects the framework from the workspace files when not explicitly known.
-  // Priority: .caide/framework.json (written by scaffold) -> pubspec.yaml -> package.json deps -> blank.
-  // For blank framework devCommand is "" and startPreview will throw explicitly (M16: "Preview not available").
-  if (!appDir) return getFrameworkConfig("website");
+export function detectFrameworkForAppDir(appDir?: string): {
+  framework: ProjectFramework;
+  title: string;
+} {
+  // Detects framework and project title from workspace files.
+  // Priority: .caide/framework.json -> pubspec.yaml (Flutter) -> package.json (RN if expo/react-native, else Website) -> blank.
+  if (!appDir) return { framework: "website", title: "App" };
+  const baseTitle = path.basename(appDir) || "App";
   try {
-    const frameworkJsonPath = `${appDir}/.caide/framework.json`;
+    const frameworkJsonPath = path.join(appDir, ".caide", "framework.json");
     if (fs.existsSync(frameworkJsonPath)) {
       const parsed = JSON.parse(fs.readFileSync(frameworkJsonPath, "utf-8")) as Record<
         string,
@@ -164,25 +175,50 @@ function getFrameworkConfigForAppDir(appDir?: string) {
       >;
       const fw = String(parsed.framework ?? "").toLowerCase();
       if (fw === "react-native" || fw === "flutter" || fw === "website" || fw === "blank") {
-        return getFrameworkConfig(fw as any);
+        return {
+          framework: fw as ProjectFramework,
+          title: (typeof parsed.title === "string" && parsed.title.trim()) || baseTitle,
+        };
       }
     }
-    if (fs.existsSync(`${appDir}/pubspec.yaml`)) return getFrameworkConfig("flutter");
-    const pkgPath = `${appDir}/package.json`;
+    const pubspecPath = path.join(appDir, "pubspec.yaml");
+    if (fs.existsSync(pubspecPath)) {
+      const content = fs.readFileSync(pubspecPath, "utf-8");
+      const nameMatch = content.match(/^name:\s*([^\s#]+)/m);
+      return {
+        framework: "flutter",
+        title: nameMatch?.[1] || baseTitle,
+      };
+    }
+    const pkgPath = path.join(appDir, "package.json");
     if (fs.existsSync(pkgPath)) {
       const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8")) as Record<string, unknown>;
+      const pkgName = typeof pkg.name === "string" ? pkg.name.trim() : "";
       const deps = {
         ...((pkg.dependencies ?? {}) as Record<string, unknown>),
         ...((pkg.devDependencies ?? {}) as Record<string, unknown>),
       };
       if (deps.expo || deps["react-native"] || deps["expo-status-bar"]) {
-        return getFrameworkConfig("react-native");
+        return {
+          framework: "react-native",
+          title: pkgName || baseTitle,
+        };
       }
-      // Any package.json without RN deps is treated as website (Vite+React)
-      return getFrameworkConfig("website");
+      return {
+        framework: "website",
+        title: pkgName || baseTitle,
+      };
     }
   } catch {
     // ignore — fall through to blank
   }
-  return getFrameworkConfig("blank");
+  return {
+    framework: "blank",
+    title: baseTitle,
+  };
+}
+
+export function getFrameworkConfigForAppDir(appDir?: string) {
+  const detected = detectFrameworkForAppDir(appDir);
+  return getFrameworkConfig(detected.framework);
 }

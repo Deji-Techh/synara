@@ -1,4 +1,6 @@
 import type {
+  ProfileStats,
+  ProfileTokenStats,
   ProviderKind,
   ServerConfig,
   ServerListProviderUsageInput,
@@ -8,6 +10,70 @@ import type {
 } from "@caide/contracts";
 import { mutationOptions, queryOptions, type QueryClient } from "@tanstack/react-query";
 import { ensureNativeApi } from "~/nativeApi";
+
+export const DEFAULT_PROFILE_STATS_FALLBACK: ProfileStats = {
+  generatedAt: new Date().toISOString() as any,
+  timezone: {
+    utcOffsetMinutes: -new Date().getTimezoneOffset(),
+    today: new Date().toISOString().slice(0, 10),
+  },
+  identity: {
+    homeDirBasename: "Developer",
+    initials: "CD",
+    defaultHandle: "developer",
+  },
+  activity: {
+    currentStreakDays: 0,
+    longestStreakDays: 0,
+    totalPromptsSent: 0,
+    totalThreads: 0,
+    promptsToday: 0,
+    heatmapMetric: "prompts",
+    heatmap: [],
+  },
+  activeHours: {
+    startHour: null,
+    endHour: null,
+    turnCount: 0,
+    label: null,
+  },
+  insights: {
+    topProvider: null,
+    topProviderPercent: null,
+    topReasoning: null,
+    topReasoningPercent: null,
+    skillsExplored: 0,
+    totalSkillsUsed: 0,
+  },
+  providerModels: [],
+  skills: [],
+  mostUsedSkill: null,
+  mostWorkedProject: null,
+  frameworks: [],
+  mostUsedFramework: null,
+  quota: {
+    status: "unavailable",
+    provider: null,
+    window: null,
+    usedPercent: null,
+    resetsAt: null,
+    planName: null,
+  },
+};
+
+export const DEFAULT_PROFILE_TOKEN_STATS_FALLBACK: ProfileTokenStats = {
+  available: false,
+  lifetimeTotalTokens: null,
+  peakDayTokens: null,
+  peakDay: null,
+  providers: [],
+  unavailableProviders: [],
+  topProvider: null,
+  topProviderPercent: null,
+  models: [],
+  heatmapMetric: "tokens",
+  heatmap: [],
+};
 
 export const LOCAL_SERVERS_VISIBLE_REFETCH_INTERVAL_MS = 10_000;
 const LOCAL_SERVERS_DEFAULT_STALE_TIME_MS = 3_000;
@@ -173,7 +239,7 @@ export function serverSettingsQueryOptions() {
   });
 }
 
-export function serverWorktreesQueryOptions() {
+export function serverWorktreesQueryOptions(input?: { enabled?: boolean }) {
   return queryOptions({
     queryKey: serverQueryKeys.worktrees(),
     queryFn: async () => {
@@ -183,6 +249,7 @@ export function serverWorktreesQueryOptions() {
     staleTime: 30_000,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    ...(input?.enabled !== undefined ? { enabled: input.enabled } : {}),
   });
 }
 
@@ -276,7 +343,7 @@ export function serverProfileStatsQueryOptions(input: { enabled?: boolean } = {}
     enabled: input.enabled ?? true,
     staleTime: 5 * 60_000,
     gcTime: 24 * 60 * 60_000,
-    placeholderData: (previous) => previous,
+    placeholderData: (previous) => previous ?? DEFAULT_PROFILE_STATS_FALLBACK,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     retry: 2,
@@ -299,7 +366,7 @@ export function serverProfileTokenStatsQueryOptions(input: { enabled?: boolean }
     enabled: input.enabled ?? true,
     staleTime: 15 * 60_000,
     gcTime: 24 * 60 * 60_000,
-    placeholderData: (previous) => previous,
+    placeholderData: (previous) => previous ?? DEFAULT_PROFILE_TOKEN_STATS_FALLBACK,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     retry: 2,

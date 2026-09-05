@@ -190,6 +190,11 @@ const ALWAYS_AVAILABLE_PROVIDERS = new Set([
 
 function computeAllProviderStatuses(): any[] {
   const now = new Date().toISOString();
+  const hasVoiceKey = Boolean(
+    getProviderApiKeyDirect("google") ||
+    getProviderApiKeyDirect("groq") ||
+    getProviderApiKeyDirect("openai")
+  );
   return PROVIDER_KINDS.map((p) => {
     const apiKey = getProviderApiKeyDirect(p);
     const isConfigured =
@@ -199,6 +204,7 @@ function computeAllProviderStatuses(): any[] {
       status: isConfigured ? "ready" : "warning",
       available: isConfigured,
       authStatus: isConfigured ? "authenticated" : "unauthenticated",
+      voiceTranscriptionAvailable: hasVoiceKey,
       version: "1.0.0",
       checkedAt: now,
       message: isConfigured ? `${p} ready` : `${p} not configured`,
@@ -1156,6 +1162,28 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               updatedAt: command.createdAt ?? now,
               deletedAt: null,
             });
+            try {
+              if (command.workspaceRoot && fs.existsSync(command.workspaceRoot)) {
+                const caideDir = path.join(command.workspaceRoot, ".caide");
+                if (!fs.existsSync(caideDir)) {
+                  fs.mkdirSync(caideDir, { recursive: true });
+                }
+                const fwPath = path.join(caideDir, "framework.json");
+                if (!fs.existsSync(fwPath)) {
+                  fs.writeFileSync(
+                    fwPath,
+                    JSON.stringify(
+                      { framework: command.framework ?? "blank", title: command.title ?? "App" },
+                      null,
+                      2,
+                    ),
+                    "utf-8",
+                  );
+                }
+              }
+            } catch {
+              // ignore
+            }
             globalSnapshotSequence += 1;
             savePersistedState();
             publishDomainEvent({

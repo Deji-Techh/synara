@@ -101,6 +101,7 @@ import {
   type ProviderKind,
   ThreadId,
   type AppCreateResult,
+  type ProjectFramework,
   type ResolvedKeybindingsConfig,
   WS_GITHUB_PROJECT_PROVISIONING_CAPABILITY,
 } from "@caide/contracts";
@@ -406,6 +407,7 @@ import {
 } from "../lib/projectCreation";
 import { useSpacesUiStore } from "../spacesUiStore";
 import { CreateAppDialog } from "./CreateAppDialog";
+import { ImportProjectDialog } from "./ImportProjectDialog";
 import { SpaceEditorDialog } from "./SpaceEditorDialog";
 import { useSpacesController } from "./useSpacesController";
 import { SpaceEmptyState } from "./SpaceEmptyState";
@@ -1550,6 +1552,7 @@ export default function Sidebar() {
   const { activeProjectId: focusedProjectId } = useFocusedChatContext();
   const latestProjectId = useLatestProjectStore((state) => state.latestProjectId);
   const [createAppDialogOpen, setCreateAppDialogOpen] = useState(false);
+  const [importProjectDialogOpen, setImportProjectDialogOpen] = useState(false);
   const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
   const openFeedbackDialog = useFeedbackDialogStore((state) => state.openDialog);
   const [searchPaletteMode, setSearchPaletteMode] = useState<SidebarSearchPaletteMode>("search");
@@ -2300,7 +2303,12 @@ export default function Sidebar() {
   const addProjectFromPath = useCallback(
     async (
       rawCwd: string,
-      options: { createIfMissing?: boolean; spaceId?: SpaceId | null } = {},
+      options: {
+        createIfMissing?: boolean;
+        spaceId?: SpaceId | null;
+        title?: string;
+        framework?: ProjectFramework;
+      } = {},
     ) => {
       const cwd = rawCwd.trim();
       if (!cwd) {
@@ -2337,6 +2345,8 @@ export default function Sidebar() {
         const creationResult = await createOrRecoverProjectFromPath({
           api,
           workspaceRoot: cwd,
+          ...(options.title ? { title: options.title } : {}),
+          ...(options.framework ? { framework: options.framework } : {}),
           ...(options.createIfMissing === undefined
             ? {}
             : { createIfMissing: options.createIfMissing }),
@@ -2398,6 +2408,16 @@ export default function Sidebar() {
   const handleStartAddProject = useCallback(() => {
     setCreateAppDialogOpen(true);
   }, []);
+
+  const handleImportProject = useCallback(
+    async (params: { workspaceRoot: string; title: string; framework: ProjectFramework }) => {
+      await addProjectFromPath(params.workspaceRoot, {
+        title: params.title,
+        framework: params.framework,
+      });
+    },
+    [addProjectFromPath],
+  );
 
   // Dyad-parity app creation: the server RPC already created the engine app,
   // its first chat, and the bound orchestration project + thread. Wait for
@@ -5736,21 +5756,38 @@ export default function Sidebar() {
                 </Suspense>
               ) : null}
               <div className="flex items-center justify-between w-full px-1">
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      <button
-                        type="button"
-                        onClick={() => void navigate({ to: "/settings" })}
-                        className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
-                        aria-label="Settings"
-                      >
-                        <SettingsIcon className="size-4" />
-                      </button>
-                    }
-                  />
-                  <TooltipPopup side="top">Settings</TooltipPopup>
-                </Tooltip>
+                <div className="flex items-center gap-1">
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <button
+                          type="button"
+                          onClick={() => void navigate({ to: "/settings" })}
+                          className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+                          aria-label="Settings"
+                        >
+                          <SettingsIcon className="size-4" />
+                        </button>
+                      }
+                    />
+                    <TooltipPopup side="top">Settings</TooltipPopup>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <button
+                          type="button"
+                          onClick={() => setImportProjectDialogOpen(true)}
+                          className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+                          aria-label="Import project folder"
+                        >
+                          <AddPlusIcon className="size-4" />
+                        </button>
+                      }
+                    />
+                    <TooltipPopup side="top">Import project folder</TooltipPopup>
+                  </Tooltip>
+                </div>
               </div>
             </div>
           </SidebarMenuItem>
@@ -5763,6 +5800,12 @@ export default function Sidebar() {
         onCreated={(result) => {
           void handleAppCreated(result);
         }}
+      />
+
+      <ImportProjectDialog
+        open={importProjectDialogOpen}
+        onOpenChange={setImportProjectDialogOpen}
+        onImport={handleImportProject}
       />
 
       <SpaceEditorDialog

@@ -43,7 +43,7 @@ export interface StageContextInput {
 
 const FRAMEWORK_CONTRACTS: Record<string, string> = {
   "react-native": `Framework: React Native (Expo) — device-frame preview (npx expo start --web).
-Stack: Expo + NativeWind + React Navigation + Zustand + React Query + react-native-web.
+Stack: Expo + NativeWind + React Navigation + Zustand (useShallow or individual selectors only, never un-memoized object literals) + React Query + react-native-web.
 Contract: bottom tab bar with 2+ tabs, screen-based nav, 44×44 touch, no top navbar/sidebar, SafeArea, no hover-only, no fake phone bezel (preview provides frame), fill available frame (width:100% min-h:100dvh), tablet-adaptive (recompose, not centered phone column).`,
   website: `Framework: Website (Vite + React) — browser preview (bun run dev).
 Stack: Vite + React + Tailwind v4 + TanStack Router + Zustand.

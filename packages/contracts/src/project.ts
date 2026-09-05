@@ -6,6 +6,18 @@ import {
   ProjectId,
   TrimmedNonEmptyString,
 } from "./baseSchemas";
+import { ProjectFramework } from "./projectFramework";
+
+export const ProjectDetectFrameworkInput = Schema.Struct({
+  cwd: TrimmedNonEmptyString,
+});
+export type ProjectDetectFrameworkInput = typeof ProjectDetectFrameworkInput.Type;
+
+export const ProjectDetectFrameworkResult = Schema.Struct({
+  framework: ProjectFramework,
+  title: Schema.String,
+});
+export type ProjectDetectFrameworkResult = typeof ProjectDetectFrameworkResult.Type;
 
 const PROJECT_SEARCH_ENTRIES_MAX_LIMIT = 200;
 const PROJECT_SEARCH_LOCAL_ENTRIES_MAX_LIMIT = 100;

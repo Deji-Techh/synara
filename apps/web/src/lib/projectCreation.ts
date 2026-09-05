@@ -6,6 +6,7 @@
 import {
   type NativeApi,
   type OrchestrationShellSnapshot,
+  type ProjectFramework,
   type ProjectId,
   type SpaceId,
 } from "@caide/contracts";
@@ -37,6 +38,8 @@ export async function createOrRecoverProjectFromPath(input: {
   api: NativeApi;
   workspaceRoot: string;
   createIfMissing?: boolean;
+  title?: string;
+  framework?: ProjectFramework;
   /** Overrides the active-space default; `null` files the project in Void. */
   spaceId?: SpaceId | null;
   loadSnapshot: () => Promise<OrchestrationShellSnapshot | null>;
@@ -57,7 +60,8 @@ export async function createOrRecoverProjectFromPath(input: {
   const delayMs = input.delayMs ?? DEFAULT_PROJECT_CREATE_RECOVERY_DELAY_MS;
   const projectId = newProjectId();
   const createdAt = new Date().toISOString();
-  const title = buildProjectTitleFromWorkspaceRoot(workspaceRoot);
+  const title = input.title?.trim() || buildProjectTitleFromWorkspaceRoot(workspaceRoot);
+  const framework = input.framework ?? "blank";
 
   try {
     await input.api.orchestration.dispatchCommand({
@@ -67,7 +71,7 @@ export async function createOrRecoverProjectFromPath(input: {
       kind: "project",
       title,
       workspaceRoot,
-      framework: "blank",
+      framework,
       createWorkspaceRootIfMissing: input.createIfMissing === true,
       defaultModelSelection: {
         provider: "groq",
