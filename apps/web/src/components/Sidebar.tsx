@@ -45,7 +45,6 @@ import {
   LuPin,
 } from "react-icons/lu";
 import { SidebarStageBackdrop } from "~/components/SidebarStageBackdrop";
-import { CaideLogo } from "~/components/CaideLogo";
 import { FrameworkIcon } from "~/components/FrameworkIcon";
 import { createCentralIconComponent } from "~/lib/central-icons";
 import {
@@ -1264,7 +1263,6 @@ export function SidebarSurfacePicker({
           />
         }
       >
-        <CaideLogo className="size-4 shrink-0 text-foreground" />
         <span className="font-display min-w-0 truncate text-[17px] text-foreground">
           {SIDEBAR_SURFACE_PICKER_TITLE}
         </span>
@@ -5465,7 +5463,6 @@ export default function Sidebar() {
             )}
           >
             <div className="flex w-full items-center gap-2">
-              <CaideLogo className="size-4 text-white" />
               <span className="text-sm font-semibold tracking-tight text-white">Caide</span>
               {titlebarControls}
             </div>
@@ -5474,7 +5471,6 @@ export default function Sidebar() {
       ) : (
         <SidebarHeader className="relative z-10 h-10 shrink-0 flex-row items-center px-3 py-0 font-system-ui bg-transparent border-0">
           <div className="flex w-full items-center gap-2">
-            <CaideLogo className="size-4 text-white" />
             <span className="text-sm font-semibold tracking-tight text-white">Caide</span>
           </div>
         </SidebarHeader>

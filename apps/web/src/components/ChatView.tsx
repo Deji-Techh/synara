@@ -11069,9 +11069,15 @@ export default function ChatView({
                 />
                 <div
                   className={cn(
+                    "flex-1 min-h-0 flex flex-col cursor-text",
                     COMPOSER_EDITOR_PADDING_CLASS_NAME,
                     composerMenuOpen && !isComposerApprovalState && "overflow-visible",
                   )}
+                  onClick={(e) => {
+                    if (e.target === e.currentTarget) {
+                      composerEditorRef.current?.focusAtEnd();
+                    }
+                  }}
                 >
                   {/* anchor for T3-style portal positioning */}
                   <div ref={composerMenuAnchorRef} className="h-0 w-full" aria-hidden />

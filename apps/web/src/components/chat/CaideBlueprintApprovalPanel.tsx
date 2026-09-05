@@ -1,4 +1,5 @@
 import { type ApprovalRequestId, type ProviderApprovalDecision } from "@caide/contracts";
+import { IconSparkles, IconCheck } from "@tabler/icons-react";
 import { type PendingApproval } from "../../pendingInteractionDerivation";
 import { cn } from "~/lib/utils";
 import { Button } from "../ui/button";
@@ -110,24 +111,24 @@ export const CaideBlueprintApprovalPanel = function CaideBlueprintApprovalPanel(
   };
 
   return (
-    <div className={cn(COMPOSER_INPUT_SURFACE_CLASS_NAME, "overflow-hidden")}>
-      <div className="border-b border-border/60 px-3.5 py-2.5">
+    <div className={cn(COMPOSER_INPUT_SURFACE_CLASS_NAME, "overflow-hidden my-2 border-border/50")}>
+      <div className="border-b border-border/40 px-3.5 py-2 bg-muted/20">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-[12px] font-bold text-primary">
-              ✦
+            <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-[color-mix(in_srgb,var(--info)_15%,transparent)] text-[var(--info)]">
+              <IconSparkles size={13} />
             </span>
-            <div className="min-w-0">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                App Blueprint
-              </div>
-              <div className="truncate text-[13px] font-semibold text-foreground">
+            <div className="flex items-baseline gap-1.5 min-w-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--info)]">
+                Blueprint
+              </span>
+              <span className="truncate text-xs font-semibold text-foreground">
                 {appName || "Untitled app"}
-              </div>
+              </span>
             </div>
           </div>
           {visualCount > 0 ? (
-            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground">
+            <span className="shrink-0 rounded-full border border-border/40 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               {visualCount} visual{visualCount === 1 ? "" : "s"}
             </span>
           ) : null}

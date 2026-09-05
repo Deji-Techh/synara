@@ -153,6 +153,7 @@ export const DEFAULT_KEYBINDINGS: ReadonlyArray<KeybindingRule> = [
   { key: "meta+ctrl+p", command: "git.commitAndPush", when: "!terminalFocus && isMac" },
   { key: "ctrl+alt+p", command: "git.commitAndPush", when: "!terminalFocus && !isMac" },
   { key: "mod+o", command: "editor.openFavorite" },
+  { key: "mod+p", command: "preview.toggle", when: "!terminalFocus" },
 ];
 
 function normalizeKeyToken(token: string): string {

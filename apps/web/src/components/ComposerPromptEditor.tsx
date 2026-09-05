@@ -1196,12 +1196,19 @@ function ComposerPromptEditorInner({
 
   return (
     <ComposerRemoveTerminalContextContext.Provider value={onRemoveTerminalContext}>
-      <div className="relative">
+      <div
+        className="relative flex-1 min-h-0 flex flex-col cursor-text"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            editor.focus();
+          }
+        }}
+      >
         <PlainTextPlugin
           contentEditable={
             <ContentEditable
               className={cn(
-                "block max-h-[200px] w-full overflow-y-auto whitespace-pre-wrap break-words bg-transparent text-foreground focus:outline-none",
+                "block flex-1 min-h-0 max-h-[200px] w-full overflow-y-auto whitespace-pre-wrap break-words bg-transparent text-foreground focus:outline-none",
                 COMPOSER_EDITOR_TYPOGRAPHY_CLASS_NAME,
                 COMPOSER_EDITOR_MIN_HEIGHT_CLASS_NAME,
                 COMPOSER_EDITOR_CONTENT_RESET_CLASS_NAME,

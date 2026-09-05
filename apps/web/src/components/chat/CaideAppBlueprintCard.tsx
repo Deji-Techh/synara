@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { CaideCard, CaideCardHeader, CaideCardContent } from "./CaideCardPrimitives";
+import { IconSparkles, IconCheck } from "@tabler/icons-react";
+import { CaideCard, CaideCardHeader, CaideBadge, CaideCardContent } from "./CaideCardPrimitives";
 import { useOpenPendingBlueprint } from "~/usePendingInteractionHooks";
 
 interface CaideAppBlueprintCardProps {
@@ -23,9 +24,6 @@ export const CaideAppBlueprintCard: React.FC<CaideAppBlueprintCardProps> = ({
   description,
 }) => {
   const pending = useOpenPendingBlueprint();
-  // When a pending blueprint exists, derive display from the live pending
-  // blueprint (the source of truth including any composer edits) instead of
-  // the stale snapshot props from the original <caide-app-blueprint> tag.
   const liveBlueprint = pending?.blueprint as Record<string, unknown> | undefined;
   const displayAppName =
     typeof liveBlueprint?.appName === "string" && liveBlueprint.appName.trim() !== ""
@@ -41,56 +39,65 @@ export const CaideAppBlueprintCard: React.FC<CaideAppBlueprintCardProps> = ({
       ? (liveBlueprint.primaryColor as string)
       : primaryColor;
   const color = COLOR_RE.test(displayPrimaryColor) ? displayPrimaryColor : "#0284c7";
-  const [approved, setApproved] = useState(false);
-
-  // Static card no longer owns the approve action. The composer
-  // CaideBlueprintApprovalPanel is the single writer that collects edits
-  // and sends blueprintEdits atomically. Approving here would bypass edits
-  // and make the agent use the draft (reported as "uses its own not mine").
+  const [approved] = useState(false);
 
   return (
-    <CaideCard accentColor="gray" className="border-border/70 bg-card/60">
+    <CaideCard
+      state={approved ? "complete" : pending ? "pending" : undefined}
+      accent={approved ? "success" : "info"}
+      className="border border-border/50 bg-card/60 my-1.5"
+    >
       <CaideCardHeader
-        icon={
-          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary text-[12px] font-bold">
-            ✦
-          </div>
-        }
+        icon={<IconSparkles size={15} />}
+        accent={approved ? "success" : "info"}
       >
-        <div className="flex w-full items-center justify-between gap-2">
-          <div className="min-w-0">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              App Blueprint
-            </div>
-            <div className="truncate text-[13px] font-semibold text-foreground">
+        <div className="flex w-full items-center justify-between text-xs">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <CaideBadge accent={approved ? "success" : "info"}>Blueprint</CaideBadge>
+            <span className="truncate font-semibold text-foreground/90">
               {displayAppName}
-            </div>
+            </span>
           </div>
-          <div className="flex shrink-0 items-center gap-1.5 rounded-md border border-border/40 bg-muted/40 px-2 py-1">
-            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
-            <span className="font-mono text-[10.5px] text-muted-foreground">{color}</span>
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="flex items-center gap-1 rounded-md border border-border/40 bg-muted/30 px-1.5 py-0.5">
+              <span className="size-2 rounded-full shadow-2xs" style={{ backgroundColor: color }} />
+              <span className="font-mono text-[10px] text-muted-foreground">{color}</span>
+            </div>
+            {approved ? (
+              <span className="inline-flex items-center gap-0.5 text-[11px] text-[var(--success)] font-medium">
+                <IconCheck size={11} strokeWidth={2.5} />
+                Approved
+              </span>
+            ) : pending ? (
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--info)]">
+                <span className="size-1.5 rounded-full bg-[var(--info)] animate-pulse" />
+                Ready for review
+              </span>
+            ) : (
+              <span className="text-[11px] text-muted-foreground/60">Reviewed</span>
+            )}
           </div>
         </div>
       </CaideCardHeader>
-      <CaideCardContent>
+      <CaideCardContent className="px-2.5 pb-2.5 pt-0.5">
         {displayDesignDirection && (
-          <p className="leading-relaxed text-muted-foreground">{displayDesignDirection}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">{displayDesignDirection}</p>
         )}
         {description && (
-          <p className="mt-1 text-[11px] italic leading-relaxed text-muted-foreground/80">
+          <p className="mt-1 text-[11px] italic text-muted-foreground/75 leading-relaxed">
             {description}
           </p>
         )}
         {features.length > 0 && (
-          <div className="mt-2.5 space-y-1.5">
-            <div className="text-[10.5px] font-medium uppercase tracking-wide text-foreground/70">
-              Key features
+          <div className="mt-2 space-y-1">
+            <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+              Key Features
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1">
               {features.map((feat, idx) => (
                 <span
                   key={idx}
-                  className="rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground/80"
+                  className="rounded-md border border-border/40 bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-foreground/80"
                 >
                   {feat}
                 </span>
@@ -98,18 +105,18 @@ export const CaideAppBlueprintCard: React.FC<CaideAppBlueprintCardProps> = ({
             </div>
           </div>
         )}
-        <div className="mt-2.5 border-t border-border/40 pt-2.5">
+        <div className="mt-2 border-t border-border/30 pt-2">
           {approved ? (
-            <p className="text-[11px] text-muted-foreground">
-              Blueprint approved — building started.
-            </p>
+            <div className="flex items-center gap-1.5 text-[11px] text-[var(--success)] font-medium">
+              <IconCheck size={12} strokeWidth={2.5} />
+              <span>Blueprint approved — building started.</span>
+            </div>
           ) : pending ? (
-            <p className="text-[11px] text-muted-foreground">
-              Review and edit the blueprint in the composer below. Approve there to apply your
-              changes — the agent will use your edited values.
+            <p className="text-[11px] text-muted-foreground/80">
+              Review and customize the blueprint in the composer below. Approve there to apply your changes.
             </p>
           ) : (
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground/60">
               Blueprint was reviewed in the composer.
             </p>
           )}

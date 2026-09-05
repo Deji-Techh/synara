@@ -194,6 +194,11 @@ const AVAILABLE_NOW_DEFINITIONS: readonly ShortcutDefinition[] = [
     description: "Reveal the iOS Simulator panel for the active thread. macOS servers only.",
   },
   {
+    command: "preview.toggle",
+    label: "Toggle preview",
+    description: "Open or close the live app preview panel for the active thread.",
+  },
+  {
     command: "thread.copyId",
     label: "Copy thread ID",
     description: "Copy the active thread's ID to the clipboard.",

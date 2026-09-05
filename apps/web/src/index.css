@@ -2667,6 +2667,9 @@ diffs-container {
 /* T3 Code Chat Composer Main Surface & Attached Context Strip */
 [data-chat-composer-main-surface="true"] {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   min-height: 136px;
   border-radius: 22px;
   background: color-mix(in srgb, var(--composer-glass-surface, #161618) 88%, transparent);
@@ -2675,6 +2678,10 @@ diffs-container {
   -webkit-backdrop-filter: blur(28px) saturate(140%);
   backdrop-filter: blur(28px) saturate(140%);
   transition: background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+
+[data-chat-composer-footer="true"] {
+  margin-top: auto;
 }
 
 [data-chat-composer-main-surface="true"]:focus-within {

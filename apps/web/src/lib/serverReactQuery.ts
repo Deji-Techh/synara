@@ -276,7 +276,8 @@ export function serverProfileStatsQueryOptions(input: { enabled?: boolean } = {}
     enabled: input.enabled ?? true,
     staleTime: 60_000,
     refetchOnWindowFocus: false,
-    retry: false,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 3000),
     queryFn: async () => {
       const api = ensureNativeApi();
       return api.stats.getProfileStats({
@@ -295,7 +296,8 @@ export function serverProfileTokenStatsQueryOptions(input: { enabled?: boolean }
     enabled: input.enabled ?? true,
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
-    retry: false,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 3000),
     queryFn: async () => {
       const api = ensureNativeApi();
       return api.stats.getProfileTokenStats({

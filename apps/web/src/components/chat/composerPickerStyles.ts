@@ -251,7 +251,7 @@ export const COMPOSER_EDITOR_MIN_HEIGHT_CLASS_NAME =
 export const COMPOSER_EDITOR_CONTENT_RESET_CLASS_NAME = "[&_p]:m-0";
 /** Shared padding around the composer prompt editor. */
 export const COMPOSER_EDITOR_PADDING_CLASS_NAME = [
-  "relative",
+  "relative flex-1 min-h-0 flex flex-col",
   "pl-[var(--app-density-composer-editor-padding-x,0.875rem)]",
   "pr-[var(--app-density-composer-editor-padding-x-end,0.875rem)]",
   "pt-[var(--app-density-composer-editor-padding-top,0.875rem)]",
@@ -259,7 +259,7 @@ export const COMPOSER_EDITOR_PADDING_CLASS_NAME = [
 ].join(" ");
 /** Bottom bar row — flush to the composer shell edges. */
 export const COMPOSER_FOOTER_ROW_CLASS_NAME = [
-  "flex items-center justify-between",
+  "mt-auto flex items-center justify-between",
   "pl-[var(--app-density-composer-footer-padding,0.375rem)]",
   "pr-[var(--app-density-composer-footer-padding-end,0.5rem)]",
   "pb-[var(--app-density-composer-footer-padding,0.375rem)]",

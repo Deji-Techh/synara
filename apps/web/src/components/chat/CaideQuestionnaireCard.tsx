@@ -1,10 +1,11 @@
 import React, { useCallback, useState } from "react";
-import { CaideCard, CaideCardHeader } from "./CaideCardPrimitives";
-import { cn } from "~/lib/utils";
-import { newCommandId } from "~/lib/utils";
+import { IconHelpCircle, IconCheck } from "@tabler/icons-react";
+import { CaideCard, CaideCardHeader, CaideBadge } from "./CaideCardPrimitives";
+import { cn, newCommandId } from "~/lib/utils";
 import { ensureNativeApi } from "~/nativeApi";
 import { useOpenPendingUserInput } from "~/usePendingInteractionHooks";
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 
 export interface QuestionnaireQuestion {
   id?: string;
@@ -62,56 +63,59 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = () 
 
   if (!pending) {
     return (
-      <CaideCard accentColor="gray" className="border-border/70 bg-card/60">
+      <CaideCard state="complete" accent="neutral" className="border border-border/40 bg-card/40 my-1">
         <CaideCardHeader
-          icon={
-            <div className="h-6 w-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-              ✓
-            </div>
-          }
+          icon={<IconCheck size={14} className="text-muted-foreground/80" />}
+          accent="neutral"
         >
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              Questionnaire
+          <div className="flex w-full items-center justify-between text-xs">
+            <div className="flex items-center gap-1.5">
+              <CaideBadge accent="neutral">Questionnaire</CaideBadge>
+              <span className="text-muted-foreground">Answers recorded</span>
             </div>
-            <div className="text-sm font-semibold text-foreground">Answers recorded</div>
+            <span className="text-[11px] text-muted-foreground/60">Done</span>
           </div>
         </CaideCardHeader>
       </CaideCard>
     );
   }
 
-  const questions = pending.pending.questions as unknown as QuestionnaireQuestion[];
+  const questions = (pending.pending?.questions ?? []) as unknown as QuestionnaireQuestion[];
 
   return (
-    <CaideCard accentColor="gray" className="border-border/70 bg-card/60">
+    <CaideCard state="pending" accent="info" className="border border-border/50 bg-card/60 my-1.5">
       <CaideCardHeader
-        icon={
-          <div className="h-6 w-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-            ?
-          </div>
-        }
+        icon={<IconHelpCircle size={15} />}
+        accent="info"
       >
-        <div>
-          <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Plan Questionnaire
+        <div className="flex w-full items-center justify-between text-xs">
+          <div className="flex items-center gap-1.5">
+            <CaideBadge accent="info">Questionnaire</CaideBadge>
+            <span className="font-medium text-foreground/90">
+              {questions.length > 0 ? `${questions.length} question${questions.length === 1 ? "" : "s"}` : "Project questions"}
+            </span>
           </div>
-          <div className="text-sm font-semibold text-foreground">Project Questions</div>
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--info)]">
+            <span className="size-1.5 rounded-full bg-[var(--info)] animate-pulse" />
+            Awaiting input
+          </span>
         </div>
       </CaideCardHeader>
-      <form onSubmit={handleSubmit} className="px-3.5 pb-3 space-y-3.5 text-xs">
+
+      <form onSubmit={handleSubmit} className="px-2.5 pb-2.5 pt-1 space-y-3 text-xs">
         {questions.map((q, idx) => {
           const qKey = q.id || `q_${idx}`;
           const isMulti = q.type === "checkbox";
           const currentVal = answers[qKey];
 
           return (
-            <div key={qKey} className="space-y-1.5 pt-1">
-              <div className="font-medium text-foreground text-xs leading-snug">
-                {idx + 1}. {q.question}
+            <div key={qKey} className="space-y-1.5">
+              <div className="flex items-baseline gap-1.5 font-medium text-foreground text-xs leading-snug">
+                <span className="font-mono text-[11px] text-muted-foreground/70">{idx + 1}.</span>
+                <span>{q.question}</span>
               </div>
               {q.options && q.options.length > 0 ? (
-                <div className="grid gap-1.5 pl-1">
+                <div className="grid gap-1 pl-3">
                   {q.options.map((opt) => {
                     const isSelected = isMulti
                       ? Array.isArray(currentVal) && currentVal.includes(opt)
@@ -123,22 +127,28 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = () 
                         type="button"
                         onClick={() => handleSelectOption(qKey, opt, isMulti)}
                         className={cn(
-                          "flex items-center gap-2.5 px-3 py-2 rounded-lg border text-left text-xs transition-colors cursor-pointer",
+                          "flex items-center gap-2 px-2.5 py-1.5 rounded-md border text-left text-xs transition-colors cursor-pointer",
                           isSelected
-                            ? "border-primary bg-primary/10 text-foreground font-medium"
-                            : "border-border/60 hover:border-border hover:bg-muted/40 text-muted-foreground",
+                            ? "border-[color-mix(in_srgb,var(--info)_55%,transparent)] bg-[color-mix(in_srgb,var(--info)_10%,transparent)] text-foreground font-medium shadow-xs"
+                            : "border-border/50 hover:border-border/80 hover:bg-muted/30 text-muted-foreground",
                         )}
                       >
                         <span
                           className={cn(
-                            "h-3.5 w-3.5 border flex items-center justify-center shrink-0",
-                            isMulti ? "rounded-md" : "rounded-full",
+                            "size-3.5 border flex items-center justify-center shrink-0 transition-colors",
+                            isMulti ? "rounded-[3px]" : "rounded-full",
                             isSelected
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : "border-muted-foreground/50",
+                              ? "border-[var(--info)] bg-[var(--info)] text-white"
+                              : "border-muted-foreground/40",
                           )}
                         >
-                          {isSelected && <span className="text-[9px] leading-none">✓</span>}
+                          {isSelected && (
+                            isMulti ? (
+                              <IconCheck size={10} strokeWidth={3} />
+                            ) : (
+                              <span className="size-1.5 rounded-full bg-white" />
+                            )
+                          )}
                         </span>
                         <span className="flex-1">{opt}</span>
                       </button>
@@ -146,24 +156,31 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = () 
                   })}
                 </div>
               ) : (
-                <input
-                  type="text"
-                  value={(currentVal as string) ?? ""}
-                  onChange={(e) => handleSelectOption(qKey, e.target.value, false)}
-                  placeholder="Your answer..."
-                  disabled={submitted}
-                  className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
-                />
+                <div className="pl-3">
+                  <Input
+                    type="text"
+                    value={(currentVal as string) ?? ""}
+                    onChange={(e) => handleSelectOption(qKey, e.target.value, false)}
+                    placeholder="Your answer..."
+                    disabled={submitted}
+                    className="h-7 w-full rounded-md border-border/50 bg-muted/20 px-2.5 text-xs text-foreground placeholder:text-muted-foreground/40 focus-visible:ring-1 focus-visible:ring-ring"
+                  />
+                </div>
               )}
             </div>
           );
         })}
-        <div className="flex items-center justify-between border-t border-border/40 pt-2.5">
-          <span className="text-[11px] text-muted-foreground">
+
+        <div className="flex items-center justify-between border-t border-border/30 pt-2">
+          <span className="text-[11px] text-muted-foreground/80">
             {submitted ? "✓ Answers submitted" : "Select options and submit to guide the agent"}
           </span>
           {!submitted ? (
-            <Button type="submit" size="sm" className="rounded-full px-4">
+            <Button
+              type="submit"
+              size="sm"
+              className="h-7 text-xs px-3 rounded-md font-medium"
+            >
               Submit answers
             </Button>
           ) : null}

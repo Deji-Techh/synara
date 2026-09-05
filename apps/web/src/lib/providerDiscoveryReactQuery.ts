@@ -134,6 +134,8 @@ export function skillsCatalogQueryOptions(input?: { cwd?: string | null; enabled
     enabled: input?.enabled ?? true,
     staleTime: 30_000,
     placeholderData: (previous) => previous,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 3000),
   });
 }
 

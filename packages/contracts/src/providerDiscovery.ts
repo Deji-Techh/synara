@@ -10,17 +10,17 @@ import { ProviderOptionDescriptor } from "./model";
 const ProviderDiscoveryKind = ProviderKind;
 
 export const ProviderSkillInterface = Schema.Struct({
-  displayName: Schema.optional(TrimmedNonEmptyString),
-  shortDescription: Schema.optional(TrimmedNonEmptyString),
+  displayName: Schema.optional(Schema.String),
+  shortDescription: Schema.optional(Schema.String),
 });
 export type ProviderSkillInterface = typeof ProviderSkillInterface.Type;
 
 export const ProviderSkillDescriptor = Schema.Struct({
   name: TrimmedNonEmptyString,
-  description: Schema.optional(TrimmedNonEmptyString),
+  description: Schema.optional(Schema.String),
   path: TrimmedNonEmptyString,
   enabled: Schema.Boolean,
-  scope: Schema.optional(TrimmedNonEmptyString),
+  scope: Schema.optional(Schema.String),
   interface: Schema.optional(ProviderSkillInterface),
   dependencies: Schema.optional(Schema.Unknown),
 });

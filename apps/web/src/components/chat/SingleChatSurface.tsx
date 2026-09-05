@@ -218,6 +218,10 @@ export function SingleChatSurface(props: {
     usePreviewStageStore.getState().close(props.threadId);
   }, [props.threadId]);
 
+  const handleTogglePreview = useCallback(() => {
+    usePreviewStageStore.getState().toggle(props.threadId);
+  }, [props.threadId]);
+
   // Fade mutual exclusion: closing the other panel when one opens.
   const prevPreviewOpenRef = useRef(previewStageState.open);
   const prevDockOpenRef = useRef(dockState.open);
@@ -1132,6 +1136,7 @@ export function SingleChatSurface(props: {
               onToggleDiff={handleToggleDiff}
               onToggleRightDock={handleToggleRightDock}
               onToggleBrowser={handleToggleBrowser}
+              onTogglePreview={handleTogglePreview}
               {...(hasDeviceSupport ? { onToggleDevice: handleToggleDevice } : {})}
               onOpenBrowserUrl={handleOpenBrowserUrl}
               onOpenTurnDiff={handleOpenTurnDiff}
