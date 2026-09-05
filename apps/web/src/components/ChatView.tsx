@@ -2209,9 +2209,15 @@ export default function ChatView({
   const stickyActiveProvider = useComposerDraftStore((state) => state.stickyActiveProvider);
   const threadProvider =
     activeThread?.modelSelection.provider ?? activeProject?.defaultModelSelection?.provider ?? null;
+  const hasThreadStarted = Boolean(
+    activeThread &&
+      (activeThread.latestTurn !== null ||
+        (activeThread.messages && activeThread.messages.length > 0) ||
+        activeThread.session !== null),
+  );
   const isTurnInFlight = Boolean(
     activeThread &&
-      (activeThread.latestTurn?.status === "running" ||
+      (activeThread.latestTurn?.state === "running" ||
         activeThread.session?.status === "running"),
   );
   const lockedProvider: ProviderKind | null = isTurnInFlight
@@ -3381,8 +3387,8 @@ export default function ChatView({
       const messageId = newMessageId();
       const commandId = newCommandId();
       const createdAt = new Date().toISOString();
-      // Dispatch directly as local-agent with approval text — bypasses composer draft queue
-      // so Approve & Build is one-click. Falls back to composer copy if dispatch fails.
+      const api = readNativeApi();
+      if (!api) return;
       try {
         await api.orchestration.dispatchCommand({
           type: "thread.turn.start",
