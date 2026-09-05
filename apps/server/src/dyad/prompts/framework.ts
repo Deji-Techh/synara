@@ -30,7 +30,7 @@ The project framework is BLANK: an empty workspace with no stack assumptions.
 const REACT_NATIVE_BRIEF = `
 The project framework is REACT NATIVE (Expo): a native-feel mobile app.
 - Stack: Expo + NativeWind (Tailwind for RN) + React Navigation + Zustand + React Query. TypeScript throughout.
-- When using Zustand v5, always select individual state properties or wrap object selectors with `useShallow` from `zustand/react/shallow`. NEVER return an un-memoized object literal `(state) => ({ ... })` directly as this causes infinite re-render loops in React 18.
+- When using Zustand v5, always select individual state properties or wrap object selectors with \`useShallow\` from \`zustand/react/shallow\`. NEVER return an un-memoized object literal \`(state) => ({ ... })\` directly as this causes infinite re-render loops in React 18.
 - NEVER use DOM APIs, CSS stylesheets, <div>/<span>, or web-only libraries. Use React Native primitives (View/Text/Pressable/FlatList) and expo packages.
 - Install packages with the JS package manager (Expo-compatible packages only; never another platform's toolchain or language packages).
 - Preview runs via \`npx expo start\` inside the phone/tablet device frame; the app must fill the frame (100% width, no fake bezels).
