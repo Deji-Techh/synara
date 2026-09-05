@@ -14,6 +14,7 @@ import { Button } from "~/components/ui/button";
 import { PlusIcon, SkillCubeIcon } from "~/lib/icons";
 import { ensureNativeApi } from "~/nativeApi";
 import {
+  DEFAULT_SKILLS_CATALOG_RESULT,
   providerDiscoveryQueryKeys,
   skillsCatalogQueryOptions,
 } from "~/lib/providerDiscoveryReactQuery";
@@ -61,8 +62,13 @@ export function SkillsSettingsPanel() {
     (serverSettingsQuery.data?.skills.disabled ?? []).map((name) => settingsSkillNameKey(name)),
   );
 
-  const skillGroups = buildSettingsSkillGroups(catalogQuery.data?.skills ?? []);
-  const skillSections = buildSettingsSkillSections(catalogQuery.data?.skills ?? []);
+  const effectiveSkills =
+    catalogQuery.data?.skills && catalogQuery.data.skills.length > 0
+      ? catalogQuery.data.skills
+      : DEFAULT_SKILLS_CATALOG_RESULT.skills;
+
+  const skillGroups = buildSettingsSkillGroups(effectiveSkills);
+  const skillSections = buildSettingsSkillSections(effectiveSkills);
 
   const isSystemGroup = (group: (typeof skillGroups)[number]) =>
     group.sources.some((s) => s.origin === "system" || s.origin === "caide");
@@ -193,7 +199,7 @@ export function SkillsSettingsPanel() {
         />
       </SettingsSection>
 
-      {catalogQuery.isError && (!catalogQuery.data || catalogQuery.data.skills.length === 0) ? (
+      {catalogQuery.isError && effectiveSkills.length === 0 ? (
         <SettingsSection title="Skills">
           <SettingsRow
             title="Skill discovery failed"

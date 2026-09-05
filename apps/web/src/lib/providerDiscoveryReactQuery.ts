@@ -208,12 +208,12 @@ export function providerSkillsQueryOptions(input: {
 // Keep prior data during refetches so Settings does not flicker back to "Scanning..."
 // while the server refreshes filesystem discovery in the background.
 export function skillsCatalogQueryOptions(input?: { cwd?: string | null; enabled?: boolean }) {
-  const cwd = input?.cwd ?? null;
+  const trimmedCwd = input?.cwd?.trim() || null;
   return queryOptions({
-    queryKey: providerDiscoveryQueryKeys.skillsCatalog(cwd),
+    queryKey: providerDiscoveryQueryKeys.skillsCatalog(trimmedCwd),
     queryFn: async (): Promise<ProviderSkillsCatalogResult> => {
       const api = ensureNativeApi();
-      return api.provider.listSkillsCatalog(cwd ? { cwd } : {});
+      return api.provider.listSkillsCatalog(trimmedCwd ? { cwd: trimmedCwd } : {});
     },
     enabled: input?.enabled ?? true,
     staleTime: 5 * 60_000,

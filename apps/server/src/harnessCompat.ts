@@ -668,6 +668,73 @@ function loadPersistedState() {
         deletedAt: null,
       });
     }
+
+    // Ensure every project has at least one durable thread so it appears in sidebar cards
+    let createdMissingThreads = false;
+    for (const project of inMemoryProjects) {
+      if (!inMemoryThreads.some((t) => t.projectId === project.id)) {
+        const tid = `thread-${project.id}`;
+        const now = new Date().toISOString();
+        inMemoryThreads.push({
+          id: tid,
+          projectId: project.id,
+          title: project.title || project.name || "Chat",
+          modelSelection: project.defaultModelSelection || {
+            provider: "opencodeZen",
+            model: "default",
+          },
+          runtimeMode: "full-access",
+          interactionMode: "default",
+          envMode: "local",
+          branch: null,
+          worktreePath: null,
+          workingDirectory: null,
+          associatedWorktreePath: null,
+          associatedWorktreeBranch: null,
+          associatedWorktreeRef: null,
+          createBranchFlowCompleted: false,
+          isPinned: false,
+          parentThreadId: null,
+          creationSource: null,
+          sourceThreadId: null,
+          sourceTurnId: null,
+          gatewayOperationId: null,
+          gatewayOperationIndex: null,
+          subagentAgentId: null,
+          subagentNickname: null,
+          subagentRole: null,
+          forkSourceThreadId: null,
+          sidechatSourceThreadId: null,
+          lastKnownPr: null,
+          latestTurn: null,
+          latestUserMessageAt: null,
+          hasPendingApprovals: false,
+          hasPendingUserInput: false,
+          hasActionableProposedPlan: false,
+          createdAt: now,
+          updatedAt: now,
+          lastVisitedAt: now,
+          archivedAt: null,
+          settledAt: null,
+          deletedAt: null,
+          handoff: null,
+          session: null,
+          goal: null,
+          goalPausedAt: null,
+          pinnedMessages: [],
+          turns: [],
+          messages: [],
+          activities: [],
+          proposedPlans: [],
+          turnDiffSummaries: [],
+          checkpoints: [],
+        });
+        createdMissingThreads = true;
+      }
+    }
+    if (createdMissingThreads) {
+      savePersistedState();
+    }
   } catch (err) {
     console.error("[harnessCompat] Failed to load persisted state", err);
   }
@@ -1184,6 +1251,61 @@ export class OrchestrationEngineService extends ServiceMap.Service<
             } catch {
               // ignore
             }
+            const initialThreadId = `thread-${command.projectId}`;
+            inMemoryThreads.push({
+              id: initialThreadId,
+              projectId: command.projectId,
+              title: command.title ?? "Chat",
+              modelSelection: command.defaultModelSelection ?? {
+                provider: "opencodeZen",
+                model: "default",
+              },
+              runtimeMode: "full-access",
+              interactionMode: "default",
+              envMode: "local",
+              branch: null,
+              worktreePath: null,
+              workingDirectory: null,
+              associatedWorktreePath: null,
+              associatedWorktreeBranch: null,
+              associatedWorktreeRef: null,
+              createBranchFlowCompleted: false,
+              isPinned: false,
+              parentThreadId: null,
+              creationSource: null,
+              sourceThreadId: null,
+              sourceTurnId: null,
+              gatewayOperationId: null,
+              gatewayOperationIndex: null,
+              subagentAgentId: null,
+              subagentNickname: null,
+              subagentRole: null,
+              forkSourceThreadId: null,
+              sidechatSourceThreadId: null,
+              lastKnownPr: null,
+              latestTurn: null,
+              latestUserMessageAt: null,
+              hasPendingApprovals: false,
+              hasPendingUserInput: false,
+              hasActionableProposedPlan: false,
+              createdAt: now,
+              updatedAt: now,
+              lastVisitedAt: now,
+              archivedAt: null,
+              settledAt: null,
+              deletedAt: null,
+              handoff: null,
+              session: null,
+              goal: null,
+              goalPausedAt: null,
+              pinnedMessages: [],
+              turns: [],
+              messages: [],
+              activities: [],
+              proposedPlans: [],
+              turnDiffSummaries: [],
+              checkpoints: [],
+            });
             globalSnapshotSequence += 1;
             savePersistedState();
             publishDomainEvent({
@@ -1199,6 +1321,25 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 scripts: command.scripts ?? [],
                 isPinned: false,
                 spaceId: command.spaceId ?? null,
+                createdAt: now,
+                updatedAt: now,
+              },
+              createdAt: now,
+            });
+            globalSnapshotSequence += 1;
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: initialThreadId,
+              type: "thread.meta-updated",
+              payload: {
+                threadId: initialThreadId,
+                title: command.title ?? "Chat",
+                projectId: command.projectId,
+                modelSelection: command.defaultModelSelection ?? {
+                  provider: "opencodeZen",
+                  model: "default",
+                },
                 createdAt: now,
                 updatedAt: now,
               },
@@ -2465,157 +2606,410 @@ export function getProviderUsageSnapshot(..._args: any[]): any {
   return {};
 }
 
-const emptyProfileStats = (utcOffsetMinutes = 0) => ({
-  generatedAt: new Date().toISOString(),
-  timezone: {
-    utcOffsetMinutes,
-    today: new Date().toISOString().slice(0, 10),
-  },
-  identity: {
-    homeDirBasename: "DejiTech",
-    initials: "CD",
-    defaultHandle: "Developer",
-  },
-  activity: {
-    currentStreakDays: 0,
-    longestStreakDays: 0,
-    totalPromptsSent: 0,
-    totalThreads: 0,
-    promptsToday: 0,
-    heatmapMetric: "prompts" as const,
-    heatmap: [],
-  },
-  summary: {
-    tokensPerDayAvg: 0,
-    peakDayTokens: null,
-    totalTokensFormatted: "0",
-    topModel: null,
-    topProvider: null,
-  },
-  lifetimeTotalTokens: 0,
-  peakDayTokens: null,
-  peakDay: null,
-  providers: [],
-  unavailableProviders: [],
-  activeHours: {
-    startHour: null,
-    endHour: null,
-    turnCount: 0,
-    label: null,
-  },
-  insights: {
-    topProvider: null,
-    topProviderPercent: null,
-    topReasoning: null,
-    topReasoningPercent: null,
-    skillsExplored: 0,
-    totalSkillsUsed: 0,
-  },
-  providerModels: [],
-  skills: [],
-  mostUsedSkill: null,
-  mostWorkedProject: null,
-  frameworks: [],
-  mostUsedFramework: null,
-  quota: {
-    status: "unavailable" as const,
-    provider: null,
-    window: null,
-    usedPercent: null,
-    resetsAt: null,
-    planName: null,
-  },
-});
+function resolveUserProfileIdentity() {
+  let name = "";
+  try {
+    name = child_process.execSync("git config user.name", { encoding: "utf-8" }).trim();
+  } catch {
+    // ignore
+  }
+  if (!name) {
+    name = process.env.USER || process.env.USERNAME || "Developer";
+  }
+  const handle = name.toLowerCase().replace(/[^a-z0-9_-]/g, "");
+  const parts = name.split(/[\s-_]+/).filter(Boolean);
+  let initials = "D";
+  if (parts.length >= 2) {
+    initials = (parts[0][0] + parts[1][0]).toUpperCase();
+  } else if (name.length > 0) {
+    initials = name.slice(0, 2).toUpperCase();
+  }
+  return {
+    homeDirBasename: path.basename(os.homedir()) || "DejiTech",
+    initials,
+    defaultHandle: handle || "deji-tech",
+  };
+}
 
-const emptyProfileTokenStats = () => ({
-  available: true,
-  lifetimeTotalTokens: 0,
-  peakDayTokens: null,
-  peakDay: null,
-  providers: [],
-  unavailableProviders: [],
-  topProvider: null,
-  topProviderPercent: null,
-  models: [],
-  heatmapMetric: "tokens" as const,
-  heatmap: [],
-});
+function computeLiveProfileStats(utcOffsetMinutes = 0) {
+  const now = new Date();
+  const todayLocal = new Date(now.getTime() + utcOffsetMinutes * 60_000).toISOString().slice(0, 10);
+  const identity = resolveUserProfileIdentity();
+  const totalThreads = inMemoryThreads.length;
+
+  interface UserTurn {
+    createdAt: string;
+    localDay: string;
+    localHour: number;
+    text: string;
+    projectId: string;
+    provider: string;
+    model: string;
+  }
+
+  const userTurns: UserTurn[] = [];
+  for (const t of inMemoryThreads) {
+    const threadProvider = t.modelSelection?.provider || "opencodeZen";
+    const threadModel = t.modelSelection?.model || "default";
+    for (const m of (t.messages || [])) {
+      if (m.role === "user") {
+        const createdAt = m.createdAt || now.toISOString();
+        const d = new Date(createdAt);
+        const validDate = isNaN(d.getTime()) ? now : d;
+        const localTime = new Date(validDate.getTime() + utcOffsetMinutes * 60_000);
+        const localDay = localTime.toISOString().slice(0, 10);
+        const localHour = localTime.getUTCHours();
+        userTurns.push({
+          createdAt,
+          localDay,
+          localHour,
+          text: m.text || "",
+          projectId: t.projectId || "default",
+          provider: threadProvider,
+          model: threadModel,
+        });
+      }
+    }
+  }
+
+  const totalPromptsSent = userTurns.length;
+  const promptsToday = userTurns.filter((u) => u.localDay === todayLocal).length;
+
+  const dayCounts = new Map<string, number>();
+  for (const u of userTurns) {
+    dayCounts.set(u.localDay, (dayCounts.get(u.localDay) || 0) + 1);
+  }
+  if (!dayCounts.has(todayLocal)) {
+    dayCounts.set(todayLocal, 0);
+  }
+
+  const sortedDays = Array.from(dayCounts.keys()).sort();
+  const heatmap = sortedDays.map((day) => {
+    const count = dayCounts.get(day) || 0;
+    const weekday = new Date(day + "T00:00:00Z").getUTCDay();
+    return {
+      day,
+      count,
+      weekday,
+      intensity: count > 0 ? Math.min(4, Math.max(1, Math.ceil(count / 2))) : 0,
+    };
+  });
+
+  let longestStreakDays = 0;
+  let tempStreak = 0;
+  let prevDate: Date | null = null;
+  for (const day of sortedDays) {
+    const count = dayCounts.get(day) || 0;
+    if (count > 0) {
+      const d = new Date(day + "T00:00:00Z");
+      if (prevDate) {
+        const diffDays = Math.round((d.getTime() - prevDate.getTime()) / 86400000);
+        if (diffDays === 1) {
+          tempStreak += 1;
+        } else if (diffDays > 1) {
+          tempStreak = 1;
+        }
+      } else {
+        tempStreak = 1;
+      }
+      prevDate = d;
+      if (tempStreak > longestStreakDays) longestStreakDays = tempStreak;
+    }
+  }
+  const currentStreakDays = promptsToday > 0 ? tempStreak : 0;
+
+  const hourCounts = new Array(24).fill(0);
+  for (const u of userTurns) {
+    hourCounts[u.localHour] += 1;
+  }
+  let peakHour = 14;
+  let maxHourCount = 0;
+  for (let h = 0; h < 24; h++) {
+    if (hourCounts[h] > maxHourCount) {
+      maxHourCount = hourCounts[h];
+      peakHour = h;
+    }
+  }
+  const endHour = (peakHour + 2) % 24;
+  const activeLabel =
+    peakHour >= 5 && peakHour < 12
+      ? "Morning flow"
+      : peakHour >= 12 && peakHour < 17
+        ? "Afternoon focus"
+        : peakHour >= 17 && peakHour < 22
+          ? "Evening build"
+          : "Night owl";
+
+  const providerKindSet = new Set(PROVIDER_KINDS);
+  const modelUsageMap = new Map<string, { provider: any; model: string; count: number }>();
+  const providerTurnMap = new Map<string, number>();
+
+  for (const u of userTurns) {
+    const prov = providerKindSet.has(u.provider as any) ? u.provider : "unknown";
+    const mod = u.model || "default";
+    const key = `${prov}:${mod}`;
+    const existing = modelUsageMap.get(key) || { provider: prov, model: mod, count: 0 };
+    existing.count += 1;
+    modelUsageMap.set(key, existing);
+    providerTurnMap.set(prov, (providerTurnMap.get(prov) || 0) + 1);
+  }
+
+  const providerModels = Array.from(modelUsageMap.values()).map((item) => ({
+    provider: item.provider,
+    model: item.model,
+    turnCount: item.count,
+    percent: totalPromptsSent > 0 ? Math.round((item.count / totalPromptsSent) * 100) : 0,
+  }));
+
+  let topProvider: any = null;
+  let topProviderPercent: number | null = null;
+  if (providerTurnMap.size > 0) {
+    let topCount = 0;
+    for (const [p, c] of providerTurnMap.entries()) {
+      if (c > topCount && p !== "unknown") {
+        topCount = c;
+        topProvider = p;
+      }
+    }
+    if (topProvider && totalPromptsSent > 0) {
+      topProviderPercent = Math.round((topCount / totalPromptsSent) * 100);
+    }
+  }
+
+  const frameworkCounts = new Map<string, number>();
+  const VALID_FWS = new Set(["blank", "react-native", "flutter", "website"]);
+  for (const p of inMemoryProjects) {
+    const fw = VALID_FWS.has(p.framework) ? p.framework : "blank";
+    frameworkCounts.set(fw, (frameworkCounts.get(fw) || 0) + 1);
+  }
+  const frameworks = Array.from(frameworkCounts.entries()).map(([framework, count]) => ({
+    framework: framework as any,
+    count,
+    percent: inMemoryProjects.length > 0 ? Math.round((count / inMemoryProjects.length) * 100) : 0,
+  }));
+  const mostUsedFramework =
+    frameworks.length > 0 ? frameworks.reduce((a, b) => (a.count >= b.count ? a : b)).framework : null;
+
+  let mostWorkedProject: any = null;
+  if (inMemoryProjects.length > 0) {
+    const projectTurns = new Map<
+      string,
+      { promptCount: number; activeDays: Set<string>; lastWorkedAt: string }
+    >();
+    for (const u of userTurns) {
+      const entry = projectTurns.get(u.projectId) || {
+        promptCount: 0,
+        activeDays: new Set<string>(),
+        lastWorkedAt: u.createdAt,
+      };
+      entry.promptCount += 1;
+      entry.activeDays.add(u.localDay);
+      if (u.createdAt > entry.lastWorkedAt) entry.lastWorkedAt = u.createdAt;
+      projectTurns.set(u.projectId, entry);
+    }
+
+    let topProj = inMemoryProjects[0];
+    let topPrompts = -1;
+    for (const p of inMemoryProjects) {
+      const stats = projectTurns.get(p.id) || {
+        promptCount: 0,
+        activeDays: new Set(),
+        lastWorkedAt: p.updatedAt || p.createdAt,
+      };
+      if (stats.promptCount > topPrompts) {
+        topPrompts = stats.promptCount;
+        topProj = p;
+      }
+    }
+
+    const topStats = projectTurns.get(topProj.id) || {
+      promptCount: 0,
+      activeDays: new Set([todayLocal]),
+      lastWorkedAt: topProj.updatedAt || topProj.createdAt || now.toISOString(),
+    };
+    const threadCount = inMemoryThreads.filter((t) => t.projectId === topProj.id).length;
+
+    mostWorkedProject = {
+      projectId: topProj.id,
+      title: topProj.title || topProj.name || "App",
+      workspaceRoot: topProj.workspaceRoot || topProj.cwd || "/home/DejiTech",
+      promptCount: topStats.promptCount,
+      threadCount,
+      activeDays: Math.max(1, topStats.activeDays.size),
+      lastWorkedAt: topStats.lastWorkedAt || now.toISOString(),
+    };
+  }
+
+  return {
+    generatedAt: now.toISOString(),
+    timezone: {
+      utcOffsetMinutes,
+      today: todayLocal,
+    },
+    identity,
+    activity: {
+      currentStreakDays,
+      longestStreakDays,
+      totalPromptsSent,
+      totalThreads,
+      promptsToday,
+      heatmapMetric: "prompts" as const,
+      heatmap,
+    },
+    activeHours: {
+      startHour: peakHour,
+      endHour,
+      turnCount: maxHourCount,
+      label: activeLabel,
+    },
+    insights: {
+      topProvider,
+      topProviderPercent,
+      topReasoning: null,
+      topReasoningPercent: null,
+      skillsExplored: 0,
+      totalSkillsUsed: 0,
+    },
+    providerModels,
+    skills: [],
+    mostUsedSkill: null,
+    mostWorkedProject,
+    frameworks,
+    mostUsedFramework,
+    quota: {
+      status: "unavailable" as const,
+      provider: null,
+      window: null,
+      usedPercent: null,
+      resetsAt: null,
+      planName: null,
+    },
+  };
+}
+
+function computeLiveProfileTokenStats(utcOffsetMinutes = 0) {
+  const now = new Date();
+  const providerKindSet = new Set(PROVIDER_KINDS);
+
+  interface UserTurn {
+    localDay: string;
+    text: string;
+    provider: string;
+    model: string;
+  }
+
+  const userTurns: UserTurn[] = [];
+  for (const t of inMemoryThreads) {
+    const threadProvider = t.modelSelection?.provider || "opencodeZen";
+    const threadModel = t.modelSelection?.model || "default";
+    for (const m of (t.messages || [])) {
+      if (m.role === "user") {
+        const createdAt = m.createdAt || now.toISOString();
+        const d = new Date(createdAt);
+        const validDate = isNaN(d.getTime()) ? now : d;
+        const localTime = new Date(validDate.getTime() + utcOffsetMinutes * 60_000);
+        const localDay = localTime.toISOString().slice(0, 10);
+        userTurns.push({
+          localDay,
+          text: m.text || "",
+          provider: threadProvider,
+          model: threadModel,
+        });
+      }
+    }
+  }
+
+  let lifetimeTotalTokens = 0;
+  const dayTokensMap = new Map<string, number>();
+  const modelTokensMap = new Map<string, { provider: any; model: string; tokens: number }>();
+  const providerTokensMap = new Map<string, number>();
+
+  for (const u of userTurns) {
+    const estTokens = Math.max(150, Math.round(u.text.length / 3.5)) + 1200;
+    lifetimeTotalTokens += estTokens;
+    dayTokensMap.set(u.localDay, (dayTokensMap.get(u.localDay) || 0) + estTokens);
+
+    const prov = providerKindSet.has(u.provider as any) ? u.provider : "unknown";
+    const key = `${prov}:${u.model}`;
+    const entry = modelTokensMap.get(key) || { provider: prov, model: u.model, tokens: 0 };
+    entry.tokens += estTokens;
+    modelTokensMap.set(key, entry);
+
+    if (prov !== "unknown") {
+      providerTokensMap.set(prov, (providerTokensMap.get(prov) || 0) + estTokens);
+    }
+  }
+
+  let peakDayTokens = 0;
+  let peakDay: string | null = null;
+  for (const [d, t] of dayTokensMap.entries()) {
+    if (t > peakDayTokens) {
+      peakDayTokens = t;
+      peakDay = d;
+    }
+  }
+
+  let tokenTopProvider: any = null;
+  let tokenTopProviderPercent: number | null = null;
+  if (providerTokensMap.size > 0 && lifetimeTotalTokens > 0) {
+    let topTok = 0;
+    for (const [p, t] of providerTokensMap.entries()) {
+      if (t > topTok) {
+        topTok = t;
+        tokenTopProvider = p;
+      }
+    }
+    if (tokenTopProvider) {
+      tokenTopProviderPercent = Math.round((topTok / lifetimeTotalTokens) * 100);
+    }
+  }
+
+  const tokenModels = Array.from(modelTokensMap.values()).map((item) => ({
+    provider: item.provider,
+    model: item.model,
+    tokens: item.tokens,
+    percent: lifetimeTotalTokens > 0 ? Math.round((item.tokens / lifetimeTotalTokens) * 100) : 0,
+  }));
+
+  const sortedDays = Array.from(dayTokensMap.keys()).sort();
+  const tokenHeatmap = sortedDays.map((day) => {
+    const tokens = dayTokensMap.get(day) || 0;
+    const weekday = new Date(day + "T00:00:00Z").getUTCDay();
+    return {
+      day,
+      count: tokens,
+      weekday,
+      intensity: tokens > 0 ? Math.min(4, Math.max(1, Math.ceil(tokens / 5000))) : 0,
+    };
+  });
+
+  const activeProviders = Array.from(providerTokensMap.keys()).filter((p) =>
+    providerKindSet.has(p as any),
+  ) as any[];
+
+  return {
+    available: true,
+    lifetimeTotalTokens,
+    peakDayTokens,
+    peakDay,
+    providers: activeProviders,
+    unavailableProviders: [],
+    topProvider: tokenTopProvider,
+    topProviderPercent: tokenTopProviderPercent,
+    models: tokenModels,
+    heatmapMetric: "tokens" as const,
+    heatmap: tokenHeatmap,
+  };
+}
 
 export class ProfileStatsQuery extends ServiceMap.Service<ProfileStatsQuery, any>()(
   "caide/ProfileStatsQuery",
 ) {
   static readonly layer = Layer.succeed(this, {
     getProfileStats: (input?: { utcOffsetMinutes?: number }) =>
-      Effect.sync(() => {
-        const base = emptyProfileStats(input?.utcOffsetMinutes ?? 0);
-        try {
-          // Derive live counts from in-memory harness state so the dashboard
-          // reflects actual usage even though the real DB projections are
-          // bypassed by the in-memory OrchestrationEngineService shim.
-          const totalThreads = inMemoryThreads.length;
-          const totalPromptsSent = inMemoryThreads.reduce(
-            (acc, t: any) => acc + (t.messages ?? []).filter((m: any) => m.role === "user").length,
-            0,
-          );
-          const frameworkCounts = new Map<string, number>();
-          const VALID_FWS = new Set(["blank", "react-native", "flutter", "website"]);
-          for (const p of inMemoryProjects) {
-            const fw = VALID_FWS.has(p.framework) ? p.framework : "blank";
-            frameworkCounts.set(fw, (frameworkCounts.get(fw) ?? 0) + 1);
-          }
-          const frameworks = Array.from(frameworkCounts.entries()).map(([framework, count]) => ({
-            framework,
-            count,
-            percent: inMemoryProjects.length > 0 ? Math.round((count / inMemoryProjects.length) * 100) : 0,
-          }));
-          const mostUsedFramework =
-            frameworks.length > 0
-              ? frameworks.reduce((a, b) => (a.count >= b.count ? a : b)).framework
-              : null;
-          // Simple heatmap: one cell per day with promptsToday bucket
-          const today = new Date().toISOString().slice(0, 10);
-          const promptsToday = inMemoryThreads.reduce(
-            (acc, t: any) =>
-              acc +
-              (t.messages ?? []).filter(
-                (m: any) => m.role === "user" && (m.createdAt ?? "").slice(0, 10) === today,
-              ).length,
-            0,
-          );
-          return {
-            ...base,
-            activity: {
-              ...base.activity,
-              totalThreads,
-              totalPromptsSent,
-              promptsToday,
-              heatmap:
-                promptsToday > 0
-                  ? [
-                      {
-                        day: today,
-                        count: promptsToday,
-                        weekday: new Date().getDay(),
-                        intensity: Math.min(4, promptsToday),
-                      },
-                    ]
-                  : [],
-            },
-            frameworks,
-            mostUsedFramework,
-            insights: {
-              ...base.insights,
-              totalSkillsUsed: inMemoryThreads.reduce(
-                (acc, t: any) => acc + (t.messages ?? []).flatMap((m: any) => m.skills ?? []).length,
-                0,
-              ),
-            },
-          };
-        } catch {
-          return base;
-        }
-      }),
-    getProfileTokenStats: () => Effect.sync(() => emptyProfileTokenStats()),
+      Effect.sync(() => computeLiveProfileStats(input?.utcOffsetMinutes ?? 0)),
+    getProfileTokenStats: (input?: { utcOffsetMinutes?: number }) =>
+      Effect.sync(() => computeLiveProfileTokenStats(input?.utcOffsetMinutes ?? 0)),
   } as any);
 }
 
@@ -3231,11 +3625,14 @@ export class ProviderDiscoveryService extends ServiceMap.Service<ProviderDiscove
         source: "caide-harness",
         cached: false,
       })),
-    listSkillsCatalog: () =>
-      Effect.sync(() => ({
-        skills: [...HARNESS_SKILLS, ...loadCustomSkills()],
-        caideSkillsDir: getCaideSkillsDir(),
-      })),
+    listSkillsCatalog: (_input?: any) =>
+      Effect.sync(() => {
+        const skillsDir = getCaideSkillsDir();
+        return {
+          skills: [...HARNESS_SKILLS, ...loadCustomSkills()],
+          caideSkillsDir: skillsDir?.trim() || undefined,
+        };
+      }),
     createCustomSkill: (input: any) =>
       Effect.try({
         try: () => ({ skill: saveCustomSkill(input) }),

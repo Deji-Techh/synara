@@ -279,6 +279,14 @@ export function useComposerVoiceController(
             if (!isCurrentVoiceRequest()) {
               return;
             }
+            if (!result || !result.text?.trim()) {
+              toastManager.add({
+                type: "warning",
+                title: "No speech detected",
+                description: "Audio recording was empty or could not be transcribed.",
+              });
+              return;
+            }
             onTranscriptReady(result.text);
           });
       })

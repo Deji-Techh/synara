@@ -11,32 +11,47 @@ import { sharedProviderSecrets } from "../dyad/providers/secrets.ts";
 
 const PROVIDER_ENV_KEYS: Record<string, string[]> = {
   google: ["GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GENERATIVE_AI_API_KEY"],
+  gemini: ["GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GENERATIVE_AI_API_KEY"],
   groq: ["GROQ_API_KEY"],
   openai: ["OPENAI_API_KEY"],
 };
 
 export function getVoiceApiKey(provider: string): string | null {
+  const norm = provider.toLowerCase();
+  const lookupKeys =
+    norm === "google" || norm === "gemini" ? ["google", "gemini"] : [provider];
+
   try {
     const secrets = sharedProviderSecrets().read();
-    const stored = secrets?.providers?.[provider]?.apiKey?.trim();
-    if (stored) return stored;
+    for (const key of lookupKeys) {
+      const stored = secrets?.providers?.[key]?.apiKey?.trim();
+      if (stored) return stored;
+    }
   } catch {
     // ignore
   }
 
-  const envKeys = PROVIDER_ENV_KEYS[provider] || [];
-  for (const envKey of envKeys) {
-    const val = process.env[envKey]?.trim();
-    if (val) return val;
+  for (const key of lookupKeys) {
+    const envKeys = PROVIDER_ENV_KEYS[key] || [];
+    for (const envKey of envKeys) {
+      const val = process.env[envKey]?.trim();
+      if (val) return val;
+    }
   }
 
   // Check ~/.caide/userdata/secrets legacy files
   try {
     const home = process.env.HOME || os.homedir();
-    const secretPath = path.join(home, ".caide/userdata/secrets", `provider-${provider}-api-key.bin`);
-    if (fs.existsSync(secretPath)) {
-      const key = fs.readFileSync(secretPath, "utf-8").trim();
-      if (key) return key;
+    for (const key of lookupKeys) {
+      const secretPath = path.join(
+        home,
+        ".caide/userdata/secrets",
+        `provider-${key}-api-key.bin`,
+      );
+      if (fs.existsSync(secretPath)) {
+        const secretVal = fs.readFileSync(secretPath, "utf-8").trim();
+        if (secretVal) return secretVal;
+      }
     }
   } catch {
     // ignore
@@ -74,8 +89,7 @@ export function resolveBestVoiceProvider(preferred?: string): { provider: "googl
 }
 
 async function transcribeWithGemini(apiKey: string, audioBase64: string, mimeType = "audio/wav"): Promise<string> {
-  // Using gemini-2.5-flash or gemini-1.5-flash which has multimodal audio support
-  const models = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"];
+  const models = ["gemini-2.5-flash", "gemini-3.5-transcribe", "gemini-flash-latest"];
   let lastError: Error | null = null;
 
   for (const model of models) {
@@ -102,17 +116,25 @@ async function transcribeWithGemini(apiKey: string, audioBase64: string, mimeTyp
           ],
           generationConfig: {
             temperature: 0,
+            thinkingConfig: {
+              thinkingBudget: 0,
+            },
           },
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Gemini API returned HTTP ${response.status}: ${errorText}`);
+        throw new Error(`Gemini API (${model}) returned HTTP ${response.status}: ${errorText}`);
       }
 
       const data = (await response.json()) as any;
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? "";
+      const parts = data?.candidates?.[0]?.content?.parts || [];
+      const text = parts
+        .filter((p: any) => !p.thought)
+        .map((p: any) => p.text || "")
+        .join(" ")
+        .trim();
       return text;
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));

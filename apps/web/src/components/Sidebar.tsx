@@ -1335,6 +1335,7 @@ export default function Sidebar() {
   const collapseProjectsExcept = useStore((store) => store.collapseProjectsExcept);
   const reorderProjects = useStore((store) => store.reorderProjects);
   const renameProjectLocally = useStore((store) => store.renameProjectLocally);
+  const [viewingAllApps, setViewingAllApps] = useState(false);
   // Dyad-style single drill: start projects-only when several are expanded.
   const projectsOnlyNormalizedRef = useRef(false);
   useEffect(() => {
@@ -2011,6 +2012,8 @@ export default function Sidebar() {
 
   const openOrCreateProjectThreadFromSnapshot = useCallback(
     async (projectId: ProjectId, snapshot: OrchestrationShellSnapshot): Promise<boolean> => {
+      drillProject(projectId);
+      setViewingAllApps(false);
       const latestThread = sortThreadsForSidebar(
         snapshot.threads
           .filter(
@@ -2032,16 +2035,24 @@ export default function Sidebar() {
         return true;
       }
 
-      void handleNewThread(projectId, {
+      const createdThreadId = await handleNewThread(projectId, {
         envMode: appSettings.defaultThreadEnvMode,
-      }).catch(() => undefined);
+      }).catch(() => null);
+      if (createdThreadId) {
+        await navigate({
+          to: "/$threadId",
+          params: { threadId: createdThreadId },
+        });
+      }
       return true;
     },
     [
       appSettings.defaultThreadEnvMode,
       appSettings.sidebarThreadSortOrder,
+      drillProject,
       handleNewThread,
       navigate,
+      setViewingAllApps,
     ],
   );
 
@@ -2053,6 +2064,8 @@ export default function Sidebar() {
         return false;
       }
 
+      drillProject(projectId);
+      setViewingAllApps(false);
       const latestThread = sortThreadsForSidebar(
         snapshot.threads
           .filter(
@@ -2075,17 +2088,25 @@ export default function Sidebar() {
       }
 
       setProjectExpanded(projectId, true);
-      void handleNewThread(projectId, {
+      const createdThreadId = await handleNewThread(projectId, {
         envMode: appSettings.defaultThreadEnvMode,
-      }).catch(() => undefined);
+      }).catch(() => null);
+      if (createdThreadId) {
+        await navigate({
+          to: "/$threadId",
+          params: { threadId: createdThreadId },
+        });
+      }
       return true;
     },
     [
       appSettings.defaultThreadEnvMode,
       appSettings.sidebarThreadSortOrder,
+      drillProject,
       handleNewThread,
       navigate,
       setProjectExpanded,
+      setViewingAllApps,
     ],
   );
 
@@ -3577,8 +3598,6 @@ export default function Sidebar() {
     () => standardProjects.length > 0 && standardProjects.every((project) => project.expanded),
     [standardProjects],
   );
-
-  const [viewingAllApps, setViewingAllApps] = useState(false);
 
   const drilledProject = useMemo(() => {
     if (viewingAllApps) return null;
