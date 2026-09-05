@@ -26,12 +26,18 @@ const DEFAULT_GIT_CAPACITY_RETRY_MS = 250;
 export function isGitExpensiveReadCapacityError(
   error: unknown,
 ): error is { readonly code: string; readonly retryAfterMs?: unknown } {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === RPC_EXPENSIVE_READ_CAPACITY_EXCEEDED
-  );
+  if (typeof error !== "object" || error === null) return false;
+  if ("code" in error && error.code === RPC_EXPENSIVE_READ_CAPACITY_EXCEEDED) {
+    return true;
+  }
+  if (
+    "message" in error &&
+    typeof error.message === "string" &&
+    error.message.includes("expensive-read request capacity exceeded")
+  ) {
+    return true;
+  }
+  return false;
 }
 
 function shouldRetryGitExpensiveRead(failureCount: number, error: unknown): boolean {

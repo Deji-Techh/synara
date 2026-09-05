@@ -27,6 +27,7 @@ import {
   gitStageFilesMutationOptions,
   gitUnstageFilesMutationOptions,
   gitWorkingTreeDiffQueryOptions,
+  isGitExpensiveReadCapacityError,
 } from "~/lib/gitReactQuery";
 import { PlusIcon, RefreshCwIcon, RotateCcwIcon } from "~/lib/icons";
 import { cn } from "~/lib/utils";
@@ -268,14 +269,20 @@ export function GitPanel(props: {
   }
   const selectedFileDiff = selectedResolved?.file ?? null;
   const selectedPath = selected?.path ?? null;
+  const isStagedCapacityDelayed = isGitExpensiveReadCapacityError(stagedQuery.error);
+  const isUnstagedCapacityDelayed = isGitExpensiveReadCapacityError(unstagedQuery.error);
+  const isCapacityDelayed =
+    (isStagedCapacityDelayed && (stagedQuery.isFetching || stagedQuery.isLoading)) ||
+    (isUnstagedCapacityDelayed && (unstagedQuery.isFetching || unstagedQuery.isLoading));
 
-  const isLoading = stagedQuery.isLoading || unstagedQuery.isLoading;
-  const error =
+  const isLoading = stagedQuery.isLoading || unstagedQuery.isLoading || isCapacityDelayed;
+  const rawError =
     stagedQuery.error instanceof Error
       ? stagedQuery.error.message
       : unstagedQuery.error instanceof Error
         ? unstagedQuery.error.message
         : null;
+  const error = isCapacityDelayed ? null : rawError;
   const hasChanges = stagedFiles.length > 0 || unstagedFiles.length > 0;
 
   if (!cwd) {

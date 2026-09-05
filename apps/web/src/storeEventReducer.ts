@@ -613,6 +613,17 @@ function applyTurnDiffSummaryToThread(
   };
 }
 
+const TOOL_TAG_REGEX = /<(?:caide|dyad)-(?:tool|write)[^>]*>/;
+
+function getCommonPrefixLength(a: string, b: string): number {
+  const max = Math.min(a.length, b.length);
+  let i = 0;
+  while (i < max && a.charCodeAt(i) === b.charCodeAt(i)) {
+    i++;
+  }
+  return i;
+}
+
 function mergeStreamingMessage(
   existingMessage: ChatMessage,
   incomingMessage: ChatMessage,
@@ -624,30 +635,52 @@ function mergeStreamingMessage(
     !incomingMessage.streaming
   ) {
     nextText = incomingMessage.text;
-  } else if (incomingMessage.streaming) {
-    if (incomingMessage.text.length === 0) {
-      nextText = existingMessage.text;
-    } else if (incomingMessage.text.startsWith(existingMessage.text)) {
-      nextText = incomingMessage.text;
-    } else if (existingMessage.text.endsWith(incomingMessage.text)) {
-      nextText = existingMessage.text;
-    } else if (existingMessage.text.includes(incomingMessage.text)) {
-      // Incoming text is already fully contained in the existing text —
-      // this happens when overlapping server chunks arrive out of order.
-      nextText = existingMessage.text;
-    } else {
-      nextText = `${existingMessage.text}${incomingMessage.text}`;
-    }
   } else if (incomingMessage.text.length === 0) {
     nextText = existingMessage.text;
   } else if (incomingMessage.text.startsWith(existingMessage.text)) {
     nextText = incomingMessage.text;
   } else if (existingMessage.text.startsWith(incomingMessage.text)) {
     nextText = existingMessage.text;
+  } else if (existingMessage.text.endsWith(incomingMessage.text)) {
+    nextText = existingMessage.text;
+  } else if (existingMessage.text.includes(incomingMessage.text)) {
+    // Incoming text is already fully contained in the existing text —
+    // this happens when overlapping server chunks arrive out of order.
+    nextText = existingMessage.text;
   } else {
-    // Divergent overlap (patch vs full messages race) — prefer the newer
-    // full message to avoid double-append of the common prefix.
-    nextText = incomingMessage.text;
+    // The incoming text neither strictly prefixes nor is contained within existing text.
+    // Determine whether this is an in-place revised cumulative snapshot (e.g. tool status
+    // mutations, tag edits, or divergent snapshot updates) versus an incremental delta chunk.
+    const commonPrefixLen = getCommonPrefixLength(existingMessage.text, incomingMessage.text);
+    const hasToolMarkup =
+      TOOL_TAG_REGEX.test(incomingMessage.text) || TOOL_TAG_REGEX.test(existingMessage.text);
+
+    if (
+      hasToolMarkup ||
+      commonPrefixLen >= 20 ||
+      (existingMessage.text.length > 0 && commonPrefixLen / existingMessage.text.length >= 0.3)
+    ) {
+      // Both strings share a substantial common prefix from the start or carry tool markup.
+      // The incoming message is an authoritative cumulative snapshot from the server whose
+      // in-place content diverged (e.g. <caide-tool status="running"> -> status="complete").
+      // Replacing prevents multiplying/duplicating earlier paragraphs and tool accordions.
+      nextText = incomingMessage.text;
+    } else {
+      // The incoming text does not share a substantial prefix from the start;
+      // treat it as an incremental delta chunk and merge at the tail / overlap.
+      const maxOverlap = Math.min(existingMessage.text.length, incomingMessage.text.length);
+      let overlapLen = 0;
+      for (let len = maxOverlap; len > 0; len--) {
+        if (existingMessage.text.endsWith(incomingMessage.text.slice(0, len))) {
+          overlapLen = len;
+          break;
+        }
+      }
+      nextText =
+        overlapLen > 0
+          ? `${existingMessage.text}${incomingMessage.text.slice(overlapLen)}`
+          : `${existingMessage.text}${incomingMessage.text}`;
+    }
   }
   const nextAttachments = incomingMessage.attachments ?? existingMessage.attachments;
   const nextSkills =

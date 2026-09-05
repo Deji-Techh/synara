@@ -8,7 +8,7 @@ export type WsRequestClass = "control" | "standard" | "expensive-read";
 export const WS_REQUEST_CLASS_LIMITS: Readonly<Record<WsRequestClass, number>> = {
   control: 16,
   standard: 12,
-  "expensive-read": 10,
+  "expensive-read": 16,
 };
 
 const CONTROL_METHODS = new Set<string>([
@@ -34,9 +34,7 @@ const EXPENSIVE_READ_METHODS = new Set<string>([
   ORCHESTRATION_WS_METHODS.listProviderDeliveryBlockers,
   WS_METHODS.projectsSearchEntries,
   WS_METHODS.filesystemBrowse,
-  WS_METHODS.gitStatus,
   WS_METHODS.gitReadWorkingTreeDiff,
-  WS_METHODS.gitWorkingTreeDiffStats,
   WS_METHODS.gitSummarizeDiff,
   WS_METHODS.gitPullRequestSnapshot,
   WS_METHODS.serverGetProviderUsageSnapshot,

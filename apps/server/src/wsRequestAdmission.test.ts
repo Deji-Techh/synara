@@ -2,11 +2,14 @@ import { ORCHESTRATION_WS_METHODS, WS_METHODS } from "@caide/contracts";
 import { Deferred, Effect, Fiber } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { classifyWsRequest, makeWsRequestAdmission } from "./wsRequestAdmission";
+import { classifyWsRequest, makeWsRequestAdmission, WS_REQUEST_CLASS_LIMITS } from "./wsRequestAdmission";
 
 describe("WsRequestAdmission", () => {
   it("keeps lightweight shell reads out of the expensive lane", () => {
     expect(classifyWsRequest(ORCHESTRATION_WS_METHODS.getShellSnapshot)).toBe("standard");
+    expect(classifyWsRequest(WS_METHODS.gitStatus)).toBe("standard");
+    expect(classifyWsRequest(WS_METHODS.gitWorkingTreeDiffStats)).toBe("standard");
+    expect(classifyWsRequest(WS_METHODS.gitReadWorkingTreeDiff)).toBe("expensive-read");
     expect(classifyWsRequest(ORCHESTRATION_WS_METHODS.getThreadDetailSnapshot)).toBe(
       "expensive-read",
     );
@@ -20,8 +23,9 @@ describe("WsRequestAdmission", () => {
     await Effect.runPromise(
       Effect.gen(function* () {
         const admission = yield* makeWsRequestAdmission;
+        const limit = WS_REQUEST_CLASS_LIMITS["expensive-read"];
         const acquired = [];
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < limit; i++) {
           acquired.push(yield* admission.acquire(1, WS_METHODS.statsGetProfileStats));
         }
         const rejected = yield* admission
@@ -41,8 +45,8 @@ describe("WsRequestAdmission", () => {
         yield* admission.release(control);
         expect(yield* admission.snapshot).toMatchObject({
           active: 0,
-          admittedTotal: 11,
-          releasedTotal: 11,
+          admittedTotal: limit + 1,
+          releasedTotal: limit + 1,
           rejectedTotal: 1,
         });
       }),

@@ -14,9 +14,13 @@ import {
   ThreadMarkerId,
   TurnId,
 } from "@caide/contracts";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
-import { applyOrchestrationEvents, applyOrchestrationEventsHotPath } from "./storeEventReducer";
+import {
+  applyOrchestrationEvents,
+  applyOrchestrationEventsHotPath,
+  resetAppliedEventDedup,
+} from "./storeEventReducer";
 import {
   syncServerShellSnapshot,
   syncServerReadModel,
@@ -37,6 +41,9 @@ import {
 import { DEFAULT_INTERACTION_MODE, DEFAULT_RUNTIME_MODE } from "./types";
 
 describe("store event reducer", () => {
+  beforeEach(() => {
+    resetAppliedEventDedup();
+  });
   it("hydrates and removes Spaces while clearing matching project assignments", () => {
     const spaceId = SpaceId.makeUnsafe("space-work");
     let state = applyOrchestrationEvents(makeState(makeThread()), [
@@ -570,6 +577,96 @@ describe("store event reducer", () => {
         completedAt: "2026-02-27T00:01:06.000Z",
       },
     ]);
+  });
+
+  it("reconciles in-place tool status updates during streaming without duplicating text or tool tags", () => {
+    const assistantId = MessageId.makeUnsafe("assistant-tool-stream");
+    const turnId = TurnId.makeUnsafe("turn-tools");
+    const threadId = ThreadId.makeUnsafe("thread-1");
+
+    const introText = "Requirements captured. I will draft the specification architecture for the app.";
+    const toolRunningText = `${introText}\n\n<caide-tool id="call_1" name="read_file" status="running" path="spec.md">\n{\n  "path": "spec.md"\n}\n</caide-tool>\n\n`;
+    const toolCompleteText = `${introText}\n\n<caide-tool id="call_1" name="read_file" status="complete" path="spec.md">\n# Specification Content\n</caide-tool>\n\n`;
+    const tool2RunningText = `${toolCompleteText}Specification draft ready.\n\n<caide-tool id="call_2" name="list_dir" status="running" path=".">\n{}\n</caide-tool>\n\n`;
+    const tool2CompleteText = `${toolCompleteText}Specification draft ready.\n\n<caide-tool id="call_2" name="list_dir" status="complete" path=".">\n["spec.md"]\n</caide-tool>\n\n`;
+
+    const initialState = makeState(
+      makeThread({
+        messages: [
+          {
+            id: assistantId,
+            role: "assistant",
+            text: toolRunningText,
+            turnId,
+            createdAt: "2026-02-27T00:01:05.000Z",
+            streaming: true,
+            source: "native",
+          },
+        ],
+      }),
+    );
+
+    // 1) Tool 1 completes in-place:
+    const step1 = applyOrchestrationEvents(initialState, [
+      makeDomainEvent("thread.message-sent", {
+        threadId,
+        messageId: assistantId,
+        role: "assistant",
+        text: toolCompleteText,
+        turnId,
+        streaming: true,
+        createdAt: "2026-02-27T00:01:05.000Z",
+        updatedAt: "2026-02-27T00:01:06.000Z",
+        attachments: [],
+        source: "native",
+      }),
+    ]);
+
+    const msg1 = threadsOf(step1)[0]?.messages[0];
+    expect(msg1?.text).toBe(toolCompleteText);
+    expect(msg1?.text.split(introText).length - 1).toBe(1);
+
+    // 2) Tool 2 starts:
+    const step2 = applyOrchestrationEvents(step1, [
+      makeDomainEvent("thread.message-sent", {
+        threadId,
+        messageId: assistantId,
+        role: "assistant",
+        text: tool2RunningText,
+        turnId,
+        streaming: true,
+        createdAt: "2026-02-27T00:01:05.000Z",
+        updatedAt: "2026-02-27T00:01:07.000Z",
+        attachments: [],
+        source: "native",
+      }),
+    ]);
+
+    const msg2 = threadsOf(step2)[0]?.messages[0];
+    expect(msg2?.text).toBe(tool2RunningText);
+    expect(msg2?.text.split(introText).length - 1).toBe(1);
+
+    // 3) Tool 2 completes in-place:
+    const step3 = applyOrchestrationEvents(step2, [
+      makeDomainEvent("thread.message-sent", {
+        threadId,
+        messageId: assistantId,
+        role: "assistant",
+        text: tool2CompleteText,
+        turnId,
+        streaming: true,
+        createdAt: "2026-02-27T00:01:05.000Z",
+        updatedAt: "2026-02-27T00:01:08.000Z",
+        attachments: [],
+        source: "native",
+      }),
+    ]);
+
+    const msg3 = threadsOf(step3)[0]?.messages[0];
+    expect(msg3?.text).toBe(tool2CompleteText);
+    expect(msg3?.text.split(introText).length - 1).toBe(1);
+    expect(msg3?.text.split('<caide-tool id="call_1"').length - 1).toBe(1);
+    expect(msg3?.text.split('<caide-tool id="call_2"').length - 1).toBe(1);
   });
 
   it("replaces a non-streaming user message when an active-tail edit reuses its message id", () => {
@@ -1440,6 +1537,7 @@ describe("store event reducer", () => {
       (state, currentEvent) => applyOrchestrationEventsHotPath(state, [currentEvent]),
       initialState,
     );
+    resetAppliedEventDedup();
     const batched = applyOrchestrationEventsHotPath(initialState, events);
 
     expect(threadsOf(batched)[0]?.activities).toEqual(threadsOf(sequential)[0]?.activities);
@@ -1478,6 +1576,7 @@ describe("store event reducer", () => {
       (state, event) => applyOrchestrationEventsHotPath(state, [event]),
       initialState,
     );
+    resetAppliedEventDedup();
     const batched = applyOrchestrationEventsHotPath(initialState, events);
 
     expect(threadsOf(sequential)[0]?.activities.map((activity) => activity.sequence)).toEqual([
@@ -1547,6 +1646,7 @@ describe("store event reducer", () => {
       (state, currentEvent) => applyOrchestrationEventsHotPath(state, [currentEvent]),
       initialState,
     );
+    resetAppliedEventDedup();
     const batched = applyOrchestrationEventsHotPath(initialState, events);
 
     expect(threadsOf(batched)[0]).toEqual(threadsOf(sequential)[0]);
