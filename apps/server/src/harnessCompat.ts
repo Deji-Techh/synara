@@ -1962,6 +1962,33 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 });
               };
 
+              let pendingTokenFlushTimer: NodeJS.Timeout | null = null;
+              let lastTokenPublishTime = 0;
+              const STREAM_FLUSH_INTERVAL_MS = 35; // 35ms throttle: smooth ~28fps text flow, zero UI starvation, massive CPU reduction
+
+              const flushAssistantMessageImmediate = (msg: any) => {
+                if (pendingTokenFlushTimer !== null) {
+                  clearTimeout(pendingTokenFlushTimer);
+                  pendingTokenFlushTimer = null;
+                }
+                lastTokenPublishTime = Date.now();
+                publishAssistantMessage(msg);
+              };
+
+              const scheduleAssistantMessagePublish = (msg: any) => {
+                const now = Date.now();
+                const elapsed = now - lastTokenPublishTime;
+                if (elapsed >= STREAM_FLUSH_INTERVAL_MS) {
+                  flushAssistantMessageImmediate(msg);
+                } else if (pendingTokenFlushTimer === null) {
+                  pendingTokenFlushTimer = setTimeout(() => {
+                    pendingTokenFlushTimer = null;
+                    lastTokenPublishTime = Date.now();
+                    publishAssistantMessage(msg);
+                  }, STREAM_FLUSH_INTERVAL_MS - elapsed);
+                }
+              };
+
               let stepAssistantText = "";
 
               const loop = runLoop({
@@ -2060,7 +2087,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                           .replace(/\{\s*"path"\s*:\s*"[^"]*"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g, "")
                           .trim();
                       }
-                      publishAssistantMessage(assistantMsg);
+                      scheduleAssistantMessagePublish(assistantMsg);
                     }
                   } else if (event.type === "tool_call") {
                     const toolArgs =
@@ -2104,7 +2131,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                       const startTag = `\n\n<caide-tool id="${event.id}" name="${event.name}" status="running"${targetAttr}>\n${inputSnippet}\n</caide-tool>\n\n`;
                       assistantMsg.text += startTag;
                       assistantMsg.updatedAt = new Date().toISOString();
-                      publishAssistantMessage(assistantMsg);
+                      flushAssistantMessageImmediate(assistantMsg);
                     } else if (event.status === "completed" || event.status === "failed") {
                       const resultText =
                         typeof event.result === "string"
@@ -2128,7 +2155,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                         assistantMsg.text += updatedTag;
                       }
                       assistantMsg.updatedAt = new Date().toISOString();
-                      publishAssistantMessage(assistantMsg);
+                      flushAssistantMessageImmediate(assistantMsg);
                     }
                   }
                 },
@@ -2137,6 +2164,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               for await (const _loopEvent of loop) {
                 // onEvent handles all publishing
               }
+              flushAssistantMessageImmediate(assistantMsg);
 
               // Fallback: if model leaked a file write as text (e.g. {"path":"."} or
               // <caide-write>/<dyad-write>), parse and execute it so the build
@@ -2202,10 +2230,10 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                       );
                       assistantMsg.text += `\n\n✅ Applied ${w.path} via fallback parser`;
                       assistantMsg.updatedAt = new Date().toISOString();
-                      publishAssistantMessage(assistantMsg);
+                      flushAssistantMessageImmediate(assistantMsg);
                     } catch (e: any) {
                       assistantMsg.text += `\n\n⚠️ Fallback write failed for ${w.path}: ${e?.message ?? String(e)}`;
-                      publishAssistantMessage(assistantMsg);
+                      flushAssistantMessageImmediate(assistantMsg);
                     }
                   }
                   // Strip the leaked tag/JSON from displayed text to avoid duplication + {"path":"."}
@@ -2214,7 +2242,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                     .replace(/\{\s*"path"\s*:\s*"[^"]*"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g, "")
                     .replace(/\n{3,}/g, "\n\n")
                     .trim();
-                  publishAssistantMessage(assistantMsg);
+                  flushAssistantMessageImmediate(assistantMsg);
                 } else if (/\{\s*"path"\s*:\s*"\.?"\s*(?:,\s*"content")?/.test(text)) {
                   // Leaked JSON with invalid path like {"path":"."} or {"path":""} — strip it so user doesn't see it
                   assistantMsg.text = assistantMsg.text
@@ -2222,7 +2250,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                     .replace(/\{\s*"path"\s*:\s*"[^"]*"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g, "")
                     .replace(/\n{3,}/g, "\n\n")
                     .trim();
-                  publishAssistantMessage(assistantMsg);
+                  flushAssistantMessageImmediate(assistantMsg);
                 }
               } catch (e) {
                 console.warn("[harnessCompat] fallback parser error", e);
@@ -2239,7 +2267,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 if (deduped !== assistantMsg.text) {
                   assistantMsg.text = deduped.trim();
                   assistantMsg.updatedAt = new Date().toISOString();
-                  publishAssistantMessage(assistantMsg);
+                  flushAssistantMessageImmediate(assistantMsg);
                 }
               } catch {}
 
@@ -2282,6 +2310,10 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 createdAt: new Date().toISOString(),
               });
             } catch (err: any) {
+              if (pendingTokenFlushTimer !== null) {
+                clearTimeout(pendingTokenFlushTimer);
+                pendingTokenFlushTimer = null;
+              }
               console.error("[harnessCompat] LLM turn error", err);
               assistantMsg.streaming = false;
               if (!assistantMsg.text) {
