@@ -1158,7 +1158,7 @@ function ChatMarkdown({
   // values in parameter destructuring make React Compiler 1.0.0 bail on the
   // whole component (BuildHIR AssignmentPattern), losing its auto-memoization.
   const isStreaming = isStreamingProp ?? false;
-  const className = classNameProp ?? "text-sm leading-relaxed";
+  const className = classNameProp ?? "text-sm";
   const variant = variantProp ?? "assistant";
   const { resolvedTheme } = useTheme();
   const diffThemeName = resolveDiffThemeName(resolvedTheme);
@@ -1458,8 +1458,10 @@ function ChatMarkdown({
 
     for (const block of parsedBlocks) {
       if (block.kind === "markdown") {
-        flushToolGroup();
-        units.push({ kind: "markdown", block });
+        if (block.content && block.content.trim().length > 0) {
+          flushToolGroup();
+          units.push({ kind: "markdown", block });
+        }
       } else if (block.kind === "custom-tag") {
         const tag = block.tag.toLowerCase();
         if (tag === "caide-write" || tag === "dyad-write") {

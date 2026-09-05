@@ -33,7 +33,67 @@ export class CheckpointDiffQuery extends ServiceMap.Service<CheckpointDiffQuery,
   } as any);
 }
 
-export function resolveThreadWorkspaceCwd(..._args: any[]): string {
+export function getThreadWorkspaceCwd(threadId: string): string {
+  try {
+    loadPersistedState();
+    const thread = inMemoryThreads.find((t) => t.id === threadId);
+    if (thread) {
+      if (thread.worktreePath && fs.existsSync(thread.worktreePath)) return thread.worktreePath;
+      if (thread.workingDirectory && fs.existsSync(thread.workingDirectory)) return thread.workingDirectory;
+      const project = inMemoryProjects.find((p) => p.id === thread.projectId);
+      if (project) {
+        const dir = project.cwd || project.workspaceRoot;
+        if (dir && fs.existsSync(dir)) return dir;
+      }
+    }
+    if (fs.existsSync(THREADS_JSON_FILE) && fs.existsSync(PROJECTS_JSON_FILE)) {
+      const threadsRaw = JSON.parse(fs.readFileSync(THREADS_JSON_FILE, "utf-8"));
+      const projectsRaw = JSON.parse(fs.readFileSync(PROJECTS_JSON_FILE, "utf-8"));
+      const tList = Array.isArray(threadsRaw) ? threadsRaw : Object.values(threadsRaw);
+      const pList = Array.isArray(projectsRaw) ? projectsRaw : Object.values(projectsRaw);
+      const th = tList.find((t: any) => t && t.id === threadId);
+      if (th) {
+        if (th.worktreePath && fs.existsSync(th.worktreePath)) return th.worktreePath;
+        if (th.workingDirectory && fs.existsSync(th.workingDirectory)) return th.workingDirectory;
+        const pr = pList.find((p: any) => p && p.id === th.projectId);
+        if (pr) {
+          const dir = pr.cwd || pr.workspaceRoot;
+          if (dir && fs.existsSync(dir)) return dir;
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return process.cwd();
+}
+
+export function resolveThreadWorkspaceCwd(input?: any): string {
+  if (typeof input === "string") {
+    return getThreadWorkspaceCwd(input);
+  }
+  if (input && typeof input === "object") {
+    if (input.thread) {
+      const thread = input.thread;
+      if (thread.worktreePath && fs.existsSync(thread.worktreePath)) return thread.worktreePath;
+      if (thread.workingDirectory && fs.existsSync(thread.workingDirectory)) return thread.workingDirectory;
+      const projects = input.projects ?? inMemoryProjects;
+      const project = projects.find((p: any) => p && p.id === thread.projectId);
+      if (project) {
+        const dir = project.cwd || project.workspaceRoot;
+        if (dir && fs.existsSync(dir)) return dir;
+      }
+    }
+    if (input.threadId) {
+      return getThreadWorkspaceCwd(input.threadId);
+    }
+    if (input.workingDirectory && fs.existsSync(input.workingDirectory)) {
+      return input.workingDirectory;
+    }
+    if (input.projectCwd && fs.existsSync(input.projectCwd)) {
+      return input.projectCwd;
+    }
+  }
   return process.cwd();
 }
 
@@ -1054,14 +1114,18 @@ async function buildSystemPrompt(
   const frameworkShort = FRAMEWORK_SHORT[framework] ?? FRAMEWORK_SHORT.blank;
   const slashHelp = `User slash commands (client-side, you don't call them): /clear (new thread), /plan (plan mode), /default (build mode), /debug, /model, /compact, /status, /export, /fork, /side, /review, /doctor, /test, /analyze, /build, /preview, /theme, /goal, /spawn, /init, /btw, /learn, /commands, /help — they are handled by the UI. If user typed /plan, you are already in PLAN; if they typed /clear, context is fresh.`;
   const greetingRule = `For casual greetings like "hey", "hi", "hello" without a build request, respond with a friendly short greeting and ask what they would like to build — do not call tools.`;
-  const buildRule = `When the user requests a build, work proactively: inspect the workspace with list_dir, then immediately proceed to creating or updating files with write_file and installing packages with run_command. Do not get stuck repeatedly inspecting files. Always provide complete working code without placeholders.`;
+  const toneAndEmojiRule = `Tone & Style Requirements (STRICT):
+1. ZERO EMOJIS: Never use emojis anywhere in your responses, lists, headings, code, or comments unless the user explicitly requests them. Do NOT use checkmarks (✅, ❌), device icons (📱, 💻), decorative symbols (🚀, 🎨, 💡, 🔧), or any other emojis.
+2. Direct, Serious Tone: Always maintain a serious, straightforward, concise, and highly professional engineering tone. Avoid cheerleading, hype, or generic pleasantries. State facts, architectures, code changes, and verification outcomes directly without conversational fluff.
+3. Rigorous Audit & Review: When asked to audit, inspect, review, or evaluate what was built, do NOT give superficial cheerleading summaries. Inspect the actual codebase with tools (read files, run tests/linters, verify error handling and edge cases). Report concrete technical findings, code defects, gaps against specifications, and actionable engineering next steps.`;
+
   const modeDirective =
     normalizedMode === "ask"
-      ? `You are in ASK mode for ${framework} (${frameworkShort}). Answer for THIS framework only — if asked "what can you build?" list only ${framework} capabilities, not all frameworks. You have READ-ONLY tools available (read_file, list_dir, search_files, read_url, get_design_tokens, read_spec, get_preview_url, screenshot, lint_project, test_project, spawn_subagent) — use them if you need to inspect files to answer. Do NOT write code or modify files unless the user explicitly asks.\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}`
+      ? `You are in ASK mode for ${framework} (${frameworkShort}). Answer for THIS framework only — if asked "what can you build?" list only ${framework} capabilities, not all frameworks. You have READ-ONLY tools available (read_file, list_dir, search_files, read_url, get_design_tokens, read_spec, get_preview_url, screenshot, lint_project, test_project, spawn_subagent) — use them if you need to inspect files to answer. Do NOT write code or modify files unless the user explicitly asks.\n${slashHelp}\n${toneAndEmojiRule}\nTools:\n- ${CORE_TOOLS_TEXT}`
       : normalizedMode === "plan"
-        ? `You are in PLAN mode for ${framework} (${frameworkShort}). Create a plan/spec before writing application code for THIS framework only. You have full tools — use write_spec, write_design_spec, write_motion_spec, checkpoint, log_decision, plus read tools to inspect workspace.\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}`
-        : `You are in BUILD mode for ${framework} (${frameworkShort}). ${greetingRule} ${buildRule}\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}\n\nTool rules: work efficiently; call write_file to produce code, run_command for installs/builds, get_preview_url to get preview URL, screenshot to verify.`;
-  return `${rolePrompt}\n\n${modeDirective}`.trim();
+        ? `You are in PLAN mode for ${framework} (${frameworkShort}). First discuss requirements and present a concrete architecture or questionnaire/blueprint with the user before writing application code. You have full planning tools — use write_spec, write_design_spec, write_motion_spec, checkpoint, log_decision, plus read tools to inspect workspace.\n${slashHelp}\n${toneAndEmojiRule}\nTools:\n- ${CORE_TOOLS_TEXT}`
+        : `You are in BUILD mode for ${framework} (${frameworkShort}). ${greetingRule} ${buildRule}\n${slashHelp}\n${toneAndEmojiRule}\nTools:\n- ${CORE_TOOLS_TEXT}\n\nTool rules: work efficiently; call write_file to produce code, run_command for installs/builds, get_preview_url to get preview URL, screenshot to verify.`;
+  return `${rolePrompt}\n\n${toneAndEmojiRule}\n\n${modeDirective}`.trim();
 }
 
 export class OrchestrationEngineService extends ServiceMap.Service<

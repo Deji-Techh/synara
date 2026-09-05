@@ -20,8 +20,10 @@ describe("WsRequestAdmission", () => {
     await Effect.runPromise(
       Effect.gen(function* () {
         const admission = yield* makeWsRequestAdmission;
-        const first = yield* admission.acquire(1, ORCHESTRATION_WS_METHODS.getSnapshot);
-        const second = yield* admission.acquire(1, WS_METHODS.statsGetProfileStats);
+        const acquired = [];
+        for (let i = 0; i < 10; i++) {
+          acquired.push(yield* admission.acquire(1, WS_METHODS.statsGetProfileStats));
+        }
         const rejected = yield* admission
           .acquire(1, WS_METHODS.gitReadWorkingTreeDiff)
           .pipe(Effect.exit);
@@ -33,14 +35,14 @@ describe("WsRequestAdmission", () => {
 
         const control = yield* admission.acquire(1, WS_METHODS.terminalAckOutput);
         expect(control.requestClass).toBe("control");
-        yield* admission.release(first);
-        yield* admission.release(first);
-        yield* admission.release(second);
+        for (const lease of acquired) {
+          yield* admission.release(lease);
+        }
         yield* admission.release(control);
         expect(yield* admission.snapshot).toMatchObject({
           active: 0,
-          admittedTotal: 3,
-          releasedTotal: 3,
+          admittedTotal: 11,
+          releasedTotal: 11,
           rejectedTotal: 1,
         });
       }),

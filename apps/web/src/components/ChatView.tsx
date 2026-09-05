@@ -11333,21 +11333,19 @@ export default function ChatView({
                               ? "Submit answers"
                               : "Next question"}
                         </Button>
-                      ) : phase === "running" ? (
-                        <Button
+                      ) : (phase === "running" || latestTurnLive || Boolean(activeThread?.messages?.some((m) => m.streaming)) || isSendBusy) ? (
+                        <button
                           type="button"
-                          variant="prominent"
-                          size="icon-xs"
-                          className="sm:size-[26px]"
+                          className="flex size-7.5 sm:size-8 items-center justify-center rounded-full bg-red-600 text-white hover:bg-red-500 transition-all duration-150 shadow-xs hover:scale-105 active:scale-95 cursor-pointer"
                           onClick={onInterruptFromStopControl}
                           aria-label="Stop generation"
-                          title="Stop the current response. On Mac, press Ctrl+C to interrupt."
+                          title="Stop the current response"
                         >
                           <span
                             aria-hidden="true"
-                            className="block size-2 rounded-[1px] bg-current"
+                            className="block size-2.5 rounded-[2px] bg-white"
                           />
-                        </Button>
+                        </button>
                       ) : pendingUserInputs.length === 0 &&
                         !isVoiceRecording &&
                         !isVoiceTranscribing ? (

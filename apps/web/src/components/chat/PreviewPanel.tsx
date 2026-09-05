@@ -1232,6 +1232,7 @@ export function PreviewPanel(props: {
         threadId: props.threadId,
         device,
         ...(deviceId !== undefined ? { deviceId } : {}),
+        ...(props.workspaceRoot ? { appDir: props.workspaceRoot } : {}),
       });
 
     startWith(initialDevice, initialDeviceId)

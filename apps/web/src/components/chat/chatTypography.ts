@@ -63,10 +63,13 @@ export function getChatTranscriptAssistantCharWidthPx(
   return normalizeChatFontSizePx(chatFontSizePx) * CHAT_TRANSCRIPT_ASSISTANT_CHAR_WIDTH_RATIO;
 }
 
-function buildChatTextStyle(fontSizePx: number, lineHeightPx: number): CSSProperties {
+function buildChatTextStyle(fontSizePx: number, _lineHeightPx?: number): CSSProperties {
   return {
     fontSize: `${fontSizePx}px`,
-    lineHeight: `${lineHeightPx}px`,
+    lineHeight: "var(--chat-line-height, 1.65)",
+    wordSpacing: "var(--chat-word-spacing, normal)",
+    letterSpacing: "var(--chat-letter-spacing, normal)",
+    fontWeight: "var(--chat-font-weight, 450)",
   };
 }
 

@@ -162,6 +162,12 @@ export function projectReadFileQueryOptions(input: {
     },
     enabled: (input.enabled ?? true) && effectiveCwd !== null && input.relativePath !== null,
     staleTime: input.staleTime ?? DEFAULT_READ_FILE_STALE_TIME,
+    retry: (failureCount, error) => {
+      if (failureCount >= 3) return false;
+      const message = error instanceof Error ? error.message : String(error);
+      return message.includes("capacity exceeded") || message.includes("busy");
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000),
   });
 }
 

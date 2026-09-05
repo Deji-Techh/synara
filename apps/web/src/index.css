@@ -741,17 +741,26 @@ label:has(> select#reasoning-effort) select {
   font-weight: var(--chat-font-weight, 450);
 }
 
+.chat-markdown p,
+.chat-markdown li,
+.chat-markdown span:not([class*="font-"]),
+.chat-markdown div:not([class*="font-"]) {
+  line-height: inherit;
+  word-spacing: inherit;
+  letter-spacing: inherit;
+}
+
 .chat-markdown strong,
 .chat-markdown b {
-  font-weight: var(--chat-bold-weight, 700);
+  font-weight: var(--chat-bold-weight, 700) !important;
   font-synthesis: none;
 }
 
 .chat-markdown mark,
 .chat-markdown .chat-highlight {
-  background-color: var(--chat-highlight-bg, rgba(245, 158, 11, 0.25));
-  color: var(--chat-highlight-text, inherit);
-  border: 1px solid var(--chat-highlight-border, rgba(245, 158, 11, 0.45));
+  background-color: var(--chat-highlight-bg, rgba(245, 158, 11, 0.25)) !important;
+  color: var(--chat-highlight-text, inherit) !important;
+  border: 1px solid var(--chat-highlight-border, rgba(245, 158, 11, 0.45)) !important;
   border-radius: 0.25em;
   padding: 0.08em 0.3em;
   font-weight: 500;

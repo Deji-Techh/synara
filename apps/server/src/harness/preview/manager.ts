@@ -5,6 +5,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import * as fs from "node:fs";
 
 import { getFrameworkConfig } from "../framework/registry.ts";
+import { getThreadWorkspaceCwd } from "../../harnessCompat.ts";
 
 export interface PreviewSession {
   threadId: string;
@@ -55,13 +56,21 @@ export async function startPreview(input: {
     return { url: existing.url, kind: existing.kind };
   }
 
-  const framework = getFrameworkConfigForAppDir(input.appDir);
+  let appDir = input.appDir;
+  if (!appDir || appDir === process.cwd()) {
+    const threadCwd = getThreadWorkspaceCwd(input.threadId);
+    if (threadCwd && threadCwd !== process.cwd() && fs.existsSync(threadCwd)) {
+      appDir = threadCwd;
+    } else {
+      appDir = appDir ?? process.cwd();
+    }
+  }
+
+  const framework = getFrameworkConfigForAppDir(appDir);
   const devCommand = framework?.devCommand;
   if (!devCommand) {
     throw new Error(`No dev command configured for this framework`);
   }
-
-  const appDir = input.appDir ?? process.cwd();
   // env with an optional explicit port
   const env = { ...process.env };
   if (input.port) env.CAIDE_PREVIEW_PORT = String(input.port);

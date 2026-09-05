@@ -1027,7 +1027,11 @@ export function PreviewStage(props: {
     // (and stale "blank" values persisted across projects); let preview/start
     // succeed or fail with an accurate engine error instead.
     ensureNativeApi()
-      .preview.start({ threadId: props.threadId, device: "web-server" })
+      .preview.start({
+        threadId: props.threadId,
+        device: "web-server",
+        ...(props.workspaceRoot ? { appDir: props.workspaceRoot } : {}),
+      })
       .then((result) =>
         setPanelState((prev) => previewStarted(prev, result.url, [], result.kind ?? null)),
       )
@@ -1035,7 +1039,7 @@ export function PreviewStage(props: {
         const msg = error instanceof Error ? error.message : "The preview failed to start.";
         setPanelState((prev) => previewStartFailed(prev, msg));
       });
-  }, [props.threadId]);
+  }, [props.threadId, props.workspaceRoot]);
 
   const handleStop = useCallback(() => {
     void ensureNativeApi().preview.stop({ threadId: props.threadId });
