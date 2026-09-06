@@ -43,6 +43,11 @@ describe("framework scaffolds (d)", () => {
     expect(JSON.parse(s.read(".caide/framework.json")).framework).toBe("website");
     expect(s.exists(".caide/design-spec.json")).toBe(true);
     expect(s.exists("package.json")).toBe(true);
+    for (const f of ["AI_RULES.md", "src/components/ErrorBoundary.tsx", "src/pages/Home.tsx"]) {
+      expect(s.exists(f), f).toBe(true);
+    }
+    expect(s.read("src/App.tsx")).toContain("ErrorBoundary");
+    expect(s.read("AI_RULES.md")).toContain("bun run dev");
   });
 
   it("blank ships an empty workspace with an explicit marker", async () => {

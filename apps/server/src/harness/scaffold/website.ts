@@ -122,12 +122,64 @@ body {
   await write(
     "src/App.tsx",
     `import React from 'react';
+import ErrorBoundary from './components/ErrorBoundary.tsx';
+import Home from './pages/Home.tsx';
 
 export default function App() {
   return (
+    <ErrorBoundary>
+      <Home appName="${appName}" />
+    </ErrorBoundary>
+  );
+}
+`,
+  );
+
+  // 6b. src/components/ErrorBoundary.tsx — never white-screen on a render fault
+  await write(
+    "src/components/ErrorBoundary.tsx",
+    `import React from 'react';
+
+interface State {
+  error: Error | null;
+}
+
+export default class ErrorBoundary extends React.Component<React.PropsWithChildren, State> {
+  state: State = { error: null };
+
+  static getDerivedStateFromError(error: Error): State {
+    return { error };
+  }
+
+  componentDidCatch(error: Error): void {
+    console.error('[app] render fault', error);
+  }
+
+  render(): React.ReactNode {
+    if (this.state.error) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen px-4">
+          <h1 className="text-xl font-semibold text-white mb-2">Something went wrong</h1>
+          <p className="text-neutral-400 text-sm">Reload the preview to try again.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+`,
+  );
+
+  // 6c. src/pages/Home.tsx
+  await write(
+    "src/pages/Home.tsx",
+    `import React from 'react';
+
+export default function Home({ appName }: { appName: string }) {
+  return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4">
       <h1 className="text-3xl font-bold tracking-tight text-white mb-2">
-        Welcome to ${appName}
+        Welcome to {appName}
       </h1>
       <p className="text-neutral-400 text-sm">
         Scaffolded with Vite + React + Tailwind v4
@@ -135,6 +187,19 @@ export default function App() {
     </div>
   );
 }
+`,
+  );
+
+  // 6d. AI_RULES.md — stack conventions the agent must follow
+  await write(
+    "AI_RULES.md",
+    `# AI Rules — ${appName} (website)
+
+- Stack: Vite + React 19 + Tailwind CSS v4. Commands: \`bun run dev\` (preview), \`bun run build\` (typecheck + build).
+- Paths: pages in \`src/pages/\`, shared UI in \`src/components/\`, design tokens in \`src/design/\` + \`.caide/design-spec.json\`.
+- Client-only app: NEVER reference server secrets or \`process.env.DATABASE_URL\` from \`src/\` — the Vite bundle is public.
+- Styling: Tailwind utilities first; CSS variables in \`src/index.css\` for theme tokens.
+- Every page renders inside the \`ErrorBoundary\` in \`src/App.tsx\`; keep it mounted.
 `,
   );
 

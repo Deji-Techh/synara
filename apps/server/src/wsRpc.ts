@@ -456,7 +456,51 @@ function makeWsPreviewHandlers(_providerAdapterRegistry: any, _options: any) {
         }),
       ),
     "preview.flutterToolchainStatus": (_input: any) =>
-      tryPromise(Promise.resolve({ installed: true })),
+      tryPromise(
+        (async () => {
+          // Real probe (was a hardcoded {installed:true} stub): platform
+          // support + `flutter --version`. Shape matches what PreviewStage
+          // consumes; installProgress stays null until an install runs.
+          const supported = process.platform === "linux" || process.platform === "darwin" || process.platform === "win32";
+          if (!supported) {
+            return {
+              supported: false,
+              installed: false,
+              version: "",
+              estimatedDownloadBytes: 0,
+              unsupportedReason: `Flutter is not supported on ${process.platform}.`,
+              installProgress: null,
+            };
+          }
+          try {
+            const out = await new Promise<string>((resolve, reject) => {
+              execFile("flutter", ["--version"], { timeout: 20_000 }, (err, stdout) =>
+                err ? reject(err) : resolve(String(stdout ?? "")),
+              );
+            });
+            const firstLine = out.split("\n")[0]?.trim() ?? "";
+            const version = firstLine.replace(/^Flutter\s+/, "").split(" ")[0] ?? "";
+            return {
+              supported: true,
+              installed: true,
+              version,
+              estimatedDownloadBytes: 0,
+              unsupportedReason: null,
+              installProgress: null,
+            };
+          } catch {
+            return {
+              supported: true,
+              installed: false,
+              version: "",
+              // Full SDK bundle order of magnitude (guides the install UI).
+              estimatedDownloadBytes: 1_200_000_000,
+              unsupportedReason: null,
+              installProgress: null,
+            };
+          }
+        })(),
+      ),
     "preview.flutterToolchainInstall": (_input: any) =>
       tryPromise(Promise.resolve({ installed: true })),
   };
