@@ -8,12 +8,15 @@ import {
   buildUiSkillPack,
   CAIDE_MOBILE_UI_SKILL_PACK,
   CAIDE_WEB_UI_SKILL_PACK,
+  COMPACTION_SYSTEM_PROMPT,
   constructLocalAgentPrompt,
   constructPlanModePrompt,
   constructSystemPrompt,
   DESIGN_ENGINE_CONTRACT,
   getSystemPromptForChatMode,
   MOBILE_PRODUCT_CONTRACT,
+  SECURITY_REVIEW_SYSTEM_PROMPT,
+  SUMMARIZE_CHAT_SYSTEM_PROMPT,
   WEB3_SKILL_PACK,
   WEB_PRODUCT_CONTRACT,
 } from "./index.ts";
@@ -60,6 +63,15 @@ describe("dyad prompt transplant (m1)", () => {
   it("provision-backend guide is on disk for the read_guide path", () => {
     const guide = readGuide("provision-backend");
     expect(guide.length).toBeGreaterThan(500);
+  });
+
+  it("ships donor-verbatim utility prompts (compaction/summarize/security)", () => {
+    expect(COMPACTION_SYSTEM_PROMPT).toContain("## Key Decisions Made");
+    expect(COMPACTION_SYSTEM_PROMPT).toContain("## Standing Preferences & Constraints");
+    expect(COMPACTION_SYSTEM_PROMPT).toContain("Skip empty sections");
+    expect(SUMMARIZE_CHAT_SYSTEM_PROMPT).toContain("YOU MUST CALL `set_chat_summary` EXACTLY ONCE");
+    expect(SECURITY_REVIEW_SYSTEM_PROMPT).toContain("<dyad-security-finding");
+    expect(SECURITY_REVIEW_SYSTEM_PROMPT).toContain("Begin your security review.");
   });
 
   it("dispatcher routes plan/local-agent/build/ask with no leftover placeholders", () => {
