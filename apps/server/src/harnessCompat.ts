@@ -113,6 +113,8 @@ const THREADS_JSON_FILE = path.join(CAIDE_APPS_DIR, "threads.json");
 let globalSnapshotSequence = 1;
 const inMemoryProjects: any[] = [];
 const inMemoryThreads: any[] = [];
+const activeTurnAbortControllers = new Map<string, AbortController>();
+const activeAssistantMessagesByThreadId = new Map<string, any>();
 
 const PROVIDER_TO_ENV_VAR: Record<string, string[]> = {
   google: ["GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GENERATIVE_AI_API_KEY"],
@@ -651,7 +653,7 @@ function loadPersistedState() {
       (p) => p.kind === "chat" || p.id === "default" || p.workspaceRoot === homeDir,
     );
     if (!hasHomeProject) {
-      inMemoryProjects.unshift({
+      inMemoryProjects.push({
         id: "default",
         title: "Home",
         name: "Home",
@@ -667,6 +669,15 @@ function loadPersistedState() {
         updatedAt: new Date().toISOString(),
         deletedAt: null,
       });
+    } else {
+      // Ensure Home is always at the end, so real user projects take priority as projects[0]
+      const homeIdx = inMemoryProjects.findIndex(
+        (p) => p.id === "default" || p.kind === "chat" || p.workspaceRoot === homeDir,
+      );
+      if (homeIdx >= 0 && homeIdx < inMemoryProjects.length - 1) {
+        const [homeProj] = inMemoryProjects.splice(homeIdx, 1);
+        if (homeProj) inMemoryProjects.push(homeProj);
+      }
     }
 
     // Ensure every project has at least one durable thread so it appears in sidebar cards
@@ -1118,6 +1129,39 @@ function threadMetaUpdatedPayload(
   };
 }
 
+// Build a schema-valid `thread.created` payload.
+function threadCreatedPayload(thread: any): any {
+  return {
+    threadId: thread.id,
+    projectId: thread.projectId,
+    title: thread.title ?? "New Chat",
+    modelSelection: thread.modelSelection ?? {
+      provider: "opencodeZen",
+      model: "default",
+    },
+    runtimeMode: thread.runtimeMode ?? "full-access",
+    interactionMode: thread.interactionMode ?? "default",
+    envMode: thread.envMode ?? "local",
+    branch: thread.branch ?? null,
+    worktreePath: thread.worktreePath ?? null,
+    workingDirectory: thread.workingDirectory ?? null,
+    associatedWorktreePath: thread.associatedWorktreePath ?? null,
+    associatedWorktreeBranch: thread.associatedWorktreeBranch ?? null,
+    associatedWorktreeRef: thread.associatedWorktreeRef ?? null,
+    createBranchFlowCompleted: false,
+    isPinned: false,
+    parentThreadId: null,
+    creationSource: null,
+    sourceThreadId: null,
+    sourceTurnId: null,
+    gatewayOperationId: null,
+    gatewayOperationIndex: null,
+    subagentAgentId: null,
+    subagentNickname: null,
+    subagentRole: null,
+  };
+}
+
 // The core harness tools the builder agent can call. Kept in the system
 // prompt so the model actually knows it has tools (the user's core complaint).
 // Includes readOnly vs modifiesState hint so the model knows ASK can still READ.
@@ -1188,16 +1232,17 @@ async function buildSystemPrompt(
   const slashHelp = `User slash commands (client-side, you don't call them): /clear (new thread), /plan (plan mode), /default (build mode), /debug, /model, /compact, /status, /export, /fork, /side, /review, /doctor, /test, /analyze, /build, /preview, /theme, /goal, /spawn, /init, /btw, /learn, /commands, /help — they are handled by the UI. If user typed /plan, you are already in PLAN; if they typed /clear, context is fresh.`;
   const greetingRule = `For casual greetings like "hey", "hi", "hello" without a build request, respond with a friendly short greeting and ask what they would like to build — do not call tools.`;
   const toneAndEmojiRule = `Tone & Style Requirements (STRICT):
-1. ZERO EMOJIS: Never use emojis anywhere in your responses, lists, headings, code, or comments unless the user explicitly requests them. Do NOT use checkmarks (✅, ❌), device icons (📱, 💻), decorative symbols (🚀, 🎨, 💡, 🔧), or any other emojis.
+1. ZERO EMOJIS: Never use emojis anywhere in your responses, lists, headings, code, or comments unless the user explicitly requests them. Do NOT use checkmarks, device icons, decorative symbols, or any other emojis.
 2. Direct, Serious Tone: Always maintain a serious, straightforward, concise, and highly professional engineering tone. Avoid cheerleading, hype, or generic pleasantries. State facts, architectures, code changes, and verification outcomes directly without conversational fluff.
-3. Rigorous Audit & Review: When asked to audit, inspect, review, or evaluate what was built, do NOT give superficial cheerleading summaries. Inspect the actual codebase with tools (read files, run tests/linters, verify error handling and edge cases). Report concrete technical findings, code defects, gaps against specifications, and actionable engineering next steps.`;
+3. Rigorous Audit & Review: When asked to audit, inspect, review, or evaluate what was built or the project state, do NOT give superficial cheerleading summaries. Inspect the actual codebase with tools (read files, run tests/linters, verify error handling and edge cases). Report concrete technical findings, code defects, gaps against specifications, and actionable engineering next steps.
+4. Active Investigation: When the user asks you to audit, diagnose, explore, inspect, or answer questions about the workspace, actively use your read tools (list_dir, read_file, search_files). Never stop after a single tool call without completing your analysis. Continue inspecting until you have sufficient facts, then output your complete findings.`;
 
   const modeDirective =
     normalizedMode === "ask"
-      ? `You are in ASK mode for ${framework} (${frameworkShort}). Answer for THIS framework only — if asked "what can you build?" list only ${framework} capabilities, not all frameworks. You have READ-ONLY tools available (read_file, list_dir, search_files, read_url, get_design_tokens, read_spec, get_preview_url, screenshot, lint_project, test_project, spawn_subagent) — use them if you need to inspect files to answer. Do NOT write code or modify files unless the user explicitly asks.\n${slashHelp}\n${toneAndEmojiRule}\nTools:\n- ${CORE_TOOLS_TEXT}`
+      ? `You are in ASK mode for ${framework} (${frameworkShort}). Answer for THIS framework only — if asked "what can you build?" list only ${framework} capabilities, not all frameworks. You have READ-ONLY tools available (read_file, list_dir, search_files, read_url, get_design_tokens, read_spec, get_preview_url, screenshot, lint_project, test_project, spawn_subagent) — use them if you need to inspect files to answer. When asked to audit, diagnose, or explain the project, actively inspect files with list_dir and read_file. Do NOT write code or modify files unless the user explicitly asks.\n${slashHelp}\n${toneAndEmojiRule}\nTools:\n- ${CORE_TOOLS_TEXT}`
       : normalizedMode === "plan"
-        ? `You are in PLAN mode for ${framework} (${frameworkShort}). First discuss requirements and present a concrete architecture or questionnaire/blueprint with the user before writing application code. You have full planning tools — use write_spec, write_design_spec, write_motion_spec, checkpoint, log_decision, plus read tools to inspect workspace.\n${slashHelp}\n${toneAndEmojiRule}\nTools:\n- ${CORE_TOOLS_TEXT}`
-        : `You are in BUILD mode for ${framework} (${frameworkShort}). ${greetingRule} ${buildRule}\n${slashHelp}\n${toneAndEmojiRule}\nTools:\n- ${CORE_TOOLS_TEXT}\n\nTool rules: work efficiently; call write_file to produce code, run_command for installs/builds, get_preview_url to get preview URL, screenshot to verify.`;
+        ? `You are in PLAN mode for ${framework} (${frameworkShort}). First discuss requirements and present a concrete architecture or questionnaire/blueprint with the user before writing application code. You have full planning tools — use write_spec, write_design_spec, write_motion_spec, checkpoint, log_decision, plus read tools to inspect workspace. When asked to audit, diagnose, inspect, or evaluate the codebase, actively inspect workspace files with list_dir and read_file and report concrete technical findings.\n${slashHelp}\n${toneAndEmojiRule}\nTools:\n- ${CORE_TOOLS_TEXT}`
+        : `You are in BUILD mode for ${framework} (${frameworkShort}). ${greetingRule} ${buildRule}\nWhen asked to audit, diagnose, or fix issues, actively inspect workspace files with read_file, list_dir, and search_files before modifying code.\n${slashHelp}\n${toneAndEmojiRule}\nTools:\n- ${CORE_TOOLS_TEXT}\n\nTool rules: work efficiently; call write_file to produce code, run_command for installs/builds, get_preview_url to get preview URL, screenshot to verify.`;
   return `${rolePrompt}\n\n${toneAndEmojiRule}\n\n${modeDirective}`.trim();
 }
 
@@ -1388,7 +1433,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
         } else if (command?.type === "thread.create") {
           const existing = inMemoryThreads.find((t) => t.id === command.threadId);
           if (!existing) {
-            inMemoryThreads.push({
+            const newThread = {
               id: command.threadId,
               projectId: command.projectId,
               title: command.title ?? "New Chat",
@@ -1414,9 +1459,19 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               activities: [],
               proposedPlans: [],
               turnDiffSummaries: [],
-            });
+            };
+            inMemoryThreads.push(newThread);
             globalSnapshotSequence += 1;
             savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.created",
+              payload: threadCreatedPayload(newThread),
+              createdAt: now,
+            });
+            globalSnapshotSequence += 1;
             publishDomainEvent({
               sequence: globalSnapshotSequence,
               aggregateKind: "thread",
@@ -1438,7 +1493,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               sourceThread?.modelSelection?.provider ??
               "unknown";
             const targetProvider = command.modelSelection?.provider ?? "google";
-            inMemoryThreads.push({
+            const newThread = {
               id: command.threadId,
               projectId: command.projectId,
               title: command.title ?? (command.type === "thread.handoff.create" ? "Handoff" : "Fork"),
@@ -1476,9 +1531,19 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               threadMarkers: [],
               proposedPlans: [],
               turnDiffSummaries: [],
-            });
+            };
+            inMemoryThreads.push(newThread);
             globalSnapshotSequence += 1;
             savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.created",
+              payload: threadCreatedPayload(newThread),
+              createdAt: now,
+            });
+            globalSnapshotSequence += 1;
             publishDomainEvent({
               sequence: globalSnapshotSequence,
               aggregateKind: "thread",
@@ -1803,6 +1868,25 @@ export class OrchestrationEngineService extends ServiceMap.Service<
         } else if (command?.type === "thread.turn.interrupt") {
           const thread = inMemoryThreads.find((t) => t.id === command.threadId);
           if (thread) {
+            const controller = activeTurnAbortControllers.get(command.threadId);
+            if (controller) {
+              controller.abort();
+              activeTurnAbortControllers.delete(command.threadId);
+            }
+            const activeMsg = activeAssistantMessagesByThreadId.get(command.threadId);
+            if (activeMsg) {
+              activeMsg.streaming = false;
+              activeMsg.updatedAt = now;
+              publishDomainEvent({
+                sequence: globalSnapshotSequence + 1,
+                aggregateKind: "thread",
+                aggregateId: command.threadId,
+                type: "thread.message-sent",
+                payload: messageSentPayload(command.threadId, activeMsg),
+                createdAt: now,
+              });
+              activeAssistantMessagesByThreadId.delete(command.threadId);
+            }
             if (thread.latestTurn) {
               thread.latestTurn.state = "interrupted";
               thread.latestTurn.status = "interrupted";
@@ -1825,6 +1909,25 @@ export class OrchestrationEngineService extends ServiceMap.Service<
         } else if (command?.type === "thread.session.stop") {
           const thread = inMemoryThreads.find((t) => t.id === command.threadId);
           if (thread) {
+            const controller = activeTurnAbortControllers.get(command.threadId);
+            if (controller) {
+              controller.abort();
+              activeTurnAbortControllers.delete(command.threadId);
+            }
+            const activeMsg = activeAssistantMessagesByThreadId.get(command.threadId);
+            if (activeMsg) {
+              activeMsg.streaming = false;
+              activeMsg.updatedAt = now;
+              publishDomainEvent({
+                sequence: globalSnapshotSequence + 1,
+                aggregateKind: "thread",
+                aggregateId: command.threadId,
+                type: "thread.message-sent",
+                payload: messageSentPayload(command.threadId, activeMsg),
+                createdAt: now,
+              });
+              activeAssistantMessagesByThreadId.delete(command.threadId);
+            }
             thread.session = null;
             thread.updatedAt = now;
             globalSnapshotSequence += 1;
@@ -2075,8 +2178,20 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                   content: m.text,
                 }));
 
-              const project = inMemoryProjects.find((p: any) => p.id === thread.projectId);
+              let project = inMemoryProjects.find((p: any) => p.id === thread.projectId);
+              const homeDir = process.env.HOME || "/home/DejiTech";
+              let appPath = thread.workingDirectory || thread.worktreePath || project?.workspaceRoot;
+              if ((!appPath || appPath === homeDir || thread.projectId === "default") && inMemoryProjects.length > 1) {
+                const realProj = inMemoryProjects.find((p: any) => p.id !== "default" && p.kind !== "chat");
+                if (realProj && realProj.workspaceRoot) {
+                  appPath = realProj.workspaceRoot;
+                  project = realProj;
+                  thread.projectId = realProj.id;
+                }
+              }
+              appPath = appPath ?? process.cwd();
               const framework = project?.framework ?? "blank";
+
               let skills: string[] = [];
               try {
                 const { getFrameworkConfig } = await import("./harness/framework/registry.ts");
@@ -2086,7 +2201,14 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               }
               const system = await buildSystemPrompt(command.mode, framework, skills);
 
-              const appPath = project?.workspaceRoot ?? process.cwd();
+              // Register abort controller and active message for stop support
+              const turnAbortController = new AbortController();
+              const existingController = activeTurnAbortControllers.get(command.threadId);
+              if (existingController) {
+                try { existingController.abort(); } catch {}
+              }
+              activeTurnAbortControllers.set(command.threadId, turnAbortController);
+              activeAssistantMessagesByThreadId.set(command.threadId, assistantMsg);
 
               // Conversation for the harness loop. The system prompt rides the
               // adapter's `system` option; the rest is the real history.
@@ -2111,7 +2233,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 readOnly: t.readOnly,
                 execute: (args: any, ctx: any) =>
                   t.execute(args, {
-                    signal: ctx.signal,
+                    signal: ctx.signal ?? turnAbortController.signal,
                     appPath,
                     sessionId: ctx.sessionId,
                     toolId: ctx.toolId,
@@ -2164,6 +2286,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 sessionId: thread.id,
                 turnId,
                 maxSteps: 100,
+                signal: turnAbortController.signal,
                 llm: adapter,
                 tools: loopToolDefinitions,
                 buildMessages: () => conversation,
@@ -2277,20 +2400,24 @@ export class OrchestrationEngineService extends ServiceMap.Service<
 
                     if (event.status === "started") {
                       const trimmedReasoning = stepAssistantText.slice(-500).trim();
-                      conversation.push({
-                        role: "assistant",
-                        content: trimmedReasoning ? trimmedReasoning : `Calling ${event.name}`,
-                        tool_calls: [
-                          {
-                            id: event.id,
-                            type: "function",
-                            function: {
-                              name: event.name,
-                              arguments: JSON.stringify(event.args ?? {}),
-                            },
-                          },
-                        ],
-                      } as any);
+                      const lastMsg = conversation[conversation.length - 1];
+                      const newCall = {
+                        id: event.id,
+                        type: "function",
+                        function: {
+                          name: event.name,
+                          arguments: JSON.stringify(event.args ?? {}),
+                        },
+                      };
+                      if (lastMsg && lastMsg.role === "assistant" && Array.isArray((lastMsg as any).tool_calls)) {
+                        (lastMsg as any).tool_calls.push(newCall);
+                      } else {
+                        conversation.push({
+                          role: "assistant",
+                          content: trimmedReasoning ? trimmedReasoning : `Calling ${event.name}`,
+                          tool_calls: [newCall],
+                        } as any);
+                      }
                       stepAssistantText = "";
 
                       const inputSnippet =
@@ -2485,13 +2612,23 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               }
               console.error("[harnessCompat] LLM turn error", err);
               assistantMsg.streaming = false;
-              if (!assistantMsg.text) {
-                assistantMsg.text = `Error: ${err?.message || "Failed to generate response."}`;
+              if (turnAbortController.signal.aborted || err?.name === "AbortError") {
+                turn.status = "interrupted";
+                if (!assistantMsg.text) {
+                  assistantMsg.text = "Response stopped.";
+                }
+              } else {
+                turn.status = "failed";
+                const errorDetail = err?.message || "Failed to generate response.";
+                if (!assistantMsg.text) {
+                  assistantMsg.text = `Error: ${errorDetail}`;
+                } else {
+                  assistantMsg.text += `\n\nError: ${errorDetail}`;
+                }
               }
-              turn.status = "failed";
               thread.latestTurn = {
                 turnId,
-                state: "error",
+                state: turn.status === "interrupted" ? "interrupted" : "error",
                 requestedAt: now,
                 startedAt: now,
                 completedAt: new Date().toISOString(),
@@ -2525,6 +2662,9 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 },
                 createdAt: new Date().toISOString(),
               });
+            } finally {
+              activeTurnAbortControllers.delete(command.threadId);
+              activeAssistantMessagesByThreadId.delete(command.threadId);
             }
           })();
         }

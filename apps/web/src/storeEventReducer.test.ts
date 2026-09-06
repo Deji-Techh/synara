@@ -2282,4 +2282,46 @@ describe("store event reducer", () => {
       initialState.messageIdsByThreadId?.[threadId],
     );
   });
+
+  it("adds threads immediately from live thread.created events", () => {
+    const initialState = makeState(makeThread());
+    const createdThreadId = "thread-live-new" as any;
+    const projectId = "project-live-1" as any;
+
+    const next = applyOrchestrationEvents(initialState, [
+      makeDomainEvent("thread.created", {
+        threadId: createdThreadId,
+        projectId,
+        title: "Brand New Thread",
+        modelSelection: { provider: "opencodeZen", model: "default" },
+        runtimeMode: "full-access",
+        interactionMode: "default",
+        envMode: "local",
+        branch: null,
+        worktreePath: null,
+        workingDirectory: null,
+        associatedWorktreePath: null,
+        associatedWorktreeBranch: null,
+        associatedWorktreeRef: null,
+        createBranchFlowCompleted: false,
+        isPinned: false,
+        parentThreadId: null,
+        creationSource: null,
+        sourceThreadId: null,
+        sourceTurnId: null,
+        gatewayOperationId: null,
+        gatewayOperationIndex: null,
+        subagentAgentId: null,
+        subagentNickname: null,
+        subagentRole: null,
+      }),
+    ]);
+
+    const thread = threadsOf(next).find((t) => t.id === createdThreadId);
+    expect(thread).toBeDefined();
+    expect(thread?.title).toBe("Brand New Thread");
+    expect(thread?.projectId).toBe(projectId);
+    expect(next.sidebarThreadSummaryById[createdThreadId]).toBeDefined();
+    expect(next.sidebarThreadSummaryById[createdThreadId]?.title).toBe("Brand New Thread");
+  });
 });

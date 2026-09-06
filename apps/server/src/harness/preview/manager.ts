@@ -46,6 +46,68 @@ export function getPreviewState(threadId: string): {
   return { running: true, url: session.url, logs: [...session.logs], kind: session.kind };
 }
 
+async function ensureDependenciesInstalled(
+  appDir: string,
+  onLog: (line: string) => void,
+): Promise<void> {
+  const pkgPath = path.join(appDir, "package.json");
+  if (!fs.existsSync(pkgPath)) return;
+
+  const nodeModulesPath = path.join(appDir, "node_modules");
+  if (fs.existsSync(nodeModulesPath)) return;
+
+  onLog("[preview] Missing node_modules detected. Installing project dependencies...");
+
+  // Determine package manager: prefer bun if available, else npm
+  let cmd = "bun";
+  let args = ["install"];
+
+  try {
+    const { execSync } = await import("node:child_process");
+    execSync("bun --version", { stdio: "ignore" });
+  } catch {
+    cmd = "npm";
+    args = ["install", "--no-audit", "--no-fund"];
+  }
+
+  onLog(`[preview] Running: ${cmd} ${args.join(" ")} in ${appDir}`);
+
+  await new Promise<void>((resolve, reject) => {
+    const installProc = spawn(cmd, args, {
+      cwd: appDir,
+      shell: true,
+      env: { ...process.env, CI: "1", NO_COLOR: "1" },
+    });
+
+    installProc.stdout?.on("data", (d) => {
+      for (const line of d.toString().split("\n")) {
+        if (line.trim()) onLog(`[install] ${line.trim()}`);
+      }
+    });
+
+    installProc.stderr?.on("data", (d) => {
+      for (const line of d.toString().split("\n")) {
+        if (line.trim()) onLog(`[install] ${line.trim()}`);
+      }
+    });
+
+    const timeout = setTimeout(() => {
+      installProc.kill("SIGKILL");
+      reject(new Error("Dependency installation timed out after 120s"));
+    }, 120_000);
+
+    installProc.on("exit", (code) => {
+      clearTimeout(timeout);
+      if (code === 0) {
+        onLog("[preview] Dependencies installed successfully.");
+        resolve();
+      } else {
+        reject(new Error(`Dependency installation failed with code ${code}`));
+      }
+    });
+  });
+}
+
 export async function startPreview(input: {
   threadId: string;
   appDir?: string;
@@ -73,6 +135,23 @@ export async function startPreview(input: {
   if (!devCommand) {
     throw new Error(`No dev command configured for this framework`);
   }
+
+  // Pre-register session so installation logs can be streamed and viewed immediately
+  const initialLogs: string[] = [];
+  const dummyProcess = { exitCode: null, kill: () => false } as unknown as ChildProcess;
+  const session: PreviewSession = {
+    threadId: input.threadId,
+    process: dummyProcess,
+    url: "",
+    kind: "web",
+    logs: initialLogs,
+    appDir,
+  };
+  sessions.set(input.threadId, session);
+
+  // Auto-install dependencies if package.json exists and node_modules is missing
+  await ensureDependenciesInstalled(appDir, (line) => pushLog(session, line));
+
   // env with an optional explicit port, suppressing external browser launch
   const env = {
     ...process.env,
@@ -84,15 +163,7 @@ export async function startPreview(input: {
   if (input.port) env.CAIDE_PREVIEW_PORT = String(input.port);
 
   const child = spawn(devCommand, { cwd: appDir, shell: true, env });
-  const session: PreviewSession = {
-    threadId: input.threadId,
-    process: child,
-    url: "",
-    kind: "web",
-    logs: [],
-    appDir,
-  };
-  sessions.set(input.threadId, session);
+  session.process = child;
 
   let resolvedUrl: string | null = null;
   const urlPromise = new Promise<{ url: string; kind: "web" | "native" }>((resolve, reject) => {

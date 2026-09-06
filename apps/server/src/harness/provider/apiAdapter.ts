@@ -136,35 +136,55 @@ export async function* streamProvider(
     };
   }
 
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(requestBody),
-      signal,
-    });
-  } catch (err: any) {
-    if (signal?.aborted) return;
-    throw new ProviderApiError({
-      status: 0,
-      code: "NETWORK_ERROR",
-      message: err.message || "Failed to reach provider endpoint",
-      retryable: true,
-    });
-  }
+  let response: Response | undefined;
+  const maxFetchAttempts = 2;
+  const retryDelayMs = process.env.NODE_ENV === "test" ? 100 : 2000;
 
-  if (!response.ok || !response.body) {
-    let errorBody = "";
+  for (let attempt = 1; attempt <= maxFetchAttempts; attempt++) {
     try {
-      errorBody = await response.text();
-    } catch {
-      // ignore
+      response = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(requestBody),
+        signal,
+      });
+    } catch (err: any) {
+      if (signal?.aborted) return;
+      if (attempt < maxFetchAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+        if (signal?.aborted) return;
+        continue;
+      }
+      throw new ProviderApiError({
+        status: 0,
+        code: "NETWORK_ERROR",
+        message: err.message || "Failed to reach provider endpoint",
+        retryable: true,
+      });
     }
 
-    const retryable = response.status === 429 || response.status >= 500;
+    if (attempt < maxFetchAttempts && (response.status === 429 || response.status === 503)) {
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+      if (signal?.aborted) return;
+      continue;
+    }
+    break;
+  }
+
+  if (!response || !response.ok || !response.body) {
+    let errorBody = "";
+    if (response) {
+      try {
+        errorBody = await response.text();
+      } catch {
+        // ignore
+      }
+    }
+
+    const status = response ? response.status : 0;
+    const retryable = status === 429 || status >= 500;
     let message = errorBody;
-    let code = `HTTP_${response.status}`;
+    let code = `HTTP_${status}`;
 
     try {
       const parsed = JSON.parse(errorBody);
@@ -177,7 +197,7 @@ export async function* streamProvider(
     }
 
     throw new ProviderApiError({
-      status: response.status,
+      status,
       code,
       message,
       retryable,

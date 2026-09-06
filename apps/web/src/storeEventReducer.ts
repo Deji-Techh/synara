@@ -46,6 +46,7 @@ import {
   removeSpace,
   removeDeletedProjectFromClientState,
   removeDeletedThreadFromClientState,
+  syncServerThreadDetail,
   upsertProject,
   upsertSpace,
 } from "./storeProjection";
@@ -930,6 +931,62 @@ function applyOrchestrationEvent(
     case "thread.deleted":
       // Deletion is terminal for both active sidebar rows and archived settings rows.
       return removeDeletedThreadFromClientState(state, event.payload.threadId, event.sequence);
+
+    case "thread.created": {
+      const p = event.payload;
+      const readModelThread: ReadModelThread = {
+        id: p.threadId,
+        projectId: p.projectId,
+        title: p.title,
+        modelSelection: normalizeModelSelection(p.modelSelection),
+        runtimeMode: p.runtimeMode ?? "full-access",
+        interactionMode: p.interactionMode ?? "default",
+        envMode: p.envMode ?? "local",
+        branch: p.branch ?? null,
+        worktreePath: p.worktreePath ?? null,
+        workingDirectory: p.workingDirectory ?? null,
+        associatedWorktreePath: p.associatedWorktreePath ?? null,
+        associatedWorktreeBranch: p.associatedWorktreeBranch ?? null,
+        associatedWorktreeRef: p.associatedWorktreeRef ?? null,
+        createBranchFlowCompleted: p.createBranchFlowCompleted ?? false,
+        isPinned: p.isPinned ?? false,
+        parentThreadId: p.parentThreadId ?? null,
+        creationSource: p.creationSource ?? null,
+        sourceThreadId: p.sourceThreadId ?? null,
+        sourceTurnId: p.sourceTurnId ?? null,
+        gatewayOperationId: p.gatewayOperationId ?? null,
+        gatewayOperationIndex: p.gatewayOperationIndex ?? null,
+        subagentAgentId: p.subagentAgentId ?? null,
+        subagentNickname: p.subagentNickname ?? null,
+        subagentRole: p.subagentRole ?? null,
+        forkSourceThreadId: null,
+        sidechatSourceThreadId: null,
+        lastKnownPr: null,
+        latestTurn: null,
+        latestUserMessageAt: null,
+        hasPendingApprovals: false,
+        hasPendingUserInput: false,
+        hasActionableProposedPlan: false,
+        createdAt: event.occurredAt ?? new Date().toISOString(),
+        updatedAt: event.occurredAt ?? new Date().toISOString(),
+        archivedAt: null,
+        settledAt: null,
+        handoff: null,
+        session: null,
+        goal: null,
+        goalPausedAt: null,
+        turns: [],
+        messages: [],
+        activities: [],
+        proposedPlans: [],
+        turnDiffSummaries: [],
+        checkpoints: [],
+        pinnedMessages: [],
+        threadMarkers: [],
+        pendingInteractions: [],
+      };
+      return syncServerThreadDetail(state, readModelThread);
+    }
 
     case "thread.meta-updated":
       return applyThreadUpdate(

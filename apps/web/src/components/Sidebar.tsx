@@ -5589,7 +5589,8 @@ export default function Sidebar() {
                       <button
                         type="button"
                         onClick={() => {
-                          const targetProjId = scopedProjectId ?? focusedProjectId ?? projects[0]?.id;
+                          const realProjects = projects.filter((p) => p.id !== "default" && (p as any).kind !== "chat");
+                          const targetProjId = scopedProjectId ?? focusedProjectId ?? realProjects[0]?.id ?? projects[0]?.id;
                           if (targetProjId) {
                             prefetchModelsForProjectNewThread(targetProjId, { includeDroid: true });
                             void handleNewThread(targetProjId, {
@@ -5741,7 +5742,8 @@ export default function Sidebar() {
                       size="xs"
                       variant="outline"
                       onClick={() => {
-                        const targetProjId = scopedProjectId ?? focusedProjectId ?? projects[0]?.id;
+                        const realProjects = projects.filter((p) => p.id !== "default" && (p as any).kind !== "chat");
+                        const targetProjId = scopedProjectId ?? focusedProjectId ?? realProjects[0]?.id ?? projects[0]?.id;
                         if (targetProjId) {
                           prefetchModelsForProjectNewThread(targetProjId, { includeDroid: true });
                           void handleNewThread(targetProjId, {
