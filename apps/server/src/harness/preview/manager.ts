@@ -325,7 +325,10 @@ export async function startPreview(input: {
   // Auto-install dependencies if package.json exists and node_modules is missing
   await ensureDependenciesInstalled(appDir, (line) => pushLog(session, line));
 
-  const compatPreloadPath = path.join(__dirname, "compatPreload.cjs");
+  // NOTE: bare __dirname is not defined in the packaged ESM bundle (it threw
+  // ReferenceError in the AppImage) — follow the codebase convention and use
+  // import.meta.dirname. Missing file simply disables the preload (existsSync).
+  const compatPreloadPath = path.join(import.meta.dirname ?? "", "compatPreload.cjs");
   const nodeOptions = [
     process.env.NODE_OPTIONS || "",
     fs.existsSync(compatPreloadPath) ? `-r ${compatPreloadPath}` : "",
