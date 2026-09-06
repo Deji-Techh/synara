@@ -8,6 +8,11 @@ import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import { getDatabaseLink } from "../../dyad/db/connections.ts";
 import { applyTodoUpdate, getTodos } from "../../dyad/plan/todoStore.ts";
+import {
+  clearPlanRecords,
+  getAcceptedPlan,
+  recordPlanPresented,
+} from "../../dyad/plan/planStore.ts";
 import { SessionStorage } from "../session/storage.ts";
 import {
   applySettingsSync,
@@ -75,5 +80,34 @@ describe("session stores persistence (m3g)", () => {
     const sid = `s-${Date.now()}-c`;
     await expect(restoreSessionState(sid, storage)).resolves.toBeUndefined();
     clearSessionStores(sid);
+  });
+
+  it("round-trips the accepted plan handoff record through JSONL", async () => {
+    const { storage } = tempStorage();
+    const sid = `s-${Date.now()}-d`;
+    const { recordPlanAccepted } = await import("../../dyad/plan/planStore.ts");
+    recordPlanPresented(sid, {
+      id: "auth-1",
+      title: "Auth",
+      summary: "Login stuff.",
+      plan: "## Steps",
+      status: "draft",
+      createdAt: 1,
+    });
+    recordPlanAccepted(sid, 2);
+    await snapshotSessionState(sid, storage);
+    await storage.flush(sid);
+    clearSessionStores(sid);
+    await restoreSessionState(sid, storage);
+    try {
+      expect(getAcceptedPlan(sid)).toMatchObject({
+        id: "auth-1",
+        title: "Auth",
+        status: "accepted",
+        acceptedAt: 2,
+      });
+    } finally {
+      clearSessionStores(sid);
+    }
   });
 });

@@ -13,6 +13,12 @@ import {
 } from "../../dyad/tools/permissions.ts";
 import { MemoryMcpConsentStore, type McpConsent } from "../../dyad/mcp/mcpConsent.ts";
 import { getTodos, setTodos } from "../../dyad/plan/todoStore.ts";
+import {
+  clearPlanRecords,
+  getAcceptedPlan,
+  setAcceptedPlan,
+  type PlanRecord,
+} from "../../dyad/plan/planStore.ts";
 import { getSessionTitle } from "../../dyad/misc/miscTools.ts";
 
 export interface SettingsSyncPayload {
@@ -61,6 +67,7 @@ export function getOrCreateSessionStores(sessionId: string): SessionStores {
 
 export function clearSessionStores(sessionId: string): void {
   stores.delete(sessionId);
+  clearPlanRecords(sessionId);
   unlinkDatabase(sessionId);
 }
 
@@ -99,12 +106,23 @@ export async function snapshotSessionState(
 ): Promise<void> {
   const entry = stores.get(sessionId);
   const consents: Record<string, ToolConsent> = entry ? entry.consent.entries() : {};
+  const accepted = getAcceptedPlan(sessionId);
   await storage.append(sessionId, "session/state", {
     todos: getTodos(sessionId),
     title: getSessionTitle(sessionId),
     link: getDatabaseLink(sessionId) ?? null,
     toolConsents: consents,
     safeSql: entry?.safeSql ?? true,
+    // Bounded handoff record (no full plan text — re-read from the file).
+    acceptedPlan: accepted
+      ? {
+          id: accepted.id,
+          title: accepted.title,
+          summary: accepted.summary,
+          file: accepted.file ?? null,
+          acceptedAt: accepted.acceptedAt ?? null,
+        }
+      : null,
   });
 }
 
@@ -122,6 +140,13 @@ export async function restoreSessionState(
       link?: DbLink | null;
       toolConsents?: Record<string, unknown>;
       safeSql?: unknown;
+      acceptedPlan?: {
+        id?: unknown;
+        title?: unknown;
+        summary?: unknown;
+        file?: unknown;
+        acceptedAt?: unknown;
+      } | null;
     };
     if (Array.isArray(data.todos)) {
       setTodos(
@@ -142,6 +167,22 @@ export async function restoreSessionState(
     }
     if (typeof data.safeSql === "boolean") {
       getOrCreateSessionStores(sessionId).safeSql = data.safeSql;
+    }
+    if (data.acceptedPlan && typeof data.acceptedPlan === "object") {
+      const p = data.acceptedPlan;
+      if (typeof p.id === "string" && typeof p.title === "string") {
+        const record: PlanRecord = {
+          id: p.id,
+          title: p.title,
+          summary: typeof p.summary === "string" ? p.summary : "",
+          plan: "",
+          status: "accepted",
+          createdAt: 0,
+          acceptedAt: typeof p.acceptedAt === "number" ? p.acceptedAt : undefined,
+          file: typeof p.file === "string" ? p.file : undefined,
+        };
+        setAcceptedPlan(sessionId, record);
+      }
     }
     return;
   }

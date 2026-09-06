@@ -229,4 +229,41 @@ describe("dyad plan tools transplant (m2b)", () => {
       clearTodos("s-todos-ev");
     }
   });
+
+  it("writes validated frontmatter drafts and records acceptance on exit", async () => {
+    const { clearPlanRecords, getAcceptedPlan } = await import("./planStore.ts");
+    const events: unknown[] = [];
+    setPlanTransport(fakeTransport(events));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-planhandoff-"));
+    const sid = "s-handoff";
+    clearPlanRecords(sid);
+    try {
+      const presented = await writePlanTool.execute(
+        { title: "Auth System", summary: "Login stuff.", plan: "## Overview\nThings." },
+        toolCtx(dir, sid),
+      );
+      expect(presented).toContain('Implementation plan "Auth System" has been presented');
+      const files = fs.readdirSync(path.join(dir, ".caide", "plans"));
+      expect(files).toHaveLength(1);
+      expect(files[0]).toMatch(/^auth-system-\d+\.md$/);
+      const { parsePlanFile } = await import("./planStore.ts");
+      const onDisk = parsePlanFile(
+        fs.readFileSync(path.join(dir, ".caide", "plans", files[0]), "utf-8"),
+      );
+      expect(onDisk).toMatchObject({ title: "Auth System", status: "draft" });
+      expect(onDisk?.id).toBeTruthy();
+
+      const exited = await executeExitPlan({ confirmation: true }, sid);
+      expect(exited).toMatch(/Switching to Agent mode/);
+      expect(exited).toContain('Accepted plan: "Auth System"');
+      expect(getAcceptedPlan(sid)?.status).toBe("accepted");
+      const acceptedOnDisk = parsePlanFile(
+        fs.readFileSync(path.join(dir, ".caide", "plans", files[0]), "utf-8"),
+      );
+      expect(acceptedOnDisk?.status).toBe("accepted");
+    } finally {
+      setPlanTransport(null);
+      clearPlanRecords(sid);
+    }
+  });
 });

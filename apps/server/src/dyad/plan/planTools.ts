@@ -7,11 +7,15 @@
 // Donor: dyad x caide tools/{planning_questionnaire,write_plan,exit_plan,
 // update_todos,ask_env_vars}.ts.
 
-import * as fs from "node:fs";
-import * as path from "node:path";
 import { z } from "zod";
 import { defineTool, type ToolDef } from "../../harness/tools/defineTool.ts";
 import { applyTodoUpdate, type Todo, type TodoStatus } from "./todoStore.ts";
+import {
+  markPlanFileAccepted,
+  recordPlanAccepted,
+  recordPlanPresented,
+  writePlanFile,
+} from "./planStore.ts";
 import { nextRequestId, waitForUserInput } from "./userPrompt.ts";
 
 export class PlanUiNotConnectedError extends Error {
@@ -234,10 +238,6 @@ Example:
   presentCall: (args: any) => `Plan: ${args.title}`,
 });
 
-function slugify(title: string): string {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "plan";
-}
-
 export async function executeWritePlan(
   input: z.infer<typeof writePlanSchema>,
   sessionId: string,
@@ -245,16 +245,11 @@ export async function executeWritePlan(
 ): Promise<string> {
   const parsed = writePlanSchema.parse(input);
   requireTransport("write_plan").sendPlanUpdate(sessionId, parsed);
-  // Best-effort draft persistence (donor: savePlanToDisk) — a write failure
-  // must not fail the tool call; the plan is still shown in-memory.
+  // Draft persistence (donor savePlanToDisk): validated frontmatter file.
+  // Best-effort — a write failure must not fail the tool call.
   try {
-    const dir = path.join(appPath, ".caide", "plans");
-    await fs.promises.mkdir(dir, { recursive: true });
-    const file = path.join(dir, `${slugify(parsed.title)}-${Date.now()}.md`);
-    await fs.promises.writeFile(
-      file,
-      `---\ntitle: ${JSON.stringify(parsed.title)}\nstatus: draft\n---\n\n# ${parsed.title}\n\n${parsed.summary}\n\n${parsed.plan}\n`,
-    );
+    const record = await writePlanFile(appPath, parsed);
+    recordPlanPresented(sessionId, record);
   } catch {
     // ignore — shown in-memory regardless
   }
@@ -308,7 +303,17 @@ export async function executeExitPlan(
     throw new PlanPreconditionError("User must confirm the plan before exiting plan mode");
   }
   requireTransport("exit_plan").sendPlanExit(sessionId);
-  return "Plan accepted. Switching to Agent mode to begin implementation. The agreed plan will guide the implementation process.";
+  // Record WHAT was accepted so the implementation turn is grounded in the
+  // agreed plan (donor plan-handoff state; the continue-gate steers the
+  // next turn in this session).
+  const accepted = recordPlanAccepted(sessionId);
+  if (accepted?.file) {
+    await markPlanFileAccepted(accepted.file, accepted.acceptedAt ?? Date.now());
+  }
+  const grounding = accepted
+    ? ` Accepted plan: "${accepted.title}" — ${accepted.summary}`
+    : "";
+  return `Plan accepted. Switching to Agent mode to begin implementation. The agreed plan will guide the implementation process.${grounding}`;
 }
 
 // --- update_todos (donor schema + description verbatim) ---
