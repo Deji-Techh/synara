@@ -137,8 +137,10 @@ export async function* streamProvider(
   }
 
   let response: Response | undefined;
-  const maxFetchAttempts = 2;
+  const maxFetchAttempts = 3;
   const retryDelayMs = process.env.NODE_ENV === "test" ? 100 : 2000;
+  // Retryable statuses mirror isRecoverableError (loop/retry.ts): rate
+  // limits and transient provider/server errors. Aborts never retry.
 
   for (let attempt = 1; attempt <= maxFetchAttempts; attempt++) {
     try {
@@ -163,7 +165,14 @@ export async function* streamProvider(
       });
     }
 
-    if (attempt < maxFetchAttempts && (response.status === 429 || response.status === 503)) {
+    if (
+      attempt < maxFetchAttempts &&
+      (response.status === 429 ||
+        response.status === 502 ||
+        response.status === 503 ||
+        response.status === 504 ||
+        response.status === 529)
+    ) {
       await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
       if (signal?.aborted) return;
       continue;

@@ -80,8 +80,24 @@ export interface HarnessClientSender {
   isOpen: () => boolean;
 }
 
+/** Diagnostic counters for fan-out health (no drops: every client gets every event). */
+export interface HubBroadcastStats {
+  broadcasts: number;
+  deliveries: number;
+  sendErrors: number;
+  prunedDeadClients: number;
+}
+
+const REPLAY_YIELD_EVERY = 25;
+
 export class HarnessHub {
   private sessionClients = new Map<string, Set<HarnessClientSender>>();
+  private broadcastStats: HubBroadcastStats = {
+    broadcasts: 0,
+    deliveries: 0,
+    sendErrors: 0,
+    prunedDeadClients: 0,
+  };
   private onCancelHandler?: SessionCancelHandler;
   private onSteerHandler?: SessionSteerHandler;
   private onCheckpointHandler?: CheckpointResponseHandler;
@@ -93,6 +109,11 @@ export class HarnessHub {
   private onProviderSettingsGetHandler?: ProviderSettingsGetHandler;
   private onProviderSettingsSetHandler?: ProviderSettingsSetHandler;
   private onProviderSettingsTestHandler?: ProviderSettingsTestHandler;
+
+  /** Diagnostic snapshot of fan-out health. */
+  getBroadcastStats(): HubBroadcastStats {
+    return { ...this.broadcastStats };
+  }
 
   /** Register a client sender; returns an unsubscribe function. */
   addClient(sessionId: string, sender: HarnessClientSender): () => void {
@@ -198,20 +219,44 @@ export class HarnessHub {
   broadcastToSession(sessionId: string, event: HarnessEvent): void {
     const clients = this.sessionClients.get(sessionId);
     if (!clients || clients.size === 0) return;
+    this.broadcastStats.broadcasts += 1;
     const payload = JSON.stringify(event);
-    for (const client of clients) {
-      if (client.isOpen()) client.sendText(payload);
+    for (const client of [...clients]) {
+      // Prune dead senders so a disconnected tab never accumulates.
+      if (!client.isOpen()) {
+        clients.delete(client);
+        if (clients.size === 0) this.sessionClients.delete(sessionId);
+        this.broadcastStats.prunedDeadClients += 1;
+        continue;
+      }
+      // Isolate per-client send failures: one broken socket must not kill
+      // fan-out to the remaining clients of the session.
+      try {
+        client.sendText(payload);
+        this.broadcastStats.deliveries += 1;
+      } catch {
+        clients.delete(client);
+        if (clients.size === 0) this.sessionClients.delete(sessionId);
+        this.broadcastStats.sendErrors += 1;
+      }
     }
   }
 
   /** Send the durable event tail to a (re)subscribing client. */
   async replaySession(sessionId: string, sender: HarnessClientSender): Promise<void> {
     const events = await readHarnessEvents(sessionId);
+    let sinceYield = 0;
     for (const event of events) {
       if (!sender.isOpen()) return;
       const clients = this.sessionClients.get(sessionId);
       if (!clients?.has(sender)) return;
       sender.sendText(JSON.stringify(event));
+      sinceYield += 1;
+      // Cooperative yield so a 200-event tail never blocks the event loop.
+      if (sinceYield >= REPLAY_YIELD_EVERY) {
+        sinceYield = 0;
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
     }
   }
 
