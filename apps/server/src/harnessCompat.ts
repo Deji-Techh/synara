@@ -1238,6 +1238,8 @@ async function buildSystemPrompt(
 4. Purposeful Tool Use: Only call tools when strictly necessary to answer the question or perform requested work. Avoid over-engineering. Never repeat the same tool call with the same arguments if already completed. Once you have the needed information, stop calling tools and present your answer.
 5. Rigorous Audit & Review: When explicitly asked to audit, inspect, review, or evaluate what was built or the project state, inspect the actual codebase with tools and report concrete technical findings.`;
 
+  const buildRule = `Build the app incrementally: scaffold the project structure first, implement features one at a time, run commands to install dependencies and verify the build, then get the preview URL to confirm it works. Always write complete, working files — never use placeholders or TODO stubs.`;
+
   const modeDirective =
     normalizedMode === "ask"
       ? `You are in ASK mode for ${framework} (${frameworkShort}). Answer for THIS framework only — if asked "what can you build?" list only ${framework} capabilities, not all frameworks. You have READ-ONLY tools available (read_file, list_dir, search_files, read_url, get_design_tokens, read_spec, get_preview_url, screenshot, lint_project, test_project, spawn_subagent) — use them only if needed to inspect files to answer. Do NOT write code or modify files unless the user explicitly asks.\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}`
