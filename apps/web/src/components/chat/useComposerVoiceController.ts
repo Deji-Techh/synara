@@ -62,9 +62,9 @@ export interface UseComposerVoiceControllerResult {
 const DEFAULT_FAILURE_COPY: ComposerVoiceFailureCopy = {
   transcriptionFailedTitle: "Voice transcription failed",
   fallbackDescription: "The voice note could not be transcribed.",
-  authExpiredTitle: "Sign in to ChatGPT again",
+  authExpiredTitle: "Voice provider key required",
   authExpiredDescription:
-    "Voice transcription uses your ChatGPT session in Codex. That session was rejected, so sign in again there and retry.",
+    "Voice transcription requires an API key for Google Gemini, Groq, or OpenAI. Please configure one in Settings → Providers.",
   refreshActionLabel: "Refresh status",
 };
 

@@ -803,7 +803,14 @@ export function sanitizeVoiceErrorMessage(message: string): string {
 
 export function isVoiceAuthExpiredMessage(message: string): boolean {
   const normalized = message.toLowerCase();
-  return normalized.includes("chatgpt login has expired") || normalized.includes("sign in again");
+  return (
+    normalized.includes("api key") ||
+    normalized.includes("unauthorized") ||
+    normalized.includes("chatgpt login has expired") ||
+    normalized.includes("sign in again") ||
+    normalized.includes("settings → providers") ||
+    normalized.includes("settings -> providers")
+  );
 }
 
 export function describeVoiceRecordingStartError(error: unknown): string {

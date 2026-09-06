@@ -351,7 +351,7 @@ describe("useComposerVoiceController", () => {
     expect(options.refreshVoiceStatus).toHaveBeenCalledTimes(1);
     const failureToast = toast.add.mock.calls.at(-1)?.[0];
     expect(failureToast).toMatchObject({
-      title: "Sign in to ChatGPT again",
+      title: "Voice provider key required",
       actionProps: { children: "Refresh status" },
     });
     failureToast?.actionProps?.onClick();

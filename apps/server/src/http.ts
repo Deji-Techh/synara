@@ -397,7 +397,55 @@ export const binaryUploadEffectRouteLayer = Layer.mergeAll(
       if (request.method === "OPTIONS") {
         return HttpServerResponse.empty({ status: 204, headers: corsHeaders });
       }
-      return HttpServerResponse.jsonUnsafe({ text: "" }, { status: 200, headers: corsHeaders });
+
+      const buffer = yield* request.arrayBuffer;
+      if (!buffer || buffer.byteLength === 0) {
+        return HttpServerResponse.jsonUnsafe(
+          { error: "No audio data received in voice upload." },
+          { status: 400, headers: corsHeaders },
+        );
+      }
+
+      const provider = url.searchParams.get("provider") || undefined;
+      const cwd = url.searchParams.get("cwd") || undefined;
+      const threadId = url.searchParams.get("threadId") || undefined;
+      const mimeType = (url.searchParams.get("mimeType") || "audio/wav") as "audio/wav";
+      const sampleRateHz = Number(url.searchParams.get("sampleRateHz")) || 24000;
+      const durationMs = Number(url.searchParams.get("durationMs")) || 0;
+      const audioBase64 = Buffer.from(buffer).toString("base64");
+
+      const outcome = yield* Effect.tryPromise({
+        try: async () => {
+          const { transcribeVoiceAudio } = await import("./voice/transcriptionService.ts");
+          return await transcribeVoiceAudio({
+            audioBase64,
+            mimeType,
+            sampleRateHz,
+            durationMs,
+            provider,
+            cwd,
+            threadId,
+          });
+        },
+        catch: (err) => (err instanceof Error ? err.message : String(err)),
+      }).pipe(
+        Effect.match({
+          onFailure: (errorMessage) => ({ success: false as const, error: errorMessage }),
+          onSuccess: (result) => ({ success: true as const, result }),
+        }),
+      );
+
+      if (!outcome.success) {
+        return HttpServerResponse.jsonUnsafe(
+          { error: outcome.error },
+          { status: 400, headers: corsHeaders },
+        );
+      }
+
+      return HttpServerResponse.jsonUnsafe(
+        { text: outcome.result.text },
+        { status: 200, headers: corsHeaders },
+      );
     }),
   ),
   HttpRouter.add(

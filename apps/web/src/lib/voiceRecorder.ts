@@ -124,6 +124,7 @@ export function useVoiceRecorder() {
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
+          autoGainControl: true,
           sampleRate: { ideal: TARGET_SAMPLE_RATE },
         },
       });

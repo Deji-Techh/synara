@@ -16,11 +16,7 @@ export default defineConfig({
       },
       {
         find: "electron",
-        replacement: path.resolve(import.meta.dirname, "./apps/engine/src/electron-shim.ts"),
-      },
-      {
-        find: /^@\//,
-        replacement: `${path.resolve(import.meta.dirname, "./apps/engine/src")}/`,
+        replacement: path.resolve(import.meta.dirname, "./scripts/electron-shim.ts"),
       },
     ],
   },

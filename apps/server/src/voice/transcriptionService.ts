@@ -19,7 +19,16 @@ const PROVIDER_ENV_KEYS: Record<string, string[]> = {
 export function getVoiceApiKey(provider: string): string | null {
   const norm = provider.toLowerCase();
   const lookupKeys =
-    norm === "google" || norm === "gemini" ? ["google", "gemini"] : [provider];
+    norm === "google" || norm === "gemini" ? ["google", "gemini"] : [norm];
+
+  // Check environment variables first (override)
+  for (const key of lookupKeys) {
+    const envKeys = PROVIDER_ENV_KEYS[key] || [];
+    for (const envKey of envKeys) {
+      const val = process.env[envKey]?.trim();
+      if (val) return val;
+    }
+  }
 
   try {
     const secrets = sharedProviderSecrets().read();
@@ -31,13 +40,33 @@ export function getVoiceApiKey(provider: string): string | null {
     // ignore
   }
 
-  for (const key of lookupKeys) {
-    const envKeys = PROVIDER_ENV_KEYS[key] || [];
-    for (const envKey of envKeys) {
-      const val = process.env[envKey]?.trim();
-      if (val) return val;
+  // Check direct dyad-providers.json and ~/.dyad/provider_secrets.json
+  try {
+    const home = process.env.CAIDE_HOME || process.env.HOME || os.homedir();
+    const candidateFiles = [
+      path.join(home, ".caide", "dyad-providers.json"),
+      path.join(home, "dyad-providers.json"),
+      path.join(os.homedir(), ".caide", "dyad-providers.json"),
+      path.join(os.homedir(), ".dyad", "provider_secrets.json"),
+    ];
+    for (const file of candidateFiles) {
+      if (fs.existsSync(file)) {
+        try {
+          const raw = JSON.parse(fs.readFileSync(file, "utf-8"));
+          const providers = raw?.providers || raw;
+          for (const key of lookupKeys) {
+            const val = providers?.[key]?.apiKey?.trim?.() || providers?.[key]?.trim?.();
+            if (val) return val;
+          }
+        } catch {
+          // ignore
+        }
+      }
     }
+  } catch {
+    // ignore
   }
+
 
   // Check ~/.caide/userdata/secrets legacy files
   try {
@@ -130,11 +159,18 @@ async function transcribeWithGemini(apiKey: string, audioBase64: string, mimeTyp
 
       const data = (await response.json()) as any;
       const parts = data?.candidates?.[0]?.content?.parts || [];
-      const text = parts
+      const nonThoughtText = parts
         .filter((p: any) => !p.thought)
         .map((p: any) => p.text || "")
         .join(" ")
         .trim();
+      const rawText =
+        nonThoughtText ||
+        parts
+          .map((p: any) => p.text || "")
+          .join(" ")
+          .trim();
+      const text = rawText.replace(/^["'«“`]+|["'»”`]+$/g, "").trim();
       return text;
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
