@@ -64,6 +64,15 @@ export {
   type ProviderInvariantOptions,
 } from "./providerInvariants.ts";
 export {
+  TEST_ASSERTION_CODE_SYSTEM_PROMPT,
+  buildAssertionCodePayload,
+} from "./testAssertionsPrompt.ts";
+export {
+  INSPIRATION_PROMPTS,
+  type InspirationIconName,
+  type InspirationPrompt,
+} from "./inspirationPrompts.ts";
+export {
   APP_FRAMEWORK_TYPES,
   isNeonSupportedFramework,
   type AppFrameworkType,

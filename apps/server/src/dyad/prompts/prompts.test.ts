@@ -14,9 +14,12 @@ import {
   constructSystemPrompt,
   DESIGN_ENGINE_CONTRACT,
   getSystemPromptForChatMode,
+  INSPIRATION_PROMPTS,
   MOBILE_PRODUCT_CONTRACT,
   SECURITY_REVIEW_SYSTEM_PROMPT,
   SUMMARIZE_CHAT_SYSTEM_PROMPT,
+  TEST_ASSERTION_CODE_SYSTEM_PROMPT,
+  buildAssertionCodePayload,
   WEB3_SKILL_PACK,
   WEB_PRODUCT_CONTRACT,
 } from "./index.ts";
@@ -276,5 +279,24 @@ describe("dyad prompt transplant (m1)", () => {
     });
     expect(webBuild).toContain("src/pages/Dashboard.tsx");
     expect(webBuild).toContain("Sonner");
+  });
+
+  it("ships the assertion-synthesis prompt and inspiration list", () => {
+    expect(TEST_ASSERTION_CODE_SYSTEM_PROMPT).toContain("Return ONLY JSON");
+    expect(TEST_ASSERTION_CODE_SYSTEM_PROMPT).toContain("await expect(");
+    const payload = buildAssertionCodePayload({
+      testTitle: "login",
+      bodyStatements: ["await page.goto('/');"],
+      requests: [{ id: "a1", afterStep: 0, text: "shows welcome" }],
+    });
+    expect(payload).toContain("Playwright test: login");
+    expect(payload).toContain("0: await page.goto('/');");
+    expect(payload).toContain("a1 | after step 0 | shows welcome");
+
+    expect(INSPIRATION_PROMPTS).toHaveLength(16);
+    const labels = INSPIRATION_PROMPTS.map((p) => p.label);
+    expect(labels).toContain("Pantry recipe planner");
+    expect(labels).toContain("Personal launch page");
+    expect(new Set(labels).size).toBe(16);
   });
 });
