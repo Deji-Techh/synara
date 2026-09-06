@@ -1770,7 +1770,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
           const thread = inMemoryThreads.find((t) => t.id === command.threadId);
           if (thread && thread.threadMarkers) {
             thread.threadMarkers = thread.threadMarkers.filter(
-              (m: any) => m.markerId !== command.markerId,
+              (m: any) => m.id !== command.markerId,
             );
             thread.updatedAt = now;
             globalSnapshotSequence += 1;
@@ -1791,7 +1791,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
         } else if (command?.type === "thread.marker.done.set") {
           const thread = inMemoryThreads.find((t) => t.id === command.threadId);
           if (thread && thread.threadMarkers) {
-            const marker = thread.threadMarkers.find((m: any) => m.markerId === command.markerId);
+            const marker = thread.threadMarkers.find((m: any) => m.id === command.markerId);
             if (marker) marker.done = Boolean(command.done);
             thread.updatedAt = now;
             globalSnapshotSequence += 1;
@@ -1813,7 +1813,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
         } else if (command?.type === "thread.marker.label.set") {
           const thread = inMemoryThreads.find((t) => t.id === command.threadId);
           if (thread && thread.threadMarkers) {
-            const marker = thread.threadMarkers.find((m: any) => m.markerId === command.markerId);
+            const marker = thread.threadMarkers.find((m: any) => m.id === command.markerId);
             if (marker) marker.label = command.label ?? null;
             thread.updatedAt = now;
             globalSnapshotSequence += 1;

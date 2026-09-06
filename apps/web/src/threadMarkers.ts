@@ -66,7 +66,9 @@ async function dispatchMarkerCommand(
 ): Promise<void> {
   const api = readNativeApi();
   if (!api) {
-    return;
+    // Never fail silently here: every caller surfaces this rejection as an
+    // error toast ("Could not create marker"), which beats a dead click.
+    throw new Error("Not connected to the Caide engine — reconnect and try again.");
   }
   await api.orchestration.dispatchCommand({
     commandId: newCommandId(),

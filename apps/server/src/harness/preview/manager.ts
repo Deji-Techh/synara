@@ -20,12 +20,35 @@ export interface PreviewSession {
 
 const MAX_LOGS = 500;
 const MAX_LOG_LEN = 4096;
-const START_TIMEOUT_MS = 60_000;
+// First boot compiles the web bundle (Expo Metro for RN) — aligned with the
+// open_preview tool timeout (90s) so slow first runs don't false-fail.
+const START_TIMEOUT_MS = 90_000;
 
 const sessions = new Map<string, PreviewSession>();
 
+/** Strips ANSI color codes dev servers emit even with NO_COLOR set. */
+const ANSI_PATTERN = /\u001b\[[0-9;]*m/g;
+
 /** Matches http(s) URLs in dev-server output. */
 const URL_PATTERN = /(https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|[a-zA-Z0-9._-]+)(?::\d+)?(?:\/[^\s]*)?)/;
+
+/**
+ * Extracts a renderable preview URL from one dev-server output line.
+ * Handles Expo/Metro phrasing ("Web is waiting on http://…") and rewrites
+ * 0.0.0.0 to localhost (unroutable as an iframe src). Returns null when the
+ * line carries no usable http(s) URL (e.g. exp:// deep links).
+ */
+export function extractPreviewUrl(line: string): string | null {
+  const cleaned = line.replace(ANSI_PATTERN, "");
+  const match = cleaned.match(URL_PATTERN);
+  if (!match?.[1]) return null;
+  return normalizePreviewUrl(match[1]);
+}
+
+/** Rewrites wildcard-host URLs to localhost and trims trailing punctuation. */
+export function normalizePreviewUrl(url: string): string {
+  return url.replace("://0.0.0.0", "://localhost").replace(/[.,;:!?]+$/, "");
+}
 
 function pushLog(session: PreviewSession, line: string) {
   const trimmed = line.slice(0, MAX_LOG_LEN);
@@ -337,12 +360,11 @@ export async function startPreview(input: {
       const text = data.toString();
       for (const line of text.split("\n")) {
         if (line) pushLog(session, line);
-        const m = line.match(URL_PATTERN);
-        if (m && m[1] && !resolvedUrl) {
-          const url = m[1];
+        if (resolvedUrl) continue;
+        const url = extractPreviewUrl(line);
+        if (url) {
           resolvedUrl = url;
-          const isNative = !url.startsWith("http://") && !url.startsWith("https://");
-          session.kind = isNative ? "native" : "web";
+          session.kind = "web";
           session.url = url;
           clearTimeout(timeout);
           resolve({ url, kind: session.kind });
@@ -354,7 +376,11 @@ export async function startPreview(input: {
     child.on("exit", (code) => {
       if (!resolvedUrl) {
         clearTimeout(timeout);
-        reject(new Error(`Preview process exited (code ${code}) before reporting a URL`));
+        reject(
+          new Error(
+            `Preview process exited (code ${code}) before reporting a URL. Recent output:\n${session.logs.slice(-15).join("\n")}`,
+          ),
+        );
       }
     });
   });
@@ -362,8 +388,15 @@ export async function startPreview(input: {
   try {
     return await urlPromise;
   } catch (err) {
+    // Keep the log tail on the error so the preview pane's failed state shows
+    // actionable output (missing deps, port in use, bundler error) instead of
+    // a bare timeout — the #1 cause of "blank white preview" reports.
+    const tail = session.logs.slice(-15).join("\n");
     sessions.delete(input.threadId);
     child.kill("SIGTERM");
+    if (err instanceof Error && tail && !err.message.includes("Recent output")) {
+      throw new Error(`${err.message}. Recent output:\n${tail}`);
+    }
     throw err;
   }
 }

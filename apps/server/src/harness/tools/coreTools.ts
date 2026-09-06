@@ -428,7 +428,7 @@ export const testProjectTool = defineTool({
 export const getPreviewUrlTool = defineTool({
   name: "get_preview_url",
   description:
-    "Returns the live preview URL for this thread's app (device-frame for RN/Flutter, browser for Website). If no preview is running, returns null and the dev command to start it.",
+    "Returns the live preview URL for this thread's app (device-frame for RN/Flutter, browser for Website). If no preview is running, returns null with the framework — then call open_preview yourself to start it. Never ask the user to run dev commands manually.",
   schema: z.object({}),
   readOnly: true,
   modifiesState: false,
@@ -470,12 +470,8 @@ export const getPreviewUrlTool = defineTool({
       const hint =
         framework === "blank"
           ? "Preview not available for Blank projects"
-          : framework === "react-native"
-            ? "npx expo start --web"
-            : framework === "flutter"
-              ? "flutter run -d web-server"
-              : "bun run dev";
-      return { url: null, running: false, framework, hint: `Run: ${hint} or call preview.start` };
+          : "Preview is not running — call open_preview yourself to start it; never ask the user to run dev commands manually.";
+      return { url: null, running: false, framework, hint };
     } catch {
       return { url: null, running: false, error: "Failed to read preview state" };
     }

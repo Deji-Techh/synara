@@ -67,6 +67,7 @@ import {
   remarkSpawnSubagentChip,
 } from "../lib/remarkSpawnSubagentChip";
 import { remarkChatHighlight } from "../lib/remarkChatHighlight";
+import { resolveHarnessToolPresentation } from "../lib/harnessToolPresentation";
 import { BotIcon } from "~/lib/icons";
 import { IconButton } from "./ui/icon-button";
 import { parseFullMessage, type Block } from "../lib/streamingMessageParser";
@@ -1082,6 +1083,32 @@ function blockToAntigravityItem(block: any): AntigravityToolItem {
     lineRange = `#L${attrs.start_line}-${attrs.end_line || attrs.start_line}`;
   } else if (attrs.range) {
     lineRange = `#L${attrs.range}`;
+  }
+
+  // Caide harness/Dyad tools have canonical verbs — resolve them before the
+  // generic keyword heuristics below so writes never read as "Analyzed".
+  const harnessPresentation = resolveHarnessToolPresentation(rawName);
+  if (harnessPresentation) {
+    const settled = Boolean(block.complete);
+    const verb = settled ? harnessPresentation.completed : harnessPresentation.running;
+    const target =
+      harnessPresentation.type === "search"
+        ? query || path || clean
+        : harnessPresentation.type === "command"
+          ? cmd || path || clean
+          : harnessPresentation.type === "other"
+            ? path || cmd || query || clean
+            : path || "file";
+    return {
+      id: `tool-${block.id}`,
+      type: harnessPresentation.type,
+      verb,
+      target,
+      lineRange,
+      resultBadge,
+      content: block.content,
+      state: block.complete ? "complete" : "running",
+    };
   }
 
   if (clean.includes("read") || clean.includes("view") || clean.includes("file")) {

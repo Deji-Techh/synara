@@ -49,7 +49,8 @@ export const AntigravityToolGroup: React.FC<AntigravityToolGroupProps> = ({
 
     const commands = items.filter((it) => it.type === "command");
     const searches = items.filter((it) => it.type === "search");
-    const reads = items.filter((it) => it.type === "read" || it.type === "edit");
+    const edits = items.filter((it) => it.type === "edit");
+    const reads = items.filter((it) => it.type === "read");
     const filesCount = reads.length;
 
     // Single command
@@ -70,7 +71,7 @@ export const AntigravityToolGroup: React.FC<AntigravityToolGroupProps> = ({
     }
 
     // Files + searches combination
-    if (filesCount > 0 && searches.length > 0 && commands.length === 0) {
+    if (filesCount > 0 && searches.length > 0 && commands.length === 0 && edits.length === 0) {
       return {
         summaryLabel: `Explored ${filesCount} ${filesCount === 1 ? "file" : "files"}, ${searches.length} ${searches.length === 1 ? "search" : "searches"}`,
         activeLabel: `Exploring ${filesCount} ${filesCount === 1 ? "file" : "files"}, ${searches.length} ${searches.length === 1 ? "search" : "searches"}`,
@@ -78,10 +79,26 @@ export const AntigravityToolGroup: React.FC<AntigravityToolGroupProps> = ({
     }
 
     // Only files
-    if (filesCount > 0 && searches.length === 0 && commands.length === 0) {
+    if (filesCount > 0 && searches.length === 0 && commands.length === 0 && edits.length === 0) {
       return {
         summaryLabel: `Explored ${filesCount} ${filesCount === 1 ? "file" : "files"}`,
         activeLabel: `Exploring ${filesCount} ${filesCount === 1 ? "file" : "files"}`,
+      };
+    }
+
+    // Only edits (file writes) — never label these as exploring.
+    if (edits.length > 0 && filesCount === 0 && searches.length === 0 && commands.length === 0) {
+      return {
+        summaryLabel: `Edited ${edits.length} ${edits.length === 1 ? "file" : "files"}`,
+        activeLabel: `Editing ${edits.length} ${edits.length === 1 ? "file" : "files"}`,
+      };
+    }
+
+    // Edits + reads together.
+    if (edits.length > 0 && filesCount > 0 && searches.length === 0 && commands.length === 0) {
+      return {
+        summaryLabel: `Edited ${edits.length} ${edits.length === 1 ? "file" : "files"}, explored ${filesCount} ${filesCount === 1 ? "file" : "files"}`,
+        activeLabel: `Editing ${edits.length} ${edits.length === 1 ? "file" : "files"}, exploring ${filesCount} ${filesCount === 1 ? "file" : "files"}`,
       };
     }
 
@@ -96,6 +113,7 @@ export const AntigravityToolGroup: React.FC<AntigravityToolGroupProps> = ({
     // Mixed
     const parts: string[] = [];
     if (commands.length > 0) parts.push(`Ran ${commands.length} ${commands.length === 1 ? "command" : "commands"}`);
+    if (edits.length > 0) parts.push(`edited ${edits.length} ${edits.length === 1 ? "file" : "files"}`);
     if (filesCount > 0) parts.push(`explored ${filesCount} ${filesCount === 1 ? "file" : "files"}`);
     if (searches.length > 0) parts.push(`${searches.length} ${searches.length === 1 ? "search" : "searches"}`);
 
