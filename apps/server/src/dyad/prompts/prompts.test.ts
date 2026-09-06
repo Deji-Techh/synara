@@ -20,6 +20,9 @@ import {
   SUMMARIZE_CHAT_SYSTEM_PROMPT,
   TEST_ASSERTION_CODE_SYSTEM_PROMPT,
   buildAssertionCodePayload,
+  GIT_CONTEXT_BLOCK,
+  BUILD_GIT_CONTEXT_BLOCK,
+  buildGitReminder,
   WEB3_SKILL_PACK,
   WEB_PRODUCT_CONTRACT,
 } from "./index.ts";
@@ -298,5 +301,28 @@ describe("dyad prompt transplant (m1)", () => {
     expect(labels).toContain("Pantry recipe planner");
     expect(labels).toContain("Personal launch page");
     expect(new Set(labels).size).toBe(16);
+  });
+
+  it("appends git provenance blocks only when requested, builds reminders", () => {
+    const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
+    expect(constructSystemPrompt({ ...base, chatMode: "local-agent" })).not.toContain("<git_context>");
+    expect(constructSystemPrompt({ ...base, chatMode: "build" })).not.toContain("<git_context>");
+
+    const agent = constructSystemPrompt({ ...base, chatMode: "local-agent", gitProvenance: true });
+    expect(agent).toContain(GIT_CONTEXT_BLOCK);
+    expect(agent).not.toContain(BUILD_GIT_CONTEXT_BLOCK);
+
+    const build = getSystemPromptForChatMode({ chatMode: "build", gitProvenance: true });
+    expect(build).toContain(BUILD_GIT_CONTEXT_BLOCK);
+
+    expect(buildGitReminder({ commitHash: "abc123" })).toBe(
+      "<system-reminder>Previous assistant message created commit: abc123.</system-reminder>",
+    );
+    expect(buildGitReminder({ sourceCommitHash: "def456" })).toBe(
+      "<system-reminder>Previous assistant message created no commit. Repository commit before that message: def456.</system-reminder>",
+    );
+    expect(buildGitReminder(undefined)).toBeNull();
+    expect(buildGitReminder({})).toBeNull();
+    expect(buildGitReminder({ commitHash: "a<b>&c" })).toContain("a&lt;b&gt;&amp;c");
   });
 });

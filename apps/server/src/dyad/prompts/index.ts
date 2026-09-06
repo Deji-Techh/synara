@@ -73,6 +73,12 @@ export {
   type InspirationPrompt,
 } from "./inspirationPrompts.ts";
 export {
+  GIT_CONTEXT_BLOCK,
+  BUILD_GIT_CONTEXT_BLOCK,
+  buildGitReminder,
+  escapeXmlContent,
+} from "./gitContextPrompt.ts";
+export {
   APP_FRAMEWORK_TYPES,
   isNeonSupportedFramework,
   type AppFrameworkType,

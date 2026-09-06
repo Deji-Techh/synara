@@ -10,6 +10,7 @@ import type { AppTarget } from "./appTarget.ts";
 import { AGENT_TEST_WRITING_GUIDANCE } from "./testGuidance.ts";
 import { buildPlatformPrompt } from "./platformContracts.ts";
 import { buildProviderInvariants } from "./providerInvariants.ts";
+import { BUILD_GIT_CONTEXT_BLOCK, GIT_CONTEXT_BLOCK } from "./gitContextPrompt.ts";
 import { CAIDE_WEB_UI_SKILL_PACK } from "./webSkillPack.ts";
 import {
   CAIDE_MOBILE_UI_SKILL_PACK,
@@ -482,6 +483,13 @@ export function constructLocalAgentPrompt(
     /** False → Neon disconnected notice. */
     neonConnected?: boolean;
     neonEmailVerificationEnabled?: boolean;
+    /**
+     * Git-provenance explanation block. Off by default (the turn pipeline
+     * does not attach commit reminders yet — that lands with the
+     * VCS/versions milestone). "local-agent" appends GIT_CONTEXT_BLOCK,
+     * "build" appends BUILD_GIT_CONTEXT_BLOCK.
+     */
+    gitProvenance?: "local-agent" | "build";
     enableAppBlueprint?: boolean;
     codeExplorerAvailable?: boolean;
     /**
@@ -570,6 +578,14 @@ export function constructLocalAgentPrompt(
   });
   if (providerInvariants) {
     prompt += `\n\n<provider_invariants>\n${providerInvariants}\n</provider_invariants>`;
+  }
+
+  // Git provenance explanation (see gitContextPrompt.ts). Off unless the
+  // caller opts in — default prompts are unchanged.
+  if (options?.gitProvenance === "local-agent") {
+    prompt += `\n\n${GIT_CONTEXT_BLOCK}`;
+  } else if (options?.gitProvenance === "build") {
+    prompt += `\n\n${BUILD_GIT_CONTEXT_BLOCK}`;
   }
 
   // Append theme prompt if provided

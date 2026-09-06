@@ -12,6 +12,7 @@ import fs from "node:fs";
 import { constructLocalAgentPrompt } from "./agentPrompt.ts";
 import { constructPlanModePrompt } from "./planPrompt.ts";
 import { buildProviderInvariants } from "./providerInvariants.ts";
+import { BUILD_GIT_CONTEXT_BLOCK } from "./gitContextPrompt.ts";
 import { DEFAULT_AI_RULES } from "./aiRules.ts";
 import type { AppFrameworkType } from "./frameworkType.ts";
 import { CAIDE_MOBILE_UI_SKILL_PACK } from "./skillPacks.ts";
@@ -464,6 +465,7 @@ export const constructSystemPrompt = ({
   neonClientCode,
   neonConnected,
   neonEmailVerificationEnabled,
+  gitProvenance,
   enableAppBlueprint,
   codeExplorerAvailable,
   testingEnabled,
@@ -493,6 +495,11 @@ export const constructSystemPrompt = ({
   /** False → Neon disconnected notice. */
   neonConnected?: boolean;
   neonEmailVerificationEnabled?: boolean;
+  /**
+   * Git-provenance explanation blocks. Off by default. Local-agent turns
+   * get GIT_CONTEXT_BLOCK, build turns get BUILD_GIT_CONTEXT_BLOCK.
+   */
+  gitProvenance?: boolean;
   enableAppBlueprint?: boolean;
   codeExplorerAvailable?: boolean;
   testingEnabled?: boolean;
@@ -537,6 +544,7 @@ export const constructSystemPrompt = ({
       neonClientCode,
       neonConnected,
       neonEmailVerificationEnabled,
+      gitProvenance: gitProvenance ? "local-agent" : undefined,
       enableAppBlueprint,
       codeExplorerAvailable,
       testingEnabled,
@@ -555,6 +563,7 @@ export const constructSystemPrompt = ({
     neonClientCode,
     neonConnected,
     neonEmailVerificationEnabled,
+    gitProvenance,
     testingEnabled,
     appTarget: appTarget ?? appTargetForFramework(caideFramework),
   });
@@ -602,6 +611,7 @@ export const getSystemPromptForChatMode = ({
   neonClientCode,
   neonConnected,
   neonEmailVerificationEnabled,
+  gitProvenance,
   testingEnabled,
   appTarget,
 }: {
@@ -619,6 +629,10 @@ export const getSystemPromptForChatMode = ({
   /** False → Neon disconnected notice. */
   neonConnected?: boolean;
   neonEmailVerificationEnabled?: boolean;
+  /**
+   * Git-provenance explanation block (BUILD variant). Off by default.
+   */
+  gitProvenance?: boolean;
   /**
    * Whether the app has opted into the E2E testing feature. Test-writing
    * guidance is only injected when true, so the model doesn't offer to write
@@ -672,7 +686,9 @@ export const getSystemPromptForChatMode = ({
         neonLocalAgentMode: false,
       });
       return invariants ? `\n\n<provider_invariants>\n${invariants}\n</provider_invariants>` : "";
-    })();
+    })() +
+    // Git provenance explanation (build variant). Off unless requested.
+    (gitProvenance ? `\n\n${BUILD_GIT_CONTEXT_BLOCK}` : "");
   return buildPrompt;
 };
 
