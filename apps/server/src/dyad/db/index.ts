@@ -53,6 +53,13 @@ export {
 } from "./supabaseApi.ts";
 export { slugifyMigrationName, writeMigrationFile } from "./migrations.ts";
 export {
+  ensureDyadSchema,
+  openDyadDb,
+  defaultDyadDbPath,
+  MCP_SERVERS_DDL,
+  MCP_TOOL_CONSENTS_DDL,
+} from "./schema.ts";
+export {
   linkDatabase,
   unlinkDatabase,
   getDatabaseLink,

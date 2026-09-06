@@ -29,3 +29,9 @@ export {
   resetPreCommitCount,
   runPreCommitTool,
 } from "./preCommitTools.ts";
+export {
+  createVersion,
+  listVersions,
+  restoreVersion,
+  type AppVersion,
+} from "./versions.ts";
