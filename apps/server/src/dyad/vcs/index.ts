@@ -13,3 +13,12 @@ export {
   executeGitCommit,
   GitToolError,
 } from "./gitTools.ts";
+export {
+  ALL_GIT_HISTORY_TOOLS,
+  gitShowCommitTool,
+  gitShowFileTool,
+  gitRestoreFileTool,
+  executeGitShowCommit,
+  executeGitShowFile,
+  executeGitRestoreFile,
+} from "./gitHistoryTools.ts";

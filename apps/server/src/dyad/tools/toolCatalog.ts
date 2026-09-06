@@ -100,6 +100,9 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "git_diff", category: "git", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/vcs" },
   { name: "git_log", category: "git", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/vcs" },
   { name: "git_commit", category: "git", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/vcs" },
+  { name: "git_show_commit", category: "git", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/vcs" },
+  { name: "git_show_file", category: "git", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/vcs" },
+  { name: "git_restore_file", category: "git", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/vcs" },
   // history
   { name: "summarize_context", category: "history", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/misc" },
   { name: "read_guide", category: "history", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/misc" },
@@ -168,6 +171,8 @@ export const BUILD_PROFILE_TOOLS: ReadonlySet<string> = new Set([
   "git_status",
   "git_diff",
   "git_log",
+  "git_show_commit",
+  "git_show_file",
   "open_preview",
   "preview_status",
   "get_preview_url",

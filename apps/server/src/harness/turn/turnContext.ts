@@ -13,7 +13,7 @@ import { ALL_CORE_TOOLS } from "../tools/coreTools.ts";
 import { ALL_PREVIEW_TOOLS } from "../tools/previewTools.ts";
 import { ALL_DB_PANEL_TOOLS, shouldRevealDatabasePanel } from "../../dyad/db/dbPanel.ts";
 import { ALL_FILE_EDIT_TOOLS } from "../../dyad/editing/index.ts";
-import { ALL_GIT_TOOLS } from "../../dyad/vcs/index.ts";
+import { ALL_GIT_HISTORY_TOOLS, ALL_GIT_TOOLS } from "../../dyad/vcs/index.ts";
 import { ALL_PLAN_TOOLS } from "../../dyad/plan/index.ts";
 import { ALL_BLUEPRINT_TOOLS } from "../../dyad/plan/blueprintTools.ts";
 import { assertAppBlueprintApproved } from "../../dyad/plan/blueprintStore.ts";
@@ -106,6 +106,7 @@ const UNIFIED_DEFS: ToolDef[] = [
   ...ALL_DB_PANEL_TOOLS,
   ...ALL_FILE_EDIT_TOOLS,
   ...ALL_GIT_TOOLS,
+  ...ALL_GIT_HISTORY_TOOLS,
   ...ALL_PLAN_TOOLS,
   ...ALL_BLUEPRINT_TOOLS,
   ...ALL_MCP_TOOLS,
