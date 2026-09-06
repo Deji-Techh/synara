@@ -9,6 +9,7 @@ import type { HarnessEvent } from "@caide/contracts";
 import { createStreamProviderAdapter } from "../provider/streamProviderAdapter.ts";
 import { DEFAULT_MAX_TOOL_CALL_STEPS, runLoop, type LLMAdapter } from "../loop/loop.ts";
 import { resetPreCommitCount } from "../../dyad/vcs/preCommitTools.ts";
+import { resolveChatModeForTurn } from "../../dyad/plan/chatMode.ts";
 import { Inbox } from "../inbox/index.ts";
 import { appendHarnessEvent, flushTurnTokens } from "./eventLog.ts";
 import { buildConversationChain, buildMessages } from "../session/buildChain.ts";
@@ -150,7 +151,9 @@ export class CaideRunner {
         store: sessionStores.consent,
         requestMcpConsent: input.requestMcpConsent,
       });
-      const chatMode = chatModeFor(input.mode ?? "agent");
+      const chatMode = chatModeFor(
+        resolveChatModeForTurn({ requestedChatMode: input.mode ?? null }).mode,
+      );
       const system = constructSystemPrompt({
         aiRules: undefined,
         chatMode,

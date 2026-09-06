@@ -77,3 +77,11 @@ export {
   type PlanRecord,
   type PlanStatus,
 } from "./planStore.ts";
+export {
+  getInitialChatModeForNewChat,
+  normalizeStoredChatMode,
+  resolveChatModeForTurn,
+  type ChatModeResolution,
+  type ChatModeSource,
+  type TurnChatMode,
+} from "./chatMode.ts";
