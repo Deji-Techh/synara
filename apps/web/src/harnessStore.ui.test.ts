@@ -62,6 +62,29 @@ describe("harnessStore ui events (m3)", () => {
     harnessStore.clearSession("s-ui");
   });
 
+  it("records todos updates and replaces the list", () => {
+    harnessStore.clearSession("s-ui");
+    expect(harnessStore.getState().sessions["s-ui"]?.todos).toBeUndefined();
+    harnessStore.handleEvent({
+      type: "todos_update",
+      sessionId: "s-ui",
+      todos: [
+        { id: "1", content: "First", status: "in_progress" },
+        { id: "2", content: "Second", status: "pending" },
+      ],
+    });
+    expect(harnessStore.getState().sessions["s-ui"]?.todos).toHaveLength(2);
+    harnessStore.handleEvent({
+      type: "todos_update",
+      sessionId: "s-ui",
+      todos: [{ id: "1", content: "First", status: "completed" }],
+    });
+    const todos = harnessStore.getState().sessions["s-ui"]?.todos ?? [];
+    expect(todos).toHaveLength(1);
+    expect(todos[0]).toMatchObject({ id: "1", status: "completed" });
+    harnessStore.clearSession("s-ui");
+  });
+
   it("keeps an ordered timeline of tokens, tools, checkpoints, and errors", () => {
     harnessStore.clearSession("s-ui");
     harnessStore.handleEvent({ type: "token", sessionId: "s-ui", content: "Hi" });

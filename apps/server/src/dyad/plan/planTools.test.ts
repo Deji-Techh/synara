@@ -194,4 +194,39 @@ describe("dyad plan tools transplant (m2b)", () => {
       setPlanTransport(null);
     }
   });
+
+  it("broadcasts todos updates when the transport supports it, degrades headless", async () => {
+    clearTodos("s-todos-ev");
+    const seen: Array<{ sessionId: string; todos: unknown }> = [];
+    setPlanTransport({
+      ...fakeTransport([]),
+      sendTodosUpdate: (sessionId, todos) => seen.push({ sessionId, todos }),
+    });
+    try {
+      const out = await updateTodosTool.execute(
+        { merge: false, todos: [{ id: "1", content: "First", status: "in_progress" }] },
+        toolCtx("/tmp", "s-todos-ev"),
+      );
+      expect(out).toMatch(/1 in progress/);
+      expect(out).toMatch(/Outstanding todos/);
+      expect(seen).toHaveLength(1);
+      expect(seen[0].sessionId).toBe("s-todos-ev");
+    } finally {
+      setPlanTransport(null);
+      clearTodos("s-todos-ev");
+    }
+    // legacy transport without the optional push still executes fine
+    setPlanTransport(fakeTransport([]));
+    try {
+      clearTodos("s-todos-ev");
+      const out = await updateTodosTool.execute(
+        { merge: false, todos: [{ id: "1", content: "First", status: "pending" }] },
+        toolCtx("/tmp", "s-todos-ev"),
+      );
+      expect(out).toMatch(/1 pending/);
+    } finally {
+      setPlanTransport(null);
+      clearTodos("s-todos-ev");
+    }
+  });
 });

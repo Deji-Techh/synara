@@ -18,6 +18,7 @@ import { shouldRevealDatabasePanel } from "../../dyad/db/dbPanel.ts";
 import type { SettingsLike } from "../../dyad/providers/index.ts";
 import type { ConsentRequestFn } from "../../dyad/tools/index.ts";
 import { createTurnContext } from "./turnContext.ts";
+import { getTodos } from "../../dyad/plan/todoStore.ts";
 import {
   getOrCreateSessionStores,
   restoreSessionState,
@@ -128,6 +129,12 @@ export class CaideRunner {
     try {
       const storage = new SessionStorage();
       await restoreSessionState(input.sessionId, storage).catch(() => {});
+      // Re-push the persisted todo list so the TodoList header survives
+      // reconnects and new turns (Dyad parity: turn-start todos broadcast).
+      const restoredTodos = getTodos(input.sessionId);
+      if (restoredTodos.length > 0) {
+        forward({ type: "todos_update", sessionId: input.sessionId, todos: restoredTodos });
+      }
       const sessionStores = getOrCreateSessionStores(input.sessionId);
       const ctx = createTurnContext({
         sessionId: input.sessionId,

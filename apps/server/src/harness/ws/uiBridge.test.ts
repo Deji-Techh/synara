@@ -111,4 +111,18 @@ describe("ui bridge delivery (m3)", () => {
       bridge.detach();
     }
   });
+
+  it("emits todos updates as typed events", () => {
+    const { sent, server } = fakeServer();
+    const bridge = attachUiBridge(server);
+    try {
+      getPlanTransport()?.sendTodosUpdate?.("s", [
+        { id: "1", content: "First", status: "in_progress" },
+      ]);
+      expect(sent.map((e) => e.type)).toEqual(["todos_update"]);
+      expect(sent[0]).toMatchObject({ sessionId: "s" });
+    } finally {
+      bridge.detach();
+    }
+  });
 });

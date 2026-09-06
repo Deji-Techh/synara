@@ -150,6 +150,21 @@ export const PlanExitHarnessEvent = Schema.Struct({
 });
 export type PlanExitHarnessEvent = typeof PlanExitHarnessEvent.Type;
 
+/** update_todos live push (persistent TodoList header above the transcript). */
+export const TodoItemSchema = Schema.Struct({
+  id: Schema.String,
+  content: Schema.String,
+  status: Schema.Literals(["pending", "in_progress", "completed"]),
+});
+export type TodoItemSchema = typeof TodoItemSchema.Type;
+
+export const TodosUpdateHarnessEvent = Schema.Struct({
+  type: Schema.Literal("todos_update"),
+  sessionId: Schema.String,
+  todos: Schema.Array(TodoItemSchema),
+});
+export type TodosUpdateHarnessEvent = typeof TodosUpdateHarnessEvent.Type;
+
 export const BlueprintVisualSchema = Schema.Struct({
   type: Schema.Literals(["logo", "photo", "illustration", "icon", "background", "other"]),
   description: Schema.String,
@@ -208,6 +223,7 @@ export const HarnessEvent = Schema.Union([
   UiRevealHarnessEvent,
   PlanUpdateHarnessEvent,
   PlanExitHarnessEvent,
+  TodosUpdateHarnessEvent,
   BlueprintUpdateHarnessEvent,
   ProviderSettingsStateHarnessEvent,
 ]);

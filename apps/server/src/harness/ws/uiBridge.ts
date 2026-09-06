@@ -49,6 +49,8 @@ export function attachUiBridge(server: HarnessHub): {
     sendPlanUpdate: (sessionId, plan) =>
       send(server, sessionId, { type: "plan_update", sessionId, ...plan }),
     sendPlanExit: (sessionId) => send(server, sessionId, { type: "plan_exit", sessionId }),
+    sendTodosUpdate: (sessionId, todos) =>
+      send(server, sessionId, { type: "todos_update", sessionId, todos }),
   });
 
   setDbPanelTransport({

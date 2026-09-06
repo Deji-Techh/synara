@@ -60,6 +60,7 @@ const HARNESS_TOOL_PRESENTATIONS: Record<string, HarnessToolPresentation> = {
   checkpoint: presentation("other", "Requesting approval", "Requested approval"),
   log_decision: presentation("other", "Logging decision", "Logged decision"),
   spawn_subagent: presentation("other", "Delegating", "Delegated"),
+  update_todos: presentation("other", "Updating to-dos", "Updated to-dos"),
 };
 
 export function normalizeHarnessToolName(rawName: string): string {

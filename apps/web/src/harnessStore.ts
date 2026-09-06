@@ -52,6 +52,12 @@ export interface BlueprintEntry {
   approved: boolean;
 }
 
+export interface TodoEntry {
+  id: string;
+  content: string;
+  status: "pending" | "in_progress" | "completed";
+}
+
 export interface TimelineEntry {
   seq: number;
   kind: "token" | "tool" | "stage" | "checkpoint" | "error" | "artifact";
@@ -71,6 +77,7 @@ export interface SessionState {
   reveals: UiRevealEntry[];
   plan?: PlanEntry;
   blueprint?: BlueprintEntry;
+  todos: TodoEntry[];
   timeline: TimelineEntry[];
 }
 
@@ -115,6 +122,7 @@ function getOrCreateSession(sessionId: string): SessionState {
         errors: [],
         prompts: [],
         reveals: [],
+        todos: [],
         timeline: [],
       },
     };
@@ -233,6 +241,13 @@ export const harnessStore = {
             visuals: event.visuals,
             approved: false,
           },
+        };
+        break;
+      }
+      case "todos_update": {
+        state.sessions[event.sessionId] = {
+          ...session,
+          todos: event.todos.map((t) => ({ id: t.id, content: t.content, status: t.status })),
         };
         break;
       }

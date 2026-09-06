@@ -43,4 +43,12 @@ describe("resolveHarnessToolPresentation", () => {
     expect(resolveHarnessToolPresentation("some_future_tool")).toBeNull();
     expect(resolveHarnessToolPresentation(null)).toBeNull();
   });
+
+  it("maps update_todos to the other type with todo verbs", () => {
+    expect(resolveHarnessToolPresentation("update_todos")).toMatchObject({
+      type: "other",
+      running: "Updating to-dos",
+      completed: "Updated to-dos",
+    });
+  });
 });

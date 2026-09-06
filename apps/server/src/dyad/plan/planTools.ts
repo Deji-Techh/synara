@@ -11,7 +11,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { z } from "zod";
 import { defineTool, type ToolDef } from "../../harness/tools/defineTool.ts";
-import { applyTodoUpdate, type TodoStatus } from "./todoStore.ts";
+import { applyTodoUpdate, type Todo, type TodoStatus } from "./todoStore.ts";
 import { nextRequestId, waitForUserInput } from "./userPrompt.ts";
 
 export class PlanUiNotConnectedError extends Error {
@@ -50,6 +50,12 @@ export interface PlanTransport {
   sendEnvVarRequest(sessionId: string, requestId: string, vars: EnvVarRequest[]): void;
   sendPlanUpdate(sessionId: string, plan: { title: string; summary: string; plan: string }): void;
   sendPlanExit(sessionId: string): void;
+  /**
+   * Live todo-list push for the persistent TodoList header. Optional so
+   * headless/test transports keep working — execute degrades to the
+   * return-string only when no transport is wired.
+   */
+  sendTodosUpdate?(sessionId: string, todos: Todo[]): void;
 }
 
 let transport: PlanTransport | null = null;
@@ -340,9 +346,33 @@ Skip for:
 2. Trivial tasks with no organizational benefit
 3. Tasks completable in < 3 trivial steps
 4. Purely conversational/informational requests
-5. Todo items should NOT include operational actions done in service of higher-level tasks.
+5. Avoid low-level operational actions that merely support a higher-level task, unless they are an explicit user deliverable or a meaningful investigation or verification phase.
 
-NEVER INCLUDE THESE IN TODOS: linting; testing; searching or examining the codebase.
+Routine linting, testing, searching, or code examination should not become standalone todos when they merely support a higher-level task. Include testing or investigation when the user explicitly requested it or when it is necessary to describe a meaningful phase or outcome.
+
+### Examples
+
+<example>
+User: Add dark mode toggle to settings
+Assistant:
+- *Creates todo list:*
+1. Add state management [in_progress]
+2. Implement styles
+3. Create toggle component
+4. Update components
+- [Immediately begins working on todo 1 in the same tool call batch]
+<reasoning>
+Multi-step feature with dependencies.
+</reasoning>
+</example>
+
+<example>
+// User: Implement user registration, product catalog, shopping cart, checkout flow.
+Assistant: *Creates todo list breaking down each feature into specific tasks*
+<reasoning>
+Multiple complex features provided as list requiring organized task management.
+</reasoning>
+</example>
 
 ### Task States and Management
 
@@ -356,6 +386,16 @@ NEVER INCLUDE THESE IN TODOS: linting; testing; searching or examining the codeb
 - Mark complete IMMEDIATELY after finishing
 - Only ONE task in_progress at a time
 - Complete current tasks before starting new ones
+
+3. **Task Breakdown:**
+- Create specific, actionable items
+- Break complex tasks into manageable steps
+- Use clear, descriptive names
+
+4. **Parallel Todo Writes:**
+- Prefer creating the first todo as in_progress
+- Start working on todos by using tool calls in the same tool call batch as the todo write
+- Batch todo updates with other tool calls for better latency and lower costs for the user
 `,
   schema: updateTodosSchema,
   readOnly: false,
@@ -363,8 +403,18 @@ NEVER INCLUDE THESE IN TODOS: linting; testing; searching or examining the codeb
   execute: async (args, ctx) => {
     const parsed = updateTodosSchema.parse(args);
     const next = applyTodoUpdate(ctx.sessionId, parsed.merge, parsed.todos as { id: string; content?: string; status?: TodoStatus }[]);
+    // Live push for the persistent TodoList header (no-op headless — the
+    // return string below still carries the state for the transcript).
+    getPlanTransport()?.sendTodosUpdate?.(ctx.sessionId, next);
     const done = next.filter((t) => t.status === "completed").length;
-    return `Todo list updated: ${done}/${next.length} completed.`;
+    const inProgress = next.filter((t) => t.status === "in_progress");
+    const pending = next.filter((t) => t.status === "pending");
+    const outstanding = [...inProgress, ...pending];
+    const outstandingList =
+      outstanding.length > 0
+        ? `\n\nOutstanding todos:\n${outstanding.map((t) => `- [${t.status}] ${t.content}`).join("\n")}`
+        : "";
+    return `Updated todos: ${done} completed, ${inProgress.length} in progress, ${pending.length} pending${outstandingList}`;
   },
   presentCall: (args: any) => {
     const todos = args.todos ?? [];

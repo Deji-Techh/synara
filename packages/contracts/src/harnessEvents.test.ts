@@ -112,6 +112,13 @@ describe("Harness Contracts", () => {
       sessionId: "s-123",
     };
     expect(Schema.decodeUnknownSync(HarnessEvent)(exit).type).toBe("plan_exit");
+
+    const todos: HarnessEventType = {
+      type: "todos_update",
+      sessionId: "s-123",
+      todos: [{ id: "1", content: "First", status: "in_progress" }],
+    };
+    expect(Schema.decodeUnknownSync(HarnessEvent)(todos).type).toBe("todos_update");
   });
 
   it("validates blueprint_update harness event", () => {    const event: HarnessEventType = {
