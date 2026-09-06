@@ -10,7 +10,12 @@ import { z } from "zod";
 import { defineTool, type ToolDef } from "../../harness/tools/defineTool.ts";
 import { COMPANION_SKILL_FRONTMATTERS, WEB3_SKILL_FRONTMATTERS } from "../prompts/skillPacks.ts";
 import { clampSandboxTimeoutMs, SANDBOX_SCRIPT_SOURCE_LIMIT_BYTES } from "./limits.ts";
-import { formatSubagentStatus, formatTaskStatus } from "./taskRegistry.ts";
+import {
+  formatSubagentStatus,
+  formatTaskStatus,
+  listSubagentTasks,
+  requestSubagentCancel,
+} from "./taskRegistry.ts";
 import { createFsHosts, runInVm } from "./vmRunner.ts";
 
 export class SandboxValidationError extends Error {
@@ -257,9 +262,89 @@ export const checkSubagentStatusTool = defineTool({
   presentCall: (args: any) => `Check subagent: ${args.task_id}`,
 });
 
+// --- list_agents (donor schema + description verbatim) ---
+// Donor gates this behind Pro subagent threads; Caide lists the session
+// task registry instead (free-entirely, no subagentOnly concept).
+
+export const listAgentsTool = defineTool({
+  name: "list_agents",
+  description: "List durable sub-agent threads and their current status for this chat.",
+  schema: z.object({}),
+  readOnly: true,
+  modifiesState: false,
+  execute: async () => {
+    const tasks = listSubagentTasks();
+    if (tasks.length === 0) return "No sub-agent threads for this chat.";
+    return tasks
+      .map((t) => `- ${t.id} (${t.role}): ${t.status}`)
+      .join("\n");
+  },
+  presentCall: () => "List sub-agents",
+});
+
+// --- wait_agents (donor schema + description verbatim) ---
+
+const threadIdsSchema = z.object({ thread_ids: z.array(z.string()).min(1) });
+
+const WAIT_POLL_MS = 250;
+const WAIT_TIMEOUT_MS = 120_000;
+
+export const waitAgentsTool = defineTool({
+  name: "wait_agents",
+  description: "Wait until all specified sub-agents reach a terminal or idle state.",
+  schema: threadIdsSchema,
+  readOnly: false,
+  modifiesState: true,
+  execute: async (args, ctx) => {
+    const parsed = threadIdsSchema.parse(args);
+    const deadline = Date.now() + WAIT_TIMEOUT_MS;
+    for (;;) {
+      if (ctx.signal?.aborted) {
+        throw new Error("wait_agents aborted");
+      }
+      const snapshots = parsed.thread_ids.map((id) => {
+        const task = listSubagentTasks().find((t) => t.id === id);
+        if (!task) return { id, status: "unknown" as const };
+        return { id, status: task.status };
+      });
+      if (snapshots.every((s) => s.status === "completed" || s.status === "failed" || s.status === "unknown")) {
+        return snapshots.map((s) => `${s.id}: ${s.status}`).join("\n");
+      }
+      if (Date.now() >= deadline) {
+        const pending = snapshots.filter((s) => s.status === "running").map((s) => s.id);
+        return `Timed out waiting; still running: ${pending.join(", ") || "none"}. Poll again with check_subagent_status.`;
+      }
+      await new Promise((resolve) => setTimeout(resolve, WAIT_POLL_MS));
+    }
+  },
+  presentCall: (args: any) => `Wait for sub-agents: ${(args.thread_ids ?? []).join(", ")}`,
+});
+
+// --- cancel_agent (donor schema + description verbatim) ---
+
+const cancelAgentSchema = z.object({ thread_id: z.string() });
+
+export const cancelAgentTool = defineTool({
+  name: "cancel_agent",
+  description: "Cancel a running sub-agent at its next safe boundary.",
+  schema: cancelAgentSchema,
+  readOnly: false,
+  modifiesState: true,
+  execute: async (args) => {
+    const parsed = cancelAgentSchema.parse(args);
+    return requestSubagentCancel(parsed.thread_id)
+      ? "Cancellation requested."
+      : `Sub-agent ${parsed.thread_id} is unknown or already terminal.`;
+  },
+  presentCall: (args: any) => `Cancel sub-agent: ${args.thread_id}`,
+});
+
 export const ALL_SANDBOX_TOOLS: ToolDef[] = [
   executeSandboxScriptTool,
   executeForkSkillTool,
   checkTaskStatusTool,
   checkSubagentStatusTool,
+  listAgentsTool,
+  waitAgentsTool,
+  cancelAgentTool,
 ];

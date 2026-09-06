@@ -68,6 +68,9 @@ const HARNESS_TOOL_PRESENTATIONS: Record<string, HarnessToolPresentation> = {
   log_decision: presentation("other", "Logging decision", "Logged decision"),
   spawn_subagent: presentation("other", "Delegating", "Delegated"),
   update_todos: presentation("other", "Updating to-dos", "Updated to-dos"),
+  list_agents: presentation("other", "Listing sub-agents", "Listed sub-agents"),
+  wait_agents: presentation("other", "Waiting for sub-agents", "Waited for sub-agents"),
+  cancel_agent: presentation("other", "Cancelling sub-agent", "Cancelled sub-agent"),
 };
 
 export function normalizeHarnessToolName(rawName: string): string {

@@ -34,6 +34,8 @@ let taskCounter = 0;
 let subagentCounter = 0;
 const backgroundTasks = new Map<string, BackgroundTask>();
 const subagentTasks = new Map<string, SubagentTask>();
+/** Abort controllers for running subagents (donor cancelSubagent parity). */
+const subagentCancelControllers = new Map<string, AbortController>();
 
 function truncate(str: string, len: number): string {
   if (str.length <= len) return str;
@@ -116,4 +118,37 @@ export function formatSubagentStatus(id: string): string {
 export function clearTaskRegistries(): void {
   backgroundTasks.clear();
   subagentTasks.clear();
+  subagentCancelControllers.clear();
+}
+
+/** Snapshot of all known subagent tasks (donor listSubagents parity). */
+export function listSubagentTasks(): SubagentTask[] {
+  return [...subagentTasks.values()];
+}
+
+/** True when the task reached a terminal state. */
+export function isSubagentTerminal(task: SubagentTask): boolean {
+  return task.status === "completed" || task.status === "failed";
+}
+
+/**
+ * Attach a cancellation controller to a running subagent. Called by the
+ * spawner; cancel_agent aborts it at the next safe boundary.
+ */
+export function setSubagentCancelController(id: string, controller: AbortController): void {
+  if (subagentTasks.has(id)) {
+    subagentCancelControllers.set(id, controller);
+  }
+}
+
+/**
+ * Request cancellation of a running sub-agent. Returns false when the id
+ * is unknown or already terminal. The runner settles the task as failed
+ * with a cancellation note when the abort lands.
+ */
+export function requestSubagentCancel(id: string): boolean {
+  const task = subagentTasks.get(id);
+  if (!task || isSubagentTerminal(task)) return false;
+  subagentCancelControllers.get(id)?.abort(`cancel_agent ${id}`);
+  return true;
 }

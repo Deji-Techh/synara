@@ -10,6 +10,7 @@ import { runLoop } from "../../harness/loop/loop.ts";
 import type { ToolDef } from "../../harness/tools/defineTool.ts";
 import {
   registerSubagentTask,
+  setSubagentCancelController,
   settleSubagentTask,
 } from "./taskRegistry.ts";
 
@@ -92,6 +93,10 @@ export interface SpawnSubagentDeps extends Omit<SubagentLoopDeps, "system"> {
  */
 export function spawnSubagentTask(deps: SpawnSubagentDeps): string {
   const task = registerSubagentTask(deps.role);
+  const controller = new AbortController();
+  setSubagentCancelController(task.id, controller);
+  const onExternalAbort = () => controller.abort(deps.signal?.reason ?? "parent turn aborted");
+  deps.signal?.addEventListener("abort", onExternalAbort, { once: true });
   const system = [
     `You are a "${deps.role}" subagent.`,
     `Your task is: ${deps.task}`,
@@ -100,13 +105,22 @@ export function spawnSubagentTask(deps: SpawnSubagentDeps): string {
   ].join("\n");
   void (async () => {
     try {
-      const result = await runSubagentLoop({ ...deps, system });
-      settleSubagentTask(task.id, { status: "completed", result });
+      const result = await runSubagentLoop({ ...deps, system, signal: controller.signal });
+      if (controller.signal.aborted) {
+        settleSubagentTask(task.id, {
+          status: "failed",
+          error: `Cancelled: ${String(controller.signal.reason ?? "cancel_agent")}`,
+        });
+      } else {
+        settleSubagentTask(task.id, { status: "completed", result });
+      }
     } catch (err) {
       settleSubagentTask(task.id, {
         status: "failed",
         error: err instanceof Error ? err.message : String(err),
       });
+    } finally {
+      deps.signal?.removeEventListener("abort", onExternalAbort);
     }
   })();
   return task.id;

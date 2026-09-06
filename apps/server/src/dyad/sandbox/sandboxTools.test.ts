@@ -10,19 +10,23 @@ import type { ToolContext } from "../../harness/tools/defineTool.ts";
 import { clampSandboxTimeoutMs, SANDBOX_SCRIPT_SOURCE_LIMIT_BYTES } from "./limits.ts";
 import {
   ALL_SANDBOX_TOOLS,
+  cancelAgentTool,
   checkSubagentStatusTool,
   checkTaskStatusTool,
   executeForkSkill,
   executeForkSkillTool,
   executeSandboxScript,
   executeSandboxScriptTool,
+  listAgentsTool,
   listForkSkillIds,
   setSkillRunner,
+  waitAgentsTool,
 } from "./sandboxTools.ts";
 import {
   clearTaskRegistries,
   registerBackgroundTask,
   registerSubagentTask,
+  setSubagentCancelController,
   settleBackgroundTask,
   settleSubagentTask,
 } from "./taskRegistry.ts";
@@ -38,12 +42,15 @@ function toolCtx(appPath: string): ToolContext {
 }
 
 describe("dyad sandbox transplant (m2b)", () => {
-  it("registers all four tools with donor previews and limits", () => {
+  it("registers all seven tools with donor previews and limits", () => {
     expect(ALL_SANDBOX_TOOLS.map((t) => t.name)).toEqual([
       "execute_sandbox_script",
       "execute_fork_skill",
       "check_task_status",
       "check_subagent_status",
+      "list_agents",
+      "wait_agents",
+      "cancel_agent",
     ]);
     expect(checkTaskStatusTool.presentCall?.({ task_id: "t1" })).toBe("Check task: t1");
     expect(checkSubagentStatusTool.presentCall?.({ task_id: "s1" })).toBe("Check subagent: s1");
@@ -134,6 +141,43 @@ describe("dyad sandbox transplant (m2b)", () => {
     const done = await checkSubagentStatusTool.execute({ task_id: sub.id }, toolCtx("/tmp"));
     expect(done).toContain("completed in 3 steps");
     expect(done).toContain("LGTM");
+    clearTaskRegistries();
+  });
+
+  it("lists, waits for, and cancels subagents", async () => {
+    clearTaskRegistries();
+    expect(await listAgentsTool.execute({}, toolCtx("/tmp"))).toMatch(/No sub-agent threads/);
+    const running = registerSubagentTask("explorer");
+    const settled = registerSubagentTask("reviewer");
+    settleSubagentTask(settled.id, {
+      status: "completed",
+      result: { stepCount: 1, finalText: "ok" },
+    });
+    const list = (await listAgentsTool.execute({}, toolCtx("/tmp"))) as string;
+    expect(list).toContain(running.id);
+    expect(list).toContain("running");
+    expect(list).toContain(settled.id);
+
+    const waited = (await waitAgentsTool.execute(
+      { thread_ids: [settled.id, "unknown-id"] },
+      toolCtx("/tmp"),
+    )) as string;
+    expect(waited).toContain("completed");
+    expect(waited).toContain("unknown");
+
+    expect(await cancelAgentTool.execute({ thread_id: "missing" }, toolCtx("/tmp"))).toMatch(
+      /unknown or already terminal/,
+    );
+    const controller = new AbortController();
+    setSubagentCancelController(running.id, controller);
+    expect(await cancelAgentTool.execute({ thread_id: running.id }, toolCtx("/tmp"))).toBe(
+      "Cancellation requested.",
+    );
+    expect(controller.signal.aborted).toBe(true);
+    settleSubagentTask(running.id, { status: "failed", error: "cancelled" });
+    expect(await cancelAgentTool.execute({ thread_id: running.id }, toolCtx("/tmp"))).toMatch(
+      /already terminal/,
+    );
     clearTaskRegistries();
   });
 });
