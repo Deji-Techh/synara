@@ -83,6 +83,16 @@ export const DEFAULT_SIDEBAR_PROJECT_SORT_ORDER: SidebarProjectSortOrder = "crea
 export const SidebarThreadSortOrder = Schema.Literals(["updated_at", "created_at"]);
 export type SidebarThreadSortOrder = typeof SidebarThreadSortOrder.Type;
 export const DEFAULT_SIDEBAR_THREAD_SORT_ORDER: SidebarThreadSortOrder = "updated_at";
+export const SidebarCompletionDotColor = Schema.Literals([
+  "emerald",
+  "sky",
+  "violet",
+  "amber",
+  "rose",
+  "zinc",
+]);
+export type SidebarCompletionDotColor = typeof SidebarCompletionDotColor.Type;
+export const DEFAULT_SIDEBAR_COMPLETION_DOT_COLOR: SidebarCompletionDotColor = "emerald";
 export const FollowUpBehavior = Schema.Literals(["queue", "steer"]);
 export type FollowUpBehavior = typeof FollowUpBehavior.Type;
 export const DEFAULT_FOLLOW_UP_BEHAVIOR: FollowUpBehavior = "queue";
@@ -233,6 +243,9 @@ export const AppSettingsSchema = Schema.Struct({
   ),
   sidebarThreadSortOrder: SidebarThreadSortOrder.pipe(
     withDefaults(() => DEFAULT_SIDEBAR_THREAD_SORT_ORDER),
+  ),
+  sidebarCompletionDotColor: SidebarCompletionDotColor.pipe(
+    withDefaults(() => DEFAULT_SIDEBAR_COMPLETION_DOT_COLOR),
   ),
   timestampFormat: TimestampFormat.pipe(withDefaults(() => DEFAULT_TIMESTAMP_FORMAT)),
   customEngineModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),

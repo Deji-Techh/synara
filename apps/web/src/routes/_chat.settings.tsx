@@ -69,6 +69,7 @@ import type {
   ChatWordSpacing,
 } from "../appSettings";
 import { SidebarBackdropSettings } from "../components/settings/SidebarBackdropSettings";
+import { SidebarCompletionDotColorPicker } from "~/components/settings/SidebarCompletionDotColorPicker";
 import { PALETTE_THEMES, type PaletteThemeId } from "../theme/paletteThemes";
 const ThemePackEditor = lazy(() =>
   import("../components/ThemePackEditor").then((mod) => ({ default: mod.ThemePackEditor })),
@@ -579,6 +580,31 @@ function SettingsRouteView() {
 
       <SettingsSection title="Sidebar Backdrop">
         <SidebarBackdropSettings />
+      </SettingsSection>
+
+      <SettingsSection title="Sidebar Indicators">
+        <SettingsRow
+          title="Completion dot color"
+          description="Color of the status dot indicator shown beside completed conversations in the sidebar."
+          resetAction={
+            settings.sidebarCompletionDotColor !== defaults.sidebarCompletionDotColor ? (
+              <SettingResetButton
+                label="completion dot color"
+                onClick={() =>
+                  updateSettings({ sidebarCompletionDotColor: defaults.sidebarCompletionDotColor })
+                }
+              />
+            ) : null
+          }
+          control={
+            <SidebarCompletionDotColorPicker
+              value={settings.sidebarCompletionDotColor}
+              onValueChange={(sidebarCompletionDotColor) =>
+                updateSettings({ sidebarCompletionDotColor })
+              }
+            />
+          }
+        />
       </SettingsSection>
 
       {isElectron ? (

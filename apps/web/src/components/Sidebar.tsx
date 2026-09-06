@@ -43,6 +43,8 @@ import {
   LuUndo2,
   LuTerminal,
   LuPin,
+  LuGamepad2,
+  LuEllipsisVertical,
 } from "react-icons/lu";
 import { SidebarStageBackdrop } from "~/components/SidebarStageBackdrop";
 import { FrameworkIcon } from "~/components/FrameworkIcon";
@@ -338,6 +340,7 @@ import {
   shouldClearThreadSelectionOnMouseDown,
   sortProjectsForSidebar,
   sortThreadsForSidebar,
+  isThreadActivelyWorking,
 } from "./Sidebar.logic";
 import type { LastThreadRoute } from "../chatRouteRestore";
 import { useCopyPathToClipboard, useCopyThreadIdToClipboard } from "~/hooks/useCopyToClipboard";
@@ -346,8 +349,14 @@ import { cn } from "~/lib/utils";
 import {
   disclosureContentClassName,
   disclosureShellClassName,
+  disclosureChevronClassName,
   DISCLOSURE_INNER_CLASS,
 } from "~/lib/disclosureMotion";
+import { DisclosureRegion } from "./ui/DisclosureRegion";
+import { ProjectSelectionPopup } from "./ProjectSelectionPopup";
+import { SidebarConversationHoverCard } from "./SidebarConversationHoverCard";
+import { resolveSidebarDotColorClass } from "~/lib/sidebarStatusColors";
+import { ThreadRunningSpinner } from "./ThreadRunningSpinner";
 import { createClientPointMenuAnchor } from "~/lib/clientPointMenuAnchor";
 import { resolveThreadModelSummary } from "~/lib/threadModelSummary";
 import {
@@ -1553,6 +1562,7 @@ export default function Sidebar() {
   const { activeProjectId: focusedProjectId } = useFocusedChatContext();
   const latestProjectId = useLatestProjectStore((state) => state.latestProjectId);
   const [createAppDialogOpen, setCreateAppDialogOpen] = useState(false);
+  const [projectSelectionPopupOpen, setProjectSelectionPopupOpen] = useState(false);
   const [importProjectDialogOpen, setImportProjectDialogOpen] = useState(false);
   const [searchPaletteOpen, setSearchPaletteOpen] = useState(false);
   const openFeedbackDialog = useFeedbackDialogStore((state) => state.openDialog);
@@ -3626,6 +3636,43 @@ export default function Sidebar() {
   const [projectFilterMenuOpen, setProjectFilterMenuOpen] = useState(false);
   const [settledShelfExpanded, setSettledShelfExpanded] = useState(false);
 
+  const threadCountsByProjectId = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const thread of sidebarThreads) {
+      if (thread.projectId) {
+        counts.set(thread.projectId, (counts.get(thread.projectId) ?? 0) + 1);
+      }
+    }
+    return counts;
+  }, [sidebarThreads]);
+
+  const sortedAllThreads = useMemo(() => {
+    return [...sidebarThreads].sort((a, b) => {
+      const recencyB = resolveActivityRecencyMs(b);
+      const recencyA = resolveActivityRecencyMs(a);
+      if (recencyB !== recencyA) return recencyB - recencyA;
+      return (b.updatedAt || b.createdAt || "").localeCompare(a.updatedAt || a.createdAt || "");
+    });
+  }, [sidebarThreads]);
+
+  const filteredAllThreads = useMemo(() => {
+    const q = searchFilterQuery.trim().toLowerCase();
+    if (!q) return sortedAllThreads;
+    return sortedAllThreads.filter((t) => t.title.toLowerCase().includes(q));
+  }, [sortedAllThreads, searchFilterQuery]);
+
+  const filteredProjects = useMemo(() => {
+    const q = searchFilterQuery.trim().toLowerCase();
+    if (!q) return standardProjects;
+    return standardProjects.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        (p.framework && p.framework.toLowerCase().includes(q)) ||
+        p.folderName.toLowerCase().includes(q) ||
+        sidebarThreads.some((t) => t.projectId === p.id && t.title.toLowerCase().includes(q)),
+    );
+  }, [standardProjects, searchFilterQuery, sidebarThreads]);
+
   const { activeCards, settledCards } = useMemo(() => {
     const targetThreads = scopedProjectId
       ? sidebarThreads.filter((t) => t.projectId === scopedProjectId)
@@ -4468,6 +4515,201 @@ export default function Sidebar() {
           {renderThreadHoverCardPopup(thread, hoverAnchorId, isActive)}
         </Tooltip>
       </SidebarMenuSubItem>
+    );
+  }
+
+  const handleInterruptThread = useCallback(async (threadId: ThreadId) => {
+    const api = readNativeApi();
+    if (!api) return;
+    try {
+      await api.orchestration.dispatchCommand({
+        type: "thread.turn.interrupt",
+        commandId: newCommandId(),
+        threadId,
+        createdAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Failed to interrupt thread turn:", error);
+    }
+  }, []);
+
+  function renderSidebarConversationRow(
+    thread: SidebarThreadSummary,
+    projectName?: string,
+    projectFramework?: ProjectFramework,
+    isNestedUnderProject = false,
+  ) {
+    const isActive = visualActiveSidebarThreadId === thread.id;
+    const isPinned = pinnedThreadIdSet.has(thread.id);
+    const isWorking = isThreadActivelyWorking(thread);
+    const timeAgo = formatRelativeTime(
+      thread.latestUserMessageAt ||
+        thread.latestTurn?.completedAt ||
+        thread.updatedAt ||
+        thread.createdAt ||
+        new Date().toISOString(),
+    );
+    const effectiveProjectName =
+      projectName ?? projectById.get(thread.projectId)?.name ?? "Project";
+    const effectiveFramework =
+      projectFramework ?? projectById.get(thread.projectId)?.framework;
+    const dotColorClass = resolveSidebarDotColorClass(appSettings.sidebarCompletionDotColor);
+
+    return (
+      <PreviewCard key={thread.id}>
+        <PreviewCardTrigger
+          {...SIDEBAR_HOVER_CARD_TRIGGER_PROPS}
+          render={
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => activateThreadFromSidebarIntent(thread.id)}
+              onContextMenu={(event) => {
+                event.preventDefault();
+                void handleThreadContextMenu(thread.id, {
+                  x: event.clientX,
+                  y: event.clientY,
+                });
+              }}
+              onDoubleClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                openRenameThreadDialog(thread.id);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  activateThreadFromSidebarIntent(thread.id);
+                }
+              }}
+              className={cn(
+                "group/conversation-row relative flex h-7.5 items-center gap-1.5 rounded-md px-2 text-left text-xs transition-colors cursor-pointer select-none outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                isNestedUnderProject ? "pl-5" : "pl-2",
+                isActive
+                  ? "bg-[var(--color-background-elevated-primary-opaque,var(--sidebar-accent))] text-foreground font-medium shadow-xs"
+                  : "text-muted-foreground/80 hover:bg-muted/30 hover:text-foreground",
+              )}
+            />
+          }
+        >
+          {/* Conversation Title */}
+          <span className="truncate flex-1 min-w-0 text-xs text-foreground/90">
+            {thread.title || "Untitled Conversation"}
+          </span>
+
+          {/* Right side indicator / action slot */}
+          <div className="relative flex h-5 shrink-0 items-center justify-end gap-1">
+            {/* Working state: Spinner by default, Stop button on hover */}
+            {isWorking ? (
+              <>
+                {/* Spinner when not hovered */}
+                <span className="flex items-center group-hover/conversation-row:hidden">
+                  <ThreadRunningSpinner className="size-3 text-sky-400" />
+                </span>
+
+                {/* Hover actions: Stop button + More options */}
+                <div className="hidden items-center gap-0.5 group-hover/conversation-row:flex">
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleInterruptThread(thread.id);
+                          }}
+                          className="flex size-5 items-center justify-center rounded text-red-400 hover:bg-red-500/15 hover:text-red-300 transition-colors"
+                          aria-label="Stop Execution"
+                        >
+                          <StopFilledIcon className="size-3.5 fill-current" />
+                        </button>
+                      }
+                    />
+                    <TooltipPopup side="top">Stop Execution</TooltipPopup>
+                  </Tooltip>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      void handleThreadContextMenu(thread.id, {
+                        x: rect.left,
+                        y: rect.bottom,
+                      });
+                    }}
+                    className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+                    aria-label="Thread options"
+                  >
+                    <LuEllipsisVertical className="size-3" />
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* Completed state: Relative timestamp + colored dot when not hovered, options on hover */
+              <>
+                {/* Normal view: time + dot */}
+                <div className="flex items-center gap-1.5 group-hover/conversation-row:hidden">
+                  <span className="text-[11px] tabular-nums text-muted-foreground/50">
+                    {timeAgo}
+                  </span>
+                  <span
+                    className={cn("size-1.5 rounded-full shrink-0 shadow-xs", dotColorClass)}
+                    aria-hidden="true"
+                  />
+                </div>
+
+                {/* Hover view: time + more options */}
+                <div className="hidden items-center gap-1 group-hover/conversation-row:flex">
+                  {isPinned && (
+                    <PinStatusIcon pinned={true} className="size-3 text-muted-foreground/60 shrink-0" />
+                  )}
+                  <span className="text-[11px] tabular-nums text-muted-foreground/50 mr-0.5">
+                    {timeAgo}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      void handleThreadContextMenu(thread.id, {
+                        x: rect.left,
+                        y: rect.bottom,
+                      });
+                    }}
+                    className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+                    aria-label="Thread options"
+                  >
+                    <LuEllipsisVertical className="size-3" />
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </PreviewCardTrigger>
+
+        {/* Floating Hover Card */}
+        <PreviewCardPopup
+          side="right"
+          sideOffset={8}
+          align="start"
+          className="p-0 border-0 bg-transparent shadow-none"
+        >
+          <SidebarConversationHoverCard
+            title={thread.title || "Untitled Conversation"}
+            projectName={effectiveProjectName}
+            projectFramework={effectiveFramework}
+            isWorking={isWorking}
+            statusLabel={isWorking ? "Running" : "Completed"}
+            updatedAt={
+              thread.updatedAt || thread.createdAt
+                ? formatRelativeTime(thread.updatedAt ?? thread.createdAt)
+                : undefined
+            }
+            completionDotColor={appSettings.sidebarCompletionDotColor}
+          />
+        </PreviewCardPopup>
+      </PreviewCard>
     );
   }
 
@@ -5561,7 +5803,7 @@ export default function Sidebar() {
         ) : (
           <>
             <div className="relative z-[1] flex flex-col gap-1 px-2.5 pt-2 pb-1">
-              {/* Search row */}
+              {/* Search row with unclickable Gamepad icon */}
               <div className="flex items-center gap-1">
                 <div className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-md bg-muted/20 border border-border/30 px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted/35 focus-within:border-border/60 focus-within:bg-muted/40">
                   <SearchIcon className="size-3.5 shrink-0 text-muted-foreground/70" />
@@ -5583,194 +5825,185 @@ export default function Sidebar() {
                     </button>
                   )}
                 </div>
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const realProjects = projects.filter((p) => p.id !== "default" && (p as any).kind !== "chat");
-                          const validFocusedProjId =
-                            focusedProjectId && focusedProjectId !== "default" && realProjects.some((p) => p.id === focusedProjectId)
-                              ? focusedProjectId
-                              : null;
-                          const targetProjId = scopedProjectId ?? validFocusedProjId ?? realProjects[0]?.id ?? projects[0]?.id;
-                          if (targetProjId) {
-                            prefetchModelsForProjectNewThread(targetProjId, { includeDroid: true });
-                            void handleNewThread(targetProjId, {
-                              envMode: resolveSidebarNewThreadEnvMode({
-                                defaultEnvMode: appSettings.defaultThreadEnvMode,
-                              }),
-                            });
-                          } else {
-                            void handleCreateHomeChat();
-                          }
-                        }}
-                        className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
-                        aria-label="New thread"
-                      >
-                        <LuSquarePen className="size-4" />
-                      </button>
-                    }
-                  />
-                  <TooltipPopup side="right">New thread</TooltipPopup>
-                </Tooltip>
+                {/* Unclickable Game icon */}
+                <div
+                  className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border/20 bg-muted/10 text-muted-foreground/50 cursor-default select-none pointer-events-none"
+                  aria-hidden="true"
+                  title="Game mode"
+                >
+                  <LuGamepad2 className="size-4" />
+                </div>
               </div>
+            </div>
 
-              {/* Project filter row */}
-              {projects.length > 0 && (
-                <div className="flex items-center gap-1">
-                  <Menu open={projectFilterMenuOpen} onOpenChange={setProjectFilterMenuOpen}>
-                    <MenuTrigger
-                      render={
-                        <button
-                          type="button"
-                          className="flex h-7 min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 text-xs font-medium text-foreground hover:bg-muted/40 transition-colors"
-                        >
-                          <FolderIcon className="size-3.5 shrink-0 text-muted-foreground/80" />
-                          <span className="min-w-0 flex-1 truncate text-left">
-                            {scopedProjectId
-                              ? (projectById.get(scopedProjectId)?.name ?? "Selected project")
-                              : "All projects"}
-                          </span>
-                          <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground/60" />
-                        </button>
-                      }
-                    />
-                    <ComposerPickerMenuPopup align="start" className="w-56">
-                      <MenuRadioGroup
-                        value={scopedProjectId ?? "all"}
-                        onValueChange={(val) => setScopedProjectId(val === "all" ? null : (val as string))}
-                      >
-                        <MenuRadioItem value="all" className="flex items-center gap-2 text-xs py-1.5 cursor-pointer">
-                          <FolderIcon className="size-3.5 shrink-0" />
-                          <span className="truncate">All projects</span>
-                        </MenuRadioItem>
-                        {projects.map((proj) => (
-                          <MenuRadioItem key={proj.id} value={proj.id} className="flex items-center gap-2 text-xs py-1.5 cursor-pointer">
-                            {proj.framework && proj.framework !== "blank" ? (
-                              <FrameworkIcon framework={proj.framework} size={14} className="size-3.5 shrink-0" />
-                            ) : (
-                              <FolderIcon className="size-3.5 shrink-0" />
-                            )}
-                            <span className="truncate">{proj.name}</span>
-                          </MenuRadioItem>
-                        ))}
-                      </MenuRadioGroup>
-                    </ComposerPickerMenuPopup>
-                  </Menu>
-
+            {/* Main Scrollable Content */}
+            <div className="flex-1 overflow-y-auto px-1.5 py-1">
+              {/* Projects Section */}
+              <div className="mb-2">
+                <div className="flex items-center justify-between px-2 py-1.5 text-[11px] font-medium text-muted-foreground/70">
+                  <span className="tracking-wide">Projects</span>
                   <Tooltip>
                     <TooltipTrigger
                       render={
                         <button
                           type="button"
                           onClick={handleStartAddProject}
-                          className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+                          className="flex size-5 items-center justify-center rounded text-muted-foreground/70 hover:bg-muted/50 hover:text-foreground transition-colors"
                           aria-label="New project"
                         >
-                          <LuFolderPlus className="size-4" />
+                          <LuFolderPlus className="size-3.5" />
                         </button>
                       }
                     />
-                    <TooltipPopup side="right">New project</TooltipPopup>
+                    <TooltipPopup side="top">New project</TooltipPopup>
                   </Tooltip>
                 </div>
-              )}
-            </div>
 
-            {/* Main Cards List */}
-            <SidebarGroup className="px-1.5 py-1">
-              {activeCards.length > 0 ? (
                 <div className="space-y-0.5">
-                  {activeCards.map((thread) => renderThreadCard(thread))}
-                  {settledCards.length > 0 && (
-                    <div className="mt-2.5">
-                      <button
-                        type="button"
-                        onClick={() => setSettledShelfExpanded((prev) => !prev)}
-                        aria-expanded={settledShelfExpanded}
-                        className="mb-1.5 flex w-full cursor-pointer items-center gap-2 px-2 text-left select-none group"
-                      >
-                        <span className="text-[11px] font-medium text-muted-foreground/50 group-hover:text-muted-foreground/80">
-                          {settledShelfExpanded ? "Settled" : `Settled (${settledCards.length})`}
-                        </span>
-                        <span className="h-px flex-1 bg-border/40" />
-                        <ChevronDownIcon
-                          className={cn(
-                            "size-3 text-muted-foreground/50 transition-transform duration-200",
-                            settledShelfExpanded && "rotate-180",
-                          )}
-                        />
-                      </button>
-                      {settledShelfExpanded && (
-                        <div className="space-y-0.5 px-0.5">
-                          {settledCards.map((thread) => renderSettledSlimRow(thread))}
+                  {filteredProjects.length === 0 ? (
+                    <div className="py-2 px-2 text-center text-xs text-muted-foreground/50">
+                      {searchFilterQuery ? "No matching projects" : "No projects"}
+                    </div>
+                  ) : (
+                    filteredProjects.map((project) => {
+                      const isExpanded = Boolean(project.expanded);
+                      const projectThreads = sidebarThreads
+                        .filter((t) => t.projectId === project.id)
+                        .sort((a, b) => {
+                          const recB = resolveActivityRecencyMs(b);
+                          const recA = resolveActivityRecencyMs(a);
+                          if (recB !== recA) return recB - recA;
+                          return (b.updatedAt || b.createdAt || "").localeCompare(a.updatedAt || a.createdAt || "");
+                        });
+
+                      return (
+                        <div key={project.id} className="group/project-row">
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => toggleProject(project.id)}
+                            onContextMenu={(event) => {
+                              event.preventDefault();
+                              void handleProjectContextMenu(project.id, {
+                                x: event.clientX,
+                                y: event.clientY,
+                              });
+                            }}
+                            className="flex h-7.5 w-full cursor-pointer items-center gap-1.5 rounded-md px-2 text-xs font-medium text-foreground/90 transition-colors hover:bg-muted/30 select-none"
+                          >
+                            <ChevronDownIcon
+                              className={cn(
+                                "size-3 text-muted-foreground/60 transition-transform duration-200 shrink-0",
+                                !isExpanded && "-rotate-90",
+                              )}
+                            />
+                            {project.framework && project.framework !== "blank" ? (
+                              <FrameworkIcon framework={project.framework} size={14} className="size-3.5 shrink-0" />
+                            ) : (
+                              <FolderIcon className="size-3.5 shrink-0 text-muted-foreground/75" />
+                            )}
+                            <span className="truncate flex-1 min-w-0 text-xs font-medium text-foreground/90">
+                              {project.name}
+                            </span>
+
+                            {/* Project hover toolbar: ... and + */}
+                            <div className="hidden items-center gap-0.5 group-hover/project-row:flex">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  void handleProjectContextMenu(project.id, {
+                                    x: rect.left,
+                                    y: rect.bottom,
+                                  });
+                                }}
+                                className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+                                aria-label="Project options"
+                              >
+                                <LuEllipsisVertical className="size-3" />
+                              </button>
+                              <Tooltip>
+                                <TooltipTrigger
+                                  render={
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        prefetchModelsForProjectNewThread(project.id, { includeDroid: true });
+                                        void handleNewThread(project.id, {
+                                          envMode: resolveSidebarNewThreadEnvMode({
+                                            defaultEnvMode: appSettings.defaultThreadEnvMode,
+                                          }),
+                                        });
+                                      }}
+                                      className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+                                      aria-label="New Conversation in Project"
+                                    >
+                                      <AddPlusIcon className="size-3.5" />
+                                    </button>
+                                  }
+                                />
+                                <TooltipPopup side="top">New Conversation in Project</TooltipPopup>
+                              </Tooltip>
+                            </div>
+                          </div>
+
+                          {/* Collapsible nested threads */}
+                          <DisclosureRegion open={isExpanded}>
+                            <div className="space-y-0.5 pt-0.5 pb-1">
+                              {projectThreads.length === 0 ? (
+                                <div className="py-1.5 pl-6 pr-2 text-[11px] italic text-muted-foreground/45 select-none">
+                                  No conversations yet
+                                </div>
+                              ) : (
+                                projectThreads.map((thread) =>
+                                  renderSidebarConversationRow(thread, project.name, project.framework, true),
+                                )
+                              )}
+                            </div>
+                          </DisclosureRegion>
                         </div>
-                      )}
-                    </div>
+                      );
+                    })
                   )}
                 </div>
-              ) : settledCards.length > 0 ? (
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => setSettledShelfExpanded((prev) => !prev)}
-                    aria-expanded={settledShelfExpanded}
-                    className="mb-1.5 flex w-full cursor-pointer items-center gap-2 px-2 text-left select-none group"
-                  >
-                    <span className="text-[11px] font-medium text-muted-foreground/50 group-hover:text-muted-foreground/80">
-                      {settledShelfExpanded ? "Settled" : `Settled (${settledCards.length})`}
-                    </span>
-                    <span className="h-px flex-1 bg-border/40" />
-                    <ChevronDownIcon
-                      className={cn(
-                        "size-3 text-muted-foreground/50 transition-transform duration-200",
-                        settledShelfExpanded && "rotate-180",
-                      )}
+              </div>
+
+              {/* Conversations Section */}
+              <div className="mt-3">
+                <div className="flex items-center justify-between px-2 py-1.5 text-[11px] font-medium text-muted-foreground/70">
+                  <span className="tracking-wide">Conversations</span>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <button
+                          type="button"
+                          onClick={() => setProjectSelectionPopupOpen(true)}
+                          className="flex size-5 items-center justify-center rounded text-muted-foreground/70 hover:bg-muted/50 hover:text-foreground transition-colors"
+                          aria-label="New conversation"
+                        >
+                          <AddPlusIcon className="size-3.5" />
+                        </button>
+                      }
                     />
-                  </button>
-                  {settledShelfExpanded && (
-                    <div className="space-y-0.5 px-0.5">
-                      {settledCards.map((thread) => renderSettledSlimRow(thread))}
+                    <TooltipPopup side="top">New conversation</TooltipPopup>
+                  </Tooltip>
+                </div>
+
+                <div className="space-y-0.5">
+                  {filteredAllThreads.length === 0 ? (
+                    <div className="py-4 text-center text-xs text-muted-foreground/50">
+                      {searchFilterQuery ? "No matching conversations" : "No conversations yet"}
                     </div>
+                  ) : (
+                    filteredAllThreads.map((thread) =>
+                      renderSidebarConversationRow(thread, undefined, undefined, false),
+                    )
                   )}
                 </div>
-              ) : (
-                <div className="space-y-2 px-3 py-6 text-center">
-                  <p className="text-xs text-muted-foreground/60">
-                    {searchFilterQuery ? "No matching threads" : "No threads yet"}
-                  </p>
-                  {!searchFilterQuery && (
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      onClick={() => {
-                        const realProjects = projects.filter((p) => p.id !== "default" && (p as any).kind !== "chat");
-                        const validFocusedProjId =
-                          focusedProjectId && focusedProjectId !== "default" && realProjects.some((p) => p.id === focusedProjectId)
-                            ? focusedProjectId
-                            : null;
-                        const targetProjId = scopedProjectId ?? validFocusedProjId ?? realProjects[0]?.id ?? projects[0]?.id;
-                        if (targetProjId) {
-                          prefetchModelsForProjectNewThread(targetProjId, { includeDroid: true });
-                          void handleNewThread(targetProjId, {
-                            envMode: resolveSidebarNewThreadEnvMode({
-                              defaultEnvMode: appSettings.defaultThreadEnvMode,
-                            }),
-                          });
-                        } else {
-                          void handleCreateHomeChat();
-                        }
-                      }}
-                      className="text-xs"
-                    >
-                      Start a thread
-                    </Button>
-                  )}
-                </div>
-              )}
-            </SidebarGroup>
+              </div>
+            </div>
           </>
         )}
       </SidebarContent>
@@ -5822,6 +6055,25 @@ export default function Sidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+
+      <ProjectSelectionPopup
+        open={projectSelectionPopupOpen}
+        onOpenChange={setProjectSelectionPopupOpen}
+        projects={projects.filter((p) => p.id !== "default" && (p as any).kind !== "chat")}
+        threadCountsByProjectId={threadCountsByProjectId}
+        onSelectProject={(selectedProjId) => {
+          prefetchModelsForProjectNewThread(selectedProjId, { includeDroid: true });
+          void handleNewThread(selectedProjId, {
+            envMode: resolveSidebarNewThreadEnvMode({
+              defaultEnvMode: appSettings.defaultThreadEnvMode,
+            }),
+          });
+        }}
+        onCreateNewProject={() => {
+          setProjectSelectionPopupOpen(false);
+          setCreateAppDialogOpen(true);
+        }}
+      />
 
       <CreateAppDialog
         open={createAppDialogOpen}
