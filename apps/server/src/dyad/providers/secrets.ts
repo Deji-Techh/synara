@@ -1,13 +1,16 @@
 // FILE: secrets.ts
 // Purpose: File-backed provider credentials for Dyad providers
 // (~/.caide/dyad-providers.json, 0600). Donor used Electron safeStorage
-// (OS keychain); Bun has no keychain, so keys rest in a user-only file —
-// same posture as .env files. Env vars remain the override for servers.
+// (OS keychain); on servers without a keychain, keys rest AES-256-GCM
+// encrypted under a machine-local 0600 key (~/.caide/.providers.key).
+// v1 plaintext files keep reading and migrate to v2 on the next write.
+// Env vars remain the override for servers.
 // Shape matches SettingsLike so the gateway can pass it straight through.
 
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import * as crypto from "node:crypto";
 import type { SettingsLike } from "./routing.ts";
 
 export interface StoredProviderEntry {
@@ -25,6 +28,81 @@ export interface ProviderSecretsFile {
 
 const EMPTY: ProviderSecretsFile = { version: 1, providers: {} };
 
+/**
+ * Encryption at rest (donor safeStorage parity on servers without a
+ * keychain): AES-256-GCM with a machine-local 0600 key file. v2 files are
+ * `{version: 2, encrypted: {iv, tag, data}}`; v1 plaintext files keep
+ * reading (migrated to v2 on the next write). Corrupt files read as empty
+ * (never throw on read — same contract as before).
+ */
+const KEY_BYTES = 32;
+
+function keyPathForSecretsFile(filePath: string): string {
+  return path.join(path.dirname(filePath), ".providers.key");
+}
+
+function loadOrCreateKey(keyPath: string): Buffer {
+  try {
+    const raw = fs.readFileSync(keyPath);
+    if (raw.length === KEY_BYTES) return raw;
+  } catch {
+    // missing or wrong size — create below
+  }
+  const key = crypto.randomBytes(KEY_BYTES);
+  fs.mkdirSync(path.dirname(keyPath), { recursive: true });
+  fs.writeFileSync(keyPath, key, { mode: 0o600 });
+  try {
+    fs.chmodSync(keyPath, 0o600);
+  } catch {
+    // non-POSIX — best effort
+  }
+  return key;
+}
+
+interface EncryptedPayload {
+  iv: string;
+  tag: string;
+  data: string;
+}
+
+function encryptProviders(payload: Record<string, unknown>, key: Buffer): EncryptedPayload {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+  const plaintext = Buffer.from(JSON.stringify(payload), "utf-8");
+  const data = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+  return { iv: iv.toString("base64"), tag: cipher.getAuthTag().toString("base64"), data: data.toString("base64") };
+}
+
+function decryptProviders(encrypted: EncryptedPayload, key: Buffer): Record<string, unknown> | null {
+  try {
+    const decipher = crypto.createDecipheriv(
+      "aes-256-gcm",
+      key,
+      Buffer.from(encrypted.iv, "base64"),
+    );
+    decipher.setAuthTag(Buffer.from(encrypted.tag, "base64"));
+    const plain = Buffer.concat([
+      decipher.update(Buffer.from(encrypted.data, "base64")),
+      decipher.final(),
+    ]).toString("utf-8");
+    const parsed = JSON.parse(plain) as Record<string, unknown>;
+    if (parsed && typeof parsed === "object") return parsed;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** True when the file is a v2 encrypted envelope (diagnostics/tests). */
+export function isEncryptedSecretsFile(filePath: string): boolean {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(filePath, "utf8")) as { version?: unknown };
+    return parsed?.version === 2;
+  } catch {
+    return false;
+  }
+}
+
 export function defaultSecretsPath(): string {
   const home = process.env.CAIDE_HOME?.trim() || path.join(os.homedir(), ".caide");
   return path.join(home, "dyad-providers.json");
@@ -33,7 +111,20 @@ export function defaultSecretsPath(): string {
 function readFile(filePath: string): ProviderSecretsFile {
   try {
     const raw = fs.readFileSync(filePath, "utf8");
-    const parsed = JSON.parse(raw) as Partial<ProviderSecretsFile>;
+    const parsed = JSON.parse(raw) as Partial<ProviderSecretsFile> & { encrypted?: EncryptedPayload };
+    if (parsed && typeof parsed === "object" && parsed.version === 2 && parsed.encrypted) {
+      const key = loadOrCreateKey(keyPathForSecretsFile(filePath));
+      const payload = decryptProviders(parsed.encrypted, key);
+      if (payload && typeof payload.providers === "object" && payload.providers !== null) {
+        return {
+          version: 1,
+          providers: payload.providers as ProviderSecretsFile["providers"],
+          defaultProviderId: typeof payload.defaultProviderId === "string" ? payload.defaultProviderId : undefined,
+          defaultModelId: typeof payload.defaultModelId === "string" ? payload.defaultModelId : undefined,
+        };
+      }
+      return { ...EMPTY, providers: {} };
+    }
     if (parsed && typeof parsed === "object" && parsed.version === 1 && parsed.providers) {
       return { version: 1, providers: parsed.providers, defaultProviderId: parsed.defaultProviderId, defaultModelId: parsed.defaultModelId };
     }
@@ -117,7 +208,26 @@ export class ProviderSecretsStore {
 
   private write(file: ProviderSecretsFile): void {
     fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
-    fs.writeFileSync(this.filePath, `${JSON.stringify(file, null, 2)}\n`, { mode: 0o600 });
+    // Prefer the v2 encrypted envelope; fall back to v1 plaintext only when
+    // key storage is unavailable (availability first — same posture as
+    // before, with a warning so the downgrade is visible).
+    let body: string;
+    try {
+      const key = loadOrCreateKey(keyPathForSecretsFile(this.filePath));
+      const encrypted = encryptProviders(
+        {
+          providers: file.providers,
+          ...(file.defaultProviderId ? { defaultProviderId: file.defaultProviderId } : {}),
+          ...(file.defaultModelId ? { defaultModelId: file.defaultModelId } : {}),
+        },
+        key,
+      );
+      body = `${JSON.stringify({ version: 2, encrypted }, null, 2)}\n`;
+    } catch (err) {
+      console.warn(`[providers] key storage unavailable, writing plaintext secrets: ${err instanceof Error ? err.message : String(err)}`);
+      body = `${JSON.stringify(file, null, 2)}\n`;
+    }
+    fs.writeFileSync(this.filePath, body, { mode: 0o600 });
     try {
       fs.chmodSync(this.filePath, 0o600);
     } catch {

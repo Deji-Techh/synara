@@ -8,7 +8,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { ProviderSecretsStore } from "./secrets.ts";
+import { ProviderSecretsStore, isEncryptedSecretsFile } from "./secrets.ts";
 import { testProviderConnection } from "./testConnection.ts";
 
 function tempFile(): string {
@@ -80,5 +80,46 @@ describe("provider connection probes", () => {
       ok: true,
       message: "Key saved — no live check for this provider yet.",
     });
+  });
+
+  it("encrypts at rest, migrates v1 plaintext, and survives restarts", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-secenc-"));
+    const file = path.join(dir, "providers.json");
+    const store = new ProviderSecretsStore(file);
+    store.setProvider("openai", { apiKey: "sk-secret" });
+    expect(isEncryptedSecretsFile(file)).toBe(true);
+    const raw = fs.readFileSync(file, "utf8");
+    expect(raw).not.toContain("sk-secret");
+    // Fresh instance (new process) decrypts with the key file.
+    const reopened = new ProviderSecretsStore(file);
+    expect(reopened.read().providers.openai).toMatchObject({ apiKey: "sk-secret" });
+    // Key file is user-only.
+    const stat = fs.statSync(path.join(dir, ".providers.key"));
+    expect(stat.mode & 0o777).toBe(0o600);
+  });
+
+  it("reads legacy v1 plaintext and migrates it on write", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-secmig-"));
+    const file = path.join(dir, "providers.json");
+    fs.writeFileSync(
+      file,
+      JSON.stringify({ version: 1, providers: { anthropic: { apiKey: "sk-old" } } }),
+    );
+    expect(isEncryptedSecretsFile(file)).toBe(false);
+    const store = new ProviderSecretsStore(file);
+    expect(store.read().providers.anthropic).toMatchObject({ apiKey: "sk-old" });
+    store.setProvider("openai", { apiKey: "sk-new" });
+    expect(isEncryptedSecretsFile(file)).toBe(true);
+    const reread = new ProviderSecretsStore(file).read();
+    expect(reread.providers.anthropic).toMatchObject({ apiKey: "sk-old" });
+    expect(reread.providers.openai).toMatchObject({ apiKey: "sk-new" });
+  });
+
+  it("reads corrupt files as empty without throwing", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-secbad-"));
+    const file = path.join(dir, "providers.json");
+    fs.writeFileSync(file, "{not json");
+    expect(new ProviderSecretsStore(file).read()).toEqual({ version: 1, providers: {} });
+    expect(isEncryptedSecretsFile(file)).toBe(false);
   });
 });
