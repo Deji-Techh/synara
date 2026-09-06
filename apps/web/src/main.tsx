@@ -8,6 +8,7 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
 
 import "@fontsource-variable/jetbrains-mono";
+import "@fontsource-variable/inter";
 import "./index.css";
 
 import { appHistory } from "./appNavigation";

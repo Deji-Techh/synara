@@ -93,6 +93,19 @@ export const SidebarCompletionDotColor = Schema.Literals([
 ]);
 export type SidebarCompletionDotColor = typeof SidebarCompletionDotColor.Type;
 export const DEFAULT_SIDEBAR_COMPLETION_DOT_COLOR: SidebarCompletionDotColor = "emerald";
+
+export const SidebarFolderColor = Schema.Literals([
+  "default",
+  "amber",
+  "sky",
+  "emerald",
+  "violet",
+  "rose",
+  "indigo",
+  "orange",
+]);
+export type SidebarFolderColor = typeof SidebarFolderColor.Type;
+export const DEFAULT_SIDEBAR_FOLDER_COLOR: SidebarFolderColor = "default";
 export const FollowUpBehavior = Schema.Literals(["queue", "steer"]);
 export type FollowUpBehavior = typeof FollowUpBehavior.Type;
 export const DEFAULT_FOLLOW_UP_BEHAVIOR: FollowUpBehavior = "queue";
@@ -246,6 +259,9 @@ export const AppSettingsSchema = Schema.Struct({
   ),
   sidebarCompletionDotColor: SidebarCompletionDotColor.pipe(
     withDefaults(() => DEFAULT_SIDEBAR_COMPLETION_DOT_COLOR),
+  ),
+  sidebarFolderColor: SidebarFolderColor.pipe(
+    withDefaults(() => DEFAULT_SIDEBAR_FOLDER_COLOR),
   ),
   timestampFormat: TimestampFormat.pipe(withDefaults(() => DEFAULT_TIMESTAMP_FORMAT)),
   customEngineModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),

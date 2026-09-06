@@ -12,19 +12,16 @@ import {
   CircleQuestionIcon,
   ClockIcon,
   CopyIcon,
-  ExternalLinkIcon,
   FolderIcon,
   FolderOpenIcon,
   GiftIcon,
   HistoryIcon,
-  KanbanIcon,
   KeyboardIcon,
   BellIcon,
   type LucideIcon,
   NewThreadIcon,
   PencilIcon,
   PinIcon,
-  PlayIcon,
   SearchIcon,
   SettingsIcon,
   StopFilledIcon,
@@ -355,7 +352,7 @@ import {
 import { DisclosureRegion } from "./ui/DisclosureRegion";
 import { ProjectSelectionPopup } from "./ProjectSelectionPopup";
 import { SidebarConversationHoverCard } from "./SidebarConversationHoverCard";
-import { resolveSidebarDotColorClass } from "~/lib/sidebarStatusColors";
+import { resolveSidebarDotColorClass, resolveSidebarFolderColorClass } from "~/lib/sidebarStatusColors";
 import { ThreadRunningSpinner } from "./ThreadRunningSpinner";
 import { createClientPointMenuAnchor } from "~/lib/clientPointMenuAnchor";
 import { resolveThreadModelSummary } from "~/lib/threadModelSummary";
@@ -3161,7 +3158,6 @@ export default function Sidebar() {
     handleRenameVoid,
     resetVoidSpace,
     handleDeleteSpace,
-    handleMoveProjectToSpace,
     handleSpaceEditorSubmit,
     handleBulkMoveProjects,
   } = useSpacesController({
@@ -3253,10 +3249,10 @@ export default function Sidebar() {
       const confirmed = await api.dialogs.confirm(
         projectThreads.length > 0
           ? [
-              `Remove project "${project.name}"?`,
-              `This will delete ${projectThreads.length} ${pluralize(projectThreads.length, "thread")} in this folder and remove the project.`,
+              `Delete project "${project.name}"?`,
+              `This will delete ${projectThreads.length} ${pluralize(projectThreads.length, "conversation")} in this project and delete the project.`,
             ].join("\n")
-          : `Remove project "${project.name}"?`,
+          : `Delete project "${project.name}"?`,
       );
       if (!confirmed) return;
 
@@ -3276,8 +3272,8 @@ export default function Sidebar() {
         if (deletionResult.failureCount > 0) {
           toastManager.add({
             type: "error",
-            title: `Failed to remove "${project.name}"`,
-            description: `Could not delete ${deletionResult.failureCount} ${pluralize(deletionResult.failureCount, "thread")} in "${project.name}".`,
+            title: `Failed to delete "${project.name}"`,
+            description: `Could not delete ${deletionResult.failureCount} ${pluralize(deletionResult.failureCount, "conversation")} in "${project.name}".`,
           });
           return;
         }
@@ -3290,11 +3286,11 @@ export default function Sidebar() {
         clearProjectDraftThreads(projectId);
         toastManager.add({
           type: "success",
-          title: `Removed "${project.name}"`,
+          title: `Deleted "${project.name}"`,
           description:
             deletionResult.deletedCount > 0
-              ? `Deleted ${deletionResult.deletedCount} ${pluralize(deletionResult.deletedCount, "thread")} and removed the project.`
-              : "Project removed.",
+              ? `Deleted ${deletionResult.deletedCount} ${pluralize(deletionResult.deletedCount, "conversation")} and deleted the project.`
+              : "Project deleted.",
         });
       };
 
@@ -5897,11 +5893,22 @@ export default function Sidebar() {
                                 !isExpanded && "-rotate-90",
                               )}
                             />
-                            {project.framework && project.framework !== "blank" ? (
-                              <FrameworkIcon framework={project.framework} size={14} className="size-3.5 shrink-0" />
-                            ) : (
-                              <FolderIcon className="size-3.5 shrink-0 text-muted-foreground/75" />
-                            )}
+                            <div className="relative size-3.5 shrink-0 flex items-center justify-center">
+                              <FolderIcon
+                                className={cn(
+                                  "size-3.5 shrink-0 transition-opacity duration-150",
+                                  resolveSidebarFolderColorClass(appSettings.sidebarFolderColor),
+                                  project.framework && project.framework !== "blank" && "group-hover/project-row:opacity-0",
+                                )}
+                              />
+                              {project.framework && project.framework !== "blank" ? (
+                                <FrameworkIcon
+                                  framework={project.framework}
+                                  size={14}
+                                  className="absolute inset-0 size-3.5 shrink-0 opacity-0 transition-opacity duration-150 group-hover/project-row:opacity-100"
+                                />
+                              ) : null}
+                            </div>
                             <span className="truncate flex-1 min-w-0 text-xs font-medium text-foreground/90">
                               {project.name}
                             </span>
@@ -5932,6 +5939,7 @@ export default function Sidebar() {
                                         e.stopPropagation();
                                         prefetchModelsForProjectNewThread(project.id, { includeDroid: true });
                                         void handleNewThread(project.id, {
+                                          fresh: true,
                                           envMode: resolveSidebarNewThreadEnvMode({
                                             defaultEnvMode: appSettings.defaultThreadEnvMode,
                                           }),
@@ -6064,6 +6072,7 @@ export default function Sidebar() {
         onSelectProject={(selectedProjId) => {
           prefetchModelsForProjectNewThread(selectedProjId, { includeDroid: true });
           void handleNewThread(selectedProjId, {
+            fresh: true,
             envMode: resolveSidebarNewThreadEnvMode({
               defaultEnvMode: appSettings.defaultThreadEnvMode,
             }),
@@ -6149,18 +6158,6 @@ export default function Sidebar() {
                 onClick={() =>
                   void handleProjectContextMenuAction(
                     projectContextMenuState.projectId,
-                    "open-in-kanban",
-                  )
-                }
-              >
-                <ProjectContextMenuIcon icon={KanbanIcon} />
-                <span>Open in Kanban</span>
-              </MenuItem>
-              <MenuItem
-                className={PROJECT_CONTEXT_MENU_ITEM_CLASS_NAME}
-                onClick={() =>
-                  void handleProjectContextMenuAction(
-                    projectContextMenuState.projectId,
                     "copy-path",
                   )
                 }
@@ -6168,97 +6165,6 @@ export default function Sidebar() {
                 <ProjectContextMenuIcon icon={CopyIcon} />
                 <span>Copy Path</span>
               </MenuItem>
-              <MenuSeparator />
-              {projectContextMenuIsRunning ? (
-                <MenuItem
-                  className={PROJECT_CONTEXT_MENU_ITEM_CLASS_NAME}
-                  onClick={() =>
-                    void handleProjectContextMenuAction(
-                      projectContextMenuState.projectId,
-                      "stop-dev",
-                    )
-                  }
-                >
-                  <ProjectContextMenuIcon icon={StopFilledIcon} />
-                  <span>Stop dev</span>
-                </MenuItem>
-              ) : (
-                <MenuItem
-                  className={PROJECT_CONTEXT_MENU_ITEM_CLASS_NAME}
-                  onClick={() =>
-                    void handleProjectContextMenuAction(
-                      projectContextMenuState.projectId,
-                      "start-dev",
-                    )
-                  }
-                >
-                  <ProjectContextMenuIcon icon={PlayIcon} />
-                  <span>Start dev</span>
-                </MenuItem>
-              )}
-              {projectContextMenuHasOpenServer ? (
-                <MenuItem
-                  className={PROJECT_CONTEXT_MENU_ITEM_CLASS_NAME}
-                  onClick={() =>
-                    void handleProjectContextMenuAction(
-                      projectContextMenuState.projectId,
-                      "open-dev-server",
-                    )
-                  }
-                >
-                  <ProjectContextMenuIcon icon={ExternalLinkIcon} />
-                  <span>Open dev server</span>
-                </MenuItem>
-              ) : null}
-              <MenuSub keepOpenOnFocusOut>
-                <MenuSubTrigger className={PROJECT_CONTEXT_MENU_ITEM_CLASS_NAME}>
-                  {/* The glyph is the project's current space, so the row doubles as a
-                      read-out of where it lives today. It wears the same secondary tone
-                      as every other leading glyph in this menu. */}
-                  <span className={PROJECT_CONTEXT_MENU_ICON_CLASS_NAME}>
-                    <SpaceIcon
-                      icon={spaceDisplayIcon(projectContextMenuProject.spaceId, spaces, voidSpace)}
-                    />
-                  </span>
-                  <span>Move to space</span>
-                </MenuSubTrigger>
-                <ComposerPickerMenuSubPopup className="min-w-48">
-                  <MenuRadioGroup
-                    value={spaceKey(projectContextMenuProject.spaceId ?? null)}
-                    onValueChange={(value) => {
-                      void handleMoveProjectToSpace(
-                        projectContextMenuProject.id,
-                        value === VOID_SPACE_KEY ? null : SpaceId.makeUnsafe(value),
-                      );
-                    }}
-                  >
-                    <MenuRadioItem value={VOID_SPACE_KEY}>
-                      <SpaceIcon icon={voidSpace.icon} className="size-3.5" />
-                      <span className="min-w-0 truncate">{voidSpace.name}</span>
-                    </MenuRadioItem>
-                    {spaces.map((space) => (
-                      <MenuRadioItem key={space.id} value={space.id}>
-                        <SpaceIcon icon={space.icon} className="size-3.5" />
-                        <span className="min-w-0 truncate">{space.name}</span>
-                      </MenuRadioItem>
-                    ))}
-                  </MenuRadioGroup>
-                  <MenuSeparator />
-                  <MenuItem
-                    className={PROJECT_CONTEXT_MENU_ITEM_CLASS_NAME}
-                    onClick={() => {
-                      const projectId = projectContextMenuProject.id;
-                      setProjectContextMenuState(null);
-                      openSpaceCreator(projectId);
-                    }}
-                  >
-                    <span className={PROJECT_CONTEXT_MENU_ICON_CLASS_NAME}>
-                      <AddPlusIcon />
-                    </span>
-                    <span>New space…</span>
-                  </MenuItem>
-                </ComposerPickerMenuSubPopup>
-              </MenuSub>
               <MenuSeparator />
               <MenuItem
                 className={PROJECT_CONTEXT_MENU_ITEM_CLASS_NAME}
@@ -6281,36 +6187,22 @@ export default function Sidebar() {
                 <ProjectContextMenuIcon icon={PinIcon} />
                 <span>{pinActionLabel("project", projectContextMenuIsPinned)}</span>
               </MenuItem>
-              {projectContextMenuHasArchivableThreads || projectContextMenuHasAnyThreads ? (
-                <MenuSeparator />
-              ) : null}
               {projectContextMenuHasArchivableThreads ? (
-                <MenuItem
-                  className={PROJECT_CONTEXT_MENU_ITEM_CLASS_NAME}
-                  onClick={() =>
-                    void handleProjectContextMenuAction(
-                      projectContextMenuState.projectId,
-                      "archive-threads",
-                    )
-                  }
-                >
-                  <ProjectContextMenuIcon icon={ArchiveIcon} />
-                  <span>Archive threads</span>
-                </MenuItem>
-              ) : null}
-              {projectContextMenuHasAnyThreads ? (
-                <MenuItem
-                  className={PROJECT_CONTEXT_MENU_ITEM_CLASS_NAME}
-                  onClick={() =>
-                    void handleProjectContextMenuAction(
-                      projectContextMenuState.projectId,
-                      "delete-threads",
-                    )
-                  }
-                >
-                  <ProjectContextMenuIcon icon={Trash2} />
-                  <span>Delete threads</span>
-                </MenuItem>
+                <>
+                  <MenuSeparator />
+                  <MenuItem
+                    className={PROJECT_CONTEXT_MENU_ITEM_CLASS_NAME}
+                    onClick={() =>
+                      void handleProjectContextMenuAction(
+                        projectContextMenuState.projectId,
+                        "archive-threads",
+                      )
+                    }
+                  >
+                    <ProjectContextMenuIcon icon={ArchiveIcon} />
+                    <span>Archive project</span>
+                  </MenuItem>
+                </>
               ) : null}
               <MenuSeparator />
               <MenuItem
@@ -6319,77 +6211,13 @@ export default function Sidebar() {
                   void handleProjectContextMenuAction(projectContextMenuState.projectId, "delete")
                 }
               >
-                <ProjectContextMenuIcon icon={XIcon} />
-                <span>Remove</span>
+                <ProjectContextMenuIcon icon={Trash2} />
+                <span>Delete project</span>
               </MenuItem>
             </MenuGroup>
           </ComposerPickerMenuPopup>
         </Menu>
       ) : null}
-
-      <Dialog
-        open={projectRunDialogProjectId !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            closeProjectRunDialog();
-          }
-        }}
-      >
-        <DialogPopup className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base">
-              <PlayIcon className="size-4 text-emerald-500" />
-              Start dev
-            </DialogTitle>
-            <DialogDescription>
-              {projectRunDialogProject ? projectRunDialogProject.name : "Project"}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogPanel className="space-y-2">
-            <label
-              htmlFor="project-run-command-input"
-              className="block text-[length:var(--app-font-size-ui-xs,10px)] font-medium text-[var(--color-text-foreground-secondary)]"
-            >
-              Command
-            </label>
-            <Input
-              id="project-run-command-input"
-              autoFocus
-              spellCheck={false}
-              autoComplete="off"
-              autoCapitalize="off"
-              autoCorrect="off"
-              placeholder="e.g. npm run dev"
-              value={projectRunDialogCommandDraft}
-              aria-invalid={projectRunDialogCommandIsValid ? undefined : true}
-              onChange={(event) => setProjectRunDialogCommandDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  handleConfirmProjectRun();
-                }
-              }}
-            />
-            {projectRunDialogCommandIsValid ? null : (
-              <p className="text-[length:var(--app-font-size-ui-sm,11px)] text-destructive">
-                Enter a command to run.
-              </p>
-            )}
-          </DialogPanel>
-          <DialogFooter>
-            <Button variant="outline" onClick={closeProjectRunDialog}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleConfirmProjectRun}
-              disabled={!projectRunDialogCommandIsValid || Boolean(projectRunDialogExistingRun)}
-            >
-              <PlayIcon className="size-4" />
-              Run
-            </Button>
-          </DialogFooter>
-        </DialogPopup>
-      </Dialog>
 
       <RenameThreadDialog
         open={renameDialogThreadId !== null}

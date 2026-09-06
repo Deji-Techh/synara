@@ -70,6 +70,7 @@ import type {
 } from "../appSettings";
 import { SidebarBackdropSettings } from "../components/settings/SidebarBackdropSettings";
 import { SidebarCompletionDotColorPicker } from "~/components/settings/SidebarCompletionDotColorPicker";
+import { SidebarFolderColorPicker } from "~/components/settings/SidebarFolderColorPicker";
 import { PALETTE_THEMES, type PaletteThemeId } from "../theme/paletteThemes";
 const ThemePackEditor = lazy(() =>
   import("../components/ThemePackEditor").then((mod) => ({ default: mod.ThemePackEditor })),
@@ -227,12 +228,15 @@ function SettingsRouteView() {
     ...(theme !== "system" ? ["Theme"] : []),
     ...(!isDefaultActiveTheme ? [`${resolvedTheme === "dark" ? "Dark" : "Light"} theme pack`] : []),
     ...(settings.defaultProvider !== defaults.defaultProvider ? ["Default provider"] : []),
-    ...(settings.defaultThreadEnvMode !== defaults.defaultThreadEnvMode ? ["New thread mode"] : []),
+    ...(settings.defaultThreadEnvMode !== defaults.defaultThreadEnvMode ? ["New conversation mode"] : []),
     ...(settings.sidebarProjectSortOrder !== defaults.sidebarProjectSortOrder
       ? ["Project sort order"]
       : []),
     ...(settings.sidebarThreadSortOrder !== defaults.sidebarThreadSortOrder
-      ? ["Thread sort order"]
+      ? ["Conversation sort order"]
+      : []),
+    ...(settings.sidebarFolderColor !== defaults.sidebarFolderColor
+      ? ["Project folder color"]
       : []),
     ...(settings.uiDensity !== defaults.uiDensity ? ["UI density"] : []),
     ...(settings.desktopAppIcon !== defaults.desktopAppIcon ? ["App icon"] : []),
@@ -382,12 +386,12 @@ function SettingsRouteView() {
         />
 
         <SettingsRow
-          title="New threads"
-          description="Pick the default workspace mode for newly created draft threads."
+          title="New conversations"
+          description="Pick the default workspace mode for newly created draft conversations."
           resetAction={
             settings.defaultThreadEnvMode !== defaults.defaultThreadEnvMode ? (
               <SettingResetButton
-                label="new threads"
+                label="new conversations"
                 onClick={() =>
                   updateSettings({
                     defaultThreadEnvMode: defaults.defaultThreadEnvMode,
@@ -405,7 +409,7 @@ function SettingsRouteView() {
                   defaultThreadEnvMode: value,
                 });
               }}
-              ariaLabel="Default thread mode"
+              ariaLabel="Default conversation mode"
               valueContent={settings.defaultThreadEnvMode === "worktree" ? "New worktree" : "Local"}
             >
               <SelectItem hideIndicator value="local">
@@ -468,12 +472,12 @@ function SettingsRouteView() {
         />
 
         <SettingsRow
-          title="Thread order"
-          description="Controls how threads are arranged inside each project in the main sidebar."
+          title="Conversation order"
+          description="Controls how conversations are arranged inside each project in the main sidebar."
           resetAction={
             settings.sidebarThreadSortOrder !== defaults.sidebarThreadSortOrder ? (
               <SettingResetButton
-                label="thread order"
+                label="conversation order"
                 onClick={() =>
                   updateSettings({
                     sidebarThreadSortOrder: defaults.sidebarThreadSortOrder,
@@ -491,7 +495,7 @@ function SettingsRouteView() {
                 }
                 updateSettings({ sidebarThreadSortOrder: value });
               }}
-              ariaLabel="Thread sort order"
+              ariaLabel="Conversation sort order"
               valueContent={SIDEBAR_THREAD_SORT_ORDER_LABELS[settings.sidebarThreadSortOrder]}
             >
               <SelectItem hideIndicator value="updated_at">
@@ -601,6 +605,29 @@ function SettingsRouteView() {
               value={settings.sidebarCompletionDotColor}
               onValueChange={(sidebarCompletionDotColor) =>
                 updateSettings({ sidebarCompletionDotColor })
+              }
+            />
+          }
+        />
+
+        <SettingsRow
+          title="Project folder color"
+          description="Color of the folder icon displayed for projects in the sidebar."
+          resetAction={
+            settings.sidebarFolderColor !== defaults.sidebarFolderColor ? (
+              <SettingResetButton
+                label="project folder color"
+                onClick={() =>
+                  updateSettings({ sidebarFolderColor: defaults.sidebarFolderColor })
+                }
+              />
+            ) : null
+          }
+          control={
+            <SidebarFolderColorPicker
+              value={settings.sidebarFolderColor}
+              onValueChange={(sidebarFolderColor) =>
+                updateSettings({ sidebarFolderColor })
               }
             />
           }
@@ -720,12 +747,12 @@ function SettingsRouteView() {
         />
 
         <SettingsRow
-          title="Chat text boldness"
-          description="Control the weight of assistant and user chat messages. Medium and Extra Bold provide richer contrast and punchier bold text."
+          title="Text boldness"
+          description="Control the weight of text across the workspace, interface, and chat messages. Medium and Extra Bold provide richer contrast and punchier bold text."
           resetAction={
             settings.chatFontWeight !== defaults.chatFontWeight ? (
               <SettingResetButton
-                label="chat text boldness"
+                label="text boldness"
                 onClick={() =>
                   updateSettings({
                     chatFontWeight: defaults.chatFontWeight,
@@ -740,7 +767,7 @@ function SettingsRouteView() {
               onValueChange={(value) => {
                 updateSettings({ chatFontWeight: value as ChatFontWeight });
               }}
-              ariaLabel="Chat text boldness"
+              ariaLabel="Text boldness"
               options={CHAT_FONT_WEIGHT_OPTIONS}
             />
           }
@@ -748,7 +775,7 @@ function SettingsRouteView() {
 
         <SettingsRow
           title="Line spacing"
-          description="Set the vertical line spacing for transcript messages. Relaxed gives optimal breathing room for long responses."
+          description="Set the vertical line spacing for transcript messages and interface text. Relaxed gives optimal breathing room for long responses."
           resetAction={
             settings.chatLineHeight !== defaults.chatLineHeight ? (
               <SettingResetButton
@@ -775,7 +802,7 @@ function SettingsRouteView() {
 
         <SettingsRow
           title="Word spacing"
-          description="Adjust space between words in chat messages for improved readability."
+          description="Adjust space between words across chat messages and the workspace for improved readability."
           resetAction={
             settings.chatWordSpacing !== defaults.chatWordSpacing ? (
               <SettingResetButton
@@ -802,7 +829,7 @@ function SettingsRouteView() {
 
         <SettingsRow
           title="Letter spacing"
-          description="Fine-tune character tracking for chat headings and message body text."
+          description="Fine-tune character tracking for headings, message text, and UI typography."
           resetAction={
             settings.chatLetterSpacing !== defaults.chatLetterSpacing ? (
               <SettingResetButton
@@ -1092,17 +1119,17 @@ function SettingsRouteView() {
         {renderBooleanSettingRow({
           settingKey: "confirmThreadDelete",
           title: "Delete confirmation",
-          description: "Ask before deleting a thread and its chat history.",
+          description: "Ask before deleting a project or conversation and its history.",
           resetLabel: "delete confirmation",
-          ariaLabel: "Confirm thread deletion",
+          ariaLabel: "Confirm deletion",
         })}
 
         {renderBooleanSettingRow({
           settingKey: "confirmThreadArchive",
           title: "Archive confirmation",
-          description: "Ask before archiving a thread.",
+          description: "Ask before archiving a project or conversation.",
           resetLabel: "archive confirmation",
-          ariaLabel: "Confirm thread archive",
+          ariaLabel: "Confirm archive",
         })}
 
         {renderBooleanSettingRow({

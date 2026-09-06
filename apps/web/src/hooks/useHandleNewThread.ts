@@ -287,6 +287,7 @@ export function useHandleNewThread() {
         // project's primary slot earlier makes the route guard redirect the old URL to Home.
         stage: () => {
           registerDraftThread(threadId, { projectId, ...draftSeed });
+          setProjectDraftThreadId(projectId, threadId, draftSeed);
           activateThreadEntryPoint(threadId);
           applyStickyState(threadId);
           applyProviderOverride(threadId);
@@ -305,10 +306,41 @@ export function useHandleNewThread() {
           const current = norm(router.state.location.pathname);
           const historyPath = norm(router.history.location.pathname);
           const winPath = typeof window !== "undefined" ? norm(window.location.pathname) : "";
-          return current === target || historyPath === target || winPath === target;
+          const hashPath =
+            typeof window !== "undefined"
+              ? norm(window.location.hash.replace(/^#/, "").split("?")[0] ?? "")
+              : "";
+          const hrefPath = typeof window !== "undefined" ? window.location.href : "";
+          return (
+            current === target ||
+            historyPath === target ||
+            winPath === target ||
+            hashPath === target ||
+            hrefPath.includes(threadId) ||
+            router.state.location.href.includes(threadId)
+          );
         },
         finalize: () => setProjectDraftThreadId(projectId, threadId, draftSeed),
         rollback: () => {
+          // If the destination route is already active or matches the target thread, do not clear
+          const norm = (p: string) => p.replace(/\/$/, "");
+          const target = `/${threadId}`;
+          const current = norm(router.state.location.pathname);
+          const historyPath = norm(router.history.location.pathname);
+          const hashPath =
+            typeof window !== "undefined"
+              ? norm(window.location.hash.replace(/^#/, "").split("?")[0] ?? "")
+              : "";
+          const hrefPath = typeof window !== "undefined" ? window.location.href : "";
+          if (
+            current === target ||
+            historyPath === target ||
+            hashPath === target ||
+            hrefPath.includes(threadId) ||
+            router.state.location.href.includes(threadId)
+          ) {
+            return;
+          }
           clearDraftThread(threadId);
           clearTerminalState(threadId);
           if (wantsTemporaryThread) {

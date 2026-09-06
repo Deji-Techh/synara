@@ -65,7 +65,7 @@ export function getChatTranscriptAssistantCharWidthPx(
 
 function buildChatTextStyle(fontSizePx: number, _lineHeightPx?: number): CSSProperties {
   return {
-    fontSize: `${fontSizePx}px`,
+    fontSize: `var(--app-font-size-chat, ${fontSizePx}px)`,
     lineHeight: "var(--chat-line-height, 1.65)",
     wordSpacing: "var(--chat-word-spacing, normal)",
     letterSpacing: "var(--chat-letter-spacing, normal)",
@@ -98,5 +98,10 @@ export function getChatMessageFooterTextStyle(
 ): CSSProperties {
   const normalizedChatFontSizePx = normalizeChatFontSizePx(chatFontSizePx);
   const footerFontSizePx = Math.max(8, normalizedChatFontSizePx - 2);
-  return buildChatTextStyle(footerFontSizePx, getChatTranscriptLineHeightPx(footerFontSizePx));
+  return {
+    fontSize: `var(--app-font-size-chat-meta, ${footerFontSizePx}px)`,
+    lineHeight: "var(--chat-line-height, 1.4)",
+    wordSpacing: "var(--chat-word-spacing, normal)",
+    letterSpacing: "var(--chat-letter-spacing, normal)",
+  };
 }
