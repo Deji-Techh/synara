@@ -1,5 +1,8 @@
 // FILE: transcriptionService.ts
-// Purpose: Multi-provider audio voice transcription supporting Google Gemini, Groq Whisper, and OpenAI Whisper.
+// Purpose: Multi-provider audio voice transcription with automatic cascade fallback.
+//   Tries the preferred provider first, then falls through every other configured
+//   provider until one succeeds. A user whose opencodeZen key doesn't support
+//   Whisper will silently roll over to google → openrouter → groq → openai.
 // Layer: Server voice infrastructure
 
 import { Buffer } from "node:buffer";
@@ -9,38 +12,62 @@ import * as os from "node:os";
 import type { ServerVoiceTranscriptionInput, ServerVoiceTranscriptionResult } from "@caide/contracts";
 import { sharedProviderSecrets } from "../dyad/providers/secrets.ts";
 
+// ---------------------------------------------------------------------------
+// Key resolution
+// ---------------------------------------------------------------------------
+
 const PROVIDER_ENV_KEYS: Record<string, string[]> = {
   google: ["GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GENERATIVE_AI_API_KEY"],
   gemini: ["GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GENERATIVE_AI_API_KEY"],
   groq: ["GROQ_API_KEY"],
   openai: ["OPENAI_API_KEY"],
+  opencodeZen: ["OPENCODE_ZEN_API_KEY", "OPENCODE_API_KEY"],
+  "opencode-zen": ["OPENCODE_ZEN_API_KEY", "OPENCODE_API_KEY"],
+  opencodeGo: ["OPENCODE_GO_API_KEY", "OPENCODE_API_KEY"],
+  "opencode-go": ["OPENCODE_GO_API_KEY", "OPENCODE_API_KEY"],
+  openrouter: ["OPENROUTER_API_KEY"],
 };
+
+/**
+ * Keys starting with "AQ." are Dyad's Electron safeStorage encrypted blobs —
+ * they cannot be used raw against external APIs.
+ */
+function isEncryptedBlob(val: string): boolean {
+  return val.startsWith("AQ.") || val.startsWith("v10") || val.startsWith("v11");
+}
 
 export function getVoiceApiKey(provider: string): string | null {
   const norm = provider.toLowerCase();
   const lookupKeys =
-    norm === "google" || norm === "gemini" ? ["google", "gemini"] : [norm];
+    norm === "google" || norm === "gemini"
+      ? ["google", "gemini"]
+      : norm === "opencodezen" || norm === "opencode-zen"
+        ? ["opencodeZen", "opencode-zen"]
+        : norm === "opencodego" || norm === "opencode-go"
+          ? ["opencodeGo", "opencode-go"]
+          : [provider, norm];
 
-  // Check environment variables first (override)
+  // 1. Environment variables (override)
   for (const key of lookupKeys) {
     const envKeys = PROVIDER_ENV_KEYS[key] || [];
     for (const envKey of envKeys) {
       const val = process.env[envKey]?.trim();
-      if (val) return val;
+      if (val && !isEncryptedBlob(val)) return val;
     }
   }
 
+  // 2. sharedProviderSecrets → ~/.caide/dyad-providers.json
   try {
     const secrets = sharedProviderSecrets().read();
     for (const key of lookupKeys) {
       const stored = secrets?.providers?.[key]?.apiKey?.trim();
-      if (stored) return stored;
+      if (stored && !isEncryptedBlob(stored)) return stored;
     }
   } catch {
     // ignore
   }
 
-  // Check direct dyad-providers.json and ~/.dyad/provider_secrets.json
+  // 3. Fallback: scan known candidate files directly
   try {
     const home = process.env.CAIDE_HOME || process.env.HOME || os.homedir();
     const candidateFiles = [
@@ -50,36 +77,30 @@ export function getVoiceApiKey(provider: string): string | null {
       path.join(os.homedir(), ".dyad", "provider_secrets.json"),
     ];
     for (const file of candidateFiles) {
-      if (fs.existsSync(file)) {
-        try {
-          const raw = JSON.parse(fs.readFileSync(file, "utf-8"));
-          const providers = raw?.providers || raw;
-          for (const key of lookupKeys) {
-            const val = providers?.[key]?.apiKey?.trim?.() || providers?.[key]?.trim?.();
-            if (val) return val;
-          }
-        } catch {
-          // ignore
+      if (!fs.existsSync(file)) continue;
+      try {
+        const raw = JSON.parse(fs.readFileSync(file, "utf-8"));
+        const providers = raw?.providers || raw;
+        for (const key of lookupKeys) {
+          const val = providers?.[key]?.apiKey?.trim?.() || providers?.[key]?.trim?.();
+          if (val && !isEncryptedBlob(val)) return val;
         }
+      } catch {
+        // ignore
       }
     }
   } catch {
     // ignore
   }
 
-
-  // Check ~/.caide/userdata/secrets legacy files
+  // 4. Legacy ~/.caide/userdata/secrets/*.bin
   try {
     const home = process.env.HOME || os.homedir();
     for (const key of lookupKeys) {
-      const secretPath = path.join(
-        home,
-        ".caide/userdata/secrets",
-        `provider-${key}-api-key.bin`,
-      );
+      const secretPath = path.join(home, ".caide/userdata/secrets", `provider-${key}-api-key.bin`);
       if (fs.existsSync(secretPath)) {
         const secretVal = fs.readFileSync(secretPath, "utf-8").trim();
-        if (secretVal) return secretVal;
+        if (secretVal && !isEncryptedBlob(secretVal)) return secretVal;
       }
     }
   } catch {
@@ -89,35 +110,93 @@ export function getVoiceApiKey(provider: string): string | null {
   return null;
 }
 
-export function resolveBestVoiceProvider(preferred?: string): { provider: "google" | "groq" | "openai"; apiKey: string } | null {
+// ---------------------------------------------------------------------------
+// Provider cascade
+// ---------------------------------------------------------------------------
+
+export type VoiceTranscriptionProvider =
+  | "google"
+  | "groq"
+  | "openai"
+  | "opencodeZen"
+  | "opencodeGo"
+  | "openrouter";
+
+type ProviderEntry = { provider: VoiceTranscriptionProvider; apiKey: string; baseUrl?: string };
+
+/**
+ * Build a deduplicated, ordered list of every provider the user has a valid key for.
+ * Preferred provider is always first; all others follow so nothing is left untried.
+ */
+export function resolveAllVoiceProviders(preferred?: string): ProviderEntry[] {
+  const seen = new Set<VoiceTranscriptionProvider>();
+  const list: ProviderEntry[] = [];
+
+  function push(entry: ProviderEntry | null) {
+    if (entry && !seen.has(entry.provider)) {
+      seen.add(entry.provider);
+      list.push(entry);
+    }
+  }
+
   if (preferred) {
     const norm = preferred.toLowerCase();
     if (norm === "google" || norm === "gemini") {
       const key = getVoiceApiKey("google");
-      if (key) return { provider: "google", apiKey: key };
+      if (key) push({ provider: "google", apiKey: key });
     } else if (norm === "groq") {
       const key = getVoiceApiKey("groq");
-      if (key) return { provider: "groq", apiKey: key };
+      if (key) push({ provider: "groq", apiKey: key });
     } else if (norm === "openai") {
       const key = getVoiceApiKey("openai");
-      if (key) return { provider: "openai", apiKey: key };
+      if (key) push({ provider: "openai", apiKey: key });
+    } else if (norm === "opencodezen" || norm === "opencode-zen") {
+      const key = getVoiceApiKey("opencodeZen");
+      if (key) push({ provider: "opencodeZen", apiKey: key, baseUrl: "https://opencode.ai/zen/v1" });
+    } else if (norm === "opencodego" || norm === "opencode-go") {
+      const key = getVoiceApiKey("opencodeGo");
+      if (key) push({ provider: "opencodeGo", apiKey: key, baseUrl: "https://opencode.ai/zen/go/v1" });
+    } else if (norm === "openrouter") {
+      const key = getVoiceApiKey("openrouter");
+      if (key) push({ provider: "openrouter", apiKey: key, baseUrl: "https://openrouter.ai/api/v1" });
     }
   }
 
-  // Fallback in order of quality & speed
+  const zenKey = getVoiceApiKey("opencodeZen");
+  if (zenKey) push({ provider: "opencodeZen", apiKey: zenKey, baseUrl: "https://opencode.ai/zen/v1" });
+
+  const goKey = getVoiceApiKey("opencodeGo");
+  if (goKey) push({ provider: "opencodeGo", apiKey: goKey, baseUrl: "https://opencode.ai/zen/go/v1" });
+
   const googleKey = getVoiceApiKey("google");
-  if (googleKey) return { provider: "google", apiKey: googleKey };
+  if (googleKey) push({ provider: "google", apiKey: googleKey });
+
+  const openrouterKey = getVoiceApiKey("openrouter");
+  if (openrouterKey) push({ provider: "openrouter", apiKey: openrouterKey, baseUrl: "https://openrouter.ai/api/v1" });
 
   const groqKey = getVoiceApiKey("groq");
-  if (groqKey) return { provider: "groq", apiKey: groqKey };
+  if (groqKey) push({ provider: "groq", apiKey: groqKey });
 
   const openaiKey = getVoiceApiKey("openai");
-  if (openaiKey) return { provider: "openai", apiKey: openaiKey };
+  if (openaiKey) push({ provider: "openai", apiKey: openaiKey });
 
-  return null;
+  return list;
 }
 
-async function transcribeWithGemini(apiKey: string, audioBase64: string, mimeType = "audio/wav"): Promise<string> {
+/** Backward-compat: returns the first available provider only. */
+export function resolveBestVoiceProvider(preferred?: string): ProviderEntry | null {
+  return resolveAllVoiceProviders(preferred)[0] ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Transcription backends
+// ---------------------------------------------------------------------------
+
+async function transcribeWithGemini(
+  apiKey: string,
+  audioBase64: string,
+  mimeType = "audio/wav",
+): Promise<string> {
   const models = ["gemini-2.5-flash", "gemini-3.5-transcribe", "gemini-flash-latest"];
   let lastError: Error | null = null;
 
@@ -131,12 +210,7 @@ async function transcribeWithGemini(apiKey: string, audioBase64: string, mimeTyp
           contents: [
             {
               parts: [
-                {
-                  inlineData: {
-                    mimeType: mimeType || "audio/wav",
-                    data: audioBase64,
-                  },
-                },
+                { inlineData: { mimeType: mimeType || "audio/wav", data: audioBase64 } },
                 {
                   text: "Transcribe the spoken audio verbatim. Output ONLY the raw transcribed text. Do not add any explanation, quotation marks, prefixes, or commentary.",
                 },
@@ -145,9 +219,7 @@ async function transcribeWithGemini(apiKey: string, audioBase64: string, mimeTyp
           ],
           generationConfig: {
             temperature: 0,
-            thinkingConfig: {
-              thinkingBudget: 0,
-            },
+            thinkingConfig: { thinkingBudget: 0 },
           },
         }),
       });
@@ -170,8 +242,7 @@ async function transcribeWithGemini(apiKey: string, audioBase64: string, mimeTyp
           .map((p: any) => p.text || "")
           .join(" ")
           .trim();
-      const text = rawText.replace(/^["'«“`]+|["'»”`]+$/g, "").trim();
-      return text;
+      return rawText.replace(/^["'«"`]+|["'»"`]+$/g, "").trim();
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
     }
@@ -180,75 +251,91 @@ async function transcribeWithGemini(apiKey: string, audioBase64: string, mimeTyp
   throw lastError ?? new Error("Gemini transcription failed across all models.");
 }
 
-async function transcribeWithGroq(apiKey: string, audioBuffer: Buffer): Promise<string> {
+async function transcribeWithWhisperCompat(
+  apiKey: string,
+  audioBuffer: Buffer,
+  baseUrl: string,
+  providerName: string,
+): Promise<string> {
   const formData = new FormData();
   const blob = new Blob([audioBuffer], { type: "audio/wav" });
   formData.append("file", blob, "audio.wav");
   formData.append("model", "whisper-large-v3-turbo");
   formData.append("response_format", "json");
 
-  const response = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+  const response = await fetch(`${baseUrl}/audio/transcriptions`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
+    headers: { Authorization: `Bearer ${apiKey}` },
     body: formData,
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Groq Whisper API returned HTTP ${response.status}: ${errorText}`);
+    throw new Error(`${providerName} Whisper API returned HTTP ${response.status}: ${errorText}`);
   }
 
   const data = (await response.json()) as { text?: string };
   return (data?.text ?? "").trim();
 }
 
-async function transcribeWithOpenAi(apiKey: string, audioBuffer: Buffer): Promise<string> {
-  const formData = new FormData();
-  const blob = new Blob([audioBuffer], { type: "audio/wav" });
-  formData.append("file", blob, "audio.wav");
-  formData.append("model", "whisper-1");
-  formData.append("response_format", "json");
-
-  const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OpenAI Whisper API returned HTTP ${response.status}: ${errorText}`);
+async function tryTranscribeWithProvider(
+  entry: ProviderEntry,
+  audioBase64: string,
+  audioBuffer: Buffer,
+  mimeType: string,
+): Promise<string> {
+  const { provider, apiKey, baseUrl } = entry;
+  if (provider === "google") {
+    return transcribeWithGemini(apiKey, audioBase64, mimeType);
   }
-
-  const data = (await response.json()) as { text?: string };
-  return (data?.text ?? "").trim();
+  // opencodeZen, opencodeGo, openrouter, groq, openai all use Whisper-compat endpoint
+  const resolvedBase =
+    baseUrl ??
+    (provider === "groq" ? "https://api.groq.com/openai/v1" : "https://api.openai.com/v1");
+  return transcribeWithWhisperCompat(apiKey, audioBuffer, resolvedBase, provider);
 }
+
+// ---------------------------------------------------------------------------
+// Public entry point
+// ---------------------------------------------------------------------------
 
 export async function transcribeVoiceAudio(
   input: ServerVoiceTranscriptionInput,
 ): Promise<ServerVoiceTranscriptionResult> {
-  const resolved = resolveBestVoiceProvider(input.provider);
-  if (!resolved) {
+  const providers = resolveAllVoiceProviders(input.provider);
+
+  if (providers.length === 0) {
     throw new Error(
-      "Voice transcription requires an API key for Google Gemini, Groq, or OpenAI. Please configure one in Settings → Providers.",
+      "Voice transcription requires an API key for OpenCode Zen, Google Gemini, Groq, or OpenAI. Please configure one in Settings → Providers.",
     );
   }
 
-  const { provider, apiKey } = resolved;
   const audioBuffer = Buffer.from(input.audioBase64, "base64");
+  const errors: string[] = [];
 
-  let text = "";
-  if (provider === "google") {
-    text = await transcribeWithGemini(apiKey, input.audioBase64, input.mimeType);
-  } else if (provider === "groq") {
-    text = await transcribeWithGroq(apiKey, audioBuffer);
-  } else if (provider === "openai") {
-    text = await transcribeWithOpenAi(apiKey, audioBuffer);
+  for (const entry of providers) {
+    try {
+      const text = await tryTranscribeWithProvider(
+        entry,
+        input.audioBase64,
+        audioBuffer,
+        input.mimeType ?? "audio/wav",
+      );
+      if (errors.length > 0) {
+        console.warn(
+          `[transcription] Fell back to ${entry.provider} after ${errors.length} failure(s):`,
+          errors,
+        );
+      }
+      return { text };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[transcription] ${entry.provider} failed, trying next. Error: ${msg}`);
+      errors.push(`${entry.provider}: ${msg}`);
+    }
   }
 
-  return { text };
+  throw new Error(
+    `Voice transcription failed across all configured providers:\n${errors.map((e, i) => `  ${i + 1}. ${e}`).join("\n")}`,
+  );
 }
