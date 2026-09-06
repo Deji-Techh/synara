@@ -7,7 +7,7 @@
 
 import type { HarnessEvent } from "@caide/contracts";
 import { createStreamProviderAdapter } from "../provider/streamProviderAdapter.ts";
-import { runLoop, type LLMAdapter } from "../loop/loop.ts";
+import { DEFAULT_MAX_TOOL_CALL_STEPS, runLoop, type LLMAdapter } from "../loop/loop.ts";
 import { Inbox } from "../inbox/index.ts";
 import { appendHarnessEvent, flushTurnTokens } from "./eventLog.ts";
 import { buildConversationChain, buildMessages } from "../session/buildChain.ts";
@@ -171,7 +171,7 @@ export class CaideRunner {
       const stream = runLoop({
         sessionId: input.sessionId,
         turnId,
-        maxSteps: input.maxSteps ?? 25,
+        maxSteps: input.maxSteps ?? input.settings?.maxToolCallSteps ?? DEFAULT_MAX_TOOL_CALL_STEPS,
         signal: controller.signal,
         inbox: input.inbox,
         llm,
@@ -194,6 +194,10 @@ export class CaideRunner {
         })),
         onEvent: forward,
         role: "builder",
+        // Semantic stop (donor stopWhen): plan handoff tools end the turn
+        // so the continue-gate takes over. add_integration follows with the
+        // DB milestone once the integration flow is validated end to end.
+        stopAfterTool: chatMode === "plan" ? ["write_plan", "exit_plan"] : [],
       });
       for await (const event of stream) {
         void event;

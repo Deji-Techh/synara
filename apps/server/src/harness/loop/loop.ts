@@ -48,7 +48,31 @@ export interface LoopOptions {
   role?: HarnessRole;
   inbox?: Inbox;
   onToolError?: (toolName: string, error: unknown) => StructuredToolError;
+  /**
+   * Per-step message hook (donor prepareStep seam): repair/inject the step's
+   * messages after steer injection, before the LLM call — e.g. pending-user
+   * message injection or tool_use/tool_result pairing repair. Defaults to
+   * identity (messages pass through untouched).
+   */
+  prepareStep?: (input: {
+    step: number;
+    role: HarnessRole;
+    messages: ChatMessage[];
+  }) => ChatMessage[] | Promise<ChatMessage[]>;
+  /**
+   * Semantic stop tools (donor stopWhen seam): when a step executes any of
+   * these tools, the turn ends after the step's remaining calls complete
+   * (e.g. add_integration hands off to the UI flow; write_plan/exit_plan
+   * hand off to the plan continue-gate). Defaults to no semantic stop.
+   */
+  stopAfterTool?: string[];
 }
+
+/**
+ * Default per-turn tool-call step budget. Callers may override per turn
+ * (maxSteps) or via settings (maxToolCallSteps) — see runner wiring.
+ */
+export const DEFAULT_MAX_TOOL_CALL_STEPS = 25;
 
 export function formatStructuredToolError(toolName: string, error: unknown): StructuredToolError {
   if (typeof error === "object" && error !== null && "type" in error && "message" in error) {
@@ -88,7 +112,7 @@ export function formatStructuredToolError(toolName: string, error: unknown): Str
 export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEvent, void, unknown> {
   const sessionId = options.sessionId;
   const turnId = options.turnId ?? `turn-${Date.now()}`;
-  const maxSteps = options.maxSteps ?? 25;
+  const maxSteps = options.maxSteps ?? DEFAULT_MAX_TOOL_CALL_STEPS;
   const signal = options.signal;
   const inbox = options.inbox ?? new Inbox();
   const role = options.role ?? "builder";
@@ -149,6 +173,11 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
         });
       }
 
+      // Per-step hook: repair/inject messages before the LLM call.
+      const stepMessages = options.prepareStep
+        ? await options.prepareStep({ step, role, messages })
+        : messages;
+
       yield emit({
         type: "stage",
         sessionId,
@@ -163,7 +192,7 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
       // Stream LLM response
       const streamOpts: { tools: ToolDefinition[]; signal?: AbortSignal } = { tools: toolList };
       if (signal) streamOpts.signal = signal;
-      const stream = options.llm.stream(messages, streamOpts);
+      const stream = options.llm.stream(stepMessages, streamOpts);
 
       for await (const chunk of stream) {
         if (signal?.aborted) break;
@@ -189,6 +218,8 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
       }
 
       // Execute tool calls
+      const stopTools = new Set(options.stopAfterTool ?? []);
+      let stopAfterStep = false;
       for (const call of pendingToolCalls) {
         if (signal?.aborted) break;
 
@@ -278,6 +309,7 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
             result,
             durationMs: Date.now() - startTime,
           });
+          if (stopTools.has(call.name)) stopAfterStep = true;
         } catch (err) {
           const errorFormatter = options.onToolError ?? formatStructuredToolError;
           const formattedErr = errorFormatter(call.name, err);
@@ -296,6 +328,12 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
       }
 
       step += 1;
+
+      // Semantic stop: a handoff tool ran this step (integration UI flow,
+      // plan continue-gate) — end the turn instead of generating further.
+      if (stopAfterStep && !signal?.aborted) {
+        break;
+      }
     }
   } finally {
     inbox.markProcessing(false);

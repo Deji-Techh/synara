@@ -20,6 +20,11 @@ export interface ProviderSettingsInput {
 
 export interface SettingsLike {
   providerSettings?: Record<string, ProviderSettingsInput | undefined>;
+  /**
+   * Per-turn tool-call step budget override (donor settings.maxToolCallSteps).
+   * Optional — runners fall back to DEFAULT_MAX_TOOL_CALL_STEPS.
+   */
+  maxToolCallSteps?: number;
 }
 
 function settingsApiKey(input: ProviderSettingsInput | undefined): string | null | undefined {

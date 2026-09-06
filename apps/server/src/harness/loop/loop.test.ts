@@ -249,4 +249,71 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
     expect(steerMessage).toBeDefined();
     expect(steerMessage.content).toContain("[User Steering Instruction]");
   });
+
+  it("applies the prepareStep hook to step messages before the LLM call", async () => {
+    const seen: Array<{ step: number; count: number }> = [];
+    const fakeLlm: LLMAdapter = {
+      async *stream(messages) {
+        seen.push({ step: seen.length, count: messages.length });
+        yield { type: "token", content: "done" };
+      },
+    };
+    const loop = runLoop({
+      sessionId: "session-prepare-step",
+      maxSteps: 1,
+      llm: fakeLlm,
+      buildMessages: () => [{ role: "user", content: "hi" }],
+      prepareStep: ({ step, messages }) => [
+        ...messages,
+        { role: "user", content: `[injected at step ${step}]` },
+      ],
+    });
+    for await (const _ of loop) {
+      // drain
+    }
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toMatchObject({ step: 0, count: 2 });
+  });
+
+  it("ends the turn after a stopAfterTool executes (remaining calls still run)", async () => {
+    let llmCalls = 0;
+    const fakeLlm: LLMAdapter = {
+      async *stream() {
+        llmCalls += 1;
+        yield {
+          type: "tool_call",
+          toolCall: { id: `c${llmCalls}`, name: "write_plan", args: {} },
+        };
+      },
+    };
+    const executed: string[] = [];
+    const planTool: ToolDefinition = {
+      name: "write_plan",
+      description: "writes a plan",
+      execute: async () => {
+        executed.push("write_plan");
+        return "plan written";
+      },
+    };
+    const emitted: HarnessEvent[] = [];
+    const loop = runLoop({
+      sessionId: "session-stop-after-tool",
+      maxSteps: 10,
+      llm: fakeLlm,
+      tools: [planTool],
+      buildMessages: () => [{ role: "user", content: "plan this" }],
+      stopAfterTool: ["write_plan"],
+      onEvent: (ev) => emitted.push(ev),
+    });
+    for await (const _ of loop) {
+      // drain
+    }
+    // One LLM step only (no follow-up generation), tool executed + completed.
+    expect(llmCalls).toBe(1);
+    expect(executed).toEqual(["write_plan"]);
+    expect(
+      emitted.filter((e) => e.type === "tool_call" && (e as { status: string }).status === "completed"),
+    ).toHaveLength(1);
+    expect(emitted.filter((e) => e.type === "stage")).toHaveLength(1);
+  });
 });
