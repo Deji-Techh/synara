@@ -1297,61 +1297,63 @@ export class OrchestrationEngineService extends ServiceMap.Service<
             } catch {
               // ignore
             }
-            const initialThreadId = `thread-${command.projectId}`;
-            inMemoryThreads.push({
-              id: initialThreadId,
-              projectId: command.projectId,
-              title: command.title ?? "Chat",
-              modelSelection: command.defaultModelSelection ?? {
-                provider: "opencodeZen",
-                model: "default",
-              },
-              runtimeMode: "full-access",
-              interactionMode: "default",
-              envMode: "local",
-              branch: null,
-              worktreePath: null,
-              workingDirectory: null,
-              associatedWorktreePath: null,
-              associatedWorktreeBranch: null,
-              associatedWorktreeRef: null,
-              createBranchFlowCompleted: false,
-              isPinned: false,
-              parentThreadId: null,
-              creationSource: null,
-              sourceThreadId: null,
-              sourceTurnId: null,
-              gatewayOperationId: null,
-              gatewayOperationIndex: null,
-              subagentAgentId: null,
-              subagentNickname: null,
-              subagentRole: null,
-              forkSourceThreadId: null,
-              sidechatSourceThreadId: null,
-              lastKnownPr: null,
-              latestTurn: null,
-              latestUserMessageAt: null,
-              hasPendingApprovals: false,
-              hasPendingUserInput: false,
-              hasActionableProposedPlan: false,
-              createdAt: now,
-              updatedAt: now,
-              lastVisitedAt: now,
-              archivedAt: null,
-              settledAt: null,
-              deletedAt: null,
-              handoff: null,
-              session: null,
-              goal: null,
-              goalPausedAt: null,
-              pinnedMessages: [],
-              turns: [],
-              messages: [],
-              activities: [],
-              proposedPlans: [],
-              turnDiffSummaries: [],
-              checkpoints: [],
-            });
+            if (!command.skipInitialThread && !inMemoryThreads.some((t: any) => t.projectId === command.projectId)) {
+              const initialThreadId = `thread-${command.projectId}`;
+              inMemoryThreads.push({
+                id: initialThreadId,
+                projectId: command.projectId,
+                title: command.title ?? "Chat",
+                modelSelection: command.defaultModelSelection ?? {
+                  provider: "opencodeZen",
+                  model: "default",
+                },
+                runtimeMode: "full-access",
+                interactionMode: "default",
+                envMode: "local",
+                branch: null,
+                worktreePath: null,
+                workingDirectory: null,
+                associatedWorktreePath: null,
+                associatedWorktreeBranch: null,
+                associatedWorktreeRef: null,
+                createBranchFlowCompleted: false,
+                isPinned: false,
+                parentThreadId: null,
+                creationSource: null,
+                sourceThreadId: null,
+                sourceTurnId: null,
+                gatewayOperationId: null,
+                gatewayOperationIndex: null,
+                subagentAgentId: null,
+                subagentNickname: null,
+                subagentRole: null,
+                forkSourceThreadId: null,
+                sidechatSourceThreadId: null,
+                lastKnownPr: null,
+                latestTurn: null,
+                latestUserMessageAt: null,
+                hasPendingApprovals: false,
+                hasPendingUserInput: false,
+                hasActionableProposedPlan: false,
+                createdAt: now,
+                updatedAt: now,
+                lastVisitedAt: now,
+                archivedAt: null,
+                settledAt: null,
+                deletedAt: null,
+                handoff: null,
+                session: null,
+                goal: null,
+                goalPausedAt: null,
+                pinnedMessages: [],
+                turns: [],
+                messages: [],
+                activities: [],
+                proposedPlans: [],
+                turnDiffSummaries: [],
+                checkpoints: [],
+              });
+            }
             globalSnapshotSequence += 1;
             savePersistedState();
             publishDomainEvent({
@@ -2073,6 +2075,8 @@ export class OrchestrationEngineService extends ServiceMap.Service<
 
           // Spawn background LLM streaming execution
           void (async () => {
+            let pendingTokenFlushTimer: NodeJS.Timeout | null = null;
+            let turnAbortController: AbortController | null = null;
             try {
               const { streamProvider } = await import("./harness/provider/apiAdapter.ts");
               const DEFAULT_PROVIDER_MODELS: Record<string, string> = {
@@ -2203,7 +2207,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               const system = await buildSystemPrompt(command.mode, framework, skills);
 
               // Register abort controller and active message for stop support
-              const turnAbortController = new AbortController();
+              turnAbortController = new AbortController();
               const existingController = activeTurnAbortControllers.get(command.threadId);
               if (existingController) {
                 try { existingController.abort(); } catch {}
@@ -2254,7 +2258,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 });
               };
 
-              let pendingTokenFlushTimer: NodeJS.Timeout | null = null;
+              pendingTokenFlushTimer = null;
               let lastTokenPublishTime = 0;
               const STREAM_FLUSH_INTERVAL_MS = 35; // 35ms throttle: smooth ~28fps text flow, zero UI starvation, massive CPU reduction
 
@@ -2657,7 +2661,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               }
               console.error("[harnessCompat] LLM turn error", err);
               assistantMsg.streaming = false;
-              if (turnAbortController.signal.aborted || err?.name === "AbortError") {
+              if (turnAbortController?.signal.aborted || err?.name === "AbortError") {
                 turn.status = "interrupted";
                 if (!assistantMsg.text) {
                   assistantMsg.text = "Response stopped.";
