@@ -22,3 +22,10 @@ export {
   executeGitShowFile,
   executeGitRestoreFile,
 } from "./gitHistoryTools.ts";
+export {
+  ALL_PRE_COMMIT_TOOLS,
+  MAX_PRE_COMMIT_RUNS_PER_TURN,
+  executeRunPreCommit,
+  resetPreCommitCount,
+  runPreCommitTool,
+} from "./preCommitTools.ts";

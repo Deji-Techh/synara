@@ -194,10 +194,163 @@ export const buildApkTool = defineTool({
   presentCall: () => "Build debug APK",
 });
 
+// 6. read_logs — donor read_logs schema/filters over the preview console.
+// Donor description kept verbatim; source adapted: Dyad reads the Electron
+// log store (client/server/edge/network); Caide reads the thread's preview
+// dev-server console (string lines), so type filters other than server/all
+// and level filters apply as case-insensitive matches over the lines.
+const readLogsSchema = z.object({
+  type: z
+    .enum(["all", "client", "server", "edge-function", "network-requests"])
+    .optional()
+    .describe(
+      "Filter by log source type (default: all). The preview console carries dev-server output ('server'); other types match lines mentioning the source.",
+    ),
+  level: z
+    .enum(["all", "info", "warn", "error"])
+    .optional()
+    .describe("Filter by log level (default: all)"),
+  searchTerm: z
+    .string()
+    .optional()
+    .describe("Search for logs containing this text (case-insensitive)"),
+  limit: z
+    .number()
+    .min(1)
+    .max(200)
+    .optional()
+    .describe("Maximum number of logs to return (default: 50, max: 200)"),
+});
+
+function truncateLogMessage(message: string, maxLength: number = 1000): string {
+  if (message.length <= maxLength) return message;
+  const lines = message.split("\n");
+  if (lines.some((line) => line.startsWith("    at "))) {
+    return `${lines[0]}\n${lines.filter((l) => l.startsWith("    at ")).slice(0, 5).join("\n")}\n... [stack trace truncated]`;
+  }
+  const half = Math.floor((maxLength - 20) / 2);
+  return `${message.slice(0, half)}\n... [truncated] ...\n${message.slice(-half)}`;
+}
+
+export const readLogsTool = defineTool({
+  name: "read_logs",
+  description:
+    "Read logs at the moment this tool is called. Includes client logs, server logs, edge function logs, and network requests. Use this to debug errors, investigate issues, or understand app behavior. IMPORTANT: Logs are a snapshot from when you call this tool - they will NOT update while you are writing code or making changes. Use filters (searchTerm, type, level) to narrow down relevant logs on the first call.",
+  schema: readLogsSchema,
+  readOnly: true,
+  modifiesState: false,
+  execute: async (args, ctx) => {
+    const parsed = readLogsSchema.parse(args);
+    const { getPreviewState } = await import("../preview/manager.ts");
+    const state = getPreviewState(ctx.sessionId);
+    if (!state.running && state.logs.length === 0) {
+      return "No preview console logs: the preview is not running for this thread. Start it with open_preview first.";
+    }
+    const type = parsed.type ?? "all";
+    const level = parsed.level ?? "all";
+    const query = parsed.searchTerm?.toLowerCase();
+    const limit = parsed.limit ?? 50;
+    const levelWords: Record<string, string[]> = {
+      info: ["info", "log"],
+      warn: ["warn", "warning"],
+      error: ["error", "exception", "failed", "failure", "eaddrinuse"],
+    };
+    const filtered = state.logs.filter((line) => {
+      const lower = line.toLowerCase();
+      if (query && !lower.includes(query)) return false;
+      if (type !== "all" && type !== "server" && !lower.includes(type.replace("-", " "))) return false;
+      if (level !== "all" && !(levelWords[level] ?? []).some((w) => lower.includes(w))) return false;
+      return true;
+    });
+    const tail = filtered.slice(-limit).map((l) => truncateLogMessage(l));
+    return `Found ${tail.length} log${tail.length === 1 ? "" : "s"} (preview console, snapshot):\n\n${tail.join("\n")}`;
+  },
+  presentCall: () => "Read preview logs",
+});
+
+// 7. restart_app — donor restart_app over the Caide preview runtime.
+// Donor schema + description + consent kept verbatim; the Electron
+// app-run actor is replaced by preview stop + start for this thread.
+export const restartAppTool = defineTool({
+  name: "restart_app",
+  description:
+    "Restart the current app's development server without reinstalling dependencies. Use only when the user explicitly asks, the server is stopped/unresponsive/stale, a process-boundary change requires it (such as dev-server config, startup scripts, environment variables, or server initialization), or diagnostics explicitly require it. Do not use after ordinary source/style/asset edits or as routine verification. Finish related edits first and do not repeat it for the same unchanged cause.",
+  schema: z.object({}),
+  readOnly: false,
+  modifiesState: true,
+  timeoutMs: 120_000,
+  execute: async (_, ctx) => {
+    if (ctx.signal?.aborted) {
+      throw new Error("The app lifecycle operation was cancelled before it started");
+    }
+    if (detectFramework(ctx.appPath) === "blank") {
+      throw new Error("restart_app does not apply to Blank projects (no preview to restart).");
+    }
+    const { stopPreview, startPreview } = await import("../preview/manager.ts");
+    await stopPreview(ctx.sessionId);
+    const { url, kind } = await startPreview({ threadId: ctx.sessionId, appDir: ctx.appPath });
+    return `The app restarted successfully (preview ${kind} at ${url}).`;
+  },
+  presentCall: () => "Restart the current app",
+});
+
+// 8. reinstall_and_restart_app — donor reinstall flow over Caide preview.
+// Donor schema + description + consent kept verbatim; dependency reinstall
+// is framework-aware (bun install for website/RN, flutter pub get).
+export const reinstallAndRestartAppTool = defineTool({
+  name: "reinstall_and_restart_app",
+  description:
+    "Delete node_modules, reinstall dependencies, and restart the current app's development server. Use only when the user explicitly asks to reinstall dependencies, node_modules is missing/incomplete, dependency installation or package/lockfile/native-module state is demonstrably broken or stale, or diagnostics explicitly recommend it. Never use for ordinary code errors, UI changes, production build verification, or configuration changes that only require a restart. This operation includes a restart: never call both lifecycle tools for the same reason, and do not repeat it for the same unchanged cause.",
+  schema: z.object({}),
+  readOnly: false,
+  modifiesState: true,
+  timeoutMs: 600_000,
+  execute: async (_, ctx) => {
+    if (ctx.signal?.aborted) {
+      throw new Error("The app lifecycle operation was cancelled before it started");
+    }
+    const framework = detectFramework(ctx.appPath);
+    if (framework === "blank") {
+      throw new Error("reinstall_and_restart_app does not apply to Blank projects (no dependencies, no preview).");
+    }
+    if (framework === "flutter") {
+      try {
+        await execFileAsync("flutter", ["pub", "get"], {
+          cwd: ctx.appPath,
+          signal: ctx.signal,
+          timeout: 300_000,
+          maxBuffer: 10 * 1024 * 1024,
+        });
+      } catch (e: any) {
+        throw new Error(`flutter pub get failed: ${e?.message ?? String(e)}`);
+      }
+    } else {
+      try {
+        await execFileAsync("bun", ["install"], {
+          cwd: ctx.appPath,
+          signal: ctx.signal,
+          timeout: 300_000,
+          maxBuffer: 10 * 1024 * 1024,
+        });
+      } catch (e: any) {
+        throw new Error(`bun install failed: ${e?.message ?? String(e)}`);
+      }
+    }
+    const { stopPreview, startPreview } = await import("../preview/manager.ts");
+    await stopPreview(ctx.sessionId);
+    const { url, kind } = await startPreview({ threadId: ctx.sessionId, appDir: ctx.appPath });
+    return `Dependencies were reinstalled and the app restarted successfully (preview ${kind} at ${url}).`;
+  },
+  presentCall: () => "Delete node_modules, reinstall dependencies, and restart the current app",
+});
+
 export const ALL_PREVIEW_TOOLS: ToolDef[] = [
   openPreviewTool,
   restartPreviewTool,
   previewStatusTool,
   stopPreviewTool,
   buildApkTool,
+  readLogsTool,
+  restartAppTool,
+  reinstallAndRestartAppTool,
 ];

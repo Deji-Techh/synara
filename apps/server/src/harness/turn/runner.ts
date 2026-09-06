@@ -8,6 +8,7 @@
 import type { HarnessEvent } from "@caide/contracts";
 import { createStreamProviderAdapter } from "../provider/streamProviderAdapter.ts";
 import { DEFAULT_MAX_TOOL_CALL_STEPS, runLoop, type LLMAdapter } from "../loop/loop.ts";
+import { resetPreCommitCount } from "../../dyad/vcs/preCommitTools.ts";
 import { Inbox } from "../inbox/index.ts";
 import { appendHarnessEvent, flushTurnTokens } from "./eventLog.ts";
 import { buildConversationChain, buildMessages } from "../session/buildChain.ts";
@@ -129,6 +130,7 @@ export class CaideRunner {
     try {
       const storage = new SessionStorage();
       await restoreSessionState(input.sessionId, storage).catch(() => {});
+      resetPreCommitCount(input.sessionId);
       // Re-push the persisted todo list so the TodoList header survives
       // reconnects and new turns (Dyad parity: turn-start todos broadcast).
       const restoredTodos = getTodos(input.sessionId);

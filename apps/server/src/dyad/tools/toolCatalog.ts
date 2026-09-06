@@ -75,7 +75,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "set_chat_summary", category: "plan-memory", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/misc" },
   { name: "add_integration", category: "db-infra", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/db" },
   { name: "enable_nitro", category: "db-infra", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/db (ordering + guidance)" },
-  { name: "read_logs", category: "read-search", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "preview_status" },
+  { name: "read_logs", category: "read-search", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "read_logs" },
   // web-media
   { name: "web_search", category: "web-media", defaultConsent: "ask", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/web (DDG default, keyed override M3)" },
   { name: "web_crawl", category: "web-media", defaultConsent: "ask", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/web" },
@@ -93,6 +93,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "run_command", category: "verify", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "run_command" },
   { name: "run_tests", category: "verify", defaultConsent: "ask", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "test_project" },
   { name: "run_lint", category: "verify", defaultConsent: "ask", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "lint_project" },
+  { name: "run_pre_commit", category: "verify", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/vcs" },
   { name: "capture_evidence", category: "verify", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/misc" },
   { name: "capture_screenshot", category: "verify", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "screenshot" },
   // git
@@ -124,6 +125,8 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "preview_status", category: "preview", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "harness/tools" },
   { name: "stop_preview", category: "preview", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "harness/tools" },
   { name: "build_apk", category: "preview", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "harness/tools" },
+  { name: "restart_app", category: "preview", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "harness/tools" },
+  { name: "reinstall_and_restart_app", category: "preview", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "harness/tools" },
   { name: "open_database_panel", category: "db-infra", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/db" },
   { name: "test_rpc", category: "db-infra", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/web3" },
   // goals (donor goal system is out of scope for Caide v1 — see plan §5 slash decision)

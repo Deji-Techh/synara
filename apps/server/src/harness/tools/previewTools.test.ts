@@ -13,6 +13,9 @@ import {
   buildApkTool,
   openPreviewTool,
   previewStatusTool,
+  readLogsTool,
+  reinstallAndRestartAppTool,
+  restartAppTool,
 } from "./previewTools.ts";
 
 function ctxFor(appPath: string): ToolContext {
@@ -29,16 +32,19 @@ function blankDir(): string {
 }
 
 describe("preview tools (agent preview control)", () => {
-  it("registers all five preview tools in the default registry", () => {
+  it("registers all eight preview tools in the default registry", () => {
     expect(ALL_PREVIEW_TOOLS.map((t) => t.name)).toEqual([
       "open_preview",
       "restart_preview",
       "preview_status",
       "stop_preview",
       "build_apk",
+      "read_logs",
+      "restart_app",
+      "reinstall_and_restart_app",
     ]);
     const registry = createDefaultRegistry();
-    for (const name of ["open_preview", "restart_preview", "preview_status", "stop_preview", "build_apk"]) {
+    for (const name of ["open_preview", "restart_preview", "preview_status", "stop_preview", "build_apk", "read_logs", "restart_app", "reinstall_and_restart_app"]) {
       expect(registry.has(name)).toBe(true);
     }
   });
@@ -68,5 +74,16 @@ describe("preview tools (agent preview control)", () => {
     const rn = (await buildApkTool.execute({}, ctxFor(rnDir))) as any;
     expect(rn.success).toBe(false);
     expect(rn.error).toMatch(/expo prebuild/);
+  });
+
+  it("read_logs reports no console when the preview never ran", async () => {
+    const out = (await readLogsTool.execute({}, ctxFor(blankDir()))) as string;
+    expect(out).toMatch(/not running/);
+  });
+
+  it("restart_app and reinstall guard Blank explicitly", async () => {
+    const dir = blankDir();
+    await expect(restartAppTool.execute({}, ctxFor(dir))).rejects.toThrow(/Blank/);
+    await expect(reinstallAndRestartAppTool.execute({}, ctxFor(dir))).rejects.toThrow(/Blank/);
   });
 });
