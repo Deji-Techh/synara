@@ -10,8 +10,13 @@ const execFileAsync = promisify(execFile);
 const execAsync = promisify(exec);
 
 function resolveSafePath(userPath: string, appPath: string): string {
-  const resolved = path.resolve(appPath, userPath);
-  if (!resolved.startsWith(path.resolve(appPath))) {
+  const base = path.resolve(appPath);
+  const resolved = path.resolve(base, userPath);
+  // Boundary-aware containment (not a raw startsWith: "/root2" must not
+  // pass for base "/root"). Donor path_safety logic, Caide error contract.
+  const rel = path.relative(base, resolved);
+  const escapes = rel !== "" && (rel === ".." || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel));
+  if (escapes) {
     throw new Error(`Path traversal denied: '${userPath}' is outside workspace root '${appPath}'`);
   }
   return resolved;

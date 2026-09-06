@@ -92,10 +92,21 @@ describe("dyad editing transplant (m2b)", () => {
 
   it("denies workspace escapes but allows absolute-inside paths", () => {
     const dir = workspace();
-    expect(safeJoinAppPath(dir, "sub/../app.ts")).toBe(path.join(dir, "app.ts"));
+    // Donor parity: any ".." segment is rejected even when it would resolve
+    // inside (explicit traversal attempts, no "a/../b" surprises).
+    expect(() => safeJoinAppPath(dir, "sub/../app.ts")).toThrow(UnsafePathError);
     expect(safeJoinAppPath(dir, path.join(dir, "app.ts"))).toBe(path.join(dir, "app.ts"));
     expect(() => safeJoinAppPath(dir, "../../etc/passwd")).toThrow(UnsafePathError);
     expect(() => safeJoinAppPath(dir, "/etc/passwd")).toThrow(UnsafePathError);
+  });
+
+  it("allows dotfile names and enforces win32 case-insensitive roots", () => {
+    const dir = workspace();
+    // "..foo" is a plain filename, not a traversal segment.
+    expect(safeJoinAppPath(dir, "..foo")).toBe(path.join(dir, "..foo"));
+    // Win32-style roots use case-insensitive containment.
+    expect(safeJoinAppPath("C:\\apps\\demo", "src\\app.ts")).toBe("C:\\apps\\demo\\src\\app.ts");
+    expect(() => safeJoinAppPath("C:\\apps\\demo", "..\\other\\x.ts")).toThrow(UnsafePathError);
   });
 
   it("runs search_replace end to end with donor recovery errors", async () => {
