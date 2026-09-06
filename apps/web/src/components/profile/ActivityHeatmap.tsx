@@ -103,7 +103,7 @@ export function ActivityHeatmap({
   monthsPosition: monthsPositionProp,
   monthLabelClassName,
   fill: fillProp,
-  maxCellSize,
+  maxCellSize: maxCellSizeProp,
   tooltip: tooltipProp,
   tooltipUnit: tooltipUnitProp,
   className,
@@ -115,6 +115,7 @@ export function ActivityHeatmap({
   const showMonths = showMonthsProp ?? false;
   const monthsPosition = monthsPositionProp ?? "top";
   const fill = fillProp ?? false;
+  const maxCellSize = maxCellSizeProp ?? (fill ? 16 : undefined);
   const tooltip = tooltipProp ?? false;
   const tooltipUnit = tooltipUnitProp ?? "prompts";
   const columns: Column[] = [];
@@ -161,7 +162,11 @@ export function ActivityHeatmap({
 
   const columnStyle: CSSProperties = { gap: `${gap}px` };
   const cellStyle: CSSProperties = fill
-    ? { borderRadius: `${radius}px` }
+    ? {
+        borderRadius: `${radius}px`,
+        maxWidth: maxCellSize ? `${maxCellSize}px` : undefined,
+        maxHeight: maxCellSize ? `${maxCellSize}px` : undefined,
+      }
     : {
         width: `${resolvedCellSize}px`,
         height: `${resolvedCellSize}px`,

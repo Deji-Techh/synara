@@ -5590,7 +5590,11 @@ export default function Sidebar() {
                         type="button"
                         onClick={() => {
                           const realProjects = projects.filter((p) => p.id !== "default" && (p as any).kind !== "chat");
-                          const targetProjId = scopedProjectId ?? focusedProjectId ?? realProjects[0]?.id ?? projects[0]?.id;
+                          const validFocusedProjId =
+                            focusedProjectId && focusedProjectId !== "default" && realProjects.some((p) => p.id === focusedProjectId)
+                              ? focusedProjectId
+                              : null;
+                          const targetProjId = scopedProjectId ?? validFocusedProjId ?? realProjects[0]?.id ?? projects[0]?.id;
                           if (targetProjId) {
                             prefetchModelsForProjectNewThread(targetProjId, { includeDroid: true });
                             void handleNewThread(targetProjId, {
@@ -5743,7 +5747,11 @@ export default function Sidebar() {
                       variant="outline"
                       onClick={() => {
                         const realProjects = projects.filter((p) => p.id !== "default" && (p as any).kind !== "chat");
-                        const targetProjId = scopedProjectId ?? focusedProjectId ?? realProjects[0]?.id ?? projects[0]?.id;
+                        const validFocusedProjId =
+                          focusedProjectId && focusedProjectId !== "default" && realProjects.some((p) => p.id === focusedProjectId)
+                            ? focusedProjectId
+                            : null;
+                        const targetProjId = scopedProjectId ?? validFocusedProjId ?? realProjects[0]?.id ?? projects[0]?.id;
                         if (targetProjId) {
                           prefetchModelsForProjectNewThread(targetProjId, { includeDroid: true });
                           void handleNewThread(targetProjId, {

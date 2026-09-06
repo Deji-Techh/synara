@@ -2771,6 +2771,60 @@ function resolveUserProfileIdentity() {
   };
 }
 
+const HEATMAP_WINDOW_DAYS = 274;
+
+function addDaysIso(day: string, delta: number): string {
+  const [year = 1970, month = 1, date = 1] = day.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, date) + delta * 86_400_000).toISOString().slice(0, 10);
+}
+
+function weekdayOf(day: string): number {
+  const [year = 1970, month = 1, date = 1] = day.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, date)).getUTCDay();
+}
+
+function buildHeatmapFromCounts(countByDay: Map<string, number>, todayKey: string) {
+  const windowStart = addDaysIso(todayKey, -(HEATMAP_WINDOW_DAYS - 1));
+  const activeCounts: number[] = [];
+  for (const [day, count] of countByDay.entries()) {
+    if (day >= windowStart && day <= todayKey && count > 0) {
+      activeCounts.push(count);
+    }
+  }
+  activeCounts.sort((left, right) => left - right);
+
+  const heatmap = [];
+  for (let offset = 0; offset < HEATMAP_WINDOW_DAYS; offset += 1) {
+    const day = addDaysIso(windowStart, offset);
+    const count = countByDay.get(day) || 0;
+    let intensity = 0;
+    if (count > 0) {
+      if (activeCounts.length > 0) {
+        let low = 0;
+        let high = activeCounts.length;
+        while (low < high) {
+          const mid = (low + high) >>> 1;
+          if (activeCounts[mid] <= count) {
+            low = mid + 1;
+          } else {
+            high = mid;
+          }
+        }
+        intensity = Math.min(4, Math.max(1, Math.ceil((low * 4) / activeCounts.length)));
+      } else {
+        intensity = 1;
+      }
+    }
+    heatmap.push({
+      day,
+      count,
+      weekday: weekdayOf(day),
+      intensity,
+    });
+  }
+  return heatmap;
+}
+
 function computeLiveProfileStats(utcOffsetMinutes = 0) {
   const now = new Date();
   const todayLocal = new Date(now.getTime() + utcOffsetMinutes * 60_000).toISOString().slice(0, 10);
@@ -2823,17 +2877,9 @@ function computeLiveProfileStats(utcOffsetMinutes = 0) {
     dayCounts.set(todayLocal, 0);
   }
 
+  const heatmap = buildHeatmapFromCounts(dayCounts, todayLocal);
+
   const sortedDays = Array.from(dayCounts.keys()).sort();
-  const heatmap = sortedDays.map((day) => {
-    const count = dayCounts.get(day) || 0;
-    const weekday = new Date(day + "T00:00:00Z").getUTCDay();
-    return {
-      day,
-      count,
-      weekday,
-      intensity: count > 0 ? Math.min(4, Math.max(1, Math.ceil(count / 2))) : 0,
-    };
-  });
 
   let longestStreakDays = 0;
   let tempStreak = 0;
@@ -3111,17 +3157,8 @@ function computeLiveProfileTokenStats(utcOffsetMinutes = 0) {
     percent: lifetimeTotalTokens > 0 ? Math.round((item.tokens / lifetimeTotalTokens) * 100) : 0,
   }));
 
-  const sortedDays = Array.from(dayTokensMap.keys()).sort();
-  const tokenHeatmap = sortedDays.map((day) => {
-    const tokens = dayTokensMap.get(day) || 0;
-    const weekday = new Date(day + "T00:00:00Z").getUTCDay();
-    return {
-      day,
-      count: tokens,
-      weekday,
-      intensity: tokens > 0 ? Math.min(4, Math.max(1, Math.ceil(tokens / 5000))) : 0,
-    };
-  });
+  const todayLocal = new Date(now.getTime() + utcOffsetMinutes * 60_000).toISOString().slice(0, 10);
+  const tokenHeatmap = buildHeatmapFromCounts(dayTokensMap, todayLocal);
 
   const activeProviders = Array.from(providerTokensMap.keys()).filter((p) =>
     providerKindSet.has(p as any),

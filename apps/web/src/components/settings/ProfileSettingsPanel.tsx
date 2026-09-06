@@ -154,7 +154,8 @@ function ProfileContent({
           <ActivityHeatmap
             cells={heatmap.cells}
             fill
-            radius={5}
+            maxCellSize={16}
+            radius={4}
             gap={3}
             tooltip
             tooltipUnit={heatmap.unit}

@@ -18,6 +18,7 @@ import {
   isLatestPinnedThreadMutation,
 } from "../components/Sidebar.logic";
 import { toastManager } from "../components/ui/toast";
+import { useHandleNewThread } from "./useHandleNewThread";
 import { deleteActiveThreadFromClient } from "../lib/activeThreadDelete";
 import { reconcileDeletedThreadsFromClient } from "../lib/deletedThreadClientReconciliation";
 import { gitRemoveWorktreeMutationOptions } from "../lib/gitReactQuery";
@@ -113,6 +114,7 @@ export function useSidebarThreadActions(input: {
     threadsHydrated,
   } = input;
   const navigate = useNavigate();
+  const { handleNewThread } = useHandleNewThread();
   const queryClient = useQueryClient();
   const removeWorktreeMutation = useMutation(gitRemoveWorktreeMutationOptions({ queryClient }));
   const clearComposerDraftForThread = useComposerDraftStore((store) => store.clearDraftThread);
@@ -506,7 +508,11 @@ export function useSidebarThreadActions(input: {
                 replace: true,
               });
             } else if (prepared.shouldNavigateToFallback) {
-              void handleNewChat({ fresh: true });
+              if (thread.projectId && thread.projectId !== "default") {
+                void handleNewThread(thread.projectId, { fresh: true });
+              } else {
+                void handleNewChat({ fresh: true });
+              }
             }
           } else if (prepared?.shouldNavigateToFallback) {
             if (prepared.fallbackThreadId) {
@@ -515,6 +521,8 @@ export function useSidebarThreadActions(input: {
                 params: { threadId: prepared.fallbackThreadId },
                 replace: true,
               });
+            } else if (thread.projectId && thread.projectId !== "default") {
+              void handleNewThread(thread.projectId, { fresh: true });
             } else {
               void handleNewChat({ fresh: true });
             }
@@ -531,6 +539,7 @@ export function useSidebarThreadActions(input: {
       clearTemporaryThread,
       clearTerminalState,
       handleNewChat,
+      handleNewThread,
       navigate,
       removeThreadFromSplitViews,
       removeWorktreeMutation,
@@ -587,7 +596,13 @@ export function useSidebarThreadActions(input: {
               replace: true,
             });
           } else {
-            await handleNewChat({ fresh: true });
+            const currentThread = getThreadFromState(useStore.getState(), threadId);
+            const projId = currentThread?.projectId;
+            if (projId && projId !== "default") {
+              await handleNewThread(projId, { fresh: true });
+            } else {
+              await handleNewChat({ fresh: true });
+            }
           }
         }
         return true;
@@ -596,7 +611,14 @@ export function useSidebarThreadActions(input: {
         pendingThreadIds.delete(threadId);
       });
     },
-    [appSettings.sidebarThreadSortOrder, handleNewChat, routeThreadId, sidebarThreads, navigate],
+    [
+      appSettings.sidebarThreadSortOrder,
+      handleNewChat,
+      handleNewThread,
+      routeThreadId,
+      sidebarThreads,
+      navigate,
+    ],
   );
 
   const restoreArchivedThreadFromToast = useCallback(

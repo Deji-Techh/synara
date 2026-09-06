@@ -1,7 +1,6 @@
 import { type ProjectId, ThreadId } from "@caide/contracts";
 import { getDefaultModel } from "@caide/shared/model";
 import { useNavigate, useRouter } from "@tanstack/react-router";
-import { startTransition } from "react";
 import { useAppSettings } from "../appSettings";
 import {
   type ComposerThreadDraftState,
@@ -292,22 +291,22 @@ export function useHandleNewThread() {
           applyStickyState(threadId);
           applyProviderOverride(threadId);
         },
-        // Mark the draft-landing navigation as a transition so the new route
-        // subtree renders interruptibly and the browser can paint the chat
-        // mount loader immediately instead of freezing on the synchronous commit.
         navigate: () =>
-          new Promise<void>((resolve, reject) => {
-            startTransition(() => {
-              navigate({
-                to: "/$threadId",
-                params: { threadId },
-                ...(navigation?.search ? { search: navigation.search } : {}),
-              }).then(resolve, reject);
-            });
+          navigate({
+            to: "/$threadId",
+            params: { threadId },
+            ...(navigation?.search ? { search: navigation.search } : {}),
           }),
         // TanStack resolves an older navigate() promise when a newer navigation supersedes it.
         // Verify the committed route before deleting the previous project draft.
-        isDestinationActive: () => router.state.location.pathname === `/${threadId}`,
+        isDestinationActive: () => {
+          const norm = (p: string) => p.replace(/\/$/, "");
+          const target = `/${threadId}`;
+          const current = norm(router.state.location.pathname);
+          const historyPath = norm(router.history.location.pathname);
+          const winPath = typeof window !== "undefined" ? norm(window.location.pathname) : "";
+          return current === target || historyPath === target || winPath === target;
+        },
         finalize: () => setProjectDraftThreadId(projectId, threadId, draftSeed),
         rollback: () => {
           clearDraftThread(threadId);
