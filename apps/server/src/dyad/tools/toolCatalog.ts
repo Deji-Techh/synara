@@ -108,6 +108,9 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "summarize_context", category: "history", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/misc" },
   { name: "read_guide", category: "history", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/misc" },
   { name: "copy_reference", category: "history", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/misc" },
+  { name: "search_chats", category: "history", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/history" },
+  { name: "read_chat", category: "history", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/history" },
+  { name: "explore_chat_history", category: "history", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/history" },
   // subagents
   { name: "spawn_background_task", category: "subagents", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "spawn_subagent" },
   { name: "check_task_status", category: "subagents", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/sandbox" },
