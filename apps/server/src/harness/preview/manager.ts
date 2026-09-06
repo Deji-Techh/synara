@@ -32,6 +32,9 @@ const ANSI_PATTERN = /\u001b\[[0-9;]*m/g;
 /** Matches http(s) URLs in dev-server output. */
 const URL_PATTERN = /(https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|[a-zA-Z0-9._-]+)(?::\d+)?(?:\/[^\s]*)?)/;
 
+/** Output shapes emitted when the dev-server port is already taken. */
+export const PORT_CONFLICT_PATTERN = /EADDRINUSE|address already in use|port .* already in use|is already running on|use a different port/i;
+
 /**
  * Extracts a renderable preview URL from one dev-server output line.
  * Handles Expo/Metro phrasing ("Web is waiting on http://…") and rewrites
@@ -349,18 +352,33 @@ export async function startPreview(input: {
   session.process = child;
 
   let resolvedUrl: string | null = null;
+  let failed = false;
   const urlPromise = new Promise<{ url: string; kind: "web" | "native" }>((resolve, reject) => {
+    const fail = (message: string) => {
+      if (resolvedUrl || failed) return;
+      failed = true;
+      clearTimeout(timeout);
+      reject(new Error(message));
+    };
     const timeout = setTimeout(() => {
-      if (!resolvedUrl) {
-        reject(new Error(`Preview did not report a URL within ${START_TIMEOUT_MS / 1000}s`));
-      }
+      fail(`Preview did not report a URL within ${START_TIMEOUT_MS / 1000}s`);
     }, START_TIMEOUT_MS);
 
     const onData = (data: Buffer) => {
       const text = data.toString();
       for (const line of text.split("\n")) {
         if (line) pushLog(session, line);
-        if (resolvedUrl) continue;
+        if (resolvedUrl || failed) continue;
+        // A manually-started dev server holding the port (e.g. `npx expo start
+        // --web` in the user's terminal) makes the managed server hang on an
+        // interactive prompt or die — fail fast with guidance instead of
+        // burning the whole start timeout on silence.
+        if (PORT_CONFLICT_PATTERN.test(line)) {
+          fail(
+            "Preview port is already in use — stop the manually-started dev server in your terminal (e.g. the running `npx expo start --web`), then press Retry",
+          );
+          continue;
+        }
         const url = extractPreviewUrl(line);
         if (url) {
           resolvedUrl = url;
@@ -374,14 +392,7 @@ export async function startPreview(input: {
     child.stdout?.on("data", onData);
     child.stderr?.on("data", onData);
     child.on("exit", (code) => {
-      if (!resolvedUrl) {
-        clearTimeout(timeout);
-        reject(
-          new Error(
-            `Preview process exited (code ${code}) before reporting a URL. Recent output:\n${session.logs.slice(-15).join("\n")}`,
-          ),
-        );
-      }
+      fail(`Preview process exited (code ${code}) before reporting a URL`);
     });
   });
 

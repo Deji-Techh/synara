@@ -398,7 +398,16 @@ function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean 
 }
 
 function errorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error && error.message.length > 0 ? error.message : fallback;
+  // RPC failures cross the WebSocket as plain {message} payloads or realm-shifted
+  // errors — `instanceof Error` alone drops the real engine message and the pane
+  // shows the generic fallback instead.
+  if (error instanceof Error && error.message.length > 0) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message.length > 0) return message;
+  }
+  if (typeof error === "string" && error.length > 0) return error;
+  return fallback;
 }
 
 function StatusPill({ state }: { state: PreviewPanelState }) {
@@ -1240,7 +1249,7 @@ export function PreviewPanel(props: {
         setPanelState((previous) => previewStarted(previous, result.url, [], result.kind ?? null));
       })
       .catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : "The preview failed to start.";
+        const message = errorMessage(error, "The preview failed to start.");
         // Auto-retry native → web-server on device-not-found errors. This
         // covers the case where previewDevices was still null (unknown) on
         // first attempt and the engine reports "No supported devices".
@@ -1257,8 +1266,7 @@ export function PreviewPanel(props: {
               );
             })
             .catch((retryError: unknown) => {
-              const retryMessage =
-                retryError instanceof Error ? retryError.message : "The preview failed to start.";
+              const retryMessage = errorMessage(retryError, "The preview failed to start.");
               setPanelState((previous) => previewStartFailed(previous, retryMessage));
             });
           return;

@@ -131,6 +131,28 @@ describe("mergeEnginePreviewState", () => {
     expect(merged.logs).toEqual(["Launching lib/main.dart"]);
   });
 
+  it("holds a starting pane in starting (never blank-running) while the engine has no url yet", () => {
+    const starting = previewStartRequested(createInitialPreviewPanelState());
+    const merged = mergeEnginePreviewState(starting, {
+      running: true,
+      url: "",
+      logs: ["Starting Metro Bundler"],
+    });
+    expect(merged.status).toBe("starting");
+    expect(merged.url).toBeNull();
+    expect(merged.logs).toEqual(["Starting Metro Bundler"]);
+  });
+
+  it("drops a running pane back to starting instead of a blank iframe when the url clears", () => {
+    const running = previewStarted(createInitialPreviewPanelState(), "http://127.0.0.1:54321", [
+      "Keep me",
+    ]);
+    const merged = mergeEnginePreviewState(running, { running: true, url: "", logs: [] });
+    expect(merged.status).toBe("starting");
+    expect(merged.url).toBeNull();
+    expect(merged.logs).toEqual(["Keep me"]);
+  });
+
   it("falls back to idle when the engine reports stopped after running/starting", () => {
     const running = previewStarted(createInitialPreviewPanelState(), "http://127.0.0.1:54321", [
       "A previous crash line",

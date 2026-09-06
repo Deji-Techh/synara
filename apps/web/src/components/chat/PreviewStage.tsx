@@ -80,7 +80,16 @@ const BUILD_POLL_INTERVAL_MS = 2_000;
 const TOOLCHAIN_POLL_INTERVAL_MS = 10_000;
 
 function errorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error && error.message.length > 0 ? error.message : fallback;
+  // RPC failures cross the WebSocket as plain {message} payloads or realm-shifted
+  // errors — `instanceof Error` alone drops the real engine message and the pane
+  // shows the generic fallback instead.
+  if (error instanceof Error && error.message.length > 0) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message.length > 0) return message;
+  }
+  if (typeof error === "string" && error.length > 0) return error;
+  return fallback;
 }
 
 /**
@@ -1036,8 +1045,7 @@ export function PreviewStage(props: {
         setPanelState((prev) => previewStarted(prev, result.url, [], result.kind ?? null)),
       )
       .catch((error: unknown) => {
-        const msg = error instanceof Error ? error.message : "The preview failed to start.";
-        setPanelState((prev) => previewStartFailed(prev, msg));
+        setPanelState((prev) => previewStartFailed(prev, errorMessage(error, "The preview failed to start.")));
       });
   }, [props.threadId, props.workspaceRoot]);
 

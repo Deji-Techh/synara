@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { extractPreviewUrl, normalizePreviewUrl } from "./manager.ts";
+import { extractPreviewUrl, normalizePreviewUrl, PORT_CONFLICT_PATTERN } from "./manager.ts";
 
 describe("extractPreviewUrl", () => {
   it("matches plain localhost dev-server URLs", () => {
@@ -32,5 +32,19 @@ describe("extractPreviewUrl", () => {
 describe("normalizePreviewUrl", () => {
   it("leaves localhost URLs untouched", () => {
     expect(normalizePreviewUrl("http://localhost:8081/")).toBe("http://localhost:8081/");
+  });
+});
+
+describe("PORT_CONFLICT_PATTERN", () => {
+  it("matches node and expo port-taken output", () => {
+    expect(PORT_CONFLICT_PATTERN.test("Error: listen EADDRINUSE: address already in use :::8081")).toBe(
+      true,
+    );
+    expect(PORT_CONFLICT_PATTERN.test("Port 8081 is already in use")).toBe(true);
+  });
+
+  it("ignores normal startup lines", () => {
+    expect(PORT_CONFLICT_PATTERN.test("Waiting on http://localhost:8081")).toBe(false);
+    expect(PORT_CONFLICT_PATTERN.test("Starting Metro Bundler")).toBe(false);
   });
 });

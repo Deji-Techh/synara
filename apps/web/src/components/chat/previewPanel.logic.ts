@@ -174,6 +174,9 @@ export interface EnginePreviewSnapshot {
  *
  * - engine running while the pane is idle/starting/failed -> running (covers
  *   both "start finished between polls" and "preview started elsewhere");
+ *   EXCEPT engine running with an empty URL while the pane is
+ *   running/starting -> starting (dev server alive, bundle not served yet —
+ *   must never promote to running or the pane renders a blank iframe);
  * - engine stopped while the pane was running/starting -> idle (process died or
  *   was stopped), keeping the last logs so the user can read crash output;
  * - engine stopped while the pane is idle/failed -> untouched, so a failed
@@ -186,8 +189,15 @@ export function mergeEnginePreviewState(
   state: PreviewPanelState,
   snapshot: EnginePreviewSnapshot,
 ): PreviewPanelState {
-  if (!snapshot.running) {
+  if (!snapshot.running || !snapshot.url) {
     if (state.status === "running" || state.status === "starting") {
+      if (snapshot.running) {
+        // Engine alive but no URL yet (Metro/webpack still bundling) — stay in
+        // starting so the pane shows the spinner + live logs. Promoting to
+        // running with an empty URL renders a blank iframe (the white-screen bug).
+        const logs = snapshot.logs.length > 0 ? snapshot.logs : state.logs;
+        return { ...state, status: "starting", url: null, kind: null, logs };
+      }
       return { ...state, status: "idle", url: null, kind: null };
     }
     return state;
