@@ -37,6 +37,33 @@ export { COMPACTION_SYSTEM_PROMPT } from "./compactionPrompt.ts";
 export { SUMMARIZE_CHAT_SYSTEM_PROMPT } from "./summarizeChatPrompt.ts";
 export { SECURITY_REVIEW_SYSTEM_PROMPT } from "./securityReviewPrompt.ts";
 export {
+  NEON_NO_BROWSER_DATABASE_URL_RULE,
+  NEON_NO_BROWSER_SERVERLESS_RULE,
+  NEON_NO_CUSTOM_AUTH_RULE,
+  NEON_NO_MANUAL_MIGRATIONS_RULE,
+  NEON_RLS_REQUIRES_JWT_RULE,
+  NEON_IMPLEMENTER_NO_MANUAL_MIGRATIONS_RULE,
+  NEON_DISCONNECTED_SYSTEM_PROMPT,
+  getNeonAvailableSystemPrompt,
+} from "./neonPrompt.ts";
+export {
+  SUPABASE_NO_MANUAL_MIGRATIONS_RULE,
+  SUPABASE_GRANTS_AND_RLS_RULE,
+  SUPABASE_IMPLEMENTER_NO_MANUAL_MIGRATIONS_RULE,
+  SUPABASE_IMPLEMENTER_RLS_RULE,
+  SUPABASE_ROOT_RLS_RULE,
+  SUPABASE_ROOT_NO_MANUAL_MIGRATIONS_RULE,
+  SUPABASE_SERVICE_ROLE_BROWSER_RULE,
+  SUPABASE_EDGE_FUNCTION_JWT_RULE,
+  SUPABASE_DISCONNECTED_SYSTEM_PROMPT,
+  SUPABASE_NOT_AVAILABLE_SYSTEM_PROMPT,
+  getSupabaseAvailableSystemPrompt,
+} from "./supabasePrompt.ts";
+export {
+  buildProviderInvariants,
+  type ProviderInvariantOptions,
+} from "./providerInvariants.ts";
+export {
   APP_FRAMEWORK_TYPES,
   isNeonSupportedFramework,
   type AppFrameworkType,

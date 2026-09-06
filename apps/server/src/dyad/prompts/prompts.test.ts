@@ -74,6 +74,52 @@ describe("dyad prompt transplant (m1)", () => {
     expect(SECURITY_REVIEW_SYSTEM_PROMPT).toContain("Begin your security review.");
   });
 
+  it("emits no provider invariants by default, injects them when connected", () => {
+    const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
+    for (const mode of ["build", "ask", "local-agent", "plan"] as const) {
+      expect(
+        constructSystemPrompt({ ...base, chatMode: mode }),
+        `default ${mode} leak`,
+      ).not.toContain("<provider_invariants>");
+    }
+
+    const agentSupabase = constructSystemPrompt({
+      ...base,
+      chatMode: "local-agent",
+      hasSupabaseProject: true,
+      supabaseClientCode: "const supabase = createClient(URL, KEY);",
+    });
+    expect(agentSupabase).toContain("<provider_invariants>");
+    expect(agentSupabase).toContain("# Supabase Instructions");
+    expect(agentSupabase).toContain("const supabase = createClient(URL, KEY);");
+
+    const agentSupabaseOff = constructSystemPrompt({
+      ...base,
+      chatMode: "local-agent",
+      hasSupabaseProject: true,
+      supabaseConnected: false,
+    });
+    expect(agentSupabaseOff).toContain("<provider_invariants>");
+    expect(agentSupabaseOff).toContain("reconnect the linked Supabase organization");
+
+    const buildNeon = constructSystemPrompt({
+      ...base,
+      chatMode: "build",
+      hasNeonProject: true,
+      neonClientCode: "export const sql = neon(process.env.DATABASE_URL!);",
+    });
+    expect(buildNeon).toContain("<provider_invariants>");
+    expect(buildNeon).toContain("<neon-system-prompt>");
+    expect(buildNeon).toContain("NEVER implement homegrown auth");
+
+    const buildNeonOff = getSystemPromptForChatMode({
+      chatMode: "build",
+      hasNeonProject: true,
+      neonConnected: false,
+    });
+    expect(buildNeonOff).toContain("reconnect Neon or select an active branch");
+  });
+
   it("dispatcher routes plan/local-agent/build/ask with no leftover placeholders", () => {
     const plan = constructSystemPrompt({
       aiRules: undefined,

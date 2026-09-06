@@ -9,6 +9,7 @@ import type { AppFrameworkType } from "./frameworkType.ts";
 import type { AppTarget } from "./appTarget.ts";
 import { AGENT_TEST_WRITING_GUIDANCE } from "./testGuidance.ts";
 import { buildPlatformPrompt } from "./platformContracts.ts";
+import { buildProviderInvariants } from "./providerInvariants.ts";
 import { CAIDE_WEB_UI_SKILL_PACK } from "./webSkillPack.ts";
 import {
   CAIDE_MOBILE_UI_SKILL_PACK,
@@ -470,6 +471,17 @@ export function constructLocalAgentPrompt(
     freeModelMode?: boolean;
     frameworkType?: AppFrameworkType | null;
     hasSupabaseProject?: boolean;
+    /** Client-code snippet for the Supabase available prompt (omitted → no available prompt). */
+    supabaseClientCode?: string;
+    /** False → Supabase disconnected notice. */
+    supabaseConnected?: boolean;
+    /** Neon project linked to the app. */
+    hasNeonProject?: boolean;
+    /** Client-code snippet for the Neon available prompt (omitted → no available prompt). */
+    neonClientCode?: string;
+    /** False → Neon disconnected notice. */
+    neonConnected?: boolean;
+    neonEmailVerificationEnabled?: boolean;
     enableAppBlueprint?: boolean;
     codeExplorerAvailable?: boolean;
     /**
@@ -541,6 +553,24 @@ export function constructLocalAgentPrompt(
     .replace("[[PLATFORM_CONTRACT]]", () => buildPlatformPrompt(target))
     .replace("[[SERVER_LAYER]]", () => serverLayer)
     .replace("[[AI_RULES]]", () => resolvedRules);
+
+  // Database provider invariants (Supabase / Neon): appended only when the
+  // caller supplies connection state + client code, so default prompts are
+  // unchanged. Donor pattern: `<provider_invariants>` injection.
+  const providerInvariants = buildProviderInvariants({
+    hasSupabaseProject: options?.hasSupabaseProject,
+    supabaseClientCode: options?.supabaseClientCode,
+    supabaseConnected: options?.supabaseConnected,
+    hasNeonProject: options?.hasNeonProject,
+    neonClientCode: options?.neonClientCode,
+    neonConnected: options?.neonConnected,
+    neonFrameworkType: options?.frameworkType ?? null,
+    neonEmailVerificationEnabled: options?.neonEmailVerificationEnabled,
+    neonLocalAgentMode: true,
+  });
+  if (providerInvariants) {
+    prompt += `\n\n<provider_invariants>\n${providerInvariants}\n</provider_invariants>`;
+  }
 
   // Append theme prompt if provided
   if (themePrompt) {

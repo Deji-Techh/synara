@@ -11,6 +11,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { constructLocalAgentPrompt } from "./agentPrompt.ts";
 import { constructPlanModePrompt } from "./planPrompt.ts";
+import { buildProviderInvariants } from "./providerInvariants.ts";
 import { DEFAULT_AI_RULES } from "./aiRules.ts";
 import type { AppFrameworkType } from "./frameworkType.ts";
 import { CAIDE_MOBILE_UI_SKILL_PACK } from "./skillPacks.ts";
@@ -457,6 +458,12 @@ export const constructSystemPrompt = ({
   freeModelMode,
   frameworkType,
   hasSupabaseProject,
+  supabaseClientCode,
+  supabaseConnected,
+  hasNeonProject,
+  neonClientCode,
+  neonConnected,
+  neonEmailVerificationEnabled,
   enableAppBlueprint,
   codeExplorerAvailable,
   testingEnabled,
@@ -475,6 +482,17 @@ export const constructSystemPrompt = ({
   freeModelMode?: boolean;
   frameworkType?: AppFrameworkType | null;
   hasSupabaseProject?: boolean;
+  /** Client-code snippet for the Supabase available prompt (omitted → no available prompt). */
+  supabaseClientCode?: string;
+  /** False → Supabase disconnected notice. */
+  supabaseConnected?: boolean;
+  /** Neon project linked to the app. */
+  hasNeonProject?: boolean;
+  /** Client-code snippet for the Neon available prompt (omitted → no available prompt). */
+  neonClientCode?: string;
+  /** False → Neon disconnected notice. */
+  neonConnected?: boolean;
+  neonEmailVerificationEnabled?: boolean;
   enableAppBlueprint?: boolean;
   codeExplorerAvailable?: boolean;
   testingEnabled?: boolean;
@@ -513,6 +531,12 @@ export const constructSystemPrompt = ({
       freeModelMode,
       frameworkType,
       hasSupabaseProject,
+      supabaseClientCode,
+      supabaseConnected,
+      hasNeonProject,
+      neonClientCode,
+      neonConnected,
+      neonEmailVerificationEnabled,
       enableAppBlueprint,
       codeExplorerAvailable,
       testingEnabled,
@@ -525,6 +549,12 @@ export const constructSystemPrompt = ({
     chatMode,
     frameworkType,
     hasSupabaseProject,
+    supabaseClientCode,
+    supabaseConnected,
+    hasNeonProject,
+    neonClientCode,
+    neonConnected,
+    neonEmailVerificationEnabled,
     testingEnabled,
     appTarget: appTarget ?? appTargetForFramework(caideFramework),
   });
@@ -566,12 +596,29 @@ export const getSystemPromptForChatMode = ({
   chatMode,
   frameworkType,
   hasSupabaseProject,
+  supabaseClientCode,
+  supabaseConnected,
+  hasNeonProject,
+  neonClientCode,
+  neonConnected,
+  neonEmailVerificationEnabled,
   testingEnabled,
   appTarget,
 }: {
   chatMode: "build" | "ask";
   frameworkType?: AppFrameworkType | null;
   hasSupabaseProject?: boolean;
+  /** Client-code snippet for the Supabase available prompt (omitted → no available prompt). */
+  supabaseClientCode?: string;
+  /** False → Supabase disconnected notice. */
+  supabaseConnected?: boolean;
+  /** Neon project linked to the app. */
+  hasNeonProject?: boolean;
+  /** Client-code snippet for the Neon available prompt (omitted → no available prompt). */
+  neonClientCode?: string;
+  /** False → Neon disconnected notice. */
+  neonConnected?: boolean;
+  neonEmailVerificationEnabled?: boolean;
   /**
    * Whether the app has opted into the E2E testing feature. Test-writing
    * guidance is only injected when true, so the model doesn't offer to write
@@ -609,7 +656,23 @@ export const getSystemPromptForChatMode = ({
     // Keep the test guidance right after the base (i.e. after the postfix's
     // "ONLY use <dyad-write>" mandate) so it carries as the exception.
     (testingEnabled ? `\n\n${TEST_WRITING_GUIDANCE}` : "") +
-    (shouldAppendNitroNudge ? `\n\n${BUILD_SERVER_LAYER_NUDGE}` : "");
+    (shouldAppendNitroNudge ? `\n\n${BUILD_SERVER_LAYER_NUDGE}` : "") +
+    // Database provider invariants (Supabase / Neon). Empty by default, so
+    // existing build prompts are unchanged until callers pass connection state.
+    (() => {
+      const invariants = buildProviderInvariants({
+        hasSupabaseProject,
+        supabaseClientCode,
+        supabaseConnected,
+        hasNeonProject,
+        neonClientCode,
+        neonConnected,
+        neonFrameworkType: frameworkType ?? null,
+        neonEmailVerificationEnabled,
+        neonLocalAgentMode: false,
+      });
+      return invariants ? `\n\n<provider_invariants>\n${invariants}\n</provider_invariants>` : "";
+    })();
   return buildPrompt;
 };
 
