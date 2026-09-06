@@ -81,7 +81,6 @@ export function formatChatMessagesForEndpoint(
     for (const m of nonSystem as any[]) {
       if (m.role === "assistant") {
         if (m.tool_calls && Array.isArray(m.tool_calls) && m.tool_calls.length > 0) {
-          if (m.content) items.push({ type: "message", role: "assistant", content: m.content });
           for (const tc of m.tool_calls) {
             items.push({
               type: "function_call",

@@ -209,6 +209,21 @@ export async function* streamProvider(
   let buffer = "";
   let inThinking = false;
 
+  const onAbort = () => {
+    try {
+      reader.cancel("Aborted by signal").catch(() => {});
+    } catch {}
+  };
+  if (signal) {
+    if (signal.aborted) {
+      try {
+        await reader.cancel("Aborted by signal");
+      } catch {}
+      return;
+    }
+    signal.addEventListener("abort", onAbort, { once: true });
+  }
+
   try {
     while (true) {
       if (signal?.aborted) {
@@ -441,18 +456,23 @@ export async function* streamProvider(
       }
     }
   } finally {
+    if (signal) {
+      signal.removeEventListener("abort", onAbort);
+    }
     try {
       reader.releaseLock();
     } catch {
       // ignore
     }
-    if (inThinking) {
-      inThinking = false;
-      yield { type: "token", content: "</think>\n\n" };
+    if (!signal?.aborted) {
+      if (inThinking) {
+        inThinking = false;
+        yield { type: "token", content: "</think>\n\n" };
+      }
+      for (const complete of assembler.flushAll()) {
+        yield { type: "tool_call", toolCall: complete };
+      }
+      if (onTiming) onTiming(timing.finish());
     }
-    for (const complete of assembler.flushAll()) {
-      yield { type: "tool_call", toolCall: complete };
-    }
-    if (onTiming) onTiming(timing.finish());
   }
 }

@@ -46,6 +46,127 @@ export function getPreviewState(threadId: string): {
   return { running: true, url: session.url, logs: [...session.logs], kind: session.kind };
 }
 
+function ensureNodeModulesBinSymlinks(appDir: string): void {
+  const nodeModulesPath = path.join(appDir, "node_modules");
+  if (!fs.existsSync(nodeModulesPath)) return;
+
+  const binDir = path.join(nodeModulesPath, ".bin");
+  if (!fs.existsSync(binDir)) {
+    try {
+      fs.mkdirSync(binDir, { recursive: true });
+    } catch {}
+  }
+
+  const packagesToCheck: { pkgName: string; dir: string }[] = [];
+  try {
+    const entries = fs.readdirSync(nodeModulesPath, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      if (entry.name.startsWith("@")) {
+        const scopeDir = path.join(nodeModulesPath, entry.name);
+        try {
+          const scopedEntries = fs.readdirSync(scopeDir, { withFileTypes: true });
+          for (const se of scopedEntries) {
+            if (se.isDirectory()) {
+              packagesToCheck.push({
+                pkgName: `${entry.name}/${se.name}`,
+                dir: path.join(scopeDir, se.name),
+              });
+            }
+          }
+        } catch {}
+      } else if (!entry.name.startsWith(".")) {
+        packagesToCheck.push({
+          pkgName: entry.name,
+          dir: path.join(nodeModulesPath, entry.name),
+        });
+      }
+    }
+  } catch {}
+
+  for (const { dir } of packagesToCheck) {
+    const pkgJsonPath = path.join(dir, "package.json");
+    if (!fs.existsSync(pkgJsonPath)) continue;
+    try {
+      const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, "utf-8"));
+      if (!pkg.bin) continue;
+
+      const bins: Record<string, string> =
+        typeof pkg.bin === "string"
+          ? { [path.basename(pkg.name)]: pkg.bin }
+          : typeof pkg.bin === "object" && pkg.bin !== null
+            ? pkg.bin
+            : {};
+
+      for (const [binName, relBinPath] of Object.entries(bins)) {
+        const targetFile = path.resolve(dir, relBinPath);
+        const linkPath = path.join(binDir, binName);
+        if (fs.existsSync(targetFile)) {
+          try {
+            fs.chmodSync(targetFile, 0o755);
+          } catch {}
+          if (!fs.existsSync(linkPath)) {
+            try {
+              const relTarget = path.relative(binDir, targetFile);
+              fs.symlinkSync(relTarget, linkPath);
+            } catch {
+              try {
+                fs.copyFileSync(targetFile, linkPath);
+                fs.chmodSync(linkPath, 0o755);
+              } catch {}
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+}
+
+function ensureWsCompatibility(appDir: string): void {
+  const wsIndexPath = path.join(appDir, "node_modules", "ws", "index.js");
+  if (!fs.existsSync(wsIndexPath)) return;
+
+  try {
+    const content = fs.readFileSync(wsIndexPath, "utf-8");
+    if (!content.includes("WebSocketServer")) {
+      const patched = content.replace(
+        /WebSocket\.Server\s*=\s*require\(['"]\.\/lib\/websocket-server['"]\);?/,
+        (match) => `${match}\nWebSocket.WebSocketServer = WebSocket.Server;`,
+      );
+      if (patched !== content) {
+        fs.writeFileSync(wsIndexPath, patched, "utf-8");
+      }
+    }
+  } catch {}
+}
+
+function resolveDevCommand(appDir: string, defaultCmd: string): string {
+  const pkgPath = path.join(appDir, "package.json");
+  if (!fs.existsSync(pkgPath)) return defaultCmd;
+
+  try {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+    const scripts = (pkg.scripts || {}) as Record<string, string>;
+    const deps = {
+      ...((pkg.dependencies || {}) as Record<string, string>),
+      ...((pkg.devDependencies || {}) as Record<string, string>),
+    };
+
+    if (deps.expo || deps["react-native"]) {
+      if (scripts.web) {
+        return "npm run web";
+      }
+      return "npx --yes expo start --web";
+    }
+
+    if (scripts.dev) {
+      return "npm run dev";
+    }
+  } catch {}
+
+  return defaultCmd;
+}
+
 async function ensureDependenciesInstalled(
   appDir: string,
   onLog: (line: string) => void,
@@ -54,20 +175,43 @@ async function ensureDependenciesInstalled(
   if (!fs.existsSync(pkgPath)) return;
 
   const nodeModulesPath = path.join(appDir, "node_modules");
-  if (fs.existsSync(nodeModulesPath)) return;
+  if (fs.existsSync(nodeModulesPath)) {
+    ensureNodeModulesBinSymlinks(appDir);
+    ensureWsCompatibility(appDir);
+    return;
+  }
 
   onLog("[preview] Missing node_modules detected. Installing project dependencies...");
 
-  // Determine package manager: prefer bun if available, else npm
   let cmd = "bun";
   let args = ["install"];
 
-  try {
-    const { execSync } = await import("node:child_process");
-    execSync("bun --version", { stdio: "ignore" });
-  } catch {
+  const hasBunLock =
+    fs.existsSync(path.join(appDir, "bun.lock")) || fs.existsSync(path.join(appDir, "bun.lockb"));
+  const hasPnpmLock = fs.existsSync(path.join(appDir, "pnpm-lock.yaml"));
+  const hasYarnLock = fs.existsSync(path.join(appDir, "yarn.lock"));
+  const hasNpmLock = fs.existsSync(path.join(appDir, "package-lock.json"));
+
+  if (hasBunLock) {
+    cmd = "bun";
+    args = ["install"];
+  } else if (hasPnpmLock) {
+    cmd = "pnpm";
+    args = ["install"];
+  } else if (hasYarnLock) {
+    cmd = "yarn";
+    args = ["install"];
+  } else if (hasNpmLock) {
     cmd = "npm";
     args = ["install", "--no-audit", "--no-fund"];
+  } else {
+    try {
+      const { execSync } = await import("node:child_process");
+      execSync("bun --version", { stdio: "ignore" });
+    } catch {
+      cmd = "npm";
+      args = ["install", "--no-audit", "--no-fund"];
+    }
   }
 
   onLog(`[preview] Running: ${cmd} ${args.join(" ")} in ${appDir}`);
@@ -100,6 +244,8 @@ async function ensureDependenciesInstalled(
       clearTimeout(timeout);
       if (code === 0) {
         onLog("[preview] Dependencies installed successfully.");
+        ensureNodeModulesBinSymlinks(appDir);
+        ensureWsCompatibility(appDir);
         resolve();
       } else {
         reject(new Error(`Dependency installation failed with code ${code}`));
@@ -131,10 +277,11 @@ export async function startPreview(input: {
   }
 
   const framework = getFrameworkConfigForAppDir(appDir);
-  const devCommand = framework?.devCommand;
-  if (!devCommand) {
+  const rawDevCommand = framework?.devCommand;
+  if (!rawDevCommand) {
     throw new Error(`No dev command configured for this framework`);
   }
+  const devCommand = resolveDevCommand(appDir, rawDevCommand);
 
   // Pre-register session so installation logs can be streamed and viewed immediately
   const initialLogs: string[] = [];
@@ -152,9 +299,22 @@ export async function startPreview(input: {
   // Auto-install dependencies if package.json exists and node_modules is missing
   await ensureDependenciesInstalled(appDir, (line) => pushLog(session, line));
 
+  const compatPreloadPath = path.join(__dirname, "compatPreload.cjs");
+  const nodeOptions = [
+    process.env.NODE_OPTIONS || "",
+    fs.existsSync(compatPreloadPath) ? `-r ${compatPreloadPath}` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const binPath = path.join(appDir, "node_modules", ".bin");
+  const envPath = process.env.PATH ? `${binPath}:${process.env.PATH}` : binPath;
+
   // env with an optional explicit port, suppressing external browser launch
-  const env = {
+  const env: Record<string, string | undefined> = {
     ...process.env,
+    PATH: envPath,
+    NODE_OPTIONS: nodeOptions || undefined,
     BROWSER: "none",
     CI: "1",
     EXPO_NO_BROWSER: "1",

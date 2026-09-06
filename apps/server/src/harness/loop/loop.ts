@@ -111,6 +111,7 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
   inbox.markProcessing(true);
 
   let step = 0;
+  const executedReadOnlyToolSignatures = new Map<string, number>();
 
   try {
     while (step < maxSteps) {
@@ -222,6 +223,29 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
         }
 
         try {
+          // Prevent infinite tool call loops: detect if the same read-only tool was called with identical arguments
+          const callSignature = `${call.name}:${JSON.stringify(call.args ?? {})}`;
+          const isReadOnly = toolDef.readOnly ?? false;
+          if (isReadOnly) {
+            const count = (executedReadOnlyToolSignatures.get(callSignature) ?? 0) + 1;
+            executedReadOnlyToolSignatures.set(callSignature, count);
+            if (count > 2) {
+              yield emit({
+                type: "tool_call",
+                sessionId,
+                id: call.id,
+                name: call.name,
+                args: call.args,
+                status: "completed",
+                result: {
+                  notice: `Tool '${call.name}' has already executed with these arguments in this turn. No workspace changes occurred. Present your findings to the user now.`,
+                },
+                durationMs: Date.now() - startTime,
+              });
+              continue;
+            }
+          }
+
           // Bound tool execution so a hung tool (network, missing dir) can't
           // block the turn forever. Default 30s; long tools (preview start,
           // APK builds) declare their own timeoutMs on the ToolDef.

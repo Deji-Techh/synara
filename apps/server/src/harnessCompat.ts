@@ -1234,15 +1234,16 @@ async function buildSystemPrompt(
   const toneAndEmojiRule = `Tone & Style Requirements (STRICT):
 1. ZERO EMOJIS: Never use emojis anywhere in your responses, lists, headings, code, or comments unless the user explicitly requests them. Do NOT use checkmarks, device icons, decorative symbols, or any other emojis.
 2. Direct, Serious Tone: Always maintain a serious, straightforward, concise, and highly professional engineering tone. Avoid cheerleading, hype, or generic pleasantries. State facts, architectures, code changes, and verification outcomes directly without conversational fluff.
-3. Rigorous Audit & Review: When asked to audit, inspect, review, or evaluate what was built or the project state, do NOT give superficial cheerleading summaries. Inspect the actual codebase with tools (read files, run tests/linters, verify error handling and edge cases). Report concrete technical findings, code defects, gaps against specifications, and actionable engineering next steps.
-4. Active Investigation: When the user asks you to audit, diagnose, explore, inspect, or answer questions about the workspace, actively use your read tools (list_dir, read_file, search_files). Never stop after a single tool call without completing your analysis. Continue inspecting until you have sufficient facts, then output your complete findings.`;
+3. Focused & Direct Responses: When the user asks a direct question (for example, "can you see the files in this project?"), answer the question directly and concisely. Do NOT launch into an unsolicited full-project audit, file scan, or multi-step re-inspection.
+4. Purposeful Tool Use: Only call tools when strictly necessary to answer the question or perform requested work. Avoid over-engineering. Never repeat the same tool call with the same arguments if already completed. Once you have the needed information, stop calling tools and present your answer.
+5. Rigorous Audit & Review: When explicitly asked to audit, inspect, review, or evaluate what was built or the project state, inspect the actual codebase with tools and report concrete technical findings.`;
 
   const modeDirective =
     normalizedMode === "ask"
-      ? `You are in ASK mode for ${framework} (${frameworkShort}). Answer for THIS framework only — if asked "what can you build?" list only ${framework} capabilities, not all frameworks. You have READ-ONLY tools available (read_file, list_dir, search_files, read_url, get_design_tokens, read_spec, get_preview_url, screenshot, lint_project, test_project, spawn_subagent) — use them if you need to inspect files to answer. When asked to audit, diagnose, or explain the project, actively inspect files with list_dir and read_file. Do NOT write code or modify files unless the user explicitly asks.\n${slashHelp}\n${toneAndEmojiRule}\nTools:\n- ${CORE_TOOLS_TEXT}`
+      ? `You are in ASK mode for ${framework} (${frameworkShort}). Answer for THIS framework only — if asked "what can you build?" list only ${framework} capabilities, not all frameworks. You have READ-ONLY tools available (read_file, list_dir, search_files, read_url, get_design_tokens, read_spec, get_preview_url, screenshot, lint_project, test_project, spawn_subagent) — use them only if needed to inspect files to answer. Do NOT write code or modify files unless the user explicitly asks.\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}`
       : normalizedMode === "plan"
-        ? `You are in PLAN mode for ${framework} (${frameworkShort}). First discuss requirements and present a concrete architecture or questionnaire/blueprint with the user before writing application code. You have full planning tools — use write_spec, write_design_spec, write_motion_spec, checkpoint, log_decision, plus read tools to inspect workspace. When asked to audit, diagnose, inspect, or evaluate the codebase, actively inspect workspace files with list_dir and read_file and report concrete technical findings.\n${slashHelp}\n${toneAndEmojiRule}\nTools:\n- ${CORE_TOOLS_TEXT}`
-        : `You are in BUILD mode for ${framework} (${frameworkShort}). ${greetingRule} ${buildRule}\nWhen asked to audit, diagnose, or fix issues, actively inspect workspace files with read_file, list_dir, and search_files before modifying code.\n${slashHelp}\n${toneAndEmojiRule}\nTools:\n- ${CORE_TOOLS_TEXT}\n\nTool rules: work efficiently; call write_file to produce code, run_command for installs/builds, get_preview_url to get preview URL, screenshot to verify.`;
+        ? `You are in PLAN mode for ${framework} (${frameworkShort}). First discuss requirements and present a concrete architecture or questionnaire/blueprint with the user before writing application code. You have full planning tools — use write_spec, write_design_spec, write_motion_spec, checkpoint, log_decision, plus read tools to inspect workspace.\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}`
+        : `You are in BUILD mode for ${framework} (${frameworkShort}). ${greetingRule} ${buildRule}\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}\n\nTool rules: work efficiently; call write_file to produce code, run_command for installs/builds, get_preview_url to get preview URL, screenshot to verify.`;
   return `${rolePrompt}\n\n${toneAndEmojiRule}\n\n${modeDirective}`.trim();
 }
 
@@ -2281,6 +2282,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               };
 
               let stepAssistantText = "";
+              const completedStepTexts: string[] = [];
 
               const loop = runLoop({
                 sessionId: thread.id,
@@ -2359,15 +2361,13 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                         }
                       } catch {}
                     }
-                    // Dedupe: if this token chunk is already at the tail, skip it
-                    const tail = assistantMsg.text.slice(-event.content.length);
-                    if (tail === event.content) {
-                      // exact duplicate chunk, skip
-                    } else if (
-                      event.content.length > 20 &&
-                      assistantMsg.text.endsWith(event.content.slice(0, 20))
-                    ) {
-                      // likely repeated sentence start, skip
+                    // Dedupe: check if current step is echoing a previously completed step's preamble
+                    const currentStepSoFar = (stepAssistantText + event.content).trim();
+                    const isRepeatingPriorStep = completedStepTexts.some(
+                      (prior) => prior.length > 20 && currentStepSoFar.startsWith(prior.slice(0, Math.min(prior.length, 35)))
+                    );
+                    if (isRepeatingPriorStep) {
+                      stepAssistantText += event.content;
                     } else {
                       stepAssistantText += event.content;
                       assistantMsg.text += event.content;
@@ -2400,6 +2400,9 @@ export class OrchestrationEngineService extends ServiceMap.Service<
 
                     if (event.status === "started") {
                       const trimmedReasoning = stepAssistantText.slice(-500).trim();
+                      if (trimmedReasoning) {
+                        completedStepTexts.push(trimmedReasoning);
+                      }
                       const lastMsg = conversation[conversation.length - 1];
                       const newCall = {
                         id: event.id,
@@ -2461,6 +2464,35 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 // onEvent handles all publishing
               }
               flushAssistantMessageImmediate(assistantMsg);
+
+              // If turn was aborted by user stop control, conclude immediately as interrupted
+              if (turnAbortController.signal.aborted) {
+                if (pendingTokenFlushTimer !== null) {
+                  clearTimeout(pendingTokenFlushTimer);
+                  pendingTokenFlushTimer = null;
+                }
+                assistantMsg.streaming = false;
+                turn.status = "interrupted";
+                thread.latestTurn = {
+                  turnId,
+                  state: "interrupted",
+                  requestedAt: now,
+                  startedAt: now,
+                  completedAt: new Date().toISOString(),
+                  assistantMessageId: assistantMsgId,
+                };
+                globalSnapshotSequence += 1;
+                savePersistedState();
+                publishDomainEvent({
+                  sequence: globalSnapshotSequence,
+                  aggregateKind: "thread",
+                  aggregateId: command.threadId,
+                  type: "thread.message-sent",
+                  payload: messageSentPayload(command.threadId, assistantMsg),
+                  createdAt: new Date().toISOString(),
+                });
+                return;
+              }
 
               // Fallback: if model leaked a file write as text (e.g. {"path":"."} or
               // <caide-write>/<dyad-write>), parse and execute it so the build
@@ -2552,14 +2584,27 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 console.warn("[harnessCompat] fallback parser error", e);
               }
 
-              // Final dedupe: collapse duplicated sentences that slipped through
-              // (e.g. "Building Molek...Building Molek..." or "Perfect...Perfect..." seen in flawless-koala)
+              // Final dedupe: collapse duplicated prose blocks separated by caide-tools
               try {
-                let deduped = assistantMsg.text;
-                // If the same 40+ char block appears twice back-to-back, collapse to one
-                deduped = deduped.replace(/(.{40,}?)\1/g, "$1");
-                // Handle case where duplication has no separator: "life.Building" -> "life. Building"
-                // Already covered by above, but also handle with period
+                const tagSplit = assistantMsg.text.split(/(<caide-[^>]+>[\s\S]*?<\/caide-[^>]+>)/g);
+                const seenProse = new Set<string>();
+                const rebuiltParts: string[] = [];
+                for (const part of tagSplit) {
+                  if (part.startsWith("<caide-")) {
+                    rebuiltParts.push(part);
+                  } else {
+                    const trimmed = part.trim();
+                    if (trimmed.length > 20) {
+                      if (seenProse.has(trimmed)) {
+                        continue; // skip duplicate prose block
+                      }
+                      seenProse.add(trimmed);
+                    }
+                    rebuiltParts.push(part);
+                  }
+                }
+                const dedupedByTags = rebuiltParts.join("").replace(/\n{3,}/g, "\n\n").trim();
+                let deduped = dedupedByTags.replace(/(.{40,}?)\1/g, "$1");
                 if (deduped !== assistantMsg.text) {
                   assistantMsg.text = deduped.trim();
                   assistantMsg.updatedAt = new Date().toISOString();
