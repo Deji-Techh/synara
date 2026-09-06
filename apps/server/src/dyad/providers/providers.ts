@@ -243,3 +243,57 @@ export const PROVIDERS: Record<string, ProviderDef> = {
 export function keylessProviders(): ProviderDef[] {
   return Object.values(PROVIDERS).filter((p) => p.local === true);
 }
+
+export interface ProviderSettingsValidation {
+  ok: boolean;
+  message: string;
+}
+
+/**
+ * Validate a provider settings entry (donor ProviderSettingSchema union
+ * semantics: Regular vs Azure vs Vertex shapes). Returns guidance — callers
+ * save regardless except for unknown providers. Vertex documents its
+ * service-account requirements even though fetch routing is still gated
+ * (transport needs-work).
+ */
+export function validateProviderSettings(
+  providerId: string,
+  entry: { apiKey?: string; apiBaseUrl?: string; resourceName?: string },
+): ProviderSettingsValidation {
+  const def = PROVIDERS[providerId];
+  if (!def) {
+    return { ok: false, message: `Unknown provider "${providerId}" — settings not saved.` };
+  }
+  if (def.local === true) {
+    return { ok: true, message: `${def.displayName} needs no key (local runtime).` };
+  }
+  if (providerId === "azure" && !entry.resourceName?.trim()) {
+    return {
+      ok: false,
+      message: "Azure OpenAI needs a Resource Name (the resource endpoint host). Saved without it; turns will fail until it is set.",
+    };
+  }
+  if (providerId === "custom" && !entry.apiBaseUrl?.trim()) {
+    return {
+      ok: false,
+      message: "Custom providers need an API Base URL. Saved without it; turns will fail until it is set.",
+    };
+  }
+  if (providerId === "vertex") {
+    return {
+      ok: false,
+      message:
+        "Vertex AI needs service-account OAuth (serviceAccountKey, projectId, location), which is not wired to fetch streaming yet. Settings are saved, but turns will fail — point a custom provider at a Vertex OpenAI-compatible gateway, or use the google provider instead.",
+    };
+  }
+  if (def.transport === "needs-work") {
+    return {
+      ok: false,
+      message: `${def.displayName} is not on fetch streaming yet. ${def.transportNote ?? ""}`.trim(),
+    };
+  }
+  if (!entry.apiKey?.trim() && !def.envVarName) {
+    return { ok: true, message: `${def.displayName} saved (no key stored here; provide one at turn time or via gateway settings).` };
+  }
+  return { ok: true, message: `${def.displayName} settings saved.` };
+}

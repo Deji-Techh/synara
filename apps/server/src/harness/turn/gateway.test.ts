@@ -172,4 +172,71 @@ describe("turn gateway (m3h)", () => {
       gateway.detachWs();
     }
   });
+
+  it("validates provider settings on set and skips unknown providers", async () => {
+    const fs = await import("node:fs");
+    const os = await import("node:os");
+    const path = await import("node:path");
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "caide-home-"));
+    process.env.CAIDE_HOME = home;
+    const { resetSharedProviderSecrets, sharedProviderSecrets } = await import(
+      "../../dyad/providers/secrets.ts"
+    );
+    resetSharedProviderSecrets();
+    const gateway = new TurnGateway();
+    const sent: HarnessEvent[] = [];
+    const handlers: Record<string, (...args: never[]) => void> = {};
+    const server = {
+      broadcastToSession: (sessionId: string, event: HarnessEvent) => {
+        void sessionId;
+        sent.push(event);
+      },
+    } as unknown as HarnessHub;
+    for (const name of [
+      "onPromptAnswer",
+      "onConsentAnswer",
+      "onSettingsSync",
+      "onSteer",
+      "onCancel",
+      "onBlueprintResponse",
+      "onTurnStart",
+      "onProviderSettingsGet",
+      "onProviderSettingsSet",
+      "onProviderSettingsTest",
+    ]) {
+      (server as unknown as Record<string, unknown>)[name] = (h: (...args: never[]) => void) => {
+        handlers[name] = h;
+      };
+    }
+    gateway.attachWs(server);
+    try {
+      type SetFn = (
+        sid: string,
+        providerId: string,
+        entry: { apiKey?: string; apiBaseUrl?: string; resourceName?: string },
+        defaults?: { providerId?: string; modelId?: string },
+        requestId?: string,
+      ) => void;
+      const set = handlers.onProviderSettingsSet as SetFn;
+      set("s-psv", "azure", { apiKey: "k" }, undefined, "r-azure");
+      const azureState = sent.find(
+        (e) => e.type === "provider_settings_state" && (e as { requestId?: string }).requestId === "r-azure",
+      ) as unknown as { tests?: Record<string, { ok: boolean; message: string }> };
+      expect(azureState?.tests?.azure?.ok).toBe(false);
+      expect(azureState?.tests?.azure?.message).toMatch(/Resource Name/);
+      // Saved despite the warning (turn-time failure, not a silent drop).
+      expect(sharedProviderSecrets().read().providers.azure?.apiKey).toBe("k");
+
+      set("s-psv", "nope", { apiKey: "k" }, undefined, "r-nope");
+      const nopeState = sent.find(
+        (e) => e.type === "provider_settings_state" && (e as { requestId?: string }).requestId === "r-nope",
+      ) as unknown as { tests?: Record<string, { ok: boolean; message: string }> };
+      expect(nopeState?.tests?.nope?.ok).toBe(false);
+      expect(sharedProviderSecrets().read().providers.nope).toBeUndefined();
+    } finally {
+      gateway.detachWs();
+      resetSharedProviderSecrets();
+      delete process.env.CAIDE_HOME;
+    }
+  });
 });

@@ -13,6 +13,7 @@ import { HarnessHub } from "../ws/hub.ts";
 import { attachUiBridge } from "../ws/uiBridge.ts";
 import { approveBlueprint, type AppBlueprint } from "../../dyad/plan/blueprintStore.ts";
 import { sharedProviderSecrets } from "../../dyad/providers/secrets.ts";
+import { PROVIDERS, validateProviderSettings } from "../../dyad/providers/providers.ts";
 import { testProviderConnection } from "../../dyad/providers/testConnection.ts";
 import type { SettingsLike } from "../../dyad/providers/index.ts";
 import type { ConsentRequestFn } from "../../dyad/tools/permissions.ts";
@@ -66,14 +67,31 @@ export class TurnGateway {  private runner = new CaideRunner();
     });
     server.onProviderSettingsSet((sessionId, providerId, entry, defaults, requestId) => {
       const secrets = sharedProviderSecrets();
+      let validation: { ok: boolean; message: string } | undefined;
       // Empty entries (defaults-only saves) must not clobber stored keys.
       if (entry.apiKey || entry.apiBaseUrl || entry.resourceName) {
-        secrets.setProvider(providerId, entry);
+        if (!PROVIDERS[providerId]) {
+          validation = validateProviderSettings(providerId, entry);
+        } else {
+          const stored = secrets.read().providers[providerId] ?? {};
+          const merged = {
+            apiKey: entry.apiKey?.trim() ? entry.apiKey : stored.apiKey,
+            apiBaseUrl: entry.apiBaseUrl?.trim() ? entry.apiBaseUrl : stored.apiBaseUrl,
+            resourceName: entry.resourceName?.trim() ? entry.resourceName : stored.resourceName,
+          };
+          validation = validateProviderSettings(providerId, merged);
+          secrets.setProvider(providerId, entry);
+        }
       }
       if (defaults && (defaults.providerId !== undefined || defaults.modelId !== undefined)) {
         secrets.setDefaults(defaults.providerId, defaults.modelId);
       }
-      this.sendProviderState(server, sessionId, requestId);
+      this.sendProviderState(
+        server,
+        sessionId,
+        requestId,
+        validation ? { [providerId]: validation } : undefined,
+      );
     });
     server.onProviderSettingsTest((sessionId, providerId, requestId, candidate) => {
       void (async () => {

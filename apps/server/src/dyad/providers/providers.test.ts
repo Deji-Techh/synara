@@ -8,7 +8,7 @@ import {
   FREE_OPENROUTER_MODEL_NAMES,
   getContextWindow,
 } from "./catalog.ts";
-import { PROVIDERS, PROVIDER_TO_ENV_VAR } from "./providers.ts";
+import { PROVIDERS, PROVIDER_TO_ENV_VAR, validateProviderSettings } from "./providers.ts";
 import {
   resolveConnection,
   resolveAutoProvider,
@@ -106,5 +106,18 @@ describe("dyad providers transplant (m1, free-entirely)", () => {
     expect(resolveAutoProvider({ providerSettings: { vertex: {} } })).toBe(
       "ollama",
     );
+  });
+});
+
+describe("provider settings validation (donor schema parity)", () => {
+  it("accepts regular providers, flags azure/custom/vertex gaps", () => {
+    expect(validateProviderSettings("openai", { apiKey: "sk-x" })).toMatchObject({ ok: true });
+    expect(validateProviderSettings("ollama", {})).toMatchObject({ ok: true });
+    expect(validateProviderSettings("nope", { apiKey: "k" })).toMatchObject({ ok: false });
+    expect(validateProviderSettings("azure", { apiKey: "k" }).message).toMatch(/Resource Name/);
+    expect(validateProviderSettings("azure", { apiKey: "k", resourceName: "r" }).ok).toBe(true);
+    expect(validateProviderSettings("custom", {}).message).toMatch(/Base URL/);
+    expect(validateProviderSettings("custom", { apiBaseUrl: "https://x/v1" }).ok).toBe(true);
+    expect(validateProviderSettings("vertex", {}).message).toMatch(/service-account/i);
   });
 });

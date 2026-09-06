@@ -132,3 +132,8 @@ export function sharedProviderSecrets(): ProviderSecretsStore {
   if (!shared) shared = new ProviderSecretsStore();
   return shared;
 }
+
+/** Test-only: drop the memoized store so CAIDE_HOME overrides take effect. */
+export function resetSharedProviderSecrets(): void {
+  shared = null;
+}
