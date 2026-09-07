@@ -69,8 +69,19 @@ export function HarnessTranscript(props: { sessionId: string; send: SendFn }) {
 
   if (!session || blocks.length === 0) return null;
 
+  const usage = session.lastUsage;
+  const formatTokens = (n: number): string =>
+    n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
+
   return (
     <div className="flex flex-col">
+      {usage && (usage.inputTokens > 0 || usage.outputTokens > 0) && (
+        <div className="flex justify-end py-1">
+          <span className="text-[11px] tabular-nums text-muted-foreground">
+            {formatTokens(usage.inputTokens)} in · {formatTokens(usage.outputTokens)} out
+          </span>
+        </div>
+      )}
       {blocks.map((block) => {
         if (block.entry.kind === "token") {
           return (

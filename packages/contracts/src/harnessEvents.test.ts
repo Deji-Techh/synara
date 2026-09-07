@@ -145,4 +145,28 @@ describe("Harness Contracts", () => {
     };
     expect(Schema.decodeUnknownSync(HarnessEvent)(event).type).toBe("provider_settings_state");
   });
+
+  it("validates turn_end with optional usage and versions_state", () => {
+    const plain: HarnessEventType = {
+      type: "turn_end",
+      sessionId: "s-123",
+      turnId: "t-1",
+      status: "completed",
+    };
+    expect(Schema.decodeUnknownSync(HarnessEvent)(plain).type).toBe("turn_end");
+    const withUsage: HarnessEventType = {
+      type: "turn_end",
+      sessionId: "s-123",
+      turnId: "t-1",
+      status: "completed",
+      usage: { inputTokens: 10, outputTokens: 20 },
+    };
+    expect(Schema.decodeUnknownSync(HarnessEvent)(withUsage).type).toBe("turn_end");
+    const versions: HarnessEventType = {
+      type: "versions_state",
+      sessionId: "s-123",
+      versions: [{ hash: "abc", message: "Checkpoint", createdAt: 1 }],
+    };
+    expect(Schema.decodeUnknownSync(HarnessEvent)(versions).type).toBe("versions_state");
+  });
 });

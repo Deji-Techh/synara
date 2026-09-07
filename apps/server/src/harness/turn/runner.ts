@@ -23,9 +23,10 @@ import {
 import { buildGitReminder } from "../../dyad/prompts/gitContextPrompt.ts";
 import { formatMemoryForPrompt, readAppMemory } from "../../dyad/memory/memory.ts";
 import { formatIssuesForEvent, runReviewBarrier } from "../../dyad/sandbox/reviewBarrier.ts";
+import { createVersion } from "../../dyad/vcs/versions.ts";
 import { resolveChatModeForTurn } from "../../dyad/plan/chatMode.ts";
 import { Inbox } from "../inbox/index.ts";
-import { appendHarnessEvent, flushTurnTokens } from "./eventLog.ts";
+import { appendHarnessEvent, flushTurnTokens, readHarnessEvents } from "./eventLog.ts";
 import { buildConversationChain, buildMessages } from "../session/buildChain.ts";
 import { SessionStorage } from "../session/storage.ts";
 import { constructSystemPrompt } from "../../dyad/prompts/index.ts";
@@ -193,6 +194,34 @@ export class CaideRunner {
       else if (event.type === "checkpoint") this.emit({ type: "checkpoint", requiresResponse: event.requiresResponse });
       else if (event.type === "artifact_updated") this.emit({ type: "artifact_updated", path: event.path });
     };
+    // Crash resume: a previous turn_start with no turn_end means the turn
+    // died mid-flight (kill/restart). Prefix a continuation notice so the
+    // model picks up seamlessly instead of restarting done work. Explicit
+    // cancelled/failed/completed turns already closed, so they never match.
+    let resumeNotice: string | null = null;
+    try {
+      const tail = await readHarnessEvents(input.sessionId, 50);
+      let sawEnd = false;
+      let sawStart = false;
+      for (let i = tail.length - 1; i >= 0; i--) {
+        const t = tail[i].type;
+        if (t === "turn_end") {
+          sawEnd = true;
+          break;
+        }
+        if (t === "turn_start") {
+          sawStart = true;
+          break;
+        }
+      }
+      if (sawStart && !sawEnd) {
+        resumeNotice =
+          "[system-reminder]: The previous turn in this chat ended without completing (interrupted). Continue seamlessly from the last known state — do not restart work already done.";
+      }
+    } catch {
+      // history unavailable — start clean
+    }
+    const effectivePrompt = resumeNotice ? `${input.prompt}\n\n${resumeNotice}` : input.prompt;
     forward({ type: "turn_start", sessionId: input.sessionId, turnId, prompt: input.prompt });
 
     const controller = new AbortController();
@@ -247,6 +276,16 @@ export class CaideRunner {
       if (memoryBlock) {
         system += `\n\n${memoryBlock}`;
       }
+      // Per-turn token accounting (provider-reported usage only).
+      const turnUsage = { inputTokens: 0, outputTokens: 0 };
+      const recordUsage = (usage: { inputTokens: number; outputTokens: number }) => {
+        turnUsage.inputTokens += usage.inputTokens;
+        turnUsage.outputTokens += usage.outputTokens;
+      };
+      const usageField = () =>
+        turnUsage.inputTokens > 0 || turnUsage.outputTokens > 0
+          ? { usage: { ...turnUsage } }
+          : {};
       const llm =
         input.llmOverride ??
         createStreamProviderAdapter(
@@ -257,6 +296,7 @@ export class CaideRunner {
             apiKey: ctx.provider.apiKey ?? "",
             system,
             appPath: input.appPath,
+            onUsage: recordUsage,
           },
           ctx.tools,
         );
@@ -287,6 +327,7 @@ export class CaideRunner {
               apiKey: connection.apiKey ?? "",
               system,
               appPath: input.appPath,
+              onUsage: recordUsage,
             },
             ctx.tools,
           );
@@ -312,7 +353,7 @@ export class CaideRunner {
             ...history,
             {
               role: "user",
-              content: provenanceReminder ? `${input.prompt}\n\n${provenanceReminder}` : input.prompt,
+              content: [effectivePrompt, provenanceReminder].filter(Boolean).join("\n\n"),
             },
           ];
         },
@@ -351,7 +392,7 @@ export class CaideRunner {
       if (controller.signal.aborted) {
         this.status = "cancelled";
         await flushTurnTokens(input.sessionId);
-        forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "cancelled" });
+        forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "cancelled", ...usageField() });
       } else {
         this.status = "completed";
         // Review barrier (donor runAutoReviewBarrier): audit the working
@@ -377,8 +418,14 @@ export class CaideRunner {
             });
           }
         }
+        // Auto-checkpoint: snapshot the tree when the turn changed it, so
+        // every completed turn is undoable from the Versions timeline.
+        // Skips clean trees and non-repos; never fails the turn.
+        if (chatMode !== "ask" && chatMode !== "plan") {
+          await createVersion(input.appPath, `Checkpoint: ${input.prompt.slice(0, 80)}`).catch(() => null);
+        }
         await flushTurnTokens(input.sessionId);
-        forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "completed" });
+        forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "completed", ...usageField() });
       }
       await captureTurnEnd(input.sessionId, input.appPath).catch(() => {});
       await snapshotSessionState(input.sessionId, storage).catch(() => {});
@@ -414,7 +461,7 @@ export class CaideRunner {
         message: err instanceof Error ? err.message : String(err),
         recoverable: true,
       });
-      forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "failed" });
+      forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "failed", ...usageField() });
     } finally {
       input.signal?.removeEventListener("abort", onAbort);
       this.controllers.delete(input.sessionId);

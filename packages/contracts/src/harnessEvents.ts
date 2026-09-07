@@ -70,11 +70,18 @@ export const TurnStartHarnessEvent = Schema.Struct({
 });
 export type TurnStartHarnessEvent = typeof TurnStartHarnessEvent.Type;
 
+export const TurnUsageSchema = Schema.Struct({
+  inputTokens: Schema.Number,
+  outputTokens: Schema.Number,
+});
+export type TurnUsageSchema = typeof TurnUsageSchema.Type;
+
 export const TurnEndHarnessEvent = Schema.Struct({
   type: Schema.Literal("turn_end"),
   sessionId: Schema.String,
   turnId: Schema.String,
   status: TurnStatus,
+  usage: Schema.optional(TurnUsageSchema),
 });
 export type TurnEndHarnessEvent = typeof TurnEndHarnessEvent.Type;
 
@@ -196,6 +203,21 @@ export const ProviderSettingsStateHarnessEvent = Schema.Struct({
 export type ProviderSettingsStateHarnessEvent = typeof ProviderSettingsStateHarnessEvent.Type;
 
 /** write_app_blueprint presentation (approve/request-change on the card). */
+/** Version timeline state (commit snapshots for undo). */
+export const VersionEntrySchema = Schema.Struct({
+  hash: Schema.String,
+  message: Schema.String,
+  createdAt: Schema.Number,
+});
+export type VersionEntrySchema = typeof VersionEntrySchema.Type;
+
+export const VersionsStateHarnessEvent = Schema.Struct({
+  type: Schema.Literal("versions_state"),
+  sessionId: Schema.String,
+  versions: Schema.Array(VersionEntrySchema),
+});
+export type VersionsStateHarnessEvent = typeof VersionsStateHarnessEvent.Type;
+
 export const BlueprintUpdateHarnessEvent = Schema.Struct({
   type: Schema.Literal("blueprint_update"),
   sessionId: Schema.String,
@@ -224,6 +246,7 @@ export const HarnessEvent = Schema.Union([
   PlanUpdateHarnessEvent,
   PlanExitHarnessEvent,
   TodosUpdateHarnessEvent,
+  VersionsStateHarnessEvent,
   BlueprintUpdateHarnessEvent,
   ProviderSettingsStateHarnessEvent,
 ]);

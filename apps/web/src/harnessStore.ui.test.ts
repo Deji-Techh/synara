@@ -44,6 +44,24 @@ describe("harnessStore ui events (m3)", () => {
     harnessStore.clearSession("s-ui");
   });
 
+  it("records turn-end token usage", () => {
+    harnessStore.clearSession("s-ui");
+    harnessStore.handleEvent({ type: "turn_end", sessionId: "s-ui", turnId: "t1", status: "completed" });
+    expect(harnessStore.getState().sessions["s-ui"]?.lastUsage).toBeUndefined();
+    harnessStore.handleEvent({
+      type: "turn_end",
+      sessionId: "s-ui",
+      turnId: "t2",
+      status: "completed",
+      usage: { inputTokens: 1200, outputTokens: 300 },
+    });
+    expect(harnessStore.getState().sessions["s-ui"]?.lastUsage).toEqual({
+      inputTokens: 1200,
+      outputTokens: 300,
+    });
+    harnessStore.clearSession("s-ui");
+  });
+
   it("records blueprint updates", () => {
     harnessStore.clearSession("s-ui");
     harnessStore.handleEvent({

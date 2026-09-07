@@ -7,6 +7,9 @@ import { describe, expect, it } from "vitest";
 import { harnessStore } from "~/harnessStore";
 import { HarnessBlueprintCard } from "./HarnessBlueprintCard";
 import { HarnessPlanCard } from "./HarnessPlanCard";
+import { HarnessTodosCard } from "./HarnessTodosCard";
+import { HarnessVerifierCard } from "./HarnessVerifierCard";
+import { HarnessVersionsCard } from "./HarnessVersionsCard";
 import { HarnessTranscript } from "./HarnessTranscript";
 import { HarnessPrompts } from "./HarnessPrompts";
 
@@ -145,6 +148,43 @@ describe("harness components (m3)", () => {
     expect(markup).toContain("a.ts");
     expect(markup).toContain("Gate review");
     expect(markup).toContain("kaput");
+    harnessStore.clearSession("s-hc");
+  });
+
+  it("renders the todos, verifier, and versions cards from store state", () => {
+    harnessStore.clearSession("s-hc");
+    harnessStore.handleEvent({
+      type: "todos_update",
+      sessionId: "s-hc",
+      todos: [
+        { id: "1", content: "Build auth", status: "in_progress" },
+        { id: "2", content: "Write tests", status: "pending" },
+      ],
+    });
+    const todos = renderToStaticMarkup(<HarnessTodosCard sessionId="s-hc" />);
+    expect(todos).toContain("Build auth");
+    expect(todos).toContain("(0/2)");
+
+    harnessStore.handleEvent({
+      type: "verifier_result",
+      sessionId: "s-hc",
+      passed: false,
+      confidence: 70,
+      tasteScore: 55,
+      issues: ["[major] a.ts — missing null check"],
+    });
+    const verifier = renderToStaticMarkup(<HarnessVerifierCard sessionId="s-hc" />);
+    expect(verifier).toContain("Review found 1 issue");
+    expect(verifier).toContain("below bar");
+
+    harnessStore.handleEvent({
+      type: "versions_state",
+      sessionId: "s-hc",
+      versions: [{ hash: "abc1234567", message: "Checkpoint: polish", createdAt: Date.now() }],
+    });
+    const versions = renderToStaticMarkup(<HarnessVersionsCard sessionId="s-hc" send={send} />);
+    expect(versions).toContain("Checkpoint: polish");
+    expect(versions).toContain("1 checkpoint");
     harnessStore.clearSession("s-hc");
   });
 });

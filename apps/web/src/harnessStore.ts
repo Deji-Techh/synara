@@ -65,6 +65,17 @@ export interface VerifierEntry {
   issues: string[];
 }
 
+export interface VersionEntry {
+  hash: string;
+  message: string;
+  createdAt: number;
+}
+
+export interface TurnUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
 export interface TimelineEntry {
   seq: number;
   kind: "token" | "tool" | "stage" | "checkpoint" | "error" | "artifact";
@@ -86,6 +97,8 @@ export interface SessionState {
   blueprint?: BlueprintEntry;
   todos: TodoEntry[];
   verifier?: VerifierEntry;
+  versions: VersionEntry[];
+  lastUsage?: TurnUsage;
   timeline: TimelineEntry[];
 }
 
@@ -131,6 +144,7 @@ function getOrCreateSession(sessionId: string): SessionState {
         prompts: [],
         reveals: [],
         todos: [],
+        versions: [],
         timeline: [],
       },
     };
@@ -256,6 +270,22 @@ export const harnessStore = {
         state.sessions[event.sessionId] = {
           ...session,
           todos: event.todos.map((t) => ({ id: t.id, content: t.content, status: t.status })),
+        };
+        break;
+      }
+      case "turn_end": {
+        if (event.usage) {
+          state.sessions[event.sessionId] = {
+            ...getOrCreateSession(event.sessionId),
+            lastUsage: { ...event.usage },
+          };
+        }
+        break;
+      }
+      case "versions_state": {
+        state.sessions[event.sessionId] = {
+          ...session,
+          versions: event.versions.map((v) => ({ hash: v.hash, message: v.message, createdAt: v.createdAt })),
         };
         break;
       }

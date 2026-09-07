@@ -9,7 +9,7 @@ import type { HarnessEvent } from "@caide/contracts";
 import { readHarnessEvents } from "../turn/eventLog.ts";
 
 export interface ClientInboundMessage {
-  type: "subscribe" | "steer" | "cancel" | "checkpoint_response" | "ping" | "prompt_answer" | "consent_answer" | "settings_sync" | "blueprint_response" | "turn_start" | "provider_settings_get" | "provider_settings_set" | "provider_settings_test";
+  type: "subscribe" | "steer" | "cancel" | "checkpoint_response" | "ping" | "prompt_answer" | "consent_answer" | "settings_sync" | "blueprint_response" | "turn_start" | "provider_settings_get" | "provider_settings_set" | "provider_settings_test" | "versions_list" | "versions_restore";
   sessionId?: string;
   token?: string;
   prompt?: string;
@@ -22,6 +22,7 @@ export interface ClientInboundMessage {
   settings?: Record<string, unknown>;
   blueprint?: Record<string, unknown>;
   turn?: TurnStartPayload;
+  hash?: string;
   provider?: { id?: string; apiKey?: string; apiBaseUrl?: string; resourceName?: string };
   providerEntry?: { apiKey?: string; apiBaseUrl?: string; resourceName?: string };
   defaults?: { providerId?: string; modelId?: string };
@@ -52,6 +53,8 @@ export type ConsentAnswerHandler = (
   decision: "accept-once" | "accept-always" | "decline",
 ) => void;
 export type SettingsSyncHandler = (sessionId: string, settings: Record<string, unknown>) => void;
+export type VersionsListHandler = (sessionId: string) => void;
+export type VersionsRestoreHandler = (sessionId: string, hash: string) => void;
 export type BlueprintResponseHandler = (
   sessionId: string,
   approved: boolean,
@@ -105,6 +108,8 @@ export class HarnessHub {
   private onConsentAnswerHandler?: ConsentAnswerHandler;
   private onSettingsSyncHandler?: SettingsSyncHandler;
   private onBlueprintResponseHandler?: BlueprintResponseHandler;
+  private onVersionsListHandler?: VersionsListHandler;
+  private onVersionsRestoreHandler?: VersionsRestoreHandler;
   private onTurnStartHandler?: TurnStartHandler;
   private onProviderSettingsGetHandler?: ProviderSettingsGetHandler;
   private onProviderSettingsSetHandler?: ProviderSettingsSetHandler;
@@ -184,6 +189,14 @@ export class HarnessHub {
     }
     if (msg.type === "blueprint_response" && msg.sessionId) {
       this.onBlueprintResponseHandler?.(msg.sessionId, msg.approved ?? false, msg.blueprint, msg.feedback);
+      return;
+    }
+    if (msg.type === "versions_list" && msg.sessionId) {
+      this.onVersionsListHandler?.(msg.sessionId);
+      return;
+    }
+    if (msg.type === "versions_restore" && msg.sessionId && msg.hash) {
+      this.onVersionsRestoreHandler?.(msg.sessionId, msg.hash);
       return;
     }
     if (msg.type === "turn_start" && msg.sessionId && msg.turn) {
@@ -286,6 +299,14 @@ export class HarnessHub {
 
   onBlueprintResponse(handler: BlueprintResponseHandler): void {
     this.onBlueprintResponseHandler = handler;
+  }
+
+  onVersionsList(handler: VersionsListHandler): void {
+    this.onVersionsListHandler = handler;
+  }
+
+  onVersionsRestore(handler: VersionsRestoreHandler): void {
+    this.onVersionsRestoreHandler = handler;
   }
 
   onTurnStart(handler: TurnStartHandler): void {

@@ -13,6 +13,7 @@ import { HarnessPrompts } from "./HarnessPrompts";
 import { HarnessReveals } from "./HarnessReveals";
 import { HarnessTodosCard } from "./HarnessTodosCard";
 import { HarnessVerifierCard } from "./HarnessVerifierCard";
+import { HarnessVersionsCard } from "./HarnessVersionsCard";
 import { HarnessTranscript } from "./HarnessTranscript";
 
 export function HarnessSessionHost(props: { threadId: ThreadId; projectId: ProjectId | null }) {
@@ -31,6 +32,7 @@ export function HarnessSessionHost(props: { threadId: ThreadId; projectId: Proje
       <div className="px-3">
         <HarnessTodosCard sessionId={props.threadId} />
         <HarnessVerifierCard sessionId={props.threadId} />
+        <HarnessVersionsCard sessionId={props.threadId} send={send} />
         <HarnessTranscript sessionId={props.threadId} send={send} />
         <HarnessPrompts sessionId={props.threadId} send={send} />
         <HarnessPlanCard sessionId={props.threadId} send={send} />

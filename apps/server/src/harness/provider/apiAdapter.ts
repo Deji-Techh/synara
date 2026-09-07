@@ -70,21 +70,92 @@ export interface StreamProviderOptions {
   tools?: unknown[];
   signal?: AbortSignal;
   onTiming?: (timing: ReturnType<LLMStreamTiming["finish"]>) => void;
+  /** Called once per stream with accumulated input/output token usage (when reported). */
+  onUsage?: (usage: StreamUsage) => void;
 }
 
 export type ProviderChunk =
   | { type: "token"; content: string }
   | { type: "tool_call"; toolCall: CompleteToolCall };
 
+export interface StreamUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
+function num(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0;
+}
+
+/**
+ * Extract token usage from one parsed SSE payload across dialects. Returns
+ * null when the payload carries no usage block. Anthropic reports usage on
+ * message_start (input) and message_delta (output); OpenAI responses and
+ * chat/completions attach usage objects; Gemini uses usageMetadata.
+ */
+export function extractStreamUsage(json: unknown): StreamUsage | null {
+  if (!json || typeof json !== "object") return null;
+  const j = json as Record<string, unknown>;
+  // Anthropic messages.
+  const msgUsage = (j as { message?: { usage?: unknown } }).message?.usage;
+  const deltaUsage = (j as { usage?: unknown }).usage;
+  if (j.type === "message_start" && msgUsage && typeof msgUsage === "object") {
+    const u = msgUsage as Record<string, unknown>;
+    if ("input_tokens" in u || "output_tokens" in u) {
+      return { inputTokens: num(u.input_tokens), outputTokens: num(u.output_tokens) };
+    }
+  }
+  if (j.type === "message_delta" && deltaUsage && typeof deltaUsage === "object") {
+    const u = deltaUsage as Record<string, unknown>;
+    if ("output_tokens" in u) {
+      return { inputTokens: 0, outputTokens: num(u.output_tokens) };
+    }
+  }
+  // OpenAI responses API.
+  if (j.type === "response.completed") {
+    const u = (j as { response?: { usage?: unknown } }).response?.usage;
+    if (u && typeof u === "object") {
+      const r = u as Record<string, unknown>;
+      if ("input_tokens" in r || "output_tokens" in r) {
+        return { inputTokens: num(r.input_tokens), outputTokens: num(r.output_tokens) };
+      }
+    }
+  }
+  // OpenAI chat/completions chunks and final usage payloads.
+  if (j.usage && typeof j.usage === "object" && j.type !== "message_delta") {
+    const u = j.usage as Record<string, unknown>;
+    const input = num(u.prompt_tokens ?? u.input_tokens);
+    const output = num(u.completion_tokens ?? u.output_tokens);
+    if (input > 0 || output > 0 || "prompt_tokens" in u || "completion_tokens" in u) {
+      return { inputTokens: input, outputTokens: output };
+    }
+  }
+  // Gemini.
+  const meta = (j as { usageMetadata?: unknown }).usageMetadata;
+  if (meta && typeof meta === "object") {
+    const m = meta as Record<string, unknown>;
+    if ("promptTokenCount" in m || "candidatesTokenCount" in m) {
+      return { inputTokens: num(m.promptTokenCount), outputTokens: num(m.candidatesTokenCount) };
+    }
+  }
+  return null;
+}
+
 export async function* streamProvider(
   options: StreamProviderOptions,
 ): AsyncGenerator<ProviderChunk, void, unknown> {
-  const { modelId, baseUrl, apiKey, messages, tools, system, signal, onTiming } = options;
+  const { modelId, baseUrl, apiKey, messages, tools, system, signal, onTiming, onUsage } = options;
   const enablePromptCache = options.enablePromptCache === true;
   const url = buildProviderUrl(baseUrl, modelId);
   const endpoint = endpointForModel(modelId, baseUrl);
   const timing = new LLMStreamTiming();
   const assembler = new BlockAssembler();
+  const streamUsage: StreamUsage = { inputTokens: 0, outputTokens: 0 };
+  const reportUsage = () => {
+    if (onUsage && (streamUsage.inputTokens > 0 || streamUsage.outputTokens > 0)) {
+      onUsage({ ...streamUsage });
+    }
+  };
 
   timing.start();
 
@@ -288,11 +359,17 @@ export async function* streamProvider(
               yield { type: "tool_call", toolCall: complete };
             }
             if (onTiming) onTiming(timing.finish());
+            reportUsage();
             return;
           }
 
           try {
             const json = JSON.parse(dataStr);
+            const reported = extractStreamUsage(json);
+            if (reported && (reported.inputTokens > 0 || reported.outputTokens > 0)) {
+              streamUsage.inputTokens += reported.inputTokens;
+              streamUsage.outputTokens += reported.outputTokens;
+            }
 
             // 0. Reasoning / Thinking token extraction (DeepSeek R1, Kimi, Anthropic thinking)
             let reasoningToken: string | undefined;
@@ -493,6 +570,7 @@ export async function* streamProvider(
         yield { type: "tool_call", toolCall: complete };
       }
       if (onTiming) onTiming(timing.finish());
+      reportUsage();
     }
   }
 }

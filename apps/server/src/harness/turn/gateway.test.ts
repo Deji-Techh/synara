@@ -160,6 +160,12 @@ describe("turn gateway (m3h)", () => {
       onProviderSettingsTest: (h: (...args: never[]) => void) => {
         handlers.psTest = h;
       },
+      onVersionsList: (h: (...args: never[]) => void) => {
+        handlers.versionsList = h;
+      },
+      onVersionsRestore: (h: (...args: never[]) => void) => {
+        handlers.versionsRestore = h;
+      },
     } as unknown as HarnessHub;
     gateway.attachWs(server);
     try {
@@ -203,6 +209,8 @@ describe("turn gateway (m3h)", () => {
       "onProviderSettingsGet",
       "onProviderSettingsSet",
       "onProviderSettingsTest",
+      "onVersionsList",
+      "onVersionsRestore",
     ]) {
       (server as unknown as Record<string, unknown>)[name] = (h: (...args: never[]) => void) => {
         handlers[name] = h;
@@ -237,6 +245,71 @@ describe("turn gateway (m3h)", () => {
       gateway.detachWs();
       resetSharedProviderSecrets();
       delete process.env.CAIDE_HOME;
+    }
+  });
+
+  it("lists and restores app versions over the socket handlers", async () => {
+    const fs = await import("node:fs");
+    const os = await import("node:os");
+    const path = await import("node:path");
+    const { execFileSync } = await import("node:child_process");
+    const { noteSessionApp } = await import("./sessionStores.ts");
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-gwver-"));
+    execFileSync("git", ["init", "-b", "main"], { cwd: dir });
+    execFileSync("git", ["config", "user.email", "t@t"], { cwd: dir });
+    execFileSync("git", ["config", "user.name", "t"], { cwd: dir });
+    fs.writeFileSync(path.join(dir, "a.txt"), "v1\n");
+    execFileSync("git", ["add", "-A"], { cwd: dir });
+    execFileSync("git", ["commit", "-m", "init"], { cwd: dir });
+    fs.writeFileSync(path.join(dir, "a.txt"), "v2\n");
+
+    const gateway = new TurnGateway();
+    const sent: HarnessEvent[] = [];
+    const handlers: Record<string, (...args: never[]) => void> = {};
+    const server = {
+      broadcastToSession: (sessionId: string, event: HarnessEvent) => {
+        void sessionId;
+        sent.push(event);
+      },
+    } as unknown as HarnessHub;
+    for (const name of [
+      "onPromptAnswer",
+      "onConsentAnswer",
+      "onSettingsSync",
+      "onSteer",
+      "onCancel",
+      "onBlueprintResponse",
+      "onTurnStart",
+      "onProviderSettingsGet",
+      "onProviderSettingsSet",
+      "onProviderSettingsTest",
+      "onVersionsList",
+      "onVersionsRestore",
+    ]) {
+      (server as unknown as Record<string, unknown>)[name] = (h: (...args: never[]) => void) => {
+        handlers[name] = h;
+      };
+    }
+    gateway.attachWs(server);
+    try {
+      noteSessionApp("s-ver", dir);
+      const list = handlers.onVersionsList as (sid: string) => void;
+      list("s-ver");
+      await new Promise((r) => setTimeout(r, 50));
+      // No versions yet (only the init commit, no version entries).
+      const empty = sent.find((e) => e.type === "versions_state");
+      expect(empty).toMatchObject({ sessionId: "s-ver" });
+
+      // Restore the committed init state over dirty work.
+      const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: dir }).toString().trim();
+      const restore = handlers.onVersionsRestore as (sid: string, hash: string) => void;
+      restore("s-ver", head);
+      await new Promise((r) => setTimeout(r, 200));
+      expect(fs.readFileSync(path.join(dir, "a.txt"), "utf-8")).toBe("v1\n");
+      const refreshed = sent.filter((e) => e.type === "versions_state");
+      expect(refreshed.length).toBeGreaterThanOrEqual(1);
+    } finally {
+      gateway.detachWs();
     }
   });
 });

@@ -19,7 +19,8 @@ import type { SettingsLike } from "../../dyad/providers/index.ts";
 import type { ConsentRequestFn } from "../../dyad/tools/permissions.ts";
 import type { McpConsentRequestFn } from "../../dyad/mcp/mcpConsent.ts";
 import { CaideRunner, type StartTurnInput } from "./runner.ts";
-import { clearSessionApp, noteSessionApp } from "./sessionStores.ts";
+import { clearSessionApp, getSessionApp, noteSessionApp } from "./sessionStores.ts";
+import { listVersions, restoreVersion } from "../../dyad/vcs/versions.ts";
 
 export interface GatewayTurnRequest {
   sessionId: string;
@@ -114,6 +115,45 @@ export class TurnGateway {  private runner = new CaideRunner();
     });
     server.onCancel((sessionId, reason) => {
       this.runner.cancel(sessionId, reason ?? "cancelled");
+    });
+    server.onVersionsList((sessionId) => {
+      void (async () => {
+        const appPath = getSessionApp(sessionId);
+        if (!appPath) return;
+        try {
+          const versions = await listVersions(appPath, 30);
+          server.broadcastToSession(sessionId, {
+            type: "versions_state",
+            sessionId,
+            versions: versions.map((v) => ({ hash: v.hash, message: v.message, createdAt: v.createdAt })),
+          });
+        } catch {
+          // listing never fails the session
+        }
+      })();
+    });
+    server.onVersionsRestore((sessionId, hash) => {
+      void (async () => {
+        const appPath = getSessionApp(sessionId);
+        if (!appPath) return;
+        try {
+          await restoreVersion(appPath, hash);
+          const versions = await listVersions(appPath, 30);
+          server.broadcastToSession(sessionId, {
+            type: "versions_state",
+            sessionId,
+            versions: versions.map((v) => ({ hash: v.hash, message: v.message, createdAt: v.createdAt })),
+          });
+        } catch (err) {
+          server.broadcastToSession(sessionId, {
+            type: "error",
+            sessionId,
+            code: "VERSION_RESTORE_FAILED",
+            message: err instanceof Error ? err.message : String(err),
+            recoverable: true,
+          });
+        }
+      })();
     });
     server.onBlueprintResponse((sessionId, approved, blueprint, feedback) => {
       if (approved) {

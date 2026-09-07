@@ -137,6 +137,64 @@ describe("caide runner turns (m3)", () => {
     clearTurnProvenance(sid);
   });
 
+  it("auto-checkpoints dirty trees after completed turns", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-runckpt-"));
+    execFileSync("git", ["init", "-b", "main"], { cwd: dir });
+    execFileSync("git", ["config", "user.email", "t@t"], { cwd: dir });
+    execFileSync("git", ["config", "user.name", "t"], { cwd: dir });
+    fs.writeFileSync(path.join(dir, "a.txt"), "v1\n");
+    execFileSync("git", ["add", "-A"], { cwd: dir });
+    execFileSync("git", ["commit", "-m", "init"], { cwd: dir });
+    fs.writeFileSync(path.join(dir, "a.txt"), "v2\n");
+    const runner = new CaideRunner();
+    await runner.startTurn({
+      sessionId: `s-ckpt-${Date.now()}`,
+      appPath: dir,
+      prompt: "polish copy",
+      mode: "agent",
+      settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+      llmOverride: {
+        async *stream() {
+          yield { type: "token", content: "ok" } as never;
+        },
+      },
+    });
+    expect(runner.getStatus()).toBe("completed");
+    const log = fs.readFileSync(path.join(dir, ".caide", "versions.jsonl"), "utf-8");
+    expect(log).toContain("Checkpoint: polish copy");
+  });
+
+  it("resumes interrupted turns with a continuation notice", async () => {
+    const { SessionStorage } = await import("../session/storage.ts");
+    const storage = new SessionStorage();
+    const sid = `s-resume-${Date.now()}`;
+    await storage.append(sid, "harness/event", {
+      type: "turn_start",
+      sessionId: sid,
+      turnId: "t-old",
+      prompt: "old work",
+    });
+    await storage.flush(sid);
+    const seen: Array<{ role: string; content: unknown }>[] = [];
+    const runner = new CaideRunner();
+    await runner.startTurn({
+      sessionId: sid,
+      appPath: "/tmp/caide-test-app",
+      prompt: "new work",
+      mode: "ask",
+      settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+      llmOverride: {
+        async *stream(messages: Array<{ role: string; content: unknown }>) {
+          seen.push(messages);
+          yield { type: "token", content: "ok" } as never;
+        },
+      },
+    });
+    expect(runner.getStatus()).toBe("completed");
+    const userMsg = seen[0].find((m) => m.role === "user");
+    expect(String(userMsg?.content)).toMatch(/interrupted/);
+  });
+
   it("clamps non-positive step budgets to the default instead of starving the LLM", async () => {
     for (const maxSteps of [0, -5]) {
       const events: HarnessEvent[] = [];

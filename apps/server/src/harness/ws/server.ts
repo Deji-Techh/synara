@@ -113,6 +113,14 @@ export class HarnessWebSocketServer {
     this.hub.onBlueprintResponse(handler);
   }
 
+  onVersionsList(handler: Parameters<HarnessHub["onVersionsList"]>[0]): void {
+    this.hub.onVersionsList(handler);
+  }
+
+  onVersionsRestore(handler: Parameters<HarnessHub["onVersionsRestore"]>[0]): void {
+    this.hub.onVersionsRestore(handler);
+  }
+
   onTurnStart(handler: Parameters<HarnessHub["onTurnStart"]>[0]): void {
     this.hub.onTurnStart(handler);
   }

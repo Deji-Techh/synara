@@ -12,6 +12,8 @@ import { endpointForModel, streamProvider } from "./apiAdapter.ts";
 export interface StreamProviderAdapterOptions {
   /** Provider id (enables provider-specific optimizations like prompt caching). */
   providerId?: string;
+  /** Token usage callback, forwarded to the provider stream. */
+  onUsage?: (usage: { inputTokens: number; outputTokens: number }) => void;
   modelId: string;
   baseUrl: string;
   apiKey: string;
@@ -238,6 +240,7 @@ export function createStreamProviderAdapter(
         tools: providerTools,
       };
       if (opts.system) providerOpts.system = opts.system;
+      if (opts.onUsage) providerOpts.onUsage = opts.onUsage;
       // Anthropic prompt caching on the stable system prefix (direct API
       // only — compatible endpoints may reject cache_control).
       if (opts.providerId === "anthropic") providerOpts.enablePromptCache = true;
