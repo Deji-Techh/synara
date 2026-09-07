@@ -119,6 +119,8 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "list_agents", category: "subagents", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/sandbox" },
   { name: "wait_agents", category: "subagents", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/sandbox" },
   { name: "cancel_agent", category: "subagents", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/sandbox" },
+  { name: "send_message", category: "subagents", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/sandbox" },
+  { name: "followup_task", category: "subagents", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/sandbox" },
   { name: "execute_fork_skill", category: "subagents", defaultConsent: "ask", modifiesState: false, readOnly: true, deferred: true, caideMapping: "caide-native", caideTool: "dyad/sandbox (runner wired in M3)" },
   // mcp
   { name: "search_mcp_tools", category: "mcp", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/mcp" },

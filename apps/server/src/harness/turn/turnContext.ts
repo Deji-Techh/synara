@@ -43,6 +43,7 @@ import {
 } from "../../dyad/providers/index.ts";
 import { setContextSummarizer } from "../../dyad/misc/index.ts";
 import { setSkillRunner } from "../../dyad/sandbox/index.ts";
+import { setSubagentToolSource } from "../../dyad/sandbox/subagentLoop.ts";
 import { setExplorerRunner as setCodeExplorerRunner } from "../../dyad/web/index.ts";
 import { setImageProvider } from "../../dyad/web/generateImage.ts";
 import { setWebSearchProvider } from "../../dyad/web/webSearch.ts";
@@ -157,6 +158,7 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
   setContextSummarizer(async ({ system, prompt }) => synthesize(system, prompt));
   setCodeExplorerRunner(async ({ system, prompt }) => synthesize(system, prompt));
   setSkillRunner(async ({ system, prompt }) => synthesize(system, prompt));
+  setSubagentToolSource(() => UNIFIED_DEFS);
   // Keyed web providers resolve from server env (Tavily > Brave > DDG;
   // OpenAI Images > Pollinations). Env-global so idempotent across turns.
   setWebSearchProvider(autoWebSearchProvider());

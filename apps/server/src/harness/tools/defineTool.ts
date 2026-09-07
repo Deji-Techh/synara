@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { McpConsentRequestFn } from "../../dyad/mcp/mcpConsent.ts";
+import type { ConsentRequestFn, ConsentStore } from "../../dyad/tools/permissions.ts";
 
 export interface ToolContext {
   signal: AbortSignal;
@@ -12,6 +13,13 @@ export interface ToolContext {
   provider?: { modelId: string; baseUrl: string; apiKey: string; system?: string };
   /** MCP consent round-trip (sandbox host calls); absent → stored-consent only. */
   requestMcpConsent?: McpConsentRequestFn;
+  /**
+   * Agent tool-consent round-trip + store, threaded by the loop from turn
+   * options. Lets delegated tools (subagents) enforce the same per-tool
+   * ask/always/never posture as the parent turn. Absent → no extra gating.
+   */
+  requestConsent?: ConsentRequestFn;
+  consentStore?: ConsentStore;
 }
 
 export interface ToolDef<I = any, O = any> {

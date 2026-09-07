@@ -523,43 +523,89 @@ export const logDecisionTool = defineTool({
 });
 
 // 19. spawn_subagent
-// Runs a focused delegated task in a separate LLM call (a sub-agent) and
-// returns its result. Useful for isolated reviews, research, or specialized
-// skill work without bloating the main context. Requires ctx.provider.
+// Spawns a background subagent thread with a persona (explorer for bounded
+// read-only recon, implementer for GOAL/MUST HOLD scoped work, generic for
+// anything else) and returns its thread id synchronously. Poll with
+// check_subagent_status or wait_agents; continue it with send_message or
+// followup_task; stop it with cancel_agent. Donor spawn_agent semantics
+// (persona + assignment form + scope) over the Caide thread worker.
 export const spawnSubagentTool = defineTool({
   name: "spawn_subagent",
   description:
-    "Spawns a focused sub-agent to complete a delegated task (e.g. a specialized review or a self-contained subtask) and returns its result text. Prefer this for isolated work instead of doing it inline.",
+    "Spawn a background subagent thread and return its thread id immediately (the work runs detached — poll it, don't wait inline). Personas: explorer (read-only recon with cited findings), implementer (does the work; write the assignment as GOAL / MUST HOLD / OUT OF SCOPE / DONE WHEN, where MUST HOLD lists every project rule the change could touch or explains why none apply). Give at most one implementer at a time a task, and keep working while it runs only on unrelated files. Poll with check_subagent_status or wait_agents; continue with send_message/followup_task; cancel with cancel_agent.",
   schema: z.object({
-    task: z.string().describe("The focused task for the sub-agent"),
-    context: z.string().optional().describe("Additional context to give the sub-agent"),
+    persona: z.enum(["explorer", "implementer", "generic"]).optional().describe("Subagent persona (default generic)"),
+    task_name: z.string().min(1).max(100).describe("A stable short name for this task"),
+    assignment: z
+      .string()
+      .min(1)
+      .max(20_000)
+      .describe("The assignment. For implementer tasks use GOAL / MUST HOLD / OUT OF SCOPE / DONE WHEN."),
+    scope: z
+      .array(z.string().min(1).max(500))
+      .max(100)
+      .optional()
+      .describe("Advisory relative paths or prefixes expected to be in scope"),
+    context: z.string().optional().describe("Additional background context for the sub-agent"),
   }),
   readOnly: true,
   modifiesState: false,
-  execute: async ({ task, context }, ctx) => {
+  execute: async (args, ctx) => {
+    const parsed = (spawnSubagentTool.schema as z.ZodType<any>).parse(args) as {
+      persona?: "explorer" | "implementer" | "generic";
+      task_name: string;
+      assignment: string;
+      scope?: string[];
+      context?: string;
+    };
     if (!ctx.provider) {
-      return { result: "Sub-agent provider not configured." };
+      throw new Error("Sub-agent provider not configured.");
     }
-    const { streamProvider } = await import("../provider/apiAdapter.ts");
-    const system =
-      ctx.provider.system ??
-      "You are a focused sub-agent. Complete the delegated task and return a concise, complete result.";
-    const prompt = context ? `${context}\n\nTASK: ${task}` : task;
-    const stream = streamProvider({
-      modelId: ctx.provider.modelId,
-      baseUrl: ctx.provider.baseUrl,
-      apiKey: ctx.provider.apiKey,
-      system,
-      messages: [{ role: "user", content: prompt }],
+    const { streamProvider, endpointForModel } = await import("../provider/apiAdapter.ts");
+    const { formatChatMessagesForEndpoint } = await import("../provider/streamProviderAdapter.ts");
+    const { getSubagentTools, spawnSubagentTask } = await import("../../dyad/sandbox/subagentLoop.ts");
+    const llm = {
+      async *stream(messages: any, opts?: any) {
+        const chat = formatChatMessagesForEndpoint(
+          messages,
+          endpointForModel(ctx.provider!.modelId, ctx.provider!.baseUrl),
+        );
+        const stream = streamProvider({
+          modelId: ctx.provider!.modelId,
+          baseUrl: ctx.provider!.baseUrl,
+          apiKey: ctx.provider!.apiKey,
+          system: undefined,
+          messages: chat,
+          signal: opts?.signal ?? ctx.signal,
+        });
+        for await (const chunk of stream) {
+          if (chunk.type === "token" && chunk.content) yield { type: "token", content: chunk.content };
+          else if (chunk.type === "tool_call" && chunk.toolCall) yield { type: "tool_call", toolCall: chunk.toolCall };
+        }
+      },
+    };
+    const task = parsed.context ? `${parsed.context}\n\nASSIGNMENT: ${parsed.assignment}` : parsed.assignment;
+    const id = spawnSubagentTask({
+      appPath: ctx.appPath,
+      sessionId: ctx.sessionId,
+      role: parsed.persona ?? "generic",
+      persona: parsed.persona ?? "generic",
+      taskName: parsed.task_name,
+      task,
+      scope: parsed.scope ?? [],
+      tools: getSubagentTools(),
+      llm: llm as never,
       signal: ctx.signal,
+      requestConsent: ctx.requestConsent,
+      consentStore: ctx.consentStore,
     });
-    let result = "";
-    for await (const chunk of stream) {
-      if (chunk.type === "token" && chunk.content) result += chunk.content;
-    }
-    return { result };
+    return {
+      thread_id: id,
+      status: "running",
+      hint: "Poll with check_subagent_status or wait_agents. Continue with send_message/followup_task.",
+    };
   },
-  presentCall: ({ task }) => `Spawn sub-agent: ${task.slice(0, 80)}`,
+  presentCall: (args: any) => `Spawn ${args.persona ?? "generic"} sub-agent: ${String(args.task_name ?? args.task ?? "").slice(0, 80)}`,
 });
 
 export const ALL_CORE_TOOLS: ToolDef[] = [

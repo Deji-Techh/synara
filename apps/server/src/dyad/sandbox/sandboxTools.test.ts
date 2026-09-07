@@ -17,8 +17,10 @@ import {
   executeForkSkillTool,
   executeSandboxScript,
   executeSandboxScriptTool,
+  followupTaskTool,
   listAgentsTool,
   listForkSkillIds,
+  sendMessageTool,
   setSkillRunner,
   waitAgentsTool,
 } from "./sandboxTools.ts";
@@ -42,7 +44,7 @@ function toolCtx(appPath: string): ToolContext {
 }
 
 describe("dyad sandbox transplant (m2b)", () => {
-  it("registers all seven tools with donor previews and limits", () => {
+  it("registers all nine tools with donor previews and limits", () => {
     expect(ALL_SANDBOX_TOOLS.map((t) => t.name)).toEqual([
       "execute_sandbox_script",
       "execute_fork_skill",
@@ -51,6 +53,8 @@ describe("dyad sandbox transplant (m2b)", () => {
       "list_agents",
       "wait_agents",
       "cancel_agent",
+      "send_message",
+      "followup_task",
     ]);
     expect(checkTaskStatusTool.presentCall?.({ task_id: "t1" })).toBe("Check task: t1");
     expect(checkSubagentStatusTool.presentCall?.({ task_id: "s1" })).toBe("Check subagent: s1");
@@ -180,6 +184,25 @@ describe("dyad sandbox transplant (m2b)", () => {
     expect(await cancelAgentTool.execute({ thread_id: running.id }, toolCtx("/tmp"))).toMatch(
       /already terminal/,
     );
+    clearTaskRegistries();
+  });
+
+  it("queues messages and follow-ups onto threads", async () => {
+    clearTaskRegistries();
+    expect(await sendMessageTool.execute({ thread_id: "nope", message: "hi" }, toolCtx("/tmp"))).toMatch(
+      /not found/,
+    );
+    // Idle thread with no worker deps wakes vacuously (no llm to run).
+    const idle = registerSubagentTask("explorer", "test-session");
+    settleSubagentTask(idle.id, { status: "idle" });
+    expect(await sendMessageTool.execute({ thread_id: idle.id, message: "hi again" }, toolCtx("/tmp"))).toBe(
+      "Message queued durably.",
+    );
+    expect(await followupTaskTool.execute({ thread_id: idle.id, message: "do more" }, toolCtx("/tmp"))).toBe(
+      "Follow-up queued durably.",
+    );
+    expect(sendMessageTool.presentCall?.({ thread_id: idle.id })).toContain(idle.id);
+    expect(followupTaskTool.presentCall?.({ thread_id: idle.id })).toContain(idle.id);
     clearTaskRegistries();
   });
 });

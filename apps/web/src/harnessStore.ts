@@ -58,6 +58,13 @@ export interface TodoEntry {
   status: "pending" | "in_progress" | "completed";
 }
 
+export interface VerifierEntry {
+  passed: boolean;
+  confidence: number;
+  tasteScore: number;
+  issues: string[];
+}
+
 export interface TimelineEntry {
   seq: number;
   kind: "token" | "tool" | "stage" | "checkpoint" | "error" | "artifact";
@@ -78,6 +85,7 @@ export interface SessionState {
   plan?: PlanEntry;
   blueprint?: BlueprintEntry;
   todos: TodoEntry[];
+  verifier?: VerifierEntry;
   timeline: TimelineEntry[];
 }
 
@@ -248,6 +256,18 @@ export const harnessStore = {
         state.sessions[event.sessionId] = {
           ...session,
           todos: event.todos.map((t) => ({ id: t.id, content: t.content, status: t.status })),
+        };
+        break;
+      }
+      case "verifier_result": {
+        state.sessions[event.sessionId] = {
+          ...session,
+          verifier: {
+            passed: event.passed,
+            confidence: event.confidence,
+            tasteScore: event.tasteScore,
+            issues: [...event.issues],
+          },
         };
         break;
       }

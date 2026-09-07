@@ -9,6 +9,7 @@ import type { HarnessEvent } from "@caide/contracts";
 import { createStreamProviderAdapter } from "../provider/streamProviderAdapter.ts";
 import { DEFAULT_MAX_TOOL_CALL_STEPS, runLoop, type LLMAdapter } from "../loop/loop.ts";
 import { resetPreCommitCount } from "../../dyad/vcs/preCommitTools.ts";
+import { formatIssuesForEvent, runReviewBarrier } from "../../dyad/sandbox/reviewBarrier.ts";
 import { resolveChatModeForTurn } from "../../dyad/plan/chatMode.ts";
 import { Inbox } from "../inbox/index.ts";
 import { appendHarnessEvent, flushTurnTokens } from "./eventLog.ts";
@@ -254,6 +255,8 @@ export class CaideRunner {
         })),
         onEvent: forward,
         role: "builder",
+        requestConsent: input.requestConsent ?? undefined,
+        consentStore: sessionStores.consent,
         // Semantic stop (donor stopWhen): plan handoff tools end the turn
         // so the continue-gate takes over. add_integration follows with the
         // DB milestone once the integration flow is validated end to end.
@@ -276,6 +279,29 @@ export class CaideRunner {
         forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "cancelled" });
       } else {
         this.status = "completed";
+        // Review barrier (donor runAutoReviewBarrier): audit the working
+        // diff after mutating turns. Skips silently when clean/non-repo;
+        // never fails the turn.
+        if (chatMode !== "ask" && chatMode !== "plan") {
+          const verdict = await runReviewBarrier({
+            appPath: input.appPath,
+            sessionId: input.sessionId,
+            taskSummary: input.prompt.slice(0, 500),
+            llm,
+            tools: [],
+            signal: controller.signal,
+          }).catch(() => null);
+          if (verdict) {
+            forward({
+              type: "verifier_result",
+              sessionId: input.sessionId,
+              passed: verdict.passed,
+              confidence: verdict.confidence,
+              tasteScore: verdict.tasteScore,
+              issues: formatIssuesForEvent(verdict.issues),
+            });
+          }
+        }
         await flushTurnTokens(input.sessionId);
         forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "completed" });
       }

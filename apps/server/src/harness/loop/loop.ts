@@ -2,6 +2,16 @@ import type { HarnessEvent } from "@caide/contracts";
 import type { ChatMessage, HarnessRole } from "../session/buildChain.ts";
 import { Inbox } from "../inbox/index.ts";
 import { safeEmitLive } from "./events.ts";
+import type { ConsentRequestFn, ConsentStore } from "../../dyad/tools/permissions.ts";
+
+export interface ToolCallContext {
+  signal?: AbortSignal;
+  sessionId: string;
+  toolId: string;
+  /** Consent round-trip + store, threaded from turn options (subagent parity). */
+  requestConsent?: ConsentRequestFn;
+  consentStore?: ConsentStore;
+}
 
 export interface ToolDefinition {
   name: string;
@@ -9,10 +19,7 @@ export interface ToolDefinition {
   readOnly?: boolean;
   /** Per-tool execution budget; defaults to 30s when omitted. */
   timeoutMs?: number;
-  execute: (
-    args: unknown,
-    context: { signal?: AbortSignal; sessionId: string; toolId: string },
-  ) => Promise<unknown>;
+  execute: (args: unknown, context: ToolCallContext) => Promise<unknown>;
 }
 
 export interface LLMStreamChunk {
@@ -48,6 +55,13 @@ export interface LoopOptions {
   role?: HarnessRole;
   inbox?: Inbox;
   onToolError?: (toolName: string, error: unknown) => StructuredToolError;
+  /**
+   * Consent plumbing threaded into every tool-call context (the turn's own
+   * tools usually enforce consent one layer up; delegated subagent tools
+   * enforce it here so background work keeps the session posture).
+   */
+  requestConsent?: ConsentRequestFn;
+  consentStore?: ConsentStore;
   /**
    * Per-step message hook (donor prepareStep seam): repair/inject the step's
    * messages after steer injection, before the LLM call — e.g. pending-user
@@ -300,11 +314,13 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
           // Bound tool execution so a hung tool (network, missing dir) can't
           // block the turn forever. Default 30s; long tools (preview start,
           // APK builds) declare their own timeoutMs on the ToolDef.
-          const executeCtx: { signal?: AbortSignal; sessionId: string; toolId: string } = {
+          const executeCtx: ToolCallContext = {
             sessionId,
             toolId: call.id,
           };
           if (signal) executeCtx.signal = signal;
+          if (options.requestConsent) executeCtx.requestConsent = options.requestConsent;
+          if (options.consentStore) executeCtx.consentStore = options.consentStore;
           const budgetMs =
             toolDef.timeoutMs && Number.isFinite(toolDef.timeoutMs) && toolDef.timeoutMs > 0
               ? Math.floor(toolDef.timeoutMs)

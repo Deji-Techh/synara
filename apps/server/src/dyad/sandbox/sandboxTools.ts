@@ -14,8 +14,10 @@ import {
   formatSubagentStatus,
   formatTaskStatus,
   listSubagentTasks,
+  queueSubagentMessage,
   requestSubagentCancel,
 } from "./taskRegistry.ts";
+import { wakeSubagentThread } from "./subagentLoop.ts";
 import { createFsHosts, runInVm } from "./vmRunner.ts";
 
 export class SandboxValidationError extends Error {
@@ -307,7 +309,7 @@ export const waitAgentsTool = defineTool({
         if (!task) return { id, status: "unknown" as const };
         return { id, status: task.status };
       });
-      if (snapshots.every((s) => s.status === "completed" || s.status === "failed" || s.status === "unknown")) {
+      if (snapshots.every((s) => s.status === "completed" || s.status === "failed" || s.status === "idle" || s.status === "unknown")) {
         return snapshots.map((s) => `${s.id}: ${s.status}`).join("\n");
       }
       if (Date.now() >= deadline) {
@@ -339,6 +341,67 @@ export const cancelAgentTool = defineTool({
   presentCall: (args: any) => `Cancel sub-agent: ${args.thread_id}`,
 });
 
+// --- send_message (donor schema + description verbatim) ---
+
+const threadMessageSchema = z.object({
+  thread_id: z.string(),
+  message: z.string().min(1).max(20_000),
+});
+
+export const sendMessageTool = defineTool({
+  name: "send_message",
+  description: "Durably queue a message for an existing sub-agent thread.",
+  schema: threadMessageSchema,
+  readOnly: false,
+  modifiesState: true,
+  execute: async (args) => {
+    const parsed = threadMessageSchema.parse(args);
+    const queued = queueSubagentMessage(parsed.thread_id, parsed.message);
+    if (queued === "missing") {
+      return `Error: Subagent thread ${parsed.thread_id} not found.`;
+    }
+    if (queued === "terminal") {
+      return `Thread ${parsed.thread_id} already finished — start a new thread instead.`;
+    }
+    if (queued === "full") {
+      return `Thread ${parsed.thread_id} inbox is full — wait for it to drain with wait_agents first.`;
+    }
+    wakeSubagentThread(parsed.thread_id);
+    return "Message queued durably.";
+  },
+  presentCall: (args: any) => `Message sub-agent: ${args.thread_id}`,
+});
+
+// --- followup_task (donor description verbatim) ---
+
+export const followupTaskTool = defineTool({
+  name: "followup_task",
+  description:
+    "Queue a durable follow-up assignment on an existing child thread. An idle child will consume it on its next turn.",
+  schema: threadMessageSchema,
+  readOnly: false,
+  modifiesState: true,
+  execute: async (args) => {
+    const parsed = threadMessageSchema.parse(args);
+    const queued = queueSubagentMessage(
+      parsed.thread_id,
+      `FOLLOW-UP ASSIGNMENT:\n${parsed.message}`,
+    );
+    if (queued === "missing") {
+      return `Error: Subagent thread ${parsed.thread_id} not found.`;
+    }
+    if (queued === "terminal") {
+      return `Thread ${parsed.thread_id} already finished — start a new thread instead.`;
+    }
+    if (queued === "full") {
+      return `Thread ${parsed.thread_id} inbox is full — wait for it to drain with wait_agents first.`;
+    }
+    wakeSubagentThread(parsed.thread_id);
+    return "Follow-up queued durably.";
+  },
+  presentCall: (args: any) => `Follow up on sub-agent: ${args.thread_id}`,
+});
+
 export const ALL_SANDBOX_TOOLS: ToolDef[] = [
   executeSandboxScriptTool,
   executeForkSkillTool,
@@ -347,4 +410,6 @@ export const ALL_SANDBOX_TOOLS: ToolDef[] = [
   listAgentsTool,
   waitAgentsTool,
   cancelAgentTool,
+  sendMessageTool,
+  followupTaskTool,
 ];

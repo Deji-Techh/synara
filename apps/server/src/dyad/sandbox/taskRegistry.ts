@@ -20,7 +20,12 @@ export interface SubagentResult {
   finalText: string;
 }
 
-export type SubagentStatus = "running" | "completed" | "failed";
+export type SubagentStatus = "running" | "idle" | "completed" | "failed";
+
+export interface SubagentMessage {
+  role: "user" | "assistant";
+  content: string;
+}
 
 export interface SubagentTask {
   id: string;
@@ -28,6 +33,14 @@ export interface SubagentTask {
   /** Owning session (chat scoping for list_agents). */
   sessionId: string;
   status: SubagentStatus;
+  /** Durable thread transcript (survives continuations). */
+  transcript: SubagentMessage[];
+  /** Queued messages consumed by the thread worker. */
+  inbox: string[];
+  persona: string;
+  taskName: string;
+  scope: string[];
+  stepsUsed: number;
   result?: SubagentResult;
   error?: string;
 }
@@ -84,15 +97,50 @@ export function formatTaskStatus(id: string): string {
   ].join("\n");
 }
 
-export function registerSubagentTask(role: string, sessionId = ""): SubagentTask {
+export function registerSubagentTask(
+  role: string,
+  sessionId = "",
+  init?: Partial<Pick<SubagentTask, "persona" | "taskName" | "scope" | "transcript">>,
+): SubagentTask {
   const task: SubagentTask = {
     id: `subagent-${Date.now()}-${++subagentCounter}`,
     role,
     sessionId,
     status: "running",
+    transcript: init?.transcript ?? [],
+    inbox: [],
+    persona: init?.persona ?? "generic",
+    taskName: init?.taskName ?? role,
+    scope: init?.scope ?? [],
+    stepsUsed: 0,
   };
   subagentTasks.set(task.id, task);
   return task;
+}
+
+/** Append a transcript line (bounded: keeps the last 100). */
+export function appendSubagentTranscript(id: string, message: SubagentMessage): void {
+  const task = subagentTasks.get(id);
+  if (!task) return;
+  task.transcript.push(message);
+  if (task.transcript.length > 100) {
+    task.transcript.splice(0, task.transcript.length - 100);
+  }
+}
+
+/** Queue a message for the thread worker (bounded: rejects past 20). */
+export function queueSubagentMessage(id: string, message: string): "queued" | "missing" | "full" | "terminal" {
+  const task = subagentTasks.get(id);
+  if (!task) return "missing";
+  if (isSubagentTerminal(task)) return "terminal";
+  if (task.inbox.length >= 20) return "full";
+  task.inbox.push(message);
+  return "queued";
+}
+
+/** Look up a thread (any status). */
+export function getSubagentTask(id: string): SubagentTask | undefined {
+  return subagentTasks.get(id);
 }
 
 export function settleSubagentTask(
@@ -115,6 +163,10 @@ export function formatSubagentStatus(id: string): string {
   }
   if (task.status === "running") {
     return `Task ID: ${task.id} (${task.role}) is still running.`;
+  }
+  if (task.status === "idle") {
+    const tail = task.transcript.filter((m) => m.role === "assistant").at(-1)?.content ?? "";
+    return `Task ID: ${task.id} (${task.role}) is idle.${tail ? `\n\nLast report:\n${tail.slice(0, 1500)}` : ""}`;
   }
   if (task.status === "failed") {
     return `Task ID: ${task.id} (${task.role}) failed:\n${task.error}`;

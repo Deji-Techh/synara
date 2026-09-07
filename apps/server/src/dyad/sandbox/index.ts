@@ -37,6 +37,8 @@ export {
   listAgentsTool,
   waitAgentsTool,
   cancelAgentTool,
+  sendMessageTool,
+  followupTaskTool,
   executeSandboxScript,
   executeForkSkill,
   listForkSkillIds,
@@ -49,7 +51,19 @@ export { runWorkerSandbox, WORKER_WALL_TIMEOUT_MS } from "./workerRunner.ts";
 export {
   runSubagentLoop,
   spawnSubagentTask,
+  wakeSubagentThread,
+  setSubagentToolSource,
+  getSubagentTools,
+  clearThreadDeps,
   type SubagentLoopDeps,
   type SubagentLoopResult,
   type SpawnSubagentDeps,
 } from "./subagentLoop.ts";
+export {
+  systemPromptForPersona,
+  isExplorerTool,
+  EXPLORER_SYSTEM_PROMPT,
+  IMPLEMENTER_SYSTEM_PROMPT,
+  REVIEWER_SYSTEM_PROMPT,
+  type SubagentPersona,
+} from "./personas.ts";

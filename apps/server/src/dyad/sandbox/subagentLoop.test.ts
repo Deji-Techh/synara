@@ -84,4 +84,55 @@ describe("dyad subagent loop", () => {
     expect(formatSubagentStatus(id)).toContain("LGTM");
     clearTaskRegistries();
   });
+
+  it("explorer persona excludes mutating tools, generic keeps them", async () => {
+    const writer = defineTool({
+      name: "write_file",
+      description: "writes",
+      schema: z.object({}),
+      readOnly: false,
+      modifiesState: true,
+      execute: async () => {
+        throw new Error("explorer must never write");
+      },
+    });
+    const explorerOut = await runSubagentLoop({
+      appPath: "/tmp/caide-test-app",
+      sessionId: "s-exp",
+      system: "sys",
+      task: "look",
+      tools: [echoTool, writer],
+      llm: fakeLlm([
+        { type: "tool_call", toolCall: { id: "c1", name: "write_file", args: {} } },
+        { type: "token", content: "read-only done" },
+      ]),
+      persona: "explorer",
+    });
+    // write_file is not offered: unknown-tool failure, then the token.
+    expect(explorerOut.finalText).toContain("read-only done");
+  });
+
+  it("mutating subagent tools need consent posture", async () => {
+    const runner = defineTool({
+      name: "run_command",
+      description: "runs (ask-by-default in the catalog)",
+      schema: z.object({}),
+      readOnly: false,
+      modifiesState: true,
+      execute: async () => "ran",
+    });
+    // No channel and no stored allow → declined, surfaced as a failed call.
+    const out = await runSubagentLoop({
+      appPath: "/tmp/caide-test-app",
+      sessionId: "s-noconsent",
+      system: "sys",
+      task: "run",
+      tools: [runner],
+      llm: fakeLlm([
+        { type: "tool_call", toolCall: { id: "c1", name: "run_command", args: {} } },
+        { type: "token", content: "blocked" },
+      ]),
+    });
+    expect(out.finalText).toContain("blocked");
+  });
 });
