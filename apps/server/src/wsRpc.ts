@@ -455,6 +455,12 @@ function makeWsPreviewHandlers(_providerAdapterRegistry: any, _options: any) {
           ],
         }),
       ),
+    "preview.mobileUrl": (input: any) =>
+      tryPromise(
+        import("./harness/preview/manager.ts").then((m) =>
+          m.getMobilePreviewUrl({ threadId: input.threadId, appDir: input.appDir }),
+        ),
+      ),
     "preview.flutterToolchainStatus": (_input: any) =>
       tryPromise(
         (async () => {

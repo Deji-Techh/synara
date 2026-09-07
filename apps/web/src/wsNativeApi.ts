@@ -889,6 +889,7 @@ export function createWsNativeApi(): NativeApi {
       buildState: (input) => transport.request(PREVIEW_WS_METHODS.buildState, input),
       screenshot: (input) => transport.request(PREVIEW_WS_METHODS.screenshot, input),
       devices: (input) => transport.request(PREVIEW_WS_METHODS.devices, input),
+      mobileUrl: (input) => transport.request(PREVIEW_WS_METHODS.mobileUrl, input),
       flutterToolchainStatus: (input) =>
         transport.request(PREVIEW_WS_METHODS.flutterToolchainStatus, input),
       flutterToolchainInstall: (input) =>

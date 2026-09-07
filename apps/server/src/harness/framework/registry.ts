@@ -18,6 +18,11 @@ export interface FrameworkConfig {
   name: string;
   preview: "none" | "browser" | "device-frame";
   devCommand: string;
+  /**
+   * LAN-bound variant for mobile QR previews (phone on the same WiFi).
+   * Must serve loopback too so the desktop pane keeps working.
+   */
+  lanDevCommand: string;
   buildSteps: string[];
   allowedTools: string[];
   skills: string[];
@@ -32,7 +37,10 @@ export const frameworkRegistry: Record<ProjectFramework, FrameworkConfig> = {
     preview: "device-frame",
     // --web serves a browser build (react-native-web) that renders in the
     // device frame; expo prints `http://localhost:8081` for the web bundle.
+    // Expo binds all interfaces by default (verified live: *:8081), so the
+    // same command serves LAN phones — no separate LAN command needed.
     devCommand: "npx --yes expo start --web",
+    lanDevCommand: "npx --yes expo start --web",
     buildSteps: ["npx expo export"],
     allowedTools: [
       "read_file",
@@ -59,6 +67,7 @@ export const frameworkRegistry: Record<ProjectFramework, FrameworkConfig> = {
     name: "Flutter",
     preview: "device-frame",
     devCommand: "flutter run -d web-server",
+    lanDevCommand: "flutter run -d web-server --web-hostname=0.0.0.0",
     buildSteps: ["flutter build apk"],
     allowedTools: [
       "read_file",
@@ -77,6 +86,7 @@ export const frameworkRegistry: Record<ProjectFramework, FrameworkConfig> = {
     name: "Website (Vite + React)",
     preview: "browser",
     devCommand: "bun run dev",
+    lanDevCommand: "bun run dev -- --host 0.0.0.0",
     buildSteps: ["bun run build"],
     allowedTools: [
       "read_file",
@@ -97,6 +107,7 @@ export const frameworkRegistry: Record<ProjectFramework, FrameworkConfig> = {
     name: "Blank Project",
     preview: "none",
     devCommand: "",
+    lanDevCommand: "",
     buildSteps: [],
     allowedTools: ["read_file", "write_file", "list_dir", "search_files", "run_command"],
     skills: ["ui-ux-mastery"],

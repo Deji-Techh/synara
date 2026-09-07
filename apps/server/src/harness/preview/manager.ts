@@ -16,6 +16,8 @@ export interface PreviewSession {
   kind: "web" | "native";
   logs: string[];
   appDir: string;
+  /** True when spawned with a LAN-bound command (serves phones on the same WiFi). */
+  lan: boolean;
 }
 
 const MAX_LOGS = 500;
@@ -33,7 +35,8 @@ const ANSI_PATTERN = /\u001b\[[0-9;]*m/g;
 const URL_PATTERN = /(https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|[a-zA-Z0-9._-]+)(?::\d+)?(?:\/[^\s]*)?)/;
 
 /** Output shapes emitted when the dev-server port is already taken. */
-export const PORT_CONFLICT_PATTERN = /EADDRINUSE|address already in use|port .* already in use|is already running on|use a different port/i;
+export const PORT_CONFLICT_PATTERN =
+  /EADDRINUSE|address already in use|port .* already in use|is already running on|is running .* in another window|use port \d+ instead|use a different port/i;
 
 /**
  * Extracts a renderable preview URL from one dev-server output line.
@@ -166,7 +169,7 @@ function ensureWsCompatibility(appDir: string): void {
   } catch {}
 }
 
-function resolveDevCommand(appDir: string, defaultCmd: string): string {
+function resolveDevCommand(appDir: string, defaultCmd: string, lan = false): string {
   const pkgPath = path.join(appDir, "package.json");
   if (!fs.existsSync(pkgPath)) return defaultCmd;
 
@@ -179,6 +182,7 @@ function resolveDevCommand(appDir: string, defaultCmd: string): string {
     };
 
     if (deps.expo || deps["react-native"]) {
+      // Expo binds all interfaces by default — same command serves LAN.
       if (scripts.web) {
         return "npm run web";
       }
@@ -186,6 +190,10 @@ function resolveDevCommand(appDir: string, defaultCmd: string): string {
     }
 
     if (scripts.dev) {
+      // Vite needs an explicit host flag to serve LAN phones.
+      if (lan && (deps.vite || deps["@vitejs/plugin-react"])) {
+        return "npm run dev -- --host 0.0.0.0";
+      }
       return "npm run dev";
     }
   } catch {}
@@ -286,10 +294,18 @@ export async function startPreview(input: {
   port?: number;
   hostname?: string;
   device?: string;
+  /** Spawn with a LAN-bound command so phones on the same WiFi can load it. */
+  lan?: boolean;
 }): Promise<{ url: string; kind?: "web" | "native" }> {
+  const wantLan = input.lan === true;
   const existing = sessions.get(input.threadId);
   if (existing && existing.process.exitCode === null) {
-    return { url: existing.url, kind: existing.kind };
+    // A localhost-bound session also serves loopback after a LAN restart, but
+    // a LAN session always satisfies plain requests — reuse when compatible.
+    if (!wantLan || existing.lan) {
+      return { url: existing.url, kind: existing.kind };
+    }
+    await stopPreview(input.threadId);
   }
 
   let appDir = input.appDir;
@@ -303,11 +319,13 @@ export async function startPreview(input: {
   }
 
   const framework = getFrameworkConfigForAppDir(appDir);
-  const rawDevCommand = framework?.devCommand;
+  const rawDevCommand = wantLan
+    ? (framework?.lanDevCommand || framework?.devCommand)
+    : framework?.devCommand;
   if (!rawDevCommand) {
     throw new Error(`No dev command configured for this framework`);
   }
-  const devCommand = resolveDevCommand(appDir, rawDevCommand);
+  const devCommand = resolveDevCommand(appDir, rawDevCommand, wantLan);
 
   // Pre-register session so installation logs can be streamed and viewed immediately
   const initialLogs: string[] = [];
@@ -319,6 +337,7 @@ export async function startPreview(input: {
     kind: "web",
     logs: initialLogs,
     appDir,
+    lan: wantLan,
   };
   sessions.set(input.threadId, session);
 
@@ -421,6 +440,44 @@ export async function stopPreview(threadId: string): Promise<boolean> {
   session.process.kill("SIGTERM");
   sessions.delete(threadId);
   return true;
+}
+
+/**
+ * Resolves the LAN URL a phone on the same WiFi can open for this thread's
+ * preview (used by the QR branch). Requires a running preview — restarts it
+ * with a LAN-bound command when needed (loopback keeps working: binding
+ * 0.0.0.0 / Expo's default also serves localhost, so the desktop pane is
+ * unaffected). Throws a human-readable error when there is nothing to share.
+ */
+export async function getMobilePreviewUrl(input: {
+  threadId: string;
+  appDir?: string;
+}): Promise<{ lanUrl: string; lanIp: string; restarted: boolean }> {
+  const { getLanAddress, toLanUrl } = await import("./lanAddress.ts");
+  const lanIp = getLanAddress();
+  if (!lanIp) {
+    throw new Error("No LAN address detected — connect this machine to WiFi first.");
+  }
+  let session = sessions.get(input.threadId);
+  if (!session || session.process.exitCode !== null || !session.url) {
+    throw new Error("Start the preview first, then open the phone QR again.");
+  }
+  let restarted = false;
+  if (!session.lan) {
+    await stopPreview(input.threadId);
+    const { url } = await startPreview({
+      threadId: input.threadId,
+      appDir: input.appDir ?? session.appDir,
+      lan: true,
+    });
+    restarted = true;
+    session = sessions.get(input.threadId);
+    if (!session || !url) {
+      throw new Error("Preview restarted for LAN but reported no URL.");
+    }
+  }
+  const lanUrl = toLanUrl(session.url, lanIp) ?? session.url;
+  return { lanUrl, lanIp, restarted };
 }
 
 export function reloadPreview(threadId: string): boolean {

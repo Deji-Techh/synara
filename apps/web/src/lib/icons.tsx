@@ -217,6 +217,8 @@ export const DeviceRecordStopIcon: LucideIcon = centralIconWrapper("stop", "fill
 export const DeviceRotateIcon = adaptIcon(IconDeviceMobileRotated);
 export const DevicePowerIcon = adaptIcon(IconPower);
 export const DeviceDetachIcon = adaptIcon(IconPlugOff);
+// Preview header: open the phone-QR branch (LAN mobile preview).
+export const MobileQrIcon: LucideIcon = centralIconWrapper("qr-code");
 export const McpIcon: LucideIcon = (props) => (
   <VscMcp className={props.className} style={props.style} />
 );

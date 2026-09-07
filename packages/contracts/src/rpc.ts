@@ -158,6 +158,8 @@ import {
   PreviewScreenshotResult,
   PreviewDevicesInput,
   PreviewDevicesResult,
+  PreviewMobileUrlInput,
+  PreviewMobileUrlResult,
   FlutterToolchainStatusInput,
   FlutterToolchainStatusResult,
   FlutterToolchainInstallInput,
@@ -733,6 +735,12 @@ export const WsPreviewDevicesRpc = Rpc.make(PREVIEW_WS_METHODS.devices, {
   error: WsRpcError,
 });
 
+export const WsPreviewMobileUrlRpc = Rpc.make(PREVIEW_WS_METHODS.mobileUrl, {
+  payload: PreviewMobileUrlInput,
+  success: PreviewMobileUrlResult,
+  error: WsRpcError,
+});
+
 export const WsPreviewFlutterToolchainStatusRpc = Rpc.make(
   PREVIEW_WS_METHODS.flutterToolchainStatus,
   {
@@ -762,6 +770,7 @@ export const WsPreviewRpcGroup = RpcGroup.make(
   WsPreviewBuildStateRpc,
   WsPreviewScreenshotRpc,
   WsPreviewDevicesRpc,
+  WsPreviewMobileUrlRpc,
   WsPreviewFlutterToolchainStatusRpc,
   WsPreviewFlutterToolchainInstallRpc,
 );

@@ -31,6 +31,7 @@ import {
   DeviceRotateIcon,
   DevicePowerIcon,
   DeviceRecordStopIcon,
+  MobileQrIcon,
 } from "~/lib/icons";
 import {
   createInitialPreviewPanelState,
@@ -55,6 +56,7 @@ import {
   type PreviewTestState,
 } from "./previewPanel.logic";
 import { buildLocalImageUrl } from "~/lib/localImageUrls";
+import { MobileQrBranch } from "./MobileQrBranch";
 import { PanelStateMessage } from "./PanelStateMessage";
 import { CHAT_BACKGROUND_CLASS_NAME } from "./composerPickerStyles";
 
@@ -72,6 +74,7 @@ type BranchId =
   | "home"
   | "terminal"
   | "shutdown"
+  | "mobileQr"
   | null;
 
 const PREVIEW_POLL_INTERVAL_MS = 2_000;
@@ -1266,6 +1269,15 @@ export function PreviewStage(props: {
             </Button>
           </div>
         );
+      case "mobileQr":
+        return (
+          <MobileQrBranch
+            threadId={props.threadId}
+            workspaceRoot={props.workspaceRoot ?? null}
+            active={branchOpen}
+            onStartPreview={handleStart}
+          />
+        );
       case "home":
         return (
           <div className="p-4">
@@ -1363,6 +1375,8 @@ export function PreviewStage(props: {
               ? "Console"
               : branch === "screenshot"
                 ? "Screenshot"
+                : branch === "mobileQr"
+                  ? "Phone preview"
                 : branch === "home"
                   ? "Home / Reload"
                   : branch === "rotate"
@@ -1494,6 +1508,18 @@ export function PreviewStage(props: {
                 aria-label="Screenshot"
               >
                 <DeviceShutterIcon className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => openBranch("mobileQr")}
+                className={cn(
+                  "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
+                  branch === "mobileQr" && branchOpen && "bg-accent text-foreground",
+                )}
+                title="Phone preview (QR)"
+                aria-label="Phone preview (QR)"
+              >
+                <MobileQrIcon className="size-3.5" />
               </button>
               <button
                 type="button"

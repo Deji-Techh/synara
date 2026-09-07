@@ -41,6 +41,13 @@ describe("PORT_CONFLICT_PATTERN", () => {
       true,
     );
     expect(PORT_CONFLICT_PATTERN.test("Port 8081 is already in use")).toBe(true);
+    expect(
+      PORT_CONFLICT_PATTERN.test("Port 8081 is running vento-rn in another window"),
+    ).toBe(true);
+    expect(PORT_CONFLICT_PATTERN.test("Input is required, but 'npx expo' is in non-interactive mode")).toBe(
+      false,
+    );
+    expect(PORT_CONFLICT_PATTERN.test("> Use port 8082 instead?")).toBe(true);
   });
 
   it("ignores normal startup lines", () => {

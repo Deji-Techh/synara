@@ -15,6 +15,7 @@ export const PREVIEW_WS_METHODS = {
   buildState: "preview.buildState",
   screenshot: "preview.screenshot",
   devices: "preview.devices",
+  mobileUrl: "preview.mobileUrl",
   flutterToolchainStatus: "preview.flutterToolchainStatus",
   flutterToolchainInstall: "preview.flutterToolchainInstall",
 } as const;
@@ -211,6 +212,22 @@ export const PreviewDevicesInput = Schema.Struct({
   threadId: ThreadId,
 });
 export type PreviewDevicesInput = typeof PreviewDevicesInput.Type;
+
+export const PreviewMobileUrlInput = Schema.Struct({
+  threadId: ThreadId,
+  appDir: Schema.optional(TrimmedNonEmptyString.check(Schema.isMaxLength(PREVIEW_PATH_MAX_LENGTH))),
+});
+export type PreviewMobileUrlInput = typeof PreviewMobileUrlInput.Type;
+
+export const PreviewMobileUrlResult = Schema.Struct({
+  /** LAN URL a phone on the same WiFi can open, e.g. http://192.168.1.76:8081 */
+  lanUrl: TrimmedNonEmptyString.check(Schema.isMaxLength(8_192)),
+  /** Machine LAN IPv4 used in lanUrl. */
+  lanIp: TrimmedNonEmptyString.check(Schema.isMaxLength(64)),
+  /** True when the session was restarted with a LAN-bound command. */
+  restarted: Schema.Boolean,
+});
+export type PreviewMobileUrlResult = typeof PreviewMobileUrlResult.Type;
 
 export const PreviewDevice = Schema.Struct({
   id: Schema.String.check(Schema.isMaxLength(256)),
