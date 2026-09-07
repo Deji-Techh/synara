@@ -846,16 +846,28 @@ export function deriveComposerVoiceState(input: {
   isRecording: boolean;
   isTranscribing: boolean;
   voiceTranscriptionProvider?: "ai-model" | "web-speech";
+  /**
+   * Whether the Web Speech API exists in this runtime. Defaults to true so
+   * callers that don't probe (and existing unit tests) keep prior behavior;
+   * the composer controller passes the real probe result.
+   */
+  webSpeechSupported?: boolean;
 }): {
   canRenderVoiceNotes: boolean;
   canStartVoiceNotes: boolean;
   showVoiceNotesControl: boolean;
 } {
   const isWebSpeech = input.voiceTranscriptionProvider === "web-speech";
-  // Web Speech API needs no provider auth — always available (just needs internet).
-  const canRenderVoiceNotes = isWebSpeech || input.authStatus !== "unauthenticated";
-  const canStartVoiceNotes =
-    isWebSpeech || (canRenderVoiceNotes && input.voiceTranscriptionAvailable !== false);
+  // Web Speech API needs no provider auth — available when the browser
+  // implements it (just needs internet). Never offer it where unsupported:
+  // starting would silently no-op and leave Stop dead.
+  const webSpeechAvailable = !isWebSpeech || input.webSpeechSupported !== false;
+  const canRenderVoiceNotes =
+    (isWebSpeech ? webSpeechAvailable : true) &&
+    (isWebSpeech || input.authStatus !== "unauthenticated");
+  const canStartVoiceNotes = isWebSpeech
+    ? webSpeechAvailable
+    : canRenderVoiceNotes && input.voiceTranscriptionAvailable !== false;
 
   return {
     canRenderVoiceNotes,

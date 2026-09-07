@@ -98,6 +98,11 @@ vi.mock("react", () => ({
   useLayoutEffect: reactHarness.useLayoutEffect,
   useRef: reactHarness.useRef,
   useState: reactHarness.useState,
+  // Passthrough stubs for hooks the harness doesn't model. The controller
+  // only uses these transitively (via useWebSpeechTranscription) — identity
+  // stability doesn't matter for the cases under test.
+  useCallback: (fn: unknown) => fn,
+  useMemo: (fn: () => unknown) => fn(),
 }));
 
 vi.mock("../../lib/voiceRecorder", () => ({
@@ -127,6 +132,37 @@ vi.mock("../../nativeApi", () => ({
 }));
 
 vi.mock("../ui/toast", () => ({ toastManager: toast }));
+
+const webSpeech = vi.hoisted(() => ({
+  isSupported: true,
+  isListening: false,
+  interimTranscript: "",
+  lastError: null as null | { code: string; message: string },
+  start: vi.fn(),
+  stop: vi.fn<() => Promise<string>>(),
+  cancel: vi.fn(),
+  capturedOptions: null as null | {
+    onError?: (info: { code: string; message: string }) => void;
+  },
+}));
+
+vi.mock("../../lib/useWebSpeechTranscription", () => ({
+  isWebSpeechSupported: () => webSpeech.isSupported,
+  useWebSpeechTranscription: (options?: {
+    onError?: (info: { code: string; message: string }) => void;
+  }) => {
+    webSpeech.capturedOptions = options ?? null;
+    return {
+      isSupported: webSpeech.isSupported,
+      isListening: webSpeech.isListening,
+      interimTranscript: webSpeech.interimTranscript,
+      lastError: webSpeech.lastError,
+      start: webSpeech.start,
+      stop: webSpeech.stop,
+      cancel: webSpeech.cancel,
+    };
+  },
+}));
 
 vi.mock("../ChatView.logic", () => ({
   deriveComposerVoiceState: () => ({ ...voiceAvailability }),
@@ -194,6 +230,14 @@ describe("useComposerVoiceController", () => {
     voiceAvailability.canStartVoiceNotes = true;
     voiceAvailability.showVoiceNotesControl = true;
     toast.add.mockReset();
+    webSpeech.isSupported = true;
+    webSpeech.isListening = false;
+    webSpeech.interimTranscript = "";
+    webSpeech.lastError = null;
+    webSpeech.start.mockReset();
+    webSpeech.stop.mockReset().mockResolvedValue("");
+    webSpeech.cancel.mockReset();
+    webSpeech.capturedOptions = null;
     options = {
       activeProject: PROJECT,
       activeThreadId: THREAD_A,
@@ -388,6 +432,84 @@ describe("useComposerVoiceController", () => {
     transcription.resolve({ text: "stale after availability loss" });
     await submission;
     expect(options.onTranscriptReady).not.toHaveBeenCalled();
+  });
+
+  describe("web speech provider", () => {
+    const renderWebSpeech = (overrides: Partial<UseComposerVoiceControllerOptions> = {}) =>
+      render({ voiceTranscriptionProvider: "web-speech", ...overrides });
+
+    it("starts the browser recognizer instead of prewarming the server", async () => {
+      recorder.isRecording = false;
+      renderWebSpeech();
+
+      await result.startComposerVoiceRecording();
+
+      expect(webSpeech.start).toHaveBeenCalledTimes(1);
+      expect(recorder.startRecording).toHaveBeenCalledTimes(1);
+      expect(nativeApi.prewarmVoice).not.toHaveBeenCalled();
+    });
+
+    it("forwards the accumulated recognizer transcript to the composer on stop", async () => {
+      webSpeech.isListening = true;
+      webSpeech.stop.mockResolvedValueOnce("hello world");
+      renderWebSpeech();
+
+      await result.submitComposerVoiceRecording();
+
+      expect(webSpeech.stop).toHaveBeenCalledTimes(1);
+      expect(nativeApi.transcribeVoice).not.toHaveBeenCalled();
+      expect(options.onTranscriptReady).toHaveBeenCalledWith("hello world");
+    });
+
+    it("warns instead of transcribing when the recognizer produced nothing", async () => {
+      webSpeech.isListening = true;
+      webSpeech.stop.mockResolvedValueOnce("   ");
+      renderWebSpeech();
+
+      await result.submitComposerVoiceRecording();
+
+      expect(options.onTranscriptReady).not.toHaveBeenCalled();
+      expect(toast.add).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "No speech detected" }),
+      );
+    });
+
+    it("surfaces a failure instead of dead-stopping when the recognizer died", async () => {
+      // Recognizer errored (or never started) while the waveform recorder
+      // kept running — previously Stop silently did nothing here.
+      webSpeech.isListening = false;
+      webSpeech.lastError = { code: "network", message: "needs internet" };
+      recorder.isRecording = true;
+      renderWebSpeech();
+
+      await result.submitComposerVoiceRecording();
+
+      expect(recorder.cancelRecording).toHaveBeenCalled();
+      expect(options.onTranscriptReady).not.toHaveBeenCalled();
+      expect(toast.add).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Voice recognition isn't running" }),
+      );
+    });
+
+    it("tears down the waveform recorder when the recognizer errors mid-recording", () => {
+      renderWebSpeech();
+
+      webSpeech.capturedOptions?.onError?.({ code: "network", message: "needs internet" });
+
+      expect(recorder.cancelRecording).toHaveBeenCalledTimes(1);
+      expect(toast.add).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Voice recognition stopped" }),
+      );
+    });
+
+    it("exposes the interim transcript only in web-speech mode", () => {
+      webSpeech.interimTranscript = "hello";
+      renderWebSpeech();
+      expect(result.voiceInterimTranscript).toBe("hello");
+
+      render({ voiceTranscriptionProvider: "ai-model" });
+      expect(result.voiceInterimTranscript).toBe("");
+    });
   });
 
   it("does not let an older availability cancellation clear a newer transcription", async () => {

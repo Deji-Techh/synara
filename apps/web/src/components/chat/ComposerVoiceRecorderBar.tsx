@@ -15,6 +15,8 @@ interface ComposerVoiceRecorderBarProps {
   isRecording: boolean;
   isTranscribing: boolean;
   waveformLevels: readonly number[];
+  /** Live interim transcript (Web Speech mode). Rendered when non-empty. */
+  interimTranscript?: string;
   onDiscard: () => void;
   onStop: () => void;
 }
@@ -48,13 +50,24 @@ export function ComposerVoiceRecorderBar(props: ComposerVoiceRecorderBarProps) {
 
   const visibleLevels = props.waveformLevels.slice(-visibleBarCount);
 
+  const liveTranscript = props.isTranscribing ? "" : (props.interimTranscript?.trim() ?? "");
+
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2.5">
       <div ref={trackRef} className="relative flex h-7 min-w-0 flex-1 items-center overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-dashed border-zinc-300 dark:border-zinc-700"
-        />
+        {liveTranscript ? (
+          <p
+            aria-live="polite"
+            className="pointer-events-none absolute inset-y-0 left-0 flex min-w-0 items-center overflow-hidden text-xs whitespace-nowrap text-zinc-500 italic dark:text-zinc-400"
+          >
+            <span className="truncate">{liveTranscript}</span>
+          </p>
+        ) : (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-dashed border-zinc-300 dark:border-zinc-700"
+          />
+        )}
         <div
           className="relative ml-auto flex h-full items-center"
           style={{ gap: `${BAR_GAP_PX}px` }}

@@ -4353,6 +4353,7 @@ export default function ChatView({
     isVoiceTranscribing,
     voiceWaveformLevels,
     voiceRecordingDurationLabel,
+    voiceInterimTranscript,
     showVoiceNotesControl,
     startComposerVoiceRecording,
     submitComposerVoiceRecording,
@@ -11343,6 +11344,7 @@ export default function ChatView({
                           isTranscribing={isVoiceTranscribing}
                           durationLabel={voiceRecordingDurationLabel}
                           waveformLevels={voiceWaveformLevels}
+                          interimTranscript={voiceInterimTranscript}
                           onDiscard={cancelComposerVoiceRecording}
                           onStop={() => {
                             void submitComposerVoiceRecording();

@@ -57,6 +57,8 @@ export interface UseComposerVoiceControllerResult {
   isVoiceTranscribing: boolean;
   voiceWaveformLevels: readonly number[];
   voiceRecordingDurationLabel: string;
+  /** Live interim transcript while the Web Speech recognizer is listening (""). */
+  voiceInterimTranscript: string;
   showVoiceNotesControl: boolean;
   startComposerVoiceRecording: () => Promise<void>;
   submitComposerVoiceRecording: () => Promise<void>;
@@ -100,12 +102,28 @@ export function useComposerVoiceController(
     stopRecording: stopVoiceRecording,
     cancelRecording: cancelVoiceRecording,
   } = useVoiceRecorder();
-  const webSpeech = useWebSpeechTranscription();
   const [isVoiceTranscribing, setIsVoiceTranscribing] = useState(false);
   const voiceTranscriptionRequestIdRef = useRef(0);
   const voiceThreadIdRef = useRef(threadId);
   const voiceProviderRef = useRef<ProviderKind>(selectedProvider);
   const voiceRecordingStartedAtRef = useRef<number | null>(null);
+  // In web-speech mode the browser recognizer is the source of truth — the
+  // parallel waveform recorder is visualization only. A recognizer failure
+  // must tear down the waveform side too, otherwise the UI shows a recording
+  // whose Stop button silently no-ops (split-brain state).
+  const webSpeech = useWebSpeechTranscription({
+    onError: (info) => {
+      if (voiceTranscriptionProvider !== "web-speech") return;
+      voiceRecordingStartedAtRef.current = null;
+      setIsVoiceTranscribing(false);
+      void cancelVoiceRecording();
+      toastManager.add({
+        type: "error",
+        title: "Voice recognition stopped",
+        description: info.message,
+      });
+    },
+  });
   const failureCopy = {
     ...DEFAULT_FAILURE_COPY,
     ...failureCopyOverrides,
@@ -124,12 +142,17 @@ export function useComposerVoiceController(
     isRecording: isVoiceRecording || webSpeech.isListening,
     isTranscribing: isVoiceTranscribing,
     voiceTranscriptionProvider,
+    webSpeechSupported: isWebSpeechMode ? webSpeech.isSupported : undefined,
   });
 
+  const cancelWebSpeech = webSpeech.cancel;
   useEffect(() => {
     const invalidatedRequestId = voiceTranscriptionRequestIdRef.current + 1;
     voiceTranscriptionRequestIdRef.current = invalidatedRequestId;
     voiceRecordingStartedAtRef.current = null;
+    // A thread/provider switch abandons both transcription backends — the
+    // recognizer must not keep listening (or resolve) for the old thread.
+    cancelWebSpeech();
     // The spinner reset rides the cancel promise so no state is written
     // synchronously inside the effect (keeps the hook compiler-eligible).
     void cancelVoiceRecording().finally(() => {
@@ -137,7 +160,7 @@ export function useComposerVoiceController(
         setIsVoiceTranscribing(false);
       }
     });
-  }, [cancelVoiceRecording, selectedProvider, threadId]);
+  }, [cancelVoiceRecording, cancelWebSpeech, selectedProvider, threadId]);
 
   useEffect(
     () => () => {
@@ -261,8 +284,12 @@ export function useComposerVoiceController(
   };
 
   const submitComposerVoiceRecording = (): Promise<void> => {
+    // In web-speech mode the visible recording state merges the waveform
+    // recorder and the recognizer — the gate must too, so a dead recognizer
+    // with a live waveform reaches the failure branch below instead of
+    // silently no-opping.
     const isActiveRecording = isWebSpeechMode
-      ? webSpeech.isListening
+      ? webSpeech.isListening || isVoiceRecording
       : isVoiceRecording;
     if (!isActiveRecording) {
       return Promise.resolve();
@@ -273,6 +300,22 @@ export function useComposerVoiceController(
 
     if (isWebSpeechMode) {
       // Web Speech mode: stop the recognizer and read the accumulated transcript.
+      // The recognizer may have died (or never started) while the waveform
+      // recorder kept running — stopping then must surface a failure and reset
+      // the UI instead of silently doing nothing.
+      if (!webSpeech.isListening) {
+        voiceRecordingStartedAtRef.current = null;
+        setIsVoiceTranscribing(false);
+        void cancelVoiceRecording();
+        toastManager.add({
+          type: "error",
+          title: "Voice recognition isn't running",
+          description:
+            webSpeech.lastError?.message ??
+            "The recognizer stopped before any speech was captured. Try again, and check microphone access.",
+        });
+        return Promise.resolve();
+      }
       setIsVoiceTranscribing(true);
       // Stop the waveform recorder (best-effort).
       void cancelVoiceRecording();
@@ -416,6 +459,7 @@ export function useComposerVoiceController(
     isVoiceTranscribing,
     voiceWaveformLevels,
     voiceRecordingDurationLabel,
+    voiceInterimTranscript: isWebSpeechMode ? webSpeech.interimTranscript : "",
     showVoiceNotesControl,
     startComposerVoiceRecording,
     submitComposerVoiceRecording,
