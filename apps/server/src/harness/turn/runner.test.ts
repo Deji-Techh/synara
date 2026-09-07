@@ -240,6 +240,29 @@ describe("caide runner turns (m3)", () => {
     expect(String(userMsg?.content)).toMatch(/interrupted/);
   });
 
+  it("seeds turns with the project's AI_RULES.md", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-rules-"));
+    fs.writeFileSync(path.join(dir, "AI_RULES.md"), "# Rules\n\nAlways greet with AHOY.\n");
+    const seen: Array<{ role: string; content: unknown }>[] = [];
+    const runner = new CaideRunner();
+    await runner.startTurn({
+      sessionId: `s-rules-${Date.now()}`,
+      appPath: dir,
+      prompt: "hi",
+      mode: "ask",
+      settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+      llmOverride: {
+        async *stream(messages: Array<{ role: string; content: unknown }>) {
+          seen.push(messages);
+          yield { type: "token", content: "ok" } as never;
+        },
+      },
+    });
+    expect(runner.getStatus()).toBe("completed");
+    const system = seen[0].find((m) => m.role === "system");
+    expect(String(system?.content)).toMatch(/AHOY/);
+  });
+
   it("clamps non-positive step budgets to the default instead of starving the LLM", async () => {
     for (const maxSteps of [0, -5]) {
       const events: HarnessEvent[] = [];

@@ -29,7 +29,7 @@ import { Inbox } from "../inbox/index.ts";
 import { appendHarnessEvent, flushTurnTokens, readHarnessEvents } from "./eventLog.ts";
 import { buildConversationChain, buildMessages } from "../session/buildChain.ts";
 import { SessionStorage } from "../session/storage.ts";
-import { constructSystemPrompt } from "../../dyad/prompts/index.ts";
+import { constructSystemPrompt, readAiRules } from "../../dyad/prompts/index.ts";
 import type { CaideFramework } from "../../dyad/prompts/index.ts";
 import { shouldRevealDatabasePanel } from "../../dyad/db/dbPanel.ts";
 import {
@@ -283,8 +283,11 @@ export class CaideRunner {
       const chatMode = chatModeFor(
         resolveChatModeForTurn({ requestedChatMode: input.mode ?? null }).mode,
       );
+      // Project AI rules: the scaffolded AI_RULES.md (or user edits)
+      // seed every turn; missing file falls back to defaults inside.
+      const aiRules = await readAiRules(input.appPath).catch(() => undefined);
       let system = constructSystemPrompt({
-        aiRules: undefined,
+        aiRules,
         chatMode,
         enableTurboEditsV2: false,
         caideFramework: input.framework,
