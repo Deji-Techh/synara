@@ -376,7 +376,7 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
     const text: ChatMessage[] = [{ role: "user", content: "hi" }];
     expect(repairToolPairing(text)).toEqual(text);
     expect(estimateMessagesTokens(text)).toBe(1);
-    expect(DEFAULT_MAX_TOOL_CALL_STEPS).toBe(50);
+    expect(DEFAULT_MAX_TOOL_CALL_STEPS).toBe(100);
   });
 
   it("retries a terminated stream once with a continuation notice", async () => {
@@ -430,6 +430,14 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
         // drain
       }
     })()).rejects.toThrow("always down");
+  });
+
+  it("derives compaction thresholds from model windows", async () => {
+    const { getCompactionThreshold } = await import("./loop.ts");
+    expect(getCompactionThreshold(200_000)).toBe(175_000);
+    expect(getCompactionThreshold(1_000_000)).toBe(250_000);
+    expect(getCompactionThreshold(0)).toBe(100_000);
+    expect(getCompactionThreshold(NaN)).toBe(100_000);
   });
 
   it("fires a compaction signal once past 70% of budget", async () => {

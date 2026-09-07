@@ -10,6 +10,7 @@ import { createStreamProviderAdapter } from "../provider/streamProviderAdapter.t
 import { ProviderApiError } from "../provider/apiAdapter.ts";
 import {
   DEFAULT_MAX_TOOL_CALL_STEPS,
+  getCompactionThreshold,
   repairToolPairing,
   runLoop,
   type LLMAdapter,
@@ -29,7 +30,13 @@ import { Inbox } from "../inbox/index.ts";
 import { appendHarnessEvent, flushTurnTokens, readHarnessEvents } from "./eventLog.ts";
 import { buildConversationChain, buildMessages } from "../session/buildChain.ts";
 import { SessionStorage } from "../session/storage.ts";
-import { constructSystemPrompt, readAiRules } from "../../dyad/prompts/index.ts";
+import {
+  COMPACTION_SYSTEM_PROMPT,
+  constructSystemPrompt,
+  readAiRules,
+} from "../../dyad/prompts/index.ts";
+import { getContextWindow } from "../../dyad/providers/catalog.ts";
+import { getContextSummarizer } from "../../dyad/misc/index.ts";
 import type { CaideFramework } from "../../dyad/prompts/index.ts";
 import { shouldRevealDatabasePanel } from "../../dyad/db/dbPanel.ts";
 import {
@@ -135,6 +142,29 @@ export function nextFailoverTarget(
   return null;
 }
 
+/**
+ * Assemble post-compaction step messages: [system, summary notice, recent
+ * tail, current prompt]. Pure helper so the shape is unit-testable.
+ */
+export function assembleCompactedMessages(input: {
+  system: string;
+  summary: string;
+  history: Array<{ role: "system" | "user" | "assistant"; content: unknown }>;
+  prompt: string;
+  tailKeep?: number;
+}): Array<{ role: "system" | "user" | "assistant"; content: unknown }> {
+  const tail = input.history.slice(-(input.tailKeep ?? 8));
+  return [
+    { role: "system", content: input.system },
+    {
+      role: "user",
+      content: `${input.summary}\n\n(Above is a compressed summary of earlier work; only the recent messages below are verbatim.)`,
+    },
+    ...tail,
+    { role: "user", content: input.prompt },
+  ];
+}
+
 export class CaideRunner {
   private flow = new TurnFlow();
   private status: RunnerStatus = "created";
@@ -205,6 +235,7 @@ export class CaideRunner {
           }
         }
       } else if (event.type === "stage") this.emit({ type: "stage", from: event.from, to: event.to });
+      else if (event.type === "compaction") void maybeCompactTurn().catch(() => {});
       else if (event.type === "checkpoint") this.emit({ type: "checkpoint", requiresResponse: event.requiresResponse });
       if (event.type === "tool_call" && event.status !== "started") sawToolComplete = true;
       else if (event.type === "artifact_updated") this.emit({ type: "artifact_updated", path: event.path });
@@ -280,6 +311,50 @@ export class CaideRunner {
         requestMcpConsent: input.requestMcpConsent,
       });
       failedAttemptKey = `${ctx.provider.providerId}:${ctx.provider.modelId}`;
+      // Compaction budget from the turn model's real window (donor
+      // getCompactionThreshold parity: 25k output reserve, 250k cap).
+      const compactionThreshold = getCompactionThreshold(
+        getContextWindow(ctx.provider.providerId, ctx.provider.modelId),
+      );
+      // Mid-turn compaction consumer: summarize history once via the cheap
+      // model, then serve [summary + recent tail]. Single-flight, gated by
+      // the session kill-switch, silent on failure. Mirrors donor
+      // performCompaction (summary row + post-boundary messages) without a
+      // DB: the summary lives in turn scope, originals stay in the log.
+      let compactedSummary: string | null = null;
+      let compactionRunning = false;
+      async function maybeCompactTurn(): Promise<void> {
+        if (compactedSummary || compactionRunning) return;
+        if (!getOrCreateSessionStores(input.sessionId).compactionEnabled) return;
+        compactionRunning = true;
+        try {
+          const chain = await buildConversationChain(input.sessionId, undefined, storage).catch(
+            () => null,
+          );
+          if (!chain) return;
+          const history = buildMessages(chain, { role: "builder", includeSystem: false });
+          const text = history
+            .map(
+              (m) =>
+                `${m.role.toUpperCase()}: ${typeof m.content === "string" ? m.content : JSON.stringify(m.content)}`,
+            )
+            .join("\n")
+            .slice(0, 30000);
+          if (text.trim().length < 1000) return;
+          const summarize = getContextSummarizer();
+          if (summarize) {
+            compactedSummary = (
+              await summarize({ system: COMPACTION_SYSTEM_PROMPT, prompt: text })
+            ).slice(0, 6000);
+          } else {
+            compactedSummary = `[COMPRESSED CONTEXT — extractive fallback]\n${text.slice(0, 3000)}\n…\n${text.slice(-3000)}`;
+          }
+        } catch {
+          // keep full history for this turn
+        } finally {
+          compactionRunning = false;
+        }
+      }
       const chatMode = chatModeFor(
         resolveChatModeForTurn({ requestedChatMode: input.mode ?? null }).mode,
       );
@@ -361,14 +436,25 @@ export class CaideRunner {
         buildMessages: async () => {
           const chain = await buildConversationChain(input.sessionId, undefined, storage);
           const history = buildMessages(chain, { role: "builder", includeSystem: false });
-          return [
-            { role: "system", content: system },
-            ...history,
-            {
-              role: "user",
-              content: [effectivePrompt, provenanceReminder].filter(Boolean).join("\n\n"),
-            },
-          ];
+          if (compactedSummary === null) {
+            return [
+              { role: "system", content: system },
+              ...history,
+              {
+                role: "user",
+                content: [effectivePrompt, provenanceReminder].filter(Boolean).join("\n\n"),
+              },
+            ];
+          }
+          return assembleCompactedMessages({
+            system,
+            summary: compactedSummary,
+            history: history as Array<{
+              role: "system" | "user" | "assistant";
+              content: unknown;
+            }>,
+            prompt: [effectivePrompt, provenanceReminder].filter(Boolean).join("\n\n"),
+          });
         },
         tools: ctx.tools.map((t) => ({
           name: t.name,
@@ -393,10 +479,16 @@ export class CaideRunner {
         // Per-step routing: scout for read-only phases, builder otherwise,
         // planner for plan turns (single mode always returns the turn adapter
         // via adapterForKind).
-        selectLlm: ({ step, lastStepAllReadOnly, hasMutatedThisTurn }) =>
-          adapterForKind(
+        selectLlm: ({ step, lastStepAllReadOnly, hasMutatedThisTurn }) => {
+          // Actual-usage trigger: provider-reported tokens beat estimates.
+          if (turnUsage.inputTokens + turnUsage.outputTokens >= compactionThreshold) {
+            void maybeCompactTurn().catch(() => {});
+          }
+          return adapterForKind(
             classifyStepKind({ chatMode, step, lastStepAllReadOnly, hasMutatedThisTurn }),
-          ),
+          );
+        },
+        contextBudgetTokens: compactionThreshold / 0.7,
       });
       for await (const event of stream) {
         void event;

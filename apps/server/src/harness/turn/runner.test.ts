@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 import type { HarnessEvent } from "@caide/contracts";
 import { captureTurnEnd, captureTurnStart, clearTurnProvenance } from "../../dyad/vcs/gitProvenance.ts";
 import type { LLMAdapter } from "../loop/loop.ts";
-import { CaideRunner, nextFailoverTarget } from "./runner.ts";
+import { assembleCompactedMessages, CaideRunner, nextFailoverTarget } from "./runner.ts";
 import { ProviderApiError } from "../provider/apiAdapter.ts";
 
 function fakeLlm(chunks: Array<{ type: "token"; content: string }>): LLMAdapter {
@@ -261,6 +261,25 @@ describe("caide runner turns (m3)", () => {
     expect(runner.getStatus()).toBe("completed");
     const system = seen[0].find((m) => m.role === "system");
     expect(String(system?.content)).toMatch(/AHOY/);
+  });
+
+  it("assembles summary-plus-tail messages after compaction", () => {
+    const history = Array.from({ length: 20 }, (_, i) => ({
+      role: "user" as const,
+      content: `m${i}`,
+    }));
+    const out = assembleCompactedMessages({
+      system: "sys",
+      summary: "SUM",
+      history,
+      prompt: "go",
+    });
+    expect(out[0]).toMatchObject({ role: "system", content: "sys" });
+    expect(String((out[1] as { content: unknown }).content)).toMatch(/SUM/);
+    // Tail keeps the last 8 + prompt.
+    expect(out).toHaveLength(1 + 1 + 8 + 1);
+    expect(out[out.length - 1]).toMatchObject({ role: "user", content: "go" });
+    expect(out[out.length - 2]).toMatchObject({ content: "m19" });
   });
 
   it("clamps non-positive step budgets to the default instead of starving the LLM", async () => {

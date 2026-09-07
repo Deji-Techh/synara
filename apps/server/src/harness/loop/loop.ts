@@ -110,7 +110,17 @@ export interface LoopOptions {
  * Default per-turn tool-call step budget. Callers may override per turn
  * (maxSteps) or via settings (maxToolCallSteps) — see runner wiring.
  */
-export const DEFAULT_MAX_TOOL_CALL_STEPS = 50;
+export const DEFAULT_MAX_TOOL_CALL_STEPS = 100;
+
+/**
+ * Compaction threshold from a model's context window (donor
+ * getCompactionThreshold parity): reserve 25k for output, cap at 250k so
+ * huge-window models still compact before transcripts get unwieldy.
+ */
+export function getCompactionThreshold(contextWindow: number): number {
+  if (!Number.isFinite(contextWindow) || contextWindow <= 0) return 100_000;
+  return Math.min(250_000, Math.max(0, contextWindow - 25_000));
+}
 
 export function formatStructuredToolError(toolName: string, error: unknown): StructuredToolError {
   if (typeof error === "object" && error !== null && "type" in error && "message" in error) {
@@ -280,7 +290,9 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
         ? await options.prepareStep({ step, role, messages })
         : messages;
 
-      estimatedTurnTokens += estimateMessagesTokens(stepMessages);
+      // Current-window estimate (max, not cumulative: every step rebuilds
+      // the full history, so summing would over-count ~N-fold).
+      estimatedTurnTokens = Math.max(estimatedTurnTokens, estimateMessagesTokens(stepMessages));
       if (!compactionSignalled && contextBudget > 0 && estimatedTurnTokens / contextBudget >= 0.7) {
         compactionSignalled = true;
         yield emit({

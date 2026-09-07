@@ -117,6 +117,7 @@ export function applySettingsSync(sessionId: string, payload: SettingsSyncPayloa
     }
   }
   if (typeof payload.safeSql === "boolean") entry.safeSql = payload.safeSql;
+  if (typeof payload.compactionEnabled === "boolean") entry.compactionEnabled = payload.compactionEnabled;
   if (typeof payload.mcpAutoApproveSafe === "boolean") {
     entry.mcpAutoApproveSafe = payload.mcpAutoApproveSafe;
   }
@@ -151,6 +152,7 @@ export async function snapshotSessionState(
     link: getDatabaseLink(sessionId) ?? null,
     toolConsents: consents,
     safeSql: entry?.safeSql ?? true,
+    compactionEnabled: entry?.compactionEnabled ?? true,
     agentRouting: entry?.routing ?? DEFAULT_AGENT_ROUTING,
     // Bounded handoff record (no full plan text — re-read from the file).
     acceptedPlan: accepted
@@ -179,6 +181,7 @@ export async function restoreSessionState(
       link?: DbLink | null;
       toolConsents?: Record<string, unknown>;
       safeSql?: unknown;
+      compactionEnabled?: unknown;
       agentRouting?: unknown;
       acceptedPlan?: {
         id?: unknown;
@@ -207,6 +210,9 @@ export async function restoreSessionState(
     }
     if (typeof data.safeSql === "boolean") {
       getOrCreateSessionStores(sessionId).safeSql = data.safeSql;
+    }
+    if (typeof data.compactionEnabled === "boolean") {
+      getOrCreateSessionStores(sessionId).compactionEnabled = data.compactionEnabled;
     }
     if (data.agentRouting !== undefined) {
       getOrCreateSessionStores(sessionId).routing = normalizeAgentRouting(data.agentRouting);
