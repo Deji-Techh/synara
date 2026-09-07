@@ -7,7 +7,12 @@
 
 import type { HarnessEvent } from "@caide/contracts";
 import { createStreamProviderAdapter } from "../provider/streamProviderAdapter.ts";
-import { DEFAULT_MAX_TOOL_CALL_STEPS, runLoop, type LLMAdapter } from "../loop/loop.ts";
+import {
+  DEFAULT_MAX_TOOL_CALL_STEPS,
+  repairToolPairing,
+  runLoop,
+  type LLMAdapter,
+} from "../loop/loop.ts";
 import { resetPreCommitCount } from "../../dyad/vcs/preCommitTools.ts";
 import { formatIssuesForEvent, runReviewBarrier } from "../../dyad/sandbox/reviewBarrier.ts";
 import { resolveChatModeForTurn } from "../../dyad/plan/chatMode.ts";
@@ -255,6 +260,10 @@ export class CaideRunner {
         })),
         onEvent: forward,
         role: "builder",
+        // Donor prepareStep parity: drop orphaned tool_use/tool_result
+        // blocks (aborted turns leave tool_use without results; providers
+        // reject orphans). Identity for clean histories.
+        prepareStep: ({ messages }) => repairToolPairing(messages),
         requestConsent: input.requestConsent ?? undefined,
         consentStore: sessionStores.consent,
         // Semantic stop (donor stopWhen): plan handoff tools end the turn

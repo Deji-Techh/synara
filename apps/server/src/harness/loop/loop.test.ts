@@ -1,8 +1,12 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   runLoop,
+  estimateMessagesTokens,
+  repairToolPairing,
+  DEFAULT_MAX_TOOL_CALL_STEPS,
   type LLMAdapter,
   type ToolDefinition,
+  type ChatMessage,
   formatStructuredToolError,
 } from "./loop.ts";
 import { withRetry, isRecoverableError } from "./retry.ts";
@@ -351,5 +355,103 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
     expect(used).toEqual(["scout", "main"]);
     expect(seen[0]).toMatchObject({ step: 0, lastStepAllReadOnly: true, hasMutatedThisTurn: false });
     expect(seen[1]).toMatchObject({ step: 1, lastStepAllReadOnly: true, hasMutatedThisTurn: false });
+  });
+
+  it("repairs orphaned tool blocks and estimates context", () => {
+    const paired: ChatMessage[] = [
+      { role: "assistant", content: [{ type: "tool_use", id: "a", name: "read_file", input: {} }] },
+      { role: "user", content: [{ type: "tool_result", tool_use_id: "a", content: "x" }] },
+    ];
+    expect(repairToolPairing(paired)).toHaveLength(2);
+    const orphanUse: ChatMessage[] = [
+      { role: "assistant", content: [{ type: "tool_use", id: "a", name: "read_file", input: {} }] },
+    ];
+    const repaired = repairToolPairing(orphanUse);
+    expect(repaired).toHaveLength(1);
+    expect(repaired[0].content).toEqual([]);
+    const orphanResult: ChatMessage[] = [
+      { role: "user", content: [{ type: "tool_result", tool_use_id: "zzz", content: "x" }] },
+    ];
+    expect(repairToolPairing(orphanResult)[0].content).toEqual([]);
+    const text: ChatMessage[] = [{ role: "user", content: "hi" }];
+    expect(repairToolPairing(text)).toEqual(text);
+    expect(estimateMessagesTokens(text)).toBe(1);
+    expect(DEFAULT_MAX_TOOL_CALL_STEPS).toBe(50);
+  });
+
+  it("retries a terminated stream once with a continuation notice", async () => {
+    let calls = 0;
+    const flaky: LLMAdapter = {
+      async *stream(messages) {
+        calls += 1;
+        if (calls === 1) {
+          yield { type: "token", content: "partial" };
+          throw new Error("connection reset");
+        }
+        const last = messages[messages.length - 1];
+        expect(last.role).toBe("user");
+        expect(String((last as { content: unknown }).content)).toMatch(/cut off/);
+        yield { type: "token", content: "continued" };
+      },
+    };
+    const events: HarnessEvent[] = [];
+    const loop = runLoop({
+      sessionId: "session-retry",
+      maxSteps: 2,
+      llm: flaky,
+      buildMessages: () => [{ role: "user", content: "hi" }],
+      onEvent: (ev) => events.push(ev),
+    });
+    const tokens: string[] = [];
+    for await (const event of loop) {
+      if (event.type === "token") tokens.push(event.content);
+    }
+    expect(calls).toBe(2);
+    expect(tokens).toEqual(["partial", "continued"]);
+    expect(events.some((e) => e.type === "error" && (e as { code: string }).code === "STEP_RETRY")).toBe(true);
+  });
+
+  it("gives up after retries are exhausted", async () => {
+    const dead: LLMAdapter = {
+      async *stream() {
+        yield { type: "token", content: "x" };
+        throw new Error("always down");
+      },
+    };
+    const loop = runLoop({
+      sessionId: "session-retry-exhaust",
+      maxSteps: 2,
+      maxStepRetries: 1,
+      llm: dead,
+      buildMessages: () => [{ role: "user", content: "hi" }],
+    });
+    await expect((async () => {
+      for await (const _ of loop) {
+        // drain
+      }
+    })()).rejects.toThrow("always down");
+  });
+
+  it("fires a compaction signal once past 70% of budget", async () => {
+    const big = "x".repeat(4000);
+    const events: HarnessEvent[] = [];
+    const loop = runLoop({
+      sessionId: "session-compact",
+      maxSteps: 3,
+      contextBudgetTokens: 100,
+      llm: {
+        async *stream() {
+          yield { type: "token", content: "ok" };
+        },
+      },
+      buildMessages: () => [{ role: "user", content: big }],
+      onEvent: (ev) => events.push(ev),
+    });
+    for await (const _ of loop) {
+      // drain
+    }
+    const signals = events.filter((e) => e.type === "compaction");
+    expect(signals).toHaveLength(1);
+    expect(signals[0]).toMatchObject({ reason: "estimated-context" });
   });
 });

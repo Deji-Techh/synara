@@ -94,13 +94,23 @@ export interface LoopOptions {
     lastStepAllReadOnly: boolean;
     hasMutatedThisTurn: boolean;
   }) => LLMAdapter;
+  /**
+   * Estimated-token budget after which a `compaction` signal event fires once
+   * per turn (70% gate like donor shouldCompact). Signalling only — the
+   * compaction rewrite milestone consumes it. Defaults to 100_000.
+   */
+  contextBudgetTokens?: number;
+  /** Retries per step when the LLM stream itself errors (not aborts). */
+  maxStepRetries?: number;
+  /** User notice appended on a terminated-step retry. */
+  continuationNotice?: string;
 }
 
 /**
  * Default per-turn tool-call step budget. Callers may override per turn
  * (maxSteps) or via settings (maxToolCallSteps) — see runner wiring.
  */
-export const DEFAULT_MAX_TOOL_CALL_STEPS = 25;
+export const DEFAULT_MAX_TOOL_CALL_STEPS = 50;
 
 export function formatStructuredToolError(toolName: string, error: unknown): StructuredToolError {
   if (typeof error === "object" && error !== null && "type" in error && "message" in error) {
@@ -137,6 +147,62 @@ export function formatStructuredToolError(toolName: string, error: unknown): Str
   };
 }
 
+/** Rough token estimate for step messages (chars/4, text + block text). */
+export function estimateMessagesTokens(messages: ChatMessage[]): number {
+  let chars = 0;
+  for (const m of messages) {
+    if (typeof m.content === "string") {
+      chars += m.content.length;
+    } else if (Array.isArray(m.content)) {
+      for (const b of m.content) {
+        const text = (b as { text?: unknown }).text;
+        if (typeof text === "string") chars += text.length;
+        else chars += JSON.stringify(b ?? "").length;
+      }
+    }
+  }
+  return Math.ceil(chars / 4);
+}
+
+/**
+ * Drop unpaired tool_use/tool_result blocks. Aborted turns leave tool_use
+ * entries without results, and providers reject orphans (400s). Keeps only
+ * complete pairs, preserving order. Donor sanitizeStepMessages parity.
+ */
+export function repairToolPairing(messages: ChatMessage[]): ChatMessage[] {
+  const used = new Set<string>();
+  const resulted = new Set<string>();
+  for (const m of messages) {
+    if (!Array.isArray(m.content)) continue;
+    for (const b of m.content as Array<Record<string, unknown>>) {
+      if (b.type === "tool_use" && typeof b.id === "string") used.add(b.id);
+      if (b.type === "tool_result" && typeof b.tool_use_id === "string") resulted.add(b.tool_use_id);
+    }
+  }
+  const keep = (id: string | undefined, isUse: boolean): boolean => {
+    if (typeof id !== "string" || !id) return true;
+    return isUse ? resulted.has(id) : used.has(id);
+  };
+  return messages
+    .map((m) => {
+      if (!Array.isArray(m.content)) return m;
+      const blocks = (m.content as Array<Record<string, unknown>>).filter((b) => {
+        if (b.type === "tool_use") return keep(typeof b.id === "string" ? b.id : undefined, true);
+        if (b.type === "tool_result")
+          return keep(typeof b.tool_use_id === "string" ? b.tool_use_id : undefined, false);
+        return true;
+      });
+      return { ...m, content: blocks };
+    });
+}
+
+/** Default terminated-step retries (donor terminated-retry continuation). */
+export const DEFAULT_TERMINATED_STEP_RETRIES = 1;
+
+/** Notice appended on a terminated-step retry so the model continues. */
+export const TERMINATED_RETRY_NOTICE =
+  "[system-reminder]: Your previous response was cut off before completing. Continue exactly where you left off — do not restart the turn.";
+
 export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEvent, void, unknown> {
   const sessionId = options.sessionId;
   const turnId = options.turnId ?? `turn-${Date.now()}`;
@@ -167,6 +233,11 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
   // Per-step routing state: what the previous step did.
   let lastStepAllReadOnly = true;
   let hasMutatedThisTurn = false;
+  // Context accounting + terminated-step retry budget.
+  const contextBudget = options.contextBudgetTokens ?? 100_000;
+  let estimatedTurnTokens = 0;
+  let compactionSignalled = false;
+  const maxStepRetries = options.maxStepRetries ?? DEFAULT_TERMINATED_STEP_RETRIES;
 
   try {
     while (step < maxSteps) {
@@ -209,6 +280,17 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
         ? await options.prepareStep({ step, role, messages })
         : messages;
 
+      estimatedTurnTokens += estimateMessagesTokens(stepMessages);
+      if (!compactionSignalled && contextBudget > 0 && estimatedTurnTokens / contextBudget >= 0.7) {
+        compactionSignalled = true;
+        yield emit({
+          type: "compaction",
+          sessionId,
+          reason: "estimated-context",
+          summaryLength: estimatedTurnTokens,
+        });
+      }
+
       yield emit({
         type: "stage",
         sessionId,
@@ -226,19 +308,41 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
       const activeLlm = options.selectLlm
         ? options.selectLlm({ step, role, lastStepAllReadOnly, hasMutatedThisTurn })
         : options.llm;
-      const stream = activeLlm.stream(stepMessages, streamOpts);
+      let retriesLeft = maxStepRetries;
+      let stepped = false;
+      let activeMessages = stepMessages;
+      const notice = options.continuationNotice ?? TERMINATED_RETRY_NOTICE;
+      while (!stepped) {
+        try {
+          const stream = activeLlm.stream(activeMessages, streamOpts);
+          for await (const chunk of stream) {
+            if (signal?.aborted) break;
 
-      for await (const chunk of stream) {
-        if (signal?.aborted) break;
-
-        if (chunk.type === "token" && chunk.content) {
+            if (chunk.type === "token" && chunk.content) {
+              yield emit({
+                type: "token",
+                sessionId,
+                content: chunk.content,
+              });
+            } else if (chunk.type === "tool_call" && chunk.toolCall) {
+              pendingToolCalls.push(chunk.toolCall);
+            }
+          }
+          stepped = true;
+        } catch (err) {
+          if (signal?.aborted || retriesLeft <= 0) throw err;
+          retriesLeft -= 1;
+          // Drop partial tool calls from the failed attempt: re-executing
+          // them after the retry would run side effects twice.
+          pendingToolCalls.length = 0;
+          activeMessages = [...stepMessages, { role: "user" as const, content: notice }];
           yield emit({
-            type: "token",
+            type: "error",
             sessionId,
-            content: chunk.content,
+            code: "STEP_RETRY",
+            message: err instanceof Error ? err.message : String(err),
+            recoverable: true,
           });
-        } else if (chunk.type === "tool_call" && chunk.toolCall) {
-          pendingToolCalls.push(chunk.toolCall);
         }
       }
 
