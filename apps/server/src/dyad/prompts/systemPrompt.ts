@@ -5,11 +5,12 @@
 // adaptations: electron-log → console, "@/..." imports → local modules, test
 // guidance → ./testGuidance.ts, agent constructor → ./agentPrompt.ts,
 // plan constructor → ./planPrompt.ts. The donor's Turbo-Edits-V2 appendix is
-// not carried — enableTurboEditsV2 is accepted and ignored; see note below).
+// Turbo-Edits appendix carried in ./turboEditsPrompt.ts; enableTurboEditsV2 appends it (see below).)
 
 import path from "node:path";
 import fs from "node:fs";
 import { constructLocalAgentPrompt } from "./agentPrompt.ts";
+import { TURBO_EDITS_V2_SYSTEM_PROMPT } from "./turboEditsPrompt.ts";
 import { constructPlanModePrompt } from "./planPrompt.ts";
 import { buildProviderInvariants } from "./providerInvariants.ts";
 import { BUILD_GIT_CONTEXT_BLOCK } from "./gitContextPrompt.ts";
@@ -529,7 +530,6 @@ export const constructSystemPrompt = ({
    */
   caideFramework?: CaideFramework;
 }) => {
-  void enableTurboEditsV2;
   if (chatMode === "plan") {
     return constructPlanModePrompt(aiRules, themePrompt, caideFramework);
   }
@@ -549,6 +549,7 @@ export const constructSystemPrompt = ({
       neonEmailVerificationEnabled,
       neonNextjsMajorVersion,
       gitProvenance: gitProvenance ? "local-agent" : undefined,
+      enableTurboEditsV2,
       enableAppBlueprint,
       codeExplorerAvailable,
       testingEnabled,
@@ -569,6 +570,7 @@ export const constructSystemPrompt = ({
     neonEmailVerificationEnabled,
     neonNextjsMajorVersion,
     gitProvenance,
+    enableTurboEditsV2,
     testingEnabled,
     appTarget: appTarget ?? appTargetForFramework(caideFramework),
   });
@@ -618,6 +620,7 @@ export const getSystemPromptForChatMode = ({
   neonEmailVerificationEnabled,
   neonNextjsMajorVersion,
   gitProvenance,
+  enableTurboEditsV2,
   testingEnabled,
   appTarget,
 }: {
@@ -641,6 +644,8 @@ export const getSystemPromptForChatMode = ({
    * Git-provenance explanation block (BUILD variant). Off by default.
    */
   gitProvenance?: boolean;
+  /** Append the Turbo-Edits surgical-edit guidance. Off by default. */
+  enableTurboEditsV2?: boolean;
   /**
    * Whether the app has opted into the E2E testing feature. Test-writing
    * guidance is only injected when true, so the model doesn't offer to write
@@ -697,7 +702,9 @@ export const getSystemPromptForChatMode = ({
       return invariants ? `\n\n<provider_invariants>\n${invariants}\n</provider_invariants>` : "";
     })() +
     // Git provenance explanation (build variant). Off unless requested.
-    (gitProvenance ? `\n\n${BUILD_GIT_CONTEXT_BLOCK}` : "");
+    (gitProvenance ? `\n\n${BUILD_GIT_CONTEXT_BLOCK}` : "") +
+    // Turbo-Edits surgical-edit guidance (donor appendix). Off unless requested.
+    (enableTurboEditsV2 ? `\n\n${TURBO_EDITS_V2_SYSTEM_PROMPT}` : "");
   return buildPrompt;
 };
 

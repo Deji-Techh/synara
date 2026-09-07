@@ -11,6 +11,7 @@ import { AGENT_TEST_WRITING_GUIDANCE } from "./testGuidance.ts";
 import { buildPlatformPrompt } from "./platformContracts.ts";
 import { buildProviderInvariants } from "./providerInvariants.ts";
 import { BUILD_GIT_CONTEXT_BLOCK, GIT_CONTEXT_BLOCK } from "./gitContextPrompt.ts";
+import { TURBO_EDITS_V2_SYSTEM_PROMPT } from "./turboEditsPrompt.ts";
 import { CAIDE_WEB_UI_SKILL_PACK } from "./webSkillPack.ts";
 import {
   CAIDE_MOBILE_UI_SKILL_PACK,
@@ -492,6 +493,11 @@ export function constructLocalAgentPrompt(
      * "build" appends BUILD_GIT_CONTEXT_BLOCK.
      */
     gitProvenance?: "local-agent" | "build";
+    /**
+     * Append the Turbo-Edits surgical-edit guidance (donor appendix).
+     * Off by default — existing prompts are unchanged unless enabled.
+     */
+    enableTurboEditsV2?: boolean;
     enableAppBlueprint?: boolean;
     codeExplorerAvailable?: boolean;
     /**
@@ -589,6 +595,11 @@ export function constructLocalAgentPrompt(
     prompt += `\n\n${GIT_CONTEXT_BLOCK}`;
   } else if (options?.gitProvenance === "build") {
     prompt += `\n\n${BUILD_GIT_CONTEXT_BLOCK}`;
+  }
+
+  // Turbo-Edits appendix (donor opt-in guidance for batched edits).
+  if (options?.enableTurboEditsV2) {
+    prompt += `\n\n${TURBO_EDITS_V2_SYSTEM_PROMPT}`;
   }
 
   // Append theme prompt if provided

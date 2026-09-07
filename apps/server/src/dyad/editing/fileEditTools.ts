@@ -23,6 +23,11 @@ export class FileEditValidationError extends Error {
 
 // --- search_replace (donor schema + description verbatim) ---
 
+const searchReplaceBlockSchema = z.object({
+  old_string: z.string().describe("The text block to replace (same uniqueness rules as old_string)."),
+  new_string: z.string().describe("The edited text (must differ from old_string)."),
+});
+
 const searchReplaceSchema = z.object({
   file_path: z
     .string()
@@ -37,6 +42,16 @@ const searchReplaceSchema = z.object({
     .describe(
       "The edited text to replace the old_string (must be different from the old_string)",
     ),
+  edits: z
+    .array(searchReplaceBlockSchema)
+    .optional()
+    .describe(
+      "Additional SEARCH/REPLACE blocks applied atomically in the same call (all succeed or none is written). Prefer batching several targeted edits here over multiple tool calls.",
+    ),
+  description: z
+    .string()
+    .optional()
+    .describe("Brief description of the changes you are making."),
 });
 
 export const searchReplaceTool = defineTool({
@@ -53,9 +68,7 @@ CRITICAL REQUIREMENTS FOR USING THIS TOOL:
    - Include all whitespace, indentation, and surrounding code exactly as it appears in the file
    - Do NOT use only a partial fragment of a line. Include the full line containing the change.
 
-2. SINGLE INSTANCE: This tool can only change ONE instance at a time. If you need to change multiple instances:
-   - Make separate calls to this tool for each instance
-   - Each call must uniquely identify its specific instance using extensive context
+2. SINGLE INSTANCE: Each search block changes ONE instance. For multiple edits, batch them in ONE call via the edits array (each block must uniquely identify its instance using extensive context) — never mix search_replace and write_file on the same file within one response
 
 3. VERIFICATION: Before using this tool:
    - Re-read the target file immediately before editing; do not reuse content from an earlier turn after another tool may have changed it
@@ -63,12 +76,14 @@ CRITICAL REQUIREMENTS FOR USING THIS TOOL:
    - Plan separate tool calls for each instance
    - If a search block does not match, re-read the file and retry once with the current exact lines
    - After repeated mismatch failures, use write_file only when replacing the complete file is safe
+   - Include a brief description of the changes in the description parameter
 `,
   schema: searchReplaceSchema,
   readOnly: false,
   modifiesState: true,
   execute: async (args, ctx) => executeSearchReplace(args, ctx.appPath),
-  presentCall: (args: any) => `Edit ${args.file_path}`,
+  presentCall: (args: any) =>
+    `Edit ${args.file_path}${Array.isArray(args?.edits) && args.edits.length > 0 ? ` (${args.edits.length + 1} blocks)` : ""}`,
 });
 
 /** Context-bound execution (ToolContext carries appPath/signal). */
@@ -77,21 +92,34 @@ export async function executeSearchReplace(
   appPath: string,
 ): Promise<string> {
   const parsed = searchReplaceSchema.parse(input);
-  if (parsed.old_string === parsed.new_string) {
-    throw new FileEditValidationError("old_string and new_string must be different");
+  const blocks = [
+    { old_string: parsed.old_string, new_string: parsed.new_string },
+    ...(parsed.edits ?? []),
+  ];
+  for (const [i, b] of blocks.entries()) {
+    if (b.old_string === b.new_string) {
+      throw new FileEditValidationError(`Block ${i + 1}: old_string and new_string must be different`);
+    }
   }
   const fullPath = safeJoinAppPath(appPath, parsed.file_path);
   if (!fs.existsSync(fullPath)) {
     throw new FileEditValidationError(`File does not exist: ${parsed.file_path}`);
   }
   const original = await fs.promises.readFile(fullPath, "utf8");
-  const operations = `<<<<<<< SEARCH\n${escapeSearchReplaceMarkers(parsed.old_string)}\n=======\n${escapeSearchReplaceMarkers(parsed.new_string)}\n>>>>>>> REPLACE`;
+  const operations = blocks
+    .map(
+      (b) =>
+        `<<<<<<< SEARCH\n${escapeSearchReplaceMarkers(b.old_string)}\n=======\n${escapeSearchReplaceMarkers(b.new_string)}\n>>>>>>> REPLACE`,
+    )
+    .join("\n\n");
+  // Atomic dry-run: nothing is written unless every block applies.
   const result = applySearchReplace(original, operations);
   if (!result.success || typeof result.content !== "string") {
     const failure = result.error ?? "unknown";
     throw new FileEditValidationError(
       [
-        `Failed to apply search-replace: ${failure}`,
+        `Failed to apply search-replace (${blocks.length} block${blocks.length === 1 ? "" : "s"}): ${failure}`,
+        ...identifyFailingBlocks(original, blocks),
         "",
         `Recovery: re-read ${parsed.file_path} now, copy the current full lines with exact whitespace, and retry once.`,
         "Do not reuse an old search block after another tool has edited the file.",
@@ -99,7 +127,28 @@ export async function executeSearchReplace(
     );
   }
   await fs.promises.writeFile(fullPath, result.content);
-  return `Successfully applied edits to ${parsed.file_path}`;
+  return `Successfully applied ${blocks.length} edit${blocks.length === 1 ? "" : "s"} to ${parsed.file_path}`;
+}
+
+/**
+ * Dry-run attribution: re-check each block alone against the original so
+ * the error names the failing blocks (donor dryRunSearchReplace parity).
+ * The batch itself stays atomic — this only diagnoses.
+ */
+function identifyFailingBlocks(
+  original: string,
+  blocks: Array<{ old_string: string; new_string: string }>,
+): string[] {
+  if (blocks.length < 2) return [];
+  const bad: number[] = [];
+  for (const [i, b] of blocks.entries()) {
+    const single =
+      `<<<<<<< SEARCH\n${escapeSearchReplaceMarkers(b.old_string)}\n=======\n${escapeSearchReplaceMarkers(b.new_string)}\n>>>>>>> REPLACE`;
+    const r = applySearchReplace(original, single);
+    if (!r.success) bad.push(i + 1);
+  }
+  if (bad.length === 0) return ["All blocks match alone — they conflict with each other in sequence; reorder or widen context."];
+  return [`Failing block${bad.length === 1 ? "" : "s"}: ${bad.join(", ")} of ${blocks.length}.`];
 }
 
 // --- multi_replace (donor schema + description verbatim) ---

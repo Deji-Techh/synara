@@ -119,7 +119,7 @@ describe("dyad editing transplant (m2b)", () => {
       },
       toolCtx(dir),
     );
-    expect(out).toBe("Successfully applied edits to app.ts");
+    expect(out).toBe("Successfully applied 1 edit to app.ts");
     expect(fs.readFileSync(path.join(dir, "app.ts"), "utf8")).toContain("return 'hello';");
 
     await expect(
@@ -134,6 +134,37 @@ describe("dyad editing transplant (m2b)", () => {
     await expect(
       executeSearchReplace({ file_path: "app.ts", old_string: "zzz-nope", new_string: "q" }, dir),
     ).rejects.toThrow(/Recovery: re-read app.ts now/);
+  });
+
+  it("batches search_replace edits atomically with failure attribution", async () => {
+    const dir = workspace();
+    const out = await searchReplaceTool.execute(
+      {
+        file_path: "app.ts",
+        old_string: "export function hello() {\n  return 'hi';\n}",
+        new_string: "export function hello() {\n  return 'hello';\n}",
+        edits: [{ old_string: "return 'hello';", new_string: "return 'hello world';" }],
+        description: "greet the world",
+      },
+      toolCtx(dir),
+    );
+    expect(out).toBe("Successfully applied 2 edits to app.ts");
+    expect(fs.readFileSync(path.join(dir, "app.ts"), "utf8")).toContain("return 'hello world';");
+
+    const before = fs.readFileSync(path.join(dir, "app.ts"), "utf8");
+    await expect(
+      searchReplaceTool.execute(
+        {
+          file_path: "app.ts",
+          old_string: "return 'hello world';",
+          new_string: "return 'hey';",
+          edits: [{ old_string: "zzz-nope", new_string: "q" }],
+        },
+        toolCtx(dir),
+      ),
+    ).rejects.toThrow(/Failing block: 2 of 2/);
+    // Atomic: the good block was NOT written.
+    expect(fs.readFileSync(path.join(dir, "app.ts"), "utf8")).toBe(before);
   });
 
   it("runs multi_replace with order/overlap/bounds validation", async () => {

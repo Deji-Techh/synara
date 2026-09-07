@@ -23,6 +23,7 @@ import {
   GIT_CONTEXT_BLOCK,
   BUILD_GIT_CONTEXT_BLOCK,
   buildGitReminder,
+  TURBO_EDITS_V2_SYSTEM_PROMPT,
   WEB3_SKILL_PACK,
   WEB_PRODUCT_CONTRACT,
 } from "./index.ts";
@@ -324,6 +325,18 @@ describe("dyad prompt transplant (m1)", () => {
     expect(buildGitReminder(undefined)).toBeNull();
     expect(buildGitReminder({})).toBeNull();
     expect(buildGitReminder({ commitHash: "a<b>&c" })).toContain("a&lt;b&gt;&amp;c");
+  });
+
+  it("appends Turbo-Edits guidance only when enabled", () => {
+    const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
+    expect(constructSystemPrompt({ ...base, chatMode: "build" })).not.toContain("SURGICAL EDITS ONLY");
+    expect(constructSystemPrompt({ ...base, chatMode: "local-agent" })).not.toContain("SURGICAL EDITS ONLY");
+    const build = constructSystemPrompt({ ...base, chatMode: "build", enableTurboEditsV2: true });
+    expect(build).toContain("SURGICAL EDITS ONLY");
+    expect(build).toContain("edits array");
+    const agent = constructSystemPrompt({ ...base, chatMode: "local-agent", enableTurboEditsV2: true });
+    expect(agent).toContain("SURGICAL EDITS ONLY");
+    expect(TURBO_EDITS_V2_SYSTEM_PROMPT).toContain("SEARCH/REPLACE");
   });
 
   it("threads the Next.js major version into Neon boundary guidance", () => {

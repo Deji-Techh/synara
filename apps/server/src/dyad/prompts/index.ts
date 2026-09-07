@@ -73,6 +73,9 @@ export {
   type InspirationPrompt,
 } from "./inspirationPrompts.ts";
 export {
+  TURBO_EDITS_V2_SYSTEM_PROMPT,
+} from "./turboEditsPrompt.ts";
+export {
   GIT_CONTEXT_BLOCK,
   BUILD_GIT_CONTEXT_BLOCK,
   buildGitReminder,
