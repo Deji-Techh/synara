@@ -46,6 +46,12 @@ const motionInteractionSkill = readSkill("motion-interaction/SKILL.md");
 const productFlowSkill = readSkill("product-flow/SKILL.md");
 const backendProductionSkill = readSkill("backend-production/SKILL.md");
 const antiAiSlopSkill = readSkill("anti-ai-slop/SKILL.md");
+// Appllama transplant: skill files ship verbatim under skills/appllama-design
+// and skills/appllama-research (MIT, author attributed in frontmatter). Only
+// the frontmatter is parsed here; bodies stay on disk for fork-skill depth.
+const appllamaDesignSkill = readSkill("appllama-design/SKILL.md");
+const appllamaResearchSkill = readSkill("appllama-research/SKILL.md");
+const appllamaWebRuntime = readSkill("appllama-design/caide-runtime-web.md");
 
 export const UIUX_SKILL_FRONTMATTER: SkillFrontmatter =
   parseFrontmatter(uiUxMasterySkill).frontmatter;
@@ -57,9 +63,47 @@ export const COMPANION_SKILL_FRONTMATTERS: Record<string, SkillFrontmatter> = {
   "anti-ai-slop": parseFrontmatter(antiAiSlopSkill).frontmatter,
   "onboarding-welcome": parseFrontmatter(readSkill("onboarding-welcome/SKILL.md"))
     .frontmatter,
+  "appllama-design": {
+    ...parseFrontmatter(appllamaDesignSkill).frontmatter,
+    // Donor blurb names a concrete stack ("Expo / React Native"); this
+    // registry advertises into every target's prompt including website, so
+    // keep the one-liner stack-neutral. Verbatim text stays on disk.
+    description:
+      "Benchmark-quality mobile UI laws: native fidelity, navigation grammar, anti-slop discipline, motion gates, and verification loops. Use when designing or polishing any mobile UI — screens, flows, onboarding, paywalls, sheets, settings — or when studying top-app patterns. Pairs with the Appllama MCP; stack detail resolves per framework.",
+  },
+  "appllama-research": parseFrontmatter(appllamaResearchSkill).frontmatter,
 };
 
 const skillBody = stripFrontmatter(uiUxMasterySkill);
+// Always-on Appllama benchmark laws. Framework-neutral by design: this pack
+// is shared by React Native and Flutter, so stack-specific detail (package
+// names, router APIs, preview commands) lives in the runtime files on disk,
+// selected by <caide_framework>. Full skill texts are fork-skill depth.
+const APPLLAMA_MOBILE_LAWS = `
+<appllama-mobile-laws>
+Benchmark bar (Appllama transplant — every mobile screen must clear this):
+- Study before drawing: when the task names a screen type (onboarding, paywall, settings, empty state), study real top-app patterns first via the appllama-research companion skill (needs the Appllama MCP; if unconnected, reason from the playbooks on disk). Extract the pattern, not the pixels.
+- Native fidelity: semantic colors in light AND dark from day one; native controls over rebuilt ones; generous touch targets; one accent color, one grey family, locked corner radii; real text over decorative iconography.
+- Navigation grammar: push for forward exploration, replace for one-way doors (sign-in wall, onboarding done, purchase) so back can never re-enter the old state. Sheets, dialogs, and overlays each have one job — never navigate with a sheet.
+- Motion gate: platform-default motion for tabs, scroll, and back; near-imperceptible press feedback; standard motion for dialogs and toasts; delight only on rare first-time moments. Honor reduce-motion. Never claim smooth frame rates without on-device measurement.
+- Definition of done: screenshot the preview and scrub every path — back, modals, keyboard both directions, rapid taps, long content, empty, loading, and error states, large text, landscape — and fix until no flaw remains.
+Stack detail (read the file matching this project's Caide framework notice before building UI):
+- react-native: skills/appllama-design/caide-runtime-mobile.md
+- flutter: skills/appllama-design/caide-runtime-flutter.md
+Full laws and references: skills/appllama-design/SKILL.md plus skills/appllama-design/references/. Research playbooks: skills/appllama-research/ (fork via execute_fork_skill as appllama-design / appllama-research).
+</appllama-mobile-laws>
+`.trim();
+
+// Web runtime: the Appllama laws were written for native mobile. Applied
+// literally to a website they produce a narrow phone column floating in a
+// desktop viewport, so the appendix below reads as OVERRIDES for web targets.
+const APPLLAMA_WEB_BLOCK = `
+<appllama-web-runtime>
+The following Caide runtime appendix translates the Appllama benchmark laws to responsive web. Where it conflicts with mobile skill text, it wins for website targets.
+
+${appllamaWebRuntime.trim()}
+</appllama-web-runtime>
+`.trim();
 const companionSkills = [
   { name: "Motion and Interaction", content: motionInteractionSkill },
   { name: "Product Flow", content: productFlowSkill },
@@ -121,6 +165,8 @@ ${DESIGN_REFERENCE_INDEX_PROMPT}
 ${skillBody}
 
 ${companionSkills}
+
+${APPLLAMA_MOBILE_LAWS}
 </mandatory-ui-ux-skill>
 
 <ui-ux-references>
@@ -138,9 +184,10 @@ ${templatesBlock}
 
 /** Select the UI skill pack for a build target (defaults to mobile). */
 export function buildUiSkillPack(appTarget?: AppTarget): string {
-  return appTarget === "web"
-    ? CAIDE_WEB_UI_SKILL_PACK
-    : CAIDE_MOBILE_UI_SKILL_PACK;
+  if (appTarget === "web") {
+    return `${CAIDE_WEB_UI_SKILL_PACK}\n\n${APPLLAMA_WEB_BLOCK}`;
+  }
+  return CAIDE_MOBILE_UI_SKILL_PACK;
 }
 
 const WEB3_MODULE_FILES = [

@@ -4,7 +4,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { McpServersSettingsPanel } from "./McpServersSettingsPanel";
-import { validateServer, type McpServerConfig } from "./mcpServersStore";
+import { APPLAMA_MCP_URL, loadServers, validateServer, type McpServerConfig } from "./mcpServersStore";
 
 const base: McpServerConfig = {
   id: "mcp-1",
@@ -42,9 +42,21 @@ describe("mcpServersStore", () => {
   it("renders the panel shell without a backend", () => {
     const markup = renderToStaticMarkup(<McpServersSettingsPanel active={true} />);
     expect(markup).toContain("MCP servers");
-    expect(markup).toContain("No MCP servers");
+    expect(markup).toContain("Appllama");
+    expect(markup).toContain(APPLAMA_MCP_URL);
     expect(markup).toContain("Auto-approve safe MCP calls");
     expect(markup).toContain("/mcp");
     expect(renderToStaticMarkup(<McpServersSettingsPanel active={false} />)).toBe("");
+  });
+
+  it("pre-registers Appllama disabled without duplicating user entries", () => {
+    const seeded = loadServers();
+    const appllama = seeded.filter((s) => s.url === APPLAMA_MCP_URL);
+    expect(appllama).toHaveLength(1);
+    expect(appllama[0].name).toBe("Appllama");
+    expect(appllama[0].enabled).toBe(false);
+    // Idempotent: an existing user entry is never touched or duplicated.
+    const again = loadServers();
+    expect(again.filter((s) => s.url === APPLAMA_MCP_URL)).toHaveLength(1);
   });
 });

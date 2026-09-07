@@ -16,8 +16,7 @@ import { buildProviderInvariants } from "./providerInvariants.ts";
 import { BUILD_GIT_CONTEXT_BLOCK } from "./gitContextPrompt.ts";
 import { DEFAULT_AI_RULES } from "./aiRules.ts";
 import type { AppFrameworkType } from "./frameworkType.ts";
-import { CAIDE_MOBILE_UI_SKILL_PACK } from "./skillPacks.ts";
-import { CAIDE_WEB_UI_SKILL_PACK } from "./webSkillPack.ts";
+import { buildUiSkillPack } from "./skillPacks.ts";
 import { buildPlatformPrompt } from "./platformContracts.ts";
 import type { AppTarget } from "./appTarget.ts";
 import { WEB3_SKILL_PACK } from "./skillPacks.ts";
@@ -670,8 +669,7 @@ export const getSystemPromptForChatMode = ({
   const shouldAppendNitroNudge =
     frameworkType === "vite" && !hasSupabaseProject;
   const target: AppTarget = appTarget ?? "mobile";
-  const uiSkillPack =
-    target === "web" ? CAIDE_WEB_UI_SKILL_PACK : CAIDE_MOBILE_UI_SKILL_PACK;
+  const uiSkillPack = buildUiSkillPack(target);
   const buildPrompt =
     BUILD_SYSTEM_PROMPT_BASE.replace(
       "[[PLATFORM_UI_SKILL_PACK]]",

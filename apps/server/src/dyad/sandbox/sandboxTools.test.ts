@@ -63,6 +63,8 @@ describe("dyad sandbox transplant (m2b)", () => {
     expect(clampSandboxTimeoutMs(undefined)).toBe(60_000);
     expect(clampSandboxTimeoutMs(999_999_999)).toBe(60_000);
     expect(listForkSkillIds()).toContain("motion-interaction");
+    expect(listForkSkillIds()).toContain("appllama-design");
+    expect(listForkSkillIds()).toContain("appllama-research");
   });
 
   it("runs computations, blocks ambient authority, and times out loops", async () => {

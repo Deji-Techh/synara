@@ -12,9 +12,8 @@ import { buildPlatformPrompt } from "./platformContracts.ts";
 import { buildProviderInvariants } from "./providerInvariants.ts";
 import { BUILD_GIT_CONTEXT_BLOCK, GIT_CONTEXT_BLOCK } from "./gitContextPrompt.ts";
 import { TURBO_EDITS_V2_SYSTEM_PROMPT } from "./turboEditsPrompt.ts";
-import { CAIDE_WEB_UI_SKILL_PACK } from "./webSkillPack.ts";
 import {
-  CAIDE_MOBILE_UI_SKILL_PACK,
+  buildUiSkillPack,
   COMPANION_SKILL_FRONTMATTERS,
 } from "./skillPacks.ts";
 import { WEB3_SKILL_FRONTMATTERS } from "./skillPacks.ts";
@@ -564,8 +563,7 @@ export function constructLocalAgentPrompt(
     aiRules ??
     defaultAiRulesForFramework(options?.caideFramework, DEFAULT_AI_RULES) ??
     DEFAULT_AI_RULES;
-  const uiSkillPack =
-    target === "web" ? CAIDE_WEB_UI_SKILL_PACK : CAIDE_MOBILE_UI_SKILL_PACK;
+  const uiSkillPack = buildUiSkillPack(target);
   let prompt = basePrompt
     .replace("[[PLATFORM_UI_SKILL_PACK]]", () => uiSkillPack)
     .replace("[[PLATFORM_CONTRACT]]", () => buildPlatformPrompt(target))

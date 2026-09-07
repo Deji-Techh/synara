@@ -43,6 +43,38 @@ export function newServerId(): string {
   return uid();
 }
 
+/**
+ * Builtin registry: Appllama ships pre-registered but disabled, so enabling
+ * it is one click (+ Appllama account on their side). URL only — no tokens,
+ * keys, or logic. Idempotent by URL/name match: an existing user entry is
+ * never touched, and a deleted builtin reappears as disabled on next load.
+ */
+export const APPLAMA_MCP_URL = "https://mcp.appllama.io/mcp";
+const APPLAMA_BUILTIN_ID = "mcp-appllama-builtin";
+
+function ensureBuiltinServers(servers: McpServerConfig[]): McpServerConfig[] {
+  if (
+    servers.some(
+      (s) =>
+        s.url === APPLAMA_MCP_URL || s.name.trim().toLowerCase() === "appllama",
+    )
+  ) {
+    return servers;
+  }
+  return [
+    ...servers,
+    {
+      id: APPLAMA_BUILTIN_ID,
+      name: "Appllama",
+      transport: "sse",
+      enabled: false,
+      url: APPLAMA_MCP_URL,
+      defaultConsent: "ask",
+      createdAt: Date.now(),
+    },
+  ];
+}
+
 export function defaultPrefs(): McpPrefs {
   return { autoApproveSafe: true };
 }
@@ -50,11 +82,11 @@ export function defaultPrefs(): McpPrefs {
 export function loadServers(): McpServerConfig[] {
   try {
     const raw = localStorage.getItem(SERVERS_KEY);
-    if (!raw) return [];
+    if (!raw) return ensureBuiltinServers([]);
     const parsed = JSON.parse(raw) as McpServerConfig[];
-    return Array.isArray(parsed) ? parsed : [];
+    return ensureBuiltinServers(Array.isArray(parsed) ? parsed : []);
   } catch {
-    return [];
+    return ensureBuiltinServers([]);
   }
 }
 

@@ -8,6 +8,7 @@ import {
   buildUiSkillPack,
   CAIDE_MOBILE_UI_SKILL_PACK,
   CAIDE_WEB_UI_SKILL_PACK,
+  COMPANION_SKILL_FRONTMATTERS,
   COMPACTION_SYSTEM_PROMPT,
   constructLocalAgentPrompt,
   constructPlanModePrompt,
@@ -27,7 +28,7 @@ import {
   WEB3_SKILL_PACK,
   WEB_PRODUCT_CONTRACT,
 } from "./index.ts";
-import { readGuide } from "./skillLoader.ts";
+import { readGuide, readSkill } from "./skillLoader.ts";
 
 describe("dyad prompt transplant (m1)", () => {
   it("platform contracts cover mobile and web, defaulting to mobile", () => {
@@ -49,8 +50,57 @@ describe("dyad prompt transplant (m1)", () => {
   it("web pack steers away from mobile patterns", () => {
     expect(CAIDE_WEB_UI_SKILL_PACK).toContain("responsive web app");
     expect(CAIDE_WEB_UI_SKILL_PACK).toContain("Do NOT");
-    expect(buildUiSkillPack("web")).toBe(CAIDE_WEB_UI_SKILL_PACK);
+    // buildUiSkillPack("web") is the donor pack plus the Appllama web-runtime
+    // appendix (anti-app overrides); the donor export itself stays verbatim.
+    const web = buildUiSkillPack("web");
+    expect(web).toContain("responsive web app");
+    expect(web).toContain("<appllama-web-runtime>");
+    expect(web).toContain("No bottom tab bar");
     expect(buildUiSkillPack()).toBe(CAIDE_MOBILE_UI_SKILL_PACK);
+  });
+
+  it("appllama transplant: always-on laws per target, full skills as companions", () => {
+    // Mobile pack carries the framework-neutral benchmark laws with
+    // per-framework runtime pointers (shared by RN + Flutter, so no
+    // stack-specific nouns leak into either target).
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("<appllama-mobile-laws>");
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("one-way doors");
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain(
+      "skills/appllama-design/caide-runtime-mobile.md",
+    );
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain(
+      "skills/appllama-design/caide-runtime-flutter.md",
+    );
+    for (const leak of ["Vite", "shadcn", "GoRouter", "Riverpod", "Dart", "flutter pub"]) {
+      expect(CAIDE_MOBILE_UI_SKILL_PACK).not.toContain(leak);
+    }
+
+    // Companion registry advertises both skills for execute_fork_skill depth.
+    for (const id of ["appllama-design", "appllama-research"]) {
+      expect(Object.keys(COMPANION_SKILL_FRONTMATTERS)).toContain(id);
+      expect(
+        COMPANION_SKILL_FRONTMATTERS[id].description ?? "",
+      ).not.toHaveLength(0);
+    }
+
+    // All transplant files are on disk and non-trivial.
+    for (const file of [
+      "appllama-design/SKILL.md",
+      "appllama-design/references/motion.md",
+      "appllama-design/references/simulator-loop.md",
+      "appllama-design/references/native-controls.md",
+      "appllama-design/references/performance.md",
+      "appllama-design/references/image-assets.md",
+      "appllama-design/caide-runtime-mobile.md",
+      "appllama-design/caide-runtime-web.md",
+      "appllama-design/caide-runtime-flutter.md",
+      "appllama-research/SKILL.md",
+      "appllama-research/references/build-from-scratch.md",
+      "appllama-research/references/improve-a-screen.md",
+      "appllama-research/references/research-methods.md",
+    ]) {
+      expect(readSkill(file).length, file).toBeGreaterThan(200);
+    }
   });
 
   it("web3 pack ships all nine modules + multi-chain rules", () => {
