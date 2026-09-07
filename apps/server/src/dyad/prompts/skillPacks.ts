@@ -87,6 +87,7 @@ Benchmark bar (Appllama transplant — every mobile screen must clear this):
 - Navigation grammar: push for forward exploration, replace for one-way doors (sign-in wall, onboarding done, purchase) so back can never re-enter the old state. Sheets, dialogs, and overlays each have one job — never navigate with a sheet.
 - Motion gate: platform-default motion for tabs, scroll, and back; near-imperceptible press feedback; standard motion for dialogs and toasts; delight only on rare first-time moments. Honor reduce-motion. Never claim smooth frame rates without on-device measurement.
 - Definition of done: screenshot the preview and scrub every path — back, modals, keyboard both directions, rapid taps, long content, empty, loading, and error states, large text, landscape — and fix until no flaw remains.
+- Enforce alongside the anti-ai-slop companion skill (universal restraint-and-process bar); both must pass. Where the two overlap, restraint wins over decoration.
 Stack detail (read the file matching this project's Caide framework notice before building UI):
 - react-native: skills/appllama-design/caide-runtime-mobile.md
 - flutter: skills/appllama-design/caide-runtime-flutter.md

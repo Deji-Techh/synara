@@ -16,6 +16,15 @@ A visually busy interface is not automatically sophisticated. A dark theme, grad
 
 **Product clarity, hierarchy, usability, restraint, consistency, accessibility, and implementation quality take priority over decoration.**
 
+## Companion skills
+
+This standard is enforced alongside two transplant companions (fork via `execute_fork_skill` for deep dives):
+
+- `appllama-design` — benchmark-quality mobile UI laws (native fidelity, navigation grammar, motion gates, simulator-verified iteration). Its always-on condenser ships in every mobile turn; the full text lives at `skills/appllama-design/`.
+- `appllama-research` — study-real-apps playbooks for the Appllama MCP at `skills/appllama-research/`.
+
+Division of labor: this document is the universal restraint-and-process authority for every target; appllama is the mobile benchmark-and-verification authority. Both must pass. On website targets the mobile benchmark does not apply literally — the `caide-runtime-web` appendix translates it into anti-app overrides.
+
 ---
 
 # 1. Core operating rule
