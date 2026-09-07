@@ -14,6 +14,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { z } from "zod";
 import { defineTool, type ToolDef } from "../../harness/tools/defineTool.ts";
+import { searchIndexedSessions } from "./chatSearchIndex.ts";
 
 const MAX_SESSIONS_SCANNED = 50;
 const MAX_EXCERPT_CHARS = 600;
@@ -25,7 +26,8 @@ function sessionsDir(): string {
   return path.join(os.homedir(), ".caide", "sessions");
 }
 
-function listSessionIds(excludeSessionId: string): string[] {
+/** Session ids with logs on disk (test seam via CAIDE_SESSIONS_DIR). */
+export function listSessionIds(excludeSessionId: string): string[] {
   const dir = sessionsDir();
   let files: string[];
   try {
@@ -126,7 +128,7 @@ export function readSessionLines(sessionId: string): LogLine[] {
   return lines.filter((l) => l.text.trim().length > 0);
 }
 
-function keywordsOf(text: string): string[] {
+export function keywordsOf(text: string): string[] {
   const stop = new Set([
     "the", "a", "an", "and", "or", "of", "to", "in", "on", "for", "with", "what", "did",
     "we", "you", "have", "has", "had", "was", "were", "is", "are", "it", "this", "that",
@@ -179,17 +181,25 @@ export async function executeSearchChats(
     return "No searchable keywords in the query — provide a concise phrase (e.g. \"auth provider decision\").";
   }
   const limit = parsed.limit ?? 5;
-  const hits: Array<{ chatId: string; seq: number; score: number; excerpt: string }> = [];
-  for (const id of listSessionIds(sessionId)) {
-    for (const line of readSessionLines(id)) {
-      const score = scoreLine(line, keywords);
-      if (score > 0) {
-        hits.push({
-          chatId: id,
-          seq: line.seq,
-          score,
-          excerpt: line.text.slice(0, MAX_EXCERPT_CHARS),
-        });
+  type Hit = { chatId: string; seq: number; score: number; excerpt: string };
+  const hits: Hit[] = [];
+  // FTS first (warms the index as a side effect), file scoring fallback.
+  const candidates = listSessionIds(sessionId);
+  for (const hit of searchIndexedSessions(candidates, keywords, sessionId, limit * 3)) {
+    hits.push({ chatId: hit.sessionId, seq: hit.seq, score: hit.score, excerpt: hit.excerpt });
+  }
+  if (hits.length === 0) {
+    for (const id of candidates) {
+      for (const line of readSessionLines(id)) {
+        const score = scoreLine(line, keywords);
+        if (score > 0) {
+          hits.push({
+            chatId: id,
+            seq: line.seq,
+            score,
+            excerpt: line.text.slice(0, MAX_EXCERPT_CHARS),
+          });
+        }
       }
     }
   }
@@ -297,16 +307,29 @@ export async function executeExploreChatHistory(
     ...parsed.question.split(/[,;?]+/).map((s) => s.trim()).filter((s) => s.length > 3),
   ].slice(0, 3);
   const cited = new Map<string, { chatId: string; seq: number; score: number; text: string }>();
-  for (const reformulation of reformulations) {
-    const keywords = keywordsOf(reformulation);
-    for (const id of listSessionIds(sessionId)) {
-      for (const line of readSessionLines(id)) {
-        const score = scoreLine(line, keywords);
-        if (score > 0) {
-          const key = `${id}:${line.seq}`;
-          const prev = cited.get(key);
-          if (!prev || score > prev.score) {
-            cited.set(key, { chatId: id, seq: line.seq, score, text: line.text });
+  const candidates = listSessionIds(sessionId);
+  // FTS first across all reformulation keywords (warms the index), file
+  // scoring fallback when the index yields nothing.
+  const allKeywords = [...new Set(reformulations.flatMap((r) => keywordsOf(r)))];
+  for (const hit of searchIndexedSessions(candidates, allKeywords, sessionId, 24)) {
+    const key = `${hit.sessionId}:${hit.seq}`;
+    const prev = cited.get(key);
+    if (!prev || hit.score > prev.score) {
+      cited.set(key, { chatId: hit.sessionId, seq: hit.seq, score: hit.score, text: hit.excerpt });
+    }
+  }
+  if (cited.size === 0) {
+    for (const reformulation of reformulations) {
+      const keywords = keywordsOf(reformulation);
+      for (const id of candidates) {
+        for (const line of readSessionLines(id)) {
+          const score = scoreLine(line, keywords);
+          if (score > 0) {
+            const key = `${id}:${line.seq}`;
+            const prev = cited.get(key);
+            if (!prev || score > prev.score) {
+              cited.set(key, { chatId: id, seq: line.seq, score, text: line.text });
+            }
           }
         }
       }

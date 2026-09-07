@@ -21,6 +21,7 @@ import {
   isGitRepo,
 } from "../../dyad/vcs/gitProvenance.ts";
 import { buildGitReminder } from "../../dyad/prompts/gitContextPrompt.ts";
+import { formatMemoryForPrompt, readAppMemory } from "../../dyad/memory/memory.ts";
 import { formatIssuesForEvent, runReviewBarrier } from "../../dyad/sandbox/reviewBarrier.ts";
 import { resolveChatModeForTurn } from "../../dyad/plan/chatMode.ts";
 import { Inbox } from "../inbox/index.ts";
@@ -233,13 +234,19 @@ export class CaideRunner {
       const chatMode = chatModeFor(
         resolveChatModeForTurn({ requestedChatMode: input.mode ?? null }).mode,
       );
-      const system = constructSystemPrompt({
+      let system = constructSystemPrompt({
         aiRules: undefined,
         chatMode,
         enableTurboEditsV2: false,
         caideFramework: input.framework,
         gitProvenance: inGitRepo,
       });
+      // Compounding project memory (APP_MEMORY.md + recent decisions).
+      // Appended only when the project actually remembers something.
+      const memoryBlock = formatMemoryForPrompt(readAppMemory(input.appPath));
+      if (memoryBlock) {
+        system += `\n\n${memoryBlock}`;
+      }
       const llm =
         input.llmOverride ??
         createStreamProviderAdapter(

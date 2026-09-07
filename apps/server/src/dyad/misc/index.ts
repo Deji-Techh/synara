@@ -8,6 +8,7 @@ export {
   copyReferenceTool,
   captureEvidenceTool,
   readGuideTool,
+  rememberTool,
   executeSummarizeContext,
   executeCopyReference,
   executeCaptureEvidence,

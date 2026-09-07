@@ -17,6 +17,7 @@ import * as path from "node:path";
 import { z } from "zod";
 import { defineTool, type ToolDef } from "../../harness/tools/defineTool.ts";
 import { readGuide } from "../prompts/skillLoader.ts";
+import { appendMemoryNote } from "../memory/memory.ts";
 import { filterGuideByFramework } from "../guides/filter_guide_by_framework.ts";
 import type { CaideFramework } from "../prompts/framework.ts";
 
@@ -364,10 +365,35 @@ function guideFrameworkType(framework: CaideFramework | undefined): "vite" | "ne
   return "other";
 }
 
+// --- remember (Caide compounding memory; no donor equivalent) ---
+
+const rememberSchema = z.object({
+  note: z.string().min(1).max(500).describe("One lasting rule, decision, or gotcha worth remembering across turns"),
+  section: z
+    .enum(["Standing notes", "Gotchas"])
+    .optional()
+    .describe("Where to file it (default Standing notes; Gotchas for things that broke)"),
+});
+
+export const rememberTool = defineTool({
+  name: "remember",
+  description: `Save a lasting project rule, decision, or gotcha to APP_MEMORY.md so future turns (and chats) in this project remember it. Use proactively when the user states a durable preference ("always do X", "never use Y"), when you discover a non-obvious constraint, or when something breaks in a surprising way. Do NOT record turn-specific trivia, file contents, or anything already covered by the plan. Memory is project-scoped — it never leaves this project.`,
+  schema: rememberSchema,
+  readOnly: false,
+  modifiesState: true,
+  execute: async (args, ctx) => {
+    const parsed = rememberSchema.parse(args);
+    await appendMemoryNote(ctx.appPath, parsed.section ?? "Standing notes", parsed.note);
+    return `Remembered in this project's APP_MEMORY.md: ${parsed.note.slice(0, 200)}`;
+  },
+  presentCall: () => "Remember project note",
+});
+
 export const ALL_MISC_TOOLS: ToolDef[] = [
   setChatSummaryTool,
   summarizeContextTool,
   copyReferenceTool,
   captureEvidenceTool,
   readGuideTool,
+  rememberTool,
 ];

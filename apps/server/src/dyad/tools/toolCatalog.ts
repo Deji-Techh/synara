@@ -107,6 +107,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   // history
   { name: "summarize_context", category: "history", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/misc" },
   { name: "read_guide", category: "history", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/misc" },
+  { name: "remember", category: "plan-memory", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/misc" },
   { name: "copy_reference", category: "history", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/misc" },
   { name: "search_chats", category: "history", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/history" },
   { name: "read_chat", category: "history", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/history" },

@@ -11,3 +11,9 @@ export {
   readSessionLines,
   searchChatsTool,
 } from "./chatHistoryTools.ts";
+export {
+  closeSearchIndex,
+  indexSessionLines,
+  searchIndexedSessions,
+  type FtsHit,
+} from "./chatSearchIndex.ts";
