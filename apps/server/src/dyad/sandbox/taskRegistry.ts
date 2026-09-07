@@ -132,7 +132,9 @@ export function appendSubagentTranscript(id: string, message: SubagentMessage): 
 export function queueSubagentMessage(id: string, message: string): "queued" | "missing" | "full" | "terminal" {
   const task = subagentTasks.get(id);
   if (!task) return "missing";
-  if (isSubagentTerminal(task)) return "terminal";
+  // Failed threads stay dead (start anew); completed threads accept
+  // follow-ups — the worker starts a new continuation turn for them.
+  if (task.status === "failed") return "terminal";
   if (task.inbox.length >= 20) return "full";
   task.inbox.push(message);
   return "queued";

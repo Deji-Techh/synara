@@ -88,6 +88,51 @@ describe("caide runner turns (m3)", () => {
     expect(events.at(-1)).toMatchObject({ type: "turn_end", status: "cancelled" });
   });
 
+  it("fails over to the next provider after a retryable setup error", async () => {
+    const { applySettingsSync, clearSessionStores } = await import("./sessionStores.ts");
+    const sid = `s-failover-${Date.now()}`;
+    applySettingsSync(sid, {
+      agentRouting: {
+        mode: "single",
+        steps: { scout: {}, builder: {}, planner: {} },
+        fallbacks: [{ providerId: "openai", modelId: "fallback-model" }],
+      },
+    });
+    let calls = 0;
+    const events: HarnessEvent[] = [];
+    const runner = new CaideRunner();
+    try {
+      await runner.startTurn({
+        sessionId: sid,
+        appPath: "/tmp/caide-test-app",
+        prompt: "hi",
+        mode: "ask",
+        settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+        llmOverride: {
+          // Calls 1-2: persistent outage (exhausts the loop's step retry,
+          // then triggers turn-level failover). Call 3 (failover attempt):
+          // provider back.
+          async *stream() {
+            calls += 1;
+            if (calls <= 2) {
+              throw new ProviderApiError({ status: 503, code: "HTTP_503", message: "down", retryable: true });
+            }
+            yield { type: "token", content: "recovered" } as never;
+          },
+        },
+        onEvent: (e) => events.push(e),
+      });
+      expect(calls).toBe(3);
+      expect(runner.getStatus()).toBe("completed");
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: "error", code: "PROVIDER_FAILOVER" }),
+      );
+      expect(events.at(-1)).toMatchObject({ type: "turn_end", status: "completed" });
+    } finally {
+      clearSessionStores(sid);
+    }
+  });
+
   it("picks failover targets only for retryable provider errors", () => {
     const retryable = new ProviderApiError({ status: 503, code: "HTTP_503", message: "down", retryable: true });
     const fatal = new ProviderApiError({ status: 401, code: "HTTP_401", message: "no", retryable: false });

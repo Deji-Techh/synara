@@ -186,7 +186,8 @@ export function spawnSubagentTask(deps: SpawnSubagentDeps): string {
     persona,
     taskName: deps.taskName ?? deps.role,
     scope: deps.scope ?? [],
-    transcript: [{ role: "user", content: deps.task }],
+    // Transcript starts empty: the worker appends the queued assignment on
+    // consume (pre-seeding here duplicated the first user message).
   });
   const controller = new AbortController();
   setSubagentCancelController(task.id, controller);
@@ -316,6 +317,9 @@ export async function runThreadWorker(
 export function wakeSubagentThread(taskId: string): boolean {
   const task = getSubagentTask(taskId);
   if (!task || task.status === "failed") return false;
+  // A live worker owns its controller: never overwrite the registry handle
+  // (cancel_agent would then abort a dead controller and lose cancellation).
+  if (threadWorkers.has(taskId)) return true;
   const deps = threadDeps.get(taskId);
   if (!deps) return true;
   const active = new AbortController();

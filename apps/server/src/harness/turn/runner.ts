@@ -104,6 +104,8 @@ function normalizeMaxSteps(value: number | undefined): number {
 export function nextFailoverTarget(
   input: StartTurnInput,
   err: unknown,
+  /** Resolved "providerId:modelId" of the failed attempt (seeded as consumed). */
+  currentKey?: string,
 ): { providerId: string; modelId: string; key: string; label: string; cause: string } | null {
   if (!(err instanceof ProviderApiError) || err.details.retryable !== true) return null;
   let fallbacks: Array<{ providerId?: string; modelId?: string }> = [];
@@ -114,6 +116,8 @@ export function nextFailoverTarget(
   }
   if (!Array.isArray(fallbacks) || fallbacks.length === 0) return null;
   const consumed = new Set(input.failoverConsumed ?? []);
+  // Never retry the just-failed primary, even via an inheriting empty slot.
+  if (currentKey) consumed.add(currentKey);
   for (const fb of fallbacks) {
     if (!fb || (!fb.providerId && !fb.modelId)) continue;
     const providerId = fb.providerId ?? input.providerId ?? "auto";
@@ -158,6 +162,16 @@ export class CaideRunner {
 
   async startTurn(input: StartTurnInput): Promise<string> {
     const turnId = this.flow.launch(input.prompt);
+    // Per-turn token accounting (provider-reported usage only). Declared
+    // up front so every failure path (even before provider setup) can
+    // attach partial usage instead of hitting a TDZ error.
+    const turnUsage = { inputTokens: 0, outputTokens: 0 };
+    const recordUsage = (usage: { inputTokens: number; outputTokens: number }) => {
+      turnUsage.inputTokens += usage.inputTokens;
+      turnUsage.outputTokens += usage.outputTokens;
+    };
+    const usageField = () =>
+      turnUsage.inputTokens > 0 || turnUsage.outputTokens > 0 ? { usage: { ...turnUsage } } : {};
     this.status = "running";
     const forward = (event: HarnessEvent): void => {
       input.onEvent?.(event);
@@ -192,6 +206,7 @@ export class CaideRunner {
         }
       } else if (event.type === "stage") this.emit({ type: "stage", from: event.from, to: event.to });
       else if (event.type === "checkpoint") this.emit({ type: "checkpoint", requiresResponse: event.requiresResponse });
+      if (event.type === "tool_call" && event.status !== "started") sawToolComplete = true;
       else if (event.type === "artifact_updated") this.emit({ type: "artifact_updated", path: event.path });
     };
     // Crash resume: a previous turn_start with no turn_end means the turn
@@ -222,6 +237,10 @@ export class CaideRunner {
       // history unavailable — start clean
     }
     const effectivePrompt = resumeNotice ? `${input.prompt}\n\n${resumeNotice}` : input.prompt;
+    // Failover is pre-mutation only: once a tool completed, restarting
+    // the turn would re-run side effects (edits, commits, deploys).
+    let sawToolComplete = false;
+    let failedAttemptKey = "";
     forward({ type: "turn_start", sessionId: input.sessionId, turnId, prompt: input.prompt });
 
     const controller = new AbortController();
@@ -260,6 +279,7 @@ export class CaideRunner {
         store: sessionStores.consent,
         requestMcpConsent: input.requestMcpConsent,
       });
+      failedAttemptKey = `${ctx.provider.providerId}:${ctx.provider.modelId}`;
       const chatMode = chatModeFor(
         resolveChatModeForTurn({ requestedChatMode: input.mode ?? null }).mode,
       );
@@ -276,16 +296,6 @@ export class CaideRunner {
       if (memoryBlock) {
         system += `\n\n${memoryBlock}`;
       }
-      // Per-turn token accounting (provider-reported usage only).
-      const turnUsage = { inputTokens: 0, outputTokens: 0 };
-      const recordUsage = (usage: { inputTokens: number; outputTokens: number }) => {
-        turnUsage.inputTokens += usage.inputTokens;
-        turnUsage.outputTokens += usage.outputTokens;
-      };
-      const usageField = () =>
-        turnUsage.inputTokens > 0 || turnUsage.outputTokens > 0
-          ? { usage: { ...turnUsage } }
-          : {};
       const llm =
         input.llmOverride ??
         createStreamProviderAdapter(
@@ -431,7 +441,7 @@ export class CaideRunner {
       await snapshotSessionState(input.sessionId, storage).catch(() => {});
       ctx.cleanup();
     } catch (err) {
-      const next = nextFailoverTarget(input, err);
+      const next = !sawToolComplete ? nextFailoverTarget(input, err, failedAttemptKey || undefined) : null;
       if (next && !controller.signal.aborted) {
         // Transparent failover: a new turn attempt starts on the fallback
         // provider/model. The error event below explains the switch; the
@@ -445,6 +455,10 @@ export class CaideRunner {
           message: `Primary provider failed (${next.cause}); failing over to ${next.label}.`,
           recoverable: true,
         });
+        // Release this attempt's controller BEFORE recursing: the inner
+        // startTurn registers its own, and the outer finally would otherwise
+        // delete it out from under the live attempt.
+        this.controllers.delete(input.sessionId);
         return this.startTurn({
           ...input,
           providerId: next.providerId,

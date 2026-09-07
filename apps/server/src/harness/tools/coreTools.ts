@@ -548,8 +548,8 @@ export const spawnSubagentTool = defineTool({
       .describe("Advisory relative paths or prefixes expected to be in scope"),
     context: z.string().optional().describe("Additional background context for the sub-agent"),
   }),
-  readOnly: true,
-  modifiesState: false,
+  readOnly: false,
+  modifiesState: true,
   execute: async (args, ctx) => {
     const parsed = (spawnSubagentTool.schema as z.ZodType<any>).parse(args) as {
       persona?: "explorer" | "implementer" | "generic";

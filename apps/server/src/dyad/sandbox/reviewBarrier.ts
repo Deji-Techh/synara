@@ -136,6 +136,8 @@ export async function runReviewBarrier(deps: ReviewBarrierDeps): Promise<ReviewV
   const onAbort = () => controller.abort(deps.signal?.reason ?? "cancelled");
   deps.signal?.addEventListener("abort", onAbort, { once: true });
   // Headless lint evidence for the reviewer (best-effort; skipped on abort).
+  // lint_project throws on dirty output, so distinguish exec failures WITH
+  // output (dirty) from failures without (aborted / could not run).
   let lintEvidence = "Lint: not run.";
   try {
     const lint = (await lintProjectTool.execute({}, {
@@ -146,8 +148,11 @@ export async function runReviewBarrier(deps: ReviewBarrierDeps): Promise<ReviewV
     })) as { clean?: boolean; stdout?: string; stderr?: string };
     const output = `${lint.stdout ?? ""}\n${lint.stderr ?? ""}`.trim().slice(-3000);
     lintEvidence = lint.clean ? "Lint: clean." : `Lint: DIRTY.\n${output}`;
-  } catch {
-    lintEvidence = "Lint: unavailable (aborted or failed to run).";
+  } catch (err) {
+    const out = `${(err as { stdout?: unknown })?.stdout ?? ""}\n${(err as { stderr?: unknown })?.stderr ?? ""}`.trim().slice(-3000);
+    lintEvidence = out
+      ? `Lint: DIRTY.\n${out}`
+      : "Lint: unavailable (aborted or failed to run).";
   }
   try {
     const result = await runSubagentLoop({

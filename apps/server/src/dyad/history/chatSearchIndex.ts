@@ -9,7 +9,7 @@ import { DatabaseSync } from "node:sqlite";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { readSessionLines } from "./chatHistoryTools.ts";
+import { listSessionIds, readSessionLines } from "./chatHistoryFiles.ts";
 
 export interface FtsHit {
   sessionId: string;

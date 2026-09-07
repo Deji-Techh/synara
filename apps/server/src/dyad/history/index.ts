@@ -8,9 +8,14 @@ export {
   executeSearchChats,
   exploreChatHistoryTool,
   readChatTool,
-  readSessionLines,
   searchChatsTool,
 } from "./chatHistoryTools.ts";
+export {
+  keywordsOf,
+  listSessionIds,
+  readSessionLines,
+  type LogLine,
+} from "./chatHistoryFiles.ts";
 export {
   closeSearchIndex,
   indexSessionLines,
