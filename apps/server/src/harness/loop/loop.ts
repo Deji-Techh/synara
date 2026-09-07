@@ -68,6 +68,18 @@ export interface LoopOptions {
    * of stranding the turn at the continue-gate. Defaults to no semantic stop.
    */
   stopAfterTool?: string[];
+  /**
+   * Per-step model selection (Caide per-step routing): pick the LLM adapter
+   * for each step. Defaults to the single `llm` adapter. Selections see
+   * whether the previous step was read-only and whether the turn has
+   * mutated yet, so scout/builder splits stay deterministic.
+   */
+  selectLlm?: (input: {
+    step: number;
+    role: HarnessRole;
+    lastStepAllReadOnly: boolean;
+    hasMutatedThisTurn: boolean;
+  }) => LLMAdapter;
 }
 
 /**
@@ -138,6 +150,9 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
 
   let step = 0;
   const executedReadOnlyToolSignatures = new Map<string, number>();
+  // Per-step routing state: what the previous step did.
+  let lastStepAllReadOnly = true;
+  let hasMutatedThisTurn = false;
 
   try {
     while (step < maxSteps) {
@@ -191,10 +206,13 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
       const toolList = Array.from(toolMap.values());
       const pendingToolCalls: Array<{ id: string; name: string; args: unknown }> = [];
 
-      // Stream LLM response
+      // Stream LLM response (per-step routing may swap the adapter).
       const streamOpts: { tools: ToolDefinition[]; signal?: AbortSignal } = { tools: toolList };
       if (signal) streamOpts.signal = signal;
-      const stream = options.llm.stream(stepMessages, streamOpts);
+      const activeLlm = options.selectLlm
+        ? options.selectLlm({ step, role, lastStepAllReadOnly, hasMutatedThisTurn })
+        : options.llm;
+      const stream = activeLlm.stream(stepMessages, streamOpts);
 
       for await (const chunk of stream) {
         if (signal?.aborted) break;
@@ -327,6 +345,23 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
             durationMs: Date.now() - startTime,
           });
         }
+      }
+
+      // Record what this step did for next-step routing: a step counts as
+      // read-only when every executed call resolved to a read-only tool
+      // (unknown tools count as mutating — fail closed).
+      if (pendingToolCalls.length > 0) {
+        let allReadOnly = true;
+        let mutated = false;
+        for (const call of pendingToolCalls) {
+          const def = toolMap.get(call.name);
+          if (!def || def.readOnly !== true) {
+            allReadOnly = false;
+            mutated = true;
+          }
+        }
+        lastStepAllReadOnly = allReadOnly;
+        if (mutated) hasMutatedThisTurn = true;
       }
 
       step += 1;

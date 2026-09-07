@@ -54,6 +54,7 @@ import { Switch } from "../ui/switch";
 import { SettingResetButton } from "./SettingControls";
 import { SettingsRow, SettingsSection } from "./SettingsPanelPrimitives";
 import { ModelsSection } from "./ModelsSection";
+import { AgentRoutingSection } from "./AgentRoutingSection";
 import { useDyadProviderSettings } from "~/hooks/useDyadProviderSettings";
 
 const KEYLESS_PROVIDERS = new Set<string>(["ollama", "lmstudio"]);
@@ -705,6 +706,7 @@ export function ProvidersSettingsPanel({
           </div>
         </SettingsRow>
       </SettingsSection>
+      <AgentRoutingSection />
     </div>
   );
 }

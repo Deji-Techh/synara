@@ -61,6 +61,12 @@ export interface StreamProviderOptions {
    *  prepended system message, Anthropic top-level `system`, Gemini
    *  `system_instruction`). */
   system?: string;
+  /**
+   * Anthropic prompt caching on the system prefix (direct Anthropic API
+   * only — the adapter enables it solely for providerId anthropic since
+   * compatible endpoints may reject cache_control).
+   */
+  enablePromptCache?: boolean;
   tools?: unknown[];
   signal?: AbortSignal;
   onTiming?: (timing: ReturnType<LLMStreamTiming["finish"]>) => void;
@@ -74,6 +80,7 @@ export async function* streamProvider(
   options: StreamProviderOptions,
 ): AsyncGenerator<ProviderChunk, void, unknown> {
   const { modelId, baseUrl, apiKey, messages, tools, system, signal, onTiming } = options;
+  const enablePromptCache = options.enablePromptCache === true;
   const url = buildProviderUrl(baseUrl, modelId);
   const endpoint = endpointForModel(modelId, baseUrl);
   const timing = new LLMStreamTiming();
@@ -95,7 +102,11 @@ export async function* streamProvider(
       // Anthropic carries the system prompt as a top-level field, never inside
       // messages. Strip system entries from the message list so they don't get
       // coerced into user turns.
-      ...(system ? { system } : {}),
+      ...(system
+        ? enablePromptCache
+          ? { system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }] }
+          : { system }
+        : {}),
       messages: (messages as any[])
         .filter((m: any) => m.role !== "system")
         .map((m: any) => ({

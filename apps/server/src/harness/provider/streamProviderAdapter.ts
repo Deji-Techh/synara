@@ -10,6 +10,8 @@ import type { ToolDef } from "../tools/defineTool.ts";
 import { endpointForModel, streamProvider } from "./apiAdapter.ts";
 
 export interface StreamProviderAdapterOptions {
+  /** Provider id (enables provider-specific optimizations like prompt caching). */
+  providerId?: string;
   modelId: string;
   baseUrl: string;
   apiKey: string;
@@ -236,6 +238,9 @@ export function createStreamProviderAdapter(
         tools: providerTools,
       };
       if (opts.system) providerOpts.system = opts.system;
+      // Anthropic prompt caching on the stable system prefix (direct API
+      // only — compatible endpoints may reject cache_control).
+      if (opts.providerId === "anthropic") providerOpts.enablePromptCache = true;
       if (options?.signal) providerOpts.signal = options.signal;
       const provider = streamProvider(providerOpts as Parameters<typeof streamProvider>[0]);
 

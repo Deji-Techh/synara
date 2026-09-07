@@ -110,4 +110,26 @@ describe("session stores persistence (m3g)", () => {
       clearSessionStores(sid);
     }
   });
+
+  it("round-trips the agent routing config through sync and JSONL", async () => {
+    const { storage } = tempStorage();
+    const sid = `s-${Date.now()}-e`;
+    applySettingsSync(sid, {
+      agentRouting: { mode: "per-step", steps: { scout: { providerId: "openai" }, builder: {}, planner: { modelId: "x" } } },
+    });
+    expect(getOrCreateSessionStores(sid).routing.mode).toBe("per-step");
+    await snapshotSessionState(sid, storage);
+    await storage.flush(sid);
+    clearSessionStores(sid);
+    const { clearTodos } = await import("../../dyad/plan/todoStore.ts");
+    clearTodos(sid);
+    await restoreSessionState(sid, storage);
+    try {
+      const routing = getOrCreateSessionStores(sid).routing;
+      expect(routing.mode).toBe("per-step");
+      expect(routing.steps.scout).toEqual({ providerId: "openai" });
+    } finally {
+      clearSessionStores(sid);
+    }
+  });
 });

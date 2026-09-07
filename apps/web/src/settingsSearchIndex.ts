@@ -304,6 +304,34 @@ export const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
     keywords:
       "Configure the Builder engine API key, base URL, model ID, and pinned Flutter SDK path. endpoint flutter",
   },
+  {
+    id: "providers:agent-routing",
+    section: "providers",
+    title: "Routing mode",
+    keywords:
+      "One model for everything or per-step scout builder planner models from connected providers. routing",
+  },
+  {
+    id: "providers:routing-scout",
+    section: "providers",
+    title: "Scout",
+    keywords:
+      "Cheap model for read-only steps: exploration, file reads, searches. routing",
+  },
+  {
+    id: "providers:routing-builder",
+    section: "providers",
+    title: "Builder",
+    keywords:
+      "Strong model for steps that write code or change state. routing",
+  },
+  {
+    id: "providers:routing-planner",
+    section: "providers",
+    title: "Planner",
+    keywords:
+      "Model for plan-mode turns, questionnaires and plans. routing",
+  },
 
   // ── Skills ────────────────────────────────────────────────────────────────────
   {

@@ -20,6 +20,11 @@ import {
   type PlanRecord,
 } from "../../dyad/plan/planStore.ts";
 import { getSessionTitle } from "../../dyad/misc/miscTools.ts";
+import {
+  DEFAULT_AGENT_ROUTING,
+  normalizeAgentRouting,
+  type AgentRoutingConfig,
+} from "../../dyad/providers/agentRouting.ts";
 
 export interface SettingsSyncPayload {
   toolConsents?: Record<string, ToolConsent>;
@@ -27,6 +32,8 @@ export interface SettingsSyncPayload {
   mcpConsents?: Array<{ serverId: string | number; toolName: string; consent: McpConsent }>;
   mcpAutoApproveSafe?: boolean;
   dbLinks?: DbLink[];
+  /** Per-step model routing (single vs scout/builder/planner); validated on apply. */
+  agentRouting?: unknown;
   /** Client MCP server configs (web settings shape); manager syncs + feeds the registry. */
   mcpServers?: Array<{
     id: string;
@@ -47,6 +54,7 @@ export interface SessionStores {
   mcp: MemoryMcpConsentStore;
   safeSql: boolean;
   mcpAutoApproveSafe: boolean;
+  routing: AgentRoutingConfig;
 }
 
 const stores = new Map<string, SessionStores>();
@@ -77,6 +85,10 @@ export function getOrCreateSessionStores(sessionId: string): SessionStores {
       mcp: new MemoryMcpConsentStore(),
       safeSql: true,
       mcpAutoApproveSafe: true,
+      routing: {
+        mode: DEFAULT_AGENT_ROUTING.mode,
+        steps: { ...DEFAULT_AGENT_ROUTING.steps },
+      },
     };
     stores.set(sessionId, entry);
   }
@@ -114,6 +126,9 @@ export function applySettingsSync(sessionId: string, payload: SettingsSyncPayloa
     const first = payload.dbLinks[0];
     linkDatabase(sessionId, first);
   }
+  if (payload.agentRouting !== undefined) {
+    entry.routing = normalizeAgentRouting(payload.agentRouting);
+  }
   return entry;
 }
 
@@ -131,6 +146,7 @@ export async function snapshotSessionState(
     link: getDatabaseLink(sessionId) ?? null,
     toolConsents: consents,
     safeSql: entry?.safeSql ?? true,
+    agentRouting: entry?.routing ?? DEFAULT_AGENT_ROUTING,
     // Bounded handoff record (no full plan text — re-read from the file).
     acceptedPlan: accepted
       ? {
@@ -158,6 +174,7 @@ export async function restoreSessionState(
       link?: DbLink | null;
       toolConsents?: Record<string, unknown>;
       safeSql?: unknown;
+      agentRouting?: unknown;
       acceptedPlan?: {
         id?: unknown;
         title?: unknown;
@@ -185,6 +202,9 @@ export async function restoreSessionState(
     }
     if (typeof data.safeSql === "boolean") {
       getOrCreateSessionStores(sessionId).safeSql = data.safeSql;
+    }
+    if (data.agentRouting !== undefined) {
+      getOrCreateSessionStores(sessionId).routing = normalizeAgentRouting(data.agentRouting);
     }
     if (data.acceptedPlan && typeof data.acceptedPlan === "object") {
       const p = data.acceptedPlan;

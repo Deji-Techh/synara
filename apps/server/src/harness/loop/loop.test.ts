@@ -316,4 +316,40 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
     ).toHaveLength(1);
     expect(emitted.filter((e) => e.type === "stage")).toHaveLength(1);
   });
+
+  it("selects the LLM adapter per step and tracks read-only state", async () => {
+    const seen: Array<{ step: number; lastStepAllReadOnly: boolean; hasMutatedThisTurn: boolean }> = [];
+    const used: string[] = [];
+    const mkAdapter = (name: string): LLMAdapter => ({
+      async *stream() {
+        used.push(name);
+        if (used.length === 1) {
+          yield { type: "tool_call", toolCall: { id: "c1", name: "read_file", args: {} } };
+        } else {
+          yield { type: "token", content: "done" };
+        }
+      },
+    });
+    const main = mkAdapter("main");
+    const scout = mkAdapter("scout");
+    const readTool: ToolDefinition = { name: "read_file", description: "r", readOnly: true, execute: async () => "x" };
+    const loop = runLoop({
+      sessionId: "session-select-llm",
+      maxSteps: 3,
+      llm: main,
+      tools: [readTool],
+      buildMessages: () => [{ role: "user", content: "hi" }],
+      selectLlm: (sel) => {
+        seen.push(sel);
+        return sel.step === 0 ? scout : main;
+      },
+    });
+    for await (const _ of loop) {
+      // drain
+    }
+    // Step 0 used the scout adapter; step 1 observed the read-only step 0.
+    expect(used).toEqual(["scout", "main"]);
+    expect(seen[0]).toMatchObject({ step: 0, lastStepAllReadOnly: true, hasMutatedThisTurn: false });
+    expect(seen[1]).toMatchObject({ step: 1, lastStepAllReadOnly: true, hasMutatedThisTurn: false });
+  });
 });

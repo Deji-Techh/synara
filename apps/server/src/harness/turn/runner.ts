@@ -17,6 +17,12 @@ import { SessionStorage } from "../session/storage.ts";
 import { constructSystemPrompt } from "../../dyad/prompts/index.ts";
 import type { CaideFramework } from "../../dyad/prompts/index.ts";
 import { shouldRevealDatabasePanel } from "../../dyad/db/dbPanel.ts";
+import {
+  classifyStepKind,
+  isSlotSet,
+  type RoutingStepKind,
+} from "../../dyad/providers/agentRouting.ts";
+import { resolveConnection } from "../../dyad/providers/routing.ts";
 import type { SettingsLike } from "../../dyad/providers/index.ts";
 import type { ConsentRequestFn } from "../../dyad/tools/index.ts";
 import { createTurnContext } from "./turnContext.ts";
@@ -176,6 +182,7 @@ export class CaideRunner {
         input.llmOverride ??
         createStreamProviderAdapter(
           {
+            providerId: ctx.provider.providerId,
             modelId: ctx.provider.modelId,
             baseUrl: ctx.provider.baseUrl,
             apiKey: ctx.provider.apiKey ?? "",
@@ -184,6 +191,42 @@ export class CaideRunner {
           },
           ctx.tools,
         );
+
+      // Per-step routing: scout/builder/planner adapters resolve lazily per
+      // kind and fall back to the turn adapter when a slot is unset or its
+      // connection cannot be resolved (keys may be env-only).
+      const routing = sessionStores.routing;
+      const adapterCache = new Map<string, LLMAdapter>();
+      const adapterForKind = (kind: RoutingStepKind): LLMAdapter => {
+        if (routing.mode !== "per-step") return llm;
+        const ref = routing.steps[kind];
+        if (!isSlotSet(ref)) return llm;
+        const cacheKey = `${kind}:${ref.providerId ?? ""}:${ref.modelId ?? ""}`;
+        const cached = adapterCache.get(cacheKey);
+        if (cached) return cached;
+        try {
+          const connection = resolveConnection(
+            ref.providerId ?? ctx.provider.providerId,
+            ref.modelId ?? ctx.provider.modelId,
+            input.settings ?? {},
+          );
+          const adapter = createStreamProviderAdapter(
+            {
+              providerId: ref.providerId ?? ctx.provider.providerId,
+              modelId: ref.modelId ?? ctx.provider.modelId,
+              baseUrl: connection.baseUrl,
+              apiKey: connection.apiKey ?? "",
+              system,
+              appPath: input.appPath,
+            },
+            ctx.tools,
+          );
+          adapterCache.set(cacheKey, adapter);
+          return adapter;
+        } catch {
+          return llm;
+        }
+      };
 
       const stream = runLoop({
         sessionId: input.sessionId,
@@ -215,6 +258,13 @@ export class CaideRunner {
         // so the continue-gate takes over. add_integration follows with the
         // DB milestone once the integration flow is validated end to end.
         stopAfterTool: chatMode === "plan" ? ["write_plan", "exit_plan"] : [],
+        // Per-step routing: scout for read-only phases, builder otherwise,
+        // planner for plan turns (single mode always returns the turn adapter
+        // via adapterForKind).
+        selectLlm: ({ step, lastStepAllReadOnly, hasMutatedThisTurn }) =>
+          adapterForKind(
+            classifyStepKind({ chatMode, step, lastStepAllReadOnly, hasMutatedThisTurn }),
+          ),
       });
       for await (const event of stream) {
         void event;

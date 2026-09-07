@@ -274,6 +274,7 @@ export function syncHarnessSettings(
       dbLinks,
       mcpServers,
       blockchainNetworks,
+      agentRouting: readJson("caide:agent-routing.v1", null),
     },
   });
 }
