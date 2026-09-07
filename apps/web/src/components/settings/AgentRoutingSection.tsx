@@ -49,7 +49,7 @@ export function AgentRoutingSection() {
   const [routing, setRouting] = useState<AgentRoutingSettings>(() => loadAgentRouting());
 
   const configuredProviders = useMemo(
-    () => providers.filter((p) => p.configured),
+    () => providers.filter((p) => p.configured || p.keyless),
     [providers],
   );
 
@@ -171,8 +171,12 @@ export function AgentRoutingSection() {
           })}
           {configuredProviders.length === 0 && (
             <SettingsRow
-              title="No connected providers"
-              description="Connect a provider above first — per-step slots can only use connected providers."
+              title={connected ? "No connected providers" : "Harness offline"}
+              description={
+                connected
+                  ? "Connect a provider above first — per-step slots can only use connected providers."
+                  : "Reconnect to sync provider status; slots stay on thread defaults meanwhile."
+              }
             />
           )}
         </>

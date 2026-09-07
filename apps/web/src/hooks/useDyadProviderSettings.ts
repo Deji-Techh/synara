@@ -11,6 +11,7 @@ export interface DyadProviderStatus {
   id: string;
   configured: boolean;
   hasBaseUrl: boolean;
+  keyless: boolean;
 }
 
 export interface DyadProvidersState {

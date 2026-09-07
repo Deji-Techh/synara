@@ -845,13 +845,17 @@ export function deriveComposerVoiceState(input: {
   voiceTranscriptionAvailable: boolean | undefined;
   isRecording: boolean;
   isTranscribing: boolean;
+  voiceTranscriptionProvider?: "ai-model" | "web-speech";
 }): {
   canRenderVoiceNotes: boolean;
   canStartVoiceNotes: boolean;
   showVoiceNotesControl: boolean;
 } {
-  const canRenderVoiceNotes = input.authStatus !== "unauthenticated";
-  const canStartVoiceNotes = canRenderVoiceNotes && input.voiceTranscriptionAvailable !== false;
+  const isWebSpeech = input.voiceTranscriptionProvider === "web-speech";
+  // Web Speech API needs no provider auth — always available (just needs internet).
+  const canRenderVoiceNotes = isWebSpeech || input.authStatus !== "unauthenticated";
+  const canStartVoiceNotes =
+    isWebSpeech || (canRenderVoiceNotes && input.voiceTranscriptionAvailable !== false);
 
   return {
     canRenderVoiceNotes,

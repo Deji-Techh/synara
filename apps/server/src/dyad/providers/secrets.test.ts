@@ -28,8 +28,31 @@ describe("provider secrets store", () => {
     const settings = store.toSettings();
     expect(settings.providerSettings?.openai).toEqual({ apiBaseUrl: "https://x/v1" });
     const view = store.publicView();
-    expect(view.providers).toEqual([{ id: "openai", configured: false, hasBaseUrl: true }]);
+    expect(view.providers.find((p) => p.id === "openai")).toEqual({
+      id: "openai",
+      configured: false,
+      hasBaseUrl: true,
+      keyless: false,
+    });
+    // Registry-wide listing: stored or not, every provider appears.
+    expect(view.providers.length).toBeGreaterThan(10);
+    expect(view.providers.find((p) => p.id === "ollama")).toMatchObject({ keyless: true });
     expect(JSON.stringify(view)).not.toContain("sk-a");
+  });
+
+  it("treats env-var keys as configured (mirrors turn resolution)", () => {
+    const file = tempFile();
+    const store = new ProviderSecretsStore(file);
+    const prev = process.env.OPENAI_API_KEY;
+    process.env.OPENAI_API_KEY = "sk-env";
+    try {
+      const view = store.publicView();
+      expect(view.providers.find((p) => p.id === "openai")).toMatchObject({ configured: true });
+      expect(view.providers.find((p) => p.id === "anthropic")).toMatchObject({ configured: false });
+    } finally {
+      if (prev === undefined) delete process.env.OPENAI_API_KEY;
+      else process.env.OPENAI_API_KEY = prev;
+    }
   });
 
   it("tolerates missing and corrupt files", () => {

@@ -133,6 +133,10 @@ export const ChatHighlightColor = Schema.Literals(["amber", "emerald", "sky", "v
 export type ChatHighlightColor = typeof ChatHighlightColor.Type;
 export const DEFAULT_CHAT_HIGHLIGHT_COLOR: ChatHighlightColor = "amber";
 
+export const VoiceTranscriptionProvider = Schema.Literals(["ai-model", "web-speech"]);
+export type VoiceTranscriptionProvider = typeof VoiceTranscriptionProvider.Type;
+export const DEFAULT_VOICE_TRANSCRIPTION_PROVIDER: VoiceTranscriptionProvider = "ai-model";
+
 export function getDefaultNativeFontSmoothing(platform = globalThis.navigator?.platform ?? "") {
   return /mac|iphone|ipad|ipod/i.test(platform);
 }
@@ -294,6 +298,11 @@ export const AppSettingsSchema = Schema.Struct({
   chatLetterSpacing: ChatLetterSpacing.pipe(withDefaults(() => DEFAULT_CHAT_LETTER_SPACING)),
   chatFontWeight: ChatFontWeight.pipe(withDefaults(() => DEFAULT_CHAT_FONT_WEIGHT)),
   chatHighlightColor: ChatHighlightColor.pipe(withDefaults(() => DEFAULT_CHAT_HIGHLIGHT_COLOR)),
+  // Voice input: choose between server-side AI model transcription or Chrome's
+  // built-in Web Speech API (free, no API key, requires internet).
+  voiceTranscriptionProvider: VoiceTranscriptionProvider.pipe(
+    withDefaults(() => DEFAULT_VOICE_TRANSCRIPTION_PROVIDER),
+  ),
 });
 export type AppSettings = typeof AppSettingsSchema.Type;
 

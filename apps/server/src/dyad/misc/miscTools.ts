@@ -76,6 +76,11 @@ export function setContextSummarizer(fn: ContextSummarizer | null): void {
   summarizer = fn;
 }
 
+/** Read the wired summarizer (null when no turn context set one). */
+export function getContextSummarizer(): ContextSummarizer | null {
+  return summarizer;
+}
+
 const COMPRESSION_SYSTEM = `You are a Context Compression Agent.
 Your job is to take the verbose reasoning, findings, and completed steps of a senior developer and compress them into a dense, token-efficient summary.
 Keep ALL technical facts, variable names, architecture decisions, and open bugs.

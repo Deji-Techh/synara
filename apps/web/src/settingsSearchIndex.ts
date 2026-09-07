@@ -129,6 +129,13 @@ export const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
     title: "Notepad",
     keywords: "Show the per-thread notepad in the Context panel.",
   },
+  {
+    id: "general:voice-transcription-engine",
+    section: "general",
+    title: "Transcription engine",
+    keywords:
+      "voice speech microphone transcription web speech api ai model whisper gemini groq openai input recognition",
+  },
 
   // ── Appearance ───────────────────────────────────────────────────────────────
   {

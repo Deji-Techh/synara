@@ -189,6 +189,7 @@ export const ProviderSettingsStateHarnessEvent = Schema.Struct({
       id: Schema.String,
       configured: Schema.Boolean,
       hasBaseUrl: Schema.Boolean,
+      keyless: Schema.Boolean,
     }),
   ),
   defaultProviderId: Schema.optional(Schema.String),

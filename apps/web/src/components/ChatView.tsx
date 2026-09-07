@@ -4366,6 +4366,7 @@ export default function ChatView({
     pendingUserInputCount: pendingUserInputs.length,
     onTranscriptReady: appendVoiceTranscriptToComposer,
     refreshVoiceStatus: refreshProviderStatuses,
+    voiceTranscriptionProvider: settings.voiceTranscriptionProvider,
     actionArmDelayMs: VOICE_RECORDER_ACTION_ARM_DELAY_MS,
     failureCopy: {
       transcriptionFailedTitle: "Couldn't transcribe voice note",

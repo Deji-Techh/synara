@@ -12,6 +12,7 @@ import {
   type AppSettings,
   type FollowUpBehavior,
   DEFAULT_UI_DENSITY,
+  DEFAULT_VOICE_TRANSCRIPTION_PROVIDER,
   type UiDensity,
   MAX_CHAT_FONT_SIZE_PX,
   MAX_TERMINAL_FONT_SIZE_PX,
@@ -1051,6 +1052,45 @@ function SettingsRouteView() {
               </SelectItem>
               <SelectItem hideIndicator value="24-hour">
                 {TIMESTAMP_FORMAT_LABELS["24-hour"]}
+              </SelectItem>
+            </SettingsSelectControl>
+          }
+        />
+      </SettingsSection>
+
+      <SettingsSection title="Voice input">
+        <SettingsRow
+          title="Transcription engine"
+          description="Web Speech API uses Chrome's built-in recognition — free, no API key needed, requires internet. AI model uses your configured provider (Gemini, Groq, or OpenAI)."
+          resetAction={
+            settings.voiceTranscriptionProvider !== DEFAULT_VOICE_TRANSCRIPTION_PROVIDER ? (
+              <SettingResetButton
+                label="transcription engine"
+                onClick={() =>
+                  updateSettings({ voiceTranscriptionProvider: DEFAULT_VOICE_TRANSCRIPTION_PROVIDER })
+                }
+              />
+            ) : null
+          }
+          control={
+            <SettingsSelectControl
+              value={settings.voiceTranscriptionProvider}
+              onValueChange={(value) => {
+                if (value !== "ai-model" && value !== "web-speech") return;
+                updateSettings({ voiceTranscriptionProvider: value });
+              }}
+              ariaLabel="Voice transcription engine"
+              valueContent={
+                settings.voiceTranscriptionProvider === "web-speech"
+                  ? "Web Speech API"
+                  : "AI model"
+              }
+            >
+              <SelectItem hideIndicator value="ai-model">
+                AI model
+              </SelectItem>
+              <SelectItem hideIndicator value="web-speech">
+                Web Speech API
               </SelectItem>
             </SettingsSelectControl>
           }

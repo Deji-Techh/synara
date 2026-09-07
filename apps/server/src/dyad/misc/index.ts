@@ -16,6 +16,7 @@ export {
   listGuideNames,
   getSessionTitle,
   clearSessionTitle,
+  getContextSummarizer,
   setContextSummarizer,
   MiscValidationError,
   type EvidenceEntry,

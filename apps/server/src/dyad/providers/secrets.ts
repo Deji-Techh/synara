@@ -12,6 +12,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import * as crypto from "node:crypto";
 import type { SettingsLike } from "./routing.ts";
+import { PROVIDERS } from "./providers.ts";
 
 export interface StoredProviderEntry {
   apiKey?: string;
@@ -222,14 +223,28 @@ export class ProviderSecretsStore {
   }
 
   /** Public view: configured flags only, never keys. */
-  publicView(): { providers: Array<{ id: string; configured: boolean; hasBaseUrl: boolean }>; defaultProviderId?: string; defaultModelId?: string } {
+  publicView(): {
+    providers: Array<{ id: string; configured: boolean; hasBaseUrl: boolean; keyless: boolean }>;
+    defaultProviderId?: string;
+    defaultModelId?: string;
+  } {
     const file = readFile(this.filePath);
     return {
-      providers: Object.entries(file.providers).map(([id, entry]) => ({
-        id,
-        configured: Boolean(entry.apiKey?.trim()),
-        hasBaseUrl: Boolean(entry.apiBaseUrl?.trim()),
-      })),
+      // Every registry provider is listed (not just stored ones), and a
+      // provider counts as configured when a stored key OR its env var is
+      // present — mirroring hasProviderKey, which is what turns actually
+      // resolve. Otherwise env-keyed providers look dead while working.
+      providers: Object.values(PROVIDERS).map((def) => {
+        const entry = file.providers[def.id];
+        const stored = Boolean(entry?.apiKey?.trim());
+        const envKey = Boolean(def.envVarName && process.env[def.envVarName]?.trim());
+        return {
+          id: def.id,
+          configured: stored || envKey,
+          hasBaseUrl: Boolean(entry?.apiBaseUrl?.trim()),
+          keyless: def.local === true,
+        };
+      }),
       ...(file.defaultProviderId ? { defaultProviderId: file.defaultProviderId } : {}),
       ...(file.defaultModelId ? { defaultModelId: file.defaultModelId } : {}),
     };

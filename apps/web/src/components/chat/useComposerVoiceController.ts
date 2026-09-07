@@ -1,7 +1,8 @@
 // FILE: useComposerVoiceController.ts
 // Purpose: Own the composer voice-note state machine for recording, cancellation, and transcription.
+//          Supports two transcription backends: server-side AI model or Chromium's Web Speech API.
 // Layer: Chat composer hook
-// Depends on: useVoiceRecorder, ChatView voice helper logic, and the native API voice endpoint.
+// Depends on: useVoiceRecorder, useWebSpeechTranscription, ChatView voice helper logic, native API.
 
 import { type ProviderKind, type ServerProviderStatus, type ThreadId } from "@caide/contracts";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -12,6 +13,7 @@ import {
   isVoiceRecordingCancelledError,
   useVoiceRecorder,
 } from "../../lib/voiceRecorder";
+import { useWebSpeechTranscription } from "../../lib/useWebSpeechTranscription";
 import { readNativeApi } from "../../nativeApi";
 import type { RefreshProviderStatusesNow } from "../../hooks/useProviderStatusRefresh";
 import { toastManager } from "../ui/toast";
@@ -43,6 +45,8 @@ export interface UseComposerVoiceControllerOptions {
   pendingUserInputCount: number;
   onTranscriptReady: (transcript: string) => void;
   refreshVoiceStatus: RefreshProviderStatusesNow;
+  /** Which transcription backend to use: server-side AI model or Chromium Web Speech API. */
+  voiceTranscriptionProvider?: "ai-model" | "web-speech";
   actionArmDelayMs?: number;
   failureCopy?: Partial<ComposerVoiceFailureCopy>;
   onGuardWarning?: (message: string, details: ComposerVoiceGuardDetails) => void;
@@ -81,10 +85,12 @@ export function useComposerVoiceController(
     pendingUserInputCount,
     onTranscriptReady,
     refreshVoiceStatus,
+    voiceTranscriptionProvider = "ai-model",
     actionArmDelayMs: actionArmDelayMsProp,
     failureCopy: failureCopyOverrides,
     onGuardWarning,
   } = options;
+  const isWebSpeechMode = voiceTranscriptionProvider === "web-speech";
   const actionArmDelayMs = actionArmDelayMsProp ?? 0;
   const {
     isRecording: isVoiceRecording,
@@ -94,6 +100,7 @@ export function useComposerVoiceController(
     stopRecording: stopVoiceRecording,
     cancelRecording: cancelVoiceRecording,
   } = useVoiceRecorder();
+  const webSpeech = useWebSpeechTranscription();
   const [isVoiceTranscribing, setIsVoiceTranscribing] = useState(false);
   const voiceTranscriptionRequestIdRef = useRef(0);
   const voiceThreadIdRef = useRef(threadId);
@@ -114,8 +121,9 @@ export function useComposerVoiceController(
   const { canStartVoiceNotes, showVoiceNotesControl } = deriveComposerVoiceState({
     authStatus: activeProviderStatus?.authStatus,
     voiceTranscriptionAvailable: activeProviderStatus?.voiceTranscriptionAvailable,
-    isRecording: isVoiceRecording,
+    isRecording: isVoiceRecording || webSpeech.isListening,
     isTranscribing: isVoiceTranscribing,
+    voiceTranscriptionProvider,
   });
 
   useEffect(() => {
@@ -180,8 +188,7 @@ export function useComposerVoiceController(
   };
 
   const startComposerVoiceRecording = async () => {
-    const effectiveCwd = activeProject?.cwd ?? "";
-    if (activeProviderStatus?.authStatus === "unauthenticated") {
+    if (!isWebSpeechMode && activeProviderStatus?.authStatus === "unauthenticated") {
       toastManager.add({
         type: "error",
         title: "Please configure a voice-compatible model (Google Gemini, Groq, or OpenAI) in Settings.",
@@ -191,7 +198,9 @@ export function useComposerVoiceController(
     if (!canStartVoiceNotes) {
       toastManager.add({
         type: "error",
-        title: "Voice notes require an API key for Google Gemini, Groq, or OpenAI.",
+        title: isWebSpeechMode
+          ? "Web Speech API is not available in this browser."
+          : "Voice notes require an API key for Google Gemini, Groq, or OpenAI.",
       });
       return;
     }
@@ -203,6 +212,31 @@ export function useComposerVoiceController(
       return;
     }
 
+    if (isWebSpeechMode) {
+      // Web Speech mode: start the browser's built-in speech recognizer.
+      // Also start the audio recorder in parallel purely for waveform visualization.
+      try {
+        webSpeech.start();
+      } catch (error) {
+        toastManager.add({
+          type: "error",
+          title: "Could not start voice recognition",
+          description:
+            error instanceof Error ? error.message : "Web Speech API failed to initialize.",
+        });
+        return;
+      }
+      try {
+        await startVoiceRecording();
+      } catch {
+        // Waveform recording is optional — web speech still works without it.
+      }
+      voiceRecordingStartedAtRef.current = performance.now();
+      return;
+    }
+
+    // AI model mode: existing behavior — record audio, prewarm server.
+    const effectiveCwd = activeProject?.cwd ?? "";
     try {
       await startVoiceRecording();
       voiceRecordingStartedAtRef.current = performance.now();
@@ -227,13 +261,49 @@ export function useComposerVoiceController(
   };
 
   const submitComposerVoiceRecording = (): Promise<void> => {
-    if (!isVoiceRecording) {
+    const isActiveRecording = isWebSpeechMode
+      ? webSpeech.isListening
+      : isVoiceRecording;
+    if (!isActiveRecording) {
       return Promise.resolve();
     }
     if (!isVoiceActionArmed()) {
       return Promise.resolve();
     }
 
+    if (isWebSpeechMode) {
+      // Web Speech mode: stop the recognizer and read the accumulated transcript.
+      setIsVoiceTranscribing(true);
+      // Stop the waveform recorder (best-effort).
+      void cancelVoiceRecording();
+
+      return webSpeech
+        .stop()
+        .then((transcript) => {
+          voiceRecordingStartedAtRef.current = null;
+          setIsVoiceTranscribing(false);
+          if (!transcript.trim()) {
+            toastManager.add({
+              type: "warning",
+              title: "No speech detected",
+              description: "No words were recognized. Try speaking louder or check your microphone.",
+            });
+            return;
+          }
+          onTranscriptReady(transcript);
+        })
+        .catch(() => {
+          voiceRecordingStartedAtRef.current = null;
+          setIsVoiceTranscribing(false);
+          toastManager.add({
+            type: "error",
+            title: "Voice transcription failed",
+            description: "Web Speech API encountered an error.",
+          });
+        });
+    }
+
+    // AI model mode: existing server transcription pipeline.
     const api = readNativeApi();
     if (!api) {
       toastManager.add({
@@ -336,10 +406,13 @@ export function useComposerVoiceController(
     voiceRecordingStartedAtRef.current = null;
     setIsVoiceTranscribing(false);
     void cancelVoiceRecording();
+    if (isWebSpeechMode) {
+      webSpeech.cancel();
+    }
   };
 
   return {
-    isVoiceRecording,
+    isVoiceRecording: isVoiceRecording || webSpeech.isListening,
     isVoiceTranscribing,
     voiceWaveformLevels,
     voiceRecordingDurationLabel,

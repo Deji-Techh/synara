@@ -139,7 +139,7 @@ describe("Harness Contracts", () => {
       type: "provider_settings_state",
       sessionId: "s-123",
       requestId: "r-1",
-      providers: [{ id: "openai", configured: true, hasBaseUrl: false }],
+      providers: [{ id: "openai", configured: true, hasBaseUrl: false, keyless: false }],
       defaultProviderId: "openai",
       tests: { openai: { ok: true, message: "Connected." } },
     };
