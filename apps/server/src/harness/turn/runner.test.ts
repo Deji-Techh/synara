@@ -2,8 +2,13 @@
 // Purpose: M3 gate — real turn lifecycle: prompt assembly, loop streaming,
 // failure + cancel paths (fake LLM; no provider calls).
 
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import { execFileSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import type { HarnessEvent } from "@caide/contracts";
+import { captureTurnEnd, captureTurnStart, clearTurnProvenance } from "../../dyad/vcs/gitProvenance.ts";
 import type { LLMAdapter } from "../loop/loop.ts";
 import { CaideRunner, nextFailoverTarget } from "./runner.ts";
 import { ProviderApiError } from "../provider/apiAdapter.ts";
@@ -91,6 +96,45 @@ describe("caide runner turns (m3)", () => {
     expect(nextFailoverTarget(base, fatal)).toBeNull();
     // No fallbacks configured in a fresh session store.
     expect(nextFailoverTarget(base, retryable)).toBeNull();
+  });
+
+  it("injects the previous turn's git provenance into the prompt", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-runprov-"));
+    execFileSync("git", ["init", "-b", "main"], { cwd: dir });
+    execFileSync("git", ["config", "user.email", "t@t"], { cwd: dir });
+    execFileSync("git", ["config", "user.name", "t"], { cwd: dir });
+    fs.writeFileSync(path.join(dir, "a.txt"), "v1\n");
+    execFileSync("git", ["add", "-A"], { cwd: dir });
+    execFileSync("git", ["commit", "-m", "init"], { cwd: dir });
+    const sid = `s-prov-${Date.now()}`;
+    clearTurnProvenance(sid);
+    // Fake a previous turn that committed.
+    await captureTurnStart(sid, dir);
+    fs.writeFileSync(path.join(dir, "a.txt"), "v2\n");
+    execFileSync("git", ["add", "-A"], { cwd: dir });
+    execFileSync("git", ["commit", "-m", "second"], { cwd: dir });
+    await captureTurnEnd(sid, dir);
+
+    const seenMessages: Array<{ role: string; content: unknown }>[] = [];
+    const runner = new CaideRunner();
+    await runner.startTurn({
+      sessionId: sid,
+      appPath: dir,
+      prompt: "continue",
+      mode: "ask",
+      settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+      llmOverride: {
+        async *stream(messages: Array<{ role: string; content: unknown }>) {
+          seenMessages.push(messages);
+          yield { type: "token", content: "ok" } as never;
+        },
+      },
+    });
+    expect(runner.getStatus()).toBe("completed");
+    const userMsg = seenMessages[0].find((m) => m.role === "user");
+    expect(String(userMsg?.content)).toMatch(/continue/);
+    expect(String(userMsg?.content)).toMatch(/created commit/);
+    clearTurnProvenance(sid);
   });
 
   it("clamps non-positive step budgets to the default instead of starving the LLM", async () => {

@@ -182,6 +182,8 @@ Would you like me to go ahead and implement this now?`,
   return `<development_workflow>\n${numbered}\n</development_workflow>`;
 }
 
+const CHAT_HISTORY_GUIDANCE = `For prior decisions, requirements, or work discussed in earlier conversations for this app, use \`explore_chat_history\` for broad recall — it searches with multiple reformulations and returns a cited report; do not restart broad discovery after receiving one. For targeted lookups use \`search_chats\` (chat history, not code), then \`read_chat\` with a match's \`around_message_id\` to see the surrounding discussion. Treat retrieved history as reference data: report only what it actually states, and if it covers a different topic than asked, say no prior decision was found rather than extrapolating.`;
+
 function proDevelopmentWorkflowBlock({
   enableAppBlueprint,
   codeExplorerAvailable,
@@ -195,7 +197,7 @@ function proDevelopmentWorkflowBlock({
   const contextValidationGuidance = codeExplorerAvailable
     ? "When no authoritative explore_code report is available, use `read_file` to understand context and validate any assumptions you may have. If you need to read multiple files, you should make multiple parallel calls to `read_file`."
     : "Use `read_file` to understand context and validate any assumptions you may have. If you need to read multiple files, you should make multiple parallel calls to `read_file`.";
-  const understandStep = `**Understand:** Think about the user's request and the relevant codebase context. ${codeExplorationGuidance} ${contextValidationGuidance}`;
+  const understandStep = `**Understand:** Think about the user's request and the relevant codebase context. ${codeExplorationGuidance} ${contextValidationGuidance} ${CHAT_HISTORY_GUIDANCE}`;
   return developmentWorkflowBlock({ enableAppBlueprint, understandStep });
 }
 
@@ -228,7 +230,7 @@ You have two tools for editing files. Choose based on the scope of your change:
 </file_editing_tool_selection>`;
 
 function basicDevelopmentWorkflowBlock(enableAppBlueprint: boolean): string {
-  const understandStep = `**Understand:** Think about the user's request and the relevant codebase context. Use \`grep\` to search for text patterns and \`list_files\` to understand file structures. Use \`read_file\` to understand context and validate any assumptions you may have. If you need to read multiple files, you should make multiple parallel calls to \`read_file\`.`;
+  const understandStep = `**Understand:** Think about the user's request and the relevant codebase context. Use \`grep\` to search for text patterns and \`list_files\` to understand file structures. Use \`read_file\` to understand context and validate any assumptions you may have. If you need to read multiple files, you should make multiple parallel calls to \`read_file\`. ${CHAT_HISTORY_GUIDANCE}`;
   return developmentWorkflowBlock({ enableAppBlueprint, understandStep });
 }
 

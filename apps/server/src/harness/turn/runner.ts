@@ -15,6 +15,12 @@ import {
   type LLMAdapter,
 } from "../loop/loop.ts";
 import { resetPreCommitCount } from "../../dyad/vcs/preCommitTools.ts";
+import {
+  captureTurnEnd,
+  captureTurnStart,
+  isGitRepo,
+} from "../../dyad/vcs/gitProvenance.ts";
+import { buildGitReminder } from "../../dyad/prompts/gitContextPrompt.ts";
 import { formatIssuesForEvent, runReviewBarrier } from "../../dyad/sandbox/reviewBarrier.ts";
 import { resolveChatModeForTurn } from "../../dyad/plan/chatMode.ts";
 import { Inbox } from "../inbox/index.ts";
@@ -203,6 +209,14 @@ export class CaideRunner {
       if (restoredTodos.length > 0) {
         forward({ type: "todos_update", sessionId: input.sessionId, todos: restoredTodos });
       }
+      // Git provenance: previous turn's outcome becomes this turn's
+      // reminder; repo presence enables the git_context prompt block.
+      const prevProvenance = await captureTurnStart(input.sessionId, input.appPath);
+      const inGitRepo = await isGitRepo(input.appPath);
+      const provenanceReminder =
+        prevProvenance && (prevProvenance.commitHash || prevProvenance.sourceCommitHash)
+          ? buildGitReminder(prevProvenance)
+          : null;
       const sessionStores = getOrCreateSessionStores(input.sessionId);
       const ctx = createTurnContext({
         sessionId: input.sessionId,
@@ -224,6 +238,7 @@ export class CaideRunner {
         chatMode,
         enableTurboEditsV2: false,
         caideFramework: input.framework,
+        gitProvenance: inGitRepo,
       });
       const llm =
         input.llmOverride ??
@@ -288,7 +303,10 @@ export class CaideRunner {
           return [
             { role: "system", content: system },
             ...history,
-            { role: "user", content: input.prompt },
+            {
+              role: "user",
+              content: provenanceReminder ? `${input.prompt}\n\n${provenanceReminder}` : input.prompt,
+            },
           ];
         },
         tools: ctx.tools.map((t) => ({
@@ -355,6 +373,7 @@ export class CaideRunner {
         await flushTurnTokens(input.sessionId);
         forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "completed" });
       }
+      await captureTurnEnd(input.sessionId, input.appPath).catch(() => {});
       await snapshotSessionState(input.sessionId, storage).catch(() => {});
       ctx.cleanup();
     } catch (err) {
