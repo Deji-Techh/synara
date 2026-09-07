@@ -32,4 +32,20 @@ describe("agent routing store", () => {
     localStorage.setItem("caide:agent-routing.v1", JSON.stringify({ mode: "wild", steps: null }));
     expect(loadAgentRouting().mode).toBe("single");
   });
+
+  it("round-trips fallbacks capped at 3", () => {
+    saveAgentRouting({
+      mode: "single",
+      steps: {
+        scout: { providerId: "", modelId: "" },
+        builder: { providerId: "", modelId: "" },
+        planner: { providerId: "", modelId: "" },
+      },
+      fallbacks: [
+        { providerId: "openai", modelId: "gpt-x" },
+        { providerId: "", modelId: "" },
+      ],
+    });
+    expect(loadAgentRouting().fallbacks).toEqual([{ providerId: "openai", modelId: "gpt-x" }]);
+  });
 });

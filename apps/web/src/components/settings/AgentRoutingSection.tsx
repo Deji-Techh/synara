@@ -15,8 +15,10 @@ import { ProviderOptionLabel } from "~/components/ProviderIcon";
 import { SettingsRow, SettingsSection } from "./SettingsPanelPrimitives";
 import { SettingsSegmentedControl, SettingsSelectControl } from "./SettingControls";
 import { loadCustomModelsForProvider } from "./ModelsSection";
+import { Button } from "~/components/ui/button";
 import {
   loadAgentRouting,
+  MAX_FALLBACKS,
   ROUTING_SLOTS,
   saveAgentRouting,
   type AgentRoutingSettings,
@@ -162,6 +164,103 @@ export function AgentRoutingSection() {
           )}
         </>
       )}
+      <SettingsRow
+        title="Fallback chain"
+        description="Tried in order when the turn provider fails with a retryable error. Empty picks inherit the thread model."
+        control={
+          routing.fallbacks.length < MAX_FALLBACKS ? (
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() =>
+                persist({ ...routing, fallbacks: [...routing.fallbacks, { providerId: "", modelId: "" }] })
+              }
+            >
+              Add fallback
+            </Button>
+          ) : undefined
+        }
+      >
+        {routing.fallbacks.length > 0 && (
+          <div className="mt-2 flex flex-col gap-2">
+            {routing.fallbacks.map((fb, i) => {
+              const provider = configuredProviders.find((p) => p.id === fb.providerId);
+              const models = modelOptionsFor(fb.providerId);
+              return (
+                <div key={i} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">#{i + 1}</span>
+                  <SettingsSelectControl
+                    value={fb.providerId || "__default"}
+                    onValueChange={(v) => {
+                      const next = routing.fallbacks.map((f, j) =>
+                        j === i
+                          ? v === "__default"
+                            ? { providerId: "", modelId: "" }
+                            : { providerId: v, modelId: "" }
+                          : f,
+                      );
+                      persist({ ...routing, fallbacks: next });
+                    }}
+                    ariaLabel={`Fallback ${i + 1} provider`}
+                    valueContent={
+                      fb.providerId ? (
+                        <ProviderOptionLabel
+                          provider={fb.providerId as ProviderKind}
+                          label={providerLabel(fb.providerId)}
+                        />
+                      ) : (
+                        "Thread default"
+                      )
+                    }
+                  >
+                    <SelectItem key="__default" value="__default">
+                      Thread default
+                    </SelectItem>
+                    {configuredProviders.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        <ProviderOptionLabel provider={p.id as ProviderKind} label={providerLabel(p.id)} />
+                      </SelectItem>
+                    ))}
+                  </SettingsSelectControl>
+                  <SettingsSelectControl
+                    value={fb.modelId || "__default"}
+                    onValueChange={(v) => {
+                      const next = routing.fallbacks.map((f, j) =>
+                        j === i ? { ...f, modelId: v === "__default" ? "" : v } : f,
+                      );
+                      persist({ ...routing, fallbacks: next });
+                    }}
+                    ariaLabel={`Fallback ${i + 1} model`}
+                    valueContent={fb.modelId || "Thread default"}
+                  >
+                    <SelectItem key="__default" value="__default">
+                      Thread default
+                    </SelectItem>
+                    {models.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.label}
+                      </SelectItem>
+                    ))}
+                  </SettingsSelectControl>
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    aria-label={`Remove fallback ${i + 1}`}
+                    onClick={() =>
+                      persist({ ...routing, fallbacks: routing.fallbacks.filter((_, j) => j !== i) })
+                    }
+                  >
+                    Remove
+                  </Button>
+                  {!provider && fb.providerId && (
+                    <span className="text-[11px] text-destructive">Provider not connected</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </SettingsRow>
     </SettingsSection>
   );
 }

@@ -7,6 +7,7 @@
 
 import type { HarnessEvent } from "@caide/contracts";
 import { createStreamProviderAdapter } from "../provider/streamProviderAdapter.ts";
+import { ProviderApiError } from "../provider/apiAdapter.ts";
 import {
   DEFAULT_MAX_TOOL_CALL_STEPS,
   repairToolPairing,
@@ -63,6 +64,11 @@ export interface StartTurnInput {
   inbox?: Inbox;
   /** MCP consent round-trip for sandbox host calls (gateway bridge). */
   requestMcpConsent?: import("../../dyad/mcp/mcpConsent.ts").McpConsentRequestFn;
+  /**
+   * Internal failover cursor: "providerId:modelId" keys already tried this
+   * turn chain. Prevents failover loops; never set by callers.
+   */
+  failoverConsumed?: string[];
 }
 
 function chatModeFor(mode: ChatMode): "build" | "ask" | "local-agent" | "plan" {
@@ -80,6 +86,41 @@ function normalizeMaxSteps(value: number | undefined): number {
     return DEFAULT_MAX_TOOL_CALL_STEPS;
   }
   return Math.floor(value);
+}
+
+/**
+ * Pick the next failover target after a retryable provider failure.
+ * Returns null when failover does not apply (non-provider error,
+ * non-retryable status, no fallbacks configured, or all consumed).
+ */
+export function nextFailoverTarget(
+  input: StartTurnInput,
+  err: unknown,
+): { providerId: string; modelId: string; key: string; label: string; cause: string } | null {
+  if (!(err instanceof ProviderApiError) || err.details.retryable !== true) return null;
+  let fallbacks: Array<{ providerId?: string; modelId?: string }> = [];
+  try {
+    fallbacks = getOrCreateSessionStores(input.sessionId).routing.fallbacks;
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(fallbacks) || fallbacks.length === 0) return null;
+  const consumed = new Set(input.failoverConsumed ?? []);
+  for (const fb of fallbacks) {
+    if (!fb || (!fb.providerId && !fb.modelId)) continue;
+    const providerId = fb.providerId ?? input.providerId ?? "auto";
+    const modelId = fb.modelId ?? input.modelId ?? "auto";
+    const key = `${providerId}:${modelId}`;
+    if (consumed.has(key)) continue;
+    return {
+      providerId,
+      modelId,
+      key,
+      label: `${providerId}/${modelId}`,
+      cause: `${err.details.status} ${err.details.code}`,
+    };
+  }
+  return null;
 }
 
 export class CaideRunner {
@@ -317,6 +358,27 @@ export class CaideRunner {
       await snapshotSessionState(input.sessionId, storage).catch(() => {});
       ctx.cleanup();
     } catch (err) {
+      const next = nextFailoverTarget(input, err);
+      if (next && !controller.signal.aborted) {
+        // Transparent failover: a new turn attempt starts on the fallback
+        // provider/model. The error event below explains the switch; the
+        // recursive attempt emits its own turn_start/turn_end.
+        this.status = "failed";
+        await flushTurnTokens(input.sessionId);
+        forward({
+          type: "error",
+          sessionId: input.sessionId,
+          code: "PROVIDER_FAILOVER",
+          message: `Primary provider failed (${next.cause}); failing over to ${next.label}.`,
+          recoverable: true,
+        });
+        return this.startTurn({
+          ...input,
+          providerId: next.providerId,
+          modelId: next.modelId,
+          failoverConsumed: [...(input.failoverConsumed ?? []), next.key],
+        });
+      }
       this.status = "failed";
       await flushTurnTokens(input.sessionId);
       forward({

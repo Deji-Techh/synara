@@ -6,6 +6,7 @@ import {
   classifyStepKind,
   DEFAULT_AGENT_ROUTING,
   isSlotSet,
+  MAX_FALLBACKS,
   normalizeAgentRouting,
 } from "./agentRouting.ts";
 
@@ -32,6 +33,22 @@ describe("agent routing", () => {
     expect(out.steps.builder).toEqual({ modelId: "m" });
     expect(out.steps.planner).toEqual({});
     expect(normalizeAgentRouting({ mode: "wild" }).mode).toBe("single");
+  });
+
+  it("normalizes the fallback chain (known providers, max 3, empties dropped)", () => {
+    expect(normalizeAgentRouting({}).fallbacks).toEqual([]);
+    const out = normalizeAgentRouting({
+      fallbacks: [
+        { providerId: "openai", modelId: "gpt-x" },
+        { providerId: "nope", modelId: "m" },
+        {},
+        { providerId: "anthropic" },
+        { providerId: "google" },
+      ],
+    });
+    expect(out.fallbacks).toHaveLength(MAX_FALLBACKS);
+    expect(out.fallbacks[0]).toEqual({ providerId: "openai", modelId: "gpt-x" });
+    expect(out.fallbacks[1]).toEqual({ modelId: "m" });
   });
 
   it("classifies planner for plan turns, scout for reads, builder after mutation", () => {

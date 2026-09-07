@@ -332,6 +332,13 @@ export const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
     keywords:
       "Model for plan-mode turns, questionnaires and plans. routing",
   },
+  {
+    id: "providers:routing-fallbacks",
+    section: "providers",
+    title: "Fallback chain",
+    keywords:
+      "Backup providers tried in order when the turn provider fails. failover routing",
+  },
 
   // ── Skills ────────────────────────────────────────────────────────────────────
   {

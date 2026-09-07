@@ -19,11 +19,16 @@ export interface StepModelRef {
 export interface AgentRoutingConfig {
   mode: "single" | "per-step";
   steps: Record<RoutingStepKind, StepModelRef>;
+  /** Ordered failover chain tried when the turn provider fails retryably (max 3). */
+  fallbacks: StepModelRef[];
 }
+
+export const MAX_FALLBACKS = 3;
 
 export const DEFAULT_AGENT_ROUTING: AgentRoutingConfig = {
   mode: "single",
   steps: { scout: {}, builder: {}, planner: {} },
+  fallbacks: [],
 };
 
 function cleanRef(value: unknown): StepModelRef {
@@ -41,9 +46,13 @@ function cleanRef(value: unknown): StepModelRef {
 
 /** Validate/normalize a client-supplied routing config (unknown providers dropped). */
 export function normalizeAgentRouting(input: unknown): AgentRoutingConfig {
-  if (!input || typeof input !== "object") return { ...DEFAULT_AGENT_ROUTING, steps: { ...DEFAULT_AGENT_ROUTING.steps } };
+  if (!input || typeof input !== "object")
+    return { mode: "single", steps: { scout: {}, builder: {}, planner: {} }, fallbacks: [] };
   const rec = input as Record<string, unknown>;
   const steps = (rec.steps && typeof rec.steps === "object" ? rec.steps : {}) as Record<string, unknown>;
+  const fallbacks = Array.isArray(rec.fallbacks)
+    ? rec.fallbacks.map(cleanRef).filter((r) => isSlotSet(r)).slice(0, MAX_FALLBACKS)
+    : [];
   return {
     mode: rec.mode === "per-step" ? "per-step" : "single",
     steps: {
@@ -51,6 +60,7 @@ export function normalizeAgentRouting(input: unknown): AgentRoutingConfig {
       builder: cleanRef(steps.builder),
       planner: cleanRef(steps.planner),
     },
+    fallbacks,
   };
 }
 

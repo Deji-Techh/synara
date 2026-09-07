@@ -18,6 +18,7 @@ export interface SlotModel {
 export interface AgentRoutingSettings {
   mode: RoutingMode;
   steps: Record<RoutingSlot, SlotModel>;
+  fallbacks: SlotModel[];
 }
 
 export const ROUTING_SLOTS: Array<{ id: RoutingSlot; label: string; hint: string }> = [
@@ -33,7 +34,10 @@ const EMPTY_SLOT: SlotModel = { providerId: "", modelId: "" };
 export const DEFAULT_ROUTING: AgentRoutingSettings = {
   mode: "single",
   steps: { scout: { ...EMPTY_SLOT }, builder: { ...EMPTY_SLOT }, planner: { ...EMPTY_SLOT } },
+  fallbacks: [],
 };
+
+export const MAX_FALLBACKS = 3;
 
 function cleanSlot(value: unknown): SlotModel {
   if (!value || typeof value !== "object") return { ...EMPTY_SLOT };
@@ -50,6 +54,12 @@ export function loadAgentRouting(): AgentRoutingSettings {
     if (!raw) return structuredClone(DEFAULT_ROUTING);
     const parsed = JSON.parse(raw) as Partial<AgentRoutingSettings>;
     const steps = (parsed.steps ?? {}) as Record<string, unknown>;
+    const fallbacks = Array.isArray((parsed as { fallbacks?: unknown }).fallbacks)
+      ? ((parsed as { fallbacks?: unknown[] }).fallbacks ?? [])
+          .map(cleanSlot)
+          .filter((r) => r.providerId || r.modelId)
+          .slice(0, MAX_FALLBACKS)
+      : [];
     return {
       mode: parsed.mode === "per-step" ? "per-step" : "single",
       steps: {
@@ -57,6 +67,7 @@ export function loadAgentRouting(): AgentRoutingSettings {
         builder: cleanSlot(steps.builder),
         planner: cleanSlot(steps.planner),
       },
+      fallbacks,
     };
   } catch {
     return structuredClone(DEFAULT_ROUTING);

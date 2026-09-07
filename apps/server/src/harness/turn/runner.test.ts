@@ -5,7 +5,8 @@
 import { describe, expect, it } from "vitest";
 import type { HarnessEvent } from "@caide/contracts";
 import type { LLMAdapter } from "../loop/loop.ts";
-import { CaideRunner } from "./runner.ts";
+import { CaideRunner, nextFailoverTarget } from "./runner.ts";
+import { ProviderApiError } from "../provider/apiAdapter.ts";
 
 function fakeLlm(chunks: Array<{ type: "token"; content: string }>): LLMAdapter {
   return {
@@ -80,6 +81,16 @@ describe("caide runner turns (m3)", () => {
     await started;
     expect(runner.getStatus()).toBe("cancelled");
     expect(events.at(-1)).toMatchObject({ type: "turn_end", status: "cancelled" });
+  });
+
+  it("picks failover targets only for retryable provider errors", () => {
+    const retryable = new ProviderApiError({ status: 503, code: "HTTP_503", message: "down", retryable: true });
+    const fatal = new ProviderApiError({ status: 401, code: "HTTP_401", message: "no", retryable: false });
+    const base = { sessionId: "s", appPath: "/tmp/x", prompt: "hi" };
+    expect(nextFailoverTarget(base, new Error("boom"))).toBeNull();
+    expect(nextFailoverTarget(base, fatal)).toBeNull();
+    // No fallbacks configured in a fresh session store.
+    expect(nextFailoverTarget(base, retryable)).toBeNull();
   });
 
   it("clamps non-positive step budgets to the default instead of starving the LLM", async () => {
