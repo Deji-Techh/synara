@@ -127,6 +127,14 @@ export function AgentRoutingSection() {
                       <SelectItem key="__default" value="__default">
                         Thread default
                       </SelectItem>
+                      {pick.providerId && !provider && (
+                        <SelectItem key={pick.providerId} value={pick.providerId}>
+                          <ProviderOptionLabel
+                            provider={pick.providerId as ProviderKind}
+                            label={`${providerLabel(pick.providerId)} (disconnected)`}
+                          />
+                        </SelectItem>
+                      )}
                       {configuredProviders.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
                           <ProviderOptionLabel
@@ -145,6 +153,11 @@ export function AgentRoutingSection() {
                       <SelectItem key="__default" value="__default">
                         Thread default
                       </SelectItem>
+                      {pick.modelId && !models.some((m) => m.id === pick.modelId) && (
+                        <SelectItem key={pick.modelId} value={pick.modelId}>
+                          {pick.modelId} (unavailable)
+                        </SelectItem>
+                      )}
                       {models.map((m) => (
                         <SelectItem key={m.id} value={m.id}>
                           {m.label}
@@ -216,6 +229,14 @@ export function AgentRoutingSection() {
                     <SelectItem key="__default" value="__default">
                       Thread default
                     </SelectItem>
+                    {fb.providerId && !configuredProviders.some((p) => p.id === fb.providerId) && (
+                      <SelectItem key={fb.providerId} value={fb.providerId}>
+                        <ProviderOptionLabel
+                          provider={fb.providerId as ProviderKind}
+                          label={`${providerLabel(fb.providerId)} (disconnected)`}
+                        />
+                      </SelectItem>
+                    )}
                     {configuredProviders.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         <ProviderOptionLabel provider={p.id as ProviderKind} label={providerLabel(p.id)} />
@@ -236,6 +257,11 @@ export function AgentRoutingSection() {
                     <SelectItem key="__default" value="__default">
                       Thread default
                     </SelectItem>
+                    {fb.modelId && !models.some((m) => m.id === fb.modelId) && (
+                      <SelectItem key={fb.modelId} value={fb.modelId}>
+                        {fb.modelId} (unavailable)
+                      </SelectItem>
+                    )}
                     {models.map((m) => (
                       <SelectItem key={m.id} value={m.id}>
                         {m.label}

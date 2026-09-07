@@ -29,15 +29,16 @@ export function HarnessVerifierCard(props: { sessionId: string }) {
         <CaideCardHeader accent={accent}>
           <div className="flex min-w-0 flex-1 items-center gap-2">
             {verdict.passed ? (
-              <IconCheck size={14} className="shrink-0 text-green-500" />
+              <IconCheck size={14} className="shrink-0 text-success" />
             ) : (
-              <IconX size={14} className="shrink-0 text-amber-500" />
+              <IconX size={14} className="shrink-0 text-warning" />
             )}
             <span className="truncate text-[12px] font-semibold tracking-tight">
               {verdict.passed ? "Review passed" : `Review found ${verdict.issues.length} issue${verdict.issues.length === 1 ? "" : "s"}`}
             </span>
             <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
               {verdict.confidence}% · taste {verdict.tasteScore}
+              {/* Mirrors server TASTE_BAR (reviewBarrier.ts); keep in sync. */}
               {verdict.tasteScore < 60 ? " · below bar" : ""}
             </span>
           </div>

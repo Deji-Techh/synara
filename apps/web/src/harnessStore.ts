@@ -276,7 +276,7 @@ export const harnessStore = {
       case "turn_end": {
         if (event.usage) {
           state.sessions[event.sessionId] = {
-            ...getOrCreateSession(event.sessionId),
+            ...session,
             lastUsage: { ...event.usage },
           };
         }

@@ -48,10 +48,21 @@ function cleanSlot(value: unknown): SlotModel {
   };
 }
 
+function cloneDefault(): AgentRoutingSettings {
+  // structuredClone is unavailable on older WebViews — JSON round-trip
+  // covers this plain-data shape.
+  try {
+    if (typeof structuredClone === "function") return structuredClone(DEFAULT_ROUTING);
+  } catch {
+    // fall through to JSON clone
+  }
+  return JSON.parse(JSON.stringify(DEFAULT_ROUTING)) as AgentRoutingSettings;
+}
+
 export function loadAgentRouting(): AgentRoutingSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return structuredClone(DEFAULT_ROUTING);
+    if (!raw) return cloneDefault();
     const parsed = JSON.parse(raw) as Partial<AgentRoutingSettings>;
     const steps = (parsed.steps ?? {}) as Record<string, unknown>;
     const fallbacks = Array.isArray((parsed as { fallbacks?: unknown }).fallbacks)
@@ -70,11 +81,34 @@ export function loadAgentRouting(): AgentRoutingSettings {
       fallbacks,
     };
   } catch {
-    return structuredClone(DEFAULT_ROUTING);
+    return cloneDefault();
   }
 }
 
 export function saveAgentRouting(next: AgentRoutingSettings): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  syncAllActiveHarnessSettings();
+  // Normalize on save too (not just load): direct callers must not persist
+  // over-long or empty-entry arrays. Storage may throw (private mode/quota)
+  // — settings sync still goes out so the session is never left stale.
+  const clean: AgentRoutingSettings = {
+    mode: next.mode === "per-step" ? "per-step" : "single",
+    steps: {
+      scout: cleanSlot(next.steps?.scout),
+      builder: cleanSlot(next.steps?.builder),
+      planner: cleanSlot(next.steps?.planner),
+    },
+    fallbacks: (Array.isArray(next.fallbacks) ? next.fallbacks : [])
+      .map(cleanSlot)
+      .filter((r) => r.providerId || r.modelId)
+      .slice(0, MAX_FALLBACKS),
+  };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
+  } catch {
+    // storage unavailable — continue to sync
+  }
+  try {
+    syncAllActiveHarnessSettings();
+  } catch {
+    // no live sessions — nothing to sync
+  }
 }

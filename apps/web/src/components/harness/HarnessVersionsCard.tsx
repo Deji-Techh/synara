@@ -4,7 +4,7 @@
 // the server stashes dirty work first). Caide card primitives, theme
 // tokens only.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { useHarnessStore } from "~/harnessStore";
 import {
@@ -33,9 +33,26 @@ export function HarnessVersionsCard(props: { sessionId: string; send: SendFn }) 
   const [open, setOpen] = useState(false);
   const [confirmHash, setConfirmHash] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
+  const mountedRef = useRef(true);
+  const refreshTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    props.send({ type: "versions_list", sessionId: props.sessionId });
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (refreshTimerRef.current !== null) {
+        window.clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    // Fetch only when the card has no data yet (cached versions survive
+    // re-mounts via the store); refreshes come from restore actions.
+    if ((state.sessions[props.sessionId]?.versions ?? []).length === 0) {
+      props.send({ type: "versions_list", sessionId: props.sessionId });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.sessionId]);
 
@@ -51,7 +68,10 @@ export function HarnessVersionsCard(props: { sessionId: string; send: SendFn }) 
     setConfirmHash(null);
     setRestoring(true);
     props.send({ type: "versions_restore", sessionId: props.sessionId, hash });
-    window.setTimeout(() => {
+    if (refreshTimerRef.current !== null) window.clearTimeout(refreshTimerRef.current);
+    refreshTimerRef.current = window.setTimeout(() => {
+      refreshTimerRef.current = null;
+      if (!mountedRef.current) return;
       setRestoring(false);
       props.send({ type: "versions_list", sessionId: props.sessionId });
     }, 1500);

@@ -26,6 +26,7 @@ describe("agent routing store", () => {
         builder: { providerId: "", modelId: "" },
         planner: { providerId: "anthropic", modelId: "" },
       },
+      fallbacks: [],
     });
     expect(loadAgentRouting().mode).toBe("per-step");
     expect(loadAgentRouting().steps.scout).toEqual({ providerId: "openai", modelId: "gpt-x" });

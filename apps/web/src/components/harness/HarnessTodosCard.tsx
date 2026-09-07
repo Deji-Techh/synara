@@ -18,10 +18,10 @@ import { DisclosureChevron } from "~/components/ui/DisclosureChevron";
 
 function StatusIcon(props: { status: TodoEntry["status"]; className?: string }) {
   if (props.status === "completed") {
-    return <IconCircleCheck size={14} className="shrink-0 text-green-500" />;
+    return <IconCircleCheck size={14} className="shrink-0 text-success" />;
   }
   if (props.status === "in_progress") {
-    return <IconLoader2 size={14} className={`shrink-0 animate-spin text-blue-500 ${props.className ?? ""}`} />;
+    return <IconLoader2 size={14} className={`shrink-0 animate-spin text-info ${props.className ?? ""}`} />;
   }
   return <IconCircle size={14} className="shrink-0 text-muted-foreground" />;
 }
@@ -61,7 +61,7 @@ export function HarnessTodosCard(props: { sessionId: string }) {
             ) : (
               <>
                 {allDone ? (
-                  <IconCircleCheck size={14} className="shrink-0 text-green-500" />
+                  <IconCircleCheck size={14} className="shrink-0 text-success" />
                 ) : (
                   <IconCircle size={14} className="shrink-0 text-muted-foreground" />
                 )}
