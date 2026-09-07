@@ -1,8 +1,10 @@
 // FILE: connections.ts
 // Purpose: Database connection resolution for agent DB tools.
-// Order: session-linked provider (via add_integration) → app .env /
-// .env.local DATABASE_URL → process.env.DATABASE_URL. Supabase/Neon project
-// metadata rides the session link; M3 settings UI persists links to SQLite.
+// Order: session-linked provider (via add_integration) → app-scoped link
+// (<app>/.caide/db-link.json, persists across chats in the same project,
+// never outside it) → app .env / .env.local DATABASE_URL →
+// process.env.DATABASE_URL. Supabase/Neon project metadata rides the
+// session or app link; management tokens stay memory-only.
 
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -33,6 +35,74 @@ export function getDatabaseLink(sessionId: string): DbLink | undefined {
   return sessionLinks.get(sessionId);
 }
 
+// --- App-scoped links (persist across chats in the same project) ---
+
+const appLinkCache = new Map<string, DbLink>();
+
+function appLinkFile(appPath: string): string {
+  return path.join(appPath, ".caide", "db-link.json");
+}
+
+/** Read the persisted app link (management tokens never touch disk). */
+function readAppLinkFile(appPath: string): DbLink | undefined {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(appLinkFile(appPath), "utf8")) as Partial<DbLink>;
+    if (parsed && (parsed.provider === "supabase" || parsed.provider === "neon" || parsed.provider === "custom")) {
+      const link: DbLink = { provider: parsed.provider };
+      if (typeof parsed.databaseUrl === "string" && parsed.databaseUrl) link.databaseUrl = parsed.databaseUrl;
+      if (typeof parsed.projectId === "string" && parsed.projectId) link.projectId = parsed.projectId;
+      if (typeof parsed.organizationSlug === "string" && parsed.organizationSlug) {
+        link.organizationSlug = parsed.organizationSlug;
+      }
+      if (typeof parsed.branchId === "string" && parsed.branchId) link.branchId = parsed.branchId;
+      return link;
+    }
+  } catch {
+    // missing or corrupt — treated as unlinked
+  }
+  return undefined;
+}
+
+/** Persist an app-scoped link (0600; managementToken stays memory-only). */
+export function linkAppDatabase(appPath: string, link: DbLink): void {
+  const { managementToken: _dropped, ...persistable } = link;
+  void _dropped;
+  appLinkCache.set(appPath, { ...persistable });
+  try {
+    fs.mkdirSync(path.join(appPath, ".caide"), { recursive: true });
+    fs.writeFileSync(appLinkFile(appPath), `${JSON.stringify(persistable, null, 2)}\n`, { mode: 0o600 });
+    try {
+      fs.chmodSync(appLinkFile(appPath), 0o600);
+    } catch {
+      // non-POSIX — best effort
+    }
+  } catch {
+    // disk write failed — in-memory link still applies for this process
+  }
+}
+
+export function unlinkAppDatabase(appPath: string): void {
+  appLinkCache.delete(appPath);
+  try {
+    fs.unlinkSync(appLinkFile(appPath));
+  } catch {
+    // already gone — fine
+  }
+}
+
+export function getAppDatabaseLink(appPath: string): DbLink | undefined {
+  const cached = appLinkCache.get(appPath);
+  if (cached) return cached;
+  const fromDisk = readAppLinkFile(appPath);
+  if (fromDisk) appLinkCache.set(appPath, fromDisk);
+  return fromDisk;
+}
+
+/** Test-only: drop the app-link memory cache (disk files untouched). */
+export function clearAppLinkCache(): void {
+  appLinkCache.clear();
+}
+
 function readEnvFile(appPath: string, file: string): Record<string, string> {
   const out: Record<string, string> = {};
   try {
@@ -54,7 +124,7 @@ function readEnvFile(appPath: string, file: string): Record<string, string> {
 
 export interface ResolvedDatabase {
   databaseUrl: string;
-  source: "session-link" | ".env.local" | ".env" | "environment";
+  source: "session-link" | "app-link" | ".env.local" | ".env" | "environment";
   link?: DbLink;
 }
 
@@ -63,6 +133,10 @@ export function resolveDatabaseUrl(appPath: string, sessionId: string): Resolved
   const link = sessionLinks.get(sessionId);
   if (link?.databaseUrl) {
     return { databaseUrl: link.databaseUrl, source: "session-link", link };
+  }
+  const appLink = getAppDatabaseLink(appPath);
+  if (appLink?.databaseUrl) {
+    return { databaseUrl: appLink.databaseUrl, source: "app-link", link: appLink };
   }
   for (const file of [".env.local", ".env"] as const) {
     const vars = readEnvFile(appPath, file);

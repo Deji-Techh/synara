@@ -22,8 +22,10 @@ import { setBlueprintTransport } from "../../dyad/plan/blueprintTools.ts";
 import { dismissUserInput, resolveUserInput } from "../../dyad/plan/userPrompt.ts";
 import {
   applySettingsSync,
+  getSessionApp,
   type SettingsSyncPayload,
 } from "../turn/sessionStores.ts";
+import { linkAppDatabase } from "../../dyad/db/connections.ts";
 import { setBlockchainNetworks, type BlockchainNetwork } from "../../dyad/web3/networks.ts";
 import type { HarnessHub } from "./hub.ts";
 
@@ -118,6 +120,12 @@ export function attachUiBridge(server: HarnessHub): {
   server.onSettingsSync((sessionId, settings) => {
     const payload = settings as SettingsSyncPayload & { blockchainNetworks?: BlockchainNetwork[] };
     applySettingsSync(sessionId, payload);
+    // Project-scoped DB persistence: a synced link also lands on the app so
+    // later chats in the same project reuse it (never outside the project).
+    if (payload.dbLinks && payload.dbLinks.length > 0) {
+      const appPath = getSessionApp(sessionId);
+      if (appPath) linkAppDatabase(appPath, payload.dbLinks[0]);
+    }
     if (payload.blockchainNetworks && payload.blockchainNetworks.length > 0) {
       setBlockchainNetworks(
         payload.blockchainNetworks.filter((n) => n.id && n.rpcUrl),

@@ -51,6 +51,24 @@ export interface SessionStores {
 
 const stores = new Map<string, SessionStores>();
 
+/** sessionId -> appPath registry (appPath arrives per turn; no persistence needed). */
+const sessionApps = new Map<string, string>();
+
+/** Record which app a session belongs to (called on every turn start). */
+export function noteSessionApp(sessionId: string, appPath: string): void {
+  if (appPath) sessionApps.set(sessionId, appPath);
+}
+
+/** Look up the app a session belongs to, if known. */
+export function getSessionApp(sessionId: string): string | undefined {
+  return sessionApps.get(sessionId);
+}
+
+/** Forget a session's app mapping (session teardown). */
+export function clearSessionApp(sessionId: string): void {
+  sessionApps.delete(sessionId);
+}
+
 export function getOrCreateSessionStores(sessionId: string): SessionStores {
   let entry = stores.get(sessionId);
   if (!entry) {

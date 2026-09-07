@@ -19,6 +19,7 @@ import type { SettingsLike } from "../../dyad/providers/index.ts";
 import type { ConsentRequestFn } from "../../dyad/tools/permissions.ts";
 import type { McpConsentRequestFn } from "../../dyad/mcp/mcpConsent.ts";
 import { CaideRunner, type StartTurnInput } from "./runner.ts";
+import { clearSessionApp, noteSessionApp } from "./sessionStores.ts";
 
 export interface GatewayTurnRequest {
   sessionId: string;
@@ -47,6 +48,7 @@ export class TurnGateway {  private runner = new CaideRunner();
     this.requestMcpConsent = bridge.requestMcpConsent;
     this.uiDetach = bridge.detach;
     server.onTurnStart((sessionId, turn) => {
+      noteSessionApp(sessionId, turn.appPath);
       void this.startTurn({
         sessionId,
         appPath: turn.appPath,
@@ -151,6 +153,7 @@ export class TurnGateway {  private runner = new CaideRunner();
     extra?: Partial<StartTurnInput>,
   ): Promise<string> {
     const resolved = resolveTurnProviders(request);
+    noteSessionApp(request.sessionId, request.appPath);
     const inbox = this.getInbox(request.sessionId);
     const broadcast = (event: HarnessEvent): void => {
       extra?.onEvent?.(event);
@@ -194,6 +197,7 @@ export class TurnGateway {  private runner = new CaideRunner();
 
   dropSession(sessionId: string): void {
     this.inboxes.delete(sessionId);
+    clearSessionApp(sessionId);
   }
 
   getStatus(): ReturnType<CaideRunner["getStatus"]> {

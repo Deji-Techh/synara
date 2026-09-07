@@ -14,8 +14,10 @@ import { nextRequestId, waitForUserInput } from "../plan/userPrompt.ts";
 import {
   DbNotConnectedError,
   getDatabaseLink,
+  linkAppDatabase,
   linkDatabase,
   resolveDatabaseUrl,
+  type DbLink,
   type DbProvider,
 } from "./connections.ts";
 import { checkSqlDanger, classifySql, splitStatements } from "./sqlSafety.ts";
@@ -290,7 +292,7 @@ export const addIntegrationTool = defineTool({
   readOnly: false,
   modifiesState: true,
   execute: async (args, ctx) =>
-    executeAddIntegration(addIntegrationSchema.parse(args), ctx.sessionId, ctx.signal),
+    executeAddIntegration(addIntegrationSchema.parse(args), ctx.sessionId, ctx.signal, ctx.appPath),
   presentCall: () => "Add database integration",
 });
 
@@ -298,6 +300,7 @@ export async function executeAddIntegration(
   input: z.infer<typeof addIntegrationSchema>,
   sessionId: string,
   signal?: AbortSignal,
+  appPath?: string,
 ): Promise<string> {
   const parsed = addIntegrationSchema.parse(input);
   const existing = getDatabaseLink(sessionId);
@@ -316,12 +319,15 @@ export async function executeAddIntegration(
   }
   const picked = (answers.provider === "neon" ? "neon" : "supabase") as DbProvider;
   const databaseUrl = answers.databaseUrl || answers.database_url || "";
-  linkDatabase(sessionId, {
+  const link: DbLink = {
     provider: picked,
     databaseUrl: databaseUrl || undefined,
     projectId: answers.projectId,
     managementToken: answers.managementToken || answers.management_token || undefined,
-  });
+  };
+  linkDatabase(sessionId, link);
+  // Persist app-scoped so later chats in the same project reuse it.
+  if (appPath) linkAppDatabase(appPath, link);
   return `User completed the ${picked} integration. You can now continue with the next step.`;
 }
 
