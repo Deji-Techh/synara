@@ -87,7 +87,12 @@ export function getOrCreateSessionStores(sessionId: string): SessionStores {
       mcpAutoApproveSafe: true,
       routing: {
         mode: DEFAULT_AGENT_ROUTING.mode,
-        steps: { ...DEFAULT_AGENT_ROUTING.steps },
+        steps: {
+          scout: { ...DEFAULT_AGENT_ROUTING.steps.scout },
+          builder: { ...DEFAULT_AGENT_ROUTING.steps.builder },
+          planner: { ...DEFAULT_AGENT_ROUTING.steps.planner },
+        },
+        fallbacks: [],
       },
     };
     stores.set(sessionId, entry);
