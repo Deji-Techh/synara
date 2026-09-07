@@ -6,7 +6,12 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
-import { formatIssuesForEvent, parseVerdict, runReviewBarrier } from "./reviewBarrier.ts";
+import {
+  formatIssuesForEvent,
+  parseVerdict,
+  runReviewBarrier,
+  TASTE_BAR,
+} from "./reviewBarrier.ts";
 
 describe("review barrier", () => {
   it("parses reviewer JSON verdicts with clamping", () => {
@@ -44,6 +49,10 @@ describe("review barrier", () => {
       formatIssuesForEvent([{ severity: "major", file: "a.ts", detail: "d", suggestion: "s" }]),
     ).toEqual(["[major] a.ts — d → s"]);
     expect(formatIssuesForEvent([])).toEqual([]);
+  });
+
+  it("exposes the taste bar constant", () => {
+    expect(TASTE_BAR).toBe(60);
   });
 
   it("skips clean trees and non-repos with null", async () => {

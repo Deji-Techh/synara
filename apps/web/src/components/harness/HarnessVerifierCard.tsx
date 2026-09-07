@@ -38,6 +38,7 @@ export function HarnessVerifierCard(props: { sessionId: string }) {
             </span>
             <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
               {verdict.confidence}% · taste {verdict.tasteScore}
+              {verdict.tasteScore < 60 ? " · below bar" : ""}
             </span>
           </div>
           <CaideBadge accent={accent}>Review</CaideBadge>

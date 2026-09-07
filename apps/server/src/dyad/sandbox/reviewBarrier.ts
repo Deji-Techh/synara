@@ -10,8 +10,12 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { LLMAdapter } from "../../harness/loop/loop.ts";
 import type { ToolDef } from "../../harness/tools/defineTool.ts";
+import { lintProjectTool } from "../../harness/tools/coreTools.ts";
 import { runSubagentLoop } from "./subagentLoop.ts";
 import { REVIEWER_SYSTEM_PROMPT } from "./personas.ts";
+
+/** Taste bar: scores below this flag the card distinctly (advisory, never blocks). */
+export const TASTE_BAR = 60;
 
 const execFileAsync = promisify(execFile);
 const REVIEW_TIMEOUT_MS = 120_000;
@@ -131,12 +135,26 @@ export async function runReviewBarrier(deps: ReviewBarrierDeps): Promise<ReviewV
   const timer = setTimeout(() => controller.abort("review-timeout"), deps.timeoutMs ?? REVIEW_TIMEOUT_MS);
   const onAbort = () => controller.abort(deps.signal?.reason ?? "cancelled");
   deps.signal?.addEventListener("abort", onAbort, { once: true });
+  // Headless lint evidence for the reviewer (best-effort; skipped on abort).
+  let lintEvidence = "Lint: not run.";
+  try {
+    const lint = (await lintProjectTool.execute({}, {
+      signal: controller.signal,
+      appPath: deps.appPath,
+      sessionId: deps.sessionId,
+      toolId: "review-lint",
+    })) as { clean?: boolean; stdout?: string; stderr?: string };
+    const output = `${lint.stdout ?? ""}\n${lint.stderr ?? ""}`.trim().slice(-3000);
+    lintEvidence = lint.clean ? "Lint: clean." : `Lint: DIRTY.\n${output}`;
+  } catch {
+    lintEvidence = "Lint: unavailable (aborted or failed to run).";
+  }
   try {
     const result = await runSubagentLoop({
       appPath: deps.appPath,
       sessionId: `${deps.sessionId}:review`,
       system: REVIEWER_SYSTEM_PROMPT,
-      task: `Task under review: ${deps.taskSummary}\n\nDiff under review:\n${diff}`,
+      task: `Task under review: ${deps.taskSummary}\n\n${lintEvidence}\n\nDiff under review:\n${diff}`,
       tools: [],
       llm: deps.llm,
       signal: controller.signal,
