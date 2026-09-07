@@ -7,6 +7,7 @@ import { Cause, Effect, Exit, Stream } from "effect";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ORCHESTRATION_WS_METHODS,
+  PREVIEW_WS_METHODS,
   WS_CHANNELS,
   WS_METHODS,
   WS_COMPATIBILITY_QUERY,
@@ -39,6 +40,7 @@ import {
   shouldReconnectAfterStreamFailure,
   threadStreamInputsEqual,
   WsTransport,
+  wsFeatureSocketClientGroup,
   type WsThreadStreamFailure,
 } from "./wsTransport";
 import {
@@ -1301,5 +1303,17 @@ describe("WsTransport", () => {
     await transport.dispose();
 
     expect(listener).not.toHaveBeenCalled();
+  });
+});
+
+describe("feature socket client group", () => {
+  it("admits every preview RPC so calls resolve past the client lookup", () => {
+    // Regression: preview.mobileUrl (and screenshot/devices/flutter) died with
+    // "Unknown RPC method" because only a subset of preview RPCs lived in
+    // WsFeatureRpcGroup. This asserts against the exact group makeRpcClient is
+    // built from — not a copy of the merge expression.
+    for (const method of Object.values(PREVIEW_WS_METHODS)) {
+      expect(wsFeatureSocketClientGroup.requests.has(method), `${method} missing`).toBe(true);
+    }
   });
 });

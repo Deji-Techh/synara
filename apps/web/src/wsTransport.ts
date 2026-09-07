@@ -30,6 +30,7 @@ import {
   WsBootstrapNegotiateResult,
   WsBootstrapRpcGroup,
   WsDeviceRpcGroup,
+  WsPreviewRpcGroup,
   WS_METHODS,
   WsCompatibilityError,
   WsFeatureRpcGroup,
@@ -185,9 +186,16 @@ function awaitWithAbort<A>(promise: Promise<A>, signal: AbortSignal | undefined)
 // The goals group lives in goals.rpc.ts (not the feature group) so the engine
 // can own goal CRUD without bloating the core WS group; the web client must
 // carry it explicitly or `goals:*` calls would hit "Unknown RPC method".
-const makeRpcClient = RpcClient.make(
-  WsFeatureRpcGroup.merge(WsDeviceRpcGroup).merge(WsGoalsRpcGroup).merge(WsSubagentsRpcGroup),
-);
+// Same for the preview group: only a subset of preview RPCs is duplicated in
+// WsFeatureRpcGroup, so screenshot/devices/flutter/mobileUrl need the explicit
+// merge or their calls die client-side with "Unknown RPC method".
+// Exported for tests: this is the exact group the socket client is built from,
+// so the membership test below guards the real call path (not a copy of it).
+export const wsFeatureSocketClientGroup = WsFeatureRpcGroup.merge(WsDeviceRpcGroup)
+  .merge(WsGoalsRpcGroup)
+  .merge(WsSubagentsRpcGroup)
+  .merge(WsPreviewRpcGroup);
+const makeRpcClient = RpcClient.make(wsFeatureSocketClientGroup);
 const makeBootstrapRpcClient = RpcClient.make(WsBootstrapRpcGroup);
 const REQUEST_TIMEOUT_MS = 60_000;
 const FEATURE_CONNECTION_PROBE_TIMEOUT_MS = 10_000;
