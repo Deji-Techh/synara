@@ -251,7 +251,8 @@ export const readLogsTool = defineTool({
     const query = parsed.searchTerm?.toLowerCase();
     const limit = parsed.limit ?? 50;
     const levelWords: Record<string, string[]> = {
-      info: ["info", "log"],
+      // Substring matches (no "log": it over-matches dialog/login/catalog).
+      info: ["info"],
       warn: ["warn", "warning"],
       error: ["error", "exception", "failed", "failure", "eaddrinuse"],
     };
@@ -314,6 +315,17 @@ export const reinstallAndRestartAppTool = defineTool({
       throw new Error("reinstall_and_restart_app does not apply to Blank projects (no dependencies, no preview).");
     }
     if (framework === "flutter") {
+      // Best-effort clean of stale build outputs, then a strict pub get.
+      try {
+        await execFileAsync("flutter", ["clean"], {
+          cwd: ctx.appPath,
+          signal: ctx.signal,
+          timeout: 120_000,
+          maxBuffer: 4 * 1024 * 1024,
+        });
+      } catch {
+        // ignore — pub get below is the real gate
+      }
       try {
         await execFileAsync("flutter", ["pub", "get"], {
           cwd: ctx.appPath,
@@ -325,6 +337,14 @@ export const reinstallAndRestartAppTool = defineTool({
         throw new Error(`flutter pub get failed: ${e?.message ?? String(e)}`);
       }
     } else {
+      // Donor parity: broken/stale node_modules is deleted before the
+      // reconcile install (guarded to the app dir — never above it).
+      const nodeModules = `${ctx.appPath}/node_modules`;
+      try {
+        await fs.promises.rm(nodeModules, { recursive: true, force: true });
+      } catch (e: any) {
+        throw new Error(`Could not remove node_modules: ${e?.message ?? String(e)}`);
+      }
       try {
         await execFileAsync("bun", ["install"], {
           cwd: ctx.appPath,

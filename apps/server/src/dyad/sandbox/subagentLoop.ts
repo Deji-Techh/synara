@@ -92,9 +92,14 @@ export interface SpawnSubagentDeps extends Omit<SubagentLoopDeps, "system"> {
  * Returns the task id synchronously — donor spawn behavior.
  */
 export function spawnSubagentTask(deps: SpawnSubagentDeps): string {
-  const task = registerSubagentTask(deps.role);
+  const task = registerSubagentTask(deps.role, deps.sessionId);
   const controller = new AbortController();
   setSubagentCancelController(task.id, controller);
+  // addEventListener never fires for an already-aborted parent — check up
+  // front so a cancelled turn cannot spawn runaway subagents.
+  if (deps.signal?.aborted) {
+    controller.abort(deps.signal.reason ?? "parent turn aborted");
+  }
   const onExternalAbort = () => controller.abort(deps.signal?.reason ?? "parent turn aborted");
   deps.signal?.addEventListener("abort", onExternalAbort, { once: true });
   const system = [

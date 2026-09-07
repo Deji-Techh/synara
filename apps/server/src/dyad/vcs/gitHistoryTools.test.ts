@@ -114,4 +114,35 @@ describe("dyad git history tools", () => {
       GitToolError,
     );
   });
+
+  it("reports bad revisions accurately (not as missing repos)", async () => {
+    const dir = initRepo();
+    const err = await executeGitShowCommit({ revision: "deadbee" }, dir).catch((e) => e);
+    expect(err).toBeInstanceOf(GitToolError);
+    expect(String(err.message)).not.toMatch(/Not a git repository/);
+    expect(String(err.message)).toMatch(/exit 128/);
+  });
+
+  it("refuses dotenv restore and binary display", async () => {
+    const dir = initRepo();
+    fs.writeFileSync(path.join(dir, ".env"), "SECRET=1\n");
+    execFileSync("git", ["add", "-A"], { cwd: dir });
+    execFileSync("git", ["commit", "-m", "env"], { cwd: dir });
+    await expect(
+      executeGitRestoreFile({ revision: "HEAD", path: ".env" }, dir),
+    ).rejects.toBeInstanceOf(GitToolError);
+
+    fs.writeFileSync(path.join(dir, "blob.bin"), Buffer.from([0, 1, 2, 0, 255, 254]));
+    execFileSync("git", ["add", "-A"], { cwd: dir });
+    execFileSync("git", ["commit", "-m", "bin"], { cwd: dir });
+    await expect(
+      executeGitShowFile({ revision: "HEAD", path: "blob.bin" }, dir),
+    ).rejects.toThrow(/inary/);
+    // Binary restore round-trips byte-identical.
+    fs.unlinkSync(path.join(dir, "blob.bin"));
+    await executeGitRestoreFile({ revision: "HEAD", path: "blob.bin" }, dir);
+    expect(fs.readFileSync(path.join(dir, "blob.bin"))).toEqual(
+      Buffer.from([0, 1, 2, 0, 255, 254]),
+    );
+  });
 });

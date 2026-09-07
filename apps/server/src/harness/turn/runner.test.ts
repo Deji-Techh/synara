@@ -81,4 +81,30 @@ describe("caide runner turns (m3)", () => {
     expect(runner.getStatus()).toBe("cancelled");
     expect(events.at(-1)).toMatchObject({ type: "turn_end", status: "cancelled" });
   });
+
+  it("clamps non-positive step budgets to the default instead of starving the LLM", async () => {
+    for (const maxSteps of [0, -5]) {
+      const events: HarnessEvent[] = [];
+      let llmCalls = 0;
+      const runner = new CaideRunner();
+      await runner.startTurn({
+        sessionId: `s-clamp-${maxSteps}`,
+        appPath: "/tmp/caide-test-app",
+        prompt: "hi",
+        mode: "ask",
+        maxSteps,
+        settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+        llmOverride: {
+          async *stream() {
+            llmCalls += 1;
+            yield { type: "token", content: "hello" } as never;
+          },
+        },
+        onEvent: (e) => events.push(e),
+      });
+      expect(runner.getStatus()).toBe("completed");
+      expect(llmCalls).toBe(1);
+      expect(events.at(-1)).toMatchObject({ type: "turn_end", status: "completed" });
+    }
+  });
 });

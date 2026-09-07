@@ -325,4 +325,27 @@ describe("dyad prompt transplant (m1)", () => {
     expect(buildGitReminder({})).toBeNull();
     expect(buildGitReminder({ commitHash: "a<b>&c" })).toContain("a&lt;b&gt;&amp;c");
   });
+
+  it("threads the Next.js major version into Neon boundary guidance", () => {
+    const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
+    const modern = constructSystemPrompt({
+      ...base,
+      chatMode: "build",
+      hasNeonProject: true,
+      neonClientCode: "export const sql = neon(process.env.DATABASE_URL!);",
+      frameworkType: "nextjs",
+      neonNextjsMajorVersion: 16,
+    });
+    expect(modern).toContain("proxy.ts");
+    const legacy = constructSystemPrompt({
+      ...base,
+      chatMode: "build",
+      hasNeonProject: true,
+      neonClientCode: "export const sql = neon(process.env.DATABASE_URL!);",
+      frameworkType: "nextjs",
+      neonNextjsMajorVersion: 14,
+    });
+    expect(legacy).toContain("in `middleware.ts`");
+    expect(legacy).toContain("NOT available here");
+  });
 });

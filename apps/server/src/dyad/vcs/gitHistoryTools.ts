@@ -2,51 +2,26 @@
 // Purpose: Git history inspection + single-file restore for the agent
 // (show_commit/show_file/restore_file). Donor schemas, descriptions, and
 // consent levels kept verbatim; execution is git CLI via the shared runGit
-// seam. dotenv values are never printed (donor redaction parity); restore
-// writes the working tree only (index untouched) and rejects symlinks.
+// seam (runGitBuffer for blob bytes). dotenv values are never printed or
+// restored (donor redaction parity); restore writes the working tree only
+// (index untouched) and rejects symlinks.
 // Donor: dyad tools/git.ts (show/restore subset; Electron git_utils,
 // file-lock, cloud-sync, and Supabase-deploy side effects not carried).
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { z } from "zod";
 import { defineTool, type ToolDef } from "../../harness/tools/defineTool.ts";
 import { safeJoinAppPath, UnsafePathError } from "../editing/safePath.ts";
-import { GitToolError } from "./gitTools.ts";
-
-const execFileAsync = promisify(execFile);
+import { GitToolError, runGit, runGitBuffer } from "./gitTools.ts";
 
 const MAX_OUTPUT_CHARS = 20_000;
 
-async function runGit(
-  args: string[],
-  cwd: string,
-  signal?: AbortSignal,
-): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-  try {
-    const { stdout, stderr } = await execFileAsync("git", args, {
-      cwd,
-      signal,
-      maxBuffer: 10 * 1024 * 1024,
-    });
-    return { stdout, stderr, exitCode: 0 };
-  } catch (e: any) {
-    if (e?.code === "ENOENT") {
-      throw new GitToolError("git binary not found on PATH");
-    }
-    return {
-      stdout: e?.stdout ?? "",
-      stderr: e?.stderr ?? e?.message ?? String(e),
-      exitCode: typeof e?.code === "number" ? e.code : 1,
-    };
-  }
-}
-
 function throwIfRepoError(stdout: string, stderr: string, exitCode: number, what: string): void {
   const combined = `${stdout}\n${stderr}`;
-  if (/not a git repository|not a git repo/i.test(combined) || exitCode === 128) {
+  // Only the message identifies a non-repo: exit 128 also means bad
+  // revision / missing path, which callers report in their own words.
+  if (/not a git repository|not a git repo/i.test(combined)) {
     throw new GitToolError("Not a git repository — run `git init` first or pick a project workspace");
   }
   if (exitCode !== 0) {
@@ -107,11 +82,6 @@ function summarizeDiff(content: string): { files: number; additions: number; del
     }
   }
   return { files, additions, deletions };
-}
-
-function countTextLines(content: string): number {
-  const withoutTrailingNewline = content.replace(/\r?\n$/, "");
-  return withoutTrailingNewline ? withoutTrailingNewline.split(/\r?\n/).length : 0;
 }
 
 function truncateOutput(content: string): string {
@@ -206,16 +176,26 @@ export async function executeGitShowFile(
 ): Promise<string> {
   const parsed = gitShowFileSchema.parse(input);
   assertNotSensitive(parsed.path);
-  const result = await runGit(["show", `${parsed.revision}:${parsed.path}`], appPath, signal);
-  throwIfRepoError(result.stdout, result.stderr, result.exitCode, "git show");
-  let lines = result.stdout.split("\n");
+  const result = await runGitBuffer(["show", `${parsed.revision}:${parsed.path}`], appPath, signal);
+  if (/not a git repository|not a git repo/i.test(result.stderr)) {
+    throw new GitToolError("Not a git repository — run `git init` first or pick a project workspace");
+  }
+  if (result.exitCode !== 0) {
+    throw new GitToolError(`git show failed (exit ${result.exitCode}):\n${result.stderr}`);
+  }
+  if (result.stdout.includes(0)) {
+    throw new GitToolError(
+      `Cannot display "${parsed.path}": binary files cannot be displayed. Use git_show_commit for patch metadata instead.`,
+    );
+  }
+  const text = result.stdout.toString("utf-8");
+  let lines = text.split("\n");
   // Drop the trailing empty element from a final newline for line math.
   if (lines.length > 0 && lines[lines.length - 1] === "") lines = lines.slice(0, -1);
   const total = lines.length;
   const start = parsed.start_line_one_indexed ?? 1;
   const end = parsed.end_line_one_indexed_inclusive ?? total;
   const slice = lines.slice(start - 1, end).join("\n");
-  void countTextLines(result.stdout);
   const shown = `lines ${start}-${Math.min(end, total)} of ${total} from ${parsed.path}@${parsed.revision}\n\n`;
   return shown + truncateOutput(slice);
 }
@@ -245,6 +225,7 @@ export async function executeGitRestoreFile(
   signal?: AbortSignal,
 ): Promise<string> {
   const parsed = gitRestoreFileSchema.parse(input);
+  assertNotSensitive(parsed.path);
   let fullPath: string;
   try {
     fullPath = safeJoinAppPath(appPath, parsed.path);
@@ -264,8 +245,13 @@ export async function executeGitRestoreFile(
     if ((e as NodeJS.ErrnoException)?.code !== "ENOENT") throw e;
     // Missing target is fine — restore creates it.
   }
-  const result = await runGit(["show", `${parsed.revision}:${parsed.path}`], appPath, signal);
-  throwIfRepoError(result.stdout, result.stderr, result.exitCode, "git show");
+  const result = await runGitBuffer(["show", `${parsed.revision}:${parsed.path}`], appPath, signal);
+  if (/not a git repository|not a git repo/i.test(result.stderr)) {
+    throw new GitToolError("Not a git repository — run `git init` first or pick a project workspace");
+  }
+  if (result.exitCode !== 0) {
+    throw new GitToolError(`git show failed (exit ${result.exitCode}):\n${result.stderr}`);
+  }
   await fs.promises.mkdir(path.dirname(fullPath), { recursive: true });
   await fs.promises.writeFile(fullPath, result.stdout);
   return `Restored ${parsed.path} from ${parsed.revision} without changing the index.`;

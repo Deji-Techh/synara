@@ -272,8 +272,8 @@ export const listAgentsTool = defineTool({
   schema: z.object({}),
   readOnly: true,
   modifiesState: false,
-  execute: async () => {
-    const tasks = listSubagentTasks();
+  execute: async (_args, ctx) => {
+    const tasks = listSubagentTasks(ctx.sessionId);
     if (tasks.length === 0) return "No sub-agent threads for this chat.";
     return tasks
       .map((t) => `- ${t.id} (${t.role}): ${t.status}`)

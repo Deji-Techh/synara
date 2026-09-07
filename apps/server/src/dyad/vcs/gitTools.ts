@@ -19,7 +19,7 @@ export class GitToolError extends Error {
   }
 }
 
-async function runGit(
+export async function runGit(
   args: string[],
   cwd: string,
   signal?: AbortSignal,
@@ -43,12 +43,42 @@ async function runGit(
   }
 }
 
-function ensureRepo(stdout: string, stderr: string, exitCode: number): void {
-  if (/not a git repository|not a git repo/i.test(`${stdout}\n${stderr}`) || exitCode === 128) {
-    if (/not a git repositor/i.test(`${stdout}\n${stderr}`)) {
-      throw new GitToolError("Not a git repository — run `git init` first or pick a project workspace");
+/**
+ * Buffer-output variant for binary-safe reads (git show of blobs).
+ * Callers decide text vs binary from the bytes.
+ */
+export async function runGitBuffer(
+  args: string[],
+  cwd: string,
+  signal?: AbortSignal,
+): Promise<{ stdout: Buffer; stderr: string; exitCode: number }> {
+  try {
+    const { stdout, stderr } = await execFileAsync("git", args, {
+      cwd,
+      signal,
+      maxBuffer: 10 * 1024 * 1024,
+      encoding: "buffer",
+    });
+    return { stdout: stdout as Buffer, stderr: String(stderr ?? ""), exitCode: 0 };
+  } catch (e: any) {
+    if (e?.code === "ENOENT") {
+      throw new GitToolError("git binary not found on PATH");
     }
+    return {
+      stdout: Buffer.isBuffer(e?.stdout) ? e.stdout : Buffer.alloc(0),
+      stderr: e?.stderr ?? e?.message ?? String(e),
+      exitCode: typeof e?.code === "number" ? e.code : 1,
+    };
   }
+}
+
+function ensureRepo(stdout: string, stderr: string, exitCode: number): void {
+  // Only the message identifies a non-repo: exit 128 also means bad
+  // revision / missing path, which callers report in their own words.
+  if (/not a git repository|not a git repo/i.test(`${stdout}\n${stderr}`)) {
+    throw new GitToolError("Not a git repository — run `git init` first or pick a project workspace");
+  }
+  void exitCode;
 }
 
 // --- git_status (donor schema + description verbatim) ---

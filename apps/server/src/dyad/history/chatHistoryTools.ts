@@ -98,7 +98,13 @@ export function readSessionLines(sessionId: string): LogLine[] {
         tokenBuffer += text;
       } else {
         flushTokens();
-        if (text) lines.push({ seq, kind: "assistant", text });
+        if (text) {
+          lines.push({
+            seq,
+            kind: entry.data?.type === "tool_call" ? "tool" : "assistant",
+            text,
+          });
+        }
       }
     } else if (entry.type === "user/message") {
       flushTokens();
@@ -251,7 +257,8 @@ export async function executeReadChat(
     const idx = lines.findIndex((l) => l.seq >= parsed.around_message_id!);
     const center = idx === -1 ? lines.length - 1 : idx;
     const half = Math.floor(limit / 2);
-    slice = lines.slice(Math.max(0, center - half), center + half);
+    const start = Math.max(0, center - half);
+    slice = lines.slice(start, start + limit);
   } else {
     slice = lines.slice(parsed.offset ?? 0, (parsed.offset ?? 0) + limit);
   }
@@ -309,9 +316,19 @@ export async function executeExploreChatHistory(
     return `no_match: no prior discussion found for "${parsed.question}". Treat absence as inconclusive and consider asking the user rather than assuming.`;
   }
   const ranked = [...cited.values()].sort((a, b) => b.score - a.score).slice(0, 8);
-  // Supersede check: later lines in the same chat win — order citations
-  // oldest-first so the report reads as decision history.
-  ranked.sort((a, b) => (a.chatId === b.chatId ? a.seq - b.seq : a.score - b.score));
+  // Supersede check: later lines in the same chat win — order citations by
+  // (chat, seq) so the report reads as decision history. Total order (no
+  // mixed-key comparator): chats ranked by their best hit first.
+  const bestByChat = new Map<string, number>();
+  for (const c of ranked) {
+    bestByChat.set(c.chatId, Math.max(bestByChat.get(c.chatId) ?? 0, c.score));
+  }
+  ranked.sort((a, b) => {
+    const chatRank = (bestByChat.get(b.chatId) ?? 0) - (bestByChat.get(a.chatId) ?? 0);
+    if (chatRank !== 0) return chatRank;
+    if (a.chatId !== b.chatId) return a.chatId < b.chatId ? -1 : 1;
+    return a.seq - b.seq;
+  });
   const body = ranked
     .map((c) => `- [chat ${c.chatId} @${c.seq}] ${c.text.slice(0, MAX_EXCERPT_CHARS)}`)
     .join("\n");

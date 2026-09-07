@@ -465,6 +465,7 @@ export const constructSystemPrompt = ({
   neonClientCode,
   neonConnected,
   neonEmailVerificationEnabled,
+  neonNextjsMajorVersion,
   gitProvenance,
   enableAppBlueprint,
   codeExplorerAvailable,
@@ -495,6 +496,8 @@ export const constructSystemPrompt = ({
   /** False → Neon disconnected notice. */
   neonConnected?: boolean;
   neonEmailVerificationEnabled?: boolean;
+  /** Next.js major version for the Neon boundary-file guidance (null = assume current). */
+  neonNextjsMajorVersion?: number | null;
   /**
    * Git-provenance explanation blocks. Off by default. Local-agent turns
    * get GIT_CONTEXT_BLOCK, build turns get BUILD_GIT_CONTEXT_BLOCK.
@@ -544,6 +547,7 @@ export const constructSystemPrompt = ({
       neonClientCode,
       neonConnected,
       neonEmailVerificationEnabled,
+      neonNextjsMajorVersion,
       gitProvenance: gitProvenance ? "local-agent" : undefined,
       enableAppBlueprint,
       codeExplorerAvailable,
@@ -563,6 +567,7 @@ export const constructSystemPrompt = ({
     neonClientCode,
     neonConnected,
     neonEmailVerificationEnabled,
+    neonNextjsMajorVersion,
     gitProvenance,
     testingEnabled,
     appTarget: appTarget ?? appTargetForFramework(caideFramework),
@@ -611,6 +616,7 @@ export const getSystemPromptForChatMode = ({
   neonClientCode,
   neonConnected,
   neonEmailVerificationEnabled,
+  neonNextjsMajorVersion,
   gitProvenance,
   testingEnabled,
   appTarget,
@@ -629,6 +635,8 @@ export const getSystemPromptForChatMode = ({
   /** False → Neon disconnected notice. */
   neonConnected?: boolean;
   neonEmailVerificationEnabled?: boolean;
+  /** Next.js major version for the Neon boundary-file guidance (null = assume current). */
+  neonNextjsMajorVersion?: number | null;
   /**
    * Git-provenance explanation block (BUILD variant). Off by default.
    */
@@ -683,6 +691,7 @@ export const getSystemPromptForChatMode = ({
         neonConnected,
         neonFrameworkType: frameworkType ?? null,
         neonEmailVerificationEnabled,
+        neonNextjsMajorVersion: neonNextjsMajorVersion ?? null,
         neonLocalAgentMode: false,
       });
       return invariants ? `\n\n<provider_invariants>\n${invariants}\n</provider_invariants>` : "";

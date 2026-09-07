@@ -11,6 +11,8 @@ export {
   executeGitDiff,
   executeGitLog,
   executeGitCommit,
+  runGit,
+  runGitBuffer,
   GitToolError,
 } from "./gitTools.ts";
 export {

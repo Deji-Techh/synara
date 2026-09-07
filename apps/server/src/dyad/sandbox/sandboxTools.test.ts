@@ -147,8 +147,9 @@ describe("dyad sandbox transplant (m2b)", () => {
   it("lists, waits for, and cancels subagents", async () => {
     clearTaskRegistries();
     expect(await listAgentsTool.execute({}, toolCtx("/tmp"))).toMatch(/No sub-agent threads/);
-    const running = registerSubagentTask("explorer");
-    const settled = registerSubagentTask("reviewer");
+    const running = registerSubagentTask("explorer", "test-session");
+    const settled = registerSubagentTask("reviewer", "test-session");
+    registerSubagentTask("other-chat", "s-elsewhere");
     settleSubagentTask(settled.id, {
       status: "completed",
       result: { stepCount: 1, finalText: "ok" },
@@ -157,6 +158,7 @@ describe("dyad sandbox transplant (m2b)", () => {
     expect(list).toContain(running.id);
     expect(list).toContain("running");
     expect(list).toContain(settled.id);
+    expect(list).not.toContain("other-chat");
 
     const waited = (await waitAgentsTool.execute(
       { thread_ids: [settled.id, "unknown-id"] },

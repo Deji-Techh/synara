@@ -6,7 +6,7 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   ALL_CHAT_HISTORY_TOOLS,
   executeExploreChatHistory,
@@ -30,6 +30,10 @@ function token(content: string): Record<string, unknown> {
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-chathist-"));
   process.env.CAIDE_SESSIONS_DIR = dir;
+});
+
+afterEach(() => {
+  delete process.env.CAIDE_SESSIONS_DIR;
 });
 
 describe("dyad chat history tools", () => {

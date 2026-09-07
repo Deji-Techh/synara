@@ -42,11 +42,37 @@ function keyPathForSecretsFile(filePath: string): string {
 }
 
 function loadOrCreateKey(keyPath: string): Buffer {
+  const existing = loadKey(keyPath);
+  if (existing) return existing;
+  return createKey(keyPath);
+}
+
+/**
+ * Read-only key load. Returns null when missing or the wrong size — reads
+ * must NEVER create or overwrite keys (a copied ciphertext without its key
+ * reads as empty instead of orphaning data with a fresh key).
+ */
+function loadKey(keyPath: string): Buffer | null {
   try {
     const raw = fs.readFileSync(keyPath);
     if (raw.length === KEY_BYTES) return raw;
+    return null;
   } catch {
-    // missing or wrong size — create below
+    return null;
+  }
+}
+
+/** Create (or rotate, with warning) the machine-local key. Write path only. */
+function createKey(keyPath: string): Buffer {
+  let rotated = false;
+  try {
+    const raw = fs.readFileSync(keyPath);
+    rotated = raw.length !== KEY_BYTES;
+  } catch {
+    rotated = false;
+  }
+  if (rotated) {
+    console.warn("[providers] key file has unexpected size — rotating to a fresh key");
   }
   const key = crypto.randomBytes(KEY_BYTES);
   fs.mkdirSync(path.dirname(keyPath), { recursive: true });
@@ -113,7 +139,10 @@ function readFile(filePath: string): ProviderSecretsFile {
     const raw = fs.readFileSync(filePath, "utf8");
     const parsed = JSON.parse(raw) as Partial<ProviderSecretsFile> & { encrypted?: EncryptedPayload };
     if (parsed && typeof parsed === "object" && parsed.version === 2 && parsed.encrypted) {
-      const key = loadOrCreateKey(keyPathForSecretsFile(filePath));
+      // Read-only key load: without the matching key the file reads as
+      // empty — never mint a replacement key on the read path.
+      const key = loadKey(keyPathForSecretsFile(filePath));
+      if (!key) return { ...EMPTY, providers: {} };
       const payload = decryptProviders(parsed.encrypted, key);
       if (payload && typeof payload.providers === "object" && payload.providers !== null) {
         return {

@@ -483,6 +483,8 @@ export function constructLocalAgentPrompt(
     /** False → Neon disconnected notice. */
     neonConnected?: boolean;
     neonEmailVerificationEnabled?: boolean;
+    /** Next.js major version for the Neon boundary-file guidance (null = assume current). */
+    neonNextjsMajorVersion?: number | null;
     /**
      * Git-provenance explanation block. Off by default (the turn pipeline
      * does not attach commit reminders yet — that lands with the
@@ -574,6 +576,7 @@ export function constructLocalAgentPrompt(
     neonConnected: options?.neonConnected,
     neonFrameworkType: options?.frameworkType ?? null,
     neonEmailVerificationEnabled: options?.neonEmailVerificationEnabled,
+    neonNextjsMajorVersion: options?.neonNextjsMajorVersion ?? null,
     neonLocalAgentMode: true,
   });
   if (providerInvariants) {

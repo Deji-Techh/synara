@@ -11,7 +11,7 @@ export type TurnChatMode = "build" | "ask" | "agent" | "plan";
 
 /**
  * Normalize a stored or requested mode. Returns null for unknown values
- * (caller falls back to default). Legacy "local-agent" is preserved as-is;
+ * (caller falls back to default). Legacy "local-agent" maps to "agent";
  * "build" stays "build" (runner maps it to the local-agent engine).
  */
 export function normalizeStoredChatMode(value: unknown): TurnChatMode | null {

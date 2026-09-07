@@ -122,4 +122,21 @@ describe("provider connection probes", () => {
     expect(new ProviderSecretsStore(file).read()).toEqual({ version: 1, providers: {} });
     expect(isEncryptedSecretsFile(file)).toBe(false);
   });
+
+  it("never mints keys on read: missing or wrong-size keys read empty", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-secnokey-"));
+    const file = path.join(dir, "providers.json");
+    // v2 envelope with no key file present.
+    fs.writeFileSync(
+      file,
+      JSON.stringify({ version: 2, encrypted: { iv: "x", tag: "y", data: "z" } }),
+    );
+    expect(new ProviderSecretsStore(file).read()).toEqual({ version: 1, providers: {} });
+    expect(fs.existsSync(path.join(dir, ".providers.key"))).toBe(false);
+
+    // Wrong-size key file is left untouched by reads.
+    fs.writeFileSync(path.join(dir, ".providers.key"), Buffer.from([1, 2, 3]));
+    expect(new ProviderSecretsStore(file).read()).toEqual({ version: 1, providers: {} });
+    expect(fs.readFileSync(path.join(dir, ".providers.key"))).toEqual(Buffer.from([1, 2, 3]));
+  });
 });

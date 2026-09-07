@@ -25,6 +25,8 @@ export type SubagentStatus = "running" | "completed" | "failed";
 export interface SubagentTask {
   id: string;
   role: string;
+  /** Owning session (chat scoping for list_agents). */
+  sessionId: string;
   status: SubagentStatus;
   result?: SubagentResult;
   error?: string;
@@ -82,10 +84,11 @@ export function formatTaskStatus(id: string): string {
   ].join("\n");
 }
 
-export function registerSubagentTask(role: string): SubagentTask {
+export function registerSubagentTask(role: string, sessionId = ""): SubagentTask {
   const task: SubagentTask = {
     id: `subagent-${Date.now()}-${++subagentCounter}`,
     role,
+    sessionId,
     status: "running",
   };
   subagentTasks.set(task.id, task);
@@ -97,7 +100,12 @@ export function settleSubagentTask(
   patch: Partial<Pick<SubagentTask, "status" | "result" | "error">>,
 ): void {
   const task = subagentTasks.get(id);
-  if (task) Object.assign(task, patch);
+  if (!task) return;
+  Object.assign(task, patch);
+  // Terminal tasks need no cancellation handle — evict to bound growth.
+  if (isSubagentTerminal(task)) {
+    subagentCancelControllers.delete(id);
+  }
 }
 
 export function formatSubagentStatus(id: string): string {
@@ -121,9 +129,11 @@ export function clearTaskRegistries(): void {
   subagentCancelControllers.clear();
 }
 
-/** Snapshot of all known subagent tasks (donor listSubagents parity). */
-export function listSubagentTasks(): SubagentTask[] {
-  return [...subagentTasks.values()];
+/** Snapshot of subagent tasks, optionally scoped to one session (chat). */
+export function listSubagentTasks(sessionId?: string): SubagentTask[] {
+  const all = [...subagentTasks.values()];
+  if (sessionId === undefined) return all;
+  return all.filter((t) => t.sessionId === sessionId);
 }
 
 /** True when the task reached a terminal state. */
@@ -143,12 +153,15 @@ export function setSubagentCancelController(id: string, controller: AbortControl
 
 /**
  * Request cancellation of a running sub-agent. Returns false when the id
- * is unknown or already terminal. The runner settles the task as failed
+ * is unknown, already terminal, or has no live cancellation handle (no
+ * false "requested" reports). The runner settles the task as failed
  * with a cancellation note when the abort lands.
  */
 export function requestSubagentCancel(id: string): boolean {
   const task = subagentTasks.get(id);
   if (!task || isSubagentTerminal(task)) return false;
-  subagentCancelControllers.get(id)?.abort(`cancel_agent ${id}`);
+  const controller = subagentCancelControllers.get(id);
+  if (!controller) return false;
+  controller.abort(`cancel_agent ${id}`);
   return true;
 }

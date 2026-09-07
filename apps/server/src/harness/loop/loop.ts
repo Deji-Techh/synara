@@ -63,7 +63,9 @@ export interface LoopOptions {
    * Semantic stop tools (donor stopWhen seam): when a step executes any of
    * these tools, the turn ends after the step's remaining calls complete
    * (e.g. add_integration hands off to the UI flow; write_plan/exit_plan
-   * hand off to the plan continue-gate). Defaults to no semantic stop.
+   * hand off to the plan continue-gate). Only successful completions stop
+   * the turn — a failed handoff call lets the model fix and retry instead
+   * of stranding the turn at the continue-gate. Defaults to no semantic stop.
    */
   stopAfterTool?: string[];
 }

@@ -84,13 +84,38 @@ async function detectHook(appPath: string): Promise<DetectedHook | null> {
     const scripts = (JSON.parse(pkgRaw) as { scripts?: Record<string, string> }).scripts ?? {};
     for (const scriptName of ["precommit", "pre-commit"]) {
       if (typeof scripts[scriptName] === "string") {
-        return { kind: "npm-script", command: "bun", args: ["run", scriptName], scriptName };
+        return {
+          kind: "npm-script",
+          ...packageRunner(appPath),
+          args: ["run", scriptName],
+          scriptName,
+        };
       }
     }
   } catch {
     // no package.json or unreadable
   }
   return null;
+}
+
+/**
+ * Package runner for npm-script hooks: lockfile decides (bun/pnpm/yarn/
+ * npm), defaulting to bun. Caide workspaces are bun-first, but scaffolded
+ * website apps may carry other lockfiles.
+ */
+function packageRunner(appPath: string): { command: string } {
+  const exists = (name: string): boolean => {
+    try {
+      fs.accessSync(path.join(appPath, name));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  if (exists("bun.lockb") || exists("bun.lock")) return { command: "bun" };
+  if (exists("pnpm-lock.yaml")) return { command: "pnpm" };
+  if (exists("yarn.lock")) return { command: "yarn" };
+  return { command: "npm" };
 }
 
 function truncateOutput(content: string): string {

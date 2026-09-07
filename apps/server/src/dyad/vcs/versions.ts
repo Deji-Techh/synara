@@ -108,7 +108,6 @@ export async function createVersion(
 /** List versions newest-first (metadata log joined with git history). */
 export async function listVersions(appPath: string, limit = 30, signal?: AbortSignal): Promise<AppVersion[]> {
   const log = readVersionLog(appPath);
-  const byHash = new Map(log.map((e) => [e.hash, e]));
   // Verify hashes still exist (history rewrites drop them).
   const existing = new Set<string>();
   try {

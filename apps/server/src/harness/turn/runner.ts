@@ -58,6 +58,18 @@ function chatModeFor(mode: ChatMode): "build" | "ask" | "local-agent" | "plan" {
   return mode;
 }
 
+/**
+ * Clamp a step budget to a sane positive integer. Non-finite, zero, and
+ * negative inputs fall back to the default instead of producing a turn
+ * that never calls the LLM.
+ */
+function normalizeMaxSteps(value: number | undefined): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 1) {
+    return DEFAULT_MAX_TOOL_CALL_STEPS;
+  }
+  return Math.floor(value);
+}
+
 export class CaideRunner {
   private flow = new TurnFlow();
   private status: RunnerStatus = "created";
@@ -176,7 +188,7 @@ export class CaideRunner {
       const stream = runLoop({
         sessionId: input.sessionId,
         turnId,
-        maxSteps: input.maxSteps ?? input.settings?.maxToolCallSteps ?? DEFAULT_MAX_TOOL_CALL_STEPS,
+        maxSteps: normalizeMaxSteps(input.maxSteps ?? input.settings?.maxToolCallSteps),
         signal: controller.signal,
         inbox: input.inbox,
         llm,
