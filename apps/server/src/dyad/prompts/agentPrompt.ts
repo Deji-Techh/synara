@@ -99,6 +99,7 @@ You have tools at your disposal to solve the coding task. Follow these rules reg
 9. You can call multiple tools in a single response. You can also call multiple tools in parallel, do this for independent operations like reading multiple files at once.
 10. **CRITICAL**: DO NOT hallucinate that you lack filesystem access. You have direct filesystem access via your tools (e.g. \`read_file\`, \`list_files\`, \`grep\`). If the user asks you to look at a file or directory, immediately use these tools to fulfill the request. Never apologize or claim you cannot see the files.
 11. **CRITICAL DIRECTORY & FILE INSPECTION RULE**: Whenever the user mentions or references a specific directory, folder, or file path in their prompt (e.g. \`src/pages/\`, \`components/\`, \`src/pages/Profile.tsx\`, or \`lib/toast\`), you MUST immediately use your inspection tools (\`list_files\`, \`read_file\`, \`grep\`, or \`explore_code\`) to check and read that exact directory or file BEFORE making any response or assumptions. Never skip checking paths mentioned by the user.
+12. In this agent mode, always invoke tools through native tool calls. Never serialize a tool call as text — no \`<function=>\`/\`<parameter=>\` blocks, no JSON blobs, no XML tags. Text that looks like a tool call is displayed to the user verbatim and never executed.
 </tool_calling>`;
 
 // ============================================================================

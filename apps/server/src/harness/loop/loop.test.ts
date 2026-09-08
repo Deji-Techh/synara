@@ -462,4 +462,110 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
     expect(signals).toHaveLength(1);
     expect(signals[0]).toMatchObject({ reason: "estimated-context" });
   });
+
+  it("recovers text-serialized <function=> calls into real tool executions", async () => {
+    let steps = 0;
+    const fakeLlm: LLMAdapter = {
+      async *stream() {
+        steps += 1;
+        if (steps === 1) {
+          yield {
+            type: "token",
+            content:
+              'Writing the profile screen.\n<function=write_file><parameter=content>hello</parameter><parameter=path>app/profile.tsx</parameter></function>',
+          };
+        } else {
+          yield { type: "token", content: "Done." };
+        }
+      },
+    };
+    const executed: Array<{ name: string; args: unknown }> = [];
+    const writeTool: ToolDefinition = {
+      name: "write_file",
+      description: "writes",
+      execute: async (args: any) => {
+        executed.push({ name: "write_file", args });
+        return { ok: true };
+      },
+    };
+    const events: HarnessEvent[] = [];
+    const loop = runLoop({
+      sessionId: "session-recovery",
+      maxSteps: 5,
+      llm: fakeLlm,
+      tools: [writeTool],
+      buildMessages: () => [{ role: "user", content: "write it" }],
+      onEvent: (ev) => events.push(ev),
+    });
+    for await (const _ of loop) {
+      // drain
+    }
+    expect(executed).toEqual([
+      { name: "write_file", args: { content: "hello", path: "app/profile.tsx" } },
+    ]);
+    const statuses = events
+      .filter((e) => e.type === "tool_call")
+      .map((e) => (e as any).status);
+    expect(statuses).toEqual(["started", "completed"]);
+  });
+
+  it("skips recovery when native calls exist and ignores unknown tools", async () => {
+    let steps = 0;
+    const fakeLlm: LLMAdapter = {
+      async *stream() {
+        steps += 1;
+        if (steps === 1) {
+          yield { type: "token", content: " aquick note " };
+          yield {
+            type: "tool_call",
+            toolCall: { id: "c1", name: "read_file", args: { path: "a.ts" } },
+          };
+        } else if (steps === 2) {
+          yield {
+            type: "token",
+            content: "<function=definitely_not_a_tool><parameter=x>y</parameter></function>",
+          };
+        } else {
+          yield { type: "token", content: "Done." };
+        }
+      },
+    };
+    const executed: string[] = [];
+    const tools: ToolDefinition[] = [
+      {
+        name: "read_file",
+        description: "reads",
+        readOnly: true,
+        execute: async () => {
+          executed.push("read_file");
+          return "content";
+        },
+      },
+      {
+        name: "write_file",
+        description: "writes",
+        execute: async () => {
+          executed.push("write_file");
+          return { ok: true };
+        },
+      },
+    ];
+    const events: HarnessEvent[] = [];
+    const loop = runLoop({
+      sessionId: "session-recovery-skip",
+      maxSteps: 5,
+      llm: fakeLlm,
+      tools,
+      buildMessages: () => [{ role: "user", content: "go" }],
+      onEvent: (ev) => events.push(ev),
+    });
+    for await (const _ of loop) {
+      // drain
+    }
+    // Native call ran; the unknown text call produced no tool events.
+    expect(executed).toEqual(["read_file"]);
+    expect(
+      events.filter((e) => e.type === "tool_call" && (e as any).name === "definitely_not_a_tool"),
+    ).toHaveLength(0);
+  });
 });

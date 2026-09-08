@@ -2,6 +2,7 @@ import type { HarnessEvent } from "@caide/contracts";
 import type { ChatMessage, HarnessRole } from "../session/buildChain.ts";
 import { Inbox } from "../inbox/index.ts";
 import { safeEmitLive } from "./events.ts";
+import { recoverTextToolCalls } from "./textToolCallRecovery.ts";
 import type { ConsentRequestFn, ConsentStore } from "../../dyad/tools/permissions.ts";
 
 export interface ToolCallContext {
@@ -313,6 +314,7 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
 
       const toolList = Array.from(toolMap.values());
       const pendingToolCalls: Array<{ id: string; name: string; args: unknown }> = [];
+      let stepText = "";
 
       // Stream LLM response (per-step routing may swap the adapter).
       const streamOpts: { tools: ToolDefinition[]; signal?: AbortSignal } = { tools: toolList };
@@ -331,6 +333,7 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
             if (signal?.aborted) break;
 
             if (chunk.type === "token" && chunk.content) {
+              stepText += chunk.content;
               yield emit({
                 type: "token",
                 sessionId,
@@ -360,6 +363,17 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
 
       if (signal?.aborted) {
         break;
+      }
+
+      // If no tool calls occurred, the model may have serialized them as
+      // text (<function=> blocks or dyad-write tags — common on weak models
+      // without reliable native function calling). Recover those onto
+      // registry tools so the work executes instead of leaking into chat.
+      // Native calls always win: recovery runs only on zero native calls.
+      if (pendingToolCalls.length === 0 && stepText) {
+        for (const recovered of recoverTextToolCalls(stepText, (name) => toolMap.has(name))) {
+          pendingToolCalls.push(recovered);
+        }
       }
 
       // If no tool calls occurred, LLM completed its generation for the turn

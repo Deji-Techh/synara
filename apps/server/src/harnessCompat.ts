@@ -2524,7 +2524,40 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                   c = lines.join("\n").trim();
                   if (p && c && p !== "." && p !== "/" && p !== "") fallbackWrites.push({ path: p, content: c });
                 }
-                // 2) JSON-ish: {"path":"src/App.tsx","content":"..."} or {"path":".","content":...}
+                // 2) <function=> text-serialized calls (weak models without
+                // native function calling). Only write_file is executed here,
+                // mirroring the XML/JSON fallback scope; every other tool is
+                // covered by loop text-recovery with consent gating. Skips
+                // paths already written by a completed tool call this turn so
+                // loop-recovered writes are never applied twice.
+                // Only if no XML tags were found to avoid double-executing.
+                if (fallbackWrites.length === 0) {
+                  const { parseFunctionTagCalls } = await import(
+                    "./harness/utils/caideTagParser.ts"
+                  );
+                  const completedWriteRe =
+                    /<caide-tool[^>]*name="write_file"[^>]*status="complete"[^>]*>([\s\S]*?)<\/caide-tool>/gi;
+                  const completedBodies: string[] = [];
+                  let cm: RegExpExecArray | null;
+                  while ((cm = completedWriteRe.exec(text)) !== null) {
+                    completedBodies.push(cm[1] ?? "");
+                  }
+                  for (const call of parseFunctionTagCalls(text)) {
+                    if (call.name !== "write_file") continue;
+                    const p = (call.args.path ?? "").trim();
+                    const c = call.args.content ?? "";
+                    if (!p || !c || p === "." || p === "/") continue;
+                    if (
+                      completedBodies.some(
+                        (b) => b.includes(`"path":"${p}"`) || b.includes(`"path": "${p}"`),
+                      )
+                    ) {
+                      continue;
+                    }
+                    fallbackWrites.push({ path: p, content: c });
+                  }
+                }
+                // 3) JSON-ish: {"path":"src/App.tsx","content":"..."} or {"path":".","content":...}
                 // Only if no XML tags were found to avoid double-executing
                 if (fallbackWrites.length === 0) {
                   const jsonRe = /\{\s*"path"\s*:\s*"([^"]+)"\s*(?:,\s*"content"\s*:\s*"([\s\S]*?)"\s*)?\}/g;
@@ -2570,9 +2603,10 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                       flushAssistantMessageImmediate(assistantMsg);
                     }
                   }
-                  // Strip the leaked tag/JSON from displayed text to avoid duplication + {"path":"."}
+                  // Strip the leaked tag/JSON to avoid duplication + {"path":"."}
                   assistantMsg.text = assistantMsg.text
                     .replace(/<(?:caide|dyad)-write[^>]*>[\s\S]*?<\/(?:caide|dyad)-write>/gi, "")
+                    .replace(/<function\s*=\s*"?(?:write_file)"?[^>]*>[\s\S]*?<\/function\s*>/gi, "")
                     .replace(/\{\s*"path"\s*:\s*"[^"]*"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g, "")
                     .replace(/\n{3,}/g, "\n\n")
                     .trim();

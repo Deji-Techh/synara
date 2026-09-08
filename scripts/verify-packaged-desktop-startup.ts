@@ -211,6 +211,11 @@ export function createPackagedDesktopSmokeEnvironment(
   };
   delete env.CAIDE_AUTH_TOKEN;
   delete env.ELECTRON_RUN_AS_NODE;
+  // The extracted payload locates its own AppDir; a host AppImage session
+  // (e.g. an agent running inside one) exports a stale APPDIR/APPIMAGE that
+  // would otherwise redirect the launch into a foreign mount (exit 127).
+  delete env.APPDIR;
+  delete env.APPIMAGE;
   for (const path of [
     env.HOME,
     env.APPDATA,
