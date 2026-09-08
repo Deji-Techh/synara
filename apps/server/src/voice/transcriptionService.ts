@@ -205,6 +205,26 @@ function isAuthFailure(status: number, body: string): boolean {
   return status === 400 && /api key not valid|api_key_invalid|invalid.*api.?key/i.test(body);
 }
 
+/**
+ * Undici network failures surface as a bare "fetch failed" with the real
+ * reason (DNS, TCP timeout, refused) hidden in `cause`. Surface it so the
+ * 400 aggregate actually says which leg of the network broke.
+ */
+export function describeFetchError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  const cause = err instanceof Error ? (err as { cause?: unknown }).cause : undefined;
+  const causeMsg =
+    cause instanceof Error
+      ? `${cause.name}${(cause as NodeJS.ErrnoException).code ? ` (${(cause as NodeJS.ErrnoException).code})` : ""}: ${cause.message}`
+      : typeof cause === "object" && cause !== null
+        ? JSON.stringify(cause).slice(0, 200)
+        : typeof cause === "string" && cause
+          ? cause.slice(0, 200)
+          : "";
+  if (causeMsg && !msg.includes(causeMsg)) return `${msg} [cause: ${causeMsg}]`;
+  return msg;
+}
+
 async function transcribeWithGemini(
   apiKey: string,
   audioBase64: string,
@@ -386,7 +406,7 @@ export async function transcribeVoiceAudio(
       // resolves to "" (client shows "No speech detected") instead of an error.
       sawEmpty = true;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = describeFetchError(err);
       console.warn(`[transcription] ${entry.provider} failed, trying next. Error: ${msg}`);
       errors.push(`${entry.provider}: ${msg}`);
     }

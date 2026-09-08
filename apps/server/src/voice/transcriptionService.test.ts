@@ -162,6 +162,14 @@ describe("transcriptionService", () => {
     }
   });
 
+  it("surfaces the fetch cause (dns/timeout/refused) instead of bare 'fetch failed'", async () => {
+    const err = new Error("fetch failed") as Error & { cause?: unknown };
+    err.cause = Object.assign(new Error("getaddrinfo ENOTFOUND x"), { code: "ENOTFOUND" });
+    const { describeFetchError } = await import("./transcriptionService");
+    expect(describeFetchError(err)).toContain("ENOTFOUND");
+    expect(describeFetchError(new Error("boom"))).toBe("boom");
+  });
+
   it("falls through to the next provider when gemini rejects the key", async () => {
     const originalFetch = globalThis.fetch;
     process.env.GEMINI_API_KEY = "bad-key";
