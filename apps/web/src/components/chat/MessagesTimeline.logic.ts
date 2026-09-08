@@ -317,19 +317,22 @@ type AssistantMessageDisplayInput = {
   readonly collapsedTurnItems?: ReadonlyArray<CollapsedTurnItem>;
 };
 
-function isVisibleGeneratedImageEntry(entry: WorkLogEntry): boolean {
-  return (
-    entry.itemType === "image_generation" &&
-    entry.activityKind === "tool.completed" &&
-    entry.tone !== "error"
-  );
+/**
+ * Any completed, non-error tool row is visible non-text output (reads,
+ * searches, writes, commands, generated images). A settled tool-only turn
+ * did real work, so it must not wear the misleading "(empty response)"
+ * placeholder.
+ */
+function isVisibleCompletedToolEntry(entry: WorkLogEntry): boolean {
+  return entry.activityKind === "tool.completed" && entry.tone !== "error";
 }
 
 /**
- * Resolves the markdown body for an assistant row. A completed image-generation
- * work item is already visible non-text output, so an adjacent empty provider
- * message must not add the misleading "(empty response)" placeholder. Truly
- * empty settled turns retain the placeholder, and live empty text stays blank.
+ * Resolves the markdown body for an assistant row. A completed tool row or
+ * image-generation work item is already visible non-text output, so an
+ * adjacent empty provider message must not add the misleading
+ * "(empty response)" placeholder. Truly empty settled turns retain the
+ * placeholder, and live empty text stays blank.
  */
 export function resolveAssistantMessageDisplayText(
   input: AssistantMessageDisplayInput,
@@ -341,15 +344,15 @@ export function resolveAssistantMessageDisplayText(
     return "";
   }
 
-  const hasVisibleGeneratedImage = [
+  const hasVisibleWorkOutput = [
     ...(input.leadingWorkEntries ?? []),
     ...(input.inlineWorkEntries ?? []),
     ...(input.collapsedTurnItems ?? []).flatMap((item) =>
       item.kind === "work" ? [item.entry] : [],
     ),
-  ].some(isVisibleGeneratedImageEntry);
+  ].some(isVisibleCompletedToolEntry);
 
-  return hasVisibleGeneratedImage ? null : "(empty response)";
+  return hasVisibleWorkOutput ? null : "(empty response)";
 }
 
 // Builds the "Files changed" lookup keyed by the last assistant row in the

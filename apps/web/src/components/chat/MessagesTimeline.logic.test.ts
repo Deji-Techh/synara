@@ -794,6 +794,53 @@ describe("resolveAssistantMessageDisplayText", () => {
     ).toBeNull();
   });
 
+  it("suppresses the placeholder for settled tool-only turns", () => {
+    const readEntry = {
+      id: "explored-files",
+      createdAt: "2026-07-08T10:00:00.000Z",
+      label: "Explored 1 file",
+      tone: "tool" as const,
+      itemType: "dynamic_tool_call" as const,
+      activityKind: "tool.completed",
+    };
+    expect(
+      resolveAssistantMessageDisplayText({
+        message: { text: "", streaming: false },
+        inlineWorkEntries: [readEntry],
+      }),
+    ).toBeNull();
+    expect(
+      resolveAssistantMessageDisplayText({
+        message: { text: "", streaming: false },
+        leadingWorkEntries: [readEntry],
+      }),
+    ).toBeNull();
+  });
+
+  it("keeps the placeholder when the only tool rows failed or never ran", () => {
+    const base = {
+      id: "explored-files",
+      createdAt: "2026-07-08T10:00:00.000Z",
+      label: "Explored 1 file",
+      tone: "tool" as const,
+      itemType: "dynamic_tool_call" as const,
+    };
+    expect(
+      resolveAssistantMessageDisplayText({
+        message: { text: "", streaming: false },
+        inlineWorkEntries: [{ ...base, activityKind: "tool.started" }],
+      }),
+    ).toBe("(empty response)");
+    expect(
+      resolveAssistantMessageDisplayText({
+        message: { text: "", streaming: false },
+        inlineWorkEntries: [
+          { ...base, activityKind: "tool.completed", tone: "error" as const },
+        ],
+      }),
+    ).toBe("(empty response)");
+  });
+
   it("keeps the placeholder when a settled turn produced no visible content", () => {
     expect(
       resolveAssistantMessageDisplayText({
