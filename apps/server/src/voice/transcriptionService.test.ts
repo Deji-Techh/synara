@@ -1,11 +1,35 @@
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { resetSharedProviderSecrets } from "../dyad/providers/secrets";
 import {
   getVoiceApiKey,
   resolveAllVoiceProviders,
   resolveBestVoiceProvider,
   transcribeVoiceAudio,
 } from "./transcriptionService";
+
+/**
+ * Point key resolution at an empty home so ambient developer keys (env or
+ * ~/.caide files) can't leak into ordering assertions. Restores afterwards.
+ */
+function isolateKeyStore(): () => void {
+  const prevHome = process.env.HOME;
+  const prevCaideHome = process.env.CAIDE_HOME;
+  const tmp = mkdtempSync(join(tmpdir(), "caide-voice-keys-"));
+  process.env.HOME = tmp;
+  process.env.CAIDE_HOME = tmp;
+  resetSharedProviderSecrets();
+  return () => {
+    if (prevHome === undefined) delete process.env.HOME;
+    else process.env.HOME = prevHome;
+    if (prevCaideHome === undefined) delete process.env.CAIDE_HOME;
+    else process.env.CAIDE_HOME = prevCaideHome;
+    resetSharedProviderSecrets();
+  };
+}
 
 const WAV_BASE64 = Buffer.from(
   "RIFF" +
@@ -22,6 +46,7 @@ afterEach(() => {
 
 describe("transcriptionService", () => {
   it("resolves google provider when key is available", () => {
+    const restoreKeys = isolateKeyStore();
     const originalEnv = process.env.GEMINI_API_KEY;
     process.env.GEMINI_API_KEY = "test-gemini-key";
 
@@ -36,6 +61,7 @@ describe("transcriptionService", () => {
       } else {
         delete process.env.GEMINI_API_KEY;
       }
+      restoreKeys();
     }
   });
 
@@ -107,24 +133,27 @@ describe("transcriptionService", () => {
     }
   });
 
-  it("prefers gemini over chat providers and demotes zen/go last", () => {
+  it("puts groq first whenever configured and demotes zen/go last", () => {
+    const restoreKeys = isolateKeyStore();
     process.env.GEMINI_API_KEY = "test-gemini-key";
+    process.env.GROQ_API_KEY = "test-groq-key";
     process.env.OPENCODE_ZEN_API_KEY = "test-zen-key";
     process.env.OPENCODE_GO_API_KEY = "test-go-key";
     try {
-      for (const preferred of ["ai-model", "auto", undefined, "opencodeZen", "opencodeGo"]) {
+      for (const preferred of ["ai-model", "auto", undefined, "opencodeZen", "opencodeGo", "google", "groq"]) {
         const order = resolveAllVoiceProviders(preferred).map((p) => p.provider);
-        expect(order[0]).toBe("google");
+        expect(order[0]).toBe("groq");
         expect(order.slice(-2)).toEqual(["opencodeZen", "opencodeGo"]);
       }
-      // Explicit whisper preference with a key stays first.
-      process.env.GROQ_API_KEY = "test-groq-key";
-      expect(resolveAllVoiceProviders("groq")[0]?.provider).toBe("groq");
+      // Without a groq key, an explicit capable preference leads.
+      delete process.env.GROQ_API_KEY;
+      expect(resolveAllVoiceProviders("google")[0]?.provider).toBe("google");
     } finally {
       delete process.env.GEMINI_API_KEY;
       delete process.env.OPENCODE_ZEN_API_KEY;
       delete process.env.OPENCODE_GO_API_KEY;
       delete process.env.GROQ_API_KEY;
+      restoreKeys();
     }
   });
 

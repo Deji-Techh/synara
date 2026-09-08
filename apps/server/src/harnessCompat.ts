@@ -1299,8 +1299,11 @@ export class OrchestrationEngineService extends ServiceMap.Service<
             } catch {
               // ignore
             }
-            if (!command.skipInitialThread && !inMemoryThreads.some((t: any) => t.projectId === command.projectId)) {
-              const initialThreadId = `thread-${command.projectId}`;
+            const initialThreadId = `thread-${command.projectId}`;
+            const shouldEnsureInitialThread =
+              !command.skipInitialThread &&
+              !inMemoryThreads.some((t: any) => t.projectId === command.projectId);
+            if (shouldEnsureInitialThread) {
               inMemoryThreads.push({
                 id: initialThreadId,
                 projectId: command.projectId,
@@ -1376,25 +1379,31 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               },
               createdAt: now,
             });
-            globalSnapshotSequence += 1;
-            publishDomainEvent({
-              sequence: globalSnapshotSequence,
-              aggregateKind: "thread",
-              aggregateId: initialThreadId,
-              type: "thread.meta-updated",
-              payload: {
-                threadId: initialThreadId,
-                title: command.title ?? "Chat",
-                projectId: command.projectId,
-                modelSelection: command.defaultModelSelection ?? {
-                  provider: "opencodeZen",
-                  model: "default",
+            // Only announce the initial thread when we actually ensured it —
+            // otherwise (skipped, or the project already has threads, e.g. a
+            // duplicate app name) there is nothing new to broadcast, and the
+            // id would be meaningless to clients.
+            if (shouldEnsureInitialThread) {
+              globalSnapshotSequence += 1;
+              publishDomainEvent({
+                sequence: globalSnapshotSequence,
+                aggregateKind: "thread",
+                aggregateId: initialThreadId,
+                type: "thread.meta-updated",
+                payload: {
+                  threadId: initialThreadId,
+                  title: command.title ?? "Chat",
+                  projectId: command.projectId,
+                  modelSelection: command.defaultModelSelection ?? {
+                    provider: "opencodeZen",
+                    model: "default",
+                  },
+                  createdAt: now,
+                  updatedAt: now,
                 },
                 createdAt: now,
-                updatedAt: now,
-              },
-              createdAt: now,
-            });
+              });
+            }
           }
         } else if (command?.type === "project.meta.update") {
           const existing = inMemoryProjects.find((p) => p.id === command.projectId);

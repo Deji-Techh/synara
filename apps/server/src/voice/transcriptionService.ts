@@ -144,9 +144,11 @@ const WHISPER_PROVIDERS: Array<{ provider: VoiceTranscriptionProvider; baseUrl?:
  * `preferred` value arriving here is the user's *chat* provider (the voice
  * setting is only "ai-model" vs "web-speech"), and OpenCode Zen/Go expose no
  * audio endpoint (verified live: `/audio/transcriptions` returns the website
- * HTML). So Gemini — the only native-audio backend — goes first whenever its
- * key is configured, Whisper-compatible providers follow, and Zen/Go stay as
- * a last resort in case the vendor adds an audio route later.
+ * HTML). So Groq — the dedicated Whisper backend with per-minute rather
+ * than tiny daily-bucket limits — goes first whenever its key is configured,
+ * then an explicit capable preference, then Gemini and the remaining
+ * Whisper-compatible providers, with Zen/Go as a last resort in case the
+ * vendor adds an audio route later.
  */
 export function resolveAllVoiceProviders(preferred?: string): ProviderEntry[] {
   const seen = new Set<VoiceTranscriptionProvider>();
@@ -164,17 +166,19 @@ export function resolveAllVoiceProviders(preferred?: string): ProviderEntry[] {
   const prefersWhisper =
     norm === "groq" || norm === "openai" || norm === "openrouter" ? norm : null;
 
-  // 1. Explicit, transcription-capable preference with a configured key.
+  // 1. Groq first whenever configured: dedicated Whisper backend with
+  // per-minute (not tiny daily-bucket) limits — the reliable default.
+  push("groq", getVoiceApiKey("groq"));
+
+  // 2. Explicit, transcription-capable preference with a configured key.
   if (prefersGoogle) push("google", getVoiceApiKey("google"));
   if (prefersWhisper) {
     const entry = WHISPER_PROVIDERS.find((w) => w.provider === prefersWhisper);
     if (entry) push(entry.provider, getVoiceApiKey(entry.provider), entry.baseUrl);
   }
 
-  // 2. Gemini first whenever configured ("ai-model" setting + gemini key).
+  // 3. Gemini, then remaining Whisper-compatible providers.
   push("google", getVoiceApiKey("google"));
-
-  // 3. Whisper-compatible providers.
   for (const entry of WHISPER_PROVIDERS) {
     push(entry.provider, getVoiceApiKey(entry.provider), entry.baseUrl);
   }
