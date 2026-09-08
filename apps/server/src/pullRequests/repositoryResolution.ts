@@ -171,9 +171,51 @@ function resolveGitHubRemote(
   );
 }
 
+/**
+ * Best-effort repository root for `cwd` (null when undiscoverable). Used only
+ * to bound discovery: git walks up past the project, so a project without
+ * its own `.git` can inherit a totally unrelated ancestor repository (seen
+ * live: every project under $HOME attributed to the home-directory repo).
+ */
+function readTopLevel(git: GitCoreShape, cwd: string): Effect.Effect<string | null, Error> {
+  const operation = "PullRequestService.githubRepository.topLevel";
+  return git
+    .execute({
+      operation,
+      cwd,
+      args: ["rev-parse", "--show-toplevel"],
+      allowNonZeroExit: true,
+      maxOutputBytes: 16_384,
+    })
+    .pipe(
+      Effect.map((result) => {
+        if (result.code !== 0) return null;
+        const trimmed = result.stdout.trim();
+        return trimmed.length > 0 ? trimmed : null;
+      }),
+      Effect.orElseSucceed(() => null),
+    );
+}
+
+function isWithinDir(dir: string, candidate: string): boolean {
+  const normalizedDir = dir.replace(/\/+$/, "");
+  const normalizedCandidate = candidate.replace(/\/+$/, "");
+  return (
+    normalizedCandidate === normalizedDir || normalizedCandidate.startsWith(`${normalizedDir}/`)
+  );
+}
+
 /** Resolve every unique GitHub repository configured by a workspace, in remote preference order. */
 export function resolveGitHubRepositories(git: GitCoreShape, cwd: string) {
   return Effect.gen(function* () {
+    // Bound the discovery to the workspace: when the discovered repository
+    // root sits above the project directory (e.g. a $HOME-level repo
+    // swallowing repo-less projects), report no repositories instead of
+    // attributing someone else's remote to this project.
+    const topLevel = yield* readTopLevel(git, cwd);
+    if (topLevel !== null && !isWithinDir(cwd, topLevel)) {
+      return { repositories: [], authoritative: true } satisfies GitHubRepositoryInventory;
+    }
     // A branch query succeeds with empty output in detached/unborn repositories and fails when
     // `cwd` is not a repository, so it also preserves the old authoritative repo boundary.
     const branch = yield* readCurrentBranch(git, cwd);
