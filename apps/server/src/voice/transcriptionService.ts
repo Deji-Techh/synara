@@ -206,6 +206,34 @@ function isAuthFailure(status: number, body: string): boolean {
 }
 
 /**
+ * Local-controller timeout (same shape as the provider connection probes,
+ * which are proven to work in every runtime we ship, including the packaged
+ * desktop server). The timer is cleared as soon as the attempt settles and
+ * unref'd so it can never hold the process open.
+ */
+function withTimeout(ms: number): { signal: AbortSignal; done: () => void } {
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    try {
+      controller.abort(new Error(`timed out after ${ms / 1000}s`));
+    } catch {
+      // already settled
+    }
+  }, ms);
+  (timer as unknown as { unref?: () => void }).unref?.();
+  let finished = false;
+  return {
+    signal: controller.signal,
+    done: () => {
+      if (!finished) {
+        finished = true;
+        clearTimeout(timer);
+      }
+    },
+  };
+}
+
+/**
  * Undici network failures surface as a bare "fetch failed" with the real
  * reason (DNS, TCP timeout, refused) hidden in `cause`. Surface it so the
  * 400 aggregate actually says which leg of the network broke.
@@ -222,6 +250,18 @@ export function describeFetchError(err: unknown): string {
           ? cause.slice(0, 200)
           : "";
   if (causeMsg && !msg.includes(causeMsg)) return `${msg} [cause: ${causeMsg}]`;
+  // Undici network failures hide everything in `cause` (no HTTP status);
+  // include its first stack frames so the next "fetch failed" names the
+  // exact call site instead of just the error class.
+  if (cause instanceof Error && cause.stack) {
+    const frames = cause.stack
+      .split("\n")
+      .slice(1, 5)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .join(" <- ");
+    if (frames) return `${msg} [cause: ${causeMsg} @ ${frames.slice(0, 400)}]`;
+  }
   return msg;
 }
 
@@ -240,6 +280,7 @@ async function transcribeWithGemini(
       { temperature: 0 },
     ];
     for (const generationConfig of configs) {
+      const timeout = withTimeout(TRANSCRIPTION_TIMEOUT_MS);
       try {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
         const response = await fetch(url, {
@@ -256,7 +297,7 @@ async function transcribeWithGemini(
             ],
             generationConfig,
           }),
-          signal: AbortSignal.timeout(TRANSCRIPTION_TIMEOUT_MS),
+          signal: timeout.signal,
         });
 
         if (!response.ok) {
@@ -295,6 +336,8 @@ async function transcribeWithGemini(
         }
         lastError = err instanceof Error ? err : new Error(String(err));
         if (/timed out/.test(lastError.message)) throw lastError;
+      } finally {
+        timeout.done();
       }
     }
   }
@@ -323,29 +366,34 @@ async function transcribeWithWhisperCompat(
       }
     : {};
 
-  const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/audio/transcriptions`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, ...extraHeaders },
-    body: formData,
-    signal: AbortSignal.timeout(TRANSCRIPTION_TIMEOUT_MS),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => "");
-    throw new Error(
-      `${providerName} Whisper API returned HTTP ${response.status}: ${errorText.slice(0, 300)}`,
-    );
-  }
-
-  let data: { text?: unknown };
+  const timeout = withTimeout(TRANSCRIPTION_TIMEOUT_MS);
   try {
-    data = (await response.json()) as { text?: unknown };
-  } catch {
-    throw new Error(
-      `${providerName} Whisper API returned a non-JSON response (endpoint may not support audio transcription).`,
-    );
+    const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/audio/transcriptions`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, ...extraHeaders },
+      body: formData,
+      signal: timeout.signal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      throw new Error(
+        `${providerName} Whisper API returned HTTP ${response.status}: ${errorText.slice(0, 300)}`,
+      );
+    }
+
+    let data: { text?: unknown };
+    try {
+      data = (await response.json()) as { text?: unknown };
+    } catch {
+      throw new Error(
+        `${providerName} Whisper API returned a non-JSON response (endpoint may not support audio transcription).`,
+      );
+    }
+    return (typeof data?.text === "string" ? data.text : "").trim();
+  } finally {
+    timeout.done();
   }
-  return (typeof data?.text === "string" ? data.text : "").trim();
 }
 
 async function tryTranscribeWithProvider(
