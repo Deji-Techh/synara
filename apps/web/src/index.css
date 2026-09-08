@@ -63,6 +63,30 @@
       background-position: -200% 0;
     }
   }
+  /* Freshly generated chat titles reveal with a left-to-right wipe (a robust
+     stand-in for a typewriter inside truncation-faded rows) plus a fade.
+     Runs once: callers remount the node via key change when the title lands. */
+  @keyframes chat-title-reveal {
+    from {
+      opacity: 0;
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      opacity: 1;
+      clip-path: inset(0 0 0 0);
+    }
+  }
+}
+
+@layer utilities {
+  .chat-title-reveal {
+    animation: chat-title-reveal 220ms ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .chat-title-reveal {
+      animation: none;
+    }
+  }
 }
 
 @layer base {

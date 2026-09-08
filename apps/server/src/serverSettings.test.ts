@@ -1,10 +1,18 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { dirname } from "node:path";
-import { DEFAULT_GIT_TEXT_GENERATION_MODEL, DEFAULT_MODEL_BY_PROVIDER } from "@caide/contracts";
+import {
+  DEFAULT_GIT_TEXT_GENERATION_MODEL,
+  DEFAULT_MODEL_BY_PROVIDER,
+  DEFAULT_SERVER_SETTINGS,
+} from "@caide/contracts";
 import { Effect, FileSystem, Layer } from "effect";
 import { describe, expect, it } from "vitest";
 import { ServerConfig } from "./config";
-import { ServerSettingsLive, ServerSettingsService } from "./serverSettings";
+import {
+  resolveChatTitleModelSelection,
+  ServerSettingsLive,
+  ServerSettingsService,
+} from "./serverSettings";
 
 const serverConfigLayer = ServerConfig.layerTest(process.cwd(), {
   prefix: "caide-settings-test-",
@@ -165,5 +173,75 @@ describe("ServerSettingsService", () => {
 
     expect(settings.textGenerationModelSelection.provider).toBe("groq");
     expect(settings.textGenerationModelSelection.model).toBe(DEFAULT_MODEL_BY_PROVIDER.groq);
+  });
+});
+
+describe("resolveChatTitleModelSelection", () => {
+  it("follows the Git writing model when no override is set", () => {
+    const settings = {
+      ...DEFAULT_SERVER_SETTINGS,
+      textGenerationModelSelection: {
+        provider: "groq" as const,
+        model: DEFAULT_MODEL_BY_PROVIDER.groq,
+      },
+    };
+    expect(resolveChatTitleModelSelection(settings)).toEqual(
+      settings.textGenerationModelSelection,
+    );
+  });
+
+  it("prefers an explicit override on an enabled provider", () => {
+    const settings = {
+      ...DEFAULT_SERVER_SETTINGS,
+      textGenerationModelSelection: {
+        provider: "groq" as const,
+        model: DEFAULT_MODEL_BY_PROVIDER.groq,
+      },
+      chatTitleModelSelection: {
+        provider: "opencodeZen" as const,
+        model: "custom-title-model",
+      },
+    };
+    expect(resolveChatTitleModelSelection(settings)).toEqual(settings.chatTitleModelSelection);
+  });
+
+  it("falls back to the Git writing model when the override provider is disabled", () => {
+    const settings = {
+      ...DEFAULT_SERVER_SETTINGS,
+      textGenerationModelSelection: {
+        provider: "groq" as const,
+        model: DEFAULT_MODEL_BY_PROVIDER.groq,
+      },
+      chatTitleModelSelection: {
+        provider: "opencodeZen" as const,
+        model: "custom-title-model",
+      },
+      providers: {
+        ...DEFAULT_SERVER_SETTINGS.providers,
+        opencodeZen: { ...DEFAULT_SERVER_SETTINGS.providers.opencodeZen, enabled: false },
+      },
+    };
+    expect(resolveChatTitleModelSelection(settings)).toEqual(
+      settings.textGenerationModelSelection,
+    );
+  });
+
+  it("persists and clears the chat-title override through updateSettings", async () => {
+    const result = await Effect.runPromise(
+      Effect.gen(function* () {
+        const service = yield* ServerSettingsService;
+        const updated = yield* service.updateSettings({
+          chatTitleModelSelection: { provider: "groq", model: "llama-title" },
+        });
+        const cleared = yield* service.updateSettings({ chatTitleModelSelection: null });
+        return { updated, cleared };
+      }).pipe(Effect.provide(ServerSettingsService.layerTest({}))),
+    );
+
+    expect(result.updated.chatTitleModelSelection).toMatchObject({
+      provider: "groq",
+      model: "llama-title",
+    });
+    expect(result.cleared.chatTitleModelSelection).toBeUndefined();
   });
 });

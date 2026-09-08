@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 
 import {
+  API_PROVIDER_KINDS,
   CommandId,
   DEFAULT_MODEL_BY_PROVIDER,
   DEFAULT_TERMINAL_ID,
@@ -72,6 +73,11 @@ import {
 import { SessionCredentialService } from "./auth/Services/SessionCredentialService";
 import { ServerConfig, type ServerConfigShape } from "./config";
 import { realpathNearestExisting } from "./realpathNearestExisting";
+import {
+  GENERIC_CHAT_THREAD_TITLE,
+  isGenericChatThreadTitle,
+  sanitizeGeneratedThreadTitle,
+} from "@caide/shared/chatThreads";
 import { workspaceRootsEqual } from "@caide/shared/threadWorkspace";
 import {
   isThreadDetailEventFor,
@@ -132,7 +138,7 @@ import { ServerEnvironment } from "./environment/Services/ServerEnvironment";
 import { ToolchainDoctor } from "./toolchain/Services/ToolchainDoctor";
 import { ServerLifecycleEvents } from "./serverLifecycleEvents";
 import { ServerRuntimeStartup } from "./serverRuntimeStartup";
-import { ServerSettingsService } from "./serverSettings";
+import { ServerSettingsService, resolveChatTitleModelSelection } from "./serverSettings";
 import { isLoopbackHost } from "./startupAccess";
 import { TerminalManager } from "./terminal/Services/Manager";
 import { TerminalThreadTitleTracker } from "./terminal/terminalThreadTitleTracker";
@@ -1361,7 +1367,9 @@ const makeWsRpcHandlersLayer = () =>
             commandId: CommandId.makeUnsafe(`server:app-create-thread:${randomUUID()}`),
             threadId,
             projectId,
-            title: trimmedName,
+            // The project keeps the app name; the seed chat starts untitled
+            // so the sidebar shows a skeleton until the AI title lands.
+            title: GENERIC_CHAT_THREAD_TITLE,
             modelSelection,
             runtimeMode: "full-access",
             interactionMode: "default",
@@ -2274,6 +2282,51 @@ const makeWsRpcHandlersLayer = () =>
               });
             }),
             "Failed to generate thread recap",
+          ),
+        [WS_METHODS.serverGenerateThreadTitle]: (input) =>
+          rpcEffect(
+            Effect.gen(function* () {
+              const settings = yield* serverSettings.getSettings;
+              const configured =
+                input.textGenerationModelSelection ?? resolveChatTitleModelSelection(settings);
+              // Configured chat-title model first, then every other enabled
+              // provider's default. A generic/empty result counts as
+              // "model unavailable" so callers fall through to `Chat N`.
+              const attempts: ModelSelection[] = [configured];
+              for (const provider of API_PROVIDER_KINDS) {
+                if (provider === configured.provider) {
+                  continue;
+                }
+                const state = (
+                  settings.providers as Record<string, { enabled?: boolean } | undefined>
+                )[provider];
+                if (!state?.enabled) {
+                  continue;
+                }
+                attempts.push({
+                  provider,
+                  model: DEFAULT_MODEL_BY_PROVIDER[provider],
+                } as ModelSelection);
+              }
+              for (const modelSelection of attempts) {
+                const result = yield* textGeneration
+                  .generateThreadTitle({
+                    message: input.message,
+                    model: modelSelection.model,
+                    modelSelection,
+                  })
+                  .pipe(Effect.catchAll(() => Effect.succeed(null)));
+                if (!result) {
+                  continue;
+                }
+                const title = sanitizeGeneratedThreadTitle(result.title);
+                if (title.length > 0 && !isGenericChatThreadTitle(title)) {
+                  return { title };
+                }
+              }
+              return { title: GENERIC_CHAT_THREAD_TITLE };
+            }),
+            "Failed to generate thread title",
           ),
         [WS_METHODS.serverGenerateAutomationIntent]: (input) =>
           rpcEffect(

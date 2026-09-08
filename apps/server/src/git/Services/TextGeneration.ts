@@ -97,7 +97,9 @@ export interface BranchNameGenerationResult {
 }
 
 export interface ThreadTitleGenerationInput {
-  cwd: string;
+  // Titles need no repository context; callers may pass a cwd for
+  // provider CLIs that require one, but it is never required.
+  cwd?: string;
   message: string;
   attachments?: ReadonlyArray<ChatAttachment> | undefined;
   /** Model to use for generation. Uses the Git writing default if not specified. */

@@ -104,6 +104,9 @@ export const ServerSettings = Schema.Struct({
       model: DEFAULT_GIT_TEXT_GENERATION_MODEL,
     })),
   ),
+  // Optional override for AI chat-title naming. Absent means "follow the Git
+  // writing model" — resolved at read time, never persisted as a duplicate.
+  chatTitleModelSelection: Schema.optional(ModelSelection),
   providers: Schema.Struct({
     engine: EngineServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
     openai: OpenAiServerProviderSettings.pipe(Schema.withDecodingDefault(() => ({}))),
@@ -158,6 +161,8 @@ export const ServerSettingsPatch = Schema.Struct({
   enableProviderUpdateChecks: Schema.optionalKey(Schema.Boolean),
   defaultThreadEnvMode: Schema.optionalKey(ThreadEnvironmentMode),
   textGenerationModelSelection: Schema.optionalKey(ModelSelectionPatch),
+  // `null` clears the override so titles follow the Git writing model again.
+  chatTitleModelSelection: Schema.optionalKey(Schema.NullOr(ModelSelectionPatch)),
   providers: Schema.optionalKey(
     Schema.Struct({
       engine: Schema.optionalKey(

@@ -4,6 +4,7 @@ import {
   type ModelSelection,
   type NativeApi,
   type OrchestrationShellSnapshot,
+  type ThreadId,
 } from "@caide/contracts";
 import { workspaceRootsEqual } from "@caide/shared/threadWorkspace";
 
@@ -145,6 +146,10 @@ export async function createAppForFirstSend(input: {
   readonly modelSelection?: ModelSelection;
 }): Promise<{
   readonly projectId: Project["id"];
+  /** The server-created seed thread. First-send callers promote their own
+   * draft instead, so they delete this empty seed to avoid a phantom
+   * app-named duplicate row next to the real chat. */
+  readonly seedThreadId: ThreadId | null;
   readonly appPath: string;
   readonly snapshot: OrchestrationShellSnapshot | null;
 }> {
@@ -182,5 +187,10 @@ export async function createAppForFirstSend(input: {
     delayMs: 200,
   });
 
-  return { projectId: created.projectId, appPath: created.appPath, snapshot };
+  return {
+  projectId: created.projectId,
+  seedThreadId: created.threadId,
+  appPath: created.appPath,
+  snapshot,
+};
 }

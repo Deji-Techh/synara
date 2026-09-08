@@ -47,6 +47,7 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { SidebarHeaderNavigationControls } from "../SidebarHeaderNavigationControls";
 import ProjectScriptsControl, { type NewProjectScriptInput } from "../ProjectScriptsControl";
 import { Toggle } from "../ui/toggle";
+import { Skeleton } from "../ui/skeleton";
 import { useSidebar } from "../ui/sidebar";
 import { useAppSettings } from "../../appSettings";
 import { useStore } from "../../store";
@@ -74,6 +75,11 @@ const HEADER_COMPACT_BREAKPOINT = 700;
 interface ChatHeaderProps {
   activeThreadId: ThreadId;
   activeThreadTitle: string;
+  // True while the chat is still untitled (new draft or AI name generating):
+  // the header renders a skeleton instead of a placeholder title.
+  activeThreadTitlePending?: boolean;
+  // True briefly after the AI name lands so the header can play the reveal.
+  activeThreadTitleRevealed?: boolean;
   activeThreadEntryPoint: ThreadPrimarySurface;
   activeProvider: ProviderKind;
   activeProjectName: string | undefined;
@@ -495,6 +501,8 @@ export function resolveChatHeaderThreadIconKind(
 export function ChatHeader({
   activeThreadId,
   activeThreadTitle,
+  activeThreadTitlePending: activeThreadTitlePendingProp,
+  activeThreadTitleRevealed: activeThreadTitleRevealedProp,
   activeThreadEntryPoint,
   activeProvider,
   activeProjectName,
@@ -540,6 +548,8 @@ export function ChatHeader({
   onRenameThread,
   onCloseThreadPane,
 }: ChatHeaderProps) {
+  const titlePending = activeThreadTitlePendingProp ?? false;
+  const titleRevealed = activeThreadTitleRevealedProp ?? false;
   const hideSidebarControls = hideSidebarControlsProp ?? false;
   const hideHandoffControls = hideHandoffControlsProp ?? false;
   const showGitActions = showGitActionsProp ?? true;
@@ -726,13 +736,21 @@ export function ChatHeader({
                     )}
                   </span>
                 )}
-                <h2
-                  className="max-w-[clamp(12rem,42vw,36rem)] truncate font-system-ui text-[length:var(--app-font-size-ui,12px)] font-normal text-foreground"
-                  title={activeThreadTitle}
-                  onDoubleClick={() => onRenameThread()}
-                >
-                  {activeThreadTitle}
-                </h2>
+                {titlePending ? (
+                  <Skeleton className="h-3 w-28 rounded-full" role="status" aria-label="Naming chat…" />
+                ) : (
+                  <h2
+                    key={titleRevealed ? activeThreadTitle : "settled"}
+                    className={cn(
+                      "max-w-[clamp(12rem,42vw,36rem)] truncate font-system-ui text-[length:var(--app-font-size-ui,12px)] font-normal text-foreground",
+                      titleRevealed && "chat-title-reveal",
+                    )}
+                    title={activeThreadTitle}
+                    onDoubleClick={() => onRenameThread()}
+                  >
+                    {activeThreadTitle}
+                  </h2>
+                )}
                 {showSidechatTitleChip && onCloseThreadPane ? (
                   <IconButton
                     variant="chrome"

@@ -119,6 +119,7 @@ import {
   ServerConfigUpdatedPayload,
   ServerGenerateAutomationIntentInput,
   ServerGenerateThreadRecapInput,
+  ServerGenerateThreadTitleInput,
   ServerLifecycleStreamEvent,
   ServerProviderUpdateInput,
   ServerRunToolchainDoctorInput,
@@ -257,6 +258,7 @@ export const WS_METHODS = {
   serverPrewarmVoice: "server.prewarmVoice",
   serverTranscribeVoice: "server.transcribeVoice",
   serverGenerateThreadRecap: "server.generateThreadRecap",
+  serverGenerateThreadTitle: "server.generateThreadTitle",
   serverGenerateAutomationIntent: "server.generateAutomationIntent",
   serverUpsertKeybinding: "server.upsertKeybinding",
   subscribeServerLifecycle: "server.subscribeLifecycle",
@@ -466,6 +468,7 @@ const WebSocketRequestBody = Schema.Union([
   tagRequestBody(WS_METHODS.serverPrewarmVoice, ServerVoicePrewarmInput),
   tagRequestBody(WS_METHODS.serverTranscribeVoice, ServerVoiceTranscriptionInput),
   tagRequestBody(WS_METHODS.serverGenerateThreadRecap, ServerGenerateThreadRecapInput),
+  tagRequestBody(WS_METHODS.serverGenerateThreadTitle, ServerGenerateThreadTitleInput),
   tagRequestBody(WS_METHODS.serverGenerateAutomationIntent, ServerGenerateAutomationIntentInput),
   tagRequestBody(WS_METHODS.serverUpsertKeybinding, KeybindingRule),
 

@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   AppSettingsSchema,
+  appSettingsPatchToServerSettingsPatch,
   CUSTOM_MODEL_EDITOR_PROVIDER_SETTINGS,
   DEFAULT_CHAT_FONT_SIZE_PX,
   DEFAULT_FOLLOW_UP_BEHAVIOR,
@@ -22,6 +23,7 @@ import {
   getCustomModelsForProvider,
   getDefaultCustomModelsForProvider,
   getGitTextGenerationModelOptions,
+  isChatTitleModelDirty,
   isGitTextGenerationSettingsDirty,
   MODEL_PROVIDER_SETTINGS,
   normalizeChatFontSizePx,
@@ -159,6 +161,51 @@ describe("isGitTextGenerationSettingsDirty", () => {
         defaults,
       ),
     ).toBe(true);
+  });
+});
+
+describe("chat title model settings", () => {
+  it("tracks the chat-title override separately from the Git writing model", () => {
+    const defaults = AppSettingsSchema.makeUnsafe({});
+
+    expect(isChatTitleModelDirty(defaults, defaults)).toBe(false);
+    expect(
+      isChatTitleModelDirty(
+        { ...defaults, chatTitleProvider: "opencodeZen", chatTitleModel: "custom/title" },
+        defaults,
+      ),
+    ).toBe(true);
+  });
+
+  it("maps a provider-only change without a stale cross-vendor model slug", () => {
+    const defaults = AppSettingsSchema.makeUnsafe({});
+    const current = {
+      ...defaults,
+      chatTitleProvider: "groq" as const,
+      chatTitleModel: "llama-title",
+    };
+
+    expect(
+      appSettingsPatchToServerSettingsPatch({ chatTitleProvider: "opencodeZen" }, current),
+    ).toEqual({
+      chatTitleModelSelection: { provider: "opencodeZen" },
+    });
+  });
+
+  it("clears the override when both keys are emptied", () => {
+    const defaults = AppSettingsSchema.makeUnsafe({});
+    const current = {
+      ...defaults,
+      chatTitleProvider: "groq" as const,
+      chatTitleModel: "llama-title",
+    };
+
+    expect(
+      appSettingsPatchToServerSettingsPatch(
+        { chatTitleProvider: undefined, chatTitleModel: undefined },
+        current,
+      ),
+    ).toEqual({ chatTitleModelSelection: null });
   });
 });
 

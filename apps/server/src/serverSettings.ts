@@ -150,6 +150,24 @@ export class ServerSettingsService extends ServiceMap.Service<
 
 const PROVIDER_ORDER: readonly ProviderWithDefaultModel[] = [...API_PROVIDER_KINDS];
 
+// Resolve the model selection used for AI chat-title naming: an explicit
+// chat-title override wins when its provider is enabled, otherwise the Git
+// writing default applies. Per-provider availability fan-out (trying other
+// providers when the chosen model is unavailable) lives in the
+// `server.generateThreadTitle` handler, not here.
+export function resolveChatTitleModelSelection(settings: ServerSettings): ModelSelection {
+  const override = settings.chatTitleModelSelection;
+  if (override) {
+    const providerState = (settings.providers as Record<string, { enabled?: boolean }>)[
+      override.provider
+    ];
+    if (providerState?.enabled) {
+      return override;
+    }
+  }
+  return resolveTextGenerationProvider(settings).textGenerationModelSelection;
+}
+
 function resolveTextGenerationProvider(settings: ServerSettings): ServerSettings {
   const selection = settings.textGenerationModelSelection;
   const currentProvider = (settings.providers as Record<string, { enabled?: boolean }>)[

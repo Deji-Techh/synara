@@ -52,7 +52,13 @@ import { pendingRequestInstanceKey } from "@caide/shared/threadSummary";
 import {
   buildPromptThreadTitleFallback,
   GENERIC_CHAT_THREAD_TITLE,
+  isPendingChatThreadTitle,
 } from "@caide/shared/chatThreads";
+import {
+  beginChatTitleForFirstSend,
+  CHAT_TITLE_REVEAL_MS,
+  useChatTitleStore,
+} from "../lib/chatTitleGeneration";
 import {
   resolveThreadWorkspaceState,
   resolveThreadBranchSourceCwd,
@@ -7953,6 +7959,18 @@ export default function ChatView({
         if (created.snapshot) {
           syncServerShellSnapshot(created.snapshot);
         }
+        // The server seeds every new app with an empty first chat for dialog
+        // flows; this send promotes its own draft instead, so remove the
+        // seed now rather than leaving a phantom app-named duplicate row.
+        if (created.seedThreadId) {
+          await api.orchestration
+            .dispatchCommand({
+              type: "thread.delete",
+              commandId: newCommandId(),
+              threadId: created.seedThreadId,
+            })
+            .catch(() => undefined);
+        }
         targetProjectIdForSend = created.projectId;
         targetProjectKindForSend = "project";
         targetProjectCwdForSend = created.appPath;
@@ -8402,7 +8420,9 @@ export default function ChatView({
             commandId: newCommandId(),
             threadId: threadIdForSend,
             projectId: targetProjectIdForSend,
-            title,
+            // New chats start untitled: the sidebar/header show a skeleton
+            // until the AI title (or `Chat N` fallback) lands after this send.
+            title: GENERIC_CHAT_THREAD_TITLE,
             modelSelection: threadCreateModelSelection,
             runtimeMode: nextRuntimeModeForSend,
             interactionMode: interactionModeForSend,
@@ -8438,6 +8458,14 @@ export default function ChatView({
           });
         }
         createdServerThreadForLocalDraft = true;
+      }
+
+      if (isFirstMessage && createdServerThreadForLocalDraft) {
+        beginChatTitleForFirstSend({
+          threadId: threadIdForSend,
+          projectId: targetProjectIdForSend,
+          message: titleSeed,
+        });
       }
 
       const setupScript = switchedToLocalCheckout ? null : setupScriptForWorktree;
@@ -8548,6 +8576,15 @@ export default function ChatView({
         }),
       );
       turnStartSucceeded = true;
+      // First message on an already-promoted (server) thread with a pending
+      // title — e.g. an app-dialog seed chat — kicks off AI naming now.
+      if (isFirstMessage && isServerThread) {
+        beginChatTitleForFirstSend({
+          threadId: threadIdForSend,
+          projectId: targetProjectIdForSend,
+          message: titleSeed,
+        });
+      }
       armLocalDispatchAckFallback(threadIdForSend);
       // Steers on providers without native mid-turn steering interrupt the live
       // turn before re-dispatching; hold queued auto-dispatch through that gap
@@ -10763,6 +10800,22 @@ export default function ChatView({
     isEmpty: timelineEntries.length === 0,
   });
 
+  // Untitled chats show a skeleton in the header until the first message
+  // resolves an AI title: fresh drafts, generating threads, and dialog-seed
+  // chats that have not received a message yet.
+  const chatTitlePendingThreadIds = useChatTitleStore((store) => store.pendingThreadIds);
+  const chatTitleRevealedAt = useChatTitleStore(
+    (store) => store.revealedAtByThreadId[activeThread.id],
+  );
+  const isActiveThreadTitlePending =
+    !activeThread.parentThreadId &&
+    (chatTitlePendingThreadIds[activeThread.id] === true ||
+      (isPendingChatThreadTitle(activeThread.title) && timelineEntries.length === 0));
+  const isActiveThreadTitleRevealed =
+    !isActiveThreadTitlePending &&
+    chatTitleRevealedAt !== undefined &&
+    Date.now() - chatTitleRevealedAt < CHAT_TITLE_REVEAL_MS;
+
   const handleRenameActiveThread = async (newTitle: string) => {
     const outcome = await dispatchThreadRename({
       threadId: activeThread.id,
@@ -11608,6 +11661,8 @@ export default function ChatView({
         <ChatHeader
           activeThreadId={activeThread.id}
           activeThreadTitle={activeThreadDisplayTitle}
+          activeThreadTitlePending={isActiveThreadTitlePending}
+          activeThreadTitleRevealed={isActiveThreadTitleRevealed}
           activeThreadEntryPoint={terminalState.entryPoint}
           activeProvider={activeThread.session?.provider ?? activeThread.modelSelection.provider}
           activeProjectName={isEditorRail ? undefined : activeProjectDisplayName}

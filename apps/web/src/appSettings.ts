@@ -274,6 +274,10 @@ export const AppSettingsSchema = Schema.Struct({
   customOpenCodeGoModels: Schema.Array(Schema.String).pipe(withDefaults(() => [])),
   textGenerationProvider: PersistedProviderKind.pipe(withDefaults(() => "groq" as const)),
   textGenerationModel: Schema.optional(TrimmedNonEmptyString),
+  // Optional override for AI chat-title naming. Absent means "follow the Git
+  // writing model" — resolved server-side, never materialized locally.
+  chatTitleProvider: Schema.optional(PersistedProviderKind),
+  chatTitleModel: Schema.optional(TrimmedNonEmptyString),
   uiFontFamily: Schema.String.check(Schema.isMaxLength(256)).pipe(withDefaults(() => "")),
   defaultProvider: PersistedProviderKind.pipe(withDefaults(() => "groq" as const)),
   // Local-only UI preference: providers explicitly hidden from the composer picker.
@@ -323,6 +327,13 @@ export function isGitTextGenerationSettingsDirty(
     (settings.textGenerationProvider ?? "groq") !== (defaults.textGenerationProvider ?? "groq") ||
     (settings.textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL) !==
       (defaults.textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL)
+  );
+}
+
+export function isChatTitleModelDirty(settings: AppSettings, defaults: AppSettings): boolean {
+  return (
+    (settings.chatTitleProvider ?? null) !== (defaults.chatTitleProvider ?? null) ||
+    (settings.chatTitleModel ?? null) !== (defaults.chatTitleModel ?? null)
   );
 }
 
@@ -632,6 +643,12 @@ function serverSettingsToAppSettings(settings: ServerSettingsView): Partial<AppS
     opencodeGoBaseUrl: settings.providers.opencodeGo.baseUrl,
     ...(resolvedTextGenProvider ? { textGenerationProvider: resolvedTextGenProvider } : {}),
     textGenerationModel: settings.textGenerationModelSelection.model,
+    ...(settings.chatTitleModelSelection
+      ? {
+          chatTitleProvider: settings.chatTitleModelSelection.provider,
+          chatTitleModel: settings.chatTitleModelSelection.model,
+        }
+      : {}),
   };
 }
 
@@ -659,7 +676,10 @@ function touchesProviderDiscoverySettings(patch: Partial<AppSettings>): boolean 
   );
 }
 
-function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): ServerSettingsPatch {
+export function appSettingsPatchToServerSettingsPatch(
+  patch: Partial<AppSettings>,
+  current?: AppSettings,
+): ServerSettingsPatch {
   const providers: MutableServerSettingsProvidersPatch = {};
   const serverPatch: MutableServerSettingsPatch = {};
 
@@ -682,6 +702,38 @@ function appSettingsPatchToServerSettingsPatch(patch: Partial<AppSettings>): Ser
       ),
       model,
     };
+  }
+  if (hasOwn(patch, "chatTitleProvider") || hasOwn(patch, "chatTitleModel")) {
+    // Absent/empty on both keys clears the override so titles follow the Git
+    // writing model again. A provider-only change omits the model so the
+    // server applies that provider's default instead of a stale cross-vendor slug.
+    // Note: an explicitly-passed `undefined`/empty value clears that key rather
+    // than falling through to the current value.
+    const mergedProvider = hasOwn(patch, "chatTitleProvider")
+      ? patch.chatTitleProvider
+      : current?.chatTitleProvider;
+    const mergedModelRaw = hasOwn(patch, "chatTitleModel")
+      ? patch.chatTitleModel
+      : current?.chatTitleModel;
+    const mergedModel = mergedModelRaw?.trim() ? mergedModelRaw.trim() : undefined;
+    if (mergedProvider === undefined && mergedModel === undefined) {
+      serverPatch.chatTitleModelSelection = null;
+    } else {
+      const providerChanged =
+        hasOwn(patch, "chatTitleProvider") &&
+        patch.chatTitleProvider !== current?.chatTitleProvider;
+      // A bare provider switch drops the previous vendor's slug so the server
+      // falls back to the new provider's default model.
+      const model = providerChanged
+        ? hasOwn(patch, "chatTitleModel")
+          ? mergedModel
+          : undefined
+        : (mergedModel ?? current?.textGenerationModel?.trim() ?? undefined);
+      serverPatch.chatTitleModelSelection = {
+        provider: mergedProvider ?? current?.textGenerationProvider ?? "groq",
+        ...(model ? { model } : {}),
+      };
+    }
   }
 
   if (
@@ -1127,7 +1179,7 @@ export function useAppSettings() {
       void queryClient.invalidateQueries({ queryKey: providerDiscoveryQueryKeys.all });
     }
 
-    const serverPatch = appSettingsPatchToServerSettingsPatch(patch);
+    const serverPatch = appSettingsPatchToServerSettingsPatch(patch, settings);
     if (isServerSettingsPatchEmpty(serverPatch)) {
       return;
     }
@@ -1145,7 +1197,12 @@ export function useAppSettings() {
   const resetSettings = () => {
     setSettings(DEFAULT_APP_SETTINGS);
     void queryClient.invalidateQueries({ queryKey: providerDiscoveryQueryKeys.all });
-    const serverPatch = appSettingsPatchToServerSettingsPatch(defaults);
+    // Optional keys are absent from `defaults`, so name them explicitly to
+    // clear the chat-title override (follow-the-Git-model) on reset-all.
+    const serverPatch = appSettingsPatchToServerSettingsPatch(
+      { ...defaults, chatTitleProvider: undefined, chatTitleModel: undefined },
+      defaults,
+    );
     void ensureNativeApi()
       .server.updateSettings(serverPatch)
       .then((nextSettings) => {

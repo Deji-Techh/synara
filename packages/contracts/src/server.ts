@@ -314,6 +314,22 @@ export const ServerGenerateThreadRecapResult = Schema.Struct({
 });
 export type ServerGenerateThreadRecapResult = typeof ServerGenerateThreadRecapResult.Type;
 
+// Stateless chat-title generation for newly created threads. The server walks
+// the configured chat-title model selection (falling back to the Git writing
+// model, then other enabled providers) and returns the first non-generic
+// title. Callers treat a generic/empty title as "no model available" and fall
+// back to a deterministic `Chat N` label.
+export const ServerGenerateThreadTitleInput = Schema.Struct({
+  message: Schema.String.check(Schema.isMaxLength(8_000)),
+  textGenerationModelSelection: Schema.optional(ModelSelection),
+});
+export type ServerGenerateThreadTitleInput = typeof ServerGenerateThreadTitleInput.Type;
+
+export const ServerGenerateThreadTitleResult = Schema.Struct({
+  title: Schema.String.check(Schema.isMaxLength(120)),
+});
+export type ServerGenerateThreadTitleResult = typeof ServerGenerateThreadTitleResult.Type;
+
 // Schema-validated automation intent extraction for composer-triggered creation.
 // The UI still owns confirmation/error copy; this result only describes what the model understood.
 export const ServerAutomationIntentMissingField = Schema.Literals([

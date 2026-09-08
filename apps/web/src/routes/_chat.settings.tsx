@@ -3,7 +3,12 @@
 // Layer: Route screen
 // Exports: Settings route component for `/settings`
 
-import { PROVIDER_DISPLAY_NAMES, PROVIDER_KINDS, type ProviderKind } from "@caide/contracts";
+import {
+  DEFAULT_GIT_TEXT_GENERATION_MODEL,
+  PROVIDER_DISPLAY_NAMES,
+  PROVIDER_KINDS,
+  type ProviderKind,
+} from "@caide/contracts";
 import { PROVIDER_DESCRIPTORS } from "@caide/shared/providerMetadata";
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
@@ -22,6 +27,7 @@ import {
   normalizeTerminalFontFamily,
   normalizeTerminalFontSizePx,
   isGitTextGenerationSettingsDirty,
+  isChatTitleModelDirty,
   TERMINAL_FONT_FAMILY_SUGGESTIONS,
   useAppSettings,
 } from "../appSettings";
@@ -42,6 +48,7 @@ import { ProfileSettingsPanel } from "../components/settings/ProfileSettingsPane
 import { McpServersSettingsPanel } from "../components/settings/McpServersSettingsPanel";
 import { DatabaseSettingsPanel } from "../components/settings/DatabaseSettingsPanel";
 import { ToolApprovalsSection } from "../components/settings/ToolApprovalsSection";
+import { DebouncedSettingTextInput } from "../components/settings/DebouncedSettingTextInput";
 import {
   SettingResetButton,
   SettingsSegmentedControl,
@@ -140,6 +147,10 @@ const UI_DENSITY_OPTIONS = [
 
 const PROVIDER_SELECT_OPTIONS = PROVIDER_DESCRIPTORS.map((descriptor) => descriptor.kind);
 
+// Providers that can back AI text generation (commit messages, chat titles).
+// Mirrors the server's chat-title fallback allowlist.
+const CHAT_TITLE_PROVIDER_OPTIONS = ["groq", "opencodeZen", "opencodeGo", "engine"] as const;
+
 const TIMESTAMP_FORMAT_LABELS = {
   locale: "System default",
   "12-hour": "12-hour",
@@ -210,6 +221,7 @@ function SettingsRouteView() {
   }, [settings.terminalFontFamily]);
 
   const isGitTextGenerationModelDirty = isGitTextGenerationSettingsDirty(settings, defaults);
+  const isChatTitleModelDirtyValue = isChatTitleModelDirty(settings, defaults);
   const isInstallSettingsDirty = isProviderInstallSettingsDirty(settings, defaults);
   const hiddenProviderCount = new Set(settings.hiddenProviders).size;
   const isProviderOrderDirty = !sameProviderOrder(settings.providerOrder, defaults.providerOrder);
@@ -277,6 +289,7 @@ function SettingsRouteView() {
       ? ["Terminal close confirmation"]
       : []),
     ...(isGitTextGenerationModelDirty ? ["Git writing model"] : []),
+    ...(isChatTitleModelDirtyValue ? ["Chat title model"] : []),
     ...(settings.customEngineModels.length > 0 ||
     settings.customGroqModels.length > 0 ||
     settings.customOpenCodeZenModels.length > 0 ||
@@ -383,6 +396,65 @@ function SettingsRouteView() {
                 </SelectItem>
               ))}
             </SettingsSelectControl>
+          }
+        />
+
+        <SettingsRow
+          title="Chat title model"
+          description="Model that names a new chat after your first message. When cleared, titles follow the Git writing model; when no model is reachable, chats fall back to Chat 1, Chat 2, …"
+          resetAction={
+            isChatTitleModelDirtyValue ? (
+              <SettingResetButton
+                label="chat title model"
+                onClick={() =>
+                  updateSettings({ chatTitleProvider: undefined, chatTitleModel: undefined })
+                }
+              />
+            ) : null
+          }
+          control={
+            <div className="flex w-full flex-col gap-2 sm:w-44">
+              <SettingsSelectControl
+                value={settings.chatTitleProvider ?? settings.textGenerationProvider ?? "groq"}
+                onValueChange={(value) => {
+                  if (!isProviderSelectOption(value)) return;
+                  updateSettings({ chatTitleProvider: value });
+                }}
+                ariaLabel="Chat title provider"
+                valueContent={
+                  <ProviderOptionLabel
+                    provider={settings.chatTitleProvider ?? settings.textGenerationProvider ?? "groq"}
+                    label={
+                      PROVIDER_DISPLAY_NAMES[
+                        settings.chatTitleProvider ?? settings.textGenerationProvider ?? "groq"
+                      ]
+                    }
+                  />
+                }
+              >
+                {CHAT_TITLE_PROVIDER_OPTIONS.map((provider) => (
+                  <SelectItem hideIndicator key={provider} value={provider}>
+                    <ProviderOptionLabel
+                      provider={provider}
+                      label={PROVIDER_DISPLAY_NAMES[provider]}
+                    />
+                  </SelectItem>
+                ))}
+              </SettingsSelectControl>
+              <DebouncedSettingTextInput
+                value={settings.chatTitleModel ?? ""}
+                onCommit={(next) =>
+                  updateSettings(
+                    next.trim() ? { chatTitleModel: next.trim() } : { chatTitleModel: undefined },
+                  )
+                }
+                placeholder={
+                  settings.textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL
+                }
+                aria-label="Chat title model"
+                className="h-8 font-mono text-xs"
+              />
+            </div>
           }
         />
 

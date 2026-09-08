@@ -5,9 +5,10 @@
 import { useMemo, type ReactNode } from "react";
 
 import type { ProjectFramework, ProviderKind } from "@caide/contracts";
-import { isGenericChatThreadTitle } from "@caide/shared/chatThreads";
+import { isGenericChatThreadTitle, isPendingChatThreadTitle } from "@caide/shared/chatThreads";
 import { pluralize } from "@caide/shared/text";
 
+import { CHAT_TITLE_REVEAL_MS, useChatTitleStore } from "../lib/chatTitleGeneration";
 import { createThreadSelector } from "../storeSelectors";
 import { useStore } from "../store";
 import { resolveSubagentPresentationForThread } from "../lib/subagentPresentation";
@@ -17,6 +18,7 @@ import type { SidebarThreadSummary } from "../types";
 import { TerminalIcon } from "../lib/icons";
 import { cn } from "../lib/utils";
 import { ProviderIcon } from "./ProviderIcon";
+import { Skeleton } from "./ui/skeleton";
 import { SidebarGlyph } from "./sidebarGlyphs";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
 import { FrameworkIcon, frameworkDisplayName } from "./FrameworkIcon";
@@ -217,6 +219,18 @@ export function SidebarThreadRowContent({
         })
       : null;
   const showThreadProviderAvatar = !isGenericChatThreadTitle(thread.title);
+  // Untitled chats (or chats whose AI name is still generating) render a
+  // skeleton until the first message resolves a real title.
+  const isTitlePending =
+    useChatTitleStore((store) => store.pendingThreadIds[thread.id]) === true ||
+    (!thread.parentThreadId &&
+      isPendingChatThreadTitle(thread.title) &&
+      !thread.latestUserMessageAt);
+  const revealedAt = useChatTitleStore((store) => store.revealedAtByThreadId[thread.id]);
+  const justRevealed =
+    !isTitlePending &&
+    revealedAt !== undefined &&
+    Date.now() - revealedAt < CHAT_TITLE_REVEAL_MS;
 
   return (
     <>
@@ -254,13 +268,24 @@ export function SidebarThreadRowContent({
           )}
           data-testid={variant === "pinned" ? `thread-title-${thread.id}` : undefined}
         >
-          {isSubagentThread ? (
+          {isTitlePending ? (
+            <Skeleton
+              className="h-3 w-24 rounded-full"
+              aria-label="Naming chat…"
+              role="status"
+            />
+          ) : isSubagentThread ? (
             <SidebarSubagentLabel
               thread={thread}
               roleClassName={variant === "standard" ? "text-muted-foreground/42" : undefined}
             />
           ) : (
-            thread.title
+            <span
+              key={justRevealed ? thread.title : "settled"}
+              className={cn(justRevealed && "chat-title-reveal")}
+            >
+              {thread.title}
+            </span>
           )}
         </span>
         {!isSubagentThread && pendingStatusColorClass ? (

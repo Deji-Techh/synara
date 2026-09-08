@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildChatNumberFallbackTitle,
   buildPromptThreadTitleFallback,
   GENERIC_CHAT_THREAD_TITLE,
   isGenericChatThreadTitle,
+  isPendingChatThreadTitle,
   sanitizeGeneratedThreadTitle,
 } from "./chatThreads";
 
@@ -31,5 +33,20 @@ describe("chatThreads", () => {
   it("detects the generic chat placeholder title", () => {
     expect(isGenericChatThreadTitle(" New thread ")).toBe(true);
     expect(isGenericChatThreadTitle("Manual rename")).toBe(false);
+  });
+
+  it("detects pending titles across legacy harness defaults", () => {
+    expect(isPendingChatThreadTitle("New thread")).toBe(true);
+    expect(isPendingChatThreadTitle("New Chat")).toBe(true);
+    expect(isPendingChatThreadTitle("Home")).toBe(true);
+    expect(isPendingChatThreadTitle("  ")).toBe(true);
+    expect(isPendingChatThreadTitle("Calculator")).toBe(false);
+    expect(isPendingChatThreadTitle("Chat 4")).toBe(false);
+  });
+
+  it("builds deterministic Chat N fallback titles", () => {
+    expect(buildChatNumberFallbackTitle(4)).toBe("Chat 4");
+    expect(buildChatNumberFallbackTitle(0)).toBe("Chat 1");
+    expect(buildChatNumberFallbackTitle(-3)).toBe("Chat 1");
   });
 });

@@ -58,3 +58,19 @@ export function sanitizeGeneratedThreadTitle(raw: string): string {
 export function isGenericChatThreadTitle(title: string | null | undefined): boolean {
   return normalizeTitleWhitespace(title ?? "") === GENERIC_CHAT_THREAD_TITLE;
 }
+
+// Titles a fresh chat carries before its AI-generated name lands. Covers the
+// legacy harness defaults ("New Chat", "Home") plus empty strings so the
+// sidebar can render a skeleton for any untitled thread.
+const PENDING_CHAT_THREAD_TITLES = new Set(["New thread", "New Chat", "Home", ""]);
+
+export function isPendingChatThreadTitle(title: string | null | undefined): boolean {
+  return PENDING_CHAT_THREAD_TITLES.has(normalizeTitleWhitespace(title ?? ""));
+}
+
+// Deterministic last-resort label when no title model is available.
+// `index` is the 1-based position of the chat within its project.
+export function buildChatNumberFallbackTitle(index: number): string {
+  const safeIndex = Number.isSafeInteger(index) && index > 0 ? index : 1;
+  return `Chat ${safeIndex}`;
+}

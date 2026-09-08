@@ -725,6 +725,10 @@ export function createWsNativeApi(): NativeApi {
         transport.request(WS_METHODS.serverGenerateThreadRecap, input, {
           timeoutMs: null,
         }),
+      generateThreadTitle: (input) =>
+        transport.request(WS_METHODS.serverGenerateThreadTitle, input, {
+          timeoutMs: null,
+        }),
       generateAutomationIntent: (input) =>
         transport.request(WS_METHODS.serverGenerateAutomationIntent, input, {
           timeoutMs: null,

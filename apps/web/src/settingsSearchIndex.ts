@@ -290,6 +290,12 @@ export const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
     keywords: "Used for generated commit messages, PR titles, and branch names.",
   },
   {
+    id: "general:chat-title-model",
+    section: "general",
+    title: "Chat title model",
+    keywords: "Model that names a new chat after your first message. chat naming title",
+  },
+  {
     id: "models:saved-model-slugs",
     section: "models",
     title: "Saved model slugs",
