@@ -2230,7 +2230,15 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               const { runLoop } = await import("./harness/loop/loop.ts");
 
               const adapter = createStreamProviderAdapter(
-                { modelId, baseUrl, apiKey: apiKey || "dummy-key", system, appPath },
+                {
+                  modelId,
+                  baseUrl,
+                  apiKey: apiKey || "dummy-key",
+                  system,
+                  appPath,
+                  providerId: provider,
+                  sessionId: thread.id ?? command.threadId,
+                },
                 ALL_CORE_TOOLS,
               );
 

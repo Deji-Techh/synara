@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   getVoiceApiKey,
+  resolveAllVoiceProviders,
   resolveBestVoiceProvider,
   transcribeVoiceAudio,
 } from "./transcriptionService";
@@ -40,6 +41,7 @@ describe("transcriptionService", () => {
 
   it("transcribes audio via Gemini mock", async () => {
     const originalFetch = globalThis.fetch;
+    process.env.GEMINI_API_KEY = "test-gemini-key";
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -66,12 +68,14 @@ describe("transcriptionService", () => {
 
       expect(result.text).toBe("Spoken voice transcription test");
     } finally {
+      delete process.env.GEMINI_API_KEY;
       globalThis.fetch = originalFetch;
     }
   });
 
   it("strips outer quotes from transcription result", async () => {
     const originalFetch = globalThis.fetch;
+    process.env.GEMINI_API_KEY = "test-gemini-key";
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -98,6 +102,88 @@ describe("transcriptionService", () => {
 
       expect(result.text).toBe("Quoted voice note text");
     } finally {
+      delete process.env.GEMINI_API_KEY;
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("prefers gemini over chat providers and demotes zen/go last", () => {
+    process.env.GEMINI_API_KEY = "test-gemini-key";
+    process.env.OPENCODE_ZEN_API_KEY = "test-zen-key";
+    process.env.OPENCODE_GO_API_KEY = "test-go-key";
+    try {
+      for (const preferred of ["ai-model", "auto", undefined, "opencodeZen", "opencodeGo"]) {
+        const order = resolveAllVoiceProviders(preferred).map((p) => p.provider);
+        expect(order[0]).toBe("google");
+        expect(order.slice(-2)).toEqual(["opencodeZen", "opencodeGo"]);
+      }
+      // Explicit whisper preference with a key stays first.
+      process.env.GROQ_API_KEY = "test-groq-key";
+      expect(resolveAllVoiceProviders("groq")[0]?.provider).toBe("groq");
+    } finally {
+      delete process.env.GEMINI_API_KEY;
+      delete process.env.OPENCODE_ZEN_API_KEY;
+      delete process.env.OPENCODE_GO_API_KEY;
+      delete process.env.GROQ_API_KEY;
+    }
+  });
+
+  it("accepts stored keys regardless of prefix (no blob rejection)", () => {
+    process.env.GEMINI_API_KEY = "AQ.Ab8fake-stored-value";
+    try {
+      expect(getVoiceApiKey("google")).toBe("AQ.Ab8fake-stored-value");
+    } finally {
+      delete process.env.GEMINI_API_KEY;
+    }
+  });
+
+  it("returns empty text (not an error) when every provider hears silence", async () => {
+    const originalFetch = globalThis.fetch;
+    process.env.GEMINI_API_KEY = "test-gemini-key";
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ candidates: [{ content: { parts: [] } }] }),
+    }) as any;
+
+    try {
+      const result = await transcribeVoiceAudio({
+        provider: "ai-model",
+        cwd: "/test",
+        mimeType: "audio/wav",
+        sampleRateHz: 24_000,
+        durationMs: 1_000,
+        audioBase64: WAV_BASE64,
+      });
+      expect(result.text).toBe("");
+    } finally {
+      delete process.env.GEMINI_API_KEY;
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("falls through to the next provider when gemini rejects the key", async () => {
+    const originalFetch = globalThis.fetch;
+    process.env.GEMINI_API_KEY = "bad-key";
+    process.env.GROQ_API_KEY = "test-groq-key";
+    const fetchMock = vi.fn();
+    fetchMock.mockRejectedValueOnce(Object.assign(new Error("Gemini API key rejected (HTTP 403)."), {}));
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ text: "via groq" }) });
+    globalThis.fetch = fetchMock as any;
+
+    try {
+      const result = await transcribeVoiceAudio({
+        provider: "ai-model",
+        cwd: "/test",
+        mimeType: "audio/wav",
+        sampleRateHz: 24_000,
+        durationMs: 1_000,
+        audioBase64: WAV_BASE64,
+      });
+      expect(result.text).toBe("via groq");
+    } finally {
+      delete process.env.GEMINI_API_KEY;
+      delete process.env.GROQ_API_KEY;
       globalThis.fetch = originalFetch;
     }
   });

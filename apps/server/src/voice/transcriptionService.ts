@@ -29,11 +29,16 @@ const PROVIDER_ENV_KEYS: Record<string, string[]> = {
 };
 
 /**
- * Keys starting with "AQ." are Dyad's Electron safeStorage encrypted blobs —
- * they cannot be used raw against external APIs.
+ * Any non-empty stored value is returned as a candidate key. A previous
+ * revision rejected values starting with "AQ."/"v10"/"v11" as Electron
+ * safeStorage blobs, but that heuristic wrongly discarded a working key
+ * (verified live: an "AQ."-prefixed stored google key authenticates against
+ * the Gemini API). Dead values are harmless here — the provider cascade
+ * treats auth failures as "try next" instead of failing the request.
  */
-function isEncryptedBlob(val: string): boolean {
-  return val.startsWith("AQ.") || val.startsWith("v10") || val.startsWith("v11");
+function asCandidateKey(val: unknown): string | null {
+  const trimmed = typeof val === "string" ? val.trim() : "";
+  return trimmed ? trimmed : null;
 }
 
 export function getVoiceApiKey(provider: string): string | null {
@@ -51,8 +56,8 @@ export function getVoiceApiKey(provider: string): string | null {
   for (const key of lookupKeys) {
     const envKeys = PROVIDER_ENV_KEYS[key] || [];
     for (const envKey of envKeys) {
-      const val = process.env[envKey]?.trim();
-      if (val && !isEncryptedBlob(val)) return val;
+      const candidate = asCandidateKey(process.env[envKey]);
+      if (candidate) return candidate;
     }
   }
 
@@ -60,8 +65,8 @@ export function getVoiceApiKey(provider: string): string | null {
   try {
     const secrets = sharedProviderSecrets().read();
     for (const key of lookupKeys) {
-      const stored = secrets?.providers?.[key]?.apiKey?.trim();
-      if (stored && !isEncryptedBlob(stored)) return stored;
+      const candidate = asCandidateKey(secrets?.providers?.[key]?.apiKey);
+      if (candidate) return candidate;
     }
   } catch {
     // ignore
@@ -82,8 +87,9 @@ export function getVoiceApiKey(provider: string): string | null {
         const raw = JSON.parse(fs.readFileSync(file, "utf-8"));
         const providers = raw?.providers || raw;
         for (const key of lookupKeys) {
-          const val = providers?.[key]?.apiKey?.trim?.() || providers?.[key]?.trim?.();
-          if (val && !isEncryptedBlob(val)) return val;
+          const candidate =
+            asCandidateKey(providers?.[key]?.apiKey) ?? asCandidateKey(providers?.[key]);
+          if (candidate) return candidate;
         }
       } catch {
         // ignore
@@ -99,8 +105,8 @@ export function getVoiceApiKey(provider: string): string | null {
     for (const key of lookupKeys) {
       const secretPath = path.join(home, ".caide/userdata/secrets", `provider-${key}-api-key.bin`);
       if (fs.existsSync(secretPath)) {
-        const secretVal = fs.readFileSync(secretPath, "utf-8").trim();
-        if (secretVal && !isEncryptedBlob(secretVal)) return secretVal;
+        const candidate = asCandidateKey(fs.readFileSync(secretPath, "utf-8"));
+        if (candidate) return candidate;
       }
     }
   } catch {
@@ -124,61 +130,58 @@ export type VoiceTranscriptionProvider =
 
 type ProviderEntry = { provider: VoiceTranscriptionProvider; apiKey: string; baseUrl?: string };
 
+// Providers with a real audio-transcription endpoint, in quality order.
+const WHISPER_PROVIDERS: Array<{ provider: VoiceTranscriptionProvider; baseUrl?: string }> = [
+  { provider: "groq" },
+  { provider: "openai" },
+  { provider: "openrouter", baseUrl: "https://openrouter.ai/api/v1" },
+];
+
 /**
- * Build a deduplicated, ordered list of every provider the user has a valid key for.
- * Preferred provider is always first; all others follow so nothing is left untried.
+ * Build a deduplicated, ordered list of every provider the user has a key for.
+ *
+ * Ordering is by transcription capability, not by chat preference: the
+ * `preferred` value arriving here is the user's *chat* provider (the voice
+ * setting is only "ai-model" vs "web-speech"), and OpenCode Zen/Go expose no
+ * audio endpoint (verified live: `/audio/transcriptions` returns the website
+ * HTML). So Gemini — the only native-audio backend — goes first whenever its
+ * key is configured, Whisper-compatible providers follow, and Zen/Go stay as
+ * a last resort in case the vendor adds an audio route later.
  */
 export function resolveAllVoiceProviders(preferred?: string): ProviderEntry[] {
   const seen = new Set<VoiceTranscriptionProvider>();
   const list: ProviderEntry[] = [];
 
-  function push(entry: ProviderEntry | null) {
-    if (entry && !seen.has(entry.provider)) {
-      seen.add(entry.provider);
-      list.push(entry);
+  function push(provider: VoiceTranscriptionProvider, apiKey: string | null, baseUrl?: string) {
+    if (apiKey && !seen.has(provider)) {
+      seen.add(provider);
+      list.push(baseUrl ? { provider, apiKey, baseUrl } : { provider, apiKey });
     }
   }
 
-  if (preferred) {
-    const norm = preferred.toLowerCase();
-    if (norm === "google" || norm === "gemini") {
-      const key = getVoiceApiKey("google");
-      if (key) push({ provider: "google", apiKey: key });
-    } else if (norm === "groq") {
-      const key = getVoiceApiKey("groq");
-      if (key) push({ provider: "groq", apiKey: key });
-    } else if (norm === "openai") {
-      const key = getVoiceApiKey("openai");
-      if (key) push({ provider: "openai", apiKey: key });
-    } else if (norm === "opencodezen" || norm === "opencode-zen") {
-      const key = getVoiceApiKey("opencodeZen");
-      if (key) push({ provider: "opencodeZen", apiKey: key, baseUrl: "https://opencode.ai/zen/v1" });
-    } else if (norm === "opencodego" || norm === "opencode-go") {
-      const key = getVoiceApiKey("opencodeGo");
-      if (key) push({ provider: "opencodeGo", apiKey: key, baseUrl: "https://opencode.ai/zen/go/v1" });
-    } else if (norm === "openrouter") {
-      const key = getVoiceApiKey("openrouter");
-      if (key) push({ provider: "openrouter", apiKey: key, baseUrl: "https://openrouter.ai/api/v1" });
-    }
+  const norm = (preferred ?? "").toLowerCase();
+  const prefersGoogle = norm === "google" || norm === "gemini";
+  const prefersWhisper =
+    norm === "groq" || norm === "openai" || norm === "openrouter" ? norm : null;
+
+  // 1. Explicit, transcription-capable preference with a configured key.
+  if (prefersGoogle) push("google", getVoiceApiKey("google"));
+  if (prefersWhisper) {
+    const entry = WHISPER_PROVIDERS.find((w) => w.provider === prefersWhisper);
+    if (entry) push(entry.provider, getVoiceApiKey(entry.provider), entry.baseUrl);
   }
 
-  const zenKey = getVoiceApiKey("opencodeZen");
-  if (zenKey) push({ provider: "opencodeZen", apiKey: zenKey, baseUrl: "https://opencode.ai/zen/v1" });
+  // 2. Gemini first whenever configured ("ai-model" setting + gemini key).
+  push("google", getVoiceApiKey("google"));
 
-  const goKey = getVoiceApiKey("opencodeGo");
-  if (goKey) push({ provider: "opencodeGo", apiKey: goKey, baseUrl: "https://opencode.ai/zen/go/v1" });
+  // 3. Whisper-compatible providers.
+  for (const entry of WHISPER_PROVIDERS) {
+    push(entry.provider, getVoiceApiKey(entry.provider), entry.baseUrl);
+  }
 
-  const googleKey = getVoiceApiKey("google");
-  if (googleKey) push({ provider: "google", apiKey: googleKey });
-
-  const openrouterKey = getVoiceApiKey("openrouter");
-  if (openrouterKey) push({ provider: "openrouter", apiKey: openrouterKey, baseUrl: "https://openrouter.ai/api/v1" });
-
-  const groqKey = getVoiceApiKey("groq");
-  if (groqKey) push({ provider: "groq", apiKey: groqKey });
-
-  const openaiKey = getVoiceApiKey("openai");
-  if (openaiKey) push({ provider: "openai", apiKey: openaiKey });
+  // 4. Last resort: OpenCode Zen/Go (no audio endpoint today).
+  push("opencodeZen", getVoiceApiKey("opencodeZen"), "https://opencode.ai/zen/v1");
+  push("opencodeGo", getVoiceApiKey("opencodeGo"), "https://opencode.ai/zen/go/v1");
 
   return list;
 }
@@ -192,59 +195,87 @@ export function resolveBestVoiceProvider(preferred?: string): ProviderEntry | nu
 // Transcription backends
 // ---------------------------------------------------------------------------
 
+const GEMINI_TRANSCRIBE_MODELS = ["gemini-2.5-flash", "gemini-flash-latest"];
+const TRANSCRIPTION_TIMEOUT_MS = 60_000;
+const TRANSCRIPTION_PROMPT =
+  "Transcribe the spoken audio verbatim. Output ONLY the raw transcribed text. Do not add any explanation, quotation marks, prefixes, or commentary. If there is no speech, output nothing.";
+
+function isAuthFailure(status: number, body: string): boolean {
+  if (status === 401 || status === 403) return true;
+  return status === 400 && /api key not valid|api_key_invalid|invalid.*api.?key/i.test(body);
+}
+
 async function transcribeWithGemini(
   apiKey: string,
   audioBase64: string,
   mimeType = "audio/wav",
 ): Promise<string> {
-  const models = ["gemini-2.5-flash", "gemini-3.5-transcribe", "gemini-flash-latest"];
   let lastError: Error | null = null;
 
-  for (const model of models) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { inlineData: { mimeType: mimeType || "audio/wav", data: audioBase64 } },
-                {
-                  text: "Transcribe the spoken audio verbatim. Output ONLY the raw transcribed text. Do not add any explanation, quotation marks, prefixes, or commentary.",
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0,
-            thinkingConfig: { thinkingBudget: 0 },
-          },
-        }),
-      });
+  for (const model of GEMINI_TRANSCRIBE_MODELS) {
+    // First attempt disables thinking (cheaper/faster); some models reject
+    // thinkingConfig, so fall back to a plain config on that specific 400.
+    const configs: Array<Record<string, unknown>> = [
+      { temperature: 0, thinkingConfig: { thinkingBudget: 0 } },
+      { temperature: 0 },
+    ];
+    for (const generationConfig of configs) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { inlineData: { mimeType: mimeType || "audio/wav", data: audioBase64 } },
+                  { text: TRANSCRIPTION_PROMPT },
+                ],
+              },
+            ],
+            generationConfig,
+          }),
+          signal: AbortSignal.timeout(TRANSCRIPTION_TIMEOUT_MS),
+        });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Gemini API (${model}) returned HTTP ${response.status}: ${errorText}`);
-      }
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => "");
+          if (isAuthFailure(response.status, errorText)) {
+            throw new Error(`Gemini API key rejected (HTTP ${response.status}). Check the key.`);
+          }
+          if (response.status === 400 && /thinking/i.test(errorText) && generationConfig !== configs[configs.length - 1]) {
+            continue; // retry the same model without thinkingConfig
+          }
+          throw new Error(`Gemini API (${model}) returned HTTP ${response.status}: ${errorText.slice(0, 300)}`);
+        }
 
-      const data = (await response.json()) as any;
-      const parts = data?.candidates?.[0]?.content?.parts || [];
-      const nonThoughtText = parts
-        .filter((p: any) => !p.thought)
-        .map((p: any) => p.text || "")
-        .join(" ")
-        .trim();
-      const rawText =
-        nonThoughtText ||
-        parts
-          .map((p: any) => p.text || "")
+        const data = (await response.json()) as any;
+        const blocked = data?.promptFeedback?.blockReason;
+        if (blocked) {
+          throw new Error(`Gemini API (${model}) blocked the audio: ${blocked}`);
+        }
+        const parts = data?.candidates?.[0]?.content?.parts || [];
+        const nonThoughtText = parts
+          .filter((p: any) => !p.thought)
+          .map((p: any) => (typeof p.text === "string" ? p.text : ""))
           .join(" ")
           .trim();
-      return rawText.replace(/^["'«"`]+|["'»"`]+$/g, "").trim();
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
+        const rawText = (
+          nonThoughtText ||
+          parts
+            .map((p: any) => (typeof p.text === "string" ? p.text : ""))
+            .join(" ")
+            .trim()
+        ).replace(/^["'«"`]+|["'»"`]+$/g, "").trim();
+        return rawText;
+      } catch (err) {
+        if (err instanceof Error && /aborted|timeout/i.test(err.message)) {
+          throw new Error(`Gemini API (${model}) timed out after ${TRANSCRIPTION_TIMEOUT_MS / 1000}s.`);
+        }
+        lastError = err instanceof Error ? err : new Error(String(err));
+        if (/timed out/.test(lastError.message)) throw lastError;
+      }
     }
   }
 
@@ -258,24 +289,43 @@ async function transcribeWithWhisperCompat(
   providerName: string,
 ): Promise<string> {
   const formData = new FormData();
-  const blob = new Blob([audioBuffer], { type: "audio/wav" });
+  const blob = new Blob([new Uint8Array(audioBuffer)], { type: "audio/wav" });
   formData.append("file", blob, "audio.wav");
   formData.append("model", "whisper-large-v3-turbo");
   formData.append("response_format", "json");
 
-  const response = await fetch(`${baseUrl}/audio/transcriptions`, {
+  // OpenCode Zen/Go need the same client identification as chat traffic.
+  const extraHeaders: Record<string, string> = baseUrl.includes("opencode.ai/zen")
+    ? {
+        "x-opencode-session": `voice-${Date.now().toString(36)}`,
+        "x-opencode-client": "caide",
+        "User-Agent": "opencode/1.18.16 (caide)",
+      }
+    : {};
+
+  const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/audio/transcriptions`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}` },
+    headers: { Authorization: `Bearer ${apiKey}`, ...extraHeaders },
     body: formData,
+    signal: AbortSignal.timeout(TRANSCRIPTION_TIMEOUT_MS),
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`${providerName} Whisper API returned HTTP ${response.status}: ${errorText}`);
+    const errorText = await response.text().catch(() => "");
+    throw new Error(
+      `${providerName} Whisper API returned HTTP ${response.status}: ${errorText.slice(0, 300)}`,
+    );
   }
 
-  const data = (await response.json()) as { text?: string };
-  return (data?.text ?? "").trim();
+  let data: { text?: unknown };
+  try {
+    data = (await response.json()) as { text?: unknown };
+  } catch {
+    throw new Error(
+      `${providerName} Whisper API returned a non-JSON response (endpoint may not support audio transcription).`,
+    );
+  }
+  return (typeof data?.text === "string" ? data.text : "").trim();
 }
 
 async function tryTranscribeWithProvider(
@@ -306,12 +356,13 @@ export async function transcribeVoiceAudio(
 
   if (providers.length === 0) {
     throw new Error(
-      "Voice transcription requires an API key for OpenCode Zen, Google Gemini, Groq, or OpenAI. Please configure one in Settings → Providers.",
+      "Voice transcription needs an API key. Add a Gemini (GOOGLE/GEMINI_API_KEY), Groq, OpenAI, or OpenRouter key in Settings → Providers — with the AI-model voice setting, the Gemini key is used first when configured.",
     );
   }
 
   const audioBuffer = Buffer.from(input.audioBase64, "base64");
   const errors: string[] = [];
+  let sawEmpty = false;
 
   for (const entry of providers) {
     try {
@@ -321,19 +372,27 @@ export async function transcribeVoiceAudio(
         audioBuffer,
         input.mimeType ?? "audio/wav",
       );
-      if (errors.length > 0) {
-        console.warn(
-          `[transcription] Fell back to ${entry.provider} after ${errors.length} failure(s):`,
-          errors,
-        );
+      if (text) {
+        if (errors.length > 0 || sawEmpty) {
+          console.warn(
+            `[transcription] Transcribed with ${entry.provider} after ${errors.length} failure(s).`,
+            errors,
+          );
+        }
+        return { text };
       }
-      return { text };
+      // Empty transcript usually means silence — keep trying other providers
+      // in case one picks up faint speech, but remember it so silence
+      // resolves to "" (client shows "No speech detected") instead of an error.
+      sawEmpty = true;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.warn(`[transcription] ${entry.provider} failed, trying next. Error: ${msg}`);
       errors.push(`${entry.provider}: ${msg}`);
     }
   }
+
+  if (sawEmpty) return { text: "" };
 
   throw new Error(
     `Voice transcription failed across all configured providers:\n${errors.map((e, i) => `  ${i + 1}. ${e}`).join("\n")}`,

@@ -576,6 +576,7 @@ export const spawnSubagentTool = defineTool({
           apiKey: ctx.provider!.apiKey,
           system: undefined,
           messages: chat,
+          sessionId: ctx.sessionId,
           signal: opts?.signal ?? ctx.signal,
         });
         for await (const chunk of stream) {

@@ -12,6 +12,8 @@ import { endpointForModel, streamProvider } from "./apiAdapter.ts";
 export interface StreamProviderAdapterOptions {
   /** Provider id (enables provider-specific optimizations like prompt caching). */
   providerId?: string;
+  /** Stable per-conversation id -> `x-opencode-session` on OpenCode endpoints. */
+  sessionId?: string;
   /** Token usage callback, forwarded to the provider stream. */
   onUsage?: (usage: { inputTokens: number; outputTokens: number }) => void;
   modelId: string;
@@ -238,6 +240,7 @@ export function createStreamProviderAdapter(
         apiKey: opts.apiKey,
         messages: chat,
         tools: providerTools,
+        ...(opts.sessionId ? { sessionId: opts.sessionId } : {}),
       };
       if (opts.system) providerOpts.system = opts.system;
       if (opts.onUsage) providerOpts.onUsage = opts.onUsage;

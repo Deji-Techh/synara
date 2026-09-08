@@ -191,6 +191,41 @@ describe("Milestone M11 — Provider Streaming, SIGTERM & Block Assembly", () =>
     });
   });
 
+  it("sends x-opencode-session + opencode User-Agent on OpenCode endpoints only", async () => {
+    const { isOpenCodeEndpoint, openCodeHeaders } = await import("./apiAdapter.ts");
+    expect(isOpenCodeEndpoint("https://opencode.ai/zen/v1")).toBe(true);
+    expect(isOpenCodeEndpoint("https://opencode.ai/zen/go/v1")).toBe(true);
+    expect(isOpenCodeEndpoint("https://api.openai.com/v1")).toBe(false);
+
+    const headers = openCodeHeaders("session-abc");
+    expect(headers["x-opencode-session"]).toBe("session-abc");
+    expect(headers["User-Agent"]).toMatch(/^opencode\//);
+    expect(headers["x-opencode-client"]).toBe("caide");
+    expect(headers["x-opencode-request"]).toBeTruthy();
+    // fallback generates an id when no session is passed
+    expect(openCodeHeaders()["x-opencode-session"]).toBeTruthy();
+
+    // Non-OpenCode endpoints must not carry the headers on the wire.
+    let seen: Record<string, string | string[] | undefined> = {};
+    server.on("request", (req, res) => {
+      seen = req.headers as Record<string, string | string[] | undefined>;
+      res.writeHead(200, { "Content-Type": "text/event-stream" });
+      res.write("data: [DONE]\n\n");
+      res.end();
+    });
+    const stream = streamProvider({
+      modelId: "mimo-v2.5-free",
+      baseUrl,
+      apiKey: "test-key",
+      messages: [{ role: "user", content: "hi" }],
+      sessionId: "session-abc",
+    });
+    for await (const _ of stream) {
+      // drain
+    }
+    expect(seen["x-opencode-session"]).toBeUndefined();
+  });
+
   it("verifies per-model routing logic for responses, messages, and gemini endpoints", () => {
     expect(endpointForModel("gpt-5.6-sol")).toBe("responses");
     expect(endpointForModel("grok-3")).toBe("responses");

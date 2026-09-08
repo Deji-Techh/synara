@@ -52,11 +52,56 @@ export function buildProviderUrl(baseUrl: string, modelId: string): string {
   return `${cleanBase}/chat/completions`;
 }
 
+/**
+ * True for OpenCode Zen (`/zen/v1`) and Go (`/zen/go/v1`) endpoints.
+ * Both enforce client identification; Go additionally requires
+ * `x-opencode-session` for prompt-cache session affinity (enforced
+ * 2026-09-06), and `-free` models are UA-gated to official clients
+ * ("free tier can only be used in OpenCode" / FreeUsageLimitError).
+ */
+export function isOpenCodeEndpoint(baseUrl: string): boolean {
+  return baseUrl.includes("opencode.ai/zen");
+}
+
+function randomRequestId(): string {
+  try {
+    const uuid = (globalThis as any)?.crypto?.randomUUID?.();
+    if (typeof uuid === "string" && uuid.length > 0) return uuid;
+  } catch {
+    // fall through
+  }
+  return `req-${Date.now().toString(36)}-${Math.floor(Math.random() * 0xffffff).toString(36)}`;
+}
+
+/**
+ * OpenCode identification headers. Mirrors the official CLI
+ * (`packages/opencode/src/session/llm/request.ts`): a stable
+ * per-conversation `x-opencode-session`, a unique per-request
+ * `x-opencode-request`, plus client/project attribution and an
+ * `opencode/`-prefixed User-Agent so `-free` capacity is not rejected
+ * as third-party/abusive traffic.
+ */
+export function openCodeHeaders(sessionId?: string): Record<string, string> {
+  return {
+    "x-opencode-session": sessionId?.trim() ? sessionId.trim() : randomRequestId(),
+    "x-opencode-request": randomRequestId(),
+    "x-opencode-client": "caide",
+    "x-opencode-project": "caide",
+    "User-Agent": "opencode/1.18.16 (caide)",
+  };
+}
+
 export interface StreamProviderOptions {
   modelId: string;
   baseUrl: string;
   apiKey: string;
   messages: unknown[];
+  /**
+   * Stable per-conversation id forwarded as `x-opencode-session` on
+   * OpenCode Zen/Go endpoints. Falls back to a random id per request
+   * when omitted (still satisfies the vendor requirement).
+   */
+  sessionId?: string;
   /** Optional system prompt. Placed per-provider (OpenAI `instructions` /
    *  prepended system message, Anthropic top-level `system`, Gemini
    *  `system_instruction`). */
@@ -162,6 +207,7 @@ export async function* streamProvider(
   const headers: Record<string, string> = {
     Authorization: `Bearer ${apiKey}`,
     "Content-Type": "application/json",
+    ...(isOpenCodeEndpoint(baseUrl) ? openCodeHeaders(options.sessionId) : {}),
   };
   let requestBody: any;
 
