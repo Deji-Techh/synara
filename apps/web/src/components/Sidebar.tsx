@@ -40,10 +40,10 @@ import {
   LuUndo2,
   LuTerminal,
   LuPin,
-  LuGamepad2,
   LuEllipsisVertical,
 } from "react-icons/lu";
 import { SidebarStageBackdrop } from "~/components/SidebarStageBackdrop";
+import { GameLauncherButton } from "~/components/games/GameLauncherButton";
 import { FrameworkIcon } from "~/components/FrameworkIcon";
 import { createCentralIconComponent } from "~/lib/central-icons";
 import {
@@ -491,6 +491,10 @@ const DebugFeatureFlagsMenu = import.meta.env.DEV
       })),
     )
   : null;
+// Floating game-break window (lazy so the chat bundle stays lean until opened).
+const GameShellRoot = lazy(() =>
+  import("./games/GameShell").then((module) => ({ default: module.GameShellRoot })),
+);
 
 type ProjectContextMenuId =
   | "open-in-finder"
@@ -5821,14 +5825,8 @@ export default function Sidebar() {
                     </button>
                   )}
                 </div>
-                {/* Unclickable Game icon */}
-                <div
-                  className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border/20 bg-muted/10 text-muted-foreground/50 cursor-default select-none pointer-events-none"
-                  aria-hidden="true"
-                  title="Game mode"
-                >
-                  <LuGamepad2 className="size-4" />
-                </div>
+                {/* Game break launcher */}
+                <GameLauncherButton />
               </div>
             </div>
 
@@ -6320,6 +6318,10 @@ export default function Sidebar() {
           }}
         />
       ) : null}
+
+      <Suspense fallback={null}>
+        <GameShellRoot />
+      </Suspense>
     </>
   );
 }
