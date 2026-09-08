@@ -5,6 +5,7 @@
 // Exports: useWebSpeechTranscription, isWebSpeechSupported
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { isElectron } from "~/env";
 
 // Chromium exposes this under the webkit prefix (older) or unprefixed (newer).
 // Electron inherits it from Chromium. Only available in the renderer web context.
@@ -22,6 +23,11 @@ function getSpeechRecognitionConstructor(): SpeechRecognitionConstructor | null 
 
 /** Whether the current runtime supports the Web Speech API. */
 export function isWebSpeechSupported(): boolean {
+  // The API surface exists in Electron's Chromium, but stock Electron builds
+  // ship no Google speech-service key, so recognition starts then dies with a
+  // service error ~2s in. Report unsupported so callers fall back to AI-model
+  // transcription instead of offering a button that always fails.
+  if (isElectron) return false;
   return getSpeechRecognitionConstructor() !== null;
 }
 

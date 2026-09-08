@@ -225,6 +225,16 @@ function ProviderCard({
   const handleSave = async () => {
     const key = apiKeyInput.trim();
     const base = baseUrlInput.trim();
+    // Pasted-config accidents (e.g. a JSON blob from another settings screen)
+    // would otherwise store as a "configured" key and fail auth opaquely.
+    if (key.startsWith("{") || key.includes("\n")) {
+      toastManager.add({
+        type: "error",
+        title: `That doesn't look like an API key`,
+        description: "Paste the raw key value only — not JSON or multi-line text.",
+      });
+      return;
+    }
     onSaveKey(providerId, {
       ...(key ? { apiKey: key } : {}),
       ...(base ? { apiBaseUrl: base } : {}),

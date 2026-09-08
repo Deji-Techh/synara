@@ -12,6 +12,8 @@ export interface HarnessWsOptions {
   url: string;
   sessionId: string;
   onEvent?: (event: HarnessEvent) => void;
+  /** Fires on every (re)connect, after subscribe — the only safe moment to send. */
+  onOpen?: () => void;
   heartbeatMs?: number;
   maxBackoffMs?: number;
 }
@@ -99,6 +101,11 @@ export function connectHarnessWs(options: HarnessWsOptions): HarnessWsHandle {
     socket.onopen = () => {
       backoffMs = 500;
       socket.send(JSON.stringify({ type: "subscribe", sessionId: options.sessionId }));
+      try {
+        options.onOpen?.();
+      } catch {
+        // subscriber errors must not break the socket
+      }
       syncHarnessSettings(
         (message) => {
           if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message));

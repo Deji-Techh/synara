@@ -5,6 +5,14 @@
 
 const inFlightDraftNavigationBySlot = new Map<string, Promise<unknown>>();
 
+/** Two animation frames where available, setTimeout fallback otherwise. */
+function nextFrame(): Promise<void> {
+  if (typeof requestAnimationFrame !== "function") {
+    return new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+}
+
 export function draftNavigationSlotKey(projectId: string, entryPoint: string): string {
   return `${projectId}\u0000${entryPoint}`;
 }
@@ -58,7 +66,7 @@ export async function stageDraftNavigation(input: {
     await input.navigate();
     if (!input.isDestinationActive()) {
       // One asynchronous beat for the router state to flush before judging.
-      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      await nextFrame();
       if (!input.isDestinationActive()) {
         await new Promise((resolve) => setTimeout(resolve, 150));
         if (!input.isDestinationActive()) {

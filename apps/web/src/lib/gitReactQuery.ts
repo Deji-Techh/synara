@@ -21,7 +21,6 @@ const GIT_WORKING_TREE_DIFF_STALE_TIME_MS = 5_000;
 export const GIT_WORKING_TREE_DIFF_LIVE_REFETCH_INTERVAL_MS = 4_000;
 const RPC_EXPENSIVE_READ_CAPACITY_EXCEEDED = "RPC_EXPENSIVE_READ_CAPACITY_EXCEEDED";
 const GIT_CAPACITY_RETRY_LIMIT = 12;
-const DEFAULT_GIT_CAPACITY_RETRY_MS = 250;
 
 export function isGitExpensiveReadCapacityError(
   error: unknown,
@@ -49,9 +48,11 @@ function shouldRetryGitExpensiveRead(failureCount: number, error: unknown): bool
 function gitExpensiveReadRetryDelay(attemptIndex: number, error: unknown): number {
   if (isGitExpensiveReadCapacityError(error)) {
     const retryAfterMs = "retryAfterMs" in error ? error.retryAfterMs : undefined;
-    return typeof retryAfterMs === "number" && retryAfterMs > 0
-      ? retryAfterMs
-      : DEFAULT_GIT_CAPACITY_RETRY_MS;
+    if (typeof retryAfterMs === "number" && retryAfterMs > 0) return retryAfterMs;
+    // No server hint: back off exponentially instead of hammering the gate
+    // at a flat 250ms — retry storms are how a transient saturation turns
+    // into a sustained one.
+    return Math.min(250 * 2 ** attemptIndex, 4_000);
   }
   return Math.min(1_000 * 2 ** attemptIndex, 30_000);
 }
@@ -474,8 +475,11 @@ export function gitWorkingTreeDiffStatsQueryOptions(input: {
     enabled: (input.enabled ?? true) && input.cwd !== null,
     staleTime: GIT_WORKING_TREE_DIFF_STALE_TIME_MS,
     ...(refetchInterval !== undefined ? { refetchInterval } : {}),
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
+    // Expensive queries must not stampede on focus/reconnect: reconnect is
+    // exactly when every query refires at once, which is how the 16-slot
+    // per-socket budget saturates and diff checks start failing.
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     ...GIT_EXPENSIVE_READ_RETRY_OPTIONS,
   });
 }
@@ -500,8 +504,9 @@ export function gitWorkingTreeDiffQueryOptions(input: {
     enabled: (input.enabled ?? true) && input.cwd !== null,
     staleTime: GIT_WORKING_TREE_DIFF_STALE_TIME_MS,
     ...(refetchInterval !== undefined ? { refetchInterval } : {}),
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
+    // Same stampede guard as the stats query above.
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     ...GIT_EXPENSIVE_READ_RETRY_OPTIONS,
   });
 }

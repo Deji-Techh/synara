@@ -46,6 +46,7 @@ import { DeviceControlRail, type DeviceRailAction } from "../device/DeviceContro
 
 import { cn } from "~/lib/utils";
 import { buildLocalImageUrl } from "~/lib/localImageUrls";
+import { setVisibleInterval } from "~/lib/visibleInterval";
 import { PanelStateMessage } from "./PanelStateMessage";
 import { toastManager } from "../ui/toast";
 import { Dialog, DialogPopup, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
@@ -268,18 +269,17 @@ function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean 
     // Pauses while hidden — keep-mounted hidden preview panes were spamming
     // the WS with toolchain polls and keeping the engine awake, causing the
     // CPU/RAM spike on every preview switch.
-    const id = window.setInterval(refresh, TOOLCHAIN_POLL_INTERVAL_MS);
-    return () => window.clearInterval(id);
+    return setVisibleInterval(refresh, TOOLCHAIN_POLL_INTERVAL_MS);
   }, [props.isVisible, refresh]);
 
   // Poll progress via status while installing (engine emits progress via logs, but status percent drives bar)
   useEffect(() => {
     if (!installing || !props.isVisible) return;
-    const iv = window.setInterval(() => {
+    const iv = setVisibleInterval(() => {
       // While installing, re-use status polling for fallback + try to read engine logs for progress percent
       refresh();
     }, 1000);
-    return () => window.clearInterval(iv);
+    return () => iv();
   }, [installing, props.isVisible, refresh]);
 
   const handleInstall = useCallback(() => {
@@ -1109,8 +1109,7 @@ export function PreviewPanel(props: {
       return;
     }
     pollOnce();
-    const timer = window.setInterval(pollOnce, PREVIEW_POLL_INTERVAL_MS);
-    return () => window.clearInterval(timer);
+    return setVisibleInterval(pollOnce, PREVIEW_POLL_INTERVAL_MS);
   }, [props.isVisible, pollOnce]);
 
   // Real device list from the engine (AVDs, adb, simctl) so native runs can
@@ -1181,10 +1180,10 @@ export function PreviewPanel(props: {
         });
     };
     capture();
-    const timer = window.setInterval(capture, NATIVE_FRAME_POLL_INTERVAL_MS);
+    const stopTimer = setVisibleInterval(capture, NATIVE_FRAME_POLL_INTERVAL_MS);
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
+      stopTimer();
     };
   }, [props.isVisible, props.threadId, panelState.status, panelState.kind, panelState.url]);
 
@@ -1471,8 +1470,7 @@ export function PreviewPanel(props: {
       return;
     }
     pollBuildOnce();
-    const timer = window.setInterval(pollBuildOnce, BUILD_POLL_INTERVAL_MS);
-    return () => window.clearInterval(timer);
+    return setVisibleInterval(pollBuildOnce, BUILD_POLL_INTERVAL_MS);
   }, [props.isVisible, pollBuildOnce]);
 
   // A succeeded build means the engine snapshotted it into the global

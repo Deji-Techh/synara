@@ -359,22 +359,24 @@ export async function verifyPackagedDesktopStartup(
     if (child) {
       await terminateProcessTree(child);
     }
-    try {
-      rmSync(temporaryRoot, {
-        recursive: true,
-        force: true,
-        maxRetries: process.platform === "win32" ? 20 : 0,
-        retryDelay: process.platform === "win32" ? 250 : 100,
-      });
-    } catch (error) {
-      if (
-        process.platform !== "win32" ||
-        !(error instanceof Error && "code" in error && error.code === "EPERM")
-      ) {
-        throw error;
+    // The app is usually still running when startup proof lands, so its
+    // teardown races directory removal (lingering chrome children hold
+    // files briefly). Retry, then warn — proof already passed, so leftover
+    // temp must not fail the seal.
+    let removed = false;
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < 5 && !removed; attempt++) {
+      try {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 400));
+        rmSync(temporaryRoot, { recursive: true, force: true });
+        removed = true;
+      } catch (error) {
+        lastError = error;
       }
+    }
+    if (!removed) {
       console.warn(
-        `Could not remove Windows smoke temp directory; leaving it for runner cleanup: ${temporaryRoot}`,
+        `Could not remove smoke temp directory; leaving it for runner cleanup: ${temporaryRoot} (${lastError instanceof Error ? lastError.message : String(lastError)})`,
       );
     }
   }

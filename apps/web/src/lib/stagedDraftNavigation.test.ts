@@ -27,8 +27,7 @@ describe("stagedDraftNavigation", () => {
     expect(calls).toEqual(["stage", "navigate", "check", "finalize"]);
   });
 
-  it("rolls back a staged draft when a newer navigation wins", async () => {
-    const finalize = vi.fn();
+  it("rolls back a staged draft when a newer navigation wins", async () => {    const finalize = vi.fn();
     const rollback = vi.fn();
 
     const committed = await stageDraftNavigation({
@@ -85,5 +84,27 @@ describe("stagedDraftNavigation", () => {
 
     await expect(runDraftNavigationOnce(slotKey, secondRun)).resolves.toBe("second");
     expect(secondRun).toHaveBeenCalledOnce();
+  });
+
+  it("waits a beat for router state before rolling back", async () => {
+    const finalize = vi.fn();
+    const rollback = vi.fn();
+    let checks = 0;
+
+    const committed = await stageDraftNavigation({
+      stage: vi.fn(),
+      navigate: async () => undefined,
+      // First check runs before the router flushes; the grace re-check sees it.
+      isDestinationActive: () => {
+        checks += 1;
+        return checks >= 2;
+      },
+      finalize,
+      rollback,
+    });
+
+    expect(committed).toBe(true);
+    expect(finalize).toHaveBeenCalledOnce();
+    expect(rollback).not.toHaveBeenCalled();
   });
 });

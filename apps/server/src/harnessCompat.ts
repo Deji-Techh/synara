@@ -2271,6 +2271,15 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               pendingTokenFlushTimer = null;
               let lastTokenPublishTime = 0;
               const STREAM_FLUSH_INTERVAL_MS = 35; // 35ms throttle: smooth ~28fps text flow, zero UI starvation, massive CPU reduction
+              // Rebroadcasts carry the ENTIRE cumulative text, so cost grows
+              // with turn length — stretch the interval for large transcripts
+              // instead of re-sending megabytes at 28fps.
+              const streamFlushIntervalFor = (msg: any): number => {
+                const len = typeof msg?.text === "string" ? msg.text.length : 0;
+                if (len > 100_000) return 500;
+                if (len > 20_000) return 150;
+                return STREAM_FLUSH_INTERVAL_MS;
+              };
 
               const flushAssistantMessageImmediate = (msg: any) => {
                 if (pendingTokenFlushTimer !== null) {
@@ -2283,15 +2292,16 @@ export class OrchestrationEngineService extends ServiceMap.Service<
 
               const scheduleAssistantMessagePublish = (msg: any) => {
                 const now = Date.now();
+                const intervalMs = streamFlushIntervalFor(msg);
                 const elapsed = now - lastTokenPublishTime;
-                if (elapsed >= STREAM_FLUSH_INTERVAL_MS) {
+                if (elapsed >= intervalMs) {
                   flushAssistantMessageImmediate(msg);
                 } else if (pendingTokenFlushTimer === null) {
                   pendingTokenFlushTimer = setTimeout(() => {
                     pendingTokenFlushTimer = null;
                     lastTokenPublishTime = Date.now();
                     publishAssistantMessage(msg);
-                  }, STREAM_FLUSH_INTERVAL_MS - elapsed);
+                  }, intervalMs - elapsed);
                 }
               };
 

@@ -5,6 +5,7 @@ import {
   gitQueryKeys,
   gitStatusQueryOptions,
   gitWorkingTreeDiffQueryOptions,
+  gitWorkingTreeDiffStatsQueryOptions,
   invalidateGitQueries,
   invalidateGitQueriesForCwds,
   isGitExpensiveReadCapacityError,
@@ -378,6 +379,25 @@ describe("git expensive-read capacity retry", () => {
     expect(options.retry(0, capacityError)).toBe(true);
     expect(options.retry(12, capacityError)).toBe(false);
     expect(options.retryDelay(0, capacityError)).toBe(375);
+  });
+
+  it("backs off exponentially on capacity errors without a server hint", () => {
+    const options = gitStatusQueryOptions("/repo");
+    if (typeof options.retryDelay !== "function") return;
+    const hintless = { code: "RPC_EXPENSIVE_READ_CAPACITY_EXCEEDED" };
+    expect(options.retryDelay(0, hintless)).toBe(250);
+    expect(options.retryDelay(1, hintless)).toBe(500);
+    expect(options.retryDelay(4, hintless)).toBe(4_000);
+    expect(options.retryDelay(10, hintless)).toBe(4_000);
+  });
+
+  it("does not stampede expensive diff queries on focus or reconnect", () => {
+    const stats = gitWorkingTreeDiffStatsQueryOptions({ cwd: "/repo" });
+    const patch = gitWorkingTreeDiffQueryOptions({ cwd: "/repo" });
+    expect(stats.refetchOnWindowFocus).toBe(false);
+    expect(stats.refetchOnReconnect).toBe(false);
+    expect(patch.refetchOnWindowFocus).toBe(false);
+    expect(patch.refetchOnReconnect).toBe(false);
   });
 });
 

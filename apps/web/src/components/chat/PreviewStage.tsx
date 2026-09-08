@@ -56,6 +56,7 @@ import {
   type PreviewTestState,
 } from "./previewPanel.logic";
 import { buildLocalImageUrl } from "~/lib/localImageUrls";
+import { setVisibleInterval } from "~/lib/visibleInterval";
 import { MobileQrBranch } from "./MobileQrBranch";
 import { PanelStateMessage } from "./PanelStateMessage";
 import { CHAT_BACKGROUND_CLASS_NAME } from "./composerPickerStyles";
@@ -203,14 +204,12 @@ function FlutterToolchainBanner(props: { threadId: ThreadId; isVisible: boolean 
   useEffect(() => {
     if (!props.isVisible) return;
     refresh();
-    const id = window.setInterval(refresh, TOOLCHAIN_POLL_INTERVAL_MS);
-    return () => window.clearInterval(id);
+    return setVisibleInterval(refresh, TOOLCHAIN_POLL_INTERVAL_MS);
   }, [props.isVisible, refresh]);
 
   useEffect(() => {
     if (!installing || !props.isVisible) return;
-    const iv = window.setInterval(() => refresh(), 1000);
-    return () => window.clearInterval(iv);
+    return setVisibleInterval(() => refresh(), 1000);
   }, [installing, props.isVisible, refresh]);
 
   const handleInstall = useCallback(() => {
@@ -966,8 +965,7 @@ export function PreviewStage(props: {
   useEffect(() => {
     if (!props.isVisible) return;
     pollOnce();
-    const timer = window.setInterval(pollOnce, PREVIEW_POLL_INTERVAL_MS);
-    return () => window.clearInterval(timer);
+    return setVisibleInterval(pollOnce, PREVIEW_POLL_INTERVAL_MS);
   }, [props.isVisible, pollOnce]);
 
   const [nativeFrame, setNativeFrame] = useState<{ image: string; capturedAt: number } | null>(
@@ -1001,10 +999,10 @@ export function PreviewStage(props: {
         });
     };
     capture();
-    const timer = window.setInterval(capture, NATIVE_FRAME_POLL_INTERVAL_MS);
+    const stopTimer = setVisibleInterval(capture, NATIVE_FRAME_POLL_INTERVAL_MS);
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
+      stopTimer();
     };
   }, [props.isVisible, props.threadId, panelState.status, panelState.kind, panelState.url]);
 
@@ -1181,8 +1179,7 @@ export function PreviewStage(props: {
   useEffect(() => {
     if (!props.isVisible) return;
     pollBuildOnce();
-    const timer = window.setInterval(pollBuildOnce, BUILD_POLL_INTERVAL_MS);
-    return () => window.clearInterval(timer);
+    return setVisibleInterval(pollBuildOnce, BUILD_POLL_INTERVAL_MS);
   }, [props.isVisible, pollBuildOnce]);
 
   // Branch content resolver

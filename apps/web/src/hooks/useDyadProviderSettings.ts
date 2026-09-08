@@ -94,13 +94,22 @@ export function useDyadProviderSettings(): DyadProvidersState & {
           }));
           if (e.requestId) pendingRef.current.get(e.requestId)?.(event);
         },
+        // Request state on every (re)connect: sending immediately after
+        // connectHarnessWs returns races the socket and is silently dropped,
+        // leaving the panel permanently empty ("No connected providers").
+        onOpen: () => {
+          handleRef.current?.send({
+            type: "provider_settings_get",
+            sessionId: "settings",
+            requestId: `init-${Date.now()}`,
+          });
+        },
       });
     } catch {
       handle = null;
     }
     handleRef.current = handle;
     setState((prev) => ({ ...prev, connected: handle !== null }));
-    handle?.send({ type: "provider_settings_get", sessionId: "settings", requestId: `init-${Date.now()}` });
     return () => {
       try {
         handle?.disconnect();

@@ -1061,7 +1061,7 @@ function SettingsRouteView() {
       <SettingsSection title="Voice input">
         <SettingsRow
           title="Transcription engine"
-          description="Web Speech API uses Chrome's built-in recognition — free, no API key needed, requires internet. AI model uses your configured provider (Gemini, Groq, or OpenAI)."
+          description="Web Speech API uses Chrome's built-in recognition — free, no API key needed, requires internet (browser only; the desktop app has no speech-service key, so use AI model there). AI model uses your configured provider (Gemini, Groq, or OpenAI)."
           resetAction={
             settings.voiceTranscriptionProvider !== DEFAULT_VOICE_TRANSCRIPTION_PROVIDER ? (
               <SettingResetButton
