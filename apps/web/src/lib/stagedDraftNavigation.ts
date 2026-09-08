@@ -30,6 +30,12 @@ export function runDraftNavigationOnce<T>(slotKey: string, run: () => Promise<T>
 /**
  * Keeps the previous routed draft alive while the destination loads. A superseding navigation
  * rolls the staged draft back without treating the user's newer navigation as an error.
+ *
+ * Router state can lag behind a resolved navigate() (TanStack flushes the
+ * location asynchronously, worse under load or in the packaged app), so a
+ * single synchronous isDestinationActive() check false-negatives and rolls
+ * back a perfectly good navigation — stranding the user on Home. Re-check
+ * across two animation frames before giving up.
  */
 export async function stageDraftNavigation(input: {
   readonly stage: () => void;
@@ -51,8 +57,15 @@ export async function stageDraftNavigation(input: {
     input.stage();
     await input.navigate();
     if (!input.isDestinationActive()) {
-      rollbackOnce();
-      return false;
+      // One asynchronous beat for the router state to flush before judging.
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      if (!input.isDestinationActive()) {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        if (!input.isDestinationActive()) {
+          rollbackOnce();
+          return false;
+        }
+      }
     }
     input.finalize();
     return true;

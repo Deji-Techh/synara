@@ -28,6 +28,8 @@ import { createVersion } from "../../dyad/vcs/versions.ts";
 import { resolveChatModeForTurn } from "../../dyad/plan/chatMode.ts";
 import { Inbox } from "../inbox/index.ts";
 import { appendHarnessEvent, flushTurnTokens, readHarnessEvents } from "./eventLog.ts";
+import { clearPendingConsentsForSession } from "../../dyad/tools/permissions.ts";
+import { clearPendingMcpConsentsForSession } from "../../dyad/mcp/mcpConsent.ts";
 import { buildConversationChain, buildMessages } from "../session/buildChain.ts";
 import { SessionStorage } from "../session/storage.ts";
 import {
@@ -184,6 +186,10 @@ export class CaideRunner {
 
   cancel(sessionId: string, cause = "cancelled"): void {
     this.controllers.get(sessionId)?.abort(cause);
+    // Parked consent waits (tool + MCP) never observe the abort otherwise —
+    // settle them as declined so the turn fails fast instead of hanging.
+    clearPendingConsentsForSession(sessionId);
+    clearPendingMcpConsentsForSession(sessionId);
   }
 
   getStatus(): RunnerStatus {
@@ -384,6 +390,7 @@ export class CaideRunner {
             apiKey: ctx.provider.apiKey ?? "",
             system,
             appPath: input.appPath,
+            sessionId: input.sessionId,
             onUsage: recordUsage,
           },
           ctx.tools,
@@ -415,6 +422,7 @@ export class CaideRunner {
               apiKey: connection.apiKey ?? "",
               system,
               appPath: input.appPath,
+              sessionId: input.sessionId,
               onUsage: recordUsage,
             },
             ctx.tools,
@@ -462,7 +470,7 @@ export class CaideRunner {
           readOnly: t.readOnly,
           timeoutMs: t.timeoutMs,
           execute: (args, c) =>
-            ctx.executeWithConsent(t.name, args, c.toolId) as Promise<unknown>,
+            ctx.executeWithConsent(t.name, args, c.toolId, c.signal) as Promise<unknown>,
         })),
         onEvent: forward,
         role: "builder",

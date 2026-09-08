@@ -480,6 +480,8 @@ import {
   updateInputFromForm,
 } from "../routes/-automations.shared";
 import { ChatTranscriptPane } from "./chat/ChatTranscriptPane";
+import { ChatHarnessConsentStrip } from "./chat/ChatHarnessConsentStrip";
+import { useChatHarnessSocket } from "./chat/useChatHarnessSocket";
 import { ThreadDetailHydrationState } from "./chat/ThreadDetailHydrationState";
 import type { MessagesTimelineController } from "./chat/MessagesTimeline";
 import { buildTurnDiffSummaryByAssistantMessageId } from "./chat/MessagesTimeline.logic";
@@ -1878,6 +1880,10 @@ export default function ChatView({
   const browserOpen = rawSearch.panel === "browser";
   const resolvedDiffOpen = panelState ? panelState.panel === "diff" : diffOpen;
   const activeThreadId = activeThread?.id ?? null;
+  // Harness socket for the open server thread (session id == thread id): feeds
+  // consent ui_prompts into the shared harnessStore so parked approvals render
+  // above the composer, and lets Stop cancel the harness turn directly.
+  const chatHarnessSocket = useChatHarnessSocket(isServerThread ? activeThreadId : null);
   const activeLatestTurn = activeThread?.latestTurn ?? null;
   // Read once here so memo bodies depend on the turn id instead of the turn object: a
   // `foo?.bar` read inside a memo makes React Compiler infer `foo` as the dependency, which
@@ -6122,13 +6128,17 @@ export default function ChatView({
   const onInterrupt = useCallback(async () => {
     const api = readNativeApi();
     if (!api || !activeThread) return;
+    // Cancel the harness turn too: parked consent waits only settle via
+    // consent_answer or session cancel, and the loop abort alone never
+    // reaches them.
+    chatHarnessSocket.send({ type: "cancel", sessionId: activeThread.id });
     await api.orchestration.dispatchCommand({
       type: "thread.turn.interrupt",
       commandId: newCommandId(),
       threadId: activeThread.id,
       createdAt: new Date().toISOString(),
     });
-  }, [activeThread]);
+  }, [activeThread, chatHarnessSocket]);
 
   // A rejected interrupt (orchestration dispatch timeout, dead runtime) leaves the
   // UI spinning with no explanation, so the stop affordances report it.
@@ -11028,6 +11038,13 @@ export default function ChatView({
                   showComposerSubagentStrip
                 }
               />
+              {/* Harness turn approvals (tool/MCP consent, questionnaires) park
+                  the turn with no orchestration-side approval row — without
+                  this they are invisible and the turn reads as hung. */}
+              <ChatHarnessConsentStrip
+                threadId={isServerThread ? activeThreadId : null}
+                send={chatHarnessSocket.send}
+              />
               {/* Pending approvals and AskUserQuestion prompts both render as a detached
                   card floating just above the composer (padding gives the measured gap),
                   instead of a banner fused into the composer surface. An approval takes
@@ -11751,7 +11768,16 @@ export default function ChatView({
                     projects={composerThreadProjects}
                     activeProjectId={activeProject?.id ?? null}
                     onSelectProject={(selectedProjId) => {
-                      void handleNewThread(selectedProjId);
+                      void handleNewThread(selectedProjId, { fresh: true }).then((threadId) => {
+                        if (!threadId) {
+                          toastManager.add({
+                            type: "warning",
+                            title: "Could not switch projects",
+                            description:
+                              "Navigation to the new conversation did not settle. Try again.",
+                          });
+                        }
+                      });
                     }}
                     onCreateProject={() => setCreateAppDialogOpen(true)}
                   />

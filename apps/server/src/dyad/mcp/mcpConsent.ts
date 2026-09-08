@@ -46,9 +46,25 @@ interface PendingEntry {
 let counter = 0;
 const pending = new Map<string, PendingEntry>();
 
-export function waitForMcpConsent(requestId: string, sessionId: string): Promise<McpConsentDecision> {
+export function waitForMcpConsent(
+  requestId: string,
+  sessionId: string,
+  signal?: AbortSignal,
+): Promise<McpConsentDecision> {
   return new Promise((resolve) => {
-    pending.set(requestId, { sessionId, resolve });
+    if (signal?.aborted) {
+      resolve("decline");
+      return;
+    }
+    let onAbort: (() => void) | undefined;
+    const done = (decision: McpConsentDecision) => {
+      if (onAbort && signal) signal.removeEventListener("abort", onAbort);
+      pending.delete(requestId);
+      resolve(decision);
+    };
+    onAbort = () => done("decline");
+    pending.set(requestId, { sessionId, resolve: done });
+    signal?.addEventListener("abort", onAbort, { once: true });
   });
 }
 
@@ -92,6 +108,8 @@ export async function requireMcpToolConsent(params: {
   autoApproved?: { approved: boolean; reason?: string };
   store?: ConsentStore;
   requestConsent: McpConsentRequestFn;
+  /** Turn abort — settles a parked wait as declined instead of hanging. */
+  signal?: AbortSignal;
 }): Promise<{ allowed: boolean; autoApproveReason?: string }> {
   const store = params.store ?? new MemoryMcpConsentStore();
   const stored = getMcpConsent(params.serverId, params.toolName, store);
@@ -102,7 +120,8 @@ export async function requireMcpToolConsent(params: {
   }
 
   const requestId = `mcp:${params.serverName}:${params.toolName}:${++counter}`;
-  const decisionPromise = waitForMcpConsent(requestId, params.sessionId);
+  if (params.signal?.aborted) return { allowed: false };
+  const decisionPromise = waitForMcpConsent(requestId, params.sessionId, params.signal);
   void Promise.resolve()
     .then(() =>
       params.requestConsent({

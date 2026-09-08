@@ -161,6 +161,39 @@ describe("dyad tool catalog (m2)", () => {
     await expect(pending).resolves.toBe(false);
   });
 
+  it("an aborted turn signal declines a parked consent wait", async () => {
+    const controller = new AbortController();
+    const pending = requireAgentToolConsent({
+      sessionId: "s10",
+      toolName: "write_plan",
+      store: new MemoryConsentStore(),
+      requestConsent: () => new Promise<never>(() => {}),
+      signal: controller.signal,
+    });
+    controller.abort("cancelled");
+    await expect(pending).resolves.toBe(false);
+  });
+
+  it("a pre-aborted signal never parks", async () => {
+    const controller = new AbortController();
+    controller.abort("cancelled");
+    let parked = false;
+    const requestConsent = () => {
+      parked = true;
+      return new Promise<never>(() => {}) as Promise<"accept-once">;
+    };
+    await expect(
+      requireAgentToolConsent({
+        sessionId: "s11",
+        toolName: "write_plan",
+        store: new MemoryConsentStore(),
+        requestConsent,
+        signal: controller.signal,
+      }),
+    ).resolves.toBe(false);
+    expect(parked).toBe(false);
+  });
+
   it("toolNamesForTurn covers agent, plan, and build profiles", () => {
     const agent = toolNamesForTurn();
     expect(agent).toContain("write_file");

@@ -1125,7 +1125,9 @@ function EventRouter() {
     const pendingThreadEventsById = new Map<ThreadId, OrchestrationEvent[]>();
     const threadSnapshotRequestInFlight = new Set<ThreadId>();
     const threadSnapshotRefreshPending = new Set<ThreadId>();
-    const threadSnapshotNotFoundRetryAttempted = new Set<ThreadId>();
+    const threadSnapshotNotFoundRetryAttempted = new Map<ThreadId, number>();
+    const THREAD_SNAPSHOT_NOT_FOUND_MAX_RETRIES = 5;
+    const THREAD_SNAPSHOT_NOT_FOUND_RETRY_DELAYS_MS = [800, 2_000, 4_000, 8_000, 8_000];
     const threadReplayRequestInFlight = new Set<ThreadId>();
     const threadProjectionReconcileInFlight = new Map<ThreadId, number>();
     const threadProjectionTerminalFencePending = new Set<ThreadId>();
@@ -1782,12 +1784,26 @@ function EventRouter() {
       useStore.getState().markThreadDetailSyncFailed(threadId);
       if (
         failure.code === "THREAD_SNAPSHOT_NOT_FOUND" &&
-        !threadSnapshotNotFoundRetryAttempted.has(threadId) &&
         getThreadFromState(useStore.getState(), threadId)
       ) {
-        threadSnapshotNotFoundRetryAttempted.add(threadId);
-        useStore.getState().clearThreadDetailSyncFailure(threadId);
-        void refreshThreadSnapshot(threadId);
+        // Fresh forks/branches can arrive before the server committed them:
+        // retry with backoff instead of stranding the pane on "Loading
+        // conversation" after a single immediate attempt.
+        const attempts = threadSnapshotNotFoundRetryAttempted.get(threadId) ?? 0;
+        if (attempts < THREAD_SNAPSHOT_NOT_FOUND_MAX_RETRIES) {
+          threadSnapshotNotFoundRetryAttempted.set(threadId, attempts + 1);
+          useStore.getState().clearThreadDetailSyncFailure(threadId);
+          const delayMs =
+            THREAD_SNAPSHOT_NOT_FOUND_RETRY_DELAYS_MS[attempts] ??
+            THREAD_SNAPSHOT_NOT_FOUND_RETRY_DELAYS_MS[
+              THREAD_SNAPSHOT_NOT_FOUND_RETRY_DELAYS_MS.length - 1
+            ];
+          window.setTimeout(() => {
+            if (!disposed && subscribedThreadIds.has(threadId)) {
+              void refreshThreadSnapshot(threadId);
+            }
+          }, delayMs);
+        }
       }
     });
     // Retention can evict a thread's detail slices while its stream lease stays

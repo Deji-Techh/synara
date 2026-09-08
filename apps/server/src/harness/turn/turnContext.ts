@@ -93,7 +93,12 @@ export interface TurnContext {
   tools: ToolDef[];
   store: ConsentStore;
   /** Execute one tool call with consent gating + UI routing. */
-  executeWithConsent(toolName: string, args: unknown, toolId: string): Promise<unknown>;
+  executeWithConsent(
+    toolName: string,
+    args: unknown,
+    toolId: string,
+    signal?: AbortSignal,
+  ): Promise<unknown>;
   /** UI actions for a tool_call event (database reveal today; more in M3b). */
   routeToolEvent(toolName: string): { revealDatabase: boolean };
   cleanup(): void;
@@ -186,7 +191,12 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
     },
     tools: included,
     store,
-    async executeWithConsent(toolName: string, args: unknown, toolId: string): Promise<unknown> {
+    async executeWithConsent(
+      toolName: string,
+      args: unknown,
+      toolId: string,
+      signal?: AbortSignal,
+    ): Promise<unknown> {
       const def = included.find((d) => d.name === toolName);
       if (!def) throw new Error(`Tool not available this turn: ${toolName}`);
       assertAppBlueprintApproved(input.sessionId, toolName, !def.readOnly, {
@@ -200,6 +210,7 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
         store,
         autoApproveNonSchemaSql: input.autoApproveNonSchemaSql,
         requestConsent,
+        ...(signal ? { signal } : {}),
       });
       if (!allowed) throw new Error(`Tool call declined: ${toolName}`);
       return def.execute(args, {

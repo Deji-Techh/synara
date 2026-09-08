@@ -66,9 +66,26 @@ interface PendingEntry {
 let requestCounter = 0;
 const pending = new Map<string, PendingEntry>();
 
-export function waitForConsent(requestId: string, sessionId: string): Promise<ConsentDecision> {
+export function waitForConsent(
+  requestId: string,
+  sessionId: string,
+  signal?: AbortSignal,
+): Promise<ConsentDecision> {
   return new Promise((resolve) => {
-    pending.set(requestId, { sessionId, resolve });
+    // Already cancelled — decline immediately so the turn fails fast.
+    if (signal?.aborted) {
+      resolve("decline");
+      return;
+    }
+    let onAbort: (() => void) | undefined;
+    const done = (decision: ConsentDecision) => {
+      if (onAbort && signal) signal.removeEventListener("abort", onAbort);
+      pending.delete(requestId);
+      resolve(decision);
+    };
+    onAbort = () => done("decline");
+    pending.set(requestId, { sessionId, resolve: done });
+    signal?.addEventListener("abort", onAbort, { once: true });
   });
 }
 
@@ -156,6 +173,8 @@ export async function requireAgentToolConsent(params: {
   autoApproveNonSchemaSql?: boolean;
   store?: ConsentStore;
   requestConsent: ConsentRequestFn;
+  /** Turn abort — settles a parked wait as declined instead of hanging. */
+  signal?: AbortSignal;
 }): Promise<boolean> {
   const store = params.store ?? new MemoryConsentStore();
   const current = getAgentToolConsent(params.toolName, store);
@@ -174,13 +193,15 @@ export async function requireAgentToolConsent(params: {
   }
 
   const requestId = `agent:${params.toolName}:${++requestCounter}`;
+  // Already cancelled — fail fast without emitting a prompt nobody can answer.
+  if (params.signal?.aborted) return false;
   // Two integration styles are supported: the WS layer either answers by
   // calling resolveConsent(requestId, decision) when the user clicks, or by
   // returning the decision directly. Either path settles the wait below.
   // The request is fire-and-forget: only the decision is awaited, so a
   // cancelled session (clearPendingConsentsForSession) always settles even
   // if the transport never answers.
-  const decisionPromise = waitForConsent(requestId, params.sessionId);
+  const decisionPromise = waitForConsent(requestId, params.sessionId, params.signal);
   void Promise.resolve()
     .then(() =>
       params.requestConsent({

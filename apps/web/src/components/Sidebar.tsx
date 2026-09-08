@@ -5943,6 +5943,14 @@ export default function Sidebar() {
                                           envMode: resolveSidebarNewThreadEnvMode({
                                             defaultEnvMode: appSettings.defaultThreadEnvMode,
                                           }),
+                                        }).then((threadId) => {
+                                          if (!threadId) {
+                                            toastManager.add({
+                                              type: "warning",
+                                              title: "Could not open a new chat",
+                                              description: `Navigation to the new ${project.name} conversation did not settle. Try again.`,
+                                            });
+                                          }
                                         });
                                       }}
                                       className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
@@ -6076,6 +6084,14 @@ export default function Sidebar() {
             envMode: resolveSidebarNewThreadEnvMode({
               defaultEnvMode: appSettings.defaultThreadEnvMode,
             }),
+          }).then((threadId) => {
+            if (!threadId) {
+              toastManager.add({
+                type: "warning",
+                title: "Could not open a new chat",
+                description: "Navigation to the new conversation did not settle. Try again.",
+              });
+            }
           });
         }}
         onCreateNewProject={() => {
