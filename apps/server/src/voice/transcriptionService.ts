@@ -249,10 +249,11 @@ export function describeFetchError(err: unknown): string {
         : typeof cause === "string" && cause
           ? cause.slice(0, 200)
           : "";
-  if (causeMsg && !msg.includes(causeMsg)) return `${msg} [cause: ${causeMsg}]`;
   // Undici network failures hide everything in `cause` (no HTTP status);
-  // include its first stack frames so the next "fetch failed" names the
-  // exact call site instead of just the error class.
+  // include its first stack frames so a "fetch failed" names the exact call
+  // site instead of just the error class.
+  let suffix = "";
+  if (causeMsg && !msg.includes(causeMsg)) suffix += ` [cause: ${causeMsg}]`;
   if (cause instanceof Error && cause.stack) {
     const frames = cause.stack
       .split("\n")
@@ -260,9 +261,9 @@ export function describeFetchError(err: unknown): string {
       .map((line) => line.trim())
       .filter(Boolean)
       .join(" <- ");
-    if (frames) return `${msg} [cause: ${causeMsg} @ ${frames.slice(0, 400)}]`;
+    if (frames) suffix += ` [at: ${frames.slice(0, 500)}]`;
   }
-  return msg;
+  return suffix ? `${msg}${suffix}` : msg;
 }
 
 async function transcribeWithGemini(
