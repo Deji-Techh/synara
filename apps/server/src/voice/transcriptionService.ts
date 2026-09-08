@@ -286,7 +286,11 @@ async function transcribeWithGemini(
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
         const response = await fetch(url, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          // Identity encoding: some runtimes in this codebase patch
+          // stream .pipe() (Effect Pipeable), which breaks Undici's gzip/br
+          // response decompression ("args[0] is not a function"). Uncompressed
+          // transcription payloads never touch that path.
+          headers: { "Content-Type": "application/json", "Accept-Encoding": "identity" },
           body: JSON.stringify({
             contents: [
               {
@@ -371,7 +375,9 @@ async function transcribeWithWhisperCompat(
   try {
     const response = await fetch(`${baseUrl.replace(/\/+$/, "")}/audio/transcriptions`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, ...extraHeaders },
+      // See Gemini path: identity encoding keeps compressed responses (and
+      // the patched stream .pipe() they trigger) out of this call.
+      headers: { Authorization: `Bearer ${apiKey}`, "Accept-Encoding": "identity", ...extraHeaders },
       body: formData,
       signal: timeout.signal,
     });
