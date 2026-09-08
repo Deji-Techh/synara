@@ -337,6 +337,23 @@ export function isChatTitleModelDirty(settings: AppSettings, defaults: AppSettin
   );
 }
 
+// Effective chat-title selection for pickers: the override when set,
+// otherwise the Git writing model it follows.
+export function resolveChatTitlePickerSelection(
+  settings: Pick<
+    AppSettings,
+    "chatTitleProvider" | "chatTitleModel" | "textGenerationProvider" | "textGenerationModel"
+  >,
+): { provider: ProviderKind; model: string } {
+  return {
+    provider: settings.chatTitleProvider ?? settings.textGenerationProvider ?? "groq",
+    model:
+      settings.chatTitleModel?.trim() ||
+      settings.textGenerationModel?.trim() ||
+      DEFAULT_GIT_TEXT_GENERATION_MODEL,
+  };
+}
+
 type Mutable<T> = { -readonly [Key in keyof T]: T[Key] };
 type MutableServerSettingsPatch = Mutable<ServerSettingsPatch>;
 type MutableServerSettingsProvidersPatch = Mutable<NonNullable<ServerSettingsPatch["providers"]>>;

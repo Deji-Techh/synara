@@ -174,7 +174,7 @@ export function AgentRoutingSection() {
               title={connected ? "No connected providers" : "Harness offline"}
               description={
                 connected
-                  ? "Connect a provider above first — per-step slots can only use connected providers."
+                  ? "Agent routing runs on the Builder engine, which keeps its own API keys — add one to a provider above. Until then every step inherits the thread model."
                   : "Reconnect to sync provider status; slots stay on thread defaults meanwhile."
               }
             />

@@ -25,6 +25,7 @@ import {
   getGitTextGenerationModelOptions,
   isChatTitleModelDirty,
   isGitTextGenerationSettingsDirty,
+  resolveChatTitlePickerSelection,
   MODEL_PROVIDER_SETTINGS,
   normalizeChatFontSizePx,
   normalizeCustomModelSlugs,
@@ -190,6 +191,25 @@ describe("chat title model settings", () => {
     ).toEqual({
       chatTitleModelSelection: { provider: "opencodeZen" },
     });
+  });
+
+  it("resolves the picker to the override, else the Git writing model", () => {
+    expect(
+      resolveChatTitlePickerSelection({
+        chatTitleProvider: undefined,
+        chatTitleModel: undefined,
+        textGenerationProvider: "opencodeZen",
+        textGenerationModel: "zen-model",
+      }),
+    ).toEqual({ provider: "opencodeZen", model: "zen-model" });
+    expect(
+      resolveChatTitlePickerSelection({
+        chatTitleProvider: "groq",
+        chatTitleModel: "llama-title",
+        textGenerationProvider: "opencodeZen",
+        textGenerationModel: "zen-model",
+      }),
+    ).toEqual({ provider: "groq", model: "llama-title" });
   });
 
   it("clears the override when both keys are emptied", () => {

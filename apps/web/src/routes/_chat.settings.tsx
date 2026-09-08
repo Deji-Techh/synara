@@ -4,7 +4,6 @@
 // Exports: Settings route component for `/settings`
 
 import {
-  DEFAULT_GIT_TEXT_GENERATION_MODEL,
   PROVIDER_DISPLAY_NAMES,
   PROVIDER_KINDS,
   type ProviderKind,
@@ -28,6 +27,9 @@ import {
   normalizeTerminalFontSizePx,
   isGitTextGenerationSettingsDirty,
   isChatTitleModelDirty,
+  getAppModelOptions,
+  getCustomModelsForProvider,
+  resolveChatTitlePickerSelection,
   TERMINAL_FONT_FAMILY_SUGGESTIONS,
   useAppSettings,
 } from "../appSettings";
@@ -48,7 +50,6 @@ import { ProfileSettingsPanel } from "../components/settings/ProfileSettingsPane
 import { McpServersSettingsPanel } from "../components/settings/McpServersSettingsPanel";
 import { DatabaseSettingsPanel } from "../components/settings/DatabaseSettingsPanel";
 import { ToolApprovalsSection } from "../components/settings/ToolApprovalsSection";
-import { DebouncedSettingTextInput } from "../components/settings/DebouncedSettingTextInput";
 import {
   SettingResetButton,
   SettingsSegmentedControl,
@@ -399,64 +400,85 @@ function SettingsRouteView() {
           }
         />
 
-        <SettingsRow
-          title="Chat title model"
-          description="Model that names a new chat after your first message. When cleared, titles follow the Git writing model; when no model is reachable, chats fall back to Chat 1, Chat 2, …"
-          resetAction={
-            isChatTitleModelDirtyValue ? (
-              <SettingResetButton
-                label="chat title model"
-                onClick={() =>
-                  updateSettings({ chatTitleProvider: undefined, chatTitleModel: undefined })
-                }
-              />
-            ) : null
-          }
-          control={
-            <div className="flex w-full flex-col gap-2 sm:w-44">
-              <SettingsSelectControl
-                value={settings.chatTitleProvider ?? settings.textGenerationProvider ?? "groq"}
-                onValueChange={(value) => {
-                  if (!isProviderSelectOption(value)) return;
-                  updateSettings({ chatTitleProvider: value });
-                }}
-                ariaLabel="Chat title provider"
-                valueContent={
-                  <ProviderOptionLabel
-                    provider={settings.chatTitleProvider ?? settings.textGenerationProvider ?? "groq"}
-                    label={
-                      PROVIDER_DISPLAY_NAMES[
-                        settings.chatTitleProvider ?? settings.textGenerationProvider ?? "groq"
-                      ]
+        {(() => {
+          const chatTitleSelection = resolveChatTitlePickerSelection(settings);
+          const chatTitleProvider: ProviderKind = CHAT_TITLE_PROVIDER_OPTIONS.includes(
+            chatTitleSelection.provider as (typeof CHAT_TITLE_PROVIDER_OPTIONS)[number],
+          )
+            ? (chatTitleSelection.provider as (typeof CHAT_TITLE_PROVIDER_OPTIONS)[number])
+            : "groq";
+          const chatTitleModelOptions = getAppModelOptions(
+            chatTitleProvider,
+            getCustomModelsForProvider(settings, chatTitleProvider),
+            chatTitleSelection.model,
+          );
+          const chatTitleModel =
+            chatTitleModelOptions.some((option) => option.slug === chatTitleSelection.model)
+              ? chatTitleSelection.model
+              : (chatTitleModelOptions[0]?.slug ?? chatTitleSelection.model);
+          return (
+            <SettingsRow
+              title="Chat title model"
+              description="Model that names a new chat after your first message. Reset to follow the Git writing model; when no model is reachable, chats fall back to Chat 1, Chat 2, …"
+              resetAction={
+                isChatTitleModelDirtyValue ? (
+                  <SettingResetButton
+                    label="chat title model"
+                    onClick={() =>
+                      updateSettings({ chatTitleProvider: undefined, chatTitleModel: undefined })
                     }
                   />
-                }
-              >
-                {CHAT_TITLE_PROVIDER_OPTIONS.map((provider) => (
-                  <SelectItem hideIndicator key={provider} value={provider}>
-                    <ProviderOptionLabel
-                      provider={provider}
-                      label={PROVIDER_DISPLAY_NAMES[provider]}
-                    />
-                  </SelectItem>
-                ))}
-              </SettingsSelectControl>
-              <DebouncedSettingTextInput
-                value={settings.chatTitleModel ?? ""}
-                onCommit={(next) =>
-                  updateSettings(
-                    next.trim() ? { chatTitleModel: next.trim() } : { chatTitleModel: undefined },
-                  )
-                }
-                placeholder={
-                  settings.textGenerationModel ?? DEFAULT_GIT_TEXT_GENERATION_MODEL
-                }
-                aria-label="Chat title model"
-                className="h-8 font-mono text-xs"
-              />
-            </div>
-          }
-        />
+                ) : null
+              }
+              control={
+                <div className="flex w-full flex-col gap-2 sm:w-52">
+                  <SettingsSelectControl
+                    value={chatTitleProvider}
+                    onValueChange={(value) => {
+                      if (!isProviderSelectOption(value)) return;
+                      updateSettings({ chatTitleProvider: value });
+                    }}
+                    ariaLabel="Chat title provider"
+                    valueContent={
+                      <ProviderOptionLabel
+                        provider={chatTitleProvider}
+                        label={PROVIDER_DISPLAY_NAMES[chatTitleProvider]}
+                      />
+                    }
+                  >
+                    {CHAT_TITLE_PROVIDER_OPTIONS.map((provider) => (
+                      <SelectItem hideIndicator key={provider} value={provider}>
+                        <ProviderOptionLabel
+                          provider={provider}
+                          label={PROVIDER_DISPLAY_NAMES[provider]}
+                        />
+                      </SelectItem>
+                    ))}
+                  </SettingsSelectControl>
+                  <SettingsSelectControl
+                    value={chatTitleModel}
+                    onValueChange={(value) => {
+                      updateSettings({ chatTitleProvider, chatTitleModel: value });
+                    }}
+                    ariaLabel="Chat title model"
+                    valueContent={
+                      <span className="font-mono text-xs">
+                        {chatTitleModelOptions.find((option) => option.slug === chatTitleModel)
+                          ?.name ?? chatTitleModel}
+                      </span>
+                    }
+                  >
+                    {chatTitleModelOptions.map((option) => (
+                      <SelectItem hideIndicator key={option.slug} value={option.slug}>
+                        <span className="font-mono text-xs">{option.name}</span>
+                      </SelectItem>
+                    ))}
+                  </SettingsSelectControl>
+                </div>
+              }
+            />
+          );
+        })()}
 
         <SettingsRow
           title="New conversations"
