@@ -450,7 +450,7 @@ export const binaryUploadEffectRouteLayer = Layer.mergeAll(
   ),
   HttpRouter.add(
     "*",
-    "/api/attachment/upload",
+    "/api/attachments/upload",
     Effect.gen(function* () {
       const request = yield* HttpServerRequest.HttpServerRequest;
       const url = HttpServerRequest.toURL(request);
@@ -483,7 +483,7 @@ export const binaryUploadEffectRouteLayer = Layer.mergeAll(
   ),
   HttpRouter.add(
     "*",
-    "/api/attachment/cancel",
+    "/api/attachments/cancel",
     Effect.gen(function* () {
       const request = yield* HttpServerRequest.HttpServerRequest;
       const origin = normalizeCorsOrigin(request.headers.origin);

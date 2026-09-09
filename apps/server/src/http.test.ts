@@ -9,9 +9,14 @@ import { Effect, Exit, Layer, Option, Scope } from "effect";
 import { HttpRouter } from "effect/unstable/http";
 import { afterEach, describe, expect, it } from "vitest";
 
+import {
+  ATTACHMENT_CANCEL_ROUTE_PATH,
+  ATTACHMENT_UPLOAD_ROUTE_PATH,
+} from "@caide/shared/binaryTransfer";
 import { ServerAuth, type ServerAuthShape } from "./auth/Services/ServerAuth";
 import { resolveDefaultChatWorkspaceRoot, ServerConfig, type ServerConfigShape } from "./config";
 import {
+  binaryUploadEffectRouteLayer,
   editorIconEffectRouteLayer,
   isLegacyTokenAuthorized,
   makeDesktopShutdownEffectRouteLayer,
@@ -110,7 +115,8 @@ type TestedRoute =
   | { readonly kind: "shutdown"; readonly controller: ServerShutdownController }
   | { readonly kind: "static" }
   | { readonly kind: "favicon" }
-  | { readonly kind: "editor-icon" };
+  | { readonly kind: "editor-icon" }
+  | { readonly kind: "upload" };
 
 async function withEffectServer(
   config: ServerConfigShape,
@@ -140,6 +146,8 @@ async function withEffectServer(
             yield* httpServer.serve(yield* HttpRouter.toHttpEffect(projectFaviconEffectRouteLayer));
           } else if (route.kind === "editor-icon") {
             yield* httpServer.serve(yield* HttpRouter.toHttpEffect(editorIconEffectRouteLayer));
+          } else if (route.kind === "upload") {
+            yield* httpServer.serve(yield* HttpRouter.toHttpEffect(binaryUploadEffectRouteLayer));
           } else {
             yield* httpServer.serve(
               yield* HttpRouter.toHttpEffect(makeHealthEffectRouteLayer(route.readiness)),
@@ -479,6 +487,33 @@ describe("production Effect HTTP routes", () => {
         headers: { "accept-encoding": "gzip", "if-none-match": gzipEtag! },
       });
       expect(gzipRevalidated.status).toBe(304);
+    });
+  });
+
+  // Regression: the browser uploads to the shared ATTACHMENT_* route paths
+  // (plural), which must match the registered server routes — a singular
+  // mismatch once 404d every image/file send with "Failed to fetch".
+  it("accepts attachment uploads on the shared route paths", async () => {
+    await withEffectServer(makeConfig(), { kind: "upload" }, async (origin) => {
+      const params = new URLSearchParams({
+        threadId: "thread-1",
+        type: "image",
+        name: "shot.png",
+        mimeType: "image/png",
+      });
+      const response = await fetch(`${origin}${ATTACHMENT_UPLOAD_ROUTE_PATH}?${params}`, {
+        method: "POST",
+        body: new Blob(["fake-png-bytes"], { type: "image/png" }),
+      });
+      expect(response.status).toBe(201);
+      const payload = (await response.json()) as { id?: unknown };
+      expect(typeof payload.id).toBe("string");
+
+      const cancel = await fetch(
+        `${origin}${ATTACHMENT_CANCEL_ROUTE_PATH}?threadId=thread-1`,
+        { method: "POST" },
+      );
+      expect(cancel.status).toBe(200);
     });
   });
 
