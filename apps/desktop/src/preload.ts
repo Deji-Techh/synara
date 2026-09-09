@@ -75,6 +75,7 @@ contextBridge.exposeInMainWorld("desktopBridge", {
   confirm: (message) => ipcRenderer.invoke(IPC.confirm, message),
   setTheme: (theme) => ipcRenderer.invoke(IPC.setTheme, theme),
   getAppIcon: () => ipcRenderer.invoke(IPC.getAppIcon),
+  getProviderKeyPresence: () => ipcRenderer.invoke(IPC.providerKeyPresence),
   setAppIcon: (icon) => ipcRenderer.invoke(IPC.setAppIcon, icon),
   showContextMenu: (items, position) => ipcRenderer.invoke(IPC.contextMenu, items, position),
   openExternal: (url: string) => ipcRenderer.invoke(IPC.openExternal, url),

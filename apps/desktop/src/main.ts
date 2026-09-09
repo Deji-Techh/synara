@@ -148,6 +148,7 @@ import {
   shouldCheckForUpdatesOnForeground,
 } from "./updateState";
 import { registerDesktopVoiceTranscriptionHandler } from "./voiceTranscription";
+import { readProviderKeyPresence } from "./providerKeyPresence";
 import {
   applyDesktopPhysicalZoomAction,
   resolveDesktopMenuAccelerator,
@@ -3632,6 +3633,9 @@ function registerIpcHandlers(): void {
 
   ipcMain.removeHandler(IPC.getAppIcon);
   ipcMain.handle(IPC.getAppIcon, () => readDesktopAppIcon());
+
+  ipcMain.removeHandler(IPC.providerKeyPresence);
+  ipcMain.handle(IPC.providerKeyPresence, () => readProviderKeyPresence(BASE_DIR));
 
   ipcMain.removeHandler(IPC.setAppIcon);
   ipcMain.handle(IPC.setAppIcon, async (_event, rawIcon: unknown) => {

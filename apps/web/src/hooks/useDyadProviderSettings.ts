@@ -66,6 +66,11 @@ export function useDyadProviderSettings(): DyadProvidersState & {
     tests: {},
     connected: false,
   });
+  // Local key-presence fallback (desktop bridge reads the secrets file
+  // directly). Used until server state arrives, so badges/routing render
+  // from saved keys even when the settings socket is lossy. Never carries
+  // key material — flags only, same shape as server state.
+  const [localProviders, setLocalProviders] = useState<DyadProviderStatus[]>([]);
   const handleRef = useRef<HarnessWsHandle | null>(null);
   const pendingRef = useRef(new Map<string, (event: HarnessEvent) => void>());
   // Last applied provider_settings_state / last state request, for staleness
@@ -171,6 +176,51 @@ export function useDyadProviderSettings(): DyadProvidersState & {
     };
     armWatchdogRef.current = armWatchdog;
     openSocket();
+    // Seed from local presence (desktop only): instant, socket-independent.
+    // Server state replaces it whenever it arrives (see the merged return).
+    try {
+      const bridge = (
+        typeof window !== "undefined"
+          ? (window as unknown as {
+              desktopBridge?: {
+                getProviderKeyPresence?: () => Promise<
+                  ReadonlyArray<{
+                    id: string;
+                    configured: boolean;
+                    hasBaseUrl: boolean;
+                    keyless: boolean;
+                  }>
+                >;
+              };
+            }).desktopBridge
+          : undefined
+      );
+      void bridge
+        ?.getProviderKeyPresence?.()
+        .then((entries) => {
+          if (disposed || !Array.isArray(entries) || entries.length === 0) return;
+          setLocalProviders(
+            entries
+              .filter(
+                (e): e is { id: string; configured: boolean; hasBaseUrl: boolean; keyless: boolean } =>
+                  e !== null &&
+                  typeof e === "object" &&
+                  typeof (e as { id?: unknown }).id === "string",
+              )
+              .map((e) => ({
+                id: e.id,
+                configured: e.configured === true,
+                hasBaseUrl: e.hasBaseUrl === true,
+                keyless: e.keyless === true,
+              })),
+          );
+        })
+        .catch(() => {
+          // No bridge or bridge failed — socket state remains the source.
+        });
+    } catch {
+      // Non-browser runtimes (tests/SSR) skip local presence.
+    }
     return () => {
       disposed = true;
       clearWatchdog();
@@ -265,5 +315,9 @@ export function useDyadProviderSettings(): DyadProvidersState & {
     [send],
   );
 
-  return { ...state, save, saveDefaults, test, refresh };
+  // Socket state wins whenever it has arrived (it is live: saves and key
+  // changes flow through it). Local presence covers the gap before that —
+  // and survives a lossy socket that never delivers.
+  const providers = state.providers.length > 0 ? state.providers : localProviders;
+  return { ...state, providers, save, saveDefaults, test, refresh };
 }

@@ -189,6 +189,53 @@ describe("useDyadProviderSettings", () => {
     expect(sockets).toHaveLength(3);
   });
 
+  it("seeds providers from local bridge presence when socket state is absent", async () => {
+    (globalThis as unknown as { window?: unknown }).window = {
+      desktopBridge: {
+        getProviderKeyPresence: async () => [
+          { id: "groq", configured: true, hasBaseUrl: false, keyless: false },
+        ],
+      },
+    };
+    try {
+      mount();
+      for (let i = 0; i < 5; i += 1) await Promise.resolve();
+      reactHarness.beginRender();
+      const rerendered = useDyadProviderSettings();
+      const provided = (
+        rerendered as unknown as { providers: Array<{ id: string; configured: boolean }> }
+      ).providers;
+      expect(provided.find((p) => p.id === "groq")?.configured).toBe(true);
+    } finally {
+      delete (globalThis as unknown as { window?: unknown }).window;
+    }
+  });
+
+  it("prefers live socket state over local bridge presence", async () => {
+    (globalThis as unknown as { window?: unknown }).window = {
+      desktopBridge: {
+        getProviderKeyPresence: async () => [
+          { id: "groq", configured: false, hasBaseUrl: false, keyless: false },
+        ],
+      },
+    };
+    try {
+      mount();
+      sockets[0]!.open();
+      sockets[0]!.receive(stateEvent());
+      for (let i = 0; i < 5; i += 1) await Promise.resolve();
+      reactHarness.beginRender();
+      const rerendered = useDyadProviderSettings();
+      const provided = (
+        rerendered as unknown as { providers: Array<{ id: string; configured: boolean }> }
+      ).providers;
+      // Socket says groq configured (stateEvent) even though local says not.
+      expect(provided.find((p) => p.id === "groq")?.configured).toBe(true);
+    } finally {
+      delete (globalThis as unknown as { window?: unknown }).window;
+    }
+  });
+
   it("stops the watchdog once state arrives", () => {
     mount();
     sockets[0]!.open();

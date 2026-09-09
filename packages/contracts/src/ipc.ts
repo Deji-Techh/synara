@@ -497,8 +497,25 @@ export interface CaideStorageSnapshot {
   readonly entries: Readonly<Record<string, string>>;
 }
 
+/**
+ * Key-presence flags for one provider. Keys never cross the bridge — this is
+ * what lets settings UI render "Ready" from local state without waiting for
+ * (or depending on) a server roundtrip.
+ */
+export interface ProviderKeyPresence {
+  readonly id: string;
+  readonly configured: boolean;
+  readonly hasBaseUrl: boolean;
+  readonly keyless: boolean;
+}
+
 export interface DesktopBridge {
   getWsUrl: () => string | null;
+  /**
+   * Local provider key-presence snapshot (optional — desktop only). Used as
+   * the settings fallback when server provider state hasn't arrived.
+   */
+  getProviderKeyPresence?: () => Promise<ReadonlyArray<ProviderKeyPresence>>;
   /**
    * Absolute filesystem path for a File from drag/drop or file inputs.
    * Electron only (`webUtils.getPathForFile`). Returns null when unavailable.
