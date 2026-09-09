@@ -59,8 +59,10 @@ import {
   createOrJoinSidechat,
   createSidechatThread,
   sendSidechatPrompt,
+  syncShellSnapshotWithRetry,
   type SidechatCreationFlight,
 } from "../lib/sidechatCreation";
+import { useStore } from "../store";
 
 type ComposerSnapshot = {
   value: string;
@@ -312,8 +314,19 @@ export function useComposerSlashCommands(input: {
         importedMessages: [...importedMessages],
         createdAt,
       });
-      const snapshot = await api.orchestration.getShellSnapshot();
-      syncServerShellSnapshot(snapshot);
+      // Bounded retries: a degraded transport must surface a retryable
+      // failure, never an infinite "Loading conversation" spinner.
+      const snapshotError = await syncShellSnapshotWithRetry({
+        api,
+        syncServerShellSnapshot,
+      });
+      if (snapshotError) {
+        try {
+          useStore.getState().markThreadDetailSyncFailed(nextThreadId);
+        } catch {
+          // Failure marking is best-effort; navigation still proceeds.
+        }
+      }
       await navigateToThread(nextThreadId);
       return true;
     },
@@ -367,6 +380,13 @@ export function useComposerSlashCommands(input: {
               });
             },
             syncServerShellSnapshot,
+            markDetailSyncFailed: (sidechatThreadId) => {
+              try {
+                useStore.getState().markThreadDetailSyncFailed(sidechatThreadId);
+              } catch {
+                // Failure marking is best-effort; the pane still opens.
+              }
+            },
           }),
         sendQueuedPrompt: (sidechatThreadId, prompt) =>
           sendSidechatPrompt({

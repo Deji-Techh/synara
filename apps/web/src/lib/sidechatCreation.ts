@@ -15,6 +15,45 @@ import { buildThreadHandoffImportedMessages } from "./threadHandoff";
 import type { Project, Thread } from "../types";
 
 const SIDECHAT_MISSING_GRACE_MS = 15_000;
+// Bounded snapshot refresh: a slow or degraded transport must surface a
+// retryable failure, never an infinite "Loading conversation" spinner.
+const SNAPSHOT_SYNC_ATTEMPTS = 4;
+const SNAPSHOT_SYNC_RETRY_DELAY_MS = 2500;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Refresh the shell snapshot until one succeeds (bounded). A single
+ * getShellSnapshot can miss a just-created fork (creation applied after the
+ * snapshot was taken) or stall on a degraded transport; retries convert both
+ * into eventual success, and exhaustion yields the last error so callers can
+ * mark the thread detail failed (with retry) instead of spinning forever.
+ */
+export async function syncShellSnapshotWithRetry(input: {
+  api: NativeApi;
+  syncServerShellSnapshot: (snapshot: OrchestrationShellSnapshot) => void;
+  attempts?: number;
+  retryDelayMs?: number;
+  delayFn?: (ms: number) => Promise<void>;
+}): Promise<unknown | null> {
+  const attempts = input.attempts ?? SNAPSHOT_SYNC_ATTEMPTS;
+  const retryDelayMs = input.retryDelayMs ?? SNAPSHOT_SYNC_RETRY_DELAY_MS;
+  const wait = input.delayFn ?? delay;
+  let lastError: unknown | null = new Error("Snapshot sync did not run.");
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const snapshot = await input.api.orchestration.getShellSnapshot();
+      input.syncServerShellSnapshot(snapshot);
+      return null;
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts) await wait(retryDelayMs);
+    }
+  }
+  return lastError;
+}
 type SidechatPaneRetention = { kind: "syncing" } | { kind: "grace"; untilMs: number };
 const sidechatPaneRetentionByThreadId = new Map<ThreadId, SidechatPaneRetention>();
 const sidechatPaneRetentionListeners = new Set<() => void>();
@@ -216,6 +255,8 @@ export async function createSidechatThread(input: {
   initialPrompt?: string | undefined;
   openSidechat: (threadId: ThreadId) => void;
   syncServerShellSnapshot: (snapshot: OrchestrationShellSnapshot) => void;
+  /** Marks the new thread's detail failed so hydration shows retry, not a spinner. */
+  markDetailSyncFailed?: (threadId: ThreadId) => void;
 }): Promise<SidechatCreationResult> {
   const nextThreadId = newThreadId();
   const createdAt = new Date().toISOString();
@@ -254,15 +295,12 @@ export async function createSidechatThread(input: {
 
   // Start snapshot synchronization before an optional prompt. A slow/queued turn
   // must never prevent the successful fork from reaching the shell projection.
-  const snapshotPromise = (async (): Promise<unknown | null> => {
-    try {
-      const snapshot = await input.api.orchestration.getShellSnapshot();
-      input.syncServerShellSnapshot(snapshot);
-      return null;
-    } catch (error) {
-      return error;
-    }
-  })();
+  // Bounded retries: a degraded transport must surface a retryable failure,
+  // never an infinite "Loading conversation" spinner.
+  const snapshotPromise = syncShellSnapshotWithRetry({
+    api: input.api,
+    syncServerShellSnapshot: input.syncServerShellSnapshot,
+  });
 
   const promptPromise = (async (): Promise<unknown | null> => {
     try {
@@ -281,6 +319,11 @@ export async function createSidechatThread(input: {
   const [snapshotError, promptError] = await Promise.all([snapshotPromise, promptPromise]);
   if (snapshotError) {
     markSidechatSyncFailed(nextThreadId);
+    try {
+      input.markDetailSyncFailed?.(nextThreadId);
+    } catch {
+      // Failure marking is best-effort; the error below still surfaces.
+    }
   } else {
     clearSidechatPaneRetention(nextThreadId);
   }

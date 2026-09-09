@@ -1510,6 +1510,10 @@ export class OrchestrationEngineService extends ServiceMap.Service<
             const newThread = {
               id: command.threadId,
               projectId: command.projectId,
+              // The client sends this for sidechats; without it the forked
+              // thread loses its link to the source thread (close-flow
+              // bookkeeping, sidechat identification).
+              sidechatSourceThreadId: (command as any).sidechatSourceThreadId ?? null,
               title: command.title ?? (command.type === "thread.handoff.create" ? "Handoff" : "Fork"),
               modelSelection: command.modelSelection ?? {
                 provider: targetProvider,

@@ -10,6 +10,7 @@ import {
   getSidechatPaneRetentionVersion,
   sidechatPaneRetentionRemainingMs,
   subscribeSidechatPaneRetention,
+  syncShellSnapshotWithRetry,
   type SidechatCreationFlight,
   type SidechatCreationResult,
 } from "./sidechatCreation";
@@ -185,6 +186,7 @@ describe("createSidechatThread", () => {
 
   it("retains a grace period when snapshot synchronization fails", async () => {
     const snapshotError = new Error("snapshot failed");
+    const markDetailSyncFailed = vi.fn();
     const result = await createSidechatThread({
       api: makeApi({ getShellSnapshot: vi.fn().mockRejectedValue(snapshotError) }),
       project,
@@ -192,11 +194,15 @@ describe("createSidechatThread", () => {
       selectedModelSelection,
       openSidechat: vi.fn(),
       syncServerShellSnapshot: vi.fn(),
+      markDetailSyncFailed,
     });
 
     expect(result.snapshotError).toBe(snapshotError);
     expect(sidechatPaneRetentionRemainingMs(result.threadId)).toBeGreaterThan(0);
-  });
+    // Bounded retries (not instant): hydration flips to failed-with-retry
+    // instead of spinning forever.
+    expect(markDetailSyncFailed).toHaveBeenCalledWith(result.threadId);
+  }, 30000);
 
   it("does not open a pane when the fork itself fails", async () => {
     const openSidechat = vi.fn();
@@ -212,6 +218,58 @@ describe("createSidechatThread", () => {
       }),
     ).rejects.toThrow("fork failed");
     expect(openSidechat).not.toHaveBeenCalled();
+  });
+});
+
+describe("syncShellSnapshotWithRetry", () => {
+  it("succeeds on the first snapshot without retrying", async () => {
+    const getShellSnapshot = vi.fn().mockResolvedValue({ ok: true });
+    const syncServerShellSnapshot = vi.fn();
+    const result = await syncShellSnapshotWithRetry({
+      api: makeApi({ getShellSnapshot }),
+      syncServerShellSnapshot,
+      delayFn: vi.fn(),
+    });
+    expect(result).toBeNull();
+    expect(getShellSnapshot).toHaveBeenCalledTimes(1);
+    expect(syncServerShellSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries a degraded transport and applies the eventual snapshot", async () => {
+    const getShellSnapshot = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("capacity exceeded"))
+      .mockRejectedValueOnce(new Error("capacity exceeded"))
+      .mockResolvedValue({ ok: true });
+    const syncServerShellSnapshot = vi.fn();
+    const delays: number[] = [];
+    const result = await syncShellSnapshotWithRetry({
+      api: makeApi({ getShellSnapshot }),
+      syncServerShellSnapshot,
+      delayFn: (ms) => {
+        delays.push(ms);
+        return Promise.resolve();
+      },
+    });
+    expect(result).toBeNull();
+    expect(getShellSnapshot).toHaveBeenCalledTimes(3);
+    expect(syncServerShellSnapshot).toHaveBeenCalledTimes(1);
+    expect(delays).toEqual([2500, 2500]);
+  });
+
+  it("returns the last error after exhausting attempts", async () => {
+    const getShellSnapshot = vi.fn().mockRejectedValue(new Error("down"));
+    const syncServerShellSnapshot = vi.fn();
+    const result = await syncShellSnapshotWithRetry({
+      api: makeApi({ getShellSnapshot }),
+      syncServerShellSnapshot,
+      attempts: 2,
+      retryDelayMs: 5,
+      delayFn: () => Promise.resolve(),
+    });
+    expect(result).toBeInstanceOf(Error);
+    expect(getShellSnapshot).toHaveBeenCalledTimes(2);
+    expect(syncServerShellSnapshot).not.toHaveBeenCalled();
   });
 });
 
