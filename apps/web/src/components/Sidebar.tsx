@@ -121,7 +121,11 @@ import { isMacPlatform, newCommandId, newProjectId, newThreadId, randomUUID } fr
 import { isOrdinarySpaceProject } from "../lib/spaces";
 import { expandProjectHomePath, joinProjectPath } from "../lib/projectPaths";
 import { reconcileDeletedThreadsFromClient } from "../lib/deletedThreadClientReconciliation";
+import { isCaideAppProject } from "../lib/caideApps";
 import { deleteProjectFromClient } from "../lib/projectDelete";
+import { resolveChatCreationTarget } from "../lib/chatCreationTarget";
+import { resolvePostDeleteDestination } from "../lib/postDeleteDestination";
+import { useRecentViewsStore } from "../recentViewsStore";
 import { persistAppStateNow, useStore } from "../store";
 import { getThreadFromState } from "../threadDerivation";
 import {
@@ -2482,15 +2486,18 @@ export default function Sidebar() {
     () => resolveCurrentProjectTargetId(activeSpaceProjects, focusedProjectId),
     [activeSpaceProjects, focusedProjectId],
   );
-  const latestUsableProjectId = useMemo(
-    () =>
-      resolveLatestProjectTargetIdWithFallback(
-        activeSpaceProjects,
-        latestProjectId,
-        projectLastActivityAt,
-      ),
-    [activeSpaceProjects, latestProjectId, projectLastActivityAt],
-  );
+  const latestUsableProjectId = useMemo(() => {
+    // New chats prefer Caide apps: implicit targets land in an app when one
+    // exists, falling back to recency across all projects otherwise.
+    const appProjects = activeSpaceProjects.filter((project) =>
+      isCaideAppProject(project, { homeDir, chatWorkspaceRoot }),
+    );
+    return resolveLatestProjectTargetIdWithFallback(
+      appProjects.length > 0 ? appProjects : activeSpaceProjects,
+      latestProjectId,
+      projectLastActivityAt,
+    );
+  }, [activeSpaceProjects, chatWorkspaceRoot, homeDir, latestProjectId, projectLastActivityAt]);
   const primaryNewThreadTarget = useMemo(
     () =>
       resolveNewThreadTarget({
@@ -2554,8 +2561,51 @@ export default function Sidebar() {
     prefetchModelsForProjectNewThread(primaryNewThreadTarget.projectId);
   }, [prefetchModelsForProjectNewThread, primaryNewThreadTarget]);
 
+  // Folder projects reroute new-chat intent into the create-app dialog;
+  // the dialog offers an explicit escape hatch back to folder drafting.
+  const [redirectedFolderProjectId, setRedirectedFolderProjectId] = useState<ProjectId | null>(
+    null,
+  );
+  const redirectedFolderProject =
+    redirectedFolderProjectId !== null ? (projectById.get(redirectedFolderProjectId) ?? null) : null;
+
+  const folderRedirectForNewThread = useCallback(
+    (projectId: ProjectId) => {
+      const project = projectById.get(projectId);
+      const target = resolveChatCreationTarget(project ?? null, { homeDir, chatWorkspaceRoot });
+      return target?.kind === "app-dialog" ? project ?? null : null;
+    },
+    [chatWorkspaceRoot, homeDir, projectById],
+  );
+
+  const startFreshThreadInProject = useCallback(
+    (projectId: ProjectId, projectName: string) => {
+      prefetchModelsForProjectNewThread(projectId, { includeDroid: true });
+      void handleNewThread(projectId, {
+        fresh: true,
+        envMode: resolveSidebarNewThreadEnvMode({
+          defaultEnvMode: appSettings.defaultThreadEnvMode,
+        }),
+      }).then((threadId) => {
+        if (!threadId) {
+          toastManager.add({
+            type: "warning",
+            title: "Could not open a new chat",
+            description: `Navigation to the new ${projectName} conversation did not settle. Try again.`,
+          });
+        }
+      });
+    },
+    [appSettings.defaultThreadEnvMode, handleNewThread, prefetchModelsForProjectNewThread],
+  );
+
   const handlePrimaryNewThread = useCallback(() => {
     if (primaryNewThreadTarget) {
+      if (folderRedirectForNewThread(primaryNewThreadTarget.projectId)) {
+        setRedirectedFolderProjectId(primaryNewThreadTarget.projectId);
+        setCreateAppDialogOpen(true);
+        return;
+      }
       prefetchModelsForProjectNewThread(primaryNewThreadTarget.projectId, { includeDroid: true });
       void handleNewThread(primaryNewThreadTarget.projectId, {
         envMode: resolveSidebarNewThreadEnvMode({
@@ -2573,6 +2623,7 @@ export default function Sidebar() {
     handleStartAddProject();
   }, [
     appSettings.defaultThreadEnvMode,
+    folderRedirectForNewThread,
     handleNewThread,
     handleStartAddProject,
     prefetchModelsForProjectNewThread,
@@ -3283,12 +3334,57 @@ export default function Sidebar() {
           return;
         }
 
+        // Snapshot pre-delete membership: the store no longer knows these afterwards.
+        const deletedThreadIds = new Set(
+          sidebarThreads.filter((thread) => thread.projectId === projectId).map((thread) => thread.id),
+        );
+        const routeThreadIdBeforeDelete = routeThreadId;
+        const routeThreadProjectIdBeforeDelete =
+          routeThreadIdBeforeDelete === null
+            ? null
+            : (sidebarThreadSummaryById[routeThreadIdBeforeDelete]?.projectId ??
+              draftThreadsByThreadId[routeThreadIdBeforeDelete]?.projectId ??
+              null);
         await deleteProjectFromClient({
           api: api.orchestration,
           projectId,
           removeDeletedProjectFromClientState,
         });
         clearProjectDraftThreads(projectId);
+        // Land the user instead of stranding the route: the MRU surviving
+        // chat when the current route died with the project, the empty
+        // workspace (create-app prompt) when nothing survives.
+        const postDeleteState = useStore.getState();
+        const postDeleteDrafts = useComposerDraftStore.getState().draftThreadsByThreadId;
+        const availableThreadIds = new Set<ThreadId>([
+          ...Object.keys(postDeleteState.sidebarThreadSummaryById ?? {}),
+          ...Object.keys(postDeleteDrafts),
+        ] as ThreadId[]);
+        useRecentViewsStore.getState().pruneRecentViews({
+          availableThreadIds,
+          availableSplitViewIds: new Set(
+            Object.keys(useSplitViewStore.getState().splitViewsById ?? {}),
+          ),
+        });
+        const summariesById = postDeleteState.sidebarThreadSummaryById ?? {};
+        const fallbackThreadIds = Object.values(summariesById)
+          .map((summary) => summary)
+          .toSorted((left, right) =>
+            (right.latestUserMessageAt ?? right.updatedAt ?? right.createdAt ?? "").localeCompare(
+              left.latestUserMessageAt ?? left.updatedAt ?? left.createdAt ?? "",
+            ),
+          )
+          .map((summary) => summary.id);
+        const destination = resolvePostDeleteDestination({
+          routeAffected:
+            routeThreadIdBeforeDelete !== null &&
+            (deletedThreadIds.has(routeThreadIdBeforeDelete) ||
+              routeThreadProjectIdBeforeDelete === projectId),
+          deletedThreadIds,
+          recentViews: useRecentViewsStore.getState().recentViews,
+          fallbackThreadIds,
+          isThreadAvailable: (threadId) => availableThreadIds.has(threadId),
+        });
         toastManager.add({
           type: "success",
           title: `Deleted "${project.name}"`,
@@ -3297,6 +3393,15 @@ export default function Sidebar() {
               ? `Deleted ${deletionResult.deletedCount} ${pluralize(deletionResult.deletedCount, "conversation")} and deleted the project.`
               : "Project deleted.",
         });
+        if (destination.kind === "thread") {
+          rememberLastThreadRouteNow({ threadId: destination.threadId });
+          await navigate({
+            to: "/$threadId",
+            params: { threadId: destination.threadId },
+          });
+        } else if (destination.kind === "empty") {
+          await navigate({ to: "/" });
+        }
       };
 
       try {
@@ -3316,12 +3421,16 @@ export default function Sidebar() {
       clearProjectDraftThreads,
       copyPathToClipboard,
       deleteProjectThreads,
+      draftThreadsByThreadId,
       handleOpenProjectRunServer,
       handleStopProjectRun,
       navigate,
       openProjectRunDialog,
       projectById,
+      rememberLastThreadRouteNow,
       removeDeletedProjectFromClientState,
+      routeThreadId,
+      sidebarThreadSummaryById,
       sidebarThreads,
       toggleProjectPinned,
     ],
@@ -5944,21 +6053,12 @@ export default function Sidebar() {
                                       type="button"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        prefetchModelsForProjectNewThread(project.id, { includeDroid: true });
-                                        void handleNewThread(project.id, {
-                                          fresh: true,
-                                          envMode: resolveSidebarNewThreadEnvMode({
-                                            defaultEnvMode: appSettings.defaultThreadEnvMode,
-                                          }),
-                                        }).then((threadId) => {
-                                          if (!threadId) {
-                                            toastManager.add({
-                                              type: "warning",
-                                              title: "Could not open a new chat",
-                                              description: `Navigation to the new ${project.name} conversation did not settle. Try again.`,
-                                            });
-                                          }
-                                        });
+                                        if (folderRedirectForNewThread(project.id)) {
+                                          setRedirectedFolderProjectId(project.id);
+                                          setCreateAppDialogOpen(true);
+                                          return;
+                                        }
+                                        startFreshThreadInProject(project.id, project.name);
                                       }}
                                       className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
                                       aria-label="New Conversation in Project"
@@ -6085,21 +6185,13 @@ export default function Sidebar() {
         projects={projects.filter((p) => p.id !== "default" && (p as any).kind !== "chat")}
         threadCountsByProjectId={threadCountsByProjectId}
         onSelectProject={(selectedProjId) => {
-          prefetchModelsForProjectNewThread(selectedProjId, { includeDroid: true });
-          void handleNewThread(selectedProjId, {
-            fresh: true,
-            envMode: resolveSidebarNewThreadEnvMode({
-              defaultEnvMode: appSettings.defaultThreadEnvMode,
-            }),
-          }).then((threadId) => {
-            if (!threadId) {
-              toastManager.add({
-                type: "warning",
-                title: "Could not open a new chat",
-                description: "Navigation to the new conversation did not settle. Try again.",
-              });
-            }
-          });
+          if (folderRedirectForNewThread(selectedProjId)) {
+            setRedirectedFolderProjectId(selectedProjId);
+            setCreateAppDialogOpen(true);
+            return;
+          }
+          const selectedProject = projectById.get(selectedProjId);
+          startFreshThreadInProject(selectedProjId, selectedProject?.name ?? "project");
         }}
         onCreateNewProject={() => {
           setProjectSelectionPopupOpen(false);
@@ -6109,10 +6201,30 @@ export default function Sidebar() {
 
       <CreateAppDialog
         open={createAppDialogOpen}
-        onOpenChange={setCreateAppDialogOpen}
+        onOpenChange={(open) => {
+          setCreateAppDialogOpen(open);
+          if (!open) {
+            setRedirectedFolderProjectId(null);
+          }
+        }}
         onCreated={(result) => {
           void handleAppCreated(result);
         }}
+        folderFallback={
+          redirectedFolderProject
+            ? {
+                projectName: redirectedFolderProject.name,
+                onContinue: () => {
+                  setCreateAppDialogOpen(false);
+                  setRedirectedFolderProjectId(null);
+                  startFreshThreadInProject(
+                    redirectedFolderProject.id,
+                    redirectedFolderProject.name,
+                  );
+                },
+              }
+            : undefined
+        }
       />
 
       <ImportProjectDialog

@@ -57,6 +57,10 @@ export function CreateAppDialog(props: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated?: (result: AppCreateResult) => void;
+  // Escape hatch when the dialog interrupted folder drafting: lets the user
+  // continue in the folder instead of creating an app. Omitted everywhere
+  // else so the dialog keeps its single-purpose shape.
+  folderFallback?: { projectName: string; onContinue: () => void } | undefined;
 }) {
   const [name, setName] = useState(generateCuteAppName());
   const [framework, setFramework] = useState<ProjectFramework>("blank");
@@ -247,6 +251,15 @@ export function CreateAppDialog(props: {
           <Button variant="ghost" onClick={() => props.onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
+          {props.folderFallback ? (
+            <Button
+              variant="outline"
+              onClick={() => props.folderFallback?.onContinue()}
+              disabled={submitting}
+            >
+              Continue in {props.folderFallback.projectName} instead
+            </Button>
+          ) : null}
           <Button
             variant="prominent"
             onClick={() => void handleSubmit()}
