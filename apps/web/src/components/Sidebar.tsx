@@ -6053,11 +6053,6 @@ export default function Sidebar() {
                                       type="button"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        if (folderRedirectForNewThread(project.id)) {
-                                          setRedirectedFolderProjectId(project.id);
-                                          setCreateAppDialogOpen(true);
-                                          return;
-                                        }
                                         startFreshThreadInProject(project.id, project.name);
                                       }}
                                       className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
@@ -6185,11 +6180,6 @@ export default function Sidebar() {
         projects={projects.filter((p) => p.id !== "default" && (p as any).kind !== "chat")}
         threadCountsByProjectId={threadCountsByProjectId}
         onSelectProject={(selectedProjId) => {
-          if (folderRedirectForNewThread(selectedProjId)) {
-            setRedirectedFolderProjectId(selectedProjId);
-            setCreateAppDialogOpen(true);
-            return;
-          }
           const selectedProject = projectById.get(selectedProjId);
           startFreshThreadInProject(selectedProjId, selectedProject?.name ?? "project");
         }}
