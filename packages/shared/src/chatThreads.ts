@@ -74,3 +74,17 @@ export function buildChatNumberFallbackTitle(index: number): string {
   const safeIndex = Number.isSafeInteger(index) && index > 0 ? index : 1;
   return `Chat ${safeIndex}`;
 }
+
+// Auto-created initial threads carry the deterministic `thread-<projectId>`
+// id (see the project.create handler). The id match alone does not prove a
+// row is disposable — callers must also verify it holds no messages/turns
+// and that the project has surviving sibling chats before purging.
+export function isPhantomInitialThreadId(
+  threadId: string | null | undefined,
+  projectId: string | null | undefined,
+): boolean {
+  if (!threadId || !projectId) {
+    return false;
+  }
+  return threadId === `thread-${projectId}`;
+}

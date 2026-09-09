@@ -7998,6 +7998,9 @@ export default function ChatView({
             framework: "blank",
             createWorkspaceRootIfMissing: firstSendTarget.creation.createWorkspaceRootIfMissing,
             defaultModelSelection: firstSendTarget.creation.defaultModelSelection,
+            // This send promotes its own draft right after; the automatic
+            // project-titled thread would be a phantom duplicate row.
+            skipInitialThread: true,
             ...createProjectSpaceFields,
             createdAt,
           });

@@ -342,6 +342,23 @@ it.effect("trims branded ids and command string fields at decode boundaries", ()
   }),
 );
 
+it.effect("defaults skipInitialThread to false and accepts an explicit opt-out", () =>
+  Effect.gen(function* () {
+    const base = {
+      type: "project.create",
+      commandId: "cmd-1",
+      projectId: "project-1",
+      title: "Project Title",
+      workspaceRoot: "/tmp/workspace",
+      createdAt: "2026-01-01T00:00:00.000Z",
+    } as const;
+    const implicit = yield* decodeProjectCreateCommand(base);
+    assert.strictEqual(implicit.skipInitialThread, false);
+    const explicit = yield* decodeProjectCreateCommand({ ...base, skipInitialThread: true });
+    assert.strictEqual(explicit.skipInitialThread, true);
+  }),
+);
+
 it.effect("decodes historical project.created payloads with a default provider", () =>
   Effect.gen(function* () {
     const parsed = yield* decodeProjectCreatedPayload({

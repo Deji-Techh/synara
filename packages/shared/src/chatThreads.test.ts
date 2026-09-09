@@ -6,6 +6,7 @@ import {
   GENERIC_CHAT_THREAD_TITLE,
   isGenericChatThreadTitle,
   isPendingChatThreadTitle,
+  isPhantomInitialThreadId,
   sanitizeGeneratedThreadTitle,
 } from "./chatThreads";
 
@@ -48,5 +49,13 @@ describe("chatThreads", () => {
     expect(buildChatNumberFallbackTitle(4)).toBe("Chat 4");
     expect(buildChatNumberFallbackTitle(0)).toBe("Chat 1");
     expect(buildChatNumberFallbackTitle(-3)).toBe("Chat 1");
+  });
+
+  it("detects auto-created initial thread ids for phantom cleanup", () => {
+    expect(isPhantomInitialThreadId("thread-abc", "abc")).toBe(true);
+    expect(isPhantomInitialThreadId("thread-abc", "other")).toBe(false);
+    expect(isPhantomInitialThreadId("ace8b00d", "abc")).toBe(false);
+    expect(isPhantomInitialThreadId(null, "abc")).toBe(false);
+    expect(isPhantomInitialThreadId("thread-abc", undefined)).toBe(false);
   });
 });

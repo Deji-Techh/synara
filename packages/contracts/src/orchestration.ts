@@ -1090,6 +1090,13 @@ export const ProjectCreateCommand = Schema.Struct({
    * than failing creation.
    */
   spaceId: Schema.optional(Schema.NullOr(SpaceId)),
+  /**
+   * Skip the automatic initial thread (titled after the project). Set when the
+   * caller creates the first thread itself in the same flow (app seed chats,
+   * first-send draft promotions) so the project is not born with a phantom
+   * app-named duplicate row.
+   */
+  skipInitialThread: Schema.optional(Schema.Boolean).pipe(Schema.withDecodingDefault(() => false)),
   createdAt: IsoDateTime,
 });
 

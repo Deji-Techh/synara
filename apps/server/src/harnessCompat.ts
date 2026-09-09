@@ -5,6 +5,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { Effect, Layer, Option, PubSub, ServiceMap, Stream } from "effect";
 import { PROVIDER_KINDS } from "@caide/contracts";
+import { isPhantomInitialThreadId } from "@caide/shared/chatThreads";
 import { sharedProviderSecrets } from "./dyad/providers/secrets.ts";
 
 export class AutomationService extends ServiceMap.Service<AutomationService, any>()(
@@ -678,6 +679,32 @@ function loadPersistedState() {
         const [homeProj] = inMemoryProjects.splice(homeIdx, 1);
         if (homeProj) inMemoryProjects.push(homeProj);
       }
+    }
+
+    // Purge phantom initial threads left by paired project.create +
+    // thread.create flows (app seeds, first-send promotions): empty
+    // `thread-<projectId>` rows in projects that already have real chats hold
+    // no content and only duplicate the app-named row. A project's sole
+    // thread — or any thread holding messages/turns — is never touched.
+    let purgedPhantomThreads = false;
+    for (let index = inMemoryThreads.length - 1; index >= 0; index -= 1) {
+      const thread = inMemoryThreads[index];
+      const hasSiblings = inMemoryThreads.some(
+        (other) => other !== thread && other.projectId === thread.projectId,
+      );
+      if (
+        hasSiblings &&
+        isPhantomInitialThreadId(thread.id, thread.projectId) &&
+        (thread.messages?.length ?? 0) === 0 &&
+        (thread.turns?.length ?? 0) === 0
+      ) {
+        inMemoryThreads.splice(index, 1);
+        purgedPhantomThreads = true;
+      }
+    }
+    if (purgedPhantomThreads) {
+      console.info("[harnessCompat] Purged phantom initial thread(s) with no content");
+      savePersistedState();
     }
 
     // Ensure every project has at least one durable thread so it appears in sidebar cards

@@ -1359,6 +1359,9 @@ const makeWsRpcHandlersLayer = () =>
             framework,
             createWorkspaceRootIfMissing: true,
             defaultModelSelection: modelSelection,
+            // The seed thread below is the project's first chat; the
+            // automatic project-titled thread would be a phantom duplicate.
+            skipInitialThread: true,
             createdAt,
           } as OrchestrationCommand);
 
