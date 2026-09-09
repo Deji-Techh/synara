@@ -104,7 +104,7 @@ import {
   type ResolvedKeybindingsConfig,
   WS_GITHUB_PROJECT_PROVISIONING_CAPABILITY,
 } from "@caide/contracts";
-import { isGenericChatThreadTitle } from "@caide/shared/chatThreads";
+import { isGenericChatThreadTitle, isPendingChatThreadTitle } from "@caide/shared/chatThreads";
 import { getDefaultModel } from "@caide/shared/model";
 import { pluralize } from "@caide/shared/text";
 import { resolveThreadWorkspaceCwd } from "@caide/shared/threadEnvironment";
@@ -213,6 +213,7 @@ import { ThreadArchiveActionButton } from "./ThreadArchiveActionButton";
 import { ThreadPinToggleButton } from "./ThreadPinToggleButton";
 import {
   SidebarThreadRowContent,
+  SidebarThreadTitle,
   type SidebarThreadTerminalStatus,
 } from "./SidebarThreadRowContent";
 import { RenameDialog } from "./RenameDialog";
@@ -4592,10 +4593,12 @@ export default function Sidebar() {
             />
           }
         >
-          {/* Conversation Title */}
-          <span className="truncate flex-1 min-w-0 text-xs text-foreground/90">
-            {thread.title || "Untitled Conversation"}
-          </span>
+          {/* Conversation Title (skeleton while untitled/generating) */}
+          <SidebarThreadTitle
+            thread={thread}
+            className="truncate flex-1 min-w-0 text-xs text-foreground/90"
+            skeletonClassName="w-20 shrink-0"
+          />
 
           {/* Right side indicator / action slot */}
           <div className="relative flex h-5 shrink-0 items-center justify-end gap-1">
@@ -4696,7 +4699,13 @@ export default function Sidebar() {
           className="p-0 border-0 bg-transparent shadow-none"
         >
           <SidebarConversationHoverCard
-            title={thread.title || "Untitled Conversation"}
+            title={
+              !thread.parentThreadId &&
+              isPendingChatThreadTitle(thread.title) &&
+              !thread.latestUserMessageAt
+                ? "Naming chat…"
+                : thread.title || "Untitled Conversation"
+            }
             projectName={effectiveProjectName}
             projectFramework={effectiveFramework}
             isWorking={isWorking}

@@ -74,6 +74,29 @@ export interface ChatThreadIdentity {
   readonly archivedAt?: string | null;
 }
 
+// Shared pending/reveal state for every surface that renders a chat title
+// (sidebar rows, conversation rows, headers). Untitled chats — or chats
+// whose AI name is still generating — report pending until the first
+// message resolves a real title.
+export function usePendingChatThreadTitle(thread: {
+  readonly id: ThreadId;
+  readonly title: string;
+  readonly parentThreadId?: ThreadId | null;
+  readonly latestUserMessageAt?: string | null;
+}): { pending: boolean; revealed: boolean } {
+  const isStorePending =
+    useChatTitleStore((store) => store.pendingThreadIds[thread.id]) === true;
+  const revealedAt = useChatTitleStore((store) => store.revealedAtByThreadId[thread.id]);
+  const pending =
+    isStorePending ||
+    (!thread.parentThreadId &&
+      isPendingChatThreadTitle(thread.title) &&
+      !thread.latestUserMessageAt);
+  const revealed =
+    !pending && revealedAt !== undefined && Date.now() - revealedAt < CHAT_TITLE_REVEAL_MS;
+  return { pending, revealed };
+}
+
 // 1-based position of the thread among its project's non-archived chats,
 // ordered by creation time. Unknown threads sort last so retries still
 // produce a stable `Chat N` label instead of reusing an existing number.

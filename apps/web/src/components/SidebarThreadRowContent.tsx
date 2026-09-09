@@ -5,10 +5,10 @@
 import { useMemo, type ReactNode } from "react";
 
 import type { ProjectFramework, ProviderKind } from "@caide/contracts";
-import { isGenericChatThreadTitle, isPendingChatThreadTitle } from "@caide/shared/chatThreads";
+import { isGenericChatThreadTitle } from "@caide/shared/chatThreads";
 import { pluralize } from "@caide/shared/text";
 
-import { CHAT_TITLE_REVEAL_MS, useChatTitleStore } from "../lib/chatTitleGeneration";
+import { usePendingChatThreadTitle } from "../lib/chatTitleGeneration";
 import { createThreadSelector } from "../storeSelectors";
 import { useStore } from "../store";
 import { resolveSubagentPresentationForThread } from "../lib/subagentPresentation";
@@ -180,6 +180,42 @@ function SidebarSubagentLabel({
   });
 }
 
+export interface SidebarThreadTitleThread {
+  readonly id: SidebarThreadSummary["id"];
+  readonly title: string;
+  readonly parentThreadId?: SidebarThreadSummary["parentThreadId"];
+  readonly latestUserMessageAt?: SidebarThreadSummary["latestUserMessageAt"];
+}
+
+// Shared chat-title cell: skeleton while untitled/generating, wipe-reveal
+// when the fresh name lands, plain text otherwise. Used by every sidebar
+// thread renderer so no surface renders a raw placeholder title.
+export function SidebarThreadTitle({
+  thread,
+  className,
+  skeletonClassName,
+}: {
+  thread: SidebarThreadTitleThread;
+  className?: string;
+  skeletonClassName?: string;
+}) {
+  const { pending, revealed } = usePendingChatThreadTitle(thread);
+  if (pending) {
+    return (
+      <Skeleton
+        className={cn("h-3 w-24 rounded-full", skeletonClassName)}
+        aria-label="Naming chat…"
+        role="status"
+      />
+    );
+  }
+  return (
+    <span key={revealed ? thread.title : "settled"} className={cn(className, revealed && "chat-title-reveal")}>
+      {thread.title || "Untitled Conversation"}
+    </span>
+  );
+}
+
 export function SidebarThreadRowContent({
   thread,
   terminalEntryPoint,
@@ -219,18 +255,6 @@ export function SidebarThreadRowContent({
         })
       : null;
   const showThreadProviderAvatar = !isGenericChatThreadTitle(thread.title);
-  // Untitled chats (or chats whose AI name is still generating) render a
-  // skeleton until the first message resolves a real title.
-  const isTitlePending =
-    useChatTitleStore((store) => store.pendingThreadIds[thread.id]) === true ||
-    (!thread.parentThreadId &&
-      isPendingChatThreadTitle(thread.title) &&
-      !thread.latestUserMessageAt);
-  const revealedAt = useChatTitleStore((store) => store.revealedAtByThreadId[thread.id]);
-  const justRevealed =
-    !isTitlePending &&
-    revealedAt !== undefined &&
-    Date.now() - revealedAt < CHAT_TITLE_REVEAL_MS;
 
   return (
     <>
@@ -268,24 +292,13 @@ export function SidebarThreadRowContent({
           )}
           data-testid={variant === "pinned" ? `thread-title-${thread.id}` : undefined}
         >
-          {isTitlePending ? (
-            <Skeleton
-              className="h-3 w-24 rounded-full"
-              aria-label="Naming chat…"
-              role="status"
-            />
-          ) : isSubagentThread ? (
+          {isSubagentThread ? (
             <SidebarSubagentLabel
               thread={thread}
               roleClassName={variant === "standard" ? "text-muted-foreground/42" : undefined}
             />
           ) : (
-            <span
-              key={justRevealed ? thread.title : "settled"}
-              className={cn(justRevealed && "chat-title-reveal")}
-            >
-              {thread.title}
-            </span>
+            <SidebarThreadTitle thread={thread} />
           )}
         </span>
         {!isSubagentThread && pendingStatusColorClass ? (
