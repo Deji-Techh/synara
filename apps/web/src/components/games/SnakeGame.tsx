@@ -16,20 +16,34 @@ export function SnakeGame() {
   const keyMap = useGameShellStore((s) => s.keyMap.snake);
   const highScore = useGameShellStore((s) => s.snakeHighScore);
   const setHighScore = useGameShellStore((s) => s.setSnakeHighScore);
+  const setSnakeRun = useGameShellStore((s) => s.setSnakeRun);
 
-  const [cells, setCells] = useState<SnakePoint[]>([
+  const freshCells = () => [
     { x: 8, y: 9 },
     { x: 7, y: 9 },
     { x: 6, y: 9 },
-  ]);
-  const [food, setFood] = useState<SnakePoint>({ x: 12, y: 9 });
-  const [score, setScore] = useState(0);
-  const [alive, setAlive] = useState(true);
-  const [paused, setPaused] = useState(false);
-  const dirRef = useRef<SnakePoint>({ x: 1, y: 0 });
-  const pendingDir = useRef<SnakePoint>({ x: 1, y: 0 });
+  ];
+  // Resume the saved run; always restored paused so it never runs as a surprise.
+  const [cells, setCells] = useState<SnakePoint[]>(
+    () => useGameShellStore.getState().snakeRun?.cells ?? freshCells(),
+  );
+  const [food, setFood] = useState<SnakePoint>(
+    () => useGameShellStore.getState().snakeRun?.food ?? { x: 12, y: 9 },
+  );
+  const [score, setScore] = useState(() => useGameShellStore.getState().snakeRun?.score ?? 0);
+  const [alive, setAlive] = useState(() => useGameShellStore.getState().snakeRun?.alive ?? true);
+  const [paused, setPaused] = useState(
+    () => (useGameShellStore.getState().snakeRun ? true : false),
+  );
+  const dirRef = useRef<SnakePoint>(useGameShellStore.getState().snakeRun?.dir ?? { x: 1, y: 0 });
+  const pendingDir = useRef<SnakePoint>(useGameShellStore.getState().snakeRun?.dir ?? { x: 1, y: 0 });
   const stateRef = useRef({ cells, food, alive, paused });
   stateRef.current = { cells, food, alive, paused };
+
+  // Persist the live run every tick so restarts resume exactly.
+  useEffect(() => {
+    setSnakeRun({ cells, food, score, dir: dirRef.current, alive });
+  }, [cells, food, score, alive, setSnakeRun]);
 
   const reset = useCallback(() => {
     const fresh = [

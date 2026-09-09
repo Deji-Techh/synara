@@ -6,11 +6,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ChessPieceGlyph } from "./ChessPieces";
 import {
-  applyMove,
-  initialChessState,
   isInCheck,
   legalMoves,
   legalMovesFrom,
+  replayChessMoves,
   squareName,
   type ChessGameState,
   type ChessMove,
@@ -26,7 +25,12 @@ export function ChessBoard() {
   const difficulty = useGameShellStore((s) => s.difficulty.chess);
   const keyboardEnabled = useGameShellStore((s) => s.keyboardEnabled);
   const keyMap = useGameShellStore((s) => s.keyMap.chess);
-  const [history, setHistory] = useState<ChessGameState[]>([initialChessState()]);
+  const setChessMoves = useGameShellStore((s) => s.setChessMoves);
+  // Live line is persisted; replay rebuilds the board so restarts resume exactly.
+  const [line, setLine] = useState<ChessMove[]>(() =>
+    useGameShellStore.getState().chessMoves.slice(),
+  );
+  const history = useMemo(() => replayChessMoves(line), [line]);
   const [selected, setSelected] = useState<[number, number] | null>(null);
   const [cursor, setCursor] = useState<[number, number]>([4, 1]);
   const [thinking, setThinking] = useState(false);
@@ -47,7 +51,11 @@ export function ChessBoard() {
   const playerTurn = state.turn === "w";
 
   const doMove = (move: ChessMove) => {
-    setHistory((h) => [...h, applyMove(state, move)]);
+    setLine((prev) => {
+      const next = [...prev, move];
+      setChessMoves(next);
+      return next;
+    });
     setSelected(null);
   };
 
@@ -76,14 +84,20 @@ export function ChessBoard() {
     setThinking(true);
     aiTimer.current = setTimeout(() => {
       const ai = pickAiMove(state, difficulty as GameDifficulty);
-      if (ai) setHistory((h) => [...h, applyMove(state, ai)]);
+      if (ai) {
+        setLine((prev) => {
+          const next = [...prev, ai];
+          useGameShellStore.getState().setChessMoves(next);
+          return next;
+        });
+      }
       setThinking(false);
     }, 320);
     return () => {
       if (aiTimer.current) clearTimeout(aiTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [history.length]);
+  }, [line.length]);
 
   // Optional keyboard cursor — master switch + focus guard so work is never hijacked.
   useEffect(() => {
@@ -121,11 +135,16 @@ export function ChessBoard() {
   }, [keyboardEnabled, keyMap, cursor, state, selected, thinking]);
 
   const undo = () => {
-    setHistory((h) => (h.length > 2 ? h.slice(0, -2) : [initialChessState()]));
+    setLine((prev) => {
+      const next = prev.length > 1 ? prev.slice(0, -2) : [];
+      setChessMoves(next);
+      return next;
+    });
     setSelected(null);
   };
   const reset = () => {
-    setHistory([initialChessState()]);
+    setLine([]);
+    setChessMoves([]);
     setSelected(null);
     setCursor([4, 1]);
   };

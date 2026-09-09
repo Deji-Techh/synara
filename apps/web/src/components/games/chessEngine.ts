@@ -328,3 +328,21 @@ export function legalMovesFrom(state: ChessGameState, f: number, r: number): Che
 export function squareName(f: number, r: number): string {
   return `${"abcdefgh"[f]}${r + 1}`;
 }
+
+/**
+ * Replay a persisted move line into board history. Stops at the first illegal
+ * move so corrupt saves degrade to the last good position instead of crashing.
+ */
+export function replayChessMoves(moves: ChessMove[]): ChessGameState[] {
+  const history: ChessGameState[] = [initialChessState()];
+  for (const m of moves) {
+    const state = history[history.length - 1]!;
+    const legal = legalMovesFrom(state, m.from[0], m.from[1]).some(
+      (c) =>
+        c.to[0] === m.to[0] && c.to[1] === m.to[1] && (c.promotion ?? "q") === (m.promotion ?? "q"),
+    );
+    if (!legal) break;
+    history.push(applyMove(state, m));
+  }
+  return history;
+}
