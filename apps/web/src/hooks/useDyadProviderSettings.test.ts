@@ -236,6 +236,25 @@ describe("useDyadProviderSettings", () => {
     }
   });
 
+  it("reports offline when the socket never opens, then recovers through manual refresh", () => {
+    const api = mount();
+    // No .open() calls: simulating a dead URL.
+    vi.advanceTimersByTime(6000);
+    expect(sockets).toHaveLength(2);
+    vi.advanceTimersByTime(6000);
+    expect(sockets).toHaveLength(3);
+    vi.advanceTimersByTime(6000);
+    let state = reactHarness.readState() as { connected: boolean };
+    expect(state.connected).toBe(false);
+    expect(sockets).toHaveLength(3);
+    api.refresh();
+    state = reactHarness.readState() as { connected: boolean };
+    expect(state.connected).toBe(true);
+    // Fresh reconnect chances: continued silence triggers a new reconnect.
+    vi.advanceTimersByTime(6000);
+    expect(sockets).toHaveLength(4);
+  });
+
   it("stops the watchdog once state arrives", () => {
     mount();
     sockets[0]!.open();

@@ -93,6 +93,8 @@ export function useDyadProviderSettings(): DyadProvidersState & {
   useEffect(() => {
     let handle: HarnessWsHandle | null = null;
     let disposed = false;
+    let opened = false;
+    const bornAt = Date.now();
     const openSocket = () => {
       if (disposed) return;
       try {
@@ -128,6 +130,7 @@ export function useDyadProviderSettings(): DyadProvidersState & {
           // requestState subscribes first — broadcasts only reach
           // subscribed sessions.
           onOpen: () => {
+            opened = true;
             requestState("init");
           },
         });
@@ -147,35 +150,47 @@ export function useDyadProviderSettings(): DyadProvidersState & {
       });
       armWatchdog();
     };
+    const reconnect = () => {
+      opened = false;
+      try {
+        handle?.disconnect();
+      } catch {
+        // already closed
+      }
+      handle = null;
+      handleRef.current = null;
+      openSocket();
+    };
     const armWatchdog = () => {
       clearWatchdog();
       watchdogRef.current = setTimeout(() => {
         watchdogRef.current = null;
         if (disposed) return;
-        // No state since the request: the socket is half-working or the URL
-        // is stale. Reconnect (fresh URL + resubscribe) a couple of times,
-        // then honestly report offline so the panel stops claiming "Harness
-        // connected" with empty data.
-        if (lastStateAtRef.current < lastGetAtRef.current) {
+        // Either the socket never opened (dead URL — nothing re-arms us, so
+        // re-arm here), or it opened but no state arrived since the request
+        // (half-working socket or lost subscription). Reconnect with a fresh
+        // URL a couple of times, then honestly report offline so the panel
+        // stops claiming "Harness connected" with empty data.
+        const neverOpened = !opened && Date.now() - bornAt >= 6000;
+        const stale = opened && lastStateAtRef.current < lastGetAtRef.current;
+        if (neverOpened || stale) {
           if (staleCyclesRef.current < 2) {
             staleCyclesRef.current += 1;
-            try {
-              handle?.disconnect();
-            } catch {
-              // already closed
-            }
-            handle = null;
-            handleRef.current = null;
-            openSocket();
-            // openSocket's onOpen re-requests state and re-arms the watchdog.
+            reconnect();
+            // openSocket's onOpen re-requests state and re-arms; if it never
+            // opens, this arm keeps watch.
+            armWatchdog();
           } else {
-            setState((prev) => ({ ...prev, connected: false }));
+            setState((prev) => (prev.connected ? { ...prev, connected: false } : prev));
           }
         }
       }, 6000);
     };
     armWatchdogRef.current = armWatchdog;
     openSocket();
+    // Cover the never-opens case (dead URL): with no onOpen, nothing else
+    // would arm the watchdog. A later onOpen re-arms harmlessly.
+    armWatchdog();
     // Seed from local presence (desktop only): instant, socket-independent.
     // Server state replaces it whenever it arrives (see the merged return).
     try {
@@ -239,6 +254,10 @@ export function useDyadProviderSettings(): DyadProvidersState & {
   }, []);
 
   const refresh = useCallback(() => {
+    // A manual refresh always grants fresh reconnect chances: a previously
+    // exhausted watchdog must not pin the panel offline forever.
+    staleCyclesRef.current = 0;
+    setState((prev) => (prev.connected ? prev : { ...prev, connected: true }));
     // Subscribe-first: broadcasts only reach subscribed sessions, and a
     // subscription can be lost while sends keep working (e.g. across a
     // server restart), leaving the panel permanently empty.

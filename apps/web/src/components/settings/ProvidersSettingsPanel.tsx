@@ -529,7 +529,7 @@ export function ProvidersSettingsPanel({
   updateSettings,
   active,
 }: ProvidersSettingsPanelProps) {
-  const { providers, tests, connected, save, test } = useDyadProviderSettings();
+  const { providers, tests, connected, save, test, refresh } = useDyadProviderSettings();
   const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
 
   const hiddenProviderSet = useMemo(
@@ -682,9 +682,18 @@ export function ProvidersSettingsPanel({
       <SettingsSection
         title="Provider credentials & tools"
         action={
-          <span className={cn("text-[11px]", connected ? "text-muted-foreground" : "text-destructive")}>
-            {connected ? "Harness connected" : "Harness offline"}
-          </span>
+          connected ? (
+            <span className="text-[11px] text-muted-foreground">Harness connected</span>
+          ) : (
+            <button
+              type="button"
+              onClick={refresh}
+              title="Reconnect and re-sync provider status"
+              className="text-[11px] text-destructive underline decoration-dotted underline-offset-2 hover:text-destructive/80"
+            >
+              Harness offline — retry
+            </button>
+          )
         }
       >
         <SettingsRow
