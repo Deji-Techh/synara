@@ -6,8 +6,11 @@ const envSchema = z.object({
   NEON_AUTH_URL: z.string().url().default("http://localhost:3001"),
   PORT: z.coerce.number().int().positive().default(3001),
   NODE_ENV: z
-    .enum(["development", "production", "test"])
+    .enum(["development", "staging", "production", "test"])
     .default("development"),
+  /** Deploy target label for logs/telemetry. staging mirrors production
+   * config with dev data; keep secrets per environment (.env.staging). */
+  APP_ENV: z.string().default("development"),
   // CORS_ORIGINS is a comma-separated list of allowed origins.
   // Each origin must be a valid URL to prevent misconfiguration.
   // Example: "http://localhost:5173,https://myapp.vercel.app"

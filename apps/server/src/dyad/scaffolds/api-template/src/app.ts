@@ -6,6 +6,7 @@ import { requestId } from "./middleware/request-id";
 import { errorHandler } from "./middleware/error";
 import { securityHeaders } from "./middleware/security";
 import { healthRoutes } from "./routes/health";
+import { jobRoutes } from "./routes/jobs";
 
 const app = new Hono();
 
@@ -30,6 +31,7 @@ app.use(
 app.onError(errorHandler);
 
 app.route("/", healthRoutes);
+app.route("/", jobRoutes);
 
 // ---------------------------------------------------------------------------
 // ADD YOUR ROUTES HERE

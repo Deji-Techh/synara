@@ -23,7 +23,7 @@ import {
 import { checkSqlDanger, classifySql, splitStatements } from "./sqlSafety.ts";
 import { writeMigrationFile } from "./migrations.ts";
 import { listSupabaseProjects } from "./supabaseApi.ts";
-import { listNeonBranches, listNeonProjects } from "./neonApi.ts";
+import { listNeonBranches, listNeonProjects, createNeonBranch } from "./neonApi.ts";
 
 export class DbToolError extends Error {
   constructor(message: string) {
@@ -366,6 +366,58 @@ server-only secrets) when no provider is involved.
   presentCall: (args: any) => `Add Nitro server layer (${args.reason})`,
 });
 
+// --- create_neon_branch (referenced by the provision-backend guide) ---
+
+const createNeonBranchSchema = z.object({
+  projectId: z.string().optional().describe("Neon project id. Defaults to the linked integration's project."),
+  branchName: z.string().optional().describe("Branch name, e.g. caide-myapp-dev. Defaults to a caide-<timestamp> name."),
+});
+
+export const createNeonBranchTool = defineTool({
+  name: "create_neon_branch",
+  description: [
+    "Create a Neon branch (database) inside the linked Neon project.",
+    "Requires a linked Neon connection with a management token — call add_integration first when unlinked.",
+    "Returns the branch id/name and, when provided, a pooled connection URI.",
+    "Save the URI to .env.local as DATABASE_URL with write_file and NEVER print it back to the user.",
+  ].join(" "),
+  schema: createNeonBranchSchema,
+  readOnly: false,
+  modifiesState: true,
+  execute: async (args, ctx) => {
+    const parsed = createNeonBranchSchema.parse(args);
+    const link = getDatabaseLink(ctx.sessionId);
+    if (!link || link.provider !== "neon") {
+      throw new DbNotConnectedError();
+    }
+    if (!link.managementToken) {
+      throw new DbToolError("Neon management token missing — re-run add_integration to connect with API access.");
+    }
+    const projectId = parsed.projectId?.trim() || link.projectId;
+    if (!projectId) {
+      throw new DbToolError("No Neon project id — pass projectId or re-run add_integration.");
+    }
+    const branchName = parsed.branchName?.trim() || `caide-${Date.now().toString(36)}`;
+    const created = await createNeonBranch({
+      apiKey: link.managementToken,
+      projectId,
+      branchName,
+      signal: ctx.signal,
+    });
+    const lines = [
+      `Neon branch created: ${created.name} (${created.id}) in project ${projectId}.`,
+      "Save the connection string to .env.local as DATABASE_URL with write_file and NEVER print it in chat.",
+    ];
+    if (created.connectionUri) {
+      lines.push(`Connection URI (save then forget): ${created.connectionUri}`);
+    } else {
+      lines.push("No connection URI returned — copy DATABASE_URL from the Neon console into .env.local.");
+    }
+    return lines.join("\n");
+  },
+  presentCall: (args: any) => `Create Neon branch${args.branchName ? `: ${args.branchName}` : ""}`,
+});
+
 export async function executeEnableNitro(
   input: z.infer<typeof enableNitroSchema>,
   appPath: string,
@@ -396,6 +448,7 @@ export const ALL_DB_TOOLS: ToolDef[] = [
   getDatabaseTableSchemaTool,
   getSupabaseProjectInfoTool,
   getNeonProjectInfoTool,
+  createNeonBranchTool,
   addIntegrationTool,
   enableNitroTool,
 ];

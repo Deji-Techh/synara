@@ -71,6 +71,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   // db-infra
   { name: "get_supabase_project_info", category: "db-infra", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/db" },
   { name: "get_neon_project_info", category: "db-infra", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/db" },
+  { name: "create_neon_branch", category: "db-infra", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/db" },
   { name: "get_database_table_schema", category: "db-infra", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/db" },
   { name: "set_chat_summary", category: "plan-memory", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/misc" },
   { name: "add_integration", category: "db-infra", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/db" },

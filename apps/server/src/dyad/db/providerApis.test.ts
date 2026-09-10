@@ -8,7 +8,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { listNeonBranches, listNeonProjects } from "./neonApi.ts";
+import { listNeonBranches, listNeonProjects, createNeonBranch } from "./neonApi.ts";
 import { listSupabaseOrganizations, listSupabaseProjects } from "./supabaseApi.ts";
 import { slugifyMigrationName, writeMigrationFile } from "./migrations.ts";
 
@@ -22,6 +22,12 @@ function handler(req: http.IncomingMessage, res: http.ServerResponse): void {
   if (key !== "Bearer good") return json(401, { message: "unauthorized" });
   if (url.pathname === "/api/v2/projects") return json(200, { projects: [{ id: "p1", name: "Shop" }] });
   if (url.pathname === "/api/v2/projects/p1/branches") {
+    if (req.method === "POST") {
+      return json(200, {
+        branch: { id: "b2", name: "caide-dev" },
+        connection_uris: [{ connection_uri: "postgresql://u:p@host/db" }],
+      });
+    }
     return json(200, { branches: [{ id: "b1", name: "main", primary: true }] });
   }
   if (url.pathname === "/v1/organizations") return json(200, [{ id: "o1", name: "Acme" }]);
@@ -53,6 +59,20 @@ describe("dyad provider management apis (c8)", () => {
     expect(branches).toEqual([{ id: "b1", name: "main", primary: true }]);
     await expect(listNeonProjects({ apiKey: "bad", baseUrl: neonBase })).rejects.toThrow(/401/);
     await expect(listNeonProjects({ apiKey: "  " })).rejects.toThrow(/required/);
+  });
+
+  it("creates neon branches with connection uris", async () => {
+    const created = await createNeonBranch({
+      apiKey: "good",
+      projectId: "p1",
+      branchName: "caide-dev",
+      baseUrl: neonBase,
+    });
+    expect(created).toMatchObject({ id: "b2", name: "caide-dev" });
+    expect(created.connectionUri).toContain("postgresql://");
+    await expect(
+      createNeonBranch({ apiKey: "good", projectId: "p1", branchName: "  ", baseUrl: neonBase }),
+    ).rejects.toThrow(/required/);
   });
 
   it("lists supabase orgs and projects", async () => {
