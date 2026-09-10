@@ -151,6 +151,37 @@ export function auditDesignWorkspace(appPath: string, scope: "ui" | "all" = "ui"
   if (files.length > 5 && motionHits === 0) {
     findings.push({ level: "minor", check: "motion", message: "No reduced-motion handling detected — honor reduce-motion on every animation." });
   }
+
+  // --- web viewport + responsive checks (5 viewport classes) ---
+  const pkg = readJsonSafe(path.join(appPath, "package.json")) as Record<string, unknown> | undefined;
+  const deps = {
+    ...((pkg?.dependencies ?? {}) as Record<string, unknown>),
+    ...((pkg?.devDependencies ?? {}) as Record<string, unknown>),
+  };
+  const indexHtml = readFileSafe(path.join(appPath, "index.html"));
+  const isWeb = indexHtml !== null || ["vite", "next", "react", "tailwindcss", "@vitejs/plugin-react"].some((k) => deps[k] !== undefined);
+  if (isWeb) {
+    if (indexHtml !== null && !/<meta[^>]+name=["']viewport["']/i.test(indexHtml)) {
+      findings.push({ level: "major", file: "index.html", check: "viewports", message: "Missing <meta name=\"viewport\"> — responsive viewports cannot work without it." });
+    }
+    let responsiveHits = 0;
+    let fixedWidthReports = 0;
+    for (const file of files) {
+      const text = readFileSafe(file);
+      if (!text) continue;
+      if (/(sm:|md:|lg:|xl:|2xl:|@media|container-type|useMediaQuery|useWindowDimensions|Dimensions\.get)/.test(text)) {
+        responsiveHits++;
+      }
+      const fixed = text.match(/w-\[3[79]0px\]|width:\s*39[07]px/);
+      if (fixed && fixedWidthReports < 3) {
+        fixedWidthReports++;
+        findings.push({ level: "minor", file: rel(file), check: "viewports", message: `Fixed phone width "${fixed[0]}" — recompose per viewport class instead of locking 375/390px.` });
+      }
+    }
+    if (responsiveHits === 0) {
+      findings.push({ level: "minor", check: "viewports", message: "No responsive rules detected (breakpoints, media/container queries, Dimensions) — tablet and landscape will reuse the phone column." });
+    }
+  }
   return findings;
 }
 
@@ -161,8 +192,8 @@ export const verifyDesignTool = defineTool({
     "Checks: .caide/design-spec.json shape (tokens, darkMode.enabled, imagery strategy, viewports),",
     ".caide/motion-spec.json entries + reduced-motion fallbacks, flat-color initials product art,",
     "mixed icon families, missing dark-mode code, mock-data markers, reduced-motion handling,",
-    "and interactive elements without accessibility props.",
-    "Returns major/minor findings — fix all majors, then re-run until clean.",
+    "interactive elements without accessibility props, and (web apps) viewport meta,",
+    "responsive rules, and fixed phone-width locks.",
   ].join(" "),
   schema: verifyDesignSchema,
   readOnly: true,

@@ -49,6 +49,33 @@ describe("verify_design audit", () => {
     expect(byCheck("mock-data").length).toBeGreaterThan(0);
   });
 
+  it("flags missing viewport meta, fixed widths, and absent responsive rules (web)", () => {
+    const dir = fixture({
+      ".caide/design-spec.json": GOOD_SPEC,
+      ".caide/motion-spec.json": GOOD_MOTION,
+      "package.json": JSON.stringify({ dependencies: { react: "*", vite: "*" } }),
+      "index.html": "<html><head><title>x</title></head></html>",
+      "src/App.tsx": `export const A = () => <div style={{ width: "390px" }}>hi</div>;`,
+    });
+    const findings = auditDesignWorkspace(dir);
+    const viewports = findings.filter((f) => f.check === "viewports");
+    expect(viewports.some((f) => f.level === "major" && /meta name="viewport"/i.test(f.message))).toBe(true);
+    expect(viewports.some((f) => /Fixed phone width/.test(f.message))).toBe(true);
+    expect(viewports.some((f) => /No responsive rules/.test(f.message))).toBe(true);
+  });
+
+  it("passes a responsive web workspace with viewport meta", () => {
+    const dir = fixture({
+      ".caide/design-spec.json": GOOD_SPEC,
+      ".caide/motion-spec.json": GOOD_MOTION,
+      "package.json": JSON.stringify({ dependencies: { react: "*" } }),
+      "index.html": `<html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head></html>`,
+      "src/App.tsx": `import { useColorScheme } from 'react';\nexport const A = () => <div className="grid md:grid-cols-2">hi</div>;`,
+    });
+    const findings = auditDesignWorkspace(dir);
+    expect(findings.filter((f) => f.check === "viewports")).toEqual([]);
+  });
+
   it("tool presents a countable summary", async () => {
     const dir = fixture({ "src/a.ts": "export const x = 1;" });
     const out = (await verifyDesignTool.execute(
