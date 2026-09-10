@@ -4652,6 +4652,14 @@ export default function Sidebar() {
     const isActive = visualActiveSidebarThreadId === thread.id;
     const isPinned = pinnedThreadIdSet.has(thread.id);
     const isWorking = isThreadActivelyWorking(thread);
+    // Completion dot = unseen finished work only. New chats with zero runs
+    // (latestTurn == null) never qualify, the open chat never advertises
+    // itself as unread, and visiting (markThreadVisited) clears it for good.
+    const trailingCompletionStatus = resolveThreadStatusTrailingIndicator({
+      status: resolveThreadStatusForSidebar(thread),
+      isActive,
+    });
+    const showCompletionDot = trailingCompletionStatus?.label === "Completed";
     const timeAgo = formatRelativeTime(
       thread.latestUserMessageAt ||
         thread.latestTurn?.completedAt ||
@@ -4758,17 +4766,19 @@ export default function Sidebar() {
                 </div>
               </>
             ) : (
-              /* Completed state: Relative timestamp + colored dot when not hovered, options on hover */
+              /* Idle state: Relative timestamp always; colored dot only for unseen completion */
               <>
-                {/* Normal view: time + dot */}
+                {/* Normal view: time (+ dot when a finished task is unseen) */}
                 <div className="flex items-center gap-1.5 group-hover/conversation-row:hidden">
                   <span className="text-[11px] tabular-nums text-muted-foreground/50">
                     {timeAgo}
                   </span>
-                  <span
-                    className={cn("size-1.5 rounded-full shrink-0 shadow-xs", dotColorClass)}
-                    aria-hidden="true"
-                  />
+                  {showCompletionDot ? (
+                    <span
+                      className={cn("size-1.5 rounded-full shrink-0 shadow-xs", dotColorClass)}
+                      aria-hidden="true"
+                    />
+                  ) : null}
                 </div>
 
                 {/* Hover view: time + more options */}
@@ -4818,7 +4828,10 @@ export default function Sidebar() {
             projectName={effectiveProjectName}
             projectFramework={effectiveFramework}
             isWorking={isWorking}
-            statusLabel={isWorking ? "Running" : "Completed"}
+            statusLabel={
+              isWorking ? "Running" : showCompletionDot ? "Completed" : thread.latestTurn ? "Seen" : "Not started"
+            }
+            completionDotVisible={showCompletionDot}
             updatedAt={
               thread.updatedAt || thread.createdAt
                 ? formatRelativeTime(thread.updatedAt ?? thread.createdAt)

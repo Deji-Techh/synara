@@ -17,6 +17,7 @@ export interface SidebarConversationHoverCardProps {
   statusLabel?: string;
   updatedAt?: string;
   completionDotColor?: SidebarCompletionDotColor;
+  completionDotVisible?: boolean;
 }
 
 export function SidebarConversationHoverCard(props: SidebarConversationHoverCardProps) {
@@ -28,6 +29,7 @@ export function SidebarConversationHoverCard(props: SidebarConversationHoverCard
     statusLabel = isWorking ? "Running" : "Completed",
     updatedAt,
     completionDotColor,
+    completionDotVisible = true,
   } = props;
 
   const dotColorClass = resolveSidebarDotColorClass(completionDotColor);
@@ -57,11 +59,13 @@ export function SidebarConversationHoverCard(props: SidebarConversationHoverCard
               <ThreadRunningSpinner className="size-3 text-sky-400" />
               <span className="font-medium text-sky-400">{statusLabel}</span>
             </>
-          ) : (
+          ) : completionDotVisible ? (
             <>
               <span className={cn("size-1.5 rounded-full shrink-0 shadow-xs", dotColorClass)} />
               <span className="text-muted-foreground/80">{statusLabel}</span>
             </>
+          ) : (
+            <span className="text-muted-foreground/80">{statusLabel}</span>
           )}
         </div>
 
