@@ -95,6 +95,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "run_lint", category: "verify", defaultConsent: "ask", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "lint_project" },
   { name: "run_pre_commit", category: "verify", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/vcs" },
   { name: "capture_evidence", category: "verify", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/misc" },
+  { name: "verify_design", category: "verify", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/verify" },
   { name: "capture_screenshot", category: "verify", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "screenshot" },
   // git
   { name: "git_status", category: "git", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/vcs" },
@@ -175,6 +176,7 @@ export const BUILD_PROFILE_TOOLS: ReadonlySet<string> = new Set([
   "read_logs",
   "run_type_checks",
   "run_command",
+  "verify_design",
   "run_tests",
   "run_lint",
   "capture_screenshot",

@@ -451,4 +451,14 @@ describe("dyad prompt transplant (m1)", () => {
     });
     expect(plan).toContain("Appllama benchmark laws");
   });
+
+  it("design quality contract ships in agent and build modes", () => {
+    const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
+    const agent = constructSystemPrompt({ ...base, chatMode: "local-agent" });
+    expect(agent).toContain("<design_quality_contract>");
+    expect(agent).toContain("verify_design");
+    const build = constructSystemPrompt({ ...base, chatMode: "build" });
+    expect(build).toContain("<design_quality_contract>");
+    expect(build).toContain("verify_design");
+  });
 });

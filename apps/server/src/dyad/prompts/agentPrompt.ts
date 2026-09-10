@@ -8,6 +8,7 @@
 import type { AppFrameworkType } from "./frameworkType.ts";
 import type { AppTarget } from "./appTarget.ts";
 import { AGENT_TEST_WRITING_GUIDANCE } from "./testGuidance.ts";
+import { DESIGN_QUALITY_CONTRACT } from "./designQuality.ts";
 import { buildPlatformPrompt } from "./platformContracts.ts";
 import { buildProviderInvariants } from "./providerInvariants.ts";
 import { BUILD_GIT_CONTEXT_BLOCK, GIT_CONTEXT_BLOCK } from "./gitContextPrompt.ts";
@@ -420,6 +421,7 @@ ${PRO_FILE_EDITING_TOOL_SELECTION_BLOCK}
 
 ${proDevelopmentWorkflowBlock({ enableAppBlueprint, codeExplorerAvailable })}
 [[SERVER_LAYER]]
+${DESIGN_QUALITY_CONTRACT}
 ${testingEnabled ? `${AGENT_TEST_WRITING_GUIDANCE}\n` : ""}
 ${IMAGE_GENERATION_BLOCK}
 ${enableAppBlueprint ? `\n${APP_BLUEPRINT_BLOCK}\n` : ""}
@@ -453,6 +455,7 @@ ${BASIC_FILE_EDITING_TOOL_SELECTION_BLOCK}
 
 ${basicDevelopmentWorkflowBlock(enableAppBlueprint)}
 [[SERVER_LAYER]]
+${DESIGN_QUALITY_CONTRACT}
 ${testingEnabled ? `${AGENT_TEST_WRITING_GUIDANCE}\n` : ""}${enableAppBlueprint ? `\n${APP_BLUEPRINT_BLOCK}\n` : ""}
 ${AI_RULES_BLOCK}
 `;

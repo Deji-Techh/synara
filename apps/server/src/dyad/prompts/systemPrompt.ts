@@ -21,6 +21,7 @@ import { buildPlatformPrompt } from "./platformContracts.ts";
 import type { AppTarget } from "./appTarget.ts";
 import { WEB3_SKILL_PACK } from "./skillPacks.ts";
 import { TEST_WRITING_GUIDANCE } from "./testGuidance.ts";
+import { DESIGN_QUALITY_CONTRACT } from "./designQuality.ts";
 import {
   appTargetForFramework,
   applyFrameworkBuildExamples,
@@ -695,6 +696,7 @@ export const getSystemPromptForChatMode = ({
     // Keep the test guidance right after the base (i.e. after the postfix's
     // "ONLY use <dyad-write>" mandate) so it carries as the exception.
     (testingEnabled ? `\n\n${TEST_WRITING_GUIDANCE}` : "") +
+    `\n\n${DESIGN_QUALITY_CONTRACT}` +
     (shouldAppendNitroNudge ? `\n\n${BUILD_SERVER_LAYER_NUDGE}` : "") +
     // Database provider invariants (Supabase / Neon). Empty by default, so
     // existing build prompts are unchanged until callers pass connection state.

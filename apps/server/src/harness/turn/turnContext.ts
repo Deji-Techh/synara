@@ -24,6 +24,7 @@ import {
 } from "../../dyad/tools/toolCatalog.ts";
 import { ALL_MCP_TOOLS, setMcpToolRegistry, type McpToolRegistry } from "../../dyad/mcp/index.ts";
 import { ALL_MISC_TOOLS } from "../../dyad/misc/index.ts";
+import { ALL_VERIFY_TOOLS } from "../../dyad/verify/index.ts";
 import { ALL_SANDBOX_TOOLS } from "../../dyad/sandbox/index.ts";
 import { ALL_WEB_FETCH_TOOLS, ALL_WEB_SEARCH_TOOLS, ALL_IMAGE_TOOLS, ALL_CODE_TOOLS } from "../../dyad/web/index.ts";
 import { ALL_WEB3_TOOLS } from "../../dyad/web3/index.ts";
@@ -121,6 +122,7 @@ const UNIFIED_DEFS: ToolDef[] = [
   ...ALL_BLUEPRINT_TOOLS,
   ...ALL_MCP_TOOLS,
   ...ALL_MISC_TOOLS,
+  ...ALL_VERIFY_TOOLS,
   ...ALL_SANDBOX_TOOLS,
   ...ALL_WEB_FETCH_TOOLS,
   ...ALL_WEB_SEARCH_TOOLS,
