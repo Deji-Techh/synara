@@ -411,4 +411,39 @@ describe("dyad prompt transplant (m1)", () => {
     expect(legacy).toContain("in `middleware.ts`");
     expect(legacy).toContain("NOT available here");
   });
+
+  it("clarify-when-unsure + todos reach every mode (P1/P2)", () => {
+    const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
+    const agent = constructSystemPrompt({ ...base, chatMode: "local-agent" });
+    expect(agent).toContain("planning_questionnaire");
+    expect(agent).toContain("instead of guessing");
+    expect(agent).toContain("update_todos");
+    const ask = constructSystemPrompt({ ...base, chatMode: "ask" });
+    expect(ask).toContain("planning_questionnaire");
+    expect(ask).toContain("update_todos");
+    const build = constructSystemPrompt({ ...base, chatMode: "build" });
+    expect(build).toContain("planning_questionnaire");
+    expect(build).toContain("update_todos");
+    const plan = constructSystemPrompt({ ...base, chatMode: "plan" });
+    expect(plan).toContain("planning_questionnaire");
+  });
+
+  it("narration discipline + visual verification gate ship in builder modes (P3/P5)", () => {
+    const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
+    const agent = constructSystemPrompt({ ...base, chatMode: "local-agent" });
+    expect(agent).toContain("do NOT emit a status sentence per tool call");
+    expect(agent).toContain("capture_screenshot");
+    const build = constructSystemPrompt({ ...base, chatMode: "build" });
+    expect(build).toContain("do NOT emit a status sentence per file operation");
+    expect(build).toContain("capture_screenshot");
+  });
+
+  it("plan mode points at the Appllama benchmark laws (P4)", () => {
+    const plan = constructSystemPrompt({
+      aiRules: undefined,
+      chatMode: "plan",
+      enableTurboEditsV2: false,
+    });
+    expect(plan).toContain("Appllama benchmark laws");
+  });
 });

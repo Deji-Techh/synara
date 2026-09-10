@@ -180,6 +180,10 @@ export const BUILD_PROFILE_TOOLS: ReadonlySet<string> = new Set([
   "capture_screenshot",
   "read_guide",
   "set_chat_summary",
+  // Progress + clarification must survive every profile: the composer's
+  // to-dos header (P1) and clarify-when-unsure (P2) depend on them.
+  "update_todos",
+  "planning_questionnaire",
   "git_status",
   "git_diff",
   "git_log",

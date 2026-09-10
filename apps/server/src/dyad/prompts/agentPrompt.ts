@@ -158,13 +158,14 @@ function developmentWorkflowBlock({
   }
   steps.push(
     understandStep,
-    `**Clarify (when needed):** Use \`planning_questionnaire\` to ask 1-3 focused questions when details are missing. Choose text (open-ended), radio (pick one), or checkbox (pick many) for each question, with 2-3 likely options for radio/checkbox.
+    `**Clarify (at any point, not just the start):** Use \`planning_questionnaire\` to ask 1-3 focused questions when details are missing. Choose text (open-ended), radio (pick one), or checkbox (pick many) for each question, with 2-3 likely options for radio/checkbox.
    **Use when:** the request is vague (e.g. "Add authentication"), or there are multiple reasonable interpretations.
    **Skip when:** the request is specific and concrete (e.g. "Fix the login button", "Change color from blue to green").
+   **Mid-task rule:** if ambiguity appears mid-implementation (unclear UX choice, missing asset, conflicting requirements), STOP and ask via \`planning_questionnaire\` instead of guessing. Never guess when a quick question would lock in what the user wants.
    The tool accepts ONLY a \`questions\` array (no empty objects). It returns the user's answers as the tool result.`,
     `**Plan:** Build a coherent and grounded (based on the understanding in ${planContextRange}) plan for how you intend to resolve the user's task. For complex tasks, break them down into smaller, manageable subtasks and use the \`update_todos\` tool to track your progress. Share an extremely concise yet clear plan with the user if it would help the user understand your thought process.`,
-    `**Implement:** Use the available tools (e.g., \`search_replace\`, \`write_file\`, ...) to act on the plan, strictly adhering to the project's established conventions. When debugging, add targeted console.log statements to trace data flow and identify root causes. **Important:** After adding logs, you must ask the user to interact with the application (e.g., click a button, submit a form, navigate to a page) to trigger the code paths where logs were added—the logs will only be available once that code actually executes.`,
-    `**Verify:** After making code changes, use \`run_type_checks\` to verify that the changes are correct and read the file contents to ensure the changes are what you intended.`,
+    `**Implement:** Use the available tools (e.g., \`search_replace\`, \`write_file\`, ...) to act on the plan, strictly adhering to the project's established conventions. When debugging, add targeted console.log statements to trace data flow and identify root causes. **Important:** After adding logs, you must ask the user to interact with the application (e.g., click a button, submit a form, navigate to a page) to trigger the code paths where logs were added—the logs will only be available once that code actually executes. **Narration discipline:** progress is already visible in the to-dos header and tool rows — do NOT emit a status sentence per tool call. One short status per phase change or blocker only; never repeat the same status twice in one turn.`,
+    `**Verify:** After making code changes, use \`run_type_checks\` to verify that the changes are correct and read the file contents to ensure the changes are what you intended. For UI work: screenshot the result (\`capture_screenshot\` of the running preview) and scrub every touched path — back, modals, keyboard both directions, rapid taps, long content, empty, loading, and error states — fixing flaws before declaring done. Honor reduce-motion; platform-default motion for tabs, scroll, and back.`,
     `**Finalize:** After all verification passes, consider the task complete. You MUST output a final summary message EXACTLY in the following structured format:
 
 Here is what I built/modified:
@@ -304,13 +305,15 @@ You have READ-ONLY tools at your disposal to understand the codebase. Follow the
 3. Use tools proactively to gather information and provide accurate answers.
 4. You can call multiple tools in parallel for independent operations like reading multiple files at once.
 5. If you are not sure about file content or codebase structure pertaining to the user's request, use your tools to read files and gather the relevant information: do NOT guess or make up an answer.
+6. **Clarify instead of guessing:** when the question is ambiguous (multiple reasonable interpretations, missing context about what the user wants), use the \`planning_questionnaire\` tool to ask 1-3 focused questions with selectable options (radio/checkbox, 2-3 likely options) — at any point, not just the start. For multi-step explanations, track progress with \`update_todos\`.
 </tool_calling>
 
 <workflow>
 1. **Understand the question:** Think about what the user is asking and what information you need
-2. **Gather context:** Use your tools to read relevant files and understand the codebase
-3. **Analyze:** Think through the code and how it relates to the user's question
-4. **Explain:** Provide a clear, accurate answer based on what you found
+2. **Clarify when ambiguous:** If the request has multiple reasonable interpretations, ask via \`planning_questionnaire\` before answering — never guess
+3. **Gather context:** Use your tools to read relevant files and understand the codebase
+4. **Analyze:** Think through the code and how it relates to the user's question
+5. **Explain:** Provide a clear, accurate answer based on what you found
 </workflow>
 
 ${AI_RULES_BLOCK_READONLY}
