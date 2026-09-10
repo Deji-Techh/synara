@@ -163,6 +163,8 @@ describe("harness components (m3)", () => {
     const todos = renderToStaticMarkup(<HarnessTodosCard sessionId="s-hc" />);
     expect(todos).toContain("Build auth");
     expect(todos).toContain("(0/2)");
+    expect(todos).toContain('role="progressbar"');
+    expect(todos).toContain("To-dos");
 
     harnessStore.handleEvent({
       type: "verifier_result",

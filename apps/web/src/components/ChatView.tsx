@@ -489,6 +489,7 @@ import {
 } from "../routes/-automations.shared";
 import { ChatTranscriptPane } from "./chat/ChatTranscriptPane";
 import { ChatHarnessConsentStrip } from "./chat/ChatHarnessConsentStrip";
+import { ChatHarnessTodosStrip } from "./chat/ChatHarnessTodosStrip";
 import { useChatHarnessSocket } from "./chat/useChatHarnessSocket";
 import { ThreadDetailHydrationState } from "./chat/ThreadDetailHydrationState";
 import type { MessagesTimelineController } from "./chat/MessagesTimeline";
@@ -11136,6 +11137,7 @@ export default function ChatView({
               {/* Harness turn approvals (tool/MCP consent, questionnaires) park
                   the turn with no orchestration-side approval row — without
                   this they are invisible and the turn reads as hung. */}
+              <ChatHarnessTodosStrip threadId={isServerThread ? activeThreadId : null} />
               <ChatHarnessConsentStrip
                 threadId={isServerThread ? activeThreadId : null}
                 send={chatHarnessSocket.send}

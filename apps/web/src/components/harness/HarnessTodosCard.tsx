@@ -1,9 +1,11 @@
 // FILE: HarnessTodosCard.tsx
 // Purpose: Persistent TodoList header for harness sessions. Renders the live
-// todo list pushed by update_todos (todos_update event) above the transcript:
-// collapsed it shows the in-progress task + (done/total); expanded it lists
-// every todo with its status. Donor behavior ported from Dyad's TodoList.tsx
-// into Caide card primitives + Tabler icons (no lucide dependency on web).
+// todo list pushed by update_todos (todos_update event) docked above the
+// composer: collapsed it shows the in-progress task + (done/total) with a
+// progress bar; expanded it lists every todo with its status. Donor behavior
+// ported from Dyad's TodoList.tsx into Caide card primitives + Tabler icons
+// (no lucide dependency on web). Toggle motion uses the shared
+// disclosureMotion DisclosureRegion (AGENTS.md UI conventions).
 
 import { useState } from "react";
 import { IconCircle, IconCircleCheck, IconListCheck, IconLoader2 } from "@tabler/icons-react";
@@ -12,9 +14,10 @@ import {
   CaideBadge,
   CaideCard,
   CaideCardHeader,
-  CaideLazyContent,
 } from "~/components/chat/CaideCardPrimitives";
 import { DisclosureChevron } from "~/components/ui/DisclosureChevron";
+import { DisclosureRegion } from "~/components/ui/DisclosureRegion";
+import { cn } from "~/lib/utils";
 
 function StatusIcon(props: { status: TodoEntry["status"]; className?: string }) {
   if (props.status === "completed") {
@@ -77,7 +80,23 @@ export function HarnessTodosCard(props: { sessionId: string }) {
           <CaideBadge accent={allDone ? "success" : "info"}>To-dos</CaideBadge>
           <DisclosureChevron open={open} className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
         </CaideCardHeader>
-        <CaideLazyContent open={open}>
+        <div
+          className="h-0.5 w-full overflow-hidden bg-muted"
+          role="progressbar"
+          aria-valuenow={completed}
+          aria-valuemin={0}
+          aria-valuemax={total}
+          aria-label="To-dos progress"
+        >
+          <div
+            className={cn(
+              "h-full transition-[width] duration-220 ease-out motion-reduce:transition-none",
+              allDone ? "bg-success" : "bg-info",
+            )}
+            style={{ width: `${total === 0 ? 0 : (completed / total) * 100}%` }}
+          />
+        </div>
+        <DisclosureRegion open={open}>
           <ul className="flex flex-col gap-1.5 overflow-hidden rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5">
             {todos.map((todo) => (
               <li
@@ -93,7 +112,7 @@ export function HarnessTodosCard(props: { sessionId: string }) {
               </li>
             ))}
           </ul>
-        </CaideLazyContent>
+        </DisclosureRegion>
       </CaideCard>
     </div>
   );

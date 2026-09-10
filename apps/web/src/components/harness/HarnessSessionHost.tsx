@@ -2,7 +2,9 @@
 // Purpose: Per-thread harness wiring: owns the socket, registers the send
 // handle, reveals dock panes on ui_reveal, and renders the harness card
 // stack (prompts, plan + continue gate, blueprint approval) above the chat.
-// v1 placement: cards render in normal flow just above the transcript.
+// v1 placement: cards render in normal flow just above the transcript. The
+// todos strip lives docked above the composer (ChatHarnessTodosStrip, P1) —
+// single instance, never duplicated here.
 
 import type { ProjectId, ThreadId } from "@caide/contracts";
 import { useHarnessSession } from "~/hooks/useHarnessSession";
@@ -11,7 +13,6 @@ import { HarnessBlueprintCard } from "./HarnessBlueprintCard";
 import { HarnessPlanCard } from "./HarnessPlanCard";
 import { HarnessPrompts } from "./HarnessPrompts";
 import { HarnessReveals } from "./HarnessReveals";
-import { HarnessTodosCard } from "./HarnessTodosCard";
 import { HarnessVerifierCard } from "./HarnessVerifierCard";
 import { HarnessVersionsCard } from "./HarnessVersionsCard";
 import { HarnessTranscript } from "./HarnessTranscript";
@@ -30,7 +31,6 @@ export function HarnessSessionHost(props: { threadId: ThreadId; projectId: Proje
     <>
       <HarnessReveals threadId={props.threadId} sessionId={props.threadId} />
       <div className="px-3">
-        <HarnessTodosCard sessionId={props.threadId} />
         <HarnessVerifierCard sessionId={props.threadId} />
         <HarnessVersionsCard sessionId={props.threadId} send={send} />
         <HarnessTranscript sessionId={props.threadId} send={send} />
