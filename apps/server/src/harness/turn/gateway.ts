@@ -86,8 +86,8 @@ export class TurnGateway {  private runner = new CaideRunner();
           secrets.setProvider(providerId, entry);
         }
       }
-      if (defaults && (defaults.providerId !== undefined || defaults.modelId !== undefined)) {
-        secrets.setDefaults(defaults.providerId, defaults.modelId);
+      if (defaults && (defaults.providerId !== undefined || defaults.modelId !== undefined || defaults.imageProviderId !== undefined || defaults.imageModelId !== undefined)) {
+        secrets.setDefaults(defaults.providerId, defaults.modelId, defaults.imageProviderId, defaults.imageModelId);
       }
       this.sendProviderState(
         server,
@@ -231,6 +231,8 @@ export class TurnGateway {  private runner = new CaideRunner();
       providers: view.providers,
       ...(view.defaultProviderId ? { defaultProviderId: view.defaultProviderId } : {}),
       ...(view.defaultModelId ? { defaultModelId: view.defaultModelId } : {}),
+      ...(view.defaultImageProviderId ? { defaultImageProviderId: view.defaultImageProviderId } : {}),
+      ...(view.defaultImageModelId ? { defaultImageModelId: view.defaultImageModelId } : {}),
       ...(tests ? { tests } : {}),
     });
   }

@@ -25,6 +25,11 @@ export interface ProviderSecretsFile {
   providers: Record<string, StoredProviderEntry>;
   defaultProviderId?: string;
   defaultModelId?: string;
+  /** Preferred image-generation source (P8): auto | turn-model | gemini |
+   * openai | pollinations | placeholder. Empty/missing = auto. */
+  defaultImageProviderId?: string;
+  /** Optional image model override (e.g. Gemini image model id). */
+  defaultImageModelId?: string;
 }
 
 const EMPTY: ProviderSecretsFile = { version: 1, providers: {} };
@@ -151,12 +156,23 @@ function readFile(filePath: string): ProviderSecretsFile {
           providers: payload.providers as ProviderSecretsFile["providers"],
           defaultProviderId: typeof payload.defaultProviderId === "string" ? payload.defaultProviderId : undefined,
           defaultModelId: typeof payload.defaultModelId === "string" ? payload.defaultModelId : undefined,
+          defaultImageProviderId:
+            typeof payload.defaultImageProviderId === "string" ? payload.defaultImageProviderId : undefined,
+          defaultImageModelId:
+            typeof payload.defaultImageModelId === "string" ? payload.defaultImageModelId : undefined,
         };
       }
       return { ...EMPTY, providers: {} };
     }
     if (parsed && typeof parsed === "object" && parsed.version === 1 && parsed.providers) {
-      return { version: 1, providers: parsed.providers, defaultProviderId: parsed.defaultProviderId, defaultModelId: parsed.defaultModelId };
+      return {
+        version: 1,
+        providers: parsed.providers,
+        defaultProviderId: parsed.defaultProviderId,
+        defaultModelId: parsed.defaultModelId,
+        defaultImageProviderId: parsed.defaultImageProviderId,
+        defaultImageModelId: parsed.defaultImageModelId,
+      };
     }
   } catch {
     // missing or corrupt — start empty (never throw on read)
@@ -193,7 +209,12 @@ export class ProviderSecretsStore {
     return current;
   }
 
-  setDefaults(defaultProviderId?: string, defaultModelId?: string): ProviderSecretsFile {
+  setDefaults(
+    defaultProviderId?: string,
+    defaultModelId?: string,
+    defaultImageProviderId?: string,
+    defaultImageModelId?: string,
+  ): ProviderSecretsFile {
     const current = readFile(this.filePath);
     // Empty string clears back to Auto.
     if (defaultProviderId !== undefined) {
@@ -203,6 +224,14 @@ export class ProviderSecretsStore {
     if (defaultModelId !== undefined) {
       if (defaultModelId.trim()) current.defaultModelId = defaultModelId.trim();
       else delete current.defaultModelId;
+    }
+    if (defaultImageProviderId !== undefined) {
+      if (defaultImageProviderId.trim()) current.defaultImageProviderId = defaultImageProviderId.trim();
+      else delete current.defaultImageProviderId;
+    }
+    if (defaultImageModelId !== undefined) {
+      if (defaultImageModelId.trim()) current.defaultImageModelId = defaultImageModelId.trim();
+      else delete current.defaultImageModelId;
     }
     this.write(current);
     return current;
@@ -227,6 +256,8 @@ export class ProviderSecretsStore {
     providers: Array<{ id: string; configured: boolean; hasBaseUrl: boolean; keyless: boolean }>;
     defaultProviderId?: string;
     defaultModelId?: string;
+    defaultImageProviderId?: string;
+    defaultImageModelId?: string;
   } {
     const file = readFile(this.filePath);
     return {
@@ -247,6 +278,8 @@ export class ProviderSecretsStore {
       }),
       ...(file.defaultProviderId ? { defaultProviderId: file.defaultProviderId } : {}),
       ...(file.defaultModelId ? { defaultModelId: file.defaultModelId } : {}),
+      ...(file.defaultImageProviderId ? { defaultImageProviderId: file.defaultImageProviderId } : {}),
+      ...(file.defaultImageModelId ? { defaultImageModelId: file.defaultImageModelId } : {}),
     };
   }
 
@@ -263,6 +296,8 @@ export class ProviderSecretsStore {
           providers: file.providers,
           ...(file.defaultProviderId ? { defaultProviderId: file.defaultProviderId } : {}),
           ...(file.defaultModelId ? { defaultModelId: file.defaultModelId } : {}),
+          ...(file.defaultImageProviderId ? { defaultImageProviderId: file.defaultImageProviderId } : {}),
+          ...(file.defaultImageModelId ? { defaultImageModelId: file.defaultImageModelId } : {}),
         },
         key,
       );

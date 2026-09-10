@@ -108,8 +108,32 @@ describe("dyad web backends transplant (m2b)", () => {
       expect(out).toContain(".caide/media/generated-image-");
       expect(out).toContain("copy_file");
       const files = fs.readdirSync(path.join(dir, ".caide", "media"));
-      expect(files).toHaveLength(1);
-      expect(files[0]).toMatch(/\.png$/);
+      expect(files).toHaveLength(2); // image + manifest.json provenance
+      expect(files.some((f) => f.endsWith(".png"))).toBe(true);
+    } finally {
+      setImageProvider(null);
+    }
+  });
+
+  it("falls back to a designed placeholder + manifest when every leg fails", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-web-"));
+    setImageProvider(async () => {
+      throw new Error("all legs down");
+    });
+    try {
+      const out = await executeGenerateImage(
+        { prompt: "Hero banner", width: 512, height: 512, filename: "hero" },
+        dir,
+      );
+      expect(out).toContain("illustrated placeholder");
+      expect(out).toContain("Gemini key");
+      const svg = fs.readFileSync(path.join(dir, ".caide", "media", "hero.svg"), "utf8");
+      expect(svg).toContain("<svg");
+      expect(svg).toContain("Hero banner");
+      const manifest = JSON.parse(
+        fs.readFileSync(path.join(dir, ".caide", "media", "manifest.json"), "utf8"),
+      );
+      expect(manifest.at(-1)).toMatchObject({ leg: "placeholder" });
     } finally {
       setImageProvider(null);
     }

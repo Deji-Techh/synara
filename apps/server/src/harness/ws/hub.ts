@@ -25,7 +25,7 @@ export interface ClientInboundMessage {
   hash?: string;
   provider?: { id?: string; apiKey?: string; apiBaseUrl?: string; resourceName?: string };
   providerEntry?: { apiKey?: string; apiBaseUrl?: string; resourceName?: string };
-  defaults?: { providerId?: string; modelId?: string };
+  defaults?: { providerId?: string; modelId?: string; imageProviderId?: string; imageModelId?: string };
 }
 
 export interface TurnStartPayload {
@@ -67,7 +67,7 @@ export type ProviderSettingsSetHandler = (
   sessionId: string,
   providerId: string,
   entry: { apiKey?: string; apiBaseUrl?: string; resourceName?: string },
-  defaults?: { providerId?: string; modelId?: string },
+  defaults?: { providerId?: string; modelId?: string; imageProviderId?: string; imageModelId?: string },
   requestId?: string,
 ) => void;
 export type ProviderSettingsTestHandler = (

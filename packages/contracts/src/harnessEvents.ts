@@ -194,6 +194,8 @@ export const ProviderSettingsStateHarnessEvent = Schema.Struct({
   ),
   defaultProviderId: Schema.optional(Schema.String),
   defaultModelId: Schema.optional(Schema.String),
+  defaultImageProviderId: Schema.optional(Schema.String),
+  defaultImageModelId: Schema.optional(Schema.String),
   tests: Schema.optional(
     Schema.Record(
       Schema.String,

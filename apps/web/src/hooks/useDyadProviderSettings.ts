@@ -18,6 +18,8 @@ export interface DyadProvidersState {
   providers: DyadProviderStatus[];
   defaultProviderId?: string;
   defaultModelId?: string;
+  defaultImageProviderId?: string;
+  defaultImageModelId?: string;
   tests: Record<string, { ok: boolean; message: string }>;
   connected: boolean;
 }
@@ -54,7 +56,14 @@ export function knownDyadProviders(): readonly string[] {
 
 export function useDyadProviderSettings(): DyadProvidersState & {
   save: (providerId: string, entry: { apiKey?: string; apiBaseUrl?: string; resourceName?: string }) => void;
-  saveDefaults: (providerId?: string, modelId?: string) => void;
+  /** Merge-patch server defaults. `undefined` keeps the current value;
+   * `""` clears back to Auto. Never wipes untouched defaults (P8). */
+  saveDefaults: (patch: {
+    providerId?: string;
+    modelId?: string;
+    imageProviderId?: string;
+    imageModelId?: string;
+  }) => void;
   test: (
     providerId: string,
     candidate?: { apiKey?: string; apiBaseUrl?: string },
@@ -73,6 +82,8 @@ export function useDyadProviderSettings(): DyadProvidersState & {
   const [localProviders, setLocalProviders] = useState<DyadProviderStatus[]>([]);
   const handleRef = useRef<HarnessWsHandle | null>(null);
   const pendingRef = useRef(new Map<string, (event: HarnessEvent) => void>());
+  // Live mirror of server defaults for merge-patch saves (P8).
+  const stateRef = useRef({ defaultProviderId: "", defaultModelId: "", defaultImageProviderId: "", defaultImageModelId: "" });
   // Last applied provider_settings_state / last state request, for staleness
   // detection. A socket can end up half-working (sends arrive, broadcasts
   // never do — e.g. a subscription lost across a server restart): without
@@ -110,6 +121,8 @@ export function useDyadProviderSettings(): DyadProvidersState & {
               providers: DyadProviderStatus[];
               defaultProviderId?: string;
               defaultModelId?: string;
+              defaultImageProviderId?: string;
+              defaultImageModelId?: string;
               tests?: Record<string, { ok: boolean; message: string }>;
             };
             lastStateAtRef.current = Date.now();
@@ -120,8 +133,16 @@ export function useDyadProviderSettings(): DyadProvidersState & {
               providers: e.providers,
               defaultProviderId: e.defaultProviderId,
               defaultModelId: e.defaultModelId,
+              defaultImageProviderId: e.defaultImageProviderId,
+              defaultImageModelId: e.defaultImageModelId,
               tests: { ...prev.tests, ...(e.tests ?? {}) },
             }));
+            stateRef.current = {
+              defaultProviderId: e.defaultProviderId ?? "",
+              defaultModelId: e.defaultModelId ?? "",
+              defaultImageProviderId: e.defaultImageProviderId ?? "",
+              defaultImageModelId: e.defaultImageModelId ?? "",
+            };
             if (e.requestId) pendingRef.current.get(e.requestId)?.(event);
           },
           // Request state on every (re)connect: sending immediately after
@@ -321,14 +342,25 @@ export function useDyadProviderSettings(): DyadProvidersState & {
   );
 
   const saveDefaults = useCallback(
-    (providerId?: string, modelId?: string) => {
+    (patch: {
+      providerId?: string;
+      modelId?: string;
+      imageProviderId?: string;
+      imageModelId?: string;
+    }) => {
+      const current = stateRef.current;
       send({
         type: "provider_settings_set",
         sessionId: "settings",
         requestId: `defaults-${++requestCounter}`,
         provider: { id: "auto" },
         providerEntry: {},
-        defaults: { providerId: providerId ?? "", modelId: modelId ?? "" },
+        defaults: {
+          providerId: patch.providerId ?? current.defaultProviderId ?? "",
+          modelId: patch.modelId ?? current.defaultModelId ?? "",
+          imageProviderId: patch.imageProviderId ?? current.defaultImageProviderId ?? "",
+          imageModelId: patch.imageModelId ?? current.defaultImageModelId ?? "",
+        },
       });
     },
     [send],

@@ -55,6 +55,7 @@ import { SettingResetButton } from "./SettingControls";
 import { SettingsRow, SettingsSection } from "./SettingsPanelPrimitives";
 import { ModelsSection } from "./ModelsSection";
 import { AgentRoutingSection } from "./AgentRoutingSection";
+import { ImageGenerationSection } from "./ImageGenerationSection";
 import { useDyadProviderSettings } from "~/hooks/useDyadProviderSettings";
 
 const KEYLESS_PROVIDERS = new Set<string>(["ollama", "lmstudio"]);
@@ -726,6 +727,7 @@ export function ProvidersSettingsPanel({
         </SettingsRow>
       </SettingsSection>
       <AgentRoutingSection />
+      <ImageGenerationSection />
     </div>
   );
 }

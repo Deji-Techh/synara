@@ -47,7 +47,8 @@ import { setSubagentToolSource } from "../../dyad/sandbox/subagentLoop.ts";
 import { setExplorerRunner as setCodeExplorerRunner } from "../../dyad/web/index.ts";
 import { setImageProvider } from "../../dyad/web/generateImage.ts";
 import { setWebSearchProvider } from "../../dyad/web/webSearch.ts";
-import { autoImageProvider } from "../../dyad/web/keyedImages.ts";
+import { autoImageProvider, cascadeImageProvider, resolveImageLegs } from "../../dyad/web/keyedImages.ts";
+import { sharedProviderSecrets } from "../../dyad/providers/secrets.ts";
 import { autoWebSearchProvider } from "../../dyad/web/keyedSearch.ts";
 import { streamProvider } from "../provider/apiAdapter.ts";
 import type { CaideFramework } from "../../dyad/prompts/index.ts";
@@ -167,7 +168,25 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
   // Keyed web providers resolve from server env (Tavily > Brave > DDG;
   // OpenAI Images > Pollinations). Env-global so idempotent across turns.
   setWebSearchProvider(autoWebSearchProvider());
-  setImageProvider(autoImageProvider());
+  // Image cascade (P8): Settings preference (stored defaults) first, then
+  // turn-model capability, Gemini key, OpenAI key, keyless Pollinations,
+  // illustrated placeholder. Availability is key-presence only — zero probes,
+  // zero stalls. Server-side secrets are read directly; no protocol change.
+  try {
+    const stored = sharedProviderSecrets().read();
+    setImageProvider(
+      cascadeImageProvider(
+        resolveImageLegs({
+          preferred: stored.defaultImageProviderId ?? "auto",
+          imageModel: stored.defaultImageModelId,
+          turnProviderId: providerId,
+          turnModelId: modelId,
+        }),
+      ),
+    );
+  } catch {
+    setImageProvider(autoImageProvider());
+  }
 
   if (input.mcpRegistry !== undefined) setMcpToolRegistry(input.mcpRegistry);
   if (input.dbLink) linkDatabase(input.sessionId, input.dbLink);

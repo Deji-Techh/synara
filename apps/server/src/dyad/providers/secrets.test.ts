@@ -40,6 +40,20 @@ describe("provider secrets store", () => {
     expect(JSON.stringify(view)).not.toContain("sk-a");
   });
 
+  it("round-trips image-generation defaults (P8)", () => {
+    const store = new ProviderSecretsStore(tempFile());
+    store.setDefaults(undefined, undefined, "gemini", "gemini-2.0-flash-preview-image-generation");
+    const view = store.publicView();
+    expect(view.defaultImageProviderId).toBe("gemini");
+    expect(view.defaultImageModelId).toBe("gemini-2.0-flash-preview-image-generation");
+    // Empty string clears back to Auto without touching chat defaults.
+    store.setDefaults(undefined, undefined, "", "");
+    const cleared = store.publicView();
+    expect(cleared.defaultImageProviderId).toBeUndefined();
+    expect(cleared.defaultImageModelId).toBeUndefined();
+    expect(cleared.defaultProviderId).toBeUndefined();
+  });
+
   it("treats env-var keys as configured (mirrors turn resolution)", () => {
     const file = tempFile();
     const store = new ProviderSecretsStore(file);
