@@ -506,8 +506,26 @@ describe("production Effect HTTP routes", () => {
         body: new Blob(["fake-png-bytes"], { type: "image/png" }),
       });
       expect(response.status).toBe(201);
-      const payload = (await response.json()) as { id?: unknown };
+      const payload = (await response.json()) as {
+        id?: unknown;
+        sizeBytes?: unknown;
+        mimeType?: unknown;
+      };
       expect(typeof payload.id).toBe("string");
+      expect(payload.sizeBytes).toBe(14);
+      expect(payload.mimeType).toBe("image/png");
+
+      // Stored bytes come back through the download route for transcript
+      // thumbnails and turn-time reads.
+      const download = await fetch(
+        `${origin}/api/attachments/download?id=${encodeURIComponent(String(payload.id))}`,
+      );
+      expect(download.status).toBe(200);
+      expect(download.headers.get("content-type")).toContain("image/png");
+      await expect(download.arrayBuffer()).resolves.toHaveProperty("byteLength", 14);
+
+      const missing = await fetch(`${origin}/api/attachments/download?id=nope-not-real`);
+      expect(missing.status).toBe(404);
 
       const cancel = await fetch(
         `${origin}${ATTACHMENT_CANCEL_ROUTE_PATH}?threadId=thread-1`,

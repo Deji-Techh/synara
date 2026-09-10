@@ -9,12 +9,16 @@ export interface ExpandedImagePreview {
 }
 
 export function buildExpandedImagePreview(
-  images: ReadonlyArray<{ id: string; name: string; previewUrl?: string }>,
+  images: ReadonlyArray<{ id: string; name: string; previewUrl?: string | null }>,
   selectedImageId: string,
+  resolveSrc: (image: { id: string; previewUrl?: string | null }) => string | undefined = (
+    image,
+  ) => image.previewUrl ?? undefined,
 ): ExpandedImagePreview | null {
-  const previewableImages = images.flatMap((image) =>
-    image.previewUrl ? [{ id: image.id, src: image.previewUrl, name: image.name }] : [],
-  );
+  const previewableImages = images.flatMap((image) => {
+    const src = resolveSrc(image);
+    return src ? [{ id: image.id, src, name: image.name }] : [];
+  });
   if (previewableImages.length === 0) {
     return null;
   }

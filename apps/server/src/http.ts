@@ -14,6 +14,12 @@ import { AuthError, ServerAuth } from "./auth/Services/ServerAuth";
 import { SessionCredentialService } from "./auth/Services/SessionCredentialService";
 import { deriveAuthClientMetadata } from "./auth/utils";
 import { ServerConfig, type ServerConfigShape } from "./config";
+import { createAttachmentId, resolveAttachmentPathById } from "./attachmentStore.ts";
+import {
+  deleteAttachmentBytes,
+  MAX_ATTACHMENT_UPLOAD_BYTES,
+  storeAttachmentBytes,
+} from "./attachmentUpload.ts";
 import { ProjectFaviconResolver } from "./project/Services/ProjectFaviconResolver";
 import type { ServerReadiness } from "./server/readiness";
 import { isLoopbackHost } from "./startupAccess";
@@ -466,16 +472,57 @@ export const binaryUploadEffectRouteLayer = Layer.mergeAll(
       if (request.method === "OPTIONS") {
         return HttpServerResponse.empty({ status: 204, headers: corsHeaders });
       }
-      const type = url.searchParams.get("type") || "file";
-      const name = url.searchParams.get("name") || "attachment";
-      const mimeType = url.searchParams.get("mimeType") || "application/octet-stream";
+      const fail = (message: string, status: number) =>
+        HttpServerResponse.jsonUnsafe({ error: message }, { status, headers: corsHeaders });
+      const threadId = url.searchParams.get("threadId")?.trim() ?? "";
+      const type = url.searchParams.get("type") === "image" ? "image" : "file";
+      const name = url.searchParams.get("name")?.trim() || "attachment";
+      const mimeType =
+        url.searchParams.get("mimeType")?.trim() ||
+        (type === "image" ? "image/png" : "application/octet-stream");
+      const attachmentId = createAttachmentId(threadId);
+      if (!attachmentId) {
+        return fail("Attachment thread is invalid.", 400);
+      }
+      if (mimeType.length === 0 || mimeType.length > 100) {
+        return fail("Attachment MIME type is invalid.", 400);
+      }
+      if (type === "image" && !mimeType.toLowerCase().startsWith("image/")) {
+        return fail("Image attachments require an image MIME type.", 400);
+      }
+      if (name.length === 0 || name.length > 255 || /[\u0000\r\n]/u.test(name)) {
+        return fail("Attachment name is invalid.", 400);
+      }
+      const buffer = yield* request.arrayBuffer.pipe(
+        Effect.catchCause(() => Effect.succeed(null)),
+      );
+      if (!buffer || buffer.byteLength === 0) {
+        return fail("Attachment is empty.", 400);
+      }
+      if (buffer.byteLength > MAX_ATTACHMENT_UPLOAD_BYTES) {
+        return fail("Attachment exceeds the 25 MB upload limit.", 413);
+      }
+      const config = yield* ServerConfig;
+      // Note: effect-smol has no Effect.catchAll — orElseSucceed covers
+      // store failures here (request validation above already returned).
+      const stored = yield* storeAttachmentBytes({
+        attachmentsDir: config.attachmentsDir,
+        attachmentId,
+        type,
+        name,
+        mimeType,
+        bytes: new Uint8Array(buffer),
+      }).pipe(Effect.as(true), Effect.orElseSucceed(false));
+      if (stored !== true) {
+        return fail("Failed to persist attachment bytes.", 500);
+      }
       return HttpServerResponse.jsonUnsafe(
         {
-          id: `att_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          id: attachmentId,
           type,
           name,
           mimeType,
-          sizeBytes: 0,
+          sizeBytes: buffer.byteLength,
         },
         { status: 201, headers: corsHeaders },
       );
@@ -497,10 +544,61 @@ export const binaryUploadEffectRouteLayer = Layer.mergeAll(
       if (request.method === "OPTIONS") {
         return HttpServerResponse.empty({ status: 204, headers: corsHeaders });
       }
+      const config = yield* ServerConfig;
+      const body = yield* request.json.pipe(Effect.catchCause(() => Effect.succeed(null)));
+      const attachmentId =
+        body !== null && typeof body === "object"
+          ? String((body as { attachmentId?: unknown }).attachmentId ?? "")
+          : "";
+      yield* deleteAttachmentBytes({
+        attachmentsDir: config.attachmentsDir,
+        attachmentId,
+      });
+      // Best-effort compensation: staged uploads also expire server-side, so a
+      // missing/unreadable id is still a successful cancel for the caller.
       return HttpServerResponse.jsonUnsafe(
         { cancelled: true },
         { status: 200, headers: corsHeaders },
       );
+    }),
+  ),
+  HttpRouter.add(
+    "GET",
+    "/api/attachments/download",
+    Effect.gen(function* () {
+      const request = yield* HttpServerRequest.HttpServerRequest;
+      const url = HttpServerRequest.toURL(request);
+      if (!url) return HttpServerResponse.text("Bad Request", { status: 400 });
+      const origin = normalizeCorsOrigin(request.headers.origin);
+      const corsHeaders = {
+        "Access-Control-Allow-Origin": origin || "*",
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Credentials": "true",
+        Vary: "Origin",
+        "Cache-Control": "private, max-age=3600",
+      };
+      const config = yield* ServerConfig;
+      const fileSystem = yield* FileSystem.FileSystem;
+      const attachmentId = url.searchParams.get("id")?.trim() ?? "";
+      const filePath = resolveAttachmentPathById({
+        attachmentsDir: config.attachmentsDir,
+        attachmentId,
+      });
+      if (!filePath) {
+        return HttpServerResponse.text("Not Found", { status: 404, headers: corsHeaders });
+      }
+      const bytes = yield* fileSystem
+        .readFile(filePath)
+        .pipe(Effect.catchCause(() => Effect.succeed(null)));
+      if (!bytes) {
+        return HttpServerResponse.text("Not Found", { status: 404, headers: corsHeaders });
+      }
+      return HttpServerResponse.uint8Array(new Uint8Array(bytes), {
+        status: 200,
+        contentType: Mime.getType(filePath) ?? "application/octet-stream",
+        headers: corsHeaders,
+      });
     }),
   ),
 );

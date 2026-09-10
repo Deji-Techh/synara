@@ -6,6 +6,11 @@ import * as path from "node:path";
 import { Effect, Layer, Option, PubSub, ServiceMap, Stream } from "effect";
 import { PROVIDER_KINDS } from "@caide/contracts";
 import { isPhantomInitialThreadId } from "@caide/shared/chatThreads";
+import { resolveAttachmentPathById } from "./attachmentStore.ts";
+import {
+  buildUserMessageWithImages,
+  type ResolvedChatImage,
+} from "./harness/provider/chatMessageImages.ts";
 import { sharedProviderSecrets } from "./dyad/providers/secrets.ts";
 
 export class AutomationService extends ServiceMap.Service<AutomationService, any>()(
@@ -2120,7 +2125,9 @@ export class OrchestrationEngineService extends ServiceMap.Service<
             let pendingTokenFlushTimer: NodeJS.Timeout | null = null;
             let turnAbortController: AbortController | null = null;
             try {
-              const { streamProvider } = await import("./harness/provider/apiAdapter.ts");
+              const { streamProvider, endpointForModel } = await import(
+                "./harness/provider/apiAdapter.ts"
+              );
               const DEFAULT_PROVIDER_MODELS: Record<string, string> = {
                 google: "gemini-2.5-flash",
                 openai: "gpt-5.5",
@@ -2218,12 +2225,71 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 apiKey = getProviderApiKeyDirect("opencodeGo");
               }
 
+              // Staged composer uploads live under the server attachments
+              // dir (see attachmentUpload.ts); resolve the current turn's
+              // images to bytes so the model actually sees them. Unresolvable
+              // ids (pre-storage uploads) skip silently to today's text-only
+              // behavior. History keeps plain text: its images were delivered
+              // by their own turns.
+              const caideAttachmentsDir = path.join(
+                (process.env.CAIDE_HOME || "").trim() || path.join(os.homedir(), ".caide"),
+                "userdata",
+                "attachments",
+              );
+              // Bound per-image context cost; larger uploads stay stored and
+              // downloadable while the turn carries text only.
+              const MAX_TURN_IMAGE_BYTES = 15 * 1024 * 1024;
+              const resolveTurnImageAttachments = (message: any): ResolvedChatImage[] => {
+                const attachments = Array.isArray(message?.attachments)
+                  ? message.attachments
+                  : [];
+                const images: ResolvedChatImage[] = [];
+                for (const attachment of attachments) {
+                  try {
+                    if (!attachment || attachment.type !== "image") continue;
+                    if (typeof attachment.id !== "string" || attachment.id.length === 0) continue;
+                    const filePath = resolveAttachmentPathById({
+                      attachmentsDir: caideAttachmentsDir,
+                      attachmentId: attachment.id,
+                    });
+                    if (!filePath) continue;
+                    const bytes = fs.readFileSync(filePath);
+                    if (bytes.byteLength === 0 || bytes.byteLength > MAX_TURN_IMAGE_BYTES) continue;
+                    images.push({
+                      mimeType:
+                        typeof attachment.mimeType === "string" && attachment.mimeType.length > 0
+                          ? attachment.mimeType
+                          : "image/png",
+                      base64: bytes.toString("base64"),
+                    });
+                  } catch {
+                    continue;
+                  }
+                }
+                return images;
+              };
+              const hasTurnImages = (message: any): boolean =>
+                Array.isArray(message?.attachments) &&
+                message.attachments.some((a: any) => a?.type === "image");
+              const messageEndpoint = endpointForModel(modelId, baseUrl);
               const chatHistory = thread.messages
-                .filter((m: any) => m.id !== assistantMsgId && m.text)
-                .map((m: any) => ({
-                  role: m.role === "assistant" ? "assistant" : "user",
-                  content: m.text,
-                }));
+                .filter(
+                  (m: any) =>
+                    m.id !== assistantMsgId && (m.text || (m.id === userMsgId && hasTurnImages(m))),
+                )
+                .map((m: any) => {
+                  if (m.id !== userMsgId) {
+                    return {
+                      role: m.role === "assistant" ? "assistant" : "user",
+                      content: m.text,
+                    };
+                  }
+                  return buildUserMessageWithImages({
+                    text: m.text ?? "",
+                    images: resolveTurnImageAttachments(m),
+                    endpoint: messageEndpoint,
+                  });
+                });
 
               let project = inMemoryProjects.find((p: any) => p.id === thread.projectId);
               const homeDir = process.env.HOME || "/home/DejiTech";

@@ -58,6 +58,7 @@ import {
   WorktreeIcon,
 } from "~/lib/icons";
 import { pinActionLabel } from "~/lib/pin";
+import { resolveTimelineImageSrc } from "~/lib/attachmentDownload";
 import { Button } from "../ui/button";
 import { composerOverlayScrollMaskImage } from "./composerOverlay";
 import { CrossTaskOriginLabel, type CrossTaskOrigin } from "./CrossTaskOriginLabel";
@@ -2949,14 +2950,18 @@ const UserImageAttachmentThumbnail = memo(function UserImageAttachmentThumbnail(
       aria-label={`Preview ${props.image.name}`}
       title={props.image.name}
       onClick={() => {
-        const preview = buildExpandedImagePreview(props.userImages, props.image.id);
+        const preview = buildExpandedImagePreview(
+          props.userImages,
+          props.image.id,
+          resolveTimelineImageSrc,
+        );
         if (!preview) return;
         props.onImageExpand(preview);
       }}
     >
-      {props.image.previewUrl ? (
+      {resolveTimelineImageSrc(props.image) ? (
         <img
-          src={props.image.previewUrl}
+          src={resolveTimelineImageSrc(props.image)}
           alt={props.image.name}
           className="size-full object-cover"
           onLoad={props.onTimelineImageLoad}
