@@ -41,6 +41,8 @@ export interface QuestionnaireItem {
   options?: string[];
   required?: boolean;
   placeholder?: string;
+  /** One sentence shown under the question explaining why you're asking. */
+  why?: string;
 }
 
 export interface EnvVarRequest {
@@ -90,6 +92,7 @@ const QuestionSchema = z
       .describe("Options for radio/checkbox questions. Keep to max 3 — users can always provide a custom answer via the free-form text input. Omit for text questions."),
     required: z.boolean().optional().describe("Whether this question requires an answer (defaults to true)"),
     placeholder: z.string().optional().describe("Placeholder text for text inputs"),
+    why: z.string().optional().describe("One sentence shown under the question explaining why you need this answer — always set it so the user can answer fast or skip confidently."),
   })
   .refine((q) => q.type === "text" || (q.options && q.options.length >= 1), {
     message: "options are required for radio and checkbox questions",
@@ -188,7 +191,7 @@ export async function executeQuestionnaire(
   t.sendQuestionnaire(sessionId, requestId, questions);
   const answers = await waitForUserInput(requestId, sessionId, "questionnaire", signal);
   if (!answers) {
-    return "The user dismissed the questionnaire without answering. Ask them how they'd like to proceed, or try asking questions in regular chat text.";
+    return "The user dismissed the questionnaire without answering. Proceed with your best-guess defaults, state them explicitly in one short paragraph, and continue — do NOT restart completed work or re-ask the same questions.";
   }
   return questions.map((q) => `**${q.question}**\n${answers[q.id!] || "(no answer)"}`).join("\n\n");
 }
@@ -322,6 +325,7 @@ const todoSchema = z.object({
   id: z.string().describe("Unique identifier for the todo item"),
   content: z.string().optional().describe("The description/content of the todo item"),
   status: z.enum(["pending", "in_progress", "completed"]).optional().describe("The current status of the todo item"),
+  ref: z.string().optional().describe("Workspace-relative file path this todo maps to (e.g. src/screens/HomeScreen.tsx). Shown as a jump-to-file chip in the to-dos header — set it whenever the task centers on a file."),
 });
 
 const updateTodosSchema = z.object({
@@ -407,7 +411,7 @@ Multiple complex features provided as list requiring organized task management.
   modifiesState: true,
   execute: async (args, ctx) => {
     const parsed = updateTodosSchema.parse(args);
-    const next = applyTodoUpdate(ctx.sessionId, parsed.merge, parsed.todos as { id: string; content?: string; status?: TodoStatus }[]);
+    const next = applyTodoUpdate(ctx.sessionId, parsed.merge, parsed.todos as { id: string; content?: string; status?: TodoStatus; ref?: string }[]);
     // Live push for the persistent TodoList header (no-op headless — the
     // return string below still carries the state for the transcript).
     getPlanTransport()?.sendTodosUpdate?.(ctx.sessionId, next);

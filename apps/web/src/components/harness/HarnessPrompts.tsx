@@ -48,7 +48,7 @@ function Shell(props: {
 }
 
 function QuestionnaireCard(props: { sessionId: string; entry: UiPromptEntry; send: SendFn }) {
-  const questions = (props.entry.payload as { questions?: Array<{ id?: string; question: string; type: string; options?: string[]; placeholder?: string }> })?.questions ?? [];
+  const questions = (props.entry.payload as { questions?: Array<{ id?: string; question: string; type: string; options?: string[]; placeholder?: string; why?: string }> })?.questions ?? [];
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [done, setDone] = useState(false);
   if (done) return null;
@@ -77,6 +77,7 @@ function QuestionnaireCard(props: { sessionId: string; entry: UiPromptEntry; sen
           return (
             <div key={id} className="flex flex-col gap-1.5">
               <span className="text-xs font-medium">{q.question}</span>
+              {q.why ? <span className="text-[11px] text-muted-foreground">{q.why}</span> : null}
               {q.type === "text" ? (
                 <Input
                   placeholder={q.placeholder ?? "Type your answer…"}

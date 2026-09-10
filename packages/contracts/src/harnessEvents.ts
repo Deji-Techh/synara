@@ -162,6 +162,7 @@ export const TodoItemSchema = Schema.Struct({
   id: Schema.String,
   content: Schema.String,
   status: Schema.Literals(["pending", "in_progress", "completed"]),
+  ref: Schema.optional(Schema.String),
 });
 export type TodoItemSchema = typeof TodoItemSchema.Type;
 

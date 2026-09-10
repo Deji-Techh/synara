@@ -10,6 +10,8 @@ export interface Todo {
   id: string;
   content: string;
   status: TodoStatus;
+  /** Optional workspace-relative file path the todo maps to (jump target). */
+  ref?: string;
 }
 
 export class TodoValidationError extends Error {
@@ -37,6 +39,7 @@ export interface TodoUpdate {
   id: string;
   content?: string;
   status?: TodoStatus;
+  ref?: string;
 }
 
 /**
@@ -53,6 +56,7 @@ export function applyTodoUpdate(sessionId: string, merge: boolean, updates: Todo
           ...existing,
           ...(todo.content !== undefined && { content: todo.content }),
           ...(todo.status !== undefined && { status: todo.status }),
+          ...(todo.ref !== undefined && { ref: todo.ref }),
         });
       } else {
         if (todo.content === undefined || todo.status === undefined) {
@@ -60,7 +64,12 @@ export function applyTodoUpdate(sessionId: string, merge: boolean, updates: Todo
             `New todo with id "${todo.id}" must have content and status defined`,
           );
         }
-        byId.set(todo.id, { id: todo.id, content: todo.content, status: todo.status });
+        byId.set(todo.id, {
+          id: todo.id,
+          content: todo.content,
+          status: todo.status,
+          ...(todo.ref !== undefined && { ref: todo.ref }),
+        });
       }
     }
     const next = Array.from(byId.values());
@@ -73,7 +82,12 @@ export function applyTodoUpdate(sessionId: string, merge: boolean, updates: Todo
         `Todo with id "${todo.id}" must have content and status defined in replace mode`,
       );
     }
-    return { id: todo.id, content: todo.content, status: todo.status };
+    return {
+      id: todo.id,
+      content: todo.content,
+      status: todo.status,
+      ...(todo.ref !== undefined && { ref: todo.ref }),
+    };
   });
   setTodos(sessionId, next);
   return next;

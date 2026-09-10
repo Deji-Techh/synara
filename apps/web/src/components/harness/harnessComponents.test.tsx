@@ -196,4 +196,28 @@ describe("harness components (m3)", () => {
     expect(markup).toContain("Build me a marketplace");
     harnessStore.clearSession("s-hc");
   });
+
+  it("renders todo file refs and questionnaire why text", () => {
+    harnessStore.clearSession("s-hc");
+    harnessStore.handleEvent({
+      type: "todos_update",
+      sessionId: "s-hc",
+      todos: [{ id: "1", content: "Build home", status: "in_progress", ref: "src/screens/HomeScreen.tsx" }],
+    });
+    const todos = renderToStaticMarkup(<HarnessTodosCard sessionId="s-hc" />);
+    expect(todos).toContain("HomeScreen.tsx");
+    expect(todos).toContain("Open src/screens/HomeScreen.tsx");
+    harnessStore.clearSession("s-hc");
+
+    harnessStore.handleEvent({
+      type: "ui_prompt",
+      sessionId: "s-hc",
+      requestId: "r-why",
+      kind: "questionnaire",
+      payload: { questions: [{ id: "q1", question: "Style?", type: "radio", options: ["A"], why: "Locks the palette" }] },
+    });
+    const prompts = renderToStaticMarkup(<HarnessPrompts sessionId="s-hc" send={send} />);
+    expect(prompts).toContain("Locks the palette");
+    harnessStore.clearSession("s-hc");
+  });
 });

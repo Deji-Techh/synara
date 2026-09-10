@@ -56,6 +56,7 @@ export interface TodoEntry {
   id: string;
   content: string;
   status: "pending" | "in_progress" | "completed";
+  ref?: string;
 }
 
 export interface VerifierEntry {
@@ -273,7 +274,12 @@ export const harnessStore = {
       case "todos_update": {
         state.sessions[event.sessionId] = {
           ...session,
-          todos: event.todos.map((t) => ({ id: t.id, content: t.content, status: t.status })),
+          todos: event.todos.map((t) => ({
+            id: t.id,
+            content: t.content,
+            status: t.status,
+            ...(t.ref ? { ref: t.ref } : {}),
+          })),
         };
         break;
       }

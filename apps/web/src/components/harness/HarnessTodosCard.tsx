@@ -17,6 +17,7 @@ import {
 } from "~/components/chat/CaideCardPrimitives";
 import { DisclosureChevron } from "~/components/ui/DisclosureChevron";
 import { DisclosureRegion } from "~/components/ui/DisclosureRegion";
+import { useWorkspaceFileOpener } from "~/lib/workspaceFileOpener";
 import { cn } from "~/lib/utils";
 
 function StatusIcon(props: { status: TodoEntry["status"]; className?: string }) {
@@ -33,6 +34,7 @@ export function HarnessTodosCard(props: { sessionId: string }) {
   const state = useHarnessStore();
   const todos = state.sessions[props.sessionId]?.todos ?? [];
   const [open, setOpen] = useState(false);
+  const opener = useWorkspaceFileOpener();
 
   if (todos.length === 0) return null;
 
@@ -109,6 +111,19 @@ export function HarnessTodosCard(props: { sessionId: string }) {
                 <span className={todo.status === "completed" ? "line-through" : undefined}>
                   {todo.content}
                 </span>
+                {todo.ref ? (
+                  <button
+                    type="button"
+                    title={`Open ${todo.ref}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      opener?.openFile(todo.ref as string);
+                    }}
+                    className="ml-auto shrink-0 truncate rounded-md border border-border/60 bg-muted/40 px-1.5 py-0.5 font-mono text-[10.5px] text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+                  >
+                    {todo.ref.split("/").slice(-2).join("/")}
+                  </button>
+                ) : null}
               </li>
             ))}
           </ul>

@@ -174,6 +174,32 @@ describe("dyad plan tools transplant (m2b)", () => {
     expect(getTodos("s-t")).toEqual([]);
   });
 
+  it("carries todo file refs and questionnaire why through the transport", async () => {
+    clearTodos("s-ref");
+    const withRef = applyTodoUpdate("s-ref", false, [
+      { id: "1", content: "Build home", status: "in_progress", ref: "src/screens/HomeScreen.tsx" },
+    ]);
+    expect(withRef[0]).toMatchObject({ ref: "src/screens/HomeScreen.tsx" });
+    const mergedRef = applyTodoUpdate("s-ref", true, [{ id: "1", status: "completed" }]);
+    expect(mergedRef[0]).toMatchObject({ ref: "src/screens/HomeScreen.tsx", status: "completed" });
+    clearTodos("s-ref");
+
+    const events: unknown[] = [];
+    setPlanTransport(fakeTransport(events));
+    try {
+      const pending = executeQuestionnaire(
+        { questions: [{ question: "Style?", type: "radio", options: ["A", "B"], why: "Locks the palette" }] },
+        "s-why",
+      );
+      const sent = events[0] as any;
+      expect(sent.questions[0].why).toBe("Locks the palette");
+      resolveUserInput(sent.requestId, { [sent.questions[0].id]: "A" });
+      await expect(pending).resolves.toContain("A");
+    } finally {
+      setPlanTransport(null);
+    }
+  });
+
   it("returns env vars for the agent to save, or a graceful abort message", async () => {
     const events: unknown[] = [];
     setPlanTransport(fakeTransport(events));
