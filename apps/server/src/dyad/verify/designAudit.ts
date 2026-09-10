@@ -172,7 +172,7 @@ export function auditDesignWorkspace(appPath: string, scope: "ui" | "all" = "ui"
       if (/(sm:|md:|lg:|xl:|2xl:|@media|container-type|useMediaQuery|useWindowDimensions|Dimensions\.get)/.test(text)) {
         responsiveHits++;
       }
-      const fixed = text.match(/w-\[3[79]0px\]|width:\s*39[07]px/);
+      const fixed = text.match(/w-\[3[79]0px\]|width:\s*"?'?39[07]px/);
       if (fixed && fixedWidthReports < 3) {
         fixedWidthReports++;
         findings.push({ level: "minor", file: rel(file), check: "viewports", message: `Fixed phone width "${fixed[0]}" — recompose per viewport class instead of locking 375/390px.` });
