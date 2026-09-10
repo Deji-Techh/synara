@@ -134,6 +134,17 @@ function formatContent(raw: string): string {
   return raw;
 }
 
+/**
+ * First embedded image in a tool result (screenshot evidence, generated
+ * art). data-URL only — server file paths can't load in the browser without
+ * a grant endpoint. Minimum length guards against tiny icons/noise.
+ */
+export function extractInlineImage(content: string): string | null {
+  if (!content || content.length < 300) return null;
+  const match = content.match(/data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]{200,}/);
+  return match ? match[0].slice(0, 2_000_000) : null;
+}
+
 export const CaideClaudeToolCard: React.FC<CaideClaudeToolCardProps> = ({
   toolName,
   attributes = {},
@@ -145,6 +156,7 @@ export const CaideClaudeToolCard: React.FC<CaideClaudeToolCardProps> = ({
   const cardState = normalizeState(state);
   const meta = getToolMeta(toolName, attributes);
   const formattedContent = formatContent(content);
+  const inlineImage = extractInlineImage(content);
 
   return (
     <div className="my-0.5 select-none text-left">
@@ -169,6 +181,16 @@ export const CaideClaudeToolCard: React.FC<CaideClaudeToolCardProps> = ({
       </button>
 
       <DisclosureRegion open={isExpanded}>
+          {inlineImage ? (
+            <div className="my-1 overflow-hidden rounded-lg border border-border/40">
+              <img
+                src={inlineImage}
+                alt={`${meta.verb} evidence`}
+                className="max-h-72 w-full object-contain bg-black/60"
+                loading="lazy"
+              />
+            </div>
+          ) : null}
           {formattedContent ? (
             <div className="overflow-hidden rounded-lg border border-border/40 bg-black/60 dark:bg-black/80 my-1">
               <div className="flex items-center justify-between border-b border-border/30 bg-muted/20 px-3 py-1 text-[10.5px] text-muted-foreground/80 font-mono">

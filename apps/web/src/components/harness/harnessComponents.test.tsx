@@ -245,4 +245,31 @@ describe("harness components (m3)", () => {
     expect(markup.match(/Building the full marketplace/g)?.length ?? 0).toBeLessThanOrEqual(1);
     harnessStore.clearSession("s-hc");
   });
+
+  it("renders inline images from screenshot tool results", () => {
+    harnessStore.clearSession("s-hc");
+    const payload = JSON.stringify({ base64: `data:image/png;base64,${"A".repeat(300)}` });
+    harnessStore.handleEvent({ type: "token", sessionId: "s-hc", content: "Captured." });
+    harnessStore.handleEvent({
+      type: "tool_call",
+      sessionId: "s-hc",
+      id: "c-img",
+      name: "screenshot",
+      args: {},
+      status: "started",
+    });
+    harnessStore.handleEvent({
+      type: "tool_call",
+      sessionId: "s-hc",
+      id: "c-img",
+      name: "screenshot",
+      args: {},
+      status: "completed",
+      result: payload,
+    });
+    const markup = renderToStaticMarkup(<HarnessTranscript sessionId="s-hc" send={send} />);
+    expect(markup).toContain("<img");
+    expect(markup).toContain("data:image/png;base64,");
+    harnessStore.clearSession("s-hc");
+  });
 });

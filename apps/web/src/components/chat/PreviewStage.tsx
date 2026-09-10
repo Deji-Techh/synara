@@ -1724,16 +1724,30 @@ export function PreviewStage(props: {
                 )
               ) : (
                 <div className="flex flex-col items-center justify-center gap-1 px-[12%] text-center">
-                  <p className="text-balance text-[11px] leading-snug text-white/45">
-                    Choose a simulator or start previewing here.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleStart}
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-[11px] font-medium text-black transition-opacity hover:opacity-90"
-                  >
-                    <PlayIcon className="size-3 fill-black" /> Start Preview
-                  </button>
+                  {framework === "blank" ? (
+                    <>
+                      <p className="text-balance text-[11px] font-medium leading-snug text-white/70">
+                        Blank project — no runtime to preview.
+                      </p>
+                      <p className="text-balance text-[10px] leading-snug text-white/40">
+                        Blank is notes, docs, and scripts. Create a Website, React Native, or
+                        Flutter project to get a live preview here.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-balance text-[11px] leading-snug text-white/45">
+                        Choose a simulator or start previewing here.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleStart}
+                        className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-[11px] font-medium text-black transition-opacity hover:opacity-90"
+                      >
+                        <PlayIcon className="size-3 fill-black" /> Start Preview
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
