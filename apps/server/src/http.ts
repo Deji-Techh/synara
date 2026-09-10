@@ -15,6 +15,7 @@ import { SessionCredentialService } from "./auth/Services/SessionCredentialServi
 import { deriveAuthClientMetadata } from "./auth/utils";
 import { ServerConfig, type ServerConfigShape } from "./config";
 import { createAttachmentId, resolveAttachmentPathById } from "./attachmentStore.ts";
+import { shareRouteLayer } from "./dyad/share/shareRoute.ts";
 import {
   deleteAttachmentBytes,
   MAX_ATTACHMENT_UPLOAD_BYTES,
@@ -614,6 +615,7 @@ export const makeEffectHttpRouteLayer = (
     editorIconRouteLayer,
     binaryUploadEffectRouteLayer,
     staticAndDevEffectRouteLayer,
+    shareRouteLayer,
   );
 
 // Back-compat aliases for older test imports
