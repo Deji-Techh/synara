@@ -78,7 +78,7 @@ export interface TurnUsage {
 
 export interface TimelineEntry {
   seq: number;
-  kind: "token" | "tool" | "stage" | "checkpoint" | "error" | "artifact";
+  kind: "token" | "tool" | "stage" | "checkpoint" | "error" | "artifact" | "user";
   id?: string;
   content?: string;
 }
@@ -100,6 +100,9 @@ export interface SessionState {
   versions: VersionEntry[];
   lastUsage?: TurnUsage;
   timeline: TimelineEntry[];
+  /** Diverted plain-text user turns (P0 send-path): echoed locally so the
+   * harness transcript shows the user bubble without an orchestration turn. */
+  userMessages: Record<string, string>;
 }
 
 let timelineSeq = 0;
@@ -146,6 +149,7 @@ function getOrCreateSession(sessionId: string): SessionState {
         todos: [],
         versions: [],
         timeline: [],
+        userMessages: {},
       },
     };
   }
@@ -321,6 +325,20 @@ export const harnessStore = {
     const nextSessions = { ...state.sessions };
     delete nextSessions[sessionId];
     state = { ...state, sessions: nextSessions };
+    notify();
+  },
+
+  /** Local echo for a diverted plain-text user turn (P0 send-path). Pushes a
+   * `user` timeline entry so HarnessTranscript renders the bubble; the id is
+   * `u<seq>`-namespaced so it can never collide with server tool/checkpoint ids. */
+  appendUserMessage: (sessionId: string, messageId: string, text: string): void => {
+    const session = getOrCreateSession(sessionId);
+    const id = `u-${messageId}`;
+    state.sessions[sessionId] = {
+      ...session,
+      userMessages: { ...session.userMessages, [id]: text },
+    };
+    pushTimeline(state.sessions[sessionId], { kind: "user", id, content: text });
     notify();
   },
 

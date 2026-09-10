@@ -144,4 +144,15 @@ describe("harnessStore ui events (m3)", () => {
     expect(timeline.map((e) => e.seq)).toEqual([1, 2, 3, 4, 5]);
     harnessStore.clearSession("s-ui");
   });
+
+  it("echoes diverted user turns into the timeline without id collisions", () => {
+    harnessStore.clearSession("s-ui");
+    harnessStore.appendUserMessage("s-ui", "m1", "Build me a marketplace");
+    harnessStore.handleEvent({ type: "token", sessionId: "s-ui", content: "On it" });
+    const session = harnessStore.getState().sessions["s-ui"];
+    expect(session?.userMessages).toEqual({ "u-m1": "Build me a marketplace" });
+    expect(session?.timeline.map((e) => e.kind)).toEqual(["user", "token"]);
+    expect(session?.timeline[0]).toMatchObject({ id: "u-m1", content: "Build me a marketplace" });
+    harnessStore.clearSession("s-ui");
+  });
 });

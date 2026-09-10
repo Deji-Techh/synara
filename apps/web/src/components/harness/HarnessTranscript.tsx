@@ -83,6 +83,20 @@ export function HarnessTranscript(props: { sessionId: string; send: SendFn }) {
         </div>
       )}
       {blocks.map((block) => {
+        if (block.entry.kind === "user") {
+          const text =
+            (block.entry.id && session.userMessages[block.entry.id]) ??
+            block.entry.content ??
+            "";
+          if (!text) return null;
+          return (
+            <div key={block.key} className="flex justify-end py-1">
+              <div className="max-w-[85%] rounded-2xl rounded-br-md bg-muted px-3 py-2 text-sm">
+                <ChatMarkdown text={text} />
+              </div>
+            </div>
+          );
+        }
         if (block.entry.kind === "token") {
           return (
             <div key={block.key} className="py-1 text-sm">

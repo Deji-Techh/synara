@@ -151,8 +151,7 @@ describe("harness components (m3)", () => {
     harnessStore.clearSession("s-hc");
   });
 
-  it("renders the todos, verifier, and versions cards from store state", () => {
-    harnessStore.clearSession("s-hc");
+  it("renders the todos, verifier, and versions cards from store state", () => {    harnessStore.clearSession("s-hc");
     harnessStore.handleEvent({
       type: "todos_update",
       sessionId: "s-hc",
@@ -185,6 +184,14 @@ describe("harness components (m3)", () => {
     const versions = renderToStaticMarkup(<HarnessVersionsCard sessionId="s-hc" send={send} />);
     expect(versions).toContain("Checkpoint: polish");
     expect(versions).toContain("1 checkpoint");
+    harnessStore.clearSession("s-hc");
+  });
+
+  it("renders diverted user bubbles in the transcript", () => {
+    harnessStore.clearSession("s-hc");
+    harnessStore.appendUserMessage("s-hc", "m1", "Build me a marketplace");
+    const markup = renderToStaticMarkup(<HarnessTranscript sessionId="s-hc" send={send} />);
+    expect(markup).toContain("Build me a marketplace");
     harnessStore.clearSession("s-hc");
   });
 });

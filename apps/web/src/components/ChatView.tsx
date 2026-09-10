@@ -226,6 +226,8 @@ import {
   createThreadLineageSelector,
   localSubagentThreadId,
 } from "./ChatView.selectors";
+import { harnessStore } from "~/harnessStore";
+import { startHarnessTurn } from "~/harnessWs";
 import {
   clampCollapsedComposerCursor,
   type ComposerTrigger,
@@ -7714,8 +7716,45 @@ export default function ChatView({
         setPendingAutomationConversation(null);
       }
     }
+    // P0 Dyad send-path: plain-text live sends on server threads with a live
+    // harness socket go to the TurnGateway (todos, questionnaires,
+    // Appllama-gated tools) instead of the legacy orchestration engine.
+    // Attachments, plans, queues, steers, and automation flows stay on the
+    // orchestration path until their Dyad counterparts land (006 M3).
+    if (
+      queuedChatTurn === null &&
+      !isLivePlanFollowUpSubmission &&
+      hasPromptOnlySendableContent &&
+      dispatchMode !== "steer" &&
+      isServerThread &&
+      chatHarnessSocket.connected
+    ) {
+      const harnessFramework = (activeProject as unknown as { framework?: string | null })
+        ?.framework;
+      const harnessMode =
+        chatModeForSend === "plan" ||
+        chatModeForSend === "ask" ||
+        chatModeForSend === "build"
+          ? chatModeForSend
+          : "agent";
+      const divertMessageId = newMessageId();
+      harnessStore.appendUserMessage(activeThread.id, divertMessageId, trimmedPromptForSend);
+      startHarnessTurn(chatHarnessSocket.send, activeThread.id, {
+        appPath: activeProject.cwd,
+        prompt: trimmedPromptForSend,
+        mode: harnessMode,
+        ...(harnessFramework === "blank" ||
+        harnessFramework === "react-native" ||
+        harnessFramework === "flutter" ||
+        harnessFramework === "website"
+          ? { framework: harnessFramework }
+          : {}),
+      });
+      clearComposerInput(activeThread.id);
+      scheduleComposerFocus();
+      return true;
+    }
     sendPreflightInFlightRef.current = true;
-    const sendProviderAvailability = await resolveProviderSendAvailabilityWithRefresh({
       provider: selectedModelSelectionForSend.provider,
       statuses: providerStatuses,
       refreshStatuses: () => refreshProviderStatuses({ silent: true }),
