@@ -10,7 +10,7 @@ import { HarnessPlanCard } from "./HarnessPlanCard";
 import { HarnessTodosCard } from "./HarnessTodosCard";
 import { HarnessVerifierCard } from "./HarnessVerifierCard";
 import { HarnessVersionsCard } from "./HarnessVersionsCard";
-import { HarnessTranscript } from "./HarnessTranscript";
+import { HarnessTranscript, collapseRepetitiveLines, narrationStem } from "./HarnessTranscript";
 import { HarnessPrompts } from "./HarnessPrompts";
 
 const send = () => {};
@@ -197,8 +197,7 @@ describe("harness components (m3)", () => {
     harnessStore.clearSession("s-hc");
   });
 
-  it("renders todo file refs and questionnaire why text", () => {
-    harnessStore.clearSession("s-hc");
+  it("renders todo file refs and questionnaire why text", () => {    harnessStore.clearSession("s-hc");
     harnessStore.handleEvent({
       type: "todos_update",
       sessionId: "s-hc",
@@ -218,6 +217,32 @@ describe("harness components (m3)", () => {
     });
     const prompts = renderToStaticMarkup(<HarnessPrompts sessionId="s-hc" send={send} />);
     expect(prompts).toContain("Locks the palette");
+    harnessStore.clearSession("s-hc");
+  });
+
+  it("collapses repeated assistant status narration (item 16)", () => {
+    expect(narrationStem("Building your IUO marketplace — mapping the project first.")).toBe(
+      "building your iuo marketplace",
+    );
+    expect(narrationStem("Done.")).toBe("");
+    const { text, collapsed } = collapseRepetitiveLines(
+      "Building your IUO marketplace — mapping the project first.\nBuilding your IUO marketplace — mapping the full experience.\nFixing import paths now.",
+    );
+    expect(collapsed).toBe(1);
+    expect(text).toContain("Fixing import paths now.");
+    expect(text.match(/Building your IUO/g)).toHaveLength(1);
+
+    // Repeats across tool rows collapse in the rendered transcript.
+    harnessStore.clearSession("s-hc");
+    harnessStore.handleEvent({ type: "token", sessionId: "s-hc", content: "Building the full marketplace — wiring home first." });
+    harnessStore.handleEvent({ type: "tool_call", sessionId: "s-hc", id: "c1", name: "read_file", args: {}, status: "started" });
+    harnessStore.handleEvent({ type: "token", sessionId: "s-hc", content: "Building the full marketplace — wiring explore now." });
+    harnessStore.handleEvent({ type: "tool_call", sessionId: "s-hc", id: "c1", name: "read_file", args: {}, status: "completed", result: "ok" });
+    harnessStore.handleEvent({ type: "token", sessionId: "s-hc", content: "Done — preview is live." });
+    const markup = renderToStaticMarkup(<HarnessTranscript sessionId="s-hc" send={send} />);
+    expect(markup).toContain("Done — preview is live.");
+    expect(markup).toContain("similar update");
+    expect(markup.match(/Building the full marketplace/g)?.length ?? 0).toBeLessThanOrEqual(1);
     harnessStore.clearSession("s-hc");
   });
 });
