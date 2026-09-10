@@ -394,12 +394,6 @@ function buildSkillMetadataBlock(): string {
   return `<skill_metadata>\nAvailable companion skills (deferred — use \`execute_fork_skill\` for deep-dive analysis):\n${entries.join("\n")}\n</skill_metadata>`;
 }
 
-const DEFERRED_TOOLS_BLOCK = `<deferred_tools>
-Some tools are loaded on demand and are not currently available in the tool list:
-- \`execute_fork_skill\`: Delegate a focused analysis to a specialized skill sub-agent. Use this for deep security reviews, design audits, or domain-specific analysis.
-To use a deferred tool, describe what you need and ask the system to load it.
-</deferred_tools>`;
-
 function buildLocalAgentSystemPrompt({
   enableAppBlueprint,
   codeExplorerAvailable,
@@ -430,7 +424,6 @@ ${testingEnabled ? `${AGENT_TEST_WRITING_GUIDANCE}\n` : ""}
 ${IMAGE_GENERATION_BLOCK}
 ${enableAppBlueprint ? `\n${APP_BLUEPRINT_BLOCK}\n` : ""}
 ${buildSkillMetadataBlock()}
-${DEFERRED_TOOLS_BLOCK}
 ${AI_RULES_BLOCK}
 `;
 }
@@ -567,7 +560,7 @@ export function constructLocalAgentPrompt(
     aiRules ??
     defaultAiRulesForFramework(options?.caideFramework, DEFAULT_AI_RULES) ??
     DEFAULT_AI_RULES;
-  const uiSkillPack = buildUiSkillPack(target);
+  const uiSkillPack = buildUiSkillPack(target, options?.caideFramework);
   let prompt = basePrompt
     .replace("[[PLATFORM_UI_SKILL_PACK]]", () => uiSkillPack)
     .replace("[[PLATFORM_CONTRACT]]", () => buildPlatformPrompt(target))

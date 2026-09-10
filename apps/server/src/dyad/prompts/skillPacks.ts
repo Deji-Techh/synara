@@ -14,6 +14,7 @@ import {
 import { readSkill, readWeb3Skill } from "./skillLoader.ts";
 import { CAIDE_WEB_UI_SKILL_PACK } from "./webSkillPack.ts";
 import type { AppTarget } from "./appTarget.ts";
+import type { CaideFramework } from "./framework.ts";
 
 export { CAIDE_WEB_UI_SKILL_PACK };
 
@@ -52,6 +53,10 @@ const antiAiSlopSkill = readSkill("anti-ai-slop/SKILL.md");
 const appllamaDesignSkill = readSkill("appllama-design/SKILL.md");
 const appllamaResearchSkill = readSkill("appllama-research/SKILL.md");
 const appllamaWebRuntime = readSkill("appllama-design/caide-runtime-web.md");
+// P4: mobile + flutter runtimes are inlined per framework (same as web) so
+// the model gets the exact stack mapping instead of an unreadable file path.
+const appllamaMobileRuntime = readSkill("appllama-design/caide-runtime-mobile.md");
+const appllamaFlutterRuntime = readSkill("appllama-design/caide-runtime-flutter.md");
 
 export const UIUX_SKILL_FRONTMATTER: SkillFrontmatter =
   parseFrontmatter(uiUxMasterySkill).frontmatter;
@@ -88,9 +93,8 @@ Benchmark bar (Appllama transplant — every mobile screen must clear this):
 - Motion gate: platform-default motion for tabs, scroll, and back; near-imperceptible press feedback; standard motion for dialogs and toasts; delight only on rare first-time moments. Honor reduce-motion. Never claim smooth frame rates without on-device measurement.
 - Definition of done: screenshot the preview and scrub every path — back, modals, keyboard both directions, rapid taps, long content, empty, loading, and error states, large text, landscape — and fix until no flaw remains.
 - Enforce alongside the anti-ai-slop companion skill (universal restraint-and-process bar); both must pass. Where the two overlap, restraint wins over decoration.
-Stack detail (read the file matching this project's Caide framework notice before building UI):
-- react-native: skills/appllama-design/caide-runtime-mobile.md
-- flutter: skills/appllama-design/caide-runtime-flutter.md
+- Product imagery: never ship flat-color blocks with initials as product photos. Use generated imagery (generate_image, then copy_file into the public directory) or the skill's image-asset patterns; placeholders only when the user provided no asset, recorded as such.
+Stack detail: the runtime appendix matching this project's Caide framework is inlined directly below — follow its stack mapping exactly, do not re-derive replacements.
 Full laws and references: skills/appllama-design/SKILL.md plus skills/appllama-design/references/. Research playbooks: skills/appllama-research/ (fork via execute_fork_skill as appllama-design / appllama-research).
 </appllama-mobile-laws>
 `.trim();
@@ -183,12 +187,18 @@ ${templatesBlock}
 </ui-ux-templates>
 `.trim();
 
-/** Select the UI skill pack for a build target (defaults to mobile). */
-export function buildUiSkillPack(appTarget?: AppTarget): string {
+/** Select the UI skill pack for a build target (defaults to mobile). The
+ * matching Appllama runtime appendix is inlined for the Caide framework so
+ * the model never has to resolve a server-side skill path from the app
+ * workspace (P4). Blank targets carry the mobile runtime (phone-first). */
+export function buildUiSkillPack(appTarget?: AppTarget, caideFramework?: CaideFramework): string {
   if (appTarget === "web") {
     return `${CAIDE_WEB_UI_SKILL_PACK}\n\n${APPLLAMA_WEB_BLOCK}`;
   }
-  return CAIDE_MOBILE_UI_SKILL_PACK;
+  const runtime =
+    caideFramework === "flutter" ? appllamaFlutterRuntime.trim() : appllamaMobileRuntime.trim();
+  const label = caideFramework === "flutter" ? "flutter" : "react-native";
+  return `${CAIDE_MOBILE_UI_SKILL_PACK}\n\n<appllama-framework-runtime target="${label}">\n${runtime}\n</appllama-framework-runtime>`;
 }
 
 const WEB3_MODULE_FILES = [

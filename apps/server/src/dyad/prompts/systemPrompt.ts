@@ -579,6 +579,7 @@ export const constructSystemPrompt = ({
     enableTurboEditsV2,
     testingEnabled,
     appTarget: appTarget ?? appTargetForFramework(caideFramework),
+    caideFramework,
   });
 
   // Inject web3 skill pack for multi-chain dApps
@@ -629,6 +630,7 @@ export const getSystemPromptForChatMode = ({
   enableTurboEditsV2,
   testingEnabled,
   appTarget,
+  caideFramework,
 }: {
   chatMode: "build" | "ask";
   frameworkType?: AppFrameworkType | null;
@@ -663,6 +665,11 @@ export const getSystemPromptForChatMode = ({
    * contract and UI skill pack. Defaults to "mobile".
    */
   appTarget?: AppTarget;
+  /**
+   * Caide product framework (blank | react-native | flutter | website).
+   * Selects the inlined Appllama runtime appendix for mobile targets (P4).
+   */
+  caideFramework?: CaideFramework;
 }) => {
   if (chatMode === "ask") {
     return ASK_MODE_SYSTEM_PROMPT;
@@ -676,7 +683,7 @@ export const getSystemPromptForChatMode = ({
   const shouldAppendNitroNudge =
     frameworkType === "vite" && !hasSupabaseProject;
   const target: AppTarget = appTarget ?? "mobile";
-  const uiSkillPack = buildUiSkillPack(target);
+  const uiSkillPack = buildUiSkillPack(target, caideFramework);
   const buildPrompt =
     BUILD_SYSTEM_PROMPT_BASE.replace(
       "[[PLATFORM_UI_SKILL_PACK]]",

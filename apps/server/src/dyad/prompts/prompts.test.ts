@@ -56,21 +56,26 @@ describe("dyad prompt transplant (m1)", () => {
     expect(web).toContain("responsive web app");
     expect(web).toContain("<appllama-web-runtime>");
     expect(web).toContain("No bottom tab bar");
-    expect(buildUiSkillPack()).toBe(CAIDE_MOBILE_UI_SKILL_PACK);
+    // P4: mobile targets inline the matching framework runtime appendix.
+    const mobileDefault = buildUiSkillPack();
+    expect(mobileDefault).toContain("CAIDE preview contract");
+    expect(mobileDefault).toContain('<appllama-framework-runtime target="react-native">');
+    expect(mobileDefault).toContain("expo-router file routes");
+    const flutter = buildUiSkillPack("mobile", "flutter");
+    expect(flutter).toContain('<appllama-framework-runtime target="flutter">');
+    expect(flutter).toContain("go_router");
+    const rn = buildUiSkillPack("mobile", "react-native");
+    expect(rn).toContain('<appllama-framework-runtime target="react-native">');
   });
 
   it("appllama transplant: always-on laws per target, full skills as companions", () => {
-    // Mobile pack carries the framework-neutral benchmark laws with
-    // per-framework runtime pointers (shared by RN + Flutter, so no
-    // stack-specific nouns leak into either target).
+    // Mobile pack carries the framework-neutral benchmark laws; the matching
+    // framework runtime is inlined by buildUiSkillPack (P4), not referenced
+    // by server-side path (shared by RN + Flutter, so no stack-specific
+    // nouns leak into either target).
     expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("<appllama-mobile-laws>");
     expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("one-way doors");
-    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain(
-      "skills/appllama-design/caide-runtime-mobile.md",
-    );
-    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain(
-      "skills/appllama-design/caide-runtime-flutter.md",
-    );
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("runtime appendix matching this project's Caide framework is inlined directly below");
     for (const leak of ["Vite", "shadcn", "GoRouter", "Riverpod", "Dart", "flutter pub"]) {
       expect(CAIDE_MOBILE_UI_SKILL_PACK).not.toContain(leak);
     }

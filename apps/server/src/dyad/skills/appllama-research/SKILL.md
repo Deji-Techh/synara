@@ -1,5 +1,5 @@
 ---
-name: appllama-usage
+name: appllama-research
 description: Use the Appllama MCP (mcp.appllama.io) well — research real top-grossing mobile apps, their screens, flows, and UI elements, then build from what you learn. Load when the Appllama MCP is connected and the task involves building a mobile app or screen, researching app design patterns, studying onboarding/paywall/feature flows, improving an existing screen, or whenever an appllama_* / search_apps / list_app_screens tool is available. Covers the tool map, pagination, expiring media, and the full build-from-research playbooks.
 license: MIT
 metadata:

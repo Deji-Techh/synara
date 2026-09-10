@@ -66,7 +66,7 @@ describe("dyad tool catalog (m2)", () => {
     expect(shouldIncludeTool("write_file", {}, { planModeOnly: true })).toBe(false);
     expect(shouldIncludeTool("write_file", {}, { readOnly: true })).toBe(false);
     expect(shouldIncludeTool("read_file", {}, { readOnly: true })).toBe(true);
-    expect(shouldIncludeTool("execute_fork_skill")).toBe(false);
+    expect(shouldIncludeTool("execute_fork_skill")).toBe(true);
     expect(shouldIncludeTool("execute_fork_skill", {}, { includeDeferredTools: true })).toBe(true);
     expect(shouldIncludeTool("write_app_blueprint", {}, { enableAppBlueprint: false })).toBe(false);
     expect(shouldIncludeTool("spawn_subagent", {}, { buildProfile: true })).toBe(false);
