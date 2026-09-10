@@ -13,6 +13,32 @@ export interface ModelOption {
   maxOutputTokens?: number;
   contextWindow?: number;
   type?: "builtin" | "custom";
+  /**
+   * Taste score 1-10 (UI/UX judgment, code quality, API design, copy).
+   * Set only for benchmarked flagships; undefined = unknown, not bad.
+   * Mirrors the server catalog (item 29); drives picker badges.
+   */
+  taste?: number;
+}
+
+/**
+ * Taste score for a model slug (provider discovery names, OpenAI
+ * parameterized suffixes, custom variants). Substring match on benchmarked
+ * flagship ids; undefined = unknown. Pure — unit-tested.
+ */
+export function tasteForModelSlug(slug: string): number | undefined {
+  const normalized = slug.trim().toLowerCase();
+  if (!normalized) return undefined;
+  for (const [marker, taste] of [
+    ["claude-opus-4-8", 8],
+    ["claude-opus-4-6", 8],
+    ["claude-sonnet-4-6", 7],
+    ["gpt-5.6-sol", 5],
+    ["gpt-5.6-luna", 5],
+  ] as const) {
+    if (normalized.includes(marker)) return taste;
+  }
+  return undefined;
 }
 
 export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
@@ -24,6 +50,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       contextWindow: 372_000,
       temperature: 1,
       dollarSigns: 6,
+      taste: 5,
     },
     {
       name: "gpt-5.6-sol",
@@ -32,6 +59,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       contextWindow: 372_000,
       temperature: 1,
       dollarSigns: 6,
+      taste: 5,
     },
     {
       name: "gpt-5.5",
@@ -83,6 +111,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       contextWindow: 1_000_000,
       temperature: 1,
       dollarSigns: 6,
+      taste: 8,
     },
     {
       name: "claude-opus-4-6",
@@ -92,6 +121,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       contextWindow: 1_000_000,
       temperature: 1,
       dollarSigns: 6,
+      taste: 8,
     },
     {
       name: "claude-sonnet-4-6",
@@ -101,6 +131,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       contextWindow: 1_000_000,
       temperature: 1,
       dollarSigns: 5,
+      taste: 7,
     },
   ],
   google: [
@@ -977,10 +1008,13 @@ export async function fetchRemoteCatalogModels(
                 contextWindow: 128_000,
                 maxOutputTokens: 32_000,
                 dollarSigns: item.id.includes("free") || item.id.includes("flash") ? 0 : 1,
-                tag: item.id.includes("free") ? "Free" : undefined,
-                tagColor: item.id.includes("free")
-                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-                  : undefined,
+                ...(item.id.includes("free")
+                  ? {
+                      tag: "Free",
+                      tagColor:
+                        "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+                    }
+                  : {}),
                 type: "builtin" as const,
               };
             });

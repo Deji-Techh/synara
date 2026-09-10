@@ -16,6 +16,7 @@ import {
   type ProviderModelOptionGroup,
 } from "../../providerModelOptions";
 import type { ProviderKind } from "@caide/contracts";
+import { tasteForModelSlug } from "@caide/shared/languageModelCatalog";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
 import { DisclosureChevron } from "../ui/DisclosureChevron";
 import { MenuGroup, MenuGroupLabel, MenuRadioItem } from "../ui/menu";
@@ -68,6 +69,22 @@ function ProviderModelRadioItem(
   const accessibleModelName = provenanceLabel
     ? `${modelOption.name} — ${provenanceLabel}`
     : modelOption.name;
+  // Taste badge (item 29): benchmarked flagships show their design-taste
+  // score; unknown models show nothing (unknown ≠ bad).
+  const taste = tasteForModelSlug(modelOption.slug);
+  const tasteBadge =
+    taste !== undefined ? (
+      <span
+        title={`Taste ${taste}/10 — design judgment, code quality, copy. Higher is better for UI work.`}
+        className={cn(
+          "ml-1.5 inline-flex shrink-0 items-center rounded px-1 py-px font-mono text-[10px] font-medium tabular-nums",
+          taste >= 7 ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground/80",
+        )}
+      >
+        <span aria-hidden="true">taste {taste}</span>
+        <span className="sr-only">{`taste score ${taste} out of 10`}</span>
+      </span>
+    ) : null;
 
   return (
     <MenuRadioItem
@@ -126,7 +143,10 @@ function ProviderModelRadioItem(
             supportsFavorites && COMPOSER_PICKER_MODEL_ROW_LABEL_INDENT_CLASS_NAME,
           )}
         >
-          <span className="block min-w-0 truncate">{modelOption.name}</span>
+          <span className="block min-w-0 truncate">
+            {modelOption.name}
+            {tasteBadge}
+          </span>
           {provenanceLabel ? (
             <span
               aria-hidden="true"
@@ -137,7 +157,10 @@ function ProviderModelRadioItem(
           ) : null}
         </span>
       ) : (
-        modelOption.name
+        <span className="inline-flex min-w-0 items-center">
+          <span className="block min-w-0 truncate">{modelOption.name}</span>
+          {tasteBadge}
+        </span>
       )}
     </MenuRadioItem>
   );
