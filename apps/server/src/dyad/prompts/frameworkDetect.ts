@@ -6,8 +6,7 @@
 import { normalizeCaideFramework, type CaideFramework } from "./framework.ts";
 
 /** Framework detection from workspace files (pure fs, testable). */
-export async function detectFrameworkFromDisk(appPath: string): Promise<CaideFramework | undefined> {
-  const fs = await import("node:fs");
+export async function detectFrameworkFromDisk(appPath: string): Promise<CaideFramework | undefined> {  const fs = await import("node:fs");
   try {
     const raw = fs.readFileSync(`${appPath}/.caide/framework.json`, "utf8");
     const parsed = JSON.parse(raw) as Record<string, unknown>;
@@ -28,5 +27,27 @@ export async function detectFrameworkFromDisk(appPath: string): Promise<CaideFra
     return "website";
   } catch {
     return undefined;
+  }
+}
+
+const WEB3_DEP_KEYS = [
+  "wagmi", "viem", "ethers", "web3", "@solana/web3.js", "@solana/wallet-adapter-react",
+  "@mysten/sui", "aptos", "@web3modal/wagmi", "@rainbow-me/rainbowkit",
+];
+
+/** Multi-chain dApp detection: src/caide-web3/ tree or web3 wallet/chain deps. Pure fs, testable. */
+export async function detectWeb3App(appPath: string): Promise<boolean> {
+  const fs = await import("node:fs");
+  try {
+    if (fs.existsSync(`${appPath}/src/caide-web3`)) return true;
+    const pkgRaw = fs.readFileSync(`${appPath}/package.json`, "utf8");
+    const pkg = JSON.parse(pkgRaw) as Record<string, unknown>;
+    const deps = {
+      ...((pkg.dependencies ?? {}) as Record<string, unknown>),
+      ...((pkg.devDependencies ?? {}) as Record<string, unknown>),
+    };
+    return WEB3_DEP_KEYS.some((k) => deps[k] !== undefined);
+  } catch {
+    return false;
   }
 }

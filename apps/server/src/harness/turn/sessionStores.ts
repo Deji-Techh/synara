@@ -55,6 +55,9 @@ export interface SessionStores {
   safeSql: boolean;
   mcpAutoApproveSafe: boolean;
   routing: AgentRoutingConfig;
+  /** Per-tool execution counts (post-consent). Powers fork-skill/subagent
+   * telemetry (item 31) and fixer-retry signals for the run log. */
+  toolCalls: Record<string, number>;
 }
 
 const stores = new Map<string, SessionStores>();
@@ -94,10 +97,22 @@ export function getOrCreateSessionStores(sessionId: string): SessionStores {
         },
         fallbacks: [],
       },
+      toolCalls: {},
     };
     stores.set(sessionId, entry);
   }
   return entry;
+}
+
+/** Increment a session's post-consent execution count for one tool. */
+export function recordSessionToolCall(sessionId: string, toolName: string): void {
+  const entry = getOrCreateSessionStores(sessionId);
+  entry.toolCalls[toolName] = (entry.toolCalls[toolName] ?? 0) + 1;
+}
+
+/** Snapshot of per-tool execution counts for a session. */
+export function getSessionToolCounts(sessionId: string): Record<string, number> {
+  return { ...getOrCreateSessionStores(sessionId).toolCalls };
 }
 
 export function clearSessionStores(sessionId: string): void {

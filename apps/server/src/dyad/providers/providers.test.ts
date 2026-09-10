@@ -7,6 +7,8 @@ import {
   MODEL_OPTIONS,
   FREE_OPENROUTER_MODEL_NAMES,
   getContextWindow,
+  highestTasteModel,
+  findModelOption,
 } from "./catalog.ts";
 import { PROVIDERS, PROVIDER_TO_ENV_VAR, validateProviderSettings } from "./providers.ts";
 import {
@@ -35,6 +37,20 @@ describe("dyad providers transplant (m1, free-entirely)", () => {
     expect(getContextWindow("openai", "gpt-5.6-sol")).toBe(372_000);
     expect(getContextWindow("anthropic", "claude-opus-4-8")).toBe(1_000_000);
     expect(getContextWindow("nope", "nope")).toBe(128_000);
+  });
+
+  it("scores flagship taste and ranks candidates (item 29)", () => {
+    expect(findModelOption("anthropic", "claude-opus-4-8")?.taste).toBe(8);
+    expect(findModelOption("anthropic", "claude-sonnet-4-6")?.taste).toBe(7);
+    expect(findModelOption("openai", "gpt-5.6-sol")?.taste).toBe(5);
+    expect(findModelOption("google", "gemini-2.5-pro")?.taste).toBeUndefined();
+    expect(
+      highestTasteModel([
+        { providerId: "openai", modelId: "gpt-5.6-sol" },
+        { providerId: "anthropic", modelId: "claude-opus-4-8" },
+      ]),
+    ).toMatchObject({ providerId: "anthropic", modelId: "claude-opus-4-8", taste: 8 });
+    expect(highestTasteModel([])).toBeUndefined();
   });
 
   it("carries zero Pro surface: no gateway prefixes, no free-pro gate", () => {

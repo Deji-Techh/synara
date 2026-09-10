@@ -10,6 +10,7 @@ import {
   allUnifiedToolDefs,
   createTurnContext,
   detectFrameworkFromDisk,
+  detectWeb3App,
 } from "./turnContext.ts";
 
 describe("turn context wire (m3)", () => {
@@ -28,6 +29,24 @@ describe("turn context wire (m3)", () => {
 
     const blank = fs.mkdtempSync(path.join(os.tmpdir(), "caide-fw-"));
     await expect(detectFrameworkFromDisk(blank)).resolves.toBeUndefined();
+  });
+
+  it("detects multi-chain dApps for the web3 skill pack (item 32)", async () => {
+    const tree = fs.mkdtempSync(path.join(os.tmpdir(), "caide-w3-"));
+    fs.mkdirSync(path.join(tree, "src", "caide-web3"), { recursive: true });
+    await expect(detectWeb3App(tree)).resolves.toBe(true);
+
+    const deps = fs.mkdtempSync(path.join(os.tmpdir(), "caide-w3-"));
+    fs.writeFileSync(
+      path.join(deps, "package.json"),
+      JSON.stringify({ dependencies: { wagmi: "*", react: "*" } }),
+    );
+    await expect(detectWeb3App(deps)).resolves.toBe(true);
+
+    const plain = fs.mkdtempSync(path.join(os.tmpdir(), "caide-w3-"));
+    fs.writeFileSync(path.join(plain, "package.json"), JSON.stringify({ dependencies: { react: "*" } }));
+    await expect(detectWeb3App(plain)).resolves.toBe(false);
+    await expect(detectWeb3App(path.join(os.tmpdir(), "caide-nope-missing"))).resolves.toBe(false);
   });
 
   it("assembles provider + unified tools with mode filtering", () => {

@@ -17,7 +17,7 @@ import {
   buildUiSkillPack,
   COMPANION_SKILL_FRONTMATTERS,
 } from "./skillPacks.ts";
-import { WEB3_SKILL_FRONTMATTERS } from "./skillPacks.ts";
+import { WEB3_SKILL_FRONTMATTERS, WEB3_SKILL_PACK } from "./skillPacks.ts";
 import { DEFAULT_AI_RULES } from "./aiRules.ts";
 import {
   appTargetForFramework,
@@ -518,6 +518,11 @@ export function constructLocalAgentPrompt(
      * layout, commands, and preview it builds for. Donor text untouched.
      */
     caideFramework?: CaideFramework;
+    /**
+     * Multi-chain web3 dApp: appends the WEB3_SKILL_PACK (item 32). Off by
+     * default so non-web3 prompts are byte-identical.
+     */
+    isWeb3App?: boolean;
   },
 ): string {
   const enableAppBlueprint = options?.enableAppBlueprint !== false;
@@ -587,6 +592,12 @@ export function constructLocalAgentPrompt(
   });
   if (providerInvariants) {
     prompt += `\n\n<provider_invariants>\n${providerInvariants}\n</provider_invariants>`;
+  }
+
+  // Web3 vertical (item 32): multi-chain dApps get the web3 skill pack.
+  // Off unless requested — default prompts are unchanged.
+  if (options?.isWeb3App) {
+    prompt += `\n\n${WEB3_SKILL_PACK}`;
   }
 
   // Git provenance explanation (see gitContextPrompt.ts). Off unless the

@@ -5,6 +5,7 @@
 // for the mode + framework, streams the harness loop over the provider
 // adapter, and forwards typed HarnessEvents. One AbortController per session.
 
+import * as path from "node:path";
 import type { HarnessEvent } from "@caide/contracts";
 import { createStreamProviderAdapter } from "../provider/streamProviderAdapter.ts";
 import { ProviderApiError } from "../provider/apiAdapter.ts";
@@ -26,6 +27,7 @@ import { formatMemoryForPrompt, readAppMemory } from "../../dyad/memory/memory.t
 import { formatIssuesForEvent, runReviewBarrier } from "../../dyad/sandbox/reviewBarrier.ts";
 import { createVersion } from "../../dyad/vcs/versions.ts";
 import { resolveChatModeForTurn } from "../../dyad/plan/chatMode.ts";
+import { detectWeb3App } from "../../dyad/prompts/frameworkDetect.ts";
 import { Inbox } from "../inbox/index.ts";
 import { appendHarnessEvent, flushTurnTokens, readHarnessEvents } from "./eventLog.ts";
 import { clearPendingConsentsForSession } from "../../dyad/tools/permissions.ts";
@@ -57,6 +59,7 @@ import {
   snapshotSessionState,
 } from "./sessionStores.ts";
 import { TurnFlow, type TurnStatus } from "./index.ts";
+import { ProjectLogStore } from "../selfImprove/projectLog.ts";
 
 export type RunnerStatus = TurnStatus;
 export type ChatMode = "build" | "ask" | "agent" | "plan";
@@ -245,6 +248,13 @@ export class CaideRunner {
       else if (event.type === "checkpoint") this.emit({ type: "checkpoint", requiresResponse: event.requiresResponse });
       if (event.type === "tool_call" && event.status !== "started") sawToolComplete = true;
       else if (event.type === "artifact_updated") this.emit({ type: "artifact_updated", path: event.path });
+      if (event.type === "tool_call") {
+        if (event.status === "failed") failedToolCalls++;
+        if (event.name === "execute_fork_skill") {
+          const skillId = (event.args as { skill_id?: unknown } | null | undefined)?.skill_id;
+          if (typeof skillId === "string" && skillId) forkSkills.add(skillId);
+        }
+      }
     };
     // Crash resume: a previous turn_start with no turn_end means the turn
     // died mid-flight (kill/restart). Prefix a continuation notice so the
@@ -278,6 +288,35 @@ export class CaideRunner {
     // the turn would re-run side effects (edits, commits, deploys).
     let sawToolComplete = false;
     let failedAttemptKey = "";
+    // Self-improve telemetry (item 33): per-turn failure + skill signals for
+    // the project run log. Best-effort — never fails the turn.
+    let failedToolCalls = 0;
+    const forkSkills = new Set<string>();
+    let turnVerdict: { passed: boolean; tasteScore: number; issues: string[] } | null = null;
+    const logProjectRun = (status: "completed" | "failed" | "cancelled", failure?: string): void => {
+      try {
+        const store = new ProjectLogStore(path.join(input.appPath, ".caide", "telemetry"));
+        const verdict = turnVerdict;
+        void store
+          .appendLog({
+            projectId: path.basename(input.appPath) || input.sessionId,
+            framework: input.framework ?? "unknown",
+            skills: [...forkSkills],
+            verifierPassRate: verdict ? (verdict.passed ? 1 : 0) : 0,
+            fixerRetryCount: failedToolCalls,
+            tasteScore: verdict?.tasteScore ?? 0,
+            benchmarkScore: 0,
+            edgeCasesFound: [
+              ...(verdict?.issues ?? []),
+              ...(failure ? [failure] : []),
+            ].slice(0, 20),
+            timestamp: Date.now(),
+          })
+          .catch(() => {});
+      } catch {
+        // telemetry never fails the turn
+      }
+    };
     forward({ type: "turn_start", sessionId: input.sessionId, turnId, prompt: input.prompt });
 
     const controller = new AbortController();
@@ -367,12 +406,16 @@ export class CaideRunner {
       // Project AI rules: the scaffolded AI_RULES.md (or user edits)
       // seed every turn; missing file falls back to defaults inside.
       const aiRules = await readAiRules(input.appPath).catch(() => undefined);
+      // Web3 vertical (item 32): multi-chain dApps get the web3 skill pack.
+      // Disk-detected per turn so a newly added wallet dependency lights it up.
+      const isWeb3App = await detectWeb3App(input.appPath).catch(() => false);
       let system = constructSystemPrompt({
         aiRules,
         chatMode,
         enableTurboEditsV2: false,
         caideFramework: input.framework,
         gitProvenance: inGitRepo,
+        isWeb3App,
       });
       // Compounding project memory (APP_MEMORY.md + recent decisions).
       // Appended only when the project actually remembers something.
@@ -506,6 +549,7 @@ export class CaideRunner {
         this.status = "cancelled";
         await flushTurnTokens(input.sessionId);
         forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "cancelled", ...usageField() });
+        logProjectRun("cancelled", "turn cancelled");
       } else {
         this.status = "completed";
         // Review barrier (donor runAutoReviewBarrier): audit the working
@@ -521,6 +565,11 @@ export class CaideRunner {
             signal: controller.signal,
           }).catch(() => null);
           if (verdict) {
+            turnVerdict = {
+              passed: verdict.passed,
+              tasteScore: verdict.tasteScore,
+              issues: formatIssuesForEvent(verdict.issues),
+            };
             forward({
               type: "verifier_result",
               sessionId: input.sessionId,
@@ -539,6 +588,7 @@ export class CaideRunner {
         }
         await flushTurnTokens(input.sessionId);
         forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "completed", ...usageField() });
+        logProjectRun("completed");
       }
       await captureTurnEnd(input.sessionId, input.appPath).catch(() => {});
       await snapshotSessionState(input.sessionId, storage).catch(() => {});
@@ -579,6 +629,7 @@ export class CaideRunner {
         recoverable: true,
       });
       forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "failed", ...usageField() });
+      logProjectRun("failed", err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500));
     } finally {
       input.signal?.removeEventListener("abort", onAbort);
       this.controllers.delete(input.sessionId);

@@ -42,8 +42,27 @@ describe("caide runner turns (m3)", () => {
     expect(events.at(-1)).toMatchObject({ type: "turn_end", status: "completed" });
   });
 
-  it("fails structured without throwing when no provider key exists", async () => {
-    const events: HarnessEvent[] = [];
+  it("appends a project run log per turn (self-improve telemetry)", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-runlog-"));
+    const runner = new CaideRunner();
+    await runner.startTurn({
+      sessionId: `s-runlog-${Date.now()}`,
+      appPath: dir,
+      prompt: "hi",
+      mode: "ask",
+      framework: "website",
+      settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+      llmOverride: fakeLlm([{ type: "token", content: "hello" }]),
+    });
+    const logFile = path.join(dir, ".caide", "telemetry", "project-runs.jsonl");
+    const lines = fs.readFileSync(logFile, "utf8").trim().split("\n");
+    expect(lines).toHaveLength(1);
+    const entry = JSON.parse(lines[0]);
+    expect(entry).toMatchObject({ framework: "website", skills: [] });
+    expect(typeof entry.timestamp).toBe("number");
+  });
+
+  it("fails structured without throwing when no provider key exists", async () => {    const events: HarnessEvent[] = [];
     const runner = new CaideRunner();
     await runner.startTurn({
       sessionId: "s-nokey",

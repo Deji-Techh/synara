@@ -562,6 +562,7 @@ export const constructSystemPrompt = ({
       testingEnabled,
       appTarget,
       caideFramework,
+      isWeb3App,
     });
   }
 

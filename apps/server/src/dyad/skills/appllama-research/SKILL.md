@@ -19,6 +19,8 @@ step — this skill tells you what to study; that one tells you how to build.
 
 ## Ground rules (read first)
 
+0. **No MCP, no library.** If `search_mcp_tools` finds no `appllama_*` tools, the Appllama MCP is not connected — tell the user to enable Appllama in Settings → MCP (one click, pre-registered), then proceed from the playbooks on disk. Never claim to have studied screens you did not fetch.
+
 1. **Start with `get_credits` — it's free.** It tells you the balance,
    limits, and reset date. Pro includes 1,500 credits a month (they reset in
    full on the 1st, UTC); every other call spends 1 credit.

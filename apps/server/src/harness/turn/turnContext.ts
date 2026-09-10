@@ -50,6 +50,7 @@ import { setImageProvider } from "../../dyad/web/generateImage.ts";
 import { setWebSearchProvider } from "../../dyad/web/webSearch.ts";
 import { autoImageProvider, cascadeImageProvider, resolveImageLegs } from "../../dyad/web/keyedImages.ts";
 import { sharedProviderSecrets } from "../../dyad/providers/secrets.ts";
+import { recordSessionToolCall } from "./sessionStores.ts";
 import { autoWebSearchProvider } from "../../dyad/web/keyedSearch.ts";
 import { streamProvider } from "../provider/apiAdapter.ts";
 import type { CaideFramework } from "../../dyad/prompts/index.ts";
@@ -108,6 +109,7 @@ export interface TurnContext {
 
 /** Framework detection from workspace files — re-exported here for compatibility. */
 export { detectFrameworkFromDisk } from "../../dyad/prompts/frameworkDetect.ts";
+export { detectWeb3App } from "../../dyad/prompts/frameworkDetect.ts";
 
 const UNIFIED_DEFS: ToolDef[] = [
   ...ALL_CORE_TOOLS,
@@ -234,6 +236,7 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
         ...(signal ? { signal } : {}),
       });
       if (!allowed) throw new Error(`Tool call declined: ${toolName}`);
+      recordSessionToolCall(input.sessionId, toolName);
       return def.execute(args, {
         signal: AbortSignal.timeout(600_000),
         appPath: input.appPath,

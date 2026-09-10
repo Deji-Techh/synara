@@ -239,5 +239,10 @@ ${web3ModulesBlock}
 - Use try/catch around all blockchain RPC calls
 - Never expose private keys, seed phrases, or API keys
 - Prefer the pre-built components in src/caide-web3/ when adding wallet connection features
+
+## Web3 Delivery Flow
+- Clarify chain, wallet scope, and transaction surfaces with planning_questionnaire before building — never assume mainnet, a specific wallet, or real funds.
+- Verify with test_rpc and read-only calls on devnet/testnet first; only touch mainnet on explicit user confirmation.
+- Run verify_design for any wallet/transaction UI and capture evidence of connect → sign → confirm flows.
 </web3-development>
 `.trim();

@@ -461,4 +461,14 @@ describe("dyad prompt transplant (m1)", () => {
     expect(build).toContain("<design_quality_contract>");
     expect(build).toContain("verify_design");
   });
+
+  it("web3 skill pack reaches local-agent turns for dApps (item 32)", () => {
+    const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
+    const plain = constructSystemPrompt({ ...base, chatMode: "local-agent" });
+    expect(plain).not.toContain("<web3-development>");
+    const dapp = constructSystemPrompt({ ...base, chatMode: "local-agent", isWeb3App: true });
+    expect(dapp).toContain("<web3-development>");
+    expect(dapp).toContain("planning_questionnaire");
+    expect(dapp).toContain("testnet");
+  });
 });

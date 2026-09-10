@@ -18,6 +18,12 @@ export interface ModelOption {
   tagColor?: string;
   maxOutputTokens?: number;
   contextWindow?: number;
+  /**
+   * Taste score 1-10 (UI/UX judgment, code quality, API design, copy).
+   * Set only for benchmarked flagships; undefined = unknown, not bad.
+   * Powers taste-aware routing suggestions (item 29).
+   */
+  taste?: number;
   effortSettings?: {
     defaultEffortLevel: string;
     possibleEffortLevels: string[];
@@ -55,6 +61,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       contextWindow: 372_000,
       temperature: 1,
       dollarSigns: 6,
+      taste: 5,
     },
     {
       name: GPT_5_5_MODEL_NAME,
@@ -138,6 +145,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       contextWindow: 1_000_000,
       temperature: 1,
       dollarSigns: 6,
+      taste: 8,
     },
     {
       name: "claude-opus-4-6",
@@ -148,6 +156,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       contextWindow: 1_000_000,
       temperature: 1,
       dollarSigns: 6,
+      taste: 8,
     },
     {
       name: SONNET_4_6,
@@ -158,6 +167,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       contextWindow: 1_000_000,
       temperature: 1,
       dollarSigns: 5,
+      taste: 7,
     },
   ],
   google: [
@@ -491,6 +501,22 @@ export function findModelOption(
   modelName: string,
 ): ModelOption | undefined {
   return MODEL_OPTIONS[providerId]?.find((m) => m.name === modelName);
+}
+
+/**
+ * Highest-taste candidate (item 29). Unknown taste counts as 0 so any
+ * benchmarked model wins; ties keep input order. Returns undefined for an
+ * empty list.
+ */
+export function highestTasteModel(
+  candidates: Array<{ providerId: string; modelId: string }>,
+): { providerId: string; modelId: string; taste: number } | undefined {
+  let best: { providerId: string; modelId: string; taste: number } | undefined;
+  for (const c of candidates) {
+    const taste = findModelOption(c.providerId, c.modelId)?.taste ?? 0;
+    if (!best || taste > best.taste) best = { ...c, taste };
+  }
+  return best;
 }
 
 /** Context window for budget checks; defaults to 128k when unknown. */

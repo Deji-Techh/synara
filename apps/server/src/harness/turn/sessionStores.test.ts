@@ -18,6 +18,8 @@ import {
   applySettingsSync,
   clearSessionStores,
   getOrCreateSessionStores,
+  getSessionToolCounts,
+  recordSessionToolCall,
   restoreSessionState,
   snapshotSessionState,
 } from "./sessionStores.ts";
@@ -131,5 +133,17 @@ describe("session stores persistence (m3g)", () => {
     } finally {
       clearSessionStores(sid);
     }
+  });
+
+  it("counts post-consent tool calls per session (fork telemetry)", () => {
+    const sid = `s-tools-${Date.now()}`;
+    recordSessionToolCall(sid, "execute_fork_skill");
+    recordSessionToolCall(sid, "execute_fork_skill");
+    recordSessionToolCall(sid, "spawn_subagent");
+    expect(getSessionToolCounts(sid)).toEqual({ execute_fork_skill: 2, spawn_subagent: 1 });
+    // Snapshot shape is unaffected (counts are runtime-only).
+    expect(getOrCreateSessionStores(sid).toolCalls.execute_fork_skill).toBe(2);
+    clearSessionStores(sid);
+    expect(getSessionToolCounts(sid)).toEqual({});
   });
 });
