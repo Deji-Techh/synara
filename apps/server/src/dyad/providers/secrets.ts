@@ -23,13 +23,13 @@ export interface StoredProviderEntry {
 export interface ProviderSecretsFile {
   version: 1;
   providers: Record<string, StoredProviderEntry>;
-  defaultProviderId?: string;
-  defaultModelId?: string;
+  defaultProviderId?: string | undefined;
+  defaultModelId?: string | undefined;
   /** Preferred image-generation source (P8): auto | turn-model | gemini |
    * openai | pollinations | placeholder. Empty/missing = auto. */
-  defaultImageProviderId?: string;
+  defaultImageProviderId?: string | undefined;
   /** Optional image model override (e.g. Gemini image model id). */
-  defaultImageModelId?: string;
+  defaultImageModelId?: string | undefined;
 }
 
 const EMPTY: ProviderSecretsFile = { version: 1, providers: {} };

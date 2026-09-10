@@ -7756,6 +7756,7 @@ export default function ChatView({
       return true;
     }
     sendPreflightInFlightRef.current = true;
+    const sendProviderAvailability = await resolveProviderSendAvailabilityWithRefresh({
       provider: selectedModelSelectionForSend.provider,
       statuses: providerStatuses,
       refreshStatuses: () => refreshProviderStatuses({ silent: true }),

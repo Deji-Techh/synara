@@ -16,10 +16,10 @@ export interface DyadProviderStatus {
 
 export interface DyadProvidersState {
   providers: DyadProviderStatus[];
-  defaultProviderId?: string;
-  defaultModelId?: string;
-  defaultImageProviderId?: string;
-  defaultImageModelId?: string;
+  defaultProviderId?: string | undefined;
+  defaultModelId?: string | undefined;
+  defaultImageProviderId?: string | undefined;
+  defaultImageModelId?: string | undefined;
   tests: Record<string, { ok: boolean; message: string }>;
   connected: boolean;
 }

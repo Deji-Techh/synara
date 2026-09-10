@@ -74,7 +74,12 @@ export async function executeGenerateImage(
   const parsed = generateImageSchema.parse(input);
   const run = provider ?? pollinationsGenerate;
   try {
-    const image = await run({ prompt: parsed.prompt, width: parsed.width, height: parsed.height, signal });
+    const image = await run({
+      prompt: parsed.prompt,
+      width: parsed.width,
+      height: parsed.height,
+      ...(signal ? { signal } : {}),
+    });
     const ext = /png/.test(image.mimeType) ? "png" : /webp/.test(image.mimeType) ? "webp" : /svg/.test(image.mimeType) ? "svg" : "jpg";
     const name = (parsed.filename ?? `generated-image-${Date.now()}`).replace(/[^a-zA-Z0-9-_]+/g, "-");
     const rel = path.join(".caide", "media", `${name}.${ext}`);
