@@ -114,6 +114,11 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "vercel_deployments", category: "preview", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/publish" },
   { name: "vercel_env_sync", category: "preview", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/publish" },
   { name: "vercel_disconnect", category: "preview", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/publish" },
+  { name: "coolify_connect", category: "preview", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/publish" },
+  { name: "coolify_discover", category: "preview", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/publish" },
+  { name: "coolify_deploy", category: "preview", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/publish" },
+  { name: "coolify_status", category: "preview", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/publish" },
+  { name: "coolify_disconnect", category: "preview", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/publish" },
   { name: "verify_design", category: "verify", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/verify" },
   { name: "capture_screenshot", category: "verify", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "screenshot" },
   // git

@@ -21,6 +21,7 @@ export interface VercelPublishLink {
 }
 
 export interface CoolifyPublishLink {
+  instanceUrl?: string;
   serverUuid?: string;
   projectUuid?: string;
   environment?: string;
@@ -55,7 +56,7 @@ export function readPublishLinks(appPath: string): PublishLinks {
         deploymentUrl: parsed.vercel.deploymentUrl,
       };
     }
-    if (parsed.coolify && (parsed.coolify.projectUuid || parsed.coolify.applicationUuid)) {
+    if (parsed.coolify && (parsed.coolify.projectUuid || parsed.coolify.applicationUuid || parsed.coolify.instanceUrl)) {
       links.coolify = { ...parsed.coolify };
     }
     publishCache.set(appPath, links);

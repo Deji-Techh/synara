@@ -30,6 +30,7 @@ const PROVIDER_ENV_KEYS: Record<string, string[]> = {
   neon: ["NEON_API_KEY"],
   github: ["GITHUB_TOKEN", "GH_TOKEN"],
   vercel: ["VERCEL_TOKEN"],
+  coolify: ["COOLIFY_TOKEN"],
 };
 
 /**

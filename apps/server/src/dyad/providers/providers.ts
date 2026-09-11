@@ -45,6 +45,7 @@ export const PROVIDER_TO_ENV_VAR: Record<string, string> = {
   neon: "NEON_API_KEY",
   github: "GITHUB_TOKEN",
   vercel: "VERCEL_TOKEN",
+  coolify: "COOLIFY_TOKEN",
   mistral: "MISTRAL_API_KEY",
   together: "TOGETHER_API_KEY",
   cohere: "COHERE_API_KEY",
@@ -226,6 +227,16 @@ export const PROVIDERS: Record<string, ProviderDef> = {
     transport: "needs-work",
     transportNote:
       "Personal token for project create/connect, deployments, and Neon env sync — not a chat model. Saved to the encrypted secrets file.",
+  },
+  coolify: {
+    id: "coolify",
+    displayName: "Coolify",
+    envVarName: "COOLIFY_TOKEN",
+    websiteUrl: "https://coolify.io/docs/",
+    secondary: true,
+    transport: "needs-work",
+    transportNote:
+      "Self-hosted instance API token for discover, project create, and deploys (instance URL is per-app link state) — not a chat model.",
   },
   mistral: {
     id: "mistral",
