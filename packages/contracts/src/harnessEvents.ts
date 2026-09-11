@@ -173,6 +173,18 @@ export const TodosUpdateHarnessEvent = Schema.Struct({
 });
 export type TodosUpdateHarnessEvent = typeof TodosUpdateHarnessEvent.Type;
 
+/** MCP OAuth flow state (authorize URL to open, connected/failed outcome). */
+export const McpOAuthHarnessEvent = Schema.Struct({
+  type: Schema.Literal("mcp_oauth"),
+  sessionId: Schema.String,
+  requestId: Schema.optional(Schema.String),
+  serverId: Schema.String,
+  status: Schema.Literals(["authorize", "connected", "failed"]),
+  authorizeUrl: Schema.optional(Schema.String),
+  message: Schema.optional(Schema.String),
+});
+export type McpOAuthHarnessEvent = typeof McpOAuthHarnessEvent.Type;
+
 export const BlueprintVisualSchema = Schema.Struct({
   type: Schema.Literals(["logo", "photo", "illustration", "icon", "background", "other"]),
   description: Schema.String,
@@ -250,6 +262,7 @@ export const HarnessEvent = Schema.Union([
   PlanUpdateHarnessEvent,
   PlanExitHarnessEvent,
   TodosUpdateHarnessEvent,
+  McpOAuthHarnessEvent,
   VersionsStateHarnessEvent,
   BlueprintUpdateHarnessEvent,
   ProviderSettingsStateHarnessEvent,

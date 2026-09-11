@@ -64,4 +64,30 @@ describe("harness hub fan-out", () => {
     expect(() => hub.broadcastToSession("missing", tokenEvent("missing", "x"))).not.toThrow();
     expect(hub.getBroadcastStats()).toMatchObject({ broadcasts: 0, deliveries: 0 });
   });
+
+  it("routes mcp_oauth_start to the registered handler with parsed fields", () => {
+    const hub = new HarnessHub();
+    const seen: unknown[] = [];
+    hub.onMcpOAuthStart((sessionId, input) => {
+      seen.push({ sessionId, ...input });
+    });
+    const s = sender(true);
+    hub.handleText(
+      s,
+      JSON.stringify({
+        type: "mcp_oauth_start",
+        sessionId: "settings",
+        requestId: "r1",
+        serverId: "mcp-1",
+        serverUrl: "https://mcp.example.com/mcp",
+        scope: "tools",
+      }),
+    );
+    expect(seen).toEqual([
+      { sessionId: "settings", serverId: "mcp-1", serverUrl: "https://mcp.example.com/mcp", scope: "tools", requestId: "r1" },
+    ]);
+    // Missing serverUrl is ignored (no crash, no call).
+    hub.handleText(s, JSON.stringify({ type: "mcp_oauth_start", sessionId: "settings", serverId: "mcp-1" }));
+    expect(seen).toHaveLength(1);
+  });
 });

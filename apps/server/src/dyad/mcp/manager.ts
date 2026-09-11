@@ -1,12 +1,13 @@
 // FILE: manager.ts
 // Purpose: MCP server lifecycle + call transport. Dependency-free JSON-RPC
 // 2.0 over stdio (child process) and Streamable HTTP/SSE (fetch): no MCP SDK
-// needed for initialize/tools-list/tools-call. OAuth servers stay needs-work
-// (donor mcp_oauth_flow parity is M4b). Feeds the discovery registry consumed
-// by search_mcp_tools/get_mcp_tool_schema.
+// needed for initialize/tools-list/tools-call. OAuth (DCR + PKCE + loopback)
+// lives in mcpOAuth.ts; stored access tokens overlay SSE headers at sync.
+// Feeds the discovery registry consumed by search_mcp_tools/get_mcp_tool_schema.
 
 import { spawn, type ChildProcess } from "node:child_process";
 import { buildMcpToolKey, sanitizeMcpName } from "./mcpKeys.ts";
+import { getStoredOAuthAccessToken } from "./mcpOAuth.ts";
 import { setMcpToolRegistry, type JsonSchema, type McpToolDef } from "./mcpTools.ts";
 
 export const MCP_RPC_TIMEOUT_MS = 30_000;
@@ -239,10 +240,23 @@ export class McpManager {
         continue;
       }
       try {
+        // OAuth overlay: a stored access token authorizes SSE servers that
+        // carry no explicit Authorization header (settings stay key-free).
+        let config = server.config;
+        if (
+          config.transport === "sse" &&
+          !config.headers?.Authorization &&
+          !config.headers?.authorization
+        ) {
+          const access = getStoredOAuthAccessToken(server.id);
+          if (access) {
+            config = { ...config, headers: { ...(config.headers ?? {}), Authorization: `Bearer ${access}` } };
+          }
+        }
         const conn =
-          server.config.transport === "stdio"
-            ? await McpConnection.stdio(server.config)
-            : await McpConnection.sse(server.config);
+          config.transport === "stdio"
+            ? await McpConnection.stdio(config)
+            : await McpConnection.sse(config);
         this.connections.set(server.id, { server, conn });
         const { toolCount } = await conn.test();
         results.push({ id: server.id, name: server.name, ok: true, message: `${toolCount} tool(s)` });

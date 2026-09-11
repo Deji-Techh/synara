@@ -117,6 +117,39 @@ export function attachUiBridge(server: HarnessHub): {
     resolveConsent(requestId, decision);
     resolveMcpConsent(requestId, decision);
   });
+  server.onMcpOAuthStart((sessionId, input) => {
+    void (async () => {
+      const base = { sessionId, requestId: input.requestId, serverId: input.serverId } as const;
+      try {
+        const { beginMcpOAuthFlow, completeMcpOAuthFlow } = await import("../../dyad/mcp/mcpOAuth.ts");
+        const begun = await beginMcpOAuthFlow({
+          serverId: input.serverId,
+          serverUrl: input.serverUrl,
+          ...(input.clientId ? { clientId: input.clientId } : {}),
+          ...(input.scope ? { scope: input.scope } : {}),
+          ...(typeof input.callbackPort === "number" ? { callbackPort: input.callbackPort } : {}),
+        });
+        send(server, sessionId, { ...base, type: "mcp_oauth", status: "authorize", authorizeUrl: begun.authorizeUrl });
+        const { code } = await begun.waitForCallback;
+        await completeMcpOAuthFlow({
+          serverId: input.serverId,
+          metadata: begun.metadata,
+          client: begun.client,
+          code,
+          redirectUri: begun.redirectUri,
+          verifier: begun.verifier,
+        });
+        send(server, sessionId, { ...base, type: "mcp_oauth", status: "connected" });
+      } catch (err) {
+        send(server, sessionId, {
+          ...base,
+          type: "mcp_oauth",
+          status: "failed",
+          message: err instanceof Error ? err.message : String(err),
+        });
+      }
+    })();
+  });
   server.onSettingsSync((sessionId, settings) => {
     const payload = settings as SettingsSyncPayload & { blockchainNetworks?: BlockchainNetwork[] };
     applySettingsSync(sessionId, payload);
@@ -131,24 +164,26 @@ export function attachUiBridge(server: HarnessHub): {
         payload.blockchainNetworks.filter((n) => n.id && n.rpcUrl),
       );
     }
-    // Settings UI → live tools: sync manager connections (stdio/SSE only;
-    // OAuth stays needs-work) and republish the discovery registry.
+    // Settings UI → live tools: sync manager connections. OAuth-transport
+    // servers sync as SSE (their stored OAuth token authorizes at connect);
+    // the token itself never crosses the socket.
     if (payload.mcpServers && payload.mcpServers.length > 0) {
       const servers: ManagedMcpServer[] = payload.mcpServers
-        .filter((s) => s.transport === "stdio" || s.transport === "sse")
+        .filter((s) => s.transport === "stdio" || s.transport === "sse" || s.transport === "oauth")
         .map((s) => ({
           id: s.id,
           name: s.name,
           enabled: s.enabled !== false,
           defaultConsent: s.defaultConsent,
-          config: (s.transport === "sse"
-            ? { transport: "sse" as const, url: s.url ?? "", headers: s.headers }
-            : {
+          config: (s.transport === "stdio"
+            ? {
                 transport: "stdio" as const,
                 command: s.command ?? "",
                 args: s.args,
                 env: s.env,
-              }) as ManagedMcpServer["config"],
+              }
+            : { transport: "sse" as const, url: s.url ?? "", headers: s.headers }
+          ) as ManagedMcpServer["config"],
         }))
         .filter((s) =>
           s.config.transport === "sse" ? s.config.url.length > 0 : s.config.command.length > 0,

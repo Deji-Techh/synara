@@ -66,6 +66,11 @@ describe("turn context wire (m3)", () => {
       expect(names).toContain("execute_sql");
       expect(names).not.toContain("write_plan");
       expect(allUnifiedToolDefs().length).toBeGreaterThanOrEqual(50);
+      // Phase 5 sweep: FTS chat-history tools ride every agent turn.
+      expect(names).toContain("search_chats");
+      expect(names).toContain("read_chat");
+      expect(names).toContain("share_artifact");
+      expect(names).toContain("verify_design");
 
       const plan = createTurnContext({
         sessionId: "s-plan",

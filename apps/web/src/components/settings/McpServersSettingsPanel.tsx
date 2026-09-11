@@ -12,6 +12,7 @@ import { Input } from "~/components/ui/input";
 import { Switch } from "~/components/ui/switch";
 import { toastManager } from "~/components/ui/toast";
 import { copyTextToClipboard } from "~/hooks/useCopyToClipboard";
+import { useMcpOAuth } from "./useMcpOAuth";
 import { cn } from "~/lib/utils";
 import { SettingsListRow, SettingsRow, SettingsSection } from "./SettingsPanelPrimitives";
 import {
@@ -28,6 +29,59 @@ import {
 
 function transportLabel(t: McpTransportKind): string {
   return t === "stdio" ? "stdio" : t === "sse" ? "SSE" : "OAuth";
+}
+
+function OAuthConnectButton(props: {
+  server: McpServerConfig;
+  statusByServer: Record<string, { state: string; authorizeUrl?: string; message?: string }>;
+  onStart: (input: { serverId: string; serverUrl: string; clientId?: string; scope?: string }) => void;
+  onReset: (serverId: string) => void;
+}) {
+  const status = props.statusByServer[props.server.id] ?? { state: "idle" };
+  if (status.state === "connected") {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400">
+        Connected ✓
+        <Button size="xs" variant="ghost" onClick={() => props.onReset(props.server.id)}>
+          Reset
+        </Button>
+      </span>
+    );
+  }
+  if (status.state === "failed") {
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <span className="max-w-64 truncate text-[11px] text-destructive" title={status.message}>
+          {status.message}
+        </span>
+        <Button size="xs" variant="outline" onClick={() => props.onReset(props.server.id)}>
+          Retry
+        </Button>
+      </span>
+    );
+  }
+  const busy = status.state === "starting" || status.state === "authorizing";
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {status.state === "authorizing" ? (
+        <span className="text-[11px] text-muted-foreground">Approve in the opened tab…</span>
+      ) : null}
+      <Button
+        size="xs"
+        variant="outline"
+        disabled={busy}
+        onClick={() =>
+          props.onStart({
+            serverId: props.server.id,
+            serverUrl: props.server.url ?? "",
+            ...(props.server.clientId?.trim() ? { clientId: props.server.clientId.trim() } : {}),
+          })
+        }
+      >
+        {busy ? "Connecting…" : "Connect with OAuth"}
+      </Button>
+    </span>
+  );
 }
 
 function emptyDraft(): McpServerConfig {
@@ -53,6 +107,7 @@ export function McpServersSettingsPanel(props: { active: boolean }) {
   const [draftArgs, setDraftArgs] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const { statusByServer, start: startOAuth, reset: resetOAuth } = useMcpOAuth();
 
   const persist = (next: McpServerConfig[]) => {
     setServers(next);
@@ -316,7 +371,15 @@ export function McpServersSettingsPanel(props: { active: boolean }) {
                       ))}
                     </div>
                   </div>
-                  <div className="flex justify-end">
+                  <div className="flex justify-end gap-2">
+                    {server.transport === "oauth" && server.url ? (
+                      <OAuthConnectButton
+                        server={server}
+                        statusByServer={statusByServer}
+                        onStart={startOAuth}
+                        onReset={resetOAuth}
+                      />
+                    ) : null}
                     <Button
                       size="xs"
                       variant="destructive-outline"

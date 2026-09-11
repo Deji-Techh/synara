@@ -9,8 +9,13 @@ import type { HarnessEvent } from "@caide/contracts";
 import { readHarnessEvents } from "../turn/eventLog.ts";
 
 export interface ClientInboundMessage {
-  type: "subscribe" | "steer" | "cancel" | "checkpoint_response" | "ping" | "prompt_answer" | "consent_answer" | "settings_sync" | "blueprint_response" | "turn_start" | "provider_settings_get" | "provider_settings_set" | "provider_settings_test" | "versions_list" | "versions_restore";
+  type: "subscribe" | "steer" | "cancel" | "checkpoint_response" | "ping" | "prompt_answer" | "consent_answer" | "settings_sync" | "blueprint_response" | "turn_start" | "provider_settings_get" | "provider_settings_set" | "provider_settings_test" | "versions_list" | "versions_restore" | "mcp_oauth_start";
   sessionId?: string;
+  serverId?: string;
+  serverUrl?: string;
+  clientId?: string;
+  scope?: string;
+  callbackPort?: number;
   token?: string;
   prompt?: string;
   checkpointId?: string;
@@ -62,6 +67,17 @@ export type BlueprintResponseHandler = (
   feedback?: string,
 ) => void;
 export type TurnStartHandler = (sessionId: string, turn: TurnStartPayload) => void;
+export type McpOAuthStartHandler = (
+  sessionId: string,
+  input: {
+    serverId: string;
+    serverUrl: string;
+    clientId?: string;
+    scope?: string;
+    callbackPort?: number;
+    requestId?: string;
+  },
+) => void;
 export type ProviderSettingsGetHandler = (sessionId: string, requestId?: string) => void;
 export type ProviderSettingsSetHandler = (
   sessionId: string,
@@ -113,6 +129,7 @@ export class HarnessHub {
   private onTurnStartHandler?: TurnStartHandler;
   private onProviderSettingsGetHandler?: ProviderSettingsGetHandler;
   private onProviderSettingsSetHandler?: ProviderSettingsSetHandler;
+  private onMcpOAuthStartHandler?: McpOAuthStartHandler;
   private onProviderSettingsTestHandler?: ProviderSettingsTestHandler;
 
   /** Diagnostic snapshot of fan-out health. */
@@ -227,6 +244,17 @@ export class HarnessHub {
       this.onProviderSettingsTestHandler?.(msg.sessionId, msg.provider.id, msg.requestId, candidate);
       return;
     }
+    if (msg.type === "mcp_oauth_start" && msg.sessionId && msg.serverId && msg.serverUrl) {
+      this.onMcpOAuthStartHandler?.(msg.sessionId, {
+        serverId: msg.serverId,
+        serverUrl: msg.serverUrl,
+        ...(msg.clientId ? { clientId: String(msg.clientId) } : {}),
+        ...(msg.scope ? { scope: String(msg.scope) } : {}),
+        ...(typeof msg.callbackPort === "number" ? { callbackPort: msg.callbackPort } : {}),
+        ...(msg.requestId ? { requestId: msg.requestId } : {}),
+      });
+      return;
+    }
   }
 
   broadcastToSession(sessionId: string, event: HarnessEvent): void {
@@ -323,6 +351,10 @@ export class HarnessHub {
 
   onProviderSettingsTest(handler: ProviderSettingsTestHandler): void {
     this.onProviderSettingsTestHandler = handler;
+  }
+
+  onMcpOAuthStart(handler: McpOAuthStartHandler): void {
+    this.onMcpOAuthStartHandler = handler;
   }
 }
 

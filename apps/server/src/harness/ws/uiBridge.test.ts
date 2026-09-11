@@ -29,6 +29,9 @@ function fakeServer() {
     onSettingsSync: (h: (...args: never[]) => void) => {
       handlers.settings = h;
     },
+    onMcpOAuthStart: (h: (...args: never[]) => void) => {
+      handlers.mcpOAuth = h;
+    },
   } as unknown as HarnessHub;
   return { sent, handlers, server };
 }
