@@ -49,6 +49,25 @@ describe("turn context wire (m3)", () => {
     await expect(detectWeb3App(path.join(os.tmpdir(), "caide-nope-missing"))).resolves.toBe(false);
   });
 
+  it("detects Flutter web3 apps via pubspec and lib code (F1)", async () => {
+    const pub = fs.mkdtempSync(path.join(os.tmpdir(), "caide-w3f-"));
+    fs.writeFileSync(path.join(pub, "pubspec.yaml"), "name: x\ndependencies:\n  web3dart: ^3.0.0\n");
+    await expect(detectWeb3App(pub)).resolves.toBe(true);
+
+    const lib = fs.mkdtempSync(path.join(os.tmpdir(), "caide-w3f-"));
+    fs.writeFileSync(path.join(lib, "pubspec.yaml"), "name: y\ndependencies:\n  flutter:\n    sdk: flutter\n");
+    fs.mkdirSync(path.join(lib, "lib", "wallet"), { recursive: true });
+    fs.writeFileSync(
+      path.join(lib, "lib", "wallet", "connect.dart"),
+      "import 'package:walletconnect_dart/walletconnect_dart.dart';\nclass W {}",
+    );
+    await expect(detectWeb3App(lib)).resolves.toBe(true);
+
+    const plainFlutter = fs.mkdtempSync(path.join(os.tmpdir(), "caide-w3f-"));
+    fs.writeFileSync(path.join(plainFlutter, "pubspec.yaml"), "name: z\ndependencies:\n  go_router: ^1.0.0\n");
+    await expect(detectWeb3App(plainFlutter)).resolves.toBe(false);
+  });
+
   it("assembles provider + unified tools with mode filtering", () => {
     const ctx = createTurnContext({
       sessionId: "s-turn",

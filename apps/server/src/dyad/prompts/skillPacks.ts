@@ -252,7 +252,12 @@ ${web3ModulesBlock}
 - Validate addresses before sending transactions
 - Use try/catch around all blockchain RPC calls
 - Never expose private keys, seed phrases, or API keys
-- Prefer the pre-built components in src/caide-web3/ when adding wallet connection features
+- React/Expo apps: prefer the pre-built components in src/caide-web3/ when adding wallet connection features.
+- Flutter apps: there is no src/caide-web3/ tree — use Dart packages instead (web3dart for EVM, solana Dart clients, walletconnect_dart / web3modal_flutter for WalletConnect). Never import React hooks (wagmi, wallet-adapter-react) or TS files into Dart code; the web3-module bodies below describe patterns, not copy-paste imports.
+
+## Chain Environments
+- EVM networks use testnets (Sepolia etc.); Solana uses devnet. Say which one you are verifying on — never conflate them.
+- test_rpc covers EVM endpoints; for Solana use read-only devnet calls first. Only touch mainnet on explicit user confirmation.
 
 ## Web3 Delivery Flow
 - Clarify chain, wallet scope, and transaction surfaces with planning_questionnaire before building — never assume mainnet, a specific wallet, or real funds.

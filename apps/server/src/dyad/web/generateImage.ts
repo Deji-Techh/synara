@@ -57,7 +57,7 @@ const generateImageSchema = z.object({
 export const generateImageTool = defineTool({
   name: "generate_image",
   description:
-    "Generate a custom image for the app (illustrations, hero art, empty-state art). Only when an existing asset, SVG, or icon library would NOT suffice. After generating, use copy_file to move it from .caide/media/ to the project's public directory with a descriptive filename, then reference the copied path in code.",
+    "Generate a custom image for the app (illustrations, hero art, empty-state art). Only when an existing asset, SVG, or icon library would NOT suffice. After generating, use copy_file to move it from .caide/media/ to the project's asset directory (web: public/, Flutter: assets/ + pubspec) with a descriptive filename, then reference the copied path in code.",
   schema: generateImageSchema,
   readOnly: false,
   modifiesState: true,
@@ -89,7 +89,7 @@ export async function executeGenerateImage(
     await appendImageManifest(appPath, { prompt: parsed.prompt, leg: image.leg ?? "default", file: rel, at: Date.now() });
     return [
       `Image saved to ${rel} (${image.bytes.length} bytes) via ${image.leg ?? "default"}.`,
-      `Use copy_file to move it to the project's public directory with a descriptive filename, then reference the copied path in code.`,
+      `Use copy_file to move it to the project's asset directory (web: public/, Flutter: assets/ + pubspec) with a descriptive filename, then reference the copied path in code.`,
     ].join("\n");
   } catch (err) {
     // Terminal fallback (P8): every network leg failed. Write a designed
@@ -103,7 +103,7 @@ export async function executeGenerateImage(
     return [
       `All image-generation legs failed (${cause}). Wrote a designed illustrated placeholder to ${rel} instead.`,
       `Connect a Gemini key in Settings → Providers for real generated imagery, then re-run generate_image.`,
-      `Use copy_file to move it to the project's public directory with a descriptive filename, then reference the copied path in code.`,
+      `Use copy_file to move it to the project's asset directory (web: public/, Flutter: assets/ + pubspec) with a descriptive filename, then reference the copied path in code.`,
     ].join("\n");
   }
 }

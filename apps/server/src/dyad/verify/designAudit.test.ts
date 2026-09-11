@@ -64,8 +64,7 @@ describe("verify_design audit", () => {
     expect(viewports.some((f) => /No responsive rules/.test(f.message))).toBe(true);
   });
 
-  it("passes a responsive web workspace with viewport meta", () => {
-    const dir = fixture({
+  it("passes a responsive web workspace with viewport meta", () => {    const dir = fixture({
       ".caide/design-spec.json": GOOD_SPEC,
       ".caide/motion-spec.json": GOOD_MOTION,
       "package.json": JSON.stringify({ dependencies: { react: "*" } }),
@@ -84,5 +83,45 @@ describe("verify_design audit", () => {
     )) as string;
     expect(out).toMatch(/Design audit: \d+ major, \d+ minor/);
     expect(verifyDesignTool.presentCall?.({})).toBe("Audit design quality");
+  });
+
+  it("judges idiomatic Flutter code by Flutter oracles (F1)", () => {
+    const dir = fixture({
+      ".caide/design-spec.json": GOOD_SPEC,
+      ".caide/motion-spec.json": GOOD_MOTION,
+      "pubspec.yaml": "name: x\ndependencies:\n  flutter:\n    sdk: flutter\n",
+      "lib/home.dart": [
+        "import 'package:flutter/material.dart';",
+        "import 'package:flutter/cupertino.dart';",
+        "final dark = ThemeMode.dark;",
+        "final noAnim = MediaQuery.disableAnimationsOf(context);",
+        "Semantics(label: 'Save', child: InkWell(onTap: () {}, child: Text('x')))",
+        "final initials = 'AB';",
+        "CircleAvatar(backgroundColor: Colors.blue, child: Text(initials))",
+      ].join("\n"),
+    });
+    const findings = auditDesignWorkspace(dir);
+    // Material + Cupertino coexistence is idiomatic — no icon finding.
+    expect(findings.filter((f) => f.check === "icons")).toEqual([]);
+    // Semantics-labeled InkWell + MediaQuery motion handling pass.
+    expect(findings.filter((f) => f.check === "accessibility")).toEqual([]);
+    expect(findings.filter((f) => f.check === "motion")).toEqual([]);
+    // Avatar initials are a minor note on Flutter, not a major.
+    const imagery = findings.filter((f) => f.check === "imagery");
+    expect(imagery.every((f) => f.level === "minor")).toBe(true);
+  });
+
+  it("checks the Flutter web entry viewport meta (F1)", () => {
+    const dir = fixture({
+      ".caide/design-spec.json": GOOD_SPEC,
+      ".caide/motion-spec.json": GOOD_MOTION,
+      "pubspec.yaml": "name: x\n",
+      "web/index.html": "<html><head><title>x</title></head></html>",
+      "lib/main.dart": "void main() {}",
+    });
+    const findings = auditDesignWorkspace(dir);
+    expect(
+      findings.some((f) => f.check === "viewports" && f.file === "web/index.html" && f.level === "major"),
+    ).toBe(true);
   });
 });

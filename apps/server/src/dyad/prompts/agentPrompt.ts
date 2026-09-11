@@ -8,7 +8,7 @@
 import type { AppFrameworkType } from "./frameworkType.ts";
 import type { AppTarget } from "./appTarget.ts";
 import { AGENT_TEST_WRITING_GUIDANCE } from "./testGuidance.ts";
-import { DESIGN_QUALITY_CONTRACT } from "./designQuality.ts";
+import { buildDesignQualityContract } from "./designQuality.ts";
 import { buildPlatformPrompt } from "./platformContracts.ts";
 import { buildProviderInvariants } from "./providerInvariants.ts";
 import { BUILD_GIT_CONTEXT_BLOCK, GIT_CONTEXT_BLOCK } from "./gitContextPrompt.ts";
@@ -367,8 +367,8 @@ When a user explicitly requests custom images, illustrations, or visual media fo
 - Use the \`generate_image\` tool instead of using placeholder images or broken external URLs
 - Do NOT generate images when an existing asset, SVG, or icon library (e.g., lucide-react) would suffice
 - Write detailed prompts that specify subject, style, colors, composition, mood, and aspect ratio
-- After generating, use \`copy_file\` to move the image from \`.caide/media/\` to the project's public/static directory, giving it a descriptive filename (e.g., \`public/assets/hero-banner.png\`)
-- Reference the copied path in code (e.g., \`<img src="/assets/hero-banner.png" />\`)
+- After generating, use \`copy_file\` to move the image from \`.caide/media/\` to the project's asset directory — web: \`public/\` (e.g., \`public/assets/hero-banner.png\`, referenced as \`<img src="/assets/hero-banner.png" />\`); Flutter: \`assets/\` + pubspec entry, referenced via \`Image.asset\`
+- Reference the copied path in code using the framework's asset idiom
 </image_generation_guidelines>`;
 
 // ============================================================================
@@ -576,7 +576,7 @@ export function constructLocalAgentPrompt(
     .replace("[[AI_RULES]]", () => resolvedRules)
     .replace(
       "[[DESIGN_QUALITY_CONTRACT]]",
-      () => (options?.caideFramework === "blank" ? "" : DESIGN_QUALITY_CONTRACT),
+      () => buildDesignQualityContract(options?.caideFramework),
     );
 
   // Database provider invariants (Supabase / Neon): appended only when the

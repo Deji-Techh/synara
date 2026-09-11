@@ -483,8 +483,7 @@ describe("dyad prompt transplant (m1)", () => {
     }
   });
 
-  it("plan mode uses framework stack rules and web3 pack on demand (F0)", () => {
-    const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
+  it("plan mode uses framework stack rules and web3 pack on demand (F0)", () => {    const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
     const flutterPlan = constructSystemPrompt({ ...base, chatMode: "plan", caideFramework: "flutter" });
     expect(flutterPlan).toContain("Flutter application");
     expect(flutterPlan).not.toContain("Vue");
@@ -492,5 +491,27 @@ describe("dyad prompt transplant (m1)", () => {
     expect(web3Plan).toContain("<web3-development>");
     const plainPlan = constructSystemPrompt({ ...base, chatMode: "plan" });
     expect(plainPlan).not.toContain("<web3-development>");
+  });
+
+  it("quality contract appendices match the framework (F1)", () => {
+    const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
+    const flutter = constructSystemPrompt({ ...base, chatMode: "local-agent", caideFramework: "flutter" });
+    expect(flutter).toContain("<design_quality_flutter>");
+    expect(flutter).toContain("HapticFeedback");
+    expect(flutter).not.toContain("expo-haptics");
+    expect(flutter).not.toContain("expo-symbols");
+    const rn = constructSystemPrompt({ ...base, chatMode: "local-agent", caideFramework: "react-native" });
+    expect(rn).toContain("<design_quality_rn>");
+    expect(rn).toContain("expo-image");
+    const web = constructSystemPrompt({ ...base, chatMode: "build", caideFramework: "website" });
+    expect(web).toContain("<design_quality_web>");
+    expect(web).toContain('meta name="viewport"');
+  });
+
+  it("web3 pack speaks Flutter where it matters (F1)", () => {
+    const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
+    const dapp = constructSystemPrompt({ ...base, chatMode: "local-agent", isWeb3App: true });
+    expect(dapp).toContain("web3dart");
+    expect(dapp).toContain("Sepolia");
   });
 });

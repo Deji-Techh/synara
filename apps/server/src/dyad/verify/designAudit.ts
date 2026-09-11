@@ -116,22 +116,35 @@ export function auditDesignWorkspace(appPath: string, scope: "ui" | "all" = "ui"
   let darkHits = 0;
   let motionHits = 0;
   let a11yMissing = 0;
+  // Flutter idioms differ (Material + Cupertino coexistence is normal;
+  // Semantics/semanticLabel carry labels; MediaQuery carries motion prefs),
+  // so framework-specific oracles branch on a pubspec marker (F1).
+  let isFlutter = false;
+  try {
+    isFlutter = readFileSafe(path.join(appPath, "pubspec.yaml")) !== null;
+  } catch {
+    isFlutter = false;
+  }
   for (const file of files) {
     const text = readFileSafe(file);
     if (!text) continue;
     const r = rel(file);
     if (/initials/i.test(text) && /backgroundColor/i.test(text)) {
-      findings.push({ level: "major", file: r, check: "imagery", message: "Flat-color initials block detected — never ship initials-on-color as product photos; use generate_image or the image-asset patterns." });
+      findings.push(
+        isFlutter
+          ? { level: "minor", file: r, check: "imagery", message: "Colored-initials block — fine for CircleAvatar avatars, but never as product photos; use generated imagery or the image-asset patterns." }
+          : { level: "major", file: r, check: "imagery", message: "Flat-color initials block detected — never ship initials-on-color as product photos; use generate_image or the image-asset patterns." },
+      );
     }
     if (/@expo\/vector-icons|Ionicons|MaterialIcons|FontAwesome|Feather/.test(text)) iconFamilies.add("vector-icons");
     if (/expo-symbols|SF Symbols|sf:/.test(text)) iconFamilies.add("sf-symbols");
-    if (/CupertinoIcons|Cupertino/.test(text)) iconFamilies.add("cupertino");
-    if (/useColorScheme|ColorScheme|dark-first|Brightness\.dark|ThemeMode\.dark|dark: ?["']/.test(text)) darkHits++;
-    if (/reduce-?motion|ReduceMotion|prefers-reduced-motion|AccessibilityInfo.*reduce|animateWithReducedMotion/i.test(text)) motionHits++;
-    if (/(Pressable|TouchableOpacity|TouchableHighlight|InkWell|GestureDetector)/.test(text) && !/accessibility(Role|Label|Hint)/.test(text)) {
+    if (!isFlutter && /CupertinoIcons|Cupertino/.test(text)) iconFamilies.add("cupertino");
+    if (/useColorScheme|ColorScheme|dark-first|Brightness\.dark|ThemeMode\.dark|ThemeMode\(|dark: ?["']/.test(text)) darkHits++;
+    if (/reduce-?motion|ReduceMotion|prefers-reduced-motion|disableAnimations|accessibleNavigation|AccessibilityInfo.*reduce|animateWithReducedMotion/i.test(text)) motionHits++;
+    if (/(Pressable|TouchableOpacity|TouchableHighlight|InkWell|GestureDetector)/.test(text) && !/accessibility(Role|Label|Hint)|Semantics\(|semanticLabel/.test(text)) {
       a11yMissing++;
       if (a11yMissing <= 5) {
-        findings.push({ level: "minor", file: r, check: "accessibility", message: "Interactive element without accessibilityRole/Label — add labels; keep 44px minimum targets." });
+        findings.push({ level: "minor", file: r, check: "accessibility", message: "Interactive element without an accessibility label (accessibilityLabel / Semantics + semanticLabel) — add labels; keep 44px iOS / 48px Android minimum targets." });
       }
     }
     const mock = text.match(/\b(lorem ipsum|TODO: replace|placeholder-replace-with)\b/i);
@@ -141,7 +154,7 @@ export function auditDesignWorkspace(appPath: string, scope: "ui" | "all" = "ui"
     }
   }
   if (iconFamilies.size >= 3) {
-    findings.push({ level: "major", check: "icons", message: `Mixed icon families (${[...iconFamilies].join(", ")}) — one family per app (SF Symbols on iOS).` });
+    findings.push({ level: "major", check: "icons", message: `Mixed icon families (${[...iconFamilies].join(", ")}) — ${isFlutter ? "keep Material on Android and Cupertino on iOS; do not add a third family" : "one family per app (SF Symbols on iOS)"}.` });
   } else if (iconFamilies.size === 2) {
     findings.push({ level: "minor", check: "icons", message: `Two icon families (${[...iconFamilies].join(", ")}) — converge on one.` });
   }
@@ -180,6 +193,13 @@ export function auditDesignWorkspace(appPath: string, scope: "ui" | "all" = "ui"
     }
     if (responsiveHits === 0) {
       findings.push({ level: "minor", check: "viewports", message: "No responsive rules detected (breakpoints, media/container queries, Dimensions) — tablet and landscape will reuse the phone column." });
+    }
+  }
+  // Flutter-web edge: index.html lives at web/, not root — check it there.
+  if (!isWeb && isFlutter) {
+    const flutterIndex = readFileSafe(path.join(appPath, "web", "index.html"));
+    if (flutterIndex !== null && !/<meta[^>]+name=["']viewport["']/i.test(flutterIndex)) {
+      findings.push({ level: "major", file: "web/index.html", check: "viewports", message: "Missing <meta name=\"viewport\"> in the Flutter web entry — responsive viewports cannot work without it." });
     }
   }
   return findings;
