@@ -480,7 +480,6 @@ describe("dyad prompt transplant (m1)", () => {
     expect(plan).toContain("Blank projects are exempt");
     expect(plan).toContain("desktop breakpoints");
   });
-});
 
   it("blank projects get orientation only, never mobile UI contracts (F0)", () => {
     const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
