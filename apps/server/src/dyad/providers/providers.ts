@@ -43,6 +43,8 @@ export const PROVIDER_TO_ENV_VAR: Record<string, string> = {
   groq: "GROQ_API_KEY",
   supabase: "SUPABASE_ACCESS_TOKEN",
   neon: "NEON_API_KEY",
+  github: "GITHUB_TOKEN",
+  vercel: "VERCEL_TOKEN",
   mistral: "MISTRAL_API_KEY",
   together: "TOGETHER_API_KEY",
   cohere: "COHERE_API_KEY",
@@ -202,6 +204,28 @@ export const PROVIDERS: Record<string, ProviderDef> = {
     transport: "needs-work",
     transportNote:
       "Management API key for database provisioning (create projects and branches) — not a chat model. Saved to the encrypted secrets file.",
+  },
+  github: {
+    id: "github",
+    displayName: "GitHub",
+    envVarName: "GITHUB_TOKEN",
+    baseUrl: "https://api.github.com",
+    websiteUrl: "https://github.com/settings/tokens",
+    secondary: true,
+    transport: "needs-work",
+    transportNote:
+      "Personal access token (repo scope) for repo creation, collaborators, and push fallback — the gh CLI path needs no token. Not a chat model.",
+  },
+  vercel: {
+    id: "vercel",
+    displayName: "Vercel",
+    envVarName: "VERCEL_TOKEN",
+    baseUrl: "https://api.vercel.com",
+    websiteUrl: "https://vercel.com/account/tokens",
+    secondary: true,
+    transport: "needs-work",
+    transportNote:
+      "Personal token for project create/connect, deployments, and Neon env sync — not a chat model. Saved to the encrypted secrets file.",
   },
   mistral: {
     id: "mistral",

@@ -28,6 +28,8 @@ const PROVIDER_ENV_KEYS: Record<string, string[]> = {
   openrouter: ["OPENROUTER_API_KEY"],
   supabase: ["SUPABASE_ACCESS_TOKEN"],
   neon: ["NEON_API_KEY"],
+  github: ["GITHUB_TOKEN", "GH_TOKEN"],
+  vercel: ["VERCEL_TOKEN"],
 };
 
 /**
