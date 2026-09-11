@@ -24,7 +24,7 @@ import {
 } from "../../dyad/vcs/gitProvenance.ts";
 import { buildGitReminder } from "../../dyad/prompts/gitContextPrompt.ts";
 import { formatMemoryForPrompt, readAppMemory } from "../../dyad/memory/memory.ts";
-import { formatIssuesForEvent, runReviewBarrier } from "../../dyad/sandbox/reviewBarrier.ts";
+import { formatIssuesForEvent, recordEvidenceOutcome, runReviewBarrier } from "../../dyad/sandbox/reviewBarrier.ts";
 import { createVersion } from "../../dyad/vcs/versions.ts";
 import { resolveChatModeForTurn } from "../../dyad/plan/chatMode.ts";
 import { detectWeb3App } from "../../dyad/prompts/frameworkDetect.ts";
@@ -254,6 +254,12 @@ export class CaideRunner {
           const skillId = (event.args as { skill_id?: unknown } | null | undefined)?.skill_id;
           if (typeof skillId === "string" && skillId) forkSkills.add(skillId);
         }
+        // Screenshot completions feed the reviewer's evidence gate (item 1).
+        if (event.name === "screenshot" && event.status === "completed") {
+          const ref = (event.result as { path?: unknown } | null | undefined)?.path;
+          if (typeof ref === "string" && ref) evidenceRefs.push(ref);
+          else evidenceRefs.push("screenshot:captured");
+        }
       }
     };
     // Crash resume: a previous turn_start with no turn_end means the turn
@@ -292,6 +298,8 @@ export class CaideRunner {
     // the project run log. Best-effort — never fails the turn.
     let failedToolCalls = 0;
     const forkSkills = new Set<string>();
+    // Visual-evidence refs captured this turn (screenshot tool results).
+    const evidenceRefs: string[] = [];
     let turnVerdict: { passed: boolean; tasteScore: number; issues: string[] } | null = null;
     const logProjectRun = (status: "completed" | "failed" | "cancelled", failure?: string): void => {
       try {
@@ -563,6 +571,7 @@ export class CaideRunner {
             llm,
             tools: [],
             signal: controller.signal,
+            evidence: evidenceRefs,
           }).catch(() => null);
           if (verdict) {
             turnVerdict = {
@@ -578,6 +587,38 @@ export class CaideRunner {
               tasteScore: verdict.tasteScore,
               issues: formatIssuesForEvent(verdict.issues),
             });
+            // Graduated evidence block (item 1): first miss completes with a
+            // system reminder the next turn sees; the second consecutive miss
+            // fails the turn so "done" always means evidenced.
+            if (verdict.missingEvidence) {
+              const streak = recordEvidenceOutcome(input.sessionId, true);
+              if (streak >= 2) {
+                this.status = "failed";
+                await flushTurnTokens(input.sessionId);
+                forward({
+                  type: "error",
+                  sessionId: input.sessionId,
+                  code: "EVIDENCE_REQUIRED",
+                  message:
+                    "UI files changed two turns running with no screenshots. Run the preview, capture every touched screen with screenshot, then continue.",
+                  recoverable: true,
+                });
+                forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "failed", ...usageField() });
+                logProjectRun("failed", "missing visual evidence (2nd consecutive turn)");
+                await captureTurnEnd(input.sessionId, input.appPath).catch(() => {});
+                await snapshotSessionState(input.sessionId, storage).catch(() => {});
+                ctx.cleanup();
+                return turnId;
+              }
+              forward({
+                type: "token",
+                sessionId: input.sessionId,
+                content:
+                  "[system-reminder]: This turn changed UI files without capturing screenshots. Before finishing next time: open the preview and call screenshot for every touched screen, or the turn will fail review.",
+              });
+            } else {
+              recordEvidenceOutcome(input.sessionId, false);
+            }
           }
         }
         // Auto-checkpoint: snapshot the tree when the turn changed it, so

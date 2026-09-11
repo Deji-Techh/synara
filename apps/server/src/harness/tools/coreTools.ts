@@ -178,17 +178,50 @@ export const readUrlTool = defineTool({
 // 7. screenshot
 export const screenshotTool = defineTool({
   name: "screenshot",
-  description: "Captures a screenshot of the active device or web preview for visual comparison.",
+  description:
+    "Captures a real screenshot of the running app preview for visual verification. Requires an active preview (open_preview first). Saves to .caide/evidence/ and records a screenshot evidence entry. Prefer this over describing visuals from code.",
   schema: z.object({
-    selector: z.string().optional().describe("Optional CSS selector to scope capture"),
+    selector: z.string().optional().describe("Optional CSS selector to scope capture (best-effort)"),
+    width: z.number().int().min(320).max(2048).optional().describe("Viewport width (default 390)"),
+    height: z.number().int().min(320).max(2048).optional().describe("Viewport height (default 844)"),
   }),
   readOnly: true,
   modifiesState: false,
-  execute: async ({ selector }) => {
+  execute: async ({ selector, width, height }, ctx) => {
+    const { getPreviewState } = await import("../preview/manager.ts");
+    const { capturePreviewScreenshot, CaptureUnavailableError } = await import("../preview/capture.ts");
+    const state = getPreviewState(ctx.sessionId);
+    if (!state.running || !state.url) {
+      throw new Error("No active preview — call open_preview first, then screenshot.");
+    }
+    let shot;
+    try {
+      shot = await capturePreviewScreenshot({ url: state.url, width, height });
+    } catch (err) {
+      if (err instanceof CaptureUnavailableError) throw err;
+      throw new Error(`Screenshot capture failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+    const rel = `.caide/evidence/shot-${Date.now()}.png`;
+    try {
+      const { default: path } = await import("node:path");
+      const { default: fs } = await import("node:fs");
+      const full = path.join(ctx.appPath, rel);
+      fs.mkdirSync(path.dirname(full), { recursive: true });
+      fs.writeFileSync(full, Buffer.from(shot.base64, "base64"));
+      const { executeCaptureEvidence } = await import("../../dyad/misc/miscTools.ts");
+      await executeCaptureEvidence(
+        { kind: "screenshot", label: "preview screenshot", reference: rel, passed: true },
+        ctx.sessionId,
+        ctx.appPath,
+      ).catch(() => {});
+    } catch {
+      // evidence persistence is best-effort; the bytes below still count
+    }
     return {
-      base64: "data:image/png;base64,placeholder_screenshot",
-      dimensions: { width: 390, height: 844 },
+      base64: `data:image/png;base64,${shot.base64}`,
+      dimensions: { width: shot.width, height: shot.height },
       selector,
+      path: rel,
     };
   },
 });

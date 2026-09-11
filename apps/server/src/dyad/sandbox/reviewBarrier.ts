@@ -33,6 +33,45 @@ export interface ReviewVerdict {
   confidence: number;
   tasteScore: number;
   issues: ReviewIssue[];
+  /** True when UI files changed but no visual evidence was supplied. */
+  missingEvidence?: boolean;
+}
+
+/** Consecutive evidence-miss streak per session (graduated block gate). */
+const evidenceMissStreak = new Map<string, number>();
+
+export function getEvidenceMissStreak(sessionId: string): number {
+  return evidenceMissStreak.get(sessionId) ?? 0;
+}
+
+export function recordEvidenceOutcome(sessionId: string, missing: boolean): number {
+  const next = missing ? getEvidenceMissStreak(sessionId) + 1 : 0;
+  if (next === 0) evidenceMissStreak.delete(sessionId);
+  else evidenceMissStreak.set(sessionId, next);
+  return next;
+}
+
+/** Test seam: reset streak state. */
+export function clearEvidenceMissStreak(sessionId?: string): void {
+  if (sessionId) evidenceMissStreak.delete(sessionId);
+  else evidenceMissStreak.clear();
+}
+
+/** Diff paths that count as UI touches for the evidence gate. */
+const UI_TOUCH_PATTERN = /\.(tsx|jsx|dart|css|scss|less|vue|svelte)$|[\/](screens|pages|components|widgets|views|app|lib)[\/]/i;
+
+export function diffTouchesUi(diff: string): boolean {
+  const paths = new Set<string>();
+  for (const match of diff.matchAll(/^diff --git a\/(\S+) b\/\S+/gm)) {
+    if (match[1]) paths.add(match[1]);
+  }
+  for (const match of diff.matchAll(/^\+\+\+ b\/(\S+)/gm)) {
+    if (match[1]) paths.add(match[1]);
+  }
+  for (const p of paths) {
+    if (UI_TOUCH_PATTERN.test(p)) return true;
+  }
+  return false;
 }
 
 async function gitStatus(appPath: string): Promise<string | null> {
@@ -103,6 +142,8 @@ export interface ReviewBarrierDeps {
   tools: ToolDef[];
   signal?: AbortSignal;
   timeoutMs?: number;
+  /** Visual evidence refs (e.g. .caide/evidence/shot-*.png) for UI turns. */
+  evidence?: string[];
 }
 
 /**
@@ -131,6 +172,11 @@ export async function runReviewBarrier(deps: ReviewBarrierDeps): Promise<ReviewV
   if (diff.length > MAX_DIFF_CHARS) {
     diff = `...[diff truncated — showing last ${MAX_DIFF_CHARS} chars]\n${diff.slice(-MAX_DIFF_CHARS)}`;
   }
+  // Evidence gate inputs: UI-touch detection + supplied refs. The blocker
+  // itself is injected deterministically below (never reviewer-dependent).
+  const touchedUi = diffTouchesUi(diff);
+  const evidenceRefs = (deps.evidence ?? []).map((e) => e.trim()).filter(Boolean);
+  const missingEvidence = touchedUi && evidenceRefs.length === 0;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort("review-timeout"), deps.timeoutMs ?? REVIEW_TIMEOUT_MS);
   const onAbort = () => controller.abort(deps.signal?.reason ?? "cancelled");
@@ -159,7 +205,7 @@ export async function runReviewBarrier(deps: ReviewBarrierDeps): Promise<ReviewV
       appPath: deps.appPath,
       sessionId: `${deps.sessionId}:review`,
       system: REVIEWER_SYSTEM_PROMPT,
-      task: `Task under review: ${deps.taskSummary}\n\n${lintEvidence}\n\nDiff under review:\n${diff}`,
+      task: `Task under review: ${deps.taskSummary}\n\n${lintEvidence}\n\nVisual evidence: ${evidenceRefs.length > 0 ? evidenceRefs.join(", ") : "NONE — UI changes without screenshots cannot pass; record a blocker-severity issue demanding screenshots before approval."}\n\nDiff under review:\n${diff}`,
       tools: [],
       llm: deps.llm,
       signal: controller.signal,
@@ -167,7 +213,19 @@ export async function runReviewBarrier(deps: ReviewBarrierDeps): Promise<ReviewV
       maxSteps: 3,
     });
     if (controller.signal.aborted) return null;
-    return parseVerdict(result.finalText);
+    const verdict = parseVerdict(result.finalText);
+    if (missingEvidence) {
+      // Deterministic gate — never depends on reviewer obedience.
+      verdict.missingEvidence = true;
+      verdict.passed = false;
+      verdict.issues.unshift({
+        severity: "blocker",
+        file: "",
+        detail: "missing visual evidence: UI files changed but no screenshots were captured (call screenshot, then re-verify)",
+        suggestion: "Run the app preview, capture screenshots of every touched screen, then request review again.",
+      });
+    }
+    return verdict;
   } catch {
     return null;
   } finally {

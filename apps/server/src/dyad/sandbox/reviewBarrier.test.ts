@@ -7,8 +7,12 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  clearEvidenceMissStreak,
+  diffTouchesUi,
   formatIssuesForEvent,
+  getEvidenceMissStreak,
   parseVerdict,
+  recordEvidenceOutcome,
   runReviewBarrier,
   TASTE_BAR,
 } from "./reviewBarrier.ts";
@@ -66,5 +70,18 @@ describe("review barrier", () => {
         tools: [],
       }),
     ).resolves.toBeNull();
+  });
+
+  it("detects UI touches and tracks evidence-miss streaks (item 1)", () => {
+    expect(diffTouchesUi("diff --git a/src/screens/Home.tsx b/src/screens/Home.tsx\n+++ b/src/screens/Home.tsx")).toBe(true);
+    expect(diffTouchesUi("diff --git a/src/db/schema.ts b/src/db/schema.ts\n+++ b/src/db/schema.ts")).toBe(false);
+    expect(diffTouchesUi("")).toBe(false);
+    const sid = `s-ev-${Date.now()}`;
+    expect(getEvidenceMissStreak(sid)).toBe(0);
+    expect(recordEvidenceOutcome(sid, true)).toBe(1);
+    expect(recordEvidenceOutcome(sid, true)).toBe(2);
+    expect(recordEvidenceOutcome(sid, false)).toBe(0);
+    expect(getEvidenceMissStreak(sid)).toBe(0);
+    clearEvidenceMissStreak(sid);
   });
 });

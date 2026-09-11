@@ -35,6 +35,7 @@ You receive a unified diff plus the task it claims to implement. Return your ver
 
 Rules:
 - passed=false when any blocker exists (data loss, auth bypass, broken build, migration without rollback path, secrets in code).
+- When the task lists "Visual evidence: NONE", record a blocker-severity issue demanding screenshots before approval — UI changes without visual evidence never pass.
 - Check: does the diff do what the task claims? Are deletions/renames intentional? Is auth/data-access scoping preserved? Are there placeholders, TODOs, or dead code?
 - tasteScore rates UI/code craftsmanship (naming, consistency, no slop patterns).
 - Empty issues array with passed=true when clean. Never invent files.`;

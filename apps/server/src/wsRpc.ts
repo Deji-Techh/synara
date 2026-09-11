@@ -450,7 +450,20 @@ function makeWsPreviewHandlers(_providerAdapterRegistry: any, _options: any) {
         ),
       ),
     "preview.buildState": (_input: any) => tryPromise(Promise.resolve({})),
-    "preview.screenshot": (_input: any) => tryPromise(Promise.resolve({ image: null })),
+    "preview.screenshot": (input: any) =>
+      tryPromise(
+        import("./harness/preview/capture.ts").then(async (m) => {
+          const { getPreviewState } = await import("./harness/preview/manager.ts");
+          const state = getPreviewState(input?.threadId ?? "");
+          if (!state.running || !state.url) return { image: null };
+          try {
+            const shot = await m.capturePreviewScreenshot({ url: state.url });
+            return { image: `data:image/png;base64,${shot.base64}` };
+          } catch {
+            return { image: null };
+          }
+        }),
+      ),
     "preview.devices": (_input: any) =>
       tryPromise(
         Promise.resolve({

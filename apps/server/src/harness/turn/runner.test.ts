@@ -62,7 +62,7 @@ describe("caide runner turns (m3)", () => {
     expect(typeof entry.timestamp).toBe("number");
   });
 
-  it("fails structured without throwing when no provider key exists", async () => {    const events: HarnessEvent[] = [];
+    it("fails structured without throwing when no provider key exists", async () => {    const events: HarnessEvent[] = [];
     const runner = new CaideRunner();
     await runner.startTurn({
       sessionId: "s-nokey",
@@ -325,5 +325,51 @@ describe("caide runner turns (m3)", () => {
       expect(llmCalls).toBe(1);
       expect(events.at(-1)).toMatchObject({ type: "turn_end", status: "completed" });
     }
+  });
+
+  it("graduates missing visual evidence: reminder first, failure second (item 1)", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-evidence-gate-"));
+    execFileSync("git", ["init", "-b", "main"], { cwd: dir });
+    execFileSync("git", ["config", "user.email", "t@t"], { cwd: dir });
+    execFileSync("git", ["config", "user.name", "t"], { cwd: dir });
+    fs.mkdirSync(path.join(dir, "src"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "src", "App.tsx"), "export const A = 1;\n");
+    execFileSync("git", ["add", "-A"], { cwd: dir });
+    execFileSync("git", ["commit", "-m", "init"], { cwd: dir });
+    // Uncommitted UI change for the barrier to review.
+    fs.writeFileSync(path.join(dir, "src", "App.tsx"), "export const A = 2;\n");
+    const sid = `s-evidence-${Date.now()}`;
+    const llm = fakeLlm([{ type: "token", content: "done" }]);
+    const base = {
+      sessionId: sid,
+      appPath: dir,
+      prompt: "polish the home screen",
+      settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+      llmOverride: llm,
+    } as const;
+
+    const runner = new CaideRunner();
+    const first: HarnessEvent[] = [];
+    await runner.startTurn({ ...base, onEvent: (e) => first.push(e) });
+    // First miss completes (warn once) with the evidence blocker + reminder.
+    expect(first.at(-1)).toMatchObject({ type: "turn_end", status: "completed" });
+    expect(first).toContainEqual(
+      expect.objectContaining({ type: "verifier_result", passed: false }),
+    );
+    expect(
+      first.some(
+        (e) => e.type === "token" && (e as { content?: string }).content?.includes("system-reminder"),
+      ),
+    ).toBe(true);
+
+    // The first turn's auto-checkpoint committed the change — re-dirty the
+    // tree so the second turn has UI diff to review.
+    fs.writeFileSync(path.join(dir, "src", "App.tsx"), "export const A = 3;\n");
+    const second: HarnessEvent[] = [];
+    await runner.startTurn({ ...base, onEvent: (e) => second.push(e) });
+    // Second consecutive miss fails the turn.
+    expect(second).toContainEqual(expect.objectContaining({ type: "error", code: "EVIDENCE_REQUIRED" }));
+    expect(second.at(-1)).toMatchObject({ type: "turn_end", status: "failed" });
+    clearTurnProvenance(sid);
   });
 });

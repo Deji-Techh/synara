@@ -300,4 +300,15 @@ describe("Milestone M4 — Tool DSL, Scheduler, Executor & Core Tools", () => {
       expect(typeof tool?.execute).toBe("function");
     }
   });
+
+  it("screenshot tool requires an active preview instead of returning a stub", async () => {
+    const { screenshotTool } = await import("./coreTools.ts");
+    expect(screenshotTool.readOnly).toBe(true);
+    await expect(
+      screenshotTool.execute(
+        {},
+        { signal: AbortSignal.timeout(5000), appPath: tempDir, sessionId: `s-nopreview-${Date.now()}`, toolId: "t1" },
+      ),
+    ).rejects.toThrow(/open_preview/);
+  });
 });
