@@ -113,3 +113,67 @@ export class ProjectLogStore {
     };
   }
 }
+
+export interface SkillUsageStats {
+  skill: string;
+  turns: number;
+  averagePassRate: number;
+  averageTasteScore: number;
+}
+
+/** Per-skill usage aggregation (item 4): which fork skills actually get
+ * used, and how those turns score. Filter skill_id as needed (e.g.
+ * appllama-*) by the caller. */
+export function analyzeSkillUsage(logs: ProjectRunLog[]): SkillUsageStats[] {
+  const bySkill = new Map<string, { turns: number; totalPass: number; totalTaste: number }>();
+  for (const log of logs) {
+    for (const skill of log.skills) {
+      const entry = bySkill.get(skill) ?? { turns: 0, totalPass: 0, totalTaste: 0 };
+      entry.turns += 1;
+      entry.totalPass += log.verifierPassRate;
+      entry.totalTaste += log.tasteScore;
+      bySkill.set(skill, entry);
+    }
+  }
+  return [...bySkill.entries()]
+    .map(([skill, e]) => ({
+      skill,
+      turns: e.turns,
+      averagePassRate: Math.round((e.totalPass / e.turns) * 100) / 100,
+      averageTasteScore: Math.round((e.totalTaste / e.turns) * 100) / 100,
+    }))
+    .sort((a, b) => b.turns - a.turns);
+}
+
+/**
+ * Render pattern analysis + skill usage as proposal text the agent (or a
+ * user reading telemetry) can act on: promote recurring-failure rules into
+ * prompts/skill packs, double down on high-scoring skill combos.
+ */
+export function formatTelemetryProposals(
+  analysis: RecurringPatternAnalysis,
+  skillUsage: SkillUsageStats[],
+  logCount: number,
+): string {
+  const lines = [`Telemetry review over ${logCount} logged turn${logCount === 1 ? "" : "s"}:`];
+  if (analysis.recurringFailures.length === 0 && skillUsage.length === 0) {
+    lines.push("No recurring failures and no fork-skill usage yet — nothing to promote.");
+    return lines.join("\n");
+  }
+  for (const f of analysis.recurringFailures) {
+    lines.push(`- Recurring failure (${f.occurrences}x): ${f.failure}`);
+    lines.push(`  Proposal: ${f.recommendation}`);
+  }
+  for (const combo of analysis.bestSkillCombos.slice(0, 3)) {
+    const label = combo.skills.length > 0 ? combo.skills.join(" + ") : "(no skills)";
+    lines.push(
+      `- Skill combo ${label}: pass rate ${combo.averagePassRate}, taste ${combo.averageTasteScore}.`,
+    );
+  }
+  for (const s of skillUsage.slice(0, 5)) {
+    lines.push(
+      `- Skill ${s.skill}: used in ${s.turns} turn${s.turns === 1 ? "" : "s"} (pass ${s.averagePassRate}, taste ${s.averageTasteScore}).`,
+    );
+  }
+  return lines.join("\n");
+}

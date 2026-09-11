@@ -74,7 +74,7 @@ export function AgentRoutingSection() {
     <SettingsSection title="Agent routing">
       <SettingsRow
         title="Routing mode"
-        description="One model uses the thread model for every step. Per-step uses Scout for read-only steps, Builder once code changes, and Planner for plan-mode turns. Empty slots inherit the thread model."
+        description="One model uses the thread model for every step. Per-step uses Scout for read-only steps, Builder once code changes, and Planner for plan-mode turns. Empty slots inherit the thread model — except Planner, which prefers the highest-taste configured model (announced in the turn; set the slot to opt out)."
         control={
           <SettingsSegmentedControl<RoutingMode>
             value={routing.mode}

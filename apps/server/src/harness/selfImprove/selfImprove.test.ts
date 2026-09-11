@@ -93,4 +93,33 @@ describe("Milestone M26 — Self-Improving Loop & Cross-Project Learning", () =>
     expect(topCombo.skills).toContain("ui-ux-mastery");
     expect(topCombo.averagePassRate).toBeGreaterThan(0.9);
   });
+
+  it("aggregates per-skill usage and formats proposals (item 4)", async () => {
+    const { analyzeSkillUsage, formatTelemetryProposals } = await import("./projectLog.ts");
+    const { ProjectLogStore } = await import("./index.ts");
+    const store = new ProjectLogStore(tempDir);
+    const base = {
+      projectId: "p",
+      framework: "react-native",
+      verifierPassRate: 1,
+      fixerRetryCount: 0,
+      tasteScore: 80,
+      benchmarkScore: 0,
+      edgeCasesFound: [] as string[],
+      timestamp: Date.now(),
+    };
+    await store.appendLog({ ...base, skills: ["appllama-design"] });
+    await store.appendLog({ ...base, skills: ["appllama-design"], tasteScore: 90 });
+    await store.appendLog({ ...base, skills: ["other"], tasteScore: 60 });
+    const logs = await store.readLogs();
+    const usage = analyzeSkillUsage(logs);
+    expect(usage[0]).toMatchObject({ skill: "appllama-design", turns: 2 });
+    expect(usage[0].averageTasteScore).toBe(85);
+    const text = formatTelemetryProposals(ProjectLogStore.analyzePatterns(logs), usage, logs.length);
+    expect(text).toContain("appllama-design");
+    expect(text).toContain("3 logged turns");
+    expect(
+      formatTelemetryProposals({ recurringFailures: [], bestSkillCombos: [] }, [], 0),
+    ).toContain("nothing to promote");
+  });
 });

@@ -32,7 +32,7 @@ function toolCtx(appPath: string): ToolContext {
 }
 
 describe("dyad misc tools transplant (m2b)", () => {
-  it("registers all six misc tools with donor previews", () => {
+  it("registers all seven misc tools with donor previews", () => {
     expect(ALL_MISC_TOOLS.map((t) => t.name)).toEqual([
       "set_chat_summary",
       "summarize_context",
@@ -40,6 +40,7 @@ describe("dyad misc tools transplant (m2b)", () => {
       "capture_evidence",
       "read_guide",
       "remember",
+      "telemetry_review",
     ]);
     expect(setChatSummaryTool.presentCall?.({ summary: "Auth" })).toBe("Auth");
     expect(summarizeContextTool.presentCall?.({})).toBe("Compressing chat context...");

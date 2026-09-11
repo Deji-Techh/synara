@@ -394,6 +394,34 @@ export const rememberTool = defineTool({
   presentCall: () => "Remember project note",
 });
 
+export const telemetryReviewTool = defineTool({
+  name: "telemetry_review",
+  description: [
+    "Review this project's turn telemetry (.caide/telemetry/project-runs.jsonl): recurring failures with",
+    "promotion proposals, best skill combinations, and per-skill usage. Use it when output quality slips,",
+    "before tuning prompts, or when the user asks what keeps going wrong.",
+  ].join(" "),
+  schema: z.object({}),
+  readOnly: true,
+  modifiesState: false,
+  execute: async (_, ctx) => {
+    const { ProjectLogStore, analyzeSkillUsage, formatTelemetryProposals } = await import(
+      "../../harness/selfImprove/projectLog.ts"
+    );
+    const store = new ProjectLogStore(path.join(ctx.appPath, ".caide", "telemetry"));
+    const logs = await store.readLogs().catch(() => []);
+    if (logs.length === 0) {
+      return "No telemetry logged yet for this project — run a few turns first (completed and failed turns append automatically).";
+    }
+    return formatTelemetryProposals(
+      ProjectLogStore.analyzePatterns(logs),
+      analyzeSkillUsage(logs),
+      logs.length,
+    );
+  },
+  presentCall: () => "Review project telemetry",
+});
+
 export const ALL_MISC_TOOLS: ToolDef[] = [
   setChatSummaryTool,
   summarizeContextTool,
@@ -401,4 +429,5 @@ export const ALL_MISC_TOOLS: ToolDef[] = [
   captureEvidenceTool,
   readGuideTool,
   rememberTool,
+  telemetryReviewTool,
 ];

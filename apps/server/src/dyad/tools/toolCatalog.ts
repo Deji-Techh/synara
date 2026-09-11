@@ -101,6 +101,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "run_lint", category: "verify", defaultConsent: "ask", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "lint_project" },
   { name: "run_pre_commit", category: "verify", defaultConsent: "always", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/vcs" },
   { name: "capture_evidence", category: "verify", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/misc" },
+  { name: "telemetry_review", category: "history", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/misc" },
   { name: "share_artifact", category: "preview", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/share" },
   { name: "revoke_share", category: "preview", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/share" },
   { name: "list_shares", category: "preview", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/share" },

@@ -162,6 +162,38 @@ describe("caide runner turns (m3)", () => {
     expect(nextFailoverTarget(base, retryable)).toBeNull();
   });
 
+  it("announces the taste planner fallback on empty planner slots (item 4)", async () => {
+    const { applySettingsSync, clearSessionStores } = await import("./sessionStores.ts");
+    const sid = `s-taste-${Date.now()}`;
+    applySettingsSync(sid, {
+      agentRouting: { mode: "per-step", steps: { scout: {}, builder: {}, planner: {} }, fallbacks: [] },
+    });
+    const events: HarnessEvent[] = [];
+    const runner = new CaideRunner();
+    try {
+      // The taste adapter bypasses llmOverride (it builds a real adapter for
+      // the picked model), so the turn itself fails on the fake key — but the
+      // announcement must fire first, synchronously at adapter build.
+      await runner.startTurn({
+        sessionId: sid,
+        appPath: "/tmp/caide-test-app",
+        prompt: "plan the home screen",
+        mode: "plan",
+        settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+        llmOverride: fakeLlm([{ type: "token", content: "planning" }]),
+        onEvent: (e) => events.push(e),
+      });
+      expect(
+        events.some(
+          (e) => e.type === "token" && (e as { content?: string }).content?.includes("highest-taste"),
+        ),
+      ).toBe(true);
+      expect(events.at(-1)?.type).toBe("turn_end");
+    } finally {
+      clearSessionStores(sid);
+    }
+  });
+
   it("injects the previous turn's git provenance into the prompt", async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-runprov-"));
     execFileSync("git", ["init", "-b", "main"], { cwd: dir });

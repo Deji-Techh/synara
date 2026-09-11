@@ -39,7 +39,7 @@ import {
   constructSystemPrompt,
   readAiRules,
 } from "../../dyad/prompts/index.ts";
-import { getContextWindow } from "../../dyad/providers/catalog.ts";
+import { getContextWindow, highestTasteModel, MODEL_OPTIONS } from "../../dyad/providers/catalog.ts";
 import { getContextSummarizer } from "../../dyad/misc/index.ts";
 import type { CaideFramework } from "../../dyad/prompts/index.ts";
 import { shouldRevealDatabasePanel } from "../../dyad/db/dbPanel.ts";
@@ -48,7 +48,7 @@ import {
   isSlotSet,
   type RoutingStepKind,
 } from "../../dyad/providers/agentRouting.ts";
-import { resolveConnection } from "../../dyad/providers/routing.ts";
+import { hasProviderKey, resolveConnection } from "../../dyad/providers/routing.ts";
 import type { SettingsLike } from "../../dyad/providers/index.ts";
 import type { ConsentRequestFn } from "../../dyad/tools/index.ts";
 import { createTurnContext } from "./turnContext.ts";
@@ -452,10 +452,72 @@ export class CaideRunner {
       // connection cannot be resolved (keys may be env-only).
       const routing = sessionStores.routing;
       const adapterCache = new Map<string, LLMAdapter>();
+      // Taste fallback (item 4): per-step mode with an empty planner slot
+      // resolves the highest-taste CONFIGURED model instead of inheriting.
+      // Announced once per turn in-transcript; single mode never reroutes.
+      // Opt out by setting the planner slot explicitly (even to thread default).
+      let tastePlannerPick: { providerId: string; modelId: string; taste: number } | null | undefined;
+      let tasteAnnounced = false;
+      const resolveTastePlanner = (): { providerId: string; modelId: string; taste: number } | null => {
+        if (tastePlannerPick !== undefined) return tastePlannerPick;
+        const candidates: Array<{ providerId: string; modelId: string }> = [];
+        for (const [providerId, models] of Object.entries(MODEL_OPTIONS)) {
+          let configured = false;
+          try {
+            configured = hasProviderKey(providerId, input.settings ?? {});
+          } catch {
+            configured = false;
+          }
+          if (!configured) continue;
+          for (const m of models) {
+            if (typeof m.taste === "number") candidates.push({ providerId, modelId: m.name });
+          }
+        }
+        tastePlannerPick = highestTasteModel(candidates);
+        return tastePlannerPick;
+      };
       const adapterForKind = (kind: RoutingStepKind): LLMAdapter => {
         if (routing.mode !== "per-step") return llm;
         const ref = routing.steps[kind];
-        if (!isSlotSet(ref)) return llm;
+        if (!isSlotSet(ref)) {
+          if (kind === "planner") {
+            const pick = resolveTastePlanner();
+            if (pick) {
+              try {
+                const cacheKey = `taste:${pick.providerId}:${pick.modelId}`;
+                const cached = adapterCache.get(cacheKey);
+                if (cached) return cached;
+                const connection = resolveConnection(pick.providerId, pick.modelId, input.settings ?? {});
+                const adapter = createStreamProviderAdapter(
+                  {
+                    providerId: pick.providerId,
+                    modelId: pick.modelId,
+                    baseUrl: connection.baseUrl,
+                    apiKey: connection.apiKey ?? "",
+                    system,
+                    appPath: input.appPath,
+                    sessionId: input.sessionId,
+                    onUsage: recordUsage,
+                  },
+                  ctx.tools,
+                );
+                adapterCache.set(cacheKey, adapter);
+                if (!tasteAnnounced) {
+                  tasteAnnounced = true;
+                  forward({
+                    type: "token",
+                    sessionId: input.sessionId,
+                    content: `_Planning with ${pick.providerId}/${pick.modelId} (highest-taste configured model, taste ${pick.taste}/10)._`,
+                  });
+                }
+                return adapter;
+              } catch {
+                // fall through to inherited adapter
+              }
+            }
+          }
+          return llm;
+        };
         const cacheKey = `${kind}:${ref.providerId ?? ""}:${ref.modelId ?? ""}`;
         const cached = adapterCache.get(cacheKey);
         if (cached) return cached;
