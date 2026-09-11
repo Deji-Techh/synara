@@ -187,11 +187,25 @@ ${templatesBlock}
 </ui-ux-templates>
 `.trim();
 
+/** Blank projects have no UI, no preview, and no stack: only orientation. */
+const CAIDE_BLANK_UI_NOTICE = `
+<mandatory-ui-ux-skill>
+This is a BLANK project: notes, docs, and scripts — no application UI, no
+preview surface, no component framework. Do NOT apply mobile UI contracts,
+viewport gates, design specs, icon families, or motion storyboards. Do NOT
+emit React/Dart/npm/flutter commands unprompted. If the user asks for an app
+UI, tell them to create a Website, React Native, or Flutter project instead.
+</mandatory-ui-ux-skill>
+`.trim();
+
 /** Select the UI skill pack for a build target (defaults to mobile). The
  * matching Appllama runtime appendix is inlined for the Caide framework so
  * the model never has to resolve a server-side skill path from the app
- * workspace (P4). Blank targets carry the mobile runtime (phone-first). */
+ * workspace (P4). Blank targets carry an orientation notice only (F0). */
 export function buildUiSkillPack(appTarget?: AppTarget, caideFramework?: CaideFramework): string {
+  if (caideFramework === "blank") {
+    return CAIDE_BLANK_UI_NOTICE;
+  }
   if (appTarget === "web") {
     return `${CAIDE_WEB_UI_SKILL_PACK}\n\n${APPLLAMA_WEB_BLOCK}`;
   }

@@ -128,4 +128,38 @@ describe("vercel publish (phase 4b)", () => {
     expect(vercelConnectTool.presentCall?.({})).toBe("Connect Vercel project");
     expect(vercelDisconnectTool.presentCall?.({})).toBe("Disconnect Vercel project");
   });
+
+  it("refuses non-website frameworks with alternatives (F0)", async () => {
+    const { mkdtempSync, mkdirSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { vercelConnectTool: connect, vercelDeployTool: deploy } = await import("./vercelTools.ts");
+    const fixture = (framework: string) => {
+      const dir = mkdtempSync(join(tmpdir(), "caide-fwgate-"));
+      mkdirSync(join(dir, ".caide"), { recursive: true });
+      writeFileSync(join(dir, ".caide", "framework.json"), JSON.stringify({ framework }));
+      return dir;
+    };
+    const ctxFor = (appPath: string) => ({
+      signal: AbortSignal.timeout(5000),
+      appPath,
+      sessionId: "s-fw",
+      toolId: "t-fw",
+    });
+    for (const [framework, hint] of [
+      ["react-native", "Coolify"],
+      ["flutter", "Coolify"],
+      ["blank", "Blank project"],
+    ] as const) {
+      const dir = fixture(framework);
+      await expect(connect.execute({ name: "x" }, ctxFor(dir))).rejects.toThrow(hint);
+      await expect(deploy.execute({}, ctxFor(dir))).rejects.toThrow(hint);
+    }
+    // Website passes the gate (then fails on the missing token — no network).
+    const web = fixture("website");
+    await expect(connect.execute({ name: "x" }, ctxFor(web))).rejects.toThrow(/Vercel token missing/);
+    // Unknown framework is not blocked (detection is best-effort).
+    const unknown = mkdtempSync(join(tmpdir(), "caide-fwgate-"));
+    await expect(connect.execute({ name: "x" }, ctxFor(unknown))).rejects.toThrow(/Vercel token missing/);
+  });
 });

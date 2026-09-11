@@ -5,8 +5,10 @@
 
 import {
   buildFrameworkNotice,
+  defaultAiRulesForFramework,
   type CaideFramework,
 } from "./framework.ts";
+import { WEB3_SKILL_PACK } from "./skillPacks.ts";
 
 export const PLAN_MODE_SYSTEM_PROMPT = `
 <role>
@@ -147,11 +149,20 @@ export function constructPlanModePrompt(
   aiRules: string | undefined,
   themePrompt?: string,
   caideFramework?: CaideFramework,
+  isWeb3App?: boolean,
 ): string {
-  let prompt = PLAN_MODE_SYSTEM_PROMPT.replace(
-    "[[AI_RULES]]",
-    aiRules ?? DEFAULT_PLAN_AI_RULES,
-  );
+  // Framework isolation: an explicit AI_RULES.md always wins; otherwise the
+  // framework's own stack rules apply (same as build/agent) so a Flutter
+  // project never plans against React/Vue/CSS vocabulary.
+  const resolvedRules =
+    aiRules ??
+    defaultAiRulesForFramework(caideFramework, DEFAULT_PLAN_AI_RULES) ??
+    DEFAULT_PLAN_AI_RULES;
+  let prompt = PLAN_MODE_SYSTEM_PROMPT.replace("[[AI_RULES]]", resolvedRules);
+
+  if (isWeb3App) {
+    prompt += `\n\n${WEB3_SKILL_PACK}`;
+  }
 
   if (themePrompt) {
     prompt += "\n\n" + themePrompt;

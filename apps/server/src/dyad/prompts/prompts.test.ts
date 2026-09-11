@@ -471,4 +471,26 @@ describe("dyad prompt transplant (m1)", () => {
     expect(dapp).toContain("planning_questionnaire");
     expect(dapp).toContain("testnet");
   });
+
+  it("blank projects get orientation only, never mobile UI contracts (F0)", () => {
+    const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
+    for (const chatMode of ["local-agent", "build"] as const) {
+      const blank = constructSystemPrompt({ ...base, chatMode, caideFramework: "blank" });
+      expect(blank).toContain("BLANK project");
+      for (const leak of ["bottom tab", "expo-", "44×44", "viewportsVerified", "<appllama-mobile-laws>", "design-spec.json"]) {
+        expect(blank, `${chatMode} leak: ${leak}`).not.toContain(leak);
+      }
+    }
+  });
+
+  it("plan mode uses framework stack rules and web3 pack on demand (F0)", () => {
+    const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
+    const flutterPlan = constructSystemPrompt({ ...base, chatMode: "plan", caideFramework: "flutter" });
+    expect(flutterPlan).toContain("Flutter application");
+    expect(flutterPlan).not.toContain("Vue");
+    const web3Plan = constructSystemPrompt({ ...base, chatMode: "plan", isWeb3App: true });
+    expect(web3Plan).toContain("<web3-development>");
+    const plainPlan = constructSystemPrompt({ ...base, chatMode: "plan" });
+    expect(plainPlan).not.toContain("<web3-development>");
+  });
 });

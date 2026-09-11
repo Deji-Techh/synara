@@ -7,6 +7,8 @@ import { z } from "zod";
 import { defineTool, type ToolDef } from "../../harness/tools/defineTool.ts";
 import { getVoiceApiKey } from "../../voice/transcriptionService.ts";
 import { getDatabaseLink } from "../db/connections.ts";
+import { detectFrameworkFromDisk } from "../prompts/frameworkDetect.ts";
+import type { CaideFramework } from "../prompts/framework.ts";
 import {
   createVercelProject,
   getVercelAuthUser,
@@ -38,6 +40,27 @@ function requireVercelToken(): string {
   return token;
 }
 
+/**
+ * Vercel hosts web frontends only (F0). Refuse React Native / Flutter /
+ * blank apps with a redirect instead of creating a doomed project:
+ * companion APIs go to Coolify, binaries via share_artifact.
+ */
+export async function requireWebsiteFramework(appPath: string): Promise<void> {
+  let framework: CaideFramework | undefined;
+  try {
+    framework = await detectFrameworkFromDisk(appPath);
+  } catch {
+    framework = undefined;
+  }
+  if (framework && framework !== "website") {
+    throw new VercelToolError(
+      framework === "blank"
+        ? "Vercel hosts websites — this is a Blank project with no UI to deploy. Create a Website project to use Vercel."
+        : `Vercel hosts websites — this is a ${framework === "react-native" ? "React Native" : "Flutter"} app. Ship its companion API via Coolify, or share binaries with share_artifact.`,
+    );
+  }
+}
+
 const vercelConnectSchema = z.object({
   projectId: z.string().optional().describe("Existing Vercel project id to link. Omit to create one."),
   name: z.string().optional().describe("Name for a new project (defaults to the app directory name)."),
@@ -50,12 +73,14 @@ export const vercelConnectTool = defineTool({
     "Connect the app to Vercel: link an existing project or create one. Requires a Vercel personal token",
     "(account settings → tokens). Persists the link to .caide/publish.json. Connect the project to a git",
     "repo (dashboard or our GitHub flow) before deploying.",
+    "Website projects only — React Native, Flutter, and Blank apps are refused with alternatives.",
   ].join(" "),
   schema: vercelConnectSchema,
   readOnly: false,
   modifiesState: true,
   execute: async (args, ctx) => {
     const parsed = vercelConnectSchema.parse(args);
+    await requireWebsiteFramework(ctx.appPath);
     const token = requireVercelToken();
     const user = await getVercelAuthUser({ token, signal: ctx.signal });
     let project;
@@ -89,12 +114,13 @@ export const vercelDeployTool = defineTool({
   name: "vercel_deploy",
   description: [
     "Trigger a production deployment on the linked Vercel project. The project must be connected to a git",
-    "repo (otherwise Vercel's error is surfaced — file-upload deploys are out of scope).",
+    "repo (otherwise Vercel's error is surfaced — file-upload deploys are out of scope). Website projects only.",
   ].join(" "),
   schema: z.object({}),
   readOnly: false,
   modifiesState: true,
   execute: async (_, ctx) => {
+    await requireWebsiteFramework(ctx.appPath);
     const token = requireVercelToken();
     const link = readPublishLinks(ctx.appPath).vercel;
     if (!link) throw new VercelToolError("No Vercel project linked — run vercel_connect first.");

@@ -538,7 +538,7 @@ export const constructSystemPrompt = ({
   caideFramework?: CaideFramework;
 }) => {
   if (chatMode === "plan") {
-    return constructPlanModePrompt(aiRules, themePrompt, caideFramework);
+    return constructPlanModePrompt(aiRules, themePrompt, caideFramework, isWeb3App);
   }
 
   if (chatMode === "local-agent") {
@@ -693,11 +693,11 @@ export const getSystemPromptForChatMode = ({
     )
       // Keep the platform contract near the top, right after the role block,
       // so it is never diluted by the rest of the prompt.
-      .replace("[[PLATFORM_CONTRACT]]", () => buildPlatformPrompt(target)) +
+      .replace("[[PLATFORM_CONTRACT]]", () => buildPlatformPrompt(target, caideFramework)) +
     // Keep the test guidance right after the base (i.e. after the postfix's
     // "ONLY use <dyad-write>" mandate) so it carries as the exception.
     (testingEnabled ? `\n\n${TEST_WRITING_GUIDANCE}` : "") +
-    `\n\n${DESIGN_QUALITY_CONTRACT}` +
+    "[[DESIGN_QUALITY_CONTRACT]]" +
     (shouldAppendNitroNudge ? `\n\n${BUILD_SERVER_LAYER_NUDGE}` : "") +
     // Database provider invariants (Supabase / Neon). Empty by default, so
     // existing build prompts are unchanged until callers pass connection state.
@@ -720,7 +720,12 @@ export const getSystemPromptForChatMode = ({
     (gitProvenance ? `\n\n${BUILD_GIT_CONTEXT_BLOCK}` : "") +
     // Turbo-Edits surgical-edit guidance (donor appendix). Off unless requested.
     (enableTurboEditsV2 ? `\n\n${TURBO_EDITS_V2_SYSTEM_PROMPT}` : "");
-  return buildPrompt;
+  // Blank projects get orientation only — never UI quality contracts (F0).
+  const withQuality =
+    caideFramework === "blank"
+      ? buildPrompt.replace("[[DESIGN_QUALITY_CONTRACT]]", "")
+      : buildPrompt.replace("[[DESIGN_QUALITY_CONTRACT]]", () => `\n\n${DESIGN_QUALITY_CONTRACT}`);
+  return withQuality;
 };
 
 export const readAiRules = async (dyadAppPath: string) => {

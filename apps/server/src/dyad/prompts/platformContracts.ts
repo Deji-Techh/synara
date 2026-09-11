@@ -8,6 +8,16 @@
 // against every bullet before finishing.
 
 import type { AppTarget } from "./appTarget.ts";
+import type { CaideFramework } from "./framework.ts";
+
+export const BLANK_PLATFORM_CONTRACT = `
+# PLATFORM CONTRACT — BLANK (non-negotiable)
+
+This project has no UI framework, no preview, and no build pipeline. Notes,
+docs, and scripts only. Do NOT apply mobile or web product contracts. If the
+user asks for an app UI, tell them to create a Website, React Native, or
+Flutter project instead of building screens here.
+`.trim();
 
 export const MOBILE_PRODUCT_CONTRACT = `
 # PLATFORM CONTRACT — MOBILE APP (non-negotiable)
@@ -72,8 +82,13 @@ update it if the platform rules changed. Content: one-line target ("mobile" or
 /**
  * Returns the platform contract + skill-pack guidance for a build target.
  * Defaults to "mobile" to preserve current behavior for existing apps.
+ * Blank projects get an orientation-only contract (F0): no UI mandates,
+ * no tab bars, no spec-file ritual — there is nothing to design yet.
  */
-export function buildPlatformPrompt(appTarget?: AppTarget): string {
+export function buildPlatformPrompt(appTarget?: AppTarget, caideFramework?: CaideFramework): string {
+  if (caideFramework === "blank") {
+    return BLANK_PLATFORM_CONTRACT;
+  }
   const target: AppTarget = appTarget ?? "mobile";
   const contract =
     target === "web" ? WEB_PRODUCT_CONTRACT : MOBILE_PRODUCT_CONTRACT;

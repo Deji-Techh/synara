@@ -421,7 +421,7 @@ ${PRO_FILE_EDITING_TOOL_SELECTION_BLOCK}
 
 ${proDevelopmentWorkflowBlock({ enableAppBlueprint, codeExplorerAvailable })}
 [[SERVER_LAYER]]
-${DESIGN_QUALITY_CONTRACT}
+[[DESIGN_QUALITY_CONTRACT]]
 ${testingEnabled ? `${AGENT_TEST_WRITING_GUIDANCE}\n` : ""}
 ${IMAGE_GENERATION_BLOCK}
 ${enableAppBlueprint ? `\n${APP_BLUEPRINT_BLOCK}\n` : ""}
@@ -455,7 +455,7 @@ ${BASIC_FILE_EDITING_TOOL_SELECTION_BLOCK}
 
 ${basicDevelopmentWorkflowBlock(enableAppBlueprint)}
 [[SERVER_LAYER]]
-${DESIGN_QUALITY_CONTRACT}
+[[DESIGN_QUALITY_CONTRACT]]
 ${testingEnabled ? `${AGENT_TEST_WRITING_GUIDANCE}\n` : ""}${enableAppBlueprint ? `\n${APP_BLUEPRINT_BLOCK}\n` : ""}
 ${AI_RULES_BLOCK}
 `;
@@ -571,9 +571,13 @@ export function constructLocalAgentPrompt(
   const uiSkillPack = buildUiSkillPack(target, options?.caideFramework);
   let prompt = basePrompt
     .replace("[[PLATFORM_UI_SKILL_PACK]]", () => uiSkillPack)
-    .replace("[[PLATFORM_CONTRACT]]", () => buildPlatformPrompt(target))
+    .replace("[[PLATFORM_CONTRACT]]", () => buildPlatformPrompt(target, options?.caideFramework))
     .replace("[[SERVER_LAYER]]", () => serverLayer)
-    .replace("[[AI_RULES]]", () => resolvedRules);
+    .replace("[[AI_RULES]]", () => resolvedRules)
+    .replace(
+      "[[DESIGN_QUALITY_CONTRACT]]",
+      () => (options?.caideFramework === "blank" ? "" : DESIGN_QUALITY_CONTRACT),
+    );
 
   // Database provider invariants (Supabase / Neon): appended only when the
   // caller supplies connection state + client code, so default prompts are
