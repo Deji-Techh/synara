@@ -109,4 +109,17 @@ describe("github publish (phase 4a)", () => {
     expect(createGithubRepoTool.presentCall?.({ repo: "x" })).toBe("Create GitHub repo: x");
     expect(githubStatusTool.presentCall?.({})).toBe("GitHub status");
   });
+
+  it("push pre-checks fail with remediation instead of cryptic git errors", async () => {
+    const { mkdtempSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { pushWithGhCli } = await import("./githubApi.ts");
+    const dir = mkdtempSync(join(tmpdir(), "caide-ghpush-"));
+    const result = await pushWithGhCli({ appPath: dir, owner: "octo", repo: "shop" });
+    expect(result.pushed).toBe(false);
+    // Either gh is missing or the dir is not a repo — both are actionable.
+    expect(result.reason).toMatch(/gh CLI|not a git repository/i);
+    expect(result.remote).toBe("https://github.com/octo/shop.git");
+  });
 });

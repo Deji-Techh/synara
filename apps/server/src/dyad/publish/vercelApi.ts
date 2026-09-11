@@ -177,7 +177,25 @@ export async function triggerVercelDeployment(input: {
 /** Neon-owned env keys synced to Vercel (never POSTGRES_URL — donor rule). */
 export const NEON_VERCEL_ENV_KEYS = ["DATABASE_URL", "NEON_AUTH_BASE_URL", "NEON_AUTH_COOKIE_SECRET"] as const;
 
-/** Upsert env vars across production/preview/development targets. */
+async function listVercelEnvIds(input: {
+  token: string;
+  projectId: string;
+  teamId?: string;
+  baseUrl?: string;
+  signal?: AbortSignal;
+}): Promise<Map<string, string>> {
+  const data = (await vercelFetch(input.baseUrl ?? VERCEL_API_BASE_URL, input.token, `/v9/projects/${encodeURIComponent(input.projectId)}/env`, {
+    teamId: input.teamId,
+    signal: input.signal,
+  })) as { envs?: Array<{ id?: string; key?: string }> };
+  const map = new Map<string, string>();
+  for (const env of data.envs ?? []) {
+    if (env.key && env.id) map.set(env.key, env.id);
+  }
+  return map;
+}
+
+/** Upsert env vars across production/preview/development targets (update-in-place, no 409s). */
 export async function syncNeonEnvToVercel(input: {
   token: string;
   projectId: string;
@@ -187,21 +205,32 @@ export async function syncNeonEnvToVercel(input: {
   signal?: AbortSignal;
 }): Promise<string[]> {
   requireToken(input.token);
+  const existing = await listVercelEnvIds({
+    token: input.token,
+    projectId: input.projectId,
+    teamId: input.teamId,
+    baseUrl: input.baseUrl,
+    signal: input.signal,
+  });
   const synced: string[] = [];
   for (const [key, value] of Object.entries(input.vars)) {
     if (!NEON_VERCEL_ENV_KEYS.includes(key as (typeof NEON_VERCEL_ENV_KEYS)[number])) continue;
     if (!value?.trim()) continue;
-    await vercelFetch(
-      input.baseUrl ?? VERCEL_API_BASE_URL,
-      input.token,
-      `/v10/projects/${encodeURIComponent(input.projectId)}/env`,
-      {
-        method: "POST",
-        body: { key, value, type: "encrypted", target: ["production", "preview", "development"] },
+    const base = input.baseUrl ?? VERCEL_API_BASE_URL;
+    const oldId = existing.get(key);
+    if (oldId) {
+      await vercelFetch(base, input.token, `/v9/projects/${encodeURIComponent(input.projectId)}/env/${encodeURIComponent(oldId)}`, {
+        method: "DELETE",
         teamId: input.teamId,
         signal: input.signal,
-      },
-    );
+      });
+    }
+    await vercelFetch(base, input.token, `/v10/projects/${encodeURIComponent(input.projectId)}/env`, {
+      method: "POST",
+      body: { key, value, type: "encrypted", target: ["production", "preview", "development"] },
+      teamId: input.teamId,
+      signal: input.signal,
+    });
     synced.push(key);
   }
   return synced;

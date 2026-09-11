@@ -439,6 +439,43 @@ function upsertSessionProjectLink(
   if (appPath) linkAppDatabase(appPath, next);
 }
 
+/**
+ * Writes DATABASE_URL to <app>/.env.local (append-or-replace, rest of file
+ * preserved), then verifies by re-reading. Returns true when the verified
+ * value matches. The URI dies in chat if the agent skips this — so create
+ * tools call it directly instead of instructing and hoping.
+ */
+export function writeEnvLocalDatabaseUrl(appPath: string, databaseUrl: string): boolean {
+  try {
+    const file = path.join(appPath, ".env.local");
+    let lines: string[] = [];
+    try {
+      lines = fs.readFileSync(file, "utf8").split("\n");
+    } catch {
+      // missing — start fresh
+    }
+    let replaced = false;
+    const next = lines.map((line) => {
+      if (/^\s*DATABASE_URL\s*=/.test(line)) {
+        replaced = true;
+        return `DATABASE_URL="${databaseUrl}"`;
+      }
+      return line;
+    });
+    if (!replaced) {
+      if (next.length > 0 && next[next.length - 1]?.trim() !== "") next.push("");
+      next.push(`DATABASE_URL="${databaseUrl}"`);
+    }
+    fs.mkdirSync(appPath, { recursive: true });
+    fs.writeFileSync(file, `${next.join("\n").replace(/\n+$/, "")}\n`);
+    // Verify by re-reading (never trust the write blindly).
+    const verify = fs.readFileSync(file, "utf8");
+    return verify.split("\n").some((line) => line.trim() === `DATABASE_URL="${databaseUrl}"`);
+  } catch {
+    return false;
+  }
+}
+
 export const createSupabaseProjectTool = defineTool({
   name: "create_supabase_project",
   description: [
@@ -604,13 +641,13 @@ export const createNeonProjectTool = defineTool({
       ...(branchId ? { branchId } : {}),
     });
     const connectionLine = created.connectionUri
-      ? "Connection string returned by the API (save to .env.local as DATABASE_URL with write_file, then forget it — NEVER print it in chat)."
+      ? writeEnvLocalDatabaseUrl(ctx.appPath, created.connectionUri)
+        ? "Connection string saved to .env.local as DATABASE_URL and verified (then forgotten here — NEVER print it in chat)."
+        : "Connection string could NOT be written automatically — save it to .env.local as DATABASE_URL with write_file."
       : "Copy its connection string from the Neon console into .env.local as DATABASE_URL with write_file.";
     return [
       `Neon project created and linked: ${created.name} (${created.id}).${branchNote}`,
-      created.connectionUri
-        ? `Connection URI (save to .env.local as DATABASE_URL with write_file, then forget it — NEVER print it in chat): ${created.connectionUri}`
-        : connectionLine,
+      connectionLine,
     ].join("\n");
   },
   presentCall: (args: any) => `Create Neon project${args.name ? `: ${args.name}` : ""}`,
@@ -654,19 +691,22 @@ export const neonTestBranchTool = defineTool({
     return [
       `Test branch created: ${branch.name} (${branch.id}).`,
       branch.connectionUri
-        ? "Connection URI (save then forget, NEVER print in chat): " + branch.connectionUri
+        ? writeEnvLocalDatabaseUrl(ctx.appPath, branch.connectionUri)
+          ? "Connection string saved to .env.local as DATABASE_URL and verified (then forgotten here — NEVER print it in chat). Delete the branch when verification is done."
+          : "Connection string could NOT be written automatically — save it to .env.local as DATABASE_URL with write_file."
         : "Copy its connection string from the Neon console for isolated verification, then delete the branch.",
     ].join("\n");
   },
   presentCall: (args: any) => args.action === "delete" ? "Delete Neon test branch" : "Create Neon test branch",
 });
 
-export const createNeonBranchTool = defineTool({  name: "create_neon_branch",
+export const createNeonBranchTool = defineTool({
+  name: "create_neon_branch",
   description: [
     "Create a Neon branch (database) inside the linked Neon project.",
     "Requires a linked Neon connection with a management token — call add_integration first when unlinked.",
-    "Returns the branch id/name and, when provided, a pooled connection URI.",
-    "Save the URI to .env.local as DATABASE_URL with write_file and NEVER print it back to the user.",
+    "Returns the branch id/name. The pooled connection URI (when provided) is written to .env.local as",
+    "DATABASE_URL automatically and verified — NEVER print it back to the user.",
   ].join(" "),
   schema: createNeonBranchSchema,
   readOnly: false,
@@ -687,10 +727,13 @@ export const createNeonBranchTool = defineTool({  name: "create_neon_branch",
     });
     const lines = [
       `Neon branch created: ${created.name} (${created.id}) in project ${projectId}.`,
-      "Save the connection string to .env.local as DATABASE_URL with write_file and NEVER print it in chat.",
     ];
     if (created.connectionUri) {
-      lines.push(`Connection URI (save then forget): ${created.connectionUri}`);
+      lines.push(
+        writeEnvLocalDatabaseUrl(ctx.appPath, created.connectionUri)
+          ? "Connection string saved to .env.local as DATABASE_URL and verified (then forgotten here — NEVER print it in chat)."
+          : "Connection string could NOT be written automatically — save it to .env.local as DATABASE_URL with write_file.",
+      );
     } else {
       lines.push("No connection URI returned — copy DATABASE_URL from the Neon console into .env.local.");
     }

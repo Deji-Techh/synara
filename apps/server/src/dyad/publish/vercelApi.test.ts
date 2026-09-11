@@ -43,11 +43,19 @@ function handler(req: http.IncomingMessage, res: http.ServerResponse): void {
   if (url.pathname === "/v10/projects/prj_1/env" && req.method === "POST") {
     return json(200, {});
   }
+  if (url.pathname === "/v9/projects/prj_1/env" && req.method !== "POST") {
+    return json(200, { envs: [{ id: "env_1", key: "DATABASE_URL" }] });
+  }
+  if (url.pathname === "/v9/projects/prj_1/env/env_1" && req.method === "DELETE") {
+    deleted.push("DATABASE_URL");
+    return json(200, {});
+  }
   return json(404, { error: { message: "nope" } });
 }
 
 let server: http.Server;
 let base = "";
+const deleted: string[] = [];
 beforeAll(async () => {
   server = http.createServer(handler);
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
@@ -80,6 +88,7 @@ describe("vercel publish (phase 4b)", () => {
   });
 
   it("syncs only Neon-owned env keys, never POSTGRES_URL", async () => {
+    deleted.length = 0;
     const synced = await syncNeonEnvToVercel({
       token: "good",
       projectId: "prj_1",
@@ -87,6 +96,8 @@ describe("vercel publish (phase 4b)", () => {
       baseUrl: base,
     });
     expect(synced).toEqual(["DATABASE_URL", "NEON_AUTH_BASE_URL"]);
+    // Existing DATABASE_URL was replaced in place (no duplicate-key 409).
+    expect(deleted).toEqual(["DATABASE_URL"]);
   });
 
   it("connect/disconnect round-trips publish.json without secrets", async () => {

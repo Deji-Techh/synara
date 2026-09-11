@@ -52,7 +52,17 @@ async function githubFetch(
     });
     if (res.status === 204) return {};
     if (!res.ok) {
-      throw new GithubApiError(`GitHub API ${res.status} on ${path}`, res.status);
+      // Surface the API's message (scope/SSO/permission hints) — bare
+      // statuses are opaque and unactionable.
+      let detail = "";
+      try {
+        const errBody = (await res.json()) as { message?: string; errors?: Array<{ message?: string }> };
+        const msg = errBody.message ?? errBody.errors?.map((e) => e.message).filter(Boolean).join("; ");
+        if (msg) detail = `: ${msg}`;
+      } catch {
+        // ignore body parse
+      }
+      throw new GithubApiError(`GitHub API ${res.status} on ${path}${detail}`, res.status);
     }
     return (await res.json()) as unknown;
   } catch (err) {
@@ -178,9 +188,24 @@ export async function pushWithGhCli(input: {
   if (!(await isGhCliAuthenticated(input.appPath))) {
     return { pushed: false, remote, reason: "gh CLI not installed or not authenticated" };
   }
+  const run = async (args: string[]) => execFileAsync("git", args, { cwd: input.appPath, timeout: 30_000 });
   try {
-    await execFileAsync("git", ["remote", "remove", "origin"], { cwd: input.appPath, timeout: 15_000 }).catch(() => {});
-    await execFileAsync("git", ["remote", "add", "origin", remote], { cwd: input.appPath, timeout: 15_000 });
+    // Pre-checks with exact remediation (no cryptic push failures).
+    await run(["rev-parse", "--is-inside-work-tree"]).catch(() => {
+      throw new Error("not a git repository — run git init, add, and commit first");
+    });
+    try {
+      await run(["rev-parse", "--verify", "HEAD"]);
+    } catch {
+      throw new Error("no commits yet — stage and commit files first (git add -A && git commit)");
+    }
+    try {
+      await run(["config", "user.email"]);
+    } catch {
+      throw new Error("git identity missing — set user.name and user.email first");
+    }
+    await run(["remote", "remove", "origin"]).catch(() => {});
+    await run(["remote", "add", "origin", remote]);
     const branch = input.branch?.trim();
     const pushArgs = branch ? ["push", "-u", "origin", branch] : ["push", "-u", "origin", "HEAD"];
     await execFileAsync("git", pushArgs, { cwd: input.appPath, timeout: 120_000 });

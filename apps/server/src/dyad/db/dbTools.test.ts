@@ -23,6 +23,7 @@ import {
   setDbDriver,
   setIntegrationTransport,
   sqlConsentInfo,
+  writeEnvLocalDatabaseUrl,
 } from "./dbTools.ts";
 import { checkSqlDanger, classifySql, splitStatements } from "./sqlSafety.ts";
 import { resolveUserInput } from "../plan/userPrompt.ts";
@@ -179,10 +180,11 @@ describe("dyad db tools transplant (m4)", () => {
       const ctx = { signal: AbortSignal.timeout(5000), appPath: dir, sessionId: sid, toolId: "t1" };
       const out = (await createNeonProjectTool.execute({ name: "Shop" }, ctx)) as string;
       expect(out).toContain("linked");
-      // URI goes to the agent (for .env.local) with a never-print instruction —
-      // same posture as the existing branch tool.
-      expect(out).toContain("postgresql://u:p@host/db");
-      expect(out).toContain("NEVER print");
+      // URI never reaches chat — it is written to .env.local and verified.
+      expect(out).not.toContain("postgresql://u:p@host/db");
+      expect(out).toContain("saved to .env.local");
+      const envLocal = fs.readFileSync(path.join(dir, ".env.local"), "utf8");
+      expect(envLocal).toContain('DATABASE_URL="postgresql://u:p@host/db"');
       expect(getDatabaseLink(sid)?.projectId).toBe("p9");
       const disk = JSON.parse(fs.readFileSync(path.join(dir, ".caide", "db-link.json"), "utf8"));
       expect(disk.projectId).toBe("p9");
@@ -191,5 +193,19 @@ describe("dyad db tools transplant (m4)", () => {
       vi.unstubAllGlobals();
       unlinkDatabase(sid);
     }
+  });
+
+  it("writeEnvLocalDatabaseUrl appends, replaces, and verifies", () => {
+    const dir = appDir();
+    expect(writeEnvLocalDatabaseUrl(dir, "postgres://a")).toBe(true);
+    expect(fs.readFileSync(path.join(dir, ".env.local"), "utf8")).toBe('DATABASE_URL="postgres://a"\n');
+    expect(writeEnvLocalDatabaseUrl(dir, "postgres://b")).toBe(true);
+    const text = fs.readFileSync(path.join(dir, ".env.local"), "utf8");
+    expect(text).toBe('DATABASE_URL="postgres://b"\n');
+    expect(text.match(/DATABASE_URL/g)).toHaveLength(1);
+    // Other vars preserved.
+    fs.writeFileSync(path.join(dir, ".env.local"), 'OTHER="x"\nDATABASE_URL="postgres://b"\n');
+    expect(writeEnvLocalDatabaseUrl(dir, "postgres://c")).toBe(true);
+    expect(fs.readFileSync(path.join(dir, ".env.local"), "utf8")).toContain('OTHER="x"');
   });
 });
