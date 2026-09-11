@@ -148,6 +148,9 @@ describe("turn gateway (m3h)", () => {
       onBlueprintResponse: (h: (...args: never[]) => void) => {
         handlers.blueprint = h;
       },
+      onMcpOAuthStart: (h: (...args: never[]) => void) => {
+        handlers.mcpOAuth = h;
+      },
       onTurnStart: (h: (...args: never[]) => void) => {
         handlers.turn = h;
       },
@@ -205,6 +208,7 @@ describe("turn gateway (m3h)", () => {
       "onSteer",
       "onCancel",
       "onBlueprintResponse",
+      "onMcpOAuthStart",
       "onTurnStart",
       "onProviderSettingsGet",
       "onProviderSettingsSet",
@@ -279,6 +283,7 @@ describe("turn gateway (m3h)", () => {
       "onSteer",
       "onCancel",
       "onBlueprintResponse",
+      "onMcpOAuthStart",
       "onTurnStart",
       "onProviderSettingsGet",
       "onProviderSettingsSet",
