@@ -77,13 +77,28 @@ pre-tested — you MUST NOT skip any of them):
 
 ### 2. Provision a Neon database
 
-1. If the user does not have a Neon account connected, ask them to
-   connect one via Settings → Neon.
-2. Once connected, use the `create_neon_branch` tool (or equivalent)
-   to create a new database for this app.
-3. Get the connection string (`DATABASE_URL`) and tell the user to
-   add it to their environment. Set `NEON_AUTH_SECRET` to a random
-   32+ character string.
+1. If the user does not have a Neon API key, ask them to add one in
+   Settings → Database (Neon console → API keys) — no hosted OAuth needed.
+2. Use the `create_neon_project` tool to create a project (it also creates
+   a `development` branch and links the project id to the session + app
+   automatically — no copy-paste).
+3. Save the returned connection string to `.env.local` as `DATABASE_URL`
+   with `write_file` (then forget it — never print it in chat). Set
+   `NEON_AUTH_SECRET` to a random 32+ character string.
+4. For an existing project, `create_neon_branch` adds isolated branches;
+   `neon_test_branch` creates throwaway branches for verification.
+
+### 2b. Provision a Supabase database (alternative)
+
+1. If the user does not have a Supabase access token, ask them to add one
+   in Settings → Database (Supabase dashboard → account tokens).
+2. Use the `create_supabase_project` tool (it links the project id to the
+   session + app automatically — no copy-paste).
+3. Save the connection string to `.env.local` as `DATABASE_URL` with
+   `write_file` (never print secrets in chat). Run schema via `execute_sql`
+   (schema-mutating SQL is recorded to `supabase/migrations/` automatically).
+4. Deploy `supabase/functions/*` with `deploy_supabase_functions`; verify
+   auth flows with a throwaway `supabase_test_user` (delete it after).
 
 ### 3. Customize the database schema
 

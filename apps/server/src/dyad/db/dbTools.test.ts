@@ -5,15 +5,17 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   linkDatabase,
   unlinkDatabase,
+  getDatabaseLink,
   resolveDatabaseUrl,
   DbNotConnectedError,
 } from "./connections.ts";
 import {
   ALL_DB_TOOLS,
+  createNeonProjectTool,
   executeAddIntegration,
   executeEnableNitro,
   executeSql,
@@ -148,6 +150,45 @@ describe("dyad db tools transplant (m4)", () => {
         /provision-backend/,
       );
     } finally {
+      unlinkDatabase(sid);
+    }
+  });
+
+  it("one-click wiring links project ids without copy-paste (phase 3)", async () => {
+    const sid = `s-provision-${Date.now()}`;
+    const dir = appDir();
+    linkDatabase(sid, { provider: "neon", managementToken: "good" });
+    const stub = vi.fn(async (url: unknown) => {
+      const u = String(url);
+      if (u.endsWith("/projects")) {
+        return {
+          ok: true,
+          json: async () => ({
+            project: { id: "p9", name: "Shop" },
+            connection_uris: [{ connection_uri: "postgresql://u:p@host/db" }],
+          }),
+        } as Response;
+      }
+      if (u.includes("/branches")) {
+        return { ok: true, json: async () => ({ branch: { id: "b1", name: "development" } }) } as Response;
+      }
+      throw new Error(`unexpected ${u}`);
+    });
+    vi.stubGlobal("fetch", stub);
+    try {
+      const ctx = { signal: AbortSignal.timeout(5000), appPath: dir, sessionId: sid, toolId: "t1" };
+      const out = (await createNeonProjectTool.execute({ name: "Shop" }, ctx)) as string;
+      expect(out).toContain("linked");
+      // URI goes to the agent (for .env.local) with a never-print instruction —
+      // same posture as the existing branch tool.
+      expect(out).toContain("postgresql://u:p@host/db");
+      expect(out).toContain("NEVER print");
+      expect(getDatabaseLink(sid)?.projectId).toBe("p9");
+      const disk = JSON.parse(fs.readFileSync(path.join(dir, ".caide", "db-link.json"), "utf8"));
+      expect(disk.projectId).toBe("p9");
+      expect(JSON.stringify(disk)).not.toContain("good");
+    } finally {
+      vi.unstubAllGlobals();
       unlinkDatabase(sid);
     }
   });

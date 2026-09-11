@@ -393,30 +393,50 @@ const createSupabaseProjectSchema = z.object({
   region: z.string().optional().describe("Region, e.g. us-east-1. Defaults to us-east-1."),
 });
 
-function requireSupabaseManagementToken(sessionId: string): { link: DbLink; token: string } {
+function requireSupabaseManagementToken(sessionId: string): { link: DbLink | undefined; token: string } {
   const link = getDatabaseLink(sessionId);
-  if (!link || link.provider !== "supabase") {
-    throw new DbNotConnectedError();
-  }
   // Session link token wins; otherwise the stored settings key or env
   // (Settings → Database → access token, or SUPABASE_ACCESS_TOKEN).
-  const token = link.managementToken || getVoiceApiKey("supabase");
-  if (!token) {
+  const token = link?.provider === "supabase" ? link.managementToken : undefined;
+  const resolved = token || getVoiceApiKey("supabase");
+  if (!resolved) {
     throw new DbToolError("Supabase access token missing — add one in Settings → Database, or re-run add_integration.");
   }
-  return { link, token };
+  return { link, token: resolved };
 }
 
-function requireNeonManagementToken(sessionId: string): { link: DbLink; token: string } {
+function requireNeonManagementToken(sessionId: string): { link: DbLink | undefined; token: string } {
   const link = getDatabaseLink(sessionId);
-  if (!link || link.provider !== "neon") {
-    throw new DbNotConnectedError();
-  }
-  const token = link.managementToken || getVoiceApiKey("neon");
-  if (!token) {
+  const token = link?.provider === "neon" ? link.managementToken : undefined;
+  const resolved = token || getVoiceApiKey("neon");
+  if (!resolved) {
     throw new DbToolError("Neon API key missing — add one in Settings → Database, or re-run add_integration.");
   }
-  return { link, token };
+  return { link, token: resolved };
+}
+
+/**
+ * One-click wiring: after a successful create, the session link carries the
+ * new project id (and branch) so later chats reuse it without copy-paste.
+ * Persists to <app>/.caide/db-link.json (tokens stay memory-only).
+ */
+function upsertSessionProjectLink(
+  sessionId: string,
+  appPath: string,
+  provider: DbProvider,
+  projectId: string,
+  extra?: { organizationSlug?: string; branchId?: string },
+): void {
+  const existing = getDatabaseLink(sessionId);
+  const next: DbLink = {
+    ...(existing ?? { provider }),
+    provider,
+    projectId,
+    ...(extra?.organizationSlug ? { organizationSlug: extra.organizationSlug } : {}),
+    ...(extra?.branchId ? { branchId: extra.branchId } : {}),
+  };
+  linkDatabase(sessionId, next);
+  if (appPath) linkAppDatabase(appPath, next);
 }
 
 export const createSupabaseProjectTool = defineTool({
@@ -432,7 +452,7 @@ export const createSupabaseProjectTool = defineTool({
   execute: async (args, ctx) => {
     const parsed = createSupabaseProjectSchema.parse(args);
     const { link, token } = requireSupabaseManagementToken(ctx.sessionId);
-    const orgId = parsed.organizationId?.trim() || link.organizationSlug || "";
+    const orgId = parsed.organizationId?.trim() || link?.organizationSlug || "";
     if (!orgId) {
       throw new DbToolError("No organization — pass organizationId or re-run add_integration.");
     }
@@ -443,9 +463,10 @@ export const createSupabaseProjectTool = defineTool({
       region: parsed.region,
       signal: ctx.signal,
     });
+    upsertSessionProjectLink(ctx.sessionId, ctx.appPath, "supabase", created.id, { organizationSlug: orgId });
     return [
-      `Supabase project created: ${created.name} (${created.id}).`,
-      "Save its connection string to .env.local as DATABASE_URL with write_file and link the project id. NEVER print secrets in chat.",
+      `Supabase project created and linked: ${created.name} (${created.id}).`,
+      "Save its connection string to .env.local as DATABASE_URL with write_file. NEVER print secrets in chat.",
     ].join("\n");
   },
   presentCall: (args: any) => `Create Supabase project${args.name ? `: ${args.name}` : ""}`,
@@ -470,7 +491,7 @@ export const deploySupabaseFunctionsTool = defineTool({
   execute: async (args, ctx) => {
     const parsed = deploySupabaseFunctionsSchema.parse(args);
     const { link, token } = requireSupabaseManagementToken(ctx.sessionId);
-    const projectId = parsed.projectId?.trim() || link.projectId || "";
+    const projectId = parsed.projectId?.trim() || link?.projectId || "";
     if (!projectId) {
       throw new DbToolError("No project ref — pass projectId or re-run add_integration.");
     }
@@ -516,7 +537,7 @@ export const supabaseTestUserTool = defineTool({
   execute: async (args, ctx) => {
     const parsed = supabaseTestUserSchema.parse(args);
     const { link, token } = requireSupabaseManagementToken(ctx.sessionId);
-    const projectId = link.projectId || "";
+    const projectId = link?.projectId || "";
     if (!projectId) {
       throw new DbToolError("No project ref — re-run add_integration.");
     }
@@ -556,10 +577,7 @@ export const createNeonProjectTool = defineTool({
   modifiesState: true,
   execute: async (args, ctx) => {
     const parsed = createNeonProjectSchema.parse(args);
-    const token = getVoiceApiKey("neon");
-    if (!token) {
-      throw new DbToolError("Neon API key missing — add one in Settings → Database.");
-    }
+    const { token } = requireNeonManagementToken(ctx.sessionId);
     let created;
     created = await createNeonProject({
       apiKey: token,
@@ -569,6 +587,7 @@ export const createNeonProjectTool = defineTool({
     });
     // Best-effort dev branch so the app has an isolated workspace branch.
     let branchNote = "";
+    let branchId: string | undefined;
     try {
       const branch = await createNeonBranch({
         apiKey: token,
@@ -576,13 +595,20 @@ export const createNeonProjectTool = defineTool({
         branchName: "development",
         signal: ctx.signal,
       });
+      branchId = branch.id;
       branchNote = ` Development branch ready (${branch.id}).`;
     } catch {
       branchNote = " Development branch could not be created automatically — create one with create_neon_branch.";
     }
+    upsertSessionProjectLink(ctx.sessionId, ctx.appPath, "neon", created.id, {
+      ...(branchId ? { branchId } : {}),
+    });
+    const connectionLine = created.connectionUri
+      ? "Connection string returned by the API (save to .env.local as DATABASE_URL with write_file, then forget it — NEVER print it in chat)."
+      : "Copy its connection string from the Neon console into .env.local as DATABASE_URL with write_file.";
     return [
-      `Neon project created: ${created.name} (${created.id}).${branchNote}`,
-      "Save its connection string to .env.local as DATABASE_URL with write_file and NEVER print it in chat.",
+      `Neon project created and linked: ${created.name} (${created.id}).${branchNote}`,
+      created.connectionUri ? `Connection URI (save then forget): ${created.connectionUri}` : connectionLine,
     ].join("\n");
   },
   presentCall: (args: any) => `Create Neon project${args.name ? `: ${args.name}` : ""}`,
@@ -607,11 +633,7 @@ export const neonTestBranchTool = defineTool({
   modifiesState: true,
   execute: async (args, ctx) => {
     const parsed = neonTestBranchSchema.parse(args);
-    const token = getVoiceApiKey("neon");
-    if (!token) {
-      throw new DbToolError("Neon API key missing — add one in Settings → Database.");
-    }
-    const link = getDatabaseLink(ctx.sessionId);
+    const { link, token } = requireNeonManagementToken(ctx.sessionId);
     const projectId = parsed.projectId?.trim() || link?.projectId || "";
     if (!projectId) {
       throw new DbToolError("No project id — pass projectId or link a Neon project first.");
@@ -650,7 +672,7 @@ export const createNeonBranchTool = defineTool({  name: "create_neon_branch",
   execute: async (args, ctx) => {
     const parsed = createNeonBranchSchema.parse(args);
     const { link, token } = requireNeonManagementToken(ctx.sessionId);
-    const projectId = parsed.projectId?.trim() || link.projectId;
+    const projectId = parsed.projectId?.trim() || link?.projectId;
     if (!projectId) {
       throw new DbToolError("No Neon project id — pass projectId or re-run add_integration.");
     }

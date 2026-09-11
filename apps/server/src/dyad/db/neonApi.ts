@@ -157,6 +157,7 @@ export async function createNeonBranch(input: {
 export interface NeonCreatedProject {
   id: string;
   name: string;
+  connectionUri?: string;
 }
 
 /** Create a Neon project. On post-create failure the caller should delete
@@ -182,10 +183,11 @@ export async function createNeonProject(input: {
       },
     },
     input.signal,
-  )) as { project?: { id?: string; name?: string } };
+  )) as { project?: { id?: string; name?: string }; connection_uris?: Array<{ connection_uri?: string }> };
   const id = data.project?.id ?? "";
   if (!id) throw new NeonApiError("Neon API returned no project id.");
-  return { id, name: data.project?.name ?? name };
+  const connectionUri = data.connection_uris?.map((u) => u.connection_uri).find(Boolean);
+  return { id, name: data.project?.name ?? name, ...(connectionUri ? { connectionUri } : {}) };
 }
 
 /** Delete a Neon project (orphan cleanup after failed provisioning). */
