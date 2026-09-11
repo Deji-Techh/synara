@@ -153,3 +153,102 @@ export async function createNeonBranch(input: {
   const connectionUri = data.connection_uris?.map((u) => u.connection_uri).find(Boolean);
   return { id, name: data.branch?.name ?? name, ...(connectionUri ? { connectionUri } : {}) };
 }
+
+export interface NeonCreatedProject {
+  id: string;
+  name: string;
+}
+
+/** Create a Neon project. On post-create failure the caller should delete
+ * the orphan project (donor parity: best-effort cleanup lives in the tool). */
+export async function createNeonProject(input: {
+  apiKey: string;
+  name: string;
+  regionId?: string;
+  baseUrl?: string;
+  signal?: AbortSignal;
+}): Promise<NeonCreatedProject> {
+  if (!input.apiKey.trim()) throw new NeonApiError("Neon API key is required.");
+  const name = input.name.trim();
+  if (!name) throw new NeonApiError("Project name is required.");
+  const data = (await neonPost(
+    input.baseUrl ?? NEON_API_BASE_URL,
+    input.apiKey,
+    "/projects",
+    {
+      project: {
+        name,
+        ...(input.regionId?.trim() ? { region_id: input.regionId.trim() } : {}),
+      },
+    },
+    input.signal,
+  )) as { project?: { id?: string; name?: string } };
+  const id = data.project?.id ?? "";
+  if (!id) throw new NeonApiError("Neon API returned no project id.");
+  return { id, name: data.project?.name ?? name };
+}
+
+/** Delete a Neon project (orphan cleanup after failed provisioning). */
+export async function deleteNeonProject(input: {
+  apiKey: string;
+  projectId: string;
+  baseUrl?: string;
+  signal?: AbortSignal;
+}): Promise<void> {
+  if (!input.apiKey.trim()) throw new NeonApiError("Neon API key is required.");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20_000);
+  try {
+    const res = await fetch(
+      `${(input.baseUrl ?? NEON_API_BASE_URL).replace(/\/+$/, "")}/projects/${encodeURIComponent(input.projectId)}`,
+      {
+        method: "DELETE",
+        signal: controller.signal,
+        headers: { accept: "application/json", authorization: `Bearer ${input.apiKey}` },
+      },
+    );
+    if (!res.ok && res.status !== 404) {
+      throw new NeonApiError(`Neon API ${res.status} on delete project`, res.status);
+    }
+  } catch (err) {
+    if (err instanceof NeonApiError) throw err;
+    throw new NeonApiError(
+      `Neon API request failed (delete project): ${err instanceof Error ? err.message : String(err)}`,
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Delete a Neon branch (test-branch teardown). */
+export async function deleteNeonBranch(input: {
+  apiKey: string;
+  projectId: string;
+  branchId: string;
+  baseUrl?: string;
+  signal?: AbortSignal;
+}): Promise<void> {
+  if (!input.apiKey.trim()) throw new NeonApiError("Neon API key is required.");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20_000);
+  try {
+    const res = await fetch(
+      `${(input.baseUrl ?? NEON_API_BASE_URL).replace(/\/+$/, "")}/projects/${encodeURIComponent(input.projectId)}/branches/${encodeURIComponent(input.branchId)}`,
+      {
+        method: "DELETE",
+        signal: controller.signal,
+        headers: { accept: "application/json", authorization: `Bearer ${input.apiKey}` },
+      },
+    );
+    if (!res.ok && res.status !== 404) {
+      throw new NeonApiError(`Neon API ${res.status} on delete branch`, res.status);
+    }
+  } catch (err) {
+    if (err instanceof NeonApiError) throw err;
+    throw new NeonApiError(
+      `Neon API request failed (delete branch): ${err instanceof Error ? err.message : String(err)}`,
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+}

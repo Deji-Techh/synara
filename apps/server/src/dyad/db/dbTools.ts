@@ -33,7 +33,7 @@ import {
   deploySupabaseFunction,
   getSupabaseProjectApiKeys,
 } from "./supabaseApi.ts";
-import { listNeonBranches, listNeonProjects, createNeonBranch } from "./neonApi.ts";
+import { listNeonBranches, listNeonProjects, createNeonBranch, createNeonProject, deleteNeonBranch, deleteNeonProject } from "./neonApi.ts";
 
 export class DbToolError extends Error {
   constructor(message: string) {
@@ -538,6 +538,105 @@ export const supabaseTestUserTool = defineTool({
   presentCall: (args: any) => args.action === "delete" ? "Delete test user" : "Create test user",
 });
 
+// --- create_neon_project (PAT-based; no hosted broker) ---
+
+const createNeonProjectSchema = z.object({
+  name: z.string().describe("Project name, e.g. myapp."),
+  regionId: z.string().optional().describe("Region id, e.g. aws-us-east-2. Defaults to the account default."),
+});
+
+export const createNeonProjectTool = defineTool({
+  name: "create_neon_project",
+  description: [
+    "Create a Neon project. Requires a Neon API key — add one in Settings → Database, or re-run add_integration.",
+    "After creation, save the connection string to .env.local as DATABASE_URL and link the project id.",
+  ].join(" "),
+  schema: createNeonProjectSchema,
+  readOnly: false,
+  modifiesState: true,
+  execute: async (args, ctx) => {
+    const parsed = createNeonProjectSchema.parse(args);
+    const token = getVoiceApiKey("neon");
+    if (!token) {
+      throw new DbToolError("Neon API key missing — add one in Settings → Database.");
+    }
+    let created;
+    created = await createNeonProject({
+      apiKey: token,
+      name: parsed.name,
+      regionId: parsed.regionId,
+      signal: ctx.signal,
+    });
+    // Best-effort dev branch so the app has an isolated workspace branch.
+    let branchNote = "";
+    try {
+      const branch = await createNeonBranch({
+        apiKey: token,
+        projectId: created.id,
+        branchName: "development",
+        signal: ctx.signal,
+      });
+      branchNote = ` Development branch ready (${branch.id}).`;
+    } catch {
+      branchNote = " Development branch could not be created automatically — create one with create_neon_branch.";
+    }
+    return [
+      `Neon project created: ${created.name} (${created.id}).${branchNote}`,
+      "Save its connection string to .env.local as DATABASE_URL with write_file and NEVER print it in chat.",
+    ].join("\n");
+  },
+  presentCall: (args: any) => `Create Neon project${args.name ? `: ${args.name}` : ""}`,
+});
+
+// --- neon_test_branch (throwaway branch for isolated verification) ---
+
+const neonTestBranchSchema = z.object({
+  action: z.enum(["create", "delete"]).describe("Create or delete the throwaway test branch."),
+  projectId: z.string().optional().describe("Project id. Defaults to the linked integration's project."),
+  branchId: z.string().optional().describe("Branch id for action=delete."),
+});
+
+export const neonTestBranchTool = defineTool({
+  name: "neon_test_branch",
+  description: [
+    "Create or delete a throwaway Neon branch (caide-test-*) for isolated end-to-end verification.",
+    "Requires a Neon API key. Delete the branch when verification is done.",
+  ].join(" "),
+  schema: neonTestBranchSchema,
+  readOnly: false,
+  modifiesState: true,
+  execute: async (args, ctx) => {
+    const parsed = neonTestBranchSchema.parse(args);
+    const token = getVoiceApiKey("neon");
+    if (!token) {
+      throw new DbToolError("Neon API key missing — add one in Settings → Database.");
+    }
+    const link = getDatabaseLink(ctx.sessionId);
+    const projectId = parsed.projectId?.trim() || link?.projectId || "";
+    if (!projectId) {
+      throw new DbToolError("No project id — pass projectId or link a Neon project first.");
+    }
+    if (parsed.action === "delete") {
+      if (!parsed.branchId?.trim()) throw new DbToolError("branchId is required for action=delete.");
+      await deleteNeonBranch({ apiKey: token, projectId, branchId: parsed.branchId, signal: ctx.signal });
+      return `Test branch ${parsed.branchId} deleted.`;
+    }
+    const branch = await createNeonBranch({
+      apiKey: token,
+      projectId,
+      branchName: `caide-test-${Date.now().toString(36)}`,
+      signal: ctx.signal,
+    });
+    return [
+      `Test branch created: ${branch.name} (${branch.id}).`,
+      branch.connectionUri
+        ? "Connection URI (save then forget, NEVER print in chat): " + branch.connectionUri
+        : "Copy its connection string from the Neon console for isolated verification, then delete the branch.",
+    ].join("\n");
+  },
+  presentCall: (args: any) => args.action === "delete" ? "Delete Neon test branch" : "Create Neon test branch",
+});
+
 export const createNeonBranchTool = defineTool({  name: "create_neon_branch",
   description: [
     "Create a Neon branch (database) inside the linked Neon project.",
@@ -609,7 +708,9 @@ export const ALL_DB_TOOLS: ToolDef[] = [
   createSupabaseProjectTool,
   deploySupabaseFunctionsTool,
   supabaseTestUserTool,
+  createNeonProjectTool,
   createNeonBranchTool,
+  neonTestBranchTool,
   addIntegrationTool,
   enableNitroTool,
 ];

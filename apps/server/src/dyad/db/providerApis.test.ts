@@ -8,7 +8,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it, vi, afterEach } from "vitest";
-import { listNeonBranches, listNeonProjects, createNeonBranch } from "./neonApi.ts";
+import { listNeonBranches, listNeonProjects, createNeonBranch, createNeonProject, deleteNeonBranch, deleteNeonProject } from "./neonApi.ts";
 import {
   createSupabaseProject,
   createSupabaseTestUser,
@@ -28,7 +28,10 @@ function handler(req: http.IncomingMessage, res: http.ServerResponse): void {
     res.end(JSON.stringify(body));
   };
   if (key !== "Bearer good") return json(401, { message: "unauthorized" });
-  if (url.pathname === "/api/v2/projects") return json(200, { projects: [{ id: "p1", name: "Shop" }] });
+  if (url.pathname === "/api/v2/projects") {
+    if (req.method === "POST") return json(201, { project: { id: "p9", name: "NewProj" } });
+    return json(200, { projects: [{ id: "p1", name: "Shop" }] });
+  }
   if (url.pathname === "/api/v2/projects/p1/branches") {
     if (req.method === "POST") {
       return json(200, {
@@ -37,6 +40,12 @@ function handler(req: http.IncomingMessage, res: http.ServerResponse): void {
       });
     }
     return json(200, { branches: [{ id: "b1", name: "main", primary: true }] });
+  }
+  if (req.method === "DELETE" && url.pathname === "/api/v2/projects/p1/branches/b2") {
+    return json(200, {});
+  }
+  if (req.method === "DELETE" && url.pathname === "/api/v2/projects/p9") {
+    return json(200, {});
   }
   if (url.pathname === "/v1/organizations") return json(200, [{ id: "o1", name: "Acme" }]);
   if (url.pathname === "/v1/projects") {
@@ -148,6 +157,23 @@ describe("dyad provider management apis (c8)", () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  it("creates and deletes neon projects and branches", async () => {
+    const project = await createNeonProject({ apiKey: "good", name: "NewProj", baseUrl: neonBase });
+    expect(project).toEqual({ id: "p9", name: "NewProj" });
+    await expect(
+      createNeonProject({ apiKey: "good", name: "  ", baseUrl: neonBase }),
+    ).rejects.toThrow(/required/);
+    await expect(
+      deleteNeonBranch({ apiKey: "good", projectId: "p1", branchId: "b2", baseUrl: neonBase }),
+    ).resolves.toBeUndefined();
+    await expect(
+      deleteNeonProject({ apiKey: "good", projectId: "p9", baseUrl: neonBase }),
+    ).resolves.toBeUndefined();
+    await expect(
+      deleteNeonBranch({ apiKey: "bad", projectId: "p1", branchId: "b2", baseUrl: neonBase }),
+    ).rejects.toThrow(/401/);
   });
 
   it("lists supabase orgs and projects", async () => {

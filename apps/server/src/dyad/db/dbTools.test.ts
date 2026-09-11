@@ -30,7 +30,7 @@ function appDir(): string {
 }
 
 describe("dyad db tools transplant (m4)", () => {
-  it("registers all ten DB tools with donor previews", () => {
+  it("registers all twelve DB tools with donor previews", () => {
     expect(ALL_DB_TOOLS.map((t) => t.name)).toEqual([
       "execute_sql",
       "get_database_table_schema",
@@ -39,7 +39,9 @@ describe("dyad db tools transplant (m4)", () => {
       "create_supabase_project",
       "deploy_supabase_functions",
       "supabase_test_user",
+      "create_neon_project",
       "create_neon_branch",
+      "neon_test_branch",
       "add_integration",
       "enable_nitro",
     ]);
