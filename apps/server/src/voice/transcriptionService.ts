@@ -26,6 +26,8 @@ const PROVIDER_ENV_KEYS: Record<string, string[]> = {
   opencodeGo: ["OPENCODE_GO_API_KEY", "OPENCODE_API_KEY"],
   "opencode-go": ["OPENCODE_GO_API_KEY", "OPENCODE_API_KEY"],
   openrouter: ["OPENROUTER_API_KEY"],
+  supabase: ["SUPABASE_ACCESS_TOKEN"],
+  neon: ["NEON_API_KEY"],
 };
 
 /**

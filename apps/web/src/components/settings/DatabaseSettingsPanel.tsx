@@ -10,6 +10,7 @@ import { DisclosureRegion } from "~/components/ui/DisclosureRegion";
 import { Input } from "~/components/ui/input";
 import { Switch } from "~/components/ui/switch";
 import { toastManager } from "~/components/ui/toast";
+import { useDyadProviderSettings } from "~/hooks/useDyadProviderSettings";
 import { cn } from "~/lib/utils";
 import { SettingsListRow, SettingsRow, SettingsSection } from "./SettingsPanelPrimitives";
 import {
@@ -39,6 +40,9 @@ export function DatabaseSettingsPanel(props: { active: boolean }) {
   const [networks, setNetworks] = useState<BlockchainNetwork[]>(() => loadNetworks());
   const [addingConn, setAddingConn] = useState(false);
   const [addingNet, setAddingNet] = useState(false);
+  const [managingTokens, setManagingTokens] = useState(false);
+  const [tokenDrafts, setTokenDrafts] = useState({ supabase: "", neon: "" });
+  const dyadProviders = useDyadProviderSettings();
   const [connDraft, setConnDraft] = useState({ name: "", provider: "supabase" as DbProviderKind, databaseUrl: "", projectId: "" });
   const [netDraft, setNetDraft] = useState({ name: "", chainKind: "evm" as const, chainId: "", rpcUrl: "", explorerUrl: "" });
   const [netTests, setNetTests] = useState<Record<string, NetTest>>({});
@@ -176,6 +180,65 @@ export function DatabaseSettingsPanel(props: { active: boolean }) {
               Save connection
             </Button>
           </div>
+        </DisclosureRegion>
+      </SettingsSection>
+
+      <SettingsSection
+        title="Management tokens"
+        action={
+          <Button size="xs" variant="outline" onClick={() => setManagingTokens((v) => !v)} aria-expanded={managingTokens}>
+            Manage tokens
+            <DisclosureChevron open={managingTokens} className="ml-1 size-3.5" />
+          </Button>
+        }
+      >
+        <DisclosureRegion open={managingTokens} contentClassName="mt-3 space-y-3 border-t border-border/70 pt-3">
+          <p className="text-[11px] text-muted-foreground">
+            Personal access tokens unlock one-click provisioning for the agent: Supabase project creation, function
+            deploys, and test users; Neon project and branch creation. Stored encrypted server-side, never in the
+            browser. Get them from the Supabase dashboard → account tokens, and the Neon console → API keys.
+          </p>
+          {(
+            [
+              { id: "supabase", label: "Supabase access token", placeholder: "sbp_…" },
+              { id: "neon", label: "Neon API key", placeholder: "napi_…" },
+            ] as const
+          ).map((row) => {
+            const configured = dyadProviders.providers.some((p) => p.id === row.id && p.configured);
+            return (
+              <SettingsRow
+                key={row.id}
+                title={row.label}
+                description={configured ? "Configured ✓ — saving replaces it." : "Not configured."}
+                control={
+                  <div className="flex w-full gap-2 sm:w-auto">
+                    <Input
+                      className="w-full font-mono text-[11px] sm:w-64"
+                      type="password"
+                      autoComplete="off"
+                      value={tokenDrafts[row.id]}
+                      placeholder={row.placeholder}
+                      onChange={(e) => setTokenDrafts((prev) => ({ ...prev, [row.id]: e.target.value }))}
+                    />
+                    <Button
+                      size="sm"
+                      disabled={!tokenDrafts[row.id].trim()}
+                      onClick={() => {
+                        dyadProviders.save(row.id, { apiKey: tokenDrafts[row.id].trim() });
+                        setTokenDrafts((prev) => ({ ...prev, [row.id]: "" }));
+                        toastManager.add({ type: "success", title: `${row.label} saved` });
+                      }}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                }
+              />
+            );
+          })}
+          {!dyadProviders.connected ? (
+            <p className="text-[11px] text-destructive">Harness offline — tokens can't be saved right now.</p>
+          ) : null}
         </DisclosureRegion>
       </SettingsSection>
 

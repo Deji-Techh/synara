@@ -70,6 +70,9 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
   { name: "lsp_symbol_lookup", category: "read-search", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/web (mtime symbol index)" },
   // db-infra
   { name: "get_supabase_project_info", category: "db-infra", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/db" },
+  { name: "create_supabase_project", category: "db-infra", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/db" },
+  { name: "deploy_supabase_functions", category: "db-infra", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/db" },
+  { name: "supabase_test_user", category: "db-infra", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/db" },
   { name: "get_neon_project_info", category: "db-infra", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/db" },
   { name: "create_neon_branch", category: "db-infra", defaultConsent: "ask", modifiesState: true, readOnly: false, caideMapping: "caide-native", caideTool: "dyad/db" },
   { name: "get_database_table_schema", category: "db-infra", defaultConsent: "always", modifiesState: false, readOnly: true, caideMapping: "caide-native", caideTool: "dyad/db" },

@@ -7,9 +7,17 @@ import * as http from "node:http";
 import * as os from "node:os";
 import * as path from "node:path";
 import type { AddressInfo } from "node:net";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi, afterEach } from "vitest";
 import { listNeonBranches, listNeonProjects, createNeonBranch } from "./neonApi.ts";
-import { listSupabaseOrganizations, listSupabaseProjects } from "./supabaseApi.ts";
+import {
+  createSupabaseProject,
+  createSupabaseTestUser,
+  deleteSupabaseTestUser,
+  deploySupabaseFunction,
+  getSupabaseProjectApiKeys,
+  listSupabaseOrganizations,
+  listSupabaseProjects,
+} from "./supabaseApi.ts";
 import { slugifyMigrationName, writeMigrationFile } from "./migrations.ts";
 
 function handler(req: http.IncomingMessage, res: http.ServerResponse): void {
@@ -32,7 +40,17 @@ function handler(req: http.IncomingMessage, res: http.ServerResponse): void {
   }
   if (url.pathname === "/v1/organizations") return json(200, [{ id: "o1", name: "Acme" }]);
   if (url.pathname === "/v1/projects") {
+    if (req.method === "POST") return json(201, { id: "r2", name: "NewApp" });
     return json(200, [{ id: "r1", name: "App", organization_id: "o1", region: "eu-west", status: "ACTIVE" }]);
+  }
+  if (url.pathname === "/v1/projects/r1/api-keys") {
+    return json(200, [
+      { name: "anon", api_key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.anon" },
+      { name: "service_role", api_key: "sk-secret-value" },
+    ]);
+  }
+  if (url.pathname === "/v1/projects/r1/functions/deploy" && req.method === "POST") {
+    return json(200, {});
   }
   return json(404, { message: "nope" });
 }
@@ -73,6 +91,63 @@ describe("dyad provider management apis (c8)", () => {
     await expect(
       createNeonBranch({ apiKey: "good", projectId: "p1", branchName: "  ", baseUrl: neonBase }),
     ).rejects.toThrow(/required/);
+  });
+
+  it("creates supabase projects, reveals keys, and deploys functions", async () => {
+    const created = await createSupabaseProject({
+      token: "good",
+      name: "NewApp",
+      organizationId: "o1",
+      baseUrl: supabaseBase,
+    });
+    expect(created).toEqual({ id: "r2", name: "NewApp" });
+    await expect(
+      createSupabaseProject({ token: "good", name: "  ", organizationId: "o1", baseUrl: supabaseBase }),
+    ).rejects.toThrow(/required/);
+
+    const keys = await getSupabaseProjectApiKeys({ token: "good", projectId: "r1", reveal: true, baseUrl: supabaseBase });
+    expect(keys).toHaveLength(2);
+    expect(keys.find((k) => k.name === "service_role")?.apiKey).toBe("sk-secret-value");
+
+    await expect(
+      deploySupabaseFunction({ token: "good", projectId: "r1", slug: "hello", bundleB64: "e30=", baseUrl: supabaseBase }),
+    ).resolves.toBeUndefined();
+    await expect(
+      deploySupabaseFunction({ token: "bad", projectId: "r1", slug: "hello", bundleB64: "e30=", baseUrl: supabaseBase }),
+    ).rejects.toThrow(/401/);
+  });
+
+  it("creates and deletes supabase test users without leaking the secret", async () => {
+    const seen: string[] = [];
+    const stub = vi.fn(async (url: unknown, init?: { method?: string; body?: string }) => {
+      const u = String(url);
+      if (!u.includes("/auth/v1/admin/users")) throw new Error(`unexpected ${u}`);
+      if ((init?.method ?? "GET") === "POST") {
+        const body = JSON.parse(init?.body ?? "{}");
+        expect(body.email).toMatch(/dyad-test-.*@dyad.test/);
+        expect(body.email_confirm).toBe(true);
+        return { ok: true, json: async () => ({ id: "u-1", email: body.email }) } as Response;
+      }
+      seen.push(u);
+      return { ok: true, status: 200, json: async () => ({}) } as Response;
+    });
+    vi.stubGlobal("fetch", stub);
+    try {
+      const user = await createSupabaseTestUser({ projectRef: "r1", secretKey: "sk-secret-value" });
+      expect(user).toMatchObject({ id: "u-1" });
+      expect(user.email).toMatch(/@dyad.test$/);
+      await expect(
+        deleteSupabaseTestUser({ projectRef: "r1", secretKey: "sk-secret-value", userId: "u-1" }),
+      ).resolves.toBeUndefined();
+      expect(seen[0]).toContain("/auth/v1/admin/users/u-1");
+      // Secret travels in headers only — never in URLs or results.
+      for (const call of stub.mock.calls) {
+        expect(String(call[0])).not.toContain("sk-secret-value");
+      }
+      expect(JSON.stringify(user)).not.toContain("sk-secret-value");
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("lists supabase orgs and projects", async () => {

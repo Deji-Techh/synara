@@ -41,6 +41,8 @@ export const PROVIDER_TO_ENV_VAR: Record<string, string> = {
   opencodeZen: "OPENCODE_ZEN_API_KEY",
   opencodeGo: "OPENCODE_GO_API_KEY",
   groq: "GROQ_API_KEY",
+  supabase: "SUPABASE_ACCESS_TOKEN",
+  neon: "NEON_API_KEY",
   mistral: "MISTRAL_API_KEY",
   together: "TOGETHER_API_KEY",
   cohere: "COHERE_API_KEY",
@@ -178,6 +180,28 @@ export const PROVIDERS: Record<string, ProviderDef> = {
     websiteUrl: "https://console.groq.com/keys",
     secondary: true,
     transport: "streamable",
+  },
+  supabase: {
+    id: "supabase",
+    displayName: "Supabase",
+    envVarName: "SUPABASE_ACCESS_TOKEN",
+    baseUrl: "https://api.supabase.com",
+    websiteUrl: "https://supabase.com/dashboard/account/tokens",
+    secondary: true,
+    transport: "needs-work",
+    transportNote:
+      "Management API token for database provisioning (create projects, deploy functions, test users) — not a chat model. Saved to the encrypted secrets file.",
+  },
+  neon: {
+    id: "neon",
+    displayName: "Neon",
+    envVarName: "NEON_API_KEY",
+    baseUrl: "https://console.neon.tech/api/v2",
+    websiteUrl: "https://console.neon.tech/app/settings/api-keys",
+    secondary: true,
+    transport: "needs-work",
+    transportNote:
+      "Management API key for database provisioning (create projects and branches) — not a chat model. Saved to the encrypted secrets file.",
   },
   mistral: {
     id: "mistral",

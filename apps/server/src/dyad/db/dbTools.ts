@@ -9,6 +9,8 @@
 // human-gate waiter (dyad/plan/userPrompt) like the donor resolver.
 
 import { z } from "zod";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { defineTool, type ToolDef } from "../../harness/tools/defineTool.ts";
 import { nextRequestId, waitForUserInput } from "../plan/userPrompt.ts";
 import {
@@ -21,8 +23,16 @@ import {
   type DbProvider,
 } from "./connections.ts";
 import { checkSqlDanger, classifySql, splitStatements } from "./sqlSafety.ts";
+import { getVoiceApiKey } from "../../voice/transcriptionService.ts";
 import { writeMigrationFile } from "./migrations.ts";
 import { listSupabaseProjects } from "./supabaseApi.ts";
+import {
+  createSupabaseProject,
+  createSupabaseTestUser,
+  deleteSupabaseTestUser,
+  deploySupabaseFunction,
+  getSupabaseProjectApiKeys,
+} from "./supabaseApi.ts";
 import { listNeonBranches, listNeonProjects, createNeonBranch } from "./neonApi.ts";
 
 export class DbToolError extends Error {
@@ -206,9 +216,10 @@ export const getSupabaseProjectInfoTool = defineTool({
       `Database URL source: ${resolveDatabaseUrl(ctx.appPath, ctx.sessionId).source}.`,
       "Use get_database_table_schema to inspect tables and execute_sql for queries.",
     ];
-    if (link.managementToken) {
+    const supabaseToken = link.managementToken || getVoiceApiKey("supabase");
+    if (supabaseToken) {
       try {
-        const projects = await listSupabaseProjects({ token: link.managementToken });
+        const projects = await listSupabaseProjects({ token: supabaseToken });
         lines.push(
           "",
           `Remote projects (${projects.length}):`,
@@ -240,15 +251,16 @@ export const getNeonProjectInfoTool = defineTool({
       `Database URL source: ${resolveDatabaseUrl(ctx.appPath, ctx.sessionId).source}.`,
       "Use get_database_table_schema to inspect tables and execute_sql for queries.",
     ];
-    if (link.managementToken) {
+    const neonToken = link.managementToken || getVoiceApiKey("neon");
+    if (neonToken) {
       try {
-        const projects = await listNeonProjects({ apiKey: link.managementToken });
+        const projects = await listNeonProjects({ apiKey: neonToken });
         lines.push("", `Remote projects (${projects.length}):`);
         for (const p of projects.slice(0, 10)) {
           lines.push(`- ${p.name} (${p.id})`);
           if (link.projectId && p.id === link.projectId) {
             try {
-              const branches = await listNeonBranches({ apiKey: link.managementToken as string, projectId: p.id });
+              const branches = await listNeonBranches({ apiKey: neonToken, projectId: p.id });
               for (const b of branches.slice(0, 10)) {
                 lines.push(`    branch: ${b.name} (${b.id})${b.primary ? " [primary]" : ""}`);
               }
@@ -373,8 +385,160 @@ const createNeonBranchSchema = z.object({
   branchName: z.string().optional().describe("Branch name, e.g. caide-myapp-dev. Defaults to a caide-<timestamp> name."),
 });
 
-export const createNeonBranchTool = defineTool({
-  name: "create_neon_branch",
+// --- create_supabase_project (PAT-based; no hosted broker) ---
+
+const createSupabaseProjectSchema = z.object({
+  name: z.string().describe("Project name, e.g. myapp-prod."),
+  organizationId: z.string().optional().describe("Organization slug/id. Defaults to the linked integration's organization."),
+  region: z.string().optional().describe("Region, e.g. us-east-1. Defaults to us-east-1."),
+});
+
+function requireSupabaseManagementToken(sessionId: string): { link: DbLink; token: string } {
+  const link = getDatabaseLink(sessionId);
+  if (!link || link.provider !== "supabase") {
+    throw new DbNotConnectedError();
+  }
+  // Session link token wins; otherwise the stored settings key or env
+  // (Settings → Database → access token, or SUPABASE_ACCESS_TOKEN).
+  const token = link.managementToken || getVoiceApiKey("supabase");
+  if (!token) {
+    throw new DbToolError("Supabase access token missing — add one in Settings → Database, or re-run add_integration.");
+  }
+  return { link, token };
+}
+
+function requireNeonManagementToken(sessionId: string): { link: DbLink; token: string } {
+  const link = getDatabaseLink(sessionId);
+  if (!link || link.provider !== "neon") {
+    throw new DbNotConnectedError();
+  }
+  const token = link.managementToken || getVoiceApiKey("neon");
+  if (!token) {
+    throw new DbToolError("Neon API key missing — add one in Settings → Database, or re-run add_integration.");
+  }
+  return { link, token };
+}
+
+export const createSupabaseProjectTool = defineTool({
+  name: "create_supabase_project",
+  description: [
+    "Create a Supabase project inside an organization.",
+    "Requires a linked Supabase connection with a personal access token — call add_integration first when unlinked.",
+    "After creation, save the connection string to .env.local as DATABASE_URL and link the project id.",
+  ].join(" "),
+  schema: createSupabaseProjectSchema,
+  readOnly: false,
+  modifiesState: true,
+  execute: async (args, ctx) => {
+    const parsed = createSupabaseProjectSchema.parse(args);
+    const { link, token } = requireSupabaseManagementToken(ctx.sessionId);
+    const orgId = parsed.organizationId?.trim() || link.organizationSlug || "";
+    if (!orgId) {
+      throw new DbToolError("No organization — pass organizationId or re-run add_integration.");
+    }
+    const created = await createSupabaseProject({
+      token,
+      name: parsed.name,
+      organizationId: orgId,
+      region: parsed.region,
+      signal: ctx.signal,
+    });
+    return [
+      `Supabase project created: ${created.name} (${created.id}).`,
+      "Save its connection string to .env.local as DATABASE_URL with write_file and link the project id. NEVER print secrets in chat.",
+    ].join("\n");
+  },
+  presentCall: (args: any) => `Create Supabase project${args.name ? `: ${args.name}` : ""}`,
+});
+
+// --- deploy_supabase_functions ---
+
+const deploySupabaseFunctionsSchema = z.object({
+  projectId: z.string().optional().describe("Project ref. Defaults to the linked integration's project."),
+  slugs: z.array(z.string()).describe("Function slugs to deploy from supabase/functions/<slug>/index.ts in the app."),
+});
+
+export const deploySupabaseFunctionsTool = defineTool({
+  name: "deploy_supabase_functions",
+  description: [
+    "Deploy Edge Functions from supabase/functions/<slug>/index.ts to the linked Supabase project.",
+    "Bundles each function directory and deploys sequentially. Requires a linked Supabase connection.",
+  ].join(" "),
+  schema: deploySupabaseFunctionsSchema,
+  readOnly: false,
+  modifiesState: true,
+  execute: async (args, ctx) => {
+    const parsed = deploySupabaseFunctionsSchema.parse(args);
+    const { link, token } = requireSupabaseManagementToken(ctx.sessionId);
+    const projectId = parsed.projectId?.trim() || link.projectId || "";
+    if (!projectId) {
+      throw new DbToolError("No project ref — pass projectId or re-run add_integration.");
+    }
+    const deployed: string[] = [];
+    for (const slug of parsed.slugs.map((s) => s.trim()).filter(Boolean)) {
+      const entry = path.join(ctx.appPath, "supabase", "functions", slug, "index.ts");
+      let source: string;
+      try {
+        source = await fs.promises.readFile(entry, "utf8");
+      } catch {
+        throw new DbToolError(`Function source missing: supabase/functions/${slug}/index.ts.`);
+      }
+      await deploySupabaseFunction({
+        token,
+        projectId,
+        slug,
+        bundleB64: Buffer.from(source, "utf8").toString("base64"),
+        signal: ctx.signal,
+      });
+      deployed.push(slug);
+    }
+    return `Deployed ${deployed.length} Edge Function${deployed.length === 1 ? "" : "s"} to ${projectId}: ${deployed.join(", ")}.`;
+  },
+  presentCall: (args: any) => `Deploy functions: ${(args.slugs ?? []).join(", ") || "none"}`,
+});
+
+// --- supabase_test_user (throwaway e2e user; secret key never leaves the call) ---
+
+const supabaseTestUserSchema = z.object({
+  action: z.enum(["create", "delete"]).describe("Create or delete the throwaway test user."),
+  userId: z.string().optional().describe("User id for action=delete."),
+});
+
+export const supabaseTestUserTool = defineTool({
+  name: "supabase_test_user",
+  description: [
+    "Create or delete a throwaway Supabase Auth user (dyad-test+* address) for isolated end-to-end verification.",
+    "Uses the project secret key via the Auth Admin API — the key is fetched with reveal, used once, and NEVER stored in the app or printed in chat. The app keeps running on the publishable key.",
+  ].join(" "),
+  schema: supabaseTestUserSchema,
+  readOnly: false,
+  modifiesState: true,
+  execute: async (args, ctx) => {
+    const parsed = supabaseTestUserSchema.parse(args);
+    const { link, token } = requireSupabaseManagementToken(ctx.sessionId);
+    const projectId = link.projectId || "";
+    if (!projectId) {
+      throw new DbToolError("No project ref — re-run add_integration.");
+    }
+    const keys = await getSupabaseProjectApiKeys({ token, projectId, reveal: true, signal: ctx.signal });
+    const secret = keys.find((k) => /secret|service_role/i.test(`${k.name} ${k.apiKey ?? ""}`))?.apiKey
+      ?? keys.map((k) => k.apiKey).find(Boolean);
+    if (!secret) {
+      throw new DbToolError("No secret key revealed for this project — check dashboard permissions.");
+    }
+    const projectRef = projectId.includes(".") ? projectId.split(".")[0] as string : projectId;
+    if (parsed.action === "delete") {
+      if (!parsed.userId?.trim()) throw new DbToolError("userId is required for action=delete.");
+      await deleteSupabaseTestUser({ projectRef, secretKey: secret, userId: parsed.userId, signal: ctx.signal });
+      return `Test user ${parsed.userId} deleted.`;
+    }
+    const user = await createSupabaseTestUser({ projectRef, secretKey: secret, signal: ctx.signal });
+    return `Test user created: ${user.email} (${user.id}). Delete it with supabase_test_user action=delete when done.`;
+  },
+  presentCall: (args: any) => args.action === "delete" ? "Delete test user" : "Create test user",
+});
+
+export const createNeonBranchTool = defineTool({  name: "create_neon_branch",
   description: [
     "Create a Neon branch (database) inside the linked Neon project.",
     "Requires a linked Neon connection with a management token — call add_integration first when unlinked.",
@@ -386,20 +550,14 @@ export const createNeonBranchTool = defineTool({
   modifiesState: true,
   execute: async (args, ctx) => {
     const parsed = createNeonBranchSchema.parse(args);
-    const link = getDatabaseLink(ctx.sessionId);
-    if (!link || link.provider !== "neon") {
-      throw new DbNotConnectedError();
-    }
-    if (!link.managementToken) {
-      throw new DbToolError("Neon management token missing — re-run add_integration to connect with API access.");
-    }
+    const { link, token } = requireNeonManagementToken(ctx.sessionId);
     const projectId = parsed.projectId?.trim() || link.projectId;
     if (!projectId) {
       throw new DbToolError("No Neon project id — pass projectId or re-run add_integration.");
     }
     const branchName = parsed.branchName?.trim() || `caide-${Date.now().toString(36)}`;
     const created = await createNeonBranch({
-      apiKey: link.managementToken,
+      apiKey: token,
       projectId,
       branchName,
       signal: ctx.signal,
@@ -448,6 +606,9 @@ export const ALL_DB_TOOLS: ToolDef[] = [
   getDatabaseTableSchemaTool,
   getSupabaseProjectInfoTool,
   getNeonProjectInfoTool,
+  createSupabaseProjectTool,
+  deploySupabaseFunctionsTool,
+  supabaseTestUserTool,
   createNeonBranchTool,
   addIntegrationTool,
   enableNitroTool,
