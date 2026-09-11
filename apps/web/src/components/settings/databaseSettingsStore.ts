@@ -8,6 +8,13 @@ import { syncAllActiveHarnessSettings } from "~/harnessWs";
 
 export type DbProviderKind = "supabase" | "neon";
 
+/** Connection scope: global default vs bound to one project workspace. Absent = global (legacy entries). */
+export interface DbConnectionScope {
+  type: "global" | "project";
+  /** Canonical workspace root when type is "project". */
+  workspaceRoot?: string;
+}
+
 export interface DbConnection {
   id: string;
   provider: DbProviderKind;
@@ -16,6 +23,7 @@ export interface DbConnection {
   projectId?: string;
   enabled: boolean;
   createdAt: number;
+  scope?: DbConnectionScope;
 }
 
 export type ChainKind = "evm" | "solana";
@@ -90,7 +98,24 @@ export function validateConnection(
   if (!/^(postgres(ql)?:\/\/|supabase:\/\/)/.test(input.databaseUrl ?? "")) {
     problems.push("DATABASE_URL must be a postgres:// connection string.");
   }
+  if (input.scope?.type === "project" && !(input.scope.workspaceRoot ?? "").trim()) {
+    problems.push("Project scope needs a workspace root.");
+  }
   return problems;
+}
+
+/** Normalize a workspace root for scope matching (slashes, trailing sep). */
+export function normalizeScopeRoot(root: string): string {
+  return root.replace(/\\/g, "/").replace(/\/+$/, "");
+}
+
+/** True when a project-scoped connection belongs to the given workspace. */
+export function connectionMatchesWorkspace(connection: DbConnection, workspaceRoot: string): boolean {
+  return (
+    connection.scope?.type === "project" &&
+    !!connection.scope.workspaceRoot &&
+    normalizeScopeRoot(connection.scope.workspaceRoot) === normalizeScopeRoot(workspaceRoot)
+  );
 }
 
 export function validateNetwork(

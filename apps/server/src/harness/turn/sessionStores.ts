@@ -31,7 +31,9 @@ export interface SettingsSyncPayload {
   safeSql?: boolean;
   mcpConsents?: Array<{ serverId: string | number; toolName: string; consent: McpConsent }>;
   mcpAutoApproveSafe?: boolean;
-  dbLinks?: DbLink[];
+  dbLinks?: Array<
+    DbLink & { scope?: { type: "global" | "project"; workspaceRoot?: string } }
+  >;
   /** Per-step model routing (single vs scout/builder/planner); validated on apply. */
   agentRouting?: unknown;
   /** Client MCP server configs (web settings shape); manager syncs + feeds the registry. */
@@ -144,8 +146,22 @@ export function applySettingsSync(sessionId: string, payload: SettingsSyncPayloa
     }
   }
   if (payload.dbLinks && payload.dbLinks.length > 0) {
-    const first = payload.dbLinks[0];
-    linkDatabase(sessionId, first);
+    // Project-scoped matching: a connection bound to this session's app wins;
+    // otherwise the global default applies. Never clobber with nothing — an
+    // unmatched sync leaves the existing session link alone.
+    const appPath = getSessionApp(sessionId);
+    const sameRoot = (a?: string, b?: string) =>
+      !!a && !!b && a.replace(/\\/g, "/").replace(/\/+$/, "") === b.replace(/\\/g, "/").replace(/\/+$/, "");
+    const match =
+      (appPath && payload.dbLinks.find((c) => c.scope?.type === "project" && sameRoot(c.scope.workspaceRoot, appPath))) ||
+      payload.dbLinks.find((c) => !c.scope || c.scope.type === "global");
+    // No match (e.g. every entry is bound to another project): leave the
+    // existing session link alone rather than clobbering it.
+    if (match) {
+      const { scope: _scope, ...link } = match;
+      void _scope;
+      linkDatabase(sessionId, link);
+    }
   }
   if (payload.agentRouting !== undefined) {
     entry.routing = normalizeAgentRouting(payload.agentRouting);

@@ -2,7 +2,12 @@
 // Purpose: Guards DB connection/network validation (pure, no network).
 
 import { describe, expect, it } from "vitest";
-import { validateConnection, validateNetwork } from "./databaseSettingsStore";
+import {
+  connectionMatchesWorkspace,
+  normalizeScopeRoot,
+  validateConnection,
+  validateNetwork,
+} from "./databaseSettingsStore";
 
 describe("databaseSettingsStore", () => {
   it("accepts valid connections and networks", () => {
@@ -34,5 +39,27 @@ describe("databaseSettingsStore", () => {
       "A valid http(s) RPC URL is required.",
       "Chain ID is required (e.g. 1, 137, solana-mainnet).",
     ]);
+  });
+
+  it("validates project scope and matches workspaces slash-insensitively", () => {
+    expect(
+      validateConnection(
+        { id: "a", name: "x", databaseUrl: "postgres://u@h/db", scope: { type: "project", workspaceRoot: " " } },
+        [],
+      ),
+    ).toContain("Project scope needs a workspace root.");
+    expect(normalizeScopeRoot("C:\\work\\app\\")).toBe("C:/work/app");
+    const bound = {
+      id: "a",
+      name: "x",
+      provider: "neon" as const,
+      databaseUrl: "postgres://u@h/db",
+      enabled: true,
+      createdAt: 0,
+      scope: { type: "project" as const, workspaceRoot: "/work/app/" },
+    };
+    expect(connectionMatchesWorkspace(bound, "/work/app")).toBe(true);
+    expect(connectionMatchesWorkspace(bound, "/work/other")).toBe(false);
+    expect(connectionMatchesWorkspace({ ...bound, scope: { type: "global" as const } }, "/work/app")).toBe(false);
   });
 });

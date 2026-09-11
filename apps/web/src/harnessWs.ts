@@ -236,6 +236,7 @@ export function syncHarnessSettings(
       databaseUrl: string;
       projectId?: string;
       enabled: boolean;
+      scope?: { type: string; workspaceRoot?: string };
     }>
   >("caide.db-connections.v1", []);
   const mcpServers = readJson<
@@ -265,11 +266,11 @@ export function syncHarnessSettings(
   >("caide.blockchain-networks.v1", []);
   const dbLinks = connections
     .filter((c) => c.enabled && typeof c.databaseUrl === "string" && c.databaseUrl.length > 0)
-    .slice(0, 1)
     .map((c) => ({
       provider: c.provider === "neon" ? "neon" : "supabase",
       databaseUrl: c.databaseUrl,
       projectId: c.projectId,
+      scope: c.scope,
     }));
   send({
     type: "settings_sync",

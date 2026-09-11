@@ -31,6 +31,12 @@ import { ScrollArea } from "../ui/scroll-area";
 import { DockPaneHeader } from "./DockPaneHeader";
 import { PanelStateMessage } from "./PanelStateMessage";
 import { ensureNativeApi } from "~/nativeApi";
+import {
+  connectionMatchesWorkspace,
+  loadConnections,
+  normalizeScopeRoot,
+  saveConnections,
+} from "../settings/databaseSettingsStore";
 
 interface EngineApp {
   id: number;
@@ -87,8 +93,7 @@ async function invokeDatabase<T>(
 }
 
 /** Human error mapping — raw transport/schema messages never reach users. */
-export function databaseErrorMessage(cause: unknown): string {
-  const raw = cause instanceof Error ? cause.message : String(cause);
+export function databaseErrorMessage(cause: unknown): string {  const raw = cause instanceof Error ? cause.message : String(cause);
   if (/harness offline|socket|ECONNREFUSED|connect|fetch failed|network/i.test(raw)) {
     return "Can't reach Caide's backend. Restart the app; if it persists, check Settings → Providers for connection status.";
   }
@@ -598,10 +603,88 @@ export function DatabasePanel(props: {
                   <RefreshCwIcon className={cn("size-3", busy && "animate-spin")} /> Refresh
                 </Button>
               </div>
+              <ProjectConnectionSection workspaceRoot={props.workspaceRoot} />
             </>
           )}
         </div>
       </ScrollArea>
     </div>
+  );
+}
+
+/**
+ * Project default assignment: binds one settings connection to this
+ * project's workspace so its chats use it instead of the global default.
+ * Writes through the settings store (triggers a settings sync).
+ */
+function ProjectConnectionSection(props: { workspaceRoot?: string | null | undefined }) {
+  const [version, setVersion] = useState(0);
+  if (!props.workspaceRoot) return null;
+  const root = props.workspaceRoot;
+  const connections = loadConnections().filter((c) => c.enabled && c.databaseUrl);
+  const bound = connections.find((c) => connectionMatchesWorkspace(c, root));
+  const assign = (id: string | null) => {
+    saveConnections(
+      loadConnections().map((c) =>
+        c.id === id
+          ? { ...c, scope: { type: "project" as const, workspaceRoot: normalizeScopeRoot(root) } }
+          : c.scope?.type === "project" && c.scope.workspaceRoot && normalizeScopeRoot(c.scope.workspaceRoot) === normalizeScopeRoot(root)
+            ? { ...c, scope: { type: "global" as const } }
+            : c,
+      ),
+    );
+    setVersion((v) => v + 1);
+  };
+  void version;
+  if (connections.length === 0) {
+    return (
+      <section className="rounded-lg border border-border">
+        <header className="border-b border-border px-3 py-2">
+          <div className="font-medium">Project default</div>
+        </header>
+        <div className="p-3 text-xs text-muted-foreground">
+          No saved connections. Add one in Settings → Database, then bind it here.
+        </div>
+      </section>
+    );
+  }
+  return (
+    <section className="rounded-lg border border-border">
+      <header className="border-b border-border px-3 py-2">
+        <div className="font-medium">Project default</div>
+      </header>
+      <div className="flex flex-col gap-1 p-2">
+        {connections.map((c) => {
+          const isBound = bound?.id === c.id;
+          return (
+            <div key={c.id} className="flex items-center gap-2 rounded-md px-2 py-1 text-xs">
+              <span className="min-w-0 flex-1 truncate">
+                {c.name} <span className="text-muted-foreground">· {c.provider}</span>
+              </span>
+              {isBound ? (
+                <Badge variant="secondary" className="gap-1">
+                  <CheckCircle2Icon className="size-3" /> This project
+                </Badge>
+              ) : (
+                <Button size="xs" variant="outline" onClick={() => assign(c.id)}>
+                  Use for this project
+                </Button>
+              )}
+            </div>
+          );
+        })}
+        {bound ? (
+          <div className="px-2 pb-1">
+            <Button size="xs" variant="ghost" onClick={() => assign("__clear__")}>
+              Clear project binding (fall back to global default)
+            </Button>
+          </div>
+        ) : (
+          <div className="px-2 pb-1 text-[11px] text-muted-foreground">
+            No binding — this project uses the global default connection.
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

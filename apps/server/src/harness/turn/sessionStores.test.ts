@@ -18,7 +18,9 @@ import {
   applySettingsSync,
   clearSessionStores,
   getOrCreateSessionStores,
+  getSessionApp,
   getSessionToolCounts,
+  noteSessionApp,
   recordSessionToolCall,
   restoreSessionState,
   snapshotSessionState,
@@ -135,8 +137,7 @@ describe("session stores persistence (m3g)", () => {
     }
   });
 
-  it("counts post-consent tool calls per session (fork telemetry)", () => {
-    const sid = `s-tools-${Date.now()}`;
+  it("counts post-consent tool calls per session (fork telemetry)", () => {    const sid = `s-tools-${Date.now()}`;
     recordSessionToolCall(sid, "execute_fork_skill");
     recordSessionToolCall(sid, "execute_fork_skill");
     recordSessionToolCall(sid, "spawn_subagent");
@@ -145,5 +146,46 @@ describe("session stores persistence (m3g)", () => {
     expect(getOrCreateSessionStores(sid).toolCalls.execute_fork_skill).toBe(2);
     clearSessionStores(sid);
     expect(getSessionToolCounts(sid)).toEqual({});
+  });
+
+  it("matches project-scoped connections per session app, never clobbers (b)", () => {
+    const sidA = `s-scope-a-${Date.now()}`;
+    const sidB = `s-scope-b-${Date.now()}`;
+    noteSessionApp(sidA, "/work/app-a");
+    noteSessionApp(sidB, "C:\\work\\app-b\\");
+    const links = [
+      { provider: "supabase", databaseUrl: "postgres://global/db" },
+      {
+        provider: "neon",
+        databaseUrl: "postgres://a/db",
+        scope: { type: "project", workspaceRoot: "/work/app-a/" },
+      },
+      {
+        provider: "neon",
+        databaseUrl: "postgres://b/db",
+        scope: { type: "project", workspaceRoot: "C:/work/app-b" },
+      },
+    ];
+    applySettingsSync(sidA, { dbLinks: [...links] });
+    // Trailing-slash + backslash-insensitive matching.
+    expect(getDatabaseLink(sidA)?.databaseUrl).toBe("postgres://a/db");
+    // Stored link carries no scope residue.
+    expect(getDatabaseLink(sidA)).not.toHaveProperty("scope");
+    applySettingsSync(sidB, { dbLinks: [...links] });
+    expect(getDatabaseLink(sidB)?.databaseUrl).toBe("postgres://b/db");
+
+    // No session app and no global entry: existing link survives.
+    const sidC = `s-scope-c-${Date.now()}`;
+    noteSessionApp(sidC, "/work/app-c");
+    applySettingsSync(sidC, {
+      dbLinks: [{ provider: "neon", databaseUrl: "postgres://z/db", scope: { type: "project", workspaceRoot: "/work/other" } }],
+    });
+    expect(getDatabaseLink(sidC)).toBeUndefined();
+    // Legacy scopeless entries still provision as the global default.
+    applySettingsSync(sidC, { dbLinks: [{ provider: "supabase", databaseUrl: "postgres://legacy/db" }] });
+    expect(getDatabaseLink(sidC)?.databaseUrl).toBe("postgres://legacy/db");
+    clearSessionStores(sidA);
+    clearSessionStores(sidB);
+    clearSessionStores(sidC);
   });
 });

@@ -305,6 +305,11 @@ export function DatabaseSettingsPanel(props: { active: boolean }) {
                 <div className="space-y-1">
                   <div className="capitalize">{conn.provider}</div>
                   {conn.projectId ? <div className="font-mono text-[11px]">project {conn.projectId}</div> : null}
+                  <div className="text-[11px] text-muted-foreground">
+                    {conn.scope?.type === "project" && conn.scope.workspaceRoot
+                      ? `Bound to ${conn.scope.workspaceRoot} (set in the Database dock pane)`
+                      : "Global default — used when no project binding matches"}
+                  </div>
                 </div>
               }
               actions={
@@ -314,6 +319,15 @@ export function DatabaseSettingsPanel(props: { active: boolean }) {
                     onCheckedChange={(enabled) => persistConns(connections.map((c) => (c.id === conn.id ? { ...c, enabled } : c)))}
                     aria-label={`Enable ${conn.name}`}
                   />
+                  {conn.scope?.type === "project" ? (
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      onClick={() => persistConns(connections.map((c) => (c.id === conn.id ? { ...c, scope: { type: "global" as const } } : c)))}
+                    >
+                      Unbind
+                    </Button>
+                  ) : null}
                   <Button size="xs" variant="destructive-outline" onClick={() => persistConns(connections.filter((c) => c.id !== conn.id))}>
                     Remove
                   </Button>
