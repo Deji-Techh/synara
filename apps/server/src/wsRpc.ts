@@ -531,9 +531,194 @@ function makeWsPreviewHandlers(_providerAdapterRegistry: any, _options: any) {
   };
 }
 
-function makeWsDatabaseHandlers(_providerAdapterRegistry: any, _options: any) {
+export function makeWsDatabaseHandlers(_providerAdapterRegistry: any, _options: any) {
+  // Real bridge onto dyad/db (replaces the {} stub that surfaced as
+  // `Missing key at ["value"]["value"]`). App identity resolves from the
+  // session's noted app, else the panel-provided workspaceRoot. Tokens come
+  // from the session link first, then stored settings keys / env — never
+  // from the client payload.
+  const tryPromise = <A>(p: Promise<A>) => Effect.tryPromise(() => p);
+  const resolveApp = async (threadId: string, payload?: { workspaceRoot?: string; appId?: string | number }) => {
+    const { getSessionApp } = await import("./harness/turn/sessionStores.ts");
+    const workspaceRoot =
+      (typeof payload?.workspaceRoot === "string" && payload.workspaceRoot) ||
+      getSessionApp(threadId) ||
+      (typeof payload?.appId === "string" ? payload.appId : undefined);
+    if (!workspaceRoot) {
+      throw new Error("No project workspace for this chat yet — start a chat in a project first.");
+    }
+    return workspaceRoot;
+  };
   return {
-    "database.invoke": (_input: any) => Effect.succeed({} as any),
+    "database.invoke": (input: any) =>
+      tryPromise(
+        (async () => {
+          const threadId = typeof input?.threadId === "string" ? input?.threadId : "";
+          const channel = typeof input?.channel === "string" ? input.channel : "";
+          const payload = ((input?.payload ?? {}) as Record<string, unknown>) ?? {};
+          const { getDatabaseLink, getAppDatabaseLink, linkAppDatabase } = await import(
+            "./dyad/db/connections.ts"
+          );
+          const { getVoiceApiKey } = await import("./voice/transcriptionService.ts");
+          const str = (v: unknown) => (typeof v === "string" ? v : "");
+          switch (channel) {
+            case "list-apps": {
+              let workspaceRoot: string | undefined;
+              try {
+                workspaceRoot = await resolveApp(threadId, payload);
+              } catch {
+                return { apps: [] };
+              }
+              const link = getAppDatabaseLink(workspaceRoot) ?? getDatabaseLink(threadId);
+              const path = await import("node:path");
+              const name = workspaceRoot.split(/[\\/]/).filter(Boolean).at(-1) ?? workspaceRoot;
+              let id = 0;
+              for (const ch of workspaceRoot) id = (id * 31 + ch.charCodeAt(0)) | 0;
+              return {
+                apps: [
+                  {
+                    id: Math.abs(id),
+                    name,
+                    path: workspaceRoot,
+                    resolvedPath: path.resolve(workspaceRoot),
+                    supabaseProjectId: link?.provider === "supabase" ? (link.projectId ?? null) : null,
+                    supabaseParentProjectId: link?.provider === "supabase" ? (link.projectId ?? null) : null,
+                    supabaseOrganizationSlug: link?.organizationSlug ?? null,
+                    neonProjectId: link?.provider === "neon" ? (link.projectId ?? null) : null,
+                    neonDevelopmentBranchId: null,
+                    neonPreviewBranchId: null,
+                    neonActiveBranchId: link?.provider === "neon" ? (link.branchId ?? null) : null,
+                    selectedDatabaseBranchType: null,
+                  },
+                ],
+              };
+            }
+            case "neon:list-projects": {
+              const { listNeonProjects } = await import("./dyad/db/neonApi.ts");
+              const token =
+                getDatabaseLink(threadId)?.managementToken || getVoiceApiKey("neon") || "";
+              if (!token) throw new Error("Add a Neon API key in Settings → Database first.");
+              return { projects: await listNeonProjects({ apiKey: token }) };
+            }
+            case "neon:get-project": {
+              const { listNeonBranches } = await import("./dyad/db/neonApi.ts");
+              const token =
+                getDatabaseLink(threadId)?.managementToken || getVoiceApiKey("neon") || "";
+              if (!token) throw new Error("Add a Neon API key in Settings → Database first.");
+              const projectId = str(payload.projectId);
+              if (!projectId) throw new Error("projectId is required.");
+              return { branches: await listNeonBranches({ apiKey: token, projectId }) };
+            }
+            case "neon:set-app-project": {
+              const workspaceRoot = await resolveApp(threadId, payload);
+              const projectId = str(payload.projectId);
+              if (!projectId) throw new Error("projectId is required.");
+              const current = getAppDatabaseLink(workspaceRoot) ?? getDatabaseLink(threadId);
+              const next = { ...(current ?? { provider: "neon" as const }), provider: "neon" as const, projectId };
+              linkAppDatabase(workspaceRoot, next);
+              return { ok: true };
+            }
+            case "neon:unset-app-project": {
+              const workspaceRoot = await resolveApp(threadId, payload);
+              const current = getAppDatabaseLink(workspaceRoot);
+              if (current) {
+                const { projectId: _p, branchId: _b, ...rest } = current;
+                void _p;
+                void _b;
+                linkAppDatabase(workspaceRoot, { ...rest, provider: rest.provider });
+              }
+              return { ok: true };
+            }
+            case "neon:set-active-branch": {
+              const workspaceRoot = await resolveApp(threadId, payload);
+              const branchId = str(payload.branchId);
+              if (!branchId) throw new Error("branchId is required.");
+              const current = getAppDatabaseLink(workspaceRoot) ?? getDatabaseLink(threadId);
+              linkAppDatabase(workspaceRoot, { ...(current ?? { provider: "neon" as const }), provider: "neon" as const, branchId });
+              return { ok: true };
+            }
+            case "neon:create-project": {
+              const workspaceRoot = await resolveApp(threadId, payload);
+              const { createNeonProject, createNeonBranch } = await import("./dyad/db/neonApi.ts");
+              const token = getVoiceApiKey("neon") || getDatabaseLink(threadId)?.managementToken || "";
+              if (!token) throw new Error("Add a Neon API key in Settings → Database first.");
+              const name = str(payload.name) || workspaceRoot.split(/[\\/]/).filter(Boolean).at(-1) || "caide-app";
+              const created = await createNeonProject({ apiKey: token, name });
+              let branchId: string | undefined;
+              try {
+                const branch = await createNeonBranch({ apiKey: token, projectId: created.id, branchName: "development" });
+                branchId = branch.id;
+              } catch {
+                // project stands alone — branch later
+              }
+              const current = getAppDatabaseLink(workspaceRoot) ?? getDatabaseLink(threadId);
+              linkAppDatabase(workspaceRoot, {
+                ...(current ?? { provider: "neon" as const }),
+                provider: "neon" as const,
+                projectId: created.id,
+                ...(branchId ? { branchId } : {}),
+              });
+              return { project: created, branchId: branchId ?? null };
+            }
+            case "supabase:list-organizations": {
+              const { listSupabaseOrganizations } = await import("./dyad/db/supabaseApi.ts");
+              const token = getVoiceApiKey("supabase") || "";
+              if (!token) throw new Error("Add a Supabase access token in Settings → Database first.");
+              return await listSupabaseOrganizations({ token });
+            }
+            case "supabase:list-all-projects": {
+              const { listSupabaseProjects } = await import("./dyad/db/supabaseApi.ts");
+              const token = getVoiceApiKey("supabase") || "";
+              if (!token) throw new Error("Add a Supabase access token in Settings → Database first.");
+              return await listSupabaseProjects({ token });
+            }
+            case "supabase:set-app-project": {
+              const workspaceRoot = await resolveApp(threadId, payload);
+              const projectId = str(payload.projectId);
+              if (!projectId) throw new Error("projectId is required.");
+              const current = getAppDatabaseLink(workspaceRoot) ?? getDatabaseLink(threadId);
+              linkAppDatabase(workspaceRoot, {
+                ...(current ?? { provider: "supabase" as const }),
+                provider: "supabase" as const,
+                projectId,
+                ...(str(payload.organizationSlug) ? { organizationSlug: str(payload.organizationSlug) } : {}),
+              });
+              return { ok: true };
+            }
+            case "supabase:unset-app-project": {
+              const workspaceRoot = await resolveApp(threadId, payload);
+              const current = getAppDatabaseLink(workspaceRoot);
+              if (current && current.provider === "supabase") {
+                linkAppDatabase(workspaceRoot, {
+                  provider: "supabase",
+                  ...(current.databaseUrl ? { databaseUrl: current.databaseUrl } : {}),
+                });
+              }
+              return { ok: true };
+            }
+            case "supabase:create-project": {
+              const workspaceRoot = await resolveApp(threadId, payload);
+              const { createSupabaseProject } = await import("./dyad/db/supabaseApi.ts");
+              const token = getVoiceApiKey("supabase") || "";
+              if (!token) throw new Error("Add a Supabase access token in Settings → Database first.");
+              const name = str(payload.name) || workspaceRoot.split(/[\\/]/).filter(Boolean).at(-1) || "caide-app";
+              const orgId = str(payload.organizationId) || getAppDatabaseLink(workspaceRoot)?.organizationSlug || "";
+              if (!orgId) throw new Error("Pick an organization first (or pass organizationId).");
+              const created = await createSupabaseProject({ token, name, organizationId: orgId });
+              const current = getAppDatabaseLink(workspaceRoot) ?? getDatabaseLink(threadId);
+              linkAppDatabase(workspaceRoot, {
+                ...(current ?? { provider: "supabase" as const }),
+                provider: "supabase" as const,
+                projectId: created.id,
+                organizationSlug: orgId,
+              });
+              return { project: created };
+            }
+            default:
+              throw new Error(`Unknown database channel: ${channel || "(missing)"}`);
+          }
+        })(),
+      ),
   };
 }
 

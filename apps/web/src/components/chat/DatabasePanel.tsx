@@ -24,6 +24,7 @@ import {
 } from "~/lib/icons";
 
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import { ScrollArea } from "../ui/scroll-area";
 
@@ -72,9 +73,32 @@ async function invokeDatabase<T>(
   threadId: ThreadId,
   channel: string,
   payload?: unknown,
+  workspaceRoot?: string | null,
 ): Promise<T> {
-  const result = await ensureNativeApi().database.invoke({ threadId, channel, payload });
+  const result = await ensureNativeApi().database.invoke({
+    threadId,
+    channel,
+    payload: {
+      ...((payload ?? {}) as Record<string, unknown>),
+      ...(workspaceRoot ? { workspaceRoot } : {}),
+    },
+  });
   return result.value as T;
+}
+
+/** Human error mapping — raw transport/schema messages never reach users. */
+export function databaseErrorMessage(cause: unknown): string {
+  const raw = cause instanceof Error ? cause.message : String(cause);
+  if (/harness offline|socket|ECONNREFUSED|connect|fetch failed|network/i.test(raw)) {
+    return "Can't reach Caide's backend. Restart the app; if it persists, check Settings → Providers for connection status.";
+  }
+  if (/Settings → Database|token|401|403|unauthorized|unauthenticated/i.test(raw)) {
+    return "Missing or invalid management token — add it in Settings → Database, Management tokens.";
+  }
+  if (/Missing key at|Unexpected token|timed out|timeout|aborted/i.test(raw)) {
+    return "The backend didn't answer correctly — update to the latest AppImage, then press Refresh.";
+  }
+  return raw;
 }
 
 export function DatabasePanel(props: {
@@ -96,6 +120,7 @@ export function DatabasePanel(props: {
   const [supabaseProjects, setSupabaseProjects] = useState<SupabaseProject[] | null>(null);
   const [selectedOrgSlug, setSelectedOrgSlug] = useState<string | null>(null);
   const [branches, setBranches] = useState<NeonBranch[] | null>(null);
+  const [newProjectName, setNewProjectName] = useState("");
 
   const refreshApp = useCallback(async () => {
     if (!props.workspaceRoot) {
@@ -107,7 +132,7 @@ export function DatabasePanel(props: {
     setLoading(true);
     setResolveError(null);
     try {
-      const response = await invokeDatabase<{ apps?: EngineApp[] }>(props.threadId, "list-apps");
+      const response = await invokeDatabase<{ apps?: EngineApp[] }>(props.threadId, "list-apps", undefined, props.workspaceRoot);
       const apps = Array.isArray(response?.apps) ? response.apps : [];
       const root = props.workspaceRoot;
       const match = apps.find(
@@ -124,7 +149,7 @@ export function DatabasePanel(props: {
       setApp(match);
     } catch (cause) {
       setApp(null);
-      setResolveError(cause instanceof Error ? cause.message : String(cause));
+      setResolveError(databaseErrorMessage(cause));
     } finally {
       setLoading(false);
     }
@@ -140,7 +165,7 @@ export function DatabasePanel(props: {
     try {
       await fn();
     } catch (cause) {
-      setActionError(cause instanceof Error ? cause.message : String(cause));
+      setActionError(databaseErrorMessage(cause));
     } finally {
       setBusy(false);
     }
@@ -149,7 +174,7 @@ export function DatabasePanel(props: {
   const connectNeon = (projectId: string) =>
     run(async () => {
       if (!app) return;
-      await invokeDatabase(props.threadId, "neon:set-app-project", { appId: app.id, projectId });
+      await invokeDatabase(props.threadId, "neon:set-app-project", { appId: app.id, projectId }, props.workspaceRoot);
       await refreshApp();
       setShowNeonPicker(false);
       setNeonProjects(null);
@@ -158,7 +183,7 @@ export function DatabasePanel(props: {
   const disconnectNeon = () =>
     run(async () => {
       if (!app) return;
-      await invokeDatabase(props.threadId, "neon:unset-app-project", { appId: app.id });
+      await invokeDatabase(props.threadId, "neon:unset-app-project", { appId: app.id }, props.workspaceRoot);
       await refreshApp();
     });
 
@@ -181,7 +206,7 @@ export function DatabasePanel(props: {
   const disconnectSupabase = () =>
     run(async () => {
       if (!app) return;
-      await invokeDatabase(props.threadId, "supabase:unset-app-project", { appId: app.id });
+      await invokeDatabase(props.threadId, "supabase:unset-app-project", { appId: app.id }, props.workspaceRoot);
       await refreshApp();
     });
 
@@ -191,6 +216,8 @@ export function DatabasePanel(props: {
       const response = await invokeDatabase<{ projects?: NeonProject[] }>(
         props.threadId,
         "neon:list-projects",
+        undefined,
+        props.workspaceRoot,
       );
       setNeonProjects(Array.isArray(response?.projects) ? response.projects : []);
     });
@@ -202,6 +229,8 @@ export function DatabasePanel(props: {
       const orgs = await invokeDatabase<SupabaseOrganization[]>(
         props.threadId,
         "supabase:list-organizations",
+        undefined,
+        props.workspaceRoot,
       );
       setSupabaseOrgs(Array.isArray(orgs) ? orgs : []);
     });
@@ -212,6 +241,8 @@ export function DatabasePanel(props: {
       const all = await invokeDatabase<SupabaseProject[]>(
         props.threadId,
         "supabase:list-all-projects",
+        undefined,
+        props.workspaceRoot,
       );
       setSupabaseProjects(
         (Array.isArray(all) ? all : []).filter(
@@ -227,7 +258,7 @@ export function DatabasePanel(props: {
         const response = await invokeDatabase<{
           branches?: NeonBranch[];
           data?: { branches?: NeonBranch[] };
-        }>(props.threadId, "neon:get-project", { projectId: app.neonProjectId });
+        }>(props.threadId, "neon:get-project", { projectId: app.neonProjectId }, props.workspaceRoot);
         const list =
           (Array.isArray(response as unknown as NeonBranch[])
             ? (response as unknown as NeonBranch[])
@@ -239,7 +270,42 @@ export function DatabasePanel(props: {
   const setNeonBranch = (branchId: string) =>
     run(async () => {
       if (!app) return;
-      await invokeDatabase(props.threadId, "neon:set-active-branch", { appId: app.id, branchId });
+      await invokeDatabase(props.threadId, "neon:set-active-branch", { appId: app.id, branchId }, props.workspaceRoot);
+      await refreshApp();
+    });
+
+  const createNeonProject = () =>
+    run(async () => {
+      if (!app || !newProjectName.trim()) return;
+      await invokeDatabase<{ project?: { id: string } }>(
+        props.threadId,
+        "neon:create-project",
+        { appId: app.id, workspaceRoot: props.workspaceRoot, name: newProjectName.trim() },
+        props.workspaceRoot,
+      );
+      setNewProjectName("");
+      setShowNeonPicker(false);
+      setNeonProjects(null);
+      await refreshApp();
+    });
+
+  const createSupabaseProject = () =>
+    run(async () => {
+      if (!app || !selectedOrgSlug || !newProjectName.trim()) return;
+      await invokeDatabase<{ project?: { id: string } }>(
+        props.threadId,
+        "supabase:create-project",
+        {
+          appId: app.id,
+          workspaceRoot: props.workspaceRoot,
+          name: newProjectName.trim(),
+          organizationId: selectedOrgSlug,
+        },
+        props.workspaceRoot,
+      );
+      setNewProjectName("");
+      setShowSupabasePicker(false);
+      setSupabaseProjects(null);
       await refreshApp();
     });
 
@@ -372,7 +438,7 @@ export function DatabasePanel(props: {
                         <li className="px-2 py-1 text-xs text-muted-foreground">
                           {neonProjects === null
                             ? "Loading projects..."
-                            : "No Neon projects found."}
+                            : "No Neon projects found — create one below or add a token in Settings → Database."}
                         </li>
                       )}
                       {(neonProjects ?? []).map((project) => (
@@ -387,6 +453,18 @@ export function DatabasePanel(props: {
                           </button>
                         </li>
                       ))}
+                      <li className="flex gap-1 border-t border-border p-1">
+                        <Input
+                          className="min-w-0 flex-1 text-xs"
+                          placeholder="New project name"
+                          value={newProjectName}
+                          disabled={busy}
+                          onChange={(e) => setNewProjectName(e.target.value)}
+                        />
+                        <Button size="xs" disabled={busy || !newProjectName.trim()} onClick={createNeonProject}>
+                          Create
+                        </Button>
+                      </li>
                     </ul>
                   )}
                 </div>
@@ -496,6 +574,18 @@ export function DatabasePanel(props: {
                               </button>
                             </li>
                           ))}
+                          <li className="flex gap-1 border-t border-border p-1">
+                            <input
+                              className="min-w-0 flex-1 rounded-md border border-border bg-transparent px-2 py-1 text-xs"
+                              placeholder="New project name"
+                              value={newProjectName}
+                              disabled={busy}
+                              onChange={(e) => setNewProjectName(e.target.value)}
+                            />
+                            <Button size="xs" disabled={busy || !newProjectName.trim()} onClick={createSupabaseProject}>
+                              Create
+                            </Button>
+                          </li>
                         </ul>
                       )}
                     </div>
