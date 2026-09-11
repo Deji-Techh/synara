@@ -31,6 +31,7 @@ describe("RIGHT_DOCK_PANE_KINDS (single source of truth)", () => {
       "goals",
       "database",
       "publish",
+      "project",
     ]);
   });
 

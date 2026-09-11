@@ -5,8 +5,9 @@
 // HarnessEvent envelopes.
 
 import type { HarnessEvent } from "@caide/contracts";
-import { getAllHarnessSessions } from "./harnessSessionRegistry";
+import { getAllHarnessSessions, getHarnessSession } from "./harnessSessionRegistry";
 import { harnessStore } from "./harnessStore";
+import { applyProjectOverrides } from "./components/settings/mcpProjectOverrides";
 
 export interface HarnessWsOptions {
   url: string;
@@ -253,6 +254,10 @@ export function syncHarnessSettings(
       defaultConsent?: "ask" | "always" | "never";
     }>
   >("caide.mcp-servers.v1", []);
+  // Per-project MCP enable overlay: the thread's workspace decides which
+  // servers are live for that session; global registry untouched.
+  const sessionAppPath = getHarnessSession(sessionId)?.appPath ?? null;
+  const syncedMcpServers = applyProjectOverrides(mcpServers, sessionAppPath);
   const blockchainNetworks = readJson<
     Array<{
       id: string;
@@ -280,7 +285,7 @@ export function syncHarnessSettings(
       safeSql,
       mcpAutoApproveSafe: mcpPrefs.autoApproveSafe !== false,
       dbLinks,
-      mcpServers,
+      mcpServers: syncedMcpServers,
       blockchainNetworks,
       agentRouting: readJson("caide:agent-routing.v1", null),
     },

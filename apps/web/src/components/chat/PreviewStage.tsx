@@ -61,6 +61,7 @@ import { setVisibleInterval } from "~/lib/visibleInterval";
 import { MobileQrBranch } from "./MobileQrBranch";
 import { PanelStateMessage } from "./PanelStateMessage";
 import { CHAT_BACKGROUND_CLASS_NAME } from "./composerPickerStyles";
+import { loadPreviewDefaults, savePreviewDefaults } from "~/previewDefaultsStore";
 
 export const PREVIEW_STAGE_FIXED_WIDTH_PX = 42 * 16; // 672px
 
@@ -915,9 +916,43 @@ export function PreviewStage(props: {
   const [headerMode, setHeaderMode] = useState<HeaderMode>("quality");
   const [branch, setBranch] = useState<BranchId>(null);
   const [branchOpen, setBranchOpen] = useState(false);
-  const [viewport, setViewport] = useState<ViewportId>("full");
-  const [colorScheme, setColorScheme] = useState<PreviewColorScheme>("light");
-  const [deviceClass, setDeviceClass] = useState<DeviceClass>("phone");
+  const [viewport, setViewportState] = useState<ViewportId>(
+    () => loadPreviewDefaults(props.workspaceRoot).viewport,
+  );
+  const [colorScheme, setColorSchemeState] = useState<PreviewColorScheme>(
+    () => loadPreviewDefaults(props.workspaceRoot).colorScheme,
+  );
+  const [deviceClass, setDeviceClassState] = useState<DeviceClass>(
+    () => loadPreviewDefaults(props.workspaceRoot).deviceClass,
+  );
+  // Persist display choices per project workspace (Project dock pane reads them).
+  const persistDisplay = useCallback(
+    (patch: { viewport?: ViewportId; colorScheme?: PreviewColorScheme; deviceClass?: DeviceClass }) => {
+      if (props.workspaceRoot) savePreviewDefaults(props.workspaceRoot, patch);
+    },
+    [props.workspaceRoot],
+  );
+  const setViewport = useCallback(
+    (v: ViewportId) => {
+      setViewportState(v);
+      persistDisplay({ viewport: v });
+    },
+    [persistDisplay],
+  );
+  const setColorScheme = useCallback(
+    (c: PreviewColorScheme) => {
+      setColorSchemeState(c);
+      persistDisplay({ colorScheme: c });
+    },
+    [persistDisplay],
+  );
+  const setDeviceClass = useCallback(
+    (d: DeviceClass) => {
+      setDeviceClassState(d);
+      persistDisplay({ deviceClass: d });
+    },
+    [persistDisplay],
+  );
   const browserPreviewRef = useRef<HTMLDivElement | null>(null);
   const [browserDims, setBrowserDims] = useState<{ w: number; h: number } | null>(null);
   useEffect(() => {

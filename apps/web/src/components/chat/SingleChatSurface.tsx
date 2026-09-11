@@ -150,6 +150,11 @@ const LazyPublishPanel = lazy(() =>
     default: module.PublishPanel,
   })),
 );
+const LazyProjectPanel = lazy(() =>
+  import("./ProjectPanel").then((module) => ({
+    default: module.ProjectPanel,
+  })),
+);
 
 const DIFF_INLINE_DEFAULT_WIDTH = "max(28rem, calc(50vw - 8rem))";
 const SINGLE_PANEL_MIN_WIDTH = 26 * 16;
@@ -876,6 +881,17 @@ export function SingleChatSurface(props: {
           <Suspense fallback={<PanelStateMessage>Loading publish...</PanelStateMessage>}>
             <LazyPublishPanel
               threadId={props.threadId}
+              workspaceRoot={activeProject?.cwd ?? workspaceRoot}
+              onClose={() => closePane(props.threadId, pane.id)}
+            />
+          </Suspense>
+        );
+      case "project":
+        return (
+          <Suspense fallback={<PanelStateMessage>Loading project...</PanelStateMessage>}>
+            <LazyProjectPanel
+              threadId={props.threadId}
+              projectId={props.projectId}
               workspaceRoot={activeProject?.cwd ?? workspaceRoot}
               onClose={() => closePane(props.threadId, pane.id)}
             />

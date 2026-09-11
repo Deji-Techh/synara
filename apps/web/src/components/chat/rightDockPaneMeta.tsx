@@ -12,6 +12,7 @@ import {
   DiffIcon,
   FileIcon,
   FlagIcon,
+  FolderIcon,
   FoldersIcon,
   GitCommitIcon,
   GitPullRequestIcon,
@@ -54,6 +55,7 @@ export const RIGHT_DOCK_PANE_META: Record<RightDockPaneKind, RightDockPaneMeta> 
   goals: { label: "Goals", Icon: FlagIcon },
   database: { label: "Database", Icon: DatabaseIcon },
   publish: { label: "Publish", Icon: PublishIcon },
+  project: { label: "Project", Icon: FolderIcon },
 };
 
 // Neutral fallback for any pane kind we no longer recognize (e.g. stale
@@ -92,6 +94,7 @@ const RIGHT_DOCK_LAUNCHER_ORDER: readonly RightDockPaneKind[] = [
   "device",
   "database",
   "publish",
+  "project",
   "git",
 ];
 
