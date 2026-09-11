@@ -99,6 +99,10 @@ export const PreviewState = Schema.Struct({
    * render via device screenshot polling inside the device frame.
    */
   kind: Schema.optional(Schema.Literals(["web", "native"] as const)),
+  /** Cold-start duration (spawn → URL) in ms, when measured. */
+  coldStartMs: Schema.optional(Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))),
+  /** Last reload request epoch ms, when measured. */
+  lastReloadAt: Schema.optional(Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))),
 });
 export type PreviewState = typeof PreviewState.Type;
 
