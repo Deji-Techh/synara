@@ -352,7 +352,7 @@ const enableNitroSchema = z.object({
 export const enableNitroTool = defineTool({
   name: "enable_nitro",
   description: `
-Add a Nitro server layer to this Vite app so it can run secure server-side code
+Add a Nitro server layer to this app so it can run secure server-side code
 (API routes, database clients, secrets, webhooks).
 
 WHEN TO CALL: Before writing any code under server/, before referencing DATABASE_URL

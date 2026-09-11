@@ -472,6 +472,16 @@ describe("dyad prompt transplant (m1)", () => {
     expect(dapp).toContain("testnet");
   });
 
+  it("plan prompt routes motion packages and exempts blank (F2)", () => {
+    const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
+    const plan = constructSystemPrompt({ ...base, chatMode: "plan" });
+    expect(plan).toContain("Reanimated");
+    expect(plan).toContain("AnimatedContainer");
+    expect(plan).toContain("Blank projects are exempt");
+    expect(plan).toContain("desktop breakpoints");
+  });
+});
+
   it("blank projects get orientation only, never mobile UI contracts (F0)", () => {
     const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
     for (const chatMode of ["local-agent", "build"] as const) {

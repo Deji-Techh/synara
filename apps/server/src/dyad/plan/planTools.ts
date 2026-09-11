@@ -325,7 +325,7 @@ const todoSchema = z.object({
   id: z.string().describe("Unique identifier for the todo item"),
   content: z.string().optional().describe("The description/content of the todo item"),
   status: z.enum(["pending", "in_progress", "completed"]).optional().describe("The current status of the todo item"),
-  ref: z.string().optional().describe("Workspace-relative file path this todo maps to (e.g. src/screens/HomeScreen.tsx). Shown as a jump-to-file chip in the to-dos header — set it whenever the task centers on a file."),
+  ref: z.string().optional().describe("Workspace-relative file path this todo maps to (e.g. src/screens/HomeScreen.tsx, lib/screens/home_screen.dart, src/pages/index.tsx). Shown as a jump-to-file chip in the to-dos header — set it whenever the task centers on a file."),
 });
 
 const updateTodosSchema = z.object({

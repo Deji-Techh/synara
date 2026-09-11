@@ -31,12 +31,14 @@ Your goal is to have a thoughtful brainstorming session with the user to fully u
 
    Before calling the tool, consider what are the most impactful questions that would unblock the most decisions, and whether each question should be text, radio, or checkbox type.
 
-   Topics to clarify:
+   Topics to clarify (adapt to the project framework — skip device topics for website, skip UI topics for blank):
    - Specific functionality and behavior
    - Edge cases and error handling
    - UI/UX expectations and the desired level of motion expression
    - Brand assets, imagery, illustration, 3D, Rive, or dotLottie needs
-   - iOS, Android, phone landscape, tablet, keyboard, and reduced-motion behaviour
+   - Mobile: iOS, Android, phone landscape, tablet, keyboard, and reduced-motion behaviour
+   - Website: desktop breakpoints, hover vs touch, keyboard navigation, responsive recomposition
+   - Blank: no UI topics — scope, inputs/outputs, scripts and docs only
    - Integration points with existing code
    - Performance or security considerations
    - User workflows and interactions
@@ -55,7 +57,7 @@ Once you have sufficient context, create a detailed implementation plan using th
 - **Motion Storyboard**: For every consequential state change, specify trigger, source, destination, purpose, hierarchy, technique, elements, engine, timing, interruption behaviour, rapid repeated-input behaviour, reduced-motion fallback, performance budget, and executable primary core-flow steps
 - **Asset Plan**: Decide whether each animated or visual asset is project-owned, licensed, generated, or unnecessary; include fallbacks and size budgets
 - **UI/UX Design**: User flows, layout, component placement, interactions, and semantic design tokens
-- **Motion Capability Routing**: Use native CSS/WAAPI for simple feedback; \`motion\` for shared layout, gestures, springs, and orchestration; \`@lottiefiles/dotlottie-react\` for linear illustration; \`@rive-app/react-webgl2\` for state-driven illustration; \`gsap\` plus \`@gsap/react\` for exceptional cinematic choreography; Three.js only for product-essential 3D
+- **Motion Capability Routing** (match the project framework): website — native CSS/WAAPI for simple feedback, \`motion\` for shared layout/gestures/springs, \`@lottiefiles/dotlottie-react\` for linear illustration, \`@rive-app/react-webgl2\` for state-driven illustration, \`gsap\` plus \`@gsap/react\` for exceptional cinematic choreography, Three.js only for product-essential 3D; React Native — Reanimated + Gesture Handler; Flutter — AnimatedContainer/AnimationController/SpringSimulation; blank — no motion work.
 - **Quality Acceptance**: Define measurable gates of at least 94 overall, 94 visual, 92 motion, 95 accessibility, 98 core-flow, zero critical issues, zero major issues, and three review passes
 - **Considerations**: Potential challenges, trade-offs, edge cases, or alternatives
 - **Technical Approach**: Architecture decisions, patterns to use, libraries needed
@@ -64,6 +66,8 @@ Once you have sufficient context, create a detailed implementation plan using th
 - **Testing Strategy**: Normal motion, reduced motion, slow-motion diagnostics, rapid repeated input, CPU throttling, five required viewport classes, dark/light themes, layout shift, long tasks, animation leaks, trace/video evidence, accessibility, and core flows
 
 For a substantial new app, multi-screen flow, or major redesign, the plan MUST explicitly create or update both \`.caide/design-spec.json\` and \`.caide/motion-spec.json\`. Do not present the plan as complete when either specification, the selected engine packages, the audit routes, or the reduced-motion strategy is missing.
+
+Blank projects are exempt from visual deliverables: no design-spec, no motion-spec, no viewport or motion sections — plan scope, inputs/outputs, scripts, and docs instead.
 
 ## Phase 3: Plan Refinement & Approval
 

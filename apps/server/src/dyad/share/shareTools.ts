@@ -57,7 +57,7 @@ function resolveAppFile(appPath: string, relPath: string): string | null {
 }
 
 const shareArtifactSchema = z.object({
-  path: z.string().describe("Workspace-relative file to share (e.g. .caide/media/hero.png, dist/app.apk). Must exist under the app directory."),
+  path: z.string().describe("Workspace-relative file to share (e.g. .caide/media/hero.png, dist/app.apk, build/app.ipa, dist/index.html). Must exist under the app directory."),
   expiresInDays: z.number().int().min(SHARE_TTL_MIN_DAYS).max(SHARE_TTL_MAX_DAYS).optional().describe(`Link lifetime in days, ${SHARE_TTL_MIN_DAYS}-${SHARE_TTL_MAX_DAYS} (default ${SHARE_TTL_DEFAULT_DAYS}).`),
   note: z.string().optional().describe("Short label shown alongside the link (e.g. 'beta APK', 'home screenshot')."),
 });
