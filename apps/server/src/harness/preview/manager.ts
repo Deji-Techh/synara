@@ -18,6 +18,11 @@ export interface PreviewSession {
   appDir: string;
   /** True when spawned with a LAN-bound command (serves phones on the same WiFi). */
   lan: boolean;
+  /** Spawn epoch ms; readyAt set when the URL resolves (cold-start metric). */
+  startedAt: number;
+  readyAt?: number;
+  /** Last reload request epoch ms. */
+  lastReloadAt?: number;
 }
 
 const MAX_LOGS = 500;
@@ -67,12 +72,23 @@ export function getPreviewState(threadId: string): {
   url: string;
   logs: string[];
   kind?: "web" | "native";
+  coldStartMs?: number;
+  lastReloadAt?: number;
 } {
   const session = sessions.get(threadId);
   if (!session || session.process.exitCode !== null) {
     return { running: false, url: "", logs: [] };
   }
-  return { running: true, url: session.url, logs: [...session.logs], kind: session.kind };
+  return {
+    running: true,
+    url: session.url,
+    logs: [...session.logs],
+    kind: session.kind,
+    ...(session.readyAt !== undefined && session.startedAt
+      ? { coldStartMs: Math.max(0, session.readyAt - session.startedAt) }
+      : {}),
+    ...(session.lastReloadAt !== undefined ? { lastReloadAt: session.lastReloadAt } : {}),
+  };
 }
 
 function ensureNodeModulesBinSymlinks(appDir: string): void {
@@ -338,6 +354,7 @@ export async function startPreview(input: {
     logs: initialLogs,
     appDir,
     lan: wantLan,
+    startedAt: Date.now(),
   };
   sessions.set(input.threadId, session);
 
@@ -406,6 +423,7 @@ export async function startPreview(input: {
           resolvedUrl = url;
           session.kind = "web";
           session.url = url;
+          session.readyAt = Date.now();
           clearTimeout(timeout);
           resolve({ url, kind: session.kind });
         }
@@ -424,11 +442,20 @@ export async function startPreview(input: {
     // Keep the log tail on the error so the preview pane's failed state shows
     // actionable output (missing deps, port in use, bundler error) instead of
     // a bare timeout — the #1 cause of "blank white preview" reports.
+    // Structured boot findings (Metro/Flutter/Expo) lead when present.
     const tail = session.logs.slice(-15).join("\n");
     sessions.delete(input.threadId);
     child.kill("SIGTERM");
+    const { parseBootErrors } = await import("./buildRunner.ts");
+    const structured = parseBootErrors(session.logs.join("\n")).slice(0, 5);
+    const structuredBlock =
+      structured.length > 0
+        ? `\nStructured findings:\n${structured
+            .map((e) => `- ${e.file ? `${e.file}${e.line ? `:${e.line}` : ""} — ` : ""}${e.message}`)
+            .join("\n")}`
+        : "";
     if (err instanceof Error && tail && !err.message.includes("Recent output")) {
-      throw new Error(`${err.message}. Recent output:\n${tail}`);
+      throw new Error(`${err.message}.${structuredBlock}\nRecent output:\n${tail}`);
     }
     throw err;
   }
@@ -485,6 +512,8 @@ export function reloadPreview(threadId: string): boolean {
   if (!session || session.process.exitCode !== null) return false;
   // A SIGUSR2 is the conventional "reload" for dev servers that support it;
   // for others this is a no-op that reports true so the UI clears the spinner.
+  // The request instant is recorded for reload-latency diagnostics.
+  session.lastReloadAt = Date.now();
   try {
     session.process.kill("SIGUSR2");
   } catch {

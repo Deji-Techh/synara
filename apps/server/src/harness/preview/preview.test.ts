@@ -115,4 +115,32 @@ src/components/Card.tsx(22,10): error TS2304: Cannot find name 'missingVar'.
     expect(errors[1].line).toBe(22);
     expect(errors[1].message).toContain("Cannot find name 'missingVar'");
   });
+
+  it("parseBootErrors structures Metro, Flutter, and Expo failures (item 3)", async () => {
+    const { parseBootErrors } = await import("./buildRunner.ts");
+    const metro = parseBootErrors(
+      "error: bundling failed: Unable to resolve ./anki/anki.sqllite from src/frontend/persistence/database/DatabaseHelper.ts: DatabaseHelper.ts: DatabaseHelper.ts:1",
+    );
+    expect(metro).toHaveLength(1);
+    expect(metro[0].file).toBe("src/frontend/persistence/database/DatabaseHelper.ts");
+    expect(metro[0].message).toContain("cannot resolve");
+    expect(metro[0].message).toContain("./anki/anki.sqllite");
+
+    const transform = parseBootErrors("TransformError: Unexpected token, expected ; (12:4)\nsrc/App.tsx:12");
+    expect(transform[0]).toMatchObject({ file: "src/App.tsx", line: 12 });
+
+    const flutter = parseBootErrors("No connected devices found; please connect a device");
+    expect(flutter).toHaveLength(1);
+    expect(flutter[0].message).toContain("flutter doctor");
+
+    const expo = parseBootErrors("Metro bundler crashed unexpectedly");
+    expect(expo[0].message).toMatch(/restart the preview/i);
+
+    // Dedupes repeats, caps output, ignores clean logs.
+    const noisy = parseBootErrors(
+      ["Unable to resolve x from a.ts", "Unable to resolve x from a.ts", "Starting Metro…"].join("\n"),
+    );
+    expect(noisy).toHaveLength(1);
+    expect(parseBootErrors("Starting Metro…\nWeb is waiting on http://localhost:8081")).toEqual([]);
+  });
 });

@@ -19,6 +19,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   CircleAlertIcon,
+  DeviceLaptopIcon,
   FlaskConicalIcon,
   ListChecksIcon,
   LoaderIcon,
@@ -72,11 +73,28 @@ type BranchId =
   | "screenshot"
   | "record"
   | "rotate"
+  | "display"
   | "home"
   | "terminal"
   | "shutdown"
   | "mobileQr"
   | null;
+
+type ViewportId = "full" | "compact" | "large" | "tablet" | "desktop";
+type PreviewColorScheme = "light" | "dark";
+type DeviceClass = "phone" | "tablet";
+
+const VIEWPORT_WIDTHS: Record<Exclude<ViewportId, "full">, number> = {
+  compact: 390,
+  large: 430,
+  tablet: 768,
+  desktop: 1280,
+};
+
+const DEVICE_DIMS: Record<DeviceClass, { pixelWidth: number; pixelHeight: number }> = {
+  phone: { pixelWidth: 1080, pixelHeight: 2400 },
+  tablet: { pixelWidth: 2048, pixelHeight: 2732 },
+};
 
 const PREVIEW_POLL_INTERVAL_MS = 2_000;
 const NATIVE_FRAME_POLL_INTERVAL_MS = 1_500;
@@ -897,6 +915,9 @@ export function PreviewStage(props: {
   const [headerMode, setHeaderMode] = useState<HeaderMode>("quality");
   const [branch, setBranch] = useState<BranchId>(null);
   const [branchOpen, setBranchOpen] = useState(false);
+  const [viewport, setViewport] = useState<ViewportId>("full");
+  const [colorScheme, setColorScheme] = useState<PreviewColorScheme>("light");
+  const [deviceClass, setDeviceClass] = useState<DeviceClass>("phone");
   const browserPreviewRef = useRef<HTMLDivElement | null>(null);
   const [browserDims, setBrowserDims] = useState<{ w: number; h: number } | null>(null);
   useEffect(() => {
@@ -1307,6 +1328,82 @@ export function PreviewStage(props: {
             </div>
           </div>
         );
+      case "display":
+        return (
+          <div className="space-y-3 p-4">
+            <p className="text-xs text-muted-foreground">
+              Viewport, device frame, and color scheme for this preview. The verifier checks all five
+              viewport classes — switch through them before finishing UI work.
+            </p>
+            {isDeviceFrameProject ? (
+              <div>
+                <div className="mb-1 text-[11px] font-medium">Device</div>
+                <div className="flex gap-1">
+                  {(["phone", "tablet"] as const).map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setDeviceClass(d)}
+                      className={cn(
+                        "rounded-md px-2.5 py-1 text-xs font-medium capitalize transition-colors",
+                        deviceClass === d
+                          ? "bg-accent text-foreground"
+                          : "text-muted-foreground hover:bg-accent/50",
+                      )}
+                      aria-pressed={deviceClass === d}
+                    >
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="mb-1 text-[11px] font-medium">Viewport</div>
+                <div className="flex flex-wrap gap-1">
+                  {(["full", "compact", "large", "tablet", "desktop"] as const).map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setViewport(v)}
+                      className={cn(
+                        "rounded-md px-2.5 py-1 text-xs font-medium capitalize transition-colors",
+                        viewport === v
+                          ? "bg-accent text-foreground"
+                          : "text-muted-foreground hover:bg-accent/50",
+                      )}
+                      aria-pressed={viewport === v}
+                      title={v === "full" ? "Fill the stage" : `${VIEWPORT_WIDTHS[v]}px wide`}
+                    >
+                      {v === "full" ? "Full" : `${v} ${VIEWPORT_WIDTHS[v]}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div>
+              <div className="mb-1 text-[11px] font-medium">Color scheme</div>
+              <div className="flex gap-1">
+                {(["light", "dark"] as const).map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setColorScheme(c)}
+                    className={cn(
+                      "rounded-md px-2.5 py-1 text-xs font-medium capitalize transition-colors",
+                      colorScheme === c
+                        ? "bg-accent text-foreground"
+                        : "text-muted-foreground hover:bg-accent/50",
+                    )}
+                    aria-pressed={colorScheme === c}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
       case "rotate":
         return (
           <div className="p-4">
@@ -1378,7 +1475,9 @@ export function PreviewStage(props: {
                   ? "Home / Reload"
                   : branch === "rotate"
                     ? "Rotate"
-                    : branch === "record"
+                    : branch === "display"
+                      ? "Display"
+                      : branch === "record"
                       ? "Record"
                       : branch === "shutdown"
                         ? "Stop Preview"
@@ -1452,6 +1551,20 @@ export function PreviewStage(props: {
               >
                 <ArchiveIcon className="size-3.5" />
               </button>
+              <button
+                type="button"
+                onClick={() => openBranch("display")}
+                className={cn(
+                  "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
+                  branch === "display" && branchOpen && "bg-accent text-foreground",
+                  (viewport !== "full" || colorScheme !== "light" || deviceClass !== "phone") &&
+                    "bg-accent text-foreground",
+                )}
+                title="Display: viewport, device, color scheme"
+                aria-label="Display settings"
+              >
+                <DeviceLaptopIcon className="size-3.5" />
+              </button>
             </>
           ) : (
             <>
@@ -1493,6 +1606,20 @@ export function PreviewStage(props: {
                 aria-label="Rotate"
               >
                 <DeviceRotateIcon className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => openBranch("display")}
+                className={cn(
+                  "flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
+                  branch === "display" && branchOpen && "bg-accent text-foreground",
+                  (viewport !== "full" || colorScheme !== "light" || deviceClass !== "phone") &&
+                    "bg-accent text-foreground",
+                )}
+                title="Display: viewport, device, color scheme"
+                aria-label="Display settings"
+              >
+                <DeviceLaptopIcon className="size-3.5" />
               </button>
               <button
                 type="button"
@@ -1633,7 +1760,12 @@ export function PreviewStage(props: {
                   </button>
                 </div>
               ) : isRunning && panelState.url !== null ? (
-                <div ref={browserPreviewRef} className="relative h-full w-full overflow-hidden">
+                <div
+                  ref={browserPreviewRef}
+                  className="relative h-full w-full overflow-hidden"
+                  style={{ colorScheme }}
+                  data-theme={colorScheme}
+                >
                   {landscape && browserDims ? (
                     <iframe
                       key={panelState.reloadToken}
@@ -1647,7 +1779,7 @@ export function PreviewStage(props: {
                         transform: "translate(-50%, -50%) rotate(90deg)",
                       }}
                     />
-                  ) : (
+                  ) : viewport === "full" ? (
                     <iframe
                       key={panelState.reloadToken}
                       src={panelState.url}
@@ -1655,6 +1787,17 @@ export function PreviewStage(props: {
                       sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
                       className="h-full w-full border-0"
                     />
+                  ) : (
+                    <div className="flex h-full w-full items-stretch justify-center bg-muted/40">
+                      <iframe
+                        key={panelState.reloadToken}
+                        src={panelState.url}
+                        title={`${framework} preview at ${viewport} viewport`}
+                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
+                        className="h-full border-x border-border bg-white"
+                        style={{ width: `min(100%, ${VIEWPORT_WIDTHS[viewport]}px)` }}
+                      />
+                    </div>
                   )}
                 </div>
               ) : (
@@ -1676,11 +1819,15 @@ export function PreviewStage(props: {
           <DeviceScreen
             className="min-h-0 w-full flex-1 overflow-hidden"
             kind="androidPhone"
-            pixelWidth={1080}
-            pixelHeight={2400}
+            pixelWidth={DEVICE_DIMS[deviceClass].pixelWidth}
+            pixelHeight={DEVICE_DIMS[deviceClass].pixelHeight}
             landscape={landscape}
           >
-            <div className="flex h-full w-full flex-col items-center justify-center bg-black text-center">
+            <div
+              className="flex h-full w-full flex-col items-center justify-center bg-black text-center"
+              style={{ colorScheme }}
+              data-theme={colorScheme}
+            >
               {panelState.status === "starting" || isTransientStartingError(panelState) ? (
                 <div className="flex flex-col items-center gap-3 px-[12%] text-center">
                   <p className="text-[11px] font-medium text-white/90">
