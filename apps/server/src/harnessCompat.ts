@@ -7,6 +7,7 @@ import { Effect, Layer, Option, PubSub, ServiceMap, Stream } from "effect";
 import { PROVIDER_KINDS } from "@caide/contracts";
 import { isPhantomInitialThreadId } from "@caide/shared/chatThreads";
 import { resolveAttachmentPathById } from "./attachmentStore.ts";
+import { applyDispatchSystemPromptOverride } from "./harness/prompts/dispatchSystemPrompt.ts";
 import {
   buildUserMessageWithImages,
   type ResolvedChatImage,
@@ -1278,7 +1279,9 @@ async function buildSystemPrompt(
       : normalizedMode === "plan"
         ? `You are in PLAN mode for ${framework} (${frameworkShort}). First discuss requirements and present a concrete architecture or questionnaire/blueprint with the user before writing application code. You have full planning tools — use write_spec, write_design_spec, write_motion_spec, checkpoint, log_decision, plus read tools to inspect workspace.\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}`
         : `You are in BUILD mode for ${framework} (${frameworkShort}). ${greetingRule} ${buildRule}\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}\n\nTool rules: work efficiently; call write_file to produce code, run_command for installs/builds, get_preview_url to get preview URL, screenshot to verify.`;
-  return `${rolePrompt}\n\n${toneAndEmojiRule}\n\n${modeDirective}`.trim();
+  return applyDispatchSystemPromptOverride(
+    `${rolePrompt}\n\n${toneAndEmojiRule}\n\n${modeDirective}`.trim(),
+  );
 }
 
 export class OrchestrationEngineService extends ServiceMap.Service<

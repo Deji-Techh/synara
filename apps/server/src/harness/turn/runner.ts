@@ -33,6 +33,7 @@ import { appendHarnessEvent, flushTurnTokens, readHarnessEvents } from "./eventL
 import { clearPendingConsentsForSession } from "../../dyad/tools/permissions.ts";
 import { clearPendingMcpConsentsForSession } from "../../dyad/mcp/mcpConsent.ts";
 import { buildConversationChain, buildMessages } from "../session/buildChain.ts";
+import { resolveDispatchSystemPromptOverride } from "../prompts/dispatchSystemPrompt.ts";
 import { SessionStorage } from "../session/storage.ts";
 import {
   COMPACTION_SYSTEM_PROMPT,
@@ -426,10 +427,17 @@ export class CaideRunner {
         isWeb3App,
       });
       // Compounding project memory (APP_MEMORY.md + recent decisions).
-      // Appended only when the project actually remembers something.
-      const memoryBlock = formatMemoryForPrompt(readAppMemory(input.appPath));
-      if (memoryBlock) {
-        system += `\n\n${memoryBlock}`;
+      // Appended only when the project actually remembers something — and
+      // skipped entirely under the dispatch system-prompt env override so a
+      // smoke run dispatches exactly the override (low-token determinism).
+      const dispatchOverride = resolveDispatchSystemPromptOverride();
+      if (dispatchOverride !== null) {
+        system = dispatchOverride;
+      } else {
+        const memoryBlock = formatMemoryForPrompt(readAppMemory(input.appPath));
+        if (memoryBlock) {
+          system += `\n\n${memoryBlock}`;
+        }
       }
       const llm =
         input.llmOverride ??
