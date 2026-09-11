@@ -21,7 +21,7 @@ import { buildPlatformPrompt } from "./platformContracts.ts";
 import type { AppTarget } from "./appTarget.ts";
 import { WEB3_SKILL_PACK } from "./skillPacks.ts";
 import { TEST_WRITING_GUIDANCE } from "./testGuidance.ts";
-import { DESIGN_QUALITY_CONTRACT } from "./designQuality.ts";
+import { buildDesignQualityContract } from "./designQuality.ts";
 import {
   appTargetForFramework,
   applyFrameworkBuildExamples,
@@ -721,10 +721,9 @@ export const getSystemPromptForChatMode = ({
     // Turbo-Edits surgical-edit guidance (donor appendix). Off unless requested.
     (enableTurboEditsV2 ? `\n\n${TURBO_EDITS_V2_SYSTEM_PROMPT}` : "");
   // Blank projects get orientation only — never UI quality contracts (F0).
+  // Other frameworks get the shared core plus their stack appendix (F1).
   const withQuality =
-    caideFramework === "blank"
-      ? buildPrompt.replace("[[DESIGN_QUALITY_CONTRACT]]", "")
-      : buildPrompt.replace("[[DESIGN_QUALITY_CONTRACT]]", () => `\n\n${DESIGN_QUALITY_CONTRACT}`);
+    buildPrompt.replace("[[DESIGN_QUALITY_CONTRACT]]", () => buildDesignQualityContract(caideFramework));
   return withQuality;
 };
 
