@@ -608,7 +608,9 @@ export const createNeonProjectTool = defineTool({
       : "Copy its connection string from the Neon console into .env.local as DATABASE_URL with write_file.";
     return [
       `Neon project created and linked: ${created.name} (${created.id}).${branchNote}`,
-      created.connectionUri ? `Connection URI (save then forget): ${created.connectionUri}` : connectionLine,
+      created.connectionUri
+        ? `Connection URI (save to .env.local as DATABASE_URL with write_file, then forget it — NEVER print it in chat): ${created.connectionUri}`
+        : connectionLine,
     ].join("\n");
   },
   presentCall: (args: any) => `Create Neon project${args.name ? `: ${args.name}` : ""}`,
