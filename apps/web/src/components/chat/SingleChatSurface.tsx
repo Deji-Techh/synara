@@ -145,6 +145,11 @@ const LazyDatabasePanel = lazy(() =>
     default: module.DatabasePanel,
   })),
 );
+const LazyPublishPanel = lazy(() =>
+  import("./PublishPanel").then((module) => ({
+    default: module.PublishPanel,
+  })),
+);
 
 const DIFF_INLINE_DEFAULT_WIDTH = "max(28rem, calc(50vw - 8rem))";
 const SINGLE_PANEL_MIN_WIDTH = 26 * 16;
@@ -861,6 +866,16 @@ export function SingleChatSurface(props: {
               // Database integrations belong to the project, so resolve the
               // engine app against the canonical project root even when this
               // chat is using a worktree/alternate thread cwd.
+              workspaceRoot={activeProject?.cwd ?? workspaceRoot}
+              onClose={() => closePane(props.threadId, pane.id)}
+            />
+          </Suspense>
+        );
+      case "publish":
+        return (
+          <Suspense fallback={<PanelStateMessage>Loading publish...</PanelStateMessage>}>
+            <LazyPublishPanel
+              threadId={props.threadId}
               workspaceRoot={activeProject?.cwd ?? workspaceRoot}
               onClose={() => closePane(props.threadId, pane.id)}
             />

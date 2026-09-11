@@ -18,6 +18,7 @@ import {
   GlobeIcon,
   InfoIcon,
   MessageCircleIcon,
+  PublishIcon,
   TerminalIcon,
 } from "~/lib/icons";
 import {
@@ -52,6 +53,7 @@ export const RIGHT_DOCK_PANE_META: Record<RightDockPaneKind, RightDockPaneMeta> 
   pullRequest: { label: "Pull request", Icon: GitPullRequestIcon },
   goals: { label: "Goals", Icon: FlagIcon },
   database: { label: "Database", Icon: DatabaseIcon },
+  publish: { label: "Publish", Icon: PublishIcon },
 };
 
 // Neutral fallback for any pane kind we no longer recognize (e.g. stale
@@ -89,6 +91,7 @@ const RIGHT_DOCK_LAUNCHER_ORDER: readonly RightDockPaneKind[] = [
   "sidechat",
   "device",
   "database",
+  "publish",
   "git",
 ];
 

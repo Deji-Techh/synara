@@ -41,7 +41,7 @@ export function DatabaseSettingsPanel(props: { active: boolean }) {
   const [addingConn, setAddingConn] = useState(false);
   const [addingNet, setAddingNet] = useState(false);
   const [managingTokens, setManagingTokens] = useState(false);
-  const [tokenDrafts, setTokenDrafts] = useState({ supabase: "", neon: "" });
+  const [tokenDrafts, setTokenDrafts] = useState<Record<string, string>>({ supabase: "", neon: "" });
   const dyadProviders = useDyadProviderSettings();
   const [connDraft, setConnDraft] = useState({ name: "", provider: "supabase" as DbProviderKind, databaseUrl: "", projectId: "" });
   const [netDraft, setNetDraft] = useState({ name: "", chainKind: "evm" as const, chainId: "", rpcUrl: "", explorerUrl: "" });
@@ -240,6 +240,53 @@ export function DatabaseSettingsPanel(props: { active: boolean }) {
             <p className="text-[11px] text-destructive">Harness offline — tokens can't be saved right now.</p>
           ) : null}
         </DisclosureRegion>
+      </SettingsSection>
+
+      <SettingsSection title="Publish tokens">
+        <p className="px-0 pb-1 text-[11px] text-muted-foreground">
+          Personal tokens for shipping from inside Caide: GitHub repos and collaborators, Vercel projects and
+          deploys, Coolify self-hosted deploys. Stored encrypted server-side. Push prefers your existing `gh auth`
+          when available — no token needed for that path.
+        </p>
+        {(
+          [
+            { id: "github", label: "GitHub personal token", placeholder: "ghp_…", hint: "repo scope. Powers repo creation, collaborators, and push fallback." },
+            { id: "vercel", label: "Vercel token", placeholder: "…", hint: "Account → tokens. Powers project create/connect, deploys, and Neon env sync." },
+            { id: "coolify", label: "Coolify API token", placeholder: "…", hint: "Instance → Keys & Tokens. Powers discover, project create, and deploys." },
+          ] as const
+        ).map((row) => {
+          const configured = dyadProviders.providers.some((p) => p.id === row.id && p.configured);
+          return (
+            <SettingsRow
+              key={row.id}
+              title={row.label}
+              description={`${row.hint} ${configured ? "Configured ✓ — saving replaces it." : "Not configured."}`}
+              control={
+                <div className="flex w-full gap-2 sm:w-auto">
+                    <Input
+                      className="w-full font-mono text-[11px] sm:w-64"
+                      type="password"
+                      autoComplete="off"
+                      value={tokenDrafts[row.id] ?? ""}
+                      placeholder={row.placeholder}
+                      onChange={(e) => setTokenDrafts((prev) => ({ ...prev, [row.id]: e.target.value }))}
+                    />
+                    <Button
+                      size="sm"
+                      disabled={!(tokenDrafts[row.id] ?? "").trim()}
+                      onClick={() => {
+                        dyadProviders.save(row.id, { apiKey: (tokenDrafts[row.id] ?? "").trim() });
+                        setTokenDrafts((prev) => ({ ...prev, [row.id]: "" }));
+                        toastManager.add({ type: "success", title: `${row.label} saved` });
+                      }}
+                    >
+                      Save
+                    </Button>
+                </div>
+              }
+            />
+          );
+        })}
       </SettingsSection>
 
       <SettingsSection title={`Saved connections (${connections.filter((c) => c.enabled).length}/${connections.length})`}>

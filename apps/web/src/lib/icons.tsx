@@ -54,6 +54,7 @@ import {
   IconPaperclip,
   IconPlus,
   IconRefresh,
+  IconRocket,
   IconRotate2,
   IconSelector,
   IconStar,
@@ -128,6 +129,7 @@ export const BugIcon = adaptIcon(IconBug);
 export const CameraIcon = adaptIcon(IconCamera);
 export const CheckIcon = adaptIcon(IconCheck);
 export const DatabaseIcon = adaptIcon(IconDatabase);
+export const PublishIcon = adaptIcon(IconRocket);
 export const ChevronDownIcon = adaptIcon(IconChevronDown);
 export const ChevronLeftIcon = adaptIcon(IconChevronLeft);
 export const ChevronRightIcon = adaptIcon(IconChevronRight);

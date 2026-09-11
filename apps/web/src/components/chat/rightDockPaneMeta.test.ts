@@ -25,6 +25,10 @@ describe("RIGHT_DOCK_ADD_MENU_KINDS", () => {
     expect(getRightDockPaneMeta("explorer").label).toBe("Explorer");
   });
 
+  it("labels the publish pane", () => {
+    expect(getRightDockPaneMeta("publish").label).toBe("Publish");
+  });
+
   it("gives the platform-neutral device kind its user-facing iOS label", () => {
     expect(getRightDockPaneMeta("device").label).toBe("iOS Simulator");
   });
@@ -44,6 +48,7 @@ describe("resolveRightDockLauncherItems", () => {
       ["explorer", "Files"],
       ["sidechat", "Side chats"],
       ["database", "Database"],
+      ["publish", "Publish"],
     ]);
   });
 
@@ -54,7 +59,7 @@ describe("resolveRightDockLauncherItems", () => {
         hasGitRepository: true,
         hasReview: true,
       }).map(({ kind }) => kind),
-    ).toEqual(["diff", "terminal", "browser", "explorer", "sidechat", "database", "git"]);
+    ).toEqual(["diff", "terminal", "browser",  "explorer", "sidechat", "database", "publish", "git"]);
   });
 
   it("hides workspace-backed tools while no workspace is ready", () => {
@@ -64,7 +69,7 @@ describe("resolveRightDockLauncherItems", () => {
         hasGitRepository: false,
         hasReview: false,
       }).map(({ kind }) => kind),
-    ).toEqual(["terminal", "browser", "sidechat", "database"]);
+    ).toEqual(["terminal", "browser", "sidechat", "database", "publish"]);
   });
 
   it("hides review for a clean Git repository", () => {
@@ -74,7 +79,7 @@ describe("resolveRightDockLauncherItems", () => {
         hasGitRepository: true,
         hasReview: false,
       }).map(({ kind }) => kind),
-    ).toEqual(["terminal", "browser", "explorer", "sidechat", "database", "git"]);
+    ).toEqual(["terminal", "browser",  "explorer", "sidechat", "database", "publish", "git"]);
   });
 
   it("offers the simulator only when the server can host one", () => {
@@ -87,7 +92,7 @@ describe("resolveRightDockLauncherItems", () => {
         hasReview: false,
         hasDeviceSupport: true,
       }).map(({ kind }) => kind),
-    ).toEqual(["terminal", "browser", "explorer", "sidechat", "device", "database"]);
+    ).toEqual(["terminal", "browser", "explorer", "sidechat", "device", "database", "publish"]);
 
     expect(
       resolveRightDockLauncherItems({
