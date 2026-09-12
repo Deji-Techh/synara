@@ -1,0 +1,102 @@
+export const CAIDE_THEME = {
+  colors: {
+    bg: "#09090b",
+    surface: "#121215",
+    surfaceElevated: "#18181b",
+    border: "#27272a",
+    borderFocus: "#3f3f46",
+    primary: "#6366f1",
+    primaryHover: "#4f46e5",
+    primaryGlow: "rgba(99, 102, 241, 0.35)",
+    cyanGlow: "rgba(6, 182, 212, 0.25)",
+    emerald: "#10b981",
+    amber: "#f59e0b",
+    rose: "#f43f5e",
+    foreground: "#fafafa",
+    mutedForeground: "#a1a1aa",
+    subtleForeground: "#71717a",
+  },
+  typography: {
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif",
+    fontMono: "'JetBrains Mono', monospace",
+  },
+  shadows: {
+    glow: "0 0 50px rgba(99, 102, 241, 0.25)",
+    pill: "0 12px 36px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08)",
+    card: "0 10px 30px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06)",
+  },
+};
+
+export const FRAMEWORKS_DATA = [
+  {
+    id: "react-native",
+    label: "React Native",
+    description: "Expo / React Native mobile app",
+    hint: "Browser preview · APK build",
+    icon: "framework-icons/react-native.png",
+    color: "#61dafb",
+    badge: "Mobile",
+  },
+  {
+    id: "flutter",
+    label: "Flutter",
+    description: "Flutter mobile app",
+    hint: "Device preview · APK/AAB",
+    icon: "framework-icons/flutter.png",
+    color: "#02569b",
+    badge: "Cross-Platform",
+  },
+  {
+    id: "website",
+    label: "Website",
+    description: "Browser-first web application",
+    hint: "Browser preview · Web build",
+    icon: "framework-icons/website.png",
+    color: "#3b82f6",
+    badge: "Web",
+  },
+  {
+    id: "blank",
+    label: "Blank",
+    description: "Start from an empty workspace",
+    hint: "No preview",
+    icon: null,
+    color: "#71717a",
+    badge: "Custom",
+  },
+] as const;
+
+export const PROVIDERS_DATA = [
+  {
+    id: "opencodeZen",
+    name: "OpenCode Zen / Go",
+    badge: "Zero Latency",
+    models: "mimo-v2.5-free · gpt-5.6-sol",
+    active: true,
+    accent: "#6366f1",
+  },
+  {
+    id: "anthropic",
+    name: "Anthropic Claude",
+    badge: "Deep Reasoning",
+    models: "claude-3-7-sonnet · opus-4",
+    active: true,
+    accent: "#d97706",
+  },
+  {
+    id: "openai",
+    name: "OpenAI Codex",
+    badge: "Flagship",
+    models: "gpt-4o · o3-mini",
+    active: true,
+    accent: "#10b981",
+  },
+  {
+    id: "groq",
+    name: "Groq Cloud",
+    badge: "Ultra Fast",
+    models: "llama-3.3-70b",
+    active: true,
+    accent: "#f43f5e",
+  },
+] as const;
