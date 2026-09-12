@@ -157,6 +157,38 @@ describe("turn gateway (m3h)", () => {
     gateway.dropSession("s-dup");
   });
 
+  it("runs a second session's send while another session's turn is live (no cross-session swallow)", async () => {
+    const gateway = new TurnGateway();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const hanging: LLMAdapter = {
+      async *stream() {
+        await gate;
+        yield { type: "token", content: "a-done" } as never;
+      },
+    };
+    const settings = { providerSettings: { openai: { apiKey: "sk-test" } } };
+    const first = gateway.startTurn(
+      { sessionId: "s-a", appPath: "/tmp/caide-test-app", prompt: "a-first", mode: "ask", settings },
+      { llmOverride: hanging, onEvent: () => {} },
+    );
+    // Give A's turn a chance to claim its (per-session) flow slot.
+    await new Promise((r) => setTimeout(r, 50));
+    const bId = await gateway.startTurn(
+      { sessionId: "s-b", appPath: "/tmp/caide-test-app", prompt: "b-first", mode: "ask", settings },
+      { llmOverride: fakeLlm([{ type: "token", content: "b-done" }]), onEvent: () => {} },
+    );
+    expect(bId.startsWith("turn-")).toBe(true);
+    expect(bId.startsWith("buffered:")).toBe(false);
+    release();
+    await first;
+    expect(gateway.getStatus()).toBe("completed");
+    gateway.dropSession("s-a");
+    gateway.dropSession("s-b");
+  });
+
   it("resolves turn providers: explicit wins, else stored defaults", () => {
     const explicit = resolveTurnProviders({
       sessionId: "s",

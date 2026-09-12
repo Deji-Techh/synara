@@ -60,7 +60,21 @@ export class TurnGateway {  private runner = new CaideRunner();
         modelId: turn.modelId,
         maxSteps: turn.maxSteps,
         settings: turn.providerSettings ? { providerSettings: turn.providerSettings } : undefined,
-      }).catch(() => {});
+      }).catch((err) => {
+        // Never swallow: a turn that dies before emitting would otherwise
+        // leave the client staring at its own echo with zero feedback.
+        try {
+          server.broadcastToSession(sessionId, {
+            type: "error",
+            sessionId,
+            code: "TURN_START_FAILED",
+            message: err instanceof Error ? err.message : String(err),
+            recoverable: true,
+          });
+        } catch {
+          // last resort: socket itself is dead
+        }
+      });
     });
     server.onSteer((sessionId, prompt) => {
       this.getInbox(sessionId).steer(prompt);
@@ -242,6 +256,7 @@ export class TurnGateway {  private runner = new CaideRunner();
 
   dropSession(sessionId: string): void {
     this.inboxes.delete(sessionId);
+    this.runner.dropSession(sessionId);
     clearSessionApp(sessionId);
   }
 
