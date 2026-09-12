@@ -7722,7 +7722,11 @@ export default function ChatView({
     // Appllama-gated tools) instead of the legacy orchestration engine.
     // Attachments, plans, queues, steers, and automation flows stay on the
     // orchestration path until their Dyad counterparts land (006 M3).
+    // TEMPORARY REVERT (diagnostic): P0 divert disabled until the harness
+    // turn carries the composer's model selection. See 18920008. Remove this
+    // `false &&` to restore the divert.
     if (
+      false &&
       queuedChatTurn === null &&
       !isLivePlanFollowUpSubmission &&
       hasPromptOnlySendableContent &&
