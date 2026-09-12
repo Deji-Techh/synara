@@ -129,6 +129,11 @@ let state: HarnessStoreState = {
 };
 
 function notify(): void {
+  // Replace the root reference on every commit: mutators edit sessions in
+  // place, so without a new root React's useState subscribers receive an
+  // identical reference and bail out — the harness UI would never re-render
+  // (no echo, no tokens, no errors) despite the store filling correctly.
+  state = { ...state };
   for (const listener of listeners) {
     listener();
   }

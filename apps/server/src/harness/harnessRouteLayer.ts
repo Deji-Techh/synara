@@ -11,7 +11,6 @@ import { sharedHarnessHub, type HarnessClientSender } from "./ws/hub.ts";
 
 export const HARNESS_WS_PATH = "/harness";
 
-const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
 export const makeHarnessRouteLayer = Layer.effectDiscard(
@@ -37,7 +36,12 @@ export const makeHarnessRouteLayer = Layer.effectDiscard(
         const sender: HarnessClientSender = {
           sendText: (text: string) => {
             if (closed) return;
-            void Effect.runPromise(writer(textEncoder.encode(text))).catch(() => undefined);
+            // Pass the string through (NOT textEncoder.encode): the socket
+            // writer maps string chunks to TEXT frames. Uint8Array chunks go
+            // out as BINARY frames, which browsers deliver as Blob — the web
+            // client parses message.data as text, so binary frames silently
+            // dropped every inbound harness event in the desktop app.
+            void Effect.runPromise(writer(text)).catch(() => undefined);
           },
           isOpen: () => !closed,
         };

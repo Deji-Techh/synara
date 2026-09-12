@@ -56,6 +56,29 @@ export function makeHarnessUrl(explicitUrl: string | null): string {
   return url.toString();
 }
 
+/**
+ * Decode an inbound socket payload to text. Servers must send text frames,
+ * but binary senders exist in the wild (the embedded backend once encoded
+ * every harness event as binary, which browsers deliver as Blob and which
+ * silently dropped every inbound event). Never throws — returns null when
+ * the payload cannot be read as text.
+ */
+async function decodeSocketText(data: unknown): Promise<string | null> {
+  try {
+    if (typeof data === "string") return data;
+    if (typeof Blob !== "undefined" && data instanceof Blob) return await data.text();
+    if (typeof ArrayBuffer !== "undefined" && data instanceof ArrayBuffer) {
+      return new TextDecoder().decode(data);
+    }
+    if (typeof ArrayBuffer !== "undefined" && ArrayBuffer.isView(data)) {
+      return new TextDecoder().decode(data as ArrayBufferView);
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 export function connectHarnessWs(options: HarnessWsOptions): HarnessWsHandle {
   const heartbeatMs = options.heartbeatMs ?? 15_000;
   const maxBackoffMs = options.maxBackoffMs ?? 10_000;
@@ -123,15 +146,25 @@ export function connectHarnessWs(options: HarnessWsOptions): HarnessWsHandle {
     };
 
     socket.onmessage = (message) => {
-      try {
-        const event: unknown = JSON.parse(String(message.data));
-        if (!isHarnessEvent(event)) return;
-        if ((event as { type: string }).type === "pong") return;
-        harnessStore.handleEvent(event);
-        options.onEvent?.(event);
-      } catch {
-        // ignore malformed server message
-      }
+      // Decoupled + async: binary frames (Blob) decode asynchronously, and a
+      // slow decode must never block later frames.
+      void (async () => {
+        try {
+          const text = await decodeSocketText(message.data);
+          if (text === null) return;
+          const event: unknown = JSON.parse(text);
+          if (!isHarnessEvent(event)) return;
+          if ((event as { type: string }).type === "pong") return;
+          harnessStore.handleEvent(event);
+          try {
+            options.onEvent?.(event);
+          } catch {
+            // subscriber errors must not break the socket
+          }
+        } catch {
+          // ignore malformed server message
+        }
+      })();
     };
 
     socket.onclose = () => {
