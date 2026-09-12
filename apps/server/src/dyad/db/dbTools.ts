@@ -303,6 +303,7 @@ export const addIntegrationTool = defineTool({
   schema: addIntegrationSchema,
   readOnly: false,
   modifiesState: true,
+  waitsForUserInput: true,
   execute: async (args, ctx) =>
     executeAddIntegration(addIntegrationSchema.parse(args), ctx.sessionId, ctx.signal, ctx.appPath),
   presentCall: () => "Add database integration",

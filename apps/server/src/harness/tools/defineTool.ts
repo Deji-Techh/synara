@@ -31,6 +31,12 @@ export interface ToolDef<I = any, O = any> {
   allowedStages?: readonly string[];
   allowedRoles?: readonly string[];
   timeoutMs?: number;
+  /**
+   * The tool parks waiting for user input (questionnaires, approvals).
+   * The loop must not apply its execution budget to these — humans always
+   * take longer than 30s. Cancellation still unblocks via abort signal.
+   */
+  waitsForUserInput?: boolean;
   execute: (input: I, ctx: ToolContext) => Promise<O>;
   presentCall?: (input: I) => string;
   presentResult?: (output: O) => string;

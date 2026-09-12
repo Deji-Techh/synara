@@ -21,6 +21,13 @@ export interface ToolDefinition {
   readOnly?: boolean;
   /** Per-tool execution budget; defaults to 30s when omitted. */
   timeoutMs?: number;
+  /**
+   * The tool parks waiting for user input (questionnaires, approvals) and
+   * must never hit the execution budget — cancellation still unblocks it
+   * via the abort signal. Without this, every interactive tool is guaranteed
+   * to time out, since humans always take longer than 30s.
+   */
+  waitsForUserInput?: boolean;
   execute: (args: unknown, context: ToolCallContext) => Promise<unknown>;
 }
 
@@ -518,15 +525,17 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
             toolDef.timeoutMs && Number.isFinite(toolDef.timeoutMs) && toolDef.timeoutMs > 0
               ? Math.floor(toolDef.timeoutMs)
               : 30_000;
-          const result = await Promise.race([
-            toolDef.execute(call.args, executeCtx),
-            new Promise<never>((_, reject) =>
-              setTimeout(
-                () => reject(new Error(`Tool '${resolvedName}' timed out after ${budgetMs}ms`)),
-                budgetMs,
-              ),
-            ),
-          ]);
+          const result = toolDef.waitsForUserInput
+            ? await toolDef.execute(call.args, executeCtx)
+            : await Promise.race([
+                toolDef.execute(call.args, executeCtx),
+                new Promise<never>((_, reject) =>
+                  setTimeout(
+                    () => reject(new Error(`Tool '${resolvedName}' timed out after ${budgetMs}ms`)),
+                    budgetMs,
+                  ),
+                ),
+              ]);
 
           yield emit({
             type: "tool_call",

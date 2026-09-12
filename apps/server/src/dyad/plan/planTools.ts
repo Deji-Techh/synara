@@ -108,8 +108,7 @@ const planningQuestionnaireSchema = z.object({
 });
 
 export const planningQuestionnaireTool = defineTool({
-  name: "planning_questionnaire",
-  description: `Present a structured questionnaire to gather requirements from the user. The tool displays questions in the UI and waits for the user's responses, returning them as the tool result.
+  name: "planning_questionnaire",  description: `Present a structured questionnaire to gather requirements from the user. The tool displays questions in the UI and waits for the user's responses, returning them as the tool result.
 
 <when_to_use>
 Use this tool when:
@@ -171,6 +170,7 @@ WRONG — Array with empty object (missing required "question" and "type" fields
   schema: planningQuestionnaireSchema,
   readOnly: false,
   modifiesState: true,
+  waitsForUserInput: true,
   execute: async (args, ctx) =>
     executeQuestionnaire(planningQuestionnaireSchema.parse(args), ctx.sessionId, ctx.signal),
   presentCall: (args: any) => `Questionnaire (${args.questions.length} questions)`,
@@ -468,6 +468,7 @@ Each object should have:
   schema: askEnvVarsSchema,
   readOnly: true,
   modifiesState: false,
+  waitsForUserInput: true,
   execute: async (args, ctx) =>
     executeAskEnvVars(askEnvVarsSchema.parse(args), ctx.sessionId, ctx.signal),
   presentCall: (args: any) => `Request keys: ${(args.vars ?? []).map((v: any) => v.key).join(", ")}`,

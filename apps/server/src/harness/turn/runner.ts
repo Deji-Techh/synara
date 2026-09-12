@@ -653,6 +653,7 @@ export class CaideRunner {
           description: t.description,
           readOnly: t.readOnly,
           timeoutMs: t.timeoutMs,
+          waitsForUserInput: t.waitsForUserInput,
           execute: (args, c) =>
             ctx.executeWithConsent(t.name, args, c.toolId, c.signal) as Promise<unknown>,
         })),

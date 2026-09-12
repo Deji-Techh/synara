@@ -614,8 +614,7 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
     expect((completed[0] as any).name).toBe("list_dir");
   });
 
-  it("feeds step results back so later steps see tool outputs and errors", async () => {
-    const seenByStep: unknown[][] = [];
+  it("feeds step results back so later steps see tool outputs and errors", async () => {    const seenByStep: unknown[][] = [];
     let calls = 0;
     const fakeLlm: LLMAdapter = {
       async *stream(messages) {
@@ -663,5 +662,51 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
     const step3 = JSON.stringify(seenByStep[2]);
     expect(step3).toContain("Unknown tool");
     expect(step3).toContain("is_error");
+  });
+
+  it("never applies the execution budget to tools waiting for user input", async () => {
+    let calls = 0;
+    const fakeLlm: LLMAdapter = {
+      async *stream() {
+        calls += 1;
+        if (calls === 1) {
+          yield {
+            type: "tool_call",
+            toolCall: { id: "c-wait", name: "ask_user", args: {} },
+          };
+        } else {
+          yield { type: "token", content: "done" };
+        }
+      },
+    };
+    const tools: ToolDefinition[] = [
+      {
+        name: "ask_user",
+        description: "waits",
+        timeoutMs: 50,
+        waitsForUserInput: true,
+        execute: async () => {
+          await new Promise((r) => setTimeout(r, 300));
+          return "user said yes";
+        },
+      },
+    ];
+    const events: HarnessEvent[] = [];
+    const loop = runLoop({
+      sessionId: "session-wait",
+      maxSteps: 5,
+      llm: fakeLlm,
+      tools,
+      buildMessages: () => [{ role: "user", content: "go" }],
+      onEvent: (ev) => events.push(ev),
+    });
+    for await (const _ of loop) {
+      // drain
+    }
+    const completed = events.filter(
+      (e) => e.type === "tool_call" && (e as any).status === "completed",
+    );
+    expect(completed).toHaveLength(1);
+    expect((completed[0] as any).result).toBe("user said yes");
   });
 });
