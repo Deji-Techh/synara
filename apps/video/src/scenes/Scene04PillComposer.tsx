@@ -1,79 +1,51 @@
+// FILE: Scene04PillComposer.tsx
+// Purpose: Scene 4 — Authentic Pill Composer typing and autonomous tool execution
+// Layer: Video scene
+
 import React from "react";
-import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig } from "remotion";
+import { AbsoluteFill, useCurrentFrame, interpolate } from "remotion";
 import { BackgroundGlow } from "../components/BackgroundGlow";
-import { CaideComposer } from "../components/CaideComposer";
-import { ToolExecution } from "../components/ToolExecution";
-import { CAIDE_THEME } from "../constants/theme";
-import { SPRING_SNAPPY } from "../constants/timings";
+import { CaideWindowShell } from "../components/CaideWindowShell";
 
 export const Scene04PillComposer: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
 
-  const isExecuting = frame >= 130;
-  const toolListSpring = spring({
-    frame: frame - 130,
-    fps,
-    config: SPRING_SNAPPY,
+  // Camera zoom focused on workspace
+  const scale = interpolate(frame, [0, 240], [1.02, 1.06]);
+  const translateY = interpolate(frame, [0, 240], [30, 10]);
+
+  // Typing progress (0 to 1 between frame 15 and 80)
+  const typingProgress = interpolate(frame, [15, 80], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
   });
+
+  // Agent execution starts at frame 90
+  const isAgentRunning = frame >= 90;
+
+  // Completed tools count (0 to 4)
+  const completedCount = Math.min(
+    4,
+    Math.max(0, Math.floor((frame - 105) / 25))
+  );
 
   return (
     <AbsoluteFill style={{ overflow: "hidden" }}>
-      <BackgroundGlow intensity={1.3} />
+      <BackgroundGlow intensity={1.1} />
 
       <AbsoluteFill
         style={{
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          gap: "28px",
+          transform: `translateY(${translateY}px) scale(${scale})`,
         }}
       >
-        {/* Active Stage Indicator */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            padding: "6px 16px",
-            borderRadius: "100px",
-            backgroundColor: "rgba(99, 102, 241, 0.15)",
-            border: "1px solid rgba(99, 102, 241, 0.3)",
-            color: "#c7d2fe",
-            fontSize: "13px",
-            fontWeight: 700,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            fontFamily: CAIDE_THEME.typography.fontFamily,
-          }}
-        >
-          <span
-            style={{
-              width: "8px",
-              height: "8px",
-              borderRadius: "50%",
-              backgroundColor: isExecuting ? CAIDE_THEME.colors.primary : CAIDE_THEME.colors.emerald,
-              boxShadow: `0 0 10px ${isExecuting ? CAIDE_THEME.colors.primary : CAIDE_THEME.colors.emerald}`,
-            }}
-          />
-          <span>{isExecuting ? "Autonomous Agent Tool Execution" : "Pill Composer Architecture"}</span>
-        </div>
-
-        {/* Staggered Tool Execution List (Appears when Prompt is Sent) */}
-        {isExecuting && (
-          <div
-            style={{
-              transform: `translateY(${interpolate(toolListSpring, [0, 1], [30, 0])}px)`,
-              opacity: interpolate(toolListSpring, [0, 1], [0, 1]),
-            }}
-          >
-            <ToolExecution />
-          </div>
-        )}
-
-        {/* Authentic Caide Floating Pill Composer */}
-        <CaideComposer typingStartFrame={15} sendTriggerFrame={125} />
+        <CaideWindowShell
+          composerTypedProgress={typingProgress}
+          isAgentRunning={isAgentRunning}
+          completedToolsCount={completedCount}
+        />
       </AbsoluteFill>
     </AbsoluteFill>
   );

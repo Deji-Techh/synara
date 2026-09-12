@@ -1,3 +1,7 @@
+// FILE: CaideLogoMark.tsx
+// Purpose: Authentic, Apple/Linear-grade Caide mark and branding finale
+// Layer: Video brand asset
+
 import React from "react";
 import { useCurrentFrame, useVideoConfig, spring, interpolate, staticFile, Img } from "remotion";
 import { CAIDE_THEME } from "../constants/theme";
@@ -13,9 +17,8 @@ export const CaideLogoMark: React.FC = () => {
     config: SPRING_SNAPPY,
   });
 
-  const scale = interpolate(logoSpring, [0, 1], [0.8, 1]);
+  const scale = interpolate(logoSpring, [0, 1], [0.85, 1]);
   const opacity = interpolate(logoSpring, [0, 0.4, 1], [0, 0.9, 1]);
-  const glowPulse = interpolate(Math.sin(frame * 0.08), [-1, 1], [0.85, 1.2]);
 
   return (
     <div
@@ -29,28 +32,27 @@ export const CaideLogoMark: React.FC = () => {
         opacity,
       }}
     >
-      {/* Brand Icon with Radiant Glow */}
-      <div style={{ position: "relative", marginBottom: "28px" }}>
-        {/* Pulsing Backlight */}
+      {/* Brand Icon */}
+      <div style={{ position: "relative", marginBottom: "24px" }}>
+        {/* Subtle white ambient glow */}
         <div
           style={{
             position: "absolute",
-            inset: -30,
-            background: "radial-gradient(circle, rgba(99, 102, 241, 0.45) 0%, rgba(6, 182, 212, 0.2) 40%, transparent 70%)",
-            filter: "blur(30px)",
-            transform: `scale(${glowPulse})`,
+            inset: -20,
+            background: "radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 70%)",
+            filter: "blur(24px)",
             zIndex: 0,
           }}
         />
 
         <div
           style={{
-            width: "110px",
-            height: "110px",
-            borderRadius: "28px",
-            backgroundColor: "#121216",
-            border: "1.5px solid rgba(255, 255, 255, 0.15)",
-            boxShadow: `0 20px 50px rgba(0, 0, 0, 0.8), 0 0 40px ${CAIDE_THEME.colors.primaryGlow}`,
+            width: "96px",
+            height: "96px",
+            borderRadius: "24px",
+            backgroundColor: "#161616",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            boxShadow: "0 20px 50px rgba(0, 0, 0, 0.8)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -60,8 +62,8 @@ export const CaideLogoMark: React.FC = () => {
           }}
         >
           <Img
-            src={staticFile("app-icons/icon-group-600-macos.png")}
-            style={{ width: "90px", height: "90px", objectFit: "contain" }}
+            src={staticFile("app-icons/default.png")}
+            style={{ width: "80px", height: "80px", objectFit: "contain" }}
           />
         </div>
       </div>
@@ -69,13 +71,12 @@ export const CaideLogoMark: React.FC = () => {
       {/* Brand Name */}
       <h1
         style={{
-          fontSize: "64px",
+          fontSize: "56px",
           fontWeight: 800,
-          letterSpacing: "-0.04em",
+          letterSpacing: "-0.035em",
           margin: 0,
-          marginBottom: "12px",
+          marginBottom: "8px",
           color: "#ffffff",
-          textShadow: "0 0 40px rgba(255, 255, 255, 0.3)",
         }}
       >
         CAIDE
@@ -84,43 +85,46 @@ export const CaideLogoMark: React.FC = () => {
       {/* Tagline */}
       <p
         style={{
-          fontSize: "22px",
-          fontWeight: 600,
-          color: "#c7d2fe",
+          fontSize: "20px",
+          fontWeight: 500,
+          color: CAIDE_THEME.colors.mutedForeground,
           margin: 0,
-          marginBottom: "28px",
+          marginBottom: "24px",
           letterSpacing: "-0.01em",
-          textShadow: "0 0 20px rgba(99, 102, 241, 0.4)",
         }}
       >
         The World's Best AI App Builder
       </p>
 
       {/* Framework Support Badges */}
-      <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+      <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
         {[
-          { label: "React Native (iOS & Android)", icon: "framework-icons/react-native.png" },
-          { label: "Flutter Mobile", icon: "framework-icons/flutter.png" },
-          { label: "Web Applications", icon: "framework-icons/website.png" },
-        ].map((badge) => (
+          { name: "React Native", icon: "framework-icons/react-native.png" },
+          { name: "Flutter", icon: "framework-icons/flutter.png" },
+          { name: "Website", icon: "framework-icons/website.png" },
+          { name: "Blank", icon: null },
+        ].map((fw) => (
           <div
-            key={badge.label}
+            key={fw.name}
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "8px",
-              padding: "8px 16px",
+              gap: "6px",
+              padding: "5px 12px",
               borderRadius: "100px",
-              backgroundColor: "rgba(255, 255, 255, 0.05)",
-              border: `1px solid ${CAIDE_THEME.colors.border}`,
-              fontSize: "13px",
+              backgroundColor: "rgba(255, 255, 255, 0.04)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              fontSize: "12px",
               fontWeight: 500,
-              color: CAIDE_THEME.colors.mutedForeground,
-              backdropFilter: "blur(12px)",
+              color: "#ffffff",
             }}
           >
-            <Img src={staticFile(badge.icon)} style={{ width: "16px", height: "16px", objectFit: "contain" }} />
-            <span>{badge.label}</span>
+            {fw.icon ? (
+              <Img src={staticFile(fw.icon)} style={{ width: "14px", height: "14px" }} />
+            ) : (
+              <span style={{ fontSize: "11px", color: CAIDE_THEME.colors.subtleForeground }}>✦</span>
+            )}
+            <span>{fw.name}</span>
           </div>
         ))}
       </div>

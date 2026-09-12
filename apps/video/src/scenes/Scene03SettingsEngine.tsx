@@ -1,77 +1,49 @@
+// FILE: Scene03SettingsEngine.tsx
+// Purpose: Scene 3 — Under the hood: Caide's Provider Routing and Databases
+// Layer: Video scene
+
 import React from "react";
-import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig } from "remotion";
+import { AbsoluteFill, useCurrentFrame, interpolate } from "remotion";
 import { BackgroundGlow } from "../components/BackgroundGlow";
+import { CaideWindowShell } from "../components/CaideWindowShell";
 import { CaideSettings } from "../components/CaideSettings";
-import { CAIDE_THEME } from "../constants/theme";
-import { SPRING_SNAPPY } from "../constants/timings";
 
 export const Scene03SettingsEngine: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
 
-  const titleSpring = spring({
-    frame,
-    fps,
-    config: SPRING_SNAPPY,
-  });
+  const scale = interpolate(frame, [0, 240], [0.94, 0.98]);
 
   return (
     <AbsoluteFill style={{ overflow: "hidden" }}>
-      <BackgroundGlow intensity={1.15} />
+      <BackgroundGlow intensity={1.1} />
 
+      {/* Caide Desktop App Window with Settings Modal */}
       <AbsoluteFill
         style={{
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          gap: "20px",
+          transform: `scale(${scale})`,
         }}
       >
-        {/* Title Header */}
+        <CaideWindowShell />
+
+        {/* Modal Backdrop & Authentic Caide Settings Dialog */}
         <div
           style={{
+            position: "absolute",
+            inset: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.65)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
             display: "flex",
-            flexDirection: "column",
             alignItems: "center",
-            transform: `translateY(${interpolate(titleSpring, [0, 1], [-20, 0])}px)`,
-            opacity: interpolate(titleSpring, [0, 1], [0, 1]),
+            justifyContent: "center",
+            zIndex: 50,
           }}
         >
-          <div
-            style={{
-              padding: "4px 14px",
-              borderRadius: "100px",
-              backgroundColor: "rgba(16, 185, 129, 0.15)",
-              border: "1px solid rgba(16, 185, 129, 0.3)",
-              color: CAIDE_THEME.colors.emerald,
-              fontSize: "12px",
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              fontFamily: CAIDE_THEME.typography.fontFamily,
-              marginBottom: "8px",
-            }}
-          >
-            ✦ Unrestricted Provider Freedom
-          </div>
-
-          <h2
-            style={{
-              fontSize: "36px",
-              fontWeight: 800,
-              color: "#ffffff",
-              letterSpacing: "-0.02em",
-              margin: 0,
-              fontFamily: CAIDE_THEME.typography.fontFamily,
-            }}
-          >
-            Direct Provider Routing & Full Stack Databases
-          </h2>
+          <CaideSettings />
         </div>
-
-        {/* Authentic Settings Screen Component */}
-        <CaideSettings />
       </AbsoluteFill>
     </AbsoluteFill>
   );

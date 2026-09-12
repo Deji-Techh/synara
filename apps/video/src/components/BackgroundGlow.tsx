@@ -1,87 +1,53 @@
+// FILE: BackgroundGlow.tsx
+// Purpose: Minimalist ambient dark studio background with subtle neutral lighting
+// Layer: Video background
+
 import React from "react";
 import { useCurrentFrame, interpolate } from "remotion";
 import { CAIDE_THEME } from "../constants/theme";
 
 interface BackgroundGlowProps {
   intensity?: number;
-  hueShift?: number;
 }
 
-export const BackgroundGlow: React.FC<BackgroundGlowProps> = ({
-  intensity = 1,
-  hueShift = 0,
-}) => {
+export const BackgroundGlow: React.FC<BackgroundGlowProps> = ({ intensity = 1 }) => {
   const frame = useCurrentFrame();
 
-  const glowX1 = interpolate(Math.sin(frame * 0.02), [-1, 1], [25, 75]);
-  const glowY1 = interpolate(Math.cos(frame * 0.015), [-1, 1], [20, 60]);
-  const glowX2 = interpolate(Math.cos(frame * 0.025), [-1, 1], [70, 30]);
-  const glowY2 = interpolate(Math.sin(frame * 0.018), [-1, 1], [65, 35]);
-
-  const pulse = interpolate(Math.sin(frame * 0.05), [-1, 1], [0.85, 1.15]);
+  const glowX = interpolate(Math.sin(frame * 0.015), [-1, 1], [40, 60]);
+  const glowY = interpolate(Math.cos(frame * 0.012), [-1, 1], [35, 55]);
+  const pulse = interpolate(Math.sin(frame * 0.04), [-1, 1], [0.92, 1.08]);
 
   return (
     <div
       style={{
         position: "absolute",
         inset: 0,
-        backgroundColor: CAIDE_THEME.colors.bg,
+        backgroundColor: CAIDE_THEME.colors.shellBg,
         overflow: "hidden",
         zIndex: 0,
       }}
     >
-      {/* Background Perspective Grid */}
+      {/* Studio Radial Ambient Highlight */}
       <div
         style={{
           position: "absolute",
-          inset: 0,
-          backgroundImage: `
-            linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px)
-          `,
-          backgroundSize: "60px 60px",
-          opacity: 0.6,
-          maskImage: "radial-gradient(ellipse 80% 60% at 50% 50%, black 30%, transparent 85%)",
-          WebkitMaskImage: "radial-gradient(ellipse 80% 60% at 50% 50%, black 30%, transparent 85%)",
-        }}
-      />
-
-      {/* Primary Violet Aurora Glow */}
-      <div
-        style={{
-          position: "absolute",
-          left: `${glowX1}%`,
-          top: `${glowY1}%`,
-          width: "700px",
-          height: "700px",
+          left: `${glowX}%`,
+          top: `${glowY}%`,
+          width: "900px",
+          height: "900px",
           transform: `translate(-50%, -50%) scale(${pulse * intensity})`,
-          background: `radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, rgba(99, 102, 241, 0.04) 50%, transparent 70%)`,
-          filter: "blur(60px)",
+          background: "radial-gradient(circle, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 45%, transparent 70%)",
+          filter: "blur(80px)",
           pointerEvents: "none",
         }}
       />
 
-      {/* Cyan Secondary Accent Glow */}
-      <div
-        style={{
-          position: "absolute",
-          left: `${glowX2}%`,
-          top: `${glowY2}%`,
-          width: "600px",
-          height: "600px",
-          transform: `translate(-50%, -50%) scale(${pulse * intensity * 0.9})`,
-          background: `radial-gradient(circle, rgba(6, 182, 212, 0.14) 0%, rgba(6, 182, 212, 0.03) 45%, transparent 70%)`,
-          filter: "blur(70px)",
-          pointerEvents: "none",
-        }}
-      />
-
-      {/* Vignette Overlay */}
+      {/* Subtle Studio Vignette */}
       <div
         style={{
           position: "absolute",
           inset: 0,
-          background: "radial-gradient(circle at center, transparent 40%, rgba(9, 9, 11, 0.8) 100%)",
+          background: "radial-gradient(circle at center, transparent 50%, rgba(5, 5, 5, 0.85) 100%)",
           pointerEvents: "none",
         }}
       />

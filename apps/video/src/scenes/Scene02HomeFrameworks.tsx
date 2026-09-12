@@ -1,130 +1,86 @@
+// FILE: Scene02HomeFrameworks.tsx
+// Purpose: Scene 2 — Exact CreateAppDialog flow inside Caide desktop window
+// Layer: Video scene
+
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig } from "remotion";
 import { BackgroundGlow } from "../components/BackgroundGlow";
+import { CaideWindowShell } from "../components/CaideWindowShell";
 import { CaideAppDialog } from "../components/CaideAppDialog";
-import { CAIDE_THEME } from "../constants/theme";
 import { SPRING_SNAPPY } from "../constants/timings";
 
 export const Scene02HomeFrameworks: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Badge entrance
-  const badgeSpring = spring({
-    frame: frame - 10,
-    fps,
-    config: SPRING_SNAPPY,
-  });
-
-  const cursorX = interpolate(frame, [30, 75], [640, 305], {
+  // Natural mouse cursor glide across frameworks
+  // Frame 20 -> 75: cursor moves from outside to React Native card (at center-left)
+  const cursorX = interpolate(frame, [20, 75, 100, 115], [960, 850, 850, 1150], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
-  const cursorY = interpolate(frame, [30, 75], [520, 385], {
+  const cursorY = interpolate(frame, [20, 75, 100, 115], [700, 560, 560, 680], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  const cursorClick = interpolate(frame, [75, 82, 90], [1, 0.82, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  const isSelected = frame >= 80;
-
-  // Click ripple wave
-  const rippleProgress = Math.max(0, frame - 80);
-  const rippleScale = interpolate(rippleProgress, [0, 25], [0.3, 2.2], {
-    extrapolateRight: "clamp",
-  });
-  const rippleOpacity = interpolate(rippleProgress, [0, 10, 25], [0.8, 0.4, 0], {
-    extrapolateRight: "clamp",
-  });
+  const isClick1 = frame >= 75 && frame <= 85;
+  const isClick2 = frame >= 115 && frame <= 125;
 
   return (
     <AbsoluteFill style={{ overflow: "hidden" }}>
       <BackgroundGlow intensity={1.1} />
 
+      {/* Main Caide Desktop App Window */}
       <AbsoluteFill
         style={{
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          gap: "24px",
+          transform: "scale(0.96)",
         }}
       >
-        {/* Category Pill Tag */}
+        <CaideWindowShell />
+
+        {/* Modal Backdrop & Authentic CreateAppDialog */}
         <div
           style={{
+            position: "absolute",
+            inset: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.65)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
             display: "flex",
             alignItems: "center",
-            gap: "8px",
-            padding: "6px 16px",
-            borderRadius: "100px",
-            backgroundColor: "rgba(99, 102, 241, 0.15)",
-            border: "1px solid rgba(99, 102, 241, 0.3)",
-            color: "#a5b4fc",
-            fontSize: "13px",
-            fontWeight: 700,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            fontFamily: CAIDE_THEME.typography.fontFamily,
-            transform: `scale(${interpolate(badgeSpring, [0, 1], [0.8, 1])})`,
-            opacity: interpolate(badgeSpring, [0, 1], [0, 1]),
+            justifyContent: "center",
+            zIndex: 50,
           }}
         >
-          <span>✦ Multi-Framework AI Runtime</span>
+          <CaideAppDialog selectedFrameworkIndex={1} />
         </div>
 
-        {/* Authentic Caide App Dialog */}
-        <CaideAppDialog selectedFrameworkIndex={isSelected ? 0 : 3} />
-
-        {/* Click Ripple Effect */}
-        {frame >= 80 && frame <= 110 && (
-          <div
-            style={{
-              position: "absolute",
-              left: "305px",
-              top: "385px",
-              width: "60px",
-              height: "60px",
-              transform: `translate(-50%, -50%) scale(${rippleScale})`,
-              opacity: rippleOpacity,
-              borderRadius: "50%",
-              border: "2px solid #6366f1",
-              backgroundColor: "rgba(99, 102, 241, 0.2)",
-              pointerEvents: "none",
-              zIndex: 90,
-            }}
-          />
-        )}
-
-        {/* Animated Mouse Pointer */}
-        {frame < 120 && (
-          <div
-            style={{
-              position: "absolute",
-              left: `${cursorX}px`,
-              top: `${cursorY}px`,
-              transform: `scale(${cursorClick})`,
-              pointerEvents: "none",
-              zIndex: 100,
-              filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.5))",
-            }}
-          >
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M3 3L10.07 20.97L13.58 13.58L20.97 10.07L3 3Z"
-                fill="white"
-                stroke="#09090b"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-        )}
+        {/* Realistic Mouse Cursor */}
+        <div
+          style={{
+            position: "absolute",
+            left: `${cursorX}px`,
+            top: `${cursorY}px`,
+            pointerEvents: "none",
+            zIndex: 100,
+            transform: isClick1 || isClick2 ? "scale(0.85)" : "scale(1)",
+            transition: "transform 0.1s ease",
+          }}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M3 3L10.5 21L13.5 13.5L21 10.5L3 3Z"
+              fill="#ffffff"
+              stroke="#000000"
+              strokeWidth="2"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
       </AbsoluteFill>
     </AbsoluteFill>
   );
