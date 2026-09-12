@@ -35,6 +35,29 @@ export interface GatewayTurnRequest {
   maxSteps?: number;
 }
 
+/**
+ * Transcript mirror: projects harness turn events into the thread transcript
+ * (the same projection the legacy engine writes) so harness chats read like
+ * normal chats — user bubble + assistant text, hero dismissed. Rich harness
+ * cards (tools, todos, consent) stay in the dock transcript; the mirror only
+ * carries user/assistant text. Registered by the composition that owns
+ * threads (harnessCompat); null by default, in which case turns stay
+ * harness-transcript-only.
+ */
+export interface TranscriptMirror {
+  mirrorHarnessTurnEvent(event: HarnessEvent): void;
+}
+
+let transcriptMirror: TranscriptMirror | null = null;
+
+export function setTranscriptMirror(mirror: TranscriptMirror | null): void {
+  transcriptMirror = mirror;
+}
+
+export function getTranscriptMirror(): TranscriptMirror | null {
+  return transcriptMirror;
+}
+
 export class TurnGateway {  private runner = new CaideRunner();
   private inboxes = new Map<string, Inbox>();
   private ws: HarnessHub | null = null;
@@ -213,6 +236,19 @@ export class TurnGateway {  private runner = new CaideRunner();
     const broadcast = (event: HarnessEvent): void => {
       extra?.onEvent?.(event);
       this.ws?.broadcastToSession(request.sessionId, event);
+      // Mirror user/assistant text into the thread transcript (normal-chat
+      // look). Mirror failures must never break the turn or the socket fan-out.
+      if (
+        event.type === "turn_start" ||
+        event.type === "token" ||
+        event.type === "turn_end"
+      ) {
+        try {
+          transcriptMirror?.mirrorHarnessTurnEvent(event);
+        } catch {
+          // transcript projection is best-effort
+        }
+      }
     };
     return this.runner.startTurn({
       ...request,

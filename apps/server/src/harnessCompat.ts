@@ -8,6 +8,8 @@ import { PROVIDER_KINDS } from "@caide/contracts";
 import { isPhantomInitialThreadId } from "@caide/shared/chatThreads";
 import { resolveAttachmentPathById } from "./attachmentStore.ts";
 import { applyDispatchSystemPromptOverride } from "./harness/prompts/dispatchSystemPrompt.ts";
+import { setTranscriptMirror } from "./harness/turn/gateway.ts";
+import { createTranscriptMirror } from "./harness/turn/transcriptMirror.ts";
 import {
   buildUserMessageWithImages,
   type ResolvedChatImage,
@@ -1118,6 +1120,33 @@ export function publishDomainEvent(event: any) {
   }
   Effect.runSync(PubSub.publish(domainEventsPubSub, fullEvent));
 }
+
+// Harness transcript mirror wiring (normal-chat look for harness turns).
+// Registered here because this module owns the threads; gateway.ts must
+// never import this file (cycle) — the direction stays one-way.
+const { mirrorHarnessTurnEvent } = createTranscriptMirror({
+  findThread: (threadId: string) => inMemoryThreads.find((t: any) => t.id === threadId),
+  publishMessage: (threadId: string, msg: any) => {
+    globalSnapshotSequence += 1;
+    publishDomainEvent({
+      sequence: globalSnapshotSequence,
+      aggregateKind: "thread",
+      aggregateId: threadId,
+      type: "thread.message-sent",
+      payload: messageSentPayload(threadId, msg),
+      createdAt: new Date().toISOString(),
+    });
+  },
+  save: () => {
+    try {
+      savePersistedState();
+    } catch {
+      // persistence is best-effort
+    }
+  },
+});
+export { mirrorHarnessTurnEvent };
+setTranscriptMirror({ mirrorHarnessTurnEvent });
 
 // Build a schema-valid `thread.message-sent` payload. The stub's in-memory
 // message objects carry the id as `id` and nest fields, but the contract's

@@ -226,7 +226,6 @@ import {
   createThreadLineageSelector,
   localSubagentThreadId,
 } from "./ChatView.selectors";
-import { harnessStore } from "~/harnessStore";
 import { startHarnessTurn } from "~/harnessWs";
 import {
   clampCollapsedComposerCursor,
@@ -7745,8 +7744,8 @@ export default function ChatView({
         chatModeForSend === "build"
           ? chatModeForSend
           : "agent";
-      const divertMessageId = newMessageId();
-      harnessStore.appendUserMessage(activeThread.id, divertMessageId, trimmedPromptForSend);
+      // The server mirrors the turn into the thread transcript (user bubble
+      // + assistant text), so no local echo here — it would double-render.
       const harnessRouting = resolveHarnessModelRouting({
         provider: selectedModelSelectionForSend.provider,
         model: selectedModelSelectionForSend.model,

@@ -107,7 +107,7 @@ describe("harness components (m3)", () => {
     harnessStore.clearSession("s-hc");
   });
 
-  it("renders the transcript in order: text, tool card, checkpoint, error", () => {
+  it("renders the transcript extras in order: tool card, checkpoint, error (text lives in the thread transcript)", () => {
     harnessStore.clearSession("s-hc");
     harnessStore.handleEvent({ type: "token", sessionId: "s-hc", content: "Working on it" });
     harnessStore.handleEvent({
@@ -143,7 +143,8 @@ describe("harness components (m3)", () => {
       recoverable: true,
     });
     const markup = renderToStaticMarkup(<HarnessTranscript sessionId="s-hc" send={send} />);
-    expect(markup).toContain("Working on it");
+    // Token text is mirrored into the thread transcript, never the strip.
+    expect(markup).not.toContain("Working on it");
     expect(markup).toContain("Read");
     expect(markup).toContain("a.ts");
     expect(markup).toContain("Gate review");
@@ -189,11 +190,11 @@ describe("harness components (m3)", () => {
     harnessStore.clearSession("s-hc");
   });
 
-  it("renders diverted user bubbles in the transcript", () => {
+  it("does not render diverted user bubbles in the strip (they live in the thread transcript)", () => {
     harnessStore.clearSession("s-hc");
     harnessStore.appendUserMessage("s-hc", "m1", "Build me a marketplace");
     const markup = renderToStaticMarkup(<HarnessTranscript sessionId="s-hc" send={send} />);
-    expect(markup).toContain("Build me a marketplace");
+    expect(markup).not.toContain("Build me a marketplace");
     harnessStore.clearSession("s-hc");
   });
 
@@ -220,7 +221,7 @@ describe("harness components (m3)", () => {
     harnessStore.clearSession("s-hc");
   });
 
-  it("collapses repeated assistant status narration (item 16)", () => {
+  it("collapses repeated assistant status narration (item 16 helpers)", () => {
     expect(narrationStem("Building your IUO marketplace — mapping the project first.")).toBe(
       "building your iuo marketplace",
     );
@@ -232,17 +233,15 @@ describe("harness components (m3)", () => {
     expect(text).toContain("Fixing import paths now.");
     expect(text.match(/Building your IUO/g)).toHaveLength(1);
 
-    // Repeats across tool rows collapse in the rendered transcript.
+    // The strip no longer renders token text (thread transcript owns it),
+    // but tool cards still render around it.
     harnessStore.clearSession("s-hc");
     harnessStore.handleEvent({ type: "token", sessionId: "s-hc", content: "Building the full marketplace — wiring home first." });
     harnessStore.handleEvent({ type: "tool_call", sessionId: "s-hc", id: "c1", name: "read_file", args: {}, status: "started" });
-    harnessStore.handleEvent({ type: "token", sessionId: "s-hc", content: "Building the full marketplace — wiring explore now." });
     harnessStore.handleEvent({ type: "tool_call", sessionId: "s-hc", id: "c1", name: "read_file", args: {}, status: "completed", result: "ok" });
-    harnessStore.handleEvent({ type: "token", sessionId: "s-hc", content: "Done — preview is live." });
     const markup = renderToStaticMarkup(<HarnessTranscript sessionId="s-hc" send={send} />);
-    expect(markup).toContain("Done — preview is live.");
-    expect(markup).toContain("similar update");
-    expect(markup.match(/Building the full marketplace/g)?.length ?? 0).toBeLessThanOrEqual(1);
+    expect(markup).not.toContain("Building the full marketplace");
+    expect(markup).toContain("Read");
     harnessStore.clearSession("s-hc");
   });
 

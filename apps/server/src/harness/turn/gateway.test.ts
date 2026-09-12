@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 import type { HarnessEvent } from "@caide/contracts";
 import type { LLMAdapter } from "../loop/loop.ts";
-import { TurnGateway, resolveTurnProviders } from "./gateway.ts";
+import { TurnGateway, resolveTurnProviders, setTranscriptMirror } from "./gateway.ts";
 import { HarnessHub } from "../ws/hub.ts";
 
 function fakeLlm(chunks: Array<{ type: "token"; content: string }>): LLMAdapter {
@@ -101,6 +101,44 @@ describe("turn gateway (m3h)", () => {
     gateway.cancelTurn("s-steer");
     gateway.dropSession("s-steer");
     expect(gateway.getInbox("s-steer")).not.toBe(inbox);
+  });
+
+  it("mirrors turn_start/token/turn_end to the transcript mirror only", async () => {
+    const seen: HarnessEvent[] = [];
+    setTranscriptMirror({ mirrorHarnessTurnEvent: (e) => seen.push(e) });
+    try {
+      const gateway = new TurnGateway();
+      await gateway.startTurn(
+        {
+          sessionId: "s-mirror",
+          appPath: "/tmp/caide-test-app",
+          prompt: "hey",
+          mode: "ask",
+          settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+        },
+        {
+          llmOverride: {
+            async *stream() {
+              yield { type: "token", content: "hi" } as never;
+              yield {
+                type: "tool_call",
+                toolCall: { id: "c1", name: "execute_sql", args: {} },
+              } as never;
+            },
+          },
+          onEvent: () => {},
+        },
+      );
+      const types = seen.map((e) => e.type);
+      expect(types).toContain("turn_start");
+      expect(types).toContain("token");
+      expect(types).toContain("turn_end");
+      expect(types).not.toContain("tool_call");
+      expect(types).not.toContain("stage");
+      gateway.dropSession("s-mirror");
+    } finally {
+      setTranscriptMirror(null);
+    }
   });
 
   it("steers a duplicate send into the running turn instead of forking a parallel loop", async () => {

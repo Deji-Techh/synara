@@ -1,11 +1,10 @@
 // FILE: HarnessTranscript.tsx
-// Purpose: Ordered harness-turn transcript: assistant text (grouped token
-// runs through markdown), tool cards, checkpoints, and errors — in arrival
-// order from the store timeline. The E16a transcript feed; the legacy
-// orchestration timeline stays untouched.
+// Purpose: Rich extras for harness turns — tool cards, checkpoints, and
+// errors in arrival order from the store timeline. User bubbles + assistant
+// text live in the thread transcript (the server mirrors harness turns
+// there), so this strip skips token/user entries to avoid double surfaces.
 
 import { useMemo } from "react";
-import ChatMarkdown from "~/components/ChatMarkdown";
 import { CheckpointCard } from "~/components/CheckpointCard";
 import {
   CaideClaudeToolCard,
@@ -92,84 +91,16 @@ export function HarnessTranscript(props: { sessionId: string; send: SendFn }) {
 
   const blocks = useMemo<RenderBlock[]>(() => {
     if (!session) return [];
+    // User bubbles + assistant text live in the thread transcript now (the
+    // server mirrors harness turns there so chats read normally). This strip
+    // keeps only the rich extras with no transcript equivalent: tool cards,
+    // checkpoints, and errors. Token/user timeline entries are skipped here
+    // to avoid showing every message twice.
     const out: RenderBlock[] = [];
-    const seenStems = new Set<string>();
-    // Carry-over sentence parsing: token chunks glue without separators, so
-    // evaluate complete sentences incrementally and carry the trailing
-    // fragment. Streaming continuations rejoin correctly; separate steps
-    // never fuse into one dropped line.
-    let carry = "";
-    let keptParts: string[] = [];
-    let collapsed = 0;
-    const feedChunk = (chunk: string) => {
-      // A chunk boundary is a message/step boundary in the common case
-      // (streaming continuations rejoin losslessly below): evaluate the
-      // carried fragment first so separate steps never fuse into one line.
-      if (carry) {
-        const stem = narrationStem(carry);
-        if (stem && seenStems.has(stem)) collapsed++;
-        else {
-          if (stem) seenStems.add(stem);
-          keptParts.push(carry);
-        }
-        carry = "";
-      }
-      const parts = chunk.split(/((?<=[.!?])\s+)/);
-      for (let i = 0; i < parts.length; i += 2) {
-        const sentence = parts[i] ?? "";
-        const sep = parts[i + 1];
-        if (sep === undefined) {
-          carry = sentence;
-          break;
-        }
-        const stem = narrationStem(sentence);
-        if (stem && seenStems.has(stem)) {
-          collapsed++;
-          continue;
-        }
-        if (stem) seenStems.add(stem);
-        keptParts.push(sentence + sep);
-      }
-    };
-    let carriedRepeats = 0;
-    const flushText = (seq: number) => {
-      if (carry) {
-        const stem = narrationStem(carry);
-        if (stem && seenStems.has(stem)) collapsed++;
-        else {
-          if (stem) seenStems.add(stem);
-          keptParts.push(carry);
-        }
-        carry = "";
-      }
-      const text = keptParts.join("").trimEnd();
-      keptParts = [];
-      if (text) {
-        const totalRepeats = collapsed + carriedRepeats;
-        carriedRepeats = 0;
-        collapsed = 0;
-        out.push({
-          key: `text-${seq}`,
-          entry: { seq, kind: "token" },
-          text,
-          ...(totalRepeats > 0 ? { collapsedCount: totalRepeats } : {}),
-        });
-      } else if (collapsed + carriedRepeats > 0) {
-        // Whole run was repeats of earlier narration — fold the count into
-        // the next surviving block instead of rendering an empty bubble.
-        carriedRepeats += collapsed + 1;
-        collapsed = 0;
-      }
-    };
     for (const entry of session.timeline) {
-      if (entry.kind === "token") {
-        feedChunk(entry.content ?? "");
-      } else {
-        flushText(entry.seq);
-        out.push({ key: `${entry.kind}-${entry.seq}`, entry });
-      }
+      if (entry.kind === "token" || entry.kind === "user") continue;
+      out.push({ key: `${entry.kind}-${entry.seq}`, entry });
     }
-    flushText(Number.MAX_SAFE_INTEGER);
     return out;
   }, [session]);
 
@@ -189,32 +120,6 @@ export function HarnessTranscript(props: { sessionId: string; send: SendFn }) {
         </div>
       )}
       {blocks.map((block) => {
-        if (block.entry.kind === "user") {
-          const text =
-            (block.entry.id && session.userMessages[block.entry.id]) ??
-            block.entry.content ??
-            "";
-          if (!text) return null;
-          return (
-            <div key={block.key} className="flex justify-end py-1">
-              <div className="max-w-[85%] rounded-2xl rounded-br-md bg-muted px-3 py-2 text-sm">
-                <ChatMarkdown text={text} cwd={undefined} />
-              </div>
-            </div>
-          );
-        }
-        if (block.entry.kind === "token") {
-          return (
-            <div key={block.key} className="py-1 text-sm">
-              <ChatMarkdown text={block.text ?? ""} cwd={undefined} />
-              {block.collapsedCount ? (
-                <div className="pt-0.5 text-[11px] text-muted-foreground/70">
-                  +{block.collapsedCount} similar {block.collapsedCount === 1 ? "update" : "updates"} hidden
-                </div>
-              ) : null}
-            </div>
-          );
-        }
         if (block.entry.kind === "tool") {
           const call = block.entry.id ? session.toolCalls[block.entry.id] : undefined;
           if (!call) return null;
