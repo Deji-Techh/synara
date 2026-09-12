@@ -249,52 +249,52 @@ describe("Milestone M11 — Provider Streaming, SIGTERM & Block Assembly", () =>
   it("strips Gemini-rejected schema keys from function_declarations in the request body", async () => {
     let body: any = null;
     server.on("request", (req, res) => {
-    let raw = "";
-    req.on("data", (chunk) => {
-      raw += chunk;
-    });
-    req.on("end", () => {
-      body = JSON.parse(raw);
-      res.writeHead(200, { "Content-Type": "text/event-stream" });
-      res.write(
-        "data: " +
-          JSON.stringify({ candidates: [{ content: { parts: [{ text: "hi" }] } }] }) +
-          "\n\n",
-      );
-      res.write("data: [DONE]\n\n");
-      res.end();
-    });
+      let raw = "";
+      req.on("data", (chunk) => {
+        raw += chunk;
+      });
+      req.on("end", () => {
+        body = JSON.parse(raw);
+        res.writeHead(200, { "Content-Type": "text/event-stream" });
+        res.write(
+          "data: " +
+            JSON.stringify({ candidates: [{ content: { parts: [{ text: "hi" }] } }] }) +
+            "\n\n",
+        );
+        res.write("data: [DONE]\n\n");
+        res.end();
+      });
     });
 
     const tools = [
-    {
-      name: "read_file",
-      description: "Read a file",
-      parameters: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          path: { type: "string" },
-          limit: { type: "number", exclusiveMinimum: 0 },
-          filter: {
-            type: "object",
-            properties: { q: { type: "string" } },
-            additionalProperties: false,
+      {
+        name: "read_file",
+        description: "Read a file",
+        parameters: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            path: { type: "string" },
+            limit: { type: "number", exclusiveMinimum: 0 },
+            filter: {
+              type: "object",
+              properties: { q: { type: "string" } },
+              additionalProperties: false,
+            },
           },
         },
       },
-    },
     ];
     const tokens: string[] = [];
     const stream = streamProvider({
-    modelId: "gemini-2.5-flash",
-    baseUrl,
-    apiKey: "test-key",
-    messages: [{ role: "user", content: "hi" }],
-    tools,
+      modelId: "gemini-2.5-flash",
+      baseUrl,
+      apiKey: "test-key",
+      messages: [{ role: "user", content: "hi" }],
+      tools,
     });
     for await (const chunk of stream) {
-    if (chunk.type === "token") tokens.push(chunk.content);
+      if (chunk.type === "token") tokens.push(chunk.content);
     }
     expect(tokens).toEqual(["hi"]);
     const decls = body.tools[0].function_declarations;
