@@ -58,7 +58,7 @@ export const CaideSettings: React.FC = () => {
           { label: "MCP Tool Servers", active: false, badge: "12 active" },
           { label: "Theme & Customization", active: false },
           { label: "Keyboard Shortcuts", active: false },
-        ].map((item, i) => (
+        ].map((item) => (
           <div
             key={item.label}
             style={{
@@ -145,6 +145,19 @@ export const CaideSettings: React.FC = () => {
               config: SPRING_SNAPPY,
             });
 
+            // Animated toggle switch
+            const toggleTrigger = 35 + i * 12;
+            const toggleSpring = spring({
+              frame: frame - toggleTrigger,
+              fps,
+              config: { damping: 14, mass: 0.6, stiffness: 180 },
+            });
+            const knobX = interpolate(toggleSpring, [0, 1], [2, 18], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            });
+            const toggleBg = frame >= toggleTrigger ? CAIDE_THEME.colors.primary : "rgba(255, 255, 255, 0.1)";
+
             return (
               <div
                 key={prov.id}
@@ -201,17 +214,17 @@ export const CaideSettings: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Status toggle */}
+                {/* Animated status toggle */}
                 <div
                   style={{
                     width: "42px",
                     height: "24px",
                     borderRadius: "12px",
-                    backgroundColor: CAIDE_THEME.colors.primary,
+                    backgroundColor: toggleBg,
                     padding: "2px",
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    alignItems: "center",
+                    position: "relative",
+                    transition: "background-color 0.2s ease",
+                    boxShadow: frame >= toggleTrigger ? `0 0 12px ${CAIDE_THEME.colors.primaryGlow}` : "none",
                   }}
                 >
                   <div
@@ -220,6 +233,8 @@ export const CaideSettings: React.FC = () => {
                       height: "20px",
                       borderRadius: "50%",
                       backgroundColor: "#ffffff",
+                      transform: `translateX(${knobX}px)`,
+                      boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
                     }}
                   />
                 </div>

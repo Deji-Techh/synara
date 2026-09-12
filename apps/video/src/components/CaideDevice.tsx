@@ -18,8 +18,18 @@ export const CaideDevice: React.FC = () => {
   const rotY = interpolate(entrance, [0, 1], [-12, -3]);
   const rotX = interpolate(entrance, [0, 1], [8, 2]);
 
-  // Chart data animated wave
-  const chartPoints: Array<[number, number]> = [
+  // Dynamic timeframe switch at frame 70
+  const isOneWeek = frame >= 70;
+  const morphSpring = spring({
+    frame: frame - 70,
+    fps,
+    config: { damping: 16, mass: 0.7, stiffness: 120 },
+  });
+
+  const morph = isOneWeek ? interpolate(morphSpring, [0, 1], [0, 1]) : 0;
+
+  // Chart data animated wave with interpolation between 1D and 1W trends
+  const chartPoints1D: Array<[number, number]> = [
     [10, 80],
     [50, 65],
     [90, 75],
@@ -30,11 +40,33 @@ export const CaideDevice: React.FC = () => {
     [290, 18],
   ];
 
+  const chartPoints1W: Array<[number, number]> = [
+    [10, 95],
+    [50, 85],
+    [90, 60],
+    [130, 68],
+    [170, 40],
+    [210, 25],
+    [250, 16],
+    [290, 8],
+  ];
+
+  const chartPoints = chartPoints1D.map(([x1, y1], i) => {
+    const y2 = chartPoints1W[i]?.[1] ?? y1;
+    const curY = y1 + (y2 - y1) * morph;
+    return [x1, curY] as [number, number];
+  });
+
   const chartPath = chartPoints
-    .map(([px, py], i) => `${i === 0 ? "M" : "L"} ${px} ${py + Math.sin((frame + i * 15) * 0.08) * 4}`)
+    .map(([px, py], i) => `${i === 0 ? "M" : "L"} ${px} ${py + Math.sin((frame + i * 15) * 0.08) * 3.5}`)
     .join(" ");
 
   const fillPath = `${chartPath} L 290 120 L 10 120 Z`;
+
+  // Balance counter reacts to timeframe switch
+  const balance = isOneWeek
+    ? interpolate(morph, [0, 1], [48290.45, 54910.8], { extrapolateRight: "clamp" })
+    : 48290.45;
 
   return (
     <div
@@ -124,13 +156,13 @@ export const CaideDevice: React.FC = () => {
           </div>
 
           {/* App Header */}
-          <div style={{ padding: "12px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ padding: "10px 20px 4px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
               <div style={{ fontSize: "11px", color: CAIDE_THEME.colors.mutedForeground, textTransform: "uppercase", letterSpacing: "0.08em" }}>
                 Live Portfolio
               </div>
               <div style={{ fontSize: "28px", fontWeight: 800, color: "#ffffff", letterSpacing: "-0.02em" }}>
-                $48,290.45
+                ${balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
 
@@ -144,12 +176,35 @@ export const CaideDevice: React.FC = () => {
                 fontWeight: 700,
               }}
             >
-              +14.8%
+              {isOneWeek ? "+24.6%" : "+14.8%"}
             </div>
           </div>
 
+          {/* Timeframe Selector Pill Bar */}
+          <div style={{ display: "flex", gap: "6px", padding: "4px 20px 10px 20px" }}>
+            {["1D", "1W", "1M", "1Y"].map((tf) => {
+              const active = isOneWeek ? tf === "1W" : tf === "1D";
+              return (
+                <div
+                  key={tf}
+                  style={{
+                    padding: "3px 10px",
+                    borderRadius: "6px",
+                    backgroundColor: active ? "rgba(99, 102, 241, 0.25)" : "transparent",
+                    color: active ? "#c7d2fe" : CAIDE_THEME.colors.subtleForeground,
+                    fontSize: "11px",
+                    fontWeight: active ? 700 : 500,
+                    border: active ? "1px solid rgba(99, 102, 241, 0.4)" : "1px solid transparent",
+                  }}
+                >
+                  {tf}
+                </div>
+              );
+            })}
+          </div>
+
           {/* Chart Area */}
-          <div style={{ padding: "10px 20px", height: "150px" }}>
+          <div style={{ padding: "0 20px", height: "140px" }}>
             <svg width="100%" height="130" viewBox="0 0 300 120" style={{ overflow: "visible" }}>
               <defs>
                 <linearGradient id="chartGlow" x1="0" y1="0" x2="0" y2="1">
@@ -160,13 +215,13 @@ export const CaideDevice: React.FC = () => {
               <path d={fillPath} fill="url(#chartGlow)" />
               <path d={chartPath} fill="none" stroke="#6366f1" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
               {/* Pulsing Live Node */}
-              <circle cx="290" cy={18 + Math.sin((frame + 105) * 0.08) * 4} r="5" fill="#ffffff" />
-              <circle cx="290" cy={18 + Math.sin((frame + 105) * 0.08) * 4} r="10" fill="#6366f1" opacity="0.4" />
+              <circle cx="290" cy={(chartPoints[7]?.[1] ?? 18) + Math.sin((frame + 105) * 0.08) * 3.5} r="5" fill="#ffffff" />
+              <circle cx="290" cy={(chartPoints[7]?.[1] ?? 18) + Math.sin((frame + 105) * 0.08) * 3.5} r="11" fill="#6366f1" opacity="0.4" />
             </svg>
           </div>
 
           {/* Asset Rows */}
-          <div style={{ flex: 1, padding: "10px 18px", display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div style={{ flex: 1, padding: "8px 18px", display: "flex", flexDirection: "column", gap: "8px" }}>
             {[
               { name: "Bitcoin", symbol: "BTC", price: "$96,420.00", change: "+4.2%", color: "#f59e0b" },
               { name: "Ethereum", symbol: "ETH", price: "$3,480.12", change: "+6.8%", color: "#6366f1" },
@@ -178,7 +233,7 @@ export const CaideDevice: React.FC = () => {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  padding: "10px 12px",
+                  padding: "8px 12px",
                   borderRadius: "12px",
                   backgroundColor: "rgba(255, 255, 255, 0.04)",
                   border: "1px solid rgba(255, 255, 255, 0.04)",
@@ -187,8 +242,8 @@ export const CaideDevice: React.FC = () => {
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <div
                     style={{
-                      width: "32px",
-                      height: "32px",
+                      width: "30px",
+                      height: "30px",
                       borderRadius: "50%",
                       backgroundColor: coin.color,
                       display: "flex",
@@ -218,13 +273,13 @@ export const CaideDevice: React.FC = () => {
           {/* Bottom Nav Bar */}
           <div
             style={{
-              height: "60px",
+              height: "56px",
               borderTop: `1px solid ${CAIDE_THEME.colors.border}`,
               backgroundColor: "rgba(18, 18, 22, 0.9)",
               display: "flex",
               justifyContent: "space-around",
               alignItems: "center",
-              paddingBottom: "10px",
+              paddingBottom: "8px",
             }}
           >
             <span style={{ fontSize: "18px", color: "#6366f1" }}>✦</span>
