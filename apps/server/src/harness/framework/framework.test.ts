@@ -30,7 +30,8 @@ describe("Milestone M15 — Framework Registry & Scaffold Templates", () => {
     const createdFiles = await scaffoldProject("react-native", targetDir, "SuperRN");
 
     expect(createdFiles).toContain("package.json");
-    expect(createdFiles).toContain("App.tsx");
+    // Expo Router scaffold: entry is app/_layout.tsx, not App.tsx.
+    expect(createdFiles).toContain("app/_layout.tsx");
     expect(createdFiles).toContain("app.json");
     expect(createdFiles).toContain("src/design/tokens.ts");
     expect(createdFiles).toContain(".caide/framework.json");
@@ -40,7 +41,7 @@ describe("Milestone M15 — Framework Registry & Scaffold Templates", () => {
     // Check package.json contents
     const pkg = JSON.parse(fs.readFileSync(path.join(targetDir, "package.json"), "utf-8"));
     expect(pkg.dependencies.expo).toBeDefined();
-    expect(pkg.dependencies["@react-navigation/native"]).toBeDefined();
+    expect(pkg.dependencies["expo-router"]).toBeDefined();
 
     // Check design tokens
     const designSpec = JSON.parse(

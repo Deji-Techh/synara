@@ -190,6 +190,10 @@ export class CaideRunner {
 
   cancel(sessionId: string, cause = "cancelled"): void {
     this.controllers.get(sessionId)?.abort(cause);
+    // Release the flow slot so the next send launches fresh instead of
+    // misreporting as buffered; the aborted loop's terminal finish is a
+    // no-op against the cleared slot.
+    this.flow.cancel(cause);
     // Parked consent waits (tool + MCP) never observe the abort otherwise —
     // settle them as declined so the turn fails fast instead of hanging.
     clearPendingConsentsForSession(sessionId);
@@ -202,6 +206,17 @@ export class CaideRunner {
 
   async startTurn(input: StartTurnInput): Promise<string> {
     const turnId = this.flow.launch(input.prompt);
+    // Duplicate-send guard: a turn is genuinely running. A failover retry
+    // (failoverConsumed set) owns the slot — it bypasses the guard. A fresh
+    // send steers into the live loop's inbox instead of running a parallel
+    // loop; without an inbox there is nowhere to steer, so fall through to
+    // the legacy parallel run rather than dropping the prompt.
+    if (turnId.startsWith("buffered:") && (input.failoverConsumed ?? []).length === 0) {
+      if (input.inbox) {
+        input.inbox.steer(input.prompt);
+        return turnId;
+      }
+    }
     // Per-turn token accounting (provider-reported usage only). Declared
     // up front so every failure path (even before provider setup) can
     // attach partial usage instead of hitting a TDZ error.
@@ -627,6 +642,7 @@ export class CaideRunner {
         this.status = "cancelled";
         await flushTurnTokens(input.sessionId);
         forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "cancelled", ...usageField() });
+        this.flow.finish(turnId);
         logProjectRun("cancelled", "turn cancelled");
       } else {
         this.status = "completed";
@@ -675,6 +691,7 @@ export class CaideRunner {
                 });
                 forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "failed", ...usageField() });
                 logProjectRun("failed", "missing visual evidence (2nd consecutive turn)");
+                this.flow.finish(turnId);
                 await captureTurnEnd(input.sessionId, input.appPath).catch(() => {});
                 await snapshotSessionState(input.sessionId, storage).catch(() => {});
                 ctx.cleanup();
@@ -699,6 +716,7 @@ export class CaideRunner {
         }
         await flushTurnTokens(input.sessionId);
         forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "completed", ...usageField() });
+        this.flow.finish(turnId);
         logProjectRun("completed");
       }
       await captureTurnEnd(input.sessionId, input.appPath).catch(() => {});
@@ -721,8 +739,11 @@ export class CaideRunner {
         });
         // Release this attempt's controller BEFORE recursing: the inner
         // startTurn registers its own, and the outer finally would otherwise
-        // delete it out from under the live attempt.
+        // delete it out from under the live attempt. Also release the flow
+        // slot: the errored attempt no longer owns it, so the retry launches
+        // with a real id (and its own finish clears it).
         this.controllers.delete(input.sessionId);
+        this.flow.finish(turnId);
         return this.startTurn({
           ...input,
           providerId: next.providerId,
@@ -740,6 +761,7 @@ export class CaideRunner {
         recoverable: true,
       });
       forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "failed", ...usageField() });
+      this.flow.finish(turnId);
       logProjectRun("failed", err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500));
     } finally {
       input.signal?.removeEventListener("abort", onAbort);

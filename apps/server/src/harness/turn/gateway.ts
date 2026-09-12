@@ -204,6 +204,9 @@ export class TurnGateway {  private runner = new CaideRunner();
       providerId: resolved.providerId,
       modelId: resolved.modelId,
       settings: resolved.settings,
+      // Session inbox doubles as the duplicate-send target: a second send
+      // while the turn runs steers into the live loop instead of forking.
+      inbox: this.getInbox(request.sessionId),
       requestConsent: extra?.requestConsent ?? this.requestConsent ?? undefined,
       requestMcpConsent: extra?.requestMcpConsent ?? this.requestMcpConsent ?? undefined,
       onEvent: broadcast,

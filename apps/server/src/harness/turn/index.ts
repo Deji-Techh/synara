@@ -27,10 +27,23 @@ export class TurnFlow {
     return id;
   }
 
+  /**
+   * Release the slot when the owning turn reaches a terminal state.
+   * Non-matching ids are ignored so a stale finish can never evict a live
+   * turn (parallel-loop legacy paths). Without this, activeTurn stays set
+   * forever and every later launch misreports as buffered.
+   */
+  finish(id: string): void {
+    if (this.activeTurn && this.activeTurn !== "resuming" && this.activeTurn.id === id) {
+      this.activeTurn = null;
+    }
+  }
+
   cancel(cause: string): void {
     if (this.activeTurn && typeof this.activeTurn !== "string") {
       this.activeTurn.status = "cancelled";
     }
+    this.activeTurn = null;
     this.steerBuffer = [];
     void cause;
   }

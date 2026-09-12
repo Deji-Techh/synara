@@ -103,6 +103,60 @@ describe("turn gateway (m3h)", () => {
     expect(gateway.getInbox("s-steer")).not.toBe(inbox);
   });
 
+  it("steers a duplicate send into the running turn instead of forking a parallel loop", async () => {
+    const gateway = new TurnGateway();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let streams = 0;
+    const hanging: LLMAdapter = {
+      async *stream() {
+        streams += 1;
+        await gate;
+        yield { type: "token", content: "first-done" } as never;
+      },
+    };
+    const seen: HarnessEvent[] = [];
+    const base = {
+      sessionId: "s-dup",
+      appPath: "/tmp/caide-test-app",
+      mode: "ask" as const,
+      settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+    };
+    const first = gateway.startTurn({ ...base, prompt: "first" }, {
+      llmOverride: hanging,
+      onEvent: (e) => seen.push(e),
+    });
+    const deadline = Date.now() + 5000;
+    while (streams === 0 && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 10));
+    }
+    expect(streams).toBe(1);
+    const secondId = await gateway.startTurn({ ...base, prompt: "second" }, {
+      llmOverride: fakeLlm([{ type: "token", content: "SHOULD-NEVER-STREAM" }]),
+      onEvent: () => {},
+    });
+    expect(secondId.startsWith("buffered:")).toBe(true);
+    expect(streams).toBe(1);
+    const steered = gateway.getInbox("s-dup").claimNextStep();
+    expect(steered).toHaveLength(1);
+    expect(steered[0]).toMatchObject({ type: "steer", prompt: "second" });
+    release();
+    await first;
+    expect(gateway.getStatus()).toBe("completed");
+    const tokens = seen.filter((e) => e.type === "token").map((e) => (e as { content: string }).content);
+    expect(tokens).toContain("first-done");
+    expect(tokens).not.toContain("SHOULD-NEVER-STREAM");
+    // Slot released on completion: the next send launches fresh, not buffered.
+    const thirdId = await gateway.startTurn({ ...base, prompt: "third" }, {
+      llmOverride: fakeLlm([{ type: "token", content: "third-done" }]),
+      onEvent: () => {},
+    });
+    expect(thirdId.startsWith("turn-")).toBe(true);
+    gateway.dropSession("s-dup");
+  });
+
   it("resolves turn providers: explicit wins, else stored defaults", () => {
     const explicit = resolveTurnProviders({
       sessionId: "s",
