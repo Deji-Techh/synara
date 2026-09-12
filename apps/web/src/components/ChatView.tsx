@@ -227,6 +227,7 @@ import {
   localSubagentThreadId,
 } from "./ChatView.selectors";
 import { startHarnessTurn } from "~/harnessWs";
+import { isUsableProjectTarget } from "~/lib/projectShortcutTargets";
 import {
   clampCollapsedComposerCursor,
   type ComposerTrigger,
@@ -490,6 +491,7 @@ import { ChatTranscriptPane } from "./chat/ChatTranscriptPane";
 import { ChatHarnessConsentStrip } from "./chat/ChatHarnessConsentStrip";
 import { ChatHarnessTodosStrip } from "./chat/ChatHarnessTodosStrip";
 import { useChatHarnessSocket } from "./chat/useChatHarnessSocket";
+import { useHarnessTurnLive } from "~/harnessStore";
 import { ThreadDetailHydrationState } from "./chat/ThreadDetailHydrationState";
 import type { MessagesTimelineController } from "./chat/MessagesTimeline";
 import { buildTurnDiffSummaryByAssistantMessageId } from "./chat/MessagesTimeline.logic";
@@ -1892,6 +1894,10 @@ export default function ChatView({
   // consent ui_prompts into the shared harnessStore so parked approvals render
   // above the composer, and lets Stop cancel the harness turn directly.
   const chatHarnessSocket = useChatHarnessSocket(isServerThread ? activeThreadId : null);
+  // Live-harness-turn signal for the stop control. Scoped to the turn
+  // lifecycle — unlike message streaming flags, it cannot latch on when a
+  // turn dies without its turn_end (the stuck-mic/stop-square bug).
+  const harnessTurnLive = useHarnessTurnLive(isServerThread ? activeThreadId : null);
   const activeLatestTurn = activeThread?.latestTurn ?? null;
   // Read once here so memo bodies depend on the turn id instead of the turn object: a
   // `foo?.bar` read inside a memo makes React Compiler infer `foo` as the dependency, which
@@ -7548,6 +7554,9 @@ export default function ChatView({
       composerFileCommentsForSend.length === 0 &&
       sendableComposerTerminalContexts.length === 0 &&
       sendableComposerPastedTexts.length === 0 &&
+      // User-picked skills ride the turn as structured metadata the harness
+      // path cannot carry yet — keep skill-tagged sends on legacy like mentions.
+      selectedComposerSkillsForSend.length === 0 &&
       // Provider mentions are structured turn metadata, and automation definitions persist text only.
       selectedComposerMentionsForSend.length === 0;
     const hasPromptOnlySendableContent = hasNoStructuredComposerContext;
@@ -7746,12 +7755,24 @@ export default function ChatView({
           : "agent";
       // The server mirrors the turn into the thread transcript (user bubble
       // + assistant text), so no local echo here — it would double-render.
+      // Titles use the same AI-naming chain as legacy sends (skeleton first,
+      // AI title then Chat N fallback); without this call harness threads
+      // never get named.
+      if (!hasNativeUserMessages && activeThread.projectId) {
+        beginChatTitleForFirstSend({
+          threadId: activeThread.id,
+          projectId: activeThread.projectId,
+          message: trimmedPromptForSend,
+        });
+      }
       const harnessRouting = resolveHarnessModelRouting({
         provider: selectedModelSelectionForSend.provider,
         model: selectedModelSelectionForSend.model,
       });
       startHarnessTurn(chatHarnessSocket.send, activeThread.id, {
-        appPath: activeProject.cwd,
+        // Run where the thread lives (worktree checkout when present), not
+        // the project root — otherwise harness edits land in the wrong tree.
+        appPath: threadWorkspaceCwd ?? activeProject.cwd,
         prompt: trimmedPromptForSend,
         mode: harnessMode,
         ...(harnessRouting.providerId ? { providerId: harnessRouting.providerId } : {}),
@@ -9885,8 +9906,10 @@ export default function ChatView({
       }
       const project = useStore
         .getState()
-        .projects.find((candidate) => candidate.id === projectId && candidate.kind === "project");
-      if (!project) {
+        .projects.find((candidate) => candidate.id === projectId);
+      // isUsableProjectTarget: kind defaults to "project"; legacy rows may
+      // carry no kind. Only chat-kind containers are rejected.
+      if (!isUsableProjectTarget(project)) {
         throw new Error("Selected project is not available.");
       }
       if (draftThread?.projectId === projectId) {
@@ -11491,7 +11514,7 @@ export default function ChatView({
                               ? "Submit answers"
                               : "Next question"}
                         </Button>
-                      ) : (phase === "running" || latestTurnLive || Boolean(activeThread?.messages?.some((m) => m.streaming)) || isSendBusy) ? (
+                      ) : (phase === "running" || latestTurnLive || harnessTurnLive || isSendBusy) ? (
                         <button
                           type="button"
                           className="flex size-7.5 sm:size-8 items-center justify-center rounded-full bg-red-600 text-white hover:bg-red-500 transition-all duration-150 shadow-xs hover:scale-105 active:scale-95 cursor-pointer"

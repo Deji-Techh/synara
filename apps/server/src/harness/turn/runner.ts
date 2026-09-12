@@ -208,8 +208,13 @@ export class CaideRunner {
     }
   }
 
-  cancel(sessionId: string, cause = "cancelled"): void {
-    this.controllers.get(sessionId)?.abort(cause);
+  /** Whether this session currently owns a live (unfinished) turn. */
+  hasLiveTurn(sessionId: string): boolean {
+    const state = this.flows.get(sessionId)?.getState() ?? null;
+    return state !== null && state !== "resuming";
+  }
+
+  cancel(sessionId: string, cause = "cancelled"): void {    this.controllers.get(sessionId)?.abort(cause);
     // Release this session's flow slot so the next send launches fresh
     // instead of misreporting as buffered; the aborted loop's terminal
     // finish is a no-op against the cleared slot.
@@ -405,6 +410,9 @@ export class CaideRunner {
           ? buildGitReminder(prevProvenance)
           : null;
       const sessionStores = getOrCreateSessionStores(input.sessionId);
+      const chatMode = chatModeFor(
+        resolveChatModeForTurn({ requestedChatMode: input.mode ?? null }).mode,
+      );
       const ctx = createTurnContext({
         sessionId: input.sessionId,
         appPath: input.appPath,
@@ -412,6 +420,10 @@ export class CaideRunner {
         settings: input.settings,
         providerId: input.providerId,
         modelId: input.modelId,
+        // Plan turns get plan-only tools (write_plan/exit_plan); all other
+        // modes exclude them. Previously nothing passed options, so they were
+        // filtered from EVERY turn while the plan prompt assumed they exist.
+        options: { planModeOnly: chatMode === "plan" },
         requestConsent: input.requestConsent,
         autoApproveNonSchemaSql: input.autoApproveNonSchemaSql ?? sessionStores.safeSql,
         store: sessionStores.consent,
@@ -462,9 +474,7 @@ export class CaideRunner {
           compactionRunning = false;
         }
       }
-      const chatMode = chatModeFor(
-        resolveChatModeForTurn({ requestedChatMode: input.mode ?? null }).mode,
-      );
+      // chatMode is computed above (needed early for planModeOnly tool options).
       // Project AI rules: the scaffolded AI_RULES.md (or user edits)
       // seed every turn; missing file falls back to defaults inside.
       const aiRules = await readAiRules(input.appPath).catch(() => undefined);

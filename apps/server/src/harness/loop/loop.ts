@@ -3,6 +3,7 @@ import type { ChatMessage, HarnessRole } from "../session/buildChain.ts";
 import { Inbox } from "../inbox/index.ts";
 import { safeEmitLive } from "./events.ts";
 import { recoverTextToolCalls } from "./textToolCallRecovery.ts";
+import { resolveDonorAliasTarget } from "../../dyad/tools/toolCatalog.ts";
 import type { ConsentRequestFn, ConsentStore } from "../../dyad/tools/permissions.ts";
 
 export interface ToolCallContext {
@@ -249,6 +250,14 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
   let estimatedTurnTokens = 0;
   let compactionSignalled = false;
   const maxStepRetries = options.maxStepRetries ?? DEFAULT_TERMINATED_STEP_RETRIES;
+  // In-turn transcript: every executed call (success or failure) is fed back
+  // as tool_use/tool_result so LATER STEPS see what happened. Without this,
+  // each step rebuilds context from storage alone and the model retries
+  // blind — it never learns results, errors, or even that it already called
+  // a tool. (Matches the buildChain assistant/tool_use + user/tool_result
+  // shapes so prepareStep pairing repair accepts them.)
+  const stepTranscript: ChatMessage[] = [];
+  const MAX_TOOL_RESULT_CHARS = 20000;
 
   try {
     while (step < maxSteps) {
@@ -277,7 +286,7 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
 
       // Build context messages for current step
       const baseMessages = await options.buildMessages();
-      const messages = [...baseMessages];
+      const messages = [...baseMessages, ...stepTranscript];
 
       for (const steerPrompt of steerPrompts) {
         messages.push({
@@ -388,13 +397,61 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
         if (signal?.aborted) break;
 
         const startTime = Date.now();
-        const toolDef = toolMap.get(call.name);
+        // Donor-alias fallback: models taught legacy names (list_files, grep,
+        // ...) resolve to the real registry tool via the catalog mapping.
+        // Emitted under the resolved name so UI + transcript stay truthful.
+        const aliasedName = toolMap.has(call.name)
+          ? call.name
+          : (resolveDonorAliasTarget(call.name) ?? null);
+        const resolvedName =
+          aliasedName !== null && toolMap.has(aliasedName) ? aliasedName : call.name;
+        const toolDef = toolMap.get(resolvedName);
+        // Transcript capture for step feedback (assigned on every path below,
+        // consumed by the finally that feeds later steps).
+        let transcriptResult: unknown = null;
+        let transcriptFailed = false;
+        const pushTranscriptFeedback = (): void => {
+          // Feed this call back into the in-turn transcript so every executed
+          // call (including failures) is visible to later steps.
+          const resultText =
+            typeof transcriptResult === "string"
+              ? transcriptResult
+              : JSON.stringify(transcriptResult ?? "");
+          const truncated =
+            resultText.length > MAX_TOOL_RESULT_CHARS
+              ? `${resultText.slice(0, MAX_TOOL_RESULT_CHARS)}\n…[truncated, ${resultText.length - MAX_TOOL_RESULT_CHARS} chars omitted]`
+              : resultText;
+          stepTranscript.push(
+            {
+              role: "assistant",
+              content: [
+                {
+                  type: "tool_use",
+                  id: call.id,
+                  name: resolvedName,
+                  input: call.args ?? {},
+                },
+              ],
+            } as ChatMessage,
+            {
+              role: "user",
+              content: [
+                {
+                  type: "tool_result",
+                  tool_use_id: call.id,
+                  content: truncated,
+                  ...(transcriptFailed ? { is_error: true } : {}),
+                },
+              ],
+            } as ChatMessage,
+          );
+        };
 
         yield emit({
           type: "tool_call",
           sessionId,
           id: call.id,
-          name: call.name,
+          name: resolvedName,
           args: call.args,
           status: "started",
         });
@@ -414,27 +471,33 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
             result: formattedErr,
             durationMs: Date.now() - startTime,
           });
+          // Feed the failure back too — otherwise the model retries blind.
+          transcriptResult = formattedErr;
+          transcriptFailed = true;
+          pushTranscriptFeedback();
           continue;
         }
 
         try {
           // Prevent infinite tool call loops: detect if the same read-only tool was called with identical arguments
-          const callSignature = `${call.name}:${JSON.stringify(call.args ?? {})}`;
+          const callSignature = `${resolvedName}:${JSON.stringify(call.args ?? {})}`;
           const isReadOnly = toolDef.readOnly ?? false;
           if (isReadOnly) {
             const count = (executedReadOnlyToolSignatures.get(callSignature) ?? 0) + 1;
             executedReadOnlyToolSignatures.set(callSignature, count);
             if (count > 2) {
+              const noticeResult = {
+                notice: `Tool '${resolvedName}' has already executed with these arguments in this turn. No workspace changes occurred. Present your findings to the user now.`,
+              };
+              transcriptResult = noticeResult;
               yield emit({
                 type: "tool_call",
                 sessionId,
                 id: call.id,
-                name: call.name,
+                name: resolvedName,
                 args: call.args,
                 status: "completed",
-                result: {
-                  notice: `Tool '${call.name}' has already executed with these arguments in this turn. No workspace changes occurred. Present your findings to the user now.`,
-                },
+                result: noticeResult,
                 durationMs: Date.now() - startTime,
               });
               continue;
@@ -459,7 +522,7 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
             toolDef.execute(call.args, executeCtx),
             new Promise<never>((_, reject) =>
               setTimeout(
-                () => reject(new Error(`Tool '${call.name}' timed out after ${budgetMs}ms`)),
+                () => reject(new Error(`Tool '${resolvedName}' timed out after ${budgetMs}ms`)),
                 budgetMs,
               ),
             ),
@@ -469,27 +532,32 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
             type: "tool_call",
             sessionId,
             id: call.id,
-            name: call.name,
+            name: resolvedName,
             args: call.args,
             status: "completed",
             result,
             durationMs: Date.now() - startTime,
           });
-          if (stopTools.has(call.name)) stopAfterStep = true;
+          transcriptResult = result;
+          if (stopTools.has(resolvedName)) stopAfterStep = true;
         } catch (err) {
           const errorFormatter = options.onToolError ?? formatStructuredToolError;
-          const formattedErr = errorFormatter(call.name, err);
+          const formattedErr = errorFormatter(resolvedName, err);
+          transcriptResult = formattedErr;
+          transcriptFailed = true;
 
           yield emit({
             type: "tool_call",
             sessionId,
             id: call.id,
-            name: call.name,
+            name: resolvedName,
             args: call.args,
             status: "failed",
             result: formattedErr,
             durationMs: Date.now() - startTime,
           });
+        } finally {
+          pushTranscriptFeedback();
         }
       }
 

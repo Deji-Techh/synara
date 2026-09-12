@@ -19,6 +19,10 @@ export interface TranscriptMirror {
   mirrorHarnessTurnEvent(event: any): void;
 }
 
+/** Assistant rows the mirror owns (user rows share the turnId scheme). */
+export const HARNESS_ASSISTANT_MSG_PREFIX = "msg-harness-asst-";
+const HARNESS_USER_MSG_PREFIX = "msg-harness-user-";
+
 interface OpenMirrorTurn {
   threadId: string;
   turnId: string;
@@ -69,8 +73,8 @@ export function createTranscriptMirror(deps: TranscriptMirrorDeps): TranscriptMi
         if (thread.messages.some((m: any) => m?.turnId === turnId)) return;
         const now = new Date().toISOString();
         const prompt = typeof event.prompt === "string" ? event.prompt : "";
-        const userMsg = {
-          id: `msg-harness-user-${turnId}`,
+      const userMsg = {
+        id: `${HARNESS_USER_MSG_PREFIX}${turnId}`,
           role: "user",
           text: prompt,
           attachments: [],
@@ -83,8 +87,8 @@ export function createTranscriptMirror(deps: TranscriptMirrorDeps): TranscriptMi
           createdAt: now,
           updatedAt: now,
         };
-        const assistantMsg = {
-          id: `msg-harness-asst-${turnId}`,
+      const assistantMsg = {
+        id: `${HARNESS_ASSISTANT_MSG_PREFIX}${turnId}`,
           role: "assistant",
           text: "",
           turnId,
@@ -94,9 +98,10 @@ export function createTranscriptMirror(deps: TranscriptMirrorDeps): TranscriptMi
           updatedAt: now,
         };
         thread.messages.push(userMsg, assistantMsg);
-        if ((thread.title === "New Chat" || thread.title === "Home") && prompt.trim().length > 0) {
-          thread.title = prompt.slice(0, 36).trim();
-        }
+        // NOTE: no title write here on purpose. Thread titles belong to the
+        // AI-naming chain (skeleton → generated → Chat N fallback), which the
+        // client kicks off per first send. A raw prompt slice would look like
+        // a manual rename and suppress AI naming entirely.
         thread.latestUserMessageAt = now;
         thread.updatedAt = now;
         openTurns.set(sessionId, {
@@ -121,12 +126,39 @@ export function createTranscriptMirror(deps: TranscriptMirrorDeps): TranscriptMi
         scheduleFlush(thread.id, msg);
         return;
       }
-      if (event?.type === "turn_end") {
+      if (event?.type === "error") {
+        // Provider/turn errors surface in the main chat like legacy inline
+        // errors (the dock card alone is easy to miss).
         const open = openTurns.get(sessionId);
-        openTurns.delete(sessionId);
         if (!open) return;
         const thread = deps.findThread(open.threadId);
         const msg = thread?.messages?.find((m: any) => m?.id === open.assistantMsgId);
+        if (!thread || !msg) return;
+        const detail = typeof event.message === "string" && event.message.trim().length > 0
+          ? event.message.trim().slice(0, 500)
+          : event.code;
+        msg.text = `${msg.text ?? ""}\n\nError: ${detail}`;
+        scheduleFlush(thread.id, msg);
+        return;
+      }
+      if (event?.type === "turn_end") {        const open = openTurns.get(sessionId);
+        openTurns.delete(sessionId);
+        // Heal path: a turn_end with no open entry (missed turn_start, e.g.
+        // server restart) still settles the newest streaming assistant row so
+        // the composer never latches on a stale streaming flag.
+        const threadId = open?.threadId ?? sessionId;
+        const thread = deps.findThread(threadId);
+        const msg =
+          (open
+            ? thread?.messages?.find((m: any) => m?.id === open.assistantMsgId)
+            : [...(thread?.messages ?? [])]
+                .reverse()
+                .find(
+                  (m: any) =>
+                    typeof m?.id === "string" &&
+                    m.id.startsWith(HARNESS_ASSISTANT_MSG_PREFIX) &&
+                    m.streaming,
+                )) ?? null;
         if (!thread || !msg) return;
         msg.streaming = false;
         thread.updatedAt = new Date().toISOString();

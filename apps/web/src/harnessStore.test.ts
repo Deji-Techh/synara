@@ -46,4 +46,14 @@ describe("harnessStore reactivity", () => {
       unsub();
     }
   });
+
+  it("tracks live turns from turn_start to turn_end", () => {
+    harnessStore.clearSession("s-live");
+    expect(harnessStore.getState().sessions["s-live"]?.liveTurnId).toBeUndefined();
+    harnessStore.handleEvent({ type: "turn_start", sessionId: "s-live", turnId: "turn-7", prompt: "hey" });
+    expect(harnessStore.getState().sessions["s-live"]?.liveTurnId).toBe("turn-7");
+    // Usage-less end still clears (cancelled/aborted turns carry no usage).
+    harnessStore.handleEvent({ type: "turn_end", sessionId: "s-live", turnId: "turn-7", status: "cancelled" });
+    expect(harnessStore.getState().sessions["s-live"]?.liveTurnId).toBeUndefined();
+  });
 });

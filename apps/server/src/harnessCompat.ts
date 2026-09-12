@@ -9,7 +9,10 @@ import { isPhantomInitialThreadId } from "@caide/shared/chatThreads";
 import { resolveAttachmentPathById } from "./attachmentStore.ts";
 import { applyDispatchSystemPromptOverride } from "./harness/prompts/dispatchSystemPrompt.ts";
 import { setTranscriptMirror } from "./harness/turn/gateway.ts";
-import { createTranscriptMirror } from "./harness/turn/transcriptMirror.ts";
+import {
+  HARNESS_ASSISTANT_MSG_PREFIX,
+  createTranscriptMirror,
+} from "./harness/turn/transcriptMirror.ts";
 import {
   buildUserMessageWithImages,
   type ResolvedChatImage,
@@ -44,7 +47,32 @@ export class CheckpointDiffQuery extends ServiceMap.Service<CheckpointDiffQuery,
 
 export function getThreadWorkspaceCwd(threadId: string): string {
   try {
-    loadPersistedState();
+loadPersistedState();
+
+// Startup reconciliation: no runner turn survives a restart, so any harness
+// assistant row still marked streaming is stale by definition. Finalize them
+// now or composers latch on the stop control forever (the stuck-mic bug).
+try {
+  let staleFixed = false;
+  for (const thread of inMemoryThreads as any[]) {
+    if (!Array.isArray(thread?.messages)) continue;
+    for (const msg of thread.messages) {
+      if (
+        typeof msg?.id === "string" &&
+        msg.id.startsWith(HARNESS_ASSISTANT_MSG_PREFIX) &&
+        msg.streaming
+      ) {
+        msg.streaming = false;
+        msg.updatedAt = new Date().toISOString();
+        thread.updatedAt = msg.updatedAt;
+        staleFixed = true;
+      }
+    }
+  }
+  if (staleFixed) savePersistedState();
+} catch {
+  // never block startup
+}
     const thread = inMemoryThreads.find((t) => t.id === threadId);
     if (thread) {
       if (thread.worktreePath && fs.existsSync(thread.worktreePath)) return thread.worktreePath;
@@ -1694,6 +1722,21 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               createdAt: now,
             });
           }
+        } else if (
+          command?.type === "thread.task.stop" ||
+          command?.type === "thread.task.background" ||
+          command?.type === "thread.checkpoint.revert" ||
+          command?.type === "thread.conversation.rollback" ||
+          command?.type === "thread.message.edit-and-resend" ||
+          command?.type === "thread.turn.dispatch-queued"
+        ) {
+          // Explicitly unsupported commands fail loudly instead of
+          // silent-accepting: the UI must never pretend these worked.
+          // (The client compensates checkpoint-revert failures; the rest
+          // surface as errors.)
+          throw new Error(
+            `${command?.type} is not implemented yet — the action was not applied.`,
+          );
         } else if (command?.type === "thread.delete") {
           const index = inMemoryThreads.findIndex((t) => t.id === command.threadId);
           if (index !== -1) {

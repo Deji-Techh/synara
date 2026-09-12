@@ -2,6 +2,15 @@ import type { ProjectId } from "@caide/contracts";
 
 import type { Project } from "../types";
 
+/**
+ * Whether a project row is a valid target for new threads/draft moves.
+ * kind defaults to "project" (contracts decoding default); legacy rows may
+ * carry no kind at all. Only chat-kind containers are rejected.
+ */
+export function isUsableProjectTarget(project: Project | null | undefined): boolean {
+  return project != null && (project.kind ?? "project") === "project";
+}
+
 function resolveUsableProjectId(
   projects: readonly Project[],
   projectId: ProjectId | null,
@@ -10,10 +19,8 @@ function resolveUsableProjectId(
     return null;
   }
 
-  const project = projects.find(
-    (candidate) => candidate.id === projectId && candidate.kind === "project",
-  );
-  return project?.id ?? null;
+  const project = projects.find((candidate) => candidate.id === projectId);
+  return isUsableProjectTarget(project) ? (project?.id ?? null) : null;
 }
 
 export function resolveCurrentProjectTargetId(
@@ -56,7 +63,7 @@ export function resolveLatestProjectTargetIdWithFallback(
   return (
     resolveLatestProjectTargetId(projects, latestProjectId) ??
     projects
-      .filter((project) => project.kind === "project")
+      .filter(isUsableProjectTarget)
       .toSorted((left, right) =>
         projectRecencyKey(right, lastActivityAt).localeCompare(
           projectRecencyKey(left, lastActivityAt),

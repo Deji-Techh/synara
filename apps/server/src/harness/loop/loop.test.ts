@@ -568,4 +568,100 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
       events.filter((e) => e.type === "tool_call" && (e as any).name === "definitely_not_a_tool"),
     ).toHaveLength(0);
   });
+
+  it("resolves donor tool aliases to registry tools instead of failing", async () => {    const executed: string[] = [];
+    let calls = 0;
+    const fakeLlm: LLMAdapter = {
+      async *stream() {
+        calls += 1;
+        if (calls === 1) {
+          yield {
+            type: "tool_call",
+            toolCall: { id: "c-alias", name: "list_files", args: { path: "." } },
+          };
+        } else {
+          yield { type: "token", content: "done" };
+        }
+      },
+    };
+    const tools: ToolDefinition[] = [
+      {
+        name: "list_dir",
+        description: "lists",
+        execute: async () => {
+          executed.push("list_dir");
+          return ["a.ts"];
+        },
+      },
+    ];
+    const events: HarnessEvent[] = [];
+    const loop = runLoop({
+      sessionId: "session-alias",
+      maxSteps: 5,
+      llm: fakeLlm,
+      tools,
+      buildMessages: () => [{ role: "user", content: "go" }],
+      onEvent: (ev) => events.push(ev),
+    });
+    for await (const _ of loop) {
+      // drain
+    }
+    expect(executed).toEqual(["list_dir"]);
+    const completed = events.filter(
+      (e) => e.type === "tool_call" && (e as any).status === "completed",
+    );
+    expect(completed).toHaveLength(1);
+    expect((completed[0] as any).name).toBe("list_dir");
+  });
+
+  it("feeds step results back so later steps see tool outputs and errors", async () => {
+    const seenByStep: unknown[][] = [];
+    let calls = 0;
+    const fakeLlm: LLMAdapter = {
+      async *stream(messages) {
+        calls += 1;
+        seenByStep.push(JSON.parse(JSON.stringify(messages)));
+        if (calls === 1) {
+          yield {
+            type: "tool_call",
+            toolCall: { id: "c-fb", name: "read_file", args: { path: "a.ts" } },
+          };
+        } else if (calls === 2) {
+          yield {
+            type: "tool_call",
+            toolCall: { id: "c-err", name: "nope_missing", args: {} },
+          };
+        } else {
+          yield { type: "token", content: "done" };
+        }
+      },
+    };
+    const tools: ToolDefinition[] = [
+      {
+        name: "read_file",
+        description: "reads",
+        execute: async () => "FILE-CONTENTS-123",
+      },
+    ];
+    const loop = runLoop({
+      sessionId: "session-feedback",
+      maxSteps: 5,
+      llm: fakeLlm,
+      tools,
+      buildMessages: () => [{ role: "user", content: "go" }],
+      onEvent: () => {},
+    });
+    for await (const _ of loop) {
+      // drain
+    }
+    expect(calls).toBe(3);
+    // Step 2 sees step 1's success result.
+    const step2 = JSON.stringify(seenByStep[1]);
+    expect(step2).toContain("FILE-CONTENTS-123");
+    expect(step2).toContain("tool_result");
+    // Step 3 sees step 2's unknown-tool failure.
+    const step3 = JSON.stringify(seenByStep[2]);
+    expect(step3).toContain("Unknown tool");
+    expect(step3).toContain("is_error");
+  });
 });

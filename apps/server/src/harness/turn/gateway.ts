@@ -241,6 +241,7 @@ export class TurnGateway {  private runner = new CaideRunner();
       if (
         event.type === "turn_start" ||
         event.type === "token" ||
+        event.type === "error" ||
         event.type === "turn_end"
       ) {
         try {
@@ -268,7 +269,24 @@ export class TurnGateway {  private runner = new CaideRunner();
   }
 
   cancelTurn(sessionId: string, cause?: string): void {
+    const live = this.runner.hasLiveTurn(sessionId);
     this.runner.cancel(sessionId, cause);
+    if (!live) {
+      // Nothing running (e.g. stale client state after a restart mid-turn):
+      // settle the UI so the composer doesn't latch on stop forever. A real
+      // in-flight turn ends itself with its own turn_end; this is a no-op
+      // for the mirror (no open turn) and idempotent client-side.
+      try {
+        this.ws?.broadcastToSession(sessionId, {
+          type: "turn_end",
+          sessionId,
+          turnId: "settled",
+          status: "cancelled",
+        });
+      } catch {
+        // socket dead; nothing to settle
+      }
+    }
   }
 
   private sendProviderState(

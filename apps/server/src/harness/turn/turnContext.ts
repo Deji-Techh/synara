@@ -24,6 +24,7 @@ import {
 } from "../../dyad/tools/toolCatalog.ts";
 import { ALL_MCP_TOOLS, setMcpToolRegistry, type McpToolRegistry } from "../../dyad/mcp/index.ts";
 import { ALL_MISC_TOOLS } from "../../dyad/misc/index.ts";
+import { ALL_GOAL_TOOLS } from "../../dyad/goals/index.ts";
 import { ALL_GITHUB_TOOLS, ALL_VERCEL_TOOLS, ALL_COOLIFY_TOOLS } from "../../dyad/publish/index.ts";
 import { ALL_SHARE_TOOLS } from "../../dyad/share/index.ts";
 import { ALL_VERIFY_TOOLS } from "../../dyad/verify/index.ts";
@@ -127,6 +128,7 @@ const UNIFIED_DEFS: ToolDef[] = [
   ...ALL_BLUEPRINT_TOOLS,
   ...ALL_MCP_TOOLS,
   ...ALL_MISC_TOOLS,
+  ...ALL_GOAL_TOOLS,
   ...ALL_GITHUB_TOOLS,
   ...ALL_VERCEL_TOOLS,
   ...ALL_COOLIFY_TOOLS,

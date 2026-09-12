@@ -183,7 +183,7 @@ const exploreSchema = z.object({
 export const exploreCodeTool = defineTool({
   name: "explore_code",
   description:
-    "Explore the codebase for a feature or flow. For 'explain/locate' questions use this first instead of warming up with list_files/grep/read_file. Returns a codebase map: the key files, their roles, and exact ranges for edit/debug intents.",
+    "Explore the codebase for a feature or flow. For 'explain/locate' questions use this first instead of warming up with list_dir/search_files/read_file. Returns a codebase map: the key files, their roles, and exact ranges for edit/debug intents.",
   schema: exploreSchema,
   readOnly: true,
   modifiesState: false,

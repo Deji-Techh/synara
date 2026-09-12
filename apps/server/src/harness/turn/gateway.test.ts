@@ -2,7 +2,7 @@
 // Purpose: M3h gate — gateway start/steer/cancel over a fake WS server with
 // a fake LLM; reveal emission on tool calls.
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { HarnessEvent } from "@caide/contracts";
 import type { LLMAdapter } from "../loop/loop.ts";
 import { TurnGateway, resolveTurnProviders, setTranscriptMirror } from "./gateway.ts";
@@ -225,6 +225,25 @@ describe("turn gateway (m3h)", () => {
     expect(gateway.getStatus()).toBe("completed");
     gateway.dropSession("s-a");
     gateway.dropSession("s-b");
+  });
+
+  it("cancel on an idle session settles the UI with a synthetic turn_end", () => {
+    const gateway = new TurnGateway();
+    const hub = new HarnessHub();
+    gateway.attachWs(hub);
+    const spy = vi.spyOn(hub, "broadcastToSession");
+    try {
+      gateway.cancelTurn("s-idle");
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(spy.mock.calls[0]?.[1]).toMatchObject({
+        type: "turn_end",
+        sessionId: "s-idle",
+        status: "cancelled",
+      });
+    } finally {
+      gateway.detachWs();
+      gateway.dropSession("s-idle");
+    }
   });
 
   it("resolves turn providers: explicit wins, else stored defaults", () => {

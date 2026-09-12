@@ -35,8 +35,10 @@ describe("transcriptMirror", () => {
       text: "",
       streaming: true,
     });
-    // Legacy behavior: first message titles an untitled thread.
-    expect(threads[0].title).toBe("hey there, this is a longer greeting".slice(0, 36).trim());
+    // No title write: titles belong to the AI-naming chain (skeleton →
+    // generated → Chat N). A raw slice would pose as a manual rename and
+    // suppress AI naming.
+    expect(threads[0].title).toBe("New Chat");
     expect(published).toHaveLength(2);
   });
 
@@ -70,5 +72,30 @@ describe("transcriptMirror", () => {
     expect(() => mirrorHarnessTurnEvent(null)).not.toThrow();
     expect(() => mirrorHarnessTurnEvent({})).not.toThrow();
     expect(() => mirrorHarnessTurnEvent({ type: "token" })).not.toThrow();
+  });
+
+  it("turn_end without a prior turn_start still settles the newest streaming row", () => {    const { threads, mirrorHarnessTurnEvent } = setup();
+    // Simulate a missed turn_start (restart mid-turn): rows exist, no open entry.
+    threads[0].messages.push({
+      id: "msg-harness-asst-turn-old",
+      role: "assistant",
+      text: "partial…",
+      turnId: "turn-old",
+      streaming: true,
+    });
+    mirrorHarnessTurnEvent({ type: "turn_end", sessionId: "t-1", turnId: "turn-old", status: "cancelled" });
+    expect(threads[0].messages[0].streaming).toBe(false);
+    expect(threads[0].messages[0].text).toBe("partial…");
+  });
+
+  it("appends error events to the open assistant row", () => {
+    const { threads, mirrorHarnessTurnEvent } = setup();
+    mirrorHarnessTurnEvent({ type: "turn_start", sessionId: "t-1", turnId: "turn-9", prompt: "hey" });
+    mirrorHarnessTurnEvent({ type: "token", sessionId: "t-1", content: "Working. " });
+    mirrorHarnessTurnEvent({ type: "error", sessionId: "t-1", code: "TURN_FAILED", message: "boom happened here", recoverable: true });
+    expect(threads[0].messages[1].text).toContain("Working.");
+    expect(threads[0].messages[1].text).toContain("Error: boom happened here");
+    // Errors with no open turn are ignored (dock card still shows them).
+    mirrorHarnessTurnEvent({ type: "error", sessionId: "t-unknown", code: "X", message: "y", recoverable: true });
   });
 });

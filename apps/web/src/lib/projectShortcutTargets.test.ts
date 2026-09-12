@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Project } from "../types";
 import {
+  isUsableProjectTarget,
   resolveCurrentProjectTargetId,
   resolveLatestProjectTargetId,
   resolveLatestProjectTargetIdWithFallback,
@@ -64,6 +65,19 @@ describe("project shortcut targets", () => {
 
   it("rejects a non-ordinary latest project target", () => {
     expect(resolveLatestProjectTargetId(projects, HOME_PROJECT_ID)).toBeNull();
+  });
+
+  it("treats kind-less legacy rows as ordinary projects", () => {
+    const legacy = { ...makeProject(CURRENT_PROJECT_ID), kind: undefined };
+    expect(isUsableProjectTarget(legacy)).toBe(true);
+    expect(isUsableProjectTarget(makeProject(HOME_PROJECT_ID, "chat"))).toBe(false);
+    expect(isUsableProjectTarget(null)).toBe(false);
+    expect(resolveCurrentProjectTargetId([legacy], CURRENT_PROJECT_ID)).toBe(
+      CURRENT_PROJECT_ID,
+    );
+    expect(resolveLatestProjectTargetId([legacy], CURRENT_PROJECT_ID)).toBe(
+      CURRENT_PROJECT_ID,
+    );
   });
 
   it("returns no target for a stale latest project id", () => {

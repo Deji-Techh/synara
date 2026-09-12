@@ -10,6 +10,7 @@ import {
 } from "@caide/contracts";
 import { deriveAssociatedWorktreeMetadata } from "@caide/shared/threadWorkspace";
 import { resolveHarnessModelRouting } from "@caide/shared/model";
+import { beginChatTitleForFirstSend } from "../lib/chatTitleGeneration";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { newCommandId, newMessageId, newThreadId } from "../lib/utils";
@@ -1260,6 +1261,20 @@ export function useComposerSlashCommands(input: {
         const harness = activeThread ? getHarnessSession(activeThread.id) : undefined;
         if (harness) {
           const replacement = builders[item.command as keyof typeof builders]("");
+          // Same AI-naming chain as normal sends; internal guards no-op on
+          // titled/non-first threads.
+          if (
+            activeProject &&
+            !activeThread.messages?.some(
+              (message) => message.role === "user" && message.source === "native",
+            )
+          ) {
+            beginChatTitleForFirstSend({
+              threadId: activeThread.id,
+              projectId: activeProject.id,
+              message: replacement,
+            });
+          }
           const slashRouting = resolveHarnessModelRouting({
             provider: input.selectedModelSelection.provider,
             model: input.selectedModelSelection.model,

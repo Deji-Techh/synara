@@ -194,17 +194,16 @@ export const BUILD_PROFILE_TOOLS: ReadonlySet<string> = new Set([
   "copy_file",
   "delete_file",
   "rename_file",
-  "add_dependency",
+  "install_package",
   "read_file",
-  "list_files",
-  "grep",
+  "list_dir",
+  "search_files",
   "read_logs",
-  "run_type_checks",
+  "lint_project",
   "run_command",
   "verify_design",
-  "run_tests",
-  "run_lint",
-  "capture_screenshot",
+  "test_project",
+  "screenshot",
   "read_guide",
   "set_chat_summary",
   // Progress + clarification must survive every profile: the composer's
@@ -223,6 +222,20 @@ export const BUILD_PROFILE_TOOLS: ReadonlySet<string> = new Set([
 
 export function getToolMeta(name: string): ToolMeta | undefined {
   return TOOL_CATALOG.find((t) => t.name === name);
+}
+
+/**
+ * Resolve a donor/legacy tool name to the concrete registry tool that
+ * implements it (via the catalog's caideTool mapping). Returns null when
+ * there is no executable mapping (path-style references like "dyad/editing"
+ * are documentation, not tools). Used as a last-resort fallback so models
+ * taught donor names (list_files, grep, ...) still execute instead of
+ * failing with "Unknown tool".
+ */
+export function resolveDonorAliasTarget(name: string): string | null {
+  const target = getToolMeta(name)?.caideTool;
+  if (!target || target === name || target.includes("/")) return null;
+  return target;
 }
 
 export function getDefaultConsent(name: string): ToolConsent {

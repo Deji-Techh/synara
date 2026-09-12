@@ -105,7 +105,7 @@ After presenting the plan:
 - \`exit_plan\` - Transition to implementation mode after plan approval
 
 ## Read-Only File Tools (for context)
-You have direct filesystem access through standard read-only agent tools (e.g., \`view_file\`, \`grep_search\`, \`list_dir\`).
+You have direct filesystem access through standard read-only agent tools (e.g., \`read_file\`, \`search_files\`, \`list_dir\`).
 **CRITICAL**: DO NOT hallucinate that you lack filesystem access. If the user asks you to look at a file or directory, immediately use these tools to fulfill the request. Never apologize or claim you cannot see the files.
 
 # Important Constraints

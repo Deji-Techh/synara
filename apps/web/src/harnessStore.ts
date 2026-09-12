@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import type { HarnessEvent } from "@caide/contracts";
 
 export interface ToolCallEntry {
@@ -100,6 +100,8 @@ export interface SessionState {
   verifier?: VerifierEntry;
   versions: VersionEntry[];
   lastUsage?: TurnUsage;
+  /** Live harness turn for this session (set on turn_start, cleared on turn_end). */
+  liveTurnId?: string;
   timeline: TimelineEntry[];
   /** Diverted plain-text user turns (P0 send-path): echoed locally so the
    * harness transcript shows the user bubble without an orchestration turn. */
@@ -174,6 +176,17 @@ export const harnessStore = {
     const session = getOrCreateSession(event.sessionId);
 
     switch (event.type) {
+      case "turn_start": {
+        state.sessions[event.sessionId] = { ...session, liveTurnId: event.turnId };
+        break;
+      }
+      case "turn_end": {
+        const ended: SessionState = { ...session, liveTurnId: undefined };
+        state.sessions[event.sessionId] = event.usage
+          ? { ...ended, lastUsage: { ...event.usage } }
+          : ended;
+        break;
+      }
       case "token": {
         const updatedTokens = [...session.tokens, event.content];
         state.sessions[event.sessionId] = { ...session, tokens: updatedTokens };
@@ -288,15 +301,6 @@ export const harnessStore = {
         };
         break;
       }
-      case "turn_end": {
-        if (event.usage) {
-          state.sessions[event.sessionId] = {
-            ...session,
-            lastUsage: { ...event.usage },
-          };
-        }
-        break;
-      }
       case "versions_state": {
         state.sessions[event.sessionId] = {
           ...session,
@@ -371,4 +375,19 @@ export function useHarnessStore(): HarnessStoreState {
   }, []);
 
   return current;
+}
+
+/**
+ * Whether a harness turn is currently live for a session. Scoped to the
+ * turn lifecycle (turn_start → turn_end), unlike message streaming flags
+ * which can go stale — use this (not messages.some(streaming)) to decide
+ * stop-button visibility.
+ */
+export function useHarnessTurnLive(sessionId: string | null | undefined): boolean {
+  return useSyncExternalStore(
+    harnessStore.subscribe,
+    () =>
+      sessionId != null &&
+      harnessStore.getState().sessions[sessionId]?.liveTurnId != null,
+  );
 }

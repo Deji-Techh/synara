@@ -55,7 +55,7 @@ Private API keys/tokens exposed in browser where they can be stolen
 **low**: Low immediate risk; typically requires local access, unlikely chain of events, or only violates best practices without a clear exploitation path.
 
 # Instructions
-1. Before reporting findings, inspect the repository with the available \`list_files\`, \`grep\`, and \`read_file\` tools. Survey the relevant application and server code rather than inferring vulnerabilities from filenames or assumptions.
+1. Before reporting findings, inspect the repository with the available \`list_dir\`, \`search_files\`, and \`read_file\` tools. Survey the relevant application and server code rather than inferring vulnerabilities from filenames or assumptions.
 2. Report only issues grounded in files you actually inspected, and cite those specific file paths.
 3. Find real, exploitable vulnerabilities that lead to data breaches.
 4. Prioritize client-side exposed secrets and data leaks.
