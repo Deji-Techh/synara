@@ -15,6 +15,8 @@ export interface HarnessWsOptions {
   onEvent?: (event: HarnessEvent) => void;
   /** Fires on every (re)connect, after subscribe — the only safe moment to send. */
   onOpen?: () => void;
+  /** Fires when the socket closes (reconnect will be attempted unless disconnected). */
+  onClose?: () => void;
   heartbeatMs?: number;
   maxBackoffMs?: number;
 }
@@ -134,6 +136,11 @@ export function connectHarnessWs(options: HarnessWsOptions): HarnessWsHandle {
 
     socket.onclose = () => {
       cleanupSocket();
+      try {
+        options.onClose?.();
+      } catch {
+        // subscriber errors must not break reconnect
+      }
       scheduleReconnect();
     };
     socket.onerror = () => {

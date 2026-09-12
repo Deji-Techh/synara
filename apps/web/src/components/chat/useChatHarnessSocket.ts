@@ -15,6 +15,10 @@ export function useChatHarnessSocket(threadId: string | null): {
   send: HarnessWsHandle["send"];
 } {
   const [handle, setHandle] = useState<HarnessWsHandle | null>(null);
+  // Real socket state — NOT handle existence. A handle exists while the
+  // socket is still connecting or reconnecting; sends during that window
+  // are silently dropped, so the send path must only divert when open.
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (!threadId) {
@@ -23,8 +27,18 @@ export function useChatHarnessSocket(threadId: string | null): {
     }
     let live = true;
     let handleRef: HarnessWsHandle | null = null;
+    setOpen(false);
     try {
-      handleRef = connectHarnessWs({ url: makeHarnessUrl(null), sessionId: threadId });
+      handleRef = connectHarnessWs({
+        url: makeHarnessUrl(null),
+        sessionId: threadId,
+        onOpen: () => {
+          if (live) setOpen(true);
+        },
+        onClose: () => {
+          if (live) setOpen(false);
+        },
+      });
     } catch {
       handleRef = null;
     }
@@ -37,16 +51,17 @@ export function useChatHarnessSocket(threadId: string | null): {
         // already closed
       }
       setHandle(null);
+      setOpen(false);
     };
   }, [threadId]);
 
   return useMemo(
     () => ({
-      connected: handle !== null,
+      connected: handle !== null && open,
       send: (message: Record<string, unknown>) => {
         handle?.send(message);
       },
     }),
-    [handle],
+    [handle, open],
   );
 }
