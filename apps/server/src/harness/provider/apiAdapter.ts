@@ -43,6 +43,43 @@ export function endpointForModel(modelId: string, baseUrl?: string): ApiEndpoint
   return "chat/completions";
 }
 
+/**
+ * Keys the Gemini generateContent API rejects inside function_declarations
+ * parameter schemas (400 "Unknown name" / "Cannot find field"). Our tool
+ * schemas are generated OpenAI-style (zod adds additionalProperties:false;
+ * numeric bounds use exclusiveMinimum/Maximum), so strip them recursively
+ * for this endpoint only — every other endpoint keeps the full schema.
+ */
+const GEMINI_UNSUPPORTED_SCHEMA_KEYS = new Set([
+  "additionalProperties",
+  "exclusiveMinimum",
+  "exclusiveMaximum",
+  "$schema",
+  "$id",
+]);
+
+export function sanitizeGeminiSchema(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sanitizeGeminiSchema);
+  if (value !== null && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+      if (GEMINI_UNSUPPORTED_SCHEMA_KEYS.has(key)) continue;
+      out[key] = sanitizeGeminiSchema(entry);
+    }
+    return out;
+  }
+  return value;
+}
+
+export function sanitizeGeminiTools(tools: unknown[]): unknown[] {
+  return tools.map((tool) => {
+    if (tool === null || typeof tool !== "object" || Array.isArray(tool)) return tool;
+    const record = tool as Record<string, unknown>;
+    if (!("parameters" in record)) return tool;
+    return { ...record, parameters: sanitizeGeminiSchema(record.parameters) };
+  });
+}
+
 export function buildProviderUrl(baseUrl: string, modelId: string): string {
   const cleanBase = baseUrl.replace(/\/+$/, "");
   const endpoint = endpointForModel(modelId, baseUrl);
@@ -253,7 +290,9 @@ export async function* streamProvider(
           ? m.parts
           : [{ text: typeof m.content === "string" ? m.content : JSON.stringify(m.content ?? "") }],
       })),
-      ...(tools && tools.length > 0 ? { tools: [{ function_declarations: tools }] } : {}),
+      ...(tools && tools.length > 0
+        ? { tools: [{ function_declarations: sanitizeGeminiTools(tools) }] }
+        : {}),
     };
   } else {
     requestBody = {

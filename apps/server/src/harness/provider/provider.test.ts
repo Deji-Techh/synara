@@ -245,6 +245,66 @@ describe("Milestone M11 — Provider Streaming, SIGTERM & Block Assembly", () =>
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse",
     );
   });
+    it("strips Gemini-rejected schema keys from function_declarations in the request body", async () => {
+      let body: any = null;
+      server.on("request", (req, res) => {
+        let raw = "";
+        req.on("data", (chunk) => {
+          raw += chunk;
+        });
+        req.on("end", () => {
+          body = JSON.parse(raw);
+          res.writeHead(200, { "Content-Type": "text/event-stream" });
+          res.write(
+            "data: " +
+              JSON.stringify({ candidates: [{ content: { parts: [{ text: "hi" }] } }] }) +
+              "\n\n",
+          );
+          res.write("data: [DONE]\n\n");
+          res.end();
+        });
+      });
+  
+      const tools = [
+        {
+          name: "read_file",
+          description: "Read a file",
+          parameters: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              path: { type: "string" },
+              limit: { type: "number", exclusiveMinimum: 0 },
+              filter: {
+                type: "object",
+                properties: { q: { type: "string" } },
+                additionalProperties: false,
+              },
+            },
+          },
+        },
+      ];
+      const tokens: string[] = [];
+      const stream = streamProvider({
+        modelId: "gemini-2.5-flash",
+        baseUrl,
+        apiKey: "test-key",
+        messages: [{ role: "user", content: "hi" }],
+        tools,
+      });
+      for await (const chunk of stream) {
+        if (chunk.type === "token") tokens.push(chunk.content);
+      }
+      expect(tokens).toEqual(["hi"]);
+      const decls = body.tools[0].function_declarations;
+      expect(JSON.stringify(decls)).not.toContain("additionalProperties");
+      expect(JSON.stringify(decls)).not.toContain("exclusiveMinimum");
+      // Untouched shape otherwise.
+      expect(decls[0].name).toBe("read_file");
+      expect(decls[0].parameters.properties.path).toEqual({ type: "string" });
+      expect(decls[0].parameters.properties.limit).toEqual({ type: "number" });
+      expect(decls[0].parameters.properties.filter.properties.q).toEqual({ type: "string" });
+    });
 });
 
 describe("stream usage extraction (per dialect)", () => {
@@ -274,4 +334,5 @@ describe("stream usage extraction (per dialect)", () => {
     expect(extractStreamUsage(null)).toBeNull();
     expect(extractStreamUsage({ usage: {} })).toBeNull();
   });
+
 });
