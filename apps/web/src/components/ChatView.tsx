@@ -42,7 +42,7 @@ import {
 import { automationRequiresTargetThread } from "@caide/shared/automationMode";
 import { respondingInteractionReclaimAt } from "@caide/shared/pendingInteractions";
 import { providerSupportsNativeTurnSteering } from "@caide/shared/providerMetadata";
-import { getModelCapabilities, normalizeModelSlug } from "@caide/shared/model";
+import { getModelCapabilities, normalizeModelSlug, resolveHarnessModelRouting } from "@caide/shared/model";
 import {
   resolveLatestTailUserMessageEditTarget,
   resolveTailUserMessageEditTarget,
@@ -7722,11 +7722,14 @@ export default function ChatView({
     // Appllama-gated tools) instead of the legacy orchestration engine.
     // Attachments, plans, queues, steers, and automation flows stay on the
     // orchestration path until their Dyad counterparts land (006 M3).
-    // TEMPORARY REVERT (diagnostic): P0 divert disabled until the harness
-    // turn carries the composer's model selection. See 18920008. Remove this
-    // `false &&` to restore the divert.
+    // P0 Dyad send-path: plain-text live sends on server threads with a live
+    // harness socket go to the TurnGateway (todos, questionnaires,
+    // Appllama-gated tools) instead of the legacy orchestration engine.
+    // Attachments, plans, queues, steers, and automation flows stay on the
+    // orchestration path until their Dyad counterparts land (006 M3).
+    // The divert MUST carry the composer's model routing: without it the
+    // server falls back to a literal "auto" model that providers 404 on.
     if (
-      false &&
       queuedChatTurn === null &&
       !isLivePlanFollowUpSubmission &&
       hasPromptOnlySendableContent &&
@@ -7744,10 +7747,16 @@ export default function ChatView({
           : "agent";
       const divertMessageId = newMessageId();
       harnessStore.appendUserMessage(activeThread.id, divertMessageId, trimmedPromptForSend);
+      const harnessRouting = resolveHarnessModelRouting({
+        provider: selectedModelSelectionForSend.provider,
+        model: selectedModelSelectionForSend.model,
+      });
       startHarnessTurn(chatHarnessSocket.send, activeThread.id, {
         appPath: activeProject.cwd,
         prompt: trimmedPromptForSend,
         mode: harnessMode,
+        ...(harnessRouting.providerId ? { providerId: harnessRouting.providerId } : {}),
+        ...(harnessRouting.modelId ? { modelId: harnessRouting.modelId } : {}),
         ...(harnessFramework === "blank" ||
         harnessFramework === "react-native" ||
         harnessFramework === "flutter" ||

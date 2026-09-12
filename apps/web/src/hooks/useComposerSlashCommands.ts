@@ -9,6 +9,7 @@ import {
   type ThreadId,
 } from "@caide/contracts";
 import { deriveAssociatedWorktreeMetadata } from "@caide/shared/threadWorkspace";
+import { resolveHarnessModelRouting } from "@caide/shared/model";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { newCommandId, newMessageId, newThreadId } from "../lib/utils";
@@ -1259,10 +1260,16 @@ export function useComposerSlashCommands(input: {
         const harness = activeThread ? getHarnessSession(activeThread.id) : undefined;
         if (harness) {
           const replacement = builders[item.command as keyof typeof builders]("");
+          const slashRouting = resolveHarnessModelRouting({
+            provider: input.selectedModelSelection.provider,
+            model: input.selectedModelSelection.model,
+          });
           const turn: Parameters<typeof startHarnessTurn>[2] = {
             appPath: harness.appPath,
             prompt: replacement,
             mode: item.command === "ask" ? "ask" : "agent",
+            ...(slashRouting.providerId ? { providerId: slashRouting.providerId } : {}),
+            ...(slashRouting.modelId ? { modelId: slashRouting.modelId } : {}),
           };
           if (harness.framework) turn.framework = harness.framework;
           startHarnessTurn(harness.send, activeThread.id, turn);

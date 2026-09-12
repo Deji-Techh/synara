@@ -8,6 +8,7 @@
 // URLs, azure resource + test-URL handling, ollama/lmstudio defaults).
 
 import { endpointForModel } from "../../harness/provider/apiAdapter.ts";
+import { getDefaultModel, type ProviderKind } from "@caide/shared/model";
 import { resolveApiKeyOrThrow } from "./apiKey.ts";
 import { PROVIDERS } from "./providers.ts";
 
@@ -156,6 +157,25 @@ const AUTO_KEY_ORDER = [
   "deepseek",
   "opencode-zen",
 ] as const;
+
+/**
+ * Resolve a requested model slug to something safe to send an endpoint.
+ * Placeholder slugs ("", "auto", "default") become the provider's concrete
+ * default; unknown providers yield undefined so callers can fail loudly
+ * instead of sending a literal "auto" that providers 404 on verbatim.
+ */
+export function resolveProviderDefaultModel(
+  providerId: string,
+  requested?: string | null,
+): string | undefined {
+  const slug = (requested ?? "").trim();
+  if (slug !== "" && slug !== "auto" && slug !== "default") return slug;
+  try {
+    return getDefaultModel(providerId as ProviderKind) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 /** Has the user configured this provider (settings key or env key)? */
 export function hasProviderKey(

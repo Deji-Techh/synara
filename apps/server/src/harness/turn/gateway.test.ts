@@ -207,6 +207,31 @@ describe("turn gateway (m3h)", () => {
     expect(fallback.providerId).toBeUndefined();
   });
 
+  it("never forwards placeholder model slugs to endpoints", () => {
+    const settings = { providerSettings: { openai: { apiKey: "sk-x" } } };
+    for (const modelId of ["auto", "default", undefined]) {
+      const resolved = resolveTurnProviders({
+        sessionId: "s",
+        appPath: "/tmp/x",
+        prompt: "hi",
+        providerId: "openai",
+        ...(modelId ? { modelId } : {}),
+        settings,
+      });
+      expect(resolved.modelId).toBeTruthy();
+      expect(["auto", "default"]).not.toContain(resolved.modelId);
+    }
+    const concrete = resolveTurnProviders({
+      sessionId: "s",
+      appPath: "/tmp/x",
+      prompt: "hi",
+      providerId: "openai",
+      modelId: "gpt-5",
+      settings,
+    });
+    expect(concrete.modelId).toBe("gpt-5");
+  });
+
   it("answers provider settings get/set over the socket handlers", async () => {
     const gateway = new TurnGateway();
     const sent: HarnessEvent[] = [];

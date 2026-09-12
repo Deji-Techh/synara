@@ -39,6 +39,7 @@ export {
 export {
   resolveConnection,
   resolveAutoProvider,
+  resolveProviderDefaultModel,
   hasProviderKey,
   type ResolvedConnection,
   type ProviderSettingsInput,

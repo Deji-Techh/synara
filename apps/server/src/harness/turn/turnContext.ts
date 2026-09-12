@@ -42,6 +42,7 @@ import {
 import {
   resolveAutoProvider,
   resolveConnection,
+  resolveProviderDefaultModel,
   type SettingsLike,
 } from "../../dyad/providers/index.ts";
 import { setContextSummarizer } from "../../dyad/misc/index.ts";
@@ -150,7 +151,9 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
 
   // Provider: explicit id or auto by key presence. Local runtimes need no key.
   const providerId = input.providerId ?? resolveAutoProvider(input.settings ?? {});
-  const modelId = input.modelId ?? "auto";
+  // Placeholder slugs must never reach an endpoint verbatim ("auto" 404s).
+  // Prefer the caller's concrete model, else the provider default.
+  const modelId = resolveProviderDefaultModel(providerId, input.modelId) ?? "auto";
   const connection = resolveConnection(providerId, modelId, input.settings ?? {});
 
   // Runner seams: cheap-model provider streaming for synthesis skills.

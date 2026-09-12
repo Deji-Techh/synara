@@ -39,6 +39,7 @@ import {
   normalizeOpenCodeModelOptions,
   normalizePiModelOptions,
   parseCursorCliReasoningEffort,
+  resolveHarnessModelRouting,
   resolveLabeledOptionValue,
   resolveModelSlugForProvider,
   resolveSelectableModel,
@@ -65,8 +66,44 @@ const SYNTHETIC_CAPS: ModelCapabilities = {
   autoCompactWindowOptions: [{ value: "200k", label: "200k", isDefault: true }],
 };
 
-describe("getDefaultModel", () => {
-  it("returns the per-provider default model", () => {
+describe("resolveHarnessModelRouting", () => {
+  it("passes concrete selections through untouched", () => {
+    expect(
+      resolveHarnessModelRouting({ provider: "openrouter", model: "openai/gpt-5.5" }),
+    ).toEqual({ providerId: "openrouter", modelId: "openai/gpt-5.5" });
+  });
+
+  it("resolves placeholder slugs to the provider default", () => {
+    for (const placeholder of ["", "default", "auto"]) {
+      const routed = resolveHarnessModelRouting({ provider: "openrouter", model: placeholder });
+      expect(routed.providerId).toBe("openrouter");
+      expect(routed.modelId).toBe(getDefaultModel("openrouter"));
+      expect(routed.modelId).not.toBe("auto");
+      expect(routed.modelId).not.toBe("default");
+    }
+  });
+
+  it("normalizes UI-only aliases to harness provider ids", () => {
+    expect(resolveHarnessModelRouting({ provider: "engine", model: "x" }).providerId).toBe(
+      "opencodeZen",
+    );
+    expect(resolveHarnessModelRouting({ provider: "opencode-zen", model: "x" }).providerId).toBe(
+      "opencodeZen",
+    );
+    expect(
+      resolveHarnessModelRouting({ provider: "gemini", model: "gemini-2.5-flash" }),
+    ).toEqual({ providerId: "google", modelId: "gemini-2.5-flash" });
+  });
+
+  it("omits providerId for auto so the server resolves by key", () => {
+    expect(resolveHarnessModelRouting({ provider: "auto", model: "x" })).toEqual({
+      providerId: "",
+      modelId: "x",
+    });
+  });
+});
+
+describe("getDefaultModel", () => {  it("returns the per-provider default model", () => {
     expect(getDefaultModel("groq")).toBe("llama-3.3-70b-versatile");
     expect(getDefaultModel("opencodeZen")).toBe("deepseek-v4-flash-free");
     expect(getDefaultModel()).toBe(DEFAULT_MODEL);

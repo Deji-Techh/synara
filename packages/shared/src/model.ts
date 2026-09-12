@@ -38,6 +38,45 @@ export function coerceProviderKind(provider: string): ProviderKind {
   return (LEGACY_PROVIDER_MAP[provider] ?? provider) as ProviderKind;
 }
 
+/**
+ * Harness-facing model routing for a composer ModelSelection. The gateway
+ * resolves providers by these ids, so translate UI-only aliases (engine runs
+ * on opencodeZen; hyphenated ids predate the canonical camelCase kinds) and
+ * resolve placeholder slugs ("default"/"auto"/empty) to the provider's
+ * concrete default — the server must never receive a literal "auto" model,
+ * which providers 404 on verbatim.
+ */
+export interface HarnessModelRouting {
+  /** Empty when the provider itself is "auto": omit providerId and let the server pick by key. */
+  providerId: string;
+  modelId: string;
+}
+
+const HARNESS_PROVIDER_ALIASES: Record<string, ProviderKind> = {
+  "opencode-zen": "opencodeZen",
+  "opencode-go": "opencodeGo",
+  engine: "opencodeZen",
+};
+
+const PLACEHOLDER_MODEL_SLUGS = new Set(["", "default", "auto"]);
+
+export function resolveHarnessModelRouting(input: {
+  provider: string;
+  model: string;
+}): HarnessModelRouting {
+  const rawProvider = input.provider.trim();
+  if (rawProvider === "auto") {
+    return { providerId: "", modelId: input.model.trim() };
+  }
+  const coerced = coerceProviderKind(rawProvider);
+  const providerId = HARNESS_PROVIDER_ALIASES[coerced] ?? coerced;
+  const model = input.model.trim();
+  const modelId = PLACEHOLDER_MODEL_SLUGS.has(model)
+    ? (getDefaultModel(providerId as ProviderKind) ?? model)
+    : model;
+  return { providerId, modelId };
+}
+
 const MODEL_SLUG_SET_BY_PROVIDER: Record<ProviderKind, ReadonlySet<ModelSlug>> = Object.fromEntries(
   Object.entries(MODEL_OPTIONS_BY_PROVIDER).map(([provider, models]) => [
     provider,

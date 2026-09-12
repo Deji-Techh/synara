@@ -8,6 +8,7 @@
 // here is live and tested.
 
 import type { HarnessEvent } from "@caide/contracts";
+import { resolveProviderDefaultModel } from "../../dyad/providers/index.ts";
 import { Inbox } from "../inbox/index.ts";
 import { HarnessHub } from "../ws/hub.ts";
 import { attachUiBridge } from "../ws/uiBridge.ts";
@@ -287,9 +288,18 @@ export function resolveTurnProviders(request: GatewayTurnRequest): {
     const trimmed = value?.trim();
     return trimmed ? trimmed : undefined;
   };
+  const providerId = clean(request.providerId) ?? clean(stored.defaultProviderId);
+  const rawModel = clean(request.modelId) ?? clean(stored.defaultModelId);
+  // Never forward placeholder slugs to a provider endpoint: "auto"/"default"
+  // 404 verbatim (e.g. Gemini "models/auto is not found"). Resolve to the
+  // provider's concrete default; unknown providers stay undefined and fail
+  // loudly at connection time instead of sending a literal placeholder.
+  const modelId = providerId
+    ? (resolveProviderDefaultModel(providerId, rawModel) ?? undefined)
+    : rawModel;
   return {
-    providerId: clean(request.providerId) ?? clean(stored.defaultProviderId),
-    modelId: clean(request.modelId) ?? clean(stored.defaultModelId),
+    providerId,
+    modelId,
     settings: request.settings ?? sharedProviderSecrets().toSettings(),
   };
 }

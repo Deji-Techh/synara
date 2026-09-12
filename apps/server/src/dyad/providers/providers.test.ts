@@ -14,6 +14,7 @@ import { PROVIDERS, PROVIDER_TO_ENV_VAR, validateProviderSettings } from "./prov
 import {
   resolveConnection,
   resolveAutoProvider,
+  resolveProviderDefaultModel,
   hasProviderKey,
 } from "./routing.ts";
 import { resolveApiKeyOrThrow } from "./apiKey.ts";
@@ -122,6 +123,19 @@ describe("dyad providers transplant (m1, free-entirely)", () => {
     expect(resolveAutoProvider({ providerSettings: { vertex: {} } })).toBe(
       "ollama",
     );
+  });
+
+  it("resolveProviderDefaultModel never yields placeholder slugs", () => {
+    expect(resolveProviderDefaultModel("openai", "gpt-5")).toBe("gpt-5");
+    for (const placeholder of ["", "auto", "default", undefined, null]) {
+      const resolved = resolveProviderDefaultModel(
+        "openai",
+        placeholder as string | undefined,
+      );
+      expect(resolved).toBeTruthy();
+      expect(["auto", "default"]).not.toContain(resolved);
+    }
+    expect(resolveProviderDefaultModel("nope", "auto")).toBeUndefined();
   });
 });
 
