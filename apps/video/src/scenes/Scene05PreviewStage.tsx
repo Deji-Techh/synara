@@ -1,11 +1,12 @@
 // FILE: Scene05PreviewStage.tsx
-// Purpose: Scene 5 — Exact 672px PreviewStage expansion and live mobile app interaction
+// Purpose: Scene 5 — Exact 672px PreviewStage expansion (Ctrl+P) and live interactive mobile app
 // Layer: Video scene
 
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig } from "remotion";
 import { BackgroundGlow } from "../components/BackgroundGlow";
 import { CaideWindowShell } from "../components/CaideWindowShell";
+import { MouseCursor } from "../components/MouseCursor";
 import { SPRING_SMOOTH } from "../constants/timings";
 
 export const Scene05PreviewStage: React.FC = () => {
@@ -14,29 +15,37 @@ export const Scene05PreviewStage: React.FC = () => {
 
   // Preview stage slide-in progress (220ms ease-out matching Caide PreviewStage)
   const stageSpring = spring({
-    frame: frame - 10,
+    frame: frame - 8,
     fps,
     config: SPRING_SMOOTH,
   });
 
   const previewProgress = interpolate(stageSpring, [0, 1], [0, 1]);
 
-  // Cursor interaction: moves to 1W timeframe pill on device screen
-  // Device center is around X=1480, Y=560
-  const cursorX = interpolate(frame, [45, 75, 95], [1200, 1445, 1445], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const cursorY = interpolate(frame, [45, 75, 95], [600, 528, 528], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  // Cursor moves from chat area to the 1W timeframe pill on the mobile preview screen
+  // Device screen center is located around X: 1445, Y: 532
+  const cursorX = interpolate(
+    frame,
+    [15, 50, 75],
+    [1050, 1445, 1445],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
+  const cursorY = interpolate(
+    frame,
+    [15, 50, 75],
+    [650, 532, 532],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+  );
 
-  const isClick = frame >= 75 && frame <= 85;
-  const is1W = frame >= 75;
+  const isClick = frame >= 52 && frame <= 60;
+  const is1W = frame >= 54;
+
+  // Top feature callout
+  const bannerOpacity = interpolate(frame, [8, 30, 150, 170], [0, 1, 1, 0]);
+  const bannerY = interpolate(frame, [8, 30], [20, 0]);
 
   return (
-    <AbsoluteFill style={{ overflow: "hidden" }}>
+    <AbsoluteFill style={{ overflow: "hidden", backgroundColor: "#060606" }}>
       <BackgroundGlow intensity={1.1} />
 
       <AbsoluteFill
@@ -44,7 +53,7 @@ export const Scene05PreviewStage: React.FC = () => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          transform: "scale(0.96)",
+          transform: "scale(0.95)",
         }}
       >
         <CaideWindowShell
@@ -53,34 +62,55 @@ export const Scene05PreviewStage: React.FC = () => {
           composerTypedProgress={1}
           isAgentRunning={true}
           completedToolsCount={4}
+          showThirdUserMessage={true}
           interactiveDeviceTimeframe={is1W ? "1W" : "1D"}
         />
 
-        {/* Realistic Mouse Cursor clicking on Phone Screen */}
-        {frame >= 45 && (
-          <div
-            style={{
-              position: "absolute",
-              left: `${cursorX}px`,
-              top: `${cursorY}px`,
-              pointerEvents: "none",
-              zIndex: 100,
-              transform: isClick ? "scale(0.85)" : "scale(1)",
-              transition: "transform 0.1s ease",
-            }}
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M3 3L10.5 21L13.5 13.5L21 10.5L3 3Z"
-                fill="#ffffff"
-                stroke="#000000"
-                strokeWidth="2"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-        )}
+        {/* Realistic macOS Mouse Cursor clicking on live simulator */}
+        <MouseCursor
+          x={cursorX}
+          y={cursorY}
+          isClicking={isClick}
+          visible={frame >= 15 && frame <= 110}
+        />
       </AbsoluteFill>
+
+      {/* Top Floating Feature Callout */}
+      <div
+        style={{
+          position: "absolute",
+          top: "40px",
+          left: "0",
+          right: "0",
+          display: "flex",
+          justifyContent: "center",
+          pointerEvents: "none",
+          opacity: bannerOpacity,
+          transform: `translateY(${bannerY}px)`,
+          zIndex: 200,
+        }}
+      >
+        <div
+          style={{
+            padding: "10px 24px",
+            borderRadius: "999px",
+            backgroundColor: "rgba(18, 18, 18, 0.85)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            boxShadow: "0 10px 30px rgba(0, 0, 0, 0.6)",
+            fontSize: "13px",
+            fontWeight: 600,
+            color: "#ffffff",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
+        >
+          <span style={{ color: "#10b981" }}>●</span>
+          <span>Fixed 672px Preview Stage (`Ctrl+P`) · Live Hot Reloading & Native Simulator</span>
+        </div>
+      </div>
     </AbsoluteFill>
   );
 };

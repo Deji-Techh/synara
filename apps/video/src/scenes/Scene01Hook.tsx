@@ -1,43 +1,55 @@
 // FILE: Scene01Hook.tsx
-// Purpose: Scene 1 — Cinematic introduction of the Caide desktop application
+// Purpose: Scene 1 — Cinematic Apple-grade hook introducing Caide
 // Layer: Video scene
 
 import React from "react";
-import { AbsoluteFill, useCurrentFrame, interpolate } from "remotion";
+import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig } from "remotion";
 import { BackgroundGlow } from "../components/BackgroundGlow";
 import { CaideWindowShell } from "../components/CaideWindowShell";
+import { KineticText } from "../components/KineticText";
 import { CAIDE_THEME } from "../constants/theme";
+import { SPRING_SNAPPY } from "../constants/timings";
 
 export const Scene01Hook: React.FC = () => {
   const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
 
-  // Camera glide and scale
-  const scale = interpolate(frame, [0, 240], [0.88, 0.96]);
-  const translateY = interpolate(frame, [0, 240], [40, 0]);
-  const opacity = interpolate(frame, [0, 30], [0, 1]);
+  // Camera 3D-like glide and scale
+  const windowSpring = spring({
+    frame: frame - 10,
+    fps,
+    config: SPRING_SNAPPY,
+  });
 
-  // Title typography fade in and out
-  const titleOpacity = interpolate(frame, [15, 45, 190, 230], [0, 1, 1, 0]);
-  const titleY = interpolate(frame, [15, 45], [20, 0]);
+  const scale = interpolate(windowSpring, [0, 1], [0.86, 0.94]);
+  const translateY = interpolate(windowSpring, [0, 1], [60, 10]);
+  const windowOpacity = interpolate(frame, [0, 25], [0, 1]);
+
+  // Title typography fade and exit
+  const titleOpacity = interpolate(frame, [10, 40, 180, 220], [0, 1, 1, 0]);
+  const titleTranslateY = interpolate(frame, [10, 40, 180, 220], [30, 0, 0, -20]);
+
+  // Subtitle fade
+  const subOpacity = interpolate(frame, [45, 75, 180, 220], [0, 1, 1, 0]);
 
   return (
-    <AbsoluteFill style={{ overflow: "hidden" }}>
-      <BackgroundGlow intensity={1.1} />
+    <AbsoluteFill style={{ overflow: "hidden", backgroundColor: "#060606" }}>
+      <BackgroundGlow intensity={1.2} />
 
-      {/* Floating Caide Desktop App Window */}
+      {/* Floating Caide Desktop Window with Authentic UI */}
       <AbsoluteFill
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           transform: `translateY(${translateY}px) scale(${scale})`,
-          opacity,
+          opacity: windowOpacity,
         }}
       >
         <CaideWindowShell />
       </AbsoluteFill>
 
-      {/* Cinematic Title Overlay at the beginning */}
+      {/* Cinematic Glass Overlay Header */}
       <AbsoluteFill
         style={{
           display: "flex",
@@ -46,47 +58,72 @@ export const Scene01Hook: React.FC = () => {
           justifyContent: "center",
           pointerEvents: "none",
           opacity: titleOpacity,
-          transform: `translateY(${titleY}px)`,
+          transform: `translateY(${titleTranslateY}px)`,
+          zIndex: 100,
         }}
       >
         <div
           style={{
-            padding: "24px 40px",
-            borderRadius: "20px",
-            backgroundColor: "rgba(14, 14, 14, 0.85)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-            boxShadow: "0 25px 60px rgba(0, 0, 0, 0.8)",
+            padding: "26px 48px",
+            borderRadius: "22px",
+            backgroundColor: "rgba(10, 10, 10, 0.88)",
+            backdropFilter: "blur(28px)",
+            WebkitBackdropFilter: "blur(28px)",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            boxShadow: "0 30px 80px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.05)",
             textAlign: "center",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: "10px",
+            gap: "12px",
             fontFamily: CAIDE_THEME.typography.fontFamily,
           }}
         >
-          <h1
+          {/* Eyebrow badge */}
+          <div
             style={{
-              fontSize: "44px",
-              fontWeight: 800,
-              letterSpacing: "-0.035em",
-              margin: 0,
-              color: "#ffffff",
+              padding: "3px 10px",
+              borderRadius: "999px",
+              backgroundColor: "rgba(255, 255, 255, 0.08)",
+              border: "1px solid rgba(255, 255, 255, 0.14)",
+              fontSize: "11px",
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "#a5b4fc",
             }}
           >
-            The World's Best AI App Builder.
-          </h1>
-          <p
+            Introducing New Caide
+          </div>
+
+          <KineticText
+            text="The World's Best AI App Builder."
+            fontSize={46}
+            fontWeight={800}
+            delay={15}
+            stagger={3}
+            gradient={true}
+          />
+
+          <div
             style={{
-              fontSize: "18px",
-              color: CAIDE_THEME.colors.mutedForeground,
-              margin: 0,
+              opacity: subOpacity,
+              fontSize: "16px",
               fontWeight: 500,
+              color: "#999999",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
             }}
           >
-            React Native · Flutter · Web · Blank
-          </p>
+            <span>React Native</span>
+            <span style={{ color: "#444444" }}>·</span>
+            <span>Flutter</span>
+            <span style={{ color: "#444444" }}>·</span>
+            <span>Website</span>
+            <span style={{ color: "#444444" }}>·</span>
+            <span>Blank</span>
+          </div>
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
