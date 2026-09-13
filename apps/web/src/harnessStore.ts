@@ -182,9 +182,15 @@ export const harnessStore = {
       }
       case "turn_end": {
         const ended: SessionState = { ...session, liveTurnId: undefined };
+        // Zombie backstop: a live prompt means its turn is still running, so
+        // at turn_end every waiter is settled — anything still rendered is an
+        // orphan (e.g. settled by a path that never notified the client).
+        // Settled prompts already carry withdrawal tombstones, so replay
+        // stays clean.
+        const cleared: SessionState = { ...ended, prompts: [] };
         state.sessions[event.sessionId] = event.usage
-          ? { ...ended, lastUsage: { ...event.usage } }
-          : ended;
+          ? { ...cleared, lastUsage: { ...event.usage } }
+          : cleared;
         break;
       }
       case "token": {

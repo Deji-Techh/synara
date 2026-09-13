@@ -13,7 +13,11 @@ import { ALL_CORE_TOOLS } from "../tools/coreTools.ts";
 import { ALL_PREVIEW_TOOLS } from "../tools/previewTools.ts";
 import { ALL_DB_PANEL_TOOLS, shouldRevealDatabasePanel } from "../../dyad/db/dbPanel.ts";
 import { ALL_FILE_EDIT_TOOLS } from "../../dyad/editing/index.ts";
-import { ALL_GIT_HISTORY_TOOLS, ALL_GIT_TOOLS, ALL_PRE_COMMIT_TOOLS } from "../../dyad/vcs/index.ts";
+import {
+  ALL_GIT_HISTORY_TOOLS,
+  ALL_GIT_TOOLS,
+  ALL_PRE_COMMIT_TOOLS,
+} from "../../dyad/vcs/index.ts";
 import { ALL_CHAT_HISTORY_TOOLS } from "../../dyad/history/index.ts";
 import { ALL_PLAN_TOOLS } from "../../dyad/plan/index.ts";
 import { ALL_BLUEPRINT_TOOLS } from "../../dyad/plan/blueprintTools.ts";
@@ -29,7 +33,12 @@ import { ALL_GITHUB_TOOLS, ALL_VERCEL_TOOLS, ALL_COOLIFY_TOOLS } from "../../dya
 import { ALL_SHARE_TOOLS } from "../../dyad/share/index.ts";
 import { ALL_VERIFY_TOOLS } from "../../dyad/verify/index.ts";
 import { ALL_SANDBOX_TOOLS } from "../../dyad/sandbox/index.ts";
-import { ALL_WEB_FETCH_TOOLS, ALL_WEB_SEARCH_TOOLS, ALL_IMAGE_TOOLS, ALL_CODE_TOOLS } from "../../dyad/web/index.ts";
+import {
+  ALL_WEB_FETCH_TOOLS,
+  ALL_WEB_SEARCH_TOOLS,
+  ALL_IMAGE_TOOLS,
+  ALL_CODE_TOOLS,
+} from "../../dyad/web/index.ts";
 import { ALL_WEB3_TOOLS } from "../../dyad/web3/index.ts";
 import { ALL_DB_TOOLS, linkDatabase, type DbLink } from "../../dyad/db/index.ts";
 import {
@@ -52,7 +61,11 @@ import { setSubagentToolSource } from "../../dyad/sandbox/subagentLoop.ts";
 import { setExplorerRunner as setCodeExplorerRunner } from "../../dyad/web/index.ts";
 import { setImageProvider } from "../../dyad/web/generateImage.ts";
 import { setWebSearchProvider } from "../../dyad/web/webSearch.ts";
-import { autoImageProvider, cascadeImageProvider, resolveImageLegs } from "../../dyad/web/keyedImages.ts";
+import {
+  autoImageProvider,
+  cascadeImageProvider,
+  resolveImageLegs,
+} from "../../dyad/web/keyedImages.ts";
 import { sharedProviderSecrets } from "../../dyad/providers/secrets.ts";
 import { recordSessionToolCall } from "./sessionStores.ts";
 import { autoWebSearchProvider } from "../../dyad/web/keyedSearch.ts";
@@ -206,12 +219,9 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
   if (input.mcpRegistry !== undefined) setMcpToolRegistry(input.mcpRegistry);
   if (input.dbLink) linkDatabase(input.sessionId, input.dbLink);
 
-  const included = UNIFIED_DEFS.filter((def) =>
-    shouldIncludeTool(def.name, {}, options, store),
-  );
+  const included = UNIFIED_DEFS.filter((def) => shouldIncludeTool(def.name, {}, options, store));
 
-  const requestConsent: ConsentRequestFn =
-    input.requestConsent ?? (async () => "decline" as const);
+  const requestConsent: ConsentRequestFn = input.requestConsent ?? (async () => "decline" as const);
 
   return {
     sessionId: input.sessionId,
@@ -248,8 +258,19 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
       });
       if (!allowed) throw new Error(`Tool call declined: ${toolName}`);
       recordSessionToolCall(input.sessionId, toolName);
+      // The 10-minute tool timeout must never kill a human wait: a parked
+      // questionnaire waits as long as the user needs (an earlier build
+      // auto-dismissed parked prompts at exactly 600s, zombifying the card).
+      // Waiting tools get the caller's abort only — real cancel/steer still
+      // unblocks via waitForUserInput's abort handling. Everything else gets
+      // abort-or-600s, whichever fires first.
+      const toolSignal = def.waitsForUserInput
+        ? (signal ?? new AbortController().signal)
+        : signal
+          ? AbortSignal.any([signal, AbortSignal.timeout(600_000)])
+          : AbortSignal.timeout(600_000);
       return def.execute(args, {
-        signal: AbortSignal.timeout(600_000),
+        signal: toolSignal,
         appPath: input.appPath,
         sessionId: input.sessionId,
         toolId,

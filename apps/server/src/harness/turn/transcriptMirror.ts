@@ -1,9 +1,13 @@
 // FILE: transcriptMirror.ts
-// Purpose: Project harness turn events (turn_start/token/turn_end) into the
-// thread transcript using the exact message shape + events the legacy engine
-// uses, so harness chats render user bubbles + assistant text and dismiss
-// the hero. Rich harness cards (tools, todos, consent, errors) stay
-// dock-only; the mirror carries user/assistant text only, avoiding duplicate
+// Purpose: Project harness turn events (turn_start/token/tool_call/turn_end)
+// into the thread transcript using the exact message shape + events the
+// legacy engine uses, so harness chats render user bubbles + assistant text
+// and dismiss the hero. Tool calls project as <caide-tool> custom tags,
+// which ChatMarkdown folds into inline AntigravityToolGroup cards (grouped,
+// collapsible, per-item expand) — the same surface as legacy engine turns,
+// durable in the thread store (survives reload, no socket needed).
+// Interactive waits (questionnaires) and plan/blueprint approvals keep their
+// dedicated above-composer cards and are excluded here to avoid double
 // surfaces. Best-effort throughout: mirror failures must never break turns.
 //
 // All thread I/O goes through injected deps so this module stays decoupled
@@ -22,6 +26,49 @@ export interface TranscriptMirror {
 /** Assistant rows the mirror owns (user rows share the turnId scheme). */
 export const HARNESS_ASSISTANT_MSG_PREFIX = "msg-harness-asst-";
 const HARNESS_USER_MSG_PREFIX = "msg-harness-user-";
+
+/**
+ * Tool calls with dedicated card surfaces elsewhere: interactive waits park
+ * on ui_prompt cards, plan/blueprint tools park on approval cards. Mirroring
+ * them as inline rows would show every prompt twice.
+ */
+const MIRRORED_TOOL_EXCLUDE = new Set([
+  "planning_questionnaire",
+  "ask_env_vars",
+  "write_plan",
+  "exit_plan",
+  "write_app_blueprint",
+]);
+
+/** Attribute-safe: strip quotes (values are double-quoted in the tag). */
+function toolAttr(value: unknown): string {
+  if (typeof value !== "string" || value.length === 0) return "";
+  return value.replace(/"/g, "").slice(0, 220);
+}
+
+/** Pick the most informative locator attributes from tool args. */
+function toolLocatorAttrs(args: unknown): string {
+  if (!args || typeof args !== "object") return "";
+  const a = args as Record<string, unknown>;
+  const parts: string[] = [];
+  const path = toolAttr(a.path ?? a.file ?? a.target);
+  const command = toolAttr(a.command ?? a.cmd);
+  const query = toolAttr(a.query ?? a.pattern);
+  if (path) parts.push(` path="${path}"`);
+  if (command) parts.push(` command="${command}"`);
+  if (query) parts.push(` query="${query}"`);
+  return parts.join("");
+}
+
+/**
+ * Result text safe to embed inside a <caide-tool> block: truncated, and
+ * close-tag sequences neutralized (a literal </caide-tool> in tool output
+ * would otherwise terminate the block early and corrupt grouping).
+ */
+function toolResultText(result: unknown): string {
+  const raw = typeof result === "string" ? result : JSON.stringify(result ?? "");
+  return (raw ?? "").replace(/<\//g, "<\u200b/").slice(0, 600);
+}
 
 interface OpenMirrorTurn {
   threadId: string;
@@ -73,8 +120,8 @@ export function createTranscriptMirror(deps: TranscriptMirrorDeps): TranscriptMi
         if (thread.messages.some((m: any) => m?.turnId === turnId)) return;
         const now = new Date().toISOString();
         const prompt = typeof event.prompt === "string" ? event.prompt : "";
-      const userMsg = {
-        id: `${HARNESS_USER_MSG_PREFIX}${turnId}`,
+        const userMsg = {
+          id: `${HARNESS_USER_MSG_PREFIX}${turnId}`,
           role: "user",
           text: prompt,
           attachments: [],
@@ -87,8 +134,8 @@ export function createTranscriptMirror(deps: TranscriptMirrorDeps): TranscriptMi
           createdAt: now,
           updatedAt: now,
         };
-      const assistantMsg = {
-        id: `${HARNESS_ASSISTANT_MSG_PREFIX}${turnId}`,
+        const assistantMsg = {
+          id: `${HARNESS_ASSISTANT_MSG_PREFIX}${turnId}`,
           role: "assistant",
           text: "",
           turnId,
@@ -126,6 +173,37 @@ export function createTranscriptMirror(deps: TranscriptMirrorDeps): TranscriptMi
         scheduleFlush(thread.id, msg);
         return;
       }
+      if (event?.type === "tool_call") {
+        const open = openTurns.get(sessionId);
+        if (!open) return;
+        const thread = deps.findThread(open.threadId);
+        const msg = thread?.messages?.find((m: any) => m?.id === open.assistantMsgId);
+        if (!thread || !msg) return;
+        const name = typeof event.name === "string" && event.name.length > 0 ? event.name : "tool";
+        if (MIRRORED_TOOL_EXCLUDE.has(name)) return;
+        const callId = typeof event.id === "string" ? event.id : "";
+        const openTag =
+          `<caide-tool name="${toolAttr(name)}" tool-call-id="${toolAttr(callId)}"` +
+          `${toolLocatorAttrs(event.args)}>`;
+        if (event.status === "started") {
+          // Unclosed tag renders as a running group item (complete = closing
+          // tag seen). Closed on completed/failed below.
+          msg.text = `${msg.text ?? ""}\n\n${openTag}`;
+          scheduleFlush(thread.id, msg);
+          return;
+        }
+        if (event.status === "completed" || event.status === "failed") {
+          const status = event.status === "completed" ? "complete" : "error";
+          const closedTag = `${openTag} status="${status}">\n${toolResultText(event.result)}\n</caide-tool>`;
+          const text: string = msg.text ?? "";
+          msg.text = text.includes(openTag)
+            ? text.replace(openTag, closedTag)
+            : `${text}\n\n${closedTag}`;
+          scheduleFlush(thread.id, msg);
+          return;
+        }
+        return;
+      }
       if (event?.type === "error") {
         // Provider/turn errors surface in the main chat like legacy inline
         // errors (the dock card alone is easy to miss).
@@ -134,14 +212,16 @@ export function createTranscriptMirror(deps: TranscriptMirrorDeps): TranscriptMi
         const thread = deps.findThread(open.threadId);
         const msg = thread?.messages?.find((m: any) => m?.id === open.assistantMsgId);
         if (!thread || !msg) return;
-        const detail = typeof event.message === "string" && event.message.trim().length > 0
-          ? event.message.trim().slice(0, 500)
-          : event.code;
+        const detail =
+          typeof event.message === "string" && event.message.trim().length > 0
+            ? event.message.trim().slice(0, 500)
+            : event.code;
         msg.text = `${msg.text ?? ""}\n\nError: ${detail}`;
         scheduleFlush(thread.id, msg);
         return;
       }
-      if (event?.type === "turn_end") {        const open = openTurns.get(sessionId);
+      if (event?.type === "turn_end") {
+        const open = openTurns.get(sessionId);
         openTurns.delete(sessionId);
         // Heal path: a turn_end with no open entry (missed turn_start, e.g.
         // server restart) still settles the newest streaming assistant row so
@@ -161,6 +241,15 @@ export function createTranscriptMirror(deps: TranscriptMirrorDeps): TranscriptMi
                 )) ?? null;
         if (!thread || !msg) return;
         msg.streaming = false;
+        // Backstop: tools aborted without a completed/failed event would
+        // otherwise render as running forever. Close dangling tags.
+        if (typeof msg.text === "string") {
+          const opens = (msg.text.match(/<caide-tool[\s>]/g) ?? []).length;
+          const closes = (msg.text.match(/<\/caide-tool>/g) ?? []).length;
+          for (let i = closes; i < opens; i += 1) {
+            msg.text += "\n(interrupted)\n</caide-tool>";
+          }
+        }
         thread.updatedAt = new Date().toISOString();
         flushNow(thread.id, msg);
         return;

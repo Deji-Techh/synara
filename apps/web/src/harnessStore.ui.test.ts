@@ -53,6 +53,26 @@ describe("harnessStore ui events (m3)", () => {
     harnessStore.clearSession("s-ui");
   });
 
+  it("clears zombie prompt cards on turn_end (all waiters are settled by then)", () => {
+    harnessStore.clearSession("s-ui");
+    harnessStore.handleEvent({
+      type: "ui_prompt",
+      sessionId: "s-ui",
+      requestId: "r-zombie",
+      kind: "questionnaire",
+      payload: { questions: [] },
+    });
+    expect(harnessStore.getState().sessions["s-ui"]?.prompts).toHaveLength(1);
+    harnessStore.handleEvent({
+      type: "turn_end",
+      sessionId: "s-ui",
+      turnId: "t1",
+      status: "completed",
+    });
+    expect(harnessStore.getState().sessions["s-ui"]?.prompts).toHaveLength(0);
+    harnessStore.clearSession("s-ui");
+  });
+
   it("records reveals and plan lifecycle", () => {
     harnessStore.clearSession("s-ui");
     harnessStore.handleEvent({

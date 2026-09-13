@@ -22,7 +22,10 @@ function toolLlm(): LLMAdapter {
     async *stream() {
       calls++;
       if (calls === 1) {
-        yield { type: "tool_call", toolCall: { id: "c1", name: "execute_sql", args: { query: "select 1" } } } as never;
+        yield {
+          type: "tool_call",
+          toolCall: { id: "c1", name: "execute_sql", args: { query: "select 1" } },
+        } as never;
       } else {
         yield { type: "token", content: "done" } as never;
       }
@@ -83,7 +86,10 @@ describe("turn gateway (m3h)", () => {
       {
         llmOverride: {
           async *stream() {
-            yield { type: "tool_call", toolCall: { id: "c2", name: "open_preview", args: {} } } as never;
+            yield {
+              type: "tool_call",
+              toolCall: { id: "c2", name: "open_preview", args: {} },
+            } as never;
           },
         } as LLMAdapter,
         onEvent: (e) => previewSeen.push(e),
@@ -103,7 +109,7 @@ describe("turn gateway (m3h)", () => {
     expect(gateway.getInbox("s-steer")).not.toBe(inbox);
   });
 
-  it("mirrors turn_start/token/turn_end to the transcript mirror only", async () => {
+  it("mirrors turn_start/token/tool_call/turn_end to the transcript mirror only", async () => {
     const seen: HarnessEvent[] = [];
     setTranscriptMirror({ mirrorHarnessTurnEvent: (e) => seen.push(e) });
     try {
@@ -133,7 +139,9 @@ describe("turn gateway (m3h)", () => {
       expect(types).toContain("turn_start");
       expect(types).toContain("token");
       expect(types).toContain("turn_end");
-      expect(types).not.toContain("tool_call");
+      // Tool calls mirror inline as <caide-tool> tags (AntigravityToolGroup),
+      // so history never stacks above the chat header.
+      expect(types).toContain("tool_call");
       expect(types).not.toContain("stage");
       gateway.dropSession("s-mirror");
     } finally {
@@ -162,19 +170,25 @@ describe("turn gateway (m3h)", () => {
       mode: "ask" as const,
       settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
     };
-    const first = gateway.startTurn({ ...base, prompt: "first" }, {
-      llmOverride: hanging,
-      onEvent: (e) => seen.push(e),
-    });
+    const first = gateway.startTurn(
+      { ...base, prompt: "first" },
+      {
+        llmOverride: hanging,
+        onEvent: (e) => seen.push(e),
+      },
+    );
     const deadline = Date.now() + 5000;
     while (streams === 0 && Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 10));
     }
     expect(streams).toBe(1);
-    const secondId = await gateway.startTurn({ ...base, prompt: "second" }, {
-      llmOverride: fakeLlm([{ type: "token", content: "SHOULD-NEVER-STREAM" }]),
-      onEvent: () => {},
-    });
+    const secondId = await gateway.startTurn(
+      { ...base, prompt: "second" },
+      {
+        llmOverride: fakeLlm([{ type: "token", content: "SHOULD-NEVER-STREAM" }]),
+        onEvent: () => {},
+      },
+    );
     expect(secondId.startsWith("buffered:")).toBe(true);
     expect(streams).toBe(1);
     const steered = gateway.getInbox("s-dup").claimNextStep();
@@ -183,14 +197,19 @@ describe("turn gateway (m3h)", () => {
     release();
     await first;
     expect(gateway.getStatus()).toBe("completed");
-    const tokens = seen.filter((e) => e.type === "token").map((e) => (e as { content: string }).content);
+    const tokens = seen
+      .filter((e) => e.type === "token")
+      .map((e) => (e as { content: string }).content);
     expect(tokens).toContain("first-done");
     expect(tokens).not.toContain("SHOULD-NEVER-STREAM");
     // Slot released on completion: the next send launches fresh, not buffered.
-    const thirdId = await gateway.startTurn({ ...base, prompt: "third" }, {
-      llmOverride: fakeLlm([{ type: "token", content: "third-done" }]),
-      onEvent: () => {},
-    });
+    const thirdId = await gateway.startTurn(
+      { ...base, prompt: "third" },
+      {
+        llmOverride: fakeLlm([{ type: "token", content: "third-done" }]),
+        onEvent: () => {},
+      },
+    );
     expect(thirdId.startsWith("turn-")).toBe(true);
     gateway.dropSession("s-dup");
   });
@@ -209,13 +228,25 @@ describe("turn gateway (m3h)", () => {
     };
     const settings = { providerSettings: { openai: { apiKey: "sk-test" } } };
     const first = gateway.startTurn(
-      { sessionId: "s-a", appPath: "/tmp/caide-test-app", prompt: "a-first", mode: "ask", settings },
+      {
+        sessionId: "s-a",
+        appPath: "/tmp/caide-test-app",
+        prompt: "a-first",
+        mode: "ask",
+        settings,
+      },
       { llmOverride: hanging, onEvent: () => {} },
     );
     // Give A's turn a chance to claim its (per-session) flow slot.
     await new Promise((r) => setTimeout(r, 50));
     const bId = await gateway.startTurn(
-      { sessionId: "s-b", appPath: "/tmp/caide-test-app", prompt: "b-first", mode: "ask", settings },
+      {
+        sessionId: "s-b",
+        appPath: "/tmp/caide-test-app",
+        prompt: "b-first",
+        mode: "ask",
+        settings,
+      },
       { llmOverride: fakeLlm([{ type: "token", content: "b-done" }]), onEvent: () => {} },
     );
     expect(bId.startsWith("turn-")).toBe(true);
@@ -356,9 +387,8 @@ describe("turn gateway (m3h)", () => {
     const path = await import("node:path");
     const home = fs.mkdtempSync(path.join(os.tmpdir(), "caide-home-"));
     process.env.CAIDE_HOME = home;
-    const { resetSharedProviderSecrets, sharedProviderSecrets } = await import(
-      "../../dyad/providers/secrets.ts"
-    );
+    const { resetSharedProviderSecrets, sharedProviderSecrets } =
+      await import("../../dyad/providers/secrets.ts");
     resetSharedProviderSecrets();
     const gateway = new TurnGateway();
     const sent: HarnessEvent[] = [];
@@ -400,7 +430,9 @@ describe("turn gateway (m3h)", () => {
       const set = handlers.onProviderSettingsSet as SetFn;
       set("s-psv", "azure", { apiKey: "k" }, undefined, "r-azure");
       const azureState = sent.find(
-        (e) => e.type === "provider_settings_state" && (e as { requestId?: string }).requestId === "r-azure",
+        (e) =>
+          e.type === "provider_settings_state" &&
+          (e as { requestId?: string }).requestId === "r-azure",
       ) as unknown as { tests?: Record<string, { ok: boolean; message: string }> };
       expect(azureState?.tests?.azure?.ok).toBe(false);
       expect(azureState?.tests?.azure?.message).toMatch(/Resource Name/);
@@ -409,7 +441,9 @@ describe("turn gateway (m3h)", () => {
 
       set("s-psv", "nope", { apiKey: "k" }, undefined, "r-nope");
       const nopeState = sent.find(
-        (e) => e.type === "provider_settings_state" && (e as { requestId?: string }).requestId === "r-nope",
+        (e) =>
+          e.type === "provider_settings_state" &&
+          (e as { requestId?: string }).requestId === "r-nope",
       ) as unknown as { tests?: Record<string, { ok: boolean; message: string }> };
       expect(nopeState?.tests?.nope?.ok).toBe(false);
       expect(sharedProviderSecrets().read().providers.nope).toBeUndefined();

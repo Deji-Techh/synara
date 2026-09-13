@@ -97,10 +97,10 @@ const QuestionSchema = z
     options: z
       .array(z.string())
       .min(1)
-      .max(3)
+      .max(5)
       .optional()
       .describe(
-        "Options for radio/checkbox questions. Keep to max 3 — users can always provide a custom answer via the free-form text input. Omit for text questions.",
+        "Options for radio/checkbox questions. Keep to max 5 — users can always provide a custom answer via the free-form text input. Omit for text questions.",
       ),
     required: z
       .boolean()
@@ -145,7 +145,7 @@ The tool accepts ONLY a "questions" array.
 Each question object has these fields:
 - "question" (string, REQUIRED): The question text shown to the user
 - "type" (string, REQUIRED): One of "text", "radio", or "checkbox"
-- "options" (string array, REQUIRED for radio/checkbox, OMIT for text): 1-3 predefined choices
+- "options" (string array, REQUIRED for radio/checkbox, OMIT for text): 1-5 predefined choices
 - "id" (string, optional): Unique identifier, auto-generated if omitted
 - "required" (boolean, optional): Defaults to true
 - "placeholder" (string, optional): Placeholder for text inputs
@@ -183,7 +183,7 @@ WRONG — Empty options array:
 WRONG — Missing options for radio:
 { "type": "radio", "question": "..." }
 
-WRONG — More than 3 questions or more than 3 options
+WRONG — More than 3 questions or more than 5 options
 
 WRONG — Array with empty object (missing required "question" and "type" fields):
 { "questions": [{}] }

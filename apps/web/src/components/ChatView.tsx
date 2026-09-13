@@ -492,8 +492,13 @@ import {
   updateInputFromForm,
 } from "../routes/-automations.shared";
 import { ChatTranscriptPane } from "./chat/ChatTranscriptPane";
+import { ChatHarnessCheckpointStrip } from "./chat/ChatHarnessCheckpointStrip";
 import { ChatHarnessConsentStrip } from "./chat/ChatHarnessConsentStrip";
 import { ChatHarnessTodosStrip } from "./chat/ChatHarnessTodosStrip";
+import { HarnessBlueprintCard } from "./harness/HarnessBlueprintCard";
+import { HarnessPlanCard } from "./harness/HarnessPlanCard";
+import { HarnessVerifierCard } from "./harness/HarnessVerifierCard";
+import { HarnessVersionsCard } from "./harness/HarnessVersionsCard";
 import { useChatHarnessSocket } from "./chat/useChatHarnessSocket";
 import { useHarnessTurnLive } from "~/harnessStore";
 import { ThreadDetailHydrationState } from "./chat/ThreadDetailHydrationState";
@@ -1897,11 +1902,15 @@ export default function ChatView({
   // Harness socket for the open server thread (session id == thread id): feeds
   // consent ui_prompts into the shared harnessStore so parked approvals render
   // above the composer, and lets Stop cancel the harness turn directly.
-  const chatHarnessSocket = useChatHarnessSocket(isServerThread ? activeThreadId : null);
+  // Subscribe for ANY active thread (draft or server): on a brand-new app
+  // the server thread isn't in the client projection yet when the turn
+  // starts, and gating on isServerThread misses the live ui_prompt
+  // broadcast — the card then appears only after a navigation remount.
+  const chatHarnessSocket = useChatHarnessSocket(activeThreadId);
   // Live-harness-turn signal for the stop control. Scoped to the turn
   // lifecycle — unlike message streaming flags, it cannot latch on when a
   // turn dies without its turn_end (the stuck-mic/stop-square bug).
-  const harnessTurnLive = useHarnessTurnLive(isServerThread ? activeThreadId : null);
+  const harnessTurnLive = useHarnessTurnLive(activeThreadId);
   const activeLatestTurn = activeThread?.latestTurn ?? null;
   // Read once here so memo bodies depend on the turn id instead of the turn object: a
   // `foo?.bar` read inside a memo makes React Compiler infer `foo` as the dependency, which
@@ -11172,11 +11181,22 @@ export default function ChatView({
               {/* Harness turn approvals (tool/MCP consent, questionnaires) park
                   the turn with no orchestration-side approval row — without
                   this they are invisible and the turn reads as hung. */}
-              <ChatHarnessTodosStrip threadId={isServerThread ? activeThreadId : null} />
-              <ChatHarnessConsentStrip
-                threadId={isServerThread ? activeThreadId : null}
-                send={chatHarnessSocket.send}
-              />
+              <ChatHarnessTodosStrip threadId={activeThreadId} />
+              <ChatHarnessConsentStrip threadId={activeThreadId} send={chatHarnessSocket.send} />
+              {/* Plan + blueprint + checkpoint approvals park the turn exactly
+                  like questionnaires — they render here (never above the
+                  header). Read-only tool history projects inline into the
+                  transcript via the mirror instead. */}
+              {activeThreadId ? (
+                <div className="max-h-[32dvh] min-h-0 overflow-y-auto overscroll-contain">
+                  <HarnessPlanCard sessionId={activeThreadId} send={chatHarnessSocket.send} />
+                  <HarnessBlueprintCard sessionId={activeThreadId} send={chatHarnessSocket.send} />
+                  <ChatHarnessCheckpointStrip
+                    threadId={activeThreadId}
+                    send={chatHarnessSocket.send}
+                  />
+                </div>
+              ) : null}
               {/* Pending approvals and AskUserQuestion prompts both render as a detached
                   card floating just above the composer (padding gives the measured gap),
                   instead of a banner fused into the composer surface. An approval takes
@@ -12015,6 +12035,23 @@ export default function ChatView({
                     contentInsetBottomPx={composerTranscriptInsetPx}
                     contentInsetBottomClearancePx={composerOverlayBottomClearancePx}
                   />
+                  {/* Harness history tail: verifier results + versions. Tool
+                      calls project inline into the transcript via the mirror
+                      (<caide-tool> tags → AntigravityToolGroup), so they never
+                      stack above the header. Renders BELOW the header in normal
+                      flow, capped so long histories scroll in place instead of
+                      pushing the composer off-screen. Actionable cards
+                      (prompts, checkpoints, plan, blueprint) live in the
+                      above-composer strip instead. */}
+                  {activeThreadId ? (
+                    <div className="max-h-[30dvh] min-h-0 shrink-0 overflow-y-auto overscroll-contain">
+                      <HarnessVerifierCard sessionId={activeThreadId} />
+                      <HarnessVersionsCard
+                        sessionId={activeThreadId}
+                        send={chatHarnessSocket.send}
+                      />
+                    </div>
+                  ) : null}
                   {isGlobalPaletteOpen ? (
                     <div
                       className="absolute inset-0 z-50 flex items-start justify-center bg-black/20 pt-20 backdrop-blur-sm"

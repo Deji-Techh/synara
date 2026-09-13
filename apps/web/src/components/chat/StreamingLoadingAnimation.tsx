@@ -1,23 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useHarnessStore } from "~/harnessStore";
 
 interface StreamingLoadingAnimationProps {
   variant?: "initial" | "streaming";
 }
 
+// Framework-neutral: these rotate under ANY project (the old list
+// hardcoded Flutter verbs, so a parked website turn claimed to be
+// "generating Flutter code"). When the turn is parked on user input the
+// caller sees the waiting copy instead — busy verbs while awaiting answers
+// read as a hang.
 const INITIAL_VERBS = [
   "thinking",
   "reasoning",
   "exploring codebase",
-  "architecting Flutter UI",
-  "organizing widget tree",
-  "designing Material theme",
+  "architecting UI",
+  "organizing components",
+  "designing theme",
   "planning state model",
   "brainstorming",
 ];
 
 const STREAMING_VERBS = [
-  "generating Flutter code",
-  "crafting widgets",
+  "generating code",
+  "crafting components",
   "assembling UI",
   "wiring controllers",
   "polishing theme",
@@ -103,6 +109,12 @@ export function StreamingLoadingAnimation({
   variant = "streaming",
 }: StreamingLoadingAnimationProps) {
   const verb = useRotatingVerb(variant === "initial" ? INITIAL_VERBS : STREAMING_VERBS);
+  // Parked on user input (questionnaire/consent waiting for answers): say so
+  // instead of rotating busy verbs — the old copy made a parked turn read as
+  // doing work for minutes ("styling layout…" while awaiting taps).
+  const store = useHarnessStore();
+  const activeId = store.activeSessionId;
+  const waitingOnUser = activeId != null && (store.sessions[activeId]?.prompts.length ?? 0) > 0;
 
   return (
     <div className="inline-flex items-center gap-2 py-1 select-none animate-in fade-in duration-300">
@@ -126,7 +138,13 @@ export function StreamingLoadingAnimation({
           />
         </div>
       </div>
-      <ScrambleVerb verb={verb} />
+      {waitingOnUser ? (
+        <span className="inline-block text-xs font-medium text-muted-foreground/80 tracking-wide select-none">
+          Waiting for your answers…
+        </span>
+      ) : (
+        <ScrambleVerb verb={verb} />
+      )}
     </div>
   );
 }

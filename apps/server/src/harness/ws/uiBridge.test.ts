@@ -41,7 +41,11 @@ function fakeServer() {
 }
 
 describe("ui bridge delivery (m3)", () => {
-  it("emits plan/db/integration prompts as typed events", () => {
+  // Delivery persists before broadcasting (subscribe→replay race), so every
+  // assertion on broadcast content flushes the async delivery first.
+  const flushDelivery = () => new Promise((r) => setTimeout(r, 25));
+
+  it("emits plan/db/integration prompts as typed events", async () => {
     const { sent, server } = fakeServer();
     const bridge = attachUiBridge(server);
     try {
@@ -49,14 +53,20 @@ describe("ui bridge delivery (m3)", () => {
       getPlanTransport()?.sendPlanUpdate("s", { title: "T", summary: "S", plan: "P" });
       getPlanTransport()?.sendPlanExit("s");
       void requestDatabasePanel("s", "execute_sql");
-      expect(sent.map((e) => e.type)).toEqual([
-        "ui_prompt",
-        "plan_update",
-        "plan_exit",
-        "ui_reveal",
-      ]);
-      expect(sent[0]).toMatchObject({ kind: "questionnaire", requestId: "r1" });
-      expect(sent[3]).toMatchObject({ pane: "database", reason: "execute_sql" });
+      await flushDelivery();
+      // Order-insensitive: prompt delivery persists before broadcasting, so
+      // the async ui_prompt lands after the sync plan/reveal broadcasts.
+      expect(sent.map((e) => e.type).sort()).toEqual(
+        ["ui_prompt", "plan_update", "plan_exit", "ui_reveal"].sort(),
+      );
+      expect(sent.find((e) => e.type === "ui_prompt")).toMatchObject({
+        kind: "questionnaire",
+        requestId: "r1",
+      });
+      expect(sent.find((e) => e.type === "ui_reveal")).toMatchObject({
+        pane: "database",
+        reason: "execute_sql",
+      });
       void bridge;
     } finally {
       bridge.detach();
@@ -108,6 +118,7 @@ describe("ui bridge delivery (m3)", () => {
       const ids = withdrawSessionPrompts(server, "s-cancel");
       expect(ids).toEqual(["r-cancel"]);
       await expect(waiting).resolves.toBeNull();
+      await flushDelivery();
       expect(sent).toHaveLength(1);
       expect(sent[0]).toMatchObject({
         type: "ui_prompt_withdraw",

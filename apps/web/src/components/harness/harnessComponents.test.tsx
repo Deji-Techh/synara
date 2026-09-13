@@ -68,6 +68,18 @@ describe("harness components (m3)", () => {
     harnessStore.clearSession("s-hc");
   });
 
+  it("disables questionnaire submit until at least one answer exists", () => {
+    seedPrompts();
+    // Static render = no answers yet: Submit must be disabled so empty
+    // submits (which the model reads as dismissal and re-asks) are impossible.
+    const markup = renderToStaticMarkup(<HarnessPrompts sessionId="s-hc" send={send} />);
+    expect(markup).toContain("Submit answers");
+    expect(markup).toMatch(
+      /disabled[^>]*>Submit answers|Submit answers[^<]*<\/button[^>]*disabled/,
+    );
+    harnessStore.clearSession("s-hc");
+  });
+
   it("renders the plan card and the continue gate", () => {
     harnessStore.clearSession("s-hc");
     harnessStore.handleEvent({
@@ -152,7 +164,8 @@ describe("harness components (m3)", () => {
     harnessStore.clearSession("s-hc");
   });
 
-  it("renders the todos, verifier, and versions cards from store state", () => {    harnessStore.clearSession("s-hc");
+  it("renders the todos, verifier, and versions cards from store state", () => {
+    harnessStore.clearSession("s-hc");
     harnessStore.handleEvent({
       type: "todos_update",
       sessionId: "s-hc",
@@ -198,11 +211,19 @@ describe("harness components (m3)", () => {
     harnessStore.clearSession("s-hc");
   });
 
-  it("renders todo file refs and questionnaire why text", () => {    harnessStore.clearSession("s-hc");
+  it("renders todo file refs and questionnaire why text", () => {
+    harnessStore.clearSession("s-hc");
     harnessStore.handleEvent({
       type: "todos_update",
       sessionId: "s-hc",
-      todos: [{ id: "1", content: "Build home", status: "in_progress", ref: "src/screens/HomeScreen.tsx" }],
+      todos: [
+        {
+          id: "1",
+          content: "Build home",
+          status: "in_progress",
+          ref: "src/screens/HomeScreen.tsx",
+        },
+      ],
     });
     const todos = renderToStaticMarkup(<HarnessTodosCard sessionId="s-hc" />);
     expect(todos).toContain("HomeScreen.tsx");
@@ -214,7 +235,11 @@ describe("harness components (m3)", () => {
       sessionId: "s-hc",
       requestId: "r-why",
       kind: "questionnaire",
-      payload: { questions: [{ id: "q1", question: "Style?", type: "radio", options: ["A"], why: "Locks the palette" }] },
+      payload: {
+        questions: [
+          { id: "q1", question: "Style?", type: "radio", options: ["A"], why: "Locks the palette" },
+        ],
+      },
     });
     const prompts = renderToStaticMarkup(<HarnessPrompts sessionId="s-hc" send={send} />);
     expect(prompts).toContain("Locks the palette");
@@ -236,9 +261,28 @@ describe("harness components (m3)", () => {
     // The strip no longer renders token text (thread transcript owns it),
     // but tool cards still render around it.
     harnessStore.clearSession("s-hc");
-    harnessStore.handleEvent({ type: "token", sessionId: "s-hc", content: "Building the full marketplace — wiring home first." });
-    harnessStore.handleEvent({ type: "tool_call", sessionId: "s-hc", id: "c1", name: "read_file", args: {}, status: "started" });
-    harnessStore.handleEvent({ type: "tool_call", sessionId: "s-hc", id: "c1", name: "read_file", args: {}, status: "completed", result: "ok" });
+    harnessStore.handleEvent({
+      type: "token",
+      sessionId: "s-hc",
+      content: "Building the full marketplace — wiring home first.",
+    });
+    harnessStore.handleEvent({
+      type: "tool_call",
+      sessionId: "s-hc",
+      id: "c1",
+      name: "read_file",
+      args: {},
+      status: "started",
+    });
+    harnessStore.handleEvent({
+      type: "tool_call",
+      sessionId: "s-hc",
+      id: "c1",
+      name: "read_file",
+      args: {},
+      status: "completed",
+      result: "ok",
+    });
     const markup = renderToStaticMarkup(<HarnessTranscript sessionId="s-hc" send={send} />);
     expect(markup).not.toContain("Building the full marketplace");
     expect(markup).toContain("Read");

@@ -261,11 +261,13 @@ export class TurnGateway {
     const broadcast = (event: HarnessEvent): void => {
       extra?.onEvent?.(event);
       this.ws?.broadcastToSession(request.sessionId, event);
-      // Mirror user/assistant text into the thread transcript (normal-chat
-      // look). Mirror failures must never break the turn or the socket fan-out.
+      // Mirror user/assistant text + tool calls into the thread transcript
+      // (normal-chat look with inline Antigravity tool groups). Mirror
+      // failures must never break the turn or the socket fan-out.
       if (
         event.type === "turn_start" ||
         event.type === "token" ||
+        event.type === "tool_call" ||
         event.type === "error" ||
         event.type === "turn_end"
       ) {

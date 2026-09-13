@@ -34,14 +34,23 @@ export function HarnessPlanCard(props: { sessionId: string; send: SendFn }) {
 
   return (
     <div className="my-2 select-none">
-      <CaideCard accent="info" onClick={() => setOpen((v) => !v)} isExpanded={open}>
-        <CaideCardHeader accent="info">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <CaideBadge accent="info">{plan.exited ? "Plan accepted" : "Plan"}</CaideBadge>
-            <span className="truncate text-[12px] font-semibold tracking-tight">{plan.title}</span>
-          </div>
-          <DisclosureChevron open={open} className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-        </CaideCardHeader>
+      {/* Toggle lives on the header ONLY: body clicks (buttons, textarea)
+          must never collapse the card mid-interaction. */}
+      <CaideCard accent="info" isExpanded={open}>
+        <div onClick={() => setOpen((v) => !v)} className="cursor-pointer">
+          <CaideCardHeader accent="info">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <CaideBadge accent="info">{plan.exited ? "Plan accepted" : "Plan"}</CaideBadge>
+              <span className="truncate text-[12px] font-semibold tracking-tight">
+                {plan.title}
+              </span>
+            </div>
+            <DisclosureChevron
+              open={open}
+              className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70"
+            />
+          </CaideCardHeader>
+        </div>
         <CaideLazyContent open={open}>
           <div className="flex flex-col gap-2.5 overflow-hidden rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5">
             <p className="text-xs text-foreground/90">{plan.summary}</p>
@@ -53,7 +62,10 @@ export function HarnessPlanCard(props: { sessionId: string; send: SendFn }) {
                 <span className="text-[11px] text-muted-foreground">
                   Continue in Agent mode to build this plan?
                 </span>
-                <Button size="xs" onClick={() => steer("Begin implementation of the accepted plan now.")}>
+                <Button
+                  size="xs"
+                  onClick={() => steer("Begin implementation of the accepted plan now.")}
+                >
                   Start building
                 </Button>
               </div>
@@ -63,7 +75,10 @@ export function HarnessPlanCard(props: { sessionId: string; send: SendFn }) {
                   <Button size="xs" variant="outline" onClick={() => setChangeOpen((v) => !v)}>
                     Request changes
                   </Button>
-                  <Button size="xs" onClick={() => steer("The plan looks good — proceed to implementation.")}>
+                  <Button
+                    size="xs"
+                    onClick={() => steer("The plan looks good — proceed to implementation.")}
+                  >
                     Looks good — continue
                   </Button>
                 </div>

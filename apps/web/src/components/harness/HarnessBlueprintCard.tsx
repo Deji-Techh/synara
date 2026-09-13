@@ -58,19 +58,23 @@ export function HarnessBlueprintCard(props: { sessionId: string; send: SendFn })
 
   return (
     <div className="my-2 select-none">
-      <CaideCard accent="info" onClick={() => setOpen((v) => !v)} isExpanded={open}>
-        <CaideCardHeader accent="info">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <CaideBadge accent="info">Blueprint</CaideBadge>
-            <span className="truncate text-[12px] font-semibold tracking-tight">
-              {blueprint.appName}
-            </span>
-          </div>
-          <DisclosureChevron
-            open={open}
-            className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70"
-          />
-        </CaideCardHeader>
+      {/* Toggle lives on the header ONLY: body clicks (buttons, textarea)
+          must never collapse the card mid-interaction. */}
+      <CaideCard accent="info" isExpanded={open}>
+        <div onClick={() => setOpen((v) => !v)} className="cursor-pointer">
+          <CaideCardHeader accent="info">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <CaideBadge accent="info">Blueprint</CaideBadge>
+              <span className="truncate text-[12px] font-semibold tracking-tight">
+                {blueprint.appName}
+              </span>
+            </div>
+            <DisclosureChevron
+              open={open}
+              className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70"
+            />
+          </CaideCardHeader>
+        </div>
         <CaideLazyContent open={open}>
           <div className="flex flex-col gap-2 overflow-hidden rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5">
             <CaideAppBlueprintCard

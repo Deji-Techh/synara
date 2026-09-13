@@ -10,11 +10,7 @@
 import { useState } from "react";
 import { IconCircle, IconCircleCheck, IconListCheck, IconLoader2 } from "@tabler/icons-react";
 import { useHarnessStore, type TodoEntry } from "~/harnessStore";
-import {
-  CaideBadge,
-  CaideCard,
-  CaideCardHeader,
-} from "~/components/chat/CaideCardPrimitives";
+import { CaideBadge, CaideCard, CaideCardHeader } from "~/components/chat/CaideCardPrimitives";
 import { DisclosureChevron } from "~/components/ui/DisclosureChevron";
 import { DisclosureRegion } from "~/components/ui/DisclosureRegion";
 import { useWorkspaceFileOpener } from "~/lib/workspaceFileOpener";
@@ -25,7 +21,12 @@ function StatusIcon(props: { status: TodoEntry["status"]; className?: string }) 
     return <IconCircleCheck size={14} className="shrink-0 text-success" />;
   }
   if (props.status === "in_progress") {
-    return <IconLoader2 size={14} className={`shrink-0 animate-spin text-info ${props.className ?? ""}`} />;
+    return (
+      <IconLoader2
+        size={14}
+        className={`shrink-0 animate-spin text-info ${props.className ?? ""}`}
+      />
+    );
   }
   return <IconCircle size={14} className="shrink-0 text-muted-foreground" />;
 }
@@ -45,43 +46,52 @@ export function HarnessTodosCard(props: { sessionId: string }) {
 
   return (
     <div className="my-2 select-none">
-      <CaideCard accent={allDone ? "success" : "info"} onClick={() => setOpen((v) => !v)} isExpanded={open}>
-        <CaideCardHeader accent={allDone ? "success" : "info"}>
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            {open ? (
-              <>
-                <IconListCheck size={14} className="shrink-0 text-muted-foreground" />
-                <span className="text-[12px] font-semibold tracking-tight">
-                  {completed} of {total} to-dos completed
-                </span>
-              </>
-            ) : inProgress ? (
-              <>
-                <StatusIcon status="in_progress" />
-                <span className="truncate text-[12px] font-semibold tracking-tight">{inProgress.content}</span>
-                <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
-                  ({completed}/{total})
-                </span>
-              </>
-            ) : (
-              <>
-                {allDone ? (
-                  <IconCircleCheck size={14} className="shrink-0 text-success" />
-                ) : (
-                  <IconCircle size={14} className="shrink-0 text-muted-foreground" />
-                )}
-                <span className="text-[12px] text-muted-foreground">
-                  {allDone ? "All tasks completed" : "No task in progress"}
-                </span>
-                <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
-                  ({completed}/{total})
-                </span>
-              </>
-            )}
-          </div>
-          <CaideBadge accent={allDone ? "success" : "info"}>To-dos</CaideBadge>
-          <DisclosureChevron open={open} className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-        </CaideCardHeader>
+      {/* Toggle lives on the header ONLY: body clicks (file-ref buttons)
+          must never collapse the card. */}
+      <CaideCard accent={allDone ? "success" : "info"} isExpanded={open}>
+        <div onClick={() => setOpen((v) => !v)} className="cursor-pointer">
+          <CaideCardHeader accent={allDone ? "success" : "info"}>
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              {open ? (
+                <>
+                  <IconListCheck size={14} className="shrink-0 text-muted-foreground" />
+                  <span className="text-[12px] font-semibold tracking-tight">
+                    {completed} of {total} to-dos completed
+                  </span>
+                </>
+              ) : inProgress ? (
+                <>
+                  <StatusIcon status="in_progress" />
+                  <span className="truncate text-[12px] font-semibold tracking-tight">
+                    {inProgress.content}
+                  </span>
+                  <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                    ({completed}/{total})
+                  </span>
+                </>
+              ) : (
+                <>
+                  {allDone ? (
+                    <IconCircleCheck size={14} className="shrink-0 text-success" />
+                  ) : (
+                    <IconCircle size={14} className="shrink-0 text-muted-foreground" />
+                  )}
+                  <span className="text-[12px] text-muted-foreground">
+                    {allDone ? "All tasks completed" : "No task in progress"}
+                  </span>
+                  <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                    ({completed}/{total})
+                  </span>
+                </>
+              )}
+            </div>
+            <CaideBadge accent={allDone ? "success" : "info"}>To-dos</CaideBadge>
+            <DisclosureChevron
+              open={open}
+              className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70"
+            />
+          </CaideCardHeader>
+        </div>
         <div
           className="h-0.5 w-full overflow-hidden bg-muted"
           role="progressbar"

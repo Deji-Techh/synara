@@ -1,15 +1,15 @@
 // FILE: HarnessTranscript.tsx
 // Purpose: Rich extras for harness turns — tool cards, checkpoints, and
-// errors in arrival order from the store timeline. User bubbles + assistant
-// text live in the thread transcript (the server mirrors harness turns
-// there), so this strip skips token/user entries to avoid double surfaces.
+// errors in arrival order from the store timeline. NOTE: no longer mounted
+// in chat (tool calls project inline via the transcript mirror as
+// <caide-tool> tags; checkpoints moved to the above-composer strip) — kept
+// for the collapseRepetitiveLines/narrationStem unit exports + tests until
+// the transcript-tool utilities are re-homed. Do NOT remount above the chat
+// header (nothing renders above the header by product rule).
 
 import { useMemo } from "react";
 import { CheckpointCard } from "~/components/CheckpointCard";
-import {
-  CaideClaudeToolCard,
-  type ToolCardStatus,
-} from "~/components/chat/CaideClaudeToolCard";
+import { CaideClaudeToolCard, type ToolCardStatus } from "~/components/chat/CaideClaudeToolCard";
 import { useHarnessStore, type TimelineEntry } from "~/harnessStore";
 
 type SendFn = (message: Record<string, unknown>) => void;
@@ -24,14 +24,14 @@ function stringifyAttributes(args: unknown): Record<string, string> {
   if (!args || typeof args !== "object") return {};
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(args as Record<string, unknown>)) {
-    out[key] = typeof value === "string" ? value : JSON.stringify(value) ?? "";
+    out[key] = typeof value === "string" ? value : (JSON.stringify(value) ?? "");
   }
   return out;
 }
 
 function stringifyResult(result: unknown): string {
   if (result === undefined || result === null) return "";
-  return typeof result === "string" ? result : JSON.stringify(result, null, 2) ?? "";
+  return typeof result === "string" ? result : (JSON.stringify(result, null, 2) ?? "");
 }
 
 interface RenderBlock {
@@ -101,14 +101,17 @@ export function HarnessTranscript(props: { sessionId: string; send: SendFn }) {
       if (entry.kind === "token" || entry.kind === "user") continue;
       out.push({ key: `${entry.kind}-${entry.seq}`, entry });
     }
-    return out;
+    // Cap the rendered tail: long sessions accumulate hundreds of tool rows.
+    // Newest-first is wrong here (live activity must sit at the bottom where
+    // the eye already is), so keep the LAST N in chronological order.
+    const MAX_TAIL_BLOCKS = 24;
+    return out.length > MAX_TAIL_BLOCKS ? out.slice(out.length - MAX_TAIL_BLOCKS) : out;
   }, [session]);
 
   if (!session || blocks.length === 0) return null;
 
   const usage = session.lastUsage;
-  const formatTokens = (n: number): string =>
-    n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
+  const formatTokens = (n: number): string => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`);
 
   return (
     <div className="flex flex-col">
@@ -135,7 +138,9 @@ export function HarnessTranscript(props: { sessionId: string; send: SendFn }) {
         }
         if (block.entry.kind === "checkpoint") {
           const checkpoint =
-            block.entry.id && session.checkpoint?.id === block.entry.id ? session.checkpoint : undefined;
+            block.entry.id && session.checkpoint?.id === block.entry.id
+              ? session.checkpoint
+              : undefined;
           if (!checkpoint) return null;
           return (
             <CheckpointCard

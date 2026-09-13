@@ -29,16 +29,28 @@ function Shell(props: {
   const [open, setOpen] = useState(true);
   return (
     <div className="my-2 select-none">
-      <CaideCard accent={props.accent} onClick={() => setOpen((v) => !v)} isExpanded={open}>
-        <CaideCardHeader accent={props.accent}>
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <CaideBadge accent={props.accent}>{props.badge}</CaideBadge>
-            <span className="truncate text-[12px] font-semibold tracking-tight">{props.title}</span>
-          </div>
-          <DisclosureChevron open={open} className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-        </CaideCardHeader>
+      {/* Toggle lives on the header ONLY: body clicks (options, inputs,
+          buttons) must never collapse the card mid-answer. */}
+      <CaideCard accent={props.accent} isExpanded={open}>
+        <div onClick={() => setOpen((v) => !v)} className="cursor-pointer">
+          <CaideCardHeader accent={props.accent}>
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <CaideBadge accent={props.accent}>{props.badge}</CaideBadge>
+              <span className="truncate text-[12px] font-semibold tracking-tight">
+                {props.title}
+              </span>
+            </div>
+            <DisclosureChevron
+              open={open}
+              className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70"
+            />
+          </CaideCardHeader>
+        </div>
         <CaideLazyContent open={open}>
-          <div className="overflow-hidden rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5">
+          <div
+            className="overflow-hidden rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5"
+            onClick={(e) => e.stopPropagation()}
+          >
             {props.children}
           </div>
         </CaideLazyContent>
@@ -48,13 +60,33 @@ function Shell(props: {
 }
 
 function QuestionnaireCard(props: { sessionId: string; entry: UiPromptEntry; send: SendFn }) {
-  const questions = (props.entry.payload as { questions?: Array<{ id?: string; question: string; type: string; options?: string[]; placeholder?: string; why?: string }> })?.questions ?? [];
+  const questions =
+    (
+      props.entry.payload as {
+        questions?: Array<{
+          id?: string;
+          question: string;
+          type: string;
+          options?: string[];
+          placeholder?: string;
+          why?: string;
+        }>;
+      }
+    )?.questions ?? [];
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [done, setDone] = useState(false);
   if (done) return null;
 
   const setOne = (id: string, value: string | string[]) =>
     setAnswers((prev) => ({ ...prev, [id]: value }));
+
+  // Empty submits resolve as "(no answer)" everywhere, which the model reads
+  // as a dismissal and then re-asks — the submit→hang→re-ask loop. Require at
+  // least one answer; Dismiss stays the explicit skip path.
+  const answeredCount = questions.filter((q, i) => {
+    const v = answers[q.id ?? `q${i}`];
+    return Array.isArray(v) ? v.length > 0 : typeof v === "string" && v.trim().length > 0;
+  }).length;
 
   const submit = () => {
     const flat: Record<string, string> = {};
@@ -96,7 +128,10 @@ function QuestionnaireCard(props: { sessionId: string; entry: UiPromptEntry; sen
                         onClick={() => {
                           if (q.type === "checkbox") {
                             const list = Array.isArray(current) ? current : [];
-                            setOne(id, list.includes(opt) ? list.filter((x) => x !== opt) : [...list, opt]);
+                            setOne(
+                              id,
+                              list.includes(opt) ? list.filter((x) => x !== opt) : [...list, opt],
+                            );
                           } else {
                             setOne(id, opt);
                           }
@@ -121,7 +156,16 @@ function QuestionnaireCard(props: { sessionId: string; entry: UiPromptEntry; sen
           <Button size="xs" variant="ghost" onClick={dismiss}>
             Dismiss
           </Button>
-          <Button size="xs" onClick={submit}>
+          <Button
+            size="xs"
+            onClick={submit}
+            disabled={answeredCount === 0}
+            title={
+              answeredCount === 0
+                ? "Answer at least one question first (or Dismiss to skip)"
+                : undefined
+            }
+          >
             Submit answers
           </Button>
         </div>
@@ -131,7 +175,12 @@ function QuestionnaireCard(props: { sessionId: string; entry: UiPromptEntry; sen
 }
 
 function EnvVarsCard(props: { sessionId: string; entry: UiPromptEntry; send: SendFn }) {
-  const vars = (props.entry.payload as { vars?: Array<{ key: string; description?: string; instructionsUrl?: string }> })?.vars ?? [];
+  const vars =
+    (
+      props.entry.payload as {
+        vars?: Array<{ key: string; description?: string; instructionsUrl?: string }>;
+      }
+    )?.vars ?? [];
   const [values, setValues] = useState<Record<string, string>>({});
   const [done, setDone] = useState(false);
   if (done) return null;
@@ -153,7 +202,9 @@ function EnvVarsCard(props: { sessionId: string; entry: UiPromptEntry; send: Sen
         {vars.map((v) => (
           <div key={v.key} className="flex flex-col gap-1">
             <span className="font-mono text-[11px] font-medium">{v.key}</span>
-            {v.description ? <span className="text-[11px] text-muted-foreground">{v.description}</span> : null}
+            {v.description ? (
+              <span className="text-[11px] text-muted-foreground">{v.description}</span>
+            ) : null}
             <Input
               type="password"
               placeholder={v.key}
@@ -187,7 +238,12 @@ function IntegrationCard(props: { sessionId: string; entry: UiPromptEntry; send:
   if (done) return null;
 
   const submit = () => {
-    answerUiPrompt(props.send, props.entry.requestId, { provider, databaseUrl, projectId, managementToken });
+    answerUiPrompt(props.send, props.entry.requestId, {
+      provider,
+      databaseUrl,
+      projectId,
+      managementToken,
+    });
     harnessStore.resolvePrompt(props.sessionId, props.entry.requestId);
     setDone(true);
   };
@@ -272,11 +328,15 @@ function ConsentCard(props: {
     <Shell
       badge={props.mcp ? "MCP" : "Approval"}
       accent="warning"
-      title={props.mcp ? `${payload.serverName} → ${payload.toolName}` : `Allow ${payload.toolName}?`}
+      title={
+        props.mcp ? `${payload.serverName} → ${payload.toolName}` : `Allow ${payload.toolName}?`
+      }
     >
       <div className="flex flex-col gap-2">
         {payload.autoApproveReason ? (
-          <span className="text-[11px] text-emerald-600 dark:text-emerald-400">{payload.autoApproveReason}</span>
+          <span className="text-[11px] text-emerald-600 dark:text-emerald-400">
+            {payload.autoApproveReason}
+          </span>
         ) : null}
         {payload.toolDescription ? (
           <span className="text-[11px] text-muted-foreground">{payload.toolDescription}</span>
@@ -311,18 +371,51 @@ export function HarnessPrompts(props: { sessionId: string; send: SendFn }) {
       {prompts.map((entry) => {
         switch (entry.kind) {
           case "questionnaire":
-            return <QuestionnaireCard key={entry.requestId} sessionId={props.sessionId} entry={entry} send={props.send} />;
+            return (
+              <QuestionnaireCard
+                key={entry.requestId}
+                sessionId={props.sessionId}
+                entry={entry}
+                send={props.send}
+              />
+            );
           case "env-vars":
-            return <EnvVarsCard key={entry.requestId} sessionId={props.sessionId} entry={entry} send={props.send} />;
+            return (
+              <EnvVarsCard
+                key={entry.requestId}
+                sessionId={props.sessionId}
+                entry={entry}
+                send={props.send}
+              />
+            );
           case "integration":
-            return <IntegrationCard key={entry.requestId} sessionId={props.sessionId} entry={entry} send={props.send} />;
+            return (
+              <IntegrationCard
+                key={entry.requestId}
+                sessionId={props.sessionId}
+                entry={entry}
+                send={props.send}
+              />
+            );
           case "mcp-consent":
             return (
-              <ConsentCard key={entry.requestId} sessionId={props.sessionId} entry={entry} send={props.send} mcp />
+              <ConsentCard
+                key={entry.requestId}
+                sessionId={props.sessionId}
+                entry={entry}
+                send={props.send}
+                mcp
+              />
             );
           case "tool-consent":
             return (
-              <ConsentCard key={entry.requestId} sessionId={props.sessionId} entry={entry} send={props.send} mcp={false} />
+              <ConsentCard
+                key={entry.requestId}
+                sessionId={props.sessionId}
+                entry={entry}
+                send={props.send}
+                mcp={false}
+              />
             );
           default:
             return null;

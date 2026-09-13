@@ -39,15 +39,22 @@ import { linkAppDatabase } from "../../dyad/db/connections.ts";
 import { setBlockchainNetworks, type BlockchainNetwork } from "../../dyad/web3/networks.ts";
 import type { HarnessHub } from "./hub.ts";
 
-function send(server: HarnessHub, sessionId: string, event: HarnessEvent): void {
-  server.broadcastToSession(sessionId, event);
+async function send(server: HarnessHub, sessionId: string, event: HarnessEvent): Promise<void> {
   // Persist prompts (and only prompts — tokens/turns already persist via the
   // runner) so reconnect replay rebuilds parked questionnaires/consents.
   // Withdrawals persist too so replay drops superseded/cancelled cards.
   // Answered prompts are filtered at replay time (see hub.replaySession).
+  // Persist BEFORE broadcast: a subscribe→replay landing between a live
+  // broadcast and its async write would otherwise miss the prompt entirely,
+  // and nothing re-triggers until the next remount.
   if (event.type === "ui_prompt" || event.type === "ui_prompt_withdraw") {
-    void appendHarnessEvent(event).catch(() => undefined);
+    try {
+      await appendHarnessEvent(event);
+    } catch {
+      // logging must never break a turn
+    }
   }
+  server.broadcastToSession(sessionId, event);
 }
 
 /**
@@ -63,7 +70,7 @@ export function withdrawSessionPrompts(server: HarnessHub, sessionId: string): s
     ...clearPendingMcpConsentsForSession(sessionId),
   ];
   for (const requestId of ids) {
-    send(server, sessionId, { type: "ui_prompt_withdraw", sessionId, requestId });
+    void send(server, sessionId, { type: "ui_prompt_withdraw", sessionId, requestId });
   }
   return ids;
 }
@@ -78,13 +85,7 @@ async function settlePrompt(
   sessionId: string,
   requestId: string,
 ): Promise<void> {
-  const event = { type: "ui_prompt_withdraw", sessionId, requestId } as const;
-  try {
-    await appendHarnessEvent(event);
-  } catch {
-    // logging must never break a turn
-  }
-  server.broadcastToSession(sessionId, event);
+  await send(server, sessionId, { type: "ui_prompt_withdraw", sessionId, requestId });
 }
 
 /**
@@ -99,7 +100,7 @@ export function attachUiBridge(server: HarnessHub): {
 } {
   setPlanTransport({
     sendQuestionnaire: (sessionId, requestId, questions) =>
-      send(server, sessionId, {
+      void send(server, sessionId, {
         type: "ui_prompt",
         sessionId,
         requestId,
@@ -107,7 +108,7 @@ export function attachUiBridge(server: HarnessHub): {
         payload: { questions },
       }),
     sendEnvVarRequest: (sessionId, requestId, vars) =>
-      send(server, sessionId, {
+      void send(server, sessionId, {
         type: "ui_prompt",
         sessionId,
         requestId,
@@ -120,7 +121,7 @@ export function attachUiBridge(server: HarnessHub): {
     sendTodosUpdate: (sessionId, todos) =>
       send(server, sessionId, { type: "todos_update", sessionId, todos }),
     sendPromptWithdraw: (sessionId, requestId) =>
-      send(server, sessionId, { type: "ui_prompt_withdraw", sessionId, requestId }),
+      void send(server, sessionId, { type: "ui_prompt_withdraw", sessionId, requestId }),
   });
 
   setDbPanelTransport({
@@ -145,7 +146,7 @@ export function attachUiBridge(server: HarnessHub): {
   });
 
   const requestConsent: ConsentRequestFn = async (req) => {
-    send(server, req.sessionId, {
+    void send(server, req.sessionId, {
       type: "ui_prompt",
       sessionId: req.sessionId,
       requestId: req.requestId,
@@ -162,7 +163,7 @@ export function attachUiBridge(server: HarnessHub): {
   };
 
   const requestMcpConsent: McpConsentRequestFn = async (req) => {
-    send(server, req.sessionId, {
+    void send(server, req.sessionId, {
       type: "ui_prompt",
       sessionId: req.sessionId,
       requestId: req.requestId,
