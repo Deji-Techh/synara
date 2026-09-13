@@ -11,7 +11,7 @@ import type { HarnessEvent } from "@caide/contracts";
 import { resolveProviderDefaultModel } from "../../dyad/providers/index.ts";
 import { Inbox } from "../inbox/index.ts";
 import { HarnessHub } from "../ws/hub.ts";
-import { attachUiBridge } from "../ws/uiBridge.ts";
+import { attachUiBridge, withdrawSessionPrompts } from "../ws/uiBridge.ts";
 import { approveBlueprint, type AppBlueprint } from "../../dyad/plan/blueprintStore.ts";
 import { sharedProviderSecrets } from "../../dyad/providers/secrets.ts";
 import { PROVIDERS, validateProviderSettings } from "../../dyad/providers/providers.ts";
@@ -58,7 +58,8 @@ export function getTranscriptMirror(): TranscriptMirror | null {
   return transcriptMirror;
 }
 
-export class TurnGateway {  private runner = new CaideRunner();
+export class TurnGateway {
+  private runner = new CaideRunner();
   private inboxes = new Map<string, Inbox>();
   private ws: HarnessHub | null = null;
   private uiDetach: (() => void) | null = null;
@@ -124,8 +125,19 @@ export class TurnGateway {  private runner = new CaideRunner();
           secrets.setProvider(providerId, entry);
         }
       }
-      if (defaults && (defaults.providerId !== undefined || defaults.modelId !== undefined || defaults.imageProviderId !== undefined || defaults.imageModelId !== undefined)) {
-        secrets.setDefaults(defaults.providerId, defaults.modelId, defaults.imageProviderId, defaults.imageModelId);
+      if (
+        defaults &&
+        (defaults.providerId !== undefined ||
+          defaults.modelId !== undefined ||
+          defaults.imageProviderId !== undefined ||
+          defaults.imageModelId !== undefined)
+      ) {
+        secrets.setDefaults(
+          defaults.providerId,
+          defaults.modelId,
+          defaults.imageProviderId,
+          defaults.imageModelId,
+        );
       }
       this.sendProviderState(
         server,
@@ -139,7 +151,8 @@ export class TurnGateway {  private runner = new CaideRunner();
         const secrets = sharedProviderSecrets();
         const stored = secrets.read().providers[providerId] ?? {};
         const apiKey = candidate?.apiKey?.trim() || stored.apiKey;
-        const baseUrl = candidate?.apiBaseUrl?.trim() || candidate?.baseUrl?.trim() || stored.apiBaseUrl;
+        const baseUrl =
+          candidate?.apiBaseUrl?.trim() || candidate?.baseUrl?.trim() || stored.apiBaseUrl;
         const result = await testProviderConnection({
           providerId,
           apiKey,
@@ -152,6 +165,10 @@ export class TurnGateway {  private runner = new CaideRunner();
       })();
     });
     server.onCancel((sessionId, reason) => {
+      // Withdraw parked questionnaire/env cards first (captures the live
+      // requestIds), then cancel the turn — runner.cancel re-clears as a
+      // no-op for non-WS paths.
+      withdrawSessionPrompts(server, sessionId);
       this.runner.cancel(sessionId, reason ?? "cancelled");
     });
     server.onVersionsList((sessionId) => {
@@ -163,7 +180,11 @@ export class TurnGateway {  private runner = new CaideRunner();
           server.broadcastToSession(sessionId, {
             type: "versions_state",
             sessionId,
-            versions: versions.map((v) => ({ hash: v.hash, message: v.message, createdAt: v.createdAt })),
+            versions: versions.map((v) => ({
+              hash: v.hash,
+              message: v.message,
+              createdAt: v.createdAt,
+            })),
           });
         } catch {
           // listing never fails the session
@@ -180,7 +201,11 @@ export class TurnGateway {  private runner = new CaideRunner();
           server.broadcastToSession(sessionId, {
             type: "versions_state",
             sessionId,
-            versions: versions.map((v) => ({ hash: v.hash, message: v.message, createdAt: v.createdAt })),
+            versions: versions.map((v) => ({
+              hash: v.hash,
+              message: v.message,
+              createdAt: v.createdAt,
+            })),
           });
         } catch (err) {
           server.broadcastToSession(sessionId, {
@@ -195,7 +220,10 @@ export class TurnGateway {  private runner = new CaideRunner();
     });
     server.onBlueprintResponse((sessionId, approved, blueprint, feedback) => {
       if (approved) {
-        const stored = approveBlueprint(sessionId, (blueprint ?? undefined) as AppBlueprint | undefined);
+        const stored = approveBlueprint(
+          sessionId,
+          (blueprint ?? undefined) as AppBlueprint | undefined,
+        );
         const name = stored?.appName ?? "the app";
         this.getInbox(sessionId).steer(
           `The app blueprint for "${name}" has been approved. Proceed with implementation using it to guide file creation, design tokens, and visual assets.`,
@@ -226,10 +254,7 @@ export class TurnGateway {  private runner = new CaideRunner();
   }
 
   /** Start a turn; every event also broadcasts to WS subscribers. */
-  async startTurn(
-    request: GatewayTurnRequest,
-    extra?: Partial<StartTurnInput>,
-  ): Promise<string> {
+  async startTurn(request: GatewayTurnRequest, extra?: Partial<StartTurnInput>): Promise<string> {
     const resolved = resolveTurnProviders(request);
     noteSessionApp(request.sessionId, request.appPath);
     const inbox = this.getInbox(request.sessionId);
@@ -270,6 +295,7 @@ export class TurnGateway {  private runner = new CaideRunner();
 
   cancelTurn(sessionId: string, cause?: string): void {
     const live = this.runner.hasLiveTurn(sessionId);
+    if (this.ws) withdrawSessionPrompts(this.ws, sessionId);
     this.runner.cancel(sessionId, cause);
     if (!live) {
       // Nothing running (e.g. stale client state after a restart mid-turn):
@@ -303,7 +329,9 @@ export class TurnGateway {  private runner = new CaideRunner();
       providers: view.providers,
       ...(view.defaultProviderId ? { defaultProviderId: view.defaultProviderId } : {}),
       ...(view.defaultModelId ? { defaultModelId: view.defaultModelId } : {}),
-      ...(view.defaultImageProviderId ? { defaultImageProviderId: view.defaultImageProviderId } : {}),
+      ...(view.defaultImageProviderId
+        ? { defaultImageProviderId: view.defaultImageProviderId }
+        : {}),
       ...(view.defaultImageModelId ? { defaultImageModelId: view.defaultImageModelId } : {}),
       ...(tests ? { tests } : {}),
     });

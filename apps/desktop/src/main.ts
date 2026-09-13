@@ -1035,6 +1035,7 @@ function resolveEmbeddedCommitHash(): string | null {
 }
 
 declare const __CAIDE_WINDOWS_UPDATER_PUBLISHER__: string;
+declare const __CAIDE_BUILD_SHA__: string;
 
 function resolveEmbeddedWindowsPublisherSubjects(): string[] {
   if (!app.isPackaged || process.platform !== "win32") {
@@ -3050,6 +3051,11 @@ function backendEnv(): NodeJS.ProcessEnv {
     // Point the backend's HTTP static route at the same swap-immune snapshot the
     // caide:// protocol serves, so both surfaces survive app.asar being replaced.
     ...(servedStaticRoot?.snapshotted ? { CAIDE_STATIC_DIR: servedStaticRoot.dir } : {}),
+    // Build stamp: lets the server report the exact running build (About
+    // screen + diagnostics) so stale single-instance launches are detectable.
+    ...(typeof __CAIDE_BUILD_SHA__ === "string" && __CAIDE_BUILD_SHA__.length > 0
+      ? { CAIDE_BUILD_SHA: __CAIDE_BUILD_SHA__ }
+      : {}),
     ...(app.isPackaged
       ? {
           [DEVICE_HELPER_SOURCE_DIR_ENV]: Path.join(process.resourcesPath, "device-helper"),

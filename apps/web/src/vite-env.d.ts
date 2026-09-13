@@ -4,6 +4,7 @@ import type { NativeApi, DesktopBridge } from "@caide/contracts";
 
 interface ImportMetaEnv {
   readonly APP_VERSION: string;
+  readonly CAIDE_BUILD_SHA: string;
   readonly VITE_FEEDBACK_ENDPOINT?: string;
 }
 

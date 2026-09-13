@@ -101,7 +101,10 @@ describe("dyad plan tools transplant (m2b)", () => {
       expect(sent.type).toBe("questionnaire");
       expect(sent.questions).toHaveLength(2);
       expect(sent.questions[0].id).toBeTruthy();
-      resolveUserInput(sent.requestId, { [sent.questions[0].id]: "A", [sent.questions[1].id]: "none" });
+      resolveUserInput(sent.requestId, {
+        [sent.questions[0].id]: "A",
+        [sent.questions[1].id]: "none",
+      });
       const out = await pending;
       expect(out).toContain("**Style?**\nA");
       expect(out).toContain("**Notes?**\nnone");
@@ -114,13 +117,49 @@ describe("dyad plan tools transplant (m2b)", () => {
     const events: unknown[] = [];
     setPlanTransport(fakeTransport(events));
     try {
-      const pending = executeQuestionnaire({ questions: [{ question: "Q?", type: "text" }] }, "s-x");
+      const pending = executeQuestionnaire(
+        { questions: [{ question: "Q?", type: "text" }] },
+        "s-x",
+      );
       dismissUserInput((events[0] as any).requestId);
       await expect(pending).resolves.toMatch(/dismissed the questionnaire/);
 
       const hanging = waitForUserInput("req-hang", "s-hang", "questionnaire");
       clearUserInputForSession("s-hang");
       await expect(hanging).resolves.toBeNull();
+    } finally {
+      setPlanTransport(null);
+    }
+  });
+
+  it("supersedes a stale parked questionnaire instead of stacking a second live card", async () => {
+    const events: unknown[] = [];
+    setPlanTransport({
+      ...fakeTransport(events),
+      sendPromptWithdraw: (sessionId, requestId) =>
+        events.push({ type: "withdraw", sessionId, requestId }),
+    });
+    try {
+      const first = executeQuestionnaire(
+        { questions: [{ question: "Q1?", type: "text" }] },
+        "s-sup",
+      );
+      const firstSent = events[0] as any;
+      expect(firstSent.type).toBe("questionnaire");
+      // A second questionnaire for the same session dismisses the stale
+      // waiter and withdraws its card before parking the new one.
+      const second = executeQuestionnaire(
+        { questions: [{ question: "Q2?", type: "text" }] },
+        "s-sup",
+      );
+      await expect(first).resolves.toMatch(/dismissed the questionnaire/);
+      const withdraw = events.find((e: any) => e.type === "withdraw") as any;
+      expect(withdraw?.requestId).toBe(firstSent.requestId);
+      const secondSent = events[events.length - 1] as any;
+      expect(secondSent.type).toBe("questionnaire");
+      expect(secondSent.requestId).not.toBe(firstSent.requestId);
+      resolveUserInput(secondSent.requestId, { [secondSent.questions[0].id]: "done" });
+      await expect(second).resolves.toContain("done");
     } finally {
       setPlanTransport(null);
     }
@@ -166,9 +205,16 @@ describe("dyad plan tools transplant (m2b)", () => {
       { id: "2", content: "Second", status: "pending" },
     ]);
     const merged = applyTodoUpdate("s-t", true, [{ id: "1", status: "in_progress" }]);
-    expect(merged.find((t) => t.id === "1")).toMatchObject({ content: "First", status: "in_progress" });
-    expect(() => applyTodoUpdate("s-t", true, [{ id: "3" }])).toThrow(/must have content and status/);
-    expect(() => applyTodoUpdate("s-t", false, [{ id: "1", status: "pending" }])).toThrow(/must have content/);
+    expect(merged.find((t) => t.id === "1")).toMatchObject({
+      content: "First",
+      status: "in_progress",
+    });
+    expect(() => applyTodoUpdate("s-t", true, [{ id: "3" }])).toThrow(
+      /must have content and status/,
+    );
+    expect(() => applyTodoUpdate("s-t", false, [{ id: "1", status: "pending" }])).toThrow(
+      /must have content/,
+    );
     expect(getTodos("s-t")).toHaveLength(2);
     clearTodos("s-t");
     expect(getTodos("s-t")).toEqual([]);
@@ -188,7 +234,11 @@ describe("dyad plan tools transplant (m2b)", () => {
     setPlanTransport(fakeTransport(events));
     try {
       const pending = executeQuestionnaire(
-        { questions: [{ question: "Style?", type: "radio", options: ["A", "B"], why: "Locks the palette" }] },
+        {
+          questions: [
+            { question: "Style?", type: "radio", options: ["A", "B"], why: "Locks the palette" },
+          ],
+        },
         "s-why",
       );
       const sent = events[0] as any;

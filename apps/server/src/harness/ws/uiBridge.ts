@@ -6,20 +6,30 @@
 // Attach once at server startup; detach in tests.
 
 import type { HarnessEvent } from "@caide/contracts";
+import { appendHarnessEvent } from "../turn/eventLog.ts";
 import { setDbPanelTransport } from "../../dyad/db/dbPanel.ts";
+import { clearPendingConsentsForSession } from "../../dyad/tools/permissions.ts";
+import { clearPendingMcpConsentsForSession } from "../../dyad/mcp/mcpConsent.ts";
 import { setIntegrationTransport } from "../../dyad/db/dbTools.ts";
 import { sharedMcpManager, type ManagedMcpServer } from "../../dyad/mcp/manager.ts";
 import {
   resolveConsent,
+  sessionForConsentRequest,
   type ConsentRequestFn,
 } from "../../dyad/tools/permissions.ts";
 import {
   resolveMcpConsent,
+  sessionForMcpConsentRequest,
   type McpConsentRequestFn,
 } from "../../dyad/mcp/mcpConsent.ts";
 import { setPlanTransport } from "../../dyad/plan/planTools.ts";
 import { setBlueprintTransport } from "../../dyad/plan/blueprintTools.ts";
-import { dismissUserInput, resolveUserInput } from "../../dyad/plan/userPrompt.ts";
+import {
+  clearUserInputForSession,
+  dismissUserInput,
+  resolveUserInput,
+  sessionForRequest,
+} from "../../dyad/plan/userPrompt.ts";
 import {
   applySettingsSync,
   getSessionApp,
@@ -30,6 +40,50 @@ import { setBlockchainNetworks, type BlockchainNetwork } from "../../dyad/web3/n
 import type { HarnessHub } from "./hub.ts";
 
 function send(server: HarnessHub, sessionId: string, event: HarnessEvent): void {
+  server.broadcastToSession(sessionId, event);
+  // Persist prompts (and only prompts — tokens/turns already persist via the
+  // runner) so reconnect replay rebuilds parked questionnaires/consents.
+  // Withdrawals persist too so replay drops superseded/cancelled cards.
+  // Answered prompts are filtered at replay time (see hub.replaySession).
+  if (event.type === "ui_prompt" || event.type === "ui_prompt_withdraw") {
+    void appendHarnessEvent(event).catch(() => undefined);
+  }
+}
+
+/**
+ * Withdraw parked prompts for a session (turn cancel): settles every waiter
+ * registry (user input + tool + MCP consent) and broadcasts + persists a
+ * withdrawal per card so clients drop them and replay never resurrects
+ * them. Returns the withdrawn requestIds.
+ */
+export function withdrawSessionPrompts(server: HarnessHub, sessionId: string): string[] {
+  const ids = [
+    ...clearUserInputForSession(sessionId),
+    ...clearPendingConsentsForSession(sessionId),
+    ...clearPendingMcpConsentsForSession(sessionId),
+  ];
+  for (const requestId of ids) {
+    send(server, sessionId, { type: "ui_prompt_withdraw", sessionId, requestId });
+  }
+  return ids;
+}
+
+/**
+ * Durable settle tombstone for one answered/dismissed prompt: persisted
+ * BEFORE the waiter resolves so replay-after-restart can never resurrect
+ * the card, then broadcast so sibling tabs drop it too.
+ */
+async function settlePrompt(
+  server: HarnessHub,
+  sessionId: string,
+  requestId: string,
+): Promise<void> {
+  const event = { type: "ui_prompt_withdraw", sessionId, requestId } as const;
+  try {
+    await appendHarnessEvent(event);
+  } catch {
+    // logging must never break a turn
+  }
   server.broadcastToSession(sessionId, event);
 }
 
@@ -45,14 +99,28 @@ export function attachUiBridge(server: HarnessHub): {
 } {
   setPlanTransport({
     sendQuestionnaire: (sessionId, requestId, questions) =>
-      send(server, sessionId, { type: "ui_prompt", sessionId, requestId, kind: "questionnaire", payload: { questions } }),
+      send(server, sessionId, {
+        type: "ui_prompt",
+        sessionId,
+        requestId,
+        kind: "questionnaire",
+        payload: { questions },
+      }),
     sendEnvVarRequest: (sessionId, requestId, vars) =>
-      send(server, sessionId, { type: "ui_prompt", sessionId, requestId, kind: "env-vars", payload: { vars } }),
+      send(server, sessionId, {
+        type: "ui_prompt",
+        sessionId,
+        requestId,
+        kind: "env-vars",
+        payload: { vars },
+      }),
     sendPlanUpdate: (sessionId, plan) =>
       send(server, sessionId, { type: "plan_update", sessionId, ...plan }),
     sendPlanExit: (sessionId) => send(server, sessionId, { type: "plan_exit", sessionId }),
     sendTodosUpdate: (sessionId, todos) =>
       send(server, sessionId, { type: "todos_update", sessionId, todos }),
+    sendPromptWithdraw: (sessionId, requestId) =>
+      send(server, sessionId, { type: "ui_prompt_withdraw", sessionId, requestId }),
   });
 
   setDbPanelTransport({
@@ -110,18 +178,28 @@ export function attachUiBridge(server: HarnessHub): {
   };
 
   server.onPromptAnswer((requestId, answers) => {
-    if (answers) resolveUserInput(requestId, answers);
-    else dismissUserInput(requestId);
+    void (async () => {
+      const sessionId = sessionForRequest(requestId);
+      if (sessionId) await settlePrompt(server, sessionId, requestId);
+      if (answers) resolveUserInput(requestId, answers);
+      else dismissUserInput(requestId);
+    })();
   });
   server.onConsentAnswer((requestId, decision) => {
-    resolveConsent(requestId, decision);
-    resolveMcpConsent(requestId, decision);
+    void (async () => {
+      const sessionId =
+        sessionForConsentRequest(requestId) ?? sessionForMcpConsentRequest(requestId);
+      if (sessionId) await settlePrompt(server, sessionId, requestId);
+      resolveConsent(requestId, decision);
+      resolveMcpConsent(requestId, decision);
+    })();
   });
   server.onMcpOAuthStart((sessionId, input) => {
     void (async () => {
       const base = { sessionId, requestId: input.requestId, serverId: input.serverId } as const;
       try {
-        const { beginMcpOAuthFlow, completeMcpOAuthFlow } = await import("../../dyad/mcp/mcpOAuth.ts");
+        const { beginMcpOAuthFlow, completeMcpOAuthFlow } =
+          await import("../../dyad/mcp/mcpOAuth.ts");
         const begun = await beginMcpOAuthFlow({
           serverId: input.serverId,
           serverUrl: input.serverUrl,
@@ -129,7 +207,12 @@ export function attachUiBridge(server: HarnessHub): {
           ...(input.scope ? { scope: input.scope } : {}),
           ...(typeof input.callbackPort === "number" ? { callbackPort: input.callbackPort } : {}),
         });
-        send(server, sessionId, { ...base, type: "mcp_oauth", status: "authorize", authorizeUrl: begun.authorizeUrl });
+        send(server, sessionId, {
+          ...base,
+          type: "mcp_oauth",
+          status: "authorize",
+          authorizeUrl: begun.authorizeUrl,
+        });
         const { code } = await begun.waitForCallback;
         await completeMcpOAuthFlow({
           serverId: input.serverId,
@@ -160,9 +243,7 @@ export function attachUiBridge(server: HarnessHub): {
       if (appPath) linkAppDatabase(appPath, payload.dbLinks[0]);
     }
     if (payload.blockchainNetworks && payload.blockchainNetworks.length > 0) {
-      setBlockchainNetworks(
-        payload.blockchainNetworks.filter((n) => n.id && n.rpcUrl),
-      );
+      setBlockchainNetworks(payload.blockchainNetworks.filter((n) => n.id && n.rpcUrl));
     }
     // Settings UI → live tools: sync manager connections. OAuth-transport
     // servers sync as SSE (their stored OAuth token authorizes at connect);
@@ -182,8 +263,11 @@ export function attachUiBridge(server: HarnessHub): {
                 args: s.args,
                 env: s.env,
               }
-            : { transport: "sse" as const, url: s.url ?? "", headers: s.headers }
-          ) as ManagedMcpServer["config"],
+            : {
+                transport: "sse" as const,
+                url: s.url ?? "",
+                headers: s.headers,
+              }) as ManagedMcpServer["config"],
         }))
         .filter((s) =>
           s.config.transport === "sse" ? s.config.url.length > 0 : s.config.command.length > 0,

@@ -4,11 +4,15 @@
 
 import { describe, expect, it } from "vitest";
 import type { HarnessEvent } from "@caide/contracts";
-import { getDbPanelTransport, requestDatabasePanel, setDbPanelTransport } from "../../dyad/db/dbPanel.ts";
+import {
+  getDbPanelTransport,
+  requestDatabasePanel,
+  setDbPanelTransport,
+} from "../../dyad/db/dbPanel.ts";
 import { getPlanTransport, setPlanTransport } from "../../dyad/plan/planTools.ts";
 import { resolveUserInput, waitForUserInput } from "../../dyad/plan/userPrompt.ts";
 import { resolveConsent, waitForConsent } from "../../dyad/tools/permissions.ts";
-import { attachUiBridge } from "./uiBridge.ts";
+import { attachUiBridge, withdrawSessionPrompts } from "./uiBridge.ts";
 import { clearSessionStores, getOrCreateSessionStores } from "../turn/sessionStores.ts";
 import type { HarnessHub } from "./hub.ts";
 
@@ -62,7 +66,7 @@ describe("ui bridge delivery (m3)", () => {
   });
 
   it("routes prompt answers into the user-input waiter", async () => {
-    const { handlers, server } = fakeServer();
+    const { handlers, sent, server } = fakeServer();
     const bridge = attachUiBridge(server);
     try {
       const waiting = waitForUserInput("r-qa", "s", "questionnaire");
@@ -70,6 +74,13 @@ describe("ui bridge delivery (m3)", () => {
         q1: "A",
       });
       await expect(waiting).resolves.toEqual({ q1: "A" });
+      // Answering tombstones the prompt: siblings drop the card and replay
+      // never resurrects it (restart-safe).
+      expect(sent).toContainEqual({
+        type: "ui_prompt_withdraw",
+        sessionId: "s",
+        requestId: "r-qa",
+      });
 
       const dismissed = waitForUserInput("r-dismiss", "s", "env-vars");
       (handlers.prompt as (id: string, answers: Record<string, string> | null) => void)(
@@ -77,6 +88,11 @@ describe("ui bridge delivery (m3)", () => {
         null,
       );
       await expect(dismissed).resolves.toBeNull();
+      expect(sent).toContainEqual({
+        type: "ui_prompt_withdraw",
+        sessionId: "s",
+        requestId: "r-dismiss",
+      });
       void resolveUserInput;
     } finally {
       bridge.detach();
@@ -84,8 +100,30 @@ describe("ui bridge delivery (m3)", () => {
     }
   });
 
+  it("withdraws parked prompts on cancel so cards drop and never replay", async () => {
+    const { sent, server } = fakeServer();
+    const bridge = attachUiBridge(server);
+    try {
+      const waiting = waitForUserInput("r-cancel", "s-cancel", "questionnaire");
+      const ids = withdrawSessionPrompts(server, "s-cancel");
+      expect(ids).toEqual(["r-cancel"]);
+      await expect(waiting).resolves.toBeNull();
+      expect(sent).toHaveLength(1);
+      expect(sent[0]).toMatchObject({
+        type: "ui_prompt_withdraw",
+        sessionId: "s-cancel",
+        requestId: "r-cancel",
+      });
+      // Withdrawing again is a no-op — no duplicate withdrawals.
+      expect(withdrawSessionPrompts(server, "s-cancel")).toEqual([]);
+      expect(sent).toHaveLength(1);
+    } finally {
+      bridge.detach();
+    }
+  });
+
   it("routes consent answers into both consent registries", async () => {
-    const { handlers, server } = fakeServer();
+    const { handlers, sent, server } = fakeServer();
     const bridge = attachUiBridge(server);
     try {
       const tool = waitForConsent("r-tool", "s");
@@ -93,6 +131,11 @@ describe("ui bridge delivery (m3)", () => {
       void mcp;
       (handlers.consent as (id: string, d: "accept-once") => void)("r-tool", "accept-once");
       await expect(tool).resolves.toBe("accept-once");
+      expect(sent).toContainEqual({
+        type: "ui_prompt_withdraw",
+        sessionId: "s",
+        requestId: "r-tool",
+      });
       void resolveConsent;
     } finally {
       bridge.detach();

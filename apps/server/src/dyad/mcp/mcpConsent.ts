@@ -76,14 +76,28 @@ export function resolveMcpConsent(requestId: string, decision: McpConsentDecisio
   }
 }
 
+/** Whether this MCP consent request is still awaiting an answer. */
+export function hasPendingMcpConsent(requestId: string): boolean {
+  return pending.has(requestId);
+}
+
 // Resolve pending MCP consents for a session as declined (turn cancelled).
-export function clearPendingMcpConsentsForSession(sessionId: string): void {
+// Returns the cleared requestIds so callers can withdraw the cards.
+export function clearPendingMcpConsentsForSession(sessionId: string): string[] {
+  const ids: string[] = [];
   for (const [requestId, entry] of pending) {
     if (entry.sessionId === sessionId) {
       pending.delete(requestId);
       entry.resolve("decline");
+      ids.push(requestId);
     }
   }
+  return ids;
+}
+
+/** Session that owns a parked MCP consent (for withdrawal tombstones on answer). */
+export function sessionForMcpConsentRequest(requestId: string): string | null {
+  return pending.get(requestId)?.sessionId ?? null;
 }
 
 export function getMcpConsent(

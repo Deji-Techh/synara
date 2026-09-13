@@ -131,6 +131,18 @@ export const UiPromptHarnessEvent = Schema.Struct({
 });
 export type UiPromptHarnessEvent = typeof UiPromptHarnessEvent.Type;
 
+/**
+ * A parked prompt is withdrawn (superseded by a newer prompt of the same
+ * kind, or settled by turn cancel). Clients drop the matching card;
+ * replay skips the withdrawn prompt.
+ */
+export const UiPromptWithdrawHarnessEvent = Schema.Struct({
+  type: Schema.Literal("ui_prompt_withdraw"),
+  sessionId: Schema.String,
+  requestId: Schema.String,
+});
+export type UiPromptWithdrawHarnessEvent = typeof UiPromptWithdrawHarnessEvent.Type;
+
 /** Server asks the client to reveal a right-dock pane. */
 export const UiRevealHarnessEvent = Schema.Struct({
   type: Schema.Literal("ui_reveal"),
@@ -210,10 +222,7 @@ export const ProviderSettingsStateHarnessEvent = Schema.Struct({
   defaultImageProviderId: Schema.optional(Schema.String),
   defaultImageModelId: Schema.optional(Schema.String),
   tests: Schema.optional(
-    Schema.Record(
-      Schema.String,
-      Schema.Struct({ ok: Schema.Boolean, message: Schema.String }),
-    ),
+    Schema.Record(Schema.String, Schema.Struct({ ok: Schema.Boolean, message: Schema.String })),
   ),
 });
 export type ProviderSettingsStateHarnessEvent = typeof ProviderSettingsStateHarnessEvent.Type;
@@ -258,6 +267,7 @@ export const HarnessEvent = Schema.Union([
   CompactionHarnessEvent,
   ErrorHarnessEvent,
   UiPromptHarnessEvent,
+  UiPromptWithdrawHarnessEvent,
   UiRevealHarnessEvent,
   PlanUpdateHarnessEvent,
   PlanExitHarnessEvent,

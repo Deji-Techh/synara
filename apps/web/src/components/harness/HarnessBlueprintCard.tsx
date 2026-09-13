@@ -2,17 +2,27 @@
 // Purpose: App-blueprint presentation + approval gate for harness sessions.
 // Maps the blueprint_update event onto the existing CaideAppBlueprintCard,
 // with Approve / Request-changes actions answering blueprint_response.
+// Collapsible CaideCard shell (shared disclosure motion) like the other
+// harness cards.
 
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { useHarnessStore } from "~/harnessStore";
 import { CaideAppBlueprintCard } from "~/components/chat/CaideAppBlueprintCard";
+import {
+  CaideBadge,
+  CaideCard,
+  CaideCardHeader,
+  CaideLazyContent,
+} from "~/components/chat/CaideCardPrimitives";
+import { DisclosureChevron } from "~/components/ui/DisclosureChevron";
 
 type SendFn = (message: Record<string, unknown>) => void;
 
 export function HarnessBlueprintCard(props: { sessionId: string; send: SendFn }) {
   const state = useHarnessStore();
   const blueprint = state.sessions[props.sessionId]?.blueprint;
+  const [open, setOpen] = useState(true);
   const [changeOpen, setChangeOpen] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [acted, setActed] = useState(false);
@@ -47,38 +57,56 @@ export function HarnessBlueprintCard(props: { sessionId: string; send: SendFn })
   };
 
   return (
-    <div className="my-2">
-      <CaideAppBlueprintCard
-        appName={blueprint.appName}
-        designDirection={blueprint.designDirection}
-        primaryColor={blueprint.primaryColor}
-        description={blueprint.userPrompt}
-      />
-      <div className="mt-2 flex flex-col gap-2">
-        <div className="flex justify-end gap-2">
-          <Button size="xs" variant="outline" onClick={() => setChangeOpen((v) => !v)}>
-            Request changes
-          </Button>
-          <Button size="xs" onClick={approve}>
-            Approve blueprint
-          </Button>
-        </div>
-        {changeOpen ? (
-          <div className="flex flex-col gap-2">
-            <textarea
-              className="min-h-16 rounded-md border border-border/70 bg-background px-2.5 py-1.5 text-xs"
-              placeholder="What should change in the blueprint?"
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
+    <div className="my-2 select-none">
+      <CaideCard accent="info" onClick={() => setOpen((v) => !v)} isExpanded={open}>
+        <CaideCardHeader accent="info">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <CaideBadge accent="info">Blueprint</CaideBadge>
+            <span className="truncate text-[12px] font-semibold tracking-tight">
+              {blueprint.appName}
+            </span>
+          </div>
+          <DisclosureChevron
+            open={open}
+            className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70"
+          />
+        </CaideCardHeader>
+        <CaideLazyContent open={open}>
+          <div className="flex flex-col gap-2 overflow-hidden rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5">
+            <CaideAppBlueprintCard
+              appName={blueprint.appName}
+              designDirection={blueprint.designDirection}
+              primaryColor={blueprint.primaryColor}
+              description={blueprint.userPrompt}
             />
-            <div className="flex justify-end">
-              <Button size="xs" disabled={!feedback.trim()} onClick={requestChanges}>
-                Send change request
-              </Button>
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-end gap-2">
+                <Button size="xs" variant="outline" onClick={() => setChangeOpen((v) => !v)}>
+                  Request changes
+                </Button>
+                <Button size="xs" onClick={approve}>
+                  Approve blueprint
+                </Button>
+              </div>
+              {changeOpen ? (
+                <div className="flex flex-col gap-2">
+                  <textarea
+                    className="min-h-16 rounded-md border border-border/70 bg-background px-2.5 py-1.5 text-xs"
+                    placeholder="What should change in the blueprint?"
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
+                  />
+                  <div className="flex justify-end">
+                    <Button size="xs" disabled={!feedback.trim()} onClick={requestChanges}>
+                      Send change request
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
-        ) : null}
-      </div>
+        </CaideLazyContent>
+      </CaideCard>
     </div>
   );
 }

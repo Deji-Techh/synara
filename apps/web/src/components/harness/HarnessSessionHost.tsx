@@ -11,7 +11,6 @@ import { useHarnessSession } from "~/hooks/useHarnessSession";
 import { useStore } from "~/store";
 import { HarnessBlueprintCard } from "./HarnessBlueprintCard";
 import { HarnessPlanCard } from "./HarnessPlanCard";
-import { HarnessPrompts } from "./HarnessPrompts";
 import { HarnessReveals } from "./HarnessReveals";
 import { HarnessVerifierCard } from "./HarnessVerifierCard";
 import { HarnessVersionsCard } from "./HarnessVersionsCard";
@@ -28,16 +27,21 @@ export function HarnessSessionHost(props: { threadId: ThreadId; projectId: Proje
   if (!project) return null;
 
   return (
-    <>
+    // shrink-0: this stack sits above the transcript in the inset flex
+    // column — it must never shrink the transcript out of its box when cards
+    // mount, nor grow past its cap (long stacks scroll in place).
+    <div className="shrink-0">
       <HarnessReveals threadId={props.threadId} sessionId={props.threadId} />
-      <div className="px-3">
+      <div className="max-h-[38dvh] overflow-y-auto overscroll-contain px-3">
         <HarnessVerifierCard sessionId={props.threadId} />
         <HarnessVersionsCard sessionId={props.threadId} send={send} />
         <HarnessTranscript sessionId={props.threadId} send={send} />
-        <HarnessPrompts sessionId={props.threadId} send={send} />
+        {/* Prompts (questionnaires, consents) render ONLY in the above-composer
+            strip (ChatHarnessConsentStrip) — mounting them here too showed every
+            card twice. */}
         <HarnessPlanCard sessionId={props.threadId} send={send} />
         <HarnessBlueprintCard sessionId={props.threadId} send={send} />
       </div>
-    </>
+    </div>
   );
 }

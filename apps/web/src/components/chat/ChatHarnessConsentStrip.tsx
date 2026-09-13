@@ -10,5 +10,12 @@ type SendFn = (message: Record<string, unknown>) => void;
 
 export function ChatHarnessConsentStrip(props: { threadId: string | null; send: SendFn }) {
   if (!props.threadId) return null;
-  return <HarnessPrompts sessionId={props.threadId} send={props.send} />;
+  // Parked cards stack here (questionnaires, consents, keys). Cap the
+  // height so a full stack scrolls in place instead of overlapping the
+  // transcript or pushing the composer off-screen.
+  return (
+    <div className="max-h-80 min-h-0 overflow-y-auto overscroll-contain px-1">
+      <HarnessPrompts sessionId={props.threadId} send={props.send} />
+    </div>
+  );
 }

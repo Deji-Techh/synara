@@ -486,7 +486,10 @@ function makeWsPreviewHandlers(_providerAdapterRegistry: any, _options: any) {
           // Real probe (was a hardcoded {installed:true} stub): platform
           // support + `flutter --version`. Shape matches what PreviewStage
           // consumes; installProgress stays null until an install runs.
-          const supported = process.platform === "linux" || process.platform === "darwin" || process.platform === "win32";
+          const supported =
+            process.platform === "linux" ||
+            process.platform === "darwin" ||
+            process.platform === "win32";
           if (!supported) {
             return {
               supported: false,
@@ -538,7 +541,10 @@ export function makeWsDatabaseHandlers(_providerAdapterRegistry: any, _options: 
   // from the session link first, then stored settings keys / env — never
   // from the client payload.
   const tryPromise = <A>(p: Promise<A>) => Effect.tryPromise(() => p);
-  const resolveApp = async (threadId: string, payload?: { workspaceRoot?: string; appId?: string | number }) => {
+  const resolveApp = async (
+    threadId: string,
+    payload?: { workspaceRoot?: string; appId?: string | number },
+  ) => {
     const { getSessionApp } = await import("./harness/turn/sessionStores.ts");
     const workspaceRoot =
       (typeof payload?.workspaceRoot === "string" && payload.workspaceRoot) ||
@@ -556,9 +562,8 @@ export function makeWsDatabaseHandlers(_providerAdapterRegistry: any, _options: 
           const threadId = typeof input?.threadId === "string" ? input?.threadId : "";
           const channel = typeof input?.channel === "string" ? input.channel : "";
           const payload = ((input?.payload ?? {}) as Record<string, unknown>) ?? {};
-          const { getDatabaseLink, getAppDatabaseLink, linkAppDatabase } = await import(
-            "./dyad/db/connections.ts"
-          );
+          const { getDatabaseLink, getAppDatabaseLink, linkAppDatabase } =
+            await import("./dyad/db/connections.ts");
           const { getVoiceApiKey } = await import("./voice/transcriptionService.ts");
           const str = (v: unknown) => (typeof v === "string" ? v : "");
           switch (channel) {
@@ -581,8 +586,10 @@ export function makeWsDatabaseHandlers(_providerAdapterRegistry: any, _options: 
                     name,
                     path: workspaceRoot,
                     resolvedPath: path.resolve(workspaceRoot),
-                    supabaseProjectId: link?.provider === "supabase" ? (link.projectId ?? null) : null,
-                    supabaseParentProjectId: link?.provider === "supabase" ? (link.projectId ?? null) : null,
+                    supabaseProjectId:
+                      link?.provider === "supabase" ? (link.projectId ?? null) : null,
+                    supabaseParentProjectId:
+                      link?.provider === "supabase" ? (link.projectId ?? null) : null,
                     supabaseOrganizationSlug: link?.organizationSlug ?? null,
                     neonProjectId: link?.provider === "neon" ? (link.projectId ?? null) : null,
                     neonDevelopmentBranchId: null,
@@ -614,7 +621,11 @@ export function makeWsDatabaseHandlers(_providerAdapterRegistry: any, _options: 
               const projectId = str(payload.projectId);
               if (!projectId) throw new Error("projectId is required.");
               const current = getAppDatabaseLink(workspaceRoot) ?? getDatabaseLink(threadId);
-              const next = { ...(current ?? { provider: "neon" as const }), provider: "neon" as const, projectId };
+              const next = {
+                ...(current ?? { provider: "neon" as const }),
+                provider: "neon" as const,
+                projectId,
+              };
               linkAppDatabase(workspaceRoot, next);
               return { ok: true };
             }
@@ -634,19 +645,31 @@ export function makeWsDatabaseHandlers(_providerAdapterRegistry: any, _options: 
               const branchId = str(payload.branchId);
               if (!branchId) throw new Error("branchId is required.");
               const current = getAppDatabaseLink(workspaceRoot) ?? getDatabaseLink(threadId);
-              linkAppDatabase(workspaceRoot, { ...(current ?? { provider: "neon" as const }), provider: "neon" as const, branchId });
+              linkAppDatabase(workspaceRoot, {
+                ...(current ?? { provider: "neon" as const }),
+                provider: "neon" as const,
+                branchId,
+              });
               return { ok: true };
             }
             case "neon:create-project": {
               const workspaceRoot = await resolveApp(threadId, payload);
               const { createNeonProject, createNeonBranch } = await import("./dyad/db/neonApi.ts");
-              const token = getVoiceApiKey("neon") || getDatabaseLink(threadId)?.managementToken || "";
+              const token =
+                getVoiceApiKey("neon") || getDatabaseLink(threadId)?.managementToken || "";
               if (!token) throw new Error("Add a Neon API key in Settings → Database first.");
-              const name = str(payload.name) || workspaceRoot.split(/[\\/]/).filter(Boolean).at(-1) || "caide-app";
+              const name =
+                str(payload.name) ||
+                workspaceRoot.split(/[\\/]/).filter(Boolean).at(-1) ||
+                "caide-app";
               const created = await createNeonProject({ apiKey: token, name });
               let branchId: string | undefined;
               try {
-                const branch = await createNeonBranch({ apiKey: token, projectId: created.id, branchName: "development" });
+                const branch = await createNeonBranch({
+                  apiKey: token,
+                  projectId: created.id,
+                  branchName: "development",
+                });
                 branchId = branch.id;
               } catch {
                 // project stands alone — branch later
@@ -663,13 +686,15 @@ export function makeWsDatabaseHandlers(_providerAdapterRegistry: any, _options: 
             case "supabase:list-organizations": {
               const { listSupabaseOrganizations } = await import("./dyad/db/supabaseApi.ts");
               const token = getVoiceApiKey("supabase") || "";
-              if (!token) throw new Error("Add a Supabase access token in Settings → Database first.");
+              if (!token)
+                throw new Error("Add a Supabase access token in Settings → Database first.");
               return await listSupabaseOrganizations({ token });
             }
             case "supabase:list-all-projects": {
               const { listSupabaseProjects } = await import("./dyad/db/supabaseApi.ts");
               const token = getVoiceApiKey("supabase") || "";
-              if (!token) throw new Error("Add a Supabase access token in Settings → Database first.");
+              if (!token)
+                throw new Error("Add a Supabase access token in Settings → Database first.");
               return await listSupabaseProjects({ token });
             }
             case "supabase:set-app-project": {
@@ -681,7 +706,9 @@ export function makeWsDatabaseHandlers(_providerAdapterRegistry: any, _options: 
                 ...(current ?? { provider: "supabase" as const }),
                 provider: "supabase" as const,
                 projectId,
-                ...(str(payload.organizationSlug) ? { organizationSlug: str(payload.organizationSlug) } : {}),
+                ...(str(payload.organizationSlug)
+                  ? { organizationSlug: str(payload.organizationSlug) }
+                  : {}),
               });
               return { ok: true };
             }
@@ -700,9 +727,16 @@ export function makeWsDatabaseHandlers(_providerAdapterRegistry: any, _options: 
               const workspaceRoot = await resolveApp(threadId, payload);
               const { createSupabaseProject } = await import("./dyad/db/supabaseApi.ts");
               const token = getVoiceApiKey("supabase") || "";
-              if (!token) throw new Error("Add a Supabase access token in Settings → Database first.");
-              const name = str(payload.name) || workspaceRoot.split(/[\\/]/).filter(Boolean).at(-1) || "caide-app";
-              const orgId = str(payload.organizationId) || getAppDatabaseLink(workspaceRoot)?.organizationSlug || "";
+              if (!token)
+                throw new Error("Add a Supabase access token in Settings → Database first.");
+              const name =
+                str(payload.name) ||
+                workspaceRoot.split(/[\\/]/).filter(Boolean).at(-1) ||
+                "caide-app";
+              const orgId =
+                str(payload.organizationId) ||
+                getAppDatabaseLink(workspaceRoot)?.organizationSlug ||
+                "";
               if (!orgId) throw new Error("Pick an organization first (or pass organizationId).");
               const created = await createSupabaseProject({ token, name, organizationId: orgId });
               const current = getAppDatabaseLink(workspaceRoot) ?? getDatabaseLink(threadId);
@@ -2446,14 +2480,13 @@ const makeWsRpcHandlersLayer = () =>
           ),
         [WS_METHODS.serverPrewarmVoice]: (input) =>
           rpcEffect(
-            providerAdapterRegistry
-              .getByProvider(input.provider)
-              .pipe(
-                Effect.flatMap((adapter) =>
-                  adapter.prewarmVoice ? adapter.prewarmVoice(input) : Effect.succeed({ ok: true }),
-                ),
-                Effect.catchAll(() => Effect.succeed({ ok: true })),
+            providerAdapterRegistry.getByProvider(input.provider).pipe(
+              Effect.flatMap((adapter) =>
+                adapter.prewarmVoice ? adapter.prewarmVoice(input) : Effect.succeed({ ok: true }),
               ),
+              // effect-smol has no Effect.catchAll — orElseSucceed covers it.
+              Effect.orElseSucceed({ ok: true }),
+            ),
             "Voice transcription prewarm failed",
           ),
         [WS_METHODS.serverTranscribeVoice]: (input) =>
@@ -2516,7 +2549,7 @@ const makeWsRpcHandlersLayer = () =>
                     model: modelSelection.model,
                     modelSelection,
                   })
-                  .pipe(Effect.catchAll(() => Effect.succeed(null)));
+                  .pipe(Effect.orElseSucceed(null));
                 if (!result) {
                   continue;
                 }

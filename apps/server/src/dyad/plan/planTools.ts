@@ -16,7 +16,7 @@ import {
   recordPlanPresented,
   writePlanFile,
 } from "./planStore.ts";
-import { nextRequestId, waitForUserInput } from "./userPrompt.ts";
+import { dismissPendingForSession, nextRequestId, waitForUserInput } from "./userPrompt.ts";
 
 export class PlanUiNotConnectedError extends Error {
   constructor(toolName: string) {
@@ -57,6 +57,11 @@ export interface PlanTransport {
   sendPlanUpdate(sessionId: string, plan: { title: string; summary: string; plan: string }): void;
   sendPlanExit(sessionId: string): void;
   /**
+   * Withdraw a parked prompt card (superseded by a newer prompt, or settled
+   * by cancel). Optional so headless/test transports keep working.
+   */
+  sendPromptWithdraw?(sessionId: string, requestId: string): void;
+  /**
    * Live todo-list push for the persistent TodoList header. Optional so
    * headless/test transports keep working — execute degrades to the
    * return-string only when no transport is wired.
@@ -81,18 +86,33 @@ function requireTransport(toolName: string): PlanTransport {
 
 const QuestionSchema = z
   .object({
-    id: z.string().optional().describe("Unique identifier for this question (auto-generated if omitted)"),
+    id: z
+      .string()
+      .optional()
+      .describe("Unique identifier for this question (auto-generated if omitted)"),
     question: z.string().describe("The question text to display to the user"),
-    type: z.enum(["text", "radio", "checkbox"]).describe("text for free-form input, radio for single choice, checkbox for multiple choice"),
+    type: z
+      .enum(["text", "radio", "checkbox"])
+      .describe("text for free-form input, radio for single choice, checkbox for multiple choice"),
     options: z
       .array(z.string())
       .min(1)
       .max(3)
       .optional()
-      .describe("Options for radio/checkbox questions. Keep to max 3 — users can always provide a custom answer via the free-form text input. Omit for text questions."),
-    required: z.boolean().optional().describe("Whether this question requires an answer (defaults to true)"),
+      .describe(
+        "Options for radio/checkbox questions. Keep to max 3 — users can always provide a custom answer via the free-form text input. Omit for text questions.",
+      ),
+    required: z
+      .boolean()
+      .optional()
+      .describe("Whether this question requires an answer (defaults to true)"),
     placeholder: z.string().optional().describe("Placeholder text for text inputs"),
-    why: z.string().optional().describe("One sentence shown under the question explaining why you need this answer — always set it so the user can answer fast or skip confidently."),
+    why: z
+      .string()
+      .optional()
+      .describe(
+        "One sentence shown under the question explaining why you need this answer — always set it so the user can answer fast or skip confidently.",
+      ),
   })
   .refine((q) => q.type === "text" || (q.options && q.options.length >= 1), {
     message: "options are required for radio and checkbox questions",
@@ -108,7 +128,8 @@ const planningQuestionnaireSchema = z.object({
 });
 
 export const planningQuestionnaireTool = defineTool({
-  name: "planning_questionnaire",  description: `Present a structured questionnaire to gather requirements from the user. The tool displays questions in the UI and waits for the user's responses, returning them as the tool result.
+  name: "planning_questionnaire",
+  description: `Present a structured questionnaire to gather requirements from the user. The tool displays questions in the UI and waits for the user's responses, returning them as the tool result.
 
 <when_to_use>
 Use this tool when:
@@ -183,6 +204,12 @@ export async function executeQuestionnaire(
 ): Promise<string> {
   const parsed = planningQuestionnaireSchema.parse(input);
   const t = requireTransport("planning_questionnaire");
+  // One live questionnaire per session: a stale parked prompt (leaked by an
+  // old timeout, orphaned across turns) is dismissed and its card withdrawn
+  // before the new one parks — never two live cards for one session.
+  for (const staleId of dismissPendingForSession(sessionId, "questionnaire")) {
+    t.sendPromptWithdraw?.(sessionId, staleId);
+  }
   const requestId = nextRequestId("questionnaire");
   const questions: QuestionnaireItem[] = parsed.questions.map((q, i) => ({
     ...q,
@@ -203,7 +230,9 @@ const writePlanSchema = z.object({
   summary: z.string().describe("Brief summary (1-2 sentences) of what will be built"),
   plan: z
     .string()
-    .describe("Full implementation plan in markdown format. Include sections for: feature overview, UI/UX design, considerations, technical approach, implementation steps, code changes, and testing strategy. Put product/UX sections first, technical sections last."),
+    .describe(
+      "Full implementation plan in markdown format. Include sections for: feature overview, UI/UX design, considerations, technical approach, implementation steps, code changes, and testing strategy. Put product/UX sections first, technical sections last.",
+    ),
 });
 
 export const writePlanTool = defineTool({
@@ -262,7 +291,9 @@ export async function executeWritePlan(
 // --- exit_plan (donor schema + description verbatim) ---
 
 const exitPlanSchema = z.object({
-  confirmation: z.boolean().describe("Whether the user has accepted the plan. Must be true to proceed."),
+  confirmation: z
+    .boolean()
+    .describe("Whether the user has accepted the plan. Must be true to proceed."),
 });
 
 export const exitPlanTool = defineTool({
@@ -313,9 +344,7 @@ export async function executeExitPlan(
   if (accepted?.file) {
     await markPlanFileAccepted(accepted.file, accepted.acceptedAt ?? Date.now());
   }
-  const grounding = accepted
-    ? ` Accepted plan: "${accepted.title}" — ${accepted.summary}`
-    : "";
+  const grounding = accepted ? ` Accepted plan: "${accepted.title}" — ${accepted.summary}` : "";
   return `Plan accepted. Switching to Agent mode to begin implementation. The agreed plan will guide the implementation process.${grounding}`;
 }
 
@@ -324,15 +353,29 @@ export async function executeExitPlan(
 const todoSchema = z.object({
   id: z.string().describe("Unique identifier for the todo item"),
   content: z.string().optional().describe("The description/content of the todo item"),
-  status: z.enum(["pending", "in_progress", "completed"]).optional().describe("The current status of the todo item"),
-  ref: z.string().optional().describe("Workspace-relative file path this todo maps to (e.g. src/screens/HomeScreen.tsx, lib/screens/home_screen.dart, src/pages/index.tsx). Shown as a jump-to-file chip in the to-dos header — set it whenever the task centers on a file."),
+  status: z
+    .enum(["pending", "in_progress", "completed"])
+    .optional()
+    .describe("The current status of the todo item"),
+  ref: z
+    .string()
+    .optional()
+    .describe(
+      "Workspace-relative file path this todo maps to (e.g. src/screens/HomeScreen.tsx, lib/screens/home_screen.dart, src/pages/index.tsx). Shown as a jump-to-file chip in the to-dos header — set it whenever the task centers on a file.",
+    ),
 });
 
 const updateTodosSchema = z.object({
   merge: z
     .boolean()
-    .describe("Whether to merge the todos with the existing todos. If true, the todos will be merged into the existing todos based on the id field. You can leave unchanged properties undefined. If false, the new todos will replace the existing todos."),
-  todos: z.array(todoSchema).describe("Array of todo items. When merge is true, only include todos that need updates. When merge is false, this is the complete list."),
+    .describe(
+      "Whether to merge the todos with the existing todos. If true, the todos will be merged into the existing todos based on the id field. You can leave unchanged properties undefined. If false, the new todos will replace the existing todos.",
+    ),
+  todos: z
+    .array(todoSchema)
+    .describe(
+      "Array of todo items. When merge is true, only include todos that need updates. When merge is false, this is the complete list.",
+    ),
 });
 
 export const updateTodosTool = defineTool({
@@ -411,7 +454,11 @@ Multiple complex features provided as list requiring organized task management.
   modifiesState: true,
   execute: async (args, ctx) => {
     const parsed = updateTodosSchema.parse(args);
-    const next = applyTodoUpdate(ctx.sessionId, parsed.merge, parsed.todos as { id: string; content?: string; status?: TodoStatus; ref?: string }[]);
+    const next = applyTodoUpdate(
+      ctx.sessionId,
+      parsed.merge,
+      parsed.todos as { id: string; content?: string; status?: TodoStatus; ref?: string }[],
+    );
     // Live push for the persistent TodoList header (no-op headless — the
     // return string below still carries the state for the transcript).
     getPlanTransport()?.sendTodosUpdate?.(ctx.sessionId, next);
@@ -437,11 +484,17 @@ Multiple complex features provided as list requiring organized task management.
 const EnvVarRequestSchema = z.object({
   key: z.string().describe("The name of the environment variable (e.g. OPENAI_API_KEY)"),
   description: z.string().optional().describe("A brief description of what this key is used for"),
-  instructionsUrl: z.string().optional().describe("An optional URL where the user can get this key"),
+  instructionsUrl: z
+    .string()
+    .optional()
+    .describe("An optional URL where the user can get this key"),
 });
 
 const askEnvVarsSchema = z.object({
-  vars: z.array(EnvVarRequestSchema).min(1).describe("A list of environment variables to prompt the user for"),
+  vars: z
+    .array(EnvVarRequestSchema)
+    .min(1)
+    .describe("A list of environment variables to prompt the user for"),
 });
 
 export const askEnvVarsTool = defineTool({
@@ -471,7 +524,8 @@ Each object should have:
   waitsForUserInput: true,
   execute: async (args, ctx) =>
     executeAskEnvVars(askEnvVarsSchema.parse(args), ctx.sessionId, ctx.signal),
-  presentCall: (args: any) => `Request keys: ${(args.vars ?? []).map((v: any) => v.key).join(", ")}`,
+  presentCall: (args: any) =>
+    `Request keys: ${(args.vars ?? []).map((v: any) => v.key).join(", ")}`,
 });
 
 export async function executeAskEnvVars(
@@ -481,6 +535,9 @@ export async function executeAskEnvVars(
 ): Promise<string> {
   const parsed = askEnvVarsSchema.parse(input);
   const t = requireTransport("ask_env_vars");
+  for (const staleId of dismissPendingForSession(sessionId, "env-vars")) {
+    t.sendPromptWithdraw?.(sessionId, staleId);
+  }
   const requestId = nextRequestId("env-vars");
   t.sendEnvVarRequest(sessionId, requestId, parsed.vars);
   const result = await waitForUserInput(requestId, sessionId, "env-vars", signal);
@@ -491,7 +548,8 @@ export async function executeAskEnvVars(
   for (const [key, value] of Object.entries(result)) {
     text += `${key}=${value}\n`;
   }
-  text += "\nYou must now save these variables to the appropriate environment file (e.g. .env.local) and continue with your task.";
+  text +=
+    "\nYou must now save these variables to the appropriate environment file (e.g. .env.local) and continue with your task.";
   return text;
 }
 

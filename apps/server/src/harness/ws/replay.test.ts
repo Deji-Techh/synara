@@ -11,6 +11,7 @@ import { WebSocket } from "ws";
 import type { HarnessEvent } from "@caide/contracts";
 import { SessionStorage } from "../session/storage.ts";
 import { appendHarnessEvent, flushTurnTokens, setEventLogStorage } from "../turn/eventLog.ts";
+import { dismissUserInput, waitForUserInput } from "../../dyad/plan/userPrompt.ts";
 import { HarnessWebSocketServer } from "./server.ts";
 
 describe("harness subscribe replay (e15)", () => {
@@ -56,9 +57,56 @@ describe("harness subscribe replay (e15)", () => {
       });
     });
     ws.send(JSON.stringify({ type: "subscribe", sessionId: sid }));
-    await Promise.race([done, new Promise((_, reject) => setTimeout(() => reject(new Error("replay timeout")), 2000))]);
+    await Promise.race([
+      done,
+      new Promise((_, reject) => setTimeout(() => reject(new Error("replay timeout")), 2000)),
+    ]);
     expect(received.map((e) => e.type)).toEqual(["turn_start", "token"]);
     expect((received[1] as { content: string }).content).toBe("hello");
     ws.close();
+  });
+
+  it("replays live prompts but skips withdrawn ones", async () => {
+    const sid = `s-withdraw-${Date.now()}`;
+    // Parked (still live) questionnaire — must replay so the card rebuilds.
+    const live = waitForUserInput("req-live", sid, "questionnaire");
+    await appendHarnessEvent({
+      type: "ui_prompt",
+      sessionId: sid,
+      requestId: "req-live",
+      kind: "questionnaire",
+      payload: { questions: [] },
+    });
+    // Superseded prompt + its withdrawal — must never replay.
+    await appendHarnessEvent({
+      type: "ui_prompt",
+      sessionId: sid,
+      requestId: "req-dead",
+      kind: "questionnaire",
+      payload: { questions: [] },
+    });
+    await appendHarnessEvent({ type: "ui_prompt_withdraw", sessionId: sid, requestId: "req-dead" });
+
+    const ws = new WebSocket(`ws://127.0.0.1:${port}`);
+    await new Promise<void>((resolve) => ws.on("open", () => resolve()));
+    const received: HarnessEvent[] = [];
+    ws.on("message", (data) => {
+      const parsed = JSON.parse(data.toString()) as HarnessEvent | { type: string };
+      if (parsed.type === "subscribed") return;
+      received.push(parsed as HarnessEvent);
+    });
+    ws.send(JSON.stringify({ type: "subscribe", sessionId: sid }));
+    // Poll for the live prompt (replay is async with cooperative yields),
+    // then drain briefly so a stray withdrawn prompt would also arrive.
+    const deadline = Date.now() + 2000;
+    while (received.length === 0 && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 10));
+    }
+    await new Promise((r) => setTimeout(r, 100));
+    ws.close();
+    dismissUserInput("req-live");
+    await live;
+    expect(received.map((e) => e.type)).toEqual(["ui_prompt"]);
+    expect((received[0] as { requestId: string }).requestId).toBe("req-live");
   });
 });

@@ -84,9 +84,21 @@ export async function executeTool<I, O>(
 
   const timeoutMs = toolDef.timeoutMs ?? 30_000;
 
-  // 4. Execution with timeout and abort signal support
+  // 4. Execution with timeout and abort signal support. Tools that park
+  // waiting for human input (questionnaires, approvals) never time out —
+  // humans always take longer than 30s. Cancellation still unblocks via the
+  // abort signal, which waitForUserInput observes. Mirrors loop.ts.
   try {
     const executionPromise = toolDef.execute(parsed.data, ctx);
+
+    if (toolDef.waitsForUserInput) {
+      const output = await executionPromise;
+      return {
+        success: true,
+        output,
+        durationMs: Date.now() - startTime,
+      };
+    }
 
     const timeoutPromise = new Promise<never>((_, reject) => {
       const timer = setTimeout(() => {

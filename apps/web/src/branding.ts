@@ -7,3 +7,5 @@ export const APP_DISPLAY_NAME = isCanaryDesktop
     ? `${APP_BASE_NAME} (Dev)`
     : APP_BASE_NAME;
 export const APP_VERSION = import.meta.env.APP_VERSION || "0.0.0";
+/** Short commit hash baked at build time — identifies the exact running build. */
+export const CAIDE_BUILD_SHA = import.meta.env.CAIDE_BUILD_SHA || "dev";

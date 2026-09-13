@@ -254,6 +254,15 @@ export const harnessStore = {
         state.sessions[event.sessionId] = { ...session, prompts };
         break;
       }
+      case "ui_prompt_withdraw": {
+        // Superseded/cancelled prompt: drop the card (replay also skips it).
+        if (!session.prompts.some((p) => p.requestId === event.requestId)) break;
+        state.sessions[event.sessionId] = {
+          ...session,
+          prompts: session.prompts.filter((p) => p.requestId !== event.requestId),
+        };
+        break;
+      }
       case "ui_reveal": {
         state.sessions[event.sessionId] = {
           ...session,
@@ -304,7 +313,11 @@ export const harnessStore = {
       case "versions_state": {
         state.sessions[event.sessionId] = {
           ...session,
-          versions: event.versions.map((v) => ({ hash: v.hash, message: v.message, createdAt: v.createdAt })),
+          versions: event.versions.map((v) => ({
+            hash: v.hash,
+            message: v.message,
+            createdAt: v.createdAt,
+          })),
         };
         break;
       }
@@ -386,8 +399,6 @@ export function useHarnessStore(): HarnessStoreState {
 export function useHarnessTurnLive(sessionId: string | null | undefined): boolean {
   return useSyncExternalStore(
     harnessStore.subscribe,
-    () =>
-      sessionId != null &&
-      harnessStore.getState().sessions[sessionId]?.liveTurnId != null,
+    () => sessionId != null && harnessStore.getState().sessions[sessionId]?.liveTurnId != null,
   );
 }

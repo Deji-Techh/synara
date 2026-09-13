@@ -27,9 +27,40 @@ describe("harnessStore ui events (m3)", () => {
     harnessStore.clearSession("s-ui");
   });
 
+  it("drops withdrawn prompts without touching siblings", () => {
+    harnessStore.clearSession("s-ui");
+    harnessStore.handleEvent({
+      type: "ui_prompt",
+      sessionId: "s-ui",
+      requestId: "r1",
+      kind: "questionnaire",
+      payload: { questions: [] },
+    });
+    harnessStore.handleEvent({
+      type: "ui_prompt",
+      sessionId: "s-ui",
+      requestId: "r2",
+      kind: "tool-consent",
+      payload: {},
+    });
+    harnessStore.handleEvent({ type: "ui_prompt_withdraw", sessionId: "s-ui", requestId: "r1" });
+    expect(harnessStore.getState().sessions["s-ui"]?.prompts.map((p) => p.requestId)).toEqual([
+      "r2",
+    ]);
+    // Withdrawing an unknown id is a no-op.
+    harnessStore.handleEvent({ type: "ui_prompt_withdraw", sessionId: "s-ui", requestId: "nope" });
+    expect(harnessStore.getState().sessions["s-ui"]?.prompts).toHaveLength(1);
+    harnessStore.clearSession("s-ui");
+  });
+
   it("records reveals and plan lifecycle", () => {
     harnessStore.clearSession("s-ui");
-    harnessStore.handleEvent({ type: "ui_reveal", sessionId: "s-ui", pane: "database", reason: "execute_sql" });
+    harnessStore.handleEvent({
+      type: "ui_reveal",
+      sessionId: "s-ui",
+      pane: "database",
+      reason: "execute_sql",
+    });
     expect(harnessStore.getState().sessions["s-ui"]?.reveals).toHaveLength(1);
     harnessStore.handleEvent({
       type: "plan_update",
@@ -46,7 +77,12 @@ describe("harnessStore ui events (m3)", () => {
 
   it("records turn-end token usage", () => {
     harnessStore.clearSession("s-ui");
-    harnessStore.handleEvent({ type: "turn_end", sessionId: "s-ui", turnId: "t1", status: "completed" });
+    harnessStore.handleEvent({
+      type: "turn_end",
+      sessionId: "s-ui",
+      turnId: "t1",
+      status: "completed",
+    });
     expect(harnessStore.getState().sessions["s-ui"]?.lastUsage).toBeUndefined();
     harnessStore.handleEvent({
       type: "turn_end",

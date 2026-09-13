@@ -97,17 +97,31 @@ export function resolveConsent(requestId: string, decision: ConsentDecision): vo
   }
 }
 
+/** Whether this consent request is still awaiting an answer. */
+export function hasPendingConsent(requestId: string): boolean {
+  return pending.has(requestId);
+}
+
 /**
  * Reject all pending consent requests for a session (turn cancelled).
  * Resolves as decline so tool execution fails gracefully — donor behavior.
+ * Returns the cleared requestIds so callers can withdraw the cards.
  */
-export function clearPendingConsentsForSession(sessionId: string): void {
+export function clearPendingConsentsForSession(sessionId: string): string[] {
+  const ids: string[] = [];
   for (const [requestId, entry] of pending) {
     if (entry.sessionId === sessionId) {
       pending.delete(requestId);
       entry.resolve("decline");
+      ids.push(requestId);
     }
   }
+  return ids;
+}
+
+/** Session that owns a parked consent (for withdrawal tombstones on answer). */
+export function sessionForConsentRequest(requestId: string): string | null {
+  return pending.get(requestId)?.sessionId ?? null;
 }
 
 export function getAgentToolConsent(
@@ -260,8 +274,7 @@ export function shouldIncludeTool(
   if (!meta) return false;
   if (getAgentToolConsent(toolName, store) === "never") return false;
 
-  const modifies =
-    ctx.modifiesState?.(toolName) ?? meta.modifiesState;
+  const modifies = ctx.modifiesState?.(toolName) ?? meta.modifiesState;
 
   if (options.buildProfile && !BUILD_PROFILE_TOOLS.has(toolName)) return false;
   if (options.planModeOnly && modifies && !PLANNING_SPECIFIC_TOOLS.has(toolName)) {
@@ -290,7 +303,5 @@ export function toolNamesForTurn(
   options: ToolSetOptions = {},
   store: ConsentStore = new MemoryConsentStore(),
 ): string[] {
-  return TOOL_CATALOG.map((t) => t.name).filter((n) =>
-    shouldIncludeTool(n, ctx, options, store),
-  );
+  return TOOL_CATALOG.map((t) => t.name).filter((n) => shouldIncludeTool(n, ctx, options, store));
 }

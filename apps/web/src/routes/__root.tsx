@@ -32,7 +32,8 @@ import {
 import { QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Throttler } from "@tanstack/react-pacer";
 
-import { APP_DISPLAY_NAME, APP_VERSION } from "../branding";
+import { APP_DISPLAY_NAME, APP_VERSION, CAIDE_BUILD_SHA } from "../branding";
+import { BuildMismatchBanner } from "../components/BuildMismatchBanner";
 import { DesktopWindowControls } from "../components/DesktopWindowControls";
 import { SETTINGS_TARGETS } from "../settingsNavigation";
 
@@ -82,6 +83,7 @@ import {
   addWsCompatibilityIssueListener,
   addWsTransportStateListener,
   readLatestWsCompatibilityIssue,
+  readLatestWsTransportState,
 } from "../wsTransportEvents";
 import { providerQueryKeys } from "../lib/providerReactQuery";
 import { invalidateProjectFileQueriesForCwds, projectQueryKeys } from "../lib/projectReactQuery";
@@ -273,6 +275,7 @@ function RootRouteView() {
           <GlobalWhatsNewSurface />
           <TaskCompletionNotifications />
           <DesktopProjectBootstrap />
+          <BuildMismatchBanner />
           <Outlet />
         </AnchoredToastProvider>
       </ToastProvider>
@@ -1119,6 +1122,18 @@ function EventRouter() {
     const immediatelyFlushedAssistantMessageIds = new Set<string>();
     let providerDiscoveryInvalidationFingerprint: string | null = null;
     let shellSnapshotSequence = -1;
+    // Last server-reported shell counts (both apply paths record here) so the
+    // hydration watchdog can tell "server has nothing" apart from "client
+    // dropped everything" without touching SQL first.
+    let lastServerSnapshotCounts: { projects: number; threads: number; sequence: number } | null =
+      null;
+    const noteServerSnapshot = (snapshot: OrchestrationShellSnapshot): void => {
+      lastServerSnapshotCounts = {
+        projects: snapshot.projects.length,
+        threads: snapshot.threads.length,
+        sequence: snapshot.snapshotSequence,
+      };
+    };
     let pendingShellEvents: OrchestrationShellStreamEvent[] = [];
     const subscribedThreadIds = new Set<ThreadId>();
     const threadSnapshotSequenceById = new Map<ThreadId, number>();
@@ -1354,6 +1369,7 @@ function EventRouter() {
       }
       const promotedDraftThreadIds = collectSubscribedDraftsInShell(snapshot.threads);
       shellSnapshotSequence = snapshot.snapshotSequence;
+      noteServerSnapshot(snapshot);
       syncServerShellSnapshot(snapshot);
       reconcilePromotedDraftsFromShellThreads(snapshot.threads);
       removeOrphanedTerminalsForCurrentState();
@@ -1650,6 +1666,7 @@ function EventRouter() {
       if (item.kind === "snapshot") {
         const promotedDraftThreadIds = collectSubscribedDraftsInShell(item.snapshot.threads);
         shellSnapshotSequence = item.snapshot.snapshotSequence;
+        noteServerSnapshot(item.snapshot);
         syncServerShellSnapshot(item.snapshot);
         reconcilePromotedDraftsFromShellThreads(item.snapshot.threads);
         removeOrphanedTerminalsForCurrentState();
@@ -1993,6 +2010,7 @@ function EventRouter() {
         if (config.buildSha) {
           console.info(`[caide] server build ${config.buildSha}`);
         }
+        console.info(`[caide] client build ${CAIDE_BUILD_SHA}`);
       })
       .catch(() => undefined);
     subscribed = true;
@@ -2002,6 +2020,35 @@ function EventRouter() {
     const shellBootstrapFallbackTimer = window.setTimeout(() => {
       void loadShellSnapshotOnce().catch(() => undefined);
     }, SHELL_SNAPSHOT_BOOTSTRAP_FALLBACK_DELAY_MS);
+    // Hydration watchdog: an empty sidebar is ambiguous (server truly empty
+    // vs client dropped everything vs transport dead). Log exactly which
+    // layer is at fault so the fix starts in the right place — verify the
+    // server path (state.sqlite + orchestration.getSnapshot probe) before
+    // touching SQL or projections. Fires once, only when the store is empty.
+    const shellHydrationWatchdogTimer = window.setTimeout(() => {
+      if (disposed) return;
+      const state = useStore.getState();
+      if (state.projects.length > 0 || (state.threadIds?.length ?? 0) > 0) return;
+      const transport = readLatestWsTransportState();
+      const server = lastServerSnapshotCounts;
+      if (transport !== "open") {
+        console.warn(
+          `[caide] shell hydration: sidebar empty, transport=${transport ?? "unknown"} — client connection/hydration issue, not empty history. Check the WS connection before touching SQL.`,
+        );
+      } else if (!server) {
+        console.warn(
+          "[caide] shell hydration: sidebar empty, transport=open but no server snapshot received — probe orchestration.getSnapshot over WS, then inspect state.sqlite. A healthy snapshot means client hydration is at fault.",
+        );
+      } else if (server.projects > 0 || server.threads > 0) {
+        console.warn(
+          `[caide] shell hydration: server reported ${server.projects} projects/${server.threads} threads (seq ${server.sequence}) but the store is empty — projection/sync dropped everything. Check syncServerShellSnapshot, not SQL.`,
+        );
+      } else {
+        console.info(
+          "[caide] shell hydration: server snapshot is genuinely empty — no projects yet.",
+        );
+      }
+    }, SHELL_SNAPSHOT_BOOTSTRAP_FALLBACK_DELAY_MS + 4_000);
     const threadDetailCatchupInterval = window.setInterval(() => {
       const now = Date.now();
       let availableProjectionReconcileSlots = Math.max(
@@ -2041,6 +2088,7 @@ function EventRouter() {
       flushPendingDomainEvents();
       disposed = true;
       window.clearTimeout(shellBootstrapFallbackTimer);
+      window.clearTimeout(shellHydrationWatchdogTimer);
       window.clearInterval(threadDetailCatchupInterval);
       needsProviderInvalidation = false;
       needsBroadGitInvalidation = false;

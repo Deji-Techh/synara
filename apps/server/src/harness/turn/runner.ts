@@ -17,14 +17,14 @@ import {
   type LLMAdapter,
 } from "../loop/loop.ts";
 import { resetPreCommitCount } from "../../dyad/vcs/preCommitTools.ts";
-import {
-  captureTurnEnd,
-  captureTurnStart,
-  isGitRepo,
-} from "../../dyad/vcs/gitProvenance.ts";
+import { captureTurnEnd, captureTurnStart, isGitRepo } from "../../dyad/vcs/gitProvenance.ts";
 import { buildGitReminder } from "../../dyad/prompts/gitContextPrompt.ts";
 import { formatMemoryForPrompt, readAppMemory } from "../../dyad/memory/memory.ts";
-import { formatIssuesForEvent, recordEvidenceOutcome, runReviewBarrier } from "../../dyad/sandbox/reviewBarrier.ts";
+import {
+  formatIssuesForEvent,
+  recordEvidenceOutcome,
+  runReviewBarrier,
+} from "../../dyad/sandbox/reviewBarrier.ts";
 import { createVersion } from "../../dyad/vcs/versions.ts";
 import { resolveChatModeForTurn } from "../../dyad/plan/chatMode.ts";
 import { detectWeb3App } from "../../dyad/prompts/frameworkDetect.ts";
@@ -32,6 +32,7 @@ import { Inbox } from "../inbox/index.ts";
 import { appendHarnessEvent, flushTurnTokens, readHarnessEvents } from "./eventLog.ts";
 import { clearPendingConsentsForSession } from "../../dyad/tools/permissions.ts";
 import { clearPendingMcpConsentsForSession } from "../../dyad/mcp/mcpConsent.ts";
+import { clearUserInputForSession } from "../../dyad/plan/userPrompt.ts";
 import { buildConversationChain, buildMessages } from "../session/buildChain.ts";
 import { resolveDispatchSystemPromptOverride } from "../prompts/dispatchSystemPrompt.ts";
 import { SessionStorage } from "../session/storage.ts";
@@ -40,7 +41,11 @@ import {
   constructSystemPrompt,
   readAiRules,
 } from "../../dyad/prompts/index.ts";
-import { getContextWindow, highestTasteModel, MODEL_OPTIONS } from "../../dyad/providers/catalog.ts";
+import {
+  getContextWindow,
+  highestTasteModel,
+  MODEL_OPTIONS,
+} from "../../dyad/providers/catalog.ts";
 import { getContextSummarizer } from "../../dyad/misc/index.ts";
 import type { CaideFramework } from "../../dyad/prompts/index.ts";
 import { shouldRevealDatabasePanel } from "../../dyad/db/dbPanel.ts";
@@ -214,15 +219,19 @@ export class CaideRunner {
     return state !== null && state !== "resuming";
   }
 
-  cancel(sessionId: string, cause = "cancelled"): void {    this.controllers.get(sessionId)?.abort(cause);
+  cancel(sessionId: string, cause = "cancelled"): void {
+    this.controllers.get(sessionId)?.abort(cause);
     // Release this session's flow slot so the next send launches fresh
     // instead of misreporting as buffered; the aborted loop's terminal
     // finish is a no-op against the cleared slot.
     this.flows.get(sessionId)?.cancel(cause);
-    // Parked consent waits (tool + MCP) never observe the abort otherwise —
-    // settle them as declined so the turn fails fast instead of hanging.
+    // Parked waits never observe the abort otherwise — settle them so the
+    // turn fails fast instead of hanging. Questionnaire/env cards are
+    // withdrawn by the gateway (it owns the broadcast); clearing here covers
+    // non-WS paths and is idempotent with that broadcast.
     clearPendingConsentsForSession(sessionId);
     clearPendingMcpConsentsForSession(sessionId);
+    clearUserInputForSession(sessionId);
   }
 
   /** Forget a session's flow (and inbox slot) entirely. */
@@ -279,7 +288,12 @@ export class CaideRunner {
         this.emit({
           type: "tool_call",
           name: event.name,
-          status: event.status === "started" ? "started" : event.status === "failed" ? "failed" : "completed",
+          status:
+            event.status === "started"
+              ? "started"
+              : event.status === "failed"
+                ? "failed"
+                : "completed",
         });
         // Autonomous pane control: DB work reveals the database pane, preview
         // tools reveal the preview pane — the agent never asks the user to open them.
@@ -302,11 +316,14 @@ export class CaideRunner {
             input.onEvent?.(reveal);
           }
         }
-      } else if (event.type === "stage") this.emit({ type: "stage", from: event.from, to: event.to });
+      } else if (event.type === "stage")
+        this.emit({ type: "stage", from: event.from, to: event.to });
       else if (event.type === "compaction") void maybeCompactTurn().catch(() => {});
-      else if (event.type === "checkpoint") this.emit({ type: "checkpoint", requiresResponse: event.requiresResponse });
+      else if (event.type === "checkpoint")
+        this.emit({ type: "checkpoint", requiresResponse: event.requiresResponse });
       if (event.type === "tool_call" && event.status !== "started") sawToolComplete = true;
-      else if (event.type === "artifact_updated") this.emit({ type: "artifact_updated", path: event.path });
+      else if (event.type === "artifact_updated")
+        this.emit({ type: "artifact_updated", path: event.path });
       if (event.type === "tool_call") {
         if (event.status === "failed") failedToolCalls++;
         if (event.name === "execute_fork_skill") {
@@ -360,7 +377,10 @@ export class CaideRunner {
     // Visual-evidence refs captured this turn (screenshot tool results).
     const evidenceRefs: string[] = [];
     let turnVerdict: { passed: boolean; tasteScore: number; issues: string[] } | null = null;
-    const logProjectRun = (status: "completed" | "failed" | "cancelled", failure?: string): void => {
+    const logProjectRun = (
+      status: "completed" | "failed" | "cancelled",
+      failure?: string,
+    ): void => {
       try {
         const store = new ProjectLogStore(path.join(input.appPath, ".caide", "telemetry"));
         const verdict = turnVerdict;
@@ -373,10 +393,10 @@ export class CaideRunner {
             fixerRetryCount: failedToolCalls,
             tasteScore: verdict?.tasteScore ?? 0,
             benchmarkScore: 0,
-            edgeCasesFound: [
-              ...(verdict?.issues ?? []),
-              ...(failure ? [failure] : []),
-            ].slice(0, 20),
+            edgeCasesFound: [...(verdict?.issues ?? []), ...(failure ? [failure] : [])].slice(
+              0,
+              20,
+            ),
             timestamp: Date.now(),
           })
           .catch(() => {});
@@ -527,9 +547,16 @@ export class CaideRunner {
       // resolves the highest-taste CONFIGURED model instead of inheriting.
       // Announced once per turn in-transcript; single mode never reroutes.
       // Opt out by setting the planner slot explicitly (even to thread default).
-      let tastePlannerPick: { providerId: string; modelId: string; taste: number } | null | undefined;
+      let tastePlannerPick:
+        | { providerId: string; modelId: string; taste: number }
+        | null
+        | undefined;
       let tasteAnnounced = false;
-      const resolveTastePlanner = (): { providerId: string; modelId: string; taste: number } | null => {
+      const resolveTastePlanner = (): {
+        providerId: string;
+        modelId: string;
+        taste: number;
+      } | null => {
         if (tastePlannerPick !== undefined) return tastePlannerPick;
         const candidates: Array<{ providerId: string; modelId: string }> = [];
         for (const [providerId, models] of Object.entries(MODEL_OPTIONS)) {
@@ -558,7 +585,11 @@ export class CaideRunner {
                 const cacheKey = `taste:${pick.providerId}:${pick.modelId}`;
                 const cached = adapterCache.get(cacheKey);
                 if (cached) return cached;
-                const connection = resolveConnection(pick.providerId, pick.modelId, input.settings ?? {});
+                const connection = resolveConnection(
+                  pick.providerId,
+                  pick.modelId,
+                  input.settings ?? {},
+                );
                 const adapter = createStreamProviderAdapter(
                   {
                     providerId: pick.providerId,
@@ -588,7 +619,7 @@ export class CaideRunner {
             }
           }
           return llm;
-        };
+        }
         const cacheKey = `${kind}:${ref.providerId ?? ""}:${ref.modelId ?? ""}`;
         const cached = adapterCache.get(cacheKey);
         if (cached) return cached;
@@ -690,7 +721,13 @@ export class CaideRunner {
       if (controller.signal.aborted) {
         this.status = "cancelled";
         await flushTurnTokens(input.sessionId);
-        forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "cancelled", ...usageField() });
+        forward({
+          type: "turn_end",
+          sessionId: input.sessionId,
+          turnId,
+          status: "cancelled",
+          ...usageField(),
+        });
         flow.finish(turnId);
         logProjectRun("cancelled", "turn cancelled");
       } else {
@@ -738,7 +775,13 @@ export class CaideRunner {
                     "UI files changed two turns running with no screenshots. Run the preview, capture every touched screen with screenshot, then continue.",
                   recoverable: true,
                 });
-                forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "failed", ...usageField() });
+                forward({
+                  type: "turn_end",
+                  sessionId: input.sessionId,
+                  turnId,
+                  status: "failed",
+                  ...usageField(),
+                });
                 logProjectRun("failed", "missing visual evidence (2nd consecutive turn)");
                 flow.finish(turnId);
                 await captureTurnEnd(input.sessionId, input.appPath).catch(() => {});
@@ -761,10 +804,18 @@ export class CaideRunner {
         // every completed turn is undoable from the Versions timeline.
         // Skips clean trees and non-repos; never fails the turn.
         if (chatMode !== "ask" && chatMode !== "plan") {
-          await createVersion(input.appPath, `Checkpoint: ${input.prompt.slice(0, 80)}`).catch(() => null);
+          await createVersion(input.appPath, `Checkpoint: ${input.prompt.slice(0, 80)}`).catch(
+            () => null,
+          );
         }
         await flushTurnTokens(input.sessionId);
-        forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "completed", ...usageField() });
+        forward({
+          type: "turn_end",
+          sessionId: input.sessionId,
+          turnId,
+          status: "completed",
+          ...usageField(),
+        });
         flow.finish(turnId);
         logProjectRun("completed");
       }
@@ -772,7 +823,9 @@ export class CaideRunner {
       await snapshotSessionState(input.sessionId, storage).catch(() => {});
       ctx.cleanup();
     } catch (err) {
-      const next = !sawToolComplete ? nextFailoverTarget(input, err, failedAttemptKey || undefined) : null;
+      const next = !sawToolComplete
+        ? nextFailoverTarget(input, err, failedAttemptKey || undefined)
+        : null;
       if (next && !controller.signal.aborted) {
         // Transparent failover: a new turn attempt starts on the fallback
         // provider/model. The error event below explains the switch; the
@@ -809,9 +862,18 @@ export class CaideRunner {
         message: err instanceof Error ? err.message : String(err),
         recoverable: true,
       });
-      forward({ type: "turn_end", sessionId: input.sessionId, turnId, status: "failed", ...usageField() });
+      forward({
+        type: "turn_end",
+        sessionId: input.sessionId,
+        turnId,
+        status: "failed",
+        ...usageField(),
+      });
       flow.finish(turnId);
-      logProjectRun("failed", err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500));
+      logProjectRun(
+        "failed",
+        err instanceof Error ? err.message.slice(0, 500) : String(err).slice(0, 500),
+      );
     } finally {
       input.signal?.removeEventListener("abort", onAbort);
       this.controllers.delete(input.sessionId);

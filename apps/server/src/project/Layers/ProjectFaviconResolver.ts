@@ -118,7 +118,8 @@ export const makeProjectFaviconResolver = Effect.gen(function* () {
     if (!resolvedPath) return Option.none();
     const bytes = yield* fileSystem
       .readFile(resolvedPath)
-      .pipe(Effect.catchAllCause(() => Effect.succeed(null)));
+      // effect-smol has no Effect.catchAllCause — orElseSucceed covers it.
+      .pipe(Effect.orElseSucceed(null));
     if (!bytes) return Option.none();
     const contentType = Mime.getType(resolvedPath) ?? "application/octet-stream";
     return Option.some({ bytes, contentType });

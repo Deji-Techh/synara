@@ -9,7 +9,23 @@ import type { HarnessEvent } from "@caide/contracts";
 import { readHarnessEvents } from "../turn/eventLog.ts";
 
 export interface ClientInboundMessage {
-  type: "subscribe" | "steer" | "cancel" | "checkpoint_response" | "ping" | "prompt_answer" | "consent_answer" | "settings_sync" | "blueprint_response" | "turn_start" | "provider_settings_get" | "provider_settings_set" | "provider_settings_test" | "versions_list" | "versions_restore" | "mcp_oauth_start";
+  type:
+    | "subscribe"
+    | "steer"
+    | "cancel"
+    | "checkpoint_response"
+    | "ping"
+    | "prompt_answer"
+    | "consent_answer"
+    | "settings_sync"
+    | "blueprint_response"
+    | "turn_start"
+    | "provider_settings_get"
+    | "provider_settings_set"
+    | "provider_settings_test"
+    | "versions_list"
+    | "versions_restore"
+    | "mcp_oauth_start";
   sessionId?: string;
   serverId?: string;
   serverUrl?: string;
@@ -30,7 +46,12 @@ export interface ClientInboundMessage {
   hash?: string;
   provider?: { id?: string; apiKey?: string; apiBaseUrl?: string; resourceName?: string };
   providerEntry?: { apiKey?: string; apiBaseUrl?: string; resourceName?: string };
-  defaults?: { providerId?: string; modelId?: string; imageProviderId?: string; imageModelId?: string };
+  defaults?: {
+    providerId?: string;
+    modelId?: string;
+    imageProviderId?: string;
+    imageModelId?: string;
+  };
 }
 
 export interface TurnStartPayload {
@@ -41,7 +62,15 @@ export interface TurnStartPayload {
   providerId?: string;
   modelId?: string;
   maxSteps?: number;
-  providerSettings?: Record<string, { apiKey?: { value?: string | null } | string | null; apiBaseUrl?: string | null; baseUrl?: string | null; resourceName?: string | null }>;
+  providerSettings?: Record<
+    string,
+    {
+      apiKey?: { value?: string | null } | string | null;
+      apiBaseUrl?: string | null;
+      baseUrl?: string | null;
+      resourceName?: string | null;
+    }
+  >;
 }
 
 export type SessionCancelHandler = (sessionId: string, reason?: string) => void;
@@ -52,7 +81,10 @@ export type CheckpointResponseHandler = (
   approved: boolean,
   feedback?: string,
 ) => void;
-export type PromptAnswerHandler = (requestId: string, answers: Record<string, string> | null) => void;
+export type PromptAnswerHandler = (
+  requestId: string,
+  answers: Record<string, string> | null,
+) => void;
 export type ConsentAnswerHandler = (
   requestId: string,
   decision: "accept-once" | "accept-always" | "decline",
@@ -83,7 +115,12 @@ export type ProviderSettingsSetHandler = (
   sessionId: string,
   providerId: string,
   entry: { apiKey?: string; apiBaseUrl?: string; resourceName?: string },
-  defaults?: { providerId?: string; modelId?: string; imageProviderId?: string; imageModelId?: string },
+  defaults?: {
+    providerId?: string;
+    modelId?: string;
+    imageProviderId?: string;
+    imageModelId?: string;
+  },
   requestId?: string,
 ) => void;
 export type ProviderSettingsTestHandler = (
@@ -189,7 +226,12 @@ export class HarnessHub {
       return;
     }
     if (msg.type === "checkpoint_response" && msg.sessionId && msg.checkpointId) {
-      this.onCheckpointHandler?.(msg.sessionId, msg.checkpointId, msg.approved ?? true, msg.feedback);
+      this.onCheckpointHandler?.(
+        msg.sessionId,
+        msg.checkpointId,
+        msg.approved ?? true,
+        msg.feedback,
+      );
       return;
     }
     if (msg.type === "prompt_answer" && msg.requestId) {
@@ -205,7 +247,12 @@ export class HarnessHub {
       return;
     }
     if (msg.type === "blueprint_response" && msg.sessionId) {
-      this.onBlueprintResponseHandler?.(msg.sessionId, msg.approved ?? false, msg.blueprint, msg.feedback);
+      this.onBlueprintResponseHandler?.(
+        msg.sessionId,
+        msg.approved ?? false,
+        msg.blueprint,
+        msg.feedback,
+      );
       return;
     }
     if (msg.type === "versions_list" && msg.sessionId) {
@@ -239,9 +286,20 @@ export class HarnessHub {
       return;
     }
     if (msg.type === "provider_settings_test" && msg.sessionId && msg.provider?.id) {
-      const candidate = (msg.providerEntry as { apiKey?: string; apiBaseUrl?: string }) ??
-        (msg.apiKey ? { apiKey: String(msg.apiKey), apiBaseUrl: msg.baseUrl ? String(msg.baseUrl) : undefined } : undefined);
-      this.onProviderSettingsTestHandler?.(msg.sessionId, msg.provider.id, msg.requestId, candidate);
+      const candidate =
+        (msg.providerEntry as { apiKey?: string; apiBaseUrl?: string }) ??
+        (msg.apiKey
+          ? {
+              apiKey: String(msg.apiKey),
+              apiBaseUrl: msg.baseUrl ? String(msg.baseUrl) : undefined,
+            }
+          : undefined);
+      this.onProviderSettingsTestHandler?.(
+        msg.sessionId,
+        msg.provider.id,
+        msg.requestId,
+        candidate,
+      );
       return;
     }
     if (msg.type === "mcp_oauth_start" && msg.sessionId && msg.serverId && msg.serverUrl) {
@@ -286,11 +344,26 @@ export class HarnessHub {
   /** Send the durable event tail to a (re)subscribing client. */
   async replaySession(sessionId: string, sender: HarnessClientSender): Promise<void> {
     const events = await readHarnessEvents(sessionId);
+    // Withdrawn (superseded/cancelled) prompts never replay, even if their
+    // waiter survived in memory — the withdrawal is the durable truth.
+    const withdrawn = new Set<string>();
+    for (const event of events) {
+      if (event.type === "ui_prompt_withdraw") withdrawn.add(event.requestId);
+    }
     let sinceYield = 0;
     for (const event of events) {
       if (!sender.isOpen()) return;
       const clients = this.sessionClients.get(sessionId);
       if (!clients?.has(sender)) return;
+      if (event.type === "ui_prompt_withdraw") continue;
+      if (event.type === "ui_prompt") {
+        const requestId = (event as { requestId?: unknown }).requestId;
+        // Skip settled prompts: every settle path (answer, dismiss, cancel,
+        // supersede) persists a withdrawal tombstone first, so "no tombstone"
+        // is the durable definition of live — restart-safe, unlike the old
+        // in-memory waiter check which dropped live cards after a restart.
+        if (typeof requestId === "string" && withdrawn.has(requestId)) continue;
+      }
       sender.sendText(JSON.stringify(event));
       sinceYield += 1;
       // Cooperative yield so a 200-event tail never blocks the event loop.

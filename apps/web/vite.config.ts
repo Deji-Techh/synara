@@ -4,6 +4,7 @@
 // Depends on: Vite, Tailwind, React compiler, TanStack Router.
 
 /// <reference types="vitest" />
+import { execSync } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import zlib from "node:zlib";
@@ -17,6 +18,26 @@ import { defineConfig } from "vitest/config";
 import pkg from "./package.json" with { type: "json" };
 
 const port = Number(process.env.PORT ?? 5733);
+
+// Build stamp: short commit hash baked into the client so any screenshot or
+// settings screen identifies exactly which build is running. Falls back to
+// the env (CI) and then "dev".
+function resolveCaideBuildSha(): string {
+  const fromEnv = process.env.CAIDE_BUILD_SHA?.trim();
+  if (fromEnv) return fromEnv;
+  try {
+    return (
+      execSync("git rev-parse --short HEAD", {
+        cwd: import.meta.dirname,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      }).trim() || "dev"
+    );
+  } catch {
+    return "dev";
+  }
+}
+const CAIDE_BUILD_SHA = resolveCaideBuildSha();
 const sourcemapEnv = process.env.CAIDE_WEB_SOURCEMAP?.trim().toLowerCase();
 
 const buildSourcemap =
@@ -216,6 +237,7 @@ export default defineConfig({
     // In dev mode, tell the web app where the WebSocket server lives
     "import.meta.env.VITE_WS_URL": JSON.stringify(process.env.VITE_WS_URL ?? ""),
     "import.meta.env.APP_VERSION": JSON.stringify(pkg.version),
+    "import.meta.env.CAIDE_BUILD_SHA": JSON.stringify(CAIDE_BUILD_SHA),
   },
   ssr: {
     noExternal: ["@caide/contracts", "@caide/shared"],

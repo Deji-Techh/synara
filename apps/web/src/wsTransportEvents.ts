@@ -67,6 +67,11 @@ export function readLatestWsCompatibilityIssue(): WsCompatibilityError | null {
   return latestCompatibilityIssue;
 }
 
+/** Last published transport state (null before the first transition). */
+export function readLatestWsTransportState(): WsTransportState | null {
+  return latestTransportState;
+}
+
 export function emitWsCompatibilityIssue(issue: WsCompatibilityError | null): void {
   latestCompatibilityIssue = issue;
   if (

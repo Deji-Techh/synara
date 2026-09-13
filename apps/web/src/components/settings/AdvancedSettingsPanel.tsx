@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 
 import { logoutCurrentBrowserSession } from "~/authLogout";
-import { APP_VERSION } from "~/branding";
+import { APP_VERSION, CAIDE_BUILD_SHA } from "~/branding";
 import { resolveAndPersistPreferredEditor } from "~/editorPreferences";
 import { DisclosureChevron } from "~/components/ui/DisclosureChevron";
 import { DisclosureRegion } from "~/components/ui/DisclosureRegion";
@@ -252,7 +252,53 @@ export function AdvancedSettingsPanel(props: { active: boolean; resetEpoch: numb
           description="Current application version."
           control={<code className="text-xs font-medium text-muted-foreground">{APP_VERSION}</code>}
         />
+        <BuildStampRow serverBuildSha={configQuery.data?.buildSha ?? null} />
       </SettingsSection>
     </div>
+  );
+}
+
+/**
+ * Build stamp: the exact commit this client was built from, plus the
+ * connected server's build. A mismatch means the app was updated without a
+ * restart (the classic "new file, old window" single-instance trap) — the
+ * UI tells the user to restart instead of debugging a stale build.
+ */
+function BuildStampRow(props: { serverBuildSha: string | null }) {
+  const client = CAIDE_BUILD_SHA;
+  const server = props.serverBuildSha;
+  const mismatch =
+    client !== "dev" &&
+    typeof server === "string" &&
+    server.length > 0 &&
+    server !== "unknown" &&
+    client !== server;
+  return (
+    <SettingsRow
+      title="Build"
+      description={
+        mismatch
+          ? "Client and server builds differ — quit the app fully and reopen it to run the latest build."
+          : "Exact commit this app was built from."
+      }
+      control={
+        <span className="flex items-center gap-2">
+          <code className="text-xs font-medium text-muted-foreground" title={`client ${client}`}>
+            {client.slice(0, 8)}
+          </code>
+          {typeof server === "string" && server.length > 0 ? (
+            <code
+              className={cn(
+                "text-xs font-medium",
+                mismatch ? "text-destructive" : "text-muted-foreground",
+              )}
+              title={`server ${server}`}
+            >
+              / {server.slice(0, 8)}
+            </code>
+          ) : null}
+        </span>
+      }
+    />
   );
 }

@@ -98,6 +98,13 @@ describe("Harness Contracts", () => {
     };
     expect(Schema.decodeUnknownSync(HarnessEvent)(reveal).type).toBe("ui_reveal");
 
+    const withdraw: HarnessEventType = {
+      type: "ui_prompt_withdraw",
+      sessionId: "s-123",
+      requestId: "r-1",
+    };
+    expect(Schema.decodeUnknownSync(HarnessEvent)(withdraw).type).toBe("ui_prompt_withdraw");
+
     const update: HarnessEventType = {
       type: "plan_update",
       sessionId: "s-123",
@@ -121,7 +128,8 @@ describe("Harness Contracts", () => {
     expect(Schema.decodeUnknownSync(HarnessEvent)(todos).type).toBe("todos_update");
   });
 
-  it("validates blueprint_update harness event", () => {    const event: HarnessEventType = {
+  it("validates blueprint_update harness event", () => {
+    const event: HarnessEventType = {
       type: "blueprint_update",
       sessionId: "s-123",
       appName: "FreshBite",

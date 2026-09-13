@@ -42,7 +42,11 @@ import {
 import { automationRequiresTargetThread } from "@caide/shared/automationMode";
 import { respondingInteractionReclaimAt } from "@caide/shared/pendingInteractions";
 import { providerSupportsNativeTurnSteering } from "@caide/shared/providerMetadata";
-import { getModelCapabilities, normalizeModelSlug, resolveHarnessModelRouting } from "@caide/shared/model";
+import {
+  getModelCapabilities,
+  normalizeModelSlug,
+  resolveHarnessModelRouting,
+} from "@caide/shared/model";
 import {
   resolveLatestTailUserMessageEditTarget,
   resolveTailUserMessageEditTarget,
@@ -2233,14 +2237,13 @@ export default function ChatView({
     activeThread?.modelSelection.provider ?? activeProject?.defaultModelSelection?.provider ?? null;
   const hasThreadStarted = Boolean(
     activeThread &&
-      (activeThread.latestTurn !== null ||
-        (activeThread.messages && activeThread.messages.length > 0) ||
-        activeThread.session !== null),
+    (activeThread.latestTurn !== null ||
+      (activeThread.messages && activeThread.messages.length > 0) ||
+      activeThread.session !== null),
   );
   const isTurnInFlight = Boolean(
     activeThread &&
-      (activeThread.latestTurn?.state === "running" ||
-        activeThread.session?.status === "running"),
+    (activeThread.latestTurn?.state === "running" || activeThread.session?.status === "running"),
   );
   const lockedProvider: ProviderKind | null = isTurnInFlight
     ? (sessionProvider ?? threadProvider ?? null)
@@ -7748,9 +7751,7 @@ export default function ChatView({
       const harnessFramework = (activeProject as unknown as { framework?: string | null })
         ?.framework;
       const harnessMode =
-        chatModeForSend === "plan" ||
-        chatModeForSend === "ask" ||
-        chatModeForSend === "build"
+        chatModeForSend === "plan" || chatModeForSend === "ask" || chatModeForSend === "build"
           ? chatModeForSend
           : "agent";
       // The server mirrors the turn into the thread transcript (user bubble
@@ -9904,9 +9905,7 @@ export default function ChatView({
       if (!isLocalDraftThread) {
         return;
       }
-      const project = useStore
-        .getState()
-        .projects.find((candidate) => candidate.id === projectId);
+      const project = useStore.getState().projects.find((candidate) => candidate.id === projectId);
       // isUsableProjectTarget: kind defaults to "project"; legacy rows may
       // carry no kind. Only chat-kind containers are rejected.
       if (!isUsableProjectTarget(project)) {
@@ -11482,7 +11481,7 @@ export default function ChatView({
                           {...(contextWindowSelectionStatus.pendingSelectedLabel !== undefined
                             ? {
                                 pendingWindowLabel:
-                                   contextWindowSelectionStatus.pendingSelectedLabel,
+                                  contextWindowSelectionStatus.pendingSelectedLabel,
                               }
                             : {})}
                         />
@@ -11514,7 +11513,7 @@ export default function ChatView({
                               ? "Submit answers"
                               : "Next question"}
                         </Button>
-                      ) : (phase === "running" || latestTurnLive || harnessTurnLive || isSendBusy) ? (
+                      ) : phase === "running" || latestTurnLive || harnessTurnLive || isSendBusy ? (
                         <button
                           type="button"
                           className="flex size-7.5 sm:size-8 items-center justify-center rounded-full bg-red-600 text-white hover:bg-red-500 transition-all duration-150 shadow-xs hover:scale-105 active:scale-95 cursor-pointer"
@@ -11659,7 +11658,13 @@ export default function ChatView({
                                   />
                                 </svg>
                               ) : (
-                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                <svg
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 14 14"
+                                  fill="none"
+                                  aria-hidden="true"
+                                >
                                   <path
                                     d="M7 11.5V2.5M7 2.5L3 6.5M7 2.5L11 6.5"
                                     stroke="currentColor"
@@ -11722,12 +11727,13 @@ export default function ChatView({
           isDragOverComposer ? "opacity-100" : "opacity-0",
         )}
       />
-      {/* Top bar */}
+      {/* Top bar — opaque + stacking so scrolled transcript content (harness
+          cards, bubbles) never shows through or overlaps the header. */}
       <header
         className={cn(
           CHAT_SURFACE_HEADER_DIVIDER_CLASS_NAME,
           !isEditorRail && CHAT_SURFACE_HEADER_PADDING_X_CLASS,
-          "flex items-center",
+          "relative z-10 flex shrink-0 items-center bg-background",
           isEditorRail ? "h-10" : CHAT_SURFACE_HEADER_HEIGHT_CLASS,
           isElectron && "drag-region",
           // The editor-rail chat header sits in the editor's second row (inside the
@@ -12057,9 +12063,7 @@ export default function ChatView({
                   </div>
                   {/* A trailing BranchToolbar only renders for legacy git threads; otherwise the
                       composer is the last element, so give it a comfortable bottom margin. */}
-                  <div
-                    className="pt-3 sm:pt-4"
-                  />
+                  <div className="pt-3 sm:pt-4" />
                 </div>
               </div>
             ) : null}

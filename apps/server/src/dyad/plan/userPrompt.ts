@@ -51,10 +51,7 @@ export function waitForUserInput(
 }
 
 /** Deliver the user's answers (WS layer calls this). */
-export function resolveUserInput(
-  requestId: string,
-  answers: Record<string, string>,
-): boolean {
+export function resolveUserInput(requestId: string, answers: Record<string, string>): boolean {
   const entry = pending.get(requestId);
   if (!entry) return false;
   pending.delete(requestId);
@@ -71,16 +68,47 @@ export function dismissUserInput(requestId: string): boolean {
   return true;
 }
 
-/** Reject all waiters for a session (turn cancelled) — donor behavior. */
-export function clearUserInputForSession(sessionId: string): void {
+/** Session that owns a parked prompt (for withdrawal tombstones on answer). */
+export function sessionForRequest(requestId: string): string | null {
+  return pending.get(requestId)?.sessionId ?? null;
+}
+
+/** RequestIds still parked for a session (optionally filtered by kind). */
+export function pendingRequestsForSession(
+  sessionId: string,
+  kind?: PendingPrompt["kind"],
+): string[] {
+  const ids: string[] = [];
   for (const [requestId, entry] of pending) {
-    if (entry.sessionId === sessionId) {
-      pending.delete(requestId);
-      entry.resolve(null);
-    }
+    if (entry.sessionId === sessionId && (!kind || entry.kind === kind)) ids.push(requestId);
   }
+  return ids;
+}
+
+/**
+ * Dismiss parked prompts for a session (same-kind supersede, or full clear
+ * on turn cancel). Returns the dismissed requestIds so callers can
+ * broadcast withdrawals for the cards clients still show.
+ */
+export function dismissPendingForSession(
+  sessionId: string,
+  kind?: PendingPrompt["kind"],
+): string[] {
+  const ids = pendingRequestsForSession(sessionId, kind);
+  for (const requestId of ids) dismissUserInput(requestId);
+  return ids;
+}
+
+/** Reject all waiters for a session (turn cancelled) — donor behavior. */
+export function clearUserInputForSession(sessionId: string): string[] {
+  return dismissPendingForSession(sessionId);
 }
 
 export function pendingCount(): number {
   return pending.size;
+}
+
+/** Whether this prompt is still awaiting an answer (unanswered on replay). */
+export function hasPendingUserInput(requestId: string): boolean {
+  return pending.has(requestId);
 }
