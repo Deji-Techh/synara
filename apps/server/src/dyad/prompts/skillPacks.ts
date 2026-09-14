@@ -6,11 +6,7 @@
 // WEB pack string lives in webSkillPack.ts; selected via buildUiSkillPack().
 
 import { DESIGN_ENGINE_CONTRACT, DESIGN_REFERENCE_INDEX_PROMPT } from "./designEngine.ts";
-import {
-  parseFrontmatter,
-  stripFrontmatter,
-  type SkillFrontmatter,
-} from "./skillFrontmatter.ts";
+import { parseFrontmatter, stripFrontmatter, type SkillFrontmatter } from "./skillFrontmatter.ts";
 import { readSkill, readWeb3Skill } from "./skillLoader.ts";
 import { CAIDE_WEB_UI_SKILL_PACK } from "./webSkillPack.ts";
 import type { AppTarget } from "./appTarget.ts";
@@ -19,30 +15,8 @@ import type { CaideFramework } from "./framework.ts";
 export { CAIDE_WEB_UI_SKILL_PACK };
 
 const uiUxMasterySkill = readSkill("ui-ux-mastery/SKILL.md");
-const productArchetypes = readSkill("ui-ux-mastery/references/product-archetypes.md");
-const designSystem = readSkill("ui-ux-mastery/references/design-system.md");
-const componentContracts = readSkill(
-  "ui-ux-mastery/references/component-contracts.md",
-);
-const accessibility = readSkill("ui-ux-mastery/references/accessibility.md");
-const antiSlop = readSkill("ui-ux-mastery/references/anti-slop.md");
-const designToCode = readSkill("ui-ux-mastery/references/design-to-code.md");
-const platformPatterns = readSkill(
-  "ui-ux-mastery/references/platform-patterns.md",
-);
-const qualityRubric = readSkill("ui-ux-mastery/references/quality-rubric.md");
-const motionDirection = readSkill(
-  "ui-ux-mastery/references/motion-direction.md",
-);
-const screenSpec = readSkill("ui-ux-mastery/templates/screen-spec.md");
-const componentContract = readSkill(
-  "ui-ux-mastery/templates/component-contract.md",
-);
-const designAudit = readSkill("ui-ux-mastery/templates/design-audit.md");
-const designSpec = readSkill("ui-ux-mastery/templates/design-spec.md");
-const motionStoryboard = readSkill(
-  "ui-ux-mastery/templates/motion-storyboard.md",
-);
+// NOTE: reference/template full texts are NOT loaded here anymore — they
+// are fetched on demand via read_guide (skill:ui-ux/*). See UI_SKILL_INDEX.
 const motionInteractionSkill = readSkill("motion-interaction/SKILL.md");
 const productFlowSkill = readSkill("product-flow/SKILL.md");
 const backendProductionSkill = readSkill("backend-production/SKILL.md");
@@ -66,8 +40,7 @@ export const COMPANION_SKILL_FRONTMATTERS: Record<string, SkillFrontmatter> = {
   "product-flow": parseFrontmatter(productFlowSkill).frontmatter,
   "backend-production": parseFrontmatter(backendProductionSkill).frontmatter,
   "anti-ai-slop": parseFrontmatter(antiAiSlopSkill).frontmatter,
-  "onboarding-welcome": parseFrontmatter(readSkill("onboarding-welcome/SKILL.md"))
-    .frontmatter,
+  "onboarding-welcome": parseFrontmatter(readSkill("onboarding-welcome/SKILL.md")).frontmatter,
   "appllama-design": {
     ...parseFrontmatter(appllamaDesignSkill).frontmatter,
     // Donor blurb names a concrete stack ("Expo / React Native"); this
@@ -109,45 +82,20 @@ The following Caide runtime appendix translates the Appllama benchmark laws to r
 ${appllamaWebRuntime.trim()}
 </appllama-web-runtime>
 `.trim();
-const companionSkills = [
-  { name: "Motion and Interaction", content: motionInteractionSkill },
-  { name: "Product Flow", content: productFlowSkill },
-  { name: "Backend Production", content: backendProductionSkill },
-  { name: "Anti AI Slop", content: antiAiSlopSkill },
-]
-  .map(
-    (skill) =>
-      `<companion-skill name="${skill.name}">\n${stripFrontmatter(skill.content)}\n</companion-skill>`,
-  )
-  .join("\n\n");
-
-const references = [
-  { name: "Product Archetypes", content: productArchetypes },
-  { name: "Design System", content: designSystem },
-  { name: "Component Contracts", content: componentContracts },
-  { name: "Accessibility", content: accessibility },
-  { name: "Anti-Slop and Distinctiveness", content: antiSlop },
-  { name: "Design to Code", content: designToCode },
-  { name: "Platform Patterns", content: platformPatterns },
-  { name: "Quality Rubric", content: qualityRubric },
-  { name: "Motion Direction and Capability Routing", content: motionDirection },
-];
-
-const templates = [
-  { name: "Screen Spec", content: screenSpec },
-  { name: "Component Contract", content: componentContract },
-  { name: "Design Audit", content: designAudit },
-  { name: "Persistent Design Spec", content: designSpec },
-  { name: "Persistent Motion Storyboard", content: motionStoryboard },
-];
-
-const referencesBlock = references
-  .map((r) => `<reference name="${r.name}">\n${r.content.trim()}\n</reference>`)
-  .join("\n\n");
-
-const templatesBlock = templates
-  .map((t) => `<template name="${t.name}">\n${t.content.trim()}\n</template>`)
-  .join("\n\n");
+/**
+ * On-demand index replacing the inlined companions/references/templates
+ * (previously ~130k chars in EVERY mobile prompt). Fetch any entry with
+ * read_guide (skill:<id>) when the task actually needs it.
+ */
+const UI_SKILL_INDEX = `
+<ui-ux-skill-index>
+Deep design references, spec templates, and companion skills are NOT inlined — fetch exactly what the task needs with read_guide:
+References: skill:ui-ux/product-archetypes (app patterns by category), skill:ui-ux/design-system (tokens, type scale, spacing), skill:ui-ux/component-contracts (component APIs), skill:ui-ux/accessibility (a11y rules), skill:ui-ux/anti-slop (distinctiveness checks), skill:ui-ux/design-to-code (implementation mapping), skill:ui-ux/platform-patterns (iOS/Android conventions), skill:ui-ux/quality-rubric (review checklist), skill:ui-ux/motion-direction (animation routing).
+Templates: skill:ui-ux/screen-spec (screen spec format), skill:ui-ux/component-contract (component spec format), skill:ui-ux/design-audit (audit format), skill:ui-ux/persistent-design-spec (saved spec format), skill:ui-ux/persistent-motion-storyboard (motion spec format).
+Companions: skill:ui-ux/motion-interaction, skill:ui-ux/product-flow, skill:ui-ux/backend-production, skill:ui-ux/anti-ai-slop.
+Rule: fetch before designing screens/components/flows; never quote this index as guidance.
+</ui-ux-skill-index>
+`.trim();
 
 export const CAIDE_MOBILE_UI_SKILL_PACK = `
 <mandatory-ui-ux-skill>
@@ -169,24 +117,18 @@ ${DESIGN_REFERENCE_INDEX_PROMPT}
 
 ${skillBody}
 
-${companionSkills}
+${UI_SKILL_INDEX}
 
 ${APPLLAMA_MOBILE_LAWS}
 </mandatory-ui-ux-skill>
-
 <ui-ux-references>
-The following reference documents provide detailed guidance for specific UX domains. Consult them when relevant to the task.
-
-${referencesBlock}
+${UI_SKILL_INDEX}
 </ui-ux-references>
 
 <ui-ux-templates>
-The following templates can be used to structure design work for screens, components, and audits.
-
-${templatesBlock}
+${UI_SKILL_INDEX}
 </ui-ux-templates>
 `.trim();
-
 /** Blank projects have no UI, no preview, and no stack: only orientation. */
 const CAIDE_BLANK_UI_NOTICE = `
 <mandatory-ui-ux-skill>
@@ -227,13 +169,12 @@ const WEB3_MODULE_FILES = [
   { name: "Security", file: "web3-security/SKILL.md" },
 ] as const;
 
-export const WEB3_SKILL_FRONTMATTERS: Record<string, SkillFrontmatter> =
-  Object.fromEntries(
-    WEB3_MODULE_FILES.map((m) => [
-      m.file.split("/")[0],
-      parseFrontmatter(readWeb3Skill(m.file)).frontmatter,
-    ]),
-  );
+export const WEB3_SKILL_FRONTMATTERS: Record<string, SkillFrontmatter> = Object.fromEntries(
+  WEB3_MODULE_FILES.map((m) => [
+    m.file.split("/")[0],
+    parseFrontmatter(readWeb3Skill(m.file)).frontmatter,
+  ]),
+);
 
 const web3ModulesBlock = WEB3_MODULE_FILES.map((m) => {
   const content = readWeb3Skill(m.file);

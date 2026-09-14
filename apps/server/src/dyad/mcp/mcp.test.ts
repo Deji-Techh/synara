@@ -15,11 +15,7 @@ import {
   MemoryMcpConsentStore,
   requireMcpToolConsent,
 } from "./mcpConsent.ts";
-import {
-  buildMcpToolKey,
-  parseMcpToolKey,
-  sanitizeMcpName,
-} from "./mcpKeys.ts";
+import { buildMcpToolKey, parseMcpToolKey, sanitizeMcpName } from "./mcpKeys.ts";
 import {
   ALL_MCP_TOOLS,
   executeGetMcpToolSchema,
@@ -69,12 +65,17 @@ const DEFS: McpToolDef[] = [
 
 describe("dyad mcp transplant (m2b)", () => {
   it("parses/builds/sanitizes tool keys like the donor", () => {
-    expect(parseMcpToolKey("my-server__my-tool")).toEqual({ serverName: "my-server", toolName: "my-tool" });
+    expect(parseMcpToolKey("my-server__my-tool")).toEqual({
+      serverName: "my-server",
+      toolName: "my-tool",
+    });
     expect(parseMcpToolKey("bare")).toEqual({ serverName: "", toolName: "bare" });
     expect(buildMcpToolKey("github", "issue_write")).toBe("github__issue_write");
     expect(sanitizeMcpName("My Server v2!")).toBe("My-Server-v2-");
     expect(ALL_MCP_TOOLS.map((t) => t.name)).toEqual(["search_mcp_tools", "get_mcp_tool_schema"]);
-    expect(searchMcpToolsTool.presentCall?.({ query: "issue" })).toBe('Search MCP tools for "issue"');
+    expect(searchMcpToolsTool.presentCall?.({ query: "issue" })).toBe(
+      'Search MCP tools for "issue"',
+    );
     expect(getMcpToolSchemaTool.presentCall?.({ tools: ["a", "b"] })).toBe(
       "Get schema for MCP tool(s): a, b",
     );
@@ -161,7 +162,10 @@ describe("dyad mcp transplant (m2b)", () => {
         store,
         requestConsent: async () => "decline",
       }),
-    ).resolves.toEqual({ allowed: true, autoApproveReason: "Creates a database you just asked for." });
+    ).resolves.toEqual({
+      allowed: true,
+      autoApproveReason: "Creates a database you just asked for.",
+    });
 
     const viaResolve = requireMcpToolConsent({
       sessionId: "s2",
@@ -190,5 +194,47 @@ describe("dyad mcp transplant (m2b)", () => {
     expect(MCP_CONSENT_SCAFFOLD).toMatch(/untrusted DATA/);
     expect(MCP_CONSENT_POLICY).toMatch(/Always ask/);
     expect(buildMcpConsentSystemPrompt()).toContain('"decision": "allow" | "ask"');
+  });
+
+  it("auto-approves safe MCP calls via the classifier race (human still wins)", async () => {
+    const { setContextSummarizer } = await import("../misc/miscTools.ts");
+    setContextSummarizer(
+      async () => '{"reason": "Reads a project file; no outside effect.", "decision": "allow"}',
+    );
+    try {
+      // No stored posture, never-requesting transport: approval must come
+      // from the classifier alone.
+      await expect(
+        requireMcpToolConsent({
+          sessionId: "s-class",
+          serverId: 9,
+          serverName: "fs",
+          toolName: "read_file",
+          autoApproveSafe: true,
+          store: new MemoryMcpConsentStore(),
+          requestConsent: () => new Promise<never>(() => {}),
+        }),
+      ).resolves.toEqual({ allowed: true });
+    } finally {
+      setContextSummarizer(null);
+    }
+    // Classifier failure/skip falls back to asking (fail-closed).
+    setContextSummarizer(async () => {
+      throw new Error("provider down");
+    });
+    try {
+      const hanging = requireMcpToolConsent({
+        sessionId: "s-class2",
+        serverId: 9,
+        serverName: "fs",
+        toolName: "read_file",
+        autoApproveSafe: true,
+        store: new MemoryMcpConsentStore(),
+        requestConsent: async () => "accept-once",
+      });
+      await expect(hanging).resolves.toEqual({ allowed: true });
+    } finally {
+      setContextSummarizer(null);
+    }
   });
 });

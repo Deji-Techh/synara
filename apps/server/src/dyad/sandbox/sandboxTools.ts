@@ -37,7 +37,11 @@ const executeSandboxScriptSchema = z.object({
     .string()
     .max(SANDBOX_SCRIPT_SOURCE_LIMIT_BYTES)
     .describe("Sandboxed JavaScript subset source code to execute."),
-  description: z.string().max(160).optional().describe("One-line human-readable summary of what the script does."),
+  description: z
+    .string()
+    .max(160)
+    .optional()
+    .describe("One-line human-readable summary of what the script does."),
   execution_thread: z
     .enum(["main", "worker"])
     .optional()
@@ -116,11 +120,12 @@ export async function executeSandboxScript(
           serverId: def.serverId,
           serverName: def.serverName,
           toolName: def.toolName,
+          toolDescription: def.description ?? null,
           inputPreview: JSON.stringify(args).slice(0, 500),
+          autoApproveSafe: stores.mcpAutoApproveSafe,
+          toolArgs: args,
           store: stores.mcp,
-          requestConsent:
-            hostCtx.requestMcpConsent ??
-            (async () => "decline" as const),
+          requestConsent: hostCtx.requestMcpConsent ?? (async () => "decline" as const),
         });
         if (!allowed) throw new Error(`MCP call declined: ${def.toolKey}`);
         return sharedMcpManager().callTool(String(def.serverId), def.toolName, args);
@@ -172,7 +177,10 @@ const knownSkillIds = Object.keys(FORK_SKILL_REGISTRY).join(", ");
 const executeForkSkillSchema = z.object({
   skill_id: z.string().describe(`The skill identifier. Known skills: ${knownSkillIds}`),
   task: z.string().describe("The specific task to delegate to this skill sub-agent"),
-  context: z.string().optional().describe("Optional file paths or data for the sub-agent to work with"),
+  context: z
+    .string()
+    .optional()
+    .describe("Optional file paths or data for the sub-agent to work with"),
 });
 
 export type SkillRunner = (input: { system: string; prompt: string }) => Promise<string>;
@@ -227,7 +235,11 @@ export async function executeForkSkill(
     .filter(Boolean)
     .join("\n");
   const text = await skillRunner({ system, prompt: parsed.task });
-  return [`<fork-skill-execution skill="${parsed.skill_id}">`, text, `</fork-skill-execution>`].join("\n");
+  return [
+    `<fork-skill-execution skill="${parsed.skill_id}">`,
+    text,
+    `</fork-skill-execution>`,
+  ].join("\n");
 }
 
 // --- check_task_status (donor description verbatim) ---
@@ -277,9 +289,7 @@ export const listAgentsTool = defineTool({
   execute: async (_args, ctx) => {
     const tasks = listSubagentTasks(ctx.sessionId);
     if (tasks.length === 0) return "No sub-agent threads for this chat.";
-    return tasks
-      .map((t) => `- ${t.id} (${t.role}): ${t.status}`)
-      .join("\n");
+    return tasks.map((t) => `- ${t.id} (${t.role}): ${t.status}`).join("\n");
   },
   presentCall: () => "List sub-agents",
 });
@@ -309,7 +319,15 @@ export const waitAgentsTool = defineTool({
         if (!task) return { id, status: "unknown" as const };
         return { id, status: task.status };
       });
-      if (snapshots.every((s) => s.status === "completed" || s.status === "failed" || s.status === "idle" || s.status === "unknown")) {
+      if (
+        snapshots.every(
+          (s) =>
+            s.status === "completed" ||
+            s.status === "failed" ||
+            s.status === "idle" ||
+            s.status === "unknown",
+        )
+      ) {
         return snapshots.map((s) => `${s.id}: ${s.status}`).join("\n");
       }
       if (Date.now() >= deadline) {

@@ -266,6 +266,7 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
         autoApproveNonSchemaSql: input.autoApproveNonSchemaSql,
         requestConsent,
         bypassConsent: consentBypass,
+        toolArgs: args,
         ...(signal ? { signal } : {}),
       });
       if (!allowed) throw new Error(`Tool call declined: ${toolName}`);

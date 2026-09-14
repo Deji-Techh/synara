@@ -904,4 +904,36 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
     }
     expect(events.some((e) => e.type === "error" && (e as any).code === "STEP_LIMIT")).toBe(true);
   });
+
+  it("clamps the compaction threshold by provider cap and model window", async () => {
+    const { resolveEffectiveCompactionThreshold } = await import("./loop.ts");
+    // User setting wins when the model is huge.
+    expect(
+      resolveEffectiveCompactionThreshold({
+        userSettingTokens: 256000,
+        providerId: "openrouter",
+        contextWindow: 1000000,
+      }),
+    ).toBe(250000);
+    // Small models clamp below the setting (25k headroom).
+    expect(
+      resolveEffectiveCompactionThreshold({
+        userSettingTokens: 256000,
+        providerId: "openai",
+        contextWindow: 128000,
+      }),
+    ).toBe(103000);
+    // Provider caps: google 190k.
+    expect(
+      resolveEffectiveCompactionThreshold({
+        userSettingTokens: 500000,
+        providerId: "google",
+        contextWindow: 1000000,
+      }),
+    ).toBe(190000);
+    // Invalid settings fall back to the 256k default (then clamped).
+    expect(resolveEffectiveCompactionThreshold({ providerId: "x", contextWindow: 1000000 })).toBe(
+      250000,
+    );
+  });
 });

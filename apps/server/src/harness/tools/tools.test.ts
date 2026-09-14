@@ -307,8 +307,37 @@ describe("Milestone M4 — Tool DSL, Scheduler, Executor & Core Tools", () => {
     await expect(
       screenshotTool.execute(
         {},
-        { signal: AbortSignal.timeout(5000), appPath: tempDir, sessionId: `s-nopreview-${Date.now()}`, toolId: "t1" },
+        {
+          signal: AbortSignal.timeout(5000),
+          appPath: tempDir,
+          sessionId: `s-nopreview-${Date.now()}`,
+          toolId: "t1",
+        },
       ),
     ).rejects.toThrow(/open_preview/);
+  });
+
+  it("checkpoint tool parks on a waiter and resolves on approval", async () => {
+    const { checkpointTool } = await import("./coreTools.ts");
+    const { setCheckpointTransport, resolveUserInput } =
+      await import("../../dyad/plan/userPrompt.ts");
+    const sent: Array<{ sessionId: string; requestId: string }> = [];
+    setCheckpointTransport({
+      sendCheckpoint: (sessionId, requestId) => sent.push({ sessionId, requestId }),
+    });
+    try {
+      const sid = `s-chk-${Date.now()}`;
+      const pending = checkpointTool.execute(
+        { reason: "Delete everything" },
+        { signal: AbortSignal.timeout(5000), appPath: tempDir, sessionId: sid, toolId: "t-chk" },
+      );
+      await new Promise((r) => setTimeout(r, 10));
+      expect(sent).toHaveLength(1);
+      expect(sent[0]?.sessionId).toBe(sid);
+      resolveUserInput(sent[0]?.requestId ?? "", { approved: "true" });
+      await expect(pending).resolves.toMatch(/approved — proceed/);
+    } finally {
+      setCheckpointTransport(null);
+    }
   });
 });

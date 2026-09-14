@@ -47,9 +47,9 @@ describe("dyad misc tools transplant (m2b)", () => {
     expect(readGuideTool.presentCall?.({ guide: "provision-backend" })).toBe(
       "Read guide: provision-backend",
     );
-    expect(
-      captureEvidenceTool.presentCall?.({ kind: "test", label: "unit", passed: true }),
-    ).toBe("Record test evidence: PASSED — unit");
+    expect(captureEvidenceTool.presentCall?.({ kind: "test", label: "unit", passed: true })).toBe(
+      "Record test evidence: PASSED — unit",
+    );
   });
 
   it("stores chat titles per session", async () => {
@@ -141,5 +141,24 @@ describe("dyad misc tools transplant (m2b)", () => {
     const vite = executeReadGuide({ guide: "provision-backend", framework: "website" });
     expect(typeof vite).toBe("string");
     expect(() => executeReadGuide({ guide: "nope" })).toThrow(/not found. Available guides/);
+  });
+
+  it("fetches UI-skill docs on demand and rejects traversal", () => {
+    const ref = executeReadGuide({ guide: "skill:ui-ux/quality-rubric" });
+    expect(ref.length).toBeGreaterThan(500);
+    const tpl = executeReadGuide({ guide: "skill:ui-ux/screen-spec" });
+    expect(tpl.length).toBeGreaterThan(200);
+    expect(() => executeReadGuide({ guide: "skill:nope" })).toThrow(/not found/);
+    expect(() => executeReadGuide({ guide: "skill:../../etc/passwd" })).toThrow(/not found/);
+  });
+
+  it("keeps the mobile skill pack under budget (lazy references)", async () => {
+    const { buildUiSkillPack } = await import("../prompts/skillPacks.ts");
+    const pack = buildUiSkillPack("mobile", "flutter");
+    // Was ~199k chars inlined every turn; references/templates/companions
+    // now load via read_guide. Budget leaves headroom for core growth.
+    expect(pack.length).toBeLessThan(130_000);
+    expect(pack).toContain("read_guide");
+    expect(pack).toContain("skill:ui-ux/quality-rubric");
   });
 });

@@ -347,11 +347,17 @@ describe("turn gateway (m3h)", () => {
       onBlueprintResponse: (h: (...args: never[]) => void) => {
         handlers.blueprint = h;
       },
+      onCheckpointResponse: (h: (...args: never[]) => void) => {
+        handlers.checkpoint = h;
+      },
       onMcpOAuthStart: (h: (...args: never[]) => void) => {
         handlers.mcpOAuth = h;
       },
       onTurnStart: (h: (...args: never[]) => void) => {
         handlers.turn = h;
+      },
+      onCompactNow: (h: (...args: never[]) => void) => {
+        handlers.compact = h;
       },
       onProviderSettingsGet: (h: (...args: never[]) => void) => {
         handlers.psGet = h;
@@ -406,8 +412,10 @@ describe("turn gateway (m3h)", () => {
       "onSteer",
       "onCancel",
       "onBlueprintResponse",
+      "onCheckpointResponse",
       "onMcpOAuthStart",
       "onTurnStart",
+      "onCompactNow",
       "onProviderSettingsGet",
       "onProviderSettingsSet",
       "onProviderSettingsTest",
@@ -485,8 +493,10 @@ describe("turn gateway (m3h)", () => {
       "onSteer",
       "onCancel",
       "onBlueprintResponse",
+      "onCheckpointResponse",
       "onMcpOAuthStart",
       "onTurnStart",
+      "onCompactNow",
       "onProviderSettingsGet",
       "onProviderSettingsSet",
       "onProviderSettingsTest",

@@ -16,7 +16,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { z } from "zod";
 import { defineTool, type ToolDef } from "../../harness/tools/defineTool.ts";
-import { readGuide } from "../prompts/skillLoader.ts";
+import { listUiSkillDocIds, readGuide, readUiSkillDoc } from "../prompts/skillLoader.ts";
 import { appendMemoryNote } from "../memory/memory.ts";
 import { filterGuideByFramework } from "../guides/filter_guide_by_framework.ts";
 import type { CaideFramework } from "../prompts/framework.ts";
@@ -62,13 +62,14 @@ export const setChatSummaryTool = defineTool({
 const summarizeContextSchema = z.object({
   current_goal: z.string().describe("A brief description of the current overarching goal."),
   active_files: z.array(z.string()).describe("The list of files currently relevant to the goal."),
-  context_to_compress: z.string().describe("The raw text of recent reasoning, findings, or completed steps that you want to compress."),
+  context_to_compress: z
+    .string()
+    .describe(
+      "The raw text of recent reasoning, findings, or completed steps that you want to compress.",
+    ),
 });
 
-export type ContextSummarizer = (input: {
-  system: string;
-  prompt: string;
-}) => Promise<string>;
+export type ContextSummarizer = (input: { system: string; prompt: string }) => Promise<string>;
 
 let summarizer: ContextSummarizer | null = null;
 /** M3 wires the cheap-model provider summarizer here. */
@@ -178,8 +179,16 @@ function formatSize(bytes: number): string {
 
 const copyReferenceSchema = z.object({
   path: z.string().describe("Absolute path to the file or folder to copy into the project"),
-  destination: z.string().optional().describe("Relative path within the project for the copy destination (defaults to the file/folder name in the project root)"),
-  description: z.string().optional().describe("Brief description of what this file contains and why it's needed"),
+  destination: z
+    .string()
+    .optional()
+    .describe(
+      "Relative path within the project for the copy destination (defaults to the file/folder name in the project root)",
+    ),
+  description: z
+    .string()
+    .optional()
+    .describe("Brief description of what this file contains and why it's needed"),
 });
 
 export const copyReferenceTool = defineTool({
@@ -241,9 +250,16 @@ export async function executeCopyReference(
 // --- capture_evidence (goal-decoupled: .caide/evidence JSONL) ---
 
 const captureEvidenceSchema = z.object({
-  kind: z.string().describe("Evidence kind: test | typecheck | lint | build | screenshot | preview"),
+  kind: z
+    .string()
+    .describe("Evidence kind: test | typecheck | lint | build | screenshot | preview"),
   label: z.string().describe("Short label for what was verified"),
-  reference: z.string().min(1).describe("The command run or artifact path, e.g. 'bun run test' or '.caide/evidence/shot.png'"),
+  reference: z
+    .string()
+    .min(1)
+    .describe(
+      "The command run or artifact path, e.g. 'bun run test' or '.caide/evidence/shot.png'",
+    ),
   passed: z.boolean().describe("Whether this evidence indicates the check passed"),
 });
 
@@ -257,7 +273,8 @@ Always capture_evidence after run_tests, run_lint, or run_type_checks equivalent
   modifiesState: true,
   execute: async (args, ctx) =>
     executeCaptureEvidence(captureEvidenceSchema.parse(args), ctx.sessionId, ctx.appPath),
-  presentCall: (args: any) => `Record ${args.kind} evidence: ${args.passed ? "PASSED" : "FAILED"} — ${args.label}`,
+  presentCall: (args: any) =>
+    `Record ${args.kind} evidence: ${args.passed ? "PASSED" : "FAILED"} — ${args.label}`,
 });
 
 export interface EvidenceEntry {
@@ -298,10 +315,7 @@ export async function executeCaptureEvidence(
   };
   const dir = path.join(appPath, ".caide", "evidence");
   await fs.promises.mkdir(dir, { recursive: true });
-  await fs.promises.appendFile(
-    path.join(dir, `${sessionId}.jsonl`),
-    `${JSON.stringify(entry)}\n`,
-  );
+  await fs.promises.appendFile(path.join(dir, `${sessionId}.jsonl`), `${JSON.stringify(entry)}\n`);
   return `Evidence recorded (${parsed.passed ? "PASSED" : "FAILED"}): ${parsed.label}`;
 }
 
@@ -330,7 +344,11 @@ export function listGuideNames(): string[] {
 }
 
 const readGuideSchema = z.object({
-  guide: z.string().describe(`Guide name. Available guides: ${GUIDE_NAMES.join(", ")}`),
+  guide: z.string().describe(
+    `Guide name. Implementation guides: ${GUIDE_NAMES.join(", ")}. UI-skill docs (references/templates/companions, fetched on demand instead of living in every prompt): ${listUiSkillDocIds()
+      .map((id) => `skill:${id}`)
+      .join(", ")}`,
+  ),
   framework: z
     .enum(["blank", "react-native", "flutter", "website"])
     .optional()
@@ -339,7 +357,9 @@ const readGuideSchema = z.object({
 
 export const readGuideTool = defineTool({
   name: "read_guide",
-  description: `Read a detailed implementation guide before building a matching feature. Available guides: ${GUIDE_NAMES.join(", ")}.`,
+  description: `Read a detailed implementation guide before building a matching feature. Implementation guides: ${GUIDE_NAMES.join(", ")}. UI-skill docs (design references, spec templates, companion skills — fetch the one you need instead of guessing): ${listUiSkillDocIds()
+    .map((id) => `skill:${id}`)
+    .join(", ")}.`,
   schema: readGuideSchema,
   readOnly: true,
   modifiesState: false,
@@ -349,6 +369,18 @@ export const readGuideTool = defineTool({
 
 export function executeReadGuide(input: z.infer<typeof readGuideSchema>): string {
   const parsed = readGuideSchema.parse(input);
+  if (parsed.guide.startsWith("skill:")) {
+    const id = parsed.guide.slice("skill:".length);
+    const content = readUiSkillDoc(id);
+    if (!content) {
+      throw new MiscValidationError(
+        `UI-skill doc "${parsed.guide}" not found. Available: ${listUiSkillDocIds()
+          .map((d) => `skill:${d}`)
+          .join(", ")}`,
+      );
+    }
+    return content;
+  }
   if (!GUIDE_NAMES.includes(parsed.guide)) {
     throw new MiscValidationError(
       `Guide "${parsed.guide}" not found. Available guides: ${GUIDE_NAMES.join(", ")}`,
@@ -363,7 +395,9 @@ export function executeReadGuide(input: z.infer<typeof readGuideSchema>): string
   return hasSections ? filterGuideByFramework(content, frameworkType) : content;
 }
 
-function guideFrameworkType(framework: CaideFramework | undefined): "vite" | "nextjs" | "other" | null {
+function guideFrameworkType(
+  framework: CaideFramework | undefined,
+): "vite" | "nextjs" | "other" | null {
   // Website scaffolds are Vite; anything else keeps both guide sections.
   if (framework === "website") return "vite";
   if (framework === undefined) return null;
@@ -373,7 +407,11 @@ function guideFrameworkType(framework: CaideFramework | undefined): "vite" | "ne
 // --- remember (Caide compounding memory; no donor equivalent) ---
 
 const rememberSchema = z.object({
-  note: z.string().min(1).max(500).describe("One lasting rule, decision, or gotcha worth remembering across turns"),
+  note: z
+    .string()
+    .min(1)
+    .max(500)
+    .describe("One lasting rule, decision, or gotcha worth remembering across turns"),
   section: z
     .enum(["Standing notes", "Gotchas"])
     .optional()
@@ -405,9 +443,8 @@ export const telemetryReviewTool = defineTool({
   readOnly: true,
   modifiesState: false,
   execute: async (_, ctx) => {
-    const { ProjectLogStore, analyzeSkillUsage, formatTelemetryProposals } = await import(
-      "../../harness/selfImprove/projectLog.ts"
-    );
+    const { ProjectLogStore, analyzeSkillUsage, formatTelemetryProposals } =
+      await import("../../harness/selfImprove/projectLog.ts");
     const store = new ProjectLogStore(path.join(ctx.appPath, ".caide", "telemetry"));
     const logs = await store.readLogs().catch(() => []);
     if (logs.length === 0) {

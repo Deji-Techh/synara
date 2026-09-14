@@ -321,6 +321,36 @@ function readJson<T>(key: string, fallback: T): T {
   }
 }
 
+export const DEFAULT_COMPACTION_THRESHOLD_TOKENS = 256_000;
+
+/** Client compaction preferences (localStorage; synced per socket open). */
+export function readCompactionEnabled(): boolean {
+  try {
+    return localStorage.getItem("caide.compaction-enabled.v1") !== "false";
+  } catch {
+    return true;
+  }
+}
+
+export function readCompactionThresholdTokens(): number {
+  try {
+    const raw = Number(localStorage.getItem("caide.compaction-threshold.v1"));
+    if (Number.isFinite(raw) && raw > 0) return Math.floor(raw);
+  } catch {
+    // fall through to default
+  }
+  return DEFAULT_COMPACTION_THRESHOLD_TOKENS;
+}
+
+export function writeCompactionPrefs(enabled: boolean, thresholdTokens: number): void {
+  try {
+    localStorage.setItem("caide.compaction-enabled.v1", enabled ? "true" : "false");
+    localStorage.setItem("caide.compaction-threshold.v1", String(Math.floor(thresholdTokens)));
+  } catch {
+    // private mode etc — session default applies
+  }
+}
+
 /**
  * Push client settings to the server session stores (M3g). Reads the same
  * localStorage keys the settings panels write: tool approvals, safe-SQL,
@@ -397,6 +427,8 @@ export function syncHarnessSettings(
       mcpServers: syncedMcpServers,
       blockchainNetworks,
       agentRouting: readJson("caide:agent-routing.v1", null),
+      compactionEnabled: readCompactionEnabled(),
+      compactionThresholdTokens: readCompactionThresholdTokens(),
     },
   });
 }

@@ -131,6 +131,40 @@ export function getCompactionThreshold(contextWindow: number): number {
   return Math.min(250_000, Math.max(0, contextWindow - 25_000));
 }
 
+/**
+ * Effective compaction threshold: the user's configured ceiling, clamped by
+ * per-provider caps (donor: google 190k, openai 220k, else 250k) and the
+ * turn model's real window minus output headroom. A huge user setting can
+ * never overrun a small model.
+ */
+export function resolveEffectiveCompactionThreshold(input: {
+  userSettingTokens?: number;
+  providerId?: string;
+  contextWindow?: number;
+}): number {
+  const FALLBACK = 256_000;
+  const user =
+    typeof input.userSettingTokens === "number" &&
+    Number.isFinite(input.userSettingTokens) &&
+    input.userSettingTokens > 0
+      ? Math.floor(input.userSettingTokens)
+      : FALLBACK;
+  const provider = (input.providerId ?? "").toLowerCase();
+  const cap =
+    provider.includes("google") || provider.includes("gemini")
+      ? 190_000
+      : provider === "openai" || provider.startsWith("openai-")
+        ? 220_000
+        : 250_000;
+  const window =
+    typeof input.contextWindow === "number" &&
+    Number.isFinite(input.contextWindow) &&
+    input.contextWindow > 0
+      ? input.contextWindow
+      : 128_000;
+  return Math.min(user, cap, Math.max(0, window - 25_000));
+}
+
 export function formatStructuredToolError(toolName: string, error: unknown): StructuredToolError {
   if (typeof error === "object" && error !== null && "type" in error && "message" in error) {
     return error as StructuredToolError;

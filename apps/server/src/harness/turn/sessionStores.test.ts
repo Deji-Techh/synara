@@ -40,6 +40,7 @@ describe("session stores persistence (m3g)", () => {
       mcpAutoApproveSafe: false,
       mcpConsents: [{ serverId: 1, toolName: "issue_write", consent: "always" }],
       dbLinks: [{ provider: "supabase", databaseUrl: "postgres://x/db" }],
+      compactionThresholdTokens: 128000,
     });
     try {
       expect(entry.consent.get("run_command")).toBe("never");
@@ -48,6 +49,10 @@ describe("session stores persistence (m3g)", () => {
       expect(entry.mcpAutoApproveSafe).toBe(false);
       expect(entry.mcp.get(1, "issue_write")).toBe("always");
       expect(getDatabaseLink(sid)?.provider).toBe("supabase");
+      expect(entry.compactionThresholdTokens).toBe(128000);
+      // Invalid values never clobber.
+      applySettingsSync(sid, { compactionThresholdTokens: -5 });
+      expect(entry.compactionThresholdTokens).toBe(128000);
     } finally {
       clearSessionStores(sid);
     }
@@ -119,7 +124,10 @@ describe("session stores persistence (m3g)", () => {
     const { storage } = tempStorage();
     const sid = `s-${Date.now()}-e`;
     applySettingsSync(sid, {
-      agentRouting: { mode: "per-step", steps: { scout: { providerId: "openai" }, builder: {}, planner: { modelId: "x" } } },
+      agentRouting: {
+        mode: "per-step",
+        steps: { scout: { providerId: "openai" }, builder: {}, planner: { modelId: "x" } },
+      },
     });
     expect(getOrCreateSessionStores(sid).routing.mode).toBe("per-step");
     await snapshotSessionState(sid, storage);
@@ -137,7 +145,8 @@ describe("session stores persistence (m3g)", () => {
     }
   });
 
-  it("counts post-consent tool calls per session (fork telemetry)", () => {    const sid = `s-tools-${Date.now()}`;
+  it("counts post-consent tool calls per session (fork telemetry)", () => {
+    const sid = `s-tools-${Date.now()}`;
     recordSessionToolCall(sid, "execute_fork_skill");
     recordSessionToolCall(sid, "execute_fork_skill");
     recordSessionToolCall(sid, "spawn_subagent");
@@ -178,11 +187,19 @@ describe("session stores persistence (m3g)", () => {
     const sidC = `s-scope-c-${Date.now()}`;
     noteSessionApp(sidC, "/work/app-c");
     applySettingsSync(sidC, {
-      dbLinks: [{ provider: "neon", databaseUrl: "postgres://z/db", scope: { type: "project", workspaceRoot: "/work/other" } }],
+      dbLinks: [
+        {
+          provider: "neon",
+          databaseUrl: "postgres://z/db",
+          scope: { type: "project", workspaceRoot: "/work/other" },
+        },
+      ],
     });
     expect(getDatabaseLink(sidC)).toBeUndefined();
     // Legacy scopeless entries still provision as the global default.
-    applySettingsSync(sidC, { dbLinks: [{ provider: "supabase", databaseUrl: "postgres://legacy/db" }] });
+    applySettingsSync(sidC, {
+      dbLinks: [{ provider: "supabase", databaseUrl: "postgres://legacy/db" }],
+    });
     expect(getDatabaseLink(sidC)?.databaseUrl).toBe("postgres://legacy/db");
     clearSessionStores(sidA);
     clearSessionStores(sidB);

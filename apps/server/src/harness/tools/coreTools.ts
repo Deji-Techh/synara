@@ -4,6 +4,13 @@ import { exec, execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { z } from "zod";
 import { defineTool, type ToolDef } from "./defineTool.ts";
+import {
+  consumeTimedOut,
+  dismissPendingForSession,
+  getCheckpointTransport,
+  nextRequestId,
+  waitForUserInput,
+} from "../../dyad/plan/userPrompt.ts";
 import { designTokens, type DesignTokens } from "../../design/tokens.ts";
 
 const execFileAsync = promisify(execFile);
@@ -551,13 +558,29 @@ export const checkpointTool = defineTool({
   }),
   readOnly: false,
   modifiesState: true,
-  execute: async ({ reason, diff }) => {
-    return {
-      checkpointId: `chk-${Date.now()}`,
-      status: "pending_approval",
-      reason,
-      diff,
-    };
+  waitsForUserInput: true,
+  execute: async ({ reason, diff }, ctx) => {
+    const t = getCheckpointTransport();
+    if (!t) {
+      return "Checkpoint UI is not wired — ask the user how to proceed with the risky change instead of assuming approval.";
+    }
+    // One live checkpoint per session; the checkpoint id doubles as the
+    // waiter requestId so answers, withdrawals, and tombstones line up.
+    for (const staleId of dismissPendingForSession(ctx.sessionId, "checkpoint")) {
+      t.sendPromptWithdraw?.(ctx.sessionId, staleId);
+    }
+    const requestId = nextRequestId("checkpoint");
+    t.sendCheckpoint(ctx.sessionId, requestId, { reason, ...(diff ? { diff } : {}) });
+    const answers = await waitForUserInput(requestId, ctx.sessionId, "checkpoint", ctx.signal);
+    if (!answers) {
+      if (consumeTimedOut(requestId)) {
+        t.sendPromptWithdraw?.(ctx.sessionId, requestId);
+        return "Checkpoint timed out without review. Do NOT proceed with the risky change; ask the user how they'd like to proceed.";
+      }
+      return "Checkpoint dismissed without review. Do NOT proceed with the risky change; ask the user how they'd like to proceed.";
+    }
+    if (answers.approved === "true") return "Checkpoint approved — proceed with the change.";
+    return `Checkpoint change requested: ${answers.feedback || "no details given"}. Revise accordingly.`;
   },
 });
 

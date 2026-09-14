@@ -11,7 +11,7 @@ import { randomUUID } from "node:crypto";
 export interface PendingPrompt {
   requestId: string;
   sessionId: string;
-  kind: "questionnaire" | "env-vars" | "integration";
+  kind: "questionnaire" | "env-vars" | "integration" | "checkpoint";
   resolve: (value: Record<string, string> | null) => void;
   /** Abort listener handle (removed on settle to avoid listener leaks). */
   onAbort?: () => void;
@@ -23,11 +23,12 @@ const pending = new Map<string, PendingPrompt>();
 /** RequestIds whose waiter expired on a deadline (vs user dismiss/abort). */
 const timedOut = new Set<string>();
 
-/** Donor deadlines: questionnaire 5min, env/integration 30min. Zero = none. */
+/** Donor deadlines: questionnaire 5min, env/integration 30min, checkpoint 30min. Zero = none. */
 const WAIT_DEADLINES_MS: Record<PendingPrompt["kind"], number> = {
   questionnaire: 5 * 60_000,
   "env-vars": 30 * 60_000,
   integration: 30 * 60_000,
+  checkpoint: 30 * 60_000,
 };
 
 export function nextRequestId(kind: PendingPrompt["kind"]): string {
@@ -156,4 +157,23 @@ export function pendingCount(): number {
 /** Whether this prompt is still awaiting an answer (unanswered on replay). */
 export function hasPendingUserInput(requestId: string): boolean {
   return pending.has(requestId);
+}
+
+export interface CheckpointPrompt {
+  reason: string;
+  diff?: string;
+}
+
+export interface CheckpointTransport {
+  sendCheckpoint(sessionId: string, requestId: string, prompt: CheckpointPrompt): void;
+  sendPromptWithdraw?(sessionId: string, requestId: string): void;
+}
+
+let checkpointTransport: CheckpointTransport | null = null;
+/** WS layer wires this (M3); without one the checkpoint tool fails structured. */
+export function setCheckpointTransport(t: CheckpointTransport | null): void {
+  checkpointTransport = t;
+}
+export function getCheckpointTransport(): CheckpointTransport | null {
+  return checkpointTransport;
 }

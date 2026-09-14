@@ -3,11 +3,7 @@
 // Layer: Route screen
 // Exports: Settings route component for `/settings`
 
-import {
-  PROVIDER_DISPLAY_NAMES,
-  PROVIDER_KINDS,
-  type ProviderKind,
-} from "@caide/contracts";
+import { PROVIDER_DISPLAY_NAMES, PROVIDER_KINDS, type ProviderKind } from "@caide/contracts";
 import { PROVIDER_DESCRIPTORS } from "@caide/shared/providerMetadata";
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
@@ -50,6 +46,7 @@ import { ProfileSettingsPanel } from "../components/settings/ProfileSettingsPane
 import { McpServersSettingsPanel } from "../components/settings/McpServersSettingsPanel";
 import { DatabaseSettingsPanel } from "../components/settings/DatabaseSettingsPanel";
 import { ToolApprovalsSection } from "../components/settings/ToolApprovalsSection";
+import { CompactionSection } from "../components/settings/CompactionSection";
 import {
   SettingResetButton,
   SettingsSegmentedControl,
@@ -242,7 +239,9 @@ function SettingsRouteView() {
     ...(theme !== "system" ? ["Theme"] : []),
     ...(!isDefaultActiveTheme ? [`${resolvedTheme === "dark" ? "Dark" : "Light"} theme pack`] : []),
     ...(settings.defaultProvider !== defaults.defaultProvider ? ["Default provider"] : []),
-    ...(settings.defaultThreadEnvMode !== defaults.defaultThreadEnvMode ? ["New conversation mode"] : []),
+    ...(settings.defaultThreadEnvMode !== defaults.defaultThreadEnvMode
+      ? ["New conversation mode"]
+      : []),
     ...(settings.sidebarProjectSortOrder !== defaults.sidebarProjectSortOrder
       ? ["Project sort order"]
       : []),
@@ -412,10 +411,11 @@ function SettingsRouteView() {
             getCustomModelsForProvider(settings, chatTitleProvider),
             chatTitleSelection.model,
           );
-          const chatTitleModel =
-            chatTitleModelOptions.some((option) => option.slug === chatTitleSelection.model)
-              ? chatTitleSelection.model
-              : (chatTitleModelOptions[0]?.slug ?? chatTitleSelection.model);
+          const chatTitleModel = chatTitleModelOptions.some(
+            (option) => option.slug === chatTitleSelection.model,
+          )
+            ? chatTitleSelection.model
+            : (chatTitleModelOptions[0]?.slug ?? chatTitleSelection.model);
           return (
             <SettingsRow
               title="Chat title model"
@@ -712,18 +712,14 @@ function SettingsRouteView() {
             settings.sidebarFolderColor !== defaults.sidebarFolderColor ? (
               <SettingResetButton
                 label="project folder color"
-                onClick={() =>
-                  updateSettings({ sidebarFolderColor: defaults.sidebarFolderColor })
-                }
+                onClick={() => updateSettings({ sidebarFolderColor: defaults.sidebarFolderColor })}
               />
             ) : null
           }
           control={
             <SidebarFolderColorPicker
               value={settings.sidebarFolderColor}
-              onValueChange={(sidebarFolderColor) =>
-                updateSettings({ sidebarFolderColor })
-              }
+              onValueChange={(sidebarFolderColor) => updateSettings({ sidebarFolderColor })}
             />
           }
         />
@@ -975,7 +971,9 @@ function SettingsRouteView() {
 
         <div className="rounded-xl border border-border/70 bg-card/60 p-4 space-y-2.5">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span className="font-medium text-foreground/80">Typography & Spacing Live Preview</span>
+            <span className="font-medium text-foreground/80">
+              Typography & Spacing Live Preview
+            </span>
             <span>Real-time preview</span>
           </div>
           <div
@@ -983,10 +981,12 @@ function SettingsRouteView() {
             style={resolveChatTypographyCssProperties(settings, resolvedTheme === "dark")}
           >
             <p className="text-foreground">
-              Here is how assistant messages render. <strong>Key concepts and solutions appear punchier with bolder emphasis.</strong>
+              Here is how assistant messages render.{" "}
+              <strong>Key concepts and solutions appear punchier with bolder emphasis.</strong>
             </p>
             <p className="text-foreground">
-              Important alerts use your chosen accent like <mark className="chat-highlight">critical notice</mark> for effortless scanning.
+              Important alerts use your chosen accent like{" "}
+              <mark className="chat-highlight">critical notice</mark> for effortless scanning.
             </p>
           </div>
         </div>
@@ -1161,7 +1161,9 @@ function SettingsRouteView() {
               <SettingResetButton
                 label="transcription engine"
                 onClick={() =>
-                  updateSettings({ voiceTranscriptionProvider: DEFAULT_VOICE_TRANSCRIPTION_PROVIDER })
+                  updateSettings({
+                    voiceTranscriptionProvider: DEFAULT_VOICE_TRANSCRIPTION_PROVIDER,
+                  })
                 }
               />
             ) : null
@@ -1175,9 +1177,7 @@ function SettingsRouteView() {
               }}
               ariaLabel="Voice transcription engine"
               valueContent={
-                settings.voiceTranscriptionProvider === "web-speech"
-                  ? "Web Speech API"
-                  : "AI model"
+                settings.voiceTranscriptionProvider === "web-speech" ? "Web Speech API" : "AI model"
               }
             >
               <SelectItem hideIndicator value="ai-model">
@@ -1276,6 +1276,7 @@ function SettingsRouteView() {
       </SettingsSection>
 
       <ToolApprovalsSection />
+      <CompactionSection />
     </div>
   );
 

@@ -22,6 +22,7 @@ import {
   type ToolConsent,
 } from "./toolCatalog.ts";
 import { randomUUID } from "node:crypto";
+import { checkToolDanger, type DangerCheckResult } from "./dangerCheck.ts";
 
 export interface SqlConsentMetadata {
   sqlMutatesSchema?: boolean;
@@ -55,6 +56,8 @@ export interface ConsentRequest {
   toolName: string;
   toolDescription?: string | null;
   inputPreview?: string | null;
+  /** Static danger finding: card shows a banner and hides accept-always. */
+  danger?: DangerCheckResult | null;
 }
 
 export type ConsentRequestFn = (req: ConsentRequest) => Promise<ConsentDecision>;
@@ -189,6 +192,8 @@ export async function requireAgentToolConsent(params: {
   requestConsent: ConsentRequestFn;
   /** Full-access turn: auto-allow everything except explicit user bans. */
   bypassConsent?: boolean;
+  /** Raw tool args for static danger checks (SQL/package/script scans). */
+  toolArgs?: unknown;
   /** Turn abort — settles a parked wait as declined instead of hanging. */
   signal?: AbortSignal;
 }): Promise<boolean> {
@@ -197,9 +202,16 @@ export async function requireAgentToolConsent(params: {
 
   if (current === "always") return true;
   if (current === "never") throw new ToolNeverAllowedError(params.toolName);
+  // Static danger scan (fast, regex-only): malformed package names are
+  // command injection — blocked outright, even in full access. Other
+  // findings force an ask-with-banner card (no bypass, no accept-always).
+  const danger = checkToolDanger(params.toolName, params.toolArgs);
+  if (danger && danger.category === "malicious_package") {
+    throw new Error(`Refusing to run ${params.toolName}: ${danger.message}`);
+  }
   // Full access bypasses interactive approval — but never resurrects
-  // user-banned tools (checked above).
-  if (params.bypassConsent) return true;
+  // user-banned tools (checked above), and never skips danger cards.
+  if (params.bypassConsent && !danger) return true;
 
   if (
     shouldAutoApproveAgentTool({
@@ -229,6 +241,7 @@ export async function requireAgentToolConsent(params: {
         toolName: params.toolName,
         toolDescription: params.toolDescription,
         inputPreview: params.inputPreview,
+        ...(danger ? { danger } : {}),
       }),
     )
     .then(

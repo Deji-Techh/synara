@@ -388,6 +388,15 @@ export async function executeAddIntegration(
   linkDatabase(sessionId, link);
   // Persist app-scoped so later chats in the same project reuse it.
   if (appPath) linkAppDatabase(appPath, link);
+  // Arm the deferred follow-up: the turn usually ends before the agent acts
+  // on the new database; on turn_end the gateway relaunches with a grounded
+  // continue prompt (donor armed→due→dispatch parity).
+  const { armIntegrationFollowUp } = await import("./integrationFollowUp.ts");
+  armIntegrationFollowUp(
+    sessionId,
+    requestId,
+    `Continue. The ${picked} database integration is complete${databaseUrl ? " and DATABASE_URL is set" : ""} — proceed with the database work you planned.`,
+  );
   return `User completed the ${picked} integration. You can now continue with the next step.`;
 }
 

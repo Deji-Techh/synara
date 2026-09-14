@@ -29,6 +29,7 @@ import {
   dismissUserInput,
   resolveUserInput,
   sessionForRequest,
+  setCheckpointTransport,
 } from "../../dyad/plan/userPrompt.ts";
 import {
   applySettingsSync,
@@ -46,6 +47,22 @@ import type { HarnessHub } from "./hub.ts";
  */
 const promptSessions = new Map<string, string>();
 const PROMPT_SESSION_MAP_CAP = 500;
+
+/** In-flight MCP OAuth flows by session (cancel rejects the callback wait). */
+const oauthCancels = new Map<string, () => void>();
+
+/** Abort a session's pending MCP OAuth flow (turn cancel). */
+export function cancelMcpOAuthForSession(sessionId: string): void {
+  const cancel = oauthCancels.get(sessionId);
+  if (cancel) {
+    oauthCancels.delete(sessionId);
+    try {
+      cancel();
+    } catch {
+      // flow already settled
+    }
+  }
+}
 
 function notePromptSession(requestId: string, sessionId: string): void {
   promptSessions.set(requestId, sessionId);
@@ -65,11 +82,16 @@ async function send(server: HarnessHub, sessionId: string, event: HarnessEvent):
   } // Persist prompts (and only prompts — tokens/turns already persist via the
   // runner) so reconnect replay rebuilds parked questionnaires/consents.
   // Withdrawals persist too so replay drops superseded/cancelled cards.
+  // Checkpoint gates persist so a reload rebuilds the approval card.
   // Answered prompts are filtered at replay time (see hub.replaySession).
   // Persist BEFORE broadcast: a subscribe→replay landing between a live
   // broadcast and its async write would otherwise miss the prompt entirely,
   // and nothing re-triggers until the next remount.
-  if (event.type === "ui_prompt" || event.type === "ui_prompt_withdraw") {
+  if (
+    event.type === "ui_prompt" ||
+    event.type === "ui_prompt_withdraw" ||
+    event.type === "checkpoint"
+  ) {
     try {
       await appendHarnessEvent(event);
     } catch {
@@ -169,6 +191,20 @@ export function attachUiBridge(server: HarnessHub): {
       void send(server, sessionId, { type: "ui_prompt_withdraw", sessionId, requestId }),
   });
 
+  setCheckpointTransport({
+    sendCheckpoint: (sessionId, requestId, prompt) =>
+      void send(server, sessionId, {
+        type: "checkpoint",
+        sessionId,
+        id: requestId,
+        reason: prompt.reason,
+        requiresResponse: true,
+        ...(prompt.diff ? { diff: prompt.diff } : {}),
+      }),
+    sendPromptWithdraw: (sessionId, requestId) =>
+      void send(server, sessionId, { type: "ui_prompt_withdraw", sessionId, requestId }),
+  });
+
   const requestConsent: ConsentRequestFn = async (req) => {
     void send(server, req.sessionId, {
       type: "ui_prompt",
@@ -179,6 +215,7 @@ export function attachUiBridge(server: HarnessHub): {
         toolName: req.toolName,
         toolDescription: req.toolDescription ?? null,
         inputPreview: req.inputPreview ?? null,
+        ...(req.danger ? { danger: req.danger } : {}),
       },
     });
     // The waiter (waitForConsent) is parked by requireAgentToolConsent before
@@ -222,7 +259,13 @@ export function attachUiBridge(server: HarnessHub): {
       const sessionId =
         sessionForConsentRequest(requestId) ?? sessionForMcpConsentRequest(requestId);
       if (sessionId) await settlePrompt(server, sessionId, requestId);
-      const settled = resolveConsent(requestId, decision) || resolveMcpConsent(requestId, decision);
+      // Route by id prefix (agent:/mcp:): both resolvers no-op on unknown
+      // ids, but explicit routing survives any future id collision.
+      const settled = requestId.startsWith("mcp:")
+        ? resolveMcpConsent(requestId, decision)
+        : requestId.startsWith("agent:")
+          ? resolveConsent(requestId, decision)
+          : resolveConsent(requestId, decision) || resolveMcpConsent(requestId, decision);
       if (!settled) {
         const staleSession = sessionId ?? findSessionForStalePrompt(requestId);
         if (staleSession) {
@@ -250,7 +293,23 @@ export function attachUiBridge(server: HarnessHub): {
           status: "authorize",
           authorizeUrl: begun.authorizeUrl,
         });
-        const { code } = await begun.waitForCallback;
+        // Cancel-linked wait: turn cancel rejects the callback wait so the
+        // flow fails fast instead of lingering to its 120s timeout. (The
+        // loopback listener still self-closes on its own timer.)
+        const { code } = await new Promise<{ code: string }>((resolve, reject) => {
+          oauthCancels.set(sessionId, () => reject(new Error("OAuth cancelled with the turn.")));
+          begun.waitForCallback.then(
+            (v) => {
+              oauthCancels.delete(sessionId);
+              resolve(v);
+            },
+            (e) => {
+              oauthCancels.delete(sessionId);
+              reject(e);
+            },
+          );
+        });
+        oauthCancels.delete(sessionId);
         await completeMcpOAuthFlow({
           serverId: input.serverId,
           metadata: begun.metadata,
@@ -326,6 +385,7 @@ export function attachUiBridge(server: HarnessHub): {
       setDbPanelTransport(null);
       setBlueprintTransport(null);
       setIntegrationTransport(null);
+      setCheckpointTransport(null);
       server.onPromptAnswer(() => {});
       server.onConsentAnswer(() => {});
       server.onSettingsSync(() => {});

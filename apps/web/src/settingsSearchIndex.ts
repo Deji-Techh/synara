@@ -253,6 +253,13 @@ export const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
     title: "Terminal close confirmation",
     keywords: "Ask before closing a terminal tab and clearing its history. safety confirm",
   },
+  {
+    id: "behavior:compaction",
+    section: "behavior",
+    title: "Context compaction",
+    keywords:
+      "Auto-compact long chats threshold tokens context window summarize compact now backups.",
+  },
 
   // ── Keybindings ───────────────────────────────────────────────────────────────
   {
@@ -328,29 +335,25 @@ export const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
     id: "providers:routing-scout",
     section: "providers",
     title: "Scout",
-    keywords:
-      "Cheap model for read-only steps: exploration, file reads, searches. routing",
+    keywords: "Cheap model for read-only steps: exploration, file reads, searches. routing",
   },
   {
     id: "providers:routing-builder",
     section: "providers",
     title: "Builder",
-    keywords:
-      "Strong model for steps that write code or change state. routing",
+    keywords: "Strong model for steps that write code or change state. routing",
   },
   {
     id: "providers:routing-planner",
     section: "providers",
     title: "Planner",
-    keywords:
-      "Model for plan-mode turns, questionnaires and plans. routing",
+    keywords: "Model for plan-mode turns, questionnaires and plans. routing",
   },
   {
     id: "providers:routing-fallbacks",
     section: "providers",
     title: "Fallback chain",
-    keywords:
-      "Backup providers tried in order when the turn provider fails. failover routing",
+    keywords: "Backup providers tried in order when the turn provider fails. failover routing",
   },
 
   // ── Skills ────────────────────────────────────────────────────────────────────

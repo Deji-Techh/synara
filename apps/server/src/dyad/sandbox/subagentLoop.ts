@@ -22,11 +22,7 @@ import {
   settleSubagentTask,
   type SubagentMessage,
 } from "./taskRegistry.ts";
-import {
-  isExplorerTool,
-  systemPromptForPersona,
-  type SubagentPersona,
-} from "./personas.ts";
+import { isExplorerTool, systemPromptForPersona, type SubagentPersona } from "./personas.ts";
 
 const EXCLUDED_SUBAGENT_TOOLS = new Set([
   "spawn_subagent",
@@ -84,7 +80,10 @@ function toLoopTool(
     name: def.name,
     description: def.description,
     readOnly: def.readOnly,
-    execute: async (args: unknown, context: { signal?: AbortSignal; sessionId: string; toolId: string }) => {
+    execute: async (
+      args: unknown,
+      context: { signal?: AbortSignal; sessionId: string; toolId: string },
+    ) => {
       // Same posture as the parent turn: mutating calls need consent.
       // Without a round-trip, stored allow/deny rules still apply exactly
       // like parent turns (deny throws, SQL auto-approve included).
@@ -94,6 +93,7 @@ function toLoopTool(
           toolName: def.name,
           toolDescription: def.description,
           store: consentStore,
+          toolArgs: args,
           requestConsent:
             requestConsent ??
             (async () => {
@@ -119,7 +119,9 @@ export async function runSubagentLoop(deps: SubagentLoopDeps): Promise<SubagentL
   const tools = deps.tools
     .filter((t) => !EXCLUDED_SUBAGENT_TOOLS.has(t.name))
     .filter((t) => (deps.persona === "explorer" ? isExplorerTool(t.name, t.readOnly) : true))
-    .map((t) => toLoopTool(t, deps.appPath, deps.sessionId, deps.requestConsent, deps.consentStore));
+    .map((t) =>
+      toLoopTool(t, deps.appPath, deps.sessionId, deps.requestConsent, deps.consentStore),
+    );
   let stepCount = 0;
   const texts: string[] = [];
   const history = (deps.history ?? []).map((m) => ({
@@ -134,7 +136,10 @@ export async function runSubagentLoop(deps: SubagentLoopDeps): Promise<SubagentL
     buildMessages: () => [
       { role: "system" as const, content: deps.system },
       ...history,
-      { role: "user" as const, content: history.length > 0 ? "Continue with the thread above." : "Begin your task." },
+      {
+        role: "user" as const,
+        content: history.length > 0 ? "Continue with the thread above." : "Begin your task.",
+      },
     ],
     tools,
     role: "builder",
@@ -327,9 +332,13 @@ export function wakeSubagentThread(taskId: string): boolean {
   if (deps.signal?.aborted) {
     active.abort(deps.signal.reason ?? "parent turn aborted");
   } else {
-    deps.signal?.addEventListener("abort", () => active.abort(deps.signal?.reason ?? "parent turn aborted"), {
-      once: true,
-    });
+    deps.signal?.addEventListener(
+      "abort",
+      () => active.abort(deps.signal?.reason ?? "parent turn aborted"),
+      {
+        once: true,
+      },
+    );
   }
   void runThreadWorker(taskId, deps, active);
   return true;

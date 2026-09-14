@@ -6,11 +6,13 @@
 // snapshots at turn end, so restarts lose nothing.
 
 import { SessionStorage } from "../session/storage.ts";
-import { linkDatabase, unlinkDatabase, getDatabaseLink, type DbLink } from "../../dyad/db/connections.ts";
 import {
-  MemoryConsentStore,
-  type ToolConsent,
-} from "../../dyad/tools/permissions.ts";
+  linkDatabase,
+  unlinkDatabase,
+  getDatabaseLink,
+  type DbLink,
+} from "../../dyad/db/connections.ts";
+import { MemoryConsentStore, type ToolConsent } from "../../dyad/tools/permissions.ts";
 import { MemoryMcpConsentStore, type McpConsent } from "../../dyad/mcp/mcpConsent.ts";
 import { getTodos, setTodos } from "../../dyad/plan/todoStore.ts";
 import {
@@ -19,6 +21,12 @@ import {
   setAcceptedPlan,
   type PlanRecord,
 } from "../../dyad/plan/planStore.ts";
+import {
+  approveBlueprint,
+  getBlueprint,
+  isBlueprintApproved,
+  presentBlueprint,
+} from "../../dyad/plan/blueprintStore.ts";
 import { getSessionTitle } from "../../dyad/misc/miscTools.ts";
 import {
   DEFAULT_AGENT_ROUTING,
@@ -29,11 +37,10 @@ import {
 export interface SettingsSyncPayload {
   toolConsents?: Record<string, ToolConsent>;
   safeSql?: boolean;
+  compactionThresholdTokens?: number;
   mcpConsents?: Array<{ serverId: string | number; toolName: string; consent: McpConsent }>;
   mcpAutoApproveSafe?: boolean;
-  dbLinks?: Array<
-    DbLink & { scope?: { type: "global" | "project"; workspaceRoot?: string } }
-  >;
+  dbLinks?: Array<DbLink & { scope?: { type: "global" | "project"; workspaceRoot?: string } }>;
   /** Per-step model routing (single vs scout/builder/planner); validated on apply. */
   agentRouting?: unknown;
   /** Client MCP server configs (web settings shape); manager syncs + feeds the registry. */
@@ -56,6 +63,8 @@ export interface SessionStores {
   mcp: MemoryMcpConsentStore;
   safeSql: boolean;
   mcpAutoApproveSafe: boolean;
+  /** User-configured compaction threshold in tokens (default 256k). */
+  compactionThresholdTokens: number;
   routing: AgentRoutingConfig;
   /** Per-tool execution counts (post-consent). Powers fork-skill/subagent
    * telemetry (item 31) and fixer-retry signals for the run log. */
@@ -63,6 +72,28 @@ export interface SessionStores {
 }
 
 const stores = new Map<string, SessionStores>();
+
+/**
+ * Sessions with a live turn + settings payloads that arrived mid-turn.
+ * Applying a save (consents, routing, DB links) into a running turn flips
+ * its posture mid-flight — deferred payloads apply at the next turn_start.
+ */
+const liveTurnSessions = new Set<string>();
+const pendingSync = new Map<string, SettingsSyncPayload>();
+
+/** Mark a session's turn live (runner start) or settled (terminal paths). */
+export function setTurnLive(sessionId: string, live: boolean): void {
+  if (live) {
+    liveTurnSessions.add(sessionId);
+    return;
+  }
+  liveTurnSessions.delete(sessionId);
+  const queued = pendingSync.get(sessionId);
+  if (queued) {
+    pendingSync.delete(sessionId);
+    applySettingsSync(sessionId, queued);
+  }
+}
 
 /** sessionId -> appPath registry (appPath arrives per turn; no persistence needed). */
 const sessionApps = new Map<string, string>();
@@ -90,6 +121,7 @@ export function getOrCreateSessionStores(sessionId: string): SessionStores {
       mcp: new MemoryMcpConsentStore(),
       safeSql: true,
       mcpAutoApproveSafe: true,
+      compactionThresholdTokens: DEFAULT_COMPACTION_THRESHOLD_TOKENS,
       routing: {
         mode: DEFAULT_AGENT_ROUTING.mode,
         steps: {
@@ -105,6 +137,9 @@ export function getOrCreateSessionStores(sessionId: string): SessionStores {
   }
   return entry;
 }
+
+/** Default compaction threshold (tokens) when the client sends none. */
+export const DEFAULT_COMPACTION_THRESHOLD_TOKENS = 256_000;
 
 /** Increment a session's post-consent execution count for one tool. */
 export function recordSessionToolCall(sessionId: string, toolName: string): void {
@@ -125,6 +160,12 @@ export function clearSessionStores(sessionId: string): void {
 
 /** Apply a client settings_sync payload to the session stores. */
 export function applySettingsSync(sessionId: string, payload: SettingsSyncPayload): SessionStores {
+  // Mid-turn saves must not mutate the live turn's posture (consent flips,
+  // routing swaps, DB relinks under a parked tool). Defer to next turn.
+  if (liveTurnSessions.has(sessionId)) {
+    pendingSync.set(sessionId, { ...pendingSync.get(sessionId), ...payload });
+    return getOrCreateSessionStores(sessionId);
+  }
   const entry = getOrCreateSessionStores(sessionId);
   if (payload.toolConsents) {
     for (const [tool, consent] of Object.entries(payload.toolConsents)) {
@@ -134,7 +175,15 @@ export function applySettingsSync(sessionId: string, payload: SettingsSyncPayloa
     }
   }
   if (typeof payload.safeSql === "boolean") entry.safeSql = payload.safeSql;
-  if (typeof payload.compactionEnabled === "boolean") entry.compactionEnabled = payload.compactionEnabled;
+  if (
+    typeof payload.compactionThresholdTokens === "number" &&
+    Number.isFinite(payload.compactionThresholdTokens) &&
+    payload.compactionThresholdTokens > 0
+  ) {
+    entry.compactionThresholdTokens = Math.floor(payload.compactionThresholdTokens);
+  }
+  if (typeof payload.compactionEnabled === "boolean")
+    entry.compactionEnabled = payload.compactionEnabled;
   if (typeof payload.mcpAutoApproveSafe === "boolean") {
     entry.mcpAutoApproveSafe = payload.mcpAutoApproveSafe;
   }
@@ -151,9 +200,14 @@ export function applySettingsSync(sessionId: string, payload: SettingsSyncPayloa
     // unmatched sync leaves the existing session link alone.
     const appPath = getSessionApp(sessionId);
     const sameRoot = (a?: string, b?: string) =>
-      !!a && !!b && a.replace(/\\/g, "/").replace(/\/+$/, "") === b.replace(/\\/g, "/").replace(/\/+$/, "");
+      !!a &&
+      !!b &&
+      a.replace(/\\/g, "/").replace(/\/+$/, "") === b.replace(/\\/g, "/").replace(/\/+$/, "");
     const match =
-      (appPath && payload.dbLinks.find((c) => c.scope?.type === "project" && sameRoot(c.scope.workspaceRoot, appPath))) ||
+      (appPath &&
+        payload.dbLinks.find(
+          (c) => c.scope?.type === "project" && sameRoot(c.scope.workspaceRoot, appPath),
+        )) ||
       payload.dbLinks.find((c) => !c.scope || c.scope.type === "global");
     // No match (e.g. every entry is bound to another project): leave the
     // existing session link alone rather than clobbering it.
@@ -177,6 +231,7 @@ export async function snapshotSessionState(
   const entry = stores.get(sessionId);
   const consents: Record<string, ToolConsent> = entry ? entry.consent.entries() : {};
   const accepted = getAcceptedPlan(sessionId);
+  const blueprint = getBlueprint(sessionId);
   await storage.append(sessionId, "session/state", {
     todos: getTodos(sessionId),
     title: getSessionTitle(sessionId),
@@ -184,6 +239,8 @@ export async function snapshotSessionState(
     toolConsents: consents,
     safeSql: entry?.safeSql ?? true,
     compactionEnabled: entry?.compactionEnabled ?? true,
+    compactionThresholdTokens:
+      entry?.compactionThresholdTokens ?? DEFAULT_COMPACTION_THRESHOLD_TOKENS,
     agentRouting: entry?.routing ?? DEFAULT_AGENT_ROUTING,
     // Bounded handoff record (no full plan text — re-read from the file).
     acceptedPlan: accepted
@@ -195,6 +252,9 @@ export async function snapshotSessionState(
           acceptedAt: accepted.acceptedAt ?? null,
         }
       : null,
+    // Blueprint draft + approval (memory-only otherwise — restart would
+    // strand an approved blueprint as unapproved and re-block writes).
+    blueprint: blueprint ? { data: blueprint, approved: isBlueprintApproved(sessionId) } : null,
   });
 }
 
@@ -213,6 +273,8 @@ export async function restoreSessionState(
       toolConsents?: Record<string, unknown>;
       safeSql?: unknown;
       compactionEnabled?: unknown;
+      compactionThresholdTokens?: unknown;
+      blueprint?: unknown;
       agentRouting?: unknown;
       acceptedPlan?: {
         id?: unknown;
@@ -225,9 +287,13 @@ export async function restoreSessionState(
     if (Array.isArray(data.todos)) {
       setTodos(
         sessionId,
-        (data.todos as Array<{ id: string; content: string; status: "pending" | "in_progress" | "completed" }>).filter(
-          (t) => t && typeof t.id === "string",
-        ),
+        (
+          data.todos as Array<{
+            id: string;
+            content: string;
+            status: "pending" | "in_progress" | "completed";
+          }>
+        ).filter((t) => t && typeof t.id === "string"),
       );
     }
     if (data.link && typeof data.link === "object") linkDatabase(sessionId, data.link);
@@ -244,6 +310,15 @@ export async function restoreSessionState(
     }
     if (typeof data.compactionEnabled === "boolean") {
       getOrCreateSessionStores(sessionId).compactionEnabled = data.compactionEnabled;
+    }
+    if (
+      typeof data.compactionThresholdTokens === "number" &&
+      Number.isFinite(data.compactionThresholdTokens) &&
+      data.compactionThresholdTokens > 0
+    ) {
+      getOrCreateSessionStores(sessionId).compactionThresholdTokens = Math.floor(
+        data.compactionThresholdTokens,
+      );
     }
     if (data.agentRouting !== undefined) {
       getOrCreateSessionStores(sessionId).routing = normalizeAgentRouting(data.agentRouting);
@@ -262,6 +337,33 @@ export async function restoreSessionState(
           file: typeof p.file === "string" ? p.file : undefined,
         };
         setAcceptedPlan(sessionId, record);
+      }
+    }
+    if (data.blueprint && typeof data.blueprint === "object") {
+      const b = data.blueprint as {
+        data?: unknown;
+        approved?: unknown;
+      };
+      if (b.data && typeof b.data === "object") {
+        const d = b.data as {
+          appName?: unknown;
+          userPrompt?: unknown;
+          framework?: unknown;
+          designDirection?: unknown;
+          primaryColor?: unknown;
+          visuals?: unknown;
+        };
+        if (typeof d.appName === "string") {
+          presentBlueprint(sessionId, {
+            appName: d.appName,
+            userPrompt: typeof d.userPrompt === "string" ? d.userPrompt : "",
+            framework: typeof d.framework === "string" ? d.framework : undefined,
+            designDirection: typeof d.designDirection === "string" ? d.designDirection : "",
+            primaryColor: typeof d.primaryColor === "string" ? d.primaryColor : "",
+            visuals: Array.isArray(d.visuals) ? d.visuals : [],
+          } as Parameters<typeof presentBlueprint>[1]);
+          if (b.approved === true) approveBlueprint(sessionId);
+        }
       }
     }
     return;

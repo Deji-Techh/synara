@@ -125,6 +125,8 @@ function pushTimeline(session: SessionState, entry: Omit<TimelineEntry, "seq">):
 export interface HarnessStoreState {
   sessions: Record<string, SessionState>;
   activeSessionId: string | null;
+  /** Latest compaction outcome across sessions (settings status line). */
+  lastCompaction: { at: number; reason: string; summaryLength: number } | null;
 }
 
 const listeners = new Set<() => void>();
@@ -132,6 +134,7 @@ const listeners = new Set<() => void>();
 let state: HarnessStoreState = {
   sessions: {},
   activeSessionId: null,
+  lastCompaction: null,
 };
 
 function notify(): void {
@@ -267,6 +270,17 @@ export const harnessStore = {
       }
       case "ui_prompt_withdraw": {
         // Superseded/cancelled prompt: drop the card (replay also skips it).
+        // Checkpoint gates share the waiter id space, so a matching
+        // checkpoint clears too.
+        if (session.checkpoint && session.checkpoint.id === event.requestId) {
+          const { checkpoint: _droppedCheckpoint, ...restCheckpoint } = session;
+          void _droppedCheckpoint;
+          state.sessions[event.sessionId] = {
+            ...restCheckpoint,
+            prompts: restCheckpoint.prompts.filter((p) => p.requestId !== event.requestId),
+          };
+          break;
+        }
         if (!session.prompts.some((p) => p.requestId === event.requestId)) break;
         state.sessions[event.sessionId] = {
           ...session,
@@ -318,6 +332,17 @@ export const harnessStore = {
             status: t.status,
             ...(t.ref ? { ref: t.ref } : {}),
           })),
+        };
+        break;
+      }
+      case "compaction": {
+        state = {
+          ...state,
+          lastCompaction: {
+            at: Date.now(),
+            reason: event.reason,
+            summaryLength: event.summaryLength,
+          },
         };
         break;
       }

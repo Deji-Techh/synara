@@ -118,8 +118,13 @@ export async function requireMcpToolConsent(params: {
   serverId: number | string;
   serverName: string;
   toolName: string;
+  toolDescription?: string | null;
   inputPreview?: string | null;
   autoApproved?: { approved: boolean; reason?: string };
+  /** Session auto-approve-safe toggle: run the cheap classifier race. */
+  autoApproveSafe?: boolean;
+  /** Raw args for the classifier (preview is truncated for display). */
+  toolArgs?: unknown;
   store?: ConsentStore;
   requestConsent: McpConsentRequestFn;
   /** Turn abort — settles a parked wait as declined instead of hanging. */
@@ -135,6 +140,30 @@ export async function requireMcpToolConsent(params: {
 
   const requestId = `mcp:${params.serverName}:${params.toolName}:${randomUUID().slice(0, 8)}`;
   if (params.signal?.aborted) return { allowed: false };
+  // Classifier race (donor parity): safe calls auto-approve with a shown
+  // reason; the human always wins ties (resolveXxx only settles pending
+  // waiters, so whichever answer lands first wins and the other no-ops).
+  // Fail-closed: classifier errors/timeouts resolve nothing — the card asks.
+  if (params.autoApproveSafe !== false) {
+    void (async () => {
+      try {
+        const { buildMcpAutoApprove } = await import("./mcpAutoConsent.ts");
+        const classify = buildMcpAutoApprove({
+          sessionId: params.sessionId,
+          serverName: params.serverName,
+          toolName: params.toolName,
+          toolDescription: params.toolDescription ?? null,
+          args: params.toolArgs ?? params.inputPreview,
+        });
+        const verdict = await classify?.();
+        if (verdict?.approved && pending.has(requestId)) {
+          resolveMcpConsent(requestId, "accept-once");
+        }
+      } catch {
+        // fail closed — card asks
+      }
+    })();
+  }
   const decisionPromise = waitForMcpConsent(requestId, params.sessionId, params.signal);
   void Promise.resolve()
     .then(() =>

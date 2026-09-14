@@ -354,6 +354,7 @@ function ConsentCard(props: {
     toolDescription?: string | null;
     inputPreview?: string | null;
     autoApproveReason?: string | null;
+    danger?: { level?: string; category?: string; message?: string } | null;
   };
   const [done, setDone] = useState(false);
   const decided = useRef(false);
@@ -376,6 +377,19 @@ function ConsentCard(props: {
       }
     >
       <div className="flex flex-col gap-2">
+        {payload.danger?.message ? (
+          <span
+            role="alert"
+            className={
+              payload.danger.level === "danger"
+                ? "rounded-md border border-destructive/50 bg-destructive/10 px-2 py-1.5 text-[11px] font-medium text-destructive"
+                : "rounded-md border border-warning/50 bg-warning/10 px-2 py-1.5 text-[11px] font-medium text-warning"
+            }
+          >
+            {payload.danger.level === "danger" ? "Blocked as unsafe: " : "Please review: "}
+            {payload.danger.message}
+          </span>
+        ) : null}
         {payload.autoApproveReason ? (
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400">
             {payload.autoApproveReason}
@@ -396,9 +410,12 @@ function ConsentCard(props: {
           <Button size="xs" variant="outline" onClick={() => decide("accept-once")}>
             Accept once
           </Button>
-          <Button size="xs" onClick={() => decide("accept-always")}>
-            Always allow
-          </Button>
+          {/* No accept-always on danger findings (donor contract). */}
+          {!payload.danger ? (
+            <Button size="xs" onClick={() => decide("accept-always")}>
+              Always allow
+            </Button>
+          ) : null}
         </div>
       </div>
     </Shell>

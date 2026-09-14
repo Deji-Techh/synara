@@ -11,8 +11,16 @@ import type { HarnessEvent } from "@caide/contracts";
 import { resolveProviderDefaultModel } from "../../dyad/providers/index.ts";
 import { Inbox } from "../inbox/index.ts";
 import { HarnessHub } from "../ws/hub.ts";
-import { attachUiBridge, withdrawSessionPrompts } from "../ws/uiBridge.ts";
+import {
+  attachUiBridge,
+  cancelMcpOAuthForSession,
+  withdrawSessionPrompts,
+} from "../ws/uiBridge.ts";
 import { approveBlueprint, type AppBlueprint } from "../../dyad/plan/blueprintStore.ts";
+import {
+  dropIntegrationFollowUp,
+  takeDueIntegrationFollowUp,
+} from "../../dyad/db/integrationFollowUp.ts";
 import { sharedProviderSecrets } from "../../dyad/providers/secrets.ts";
 import { PROVIDERS, validateProviderSettings } from "../../dyad/providers/providers.ts";
 import { testProviderConnection } from "../../dyad/providers/testConnection.ts";
@@ -21,6 +29,11 @@ import type { ConsentRequestFn } from "../../dyad/tools/permissions.ts";
 import type { McpConsentRequestFn } from "../../dyad/mcp/mcpConsent.ts";
 import { CaideRunner, type StartTurnInput } from "./runner.ts";
 import { appendHarnessEvent } from "./eventLog.ts";
+import {
+  dismissUserInput,
+  resolveUserInput,
+  sessionForRequest,
+} from "../../dyad/plan/userPrompt.ts";
 import { clearSessionApp, getSessionApp, noteSessionApp } from "./sessionStores.ts";
 import { listVersions, restoreVersion } from "../../dyad/vcs/versions.ts";
 
@@ -150,6 +163,40 @@ export class TurnGateway {
     server.onSteer((sessionId, prompt) => {
       this.steerOrLaunch(server, sessionId, prompt);
     });
+    server.onCompactNow((sessionId) => {
+      // Manual compaction refuses while live (would cut the in-flight tail
+      // from under the turn); otherwise summarize + persist the boundary now
+      // and announce it so the UI can show status.
+      if (this.runner.hasLiveTurn(sessionId)) {
+        try {
+          server.broadcastToSession(sessionId, {
+            type: "error",
+            sessionId,
+            code: "COMPACT_BUSY",
+            message:
+              "A turn is running — compaction will apply automatically. Try again when it finishes.",
+            recoverable: true,
+          });
+        } catch {
+          // socket dead; nothing to settle
+        }
+        return;
+      }
+      void (async () => {
+        try {
+          const { runManualCompaction } = await import("./runner.ts");
+          const chars = await runManualCompaction(sessionId, getSessionApp(sessionId));
+          server.broadcastToSession(sessionId, {
+            type: "compaction",
+            sessionId,
+            reason: chars === null ? "manual-empty" : "manual",
+            summaryLength: chars ?? 0,
+          });
+        } catch {
+          // manual compaction never fails the chat
+        }
+      })();
+    });
     server.onProviderSettingsGet((sessionId, requestId) => {
       this.sendProviderState(server, sessionId, requestId);
     });
@@ -215,6 +262,7 @@ export class TurnGateway {
       // requestIds), then cancel the turn — runner.cancel re-clears as a
       // no-op for non-WS paths.
       withdrawSessionPrompts(server, sessionId);
+      cancelMcpOAuthForSession(sessionId);
       this.runner.cancel(sessionId, reason ?? "cancelled");
     });
     server.onVersionsList((sessionId) => {
@@ -263,6 +311,29 @@ export class TurnGateway {
           });
         }
       })();
+    });
+    server.onCheckpointResponse((sessionId, checkpointId, approved, feedback) => {
+      // Checkpoint answers target the parked checkpoint waiter (same id by
+      // design). A miss means a stale card — withdraw just that card so
+      // answering never hangs silently.
+      const answers = approved
+        ? { approved: "true" }
+        : { approved: "false", feedback: feedback ?? "" };
+      const settled = sessionForRequest(checkpointId)
+        ? resolveUserInput(checkpointId, answers)
+        : false;
+      if (!settled) {
+        dismissUserInput(checkpointId);
+        try {
+          this.ws?.broadcastToSession(sessionId, {
+            type: "ui_prompt_withdraw",
+            sessionId,
+            requestId: checkpointId,
+          });
+        } catch {
+          // socket dead; nothing to settle
+        }
+      }
     });
     server.onBlueprintResponse((sessionId, approved, blueprint, feedback) => {
       if (approved) {
@@ -333,6 +404,21 @@ export class TurnGateway {
           // transcript projection is best-effort
         }
       }
+      // Integration follow-up dispatch: a completed DB setup arms a
+      // "continue" follow-up; fire it when the turn ends (launching a fresh
+      // turn when idle), drop it when the turn failed or was cancelled.
+      if (event.type === "turn_end" && event.sessionId === request.sessionId) {
+        try {
+          if (event.status === "completed") {
+            const followUp = takeDueIntegrationFollowUp(request.sessionId);
+            if (followUp && this.ws) this.steerOrLaunch(this.ws, request.sessionId, followUp);
+          } else {
+            dropIntegrationFollowUp(request.sessionId);
+          }
+        } catch {
+          // follow-up dispatch never breaks the turn
+        }
+      }
     };
     return this.runner.startTurn({
       ...request,
@@ -353,6 +439,7 @@ export class TurnGateway {
 
   cancelTurn(sessionId: string, cause?: string): void {
     if (this.ws) withdrawSessionPrompts(this.ws, sessionId);
+    cancelMcpOAuthForSession(sessionId);
     this.runner.cancel(sessionId, cause);
     // Always settle the UI: a turn that died without its own turn_end leaves
     // the Stop button latched on a dead turn otherwise. An in-flight turn

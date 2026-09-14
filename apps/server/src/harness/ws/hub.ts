@@ -25,6 +25,7 @@ export interface ClientInboundMessage {
     | "provider_settings_test"
     | "versions_list"
     | "versions_restore"
+    | "compact_now"
     | "mcp_oauth_start";
   sessionId?: string;
   serverId?: string;
@@ -101,6 +102,7 @@ export type BlueprintResponseHandler = (
   feedback?: string,
 ) => void;
 export type TurnStartHandler = (sessionId: string, turn: TurnStartPayload) => void;
+export type CompactNowHandler = (sessionId: string) => void;
 export type McpOAuthStartHandler = (
   sessionId: string,
   input: {
@@ -166,6 +168,7 @@ export class HarnessHub {
   private onVersionsListHandler?: VersionsListHandler;
   private onVersionsRestoreHandler?: VersionsRestoreHandler;
   private onTurnStartHandler?: TurnStartHandler;
+  private onCompactNowHandler?: CompactNowHandler;
   private onProviderSettingsGetHandler?: ProviderSettingsGetHandler;
   private onProviderSettingsSetHandler?: ProviderSettingsSetHandler;
   private onMcpOAuthStartHandler?: McpOAuthStartHandler;
@@ -269,6 +272,10 @@ export class HarnessHub {
       this.onTurnStartHandler?.(msg.sessionId, msg.turn);
       return;
     }
+    if (msg.type === "compact_now" && msg.sessionId) {
+      this.onCompactNowHandler?.(msg.sessionId);
+      return;
+    }
     if (msg.type === "provider_settings_get" && msg.sessionId) {
       this.onProviderSettingsGetHandler?.(msg.sessionId, msg.requestId);
       return;
@@ -368,12 +375,20 @@ export class HarnessHub {
       const clients = this.sessionClients.get(sessionId);
       if (!clients?.has(sender)) return;
       if (event.type === "ui_prompt_withdraw") continue;
-      if (event.type === "ui_prompt") {
-        const requestId = (event as { requestId?: unknown }).requestId;
+      if (event.type === "ui_prompt" || event.type === "checkpoint") {
+        // Checkpoint gates carry id instead of requestId (same id space).
+        const ids = event as { requestId?: unknown; id?: unknown };
+        const requestId =
+          typeof ids.requestId === "string"
+            ? ids.requestId
+            : typeof ids.id === "string"
+              ? ids.id
+              : undefined;
         // Skip settled prompts: every settle path (answer, dismiss, cancel,
-        // supersede) persists a withdrawal tombstone first, so "no tombstone"
-        // is the durable definition of live — restart-safe, unlike the old
-        // in-memory waiter check which dropped live cards after a restart.
+        // supersede, deadline) persists a withdrawal tombstone first, so "no
+        // tombstone" is the durable definition of live — restart-safe, unlike
+        // the old in-memory waiter check which dropped live cards after a
+        // restart. Checkpoint gates share the waiter id space.
         if (typeof requestId === "string" && withdrawn.has(requestId)) continue;
       }
       sender.sendText(JSON.stringify(event));
@@ -424,6 +439,10 @@ export class HarnessHub {
 
   onTurnStart(handler: TurnStartHandler): void {
     this.onTurnStartHandler = handler;
+  }
+
+  onCompactNow(handler: CompactNowHandler): void {
+    this.onCompactNowHandler = handler;
   }
 
   onProviderSettingsGet(handler: ProviderSettingsGetHandler): void {
